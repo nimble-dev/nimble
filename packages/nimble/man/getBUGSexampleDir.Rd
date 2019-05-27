@@ -18,4 +18,3 @@ NIMBLE comes with some of the classic BUGS examples.  \code{getBUGSexampleDir} l
 \author{
 Christopher Paciorek
 }
-

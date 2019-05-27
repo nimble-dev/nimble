@@ -22,4 +22,3 @@ A list of the same format as \code{mcmcResults}
 \description{
 By default the effective sample sizes (ESS) (and MCMC efficiencies) are estimated from the coda package.  This function estimates them either using the same method as coda but allowing higher-order AR models or using the method provided in Stan via package rstan.
 }
-

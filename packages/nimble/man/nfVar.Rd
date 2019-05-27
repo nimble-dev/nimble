@@ -59,4 +59,3 @@ nf2$run()
 \author{
 NIMBLE development team
 }
-

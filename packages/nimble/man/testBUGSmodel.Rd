@@ -4,8 +4,8 @@
 \alias{testBUGSmodel}
 \title{Tests BUGS examples in the NIMBLE system}
 \usage{
-testBUGSmodel(example = NULL, dir = NULL, model = NULL, data = NULL,
-  inits = NULL, useInits = TRUE, debug = FALSE,
+testBUGSmodel(example = NULL, dir = NULL, model = NULL,
+  data = NULL, inits = NULL, useInits = TRUE, debug = FALSE,
   verbose = nimbleOptions("verbose"))
 }
 \arguments{
@@ -39,4 +39,3 @@ testBUGSmodel('pump')
 \author{
 Christopher Paciorek
 }
-

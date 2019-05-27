@@ -15,4 +15,3 @@ Creates a deafult \code{control} argument for \code{\link{optim}} (just an empty
 \seealso{
 \code{\link{nimOptim}}, \code{\link{optim}}
 }
-

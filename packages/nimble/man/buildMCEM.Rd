@@ -4,9 +4,10 @@
 \alias{buildMCEM}
 \title{Builds an MCEM algorithm from a given NIMBLE model}
 \usage{
-buildMCEM(model, latentNodes, burnIn = 500, mcmcControl = list(adaptInterval
-  = 100), boxConstraints = list(), buffer = 10^-6, alpha = 0.25,
-  beta = 0.25, gamma = 0.05, C = 0.001, numReps = 300, verbose = TRUE)
+buildMCEM(model, latentNodes, burnIn = 500,
+  mcmcControl = list(adaptInterval = 100), boxConstraints = list(),
+  buffer = 10^-6, alpha = 0.25, beta = 0.25, gamma = 0.05,
+  C = 0.001, numReps = 300, verbose = TRUE)
 }
 \arguments{
 \item{model}{a nimble model}
@@ -74,6 +75,7 @@ Uses an ascent-based MCEM algorithm, which includes rules for automatically incr
  }
  }
 }
+
 \examples{
 \dontrun{
 pumpCode <- nimbleCode({ 
@@ -108,12 +110,11 @@ cov <- pumpMCEM$estimateCov()
 # Could also use latentNodes = 'theta' and buildMCEM() would figure out this means 'theta[1:10]'
 
 }
-\author{
-Clifford Anderson-Bergman and Nicholas Michaud
-}
 \references{
 Caffo, Brian S., Wolfgang Jank, and Galin L. Jones (2005). Ascent-based Monte Carlo expectation-maximization.  \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 67(2), 235-251.
  
  Louis, Thomas A  (1982). Finding the Observed Information Matrix When Using the EM Algorithm. \emph{Journal of the Royal Statistical Society. Series B (Statistical Methodology)}, 44(2), 226-233.
 }
-
+\author{
+Clifford Anderson-Bergman and Nicholas Michaud
+}

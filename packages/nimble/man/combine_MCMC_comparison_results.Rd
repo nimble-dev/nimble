@@ -48,4 +48,3 @@ combinedMCMCresults <- combine_MCMC_comparison_results(nimbleMCMCresults[['model
 \seealso{
 \code{\link{compareMCMCs}}, \code{\link{rename_MCMC_comparison_method}}, \code{\link{make_MCMC_comparison_pages}}, \code{\link{reshape_comparison_results}}.
 }
-

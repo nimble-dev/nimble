@@ -109,6 +109,7 @@ The \code{MCMCcontrol} argument is a list with the following elements:
   }
  }
 }
+
 \examples{
 \dontrun{
 
@@ -183,4 +184,3 @@ crossValOutput <- runCrossValidate(MCMCconfiguration = dyesMCMCconfiguration,
 \author{
 Nicholas Michaud and Lauren Ponisio
 }
-

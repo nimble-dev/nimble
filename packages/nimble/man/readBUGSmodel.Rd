@@ -50,4 +50,3 @@ model$calculate('x')
 \author{
 Christopher Paciorek
 }
-

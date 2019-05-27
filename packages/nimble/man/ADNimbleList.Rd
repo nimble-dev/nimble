@@ -22,8 +22,8 @@ ADNimbleList
 
 \item{\code{thirdDerivs}}{Currently unused.}
 }}
+
 \seealso{
 \code{\link{nimDerivs}}
 }
 \keyword{datasets}
-

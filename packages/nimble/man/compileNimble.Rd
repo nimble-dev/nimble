@@ -46,4 +46,3 @@ See NIMBLE User Manual for examples
 \author{
 Perry de Valpine
 }
-

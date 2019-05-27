@@ -2,8 +2,8 @@
 % Please edit documentation in R/BNP_distributions.R
 \name{StickBreakingFunction}
 \alias{StickBreakingFunction}
-\alias{stick_breaking}
 \alias{stickbreaking}
+\alias{stick_breaking}
 \title{The Stick Breaking Function}
 \usage{
 stick_breaking(z, log = 0)
@@ -38,11 +38,10 @@ cstick_breaking <- compileNimble(stick_breaking)
 cstick_breaking(z)
 }
 }
-\author{
-Claudia Wehrhahn
-}
 \references{
 Sethuraman, J. (1994). A constructive definition of Dirichlet priors.
  \emph{Statistica Sinica}, 639-650.
 }
-
+\author{
+Claudia Wehrhahn
+}

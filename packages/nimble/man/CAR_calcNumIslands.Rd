@@ -14,10 +14,9 @@ CAR_calcNumIslands(adj, num)
 \description{
 Calculate number of islands (distinct connected groups) based on a CAR adjacency matrix.
 }
-\author{
-Daniel Turek
-}
 \seealso{
 \code{\link{CAR-Normal}}
 }
-
+\author{
+Daniel Turek
+}

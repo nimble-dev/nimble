@@ -2,21 +2,21 @@
 % Please edit documentation in R/MCMC_configuration.R
 \docType{class}
 \name{MCMCconf-class}
-\alias{MCMCconf}
 \alias{MCMCconf-class}
+\alias{MCMCconf}
+\alias{addSampler}
+\alias{removeSamplers}
+\alias{setSamplers}
+\alias{printSamplers}
+\alias{getSamplers}
+\alias{setSamplerExecutionOrder}
+\alias{getSamplerExecutionOrder}
 \alias{addMonitors}
 \alias{addMonitors2}
-\alias{addSampler}
+\alias{resetMonitors}
 \alias{getMonitors}
 \alias{getMonitors2}
-\alias{getSamplerExecutionOrder}
-\alias{getSamplers}
 \alias{printMonitors}
-\alias{printSamplers}
-\alias{removeSamplers}
-\alias{resetMonitors}
-\alias{setSamplerExecutionOrder}
-\alias{setSamplers}
 \alias{setThin}
 \alias{setThin2}
 \title{Class \code{MCMCconf}}
@@ -239,6 +239,7 @@ print: A logical argument specifying whether to print all current monitors (defa
 Details: See the initialize() function
             }
 }}
+
 \examples{
 code <- nimbleCode({
  mu ~ dnorm(0, 1)
@@ -255,10 +256,9 @@ conf$setThin2(10)
 conf$printMonitors()
 conf$printSamplers()
 }
-\author{
-Daniel Turek
-}
 \seealso{
 \code{\link{configureMCMC}}
 }
-
+\author{
+Daniel Turek
+}

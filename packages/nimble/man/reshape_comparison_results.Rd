@@ -25,4 +25,3 @@ Useful for making new kinds of figures or other needs
 \details{
 This is used internally by \code{\link{make_MCMC_comparison_pages}} but could also be useful to users who want to do their own thing with results from \code{\link{compareMCMCs}}.
 }
-

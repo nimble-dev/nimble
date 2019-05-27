@@ -2,14 +2,15 @@
 % Please edit documentation in R/MCMC_suite.R
 \docType{class}
 \name{MCMCsuiteClass-class}
-\alias{MCMCsuiteClass}
 \alias{MCMCsuiteClass-class}
+\alias{MCMCsuiteClass}
 \title{Class \code{MCMCsuiteClass}}
 \description{
 Objects of this class create, run, and organize output from a suite of MCMC algorithms, all applied to the same model, data, and initial values.
 This can include WinBUGS, OpenBUGS, JAGS and Stan MCMCs, as well as NIMBLE MCMC algorithms.
 Trace plots and density plots for the MCMC samples may also be generated and saved.
 }
+
 \examples{
 \dontrun{
 code <- nimbleCode({
@@ -27,10 +28,9 @@ output <- MCMCsuite(code,
 }
 
 }
-\author{
-Daniel Turek
-}
 \seealso{
 \code{\link{MCMCsuite}}
 }
-
+\author{
+Daniel Turek
+}

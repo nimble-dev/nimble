@@ -5,7 +5,8 @@
 \title{Run multiple MCMCs (packages or NIMBLE cases) for multiple models and return summary results}
 \usage{
 compareMCMCs(modelInfo, MCMCs = c("nimble"), MCMCdefs, BUGSdir, stanDir,
-  stanInfo, doSamplePlots = FALSE, verbose = TRUE, summary = TRUE, ...)
+  stanInfo, doSamplePlots = FALSE, verbose = TRUE, summary = TRUE,
+  ...)
 }
 \arguments{
 \item{modelInfo}{A set of model information for which one or more MCMCs should be run.  Can take one of several formats: (1) a character vector of names of classic WinBUGS examples.  (2) for one model, a list with elements \code{code} (containing the model code as returned by \code{\link{nimbleCode}}), \code{data} (containing a list of data that can be provided to \code{\link{nimbleModel}}, \code{constants} (containing a list of constants to be provided to \code{\link{nimbleModel}}), \code{inits} (containing a list of initial values that can be provided to \code{\link{nimbleModel}}; this is optional unless it is needed to match names in some of the other arguments, as described below), and \code{name} (a character name; this is optional).  (3) for multiple models, a list of lists formatted as per option (2).  See \code{\link{nimbleModel}} about handling of data vs. constants.  In particular, if both are provided in data, then \code{nimbleModel} will try to determine which is which.}
@@ -40,4 +41,3 @@ compareMCMCs wraps a call to \code{\link{MCMCsuite}}
 \seealso{
 \code{\link{MCMCsuiteClass}}, \code{\link{updateMCMCcomparisonWithHighOrderESS}}, \code{\link{make_MCMC_comparison_pages}}, \code{\link{reshape_comparison_results}}, \code{\link{combine_MCMC_comparison_results}}, \code{\link{rename_MCMC_comparison_method}}, \code{\link{reshape_comparison_results}}.
 }
-

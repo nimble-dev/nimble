@@ -11,11 +11,10 @@ svdNimbleList
 \description{
 \code{nimbleList} definition for the type of \code{nimbleList} returned by \code{\link{nimSvd}}.
 }
-\author{
-NIMBLE development team
-}
 \seealso{
 \code{\link{nimSvd}}
 }
+\author{
+NIMBLE development team
+}
 \keyword{datasets}
-

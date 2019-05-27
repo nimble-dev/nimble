@@ -30,8 +30,8 @@ optimResultNimbleList
 
 \item{\code{hessian}}{Only if argument hessian is true. A symmetric matrix giving an estimate of the Hessian at the solution found.}
 }}
+
 \seealso{
 \code{\link{optim}}, \code{\link{nimOptim}}
 }
 \keyword{datasets}
-

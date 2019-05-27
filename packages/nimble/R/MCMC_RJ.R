@@ -331,7 +331,7 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
         currentConf <- mcmcConf$getSamplers(nodeAsScalar[j])
         
         ## check on node configuration
-        node_configuration_check(currentConf, nodeAsScalar[j])
+        nodeConfigurationCheck(currentConf, nodeAsScalar[j])
         
         ## substitute node sampler
         mcmcConf$removeSamplers(nodeAsScalar[j])
@@ -381,7 +381,7 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
         currentConf <- mcmcConf$getSamplers(nodeAsScalar[j])
         
         ## check on node configuration
-        node_configuration_check(currentConf, nodeAsScalar[j])
+        nodeConfigurationCheck(currentConf, nodeAsScalar[j])
         
         ## Add reversible jump sampler for the indicatorNodes variable
         mcmcConf$removeSamplers(indicatorsAsScalar[j])

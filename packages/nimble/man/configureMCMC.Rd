@@ -6,7 +6,8 @@
 \usage{
 configureMCMC(model, nodes, control = list(), monitors, thin = 1,
   monitors2 = character(), thin2 = 1, useConjugacy = TRUE,
-  onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
+  onlyRW = FALSE, onlySlice = FALSE,
+  multivariateNodesAsScalars = FALSE,
   enableWAIC = nimbleOptions("enableWAIC"), print = FALSE,
   autoBlock = FALSE, oldConf,
   rules = getNimbleOption("MCMCdefaultSamplerAssignmentRules"),
@@ -65,10 +66,9 @@ Creates a defaut MCMC configuration for a given model.  The resulting object is 
 \details{
 See \code{MCMCconf} for details on how to manipulate the \code{MCMCconf} object
 }
-\author{
-Daniel Turek
-}
 \seealso{
 \code{\link{samplerAssignmentRules}} \code{\link{buildMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}
 }
-
+\author{
+Daniel Turek
+}

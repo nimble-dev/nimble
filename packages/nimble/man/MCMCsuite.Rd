@@ -165,4 +165,3 @@ output <- MCMCsuite(code,
 \author{
 Daniel Turek
 }
-

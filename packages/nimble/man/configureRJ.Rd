@@ -2,22 +2,22 @@
 % Please edit documentation in R/MCMC_RJ.R
 \name{configureRJ}
 \alias{configureRJ}
-\title{Configure reversible jump sampler}
+\title{Configure Reversible Jump sampler}
 \usage{
-configureRJ(mcmcConf, nodes, indicator = NULL, prior = NULL,
-  control_RJ = list(fixedValue = NULL, mean = NULL, scale = NULL,
-  positive = NULL))
+configureRJ(mcmcConf, targetNodes, indicatorNodes = NULL,
+  priorProb = NULL, control = list(fixedValue = NULL, mean = NULL,
+  scale = NULL, positive = NULL))
 }
 \arguments{
-\item{mcmcConf}{a \code{MCMCconf} object.}
+\item{mcmcConf}{A \code{MCMCconf} object.}
 
-\item{nodes}{a character vector, containing the names of the nodes for which the variable selection is performed.}
+\item{targetNodes}{A character vector, specifying the nodes and/or variables interested in the variable selection. Nodes may be specified in their indexed form, \code{y[1, 3]}. Alternatively, nodes specified without indexing will be expanded fully, e.g., \code{x} will be expanded to \code{x[1]]}, \code{x[2]}, etc.}
 
-\item{indicator}{a character vector, containing the names of the indicator variables associated with \code{nodes} that are involved in the reversible jump step. (see details?)}
+\item{indicatorNodes}{An optional character vector, specifying the indicator nodes and/or variables paired with \code{targetNodes}. Nodes may be specified in their indexed form, \code{y[1, 3]}. Alternatively, nodes specified without indexing will be expanded fully, e.g., \code{x} will be expanded to \code{x[1]]}, \code{x[2]}, etc. Nodes must be provided consistently with \code{targetNodes} vector. (see details?)}
 
-\item{prior}{a vector of prior probabilities for each node to be equal to 0 (or another fixed value) or not. (see details?)}
+\item{priorProb}{An optional numeric vector of prior probabilities for each node to be in the model. (see details?)}
 
-\item{control_RJ}{named list with arguments
+\item{control}{An optional list of control arguments to the Reversible Jump function.
 \itemize{
 \item fixedValue. The value taken from the variable when out of the model. (default = 0)
 \item mean. The mean of the normal proposal distribution. (default = 0)
@@ -29,12 +29,11 @@ configureRJ(mcmcConf, nodes, indicator = NULL, prior = NULL,
 Modifies the \code{MCMCconf} object of a specific model, to include a Reversible Jump MCMC sampler for variable selection using an univariate normal proposal distribution. User can control which value the variable takes when not in the model (typically 0), the mean and scale of the proposal, and whether or not the proposal is strictly positive. This function supports two different ways of writing the model.
 }
 \details{
-This functions modifies the sampler in \code{MCMCconf} for each of the nodes provided in the \code{nodes} argument. To these elements two samplers are assigned: a specialized Reversible Jump sampler and a modified version of the build sampler that is used only when the target node is in the model. 
+This functions modifies the samplers in \code{MCMCconf} for each of the nodes provided in the \code{targetNodes} argument. To these elements two samplers are assigned: a specialized Reversible Jump sampler and a modified version of the build sampler that is used only when the target node is in the model. 
 
-The specialized RJ sampler depends on whether the \code{prior} or \code{indicator} arguments are provided, according on how the model is written. When \code{prior} is provided, the specialized sampler \code{sampler_RJ} is assigned directly to the \code{nodes}. When \code{indicator} is provided, the specialized sampler \code{sampler_RJ_indicator} is assigned to nodes in \code{indicator}.
+The specialized RJ sampler depends on whether the \code{prior} or \code{indicatorNodes} arguments are provided, according on how the model is written. When \code{prior} is provided, the specialized sampler \code{sampler_RJ} is assigned directly to the \code{targetNodes}. When \code{indicatorNodes} is provided, the specialized sampler \code{sampler_RJ_indicator} is assigned to nodes in \code{indicatorNodes}.
 }
 \examples{
-
 
 }
 \references{

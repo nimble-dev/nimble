@@ -41,4 +41,3 @@ Instances of \code{nimbleList} definitions can be used as arguments to run code 
 \author{
 NIMBLE development team
 }
-

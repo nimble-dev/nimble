@@ -4,8 +4,8 @@
 \alias{runMCMC}
 \title{Run one or more chains of an MCMC algorithm and return samples, summary and/or WAIC}
 \usage{
-runMCMC(mcmc, niter = 10000, nburnin = 0, thin, thin2, nchains = 1, inits,
-  setSeed = FALSE, progressBar = TRUE, samples = TRUE,
+runMCMC(mcmc, niter = 10000, nburnin = 0, thin, thin2, nchains = 1,
+  inits, setSeed = FALSE, progressBar = TRUE, samples = TRUE,
   samplesAsCodaMCMC = FALSE, summary = FALSE, WAIC = FALSE)
 }
 \arguments{
@@ -83,10 +83,9 @@ samplesList <- runMCMC(Cmcmc, niter = 10000, nchains = 3, inits = inits)
 }
 
 }
-\author{
-Daniel Turek
-}
 \seealso{
 \code{\link{configureMCMC}} \code{\link{buildMCMC}} \code{\link{nimbleMCMC}}
 }
-
+\author{
+Daniel Turek
+}

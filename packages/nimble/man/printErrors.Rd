@@ -15,4 +15,3 @@ Retrieves the error file from R's tempdir and prints to the screen.
 \author{
 Christopher Paciorek
 }
-

@@ -25,4 +25,3 @@ One of the main purposes of renaming a method is that the method names are used 
 \seealso{
 \code{\link{compareMCMCs}}, code{\link{combine_MCMC_comparison_results}}, \code{\link{make_MCMC_comparison_pages}}, \code{\link{reshape_comparison_results}}.
 }
-

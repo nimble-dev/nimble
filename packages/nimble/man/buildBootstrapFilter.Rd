@@ -59,6 +59,7 @@ Each of the \code{control()} list options are described in detail here:
  Calling the \code{returnESS()} method of a bootstrap filter after that filter has been \code{run()} for a given model will return a vector of ESS (effective
  sample size) values, one value for each time point.
 }
+
 \examples{
 \dontrun{
 model <- nimbleModel(code = ...)
@@ -70,9 +71,6 @@ ESS <- Cmy_BootF$returnESS()
 boot_X <- as.matrix(Cmy_BootF$mvEWSamples)
 }
 }
-\author{
-Daniel Turek and Nicholas Michaud
-}
 \references{
 Gordon, N.J., D.J. Salmond, and A.F.M. Smith. (1993). Novel approach to nonlinear/non-Gaussian Bayesian state estimation. \emph{IEEE Proceedings F (Radar and Signal Processing)}. Vol. 140. No. 2. IET Digital Library, 1993.
 }
@@ -81,4 +79,7 @@ Other particle filtering methods: \code{\link{buildAuxiliaryFilter}},
   \code{\link{buildEnsembleKF}},
   \code{\link{buildLiuWestFilter}}
 }
-
+\author{
+Daniel Turek and Nicholas Michaud
+}
+\concept{particle filtering methods}

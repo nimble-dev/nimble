@@ -38,4 +38,3 @@ Executing this function has the following effects:
 \author{
 Daniel Turek
 }
-

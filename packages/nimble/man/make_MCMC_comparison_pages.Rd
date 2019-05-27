@@ -29,4 +29,3 @@ This function is extensible: new html elements can be provided, but at the momen
 \details{
 Effective sample size (ESS) is calculated using the \code{coda} packages \code{effectiveSize} function.  In cases of poot mixing, this can over-estimate ESS by not using a sufficiently high-order auto-regressive model in the estimation procudure.  See \code{\link{updateMCMCcomparisonWithHighOrderESS}} for other options.
 }
-

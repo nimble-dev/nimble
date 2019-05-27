@@ -15,4 +15,3 @@ Returns a list containing the nimbleFunction definition components (setup functi
 \author{
 Daniel Turek
 }
-
