@@ -249,7 +249,7 @@ nodeConfigurationCheck <- function(currentConf, node){
 #' \item mean. The mean of the normal proposal distribution. (default = 0)
 #' \item scale. The standard deviation of the normal proposal distribution. (default  = 1)
 #' \item positive. A logical argument specifying whether the proposal is strictly positive. (default = FALSE)
-#' \item fixedValue. An optional value taken from the variable when out of the model, used only when \code{priorProb} is provided (default = 0)
+#' \item fixedValue. An optional value taken from the variable when out of the model, used only when \code{priorProb} is provided (default = 0). If specified when \code{indicatorNodes} is passed, a \code{warning} message is thrown and ignored. 
 #' }
 #'
 #' @details 
@@ -315,25 +315,27 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
   indicatorFlag <- (!is.null(indicatorNodes))
   priorFlag     <- (!is.null(priorProb))
   
-  ## Check: user must provide indicatorNodes OR 
+  ## Check: user must provide indicatorNodes OR priorProb
   if(indicatorFlag == priorFlag) {
     stop("Provide indicatorNodes or priorProb vector")
   }
   
+  ## Check: fixedValue can be used only with priorProb 
+  if(indicatorFlag & fixedValue != 0) {
+   warning("fixedValue can be provided only when using priorProb; it will be ignored.")
+  }
+
   ##---------------------------------------##
   ## No indicator
   ##---------------------------------------##
   if(priorFlag){
     
-
     ## If one value for prior is given, it is used for each variable
     if(length(priorProb) != nNodes) {
       if(length(priorProb) == 1) priorProb <- rep(priorProb, nNodes) else stop('Length of priorProb vector must match targetNodes length')
     }
     
-
-    for(i in 1:nNodes) {
-      
+    for(i in 1:nNodes) {     
       
       ## Create node list
       nodeAsScalar <- mcmcConf$model$expandNodeNames(targetNodes[i], returnScalarComponents = TRUE)
