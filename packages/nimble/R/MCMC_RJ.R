@@ -22,15 +22,15 @@ sampler_RJ <- nimbleFunction(
   setup = function(mvSaved, model, target, control) {
     ## target should be a coefficient to be set to a fixed value (usually zero) or not
     ## control should have
-    ## 1 - fixedValue (default 0)
-    ## 2 - mean of proposal jump distribution  (default 0)
-    ## 3 - sd of proposal jump distribution  (default 1)
-    ## 4 - prior prob of taking its fixedValue  (default 0.5)
+    ## 1 - mean of proposal jump distribution  (default 0)
+    ## 2 - sd of proposal jump distribution  (default 1)
+    ## 3 - prior prob of taking its fixedValue  (default 0.5)
+    ## 4 - fixedValue (default 0)
     
-    fixedValue <- control$fixedValue
     proposalScale <- control$scale
     proposalMean <- control$mean
     positive <- control$positive
+    fixedValue <- control$fixedValue
     
     ## precompute ratio between prior probabilities
     logRatioProbFixedOverProbNotFixed <- log(control$priorProb) - log(1-control$priorProb)
@@ -119,7 +119,7 @@ sampler_RJ_indicator <- nimbleFunction(
     ## 2 - mean of proposal jump distribution  (default 0)
     ## 3 - sd of proposal jump distribution  (default 1)
     
-    coefNode <- control$coef
+    coefNode <- control$targetNode
     proposalScale <- control$scale
     proposalMean <- control$mean
     positive <- control$positive
@@ -243,10 +243,10 @@ nodeConfigurationCheck <- function(currentConf, node){
 #' @param priorProb An optional numeric vector of prior probabilities for each node to be in the model. (see details?)
 #' @param control An optional list of control arguments to the Reversible Jump function.
 #' \itemize{
-#' \item fixedValue. An optional value taken from the variable when out of the model, used only when \code{priorProb} is provided (default = 0)
 #' \item mean. The mean of the normal proposal distribution. (default = 0)
 #' \item scale. The standard deviation of the normal proposal distribution. (default  = 1)
 #' \item positive. A logical argument specifying whether the proposal is strictly positive. (default = FALSE)
+#' \item fixedValue. An optional value taken from the variable when out of the model, used only when \code{priorProb} is provided (default = 0)
 #' }
 #'
 #' @details 
@@ -270,7 +270,7 @@ nodeConfigurationCheck <- function(currentConf, node){
 #' @references
 #' 
 #' Peter J. Green. (1995). Reversible jump markov chain monte carlo computation and bayesian model determination. \emph{Biometrika}, 82(4), 711-732.
-configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb = NULL, control = list(fixedValue = NULL, mean = NULL, scale = NULL, positive = NULL)) {
+configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb = NULL, control = list(mean = NULL, scale = NULL, positive = NULL, fixedValue = NULL)) {
 
   nNodes <- length(targetNodes)
   
@@ -393,7 +393,7 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
       for(j in 1:length(nodeAsScalar)){
           
         ## add coefficients to control
-        nodeControl$coef <- nodeAsScalar[j]
+        nodeControl$targetNode <- nodeAsScalar[j]
         
         
         currentConf <- mcmcConf$getSamplers(nodeAsScalar[j])
@@ -412,7 +412,7 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
         
         mcmcConf$addSampler(type = sampler_toggled,
                             target = nodeAsScalar[j],
-                            control = list(samplerConf = currentConf[[1]], fixedValue = 0)) ## fixedValue is actually not needed but passed because of how toggled_sampler is written
+                            control = list(samplerConf = currentConf[[1]], fixedValue = 0)) ## fixedValue is actually not used by sampler_RJ_indicator but passed because of how toggled_sampler is written
       }  
         
     }
