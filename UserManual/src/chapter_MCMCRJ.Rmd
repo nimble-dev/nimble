@@ -1,0 +1,106 @@
+<!--- % See http://yihui.name/knitr/demo/child/ for documentation on the parent/child document system of knitr -->
+
+
+```{r, echo=FALSE}
+require(nimble)
+``` 
+
+# Reversible Jump MCMC 
+<!-- {#cha:algos-provided} -->
+
+Reversible Jump MCMC [@Green_1995] (RJMCMC) is a general framework for MCMC simulation in which the dimension of the parameter space can vary between iterates of the Markov chain. The reversible jump sampler can be viewed as an extension of the Metropolis-Hastings algorithm onto more general state spaces.
+Given two models $M_1$ and $M_2$ of possibly different dimensions, the core idea of this technique is to remove the difference in the dimensions of models $M_1$ and $M_2$ by supplementing the corresponding parameters $\boldsymbol{\theta_1}$ and $\boldsymbol{\theta_2}$ with auxiliary variables $\boldsymbol{u}_{1 \rightarrow 2}$ and $\boldsymbol{u}_{2 \rightarrow 1}$ such that
+
+$$(\boldsymbol{\theta_1}, \boldsymbol{u}_{1 \rightarrow 2}) \text{ and } (\boldsymbol{\theta_2}, \boldsymbol{u}_{2 \rightarrow 1})$$
+
+are in bijection, $(\boldsymbol{\theta_2}, \boldsymbol{u}_{2 \rightarrow 1}) = \Psi(\boldsymbol{\theta_1}, \boldsymbol{u}_{1 \rightarrow 2})$
+<!-- RJMCMC finds natural application in Bayesian model selection problems.  Given a countable set of models, the Bayesian model choice problem generically involves joint inference about a model indicator $k$ and a parameter vector $\theta_k$, where the model indicator determines the dimension $n_k$ of the parameter and this dimension may vary from model to model. -->
+
+NIMBLE implements RJMCMC for variable selection using a univariate normal distribution as proposal density and supports two kinds of model specifications.
+
+<!-- - Model specification depends on whether or not indicator variables are made explicit -->
+<!-- - this information is passed to `configureRJ` function by providing one of arguments `indicatorNodes` or `priorProb` -->
+<!-- - `configureRJ` modifies the model configuration, and assign the Reversible Jump sampler to the variable of interest, along with a modified version of the sampler already assigned, in order to be called only when the variable is in the model -->
+<!-- - User can specify the mean and scale of the proposal  -->
+
+## Using indicator variables
+
+```{r indicators}
+## Define model  ----
+code <- nimbleCode({
+  beta0 ~ dnorm(0, sd = 100)
+  beta1 ~ dnorm(0, sd = 100)
+  beta2 ~ dnorm(0, sd = 100)
+  sigma ~ dunif(0, 100) 
+  
+  z1 ~ dbern(psi)  ## indicator variable associated to beta1
+  z2 ~ dbern(psi)  ## indicator variable associated to beta2
+  psi ~ dbeta(1, 1) ## hyperprior on inclusion probability
+  for(i in 1:N) {
+    Ypred[i] <- beta0 + beta1 * z1 * x1[i] + beta2 * z2 * x2[i]
+    Y[i] ~ dnorm(Ypred[i], sd = sigma)
+  }
+})
+
+## simulate some data
+set.seed(0)
+N <- 100
+x1 <- runif(N, -1, 1)
+x2 <- runif(N, -1, 1)
+Y <- rnorm(N, 1.5 + 2 * x1, sd = 1)
+
+
+## build the model
+
+rSelectionModel <- nimbleModel(code, constants = list(N = N),
+                               data = list(Y = Y, x1 = x1, x2 = x2), 
+                               inits=  list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y), z2 = 1, z1 = 1, psi = 0.5))
+
+SelectionModelConf <- configureMCMC(rSelectionModel)
+
+```
+
+
+
+```{r configureRJ with indicators}
+## pass model configuration, variables for model selection and control options RJ MCMC 
+
+configureRJ(mcmcConf = SelectionModelConf,
+            targetNodes = c("beta1", "beta2"),
+            indicatorNodes = c('z1', 'z2'),
+            control = list(mean = c(1, 0), scale =  rep(2, 2), positive = FALSE))
+
+```
+
+
+The `targetNodes` argument should indicate the nodes interested in the selection procedure. `targetNodes` will be expanded as described in Section \@ref(sec:arbitr-coll-nodes). I.e., either `targetNodes = "beta"` or `targetNodes = c("beta[1]", "beta[2]")` will assign a RJ sampler to each `beta[1]` and `beta[2]` if `beta` is a vector of two values.
+The same applied to `indicatorNodes`, which provides the indicator variables paired with nodes in `targetNodes`. Notice that `indicatorNodes` must be provided consistently with respect to `targetNodes`. I.e. if `targetNodes = "beta"` is a vector, `indicator = "z"` and not `indicator = "c("z1", "z2").`
+
+## No indicator variables
+
+
+```{r no_indicators}
+
+## Linear regression with intercept and two covariates
+code <- nimbleCode({
+  beta0 ~ dnorm(0, sd = 100)
+  beta1 ~ dnorm(0, sd = 100)
+  beta2 ~ dnorm(0, sd = 100)
+  sigma ~ dunif(0, 100)
+  for(i in 1:N) {
+    Ypred[i] <- beta0 + beta1 * x1[i] + beta2 * x2[i]
+    Y[i] ~ dnorm(Ypred[i], sd = sigma)
+  }
+})
+
+
+## build the model
+
+rSelectionModel <- nimbleModel(code, constants = list(N = N),
+                               data = list(Y = Y, x1 = x1, x2 = x2), 
+                               inits=  list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y)))
+
+SelectionModelConf <- configureMCMC(rSelectionModel)
+
+
+```
