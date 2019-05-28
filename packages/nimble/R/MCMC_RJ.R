@@ -229,6 +229,7 @@ nodeConfigurationCheck <- function(currentConf, node){
   }
   if(length(currentConf) > 1)
     warning(paste0("There is more than one sampler for ", node,". Only the first will be toggled."))
+  ## TO CHECK THIS -- ALL SAMPLERS WILL BE REMOVED AND MODIFIED
 }
 
 ###-------------------------------###
@@ -337,11 +338,11 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
       
       ## Create RJ control list for the node 
       nodeControl  = list(
-        fixedValue = fixedValue[i], 
         priorProb  = priorProb[i], 
         mean       = mean[i], 
         scale      = scale[i], 
-        positive   = positive[i]) 
+        positive   = positive[i], 
+        fixedValue = fixedValue[i]) 
       
       ## if the node is not a scalar iterate through each element
       
@@ -369,7 +370,7 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
     ## indicator
     ##---------------------------##
 
-    ## Check that indicatorNodes vector  match targetNodes lenght
+    ## Check that indicatorNodes vector  match targetNodes length
     if(length(indicatorNodes) != nNodes){ 
       stop("Length of indicatorNodes vector must match targetNodes length")
     }
@@ -384,8 +385,7 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
         stop(paste0("indicatorNodes node ", indicatorNodes[i] ," does not match ", targetNodes[i], " size."))
       }
       
-      nodeControl  = list(
-        fixedValue = fixedValue[i], 
+      nodeControl  = list( 
         mean       = mean[i], 
         scale      = scale[i], 
         positive = positive[i]) 
