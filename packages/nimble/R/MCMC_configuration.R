@@ -430,7 +430,7 @@ print: A logical argument specifying whether to print the new list of samplers (
             return(invisible(NULL))
         },
         
-        printSamplers = function(ind, type, displayControlDefaults = FALSE, displayNonScalars = FALSE, displayConjugateDependencies = FALSE, executionOrder = FALSE) {
+        printSamplers = function(ind, type, displayControlDefaults = FALSE, displayNonScalars = FALSE, displayConjugateDependencies = FALSE, executionOrder = FALSE, byType = FALSE) {
             '
 Prints details of the MCMC samplers.
 
@@ -445,6 +445,8 @@ displayConjugateDependencies: A logical argument, specifying whether to display 
 displayNonScalars: A logical argument, specifying whether to display the values of non-scalar control list elements (default FALSE).
 
 executionOrder: A logical argument, specifying whether to print the sampler functions in the (possibly modified) order of execution (default FALSE).
+
+byType: A logical argument, specifying whether the nodes being sampled should be printed, sorted and organized according to the type of sampler (the sampling algorithm) which is acting on the nodes (default FALSE).
 '
             if(missing(ind))        ind <- seq_along(samplerConfs)
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
@@ -454,6 +456,20 @@ executionOrder: A logical argument, specifying whether to print the sampler func
                 ## find sampler indices with 'name' matching anything in 'type' argument:
                 typeInd <- unique(unname(unlist(lapply(type, grep, x = lapply(conf$samplerConfs, `[[`, 'name')))))
                 ind <- intersect(ind, typeInd)
+            }
+            if(byType && length(ind) > 0) {
+                samplerTypes <- unlist(lapply(ind, function(i) conf$samplerConfs[[i]]$name))
+                uniqueSamplerTypes <- sort(unique(samplerTypes), decreasing = TRUE)
+                nodesSortedBySamplerType <- lapply(uniqueSamplerTypes, function(type) sapply(conf$samplerConfs[which(samplerTypes == type)], `[[`, 'target'))
+                names(nodesSortedBySamplerType) <- uniqueSamplerTypes
+                cat('\n')
+                for(i in seq_along(nodesSortedBySamplerType)) {
+                    theseSampledNodes <- nodesSortedBySamplerType[[i]]
+                    cat(paste0(names(nodesSortedBySamplerType)[i], ' sampler (', length(theseSampledNodes), '):  '))
+                    cat(paste0(theseSampledNodes, collapse = ', '))
+                    cat('\n\n')
+                }
+                return(invisible(NULL))
             }
             makeSpaces <- if(length(ind) > 0) newSpacesFunction(max(ind)) else NULL
             if(executionOrder)      ind <- samplerExecutionOrder[samplerExecutionOrder %in% ind]
