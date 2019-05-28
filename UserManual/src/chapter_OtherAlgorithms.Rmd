@@ -203,7 +203,7 @@ list entry.  The `pfType` entry can be set either to
 user-defined nimbleFunction that returns a likelihood approximation.
 
 Any user-defined filtering nimbleFunction named in the `pfType`
-control list entry must satsify the following:
+control list entry must satisfy the following:
 
 
   1. The nimbleFunction must be the result of a call to
@@ -220,7 +220,7 @@ control list entry must satsify the following:
   `control` list can be used to pass in any additional information
   or arguments that the custom filter may require.
   1. The `nimbleFunction` must have a `run` function that
-  accepts a single integer arugment (the number of particles to use),
+  accepts a single integer argument (the number of particles to use),
   and returns a scalar double (the log-likelihood estimate).
   1. The `nimbleFunction` must define, in setup code, a
   `modelValues` object named `mvEWSamples` that is used to
