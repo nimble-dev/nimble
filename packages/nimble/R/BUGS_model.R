@@ -400,12 +400,14 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                       if(determOnly)			validValues[modelDef$maps$types != 'determ']	<- FALSE
                                       if(stochOnly)			validValues[modelDef$maps$types != 'stoch']	<- FALSE
 
-                                      boolIsData <- rep(FALSE, length(modelDef$maps$graphIDs))
-                                      possibleDataIDs <- modelDef$maps$graphIDs[modelDef$maps$types == 'RHSonly' | modelDef$maps$types == 'stoch']
-                                      boolIsData[possibleDataIDs] <- isDataFromGraphID(possibleDataIDs)
-
-                                      if(!includeData)		        validValues[boolIsData] <- FALSE
-                                      if(dataOnly)			validValues[!boolIsData] <- FALSE
+                                      if(!includeData | dataOnly) {
+                                          boolIsData <- rep(FALSE, length(modelDef$maps$graphIDs))
+                                          possibleDataIDs <- modelDef$maps$graphIDs[modelDef$maps$types == 'RHSonly' | modelDef$maps$types == 'stoch']
+                                          boolIsData[possibleDataIDs] <- isDataFromGraphID(possibleDataIDs)
+                                          
+                                          if(!includeData)		        validValues[boolIsData] <- FALSE
+                                          if(dataOnly)			validValues[!boolIsData] <- FALSE
+                                      }
                                       if(topOnly)			validValues[-modelDef$maps$top_IDs] <- FALSE
                                       if(latentOnly)			validValues[-modelDef$maps$latent_IDs] <- FALSE
                                       if(endOnly)				validValues[-modelDef$maps$end_IDs] <- FALSE
