@@ -197,6 +197,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
                 isEndNode <- model$isEndNode(nodes)
                 if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
                 
+                clusterNodeInfo <- NULL; dcrpNode <- NULL; numCRPnodes <- 0
                 for(i in seq_along(nodes)) {
                     node <- nodes[i]
                     discrete <- model$isDiscrete(node)
@@ -222,7 +223,13 @@ print: A logical argument specifying whether to print the ordered list of defaul
                         if(nodeDist == 'dinvwish')     { addSampler(target = node, type = 'RW_wishart');         next }
                         if(nodeDist == 'dcar_normal')  { addSampler(target = node, type = 'CAR_normal');         next }
                         if(nodeDist == 'dcar_proper')  { addSampler(target = node, type = 'CAR_proper');         next }
-                        if(nodeDist == 'dCRP')         { addSampler(target = node, type = 'CRP', control = list(useConjugacy = useConjugacy));                next }
+                        if(nodeDist == 'dCRP')         {
+                            addSampler(target = node, type = 'CRP', control = list(useConjugacy = useConjugacy))
+                            numCRPnodes <- numCRPnodes + 1
+                            clusterNodeInfo[[numCRPnodes]] <- findClusterNodes(model, node)
+                            dcrpNode[numCRPnodes] <- node
+                            next
+                        }
                         if(multivariateNodesAsScalars) {
                             for(scalarNode in nodeScalarComponents) {
                                 if(onlySlice) addSampler(target = scalarNode, type = 'slice')
@@ -262,12 +269,32 @@ print: A logical argument specifying whether to print the ordered list of defaul
                     ## default: 'RW' sampler
                     addSampler(target = node, type = 'RW');     next
                 }
+
+                ## For CRP-based models, wrap samplers for cluster parameters so not sampled if cluster is unoccupied.
+                if(!is.null(clusterNodeInfo)) {
+                    for(k in seq_along(clusterNodeInfo)) {
+                        for(clusterNodes in clusterNodeInfo[[k]]$clusterNodes) {
+                            samplers <- getSamplers(clusterNodes)
+                            removeSamplers(clusterNodes)
+                            for(i in seq_along(samplers)) {
+                                node <- samplers[[i]]$target
+                                addSampler(target = node, type = 'CRP_cluster_wrapper',
+                                           control = list(wrapped_type = samplers[[i]]$name, wrapped_conf = samplers[[i]],
+                                                          dcrpNode = dcrpNode[[k]], clusterID = i))
+                                ## Note for more general clustering: will probably change to
+                                ## 'clusterID=clusterNodeInfo[[k]]$clusterIDs[[??]][i]'
+                                ## which means we probably need to change to for(clusterNodesIdx in seq_along(clusterNodeInfo[[k]]$clusterNodes))
+                            }
+                        }
+                    }
+                }
+
             }
             
             if(print)   printSamplers()
         },
 
-        addConjugateSampler = function(conjugacyResult, dynamicallyIndexed = FALSE, print = FALSE) {
+        addConjugateSampler = function(conjugacyResult, dynamicallyIndexed = FALSE, dcrpNode = NULL, clusterID = NULL, print = FALSE) {
             ## update May 2016: old (non-dynamic) system is no longer supported -DT
             ##if(!getNimbleOption('useDynamicConjugacy')) {
             ##    addSampler(target = conjugacyResult$target, type = conjugacyResult$type, control = conjugacyResult$control)
