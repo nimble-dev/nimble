@@ -1,12 +1,6 @@
 ##################################################
 ## Reversible Jump sampler - covariate selection
 ##################################################
-## Regression setting 
-## At iteration k
-## cycle through each variable beta_r
-## if(beta_r in current_model) propose to remove it
-## else propose to add it
-
 ## functions summary
 ## sampler_RJ:           does the jump proposal for the variable of interest
 ## sampler_RJ_indicator: does the jump proposal for an indicator variables
@@ -18,7 +12,7 @@
 ##################################################
 ## Reversible Jump sampler
 ##
-## This sampler perform a Reversible Jump MCMC step for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{\link{configureRJ}} function, when the model code is written without using indicator variables. See Details in \code{\link{configureRJ}}. 
+## This sampler perform a Reversible Jump MCMC step for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by configureRJ function, when the model code is written without using indicator variables. 
 
 #' @rdname samplers
 #' @export
@@ -110,7 +104,7 @@ sampler_RJ <- nimbleFunction(
 ####################################################################
 ## Reversible Jump sampler
 ##
-## This sampler perform a Reversible Jump MCMC step for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{\link{configureRJ}} function, when the model code is written using indicator variables associated with the targetNodes of interest. See Details in \code{\link{configureRJ}}. 
+## This sampler perform a Reversible Jump MCMC step for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by configureRJ function, when the model code is written using indicator variables associated with the targetNodes of interest. 
 
 #' @rdname samplers
 #' @export
@@ -240,7 +234,7 @@ nodeConfigurationCheck <- function(currentConf, node){
 ###-------------------------------###
 #' Configure Reversible Jump sampler
 #'
-#' Modifies the \code{MCMCconf} object of a specific model, to include a Reversible Jump MCMC sampler for variable selection using an univariate normal proposal distribution. User can control which value the variable takes when not in the model (typically 0), the mean and scale of the proposal, and whether or not the proposal is strictly positive. This function supports two different ways of writing the model. 
+#' Modifies the \code{MCMCconf} object of a specific model, to include a Reversible Jump MCMC sampler for variable selection using an univariate normal proposal distribution. User the mean and scale of the proposal, and whether or not the proposal is strictly positive. This function supports two different ways of writing the model specifications. 
 #'
 #' @param mcmcConf A \code{MCMCconf} object.
 #'
@@ -258,8 +252,13 @@ nodeConfigurationCheck <- function(currentConf, node){
 #' @details 
 #' 
 #' This functions modifies the samplers in \code{MCMCconf} for each of the nodes provided in the \code{targetNodes} argument. To these elements two samplers are assigned: a specialized Reversible Jump sampler and a modified version of the build sampler that is used only when the target node is in the model. 
+#' \code{configureRJ} can handle two different ways of writing a nimble model, using or not indicator variables (examples?)
+#' \enumerate{
+#'   \item \code{targetNodes} and \code{priorProb} probabilities; in this case also a \fixedValue can be provided
+#'   \item \code{targetNodes} and \code{indicatorNodes}; no fixedValue, but this choice allow to have random inclusion probabilities
+#' }
 #' 
-#' The specialized RJ sampler depends on whether the \code{prior} or \code{indicatorNodes} arguments are provided, according on how the model is written. When \code{prior} is provided, the specialized sampler \code{sampler_RJ} is assigned directly to the \code{targetNodes}. When \code{indicatorNodes} is provided, the specialized sampler \code{sampler_RJ_indicator} is assigned to nodes in \code{indicatorNodes}.
+#' 
 #' 
 #' 
 #' @seealso \code{\link{sampler_BASE}} \code{\link{sampler_RJ}} \code{\link{configureRJ}}
