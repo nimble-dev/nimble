@@ -196,7 +196,9 @@ sampler_toggled <- nimbleFunction(
   ## Sample according to build sampler when the target is in the model (here different from zero)
   contains = sampler_BASE,
   setup = function(model, mvSaved, target, control) {
-    fixedValue <- control[["fixedValue"]]
+
+    fixedValue        <- if(!is.null(control[["fixedValue"]]))        control$fixedValue       else 0
+    # fixedValue <- control[["fixedValue"]]
     original_samplerConf <- control[["samplerConf"]]
     
     if(is.null(original_samplerConf))
@@ -410,9 +412,12 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
         ## Add sampler for the coefficient variable (when is in the model)
         mcmcConf$removeSamplers(nodeAsScalar[j])
         
+        # mcmcConf$addSampler(type = sampler_toggled,
+        #                     target = nodeAsScalar[j],
+        #                     control = list(samplerConf = currentConf[[1]], fixedValue = 0)) ## fixedValue is actually not used by sampler_RJ_indicator but passed because of how toggled_sampler is written
         mcmcConf$addSampler(type = sampler_toggled,
                             target = nodeAsScalar[j],
-                            control = list(samplerConf = currentConf[[1]], fixedValue = 0)) ## fixedValue is actually not used by sampler_RJ_indicator but passed because of how toggled_sampler is written
+                            control = list(samplerConf = currentConf[[1]])) ## fixedValue is actually not used by sampler_RJ_indicator but passed because of how toggled_sampler is written
       }  
         
     }
