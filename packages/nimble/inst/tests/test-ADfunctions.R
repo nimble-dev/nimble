@@ -224,7 +224,7 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
         call. = FALSE
       )
   else {
-    input <- sapply(
+    input <- lapply(
       names(opParam$args),
       function(name)
         argType2input(opParam$args[[name]], param$arg_distns[[name]])
