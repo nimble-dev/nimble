@@ -6,27 +6,26 @@ require(nimble)
 ``` 
 
 # Reversible Jump MCMC 
-<!-- {#cha:algos-provided} -->
+<!-- add to {#cha:algos-provided}?-->
 
 Reversible Jump MCMC [@Green_1995] (RJMCMC) is a general framework for MCMC simulation in which the dimension of the parameter space can vary between iterates of the Markov chain. The reversible jump sampler can be viewed as an extension of the Metropolis-Hastings algorithm onto more general state spaces.
-Given two models $M_1$ and $M_2$ of possibly different dimensions, the core idea of this technique is to remove the difference in the dimensions of models $M_1$ and $M_2$ by supplementing the corresponding parameters $\boldsymbol{\theta_1}$ and $\boldsymbol{\theta_2}$ with auxiliary variables $\boldsymbol{u}_{1 \rightarrow 2}$ and $\boldsymbol{u}_{2 \rightarrow 1}$ such that
 
-$$(\boldsymbol{\theta_1}, \boldsymbol{u}_{1 \rightarrow 2}) \text{ and } (\boldsymbol{\theta_2}, \boldsymbol{u}_{2 \rightarrow 1})$$
+Given two models $M_1$ and $M_2$ of possibly different dimensions, the core idea of this technique is to remove the difference in the dimensions of models $M_1$ and $M_2$ by supplementing the corresponding parameters $\boldsymbol{\theta_1}$ and $\boldsymbol{\theta_2}$ with auxiliary variables $\boldsymbol{u}_{1 \rightarrow 2}$ and $\boldsymbol{u}_{2 \rightarrow 1}$ such that $(\boldsymbol{\theta_1}, \boldsymbol{u}_{1 \rightarrow 2})$ and $(\boldsymbol{\theta_2}, \boldsymbol{u}_{2 \rightarrow 1})$
+are in bijection, $(\boldsymbol{\theta_2}, \boldsymbol{u}_{2 \rightarrow 1}) = \Psi(\boldsymbol{\theta_1}, \boldsymbol{u}_{1 \rightarrow 2})$. The corresponding Metropolis-Hastings acceptance probability is generalized accounting for the proposal density for the auxiliary variables.  
 
-are in bijection, $(\boldsymbol{\theta_2}, \boldsymbol{u}_{2 \rightarrow 1}) = \Psi(\boldsymbol{\theta_1}, \boldsymbol{u}_{1 \rightarrow 2})$
-<!-- RJMCMC finds natural application in Bayesian model selection problems.  Given a countable set of models, the Bayesian model choice problem generically involves joint inference about a model indicator $k$ and a parameter vector $\theta_k$, where the model indicator determines the dimension $n_k$ of the parameter and this dimension may vary from model to model. -->
+NIMBLE implements RJMCMC for variable selection using a univariate normal distribution as proposal density and supports two types of model specifications, depending on whether or not indicator variables are included. 
+A Reversible Jump sampler is added to a `MCMCConf` object by calling function `configureRJ`. Information about the model specification is passed to `configureRJ` function by providing one of arguments `indicatorNodes` or `priorProb`. 
+The `configureRJ` function modifies the model configuration, and assigns a`RJ_sampler` directly to the nodes specified in `targetNodes` when no `indicatorNodes` are provided. Otherwise a `RJ_sampler_indicator` is assigned to nodes in `indicatorNodes`. In addition, this functions removes the default NIMBLE sampler assigned to each node in `targetNodes`, and add a toggled version of the default sampler that is run only when the node is the model.
+ 
+<!--  See `help(configureRJ)` for details. -->
+ Ad
 
-NIMBLE implements RJMCMC for variable selection using a univariate normal distribution as proposal density and supports two kinds of model specifications.
-
-<!-- - Model specification depends on whether or not indicator variables are made explicit -->
-<!-- - this information is passed to `configureRJ` function by providing one of arguments `indicatorNodes` or `priorProb` -->
-<!-- - `configureRJ` modifies the model configuration, and assign the Reversible Jump sampler to the variable of interest, along with a modified version of the sampler already assigned, in order to be called only when the variable is in the model -->
 <!-- - User can specify the mean and scale of the proposal  -->
 
 ## Using indicator variables
 
-```{r indicators}
-## Define model  ----
+```{r indicators, results = "hide"}
+## Linear regression with intercept and two covariates
 code <- nimbleCode({
   beta0 ~ dnorm(0, sd = 100)
   beta1 ~ dnorm(0, sd = 100)
@@ -46,7 +45,7 @@ code <- nimbleCode({
 set.seed(0)
 N <- 100
 x1 <- runif(N, -1, 1)
-x2 <- runif(N, -1, 1)
+x2 <- runif(N, -1, 1) ## this covariate is not included
 Y <- rnorm(N, 1.5 + 2 * x1, sd = 1)
 
 
@@ -62,7 +61,7 @@ SelectionModelConf <- configureMCMC(rSelectionModel)
 
 
 
-```{r configureRJ with indicators}
+```{r configureRJ with indicators, results = "hide"}
 ## pass model configuration, variables for model selection and control options RJ MCMC 
 
 configureRJ(mcmcConf = SelectionModelConf,
@@ -74,12 +73,12 @@ configureRJ(mcmcConf = SelectionModelConf,
 
 
 The `targetNodes` argument should indicate the nodes interested in the selection procedure. `targetNodes` will be expanded as described in Section \@ref(sec:arbitr-coll-nodes). I.e., either `targetNodes = "beta"` or `targetNodes = c("beta[1]", "beta[2]")` will assign a RJ sampler to each `beta[1]` and `beta[2]` if `beta` is a vector of two values.
-The same applied to `indicatorNodes`, which provides the indicator variables paired with nodes in `targetNodes`. Notice that `indicatorNodes` must be provided consistently with respect to `targetNodes`. I.e. if `targetNodes = "beta"` is a vector, `indicator = "z"` and not `indicator = "c("z1", "z2").`
+The same applied to `indicatorNodes`, which provides the indicator variables paired with nodes in `targetNodes`. Notice that `indicatorNodes` must be provided consistently with respect to `targetNodes`. E.g. if `targetNodes = "beta"` is a vector, `indicator = "z"` and not `indicator = "c("z1", "z2").`
 
 ## No indicator variables
 
 
-```{r no_indicators}
+```{r no_indicators, results = "hide"}
 
 ## Linear regression with intercept and two covariates
 code <- nimbleCode({
