@@ -464,3 +464,76 @@ void nimbleGraph::getDependenciesOneNode(vector<int> &deps,
   PRINTF("      Done iterating through %i children of node %i\n", numChildren, CgraphID);
 #endif
 }
+
+/**********************/
+/* getDependencyPaths */
+/**********************/
+
+class depStep_class {
+ private:
+  int nodeID_and_parentExprID[2]; // nodeID is first element.  parentExprID is second element
+
+  int& nodeID() {return nodeID_and_parentExprID[0];}
+  const int& nodeID() const {return nodeID_and_parentExprID[0];}
+  int& parentExprID() {return nodeID_and_parentExprID[1];}
+  const int& parentExprID() const {return nodeID_and_parentExprID[1];}
+  oneDepStep_class() {};
+  oneDepStep_class(int nodeID_, int parentExprID_) {
+    nodeID() = nodeID_;
+    parentExprID() = parentExprID_;
+  }
+};
+
+typedef vector<depStep_class> depPath;
+typedef vector<depPath> multipleDepPaths;
+
+SEXP C_getDependencyPaths(SEXP SgraphExtPtr, SEXP Snodes) {
+  const nimbleGraph *graphPtr = static_cast<const nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
+  vector<int> nodes = SEXP_2_vectorInt(Snodes, -1); // subtract 1 index for C
+  if(nodes.size() != 1) {
+    PRINTF("Input to C_getDependencyPaths should be one and only one nodeID.");
+    return R_NilValue;
+  }
+  //  depStep_class root_step(nodes[0], INT_MIN); //R_defines.h says INT_MIN is NA_INTEGER
+  depPath root_path;
+  // root_path[0] = root_step;
+  multipleDepPaths result = getDependencyPaths_recurse(graphPtr->graphNodeVec[ nodes[0] ],
+						       root_path,
+						       INT_MIN); //R_defines.h says INT_MIN is NA_INTEGER
+  SEXP Sresult = PROTECT(Rf_allocVector(VECSXP, result.size()));
+  for(int i = 0; i < result.size(); ++i) {
+    SEXP SdepPath = PROTECT(Rf_allocVector(INTSXP, 2*result[i].size()));
+    int *depPathPtr = INTEGER(SdepPath);
+    int thisResultSize = result[i].size()
+    for(j = 0; j < thisResultSize; ++j) {
+      depPathPtr[j] = result[i][j].nodeID();
+      depPathPtr[j + thisResultSize] = result[i][j].parentExprID();
+    }
+    SET_VECTOR_ELT(Sresult, i, SdepPath);
+    UNPROTECT(1);
+  }
+  UNPROTECT(1);
+  return Sresult;
+}
+
+multipleDepPaths getDependencyPaths_recurse(const graphNode *currentNode, depPath &root_path, int parentExprID) {
+  //  const graphNode *currentNode = graphPtr->graphNodeVec[ root_path.nodeID() ];
+  depStep_class thisStep(currentNode->CgraphID, parentExprID);
+  root_path.push_back(thisStep);
+  if(currentNode->type == STOCH | currentNode->numChildren == 0) { // stop at stochastic node or if there are no children
+    multipleDepPaths result(1);
+    result[0] = root_path;
+    return result;
+  } else { // recurse through non-stochastic child nodes, if there are any
+    multipleDepPaths result;
+    for(int i = 0; i < currentNode->numChildren; ++i) {
+      multipleDepPaths result_oneChild = getDependencyPaths_recurse(currentNode->children[i],
+								    currentNode->childrenParentExpressionIDs[i]);
+      for(j = 0; j < result_oneChild.size(); ++j) {
+	result.push_back( result_oneChild[j] );
+	result_oneChild.pop_back();
+      }
+    }
+    return result;
+  }
+}
