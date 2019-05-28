@@ -60,8 +60,14 @@ sampler_RJ <- nimbleFunction(
       ## remove proposal
       ##----------------------##
       ## log probability of the reverse proposal
-      logProbReverseProposal <- dnorm(currentValue, mean = proposalMean, sd = proposalScale, log = TRUE)
-      
+      if(positive){
+        ## Taking the absolute value the proposal is a folded normal
+        logProbReverseProposal <- log(dnorm(currentValue, mean = proposalMean, sd = proposalScale) + 
+                                        dnorm(-currentValue, mean = proposalMean, sd = proposalScale))
+      } else {
+        logProbReverseProposal <- dnorm(currentValue, mean = proposalMean, sd = proposalScale, log = TRUE)
+      }
+
       model[[target]] <<- fixedValue
       proposalLogProb <- model$calculate(calcNodes)
       log_accept_prob <- proposalLogProb - currentLogProb - logRatioProbFixedOverProbNotFixed + logProbReverseProposal
@@ -69,12 +75,16 @@ sampler_RJ <- nimbleFunction(
       ##----------------------##
       ## add proposal
       ##----------------------##
-      proposalValue <- rnorm(1, mean = proposalMean, sd = proposalScale)
-      logProbForwardProposal <- dnorm(proposalValue, mean =  proposalMean, sd = proposalScale, log = TRUE)
       
-      ## take absolute value when proposal can be only positive
+      ## Only positive proposal
       if(positive){
-        proposalValue <- abs(proposalValue)
+        ## Taking the absolute value the proposal is a folded normal
+        proposalValue <- abs(rnorm(1, mean = proposalMean, sd = proposalScale))
+        logProbForwardProposal <- log(dnorm(proposalValue, mean = proposalMean, sd = proposalScale) + 
+                                        dnorm(-proposalValue, mean = proposalMean, sd = proposalScale))
+      } else {
+        proposalValue <- rnorm(1, mean = proposalMean, sd = proposalScale)
+        logProbForwardProposal <- dnorm(proposalValue, mean =  proposalMean, sd = proposalScale, log = TRUE)
       }
       
       model[[target]] <<- proposalValue
@@ -133,10 +143,17 @@ sampler_RJ_indicator <- nimbleFunction(
       ##----------------------##
       currentLogProb <- model$getLogProb(calcNodes)
       currentCoef <- model[[coefNode]]
-      ## reverse jumping density
-      logProbReverseProposal <- dnorm(currentCoef, mean = proposalMean, sd = proposalScale, log = TRUE)
+      
+      if(positive){
+        ## Taking the absolute value the proposal is a folded normal
+        logProbReverseProposal <- log(dnorm(currentCoef, mean = proposalMean, sd = proposalScale) + 
+                                        dnorm(-currentCoef, mean = proposalMean, sd = proposalScale))
+      } else {
+        ## reverse jumping density
+        logProbReverseProposal <- dnorm(currentCoef, mean = proposalMean, sd = proposalScale, log = TRUE)
+      }        
       model[[target]] <<- 0
-      model[[coefNode]] <<- 0
+      model[[coefNode]] <<- 0 ## here there should be fixedValue
       model$calculate(calcNodes)
       ## avoid including prior for coef not in model
       log_accept_prob <- model$getLogProb(calcNodesReduced) - currentLogProb + logProbReverseProposal
@@ -146,17 +163,19 @@ sampler_RJ_indicator <- nimbleFunction(
       ##----------------------##
       currentLogProb <- model$getLogProb(calcNodesReduced)
       
-      proposalCoef <- rnorm(1, mean = proposalMean, sd = proposalScale)
-      
-      ## take absolute value when proposal can be only positive
+
       if(positive){
-        proposalCoef <- abs(proposalCoef)
+        ## Taking the absolute value the proposal is a folded normal
+        proposalCoef <- abs(rnorm(1, mean = proposalMean, sd = proposalScale))
+        logProbForwardProposal <- log(dnorm(proposalCoef, mean = proposalMean, sd = proposalScale) + 
+                                        dnorm(-proposalCoef, mean = proposalMean, sd = proposalScale))
+      } else {
+        proposalCoef <- rnorm(1, mean = proposalMean, sd = proposalScale)
+        logProbForwardProposal <- dnorm(proposalCoef, mean =  proposalMean, sd = proposalScale, log = TRUE)
       }
-      
       model[[target]] <<- 1
       model[[coefNode]] <<- proposalCoef
-      ## jumping density
-      logProbForwardProposal <- dnorm(proposalCoef, mean = proposalMean, sd = proposalScale, log = TRUE)
+      
       proposalLogProb <- model$calculate(calcNodes)
       logAcceptanceProb <- proposalLogProb - currentLogProb - logProbForwardProposal
     }
@@ -230,7 +249,7 @@ nodeConfigurationCheck <- function(currentConf, node){
 #' @param priorProb An optional numeric vector of prior probabilities for each node to be in the model. (see details?)
 #' @param control An optional list of control arguments to the Reversible Jump function.
 #' \itemize{
-#' \item fixedValue. The value taken from the variable when out of the model. (default = 0)
+#' \item fixedValue. An optional value taken from the variable when out of the model, used only when \code{priorProb} is provided (default = 0)
 #' \item mean. The mean of the normal proposal distribution. (default = 0)
 #' \item scale. The standard deviation of the normal proposal distribution. (default  = 1)
 #' \item positive. A logical argument specifying whether the proposal is strictly positive. (default = FALSE)
