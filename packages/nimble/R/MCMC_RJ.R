@@ -64,7 +64,7 @@ sampler_RJ <- nimbleFunction(
 
       model[[target]] <<- fixedValue
       proposalLogProb <- model$calculate(calcNodes)
-      log_accept_prob <- proposalLogProb - currentLogProb - logRatioProbFixedOverProbNotFixed + logProbReverseProposal
+      logAcceptanceProb <- proposalLogProb - currentLogProb - logRatioProbFixedOverProbNotFixed + logProbReverseProposal
     } else {
       ##----------------------##
       ## add proposal
@@ -84,10 +84,10 @@ sampler_RJ <- nimbleFunction(
       model[[target]] <<- proposalValue
       
       proposalLogProb <- model$calculate(calcNodes)
-      log_accept_prob <- proposalLogProb - currentLogProb + logRatioProbFixedOverProbNotFixed - logProbForwardProposal  
+      logAcceptanceProb <- proposalLogProb - currentLogProb + logRatioProbFixedOverProbNotFixed - logProbForwardProposal  
     }
     
-    accept <- decide(log_accept_prob)
+    accept <- decide(logAcceptanceProb)
     
     if(accept) {
       copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
@@ -147,17 +147,16 @@ sampler_RJ_indicator <- nimbleFunction(
         logProbReverseProposal <- dnorm(currentCoef, mean = proposalMean, sd = proposalScale, log = TRUE)
       }        
       model[[target]] <<- 0
-      model[[coefNode]] <<- 0 ## here there should be fixedValue
+      model[[coefNode]] <<- 0 
       model$calculate(calcNodes)
       ## avoid including prior for coef not in model
-      log_accept_prob <- model$getLogProb(calcNodesReduced) - currentLogProb + logProbReverseProposal
+      logAcceptanceProb <- model$getLogProb(calcNodesReduced) - currentLogProb + logProbReverseProposal
     } else {
       ##----------------------##
       ## add proposal
       ##----------------------##
       currentLogProb <- model$getLogProb(calcNodesReduced)
       
-
       if(positive){
         ## Taking the absolute value the proposal is a folded normal
         proposalCoef <- abs(rnorm(1, mean = proposalMean, sd = proposalScale))
@@ -173,7 +172,7 @@ sampler_RJ_indicator <- nimbleFunction(
       proposalLogProb <- model$calculate(calcNodes)
       logAcceptanceProb <- proposalLogProb - currentLogProb - logProbForwardProposal
     }
-    accept <- decide(log_accept_prob)
+    accept <- decide(logAcceptanceProb)
     if(accept) {
       copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
     } else {
@@ -197,7 +196,7 @@ sampler_toggled <- nimbleFunction(
   contains = sampler_BASE,
   setup = function(model, mvSaved, target, control) {
 
-    fixedValue        <- if(!is.null(control[["fixedValue"]]))        control$fixedValue       else 0
+    fixedValue        <- if(!is.null(control[["fixedValue"]]))   control[["fixedValue"]]  else 0
     # fixedValue <- control[["fixedValue"]]
     original_samplerConf <- control[["samplerConf"]]
     
@@ -237,14 +236,14 @@ nodeConfigurationCheck <- function(currentConf, node){
 ###-------------------------------###
 #' Configure Reversible Jump sampler
 #'
-#' Modifies the \code{MCMCconf} object of a specific model, to include a Reversible Jump MCMC sampler for variable selection using an univariate normal proposal distribution. User the mean and scale of the proposal, and whether or not the proposal is strictly positive. This function supports two different ways of writing the model specifications. 
+#' Modifies the \code{MCMCconf} object of a specific model, to include a Reversible Jump MCMC sampler for variable selection using an univariate normal proposal distribution. User can control the mean and scale of the proposal, and whether or not the proposal is strictly positive. This function supports two different type of model specifications. 
 #'
 #' @param mcmcConf A \code{MCMCconf} object.
 #'
 #' @param targetNodes A character vector, specifying the nodes and/or variables interested in the variable selection. Nodes may be specified in their indexed form, \code{y[1, 3]}. Alternatively, nodes specified without indexing will be expanded fully, e.g., \code{x} will be expanded to \code{x[1]]}, \code{x[2]}, etc.  
 #' @param indicatorNodes An optional character vector, specifying the indicator nodes and/or variables paired with \code{targetNodes}. Nodes may be specified in their indexed form, \code{y[1, 3]}. Alternatively, nodes specified without indexing will be expanded fully, e.g., \code{x} will be expanded to \code{x[1]]}, \code{x[2]}, etc. Nodes must be provided consistently with \code{targetNodes} vector. (see details?)
 #' @param priorProb An optional numeric vector of prior probabilities for each node to be in the model. (see details?)
-#' @param control An optional list of control arguments to the Reversible Jump function.
+#' @param control An optional list of control arguments
 #' \itemize{
 #' \item mean. The mean of the normal proposal distribution. (default = 0)
 #' \item scale. The standard deviation of the normal proposal distribution. (default  = 1)
@@ -268,11 +267,51 @@ nodeConfigurationCheck <- function(currentConf, node){
 #' 
 #' @examples
 #' 
+#' 
+#' ## Linear regression with intercept and two covariates
+#' code <- nimbleCode({
+#'   beta0 ~ dnorm(0, sd = 100)
+#'   beta1 ~ dnorm(0, sd = 100)
+#'   beta2 ~ dnorm(0, sd = 100)
+#'   sigma ~ dunif(0, 100) 
+#'   
+#'   z1 ~ dbern(psi)  ## indicator variable associated to beta1
+#'   z2 ~ dbern(psi)  ## indicator variable associated to beta2
+#'   psi ~ dbeta(1, 1) ## hyperprior on inclusion probability
+#'   for(i in 1:N) {
+#'     Ypred[i] <- beta0 + beta1 * z1 * x1[i] + beta2 * z2 * x2[i]
+#'     Y[i] ~ dnorm(Ypred[i], sd = sigma)
+#'   }
+#' })
+#' 
+#' ## simulate some data
+#' set.seed(0)
+#' N <- 100
+#' x1 <- runif(N, -1, 1)
+#' x2 <- runif(N, -1, 1) ## this covariate is not included
+#' Y <- rnorm(N, 1.5 + 2 * x1, sd = 1)
+#' 
+#' 
+#' ## build the model
+#' 
+#' rindicatorModel <- nimbleModel(code, constants = list(N = N),
+#'                                data = list(Y = Y, x1 = x1, x2 = x2), 
+#'                                inits=  list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y), z2 = 1, z1 = 1, psi = 0.5))
+#' 
+#' indicatorModelConf <- configureMCMC(rindicatorModel)
+#' 
+#' configureRJ(mcmcConf = indicatorModelConf,     
+#'            targetNodes = c("beta1", "beta2"),
+#'            indicatorNodes = c('z1', 'z2'),
+#'            control = list(mean = 0, scale = 2))
+#' 
 #' @export
 #' 
 #' @references
 #' 
 #' Peter J. Green. (1995). Reversible jump markov chain monte carlo computation and bayesian model determination. \emph{Biometrika}, 82(4), 711-732.
+#' 
+#' 
 configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb = NULL, control = list(mean = NULL, scale = NULL, positive = NULL, fixedValue = NULL)) {
 
   nNodes <- length(targetNodes)
@@ -321,7 +360,7 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
   }
   
   ## Check: fixedValue can be used only with priorProb 
-  if(indicatorFlag & fixedValue != 0) {
+  if(indicatorFlag & any(fixedValue != 0)) {
    warning("fixedValue can be provided only when using priorProb; it will be ignored.")
   }
 
