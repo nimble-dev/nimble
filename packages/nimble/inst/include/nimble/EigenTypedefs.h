@@ -291,7 +291,12 @@ typename Derived::Scalar nimDerivs_sd(const ArrayBase<Derived>& v) {
 }
 
 template <typename Derived>
-double logdet(const MatrixBase<Derived>& v) {
+typename Derived::Scalar det(const MatrixBase<Derived>& v) {
+  return(v.determinant());
+}
+
+template <typename Derived>
+typename Derived::Scalar logdet(const MatrixBase<Derived>& v) {
   return(log(v.determinant()));
 }
 
