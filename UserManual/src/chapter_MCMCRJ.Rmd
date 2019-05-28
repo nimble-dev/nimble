@@ -1,9 +1,22 @@
+<!--  TO remove -->
+
+```{r echo=FALSE, include=FALSE}
+library(knitr)
+library(methods)
+opts_chunk$set(eval = TRUE, message = FALSE) ## turned off message() output
+nimbleOptions(MCMCprogressBar = FALSE)
+runMCEMs <- TRUE
+nimbleVersion <- packageVersion('nimble')
+```
+<!--  TO remove -->
+
 <!--- % See http://yihui.name/knitr/demo/child/ for documentation on the parent/child document system of knitr -->
 
 
 ```{r, echo=FALSE}
 require(nimble)
 ``` 
+
 
 # Reversible Jump MCMC 
 <!-- add to {#cha:algos-provided}?-->
@@ -14,14 +27,14 @@ Given two models $M_1$ and $M_2$ of possibly different dimensions, the core idea
 are in bijection, $(\boldsymbol{\theta_2}, \boldsymbol{u}_{2 \rightarrow 1}) = \Psi(\boldsymbol{\theta_1}, \boldsymbol{u}_{1 \rightarrow 2})$. The corresponding Metropolis-Hastings acceptance probability is generalized accounting for the proposal density for the auxiliary variables.  
 
 NIMBLE implements RJMCMC for variable selection using a univariate normal distribution as proposal density and supports two types of model specifications, depending on whether or not indicator variables are included. 
-A Reversible Jump sampler can be added to a MCMC configuration object by calling function `configureRJ`, which handles different model specification by assigning the corresponding specialized samplers, `RJ` and `RJ_ndicator`. Information about the model specification is passed to `configureRJ` function by providing one of arguments `indicatorNodes` or `priorProb`. 
+A Reversible Jump sampler can be added to a MCMC configuration object by calling the function `configureRJ`, which handles different model specification by assigning the corresponding specialized samplers, `RJ` and `RJ_indicator`. Information about the model specification is passed to `configureRJ` function by providing one of arguments `indicatorNodes` or `priorProb`. 
 The `configureRJ` function modifies the model configuration, and assigns a `RJ` sampler directly to the nodes specified in `targetNodes` when `priorProb` is provided. Otherwise a `RJ_indicator` sampler is assigned to nodes in `indicatorNodes`. In addition, this functions removes the default NIMBLE sampler assigned to each node in `targetNodes`, and adds a toggled version of the default sampler that is run only when the node is the model.
  
 <!--  See `help(configureRJ)` for details. -->
 
-The `RJ` and `RJ_indicator` both uses a univariate normal distribution as proposal density, whose mean and scale can be provided in the `control` list argument of `configureRJ` (by default `mean = 0` and `scale = 1`). The `positive` flag in the `control` allow for only positive values of the proposal when set to `TRUE`, using a folded normal distribution. 
+The `RJ` and `RJ_indicator` both uses a univariate normal distribution as proposal density, whose mean and scale can be provided in the `control` list argument of `configureRJ` (by default `mean = 0` and `scale = 1`). The `positive` flag in the `control` list allow for only positive values of the proposal when set to `TRUE`, using a folded normal distribution. 
 An optional argument called `fixedValue` can be provided when the `priorProb` argument is present, that indicates the value taken by nodes in `targetNodes` when out of the model (by default 0). 
-Arguments in `control` can accept one value that will be used for all samplers assigned to nodes `targetNodes`; alternatively each sampler can be customized by passing a vector of values whose length must corresponds to `targetNodes` one.
+All arguments in `control` can accept one value that will be used for all samplers assigned to nodes `targetNodes`; alternatively each sampler can be customized by passing a vector of values whose length must corresponds to the `targetNodes` one.
 
 In the following we provide an example for the two different model specifications. 
 
@@ -63,28 +76,43 @@ rindicatorModel <- nimbleModel(code, constants = list(N = N),
 indicatorModelConf <- configureMCMC(rindicatorModel)
 
 ```
-So far 
+
 
 ```{r indicators: print samplers}
+## print NIMBLE default samplers
 indicatorModelConf$printSamplers()
 ```
 
-```{r indicators: configureRJ, results = "hide"}
-## pass model configuration, variables for model selection and control options RJ MCMC 
+At this point we may want to modify the current configuration by adding a Reversible Jump sampler to allow for selection on `beta[1]` and `beta[2]` variables, which can be done by calling the `configureRJ` function.
 
-configureRJ(mcmcConf = indicatorModelConf,
+
+```{r indicators: configureRJ, results = "hide"}
+## pass model configuration, coefficient nodes, indicator variables and control options for RJ MCMC 
+
+configureRJ(mcmcConf = indicatorModelConf,     
             targetNodes = c("beta1", "beta2"),
             indicatorNodes = c('z1', 'z2'),
             control = list(mean = c(1, 0), scale =  rep(2, 2), positive = FALSE))
 
 ```
 
-
 The `targetNodes` argument should indicate the nodes interested in the selection procedure. `targetNodes` will be expanded as described in Section \@ref(sec:arbitr-coll-nodes). I.e., either `targetNodes = "beta"` or `targetNodes = c("beta[1]", "beta[2]")` will assign a RJ sampler to each `beta[1]` and `beta[2]` if `beta` is a vector of two values.
-The same applied to `indicatorNodes`, which provides the indicator variables paired with nodes in `targetNodes`. Notice that `indicatorNodes` must be provided consistently with respect to `targetNodes`. E.g. if `targetNodes = "beta"` is a vector, `indicator = "z"` and not `indicator = "c("z1", "z2").`
+The same applies to `indicatorNodes`, which provides the indicator variables paired with nodes in `targetNodes`. Notice that `indicatorNodes` must be provided consistently with respect to `targetNodes`. E.g. if `targetNodes = "beta"` is a vector, then `indicatorNodes = "z"` with `z` a vector as well; something like `indicatorNodes = c("z1", "z2")` will throw an error.
+
+
+```{r indicators: print samplers after configureRJ}
+indicatorModelConf$printSamplers()
+```
+
+A `RJ_indicator` sampler is assigned to `z[1]` and `z[2]` in place of the `binary` sampler. Notice that although `fixedValue` is shown in in 
+
+while sampler for `beta[1]`and `beta[2]` have been modified. 
+
+Notice that the order of the sampler has changed, since `configureRJ` calls `removeSampler` for nodes in `targetNodes` and samplers and subsequently `addSampler`, which appends the sampler to the end of current sampler list. Order can be modified by using `setSamplers` (see Section 7.2.2.6 (p. 75 of the user Manual - ref to add)).
 
 ## No indicator variables
 
+We consider the same setting, but we write the model without the use of indicator variables. 
 
 ```{r no_indicators, results = "hide"}
 
@@ -108,6 +136,4 @@ rNoIndicatorModel <- nimbleModel(code, constants = list(N = N),
                                inits=  list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y)))
 
 NoIndicatorModelConf <- configureMCMC(rNoIndicatorModel)
-
-
 ```
