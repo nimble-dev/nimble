@@ -9,6 +9,12 @@ context("Testing of derivatives for calculate() for nimbleModels")
 ## Second set are those under development by Chris, which use the
 ## test_ADModelCalculate that allows for random wrt args
 
+## Note: we should add some tests where derivs are taken of
+## a model calculate that doesn't calculate on all nodes;
+## This was hard to set up in a systematic way in that make_wrt
+## works at the element level and model$calculate at the node level,
+## so would take some additional work.
+
 ## Start of Nick's tests ##
 
 test_that('Derivs of calculate function work for model ADMod1', {
