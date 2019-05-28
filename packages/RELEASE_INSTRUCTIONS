@@ -43,8 +43,6 @@ make sure no calls to compileNimble are in any examples that are not wrapped in 
 Now in a separate branch: vX.Y-Z-cran, do this:
 
 before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in (it will pass R CMD check with "# $(FLIBS)" presumably because they are doing some sort of grep, but that is not kosher of course)
-and comment out rstan usage as in packages/MCMC_suite_rstan_monkeying_for_cran.R
-and change to requireNamespace('rstan') from require('rstan')
 
 (note that given R CMD check now errors if this is not addressed, we've changed this so this change is now already in devel)
 before release to CRAN make sure we disable Eigen pragmas that suppress warnings that CRAN dislikes:
