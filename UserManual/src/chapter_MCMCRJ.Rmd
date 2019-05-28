@@ -26,13 +26,13 @@ Reversible Jump MCMC [@Green_1995] (RJMCMC) is a general framework for MCMC simu
 Given two models $M_1$ and $M_2$ of possibly different dimensions, the core idea of this technique is to remove the difference in the dimensions of models $M_1$ and $M_2$ by supplementing the corresponding parameters $\boldsymbol{\theta_1}$ and $\boldsymbol{\theta_2}$ with auxiliary variables $\boldsymbol{u}_{1 \rightarrow 2}$ and $\boldsymbol{u}_{2 \rightarrow 1}$ such that $(\boldsymbol{\theta_1}, \boldsymbol{u}_{1 \rightarrow 2})$ and $(\boldsymbol{\theta_2}, \boldsymbol{u}_{2 \rightarrow 1})$
 are in bijection, $(\boldsymbol{\theta_2}, \boldsymbol{u}_{2 \rightarrow 1}) = \Psi(\boldsymbol{\theta_1}, \boldsymbol{u}_{1 \rightarrow 2})$. The corresponding Metropolis-Hastings acceptance probability is generalized accounting for the proposal density for the auxiliary variables.  
 
-NIMBLE implements RJMCMC for variable selection using a univariate normal distribution as proposal density and supports two types of model specifications, depending on whether or not indicator variables are included. 
+NIMBLE implements RJMCMC for variable selection using a univariate normal distribution as proposal density and` supports two types of model specifications, depending on whether or not indicator variables are included. 
 A Reversible Jump sampler can be added to a MCMC configuration object by calling the function `configureRJ`, which handles different model specification by assigning the corresponding specialized samplers, `RJ` and `RJ_indicator`. Information about the model specification is passed to `configureRJ` function by providing one of arguments `indicatorNodes` or `priorProb`. 
-The `configureRJ` function modifies the model configuration, and assigns a `RJ` sampler directly to the nodes specified in `targetNodes` when `priorProb` is provided. Otherwise a `RJ_indicator` sampler is assigned to nodes in `indicatorNodes`. In addition, this functions removes the default NIMBLE sampler assigned to each node in `targetNodes`, and adds a toggled version of the default sampler that is run only when the node is the model.
+The `configureRJ` function modifies the model configuration, and assigns a `RJ` sampler directly to the nodes specified in `targetNodes` when `priorProb` is provided. Otherwise a `RJ_indicator` sampler is assigned to nodes in `indicatorNodes`. In addition, the `configureRJ` removes the default NIMBLE sampler assigned to each node in `targetNodes`, and adds a toggled version of the default sampler that is run only when the node is the model.
  
 <!--  See `help(configureRJ)` for details. -->
 
-The `RJ` and `RJ_indicator` both uses a univariate normal distribution as proposal density, whose mean and scale can be provided in the `control` list argument of `configureRJ` (by default `mean = 0` and `scale = 1`). The `positive` flag in the `control` list allow for only positive values of the proposal when set to `TRUE`, using a folded normal distribution. 
+The `RJ` and `RJ_indicator` both use a univariate normal distribution as proposal density, whose mean and scale can be provided in the `control` list argument of `configureRJ` (by default `mean = 0` and `scale = 1`). The `positive` flag in the `control` list allows for only positive values of the proposal when is set to `TRUE`, using a folded normal distribution. 
 An optional argument called `fixedValue` can be provided when the `priorProb` argument is present, that indicates the value taken by nodes in `targetNodes` when out of the model (by default 0). 
 All arguments in `control` can accept one value that will be used for all samplers assigned to nodes `targetNodes`; alternatively each sampler can be customized by passing a vector of values whose length must corresponds to the `targetNodes` one.
 
@@ -105,13 +105,13 @@ The same applies to `indicatorNodes`, which provides the indicator variables pai
 indicatorModelConf$printSamplers()
 ```
 
-A `RJ_indicator` sampler is assigned to `z[1]` and `z[2]` in place of the `binary` sampler, while sampler for `beta[1]`and `beta[2]` have been assigned to a `toggled` that still uses the default `conjugate_dnorm_dnorm` only when the corresponding indicator is equal to $1$. The two `RJ_indicator` samplers have different means for the proposal distribution and same scale, as given in the `control` list of `configureRJ`.
+A `RJ_indicator` sampler is assigned to `z[1]` and `z[2]` in place of the `binary` sampler, while sampler for `beta[1]`and `beta[2]` have been changed with `toggled` that still uses the default `conjugate_dnorm_dnorm` sampler but only when the corresponding indicator variable is equal to $1$. The two `RJ_indicator` samplers have different means for the proposal distribution and same scale, as given in the `control` list of `configureRJ`.
 
 Notice that the order of the sampler has changed, since `configureRJ` calls `removeSampler` for nodes in `targetNodes` and samplers and subsequently `addSampler`, which appends the sampler to the end of current sampler list. Order can be modified by using `setSamplers` (see Section 7.2.2.6 (p. 75 of the user Manual - ref to add)).
 
 ## No indicator variables
 
-We consider the same setting, but we write the model without the use of indicator variables. 
+We consider the same regression setting, but writing the model without the use of indicator variables. 
 
 ```{r no_indicators, results = "hide"}
 
@@ -127,9 +127,7 @@ code <- nimbleCode({
   }
 })
 
-
 ## build the model
-
 rnoIndicatorModel <- nimbleModel(code, constants = list(N = N),
                                data = list(Y = Y, x1 = x1, x2 = x2), 
                                inits=  list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y)))
@@ -141,7 +139,8 @@ noIndicatorModelConf <- configureMCMC(rnoIndicatorModel)
 noIndicatorModelConf$printSamplers()
 ```
 
-In this case, since there are no indicator variables, we need to pass to `configureRJ` the prior inclusion probabilities for each node in `targetNodes`, by passing either one common value or a vector of values to `priorProb`. Notice that this case does not allow for a stochastic prior. 
+In this case, since there are no indicator variables, we need to pass to `configureRJ` the prior inclusion probabilities for each node in `targetNodes`, by specifying either one common value or a vector of values for the argument `priorProb`. Notice that this case does not allow for a stochastic prior. 
+
 
 ```{r no indicators: configureRJ, results = "hide"}
 ## pass model configuration, coefficient nodes, indicator variables and control options for RJ MCMC 
@@ -159,7 +158,7 @@ noIndicatorModelConf$printSamplers()
 
 Since there are no indicator variables, the `RJ` sampler is assigned directly to `beta[1]` and `beta[2]` along with the `toggled` sampler. In addition in this case one can set the coefficient to a value different from $0$ via the `fixedValue` argument in the `control` list. 
 
-The same behavior can be obtained also when using indicator variables, using a different model specification. For example, the model in \@ref(sec:rjmcmc-no-indicator} can be modified as
+If `fixedValue` is given when using `indicatorNodes` a `warning` message is thrown and and the values provided in `fixedValue` ignored.  However the same behavior can be obtained in this situation, using a different model specification. For example, the model in \@ref(sec:rjmcmc-no-indicator} can be modified as
 
 ```{r indicators v2, results = "hide", eval = FALSE}
   for(i in 1:N) {
