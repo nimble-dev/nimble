@@ -457,7 +457,7 @@ byType: A logical argument, specifying whether the nodes being sampled should be
                 typeInd <- unique(unname(unlist(lapply(type, grep, x = lapply(conf$samplerConfs, `[[`, 'name')))))
                 ind <- intersect(ind, typeInd)
             }
-            if(byType) {
+            if(byType && length(ind) > 0) {
                 samplerTypes <- unlist(lapply(ind, function(i) conf$samplerConfs[[i]]$name))
                 uniqueSamplerTypes <- sort(unique(samplerTypes), decreasing = TRUE)
                 nodesSortedBySamplerType <- lapply(uniqueSamplerTypes, function(type) sapply(conf$samplerConfs[which(samplerTypes == type)], `[[`, 'target'))
