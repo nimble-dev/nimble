@@ -14,15 +14,20 @@ Given two models $M_1$ and $M_2$ of possibly different dimensions, the core idea
 are in bijection, $(\boldsymbol{\theta_2}, \boldsymbol{u}_{2 \rightarrow 1}) = \Psi(\boldsymbol{\theta_1}, \boldsymbol{u}_{1 \rightarrow 2})$. The corresponding Metropolis-Hastings acceptance probability is generalized accounting for the proposal density for the auxiliary variables.  
 
 NIMBLE implements RJMCMC for variable selection using a univariate normal distribution as proposal density and supports two types of model specifications, depending on whether or not indicator variables are included. 
-A Reversible Jump sampler is added to a `MCMCConf` object by calling function `configureRJ`. Information about the model specification is passed to `configureRJ` function by providing one of arguments `indicatorNodes` or `priorProb`. 
-The `configureRJ` function modifies the model configuration, and assigns a`RJ_sampler` directly to the nodes specified in `targetNodes` when no `indicatorNodes` are provided. Otherwise a `RJ_sampler_indicator` is assigned to nodes in `indicatorNodes`. In addition, this functions removes the default NIMBLE sampler assigned to each node in `targetNodes`, and add a toggled version of the default sampler that is run only when the node is the model.
+A Reversible Jump sampler can be added to a MCMC configuration object by calling function `configureRJ`, which handles different model specification by assigning the corresponding specialized samplers, `RJ` and `RJ_ndicator`. Information about the model specification is passed to `configureRJ` function by providing one of arguments `indicatorNodes` or `priorProb`. 
+The `configureRJ` function modifies the model configuration, and assigns a `RJ` sampler directly to the nodes specified in `targetNodes` when `priorProb` is provided. Otherwise a `RJ_indicator` sampler is assigned to nodes in `indicatorNodes`. In addition, this functions removes the default NIMBLE sampler assigned to each node in `targetNodes`, and adds a toggled version of the default sampler that is run only when the node is the model.
  
 <!--  See `help(configureRJ)` for details. -->
- Ad
 
-<!-- - User can specify the mean and scale of the proposal  -->
+The `RJ` and `RJ_indicator` both uses a univariate normal distribution as proposal density, whose mean and scale can be provided in the `control` list argument of `configureRJ` (by default `mean = 0` and `scale = 1`). The `positive` flag in the `control` allow for only positive values of the proposal when set to `TRUE`, using a folded normal distribution. 
+An optional argument called `fixedValue` can be provided when the `priorProb` argument is present, that indicates the value taken by nodes in `targetNodes` when out of the model (by default 0). 
+Arguments in `control` can accept one value that will be used for all samplers assigned to nodes `targetNodes`; alternatively each sampler can be customized by passing a vector of values whose length must corresponds to `targetNodes` one.
+
+In the following we provide an example for the two different model specifications. 
 
 ## Using indicator variables
+
+Here we consider a normal linear regression in which two covariates `x1` and `x2` are given and only `x1` has to be included in the model.  
 
 ```{r indicators, results = "hide"}
 ## Linear regression with intercept and two covariates
@@ -51,20 +56,23 @@ Y <- rnorm(N, 1.5 + 2 * x1, sd = 1)
 
 ## build the model
 
-rSelectionModel <- nimbleModel(code, constants = list(N = N),
+rindicatorModel <- nimbleModel(code, constants = list(N = N),
                                data = list(Y = Y, x1 = x1, x2 = x2), 
                                inits=  list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y), z2 = 1, z1 = 1, psi = 0.5))
 
-SelectionModelConf <- configureMCMC(rSelectionModel)
+indicatorModelConf <- configureMCMC(rindicatorModel)
 
 ```
+So far 
 
+```{r indicators: print samplers}
+indicatorModelConf$printSamplers()
+```
 
-
-```{r configureRJ with indicators, results = "hide"}
+```{r indicators: configureRJ, results = "hide"}
 ## pass model configuration, variables for model selection and control options RJ MCMC 
 
-configureRJ(mcmcConf = SelectionModelConf,
+configureRJ(mcmcConf = indicatorModelConf,
             targetNodes = c("beta1", "beta2"),
             indicatorNodes = c('z1', 'z2'),
             control = list(mean = c(1, 0), scale =  rep(2, 2), positive = FALSE))
@@ -95,11 +103,11 @@ code <- nimbleCode({
 
 ## build the model
 
-rSelectionModel <- nimbleModel(code, constants = list(N = N),
+rNoIndicatorModel <- nimbleModel(code, constants = list(N = N),
                                data = list(Y = Y, x1 = x1, x2 = x2), 
                                inits=  list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y)))
 
-SelectionModelConf <- configureMCMC(rSelectionModel)
+NoIndicatorModelConf <- configureMCMC(rNoIndicatorModel)
 
 
 ```
