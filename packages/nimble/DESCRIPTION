@@ -22,7 +22,7 @@ Depends:
 Imports:
     methods,igraph,coda,R6
 Suggests:
-    testthat,abind,ggplot2
+    testthat
 URL: https://r-nimble.org
 SystemRequirements: GNU make
 License: BSD_3_clause + file LICENSE | GPL (>= 2)
