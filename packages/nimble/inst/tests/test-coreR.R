@@ -863,6 +863,105 @@ higherDimBlockTests <- list(
          outputType = quote(double(2)))
 )
 
+aliasTests <- list(
+    list(name = "x <- rep(x, 2)",   ## Fails due to lack of eval with eigenBlock map
+         expr = quote({
+             x <- arg1
+             x <- rep(x, 2)
+             out <- x}),
+         args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3)}),
+         outputType = quote(double(1))),
+    list(name = "x <- rep(x, length = 6)",   ## Fails due to lack of eval with eigenBlock map
+         expr = quote({
+             x <- arg1
+             x <- rep(x, length = 6)
+             out <- x}),
+         args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3)}),
+         outputType = quote(double(1))),
+    list(name = "x <- rep(x, each = 2)",   ## Fails due to lack of eval with eigenBlock map
+         expr = quote({
+             x <- arg1
+             x <- rep(x, each = 2)
+             out <- x}),
+         args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3)}),
+         outputType = quote(double(1))),
+    list(name = "x <- c(x, arg2)",   ## Fails due to lack of eval with eigenBlock map
+         expr = quote({
+             x <- arg1
+             x <- c(x, arg2)
+             out <- x}),
+         args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(4:6)}),
+         outputType = quote(double(1))),    
+    list(name = "x[2:3] <- x[1:2]",   ## Fails due to lack of eval with eigenBlock map
+         expr = quote({
+             x <- arg1
+             x[2:3] <- x[1:2]
+             out <- x}),
+         args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3)}),
+         outputType = quote(double(1))),
+    list(name = "x[c(2, 3)] <- x[1:2]",   ## Fails due to lack of eval with eigenBlock map
+         expr = quote({
+             x <- arg1
+             x[c(2, 3)] <- x[1:2]
+             out <- x}),
+         args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3)}),
+         outputType = quote(double(1))),
+    list(name = "x[c(FALSE, TRUE, TRUE)] <- x[1:2]",   ## Fails due to lack of eval with eigenBlock map
+         expr = quote({
+             x <- arg1
+             x[c(FALSE, TRUE, TRUE)] <- x[1:2]
+             out <- x}),
+         args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3)}),
+         outputType = quote(double(1))),
+    list(name = "x[2:3, 1:2] <- x[1:2, 1:2]",   ## Fails due to lack of eval with eigenBlock map
+         expr = quote({
+             x <- arg1
+             x[2:3, 1:2] <- x[1:2, 1:2]
+             out <- x}),
+         args = list(arg1 = quote(double(2))),
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:9), nrow = 3)}),
+         outputType = quote(double(2))),
+    ## No blocking in >2D supported
+    list(name = "x <- x[1:2]",   ## Fails due to x being resized before the Eigen assignment
+         expr = quote({
+             x <- arg1
+             x <- x[1:2]
+             out <- x}),
+         args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3)}),
+         outputType = quote(double(1))),
+    list(name = "x <- t(x)",   ## Fails due to x being resized before the Eigen assignment
+         expr = quote({
+             x <- arg1
+             x <- t(x)
+             out <- x}),
+         args = list(arg1 = quote(double(2))),
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:6), nrow = 2)}),
+         outputType = quote(double(2))),
+    list(name = "x <- t(x) + 1",   ## Fails due to x being resized before the Eigen assignment
+         expr = quote({
+             x <- arg1
+             x <- t(x) + 1
+             out <- x}),
+         args = list(arg1 = quote(double(2))),
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:6), nrow = 2)}),
+         outputType = quote(double(2))),
+    list(name = "x <- dnorm(x, arg2) with length(x) < length(arg2)",   ## Fails due to x being resized before the Eigen assignment
+         expr = quote({
+             x <- arg1
+             x <- dnorm(x, arg2) ## should handle recycling rule on x, but x is resized first
+             out <- x}),
+         args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
+         setArgVals = quote({arg1 = 0.1; arg2 <- 0.1 * (1:6)}),
+         outputType = quote(double(1)))
+)
 
 cTestsResults <- test_coreRfeature_batch(cTests, 'cTests') ##lapply(cTests, test_coreRfeature)
 blockTestsResults <- test_coreRfeature_batch(blockTests, 'blockTests') ##lapply(blockTests, test_coreRfeature)
@@ -877,8 +976,7 @@ logicalTestsResults <- test_coreRfeature_batch(logicalTests, 'logicalTests') ## 
 returnTestResults <- test_coreRfeature_batch(returnTests, 'returnTests') ## lapply(returnTests, test_coreRfeature)
 simpleCopyTestResults <- test_coreRfeature_batch(simpleCopyTests, 'simpleCopyTests') 
 higherDimBlockTestResults <- test_coreRfeature_batch(higherDimBlockTests, 'higherDimBlockTests') 
-
-
+aliasTestResults <- test_coreRfeature_batch(aliasTests, 'aliasTests')
 
 ## basic seq_along test
 

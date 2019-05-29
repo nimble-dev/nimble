@@ -261,17 +261,17 @@ nodeConfigurationCheck <- function(currentConf, node){
 #' 
 #' @examples
 #' 
-#' 
+#' \dontrun{
 #' ## Linear regression with intercept and two covariates, using indicator variables
 #' code <- nimbleCode({
 #'   beta0 ~ dnorm(0, sd = 100)
 #'   beta1 ~ dnorm(0, sd = 100)
 #'   beta2 ~ dnorm(0, sd = 100)
 #'   sigma ~ dunif(0, 100) 
-#'   
-#'   z1 ~ dbern(psi)  ## indicator variable associated to beta1
+#' 
+#'   z1 ~ dbern(psi)  ## indicator variable associated to beta2
 #'   z2 ~ dbern(psi)  ## indicator variable associated to beta2
-#'   psi ~ dbeta(1, 1) ## hyperprior on inclusion probability
+#'   psi ~ dunif(0, 1) ## hyperprior on inclusion probability
 #'   for(i in 1:N) {
 #'     Ypred[i] <- beta0 + beta1 * z1 * x1[i] + beta2 * z2 * x2[i]
 #'     Y[i] ~ dnorm(Ypred[i], sd = sigma)
@@ -283,22 +283,83 @@ nodeConfigurationCheck <- function(currentConf, node){
 #' N <- 100
 #' x1 <- runif(N, -1, 1)
 #' x2 <- runif(N, -1, 1) ## this covariate is not included
-#' Y <- rnorm(N, 1.5 + 2 * x1, sd = 1)
-#' 
+#' Y <- rnorm(N, 1 + 2.5 * x1, sd = 1)
 #' 
 #' ## build the model
-#' 
-#' rindicatorModel <- nimbleModel(code, constants = list(N = N),
+#' rIndicatorModel <- nimbleModel(code, constants = list(N = N),
 #'                                data = list(Y = Y, x1 = x1, x2 = x2), 
-#'                                inits=  list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y), z2 = 1, z1 = 1, psi = 0.5))
+#'                                inits=  list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y), z1 = 1, z2 = 1, psi = 0.5))
 #' 
-#' indicatorModelConf <- configureMCMC(rindicatorModel)
+#' indicatorModelConf <- configureMCMC(rIndicatorModel)
 #' 
-#' configureRJ(mcmcConf = indicatorModelConf,     
-#'            targetNodes = c("beta1", "beta2"),
-#'            indicatorNodes = c('z1', 'z2'),
-#'            control = list(mean = 0, scale = 2))
+#' ## Add reversible jump  
+#' configureRJ(mcmcConf = indicatorModelConf,     ## model configuration
+#'             targetNodes = c("beta1", "beta2"), ## coefficients for selection
+#'             indicatorNodes = c("z1", "z2"),    ## indicators paired with coefficients
+#'             control = list(mean = 0, scale = 2))
 #' 
+#' indicatorModelConf$addMonitors("beta1", "beta2", "z1", "z2")
+#' 
+#' rIndicatorMCMC <- buildMCMC(indicatorModelConf)
+#' cIndicatorModel <- compileNimble(rIndicatorModel)
+#' cIndicatorMCMC <- compileNimble(rIndicatorMCMC, project = cIndicatorModel)
+#' 
+#' set.seed(0)
+#' samples <- runMCMC(cIndicatorMCMC, 10000, nburnin = 6000)
+#' 
+#' ## posterior probability to be included in the mode
+#' mean(samples[,   "z1"])
+#' mean(samples[,   "z2"])
+#' 
+#' ## posterior means when in the model
+#' mean(samples[,  "beta1"][samples[,  "z1"] != 0])
+#' mean(samples[,  "beta2"][samples[,  "z2"] != 0])
+#' 
+#' ##################################
+#' ## Linear regression with intercept and two covariates, without indicator variables
+#' code <- nimbleCode({
+#'   beta0 ~ dnorm(0, sd = 100)
+#'   beta1 ~ dnorm(0, sd = 100)
+#'   beta2 ~ dnorm(0, sd = 100)
+#'   sigma ~ dunif(0, 100)
+#'   for(i in 1:N) {
+#'     Ypred[i] <- beta0 + beta1 * x1[i] + beta2 * x2[i]
+#'     Y[i] ~ dnorm(Ypred[i], sd = sigma)
+#'   }
+#' })
+#' 
+#' rNoIndicatorModel <- nimbleModel(code, constants = list(N = N),
+#'                                  data = list(Y = Y, x1 = x1, x2 = x2), 
+#'                                  inits=  list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y)))
+#' 
+#' noIndicatorModelConf <- configureMCMC(rNoIndicatorModel)
+#' 
+#' ## Add reversible jump  
+#' configureRJ(mcmcConf = noIndicatorModelConf,   ## model configuration
+#'             targetNodes = c("beta1", "beta2"), ## coefficients for selection   
+#'             priorProb = 0.5,                   ## prior probability of inclusion
+#'             control = list(mean = 0, scale = 2))
+#' 
+#' ## add monitors
+#' noIndicatorModelConf$addMonitors("beta1", "beta2")
+#' rNoIndicatorMCMC <- buildMCMC(noIndicatorModelConf) 
+#' 
+#' cNoIndicatorModel <- compileNimble(rNoIndicatorModel)
+#' cNoIndicatorMCMC <- compileNimble(rNoIndicatorMCMC, project = cNoIndicatorModel)
+#' 
+#' set.seed(0)
+#' samples <- runMCMC(cNoIndicatorMCMC, 10000, nburnin = 6000 )
+#' 
+#' ## posterior probability to be included in the mode
+#' mean(samples[,   "beta1"] != 0)
+#' mean(samples[,   "beta2"] != 0)
+#' 
+#' ## posterior means when in the model
+#' mean(samples[,  "beta1"][samples[,  "beta1"] != 0])
+#' mean(samples[,  "beta2"][samples[,  "beta2"] != 0])
+#' }
+#' 
+#'  
 #' @export
 #' 
 #' @references
