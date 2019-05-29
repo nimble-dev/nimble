@@ -1538,21 +1538,28 @@ compareFilesUsingDiff <- function(trialFile, correctFile, main = "") {
 ##
 ## op:        An operator string.
 ## argTypes:  A character vector of argTypes (e.g. "double(0)").
+##            If this is a named vector, then the names will be
+##            interpreted as the formals to the constructed op call.
 ## more_args: A named list, e.g. list(log = 1), that will be added
 ##            as a formal to the output expr but not part of args.
 ##
 makeOperatorParam <- function(op, argTypes, more_args = NULL) {
   name <- paste(op, paste(argTypes, collapse = ' '))
   arg_names <- names(argTypes)
-  if (is.null(arg_names))
+
+  if (is.null(arg_names)) {
     arg_names <- paste0('arg', 1:length(argTypes))
+    op_args <- lapply(arg_names, as.name)
+  } else {
+    op_args <- sapply(arg_names, as.name, simplify = FALSE)
+  }
+
   expr <- substitute(
     out <- this_call,
     list(
       this_call = as.call(c(
         substitute(FOO, list(FOO = as.name(op))),
-        lapply(arg_names, as.name),
-        more_args
+        op_args, more_args
       ))
     )
   )

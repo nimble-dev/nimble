@@ -224,10 +224,11 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
         call. = FALSE
       )
   else {
-    input <- lapply(
+    input <- sapply(
       names(opParam$args),
       function(name)
-        argType2input(opParam$args[[name]], param$arg_distns[[name]])
+        argType2input(opParam$args[[name]], param$arg_distns[[name]]),
+      simplify = FALSE
     )
   }
 
@@ -778,14 +779,16 @@ squareMatrixOpTests <- make_AD_test_batch(
   squareMatrixOps, squareMatrixArgs
 )
 
+gen_pos_def_matrix <- function(arg_size) {
+  m <- arg_size[1] ## assumes matrix argType is square
+  mat <- diag(1:m)
+  mat[lower.tri(mat)] <- runif(m*(m - 1)/2)
+  mat %*% t(mat)
+}
+
 modifyOnMatch(
   squareMatrixOpTests, 'chol .+', 'arg_distns',
-  function(arg_size) {
-    m <- arg_size[1] ## assumes matrix argType is square
-    mat <- diag(1:m)
-    mat[lower.tri(mat)] <- runif(m*(m - 1)/2)
-    mat <- mat %*% t(mat)
-  }
+  gen_pos_def_matrix
 )
 
 ## ## compilation failures
@@ -1270,9 +1273,9 @@ distn_params[['weibull_base']]$name <- 'weibull'
 ## Dirichlet distribution
 ##
 
-distn_params[['weibull_base']] <- distn_base
-distn_params[['weibull_base']]$name <- 'weibull'
-distn_params[['weibull_base']]$args <- list(
+distn_params[['dirch_base']] <- distn_base
+distn_params[['dirch_base']]$name <- 'dirch'
+distn_params[['dirch_base']]$args <- list(
   support = list(
     distn = function(n) {prob <- runif(n); prob/sum(prob)},
     type = c('double(1, 5)')
@@ -1282,7 +1285,7 @@ distn_params[['weibull_base']]$args <- list(
     type = c('double(1, 5)')
   )
 )
-distn_params[['weibull_base']]$wrt = c('alpha', 'x')
+distn_params[['dirch_base']]$wrt = c('alpha', 'x')
 
 ##
 ## Multivariate Normal distribution
@@ -1291,11 +1294,7 @@ distn_params[['weibull_base']]$wrt = c('alpha', 'x')
 chol_base <- distn_base
 chol_base$args <- list(
   cholesky = list(
-    distn = function(arg_size) {
-      mat <- diag(1:arg_size[1])
-      mat[upper.tri(mat)] <- runif(1)
-      mat
-    },
+    distn = gen_pos_def_matrix,
     type = c('double(2, c(5, 5))')
   )
 )
@@ -1367,6 +1366,9 @@ distn_params[['wish_chol_base']]$wrt <- c('cholesky', 'x')
 makeADdistnTest <- function(distn_param) {
   distn_name <- distn_param$name
   ops <- sapply(distn_param$variants, paste0, distn_name, simplify = FALSE)
+
+  support_idx <- which(names(distn_param$args) == 'support')
+
   argTypes <- sapply(distn_param$variants, function(variant) {
     op <- paste0(variant, distn_name)
     support_type <- distn_param$args$support$type
@@ -1377,17 +1379,24 @@ makeADdistnTest <- function(distn_param) {
       q = c('double(0)')##, 'double(1, 4)')
     )
     first_arg_name <- switch(variant, d = 'x', p = 'q', q = 'p')
+    ## need this complicated expand.grid call here because the argTypes might be
+    ## character vectors (e.g. if support_type is c("double(0)", "double(1, 4)")
+    ## then we create a test where we sample a scalar from the support and
+    ## another where we sample a vector of length 4 from the support
     grid <- eval(as.call(c(
       expand.grid, list(first_argType),
-      lapply(distn_param$args, `[[`, 'type')[-1]
+      lapply(distn_param$args, `[[`, 'type')[-support_idx]
     )))
     argTypes <- as.list(data.frame(t(grid), stringsAsFactors=FALSE))
     lapply(argTypes, function(v) {
-      names(v) <- c(first_arg_name, names(distn_param$args)[-1])
+      names(v) <- c(
+        first_arg_name,
+        names(distn_param$args[-support_idx])
+      )
       v
     })
   }, simplify = FALSE)
-  param_distns <- lapply(distn_param$args[-1], `[[`, 'distn')
+  param_distns <- lapply(distn_param$args[-support_idx], `[[`, 'distn')
   arg_distns <- sapply(distn_param$variants, function(variant) {
     arg1_distn <- switch(
       variant,
