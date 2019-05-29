@@ -1441,7 +1441,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', calcNodes = 
 
         if(debug) browser()
         
-        ## Expect_equal behaving strangely when given vectors so just do this manually for vectors.
+        ## Expect_equal behaving strangely when given vectors so just do this manually using all() for vectors.
         if(0 %in% order) {
             expect_equal(rOutput0$value, cOutput$value, tolerance = relTol[1]*abs(rOutput0$value),
                          info = "mismatch in 0th derivative for compiled and uncompiled")
@@ -1452,6 +1452,8 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', calcNodes = 
             delta <- abs(rOutput1$jacobian-cOutput$jacobian)
             nonzero <- cOutput$jacobian != 0
             delta[nonzero] <- delta[nonzero]/abs(cOutput$jacobian[nonzero])
+            if(!all(delta < relTol[1])) 
+                cat("Largest relative difference in gradient is ", max(delta), " for wrt of ", paste0(wrt, sep = ','), ".\n")
             expect_true(all(delta < relTol[2], na.rm = TRUE),
                          info = "mismatch in 1st derivative for compiled and uncompiled")
             expect_equal(sum(is.na(rOutput1$jacobian)), 0, info = "NAs found in uncompiled 1st derivative")
@@ -1461,6 +1463,8 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', calcNodes = 
             delta <- abs(rOutput2$hessian-cOutput$hessian)
             nonzero <- cOutput$hessian != 0
             delta[nonzero] <- delta[nonzero]/abs(cOutput$hessian[nonzero])
+            if(!all(delta < relTol[2])) 
+                cat("Largest relative difference in Hessian is ", max(delta), " for wrt of ", paste0(wrt, sep = ','), ".\n")
             expect_true(all(delta < relTol[3], na.rm = TRUE),
                          info = "mismatch in 2nd derivative for compiled and uncompiled")
             expect_equal(sum(is.na(rOutput2$hessian)), 0, info = "NAs found in uncompiled 2nd derivative")

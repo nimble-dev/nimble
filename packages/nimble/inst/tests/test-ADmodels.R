@@ -194,7 +194,8 @@ code <- nimbleCode({
 data <- list(y = rnorm(3))
 model <- nimbleModel(code, data = data)
 model$simulate()
-test_ADModelCalculate(name = 'basic state space', model)
+model$calculate()
+test_ADModelCalculate(name = 'basic state space', model)  
 
 ## basic tricky indexing
 code <- nimbleCode({
