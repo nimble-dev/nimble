@@ -1543,7 +1543,7 @@ compareFilesUsingDiff <- function(trialFile, correctFile, main = "") {
 ## more_args: A named list, e.g. list(log = 1), that will be added
 ##            as a formal to the output expr but not part of args.
 ##
-makeOperatorParam <- function(op, argTypes, more_args = NULL) {
+make_op_param <- function(op, argTypes, more_args = NULL) {
   name <- paste(op, paste(argTypes, collapse = ' '))
   arg_names <- names(argTypes)
 
@@ -1574,7 +1574,7 @@ makeOperatorParam <- function(op, argTypes, more_args = NULL) {
     name = name,
     expr = expr,
     args = argTypesList,
-    outputType = parse(text = returnTypeString(op, argTypes))[[1]]
+    outputType = parse(text = return_type_string(op, argTypes))[[1]]
   )
 }
 
@@ -1584,7 +1584,7 @@ makeOperatorParam <- function(op, argTypes, more_args = NULL) {
 ## op:       An operator string
 ## argTypes: A character vector of argTypes (e.g. "double(0)".
 ##
-returnTypeString <- function(op, argTypes) {
+return_type_string <- function(op, argTypes) {
   dist_funs <- c(
     nimble:::scalar_distribution_dFuns,
     nimble:::scalar_distribution_pFuns,
@@ -1677,7 +1677,7 @@ add_missing_size <- function(argSymbol, vector_size = 3, matrix_size = c(3, 4)) 
   invisible(argSymbol)
 }
 
-argType2input <- function(argType, distn = NULL) {
+arg_type_2_input <- function(argType, distn = NULL) {
   argSymbol <- add_missing_size(
     nimble:::argType2symbol(argType)
   )
@@ -1704,7 +1704,7 @@ argType2input <- function(argType, distn = NULL) {
   return(arg)
 }
 
-modifyOnMatch <- function(x, pattern, key, value, env = parent.frame(), ...) {
+modify_on_match <- function(x, pattern, key, value, env = parent.frame(), ...) {
   ## Modify any elements of a named list that match pattern.
   ##
   ## @param x A named list of lists.
