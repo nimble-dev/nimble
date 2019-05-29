@@ -196,8 +196,13 @@ print: A logical argument specifying whether to print the ordered list of defaul
                 ## use old (static) system for assigning default samplers
                 isEndNode <- model$isEndNode(nodes)
                 if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
-                
+
+                allDists <- unlist(lapply(model$modelDef$declInfo, `[[`, 'distributionName'))
+                allDists <- allDists[!is.na(allDists)]
+                check_dCRP <- any(allDists == "dCRP")
+              
                 clusterNodeInfo <- NULL; dcrpNode <- NULL; numCRPnodes <- 0
+
                 for(i in seq_along(nodes)) {
                     node <- nodes[i]
                     discrete <- model$isDiscrete(node)
@@ -257,13 +262,17 @@ print: A logical argument specifying whether to print the ordered list of defaul
                     if(discrete) { addSampler(target = node, type = 'slice');     next }
                     
                     ## if node distribution is dgamma and its dependency is dCRP, assign 'augmented_BetaGamma' sampler
-                    if(nodeDist == 'dgamma'){
-                      depNode <- model$getDependencies(node, self=FALSE)
-                      depNodeDist <- model$getDistribution(depNode)
-                      if(length(depNodeDist) == 1 && depNodeDist == 'dCRP'){
-                        addSampler(target = node, type = 'CRP_concentration')
-                        next
-                      }
+                    if(check_dCRP) {
+                        if(nodeDist == 'dgamma'){
+                            depNode <- model$getDependencies(node, self=FALSE)
+                            if(length(depNode) == 1) {
+                                depNodeDist <- model$getDistribution(depNode)
+                                if(!is.na(depNodeDist[1]) & depNodeDist[1] == 'dCRP'){  ## depNodeDist should be length 1
+                                    addSampler(target = node, type = 'CRP_concentration')
+                                    next
+                                }
+                            }
+                        }
                     }
                     
                     ## default: 'RW' sampler
