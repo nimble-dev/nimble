@@ -488,58 +488,30 @@ typedef vector<depStep_class> depPath;
 typedef vector<depPath> multipleDepPaths;
 
 multipleDepPaths getDependencyPaths_recurse(const graphNode *currentNode, depPath &root_path, int parentExprID) {
-  //PRINTF("F\n");
-
   multipleDepPaths result;
   depStep_class thisStep(currentNode->RgraphID, parentExprID);
-  // PRINTF("Adding %i => %i\n", currentNode->RgraphID, root_path.size()); 
   root_path.push_back(thisStep);
   if((currentNode->type == STOCH && root_path.size() > 1)) { // stop at non-first stochastic node
-    //    PRINTF("G\n");
-    
     result.push_back(root_path);
   } else {
     // Recurse through child nodes, if there are any.
     // If there are zero children, we have a terminal deterministic node, which should not be recorded.
     for(unsigned int i = 0; i < currentNode->numChildren; ++i) {
-      //      PRINTF("H %i\n", result.size());
-      
       multipleDepPaths result_oneChild = getDependencyPaths_recurse(currentNode->children[i],
 								    root_path,
-								    currentNode->childrenParentExpressionIDs[i]);
-      // PRINTF("I %i\n", result_oneChild.size());
-      // for(int k = 0; k < result_oneChild.size(); ++k) {
-      // 	for(int j = 0; j < result_oneChild[k].size(); ++j) {
-      // 	  PRINTF("%i %i\n", result_oneChild[k][j].nodeID(), result_oneChild[k][j].parentExprID());
-      // 	}
-      // }
-      
+								    currentNode->childrenParentExpressionIDs[i]);      
       for(int j = 0; j < result_oneChild.size(); ++j) {
 	result.push_back( result_oneChild[j] );
       }
-      // PRINTF("J %i\n", result.size());
-      // for(int k = 0; k < result.size(); ++k) {
-      // 	for(int j = 0; j < result[k].size(); ++j) {
-      // 	  PRINTF("%i %i\n", result[k][j].nodeID(), result[k][j].parentExprID());
-      // 	}
-      // }
     }
   }
   root_path.pop_back();
-  // PRINTF("returning\n");
-  // for(int k = 0; k < result.size(); ++k) {
-  //   for(int j = 0; j < result[k].size(); ++j) {
-  //     PRINTF("%i %i\n", result[k][j].nodeID(), result[k][j].parentExprID());
-  //   }
-  // }  
   return result;
 }
 
 SEXP C_getDependencyPaths(SEXP SgraphExtPtr, SEXP Snodes) {
-  //PRINTF("A\n");
   nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
   vector<int> nodes = SEXP_2_vectorInt(Snodes, -1); // subtract 1 index for C
-  //PRINTF("B\n");
   if(nodes.size() != 1) {
     PRINTF("Input to C_getDependencyPaths should be one and only one nodeID.");
     return R_NilValue;
@@ -553,21 +525,15 @@ SEXP C_getDependencyPaths(SEXP SgraphExtPtr, SEXP Snodes) {
     return R_NilValue;
   }
   depPath root_path;
-  //  PRINTF("C\n");
-  //  std::cout<< nodes[0] <<std::endl;
   multipleDepPaths result = getDependencyPaths_recurse(graphPtr->graphNodeVec[ nodes[0] ],
   						       root_path,
   						       INT_MIN); //R_defines.h says INT_MIN is NA_INTEGER
-  //  PRINTF("D\n");
-
   SEXP Sresult = PROTECT(Rf_allocVector(VECSXP, result.size()));
-  //  PRINTF("W %i\n", result.size());
   SEXP Sdim;
   for(int i = 0; i < result.size(); ++i) {
     SEXP SdepPath = PROTECT(Rf_allocVector(INTSXP, 2*result[i].size()));
     int *depPathPtr = INTEGER(SdepPath);
     int thisResultSize = result[i].size();
-    //  PRINTF("X %i\n", thisResultSize);
     for(int j = 0; j < thisResultSize; ++j) {
       depPathPtr[j] = result[i][j].nodeID();
       depPathPtr[j + thisResultSize] = result[i][j].parentExprID();
@@ -579,8 +545,6 @@ SEXP C_getDependencyPaths(SEXP SgraphExtPtr, SEXP Snodes) {
     SET_VECTOR_ELT(Sresult, i, SdepPath);
     UNPROTECT(2);
   }
-  PRINTF("E\n");
-  //
   UNPROTECT(1);
   return Sresult;
 }
