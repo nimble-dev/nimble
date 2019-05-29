@@ -210,7 +210,9 @@ nimbleRcall <- function(prototype, returnType, Rfun, where = getNimbleFunctionEn
     else
         returnType <- returnTypeExpr
     returnSymbol <- argType2symbol(returnType)
-    externalCallLine <- quote(SANS <- PROTECT(Rf_eval(SLANG, R_GlobalEnv)))
+    externalCallLines <- list(quote(nimVerbatim(PutRNGstate())),
+                              quote(SANS <- PROTECT(Rf_eval(SLANG, R_GlobalEnv))),
+                              quote(nimVerbatim(GetRNGstate())))
     if(returnSymbol$type != 'void') {
         resultLines <- list(substitute(declare(ans, RT), list(RT = returnType)),
                             quote(nimVerbatim(SEXP_2_NimArr(SANS, ans))),
@@ -223,7 +225,7 @@ nimbleRcall <- function(prototype, returnType, Rfun, where = getNimbleFunctionEn
                             substitute(returnType(RT), list(RT = returnType))
                             )
     }
-    allLines <- c(list(as.name("{")), convertLines, SEXPsetupLines, list(externalCallLine), resultLines)
+    allLines <- c(list(as.name("{")), convertLines, SEXPsetupLines, externalCallLines, resultLines)
     body(fun) <- as.call(allLines)
     ans <- quote(RCfunction(fun, check = FALSE, where = where))
     ans <- eval(ans)
