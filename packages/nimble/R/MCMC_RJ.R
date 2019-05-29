@@ -201,7 +201,7 @@ sampler_toggled <- nimbleFunction(
     original_samplerConf <- control[["samplerConf"]]
     
     if(is.null(original_samplerConf))
-      stop("Making wrapper_sampler: Must provide control$samplerConf")
+      stop("sampler_toggled: 'control$samplerConf' must be provided.")
     
     ## List but only with one element 
     original_sampler <- nimbleFunctionList(sampler_BASE)
@@ -233,42 +233,36 @@ nodeConfigurationCheck <- function(currentConf, node){
   ## TO CHECK THIS -- ALL SAMPLERS WILL BE REMOVED AND MODIFIED
 }
 
-###-------------------------------###
+
 #' Configure Reversible Jump sampler
 #'
-#' Modifies the \code{MCMCconf} object of a specific model, to include a Reversible Jump MCMC sampler for variable selection using an univariate normal proposal distribution. User can control the mean and scale of the proposal, and whether or not the proposal is strictly positive. This function supports two different type of model specifications. 
+#' Modifies the \code{MCMCconf} object of a specific model to include a Reversible Jump MCMC sampler for variable selection using an univariate normal proposal distribution. Users can control the mean and scale of the proposal, and whether or not the proposal is strictly positive. This function supports two different type of model specifications: with and without indicator variables. 
 #'
-#' @param mcmcConf A \code{MCMCconf} object.
-#'
-#' @param targetNodes A character vector, specifying the nodes and/or variables interested in the variable selection. Nodes may be specified in their indexed form, \code{y[1, 3]}. Alternatively, nodes specified without indexing will be expanded fully, e.g., \code{x} will be expanded to \code{x[1]]}, \code{x[2]}, etc.  
-#' @param indicatorNodes An optional character vector, specifying the indicator nodes and/or variables paired with \code{targetNodes}. Nodes may be specified in their indexed form, \code{y[1, 3]}. Alternatively, nodes specified without indexing will be expanded fully, e.g., \code{x} will be expanded to \code{x[1]]}, \code{x[2]}, etc. Nodes must be provided consistently with \code{targetNodes} vector. (see details?)
-#' @param priorProb An optional numeric vector of prior probabilities for each node to be in the model. (see details?)
-#' @param control An optional list of control arguments
+#' @param mcmcConf An \code{MCMCconf} object.
+#' @param targetNodes A character vector, specifying the nodes and/or variables for which variable selection is to be performed. Nodes may be specified in their indexed form, \code{y[1, 3]}. Alternatively, nodes specified without indexing will be expanded fully, e.g., \code{x} will be expanded to \code{x[1]]}, \code{x[2]}, etc.  
+#' @param indicatorNodes An optional character vector, specifying the indicator nodes and/or variables paired with \code{targetNodes}. Nodes may be specified in their indexed form, \code{y[1, 3]}. Alternatively, nodes specified without indexing will be expanded fully, e.g., \code{x} will be expanded to \code{x[1]]}, \code{x[2]}, etc. Nodes must be provided consistently with \code{targetNodes} vector. See details.
+#' @param priorProb An optional numeric vector of prior probabilities for each node to be in the model. See details.
+#' @param control An optional list of control arguments:
 #' \itemize{
-#' \item mean. The mean of the normal proposal distribution. (default = 0)
-#' \item scale. The standard deviation of the normal proposal distribution. (default  = 1)
-#' \item positive. A logical argument specifying whether the proposal is strictly positive. (default = FALSE)
-#' \item fixedValue. An optional value taken from the variable when out of the model, used only when \code{priorProb} is provided (default = 0). If specified when \code{indicatorNodes} is passed, a \code{warning} message is thrown and ignored. 
+#' \item mean. The mean of the normal proposal distribution (default = 0).
+#' \item scale. The standard deviation of the normal proposal distribution (default  = 1).
+#' \item positive. A logical argument specifying whether the proposal is strictly positive (default = FALSE).
+#' \item fixedValue. (Optional) Value for the variable when it is out of the model, used only when \code{priorProb} is provided (default = 0). If specified when \code{indicatorNodes} is passed, a warning is given and \code{fixedValue} is ignored. 
 #' }
 #'
 #' @details 
 #' 
-#' This functions modifies the samplers in \code{MCMCconf} for each of the nodes provided in the \code{targetNodes} argument. To these elements two samplers are assigned: a specialized Reversible Jump sampler and a modified version of the build sampler that is used only when the target node is in the model. 
-#' \code{configureRJ} can handle two different ways of writing a nimble model, using or not indicator variables (examples?)
-#' \enumerate{
-#'   \item \code{targetNodes} and \code{priorProb} probabilities; in this case also a \fixedValue can be provided
-#'   \item \code{targetNodes} and \code{indicatorNodes}; no fixedValue, but this choice allow to have random inclusion probabilities
-#' }
+#' This functions modifies the samplers in \code{MCMCconf} for each of the nodes provided in the \code{targetNodes} argument. To these elements two samplers are assigned: a specialized Reversible Jump sampler and a modified version of the existing sampler that is used only when the target node is already in the model. 
+#' \code{configureRJ} can handle two different ways of writing a NIMBLE model, either using indicator variables or not, as discussed further in the MCMC Chapter in the NIMBLE User Manual. When using indicator variables, the user should provide the \code{indicatorNodes} argument and no \code{fixedValue} argument should be used. When not using indicator variables, the user should provide the \code{priorProb} argument and no \code{indicatorNodes} argument should be provided. In the latter case, the user can provide a non-zero value for \code{fixedValue} if desired. 
+#'
+#' Note that this functionality is intended for variable selection in regression-style models but may be useful for other situations as well. At the moment, setting a variance component to zero and thereby removing a set of random effects from a model will not work because MCMC sampling in that case would need to propose values for multiple parameters (the random effects), whereas this functionality only proposes to add a single parameter.
 #' 
-#' 
-#' 
-#' 
-#' @seealso \code{\link{sampler_BASE}} \code{\link{sampler_RJ}} \code{\link{configureRJ}}
+#' @seealso \code{\link{sampler}} \code{\link{configureRJ}}
 #' 
 #' @examples
 #' 
 #' 
-#' ## Linear regression with intercept and two covariates
+#' ## Linear regression with intercept and two covariates, using indicator variables
 #' code <- nimbleCode({
 #'   beta0 ~ dnorm(0, sd = 100)
 #'   beta1 ~ dnorm(0, sd = 100)
@@ -309,8 +303,7 @@ nodeConfigurationCheck <- function(currentConf, node){
 #' 
 #' @references
 #' 
-#' Peter J. Green. (1995). Reversible jump markov chain monte carlo computation and bayesian model determination. \emph{Biometrika}, 82(4), 711-732.
-#' 
+#' Peter J. Green. (1995). Reversible jump Markov chain Monte Carlo computation and Bayesian model determination. \emph{Biometrika}, 82(4), 711-732.
 #' 
 configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb = NULL, control = list(mean = NULL, scale = NULL, positive = NULL, fixedValue = NULL)) {
 
