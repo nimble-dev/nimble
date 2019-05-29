@@ -213,7 +213,8 @@ test_that('Derivatives of matrix exponentiation function correctly.',
 ##                     compiled nimbleFunction instance in the output
 ##
 ## returns: a list with the randomly generated input and possibly the compiled
-##          nimbleFunction instance
+##          nimbleFunction instance, or NULL if the test has a known compilation
+##          failure
 test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
                     control = list(), verbose = nimbleOptions('verbose'),
                     catch_failures = FALSE, seed = 0,
@@ -445,10 +446,11 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
   if (verbose) cat("### Test successful \n\n")
   if (return_compiled_nf)
     invisible(list(CnfInst = CnfInst, input = input))
-  else {
+  else if(!isTRUE(param$knownFailures$compilation)) {
     nimble:::clearCompiled(CnfInst)
     invisible(list(input = input))
   }
+  invisible(NULL)
 }
 
 ## Takes a named list of `argTypes` and returns a list of character
@@ -588,8 +590,6 @@ make_AD_test <- function(op, argTypes, wrt_args = NULL,
         )
       )
     )
-
-  browser()
 
   methods <- list()
 
@@ -1140,7 +1140,7 @@ exp_base <- distn_base
 exp_base$args = list(
   support = list(
     distn = function(n) runif(n, max = 1000),
-    type = c('double(0)', 'double(1, 5)')
+    type = c('double(0)')
   )
 )
 exp_base$wrt <- c('x')
@@ -1510,6 +1510,11 @@ distn_tests <- unlist(
   recursive = FALSE
 )
 
+## dexp is not processed by eigenize_recyclingRuleFunction()
+distn_tests[['exp_R.dexp double(0) double(1, 3)']]$knownFailures <- list(
+  compilation = TRUE
+)
+
 ###########################################
 ## distribution functions, variable log arg
 ###########################################
@@ -1526,6 +1531,10 @@ distn_params_with_log <- lapply(distn_params, function(param) {
 distn_with_log_tests <- unlist(
   lapply(distn_params_with_log, make_distribution_fun_AD_test),
   recursive = FALSE
+)
+
+distn_with_log_tests[['exp_R.dexp double(0) double(1, 3)']]$knownFailures <- list(
+  compilation = TRUE
 )
 
 #######################
