@@ -16,10 +16,12 @@
 
 #' @rdname samplers
 #' @export
+#' 
+#' 
 sampler_RJ <- nimbleFunction(
   name = 'sampler_RJ',
   contains = sampler_BASE, 
-  setup = function(mvSaved, model, target, control) {
+  setup = function(model, mvSaved, target, control) {
     ## target should be a coefficient to be set to a fixed value (usually zero) or not
     ## control should have
     ## 1 - mean of proposal jump distribution  (default 0)
