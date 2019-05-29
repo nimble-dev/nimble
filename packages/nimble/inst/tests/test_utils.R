@@ -1452,7 +1452,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', calcNodes = 
             delta <- abs(rOutput1$jacobian-cOutput$jacobian)
             nonzero <- cOutput$jacobian != 0
             delta[nonzero] <- delta[nonzero]/abs(cOutput$jacobian[nonzero])
-            if(!all(delta < relTol[1])) 
+            if(!all(delta < relTol[2])) 
                 cat("Largest relative difference in gradient is ", max(delta), " for wrt of ", paste0(wrt, sep = ','), ".\n")
             expect_true(all(delta < relTol[2], na.rm = TRUE),
                          info = "mismatch in 1st derivative for compiled and uncompiled")
@@ -1463,7 +1463,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', calcNodes = 
             delta <- abs(rOutput2$hessian-cOutput$hessian)
             nonzero <- cOutput$hessian != 0
             delta[nonzero] <- delta[nonzero]/abs(cOutput$hessian[nonzero])
-            if(!all(delta < relTol[2])) 
+            if(!all(delta < relTol[3])) 
                 cat("Largest relative difference in Hessian is ", max(delta), " for wrt of ", paste0(wrt, sep = ','), ".\n")
             expect_true(all(delta < relTol[3], na.rm = TRUE),
                          info = "mismatch in 2nd derivative for compiled and uncompiled")
@@ -1472,7 +1472,8 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', calcNodes = 
         }
 
         expect_identical(new_rVals, correct_rVals, info = "mismatch in final uncompiled model values")
-        expect_identical(new_cVals, correct_cVals, info = "mismatch in final compiled model values")
+        expect_equal(new_cVals, correct_cVals, info = "mismatch in final compiled model values",
+                     tolerance = relTol[1]*abs(new_cVals))
         expect_identical(new_rLP, correct_rLP, info = "mismatch in final uncompiled model logProb")
         expect_equal(new_cLP, correct_cLP, info = "mismatch in final compiled model logProb",
                      tolerance = relTol[1]*abs(new_cLP))
@@ -1482,7 +1483,8 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', calcNodes = 
 
 ## Makes random vectors of wrt elements, following James Duncan's code
 make_wrt <- function(argTypes, n_random = 10) {
-  ## always include each arg on its own, and all combinations of the args
+    ## always include each arg on its own, and all combinations of the args
+    ## Note that for models with a large number of variables this might turn out to be too much.
   wrts <- as.list(names(argTypes))
   if (length(argTypes) > 1)
     for (m in 2:length(argTypes)) {
