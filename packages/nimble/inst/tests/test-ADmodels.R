@@ -453,7 +453,7 @@ test_ADModelCalculate(model, name = 'various multivariate dists')
 
 ## loop through BUGS models
 
-## example test of a BUGS model
+## example test of a BUGS model - take this out as epil is in loop below
 model <- readBUGSmodel(model = 'epil2.bug', inits = 'epil-inits.R', data = 'epil-data.R',
                        useInits = TRUE, dir = nimble:::getBUGSexampleDir('epil'))
 set.seed(1)
