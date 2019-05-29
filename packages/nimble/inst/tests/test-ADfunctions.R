@@ -980,11 +980,11 @@ distn_params[['cat_base']]$args <- list(
   support = list(
     ## support depends on k = length(prob)
     distn = function(n) function(prob) sample(1:length(prob), n, replace = TRUE),
-    type = c('double(0)', 'double(1, 5)')
+    type = c('double(0)')
   ),
   prob = list(
     distn = function(n) {prob <- runif(n); prob/sum(prob)},
-    type = c('double(1, 5)')
+    type = c('double(1, 5)', 'double(1, 8)')
   )
 )
 distn_params[['cat_base']]$wrt <- c('prob')
