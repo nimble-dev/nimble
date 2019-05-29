@@ -221,7 +221,6 @@ print: A logical argument specifying whether to print the ordered list of defaul
                     uniqueNodeDeclIDs <- unique(nodeDeclIDs)
                     nodeTraits <- lapply(uniqueNodeDeclIDs,
                                          function(x) {
-                                             print(x)
                                              declInfo <- model$modelDef$declInfo[[x]]
                                              dist <- declInfo$distributionName
                                              distInfo <- getDistributionInfo(dist)
@@ -259,6 +258,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
                         nodeDeclID <- nodeDeclIDs[i]
                         nodeTrait <- nodeTraits[[as.character(nodeDeclID)]] ## from split, the names are nodeDeclIds
                         nodeDist <- nodeTrait$dist
+                        discrete <- nodeTrait$discrete
                         if(nodeDist != "dbin") {
                             binary <- nodeTrait$binary
                         } else {
