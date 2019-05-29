@@ -258,30 +258,6 @@ nodeConfigurationCheck <- function(currentConf, node){
 #' \code{configureRJ} can handle two different ways of writing a NIMBLE model, either using indicator variables (as shown in the example below) or not (not shown, but omitting the \code{z1} and \code{z2} variables), as discussed further in the MCMC Chapter in the NIMBLE User Manual. When using indicator variables, the user should provide the \code{indicatorNodes} argument and no \code{fixedValue} argument should be used. When not using indicator variables, the user should provide the \code{priorProb} argument and no \code{indicatorNodes} argument should be provided. In the latter case, the user can provide a non-zero value for \code{fixedValue} if desired. 
 #'
 #' Note that this functionality is intended for variable selection in regression-style models but may be useful for other situations as well. At the moment, setting a variance component to zero and thereby removing a set of random effects from a model will not work because MCMC sampling in that case would need to propose values for multiple parameters (the random effects), whereas this functionality only proposes to add a single parameter.
-<<<<<<< HEAD
-#' 
-#' @seealso \code{\link{sampler}} \code{\link{configureRJ}}
-#' 
-#' @examples
-#' 
-#' 
-#' ## Linear regression with intercept and two covariates, using indicator variables
-#' code <- nimbleCode({
-#'   beta0 ~ dnorm(0, sd = 100)
-#'   beta1 ~ dnorm(0, sd = 100)
-#'   beta2 ~ dnorm(0, sd = 100)
-#'   sigma ~ dunif(0, 100) 
-#'   
-#'   z1 ~ dbern(psi)  ## indicator variable associated to beta1
-#'   z2 ~ dbern(psi)  ## indicator variable associated to beta2
-#'   psi ~ dbeta(1, 1) ## hyperprior on inclusion probability
-#'   for(i in 1:N) {
-#'     Ypred[i] <- beta0 + beta1 * z1 * x1[i] + beta2 * z2 * x2[i]
-#'     Y[i] ~ dnorm(Ypred[i], sd = sigma)
-#'   }
-#' })
-#' 
-=======
 #' 
 #' @seealso \code{\link{sampler}} \code{\link{configureRJ}}
 #' 
@@ -304,29 +280,11 @@ nodeConfigurationCheck <- function(currentConf, node){
 #'   }
 #' })
 #' 
->>>>>>> 943aeb991a5c3b5cac568b5ccc310ce268b52370
 #' ## simulate some data
 #' set.seed(0)
 #' N <- 100
 #' x1 <- runif(N, -1, 1)
 #' x2 <- runif(N, -1, 1) ## this covariate is not included
-<<<<<<< HEAD
-#' Y <- rnorm(N, 1.5 + 2 * x1, sd = 1)
-#' 
-#' 
-#' ## build the model
-#' 
-#' rindicatorModel <- nimbleModel(code, constants = list(N = N),
-#'                                data = list(Y = Y, x1 = x1, x2 = x2), 
-#'                                inits=  list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y), z2 = 1, z1 = 1, psi = 0.5))
-#' 
-#' indicatorModelConf <- configureMCMC(rindicatorModel)
-#' 
-#' configureRJ(mcmcConf = indicatorModelConf,     
-#'            targetNodes = c("beta1", "beta2"),
-#'            indicatorNodes = c('z1', 'z2'),
-#'            control = list(mean = 0, scale = 2))
-=======
 #' Y <- rnorm(N, 1 + 2.5 * x1, sd = 1)
 #' 
 #' ## build the model
@@ -347,7 +305,6 @@ nodeConfigurationCheck <- function(currentConf, node){
 #' rIndicatorMCMC <- buildMCMC(indicatorModelConf)
 #' cIndicatorModel <- compileNimble(rIndicatorModel)
 #' cIndicatorMCMC <- compileNimble(rIndicatorMCMC, project = cIndicatorModel)
->>>>>>> 943aeb991a5c3b5cac568b5ccc310ce268b52370
 #' 
 #' set.seed(0)
 #' samples <- runMCMC(cIndicatorMCMC, 10000, nburnin = 6000)
