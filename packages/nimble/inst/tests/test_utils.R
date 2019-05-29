@@ -1287,7 +1287,7 @@ derivsNimbleFunction <- nimbleFunction(
       all <- calcNodes == ""
       if(all) calcNodes <- model$getNodeNames()
   },
-  run = function(order = double(0)){
+  run = function(order = double(1)){
       if(all) {
           ansList <- nimDerivs(model$calculate(), wrt = wrt, order = order)
       } else ansList <- nimDerivs(model$calculate(calcNodes), wrt = wrt, order = order)
