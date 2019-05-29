@@ -1,3 +1,6 @@
+USER LEVEL CHANGES
+
+-- New printing option for MCMC configuration objects: conf$printSamplers(byType = TRUE), will display the node names being sampled, grouped together by the sampling algorithm acting on them (e.g., RW sampler).
 
 BUG FIXES
 

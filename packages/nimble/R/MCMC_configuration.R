@@ -196,9 +196,13 @@ print: A logical argument specifying whether to print the ordered list of defaul
                 ## use old (static) system for assigning default samplers
                 isEndNode <- model$isEndNode(nodes)
                 if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
+
                 allDists <- unlist(lapply(model$modelDef$declInfo, `[[`, 'distributionName'))
                 allDists <- allDists[!is.na(allDists)]
                 check_dCRP <- any(allDists == "dCRP")
+              
+                clusterNodeInfo <- NULL; dcrpNode <- NULL; numCRPnodes <- 0
+
                 for(i in seq_along(nodes)) {
                     node <- nodes[i]
                     discrete <- model$isDiscrete(node)
@@ -224,7 +228,13 @@ print: A logical argument specifying whether to print the ordered list of defaul
                         if(nodeDist == 'dinvwish')     { addSampler(target = node, type = 'RW_wishart');         next }
                         if(nodeDist == 'dcar_normal')  { addSampler(target = node, type = 'CAR_normal');         next }
                         if(nodeDist == 'dcar_proper')  { addSampler(target = node, type = 'CAR_proper');         next }
-                        if(nodeDist == 'dCRP')         { addSampler(target = node, type = 'CRP', control = list(useConjugacy = useConjugacy));                next }
+                        if(nodeDist == 'dCRP')         {
+                            addSampler(target = node, type = 'CRP', control = list(useConjugacy = useConjugacy))
+                            numCRPnodes <- numCRPnodes + 1
+                            clusterNodeInfo[[numCRPnodes]] <- findClusterNodes(model, node)
+                            dcrpNode[numCRPnodes] <- node
+                            next
+                        }
                         if(multivariateNodesAsScalars) {
                             for(scalarNode in nodeScalarComponents) {
                                 if(onlySlice) addSampler(target = scalarNode, type = 'slice')
@@ -268,12 +278,32 @@ print: A logical argument specifying whether to print the ordered list of defaul
                     ## default: 'RW' sampler
                     addSampler(target = node, type = 'RW');     next
                 }
+
+                ## For CRP-based models, wrap samplers for cluster parameters so not sampled if cluster is unoccupied.
+                if(!is.null(clusterNodeInfo)) {
+                    for(k in seq_along(clusterNodeInfo)) {
+                        for(clusterNodes in clusterNodeInfo[[k]]$clusterNodes) {
+                            samplers <- getSamplers(clusterNodes)
+                            removeSamplers(clusterNodes)
+                            for(i in seq_along(samplers)) {
+                                node <- samplers[[i]]$target
+                                addSampler(target = node, type = 'CRP_cluster_wrapper',
+                                           control = list(wrapped_type = samplers[[i]]$name, wrapped_conf = samplers[[i]],
+                                                          dcrpNode = dcrpNode[[k]], clusterID = i))
+                                ## Note for more general clustering: will probably change to
+                                ## 'clusterID=clusterNodeInfo[[k]]$clusterIDs[[??]][i]'
+                                ## which means we probably need to change to for(clusterNodesIdx in seq_along(clusterNodeInfo[[k]]$clusterNodes))
+                            }
+                        }
+                    }
+                }
+
             }
             
             if(print)   printSamplers()
         },
 
-        addConjugateSampler = function(conjugacyResult, dynamicallyIndexed = FALSE, print = FALSE) {
+        addConjugateSampler = function(conjugacyResult, dynamicallyIndexed = FALSE, dcrpNode = NULL, clusterID = NULL, print = FALSE) {
             ## update May 2016: old (non-dynamic) system is no longer supported -DT
             ##if(!getNimbleOption('useDynamicConjugacy')) {
             ##    addSampler(target = conjugacyResult$target, type = conjugacyResult$type, control = conjugacyResult$control)
@@ -436,7 +466,7 @@ print: A logical argument specifying whether to print the new list of samplers (
             return(invisible(NULL))
         },
         
-        printSamplers = function(ind, type, displayControlDefaults = FALSE, displayNonScalars = FALSE, displayConjugateDependencies = FALSE, executionOrder = FALSE) {
+        printSamplers = function(ind, type, displayControlDefaults = FALSE, displayNonScalars = FALSE, displayConjugateDependencies = FALSE, executionOrder = FALSE, byType = FALSE) {
             '
 Prints details of the MCMC samplers.
 
@@ -451,6 +481,8 @@ displayConjugateDependencies: A logical argument, specifying whether to display 
 displayNonScalars: A logical argument, specifying whether to display the values of non-scalar control list elements (default FALSE).
 
 executionOrder: A logical argument, specifying whether to print the sampler functions in the (possibly modified) order of execution (default FALSE).
+
+byType: A logical argument, specifying whether the nodes being sampled should be printed, sorted and organized according to the type of sampler (the sampling algorithm) which is acting on the nodes (default FALSE).
 '
             if(missing(ind))        ind <- seq_along(samplerConfs)
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
@@ -460,6 +492,20 @@ executionOrder: A logical argument, specifying whether to print the sampler func
                 ## find sampler indices with 'name' matching anything in 'type' argument:
                 typeInd <- unique(unname(unlist(lapply(type, grep, x = lapply(conf$samplerConfs, `[[`, 'name')))))
                 ind <- intersect(ind, typeInd)
+            }
+            if(byType && length(ind) > 0) {
+                samplerTypes <- unlist(lapply(ind, function(i) conf$samplerConfs[[i]]$name))
+                uniqueSamplerTypes <- sort(unique(samplerTypes), decreasing = TRUE)
+                nodesSortedBySamplerType <- lapply(uniqueSamplerTypes, function(type) sapply(conf$samplerConfs[which(samplerTypes == type)], `[[`, 'target'))
+                names(nodesSortedBySamplerType) <- uniqueSamplerTypes
+                cat('\n')
+                for(i in seq_along(nodesSortedBySamplerType)) {
+                    theseSampledNodes <- nodesSortedBySamplerType[[i]]
+                    cat(paste0(names(nodesSortedBySamplerType)[i], ' sampler (', length(theseSampledNodes), '):  '))
+                    cat(paste0(theseSampledNodes, collapse = ', '))
+                    cat('\n\n')
+                }
+                return(invisible(NULL))
             }
             makeSpaces <- if(length(ind) > 0) newSpacesFunction(max(ind)) else NULL
             if(executionOrder)      ind <- samplerExecutionOrder[samplerExecutionOrder %in% ind]

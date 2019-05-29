@@ -438,6 +438,10 @@ CRP_nonconjugate <- nimbleFunction(
   name = "CRP_nonconjugate",
   contains = CRP_helper,
   setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
+      savedIdx <- 1
+      saved <- nimNumeric(2) # treated as scalar if length 1
+      saved2 <- saved
+      saved3 <- saved
   },
   methods = list(
     storeParams = function() {},  ## nothing needed for non-conjugate
@@ -446,14 +450,26 @@ CRP_nonconjugate <- nimbleFunction(
       return(model$getLogProb(dataNodes[i]))
     },
     sample = function(i = integer(), j = integer() ) {
-      ## sample from prior
-      if( p == 1 ) {
-        model$simulate(marginalizedNodes[j])
-      } else {
-        for(l in 1:p) {  ## marginalized nodes should be in correct order based on findClusterNodes.
-          model$simulate(marginalizedNodes[(l-1)*nTilde + j])
+      if(j == 0) {  ## reset to stored values (for case of new cluster not opened)
+            values(model, marginalizedNodes[savedIdx]) <<- saved
+            if(p > 1) {
+                values(model, marginalizedNodes[nTilde + savedIdx]) <<- saved2
+                if(p > 2)
+                    values(model, marginalizedNodes[2*nTilde + savedIdx]) <<- saved3
+            }
+        } else {
+            savedIdx <<- j
+            saved <<- values(model, marginalizedNodes[j])
+            model$simulate(marginalizedNodes[j])
+            if(p > 1) {
+                saved2 <<- values(model, marginalizedNodes[nTilde + j])
+                if(p > 2)
+                    saved3 <<- values(model, marginalizedNodes[2*nTilde + j])
+                for(l in 2:p) {  ## marginalized nodes should be in correct order based on findClusterNodes.
+                    model$simulate(marginalizedNodes[(l-1)*nTilde + j])
+                }
+            }
         }
-      }
     }
   )
 )
@@ -984,6 +1000,8 @@ sampler_CRP <- nimbleFunction(
         ## p and nTilde only needed for non-conjugate currently.
         ## Note that the elements of tildeNodes will be in order such that the first element corresponds to the cluster
         ## obtained when xi[i] = 1, the second when xi[i] = 2, etc.
+      if(sampler == 'CRP_nonconjugate' && p > 3)
+          stop("sampler_CRP: CRP_nonconjugate sampler not yet set up to handle clustering of more than three variables.")  ## This is because of how we put old values back into model when proposing a new cluster that is not accepted.
       marginalizedNodes <- unlist(clusterVarInfo$clusterNodes)
       helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, p, min_nTilde)
       calcNodes <- model$getDependencies(c(target, marginalizedNodes))
@@ -1160,6 +1178,8 @@ sampler_CRP <- nimbleFunction(
         }
         xiCounts[model[[target]][i]] <- 1
       } else { # an existing label is sampled
+        if(sampler == 'CRP_nonconjugate')   # reset to previous marginalized node value
+            helperFunctions[[1]]$sample(i, 0)
         if( xiCounts[xi[i]] == 0 ) { # xi_i is a singleton, a component was deleted
           k <- k - 1
           xiUniques <- reorderXiUniques
@@ -1175,7 +1195,7 @@ sampler_CRP <- nimbleFunction(
       }
     }
 
-      ## We have updated cluster variables but not all logProb values are up-to-date.
+    ## We have updated cluster variables but not all logProb values are up-to-date.
     model$calculate(calcNodes)
     copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
   },
@@ -1570,3 +1590,19 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo) {
     }
     return(conjugate)
 }
+
+sampler_CRP_cluster_wrapper <- nimbleFunction(
+    name = "CRP_cluster_wrapper", 
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        regular_sampler <- nimbleFunctionList(sampler_BASE)
+        regular_sampler[[1]] <- control$wrapped_conf$buildSampler(model, mvSaved)
+        dcrpNode <- control$dcrpNode
+        clusterID <- control$clusterID
+    },
+    run = function() {
+        if(any(model[[dcrpNode]] == clusterID)) regular_sampler[[1]]$run()
+    },
+    methods = list(
+        reset = function() {regular_sampler[[1]]$reset()}
+    ))
