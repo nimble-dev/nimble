@@ -26,7 +26,7 @@ sampler_RJ <- nimbleFunction(
     ## control should have
     ## 1 - mean of proposal jump distribution  (default 0)
     ## 2 - sd of proposal jump distribution  (default 1)
-    ## 3 - prior prob of taking its fixedValue  (default 0.5)
+    ## 3 - prior prob of taking its fixedValue 
     ## 4 - fixedValue (default 0)
     
     proposalScale <- control$scale
@@ -370,7 +370,7 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
   scale             <- if(!is.null(control$scale))             control$scale            else 1
   positive          <- if(!is.null(control$positive))          control$positive         else FALSE
     
-  ## more defensive version
+  ## repeat values for multiple nodes if only one value is provided
   if(length(fixedValue) != nNodes) {
     if(length(fixedValue) == 1) fixedValue <- rep(fixedValue, nNodes) else stop('inconsistent length of fixedValue argument and specified number of RJ targetNodes')
   }
@@ -383,7 +383,6 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
   if(length(positive) != nNodes) {
     if(length(positive) == 1) positive <- rep(positive, nNodes) else stop('inconsistent length of positive argument and specified number of RJ targetNodes')
   }
-  
   
   ## flag for indicators and prior
   indicatorFlag <- (!is.null(indicatorNodes))
@@ -404,6 +403,11 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
   ##---------------------------------------##
   if(priorFlag){
     
+    ## check that priorProb values are in [0,1]
+    if(any(priorProb < 0 | priorProb > 1)){
+      stop('Elements in priorProb must be probabilities in [0,1]')
+    }
+
     ## If one value for prior is given, it is used for each variable
     if(length(priorProb) != nNodes) {
       if(length(priorProb) == 1) priorProb <- rep(priorProb, nNodes) else stop('Length of priorProb vector must match targetNodes length')
