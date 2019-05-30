@@ -203,7 +203,7 @@ sampler_toggled <- nimbleFunction(
 ###-------------------------------###
 #' Configure Reversible Jump sampler
 #'
-#' Modifies the \code{MCMCconf} object of a specific model to include a Reversible Jump MCMC sampler for variable selection using an univariate normal proposal distribution. Users can control the mean and scale of the proposal, and whether or not the proposal is strictly positive. This function supports two different type of model specifications: with and without indicator variables. 
+#' Modifies the \code{MCMCconf} object of a specific model to include a Reversible Jump MCMC sampler for variable selection using an univariate normal proposal distribution. Users can control the mean and scale of the proposal. This function supports two different type of model specifications: with and without indicator variables. 
 #'
 #' @param mcmcConf An \code{MCMCconf} object.
 #' @param targetNodes A character vector, specifying the nodes and/or variables for which variable selection is to be performed. Nodes may be specified in their indexed form, \code{y[1, 3]}. Alternatively, nodes specified without indexing will be expanded fully, e.g., \code{x} will be expanded to \code{x[1]]}, \code{x[2]}, etc.  
@@ -213,14 +213,13 @@ sampler_toggled <- nimbleFunction(
 #' \itemize{
 #' \item mean. The mean of the normal proposal distribution (default = 0).
 #' \item scale. The standard deviation of the normal proposal distribution (default  = 1).
-#' \item positive. A logical argument specifying whether the proposal is strictly positive (default = FALSE).
 #' \item fixedValue. (Optional) Value for the variable when it is out of the model, used only when \code{priorProb} is provided (default = 0). If specified when \code{indicatorNodes} is passed, a warning is given and \code{fixedValue} is ignored. 
 #' }
 #'
 #' @details 
 #' 
 #' This functions modifies the samplers in \code{MCMCconf} for each of the nodes provided in the \code{targetNodes} argument. To these elements two samplers are assigned: a specialized Reversible Jump sampler and a modified version of the existing sampler that is used only when the target node is already in the model. 
-#' \code{configureRJ} can handle two different ways of writing a NIMBLE model, either using indicator variables (as shown in the example below) or not (not shown, but omitting the \code{z1} and \code{z2} variables), as discussed further in the MCMC Chapter in the NIMBLE User Manual. When using indicator variables, the user should provide the \code{indicatorNodes} argument and no \code{fixedValue} argument should be used. When not using indicator variables, the user should provide the \code{priorProb} argument and no \code{indicatorNodes} argument should be provided. In the latter case, the user can provide a non-zero value for \code{fixedValue} if desired. 
+#' \code{configureRJ} can handle two different ways of writing a NIMBLE model, either using indicator variables or not as shown in the examples below and discussed further in the MCMC Chapter in the NIMBLE User Manual. When using indicator variables, the user should provide the \code{indicatorNodes} argument and no \code{fixedValue} argument should be used. When not using indicator variables, the user should provide the \code{priorProb} argument and no \code{indicatorNodes} argument should be provided. In the latter case, the user can provide a non-zero value for \code{fixedValue} if desired. 
 #'
 #' Note that this functionality is intended for variable selection in regression-style models but may be useful for other situations as well. At the moment, setting a variance component to zero and thereby removing a set of random effects from a model will not work because MCMC sampling in that case would need to propose values for multiple parameters (the random effects), whereas this functionality only proposes to add a single parameter.
 #' 
@@ -341,7 +340,6 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
   fixedValue        <- if(!is.null(control$fixedValue))        control$fixedValue       else 0
   mean              <- if(!is.null(control$mean))              control$mean             else 0
   scale             <- if(!is.null(control$scale))             control$scale            else 1
-  # positive          <- if(!is.null(control$positive))          control$positive         else FALSE
     
   ## repeat values for multiple nodes if only one value is provided
   if(length(fixedValue) != nNodes) {
@@ -353,9 +351,6 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
   if(length(scale) != nNodes) {
     if(length(scale) == 1) scale <- rep(scale, nNodes) else stop('inconsistent length of scale argument and specified number of RJ targetNodes')
   }
-  # if(length(positive) != nNodes) {
-  #   if(length(positive) == 1) positive <- rep(positive, nNodes) else stop('inconsistent length of positive argument and specified number of RJ targetNodes')
-  # }
   
   ## flag for indicators and prior
   indicatorFlag <- (!is.null(indicatorNodes))
