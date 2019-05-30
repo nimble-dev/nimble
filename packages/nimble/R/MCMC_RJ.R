@@ -386,6 +386,12 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
       ## Create node list
       nodeAsScalar <- mcmcConf$model$expandNodeNames(targetNodes[i], returnScalarComponents = TRUE)
       
+      ## if the node is multivariate check that samplers are univariate 
+      if(mcmcConf$model$isMultivariate(targetNodes[i])) {
+        if(length(nodeAsScalar) != length(mcmcConf$getSamplers(targetNodes[i])))
+          stop(paste0(targetNodes[i], "is multivariate using a joint sampler; only univariate samplers can be used"))
+      }
+
       ## Create RJ control list for the node 
       nodeControl  = list(
         priorProb  = priorProb[i], 
@@ -440,10 +446,18 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
       nodeAsScalar <- mcmcConf$model$expandNodeNames(targetNodes[i], returnScalarComponents = TRUE)
       indicatorsAsScalar <- mcmcConf$model$expandNodeNames(indicatorNodes[i], returnScalarComponents = TRUE)
       
+      ## if the node is multivariate check that samplers are univariate
+      if(modelConf$model$isMultivariate(targetNodes[i])) {
+        if(length(nodeAsScalar) != length(modelConf$getSamplers(targetNodes[i])))
+          stop(paste0(targetNodes[i], "is multivariate using a joint sampler; only univariate samplers can be used"))
+      }
+
+      ## check that length of indicatorNodes matches targetNodes
       if(length(nodeAsScalar) != length(indicatorsAsScalar)) {
         stop(paste0("indicatorNodes node ", indicatorNodes[i] ," does not match ", targetNodes[i], " size."))
       }
       
+
       nodeControl  = list( 
         mean       = mean[i], 
         scale      = scale[i])
