@@ -2293,7 +2293,7 @@ sampler_CAR_proper <- nimbleFunction(
 #' This sampler perform a Reversible Jump MCMC step for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{configureRJ} function, when the model code is written using indicator variables. See \code{\help{configureRJ}} for details.
 #'
 #' @section toggled sampler:
-#' Sample according to assigned sampler when the target is in the model. This is a specialized sampler used by `configureRJ` when adding a Reversible Jump MCMC . See \code{\help{configureRJ}} for details.
+#' Sample according to assigned sampler when the target is in the model. This is a specialized sampler used by \code{configureRJ} when adding a Reversible Jump MCMC . See \code{\help{configureRJ}} for details.
 #'
 #' @name samplers
 #' 
