@@ -39,22 +39,24 @@ sampler_RJ <- nimbleFunction(
     
     ## get all parameters related to the target
     calcNodes <- model$getDependencies(target)
+    ## target not in reduced model so its prior not calculated
+    calcNodesReduced <- model$getDependencies(target, self = FALSE)
   },
   
   run = function(){
     ## Reversible-jump move
-    
     ## get current value of the parameter we are interested in
     currentValue <- model[[target]]
     
     ## get current posterior log likelihood
-    currentLogProb <- model$getLogProb(calcNodes)
     
     if(currentValue != fixedValue)
     {
       ##----------------------##
       ## remove proposal
       ##----------------------##
+      currentLogProb <- model$getLogProb(calcNodes)
+      
       ## log probability of the reverse proposal
       if(positive){
         ## Taking the absolute value the proposal is a folded normal
@@ -71,7 +73,8 @@ sampler_RJ <- nimbleFunction(
       ##----------------------##
       ## add proposal
       ##----------------------##
-      
+      currentLogProb <- model$getLogProb(calcNodesReduced)
+
       ## Only positive proposal
       if(positive){
         ## Taking the absolute value the proposal is a folded normal
@@ -84,7 +87,7 @@ sampler_RJ <- nimbleFunction(
       }
       
       model[[target]] <<- proposalValue
-      
+
       proposalLogProb <- model$calculate(calcNodes)
       logAcceptanceProb <- proposalLogProb - currentLogProb + logRatioProbFixedOverProbNotFixed - logProbForwardProposal  
     }
