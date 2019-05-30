@@ -680,8 +680,14 @@ for(i in seq_along(examples)) {
     test_ADModelCalculate(model, name = bugsFile[i], order = 0:orders[i])
 }
 
-## Issues:
-## dyes: somewhat large relative difference for Hessian
+## Issues (this is somewhat out of date and Chris hasn't gone back through to
+## to do more assessment given NCT issue 149 regarding the errors in
+## uncompiled derivs):
+
+## dyes: somewhat large relative difference for Hessian - see code below
+## for partial deriv wrt tau.between,tau.within, c deriv is 0 and R deriv is -0.0617
+## direct numerical calculation via second difference also gives 0
+## so something is weird with R deriv
 ## equiv: not-too-large relative difference for Hessian
 ## line: large relative difference for gradient, Hessian - gradient caused by redundant wrt nodes
 ## pump: moderately large relative difference for Hessian
@@ -693,5 +699,33 @@ for(i in seq_along(examples)) {
 ## blocker: somewhat large relative difference for Hessian
 ## blocker is somewhat slow - omit Hessian?
 
-test_ADModelCalculate_internal(model, name = bugsFile[i], wrt = model$expandNodeNames('mu'), order = 1)
+## errors in numDerivs for dyes:
+set.seed(1)
+i=2
+model <- readBUGSmodel(model = 'dyes.bug', inits = NULL, data = NULL, useInits = TRUE,
+                       dir = nimble:::getBUGSexampleDir('dyes'))
+model$simulate('mu')
+out <- model$calculate()
+cmodel <- compileNimble(model)
+
+saved_taus <- c(model$tau.within, model$tau.between)
+
+myfunc =function(taus) {
+    model$tau.within = taus[1]
+    model$tau.between = taus[2]
+    model$calculate()
+}
+numDeriv::hessian(myfunc, c(model$tau.within, model$tau.between))
+
+model$tau.within = saved_taus[1]
+model$tau.between = saved_taus[2]
+
+rDerivs <- derivsNimbleFunction(model, calcNodes = "", wrt = c('tau.within','tau.between'))
+cDerivs <- compileNimble(rDerivs, project = model)
+
+rDerivs$run(2)  # far off from numDeriv::hessian result
+
+cDerivs$run(2)
+
+
 
