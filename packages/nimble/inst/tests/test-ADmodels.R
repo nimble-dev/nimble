@@ -357,7 +357,6 @@ test_ADModelCalculate(model, name = 'complicated indexing')
 ## large difference in compiled/uncompiled log density
 
 ## MVN with various parameterizations and user-defined functions
-## won't work because of dinvwish
 covFunLoop <- nimbleFunction(
     run = function(dist = double(2), rho = double(0)) {
         n = dim(dist)[1]
@@ -398,7 +397,7 @@ rGPdist <- nimbleFunction(
         return(out)
     })
 
-
+## won't work because of dinvwish, dwish
 code <- nimbleCode({
     Sigma1[1:n,1:n] <- exp(-dist[1:n,1:n]/rho)
     Sigma2[1:n,1:n] <- covFunLoop(dist[1:n,1:n], rho)
@@ -449,7 +448,168 @@ model$simulate()
 model$calculate()
 model$setData('y')
 test_ADModelCalculate(model, name = 'various multivariate dists')
-                    
+
+## removing dwish/dinvwish
+code <- nimbleCode({
+    Sigma1[1:n,1:n] <- exp(-dist[1:n,1:n]/rho)
+    Sigma2[1:n,1:n] <- covFunLoop(dist[1:n,1:n], rho)
+    Sigma3[1:n,1:n] <- covFunVec(dist[1:n,1:n], rho)
+    
+    y[1, 1:n] ~ dmnorm(mu1[1:n], cov = Sigma1[1:n,1:n])
+    y[2, 1:n] ~ dmnorm(mu2[1:n], cov = Sigma2[1:n,1:n])
+    y[3, 1:n] ~ dmnorm(mu3[1:n], cov = Sigma3[1:n,1:n])
+
+    Q[1:n,1:n] <- inverse(Sigma1[1:n, 1:n])
+    y[4, 1:n] ~ dmnorm(mu4[1:n], Q[1:n,1:n])
+
+    Uprec[1:n, 1:n] <- chol(Q[1:n,1:n])
+    Ucov[1:n, 1:n] <- chol(Sigma1[1:n,1:n])
+    y[5, 1:n] ~ dmnorm(mu5[1:n], cholesky = Uprec[1:n,1:n], prec_param = 1)
+    y[6, 1:n] ~ dmnorm(mu6[1:n], cholesky = Ucov[1:n,1:n], prec_param = 0)
+    y[7, 1:n] ~ dGPdist(dist[1:n, 1:n], rho)
+    
+    mu1[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
+    mu2[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
+    mu3[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
+    mu4[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
+    mu5[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
+    mu6[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
+    rho ~ dgamma(2, 3)
+})
+
+
+n <- 5
+locs <- runif(n)
+dd <- fields::rdist(locs)
+model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, rho = rgamma(1, 1, 1),
+                                                                 z = rep(0, n), pr = diag(n)))
+model$simulate()
+model$calculate()
+model$setData('y')
+test_ADModelCalculate(model, name = 'reduced set of multivariate dists')
+
+## vectorized covariance matrix
+code <- nimbleCode({
+    Sigma1[1:n,1:n] <- exp(-dist[1:n,1:n]/rho)
+    y[1:n] ~ dmnorm(mu1[1:n], cov = Sigma1[1:n,1:n])
+    mu1[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
+    rho ~ dgamma(2, 3)
+})
+
+n <- 5
+locs <- runif(n)
+dd <- fields::rdist(locs)
+model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, rho = rgamma(1, 1, 1),
+                                                                 z = rep(0, n), pr = diag(n)))
+model$simulate()
+model$calculate()
+model$setData('y')
+test_ADModelCalculate(model, name = 'dmnorm with vectorized covariance matrix')
+## various major differences
+
+## vectorized covariance matrix, chol param
+code <- nimbleCode({
+    Sigma1[1:n,1:n] <- exp(-dist[1:n,1:n]/rho)
+    y[1, 1:n] ~ dmnorm(mu1[1:n], cov = Sigma1[1:n,1:n])
+    mu1[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
+    mu2[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
+    Ucov[1:n, 1:n] <- chol(Sigma1[1:n,1:n])
+    y[2, 1:n] ~ dmnorm(mu2[1:n], cholesky = Ucov[1:n,1:n], prec_param = 0)
+    rho ~ dgamma(2, 3)
+})
+
+n <- 5
+locs <- runif(n)
+dd <- fields::rdist(locs)
+model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, rho = rgamma(1, 1, 1),
+                                                                 z = rep(0, n), pr = diag(n)))
+model$simulate()
+model$calculate()
+model$setData('y')
+test_ADModelCalculate(model, name = 'dmnorm with vectorized covariance matrix, chol param')
+## various major differences
+
+## user-defined cov function with loops
+## see NCT issue 130
+code <- nimbleCode({
+    Sigma2[1:n,1:n] <- covFunLoop(dist[1:n,1:n], rho)
+    y[1:n] ~ dmnorm(mu2[1:n], cov = Sigma2[1:n,1:n])
+    mu2[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
+    rho ~ dgamma(2, 3)
+})
+
+
+n <- 5
+locs <- runif(n)
+dd <- fields::rdist(locs)
+model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, rho = rgamma(1, 1, 1),
+                                                                 z = rep(0, n), pr = diag(n)))
+model$simulate()
+model$calculate()
+model$setData('y')
+test_ADModelCalculate(model, name = 'dnorm with user-defined fxn for covariance with loops')
+
+## user-defined cov function vectorized
+code <- nimbleCode({
+    Sigma3[1:n,1:n] <- covFunVec(dist[1:n,1:n], rho)
+    y[1:n] ~ dmnorm(mu3[1:n], cov = Sigma3[1:n,1:n])
+    mu3[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
+    rho ~ dgamma(2, 3)
+})
+
+
+n <- 5
+locs <- runif(n)
+dd <- fields::rdist(locs)
+model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, rho = rgamma(1, 1, 1),
+                                                                 z = rep(0, n), pr = diag(n)))
+model$simulate()
+model$calculate()
+model$setData('y')
+test_ADModelCalculate(model, name = 'dnorm with user-defined vectorized fxn')
+
+## other dmnorm parameterizations
+code <- nimbleCode({
+    y[1, 1:n] ~ dmnorm(mu1[1:n], Q[1:n,1:n])
+
+    Uprec[1:n, 1:n] <- chol(Q[1:n,1:n])
+    Ucov[1:n, 1:n] <- chol(Sigma[1:n,1:n])
+    y[2, 1:n] ~ dmnorm(mu2[1:n], cholesky = Uprec[1:n,1:n], prec_param = 1)
+    y[3, 1:n] ~ dmnorm(mu3[1:n], cholesky = Ucov[1:n,1:n], prec_param = 0)
+    mu1[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
+    mu2[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
+    mu3[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
+})
+
+
+n <- 5
+locs <- runif(n)
+dd <- fields::rdist(locs)
+Sigma <- exp(-dd/0.1)
+model <- nimbleModel(code, constants = list(n = n), inits = list(z = rep(0, n), pr = diag(n),
+                                                                 Sigma = Sigma, Q = solve(Sigma)))
+model$simulate()
+model$calculate()
+model$setData('y')
+test_ADModelCalculate(model, name = 'various dmnorm parameterizations')
+
+## user-defined distribution
+code <- nimbleCode({ 
+    y[1:n] ~ dGPdist(dist[1:n, 1:n], rho)
+    rho ~ dgamma(2, 3)
+})
+
+
+n <- 5
+locs <- runif(n)
+dd <- fields::rdist(locs)
+model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, rho = rgamma(1, 1, 1)))
+model$simulate()
+model$calculate()
+model$setData('y')
+test_ADModelCalculate(model, name = 'user-defined distribution')
+## model fails to compile
+
 
 ## loop through BUGS models
 
@@ -464,7 +624,7 @@ test_ADModelCalculate(model, name = 'epil', order = c(0,1))
 ## now loop through BUGS models.
 ## figure out if need to simulate for any of these as we do above for 'epil'
 ## also will need to specify bugs,inits,data files by specific name in some cases where naming is non-standard
-examples <- c('epil', 'blocker', 'dyes', 'equiv', 'line', 'oxford', 'pump', 'rats', 'schools', 'dugongs', 'jaw', 'beetles')
+examples <- c('epil', 'dyes', 'equiv', 'line', 'oxford', 'pump', 'rats', 'schools', 'dugongs', 'jaw', 'beetles', 'blocker')
 bugsFile <- examples
 initsFile <- dataFile <- rep(NA, length(examples))
 names(bugsFile) <- names(initsFile) <- names(dataFile) <- examples
@@ -507,6 +667,7 @@ simulateNodes['jaw'] <- 'Omega'
 simulateNodes['kidney'] <- 'b'
 
 for(i in seq_along(examples)) {
+    cat("Testing ", examples[i], ".\n")
     if(is.na(initsFile[i])) tmpInits <- NULL else tmpInits <- initsFile[i]
     if(is.na(dataFile[i])) tmpData <- NULL else tmpData <- dataFile[i]
     model <- readBUGSmodel(model = bugsFile[i], inits = tmpInits, data = tmpData, useInits = TRUE,
@@ -514,21 +675,23 @@ for(i in seq_along(examples)) {
     if(!is.null(simulateNodes[[i]])) {
         model$simulate(simulateNodes[[i]])
     }
-    model$calculate()
+    out <- model$calculate()
     ## may need to just do jacobian for bigger models
     test_ADModelCalculate(model, name = bugsFile[i], order = 0:orders[i])
 }
 
 ## Issues:
-## epil: subscript out of bounds for case 14
-## blocker: somewhat large relative difference for Hessian
-## blocker is somewhat slow - omit Hessian?
 ## dyes: somewhat large relative difference for Hessian
 ## equiv: not-too-large relative difference for Hessian
-## line: large relative difference for gradient, Hessian
+## line: large relative difference for gradient, Hessian - gradient caused by redundant wrt nodes
 ## pump: moderately large relative difference for Hessian
-## oxford: subscript out of bounds for case 9
 ## schools: model won't compile because of Wishart
 ## dugongs: various major mismatches, including logprob
 ## jaw: model won't compile because of Wishart
 ## beetles: somehow gettign an NA in if(condition) somewhere
+## rats: really slow even with only order=1
+## blocker: somewhat large relative difference for Hessian
+## blocker is somewhat slow - omit Hessian?
+
+test_ADModelCalculate_internal(model, name = bugsFile[i], wrt = model$expandNodeNames('mu'), order = 1)
+

@@ -1389,8 +1389,9 @@ test_ADModelCalculate <- function(model, name = 'unknown', calcNodes = NULL, wrt
 
 ## test of a model with a single wrt arg
 test_ADModelCalculate_internal <- function(model, name = 'unknown', calcNodes = NULL, wrt = NULL, order = c(0,1,2), 
-                                  relTol = c(1e-15, 1e-6, 1e-3), verbose = TRUE, debug = FALSE){
+                                  relTol = c(1e-15, 1e-6, 1e-3), verbose = TRUE, uniqueWrt = TRUE, debug = FALSE){
     test_that(paste0("Derivatives of calculate for model ", name), {
+        if(exists('paciorek')) browser()
         if(is.null(calcNodes)) {
             useAllNodes <- TRUE
             calcNodes <- model$getNodeNames()
@@ -1403,7 +1404,9 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', calcNodes = 
         wrt <- model$expandNodeNames(wrt, unique = FALSE)
         discrete <- sapply(wrt, function(x) model$isDiscrete(x))
         wrt <- wrt[is.na(discrete) | !discrete]  # NAs from deterministic nodes, which in most cases should be continuous
-        
+	if(length(wrt)) {
+	if(uniqueWrt)	
+            wrt <- unique(wrt)
         
         ## Store current values before derivs changes them so we can check back if needed; not currently used.
         orig_rLP <- model$getLogProb()
@@ -1427,7 +1430,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', calcNodes = 
         if(2 %in% order)
             rOutput2 <- nimDerivs(cCalcNodes$run(), wrt = wrt, order = 2, calcNodes = calcNodes)
     
-        cOutput <- cDerivs$run(max(order))
+        cOutput <- cDerivs$run(max(order))  # this prints out '1' for some reason
 
         new_rVals <- values(model, calcNodes)
         new_cVals <- values(cModel, calcNodes)
@@ -1477,24 +1480,26 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', calcNodes = 
         expect_identical(new_rLP, correct_rLP, info = "mismatch in final uncompiled model logProb")
         expect_equal(new_cLP, correct_cLP, info = "mismatch in final compiled model logProb",
                      tolerance = relTol[1]*abs(new_cLP))
-        
+        }
     })
 }
 
 ## Makes random vectors of wrt elements, following James Duncan's code
-make_wrt <- function(argTypes, n_random = 10) {
+make_wrt <- function(argTypes, n_random = 10, allCombinations = FALSE) {
     ## always include each arg on its own, and all combinations of the args
     ## Note that for models with a large number of variables this might turn out to be too much.
-  wrts <- as.list(names(argTypes))
-  if (length(argTypes) > 1)
-    for (m in 2:length(argTypes)) {
-      this_combn <- combn(names(argTypes), m)
-      wrts <- c(
-        wrts,
-        unlist(apply(this_combn, 2, list), recursive = FALSE)
-      )
+    wrts <- as.list(names(argTypes))
+    if(allCombinations) {
+        if (length(argTypes) > 1)
+            for (m in 2:length(argTypes)) {
+                this_combn <- combn(names(argTypes), m)
+                wrts <- c(
+                    wrts,
+                    unlist(apply(this_combn, 2, list), recursive = FALSE)
+                )
+            }
     }
-
+    
   while (n_random > 0) {
     n_random  <- n_random - 1
     n <- sample(1:length(argTypes), 1) # how many of the args to use?
