@@ -216,7 +216,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
                     isEndNode <-  model$isEndNode(nodeIDs) ## isEndNode can be modified later to avoid adding names when input is IDs
                     if(useConjugacy) conjugacyResultsAll <- nimble:::conjugacyRelationshipsObject$checkConjugacy(model, nodeIDs) ## Later, this can go through model$checkConjugacy if we make it check whether nodes are already nodeIDs.  To isolate changes, I am doing it directly here.
                     nodeDeclIDs <- model$modelDef$maps$graphID_2_declID[nodeIDs] ## Below, nodeDeclIDs[i] gives the nodeDeclID.  We could add an interface to get this.
-                    nodeDeclID_2_nodeIDs <- split(nodeIDs, nodeDeclIDs)
+                    nodeDeclID_2_nodes <- split(nodes, nodeDeclIDs)
                     
                     uniqueNodeDeclIDs <- unique(nodeDeclIDs)
                     nodeTraits <- lapply(uniqueNodeDeclIDs,
@@ -233,9 +233,23 @@ print: A logical argument specifying whether to print the ordered list of defaul
                                              ## For nodeScalarComponents, we will check a single node
                                              ## We could use returnType = 'ids', but we have a warning generated in that case,
                                              ## for future investigation.
-                                             firstNodeID <- nodeDeclID_2_nodeIDs[[as.character(x)]][1]
-                                             nodeScalarComponents <- model$expandNodeNamesFromGraphIDs(firstNodeID, returnScalarComponents = TRUE)
-                                             nodeLength <- length(nodeScalarComponents)
+                                             
+                                             ## Determining nodeLength is a bit tricky.
+                                             ## The only purpose is to determine scalar vs. non-scalar.
+                                             ## In the future, we may want to make this available in distributionInfo.
+                                             ## A difficulty is whether it is possible to declare a scalar
+                                             ##     case of a multivariate node.
+                                             ## If so, then the status (scalar vs non-scalar) needs to be checked
+                                             ## node by node, not just once for the declaration.
+                                             ## Here we use a system that marks scalar as scalar.  The alternative is really
+                                             ## "maybe non-scalar", in which case it is checked node-by-node below.
+                                             ## Unfortunately, this processing works from nodeNames.
+                                             allNodeScalarComponents <- model$expandNodeNames(
+                                                                               nodeDeclID_2_nodes[[as.character(x)]],
+                                                                               returnScalarComponents = TRUE)
+                                             nodeLength <- if(length(allNodeScalarComponents) ==
+                                                              length(nodeDeclID_2_nodes[[as.character(x)]]))
+                                                               1 else 2 ## 2 indicates "maybe non-scalar"
                                              list(dist = dist,
                                                   discrete = discrete,
                                                   binary = binary,
@@ -267,6 +281,10 @@ print: A logical argument specifying whether to print the ordered list of defaul
                             binary <- model$getParamExpr(node, 'size') == 1
                         }
                         nodeLength <- nodeTrait$nodeLength
+                        if(nodeLength == 2) { ## code for "maybe non-scalar", so we check each one
+                            nodeScalarComponents <- model$expandNodeNames(node, returnScalarComponents = TRUE)
+                            nodeLength <- length(nodeScalarComponents)
+                        }
                     }
                     ## if node has 0 stochastic dependents, assign 'posterior_predictive' sampler (e.g. for predictive nodes)
                     if(isEndNode[i]) { addSampler(target = node, type = 'posterior_predictive');     next }
