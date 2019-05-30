@@ -1617,6 +1617,10 @@ findClusterNodes <- function(model, target) {
         }
     }
   }
+  for(varIdx in seq_along(clusterVars)) 
+      if(any(model$isDeterm(clusterNodes[[varIdx]])))
+          stop("findClusterNodes: detected that deterministic nodes are being clustered. Please use the dCRP node to cluster stochastic nodes.")
+
   return(list(clusterNodes = clusterNodes, clusterVars = clusterVars, nTilde = nTilde,
               targetIsIndex = targetIsIndex, indexPosition = indexPosition, indexExpr = indexExpr,
               numIndexes = numIndexes, targetIndexedByFunction = targetIndexedByFunction,
