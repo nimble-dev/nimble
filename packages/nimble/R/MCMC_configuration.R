@@ -615,7 +615,7 @@ Details: See the initialize() function
                 if(getNimbleOption('MCMCmonitorAllSampledNodes')) {
                     vars <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
                 } else {
-                    vars <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE, topOnly = TRUE)
+                    vars <- model$getNodeNames(stochOnly = TRUE, topOnly = TRUE)
                 }
             } else {
                 vars <- unlist(vars)
