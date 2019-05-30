@@ -203,12 +203,12 @@ sampler_toggled <- nimbleFunction(
 ###-------------------------------###
 #' Configure Reversible Jump sampler
 #'
-#' Modifies the \code{MCMCconf} object of a specific model to include a Reversible Jump MCMC sampler for variable selection using an univariate normal proposal distribution. Users can control the mean and scale of the proposal. This function supports two different type of model specifications: with and without indicator variables. 
+#' Modifies the \code{MCMCconf} object of a specific model to include a Reversible Jump MCMC sampler for variable selection using an univariate normal proposal distribution. Users can control the mean and scale of the proposal. This function supports two different types of model specification: with and without indicator variables. 
 #'
 #' @param mcmcConf An \code{MCMCconf} object.
 #' @param targetNodes A character vector, specifying the nodes and/or variables for which variable selection is to be performed. Nodes may be specified in their indexed form, \code{y[1, 3]}. Alternatively, nodes specified without indexing will be expanded fully, e.g., \code{x} will be expanded to \code{x[1]]}, \code{x[2]}, etc.  
 #' @param indicatorNodes An optional character vector, specifying the indicator nodes and/or variables paired with \code{targetNodes}. Nodes may be specified in their indexed form, \code{y[1, 3]}. Alternatively, nodes specified without indexing will be expanded fully, e.g., \code{x} will be expanded to \code{x[1]]}, \code{x[2]}, etc. Nodes must be provided consistently with \code{targetNodes} vector. See details.
-#' @param priorProb An optional numeric vector of prior probabilities for each node to be in the model. See details.
+#' @param priorProb An optional value or vector of prior probabilities for each node to be in the model. See details.
 #' @param control An optional list of control arguments:
 #' \itemize{
 #' \item mean. The mean of the normal proposal distribution (default = 0).
@@ -466,7 +466,6 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
           
         ## add coefficients to control
         nodeControl$targetNode <- nodeAsScalar[j]
-        
         
         currentConf <- mcmcConf$getSamplers(nodeAsScalar[j])
         
