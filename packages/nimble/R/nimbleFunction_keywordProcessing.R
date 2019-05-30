@@ -736,6 +736,9 @@ singleBracket_keywordInfo <- keywordInfoClass(
         if(is.null(nfProc)) return (code)
         class <- symTypeFromSymTab(code[[2]], nfProc$setupSymTab)
         if(class == 'symbolModelValues'){
+            if(length(code) < 4) {
+                stop(paste0("incorrect syntax for accessing element of modelValues: ", deparse(code)))
+            }
             singleMVAccess_ArgList <- list(code = code, modelValues = code[[2]], var = code[[3]], row = code[[4]])
             accessName <- singleModelValuesAccessor_SetupTemplate$makeName(singleMVAccess_ArgList)
             addNecessarySetupCode(accessName, singleMVAccess_ArgList, singleModelValuesAccessor_SetupTemplate, nfProc)
