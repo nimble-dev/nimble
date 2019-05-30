@@ -2,7 +2,7 @@ Package: nimble
 Title: MCMC, Particle Filtering, and Programmable Hierarchical Modeling
 Description: A system for writing hierarchical statistical models largely compatible with 'BUGS' and 'JAGS', writing nimbleFunctions to operate models and do basic R-style math, and compiling both models and nimbleFunctions via custom-generated C++.  'NIMBLE' includes default methods for MCMC, particle filtering, Monte Carlo Expectation Maximization, and some other tools.  The nimbleFunction system makes it easy to do things like implement new MCMC samplers from R, customize the assignment of samplers to different parts of a model from R, and compile the new samplers automatically via C++ alongside the samplers 'NIMBLE' provides.  'NIMBLE' extends the 'BUGS'/'JAGS' language by making it extensible: New distributions and functions can be added, including as calls to external compiled code.  Although most people think of MCMC as the main goal of the 'BUGS'/'JAGS' language for writing models, one can use 'NIMBLE' for writing arbitrary other kinds of model-generic algorithms as well.  A full User Manual is available at <https://r-nimble.org>.
 Version: 0.8.0
-Date: 2019-03-12
+Date: 2019-06-01
 Maintainer: Christopher Paciorek <paciorek@stat.berkeley.edu>
 Authors@R: c(
     person("Perry", "de Valpine", role = "aut"),
@@ -13,6 +13,7 @@ Authors@R: c(
     person("Fritz", "Obermeyer", role = "aut"),
     person("Claudia", "Wehrhahn Cortes", role = "aut", comment = "Bayesian nonparametrics system"),
     person("Abel", "Rodriguez", role = "aut", comment = "Bayesian nonparametrics system"),
+    person("Sally", "Paganin", role = "aut", comment = "reversible jump MCMC"),
     person("Jagadish", "Babu", role = "ctb", comment = "code for the compilation system for an early version of NIMBLE"),
     person("Lauren", "Ponisio", role = "ctb", comment = "contributions to the cross-validation code"),
     person("Peter", "Sujan", role = "ctb", comment = "multivariate t distribution code")
@@ -22,7 +23,7 @@ Depends:
 Imports:
     methods,igraph,coda,R6
 Suggests:
-    testthat,R2WinBUGS,rjags,rstan,xtable,abind,ggplot2
+    testthat
 URL: https://r-nimble.org
 SystemRequirements: GNU make
 License: BSD_3_clause + file LICENSE | GPL (>= 2)
@@ -112,8 +113,6 @@ Collate:
     MCMC_run.R
     MCMC_samplers.R
     MCMC_conjugacy.R
-    MCMC_suite.R
-    MCMC_comparisons.R
     MCMC_autoBlock.R
     MCEM_build.R
     crossValidation.R

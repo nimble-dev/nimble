@@ -5,7 +5,7 @@
 #' This class underlies all NIMBLE model objects: both R model objects created from the return value of nimbleModel(), and compiled model objects.
 #' The model object contains a variety of member functions, for providing information about the model structure, setting or querying properties of the model, or accessing various internal components of the model.
 #' These member functions of the modelBaseClass are commonly used in the body of the \code{setup} function argument to nimbleFunction(), to aid in preparation of node vectors, nimbleFunctionLists, and other runtime inputs.
-#' See documentation for \code{nimbleModel} for details of creating an R model object.
+#' See documentation for \code{\link{nimbleModel}} for details of creating an R model object.
 #' @author Daniel Turek
 #' @examples
 #' code <- nimbleCode({
@@ -400,12 +400,14 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                       if(determOnly)			validValues[modelDef$maps$types != 'determ']	<- FALSE
                                       if(stochOnly)			validValues[modelDef$maps$types != 'stoch']	<- FALSE
 
-                                      boolIsData <- rep(FALSE, length(modelDef$maps$graphIDs))
-                                      possibleDataIDs <- modelDef$maps$graphIDs[modelDef$maps$types == 'RHSonly' | modelDef$maps$types == 'stoch']
-                                      boolIsData[possibleDataIDs] <- isDataFromGraphID(possibleDataIDs)
-
-                                      if(!includeData)		        validValues[boolIsData] <- FALSE
-                                      if(dataOnly)			validValues[!boolIsData] <- FALSE
+                                      if(!includeData | dataOnly) {
+                                          boolIsData <- rep(FALSE, length(modelDef$maps$graphIDs))
+                                          possibleDataIDs <- modelDef$maps$graphIDs[modelDef$maps$types == 'RHSonly' | modelDef$maps$types == 'stoch']
+                                          boolIsData[possibleDataIDs] <- isDataFromGraphID(possibleDataIDs)
+                                          
+                                          if(!includeData)		        validValues[boolIsData] <- FALSE
+                                          if(dataOnly)			validValues[!boolIsData] <- FALSE
+                                      }
                                       if(topOnly)			validValues[-modelDef$maps$top_IDs] <- FALSE
                                       if(latentOnly)			validValues[-modelDef$maps$latent_IDs] <- FALSE
                                       if(endOnly)				validValues[-modelDef$maps$end_IDs] <- FALSE

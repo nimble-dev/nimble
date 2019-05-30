@@ -6,7 +6,8 @@
 \usage{
 buildMCEM(model, latentNodes, burnIn = 500, mcmcControl = list(adaptInterval
   = 100), boxConstraints = list(), buffer = 10^-6, alpha = 0.25,
-  beta = 0.25, gamma = 0.05, C = 0.001, numReps = 300, verbose = TRUE)
+  beta = 0.25, gamma = 0.05, C = 0.001, numReps = 300,
+  forceNoConstraints = FALSE, verbose = TRUE)
 }
 \arguments{
 \item{model}{a nimble model}
@@ -32,7 +33,9 @@ buildMCEM(model, latentNodes, burnIn = 500, mcmcControl = list(adaptInterval
 
 \item{numReps}{number of bootstrap samples to use for asymptotic variance calculation.}
 
-\item{verbose}{logical indicating whether to print additional logging information}
+\item{forceNoConstraints}{avoid any constraints even from parameter bounds implicit in the model structure (e.g., from dunif or dgamma distributions); setting this to TRUE might allow MCEM to run when the bounds of a parameter being maximized over depend on another parameter.}
+
+\item{verbose}{logical indicating whether to print additional logging information.}
 }
 \value{
 an R list with two elements:

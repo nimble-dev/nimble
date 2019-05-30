@@ -6,8 +6,9 @@
 \usage{
 configureMCMC(model, nodes, control = list(), monitors, thin = 1,
   monitors2 = character(), thin2 = 1, useConjugacy = TRUE,
-  onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
-  enableWAIC = nimbleOptions("enableWAIC"), print = FALSE,
+  onlyRW = FALSE, onlySlice = FALSE,
+  multivariateNodesAsScalars = getNimbleOption("MCMCmultivariateNodesAsScalars"),
+  enableWAIC = getNimbleOption("MCMCenableWAIC"), print = FALSE,
   autoBlock = FALSE, oldConf,
   rules = getNimbleOption("MCMCdefaultSamplerAssignmentRules"),
   warnNoSamplerAssigned = TRUE, ...)
@@ -45,7 +46,7 @@ The default value is an empty character vector, i.e. no values will be recorded.
 
 \item{multivariateNodesAsScalars}{A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided \code{useConjugacy == TRUE}), regardless of the value of this argument.}
 
-\item{enableWAIC}{A logical argument, specifying whether to enable WAIC calculations for the resulting MCMC algorithm.  Defaults to the value of \code{nimbleOptions('enableWAIC')}, which in turn defaults to FALSE.  Setting \code{nimbleOptions('enableWAIC' = TRUE)} will ensure that WAIC is enabled for all calls to \code{configureMCMC} and \code{buildMCMC}.}
+\item{enableWAIC}{A logical argument, specifying whether to enable WAIC calculations for the resulting MCMC algorithm.  Defaults to the value of \code{nimbleOptions('MCMCenableWAIC')}, which in turn defaults to FALSE.  Setting \code{nimbleOptions('enableWAIC' = TRUE)} will ensure that WAIC is enabled for all calls to \code{\link{configureMCMC}} and \code{\link{buildMCMC}}.}
 
 \item{print}{A logical argument, specifying whether to print the ordered list of default samplers.}
 
@@ -57,13 +58,13 @@ The default value is an empty character vector, i.e. no values will be recorded.
 
 \item{warnNoSamplerAssigned}{A logical argument, with default value TRUE.  This specifies whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule.}
 
-\item{...}{Additional named control list elements for default samplers, or additional arguments to be passed to the \code{autoBlock()} function when \code{autoBlock = TRUE}}
+\item{...}{Additional named control list elements for default samplers, or additional arguments to be passed to the \code{\link{autoBlock}} function when \code{autoBlock = TRUE}}
 }
 \description{
 Creates a defaut MCMC configuration for a given model.  The resulting object is suitable as an argument to \code{\link{buildMCMC}}. The assignment of sampling algorithms may be controlled using the \code{rules} argument, if provided.
 }
 \details{
-See \code{MCMCconf} for details on how to manipulate the \code{MCMCconf} object
+See \code{\link{MCMCconf}} for details on how to manipulate the \code{MCMCconf} object
 }
 \author{
 Daniel Turek

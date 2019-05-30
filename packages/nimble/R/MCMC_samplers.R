@@ -554,7 +554,7 @@ sampler_slice <- nimbleFunction(
         }
         if((R-L)/(abs(R)+abs(L)+eps) <= eps | numContractions == maxContractions) {
             if(maxContractionsWarning)
-                cat("Warning: slice sampler reached maximum number of contractions.\n")
+                cat("Warning: slice sampler reached maximum number of contractions for '", target, "'. Current parameter value is ", x0, ".\n")
             nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
         } else {
             nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)

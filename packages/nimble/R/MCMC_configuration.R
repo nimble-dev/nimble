@@ -258,8 +258,13 @@ print: A logical argument specifying whether to print the ordered list of defaul
                                         )
                     names(nodeTraits) <- as.character(uniqueNodeDeclIDs)
                 }
-                
+               
+                allDists <- unlist(lapply(model$modelDef$declInfo, `[[`, 'distributionName'))
+                allDists <- allDists[!is.na(allDists)]
+                check_dCRP <- any(allDists == "dCRP")
+              
                 clusterNodeInfo <- NULL; dcrpNode <- NULL; numCRPnodes <- 0
+
                 for(i in seq_along(nodes)) {
                     node <- nodes[i]
                     if(!useNewConfigureMCMC) {
@@ -337,13 +342,17 @@ print: A logical argument specifying whether to print the ordered list of defaul
                     if(discrete) { addSampler(target = node, type = 'slice');     next }
                     
                     ## if node distribution is dgamma and its dependency is dCRP, assign 'augmented_BetaGamma' sampler
-                    if(nodeDist == 'dgamma'){
-                      depNode <- model$getDependencies(node, self=FALSE)
-                      depNodeDist <- model$getDistribution(depNode)
-                      if(length(depNodeDist) == 1 && depNodeDist == 'dCRP'){
-                        addSampler(target = node, type = 'CRP_concentration')
-                        next
-                      }
+                    if(check_dCRP) {
+                        if(nodeDist == 'dgamma'){
+                            depNode <- model$getDependencies(node, self=FALSE)
+                            if(length(depNode) == 1) {
+                                depNodeDist <- model$getDistribution(depNode)
+                                if(!is.na(depNodeDist[1]) & depNodeDist[1] == 'dCRP'){  ## depNodeDist should be length 1
+                                    addSampler(target = node, type = 'CRP_concentration')
+                                    next
+                                }
+                            }
+                        }
                     }
                     
                     ## default: 'RW' sampler
@@ -686,7 +695,7 @@ Details: See the initialize() function
                 if(getNimbleOption('MCMCmonitorAllSampledNodes')) {
                     vars <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
                 } else {
-                    vars <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE, topOnly = TRUE)
+                    vars <- model$getNodeNames(stochOnly = TRUE, topOnly = TRUE)
                 }
             } else {
                 vars <- unlist(vars)
@@ -860,11 +869,19 @@ checkCRPconjugacy <- function(model, target) {
     ## because we don't allow cluster ID to appear in multiple declarations, so can't have mu[1] <- muTilde[xi[1]]; mu[2] <- exp(muTilde[xi[2]])
     if(length(clusterVarInfo$clusterVars) == 1) {  ## for now avoid case of mixing over multiple parameters, but allow dnorm_dinvgamma below
         clusterNodes <- clusterVarInfo$clusterNodes[[1]]  # e.g., 'thetatilde[1]',...,
+        ## Currently we only handle offsets and coeffs for dnorm case;
+        ## will add Pois-gamma and possibly MVN cases.
+        identityLink <- TRUE
         conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
+        if(!length(conjugacy) && model$getDistribution(clusterNodes[1]) == 'dnorm') {
+            identityLink <- FALSE
+            conjugacy <- model$checkConjugacy(clusterNodes[1])  ## check non-identity link too
+        }
         if(length(conjugacy)) {
-            conjugacyType <- paste0(conjugacy[[1]]$type, '_', sub('dep_', '', names(conjugacy[[1]]$control))) 
+            conjugacyType <- paste0(conjugacy[[1]]$type, '_', sub('dep_', '', names(conjugacy[[1]]$control)))
+            if(!identityLink)
+                conjugacyType <- paste0(conjugacyType, '_nonidentity')
             conjugate <- TRUE
-
             ## Check that dependent nodes ('observations') from same declaration.
             ## This should ensure they have same distribution and parameters are being
             ## clustered in same way, but also allows other parameters to vary, e.g.,
@@ -940,7 +957,7 @@ addRuleToCodeBlock <- function(oldCode, rule) {
 #' @export
 #' @description
 #' Objects of this class specify an ordered set of rules for assigning MCMC sampling algorithms to the stochastic nodes in a BUGS model.
-#' This feature can be enabled by setting the NIMBLE option \code{MCMCuseSamplerAssignmentRules} to \code{TRUE}.
+#' This feature can be enabled by setting \code{nimbleOptions(MCMCuseSamplerAssignmentRules = TRUE)}.
 #' The rules can be modified to alter under what circumstances various samplers are assigned, and with what precedence.
 #' When assigning samplers to each stochastic node, the set of rules is traversed beginning with the first, until a matching rule is found.
 #' When a matching rule is found, the sampler specified by that rule is assigned (or general code for sampler assignment is executed),
@@ -949,8 +966,8 @@ addRuleToCodeBlock <- function(oldCode, rule) {
 #' Objects of this class may be passed using the \code{rules} argument to \code{\link{configureMCMC}} to customize the sampler assignment process.
 #' See documentation below for method \code{initialize()} for details of creating a samplerAssignmentRules object, 
 #' and methods \code{addRule()} and \code{reorder()} for adding and modifying the sampler assignment rules.
-#' The default behaviour of \code{configureMCMC} can be modified by setting the nimble option \'MCMCsamplerAssignmentRules\' to a customized samplerAssignmentRules object.
-#' The default behaviour of \code{configureMCMC} can be restored using \code{nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())}.
+#' The default behaviour of \code{\link{configureMCMC}} can be modified by setting the nimble option \'MCMCsamplerAssignmentRules\' to a customized samplerAssignmentRules object.
+#' The default behaviour of \code{\link{configureMCMC}} can be restored using \code{nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())}.
 #' @author Daniel Turek
 #' @seealso \code{\link{configureMCMC}}
 #' @examples
@@ -1172,16 +1189,16 @@ nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
 #'@param onlyRW A logical argument, with default value FALSE.  If specified as TRUE, then Metropolis-Hastings random walk samplers (\link{sampler_RW}) will be assigned for all non-terminal continuous-valued nodes nodes. Discrete-valued nodes are assigned a slice sampler (\link{sampler_slice}), and terminal nodes are assigned a posterior_predictive sampler (\link{sampler_posterior_predictive}).
 #'@param onlySlice A logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes. Terminal nodes are still assigned a posterior_predictive sampler.
 #'@param multivariateNodesAsScalars A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided \code{useConjugacy == TRUE}), regardless of the value of this argument.
-#' @param enableWAIC A logical argument, specifying whether to enable WAIC calculations for the resulting MCMC algorithm.  Defaults to the value of \code{nimbleOptions('MCMCenableWAIC')}, which in turn defaults to FALSE.  Setting \code{nimbleOptions('enableWAIC' = TRUE)} will ensure that WAIC is enabled for all calls to \code{configureMCMC} and \code{buildMCMC}.
+#' @param enableWAIC A logical argument, specifying whether to enable WAIC calculations for the resulting MCMC algorithm.  Defaults to the value of \code{nimbleOptions('MCMCenableWAIC')}, which in turn defaults to FALSE.  Setting \code{nimbleOptions('enableWAIC' = TRUE)} will ensure that WAIC is enabled for all calls to \code{\link{configureMCMC}} and \code{\link{buildMCMC}}.
 #'@param rules An object of class samplerAssignmentRules, which governs the assigment of MCMC sampling algorithms to stochastic model nodes.  The default set of sampler assignment rules is specified by the nimble option \'MCMCdefaultSamplerAssignmentRules\'.
 #'@param warnNoSamplerAssigned A logical argument, with default value TRUE.  This specifies whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule.
 #'@param print A logical argument, specifying whether to print the ordered list of default samplers.
 #'@param autoBlock A logical argument specifying whether to use an automated blocking procedure to determine blocks of model nodes for joint sampling.  If TRUE, an MCMC configuration object will be created and returned corresponding to the results of the automated parameter blocking.  Default value is FALSE.
 #'@param oldConf An optional MCMCconf object to modify rather than creating a new MCMCconf from scratch
-#'@param ... Additional named control list elements for default samplers, or additional arguments to be passed to the \code{autoBlock()} function when \code{autoBlock = TRUE}
+#'@param ... Additional named control list elements for default samplers, or additional arguments to be passed to the \code{\link{autoBlock}} function when \code{autoBlock = TRUE}
 #'@author Daniel Turek
 #'@export 
-#'@details See \code{MCMCconf} for details on how to manipulate the \code{MCMCconf} object
+#'@details See \code{\link{MCMCconf}} for details on how to manipulate the \code{MCMCconf} object
 #'@seealso \code{\link{samplerAssignmentRules}} \code{\link{buildMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}
 configureMCMC <- function(model, nodes, control = list(), 
                           monitors, thin = 1, monitors2 = character(), thin2 = 1,
