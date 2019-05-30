@@ -225,17 +225,6 @@ sampler_toggled <- nimbleFunction(
 ###-------------------------------###
 ## configureRJ
 ###-------------------------------###
-## helper function to check node configuration (in case of multiple calls)
-nodeConfigurationCheck <- function(currentConf, node){
-  if(length(currentConf) == 0) {
-    warning(paste0("There are no samplers for ", node,". Skipping it."))
-  }
-  if(length(currentConf) > 1)
-    warning(paste0("There is more than one sampler for ", node,". Only the first will be toggled."))
-  ## TO CHECK THIS -- ALL SAMPLERS WILL BE REMOVED AND MODIFIED
-}
-
-
 #' Configure Reversible Jump sampler
 #'
 #' Modifies the \code{MCMCconf} object of a specific model to include a Reversible Jump MCMC sampler for variable selection using an univariate normal proposal distribution. Users can control the mean and scale of the proposal, and whether or not the proposal is strictly positive. This function supports two different type of model specifications: with and without indicator variables. 
@@ -449,7 +438,22 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
         currentConf <- mcmcConf$getSamplers(nodeAsScalar[j])
         
         ## check on node configuration
-        nodeConfigurationCheck(currentConf, nodeAsScalar[j])
+        if(length(currentConf) == 0) {
+          warning(paste0("There are no samplers for ", nodeAsScalar[j],". Skipping it."))
+          next
+        }
+        else if(any(sapply(currentConf, '[[', "name")  ==  "RJ" | sapply(currentConf, '[[', "name")  ==  "RJ_indicator")) {
+          ## check if there is already a RJ or RJ_indicator sampler assigned
+          stop(paste0("Node ", nodeAsScalar[j]," is already configure for reversible jump"))
+        }
+        else if(length(currentConf) > 1){
+          warning(paste0("There is more than one sampler for ", nodeAsScalar[j],". Only the first will be used by toggled sampler, and others will be removed."))
+        }
+
+
+
+
+    ##    nodeConfigurationCheck(currentConf, nodeAsScalar[j])
         
         ## substitute node sampler
         mcmcConf$removeSamplers(nodeAsScalar[j])
@@ -469,7 +473,7 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
     ## indicator
     ##---------------------------##
 
-    ## Check that indicatorNodes vector  match targetNodes length
+    ## Check that indicatorNodes vector match targetNodes length
     if(length(indicatorNodes) != nNodes){ 
       stop("Length of indicatorNodes vector must match targetNodes length")
     }
@@ -498,7 +502,17 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
         currentConf <- mcmcConf$getSamplers(nodeAsScalar[j])
         
         ## check on node configuration
-        nodeConfigurationCheck(currentConf, nodeAsScalar[j])
+        if(length(currentConf) == 0) {
+          warning(paste0("There are no samplers for ", nodeAsScalar[j],". Skipping it."))
+          next
+        }
+        else if(any(sapply(currentConf, '[[', "name")  ==  "RJ" | sapply(currentConf, '[[', "name")  ==  "RJ_indicator")) {
+          ## check if there is already a RJ or RJ_indicator sampler assigned
+          stop(paste0("Node ", nodeAsScalar[j]," is already configure for reversible jump"))
+        }
+        else if(length(currentConf) > 1){
+          warning(paste0("There is more than one sampler for ", nodeAsScalar[j],". Only the first will be used by toggled sampler, and others will be removed."))
+        }
         
         ## Add reversible jump sampler for the indicatorNodes variable
         mcmcConf$removeSamplers(indicatorsAsScalar[j])
