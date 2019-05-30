@@ -708,7 +708,7 @@ indicatorModelConf$printSamplers()
 
 A `RJ_indicator` sampler is assigned to `z[1]` and `z[2]` in place of the `binary` sampler, while sampler for `beta[1]`and `beta[2]` have been changed with `toggled` that still uses the default `conjugate_dnorm_dnorm` sampler but only when the corresponding indicator variable is equal to $1$. The two `RJ_indicator` samplers have different means for the proposal distribution and same scale, as given in the `control` list of `configureRJ`.
 
-Notice that the order of the sampler has changed, since `configureRJ` calls `removeSampler` for nodes in `targetNodes` and samplers and subsequently `addSampler`, which appends the sampler to the end of current sampler list. Order can be modified by using `setSamplers` (see Section 7.2.2.6 (p. 75 of the user Manual - ref to add)).
+Notice that the order of the sampler has changed, since `configureRJ` calls `removeSampler` for nodes in `targetNodes` and `indicatorNodes`, and subsequently `addSampler`, which appends the sampler to the end of current sampler list. Order can be modified by using `setSamplers` (see Section 7.2.2.6 (p. 75 of the user Manual - ref to add)).
 
 ### No indicator variables
 
