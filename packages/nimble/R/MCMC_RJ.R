@@ -30,9 +30,9 @@ sampler_RJ <- nimbleFunction(
     ## 4 - fixedValue (default 0)
     
     proposalScale <- control$scale
-    proposalMean <- control$mean
-    positive <- control$positive
-    fixedValue <- control$fixedValue
+    proposalMean  <- control$mean
+    positive      <- control$positive
+    fixedValue    <- control$fixedValue
     
     ## precompute ratio between prior probabilities
     logRatioProbFixedOverProbNotFixed <- log(control$priorProb) - log(1-control$priorProb)
@@ -124,10 +124,10 @@ sampler_RJ_indicator <- nimbleFunction(
     ## 2 - mean of proposal jump distribution  (default 0)
     ## 3 - sd of proposal jump distribution  (default 1)
     
-    coefNode <- control$targetNode
+    coefNode      <- control$targetNode
     proposalScale <- control$scale
-    proposalMean <- control$mean
-    positive <- control$positive
+    proposalMean  <- control$mean
+    positive      <- control$positive
     
     ## model with coefficient included
     calcNodes <- model$getDependencies(c(coefNode, target))
@@ -369,20 +369,7 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
   mean              <- if(!is.null(control$mean))              control$mean             else 0
   scale             <- if(!is.null(control$scale))             control$scale            else 1
   positive          <- if(!is.null(control$positive))          control$positive         else FALSE
-  
-  
-  ## if one value is provided for one element of the list, this value is repeated if there are multiple nodes
-  # fixedValue        <- if(length(fixedValue) == 1L & nNodes > 1L)       rep(fixedValue, nNodes)       else fixedValue
-  # mean              <- if(length(mean) == 1L & nNodes > 1L)             rep(mean, nNodes)             else mean
-  # scale             <- if(length(scale) == 1L & nNodes > 1L)            rep(scale, nNodes)            else scale
-  # positive  <- if(length(positive) == 1L & nNodes > 1L) rep(positive, nNodes) else positive
-  # 
-  ## above set of checks paired with this check
-  # ## Check that RJ control arguments match targetNodes length
-  # if(any(lengths(list(fixedValue, mean, scale, positive)) != nNodes)){
-  #   stop("Arguments in control list must be of length 1 or match targetNodes vector length")
-  # }
-  
+    
   ## more defensive version
   if(length(fixedValue) != nNodes) {
     if(length(fixedValue) == 1) fixedValue <- rep(fixedValue, nNodes) else stop('inconsistent length of fixedValue argument and specified number of RJ targetNodes')
@@ -453,11 +440,6 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
           warning(paste0("There is more than one sampler for ", nodeAsScalar[j],". Only the first will be used by toggled sampler, and others will be removed."))
         }
 
-
-
-
-    ##    nodeConfigurationCheck(currentConf, nodeAsScalar[j])
-        
         ## substitute node sampler
         mcmcConf$removeSamplers(nodeAsScalar[j])
         mcmcConf$addSampler(type = sampler_RJ,
@@ -526,12 +508,9 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
         ## Add sampler for the coefficient variable (when is in the model)
         mcmcConf$removeSamplers(nodeAsScalar[j])
         
-        # mcmcConf$addSampler(type = sampler_toggled,
-        #                     target = nodeAsScalar[j],
-        #                     control = list(samplerConf = currentConf[[1]], fixedValue = 0)) ## fixedValue is actually not used by sampler_RJ_indicator but passed because of how toggled_sampler is written
         mcmcConf$addSampler(type = sampler_toggled,
                             target = nodeAsScalar[j],
-                            control = list(samplerConf = currentConf[[1]])) ## fixedValue is actually not used by sampler_RJ_indicator but passed because of how toggled_sampler is written
+                            control = list(samplerConf = currentConf[[1]])) 
       }  
         
     }
