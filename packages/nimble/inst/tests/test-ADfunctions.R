@@ -895,14 +895,16 @@ distn_base = list(
 
   args = list(
     ##
-    ## the support arg must be included
+    ## the rand_variate arg must be included
     ##
-    support = list( ## TODO: better naming convention
+    rand_variate = list( ## TODO: better naming convention
       ##
-      ## distn is a function that should generate a number
-      ## on the support, uniformly at random when possible.
-      ## See the definition of binom for an example where
-      ## the support depends on one of the other args.
+      ## distn is a function that should generate a number on the support,
+      ## or return a function that uses the other args to generate random
+      ## variates from this distribution. In the latter case, the formals of the
+      ## returned function should be from among the other arg names. See the
+      ## definition of binom for an example of how to use the parameters of the
+      ## distribution.
       distn = NULL,
       ##
       ## The type field is required for all args.
@@ -950,13 +952,13 @@ distn_params <- list()
 distn_params[['binom_base']] <- distn_base
 distn_params[['binom_base']]$name <- 'binom'
 distn_params[['binom_base']]$args <- list(
-  support = list(
+  rand_variate = list(
     ##
     ## `size` here refers to the size parameter of the binomial distribution.
     ## Since the support depends on a parameter, return a function which
     ## test_AD will use with the realized value of the parameter `size`.
     ##
-    distn = function(n) function(size) sample(1:size, n, replace = TRUE),
+    distn = function(n) function(size, prob) rbinom(n, size, prob, replace = TRUE),
     type = c('double(0)', 'double(1, 5)')
   ),
   size = list(
@@ -977,7 +979,7 @@ distn_params[['binom_base']]$wrt <- c('prob')
 distn_params[['cat_base']] <- distn_base
 distn_params[['cat_base']]$name <- 'cat'
 distn_params[['cat_base']]$args <- list(
-  support = list(
+  rand_variate = list(
     ## support depends on k = length(prob)
     distn = function(n) function(prob) sample(1:length(prob), n, replace = TRUE),
     type = c('double(0)')
@@ -997,7 +999,7 @@ distn_params[['cat_base']]$wrt <- c('prob')
 distn_params[['multi_no_size']] <- distn_base
 distn_params[['multi_no_size']]$name <- 'multi'
 distn_params[['multi_no_size']]$args <- list(
-  support = list(
+  rand_variate = list(
     distn = function(n) sample(1:10, n, replace = TRUE),
     type = c('double(1, 5)')
   ),
@@ -1010,7 +1012,7 @@ distn_params[['multi_no_size']]$wrt = c('prob')
 
 ## including size
 distn_params[['multi_with_size']] <- distn_params[['multi_no_size']]
-distn_params[['multi_with_size']]$args[['support']]$distn <-
+distn_params[['multi_with_size']]$args[['rand_variate']]$distn <-
   function(n) function(size, prob) nimble::rmulti(n = 1, size, prob)
 distn_params[['multi_with_size']]$args[['size']]  <- list(
   distn = function(n) sample(1:1000, n, replace = TRUE),
@@ -1024,12 +1026,12 @@ distn_params[['multi_with_size']]$args[['size']]  <- list(
 distn_params[['nbinom_base']] <- distn_base
 distn_params[['nbinom_base']]$name <- 'nbinom'
 distn_params[['nbinom_base']]$args <- list(
-  support = list(
-    distn = function(n) sample(0:100, n, replace = TRUE),
+  rand_variate = list(
+    distn = function(n) function(size, prob) rnbinom(n, size, prob),
     type = c('double(0)', 'double(1, 5)')
   ),
   size = list(
-    distn = function(n) runif(n, max = 1000),
+    distn = function(n) runif(n, max = 100),
     type = c('double(0)', 'double(1, 3)')
   ),
   prob = list(
@@ -1046,12 +1048,12 @@ distn_params[['nbinom_base']]$wrt <- c('size', 'prob')
 distn_params[['pois_base']] <- distn_base
 distn_params[['pois_base']]$name <- 'pois'
 distn_params[['pois_base']]$args <- list(
-  support = list(
-    distn = function(n) sample(0:100, n, replace = TRUE),
+  rand_variate = list(
+    distn = function(n) function(lambda) rpois(n, lambda),
     type = c('double(0)', 'double(1, 5)')
   ),
   lambda = list(
-    distn = function(n) runif(n, max = 1000),
+    distn = function(n) runif(n, max = 100),
     type = c('double(0)', 'double(1, 3)')
   )
 )
@@ -1064,16 +1066,16 @@ distn_params[['pois_base']]$wrt <- c('lambda')
 distn_params[['beta_base']] <- distn_base
 distn_params[['beta_base']]$name <- 'beta'
 distn_params[['beta_base']]$args <- list(
-  support = list(
-    distn = function(n) runif(n),
+  rand_variate = list(
+    distn = function(n) function(shape1, shape2) rbeta(n, shape1, shape2),
     type = c('double(0)', 'double(1, 5)')
   ),
   shape1 = list(
-    distn = function(n) runif(n, max = 1000),
+    distn = function(n) runif(n, max = 10),
     type = c('double(0)', 'double(1, 3)')
   ),
   shape2 = list(
-    distn = function(n) runif(n, max = 1000),
+    distn = function(n) runif(n, max = 10),
     type = c('double(0)', 'double(1, 7)')
   )
 )
@@ -1086,12 +1088,12 @@ distn_params[['beta_base']]$wrt <- c('shape1', 'shape2', 'x')
 distn_params[['chisq_base']] <- distn_base
 distn_params[['chisq_base']]$name <- 'chisq'
 distn_params[['chisq_base']]$args <- list(
-  support = list(
-    distn = function(n) runif(n, max = 1000),
+  rand_variate = list(
+    distn = function(n) function(df) rchisq(n, df),
     type = c('double(0)', 'double(1, 5)')
   ),
   df = list(
-    distn = function(n) sample(1:100, n),
+    distn = function(n) runif(n, max = 100),
     type = c('double(0)', 'double(1, 3)')
   )
 )
@@ -1107,12 +1109,12 @@ distn_params[['chisq_base']]$wrt <- c('x')
 dexp_base <- distn_base
 dexp_base$name <- 'dexp'
 dexp_base$args <- list(
-  support = list(
-    distn = function(n) runif(n, min = -1000, max = 1000),
+  rand_variate = list(
+    distn = function(n) runif(n, min = -10, max = 10),
     type = c('double(0)', 'double(1, 5)')
   ),
   location = list(
-    distn = function(n) runif(n, min = -1000, max = 1000),
+    distn = function(n) runif(n, min = -10, max = 10),
     type = c('double(0)', 'double(1, 3)')
   )
 )
@@ -1121,7 +1123,7 @@ dexp_base$wrt <- c('location', 'x')
 ## scale parameterization
 distn_params[['dexp_scale']] <- dexp_base
 distn_params[['dexp_scale']]$args[['scale']] <- list(
-  distn = function(n) runif(n, max = 1000),
+  distn = function(n) runif(n, max = 10),
   type = c('double(0)', 'double(1, 7)')
 )
 distn_params[['dexp_scale']]$wrt <- c(dexp_base$wrt, 'scale')
@@ -1138,8 +1140,7 @@ distn_params[['dexp_rate']]$wrt <- c(dexp_base$wrt, 'rate')
 
 exp_base <- distn_base
 exp_base$args = list(
-  support = list(
-    distn = function(n) runif(n, max = 1000),
+  rand_variate = list(
     type = c('double(0)')
   )
 )
@@ -1148,29 +1149,30 @@ exp_base$wrt <- c('x')
 ## base R version
 distn_params[['exp_R']] <- exp_base
 distn_params[['exp_R']]$name <- 'exp'
+distn_params[['exp_R']]$args[['rand_variate']]$distn <- function(n) {
+  function(rate) rexp(n, rate)
+}
 distn_params[['exp_R']]$args[['rate']] = list(
-  distn = function(n) runif(n, max = 1000),
+  distn = function(n) runif(n, max = 100),
   type = c('double(0)', 'double(1, 3)')
 )
 distn_params[['exp_R']]$wrt <- c(exp_base$wrt, 'rate')
 
+## NIMBLE version, rate parameterization
+distn_params[['exp_nimble_rate']] <- distn_params[['exp_R']]
+distn_params[['exp_nimble_rate']]$name <- 'exp_nimble'
+
 ## NIMBLE version, scale parameterization
 distn_params[['exp_nimble_scale']] <- exp_base
 distn_params[['exp_nimble_scale']]$name <- 'exp_nimble'
+distn_params[['exp_nimble_scale']]$args[['rand_variate']]$distn <- function(n) {
+  function(rate) rexp(n, 1/scale)
+}
 distn_params[['exp_nimble_scale']]$args[['scale']]  <- list(
-  distn = function(n) runif(n, max = 1000),
+  distn = function(n) runif(n, max = 10),
   type = c('double(0)', 'double(1, 3)')
 )
 distn_params[['exp_nimble_scale']]$wrt <- c(exp_base$wrt, 'scale')
-
-## NIMBLE version, rate parameterization
-distn_params[['exp_nimble_rate']] <- exp_base
-distn_params[['exp_nimble_rate']]$name <- 'exp_nimble'
-distn_params[['exp_nimble_rate']]$args[['rate']]  <- list(
-  distn = function(n) runif(n, max = 1000),
-  type = c('double(0)', 'double(1, 3)')
-)
-distn_params[['exp_nimble_rate']]$wrt <- c(exp_base$wrt, 'rate')
 
 ##
 ## Gamma distribution
@@ -1183,20 +1185,28 @@ distn_params[['gamma_rate']] <- distn_params[['exp_nimble_rate']]
 distn_params[['gamma_scale']]$name <-
   distn_params[['gamma_rate']]$name <- 'gamma'
 
-## add the scale arg
+## add the shape parameter
 distn_params[['gamma_scale']]$args[['shape']] <-
   distn_params[['gamma_rate']]$args[['shape']] <- list(
-    distn = function(n) runif(n, max = 1000),
+    distn = function(n) runif(n, max = 10),
     type = c('double(0)', 'double(1, 7)')
   )
 
-## add scale arg to wrt
+## add shape arg to wrt
 distn_params[['gamma_scale']]$wrt <- c(
   distn_params[['gamma_scale']]$wrt, 'shape'
 )
 distn_params[['gamma_rate']]$wrt <- c(
   distn_params[['gamma_rate']]$wrt, 'shape'
 )
+
+## change how random variates are generated
+distn_params[['gamma_rate']]$args[['rand_variate']]$distn <- function(n) {
+  function(shape, rate) rgamma(n, shape, rate)
+}
+distn_params[['gamma_scale']]$args[['rand_variate']]$distn <- function(n) {
+  function(shape, scale) rgamma(n, shape, scale=scale)
+}
 
 ##
 ## Inverse Gamma distribution
@@ -1225,16 +1235,16 @@ distn_params[['sqrtinvgamma_scale']]$name <-
 distn_params[['lnorm_base']] <- distn_base
 distn_params[['lnorm_base']]$name <- 'lnorm'
 distn_params[['lnorm_base']]$args <- list(
-  support = list(
-    distn = function(n) runif(n, max = 1000),
+  rand_variate = list(
+    distn = function(n) function(meanlog, sdlog) rlnorm(n, meanlog, sdlog),
     type = c('double(0)', 'double(1, 5)')
   ),
   meanlog = list(
-    distn = function(n) runif(n, min = -1000, max = 1000),
+    distn = function(n) runif(n, min = -100, max = 100),
     type = c('double(0)', 'double(1, 3)')
   ),
   sdlog = list(
-    distn = function(n) runif(n, max = 1000),
+    distn = function(n) runif(n, max = 100),
     type = c('double(0)', 'double(1, 7)')
   )
 )
@@ -1246,6 +1256,10 @@ distn_params[['lnorm_base']]$wrt <- c('meanlog', 'sd', 'x')
 
 distn_params[['logis_base']] <- distn_params[['dexp_scale']]
 distn_params[['logis_base']]$name <- 'logis'
+distn_params[['logis_base']]$args[['rand_variate']]$distn <- function(n) {
+  function(location, scale) rlogis(n, location, scale)
+}
+
 
 ##
 ## Normal distribution
@@ -1253,18 +1267,18 @@ distn_params[['logis_base']]$name <- 'logis'
 
 distn_params[['norm_base']] <- distn_base
 distn_params[['norm_base']]$name <- 'norm'
-distn_params[['norm_base']]$variants = c('d', 'p', 'q')
+distn_params[['norm_base']]$variants = c('d')
 distn_params[['norm_base']]$args <- list(
-  support = list(
-    distn = function(n) runif(n, min = -1000, max = 1000),
+  rand_variate = list(
+    distn = function(n) function(mean, sd) rnorm(n, mean, sd),
     type = c('double(0)', 'double(1, 5)')
   ),
   mean = list(
-    distn = function(n) runif(n, min = -1000, max = 1000),
+    distn = function(n) runif(n, min = -100, max = 100),
     type = c('double(0)', 'double(1, 3)')
   ),
   sd = list(
-    distn = function(n) runif(n, max = 1000),
+    distn = function(n) runif(n, max = 10),
     type = c('double(0)', 'double(1, 7)')
   )
 )
@@ -1277,11 +1291,8 @@ distn_params[['norm_base']]$wrt <- c('mean', 'sd', 'x')
 ## usual R version
 distn_params[['t_R']] <- distn_params[['chisq_base']]
 distn_params[['t_R']]$name <- 't'
-distn_params[['t_R']]$args[['support']]$distn <-
-  function(n) runif(n, min = -1000, max = 1000)
-
-distn_params[['t_R']]$args[['df']]$distn <- function(n) runif(n, max = 1000)
-distn_params[['t_R']]$wrt <- c(distn_params[['t_base']]$wrt, 'df')
+distn_params[['t_R']]$args[['rand_variate']]$distn <-
+  function(n) function(df) rt(n, df)
 
 ## non-standard version
 distn_params[['t_nonstandard']] <- distn_params[['t_R']]
@@ -1297,6 +1308,10 @@ distn_params[['t_nonstandard']]$wrt <- c(
   distn_params[['t_nonstandard']]$wrt, 'mu', 'sigma'
 )
 
+distn_params[['t_nonstandard']]$args[['rand_variate']]$distn <- function(n) {
+  function(mu, sigma) rnorm(n, mu, sigma)
+}
+
 ##
 ## Uniform distribution
 ##
@@ -1305,7 +1320,7 @@ distn_params[['unif_base']] <- distn_base
 distn_params[['unif_base']]$name <- 'unif'
 
 distn_params[['unif_base']]$args <- list(
-  support = list(
+  rand_variate = list(
     distn = function(n) function(min, max) runif(n, min, max),
     type = c('double(0)', 'double(1, 5)')
   ),
@@ -1326,6 +1341,9 @@ distn_params[['unif_base']]$wrt <- c('min', 'max', 'x')
 
 distn_params[['weibull_base']] <- distn_params[['gamma_scale']]
 distn_params[['weibull_base']]$name <- 'weibull'
+distn_params[['weibull_base']]$args[['rand_variate']]$distn <- function(n) {
+  function(shape, scale) rweibull(n, shape, scale)
+}
 
 ##
 ## Dirichlet distribution
@@ -1334,7 +1352,7 @@ distn_params[['weibull_base']]$name <- 'weibull'
 distn_params[['dirch_base']] <- distn_base
 distn_params[['dirch_base']]$name <- 'dirch'
 distn_params[['dirch_base']]$args <- list(
-  support = list(
+  rand_variate = list(
     distn = function(n) {prob <- runif(n); prob/sum(prob)},
     type = c('double(1, 5)')
   ),
@@ -1359,7 +1377,7 @@ chol_base$args <- list(
 
 distn_params[['mnorm_chol_base']] <- chol_base
 distn_params[['mnorm_chol_base']]$name <- 'mnorm_chol'
-distn_params[['mnorm_chol_base']]$args[['support']] <- list(
+distn_params[['mnorm_chol_base']]$args[['rand_variate']] <- list(
   distn = function(n) function(mean, cholesky)
     rmnorm_chol(n = 1, mean, cholesky),
   type = c('double(1, 5)')
@@ -1376,7 +1394,7 @@ distn_params[['mnorm_chol_base']]$wrt <- c('mean', 'cholesky', 'x')
 
 distn_params[['mvt_chol_base']] <- chol_base
 distn_params[['mvt_chol_base']]$name <- 'mvt_chol'
-distn_params[['mvt_chol_base']]$args[['support']] <- list(
+distn_params[['mvt_chol_base']]$args[['rand_variate']] <- list(
   distn = function(n) function(mu, cholesky, df)
     rmvt_chol(n = 1, mu, cholesky, df),
   type = c('double(1, 5)')
@@ -1397,7 +1415,7 @@ distn_params[['mvt_chol_base']]$wrt <- c('mu', 'cholesky', 'x')
 
 distn_params[['wish_chol_base']] <- chol_base
 distn_params[['wish_chol_base']]$name <- 'wish_chol'
-distn_params[['wish_chol_base']]$args[['support']] <- list(
+distn_params[['wish_chol_base']]$args[['rand_variate']] <- list(
   distn = function(n) function(cholesky, df)
     rwish_chol(n = 1, cholesky, df),
   type = c('double(1, 5)')
@@ -1416,7 +1434,7 @@ distn_params[['wish_chol_base']]$wrt <- c('cholesky', 'x')
 ##              - name
 ##              - variants
 ##              - args
-##                - support
+##                - rand_variate
 ##                  - type
 ##              Additional args must also have distn and type fields.
 ## more_args:   Passed to make_op_param().
@@ -1425,41 +1443,41 @@ make_distribution_fun_AD_test <- function(distn_param) {
   distn_name <- distn_param$name
   ops <- sapply(distn_param$variants, paste0, distn_name, simplify = FALSE)
 
-  support_idx <- which(names(distn_param$args) == 'support')
+  rand_variate_idx <- which(names(distn_param$args) == 'rand_variate')
 
   argTypes <- sapply(distn_param$variants, function(variant) {
     op <- paste0(variant, distn_name)
-    support_type <- distn_param$args$support$type
+    rand_variate_type <- distn_param$args$rand_variate$type
     first_argType <- switch(
       variant,
-      d = support_type,
-      p = support_type,
+      d = rand_variate_type,
+      p = rand_variate_type,
       q = c('double(0)')##, 'double(1, 4)')
     )
     first_arg_name <- switch(variant, d = 'x', p = 'q', q = 'p')
     ## need this complicated expand.grid call here because the argTypes might be
-    ## character vectors (e.g. if support_type is c("double(0)", "double(1, 4)")
+    ## character vectors (e.g. if rand_variate_type is c("double(0)", "double(1, 4)")
     ## then we create a test where we sample a scalar from the support and
     ## another where we sample a vector of length 4 from the support
     grid <- eval(as.call(c(
       expand.grid, list(first_argType),
-      lapply(distn_param$args, `[[`, 'type')[-support_idx]
+      lapply(distn_param$args, `[[`, 'type')[-rand_variate_idx]
     )))
     argTypes <- as.list(data.frame(t(grid), stringsAsFactors=FALSE))
     lapply(argTypes, function(v) {
       names(v) <- c(
         first_arg_name,
-        names(distn_param$args[-support_idx])
+        names(distn_param$args[-rand_variate_idx])
       )
       v
     })
   }, simplify = FALSE)
-  param_distns <- lapply(distn_param$args[-support_idx], `[[`, 'distn')
+  param_distns <- lapply(distn_param$args[-rand_variate_idx], `[[`, 'distn')
   arg_distns <- sapply(distn_param$variants, function(variant) {
     arg1_distn <- switch(
       variant,
-      d = list(x = distn_param$args$support$distn),
-      p = list(q = distn_param$args$support$distn),
+      d = list(x = distn_param$args$rand_variate$distn),
+      p = list(q = distn_param$args$rand_variate$distn),
       q = list(p = runif)
     )
     c(arg1_distn, param_distns)
