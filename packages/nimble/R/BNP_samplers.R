@@ -422,6 +422,7 @@ sampler_CRP_concentration <- nimbleFunction(
 CRP_helper <- nimbleFunctionVirtual(
   methods = list(
     storeParams = function() { },   ## parameters of base measure, which for conjugate cases should be the same for all clusters
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {  ## calculate prior predictive for new cluster for conjugate cases
       returnType(double())
     },
@@ -445,6 +446,7 @@ CRP_nonconjugate <- nimbleFunction(
   },
   methods = list(
     storeParams = function() {},  ## nothing needed for non-conjugate
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       return(model$getLogProb(dataNodes[i]))
@@ -486,6 +488,7 @@ CRP_conjugate_dnorm_dnorm <- nimbleFunction(
       priorMean <<- model$getParam(marginalizedNodes[1], 'mean')
       priorVar <<- model$getParam(marginalizedNodes[1], 'var')
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       dataVar <- model$getParam(dataNodes[i], 'var')
@@ -497,6 +500,68 @@ CRP_conjugate_dnorm_dnorm <- nimbleFunction(
       y <- values(model, dataNodes[i])[1]
       postVar <- 1 / (1 / dataVar + 1 / priorVar)
       postMean <- postVar * (y / dataVar + priorMean / priorVar)
+      values(model, marginalizedNodes[j]) <<- c(rnorm(1, postMean, sqrt(postVar)))
+    }
+  )
+)
+
+CRP_conjugate_dnorm_dnorm_nonidentity <- nimbleFunction(
+  name = "CRP_conjugate_dnorm_dnorm_nonidentity",
+  contains = CRP_helper,
+  setup = function(model, marginalizedNodes, dataNodes, intermNodes, intermNodes2, intermNodes3, nInterm, calcNodes, type, p, nTilde) {
+    priorMean <- nimNumeric(1)
+    priorVar <- nimNumeric(1)
+    offset <- nimNumeric(1)
+    coeff <- nimNumeric(1)
+  },
+  methods = list(
+    storeParams = function() {
+      priorMean <<- model$getParam(marginalizedNodes[1], 'mean')
+      priorVar <<- model$getParam(marginalizedNodes[1], 'var')
+    },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {
+        ## In mean of observation, determine a,b in 'a + b*mu[xi[i]]'.
+        currentValue <- values(model, marginalizedNodes[j])  
+        values(model, marginalizedNodes[j]) <<- c(0)
+        if(type == 'indivCalcs') {
+            if(nInterm >= 1) model$calculate(intermNodes[i])
+            if(nInterm >= 2) model$calculate(intermNodes2[i])
+            if(nInterm >= 3) model$calculate(intermNodes3[i])
+            model$calculate(dataNodes[i])
+        } else model$calculate(calcNodes) 
+        offset <<- model$getParam(dataNodes[i], 'mean')
+        values(model, marginalizedNodes[j]) <<- c(1)
+        if(type == 'indivCalcs') {
+            if(nInterm >= 1) model$calculate(intermNodes[i])
+            if(nInterm >= 2) model$calculate(intermNodes2[i])
+            if(nInterm >= 3) model$calculate(intermNodes3[i])
+            model$calculate(dataNodes[i])
+        } else model$calculate(calcNodes)             
+        coeff <<- model$getParam(dataNodes[i], 'mean') - offset
+        values(model, marginalizedNodes[j]) <<- currentValue
+        ## Note as this is currently used, we do not need to update
+        ## the intermediate nodes or dataNodes logProb as
+        ## ordering of calculations in sampler_CRP does not require it because of
+        ## 1:1 mapping of cluster IDs to observations.
+        ## However, to reduce change of future bugs, we are updating here.
+        if(type == 'indivCalcs') {
+            if(nInterm >= 1) model$calculate(intermNodes[i])
+            if(nInterm >= 2) model$calculate(intermNodes2[i])
+            if(nInterm >= 3) model$calculate(intermNodes3[i])
+            model$calculate(dataNodes[i])
+        } else model$calculate(calcNodes) 
+    },
+    calculate_prior_predictive = function(i = integer()) {
+      returnType(double())
+      dataVar <- model$getParam(dataNodes[i], 'var')
+      y <- values(model, dataNodes[i])[1]
+      return(dnorm(y, offset + coeff*priorMean, sqrt(coeff^2 * priorVar + dataVar), log=TRUE))
+    },
+    sample = function(i = integer(), j = integer()) {
+      dataVar <- model$getParam(dataNodes[i], 'var')
+      y <- values(model, dataNodes[i])[1]
+      postVar <- 1 / (coeff^2 / dataVar + 1 / priorVar)
+      postMean <- postVar * (coeff*(y-offset) / dataVar + priorMean / priorVar)
       values(model, marginalizedNodes[j]) <<- c(rnorm(1, postMean, sqrt(postVar)))
     }
   )
@@ -519,6 +584,7 @@ CRP_conjugate_dnorm_invgamma_dnorm <- nimbleFunction(
       priorShape <<- model$getParam(marginalizedNodes2[1], 'shape')
       priorScale <<- model$getParam(marginalizedNodes2[1], 'scale')
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])[1]
@@ -550,6 +616,7 @@ CRP_conjugate_dgamma_dpois <- nimbleFunction(
       priorShape <<- model$getParam(marginalizedNodes[1], 'shape') 
       priorRate <<- model$getParam(marginalizedNodes[1], 'rate') 
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])[1]
@@ -576,6 +643,7 @@ CRP_conjugate_dgamma_dnorm <- nimbleFunction(
       priorShape <<- model$getParam(marginalizedNodes[1], 'shape') 
       priorRate <<- model$getParam(marginalizedNodes[1], 'rate') 
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       dataMean <- model$getParam(dataNodes[i], 'mean')
@@ -605,6 +673,7 @@ CRP_conjugate_dbeta_dbern <- nimbleFunction(
       priorShape1 <<- model$getParam(marginalizedNodes[1], 'shape1') 
       priorShape2 <<- model$getParam(marginalizedNodes[1], 'shape2')
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])[1]
@@ -629,6 +698,7 @@ CRP_conjugate_dbeta_dbin <- nimbleFunction(
       priorShape1 <<- model$getParam(marginalizedNodes[1], 'shape1') 
       priorShape2 <<- model$getParam(marginalizedNodes[1], 'shape2')
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])[1]
@@ -659,6 +729,7 @@ CRP_conjugate_dbeta_dnegbin <- nimbleFunction(
       priorShape1 <<- model$getParam(marginalizedNodes[1], 'shape1') 
       priorShape2 <<- model$getParam(marginalizedNodes[1], 'shape2')
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])[1]
@@ -687,6 +758,7 @@ CRP_conjugate_dgamma_dexp <- nimbleFunction(
       priorShape <<- model$getParam(marginalizedNodes[1], 'shape') 
       priorRate <<- model$getParam(marginalizedNodes[1], 'rate') 
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])[1]
@@ -712,6 +784,7 @@ CRP_conjugate_dgamma_dgamma <- nimbleFunction(
       priorShape <<- model$getParam(marginalizedNodes[1], 'shape') 
       priorRate <<- model$getParam(marginalizedNodes[1], 'rate')  
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       datashape <- model$getParam(dataNodes[i], 'shape')
@@ -740,6 +813,7 @@ CRP_conjugate_dgamma_dweib <- nimbleFunction(
       priorShape <<- model$getParam(marginalizedNodes[1], 'shape') 
       priorRate <<- model$getParam(marginalizedNodes[1], 'rate')  
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       dataShape <- model$getParam(dataNodes[i], 'shape')
@@ -768,6 +842,7 @@ CRP_conjugate_dgamma_dinvgamma <- nimbleFunction(
       priorShape <<- model$getParam(marginalizedNodes[1], 'shape') 
       priorRate <<- model$getParam(marginalizedNodes[1], 'rate')  
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       dataShape <- model$getParam(dataNodes[i], 'shape')
@@ -795,6 +870,7 @@ CRP_conjugate_ddirch_dmulti <- nimbleFunction(
     storeParams = function() {
       priorAlpha <<- model$getParam(marginalizedNodes[1], 'alpha')
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])
@@ -970,6 +1046,7 @@ sampler_CRP <- nimbleFunction(
     } else 
       sampler <- switch(conjugacyResult,
                         conjugate_dnorm_dnorm = 'CRP_conjugate_dnorm_dnorm',
+                        conjugate_dnorm_dnorm_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity',
                         conjugate_dnorm_invgamma_dnorm = 'CRP_conjugate_dnorm_invgamma_dnorm',
                         conjugate_dbeta_dbern  = 'CRP_conjugate_dbeta_dbern',
                         conjugate_dbeta_dbin = 'CRP_conjugate_dbeta_dbin',
@@ -985,6 +1062,7 @@ sampler_CRP <- nimbleFunction(
 
     p <- length(tildeVars)
 
+    identityLink <- TRUE
     if(p == 2 && sampler == "CRP_conjugate_dnorm_invgamma_dnorm") {
       for(i in seq_along(tildeVars)) {
         if(model$getDistribution(clusterVarInfo$clusterNodes[[i]][1]) == 'dnorm') {
@@ -1003,10 +1081,13 @@ sampler_CRP <- nimbleFunction(
       if(sampler == 'CRP_nonconjugate' && p > 3)
           stop("sampler_CRP: CRP_nonconjugate sampler not yet set up to handle clustering of more than three variables.")  ## This is because of how we put old values back into model when proposing a new cluster that is not accepted.
       marginalizedNodes <- unlist(clusterVarInfo$clusterNodes)
-      helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, p, min_nTilde)
       calcNodes <- model$getDependencies(c(target, marginalizedNodes))
+      if(sampler == "CRP_conjugate_dnorm_dnorm_nonidentity") {
+          identityLink <- FALSE
+          helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, intermNodes, intermNodes2, intermNodes3, nInterm, calcNodes, type, p, min_nTilde)
+      } else helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, p, min_nTilde)
     }
-      
+    
     curLogProb <- numeric(n)
     
     printMessage <- TRUE
@@ -1096,6 +1177,8 @@ sampler_CRP <- nimbleFunction(
             model$calculate(dataNodes[i])
           } else model$calculate(calcNodes) 
         }
+        if(!identityLink) 
+            helperFunctions[[1]]$calculate_offset_coeff(i, model[[target]][i])
         curLogProb[k] <<- log(conc) + helperFunctions[[1]]$calculate_prior_predictive(i) # probability of sampling a new label, only k components because xi_i is a singleton
 
         ## Sample new cluster.
@@ -1134,6 +1217,8 @@ sampler_CRP <- nimbleFunction(
               model$calculate(dataNodes[i])
             } else model$calculate(calcNodes) 
           }
+          if(!identityLink)
+            helperFunctions[[1]]$calculate_offset_coeff(i, model[[target]][i])
           curLogProb[k+1] <<- log(conc) + helperFunctions[[1]]$calculate_prior_predictive(i) # probability of sampling a new label
         }
         
@@ -1150,11 +1235,17 @@ sampler_CRP <- nimbleFunction(
       
       ## Update metadata about clustering.
       model[[target]][i] <<- newLab
+
+      ## Note that we do not update intermNodes nor dataNodes (i.e., data logProbs) at this point
+      ## because of the 1:1 mapping of cluster IDs to observations, so sampling of other
+      ## cluster IDs in the main 'i' loop doesn't depend on having these updated. Instead update
+      ## at end of function.
       
       if( newLabCond ) { # a component is created. It can really create a new component or keep the current label if xi_i is a singleton
         if(sampler != 'CRP_nonconjugate') { # updating the cluster parameters of the new cluster
           helperFunctions[[1]]$sample(i, model[[target]][i])
         }
+
         if( xiCounts[xi[i]] != 0) { # a component is really created
           k <- k + 1
           xiUniques[k] <- newLab 

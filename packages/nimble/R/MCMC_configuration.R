@@ -789,11 +789,19 @@ checkCRPconjugacy <- function(model, target) {
     ## because we don't allow cluster ID to appear in multiple declarations, so can't have mu[1] <- muTilde[xi[1]]; mu[2] <- exp(muTilde[xi[2]])
     if(length(clusterVarInfo$clusterVars) == 1) {  ## for now avoid case of mixing over multiple parameters, but allow dnorm_dinvgamma below
         clusterNodes <- clusterVarInfo$clusterNodes[[1]]  # e.g., 'thetatilde[1]',...,
+        ## Currently we only handle offsets and coeffs for dnorm case;
+        ## will add Pois-gamma and possibly MVN cases.
+        identityLink <- TRUE
         conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
+        if(!length(conjugacy) && model$getDistribution(clusterNodes[1]) == 'dnorm') {
+            identityLink <- FALSE
+            conjugacy <- model$checkConjugacy(clusterNodes[1])  ## check non-identity link too
+        }
         if(length(conjugacy)) {
-            conjugacyType <- paste0(conjugacy[[1]]$type, '_', sub('dep_', '', names(conjugacy[[1]]$control))) 
+            conjugacyType <- paste0(conjugacy[[1]]$type, '_', sub('dep_', '', names(conjugacy[[1]]$control)))
+            if(!identityLink)
+                conjugacyType <- paste0(conjugacyType, '_nonidentity')
             conjugate <- TRUE
-
             ## Check that dependent nodes ('observations') from same declaration.
             ## This should ensure they have same distribution and parameters are being
             ## clustered in same way, but also allows other parameters to vary, e.g.,
