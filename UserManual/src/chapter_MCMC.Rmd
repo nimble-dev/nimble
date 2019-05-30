@@ -633,8 +633,7 @@ The `configureRJ` function modifies the model configuration, and assigns a `RJ` 
  
 <!--  See `help(configureRJ)` for details. -->
 
-The `RJ` and `RJ_indicator` both use a univariate normal distribution as proposal density, whose mean and scale can be provided in the `control` list argument of `configureRJ` (by default `mean = 0` and `scale = 1`). The `positive` flag in the `control` list allows for only positive values of the proposal when is set to `TRUE`, using a folded normal distribution. 
-An optional argument called `fixedValue` can be provided when the `priorProb` argument is present, that indicates the value taken by nodes in `targetNodes` when out of the model (by default 0). 
+The `RJ` and `RJ_indicator` both use a univariate normal distribution as proposal density, whose mean and scale can be provided in the `control` list argument of `configureRJ` (by default `mean = 0` and `scale = 1`). An optional argument called `fixedValue` can be provided when the `priorProb` argument is present, that indicates the value taken by nodes in `targetNodes` when out of the model (by default 0). 
 All arguments in `control` can accept one value that will be used for all samplers assigned to nodes `targetNodes`; alternatively each sampler can be customized by passing a vector of values whose length must corresponds to the `targetNodes` one.
 
 In the following we provide an example for the two different model specifications. 
