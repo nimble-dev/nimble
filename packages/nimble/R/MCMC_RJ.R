@@ -31,7 +31,6 @@ sampler_RJ <- nimbleFunction(
     
     proposalScale <- control$scale
     proposalMean  <- control$mean
-    positive      <- control$positive
     fixedValue    <- control$fixedValue
     
     ## precompute ratio between prior probabilities
@@ -56,15 +55,6 @@ sampler_RJ <- nimbleFunction(
       ## remove proposal
       ##----------------------##
       currentLogProb <- model$getLogProb(calcNodes)
-      
-      ## log probability of the reverse proposal
-      if(positive){
-        ## Taking the absolute value the proposal is a folded normal
-        logProbReverseProposal <- log(dnorm(currentValue, mean = proposalMean, sd = proposalScale) + 
-                                        dnorm(-currentValue, mean = proposalMean, sd = proposalScale))
-      } else {
-        logProbReverseProposal <- dnorm(currentValue, mean = proposalMean, sd = proposalScale, log = TRUE)
-      }
 
       model[[target]] <<- fixedValue
       proposalLogProb <- model$calculate(calcNodes)
@@ -75,17 +65,6 @@ sampler_RJ <- nimbleFunction(
       ##----------------------##
       currentLogProb <- model$getLogProb(calcNodesReduced)
 
-      ## Only positive proposal
-      if(positive){
-        ## Taking the absolute value the proposal is a folded normal
-        proposalValue <- abs(rnorm(1, mean = proposalMean, sd = proposalScale))
-        logProbForwardProposal <- log(dnorm(proposalValue, mean = proposalMean, sd = proposalScale) + 
-                                        dnorm(-proposalValue, mean = proposalMean, sd = proposalScale))
-      } else {
-        proposalValue <- rnorm(1, mean = proposalMean, sd = proposalScale)
-        logProbForwardProposal <- dnorm(proposalValue, mean =  proposalMean, sd = proposalScale, log = TRUE)
-      }
-      
       model[[target]] <<- proposalValue
 
       proposalLogProb <- model$calculate(calcNodes)
@@ -127,7 +106,6 @@ sampler_RJ_indicator <- nimbleFunction(
     coefNode      <- control$targetNode
     proposalScale <- control$scale
     proposalMean  <- control$mean
-    positive      <- control$positive
     
     ## model with coefficient included
     calcNodes <- model$getDependencies(c(coefNode, target))
@@ -143,14 +121,9 @@ sampler_RJ_indicator <- nimbleFunction(
       currentLogProb <- model$getLogProb(calcNodes)
       currentCoef <- model[[coefNode]]
       
-      if(positive){
-        ## Taking the absolute value the proposal is a folded normal
-        logProbReverseProposal <- log(dnorm(currentCoef, mean = proposalMean, sd = proposalScale) + 
-                                        dnorm(-currentCoef, mean = proposalMean, sd = proposalScale))
-      } else {
-        ## reverse jumping density
-        logProbReverseProposal <- dnorm(currentCoef, mean = proposalMean, sd = proposalScale, log = TRUE)
-      }        
+      ## reverse jumping density
+      logProbReverseProposal <- dnorm(currentCoef, mean = proposalMean, sd = proposalScale, log = TRUE)
+      
       model[[target]] <<- 0
       model[[coefNode]] <<- 0 
       model$calculate(calcNodes)
@@ -162,15 +135,10 @@ sampler_RJ_indicator <- nimbleFunction(
       ##----------------------##
       currentLogProb <- model$getLogProb(calcNodesReduced)
       
-      if(positive){
-        ## Taking the absolute value the proposal is a folded normal
-        proposalCoef <- abs(rnorm(1, mean = proposalMean, sd = proposalScale))
-        logProbForwardProposal <- log(dnorm(proposalCoef, mean = proposalMean, sd = proposalScale) + 
-                                        dnorm(-proposalCoef, mean = proposalMean, sd = proposalScale))
-      } else {
-        proposalCoef <- rnorm(1, mean = proposalMean, sd = proposalScale)
-        logProbForwardProposal <- dnorm(proposalCoef, mean =  proposalMean, sd = proposalScale, log = TRUE)
-      }
+      ## proposal value for the coefficient
+      proposalCoef <- rnorm(1, mean = proposalMean, sd = proposalScale)
+      logProbForwardProposal <- dnorm(proposalCoef, mean =  proposalMean, sd = proposalScale, log = TRUE)
+
       model[[target]] <<- 1
       model[[coefNode]] <<- proposalCoef
       
@@ -360,7 +328,7 @@ sampler_toggled <- nimbleFunction(
 #' 
 #' Peter J. Green. (1995). Reversible jump Markov chain Monte Carlo computation and Bayesian model determination. \emph{Biometrika}, 82(4), 711-732.
 #' 
-configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb = NULL, control = list(mean = NULL, scale = NULL, positive = NULL, fixedValue = NULL)) {
+configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb = NULL, control = list(mean = NULL, scale = NULL, fixedValue = NULL)) {
 
   nNodes <- length(targetNodes)
   
@@ -368,7 +336,7 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
   fixedValue        <- if(!is.null(control$fixedValue))        control$fixedValue       else 0
   mean              <- if(!is.null(control$mean))              control$mean             else 0
   scale             <- if(!is.null(control$scale))             control$scale            else 1
-  positive          <- if(!is.null(control$positive))          control$positive         else FALSE
+  # positive          <- if(!is.null(control$positive))          control$positive         else FALSE
     
   ## repeat values for multiple nodes if only one value is provided
   if(length(fixedValue) != nNodes) {
@@ -380,9 +348,9 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
   if(length(scale) != nNodes) {
     if(length(scale) == 1) scale <- rep(scale, nNodes) else stop('inconsistent length of scale argument and specified number of RJ targetNodes')
   }
-  if(length(positive) != nNodes) {
-    if(length(positive) == 1) positive <- rep(positive, nNodes) else stop('inconsistent length of positive argument and specified number of RJ targetNodes')
-  }
+  # if(length(positive) != nNodes) {
+  #   if(length(positive) == 1) positive <- rep(positive, nNodes) else stop('inconsistent length of positive argument and specified number of RJ targetNodes')
+  # }
   
   ## flag for indicators and prior
   indicatorFlag <- (!is.null(indicatorNodes))
@@ -423,7 +391,6 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
         priorProb  = priorProb[i], 
         mean       = mean[i], 
         scale      = scale[i], 
-        positive   = positive[i], 
         fixedValue = fixedValue[i]) 
       
       ## if the node is not a scalar iterate through each element
@@ -479,9 +446,8 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
       
       nodeControl  = list( 
         mean       = mean[i], 
-        scale      = scale[i], 
-        positive = positive[i]) 
-      
+        scale      = scale[i])
+
       for(j in 1:length(nodeAsScalar)){
           
         ## add coefficients to control
