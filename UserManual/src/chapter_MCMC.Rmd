@@ -749,7 +749,7 @@ In this case, since there are no indicator variables, we need to pass to `config
 configureRJ(mcmcConf = noIndicatorModelConf,     
             targetNodes = c("beta1", "beta2"),
             priorProb = 0.5,
-            control = list(mean = 0, scale = 2, fixedValue = c(1, 0)))
+            control = list(mean = 0, scale = 2, fixedValue = c(1.5, 0)))
 ```
 
 ```{r no indicators: print samplers after configureRJ}
@@ -759,11 +759,11 @@ noIndicatorModelConf$printSamplers()
 
 Since there are no indicator variables, the `RJ` sampler is assigned directly to `beta[1]` and `beta[2]` along with the `toggled` sampler. In addition in this case one can set the coefficient to a value different from $0$ via the `fixedValue` argument in the `control` list. 
 
-If `fixedValue` is given when using `indicatorNodes` a `warning` message is thrown and and the values provided in `fixedValue` ignored.  However the same behavior can be obtained in this situation, using a different model specification. For example, the model in \@ref(sec:rjmcmc-no-indicator} can be modified as
+If `fixedValue` is given when using `indicatorNodes` a `warning` message is thrown and and the values provided in `fixedValue` ignored.  However the same behavior can be obtained in this situation, using a different model specification. For example, the model in \@ref(sec:rjmcmc-no-indicator} can be modified to have `beta1` equal to $1.5$ when in the model as
 
 ```{r indicators v2, results = "hide", eval = FALSE}
   for(i in 1:N) {
-    Ypred[i] <- beta0 + (1 - z1)* beta1 *x1[i] + beta2 * z2 * x2[i]
+    Ypred[i] <- beta0 + (1 - z1) * 1.5 * beta1 * x1[i] + z1 * beta1 * x1[i] + beta2 * z2 * x2[i]
     Y[i] ~ dnorm(Ypred[i], sd = sigma)
   }
 ```
