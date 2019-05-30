@@ -5,8 +5,9 @@
 \title{Run one or more chains of an MCMC algorithm and return samples, summary and/or WAIC}
 \usage{
 runMCMC(mcmc, niter = 10000, nburnin = 0, thin, thin2, nchains = 1, inits,
-  setSeed = FALSE, progressBar = TRUE, samples = TRUE,
-  samplesAsCodaMCMC = FALSE, summary = FALSE, WAIC = FALSE)
+  setSeed = FALSE, progressBar = getNimbleOption("MCMCprogressBar"),
+  samples = TRUE, samplesAsCodaMCMC = FALSE, summary = FALSE,
+  WAIC = FALSE)
 }
 \arguments{
 \item{mcmc}{A NIMBLE MCMC algorithm.  See details.}
@@ -25,7 +26,7 @@ runMCMC(mcmc, niter = 10000, nburnin = 0, thin, thin2, nchains = 1, inits,
 
 \item{setSeed}{Logical or numeric argument.  If a single numeric value is provided, R's random number seed will be set to this value at the onset of each MCMC chain.  If a numeric vector of length \code{nchains} is provided, then each element of this vector is provided as R's random number seed at the onset of the corresponding MCMC chain.  Otherwise, in the case of a logical value, if \code{TRUE}, then R's random number seed for the ith chain is set to be \code{i}, at the onset of each MCMC chain.  Note that specifying the argument \code{setSeed = 0} does not prevent setting the RNG seed, but rather sets the random number generation seed to \code{0} at the beginning of each MCMC chain.  Default value is \code{FALSE}.}
 
-\item{progressBar}{Logical argument.  If \code{TRUE}, an MCMC progress bar is displayed during execution of each MCMC chain.  Default value is \code{TRUE}.}
+\item{progressBar}{Logical argument.  If \code{TRUE}, an MCMC progress bar is displayed during execution of each MCMC chain.  Default value is defined by the nimble package option MCMCprogressBar.}
 
 \item{samples}{Logical argument.  If \code{TRUE}, then posterior samples are returned from each MCMC chain.  These samples are optionally returned as \code{coda} \code{mcmc} objects, depending on the \code{samplesAsCodaMCMC} argument.  Default value is \code{TRUE}.  See details.}
 

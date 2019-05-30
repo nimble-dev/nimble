@@ -272,7 +272,8 @@ processNonParseableCode <- function(text) {
 #' @export
 #'
 #' @examples
-#' ## reading a model defined in the R session
+#' ## Reading a model defined in the R session
+#' 
 #' code <- nimbleCode({
 #'     x ~ dnorm(mu, sd = 1)
 #'     mu ~ dnorm(0, sd = prior_sd)

@@ -120,8 +120,8 @@ getMCEMRanges <- nimbleFunction(name = 'getMCEMRanges',
 #' @param gamma   probability of deciding that the algorithm has converged, that is, that the difference between two Q functions is less than C, when in fact it has not.  Default is 0.05.
 #' @param C      determines when the algorithm has converged - when C falls above a (1-gamma) confidence interval around the difference in Q functions from time point t-1 to time point t, we say the algorithm has converged. Default is 0.001.
 #' @param numReps number of bootstrap samples to use for asymptotic variance calculation.
-#' @param forceNoConstraints avoid any constraints even from parameter bounds implicit in the model structure (e.g., from dunif or dgamma distributions); setting this to TRUE might allow MCEM to run when the bounds of a parameter being maximized over depend on another parameter
-#' @param verbose logical indicating whether to print additional logging information
+#' @param forceNoConstraints avoid any constraints even from parameter bounds implicit in the model structure (e.g., from dunif or dgamma distributions); setting this to TRUE might allow MCEM to run when the bounds of a parameter being maximized over depend on another parameter.
+#' @param verbose logical indicating whether to print additional logging information.
 #' 
 #' @author Clifford Anderson-Bergman and Nicholas Michaud
 #' @export

@@ -10,9 +10,9 @@ nimbleModel(code, constants = list(), data = list(), inits = list(),
   name = NULL, userEnv = parent.frame())
 }
 \arguments{
-\item{code}{code for the model in the form returned by \code{\link{nimbleCode}} or (equivalently) \code{quote}}
+\item{code}{code for the model in the form returned by \code{\link{nimbleCode}} or (equivalently) \code{\link{quote}}}
 
-\item{constants}{named list of constants in the model.  Constants cannot be subsequently modified. For compatibility with JAGS and BUGS, one can include data values with constants and \code{nimbleModel} will automatically distinguish them based on what appears on the left-hand side of expressions in \code{code}.}
+\item{constants}{named list of constants in the model.  Constants cannot be subsequently modified. For compatibility with JAGS and BUGS, one can include data values with constants and \code{\link{nimbleModel}} will automatically distinguish them based on what appears on the left-hand side of expressions in \code{code}.}
 
 \item{data}{named list of values for the data nodes.  Data values can be subsequently modified.  Providing this argument also flags nodes as having data for purposes of algorithms that inspect model structure. Values that are NA will not be flagged as data.}
 
@@ -22,13 +22,13 @@ nimbleModel(code, constants = list(), data = list(), inits = list(),
 
 \item{returnDef}{logical indicating whether the model should be returned (FALSE) or just the model definition (TRUE).}
 
-\item{where}{argument passed to \code{setRefClass}, indicating the environment in which the reference class definitions generated for the model and its modelValues should be created.  This is needed for managing package namespace issues during package loading and does not normally need to be provided by a user.}
+\item{where}{argument passed to \code{\link{setRefClass}}, indicating the environment in which the reference class definitions generated for the model and its modelValues should be created.  This is needed for managing package namespace issues during package loading and does not normally need to be provided by a user.}
 
 \item{debug}{logical indicating whether to put the user in a browser for debugging.  Intended for developer use.}
 
-\item{check}{logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel', see help on \code{nimbleOptions} for details.}
+\item{check}{logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel'.  See \code{\link{nimbleOptions}} for details.}
 
-\item{calculate}{logical indicating whether to run \code{calculate} on the model after building it; this will calculate all deterministic nodes and logProbability values given the current state of all nodes. Default is TRUE. For large models, one might want to disable this, but note that deterministic nodes, including nodes introduced into the model by NIMBLE, may be \code{NA}.}
+\item{calculate}{logical indicating whether to run \code{\link{calculate}} on the model after building it; this will calculate all deterministic nodes and logProbability values given the current state of all nodes. Default is TRUE. For large models, one might want to disable this, but note that deterministic nodes, including nodes introduced into the model by NIMBLE, may be \code{NA}.}
 
 \item{name}{optional character vector giving a name of the model for internal use.  If omitted, a name will be provided.}
 
@@ -38,7 +38,7 @@ nimbleModel(code, constants = list(), data = list(), inits = list(),
 processes BUGS model code and optional constants, data, and initial values. Returns a NIMBLE model (see \code{\link{modelBaseClass}}) or model definition.
 }
 \details{
-See the User Manual or \code{help(\link{modelBaseClass})} for information about manipulating NIMBLE models created by \code{nimbleModel}, including methods that operate on models, such as \code{getDependencies}.
+See the User Manual or \code{help(\link{modelBaseClass})} for information about manipulating NIMBLE models created by \code{\link{nimbleModel}}, including methods that operate on models, such as \code{\link{getDependencies}}.
 
 The user may need to provide dimensions for certain variables as in some cases NIMBLE cannot automatically determine the dimensions and sizes of variables. See the User Manual for more information.
 
@@ -57,5 +57,8 @@ Rmodel <- nimbleModel(code, constants = constants, data = data)
 }
 \author{
 NIMBLE development team
+}
+\seealso{
+\code{\link{readBUGSmodel}} for creating models from BUGS-format model files
 }
 

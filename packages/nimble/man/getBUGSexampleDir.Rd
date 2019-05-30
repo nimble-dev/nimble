@@ -18,4 +18,7 @@ NIMBLE comes with some of the classic BUGS examples.  \code{getBUGSexampleDir} l
 \author{
 Christopher Paciorek
 }
+\seealso{
+\code{\link{readBUGSmodel}} for usage in creating a model from a classic BUGS example
+}
 
