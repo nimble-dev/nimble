@@ -22,7 +22,7 @@ Depends:
 Imports:
     methods,igraph,coda,R6
 Suggests:
-    testthat,R2WinBUGS,rjags,rstan,xtable,abind,ggplot2
+    testthat
 URL: https://r-nimble.org
 SystemRequirements: GNU make
 License: BSD_3_clause + file LICENSE | GPL (>= 2)
@@ -112,8 +112,6 @@ Collate:
     MCMC_run.R
     MCMC_samplers.R
     MCMC_conjugacy.R
-    MCMC_suite.R
-    MCMC_comparisons.R
     MCMC_autoBlock.R
     MCEM_build.R
     crossValidation.R
