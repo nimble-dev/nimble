@@ -1515,6 +1515,14 @@ distn_tests[['exp_R.dexp double(0) double(1, 3)']]$knownFailures <- list(
   compilation = TRUE
 )
 
+modify_on_match(
+  distn_tests, 'dsqrtinvgamma',
+  'knownFailures',
+  list(
+    compilation = TRUE
+  )
+)
+
 ###########################################
 ## distribution functions, variable log arg
 ###########################################
@@ -1535,6 +1543,14 @@ distn_with_log_tests <- unlist(
 
 distn_with_log_tests[['exp_R.dexp double(0) double(1, 3)']]$knownFailures <- list(
   compilation = TRUE
+)
+
+modify_on_match(
+  distn_with_log_tests, 'dsqrtinvgamma',
+  'knownFailures',
+  list(
+    compilation = TRUE
+  )
 )
 
 #######################
