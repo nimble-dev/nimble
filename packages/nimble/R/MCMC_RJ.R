@@ -373,7 +373,7 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
     
     ## check that priorProb values are in [0,1]
     if(any(priorProb < 0 | priorProb > 1)){
-      stop('Elements in priorProb must be probabilities in [0,1]')
+      stop("Elements in priorProb must be probabilities in [0,1]")
     }
 
     ## If one value for prior is given, it is used for each variable
@@ -447,8 +447,8 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
       indicatorsAsScalar <- mcmcConf$model$expandNodeNames(indicatorNodes[i], returnScalarComponents = TRUE)
       
       ## if the node is multivariate check that samplers are univariate
-      if(modelConf$model$isMultivariate(targetNodes[i])) {
-        if(length(nodeAsScalar) != length(modelConf$getSamplers(targetNodes[i])))
+      if(mcmcConf$model$isMultivariate(targetNodes[i])) {
+        if(length(nodeAsScalar) != length(mcmcConf$getSamplers(targetNodes[i])))
           stop(paste0(targetNodes[i], "is multivariate using a joint sampler; only univariate samplers can be used"))
       }
 
