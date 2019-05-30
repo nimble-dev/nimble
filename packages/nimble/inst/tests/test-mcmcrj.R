@@ -13,7 +13,7 @@ context('Testing of MCMC_RJ functionality')
 
 test_that("Test configureRJ with no indicator variables", {
 
-  ## Define model 2 covariate, one in the model
+  ## Linear regression with 2 covariate, one in the model
   code <- nimbleCode({
     beta0 ~ dnorm(0, sd = 100)
     beta1 ~ dnorm(0, sd = 100)
@@ -52,6 +52,10 @@ test_that("Test configureRJ with no indicator variables", {
   expect_error(configureRJ(mConf, nodes, prior = 0.5, control = list(positive = c(FALSE, FALSE))), 
                'inconsistent length of positive argument and specified number of RJ targetNodes')
   
+  ## priorProb not probabilities
+  expect_error(configureRJ(mConf, nodes, prior = -1))
+  expect_error(configureRJ(mConf, nodes, prior = 2))
+  
   ## Multiple nodes, less paramters
   nodes <-  c("beta0", "beta1", "beta2")
   expect_error(configureRJ(mConf, nodes, prior = c(0.5, 0.5)), 
@@ -66,11 +70,10 @@ test_that("Test configureRJ with no indicator variables", {
   expect_error(configureRJ(mConf, nodes, prior = 0.5, control = list(positive = c(FALSE, FALSE))), 
                'inconsistent length of positive argument and specified number of RJ targetNodes')
   
+  ## priorProb not probabilities
+  expect_error(configureRJ(mConf, nodes, prior = c(0.5, 2, 0.2)))
+  
 
-  ## SHOULD I CHECK ALSO FOR THE TYPE OF VALUE PASSED?
-  # mConf$printSamplers()
-  
-  
   ## indicator provided instead of prior not provided
   ## THIS RUNS WITH NO ISSUES BUT OUTPUT WILL BE WRONG - SHOULD WE PREVENT IT
   # nodes <-  c("beta2")
