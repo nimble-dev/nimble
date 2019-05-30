@@ -54,6 +54,9 @@ BUGSmodel <- function(code,
 #' As noted above, one may lump together constants and data (as part of the \code{constants} argument (unlike R interfaces to JAGS and BUGS where they are provided as the \code{data} argument). One may not provide lumped constants and data as the \code{data} argument.
 #'
 #' For variables that are a mixture of data nodes and non-data nodes, any values passed in via \code{inits} for components of the variable that are data will be ignored. All data values should be passed in through \code{data} (or \code{constants} as just discussed).
+#'
+#' @seealso \code{\link{readBUGSmodel}} for creating models from BUGS-format model files
+
 #' @examples
 #' code <- nimbleCode({
 #'     x ~ dnorm(mu, sd = 1)
@@ -262,11 +265,14 @@ processNonParseableCode <- function(text) {
 #'
 #' @return returns a NIMBLE BUGS R model
 #'
-#' @details Note that \code{readBUGSmodel} should handle most common ways of providing information on a model as used in BUGS and JAGS but does not handle input model files that refer to additional files containing data. Please see the BUGS examples provided with JAGS (\url{http://sourceforge.net/projects/mcmc-jags/files/Examples/}) for examples of supported formats. Also, \code{readBUGSmodel} takes both constants and data via the 'data' argument, unlike \code{\link{nimbleModel}}, in which these are distinguished. The reason for allowing both to be given via 'data' is for backwards compatibility with the BUGS examples, in which constants and data are not distinguished.
+#' @details Note that \code{readBUGSmodel} should handle most common ways of providing information on a model as used in BUGS and JAGS but does not handle input model files that refer to additional files containing data. Please see the BUGS examples provided with NIMBLE in the \code{classic-bugs} directory of the installed NIMBLE package or JAGS (\url{http://sourceforge.net/projects/mcmc-jags/files/Examples/}) for examples of supported formats. Also, \code{readBUGSmodel} takes both constants and data via the 'data' argument, unlike \code{\link{nimbleModel}}, in which these are distinguished. The reason for allowing both to be given via 'data' is for backwards compatibility with the BUGS examples, in which constants and data are not distinguished.
 #'
+#' @seealso \code{\link{nimbleModel}}
+#' 
 #' @export
 #'
 #' @examples
+#' ## reading a model defined in the R session
 #' code <- nimbleCode({
 #'     x ~ dnorm(mu, sd = 1)
 #'     mu ~ dnorm(0, sd = prior_sd)
@@ -276,6 +282,13 @@ processNonParseableCode <- function(text) {
 #' model$x
 #' model[['mu']]
 #' model$calculate('x')
+#'
+#' ## Reading a classic BUGS model
+#'
+#' pumpModel <- readBUGSmodel('pump.bug', dir = getBUGSexampleDir('pump'))
+#' pumpModel$getVarNames()
+#' pumpModel$x
+#' 
 readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits = TRUE, debug = FALSE, returnComponents = FALSE, check = getNimbleOption('checkModel'), calculate = TRUE) {
 
   # helper function
@@ -487,6 +500,8 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
 #'
 #' @return Character string of the fully pathed directory of the BUGS example.
 #'
+#' @seealso \code{\link{readBUGSmodel}} for usage in creating a model from a classic BUGS example
+#' 
 #' @export
 getBUGSexampleDir <- function(example){
 	dir <- system.file("classic-bugs", package = "nimble")
