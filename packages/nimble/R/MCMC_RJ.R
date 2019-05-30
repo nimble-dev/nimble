@@ -55,6 +55,8 @@ sampler_RJ <- nimbleFunction(
       ## remove proposal
       ##----------------------##
       currentLogProb <- model$getLogProb(calcNodes)
+      
+      logProbReverseProposal <- dnorm(currentValue, mean = proposalMean, sd = proposalScale, log = TRUE)
 
       model[[target]] <<- fixedValue
       proposalLogProb <- model$calculate(calcNodes)
@@ -64,6 +66,9 @@ sampler_RJ <- nimbleFunction(
       ## add proposal
       ##----------------------##
       currentLogProb <- model$getLogProb(calcNodesReduced)
+
+      proposalValue <- rnorm(1, mean = proposalMean, sd = proposalScale)
+      logProbForwardProposal <- dnorm(proposalValue, mean =  proposalMean, sd = proposalScale, log = TRUE)
 
       model[[target]] <<- proposalValue
 
