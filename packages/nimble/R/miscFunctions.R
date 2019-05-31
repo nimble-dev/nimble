@@ -7,7 +7,7 @@
 #' @export
 #'
 compareMCMCs <- function(...)
-    print("This function now resides in a separate package. Please see https://github.com/nimble-dev/compareMCMCs.")
+    cat("This function now resides in a separate package. Please see https://github.com/nimble-dev/compareMCMCs.\n")
 
 #' Placeholder for MCMCsuite
 #'
@@ -18,7 +18,7 @@ compareMCMCs <- function(...)
 #' @export
 #'
 MCMCsuite <- function(...)
-    print("This function now resides in a separate package. Please see https://github.com/nimble-dev/compareMCMCs.")
+    cat("This function now resides in a separate package. Please see https://github.com/nimble-dev/compareMCMCs.\n")
 
 ## This is used in conjugacy definition for ddirch, to calculate 'contribution'
 ## terms from dcat dependents.
