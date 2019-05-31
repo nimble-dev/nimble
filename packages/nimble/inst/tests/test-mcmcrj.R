@@ -131,49 +131,50 @@ test_that("Test configureRJ with multivariate node - no indicator", {
   expect_error(configureRJ(mcmcConf = mConf, targetNodes = targetNodes, priorProb = 0.5, control = control), NA)
   
   ## test double call to configureRJ
-  configureRJ(mcmcConf = mConf, targetNodes = targetNodes, priorProb = 0.5, control = control)
   expect_error(configureRJ(mcmcConf = mConf, targetNodes = targetNodes, priorProb = 0.5, control = control), 
   'is already configure for reversible jump')
 
-  
 })
 
 
-# test_that("Check passing node vector - no indicator", {
-#   #####################################
-#   ## Vector node
-#   code <- nimbleCode({
-#     beta0 ~ dnorm(0, sd = 100)
-#     
-#     for(i in 1:5){
-#       beta[i] ~ dnorm(0, sd = 100)
-#     }
-#     sigma ~ dunif(0, 100)
-#     for(i in 1:10) {
-#       Ypred[i] <- beta0 + sum(X[i,1:5]*beta[1:5])
-#       Y[i] ~ dnorm(Ypred[i], sd = sigma)
-#     }
-#   })
-#   
-#   ## simulate some data
-#   set.seed(1)
-#   X <- matrix(rnorm(10*5), 10, 5) 
-#   betaTrue <- c(2, -2, 3, 0, 0)
-#   eps <- rnorm(10)
-#   Y <- as.vector(X%*%betaTrue + eps)
-#   
-#   data   <- list(Y = Y, X = X)
-#   inits  <- list(beta0 = 0, beta = rep(0, 10), sigma = sd(Y))
-#   
-#   m <- nimbleModel(code, data=data, inits=inits)
-#   mConf <- configureMCMC(m)
-#   
-#   ## One node
-#   # nodes <-  c("beta2")
-#   # expect_error(configureRJ(mConf, nodes), 
-#   #              'Provide indicatorNodes or priorProb vector')
-#   
-# })
+test_that("Check passing node vector - no indicator", {
+  #####################################
+  ## Vector node
+  code <- nimbleCode({
+    beta0 ~ dnorm(0, sd = 100)
+
+    for(i in 1:5){
+      beta[i] ~ dnorm(0, sd = 100)
+    }
+    sigma ~ dunif(0, 100)
+    for(i in 1:10) {
+      Ypred[i] <- beta0 + sum(X[i,1:5]*beta[1:5])
+      Y[i] ~ dnorm(Ypred[i], sd = sigma)
+    }
+  })
+
+  ## simulate some data
+  set.seed(1)
+  X <- matrix(rnorm(10*5), 10, 5)
+  betaTrue <- c(2, -2, 3, 0, 0)
+  eps <- rnorm(10)
+  Y <- as.vector(X%*%betaTrue + eps)
+
+  data   <- list(Y = Y, X = X)
+  inits  <- list(beta0 = 0, beta = rep(0, 10), sigma = sd(Y))
+
+  m <- nimbleModel(code, data=data, inits=inits)
+  mConf <- configureMCMC(m)
+
+  ## no error
+  expect_error(configureRJ(mConf, c("beta"), prior = 0.5), NA)
+  
+  mConf <- configureMCMC(m)
+  expect_error(configureRJ(mConf, c("beta[1]", "beta[2:4]"), prior = 0.5), NA)
+  
+  mConf <- configureMCMC(m)
+  expect_error(configureRJ(mConf, c("beta[1]", "beta[2:4]"), prior = c(0.5, 0.2)), NA)
+})
 
 
 
@@ -454,7 +455,6 @@ test_that("Check sampler_RJ_indicator behaviour - indicator", {
   expect_equal(mean(output[which(output[, 'z1'] != 0), 'beta1']), as.numeric(coef(lm(Y ~ x1 + x2))[2]) , tolerance=0.1, scale = 1)
 
   
-  
   ## more challeging data
   set.seed(0)
   x1 <- runif(50, -1, 1)
@@ -474,7 +474,8 @@ test_that("Check sampler_RJ_indicator behaviour - indicator", {
   output <- runMCMC(cMCMC,  niter=100, nburnin = 0, thin=1, 
                     inits = list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y)), setSeed = 1)
   
-  ## check that when indicators are zero parameters are zero
+  ## check toggled_sampler
+  ## when indicators are zero parameters are zero 
   expect_equal(which(output[, 'beta1'] == 0), which(output[, 'z1'] == 0))
   expect_equal(which(output[, 'beta2'] == 0), which(output[, 'z2'] == 0))
   
