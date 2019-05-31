@@ -388,8 +388,8 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
       
       ## if the node is multivariate check that samplers are univariate 
       if(mcmcConf$model$isMultivariate(targetNodes[i])) {
-        if(length(nodeAsScalar) != length(mcmcConf$getSamplers(targetNodes[i])))
-          stop(paste0(targetNodes[i], "is multivariate using a joint sampler; only univariate samplers can be used"))
+        if(length(mcmcConf$getSamplers(targetNodes[i])) == 1)
+          stop(paste0(targetNodes[i], " is multivariate using a joint sampler; only univariate samplers can be used"))
       }
 
       ## Create RJ control list for the node 
@@ -448,8 +448,8 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
       
       ## if the node is multivariate check that samplers are univariate
       if(mcmcConf$model$isMultivariate(targetNodes[i])) {
-        if(length(nodeAsScalar) != length(mcmcConf$getSamplers(targetNodes[i])))
-          stop(paste0(targetNodes[i], "is multivariate using a joint sampler; only univariate samplers can be used"))
+        if(length(mcmcConf$getSamplers(targetNodes[i])) == 1)
+          stop(paste0(targetNodes[i], " is multivariate using a joint sampler; only univariate samplers can be used"))
       }
 
       ## check that length of indicatorNodes matches targetNodes
