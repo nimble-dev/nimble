@@ -1196,7 +1196,7 @@ distn_params[['exp_nimble_rate']]$name <- 'exp_nimble'
 distn_params[['exp_nimble_scale']] <- exp_base
 distn_params[['exp_nimble_scale']]$name <- 'exp_nimble'
 distn_params[['exp_nimble_scale']]$args[['rand_variate']]$distn <- function(n) {
-  function(rate) rexp(n, 1/scale)
+  function(scale) rexp(n, 1/scale)
 }
 distn_params[['exp_nimble_scale']]$args[['scale']]  <- list(
   distn = function(n) runif(n, max = 10),

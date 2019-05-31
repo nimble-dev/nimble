@@ -1544,7 +1544,6 @@ compareFilesUsingDiff <- function(trialFile, correctFile, main = "") {
 ##            as a formal to the output expr but not part of args.
 ##
 make_op_param <- function(op, argTypes, more_args = NULL) {
-  name <- paste(op, paste(argTypes, collapse = ' '))
   arg_names <- names(argTypes)
 
   if (is.null(arg_names)) {
@@ -1553,6 +1552,8 @@ make_op_param <- function(op, argTypes, more_args = NULL) {
   } else {
     op_args <- sapply(arg_names, as.name, simplify = FALSE)
   }
+
+  name <- paste(op, paste0(arg_names, ' = ', argTypes, collapse = ' '))
 
   expr <- substitute(
     out <- this_call,
