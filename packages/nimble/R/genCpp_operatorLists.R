@@ -339,10 +339,13 @@ nimDerivsPrependTypeOperators <- c("dnorm", "dpois", "dgamma", "dinvgamma", "dex
                                    "nimStep", 'ilogit', 'icloglog', 'iprobit', 'probit', 'cloglog',
                                    "nimEquals", "lgammafn", "gammafn", "lfactorial", "factorial", "logit", "cube", "inprod")
 
-## reflects distribution funs that support AD, see nimDerivs_TMB.h
+## Reflects distribution funs that support recycling rule with AD -- see nimDerivs_TMB.h.
 recyclingRuleOperatorsAD <- c(
   'dbinom', 'dexp_nimble', 'dnbinom', 'dpois', 'dchisq', 'dbeta', 'dnorm', 'dgamma',
-  'dinvgamma', 'ddexp', 'dlnorm', 'dlogis', 'dunif', 'dweibull'
+  'dinvgamma', 'ddexp', 'dlnorm', 'dlogis', 'dunif', 'dweibull',
+  ## The following operators should work but are currently broken for various
+  ## reasons which are explained in test-ADfunctions.R.
+  'dexp', 'dsqrtinvgamma', 'dt_nonstandard', 'dt'
 )
 recyclingRuleOperatorsAD <- paste0(
     recyclingRuleOperatorsAD,

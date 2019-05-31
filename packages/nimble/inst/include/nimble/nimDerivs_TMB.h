@@ -626,7 +626,7 @@ struct nimble_eigen_coeff_mod_impl<true, result_type, CppAD::AD<double>, Index> 
 
 MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dbinom, CppAD::AD<double>)
 MAKE_RECYCLING_RULE_CLASS2_1scalar(nimDerivs_dexp_nimble, CppAD::AD<double>)
-// MAKE_RECYCLING_RULE_CLASS2_1scalar(nimDerivs_dexp, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS2_1scalar(nimDerivs_dexp, CppAD::AD<double>) // broken
 MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dnbinom, CppAD::AD<double>)
 MAKE_RECYCLING_RULE_CLASS2_1scalar(nimDerivs_dpois, CppAD::AD<double>)
 MAKE_RECYCLING_RULE_CLASS2_1scalar(nimDerivs_dchisq, CppAD::AD<double>)
@@ -634,13 +634,13 @@ MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dbeta, CppAD::AD<double>)
 MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dnorm, CppAD::AD<double>)
 MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dgamma, CppAD::AD<double>)
 MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dinvgamma, CppAD::AD<double>)
-// MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dsqrtinvgamma, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dsqrtinvgamma, CppAD::AD<double>) // broken
 MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_ddexp, CppAD::AD<double>)
 MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dlnorm, CppAD::AD<double>)
 MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dlogis, CppAD::AD<double>)
 MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dunif, CppAD::AD<double>)
 MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dweibull, CppAD::AD<double>)
-// MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dt_nonstandard, CppAD::AD<double>)
-// MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dt, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dt_nonstandard, CppAD::AD<double>) // broken
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dt, CppAD::AD<double>) // broken
 
 #endif
