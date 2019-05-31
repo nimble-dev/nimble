@@ -7,7 +7,7 @@ USER LEVEL CHANGES
 
 -- Improved speed of MCMC configuration (i.e., configureMCMC()) is available by setting nimbleOptions(oldConjugacyChecking = FALSE) and/or nimbleOptions(useNewConfigureMCMC = TRUE).  These new features are considered to be in beta testing.  Default values for these nimbleOptions give old behavior. (PR #910, PR #896)
 
--- Removed compareMCMCs() and MCMCsuite(), which are being re-written for release in a separate package.
+-- Removed compareMCMCs() and MCMCsuite(), which are being re-written for release in a separate package available currently at https://github.com/nimble-dev/compareMCMCs.
 
 -- Added printing option for MCMC configuration objects: conf$printSamplers(byType = TRUE), will display the node names being sampled, grouped together by the sampling algorithm acting on them (e.g., RW sampler). (PR #901)
 

@@ -1,3 +1,24 @@
+#' Placeholder for compareMCMCs
+#'
+#' This function has been moved to a separate package
+#'
+#' @param ... arguments
+#'
+#' @export
+#'
+compareMCMCs <- function(...)
+    print("This function now resides in a separate package. Please see https://github.com/nimble-dev/compareMCMCs.")
+
+#' Placeholder for MCMCsuite
+#'
+#' This function has been moved to a separate package
+#'
+#' @param ... arguments
+#'
+#' @export
+#'
+MCMCsuite <- function(...)
+    print("This function now resides in a separate package. Please see https://github.com/nimble-dev/compareMCMCs.")
 
 ## This is used in conjugacy definition for ddirch, to calculate 'contribution'
 ## terms from dcat dependents.
