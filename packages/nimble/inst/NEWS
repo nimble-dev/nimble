@@ -1,20 +1,21 @@
                             CHANGES IN VERSION 0.8.0 (June 2019)
 USER LEVEL CHANGES
 
-
 -- Added reversible jump MCMC for variable selection via configureRJ().
 
 -- Greatly improved speed of MCMC sampling for Bayesian nonparametric models with the dCRP distribution by not sampling parameters of empty clusters. (PR #855)
 
--- Improved speed of MCMC configuration (i.e., configureMCMC()) by improving lookup of node information and other changes. (PR #910, PR #896)
+-- Improved speed of MCMC configuration (i.e., configureMCMC()) is available by setting nimbleOptions(oldConjugacyChecking = FALSE) and/or nimbleOptions(useNewConfigureMCMC = TRUE).  These new features are considered to be in beta testing.  Default values for these nimbleOptions give old behavior. (PR #910, PR #896)
 
--- Removed compareMCMCs() and MCMCsuite() and creating separate package for them.
+-- Removed compareMCMCs() and MCMCsuite(), which are being re-written for release in a separate package.
 
--- New printing option for MCMC configuration objects: conf$printSamplers(byType = TRUE), will display the node names being sampled, grouped together by the sampling algorithm acting on them (e.g., RW sampler). (PR #901)
+-- Added printing option for MCMC configuration objects: conf$printSamplers(byType = TRUE), will display the node names being sampled, grouped together by the sampling algorithm acting on them (e.g., RW sampler). (PR #901)
 
 -- Added options for control of MCMC behavior: MCMCmonitorAllSampledNodes to monitor all sampled nodes and multivariateNodesAsScalars for sampling scalars within multivariate nodes. (PR #895, #893)
 
--- Added detection of dCRP clustering of regression coefficients by detecting conjugacy when a linear combination is present. 
+-- Added detection of dCRP clustering of regression coefficients by detecting conjugacy when a linear combination is present.
+
+-- Added support for recycling-rule in compiled code for dlogis, rlogis, qlogis, and plogis. (PR #911)
 
 BUG FIXES
 
@@ -24,17 +25,19 @@ BUG FIXES
 
 -- Allow use of TRUE/FALSE for non-parameter arguments in functions in model code. (PR #904)
 
--- Fixed a bug in the RNG state when calling out to C code from R code called by nimbleRcall().  (PR # 897)
+-- Correctly manage the RNG state when calling from C++ to R via a nimbleRcall.  (PR # 897)
 
--- Handle numerical issues when numerical underflow causes exact zeros as proposals in RW_dirichlet sampler. (PR #885)
+-- Handle issues when numerical underflow causes exact zeros as proposals in RW_dirichlet sampler. (PR #885)
 
 -- Fixed a bug in conjugacy detection when models use sum(x[1:n]). (PR #890)
 
--- Fixed a bug in copying when the LHS and RHS involve the same variable. (PR #886)
+-- Fixed bugs in copying in certain cases when the LHS and RHS involve the same variable. (PR #886)
+
+-- Fixed inefficient handling in configureMCMC of some models with gamma distributions. (PR #896)
 
 DEVELOPER LEVEL CHANGES
 
--- Improved scoping of nimbleFunctions without setup code and nimbleRcall and nimbleExternalCall to avoid scoping issues in packages that depend on NIMBLE. (PR #889)
+-- Improved scoping of nimbleFunctions without setup code and nimbleRcall and nimbleExternalCall to avoid issues in packages that depend on NIMBLE. (PR #889)
 
 -- Added a check to detect and error out when clustering deterministic nodes in dCRP-based models. (PR #906)
 
@@ -44,13 +47,13 @@ DEVELOPER LEVEL CHANGES
 
 -- Added some links and tweaked documentation for various functions.
 
--- Improved speed of getNodeNames(). (PR #902)
+-- Improved speed in some uses of getNodeNames(). (PR #902)
 
--- Detect a case of incorrect syntax accessing modelValues. (PR #899)
+-- Added error trap for a case of incorrect syntax accessing modelValues. (PR #899)
 
--- Various other new error traps. (PR #884, #883)
+-- Added various other error traps. (PR #884, #883)
 
--- Removed unused support for running via Tensorflow rather than compiled C++. (PR # 882)
+-- Removed unused support for running via Tensorflow rather than generating and compiling C++. (PR # 882)
 
 -- Only calculate eigenvalues in CAR handling to avoid slow (and unneeded) eigen computations of eigenvectors. (PR #872)
 
