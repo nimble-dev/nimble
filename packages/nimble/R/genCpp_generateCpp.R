@@ -2,7 +2,8 @@
 ## Section for outputting C++ code from an exprClass object ##
 ##############################################################
 
-cppOutputCalls <- c(makeCallList(nimDerivsPrependTypeOperators, 'cppOutputNimDerivsPrependType'),
+cppOutputCalls <- c(makeCallList(recyclingRuleOperatorsAD, 'cppOutputRecyclingRuleFuction'),
+                    makeCallList(nimDerivsPrependTypeOperators, 'cppOutputNimDerivsPrependType'),
                     makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                     makeCallList(binaryMidLogicalOperators, 'cppOutputMidOperator'),
                     makeCallList(binaryOrUnaryOperators, 'cppOutputBinaryOrUnary'),
@@ -157,6 +158,14 @@ cppOutputSkip <- function(code, symTab) nimGenerateCpp(code$args[[1]], symTab)
 
 cppOutputEigBlank <- function(code, symTab) {
     paste0('(', nimGenerateCpp(code$args[[1]], symTab), ')')
+}
+
+cppOutputRecyclingRuleFuction <- function(code, symTab) {
+  if(identical(nimbleUserNamespace$cppADCode, 2L)) {
+    code$name <- paste0('nimDerivs_', code$name)
+    code$name <- gsub('::', '::nimDerivs_', code$name)
+  }
+  cppOutputCallAsIs(code, symTab)
 }
 
 cppOutputNimDerivsPrependType <- function(code, symTab){
