@@ -1,7 +1,7 @@
 ########## TO REMOVE ##########
-library(nimble)
-library(testthat)
-source("~/github/nimble/packages/nimble/R/MCMC_RJ.R")
+# library(nimble)
+# library(testthat)
+# source("~/github/nimble/packages/nimble/R/MCMC_RJ.R")
 ########## TO REMOVE ##########
 
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
