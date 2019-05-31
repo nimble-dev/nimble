@@ -83,7 +83,7 @@ test_that("Test configureRJ with no indicator variables", {
 })
   
 
-test_that("Test configureRJ with multivariate node", {
+test_that("Test configureRJ with multivariate node - no indicator", {
   ##############################
   ## Multivariate node
   code <- nimbleCode({
@@ -133,11 +133,131 @@ test_that("Test configureRJ with multivariate node", {
   expect_error(configureRJ(mcmcConf = mConf, targetNodes = targetNodes, priorProb = 0.5, control = control), NA)
   
   ## test double call to configureRJ
+  configureRJ(mcmcConf = mConf, targetNodes = targetNodes, priorProb = 0.5, control = control)
   expect_error(configureRJ(mcmcConf = mConf, targetNodes = targetNodes, priorProb = 0.5, control = control), 
   'is already configure for reversible jump')
 
   
 })
+
+
+# test_that("Check passing node vector - no indicator", {
+#   #####################################
+#   ## Vector node
+#   code <- nimbleCode({
+#     beta0 ~ dnorm(0, sd = 100)
+#     
+#     for(i in 1:5){
+#       beta[i] ~ dnorm(0, sd = 100)
+#     }
+#     sigma ~ dunif(0, 100)
+#     for(i in 1:10) {
+#       Ypred[i] <- beta0 + sum(X[i,1:5]*beta[1:5])
+#       Y[i] ~ dnorm(Ypred[i], sd = sigma)
+#     }
+#   })
+#   
+#   ## simulate some data
+#   set.seed(1)
+#   X <- matrix(rnorm(10*5), 10, 5) 
+#   betaTrue <- c(2, -2, 3, 0, 0)
+#   eps <- rnorm(10)
+#   Y <- as.vector(X%*%betaTrue + eps)
+#   
+#   data   <- list(Y = Y, X = X)
+#   inits  <- list(beta0 = 0, beta = rep(0, 10), sigma = sd(Y))
+#   
+#   m <- nimbleModel(code, data=data, inits=inits)
+#   mConf <- configureMCMC(m)
+#   
+#   ## One node
+#   # nodes <-  c("beta2")
+#   # expect_error(configureRJ(mConf, nodes), 
+#   #              'Provide indicatorNodes or priorProb vector')
+#   
+# })
+
+
+
+test_that("Check sampler_RJ behaviour (no indicator)", {
+  
+  ## Linear regression with 2 covariates, one in the model
+  code <- nimbleCode({
+    beta0 ~ dnorm(0, sd = 100)
+    beta1 ~ dnorm(0, sd = 100)
+    beta2 ~ dnorm(0, sd = 100)
+    sigma ~ dunif(0, 100)
+    for(i in 1:50) {
+      Ypred[i] <- beta0 + beta1 * x1[i] + beta2 * x2[i]
+      Y[i] ~ dnorm(Ypred[i], sd = sigma)
+    }
+  })
+  
+  ## Data simulation
+  set.seed(0)
+  x1 <- runif(50, -1, 1)
+  x2 <- runif(50, -1, 1)
+  Y <- rnorm(50, 1.5 + 2 * x1, sd = 1)
+  
+  data   <- list(Y = Y, x1 = x1, x2 = x2)
+  
+  ## check sampler behaviour 
+  m <- nimbleModel(code, data=data)
+  cm <- compileNimble(m)
+  mConf <- configureMCMC(m, monitors = c('beta1', 'beta2'))
+  configureRJ(mConf, c('beta1', 'beta2'), prior = 0.5)
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
+  output <- runMCMC(cMCMC,  niter=1000, nburnin = 900, thin=1, 
+                    inits = list(beta0 = 1, beta1 = 1, beta2 = 1, sigma = sd(Y)), setSeed = 1)
+  
+  ## beta2 should be more likely to be 0
+  expect_true(sum(output[, 'beta2'] == 0)/100 > 0.5)
+  # expect_true(mean(output[which(output[, 'beta2'] != 0), 'beta2']) - coef(lm(Y ~ x1 + x2))[3] < 0.05) ## should check that beta2 is small when in the model
+  
+  ## beta1 should be in the model in last 100 iterations (chain has converged)
+  expect_false(any(output[, 'beta1'] == 0))
+  ## beta1 estimate (comparison with lm estimate)
+  expect_equal(mean(output[which(output[, 'beta1'] != 0), 'beta1']), as.numeric(coef(lm(Y ~ x1 + x2))[2]) , tolerance=0.2, scale = 1)
+  
+  ########
+  # ## change proposal mean - still reasonable
+  # m <- nimbleModel(code, data=data)
+  # cm <- compileNimble(m)
+  # mConf <- configureMCMC(m, monitors = c('beta1'))
+  # configureRJ(mConf, 'beta1', prior = 0.5, control = list(mean = 100))
+  # 
+  # mMCMC <- buildMCMC(mConf)
+  # cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
+  # output <- runMCMC(cMCMC,  niter=100, thin=1, 
+  #                   inits = list(beta0 = 1, beta1 = 1, beta2 = 0.5, sigma = sd(Y)), setSeed = 1)
+  # mean(output)
+  # 
+  # 
+  # mConf <- configureMCMC(m, monitors = c('beta2'))
+  # configureRJ(mConf, 'beta2', prior = 0.5, control = list(mean = 10))
+  # 
+  # mMCMC <- buildMCMC(mConf)
+  # cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
+  # output <- runMCMC(cMCMC,  niter=100, thin=1, 
+  #                   inits = list(beta0 = 1, beta1 = 1, beta2 = 0.5, sigma = sd(Y)), setSeed = 1)
+  # output
+  # 
+  # mean(output[, 'beta2'])
+  # 
+  #   
+  
+  ## Different fixedvalue?  
+  #   m <- nimbleModel(code, data=data)
+  #   cm <- compileNimble(m)
+  #   mConf <- configureMCMC(m, monitors = c('beta1', 'beta2'))
+  #   configureRJ(mConf, c('beta1', 'beta2'), prior = 0.5, control = list(fixedValue = c(2, 0)))
+})
+
+
+######################################
+## Tests using indicator variables
+######################################
 
 test_that("Test configureRJ with indicator variables", {
   
@@ -202,20 +322,28 @@ test_that("Test configureRJ with indicator variables", {
 })
 
 
-test_that("Check passing node vector (no indicator)", {
-  #####################################
-  ## Vector node
+test_that("Test configureRJ with multivariate node - indicator", {
+  
+  ##############################
+  ## Multivariate node
   code <- nimbleCode({
     beta0 ~ dnorm(0, sd = 100)
     
+    mu[1:5] <- rep(0, 5)
+    sigma[1:5] <- 1/rep(100, 5)
+    simgma.mat[1:5, 1:5] <- diag(sigma[1:5])
+    beta[1:5] ~ dmnorm(mu[1:5], sigma_mat[1:5, 1:5])
+    
     for(i in 1:5){
-      beta[i] ~ dnorm(0, sd = 100)
+      ## indicator variables
+      z[i] ~ dbern(0.5)
     }
-    sigma ~ dunif(0, 100)
+    
     for(i in 1:10) {
-      Ypred[i] <- beta0 + sum(X[i,1:5]*beta[1:5])
-      Y[i] ~ dnorm(Ypred[i], sd = sigma)
+      Ypred[i] <- beta0 + sum(X[i,1:5]*beta[1:5]*z[1:5])
+      Y[i] ~ dnorm(Ypred[i], sd = sigma.y)
     }
+    sigma.y ~ dunif(0, 100)
   })
   
   ## simulate some data
@@ -226,94 +354,33 @@ test_that("Check passing node vector (no indicator)", {
   Y <- as.vector(X%*%betaTrue + eps)
   
   data   <- list(Y = Y, X = X)
-  inits  <- list(beta0 = 0, beta = rep(0, 10), sigma = sd(Y))
+  inits <- list(beta0 = 0, beta = rep(0, 5), sigma.y = sd(Y), sigma_mat = diag(rep(1/100, 5)), mu = rep(0, 5))
   
   m <- nimbleModel(code, data=data, inits=inits)
   mConf <- configureMCMC(m)
   
-  ## One node
-  # nodes <-  c("beta2")
-  # expect_error(configureRJ(mConf, nodes), 
-  #              'Provide indicatorNodes or priorProb vector')
+  ## test multivariate node with joint sampler
+  expect_error(configureRJ(mConf, "beta", indicatorNodes = "z"), 
+               'beta is multivariate using a joint sampler; only univariate samplers can be used')
+  
+  ## test multivariate node with univariate samplers 
+  nodeAsScalar <- mConf$model$expandNodeNames("beta", returnScalarComponents = TRUE)
+  ## acceptable case
+  mConf$removeSamplers("beta")
+  for(node in nodeAsScalar){
+    mConf$addSampler(node, type = "RW")
+  }
+  
+  ## this should work
+  control <-  list(fixedValue = 0, mean = 0, scale = 2)
+  expect_error(configureRJ(mcmcConf = mConf, targetNodes = "beta", indicatorNodes = "z", control = control), NA)
+  
+  ## test double call to configureRJ
+  expect_error(configureRJ(mcmcConf = mConf, targetNodes = "beta", indicatorNodes = "z", control = control), 
+               'is already configure for reversible jump')
   
 })
 
-
-
-test_that("Check sampler_RJ behaviour (no indicator)", {
-  
-  ## Linear regression with 2 covariates, one in the model
-  code <- nimbleCode({
-    beta0 ~ dnorm(0, sd = 100)
-    beta1 ~ dnorm(0, sd = 100)
-    beta2 ~ dnorm(0, sd = 100)
-    sigma ~ dunif(0, 100)
-    for(i in 1:50) {
-      Ypred[i] <- beta0 + beta1 * x1[i] + beta2 * x2[i]
-      Y[i] ~ dnorm(Ypred[i], sd = sigma)
-    }
-  })
-  
-  ## Data simulation
-  set.seed(0)
-  x1 <- runif(50, -1, 1)
-  x2 <- runif(50, -1, 1)
-  Y <- rnorm(50, 1.5 + 2 * x1, sd = 1)
-  
-  data   <- list(Y = Y, x1 = x1, x2 = x2)
-
-  ## check sampler behaviour 
-  m <- nimbleModel(code, data=data)
-  cm <- compileNimble(m)
-  mConf <- configureMCMC(m, monitors = c('beta1', 'beta2'))
-  configureRJ(mConf, c('beta1', 'beta2'), prior = 0.5)
-  mMCMC <- buildMCMC(mConf)
-  cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
-  output <- runMCMC(cMCMC,  niter=1000, nburnin = 900, thin=1, 
-                    inits = list(beta0 = 1, beta1 = 1, beta2 = 1, sigma = sd(Y)), setSeed = 1)
-  
-  ## beta2 should be more likely to be 0
-  expect_true(sum(output[, 'beta2'] == 0)/100 > 0.5)
-  # expect_true(mean(output[which(output[, 'beta2'] != 0), 'beta2']) - coef(lm(Y ~ x1 + x2))[3] < 0.05) ## should check that beta2 is small when in the model
-  
-  ## beta1 should be in the model in last 100 iterations (chain has converged)
-  expect_false(any(output[, 'beta1'] == 0))
-  ## beta1 estimate (comparison with lm estimate)
-  expect_equal(mean(output[which(output[, 'beta1'] != 0), 'beta1']), as.numeric(coef(lm(Y ~ x1 + x2))[2]) , tolerance=0.2, scale = 1)
-  
-  ########
-  # ## change proposal mean - still reasonable
-  # m <- nimbleModel(code, data=data)
-  # cm <- compileNimble(m)
-  # mConf <- configureMCMC(m, monitors = c('beta1'))
-  # configureRJ(mConf, 'beta1', prior = 0.5, control = list(mean = 100))
-  # 
-  # mMCMC <- buildMCMC(mConf)
-  # cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
-  # output <- runMCMC(cMCMC,  niter=100, thin=1, 
-  #                   inits = list(beta0 = 1, beta1 = 1, beta2 = 0.5, sigma = sd(Y)), setSeed = 1)
-  # mean(output)
-  # 
-  # 
-  # mConf <- configureMCMC(m, monitors = c('beta2'))
-  # configureRJ(mConf, 'beta2', prior = 0.5, control = list(mean = 10))
-  # 
-  # mMCMC <- buildMCMC(mConf)
-  # cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
-  # output <- runMCMC(cMCMC,  niter=100, thin=1, 
-  #                   inits = list(beta0 = 1, beta1 = 1, beta2 = 0.5, sigma = sd(Y)), setSeed = 1)
-  # output
-  # 
-  # mean(output[, 'beta2'])
-  # 
-  #   
-
-  ## Different fixedvalue?  
-#   m <- nimbleModel(code, data=data)
-#   cm <- compileNimble(m)
-#   mConf <- configureMCMC(m, monitors = c('beta1', 'beta2'))
-#   configureRJ(mConf, c('beta1', 'beta2'), prior = 0.5, control = list(fixedValue = c(2, 0)))
-})
 
 test_that("Check sampler_RJ_indicator behaviour (with indicator)", {
 
