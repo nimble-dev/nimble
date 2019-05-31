@@ -409,8 +409,10 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
           warning(paste0("There are no samplers for ", nodeAsScalar[j],". Skipping it."))
           next
         }
-        else if(any(sapply(currentConf, '[[', "name")  ==  "RJ" | sapply(currentConf, '[[', "name")  ==  "RJ_indicator")) {
-          ## check if there is already a RJ or RJ_indicator sampler assigned
+       else if(any(sapply(currentConf, '[[', "name")  ==  "RJ" | 
+          sapply(currentConf, '[[', "name")  ==  "RJ_indicator" |
+          sapply(currentConf, '[[', "name")  ==  "toggled")) {
+           ## check if there is already a RJ or RJ_indicator sampler assigned
           stop(paste0("Node ", nodeAsScalar[j]," is already configure for reversible jump"))
         }
         else if(length(currentConf) > 1){
@@ -474,7 +476,9 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
           warning(paste0("There are no samplers for ", nodeAsScalar[j],". Skipping it."))
           next
         }
-        else if(any(sapply(currentConf, '[[', "name")  ==  "RJ" | sapply(currentConf, '[[', "name")  ==  "RJ_indicator")) {
+        else if(any(sapply(currentConf, '[[', "name")  ==  "RJ" | 
+          sapply(currentConf, '[[', "name")  ==  "RJ_indicator" |
+          sapply(currentConf, '[[', "name")  ==  "toggled")) {
           ## check if there is already a RJ or RJ_indicator sampler assigned
           stop(paste0("Node ", nodeAsScalar[j]," is already configure for reversible jump"))
         }
