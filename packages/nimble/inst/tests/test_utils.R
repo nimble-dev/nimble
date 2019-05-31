@@ -1585,18 +1585,22 @@ make_op_param <- function(op, argTypes, more_args = NULL) {
 ## argTypes: A character vector of argTypes (e.g. "double(0)".
 ##
 return_type_string <- function(op, argTypes) {
-  dist_funs <- c(
+
+  ## see ops handled by eigenize_recyclingRuleFunction in genCpp_eigenization.R
+  recycling_rule_ops <- c(
     nimble:::scalar_distribution_dFuns,
     nimble:::scalar_distribution_pFuns,
     nimble:::scalar_distribution_qFuns,
-    paste0(c('d', 'q', 'p'), 't'),
-    paste0(c('d', 'q', 'p'), 'exp')
+    nimble:::scalar_distribution_rFuns,
+    paste0(c('d', 'q', 'p', 'r'), 't'),
+    paste0(c('d', 'q', 'p', 'r'), 'exp'),
+    'bessel_k'
   )
 
   returnTypeCode <- nimble:::returnTypeHandling[[op]]
 
   if (is.null(returnTypeCode))
-    if (!op %in% dist_funs)
+    if (!op %in% recycling_rule_ops)
       return(argTypes[1])
     else returnTypeCode <- 1
 
@@ -1632,31 +1636,31 @@ return_type_string <- function(op, argTypes) {
   nDim <- if (op %in% reductionOperators) 0
           else max(sapply(args, `[[`, 'nDim'))
 
-  sizes <- if (length(argTypes) == 1)
-             if (nDim == 0) 1 else args[[1]]$size
-           else {
-             if (op %in% nimble:::matrixMultOperators)  {
-               if (!length(argTypes) == 2)
-                 stop(
-                   paste0(
-                     'matrixMultOperators should only have 2 args but got ',
-                     length(argTypes)
-                   ), call. = FALSE
-                 )
-               c(args[[1]]$size[1], args[[2]]$size[2])
-             }
-             else {
-               has_right_nDim <- sapply(args, function(arg) arg$nDim == nDim)
-               if (nDim > 1) {
-                 if (nDim > 2)
-                   stop('Testing does not currently support args with nDim > 2',
-                        call. = FALSE)
-                 ## one arg is a matrix but this is not a matrix multiplication
-                 ## so assume that the first arg with nDim > 1
-                 args[has_right_nDim][[1]]$size
-               } else
-                 max(sapply(args[has_right_nDim], `[[`, 'size'))
-             }
+  if (nDim > 2)
+    stop(
+      'Testing does not currently support args with nDim > 2',
+      call. = FALSE
+    )
+
+  sizes <- if (nDim == 0) 1
+           else if (length(argTypes) == 1) args[[1]]$size
+           else if (op %in% nimble:::matrixMultOperators)  {
+             if (!length(argTypes) == 2)
+               stop(
+                 paste0(
+                   'matrixMultOperators should only have 2 args but got ',
+                   length(argTypes)
+                 ), call. = FALSE
+               )
+             c(args[[1]]$size[1], args[[2]]$size[2])
+           } else if (nDim == 2) {
+             ## one arg is a matrix but this is not matrix multiplication
+             ## so assume that the first arg with nDim > 1
+             has_right_nDim <- sapply(args, function(arg) arg$nDim == nDim)
+             args[has_right_nDim][[1]]$size
+           } else {
+             ## nDim is 1 so either recycling rule or simple vector operator
+             max((sapply(args, `[[`, 'size')))
            }
 
   size_string <- if (nDim > 0)

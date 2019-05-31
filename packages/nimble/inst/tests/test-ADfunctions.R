@@ -988,7 +988,7 @@ distn_params[['binom_base']]$args <- list(
     ## Since the support depends on a parameter, return a function which
     ## test_AD will use with the realized value of the parameter `size`.
     ##
-    distn = function(n) function(size, prob) rbinom(n, size, prob, replace = TRUE),
+    distn = function(n) function(size, prob) rbinom(n, size, prob),
     type = c('double(0)', 'double(1, 5)')
   ),
   size = list(
@@ -1012,7 +1012,7 @@ distn_params[['cat_base']]$args <- list(
   rand_variate = list(
     ## support depends on k = length(prob)
     distn = function(n) function(prob) sample(1:length(prob), n, replace = TRUE),
-    type = c('double(0)')
+    type = c('double(0)', 'double(1, 3)')
   ),
   prob = list(
     distn = function(n) {prob <- runif(n); prob/sum(prob)},
