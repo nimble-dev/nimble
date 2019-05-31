@@ -77,9 +77,7 @@ test_that("Test configureRJ with no indicator variables", {
   expect_error(configureRJ(mConf, nodes, prior = c(0.5, 2, 0.2)), 
                'Elements in priorProb must be probabilities in')
   
-  # if(.Platform$OS.type != "windows") {
-  #   nimble:::clearCompiled(m)
-  # }
+
 })
   
 
@@ -179,7 +177,7 @@ test_that("Test configureRJ with multivariate node - no indicator", {
 
 
 
-test_that("Check sampler_RJ behaviour (no indicator)", {
+test_that("Check sampler_RJ behaviour - no indicator", {
   
   ## Linear regression with 2 covariates, one in the model
   code <- nimbleCode({
@@ -215,43 +213,64 @@ test_that("Check sampler_RJ behaviour (no indicator)", {
   expect_true(sum(output[, 'beta2'] == 0)/100 > 0.5)
   # expect_true(mean(output[which(output[, 'beta2'] != 0), 'beta2']) - coef(lm(Y ~ x1 + x2))[3] < 0.05) ## should check that beta2 is small when in the model
   
-  ## beta1 should be in the model in last 100 iterations (chain has converged)
-  expect_false(any(output[, 'beta1'] == 0))
+  ## beta1 should be less likely to be 0
+  expect_true(sum(output[, 'beta1'] == 0)/100 < 0.5)
   ## beta1 estimate (comparison with lm estimate)
-  expect_equal(mean(output[which(output[, 'beta1'] != 0), 'beta1']), as.numeric(coef(lm(Y ~ x1 + x2))[2]) , tolerance=0.2, scale = 1)
+  expect_equal(mean(output[which(output[, 'beta1'] != 0), 'beta1']), as.numeric(coef(lm(Y ~ x1 + x2))[2]) , tolerance=0.1, scale = 1)
+
+  # ## beta1 should be in the model in last 100 iterations (chain has converged)
+  # expect_false(any(output[, 'beta1'] == 0))
   
-  ########
-  # ## change proposal mean - still reasonable
-  # m <- nimbleModel(code, data=data)
-  # cm <- compileNimble(m)
-  # mConf <- configureMCMC(m, monitors = c('beta1'))
-  # configureRJ(mConf, 'beta1', prior = 0.5, control = list(mean = 100))
-  # 
-  # mMCMC <- buildMCMC(mConf)
-  # cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
-  # output <- runMCMC(cMCMC,  niter=100, thin=1, 
-  #                   inits = list(beta0 = 1, beta1 = 1, beta2 = 0.5, sigma = sd(Y)), setSeed = 1)
-  # mean(output)
-  # 
-  # 
-  # mConf <- configureMCMC(m, monitors = c('beta2'))
-  # configureRJ(mConf, 'beta2', prior = 0.5, control = list(mean = 10))
-  # 
-  # mMCMC <- buildMCMC(mConf)
-  # cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
-  # output <- runMCMC(cMCMC,  niter=100, thin=1, 
-  #                   inits = list(beta0 = 1, beta1 = 1, beta2 = 0.5, sigma = sd(Y)), setSeed = 1)
-  # output
-  # 
-  # mean(output[, 'beta2'])
-  # 
-  #   
+  #######
+  ## change proposal mean for beta1 - still reasonable even if far
+  ## dnorm(1.5, 3, 1) = 0.12
+  m <- nimbleModel(code, data=data)
+  cm <- compileNimble(m)
+  mConf <- configureMCMC(m, monitors = c('beta1'))
   
-  ## Different fixedvalue?  
-  #   m <- nimbleModel(code, data=data)
-  #   cm <- compileNimble(m)
-  #   mConf <- configureMCMC(m, monitors = c('beta1', 'beta2'))
-  #   configureRJ(mConf, c('beta1', 'beta2'), prior = 0.5, control = list(fixedValue = c(2, 0)))
+  configureRJ(mConf, 'beta1', prior = 0.5, control = list(mean = 3))
+
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
+  output <- runMCMC(cMCMC,  niter=100, thin=1,
+                    inits = list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y)), setSeed = 1)
+  ## beta1 estimate (comparison with lm estimate)
+  expect_equal(mean(output[which(output[, 'beta1'] != 0), 'beta1']), as.numeric(coef(lm(Y ~ x1 + x2))[2]) , tolerance=0.1, scale = 1)
+  
+  #######
+  ## fixed value on true beta1
+  m <- nimbleModel(code, data=data)
+  cm <- compileNimble(m)
+  mConf <- configureMCMC(m, monitors = c('beta1'))
+  
+  configureRJ(mConf, 'beta1', prior = 0.5, control = list(fixedValue = 1.5))
+  
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
+  output <- runMCMC(cMCMC,  niter=100, thin=1,
+                    inits = list(beta0 = 0, beta1 = 0, beta2 = 0,  sigma = sd(Y)), setSeed = 1)
+  expect_equal(mean(output[which(output[, 'beta1'] != 0), 'beta1']), 1.5 , tolerance=0.01, scale = 1)
+  
+  #######
+  ## fixedValue on far value for beta2 
+  m <- nimbleModel(code, data=data)
+  cm <- compileNimble(m)
+  mConf <- configureMCMC(m, monitors = c('beta2'))
+  
+  configureRJ(mConf, 'beta2', prior = 0.5, control = list(fixedValue = 5))
+  
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
+  output <- runMCMC(cMCMC,  niter=100, thin=1,
+                    inits = list(beta0 = 1, beta1 = 1, beta2 = 1, sigma = sd(Y)), setSeed = 1)
+  
+  ## still beta2 is in the models but really small
+  expect_equal(mean(output[which(output[, 'beta2'] != 0), 'beta2']), 0 , tolerance=0.1, scale = 1)
+  
+  
+  if(.Platform$OS.type != "windows") {
+    nimble:::clearCompiled(m)
+  }
 })
 
 
