@@ -401,7 +401,7 @@ test_that("Test configureRJ with multivariate node - indicator", {
 })
 
 
-test_that("Check sampler_RJ_indicator behaviour (with indicator)", {
+test_that("Check sampler_RJ_indicator behaviour - indicator", {
 
   ## Linear regression with 2 covariates, one in the model
   code <- nimbleCode({
@@ -438,20 +438,46 @@ test_that("Check sampler_RJ_indicator behaviour (with indicator)", {
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE, resetFunctions = TRUE)
   output <- runMCMC(cMCMC,  niter=1000, nburnin = 900, thin=1, 
-                    inits = list(beta0 = 1, beta1 = 1, beta2 = 1, sigma = sd(Y)), setSeed = 1)
+                    inits = list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y)), setSeed = 1)
   
-  ##-------------------------------##
-  ## not sure if this is a valid test
-  ##-------------------------------##
   ## beta2 should be more likely to be 0
-  expect_true(sum(output[, 'beta2'] == 0)/100 > 0.5)
-  
-  # expect_true(mean(output[which(output[, 'beta2'] != 0), 'beta2']) - coef(lm(Y ~ x1 + x2))[3] < 0.05) ## would check that beta2 is small when in the model
-  ## beta1 should be in the model
-  expect_false(any(output[, 'beta1'] == 0))
-  ## check beta1 estimate
-  expect_equal(mean(output[which(output[, 'beta1'] != 0), 'beta1']), as.numeric(coef(lm(Y ~ x1 + x2))[2]) , tolerance=0.2, scale = 1)
+  expect_true(mean(output[, 'z2']) < 0.5)
+  ## beta2 should be 0 when z1 is 0
+  expect_equal(sum(output[, 'beta2'] != 0)/100, mean(output[, 'z2']) )
 
+  ## beta1 should be less likely to be 0
+  expect_true(mean(output[, 'z1']) > 0.5)
+  ## beta1 should be 0 when z1 is 0
+  expect_equal(sum(output[, 'beta1'] != 0)/100, mean(output[, 'z1']) )
+  
+  ## check beta1 estimate
+  expect_equal(mean(output[which(output[, 'z1'] != 0), 'beta1']), as.numeric(coef(lm(Y ~ x1 + x2))[2]) , tolerance=0.1, scale = 1)
+
+  
+  
+  ## more challeging data
+  set.seed(0)
+  x1 <- runif(50, -1, 1)
+  x2 <- runif(50, -1, 1)
+  Y <- rnorm(50, 1.5 + 1 * x1 - 1 * x2, sd = 1)
+  
+  data   <- list(Y = Y, x1 = x1, x2 = x2)
+  inits  <- list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y), z2 = 1, z1 = 1, psi = 0.5)
+  
+  m <- nimbleModel(code, data=data, inits=inits)
+  cm <- compileNimble(m)
+  
+  mConf <- configureMCMC(m, monitors = c('beta1', 'beta2', 'z1', 'z2'))
+  configureRJ(mConf, c('beta1', 'beta2'), indicator =c('z1', 'z2'))
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE, resetFunctions = TRUE)
+  output <- runMCMC(cMCMC,  niter=100, nburnin = 0, thin=1, 
+                    inits = list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y)), setSeed = 1)
+  
+  ## check that when indicators are zero parameters are zero
+  expect_equal(which(output[, 'beta1'] == 0), which(output[, 'z1'] == 0))
+  expect_equal(which(output[, 'beta2'] == 0), which(output[, 'z2'] == 0))
+  
 })
 
 
