@@ -142,6 +142,8 @@ print: A logical argument specifying whether to print the ordered list of defaul
 
 ...: Additional named control list elements for default samplers, or additional arguments to be passed to the autoBlock function when autoBlock = TRUE.
 '
+            useNewConfigureMCMC <- isTRUE(nimbleOptions("useNewConfigureMCMC"))
+            
             if(is(model, 'RmodelBaseClass')) {
                 model <<- model
             } else if(is(model, 'CmodelBaseClass')) {
@@ -159,13 +161,25 @@ print: A logical argument specifying whether to print the ordered list of defaul
             controlDefaults <<- list(...)
             namedSamplerLabelMaker <<- labelFunctionCreator('namedSampler')
             for(i in seq_along(control))     controlDefaults[[names(control)[i]]] <<- control[[i]]
-            if(identical(nodes, character())) { nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
-                                            } else             { if(is.null(nodes) || length(nodes)==0)     nodes <- character(0)
-                                                                 nl_checkVarNamesInModel(model, removeIndexing(nodes))
-                                                                 nodes <- model$expandNodeNames(nodes)            }
+            if(identical(nodes, character())) {
+                nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
+                # Check of all(model$isStoch(nodes)) is not needed in this case
+            } else             {
+                if(is.null(nodes) || length(nodes)==0)     nodes <- character(0)
+                nl_checkVarNamesInModel(model, removeIndexing(nodes))
+                nodes <- model$expandNodeNames(nodes)
+                if(useNewConfigureMCMC) { 
+                    if(!(all(model$isStoch(nodes)))) {
+                        stop('assigning samplers to non-stochastic nodes: ',
+                             paste0(nodes[!model$isStoch(nodes)],
+                                    collapse=', ')) }    ## ensure all target node(s) are stochastic
+            }
+            }
             
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
-            if(!(all(model$isStoch(nodes)))) { stop('assigning samplers to non-stochastic nodes: ', paste0(nodes[!model$isStoch(nodes)], collapse=', ')) }    ## ensure all target node(s) are stochastic
+            if(!useNewConfigureMCMC) {
+                if(!(all(model$isStoch(nodes)))) { stop('assigning samplers to non-stochastic nodes: ', paste0(nodes[!model$isStoch(nodes)], collapse=', ')) }    ## ensure all target node(s) are stochastic
+            }
 
             if(getNimbleOption('MCMCuseSamplerAssignmentRules')) {
                 ## use new system of samplerAssignmentRules
@@ -194,9 +208,57 @@ print: A logical argument specifying whether to print the ordered list of defaul
                 }
             } else {
                 ## use old (static) system for assigning default samplers
-                isEndNode <- model$isEndNode(nodes)
-                if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
-
+                if(!useNewConfigureMCMC) {
+                    isEndNode <- model$isEndNode(nodes)
+                    if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
+                } else {
+                    nodeIDs <- model$expandNodeNames(nodes, returnType = 'ids')
+                    isEndNode <-  model$isEndNode(nodeIDs) ## isEndNode can be modified later to avoid adding names when input is IDs
+                    if(useConjugacy) conjugacyResultsAll <- nimble:::conjugacyRelationshipsObject$checkConjugacy(model, nodeIDs) ## Later, this can go through model$checkConjugacy if we make it check whether nodes are already nodeIDs.  To isolate changes, I am doing it directly here.
+                    nodeDeclIDs <- model$modelDef$maps$graphID_2_declID[nodeIDs] ## Below, nodeDeclIDs[i] gives the nodeDeclID.  We could add an interface to get this.
+                    nodeDeclID_2_nodes <- split(nodes, nodeDeclIDs)
+                    
+                    uniqueNodeDeclIDs <- unique(nodeDeclIDs)
+                    nodeTraits <- lapply(uniqueNodeDeclIDs,
+                                         function(x) {
+                                             declInfo <- model$modelDef$declInfo[[x]]
+                                             dist <- declInfo$distributionName
+                                             distInfo <- getDistributionInfo(dist)
+                                             discrete <- distInfo$discrete
+                                             ## Following can be replaced by an efficiency version model$isBinary 
+                                             binary <- dist == 'dbern'
+                                             ## If dist == 'dbin', then binary-ness will be checked for each node, below
+                                             ## This could be improved to see if they all have a literal "1", for example.
+                                             ## The checking below is inefficient!
+                                             ## For nodeScalarComponents, we will check a single node
+                                             ## We could use returnType = 'ids', but we have a warning generated in that case,
+                                             ## for future investigation.
+                                             
+                                             ## Determining nodeLength is a bit tricky.
+                                             ## The only purpose is to determine scalar vs. non-scalar.
+                                             ## In the future, we may want to make this available in distributionInfo.
+                                             ## A difficulty is whether it is possible to declare a scalar
+                                             ##     case of a multivariate node.
+                                             ## If so, then the status (scalar vs non-scalar) needs to be checked
+                                             ## node by node, not just once for the declaration.
+                                             ## Here we use a system that marks scalar as scalar.  The alternative is really
+                                             ## "maybe non-scalar", in which case it is checked node-by-node below.
+                                             ## Unfortunately, this processing works from nodeNames.
+                                             allNodeScalarComponents <- model$expandNodeNames(
+                                                                               nodeDeclID_2_nodes[[as.character(x)]],
+                                                                               returnScalarComponents = TRUE)
+                                             nodeLength <- if(length(allNodeScalarComponents) ==
+                                                              length(nodeDeclID_2_nodes[[as.character(x)]]))
+                                                               1 else 2 ## 2 indicates "maybe non-scalar"
+                                             list(dist = dist,
+                                                  discrete = discrete,
+                                                  binary = binary,
+                                                  nodeLength = nodeLength)
+                                        }
+                                        )
+                    names(nodeTraits) <- as.character(uniqueNodeDeclIDs)
+                }
+               
                 allDists <- unlist(lapply(model$modelDef$declInfo, `[[`, 'distributionName'))
                 allDists <- allDists[!is.na(allDists)]
                 check_dCRP <- any(allDists == "dCRP")
@@ -205,12 +267,30 @@ print: A logical argument specifying whether to print the ordered list of defaul
 
                 for(i in seq_along(nodes)) {
                     node <- nodes[i]
-                    discrete <- model$isDiscrete(node)
-                    binary <- model$isBinary(node)
-                    nodeDist <- model$getDistribution(node)
-                    nodeScalarComponents <- model$expandNodeNames(node, returnScalarComponents = TRUE)
-                    nodeLength <- length(nodeScalarComponents)
-                    
+                    if(!useNewConfigureMCMC) {
+                        discrete <- model$isDiscrete(node)
+                        binary <- model$isBinary(node)
+                        nodeDist <- model$getDistribution(node)
+                        nodeScalarComponents <- model$expandNodeNames(node, returnScalarComponents = TRUE)
+                        nodeLength <- length(nodeScalarComponents)
+                    } else {
+                        nodeDeclID <- nodeDeclIDs[i]
+                        nodeTrait <- nodeTraits[[as.character(nodeDeclID)]] ## from split, the names are nodeDeclIds
+                        nodeDist <- nodeTrait$dist
+                        discrete <- nodeTrait$discrete
+                        if(nodeDist != "dbin") {
+                            binary <- nodeTrait$binary
+                        } else {
+                            ## Check dbin case one by one, since the paramExpr may have come from
+                            ## a constants replacement, with a 1 for some nodes of a declaration but not others.
+                            binary <- model$getParamExpr(node, 'size') == 1
+                        }
+                        nodeLength <- nodeTrait$nodeLength
+                        if(nodeLength == 2) { ## code for "maybe non-scalar", so we check each one
+                            nodeScalarComponents <- model$expandNodeNames(node, returnScalarComponents = TRUE)
+                            nodeLength <- length(nodeScalarComponents)
+                        }
+                    }
                     ## if node has 0 stochastic dependents, assign 'posterior_predictive' sampler (e.g. for predictive nodes)
                     if(isEndNode[i]) { addSampler(target = node, type = 'posterior_predictive');     next }
                     
