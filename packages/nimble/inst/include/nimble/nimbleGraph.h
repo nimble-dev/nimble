@@ -84,4 +84,13 @@ extern "C" {
   SEXP C_getDependencyPathCountOneNode(SEXP SgraphExtPtr, SEXP Snode);
 }
 
+
+/**********************/
+/* getDependencyPaths */
+/**********************/
+
+extern "C" {
+  SEXP C_getDependencyPaths(SEXP SgraphExtPtr, SEXP Snodes);
+}
+
 #endif
