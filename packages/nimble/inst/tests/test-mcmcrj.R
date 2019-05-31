@@ -399,9 +399,9 @@ test_that("Test configureRJ with multivariate node - indicator", {
                'is already configure for reversible jump')
   
   
-  if(.Platform$OS.type != "windows") {
-    nimble:::clearCompiled(m)
-  }
+  # if(.Platform$OS.type != "windows") {
+  #   nimble:::clearCompiled(m)
+  # }
   
   
 })
@@ -535,8 +535,8 @@ test_that("Check passing node vector - indicator", {
                'Length of indicatorNodes vector must match targetNodes length')
 
     
-  if(.Platform$OS.type != "windows") {
-    nimble:::clearCompiled(m)
-  }
+  # if(.Platform$OS.type != "windows") {
+  #   nimble:::clearCompiled(m)
+  # }
   
 })
