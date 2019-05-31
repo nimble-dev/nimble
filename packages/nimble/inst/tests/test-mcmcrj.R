@@ -1,9 +1,3 @@
-########## TO REMOVE ##########
-# library(nimble)
-# library(testthat)
-# source("~/github/nimble/packages/nimble/R/MCMC_RJ.R")
-########## TO REMOVE ##########
-
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
@@ -45,16 +39,16 @@ test_that("Test configureRJ with no indicator variables", {
   ## One node
   nodes <-  c("beta2")
   expect_error(configureRJ(mConf, nodes), 
-               'Provide indicatorNodes or priorProb vector')
+               "configureRJ: Provide 'indicatorNodes' or 'priorProb' vector")
   
   #####################################
   ## One node, multiple parameters 
   expect_error(configureRJ(mConf, nodes, prior = 0.5, control = list(fixedValue = c(0,1))), 
-               'inconsistent length of fixedValue argument and specified number of RJ targetNodes')
+               'configureRJ: inconsistent length')
   expect_error(configureRJ(mConf, nodes, prior = 0.5, control = list(mean = c(0,1))), 
-               'inconsistent length of mean argument and specified number of RJ targetNodes')
+               'configureRJ: inconsistent length')
   expect_error(configureRJ(mConf, nodes, prior = 0.5, control = list(scale = c(2,1))), 
-               'inconsistent length of scale argument and specified number of RJ targetNodes')
+               'configureRJ: inconsistent length')
   
   ## priorProb not probabilities
   expect_error(configureRJ(mConf, nodes, prior = -1))
@@ -64,26 +58,29 @@ test_that("Test configureRJ with no indicator variables", {
   ## Multiple nodes, less paramters
   nodes <-  c("beta0", "beta1", "beta2")
   expect_error(configureRJ(mConf, nodes, prior = c(0.5, 0.5)), 
-               'Length of priorProb vector must match targetNodes length')
+               "configureRJ: Length of 'priorProb' vector must match 'targetNodes' length.")
   
   expect_error(configureRJ(mConf, nodes, prior = 0.5, control = list(fixedValue = c(0,1))), 
-               'inconsistent length of fixedValue argument and specified number of RJ targetNodes')
+               "configureRJ: inconsistent length")
   expect_error(configureRJ(mConf, nodes, prior = 0.5, control = list(mean = c(0,1))), 
-               'inconsistent length of mean argument and specified number of RJ targetNodes')
+               "configureRJ: inconsistent length")
   expect_error(configureRJ(mConf, nodes, prior = 0.5, control = list(scale = c(2,1))), 
-               'inconsistent length of scale argument and specified number of RJ targetNodes')
+               "configureRJ: inconsistent length")
   
+  #####################################
   ## priorProb not probabilities
   expect_error(configureRJ(mConf, nodes, prior = c(0.5, 2, 0.2)), 
-               'Elements in priorProb must be probabilities in')
+               "configureRJ: Elements in priorProb")
   
 
 })
   
 
 test_that("Test configureRJ with multivariate node - no indicator", {
+  
   ##############################
   ## Multivariate node
+  
   code <- nimbleCode({
     beta0 ~ dnorm(0, sd = 100)
     
@@ -114,7 +111,7 @@ test_that("Test configureRJ with multivariate node - no indicator", {
   
   ## test multivariate node with joint sampler
   expect_error(configureRJ(mConf, "beta", prior =0.5), 
-              'beta is multivariate using a joint sampler; only univariate samplers can be used')
+              'is multivariate and uses a joint sampler; only univariate samplers can be used with reversible jump sampling.')
 
   ## test multivariate node with univariate samplers 
   nodeAsScalar <- mConf$model$expandNodeNames("beta", returnScalarComponents = TRUE)
@@ -131,12 +128,13 @@ test_that("Test configureRJ with multivariate node - no indicator", {
   
   ## test double call to configureRJ
   expect_error(configureRJ(mcmcConf = mConf, targetNodes = targetNodes, priorProb = 0.5, control = control), 
-  'is already configure for reversible jump')
+  "is already configured for reversible jump")
 
 })
 
 
 test_that("Check passing node vector - no indicator", {
+  
   #####################################
   ## Vector node
   code <- nimbleCode({
@@ -238,6 +236,22 @@ test_that("Check sampler_RJ behaviour - no indicator", {
   expect_equal(mean(output[which(output[, 'beta1'] != 0), 'beta1']), as.numeric(coef(lm(Y ~ x1 + x2))[2]) , tolerance=0.1, scale = 1)
   
   #######
+  ## change proposal variance
+  m <- nimbleModel(code, data=data)
+  cm <- compileNimble(m)
+  mConf <- configureMCMC(m, monitors = c('beta1', 'beta2'))
+  
+  configureRJ(mConf, c('beta1', 'beta2'), prior = 0.5, control = list(mean = c(1, 0), sd = c(0.01, 10)))
+  
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
+  output <- runMCMC(cMCMC,  niter=100, thin=1,
+                    inits = list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y)), setSeed = 1)
+  output  
+  ## beta1 estimate (comparison with lm estimate)
+  expect_equal(mean(output[which(output[, 'beta1'] != 0), 'beta1']), as.numeric(coef(lm(Y ~ x1 + x2))[2]) , tolerance=0.1, scale = 1)
+
+  #######
   ## fixed value on true beta1
   m <- nimbleModel(code, data=data)
   cm <- compileNimble(m)
@@ -310,34 +324,26 @@ test_that("Test configureRJ with indicator variables", {
   ## One node
   nodes <-  c("beta2")
   expect_error(configureRJ(mConf, nodes), 
-               'Provide indicatorNodes or priorProb vector')
+               "configureRJ: Provide 'indicatorNodes' or 'priorProb' vector")
   expect_error(configureRJ(mConf, nodes, indicatorNodes = c("z1", "z2")), 
-               'Length of indicatorNodes vector must match targetNodes length')
+               "configureRJ: Length of 'indicatorNodes' vector must match 'targetNodes' length.")
   
   ## One node, multiple parameters
-  # expect_error(configureRJ(mConf, nodes, indicatorNodes = "z1", control = list(fixedValue = c(0,1))), 
-  #              'inconsistent length of fixedValue argument and specified number of RJ targetNodes')
   expect_error(configureRJ(mConf, nodes, indicatorNodes = "z1", control = list(mean = c(0,1))), 
-               'inconsistent length of mean argument and specified number of RJ targetNodes')
+               'configureRJ: inconsistent length')
   expect_error(configureRJ(mConf, nodes, indicatorNodes = "z1", control = list(scale = c(2,1))), 
-               'inconsistent length of scale argument and specified number of RJ targetNodes')
+               'configureRJ: inconsistent length')
   
   ## Multiple nodes, less paramters
   nodes <-  c("beta0", "beta1", "beta2")
   expect_error(configureRJ(mConf, nodes, indicatorNodes = c("z1", "z2")), 
-               'Length of indicatorNodes vector must match targetNodes length')
+               "configureRJ: Length of 'indicatorNodes' vector must match 'targetNodes' length.")
 
-  # expect_error(configureRJ(mConf, nodes, indicatorNodes = c("z1", "z2"), control = list(fixedValue = c(0,1))), 
-  #              'inconsistent length of fixedValue argument and specified number of RJ targetNodes')
   expect_error(configureRJ(mConf, nodes, indicatorNodes = c("z1", "z2"), control = list(mean = c(0,1))), 
-               'inconsistent length of mean argument and specified number of RJ targetNodes')
+               'configureRJ: inconsistent length')
   expect_error(configureRJ(mConf, nodes, indicatorNodes = c("z1", "z2"), control = list(scale = c(2,1))), 
-               'inconsistent length of scale argument and specified number of RJ targetNodes')  
+               'configureRJ: inconsistent length')  
 
-
-  # if(.Platform$OS.type != "windows") {
-  #   nimble:::clearCompiled(m)
-  # }
 })
 
 
@@ -380,7 +386,7 @@ test_that("Test configureRJ with multivariate node - indicator", {
   
   ## test multivariate node with joint sampler
   expect_error(configureRJ(mConf, "beta", indicatorNodes = "z"), 
-               'beta is multivariate using a joint sampler; only univariate samplers can be used')
+               'is multivariate and uses a joint sampler; only univariate samplers can be used with reversible jump sampling.')
   
   ## test multivariate node with univariate samplers 
   nodeAsScalar <- mConf$model$expandNodeNames("beta", returnScalarComponents = TRUE)
@@ -396,14 +402,7 @@ test_that("Test configureRJ with multivariate node - indicator", {
   
   ## test double call to configureRJ
   expect_error(configureRJ(mcmcConf = mConf, targetNodes = "beta", indicatorNodes = "z", control = control), 
-               'is already configure for reversible jump')
-  
-  
-  # if(.Platform$OS.type != "windows") {
-  #   nimble:::clearCompiled(m)
-  # }
-  
-  
+               'is already configured for reversible jump')
 })
 
 
@@ -532,7 +531,7 @@ test_that("Check passing node vector - indicator", {
   ## throws error
   mConf <- configureMCMC(m)
   expect_error(configureRJ(mConf, c("beta[1]", "beta[2:4]"), indicatorNodes = "z"), 
-               'Length of indicatorNodes vector must match targetNodes length')
+               "configureRJ: Length of 'indicatorNodes' vector must match 'targetNodes' length.")
 
     
   # if(.Platform$OS.type != "windows") {
