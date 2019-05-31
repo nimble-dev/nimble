@@ -150,8 +150,8 @@ sampler_RJ_indicator <- nimbleFunction(
       model[[target]] <<- 1
       model[[coefNode]] <<- proposalCoef
       
-      proposalLogProb <- model$calculate(calcNodes
-)      logAcceptanceProb <- proposalLogProb - currentLogProb - logProbForwardProposal
+      proposalLogProb <- model$calculate(calcNodes)
+      logAcceptanceProb <- proposalLogProb - currentLogProb - logProbForwardProposal
     }
     accept <- decide(logAcceptanceProb)
     if(accept) {
