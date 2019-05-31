@@ -202,6 +202,7 @@ test_that("Check sampler_RJ behaviour - no indicator", {
   cm <- compileNimble(m)
   mConf <- configureMCMC(m, monitors = c('beta1', 'beta2'))
   configureRJ(mConf, c('beta1', 'beta2'), prior = 0.5)
+  
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
   output <- runMCMC(cMCMC,  niter=1000, nburnin = 900, thin=1, 
@@ -236,29 +237,13 @@ test_that("Check sampler_RJ behaviour - no indicator", {
   expect_equal(mean(output[which(output[, 'beta1'] != 0), 'beta1']), as.numeric(coef(lm(Y ~ x1 + x2))[2]) , tolerance=0.1, scale = 1)
   
   #######
-  ## change proposal variance
-  m <- nimbleModel(code, data=data)
-  cm <- compileNimble(m)
-  mConf <- configureMCMC(m, monitors = c('beta1', 'beta2'))
-  
-  configureRJ(mConf, c('beta1', 'beta2'), prior = 0.5, control = list(mean = c(1, 0), sd = c(0.01, 10)))
-  
-  mMCMC <- buildMCMC(mConf)
-  cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
-  output <- runMCMC(cMCMC,  niter=100, thin=1,
-                    inits = list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y)), setSeed = 1)
-  output  
-  ## beta1 estimate (comparison with lm estimate)
-  expect_equal(mean(output[which(output[, 'beta1'] != 0), 'beta1']), as.numeric(coef(lm(Y ~ x1 + x2))[2]) , tolerance=0.1, scale = 1)
-
-  #######
   ## fixed value on true beta1
   m <- nimbleModel(code, data=data)
   cm <- compileNimble(m)
   mConf <- configureMCMC(m, monitors = c('beta1'))
   
   configureRJ(mConf, 'beta1', prior = 0.5, control = list(fixedValue = 1.5))
-  
+
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
   output <- runMCMC(cMCMC,  niter=100, thin=1,
