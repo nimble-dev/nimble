@@ -2280,20 +2280,20 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' The posterior_predictive sampler is only appropriate for use on terminal stochastic nodes.  Note that such nodes play no role in inference but have often been included in BUGS models to accomplish posterior predictive checks.  NIMBLE allows posterior predictive values to be simulated independently of running MCMC, for example by writing a nimbleFunction to do so.  This means that in many cases where terminal stochastic nodes have been included in BUGS models, they are not needed when using NIMBLE.
 #'
-#' The posterior_predictive sampler functions by calling the simulate() method of relevant node, then updating model probabilities and deterministic dependent nodes.  The application of a posterior_predictive sampler to any non-terminal node will result in invalid posterior inferences.  The posterior_predictive sampler will automatically be assigned to all terminal, non-data stochastic nodes in a model by the default MCMC configuration, so it is uncommon to manually assign this sampler.
+#' The posterior_predictive sampler functions by calling the \code{simulate} method of relevant node, then updating model probabilities and deterministic dependent nodes.  The application of a posterior_predictive sampler to any non-terminal node will result in invalid posterior inferences.  The posterior_predictive sampler will automatically be assigned to all terminal, non-data stochastic nodes in a model by the default MCMC configuration, so it is uncommon to manually assign this sampler.
 #'
 #' The posterior_predictive sampler accepts no control list arguments.
 
 #' @section RJ sampler:
 #'  
-#' This sampler perform a Reversible Jump MCMC step for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{configureRJ} function, when the model code is written without using indicator variables. See \code{\help{configureRJ}} for details.
+#' This sampler performs reversible jump MCMC steps for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{configureRJ} function, when the model code is written without using indicator variables. See \code{\help{configureRJ}} for details. It is not intended for direct assignment by users.
 #'
 #' @section RJ_indicator sampler:
 #'  
-#' This sampler perform a Reversible Jump MCMC step for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{configureRJ} function, when the model code is written using indicator variables. See \code{\help{configureRJ}} for details.
+#' This sampler performs reversible jump MCMC steps for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{configureRJ} function, when the model code is written using indicator variables. See \code{\help{configureRJ}} for details. It is not intended for direct assignment by users.
 #'
 #' @section toggled sampler:
-#' Sample according to assigned sampler when the target is in the model. This is a specialized sampler used by \code{configureRJ} when adding a Reversible Jump MCMC . See \code{\help{configureRJ}} for details.
+#' This sampler wraps around the assigned sampler for a node and does sampling only when the target is in the model, as part of reversible jump MCMC. This is a specialized sampler used by \code{configureRJ} when adding a reversible jump MCMC . See \code{\help{configureRJ}} for details. It is not intended for direct assignment by users.
 #'
 #' @name samplers
 #' 
