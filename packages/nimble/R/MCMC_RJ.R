@@ -387,7 +387,7 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
       nodeAsScalar <- mcmcConf$model$expandNodeNames(targetNodes[i], returnScalarComponents = TRUE)
       
       ## if the node is multivariate check that samplers are univariate 
-      if(mcmcConf$model$isMultivariate(targetNodes[i])) {
+      if(length(nodeAsScalar) > 1) {
         if(length(mcmcConf$getSamplers(targetNodes[i])) == 1)
           stop(paste0(targetNodes[i], " is multivariate using a joint sampler; only univariate samplers can be used"))
       }
@@ -449,7 +449,7 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
       indicatorsAsScalar <- mcmcConf$model$expandNodeNames(indicatorNodes[i], returnScalarComponents = TRUE)
       
       ## if the node is multivariate check that samplers are univariate
-      if(mcmcConf$model$isMultivariate(targetNodes[i])) {
+      if(length(nodeAsScalar) > 1) {
         if(length(mcmcConf$getSamplers(targetNodes[i])) == 1)
           stop(paste0(targetNodes[i], " is multivariate using a joint sampler; only univariate samplers can be used"))
       }
