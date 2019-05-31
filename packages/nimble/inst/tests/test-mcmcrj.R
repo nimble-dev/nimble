@@ -111,7 +111,6 @@ test_that("Test configureRJ with multivariate node - no indicator", {
   
   m <- nimbleModel(code, data=data, inits=inits)
   mConf <- configureMCMC(m)
-  mConf$printSamplers()
   
   ## test multivariate node with joint sampler
   expect_error(configureRJ(mConf, "beta", prior =0.5), 
