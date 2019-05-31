@@ -58,7 +58,10 @@ sampler_RJ <- nimbleFunction(
       logProbReverseProposal <- dnorm(currentValue, mean = proposalMean, sd = proposalScale, log = TRUE)
 
       model[[target]] <<- fixedValue
-      proposalLogProb <- model$calculate(calcNodes)
+      
+      model$calculate(calcNodes)
+
+      proposalLogProb <-  model$getLogProb(calcNodesReduced)
       logAcceptanceProb <- proposalLogProb - currentLogProb - logRatioProbFixedOverProbNotFixed + logProbReverseProposal
     } else {
       ##----------------------##
@@ -131,6 +134,7 @@ sampler_RJ_indicator <- nimbleFunction(
       model[[target]] <<- 0
       model[[coefNode]] <<- 0 
       model$calculate(calcNodes)
+      
       ## avoid including prior for coef not in model
       logAcceptanceProb <- model$getLogProb(calcNodesReduced) - currentLogProb + logProbReverseProposal
     } else {
@@ -146,8 +150,8 @@ sampler_RJ_indicator <- nimbleFunction(
       model[[target]] <<- 1
       model[[coefNode]] <<- proposalCoef
       
-      proposalLogProb <- model$calculate(calcNodes)
-      logAcceptanceProb <- proposalLogProb - currentLogProb - logProbForwardProposal
+      proposalLogProb <- model$calculate(calcNodes
+)      logAcceptanceProb <- proposalLogProb - currentLogProb - logProbForwardProposal
     }
     accept <- decide(logAcceptanceProb)
     if(accept) {
