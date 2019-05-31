@@ -464,3 +464,87 @@ void nimbleGraph::getDependenciesOneNode(vector<int> &deps,
   PRINTF("      Done iterating through %i children of node %i\n", numChildren, CgraphID);
 #endif
 }
+
+/**********************/
+/* getDependencyPaths */
+/**********************/
+
+class depStep_class {
+private:
+  int nodeID_and_parentExprID[2]; // nodeID is first element.  parentExprID is second element
+public:
+  int& nodeID() {return nodeID_and_parentExprID[0];}
+  const int& nodeID() const {return nodeID_and_parentExprID[0];}
+  int& parentExprID() {return nodeID_and_parentExprID[1];}
+  const int& parentExprID() const {return nodeID_and_parentExprID[1];}
+  depStep_class() {};
+  depStep_class(int nodeID_, int parentExprID_) {
+    nodeID() = nodeID_;
+    parentExprID() = parentExprID_;
+  }
+};
+
+typedef vector<depStep_class> depPath;
+typedef vector<depPath> multipleDepPaths;
+
+multipleDepPaths getDependencyPaths_recurse(const graphNode *currentNode, depPath &root_path, int parentExprID) {
+  multipleDepPaths result;
+  depStep_class thisStep(currentNode->RgraphID, parentExprID);
+  root_path.push_back(thisStep);
+  if((currentNode->type == STOCH && root_path.size() > 1)) { // stop at non-first stochastic node
+    result.push_back(root_path);
+  } else {
+    // Recurse through child nodes, if there are any.
+    // If there are zero children, we have a terminal deterministic node, which should not be recorded.
+    for(unsigned int i = 0; i < currentNode->numChildren; ++i) {
+      multipleDepPaths result_oneChild = getDependencyPaths_recurse(currentNode->children[i],
+								    root_path,
+								    currentNode->childrenParentExpressionIDs[i]);      
+      for(int j = 0; j < result_oneChild.size(); ++j) {
+	result.push_back( result_oneChild[j] );
+      }
+    }
+  }
+  root_path.pop_back();
+  return result;
+}
+
+SEXP C_getDependencyPaths(SEXP SgraphExtPtr, SEXP Snodes) {
+  nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
+  vector<int> nodes = SEXP_2_vectorInt(Snodes, -1); // subtract 1 index for C
+  if(nodes.size() != 1) {
+    PRINTF("Input to C_getDependencyPaths should be one and only one nodeID.");
+    return R_NilValue;
+  }
+  if(nodes[0] >= graphPtr->graphNodeVec.size()) {
+    PRINTF("Input to C_getDependencyPaths has a nodeID that is too large.");
+    return R_NilValue;
+
+  }
+  if(graphPtr->graphNodeVec[ nodes[0] ]->numChildren == 0) {
+    return R_NilValue;
+  }
+  depPath root_path;
+  multipleDepPaths result = getDependencyPaths_recurse(graphPtr->graphNodeVec[ nodes[0] ],
+  						       root_path,
+  						       INT_MIN); //R_defines.h says INT_MIN is NA_INTEGER
+  SEXP Sresult = PROTECT(Rf_allocVector(VECSXP, result.size()));
+  SEXP Sdim;
+  for(int i = 0; i < result.size(); ++i) {
+    SEXP SdepPath = PROTECT(Rf_allocVector(INTSXP, 2*result[i].size()));
+    int *depPathPtr = INTEGER(SdepPath);
+    int thisResultSize = result[i].size();
+    for(int j = 0; j < thisResultSize; ++j) {
+      depPathPtr[j] = result[i][j].nodeID();
+      depPathPtr[j + thisResultSize] = result[i][j].parentExprID();
+    }
+    Sdim = PROTECT(Rf_allocVector(INTSXP, 2));
+    INTEGER(Sdim)[0] = thisResultSize;
+    INTEGER(Sdim)[1] = 2;
+    Rf_setAttrib(SdepPath, R_DimSymbol, Sdim);
+    SET_VECTOR_ELT(Sresult, i, SdepPath);
+    UNPROTECT(2);
+  }
+  UNPROTECT(1);
+  return Sresult;
+}

@@ -684,7 +684,16 @@ Details: This provides a fairly raw representation of the graph (model) structur
                                           stop("getDependencyPathCountOneNode: argument 'node' should be a character node name or a numeric node ID.")
                                       modelDef$maps$nimbleGraph$getDependencyPathCountOneNode(node = node)
                                   },
-
+getDependencyPaths = function(node) {
+    if(length(node) > 1)
+        stop("getDependencyPaths: argument 'node' should provide a single node.")
+    if(inherits(node, 'character')) {
+        node <- modelDef$nodeName2GraphIDs(node)
+    }
+    if(!inherits(node, 'numeric'))
+        stop("getDependencyPaths: argument 'node' should be a character node name or a numeric node ID.")
+    modelDef$maps$nimbleGraph$getDependencyPaths(node = node)
+},
                                   getDependencies = function(nodes, omit = character(), self = TRUE,
                                       determOnly = FALSE, stochOnly = FALSE,
                                       includeData = TRUE, dataOnly = FALSE,

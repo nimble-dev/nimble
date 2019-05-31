@@ -33,12 +33,16 @@ nimbleGraphClass <- setRefClass(
                     }
                 }
             }
-
             .Call(C_getDependencies, graphExtPtr, nodes, omit, downstream)
         },
         getDependencyPathCountOneNode = function(node) {
             if(length(node) > 1)
                 stop("getDependencyPathCountOneNode: argument 'node' should provide a single node.")
             .Call(C_getDependencyPathCountOneNode, graphExtPtr, node)
+        },
+        getDependencyPaths = function(node) {
+            if(length(node) > 1)
+                stop("getDependencyPaths: argument 'node' should provide a single node.")
+            .Call(C_getDependencyPaths, graphExtPtr, node)  
         }
     ))

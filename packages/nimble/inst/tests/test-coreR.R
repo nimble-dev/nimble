@@ -306,7 +306,26 @@ recyclingRuleTests <- list(
     list(name = "dnorm case 4", expr = quote(out <- dnorm(arg1, arg2, arg3)), args = list(arg1 = quote(double(1)), arg2 = quote(double(0)), arg3 = quote(double(0))),
          setArgVals = quote({arg1 <- as.numeric(1:2); arg2 <- as.numeric(3.5); arg3 <- as.numeric(4.1)}), outputType = quote(double(1))),
     list(name = "dnorm case 4 [with expressions]", expr = quote(out <- (dnorm(arg1 + 1.5, arg2 + 1.5, arg3) + 1)^2), args = list(arg1 = quote(double(1)), arg2 = quote(double(0)), arg3 = quote(double(0))),
-         setArgVals = quote({arg1 <- as.numeric(1:2); arg2 <- as.numeric(3.5); arg3 <- as.numeric(4.1)}), outputType = quote(double(1)))
+         setArgVals = quote({arg1 <- as.numeric(1:2); arg2 <- as.numeric(3.5); arg3 <- as.numeric(4.1)}), outputType = quote(double(1))),
+    list(name = "dlogis all vector",
+         expr = quote(out <- dlogis(arg1, arg2, arg3)),
+         args = list(arg1 = quote(double(1)), arg2 = quote(double(1)), arg3 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(4:2); arg3 <- as.numeric(c(2, 3, 5, 8))}),
+         outputType = quote(double(1)))
+)
+
+pRecyclingRuleTests <- list(
+    list(name = "plogis case 1", expr = quote(out <- plogis(arg1, arg2, arg3)),
+         args = list(arg1 = quote(double(1)), arg2 = quote(double(1)), arg3 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2  <- as.numeric(1:4); arg3 <- as.numeric(1:5);}),
+         outputType = quote(double(1)))
+)
+
+qRecyclingRuleTests <- list(
+    list(name = "qlogis case 1", expr = quote(out <- qlogis(arg1, arg2, arg3)),
+         args = list(arg1 = quote(double(1)), arg2 = quote(double(1)), arg3 = quote(double(1))),
+         setArgVals = quote({arg1 <- seq(.1, .4, length = 3); arg2  <- as.numeric(1:4); arg3 <- as.numeric(1:5);}),
+         outputType = quote(double(1)))
 )
 
 rRecyclingRuleTests <- list(
@@ -365,7 +384,17 @@ rRecyclingRuleTests <- list(
              setArgVals = quote({arg1 <- seq(0.1, 0.4, length = 10); arg2 <- seq(0.9, 0.7, length = 3)}),
              outputType = quote(double(1))),
 
- list(name = "rlnorm case 1", expr = quote(out <- rgamma(5, arg1, arg2)),
+  list(name = "rinvgamma case 1", expr = quote(out <- rinvgamma(5, arg1, arg2)),
+             args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
+             setArgVals = quote({arg1 <- seq(0.1, 0.4, length = 10); arg2 <- seq(0.9, 0.7, length = 3)}),
+             outputType = quote(double(1))),
+
+ list(name = "rlnorm case 1", expr = quote(out <- rlnorm(5, arg1, arg2)),
+             args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
+             setArgVals = quote({arg1 <- seq(0.1, 0.4, length = 10); arg2 <- seq(0.9, 0.7, length = 3)}),
+             outputType = quote(double(1))),
+
+ list(name = "rlogis case 1", expr = quote(out <- rlogis(5, arg1, arg2)),
              args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
              setArgVals = quote({arg1 <- seq(0.1, 0.4, length = 10); arg2 <- seq(0.9, 0.7, length = 3)}),
              outputType = quote(double(1))),
@@ -968,6 +997,8 @@ blockTestsResults <- test_coreRfeature_batch(blockTests, 'blockTests') ##lapply(
 repTestsResults <- test_coreRfeature_batch(repTests, 'repTests') ## lapply(repTests, test_coreRfeature)
 diagTestsResults <- test_coreRfeature_batch(diagTests, 'diagTests') ## lapply(diagTests, test_coreRfeature)
 recyclingRuleTestsResults <- test_coreRfeature_batch(recyclingRuleTests, 'recyclingRuleTests') ## lapply(recyclingRuleTests, test_coreRfeature)
+pRecyclingRuleTestsResults <- test_coreRfeature_batch(pRecyclingRuleTests, 'pRecyclingRuleTests')
+qRecyclingRuleTestsResults <- test_coreRfeature_batch(qRecyclingRuleTests, 'qRecyclingRuleTests')
 rRecyclingRuleTestsResults <- test_coreRfeature_batch(rRecyclingRuleTests, 'rRecyclingRuleTests') ## lapply(rRecyclingRuleTests, test_coreRfeature)
 seqTestsResults <- test_coreRfeature_batch(seqTests, 'seqTests') ## lapply(seqTests, test_coreRfeature)
 nonSeqIndexTestsResults <- test_coreRfeature_batch(nonSeqIndexTests, 'nonSeqIndexTests') ## lapply(nonSeqIndexTests, test_coreRfeature)

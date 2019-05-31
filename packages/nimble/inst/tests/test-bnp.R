@@ -4552,70 +4552,75 @@ test_that("Testing sampler assignment and misspecification of priors for conc pa
   
 })
 
-test_that("Testing dnorm_dnorm non-identity conjugacy setting", { 
+test_that("Testing dnorm_dnorm non-identity conjugacy setting, regression setting", { 
 
     ## Conjugacy detection and calculation of offset/coeff
+    set.seed(1)
     code = nimbleCode({
         for(i in 1:4) {
-            mu[i] ~ dnorm(beta, 0.25)
-            y[i] ~ dnorm(b0 + b1*mu[xi[i]], sd = 0.7)
+            b1[i] ~ dnorm(beta, 0.25)
+            y[i] ~ dnorm(b0 + b1[xi[i]]*x[i], sd = 0.7)
         }
         xi[1:4] ~ dCRP(conc=1, size=4)
         beta ~ dnorm(0,1)
         b0 ~ dnorm(0,1)
-        b1 ~ dnorm(0,1)
     })
-    data <- list(y = rnorm(4))
+    data <- list(y = rnorm(4), x = rnorm(4))
     m = nimbleModel(code, data = data, 
-                    inits = list(xi = rep(1,4), mu = rnorm(4), beta = rnorm(1), b0 = 3, b1 = 2))
+                    inits = list(xi = c(4,3,2,1), b1 = rnorm(4), beta = rnorm(1), b0 = rnorm(1)))
     conf <- configureMCMC(m)
     mcmc=buildMCMC(conf)
     expect_equal(class(mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm_nonidentity", info = 'dnorm_dnorm_nonidentity conjugacy not detected')
-    mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$calculate_offset_coeff(1,1)
+    mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$calculate_offset_coeff(1,4)  # xi[1] = 4
     expect_identical(mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$offset, m$b0, info = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
-    expect_identical(mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$coeff, m$b1, info = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
+    expect_equal(mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$coeff, m$x[1], tolerance = 1e-15,
+                 info = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
+    mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$calculate_offset_coeff(2,3)  # xi[2] = 3
+    expect_identical(mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$offset, m$b0, info = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
+    expect_equal(mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$coeff, m$x[2], tolerance = 1e-15,
+                 info = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
 
     ## Correct predictive distribution
     tmp <- m$calculate()  ## in case we go back to having calculate_offset_coeff not recalculate after set to 0 and 1
     pYgivenT <- m$getLogProb('y[1]')
-    pT <- m$getLogProb('mu[1]')
+    pT <- m$getLogProb('b1[4]')
     
     dataVar <- m$getParam('y[1]', 'var') 
-    priorVar <- m$getParam('mu[1]', 'var')
-    priorMean <- m$getParam('mu[1]', 'mean')
-    postVar <- 1 / (m$b1^2 / dataVar + 1 / priorVar) # from conjugate sampler
-    postMean <- postVar * (m$b1*(data$y[1]-m$b0) / dataVar + priorMean / priorVar) # from conjugate sampler
-    pTgivenY <- dnorm(m$mu[1] , postMean, sqrt(postVar), log = TRUE) # from conjugate sampler
+    priorVar <- m$getParam('b1[4]', 'var')
+    priorMean <- m$getParam('b1[4]', 'mean')
+    postVar <- 1 / (m$x[1]^2 / dataVar + 1 / priorVar) # from conjugate sampler
+    postMean <- postVar * (m$x[1]*(data$y[1]-m$b0) / dataVar + priorMean / priorVar) # from conjugate sampler
+    pTgivenY <- dnorm(m$b1[4] , postMean, sqrt(postVar), log = TRUE) # from conjugate sampler
     mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$storeParams()
-    mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$calculate_offset_coeff(1, 1)
+    mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$calculate_offset_coeff(1, 4)
     pY <- mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)  
     expect_equal(pY, pT + pYgivenT - pTgivenY, info = "problem with predictive distribution for dnorm_dnorm_nonidentity")
     
     set.seed(1)
-    mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$sample(1, 1)
+    mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$sample(1, 4)
     set.seed(1)
     smp <- rnorm(1 , postMean, sqrt(postVar))
-    expect_identical(smp, m$mu[1], info = "problem with predictive sample for dnorm_dnorm_nonidentity")
+    expect_identical(smp, m$b1[4], info = "problem with predictive sample for dnorm_dnorm_nonidentity")
 
     ## Compare to identity conjugacy as special case.
     set.seed(1)
     n <- 100
-    data <- list(y = rnorm(n))
+    data <- list(y = rnorm(n), x = rnorm(n))
     constants <- list(n = n)
-    inits <- list(xi = rep(1, n), mu = rep(4, n), beta =1)
+    inits <- list(xi = rep(1, n), b1 = rep(4, n), beta =1)
     
     set.seed(1)
     code = nimbleCode({
         for(i in 1:n) {
-            mu[i] ~ dnorm(beta,1)
-            y[i] ~ dnorm(b0 + b1*mu[xi[i]], sd = 1)
+            b1[i] ~ dnorm(beta,1)
+            y[i] ~ dnorm(b0 + b1[xi[i]]*x[i], sd = 1)
         }
         xi[1:n] ~ dCRP(conc=1, size=n)
         beta ~ dnorm(0,1)
     })
     m = nimbleModel(code, data = data, constants = constants,
-                    inits = c(inits, list(b0 = 0, b1 = 1)))
-    conf <- configureMCMC(m, monitors = c('mu','beta','xi'))
+                    inits = c(inits, list(b0 = 0)))
+    conf <- configureMCMC(m, monitors = c('b1','beta','xi'))
     mcmc <- buildMCMC(conf)
     cm <- compileNimble(m)
     cmcmc <- compileNimble(mcmc, project = m)
@@ -4624,15 +4629,15 @@ test_that("Testing dnorm_dnorm non-identity conjugacy setting", {
     set.seed(1)
     code = nimbleCode({
         for(i in 1:n) {
-            mu[i] ~ dnorm(beta,1)
-            y[i] ~ dnorm(mu[xi[i]], sd = 1)
+            b1[i] ~ dnorm(beta,1)
+            y[i] ~ dnorm(b1[xi[i]]*x[i], sd = 1)
         }
         xi[1:n] ~ dCRP(conc=1, size=n)
         beta ~ dnorm(0,1)
     })
     m = nimbleModel(code, data = data, constants = constants,
                     inits = inits)
-    conf <- configureMCMC(m, monitors = c('mu','beta','xi'))
+    conf <- configureMCMC(m, monitors = c('b1','beta','xi'))
     mcmc<-buildMCMC(conf)
     cm <- compileNimble(m)
     cmcmc <- compileNimble(mcmc, project = m)

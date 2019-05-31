@@ -1,12 +1,58 @@
+                            CHANGES IN VERSION 0.8.0 (June 2019)
 USER LEVEL CHANGES
 
--- New printing option for MCMC configuration objects: conf$printSamplers(byType = TRUE), will display the node names being sampled, grouped together by the sampling algorithm acting on them (e.g., RW sampler).
+
+-- Added reversible jump MCMC for variable selection via configureRJ().
+
+-- Greatly improved speed of MCMC sampling for Bayesian nonparametric models with the dCRP distribution by not sampling parameters of empty clusters. (PR #855)
+
+-- Improved speed of MCMC configuration (i.e., configureMCMC()) by improving lookup of node information and other changes. (PR #910, PR #896)
+
+-- Removed compareMCMCs() and MCMCsuite() and creating separate package for them.
+
+-- New printing option for MCMC configuration objects: conf$printSamplers(byType = TRUE), will display the node names being sampled, grouped together by the sampling algorithm acting on them (e.g., RW sampler). (PR #901)
+
+-- Added options for control of MCMC behavior: MCMCmonitorAllSampledNodes to monitor all sampled nodes and multivariateNodesAsScalars for sampling scalars within multivariate nodes. (PR #895, #893)
+
+-- Added detection of dCRP clustering of regression coefficients by detecting conjugacy when a linear combination is present. 
 
 BUG FIXES
 
--- Fixed bug in conjugacy checking of CAR model structures
+-- Fixed bug in conjugacy checking of CAR model structures. (PR #871)
 
--- model setInits method now checks for named list elements
+-- model setInits method now checks for unnamed list elements. (PR #880)
+
+-- Allow use of TRUE/FALSE for non-parameter arguments in functions in model code. (PR #904)
+
+-- Fixed a bug in the RNG state when calling out to C code from R code called by nimbleRcall().  (PR # 897)
+
+-- Handle numerical issues when numerical underflow causes exact zeros as proposals in RW_dirichlet sampler. (PR #885)
+
+-- Fixed a bug in conjugacy detection when models use sum(x[1:n]). (PR #890)
+
+-- Fixed a bug in copying when the LHS and RHS involve the same variable. (PR #886)
+
+DEVELOPER LEVEL CHANGES
+
+-- Improved scoping of nimbleFunctions without setup code and nimbleRcall and nimbleExternalCall to avoid scoping issues in packages that depend on NIMBLE. (PR #889)
+
+-- Added a check to detect and error out when clustering deterministic nodes in dCRP-based models. (PR #906)
+
+-- Added a check to detect and error out if multiple CRP indexes used in an expression. (PR #892). 
+
+-- Added better error messages for when the slice sampler reaches maximum number of contractions (PR #903) and when MCEM optimization calculates a non-valid log-density (PR #887).
+
+-- Added some links and tweaked documentation for various functions.
+
+-- Improved speed of getNodeNames(). (PR #902)
+
+-- Detect a case of incorrect syntax accessing modelValues. (PR #899)
+
+-- Various other new error traps. (PR #884, #883)
+
+-- Removed unused support for running via Tensorflow rather than compiled C++. (PR # 882)
+
+-- Only calculate eigenvalues in CAR handling to avoid slow (and unneeded) eigen computations of eigenvectors. (PR #872)
 
                             CHANGES IN VERSION 0.7.1 (March 2019)
 
