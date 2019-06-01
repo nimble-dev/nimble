@@ -189,6 +189,8 @@ cases[[caseName]] <- list(
     nimble:::makeVertexNamesFromIndexArray2(indArr2, 1, 'x')
 )
 
+sink(NULL)
+
 if(!generatingGoldFile) {
     trialResults <- readLines(tempFileName)
     correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
