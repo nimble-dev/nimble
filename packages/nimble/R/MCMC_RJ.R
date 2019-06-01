@@ -509,6 +509,6 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
         
     }
   }
-  mcmcConf
+  invisible(mcmcConf)
 }
 

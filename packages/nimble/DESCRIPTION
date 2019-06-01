@@ -114,6 +114,7 @@ Collate:
     MCMC_samplers.R
     MCMC_conjugacy.R
     MCMC_autoBlock.R
+    MCMC_RJ.R
     MCEM_build.R
     crossValidation.R
     filtering_resamplers.R

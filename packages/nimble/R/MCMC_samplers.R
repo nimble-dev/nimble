@@ -2286,14 +2286,14 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' @section RJ sampler:
 #'  
-#' This sampler performs reversible jump MCMC steps for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{configureRJ} function, when the model code is written without using indicator variables. See \code{\help{configureRJ}} for details. It is not intended for direct assignment by users.
+#' This sampler performs reversible jump MCMC steps for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{configureRJ} function, when the model code is written without using indicator variables. See \code{help{configureRJ}} for details. It is not intended for direct assignment by users.
 #'
 #' @section RJ_indicator sampler:
 #'  
-#' This sampler performs reversible jump MCMC steps for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{configureRJ} function, when the model code is written using indicator variables. See \code{\help{configureRJ}} for details. It is not intended for direct assignment by users.
+#' This sampler performs reversible jump MCMC steps for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{configureRJ} function, when the model code is written using indicator variables. See \code{help{configureRJ}} for details. It is not intended for direct assignment by users.
 #'
 #' @section toggled sampler:
-#' This sampler wraps around the assigned sampler for a node and does sampling only when the target is in the model, as part of reversible jump MCMC. This is a specialized sampler used by \code{configureRJ} when adding a reversible jump MCMC . See \code{\help{configureRJ}} for details. It is not intended for direct assignment by users.
+#' This sampler wraps around the assigned sampler for a node and does sampling only when the target is in the model, as part of reversible jump MCMC. This is a specialized sampler used by \code{configureRJ} when adding a reversible jump MCMC . See \code{help{configureRJ}} for details. It is not intended for direct assignment by users.
 #'
 #' @name samplers
 #'
