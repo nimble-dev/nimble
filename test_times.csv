@@ -9,7 +9,7 @@ time	filename
 7.36	test-returnTypeErrorTrapping.R
 7.57	test-modelValuesInterface.R
 7.99	test-errors.R
-8.00    test-mcmcrj.R
+8.00	test-mcmcrj.R
 16.93	test-nimbleFunctionInterfaces.R
 17.58	test-getDistributionInfo.R
 20.85	test-refactorCompilationSteps.R
@@ -22,9 +22,8 @@ time	filename
 46.57	test-optim.R
 54.8	test-allocation.R
 77.57	test-declare.R
-98.6	test-compareMCMCs.R
 118.97	test-mcem.R
-120.00  test-benchmarks.R
+120.00	test-benchmarks.R
 122.95	test-nimbleList_RCfun.R
 161.42	test-coreR.R
 172.43	test-getBound.R
@@ -42,4 +41,4 @@ time	filename
 853.68	test-crossVal.R
 2025.99	test-dynamicIndexing.R
 2113.34	test-mcmc.R
-2200.00 test-bnp.R
+2200.00	test-bnp.R
