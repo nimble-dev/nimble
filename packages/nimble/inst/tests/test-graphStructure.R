@@ -12,7 +12,7 @@ tempFileName <- 'graphStructureTestLog.Rout'
 generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForGraphStructureTesting'))
 outputFile <- if(generatingGoldFile) file.path(nimbleOptions('generateGoldFileForGraphStructureTesting'), goldFileName) else tempFileName
 
-sink(outputFile)
+sink_with_messages(outputFile)
 
 cases <- list()
 caseName <- 'graph structure tests case 1'
