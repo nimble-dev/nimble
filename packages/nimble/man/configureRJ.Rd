@@ -23,6 +23,9 @@ configureRJ(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb = NULL,
 \item fixedValue. (Optional) Value for the variable when it is out of the model, which can be used only when \code{priorProb} is provided (default = 0). If specified when \code{indicatorNodes} is passed, a warning is given and \code{fixedValue} is ignored. 
 }}
 }
+\value{
+\code{NULL} \code{configureRJ} modifies the input configuration \code{MCMCconf} in place.
+}
 \description{
 Modifies the \code{MCMCconf} object of a specific model to include a reversible jump MCMC sampler for variable selection using an univariate normal proposal distribution. Users can control the mean and scale of the proposal. This function supports two different types of model specification: with and without indicator variables.
 }

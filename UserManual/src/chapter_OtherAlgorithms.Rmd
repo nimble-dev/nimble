@@ -14,7 +14,7 @@ The NIMBLE algorithm library is growing and as of version 0.6-7 includes a suite
 
 ## Particle Filters / Sequential Monte Carlo
 
-### Filtering Algorithms
+### Filtering algorithms
 
   NIMBLE includes algorithms for four different types of sequential Monte Carlo (also known as particle filters), which can be used to sample from the latent states and approximate the log likelihood of a state space model.  The particle filters currently implemented in NIMBLE are the bootstrap filter, the auxiliary particle filter, the Liu-West filter, and the ensemble Kalman filter, which can be built, respectively, with calls to `buildBootstrapFilter`, `buildAuxiliaryFilter`, `buildLiuWestFilter`, and `buildEnsembleKF`.  Each particle filter requires setup arguments  `model` and `nodes`; the latter should be a character vector specifying latent model nodes.  In addition, each particle filter can be customized using a `control` list argument.  Details on the control options and specifics of the filtering algorithms can be found in the help pages for the functions.
   
@@ -334,7 +334,7 @@ pumpMLE
 
 Direct maximization after analytically integrating over the latent nodes (possible for this model but often not feasible) gives estimates of $\hat\alpha=0.823$ and $\hat\beta = 1.261$, so the MCEM seems to do pretty well, though tightening the convergence criteria may be warranted in actual usage. 
 
-### Estimating the Asymptotic Covariance From MCEM {#sec:estimate-mcem-cov}
+### Estimating the asymptotic covariance From MCEM {#sec:estimate-mcem-cov}
 
 The second element of the list returned by a call to `buildMCEM` is a function called `estimateCov`, which estimates the asymptotic covariance of the parameters at their MLE values.  If the `run` function has been called previously, the `estimateCov` function will automatically use the MLE values produced by the `run` function to estimate the covariance.  Alternatively, a user can supply their own MLE values using the `MLEs` argument, which allows the covariance to be estimated without having called the `run` function. More details about the `estimateCov` function can be found by calling `help(buildMCEM)`.  Below is an example of using the `estimateCov` function.
 

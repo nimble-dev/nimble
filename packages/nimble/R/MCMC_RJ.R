@@ -219,6 +219,8 @@ sampler_toggled <- nimbleFunction(
 #' \item fixedValue. (Optional) Value for the variable when it is out of the model, which can be used only when \code{priorProb} is provided (default = 0). If specified when \code{indicatorNodes} is passed, a warning is given and \code{fixedValue} is ignored. 
 #' }
 #'
+#' @return \code{NULL} \code{configureRJ} modifies the input configuration \code{MCMCconf} in place.
+#'
 #' @details 
 #' 
 #' This function modifies the samplers in \code{MCMCconf} for each of the nodes provided in the \code{targetNodes} argument. To these elements two samplers are assigned: a specialized reversible jump sampler and a modified version of the existing sampler that is used only when the target node is already in the model. 
@@ -509,6 +511,6 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
         
     }
   }
-  invisible(mcmcConf)
+  invisible(NULL)
 }
 
