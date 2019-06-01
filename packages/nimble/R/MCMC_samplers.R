@@ -2284,9 +2284,20 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' The posterior_predictive sampler accepts no control list arguments.
 #'
+#' @section RJ sampler:
+#'  
+#' This sampler performs reversible jump MCMC steps for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{configureRJ} function, when the model code is written without using indicator variables. See \code{\help{configureRJ}} for details. It is not intended for direct assignment by users.
+#'
+#' @section RJ_indicator sampler:
+#'  
+#' This sampler performs reversible jump MCMC steps for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{configureRJ} function, when the model code is written using indicator variables. See \code{\help{configureRJ}} for details. It is not intended for direct assignment by users.
+#'
+#' @section toggled sampler:
+#' This sampler wraps around the assigned sampler for a node and does sampling only when the target is in the model, as part of reversible jump MCMC. This is a specialized sampler used by \code{configureRJ} when adding a reversible jump MCMC . See \code{\help{configureRJ}} for details. It is not intended for direct assignment by users.
+#'
 #' @name samplers
 #'
-#' @aliases sampler posterior_predictive RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block RW_PF RW_PF_block sampler_posterior_predictive sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block sampler_RW_PF sampler_RW_PF_block CRP CRP_concentration DPmeasure
+#' @aliases sampler posterior_predictive RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block RW_PF RW_PF_block sampler_posterior_predictive sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block sampler_RW_PF sampler_RW_PF_block CRP CRP_concentration DPmeasure RJ RJ_indicator toggled
 #'
 #' @examples
 #' ## y[1] ~ dbern() or dbinom():
