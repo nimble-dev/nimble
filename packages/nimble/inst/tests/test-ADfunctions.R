@@ -1,6 +1,8 @@
 source(system.file(file.path('tests', 'AD_test_utils.R'), package = 'nimble'))
 source(system.file(file.path('tests', 'AD_math_test_lists.R'), package = 'nimble'))
 source(system.file(file.path('tests', 'AD_distribution_test_lists.R'), package = 'nimble'))
+nimbleOptions(experimentalEnableDerivs = TRUE)
+nimbleOptions(allowDynamicIndexing = FALSE)
 
 context("Testing of derivatives for nimbleFunctions.")
 

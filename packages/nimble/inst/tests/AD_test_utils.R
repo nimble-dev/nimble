@@ -1,6 +1,4 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
-nimbleOptions(experimentalEnableDerivs = TRUE)
-nimbleOptions(allowDynamicIndexing = FALSE)
 
 ## Take a test parameterization created by make_AD_test() or
 ## make_distribution_fun_AD_test(), generate a random input, and test for
