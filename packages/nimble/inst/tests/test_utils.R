@@ -1682,15 +1682,15 @@ add_missing_size <- function(argSymbol, vector_size = 3, matrix_size = c(3, 4)) 
   invisible(argSymbol)
 }
 
-arg_type_2_input <- function(argType, distn = NULL) {
+arg_type_2_input <- function(argType, input_gen_fun = NULL) {
   argSymbol <- add_missing_size(
     nimble:::argType2symbol(argType)
   )
   type <- argSymbol$type
   nDim <- argSymbol$nDim
   size <- argSymbol$size
-  if (is.null(distn))
-    distn <- switch(
+  if (is.null(input_gen_fun))
+    input_gen_fun <- switch(
       type,
       "double"  = function(arg_size) rnorm(prod(arg_size)),
       "integer" = function(arg_size) rgeom(prod(arg_size), 0.5),
@@ -1699,10 +1699,10 @@ arg_type_2_input <- function(argType, distn = NULL) {
     )
   arg <- switch(
     nDim + 1,
-    distn(1), ## nDim is 0
-    distn(size), ## nDim is 1
-    matrix(distn(size), nrow = size[1], ncol = size[2]), ## nDim is 2
-    array(distn(size), dim = size) ## nDim is 3
+    input_gen_fun(1), ## nDim is 0
+    input_gen_fun(size), ## nDim is 1
+    matrix(input_gen_fun(size), nrow = size[1], ncol = size[2]), ## nDim is 2
+    array(input_gen_fun(size), dim = size) ## nDim is 3
   )
   if (is.null(arg))
     stop('Something went wrong while making test input.', call.=FALSE)
