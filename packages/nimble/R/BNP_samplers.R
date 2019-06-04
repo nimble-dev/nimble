@@ -1426,17 +1426,12 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     if(length(unique(nTilde)) != 1)
       stop('sampler_CRP: In a model with multiple cluster parameters, the number of those parameters must all be the same.\n')
     
-    nData <- length(dataNodes)
-    J <- nData / n # equal to one in standard CRP model
-    ## Check that the number of cluster variable rows (or columns) matches number of label variables. Cases in which this can fail include use of thetaTilde[xi[i] + 1, j]
-    if(nTilde/J != n)
-      stop("sampler_CRP: When having several observations per cluster variable, the number of cluster variables columns (rows) has to match length of cluster membership variable.\n")
-    
-    
     #### End of checks of model structure. ####
     
+    nData <- length(dataNodes)
+    J <- nData / n # equal to one in standard CRP model
     min_nTilde <- min(nTilde) ## we need a scalar for use in run code, but note that given check above, all nTilde values are the same...
-    if(min_nTilde < n)
+    if(min_nTilde/J < n)
       warning('sampler_CRP: The number of cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if it ever proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.\n')
     
     
