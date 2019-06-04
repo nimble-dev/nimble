@@ -437,7 +437,7 @@ CRP_helper <- nimbleFunctionVirtual(
 CRP_nonconjugate <- nimbleFunction(
   name = "CRP_nonconjugate",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
       savedIdx <- 1
       saved <- nimNumeric(2) # treated as scalar if length 1
       saved2 <- saved
@@ -478,7 +478,7 @@ CRP_nonconjugate <- nimbleFunction(
 CRP_conjugate_dnorm_dnorm <- nimbleFunction(
   name = "CRP_conjugate_dnorm_dnorm",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
     priorMean <- nimNumeric(1)
     priorVar <- nimNumeric(1)
   },
@@ -606,7 +606,7 @@ CRP_conjugate_dnorm_invgamma_dnorm <- nimbleFunction(
 CRP_conjugate_dgamma_dpois <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dpois",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
     priorShape <- nimNumeric(1)
     priorRate <- nimNumeric(1)
   },
@@ -633,7 +633,7 @@ CRP_conjugate_dgamma_dpois <- nimbleFunction(
 CRP_conjugate_dgamma_dnorm <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dnorm",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
     priorShape <- nimNumeric(1)
     priorRate <- nimNumeric(1)
   },
@@ -663,7 +663,7 @@ CRP_conjugate_dgamma_dnorm <- nimbleFunction(
 CRP_conjugate_dbeta_dbern <- nimbleFunction(
   name = "CRP_conjugate_dbeta_dbern",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
     priorShape1 <- nimNumeric(1)
     priorShape2 <- nimNumeric(1)
   },
@@ -688,7 +688,7 @@ CRP_conjugate_dbeta_dbern <- nimbleFunction(
 CRP_conjugate_dbeta_dbin <- nimbleFunction(
   name = "CRP_conjugate_dbeta_dbin",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
     priorShape1 <- nimNumeric(1)
     priorShape2 <- nimNumeric(1)
   },
@@ -719,7 +719,7 @@ CRP_conjugate_dbeta_dbin <- nimbleFunction(
 CRP_conjugate_dbeta_dnegbin <- nimbleFunction(
   name = "CRP_conjugate_dbeta_dnegbin",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
     priorShape1 <- nimNumeric(1)
     priorShape2 <- nimNumeric(1)
   },
@@ -748,7 +748,7 @@ CRP_conjugate_dbeta_dnegbin <- nimbleFunction(
 CRP_conjugate_dgamma_dexp <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dexp",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
     priorShape <- nimNumeric(1)
     priorRate <- nimNumeric(1)
   },
@@ -774,7 +774,7 @@ CRP_conjugate_dgamma_dexp <- nimbleFunction(
 CRP_conjugate_dgamma_dgamma <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dgamma",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
     priorShape <- nimNumeric(1)
     priorRate <- nimNumeric(1)
   },
@@ -803,7 +803,7 @@ CRP_conjugate_dgamma_dgamma <- nimbleFunction(
 CRP_conjugate_dgamma_dweib <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dweib",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
     priorShape <- nimNumeric(1)
     priorRate <- nimNumeric(1)
   },
@@ -832,7 +832,7 @@ CRP_conjugate_dgamma_dweib <- nimbleFunction(
 CRP_conjugate_dgamma_dinvgamma <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dinvgamma",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
     priorShape <- nimNumeric(1)
     priorRate <- nimNumeric(1)
   },
@@ -861,7 +861,7 @@ CRP_conjugate_dgamma_dinvgamma <- nimbleFunction(
 CRP_conjugate_ddirch_dmulti <- nimbleFunction(
   name = "CRP_conjugate_ddirch_dmulti",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
     d <- length(model[[marginalizedNodes[1]]])
     priorAlpha <- nimNumeric(d)
   },
@@ -1059,6 +1059,7 @@ sampler_CRP <- nimbleFunction(
                         conjugate_ddirch_dmulti = 'CRP_conjugate_ddirch_dmulti',
                         'CRP_nonconjugate')  ## default if we don't have sampler set up for a conjugacy
     
+    J <- 1
     p <- length(tildeVars)
     identityLink <- TRUE
     if(p == 2 && sampler == "CRP_conjugate_dnorm_invgamma_dnorm") {
@@ -1083,7 +1084,7 @@ sampler_CRP <- nimbleFunction(
       if(sampler == "CRP_conjugate_dnorm_dnorm_nonidentity") {
           identityLink <- FALSE
           helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, intermNodes, intermNodes2, intermNodes3, nInterm, calcNodes, type, p, min_nTilde)
-      } else helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, p, min_nTilde)
+      } else helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, p, min_nTilde, J)
     }
     
     curLogProb <- numeric(n)
@@ -1494,6 +1495,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     } else 
       sampler <- switch(conjugacyResult,
                         conjugate_dnorm_dnorm = 'CRP_conjugate_dnorm_dnorm',
+                        conjugate_dnorm_dnorm_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity',
                         conjugate_dnorm_invgamma_dnorm = 'CRP_conjugate_dnorm_invgamma_dnorm',
                         conjugate_dbeta_dbern  = 'CRP_conjugate_dbeta_dbern',
                         conjugate_dbeta_dbin = 'CRP_conjugate_dbeta_dbin',
