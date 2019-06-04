@@ -624,7 +624,7 @@ test_ADModelCalculate(model, name = 'epil', order = c(0,1))
 ## now loop through BUGS models.
 ## figure out if need to simulate for any of these as we do above for 'epil'
 ## also will need to specify bugs,inits,data files by specific name in some cases where naming is non-standard
-examples <- c('epil', 'dyes', 'equiv', 'line', 'oxford', 'pump', 'rats', 'schools', 'dugongs', 'jaw', 'beetles', 'blocker')
+examples <- c('epil', 'dyes', 'equiv', 'line', 'oxford', 'pump', 'rats', 'dugongs', 'beetles', 'blocker')
 bugsFile <- examples
 initsFile <- dataFile <- rep(NA, length(examples))
 names(bugsFile) <- names(initsFile) <- names(dataFile) <- examples
@@ -634,6 +634,7 @@ names(bugsFile) <- names(initsFile) <- names(dataFile) <- examples
 ## bones has dcat so left out for now
 ## lsat requires setting some indexing and doing a bunch of initialization
 ## kidney has dinterval so left out for now
+## schools, jaw have wishart so left out for now
 
 ## customize file names as needed
 bugsFile['beetles'] <- 'beetles-logit'
@@ -682,7 +683,7 @@ for(i in seq_along(examples)) {
 
 ## Issues (this is somewhat out of date and Chris hasn't gone back through to
 ## to do more assessment given NCT issue 149 regarding the errors in
-## uncompiled derivs):
+## uncompiled derivs; many of the differences below are much smaller if using grad/hessian instead of genD):
 
 ## dyes: somewhat large relative difference for Hessian - see code below
 ## for partial deriv wrt tau.between,tau.within, c deriv is 0 and R deriv is -0.0617
@@ -691,41 +692,9 @@ for(i in seq_along(examples)) {
 ## equiv: not-too-large relative difference for Hessian
 ## line: large relative difference for gradient, Hessian - gradient caused by redundant wrt nodes
 ## pump: moderately large relative difference for Hessian
-## schools: model won't compile because of Wishart
 ## dugongs: various major mismatches, including logprob
-## jaw: model won't compile because of Wishart
 ## beetles: somehow gettign an NA in if(condition) somewhere
 ## rats: really slow even with only order=1
 ## blocker: somewhat large relative difference for Hessian
 ## blocker is somewhat slow - omit Hessian?
-
-## errors in numDerivs for dyes:
-set.seed(1)
-i=2
-model <- readBUGSmodel(model = 'dyes.bug', inits = NULL, data = NULL, useInits = TRUE,
-                       dir = nimble:::getBUGSexampleDir('dyes'))
-model$simulate('mu')
-out <- model$calculate()
-cmodel <- compileNimble(model)
-
-saved_taus <- c(model$tau.within, model$tau.between)
-
-myfunc =function(taus) {
-    model$tau.within = taus[1]
-    model$tau.between = taus[2]
-    model$calculate()
-}
-numDeriv::hessian(myfunc, c(model$tau.within, model$tau.between))
-
-model$tau.within = saved_taus[1]
-model$tau.between = saved_taus[2]
-
-rDerivs <- derivsNimbleFunction(model, calcNodes = "", wrt = c('tau.within','tau.between'))
-cDerivs <- compileNimble(rDerivs, project = model)
-
-rDerivs$run(2)  # far off from numDeriv::hessian result
-
-cDerivs$run(2)
-
-
 
