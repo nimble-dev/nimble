@@ -19,7 +19,7 @@ nimble_$(VERSION).tar.gz: nimble/configure FORCE
 build: nimble_$(VERSION).tar.gz
 
 install: nimble_$(VERSION).tar.gz
-	R CMD INSTALL nimble_$(VERSION).tar.gz
+	R CMD INSTALL ${NDIR} nimble_$(VERSION).tar.gz
 
 check: build FORCE
 	R CMD check --as-cran nimble_$(VERSION).tar.gz
@@ -68,7 +68,6 @@ clang-format: FORCE
 	  nimble/inst/include/nimble/NimArrBase.h \
 	  nimble/inst/include/nimble/NimArr.h \
 	  nimble/inst/include/nimble/predefinedNimbleLists.h \
-	  nimble/inst/include/nimble/tensorflow.h \
 	  nimble/inst/CppCode/predefinedNimbleLists.cpp \
 	  nimble/inst/CppCode/tensorflow.cpp \
 	  -i

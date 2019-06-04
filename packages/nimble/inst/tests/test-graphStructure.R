@@ -12,8 +12,6 @@ tempFileName <- 'graphStructureTestLog.Rout'
 generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForGraphStructureTesting'))
 outputFile <- if(generatingGoldFile) file.path(nimbleOptions('generateGoldFileForGraphStructureTesting'), goldFileName) else tempFileName
 
-sink(outputFile)
-
 cases <- list()
 caseName <- 'graph structure tests case 1'
 m <- nimbleModel(
@@ -188,6 +186,8 @@ cases[[caseName]] <- list(
     nimble:::makeVertexNamesFromIndexArray2(indArr, 1, 'x'),
     nimble:::makeVertexNamesFromIndexArray2(indArr2, 1, 'x')
 )
+
+writeOutput(cases, outputFile)
 
 if(!generatingGoldFile) {
     trialResults <- readLines(tempFileName)

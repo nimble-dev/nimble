@@ -238,8 +238,11 @@ mcmc_generateControlListArgument <- function(control, controlDefaults) {
 
 mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonScalars=FALSE, displayConjugateDependencies=FALSE) {
     ##if(any(unlist(lapply(ls, is.function)))) warning('probably provided wrong type of function argument')
-    if(!displayConjugateDependencies)
+    if(!displayConjugateDependencies) {
         if(grepl('^conjugate_d', names(ls)[1])) ls <- ls[1]    ## for conjugate samplers, remove all 'dep_dnorm', etc, control elements (don't print them!)
+        if(grepl('^CRP_cluster_wrapper', names(ls)[1]) && 'wrapped_type' %in% names(ls) &&
+           grepl('conjugate_d', ls$wrapped_type)[1]) ls <- ls[!names(ls) %in% c('wrapped_conf')]
+    }
     ls <- lapply(ls, function(el) if(is.nf(el) || is.function(el)) 'function' else el)   ## functions -> 'function'
     ls2 <- list()
     ## to make displayControlDefaults argument work again, would need to code process
@@ -261,6 +264,7 @@ mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonS
             if(is.numeric(controlValue) || is.logical(controlValue))
                 if(length(controlValue) > 1)
                     controlValue <- ifelse(is.null(dim(controlValue)), 'custom vector', 'custom array')
+        if(class(controlValue) == 'samplerConf')   controlValue <- controlValue$name
         deparsedItem <- deparse(controlValue)
         if(length(deparsedItem) > 1) deparsedItem <- paste0(deparsedItem, collapse='')
         ls2[[i]] <- paste0(controlName, ': ', deparsedItem)

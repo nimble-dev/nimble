@@ -36,7 +36,7 @@
 This class underlies all NIMBLE model objects: both R model objects created from the return value of nimbleModel(), and compiled model objects.
 The model object contains a variety of member functions, for providing information about the model structure, setting or querying properties of the model, or accessing various internal components of the model.
 These member functions of the modelBaseClass are commonly used in the body of the \code{setup} function argument to nimbleFunction(), to aid in preparation of node vectors, nimbleFunctionLists, and other runtime inputs.
-See documentation for \code{nimbleModel} for details of creating an R model object.
+See documentation for \code{\link{nimbleModel}} for details of creating an R model object.
 }
 \section{Methods}{
 

@@ -52,7 +52,7 @@ testsBasicMath = list(
   list(name = 'tanh of vector', expr = quote(out <- tanh(arg1)), inputDim = 1, outputDim = 1),
   list(name = 'acosh of vector', expr = quote(out <- acosh(1 + abs(arg1))), inputDim = 1, outputDim = 1),
   list(name = 'asinh of vector', expr = quote(out <- asinh(arg1)), inputDim = 1, outputDim = 1),
-  list(name = 'atanh of vector', expr = quote(out <- atanh(abs(arg1)-floor(abs(arg1)))), inputDim = 1, outputDim = 1, knownFailure = 'tensorflow.*runs'), ## formerly failed as using modulo; still need to assess if tf fails
+  list(name = 'atanh of vector', expr = quote(out <- atanh(abs(arg1)-floor(abs(arg1)))), inputDim = 1, outputDim = 1), ## formerly failed as using modulo
   ###
   list(name = 'scalar + scalar', expr = quote(out <- arg1 + arg2), inputDim = c(0,0), outputDim = 0),
   list(name = 'diff of scalars', expr = quote(out <- arg1 - arg2), inputDim = c(0,0), outputDim = 0),
@@ -122,7 +122,7 @@ testsMoreMath = list(
   list(name = 'logit/expit of vector', expr = quote(out <- logit(expit(arg1))), inputDim = 1, outputDim = 1),
   list(name = 'inverse probit of vector', expr = quote(out <- iprobit(arg1)), inputDim = 1, outputDim = 1),
   list(name = 'inverse probit of vector via phi', expr = quote(out <- phi(arg1)), inputDim = 1, outputDim = 1),
-  list(name = 'probit/iprobit of vector', expr = quote(out <- probit(iprobit(arg1))), inputDim = 1, outputDim = 1, knownFailure = 'tensorflow.*runs'),
+  list(name = 'probit/iprobit of vector', expr = quote(out <- probit(iprobit(arg1))), inputDim = 1, outputDim = 1),
   ###
   list(name = 'ceiling of vector', expr = quote(out <- ceiling(arg1)), inputDim = 1, outputDim = 1),
   list(name = 'floor of vector', expr = quote(out <- floor(arg1)), inputDim = 1, outputDim = 1),
@@ -179,24 +179,24 @@ testsComparison = list(
 
 
 testsMatrix = list(
-    list(name = 'forwardsolve matrix-vector', expr = quote(out <- forwardsolve(arg1, arg2)), inputDim = c(2, 1), outputDim = 1, knownFailure = 'tensorflow.*runs'),
-    list(name = 'forwardsolve matrix-matrix', expr = quote(out <- forwardsolve(arg1, arg2)), inputDim = c(2, 2), outputDim = 2, knownFailure = 'tensorflow.*Cpp'),
-    list(name = 'backsolve matrix-vector', expr = quote(out <- backsolve(arg1, arg2)), inputDim = c(2, 1), outputDim = 1, knownFailure = 'tensorflow.*runs'),
-    list(name = 'backsolve matrix-matrix', expr = quote(out <- backsolve(arg1, arg2)), inputDim = c(2, 2), outputDim = 2, knownFailure = 'tensorflow.*Cpp'),
+    list(name = 'forwardsolve matrix-vector', expr = quote(out <- forwardsolve(arg1, arg2)), inputDim = c(2, 1), outputDim = 1),
+    list(name = 'forwardsolve matrix-matrix', expr = quote(out <- forwardsolve(arg1, arg2)), inputDim = c(2, 2), outputDim = 2),
+    list(name = 'backsolve matrix-vector', expr = quote(out <- backsolve(arg1, arg2)), inputDim = c(2, 1), outputDim = 1),
+    list(name = 'backsolve matrix-matrix', expr = quote(out <- backsolve(arg1, arg2)), inputDim = c(2, 2), outputDim = 2),
 
-    list(name = 'forwardsolve matrix-vector with indices', expr = quote(out <- forwardsolve(arg1[1:2,1:2], arg2[1:2])), inputDim = c(2, 1), outputDim = 1, knownFailure = 'tensorflow.*runs'),
-    list(name = 'forwardsolve matrix-matrix with indices', expr = quote(out <- forwardsolve(arg1[1:2,1:2], arg2[1:2,1:2])), inputDim = c(2, 2), outputDim = 2, knownFailure = 'tensorflow.*runs'),
-    list(name = 'backsolve matrix-vector with indices', expr = quote(out <- backsolve(arg1[1:2,1:2], arg2[1:2])), inputDim = c(2, 1), outputDim = 1, knownFailure = 'tensorflow.*runs'),
-    list(name = 'backsolve matrix-matrix with indices', expr = quote(out <- backsolve(arg1[1:2,1:2], arg2[1:2,1:2])), inputDim = c(2, 2), outputDim = 2, knownFailure = 'tensorflow.*runs'),
+    list(name = 'forwardsolve matrix-vector with indices', expr = quote(out <- forwardsolve(arg1[1:2,1:2], arg2[1:2])), inputDim = c(2, 1), outputDim = 1),
+    list(name = 'forwardsolve matrix-matrix with indices', expr = quote(out <- forwardsolve(arg1[1:2,1:2], arg2[1:2,1:2])), inputDim = c(2, 2), outputDim = 2),
+    list(name = 'backsolve matrix-vector with indices', expr = quote(out <- backsolve(arg1[1:2,1:2], arg2[1:2])), inputDim = c(2, 1), outputDim = 1),
+    list(name = 'backsolve matrix-matrix with indices', expr = quote(out <- backsolve(arg1[1:2,1:2], arg2[1:2,1:2])), inputDim = c(2, 2), outputDim = 2),
 
-    list(name = 'forwardsolve matrix-vector amid expr', expr = quote(out <- arg2[1:2] + forwardsolve(arg1[1:2,1:2], arg2[1:2] + arg2[1:2])), inputDim = c(2, 1), outputDim = 1, knownFailure = 'tensorflow.*runs'),
-    list(name = 'forwardsolve matrix-matrix amid expr', expr = quote(out <- arg2[1:2,1:2] + forwardsolve(arg1[1:2,1:2], arg2[1:2,1:2] + arg2[1:2,1:2])), inputDim = c(2, 2), outputDim = 2, knownFailure = 'tensorflow.*runs'),
-    list(name = 'backsolve matrix-vector amid expr', expr = quote(out <- arg2[1:2] + backsolve(arg1[1:2,1:2], arg2[1:2] + arg2[1:2])), inputDim = c(2, 1), outputDim = 1, knownFailure = 'tensorflow.*runs'),
-    list(name = 'backsolve matrix-matrix amid expr', expr = quote(out <- arg2[1:2,1:2] + backsolve(arg1[1:2,1:2], arg2[1:2,1:2] + arg2[1:2,1:2])), inputDim = c(2, 2), outputDim = 2, knownFailure = 'tensorflow.*runs'),
+    list(name = 'forwardsolve matrix-vector amid expr', expr = quote(out <- arg2[1:2] + forwardsolve(arg1[1:2,1:2], arg2[1:2] + arg2[1:2])), inputDim = c(2, 1), outputDim = 1),
+    list(name = 'forwardsolve matrix-matrix amid expr', expr = quote(out <- arg2[1:2,1:2] + forwardsolve(arg1[1:2,1:2], arg2[1:2,1:2] + arg2[1:2,1:2])), inputDim = c(2, 2), outputDim = 2),
+    list(name = 'backsolve matrix-vector amid expr', expr = quote(out <- arg2[1:2] + backsolve(arg1[1:2,1:2], arg2[1:2] + arg2[1:2])), inputDim = c(2, 1), outputDim = 1),
+    list(name = 'backsolve matrix-matrix amid expr', expr = quote(out <- arg2[1:2,1:2] + backsolve(arg1[1:2,1:2], arg2[1:2,1:2] + arg2[1:2,1:2])), inputDim = c(2, 2), outputDim = 2),
 
     list(name = 'chol', expr = quote({ A <- arg1; for(i in 1:dim(A)[1]) A[i,i] <- A[i,i] + 10; out <- chol(A) }), inputDim = c(2), outputDim = 2),
     list(name = 'matrix-vector multiply', expr = quote(out <- arg1 %*% arg2), inputDim = c(2, 1), outputDim = 2),
-    list(name = 'vector-matrix multiply', expr = quote(out <- t(arg1) %*% arg2), inputDim = c(1, 2), outputDim = 2, knownFailure = 'tensorflow.*runs'),
+    list(name = 'vector-matrix multiply', expr = quote(out <- t(arg1) %*% arg2), inputDim = c(1, 2), outputDim = 2),
     list(name = 'matrix-matrix multiply', expr = quote(out <- arg1 %*% arg2), inputDim = c(2, 2), outputDim = 2)
 )
 

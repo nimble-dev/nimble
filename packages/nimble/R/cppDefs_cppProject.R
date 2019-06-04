@@ -226,18 +226,6 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        writeDynamicRegistrationsDotCpp(cppName, dllName)
                                        nimbleUserNamespace$sessionSpecificDll <- compileStaticCode(dllName, cppName, showCompilerOutput)
                                    },
-                                   compileTensorflowWrapper = function(showCompilerOutput = nimbleOptions('showCompilerOutput')) {
-                                       # Load prerequisite DLLs.
-                                       if(!requireNamespace('tensorflow')) stop('tensorflow package must be installed. Try "install.packages(\"tensorflow\")"')
-                                       tfPath <- tensorflow::tf$`__path__`  # This line triggers loading of _pywrap_tensorflow_internal.so.
-                                       tensorflowDllPath <- file.path(tfPath, 'python', '_pywrap_tensorflow_internal.so')
-                                       if(!file.exists(tensorflowDllPath))  stop(paste('Missing shared library', tensorflowDllPath))
-
-                                       timeStamp <- format(Sys.time(), "%m_%d_%H_%M_%S")
-                                       dllName <- paste0("nimble-tensorflow_", timeStamp)
-                                       cppName <- file.path(system.file(package = 'nimble'), 'CppCode', 'tensorflow.cpp')
-                                       nimbleUserNamespace$tensorflowWrapperDll <- compileStaticCode(dllName, cppName, showCompilerOutput)
-                                   },
                                    compileFile = function(names, showCompilerOutput = nimbleOptions('showCompilerOutput'),
                                                           .useLib = UseLibraryMakevars) {
                                        names <- Rname2CppName(names)
@@ -266,23 +254,6 @@ cppProjectClass <- setRefClass('cppProjectClass',
 
                                        if(is.null(nimbleUserNamespace$sessionSpecificDll)) {
                                            compileDynamicRegistrations(showCompilerOutput = showCompilerOutput)
-                                       }
-                                       if(nimbleOptions('experimentalUseTensorflow')) {
-                                           if (is.null(nimbleUserNamespace$tensorflowWrapperDll)) {
-                                               compileTensorflowWrapper(showCompilerOutput = showCompilerOutput)
-                                           }
-                                           compileOnce <- FALSE  # TODO Compile tensorflow.cpp once and link against the .so file.
-                                           if (compileOnce) {
-                                               # This passes the the tensorflow wrapper .so as a compiler flag to R CMD SHLIB.
-                                               # This fails on travis because passing this linker flag overrides PKG_LIBS from Makevars.
-                                               # For more details, see http://www.hep.by/gnu/r-patched/r-exts/R-exts_96.html
-                                               # "Supplying linker commands as arguments to R CMD SHLIB will take precedence over PKG_LIBS in `Makevars'."
-                                               SHLIBcmd <- paste(SHLIBcmd, nimbleUserNamespace$tensorflowWrapperDll[['path']])
-                                           } else {
-                                               # This recompiles the tensorflow.cpp wrapper each time it is needed.
-                                               # This is inefficient, but works for now.
-                                               SHLIBcmd <- paste(SHLIBcmd, file.path(system.file(package = 'nimble'), 'CppCode', 'tensorflow.cpp'))
-                                           }
                                        }
 
                                        origSHLIBcmd <- SHLIBcmd

@@ -431,6 +431,10 @@ nimCopy_keywordInfo <- keywordInfoClass(
 		accessTypes <- c('symbolModelVariableAccessorVector', 'symbolModelValuesAccessorVector')
 		from_ArgList <- list(name = code$from, class = symTypeFromSymTab(code$from, nfProc$setupSymTab, options = possibleObjects))
 		to_ArgList <- list(name = code$to, class = symTypeFromSymTab(code$to, nfProc$setupSymTab, options = possibleObjects))
+		if(is.null(from_ArgList$class)) 
+			stop("Error in nimCopy: '", code$from, "' is not a recognized model or modelValues object.") 		
+		if(is.null(to_ArgList$class)) 
+			stop("Error in nimCopy: '", code$to, "' is not a recognized model or modelValues object.") 		
 		if(from_ArgList$class %in% modelValuesTypes){
 			if(isCodeArgBlank(code, 'row'))		stop('row argument missing in copy call')
 			from_ArgList$row = code$row
@@ -732,6 +736,9 @@ singleBracket_keywordInfo <- keywordInfoClass(
         if(is.null(nfProc)) return (code)
         class <- symTypeFromSymTab(code[[2]], nfProc$setupSymTab)
         if(class == 'symbolModelValues'){
+            if(length(code) < 4) {
+                stop(paste0("incorrect syntax for accessing element of modelValues: ", deparse(code)))
+            }
             singleMVAccess_ArgList <- list(code = code, modelValues = code[[2]], var = code[[3]], row = code[[4]])
             accessName <- singleModelValuesAccessor_SetupTemplate$makeName(singleMVAccess_ArgList)
             addNecessarySetupCode(accessName, singleMVAccess_ArgList, singleModelValuesAccessor_SetupTemplate, nfProc)

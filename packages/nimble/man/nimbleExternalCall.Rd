@@ -4,7 +4,8 @@
 \alias{nimbleExternalCall}
 \title{Create a nimbleFunction that wraps a call to external compiled code}
 \usage{
-nimbleExternalCall(prototype, returnType, Cfun, headerFile, oFile)
+nimbleExternalCall(prototype, returnType, Cfun, headerFile, oFile,
+  where = getNimbleFunctionEnvironment())
 }
 \arguments{
 \item{prototype}{Argument type information.  This can be provided as an R function using \code{nimbleFunction} type declarations or as a list of \code{nimbleType} objects.}
@@ -16,6 +17,8 @@ nimbleExternalCall(prototype, returnType, Cfun, headerFile, oFile)
 \item{headerFile}{Name (possibly including file path) of the header file where Cfun is declared.}
 
 \item{oFile}{Name (possibly including path) of the .o file where Cfun has been compiled.  Spaces in the path may cause problems.}
+
+\item{where}{An optional \code{where} argument passed to \code{setRefClass} for where the reference class definition generated for this nimbleFunction will be stored.  This is needed due to R package namespace issues but should never need to be provided by a user.}
 }
 \value{
 A \code{nimbleFunction} that takes the indicated input arguments, calls \code{Cfun}, and returns the result.

@@ -421,6 +421,7 @@ sampler_CRP_concentration <- nimbleFunction(
 CRP_helper <- nimbleFunctionVirtual(
   methods = list(
     storeParams = function() { },   ## parameters of base measure, which for conjugate cases should be the same for all clusters
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {  ## calculate prior predictive for new cluster for conjugate cases
       returnType(double())
     },
@@ -437,22 +438,39 @@ CRP_nonconjugate <- nimbleFunction(
   name = "CRP_nonconjugate",
   contains = CRP_helper,
   setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
+      savedIdx <- 1
+      saved <- nimNumeric(2) # treated as scalar if length 1
+      saved2 <- saved
+      saved3 <- saved
   },
   methods = list(
     storeParams = function() {},  ## nothing needed for non-conjugate
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       return(model$getLogProb(dataNodes[i]))
     },
     sample = function(i = integer(), j = integer() ) {
-      ## sample from prior
-      if( p == 1 ) {
-        model$simulate(marginalizedNodes[j])
-      } else {
-        for(l in 1:p) {  ## marginalized nodes should be in correct order based on findClusterNodes.
-          model$simulate(marginalizedNodes[(l-1)*nTilde + j])
+      if(j == 0) {  ## reset to stored values (for case of new cluster not opened)
+            values(model, marginalizedNodes[savedIdx]) <<- saved
+            if(p > 1) {
+                values(model, marginalizedNodes[nTilde + savedIdx]) <<- saved2
+                if(p > 2)
+                    values(model, marginalizedNodes[2*nTilde + savedIdx]) <<- saved3
+            }
+        } else {
+            savedIdx <<- j
+            saved <<- values(model, marginalizedNodes[j])
+            model$simulate(marginalizedNodes[j])
+            if(p > 1) {
+                saved2 <<- values(model, marginalizedNodes[nTilde + j])
+                if(p > 2)
+                    saved3 <<- values(model, marginalizedNodes[2*nTilde + j])
+                for(l in 2:p) {  ## marginalized nodes should be in correct order based on findClusterNodes.
+                    model$simulate(marginalizedNodes[(l-1)*nTilde + j])
+                }
+            }
         }
-      }
     }
   )
 )
@@ -469,6 +487,7 @@ CRP_conjugate_dnorm_dnorm <- nimbleFunction(
       priorMean <<- model$getParam(marginalizedNodes[1], 'mean')
       priorVar <<- model$getParam(marginalizedNodes[1], 'var')
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       dataVar <- model$getParam(dataNodes[i], 'var')
@@ -480,6 +499,68 @@ CRP_conjugate_dnorm_dnorm <- nimbleFunction(
       y <- values(model, dataNodes[i])[1]
       postVar <- 1 / (1 / dataVar + 1 / priorVar)
       postMean <- postVar * (y / dataVar + priorMean / priorVar)
+      values(model, marginalizedNodes[j]) <<- c(rnorm(1, postMean, sqrt(postVar)))
+    }
+  )
+)
+
+CRP_conjugate_dnorm_dnorm_nonidentity <- nimbleFunction(
+  name = "CRP_conjugate_dnorm_dnorm_nonidentity",
+  contains = CRP_helper,
+  setup = function(model, marginalizedNodes, dataNodes, intermNodes, intermNodes2, intermNodes3, nInterm, calcNodes, type, p, nTilde) {
+    priorMean <- nimNumeric(1)
+    priorVar <- nimNumeric(1)
+    offset <- nimNumeric(1)
+    coeff <- nimNumeric(1)
+  },
+  methods = list(
+    storeParams = function() {
+      priorMean <<- model$getParam(marginalizedNodes[1], 'mean')
+      priorVar <<- model$getParam(marginalizedNodes[1], 'var')
+    },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {
+        ## In mean of observation, determine a,b in 'a + b*mu[xi[i]]'.
+        currentValue <- values(model, marginalizedNodes[j])  
+        values(model, marginalizedNodes[j]) <<- c(0)
+        if(type == 'indivCalcs') {
+            if(nInterm >= 1) model$calculate(intermNodes[i])
+            if(nInterm >= 2) model$calculate(intermNodes2[i])
+            if(nInterm >= 3) model$calculate(intermNodes3[i])
+            model$calculate(dataNodes[i])
+        } else model$calculate(calcNodes) 
+        offset <<- model$getParam(dataNodes[i], 'mean')
+        values(model, marginalizedNodes[j]) <<- c(1)
+        if(type == 'indivCalcs') {
+            if(nInterm >= 1) model$calculate(intermNodes[i])
+            if(nInterm >= 2) model$calculate(intermNodes2[i])
+            if(nInterm >= 3) model$calculate(intermNodes3[i])
+            model$calculate(dataNodes[i])
+        } else model$calculate(calcNodes)             
+        coeff <<- model$getParam(dataNodes[i], 'mean') - offset
+        values(model, marginalizedNodes[j]) <<- currentValue
+        ## Note as this is currently used, we do not need to update
+        ## the intermediate nodes or dataNodes logProb as
+        ## ordering of calculations in sampler_CRP does not require it because of
+        ## 1:1 mapping of cluster IDs to observations.
+        ## However, to reduce change of future bugs, we are updating here.
+        if(type == 'indivCalcs') {
+            if(nInterm >= 1) model$calculate(intermNodes[i])
+            if(nInterm >= 2) model$calculate(intermNodes2[i])
+            if(nInterm >= 3) model$calculate(intermNodes3[i])
+            model$calculate(dataNodes[i])
+        } else model$calculate(calcNodes) 
+    },
+    calculate_prior_predictive = function(i = integer()) {
+      returnType(double())
+      dataVar <- model$getParam(dataNodes[i], 'var')
+      y <- values(model, dataNodes[i])[1]
+      return(dnorm(y, offset + coeff*priorMean, sqrt(coeff^2 * priorVar + dataVar), log=TRUE))
+    },
+    sample = function(i = integer(), j = integer()) {
+      dataVar <- model$getParam(dataNodes[i], 'var')
+      y <- values(model, dataNodes[i])[1]
+      postVar <- 1 / (coeff^2 / dataVar + 1 / priorVar)
+      postMean <- postVar * (coeff*(y-offset) / dataVar + priorMean / priorVar)
       values(model, marginalizedNodes[j]) <<- c(rnorm(1, postMean, sqrt(postVar)))
     }
   )
@@ -502,6 +583,7 @@ CRP_conjugate_dnorm_invgamma_dnorm <- nimbleFunction(
       priorShape <<- model$getParam(marginalizedNodes2[1], 'shape')
       priorScale <<- model$getParam(marginalizedNodes2[1], 'scale')
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])[1]
@@ -533,6 +615,7 @@ CRP_conjugate_dgamma_dpois <- nimbleFunction(
       priorShape <<- model$getParam(marginalizedNodes[1], 'shape') 
       priorRate <<- model$getParam(marginalizedNodes[1], 'rate') 
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])[1]
@@ -559,6 +642,7 @@ CRP_conjugate_dgamma_dnorm <- nimbleFunction(
       priorShape <<- model$getParam(marginalizedNodes[1], 'shape') 
       priorRate <<- model$getParam(marginalizedNodes[1], 'rate') 
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       dataMean <- model$getParam(dataNodes[i], 'mean')
@@ -588,6 +672,7 @@ CRP_conjugate_dbeta_dbern <- nimbleFunction(
       priorShape1 <<- model$getParam(marginalizedNodes[1], 'shape1') 
       priorShape2 <<- model$getParam(marginalizedNodes[1], 'shape2')
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])[1]
@@ -612,6 +697,7 @@ CRP_conjugate_dbeta_dbin <- nimbleFunction(
       priorShape1 <<- model$getParam(marginalizedNodes[1], 'shape1') 
       priorShape2 <<- model$getParam(marginalizedNodes[1], 'shape2')
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])[1]
@@ -642,6 +728,7 @@ CRP_conjugate_dbeta_dnegbin <- nimbleFunction(
       priorShape1 <<- model$getParam(marginalizedNodes[1], 'shape1') 
       priorShape2 <<- model$getParam(marginalizedNodes[1], 'shape2')
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])[1]
@@ -670,6 +757,7 @@ CRP_conjugate_dgamma_dexp <- nimbleFunction(
       priorShape <<- model$getParam(marginalizedNodes[1], 'shape') 
       priorRate <<- model$getParam(marginalizedNodes[1], 'rate') 
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])[1]
@@ -695,6 +783,7 @@ CRP_conjugate_dgamma_dgamma <- nimbleFunction(
       priorShape <<- model$getParam(marginalizedNodes[1], 'shape') 
       priorRate <<- model$getParam(marginalizedNodes[1], 'rate')  
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       datashape <- model$getParam(dataNodes[i], 'shape')
@@ -723,6 +812,7 @@ CRP_conjugate_dgamma_dweib <- nimbleFunction(
       priorShape <<- model$getParam(marginalizedNodes[1], 'shape') 
       priorRate <<- model$getParam(marginalizedNodes[1], 'rate')  
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       dataShape <- model$getParam(dataNodes[i], 'shape')
@@ -751,6 +841,7 @@ CRP_conjugate_dgamma_dinvgamma <- nimbleFunction(
       priorShape <<- model$getParam(marginalizedNodes[1], 'shape') 
       priorRate <<- model$getParam(marginalizedNodes[1], 'rate')  
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       dataShape <- model$getParam(dataNodes[i], 'shape')
@@ -778,6 +869,7 @@ CRP_conjugate_ddirch_dmulti <- nimbleFunction(
     storeParams = function() {
       priorAlpha <<- model$getParam(marginalizedNodes[1], 'alpha')
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])
@@ -953,6 +1045,7 @@ sampler_CRP <- nimbleFunction(
     } else 
       sampler <- switch(conjugacyResult,
                         conjugate_dnorm_dnorm = 'CRP_conjugate_dnorm_dnorm',
+                        conjugate_dnorm_dnorm_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity',
                         conjugate_dnorm_invgamma_dnorm = 'CRP_conjugate_dnorm_invgamma_dnorm',
                         conjugate_dbeta_dbern  = 'CRP_conjugate_dbeta_dbern',
                         conjugate_dbeta_dbin = 'CRP_conjugate_dbeta_dbin',
@@ -967,7 +1060,7 @@ sampler_CRP <- nimbleFunction(
                         'CRP_nonconjugate')  ## default if we don't have sampler set up for a conjugacy
     
     p <- length(tildeVars)
-    
+    identityLink <- TRUE
     if(p == 2 && sampler == "CRP_conjugate_dnorm_invgamma_dnorm") {
       for(i in seq_along(tildeVars)) {
         if(model$getDistribution(clusterVarInfo$clusterNodes[[i]][1]) == 'dnorm') {
@@ -980,12 +1073,17 @@ sampler_CRP <- nimbleFunction(
       helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes1, marginalizedNodes2, dataNodes)
       calcNodes <- model$getDependencies(c(target, marginalizedNodes1, marginalizedNodes2))
     } else {
-      ## p and nTilde only needed for non-conjugate currently.
-      ## Note that the elements of tildeNodes will be in order such that the first element corresponds to the cluster
-      ## obtained when xi[i] = 1, the second when xi[i] = 2, etc.
+        ## p and nTilde only needed for non-conjugate currently.
+        ## Note that the elements of tildeNodes will be in order such that the first element corresponds to the cluster
+        ## obtained when xi[i] = 1, the second when xi[i] = 2, etc.
+      if(sampler == 'CRP_nonconjugate' && p > 3)
+          stop("sampler_CRP: CRP_nonconjugate sampler not yet set up to handle clustering of more than three variables.")  ## This is because of how we put old values back into model when proposing a new cluster that is not accepted.
       marginalizedNodes <- unlist(clusterVarInfo$clusterNodes)
-      helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, p, min_nTilde)
       calcNodes <- model$getDependencies(c(target, marginalizedNodes))
+      if(sampler == "CRP_conjugate_dnorm_dnorm_nonidentity") {
+          identityLink <- FALSE
+          helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, intermNodes, intermNodes2, intermNodes3, nInterm, calcNodes, type, p, min_nTilde)
+      } else helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, p, min_nTilde)
     }
     
     curLogProb <- numeric(n)
@@ -1077,6 +1175,8 @@ sampler_CRP <- nimbleFunction(
             model$calculate(dataNodes[i])
           } else model$calculate(calcNodes) 
         }
+        if(!identityLink) 
+            helperFunctions[[1]]$calculate_offset_coeff(i, model[[target]][i])
         curLogProb[k] <<- log(conc) + helperFunctions[[1]]$calculate_prior_predictive(i) # probability of sampling a new label, only k components because xi_i is a singleton
         
         ## Sample new cluster.
@@ -1115,6 +1215,8 @@ sampler_CRP <- nimbleFunction(
               model$calculate(dataNodes[i])
             } else model$calculate(calcNodes) 
           }
+          if(!identityLink)
+            helperFunctions[[1]]$calculate_offset_coeff(i, model[[target]][i])
           curLogProb[k+1] <<- log(conc) + helperFunctions[[1]]$calculate_prior_predictive(i) # probability of sampling a new label
         }
         
@@ -1131,11 +1233,17 @@ sampler_CRP <- nimbleFunction(
       
       ## Update metadata about clustering.
       model[[target]][i] <<- newLab
+
+      ## Note that we do not update intermNodes nor dataNodes (i.e., data logProbs) at this point
+      ## because of the 1:1 mapping of cluster IDs to observations, so sampling of other
+      ## cluster IDs in the main 'i' loop doesn't depend on having these updated. Instead update
+      ## at end of function.
       
       if( newLabCond ) { # a component is created. It can really create a new component or keep the current label if xi_i is a singleton
         if(sampler != 'CRP_nonconjugate') { # updating the cluster parameters of the new cluster
           helperFunctions[[1]]$sample(i, model[[target]][i])
         }
+
         if( xiCounts[xi[i]] != 0) { # a component is really created
           k <- k + 1
           xiUniques[k] <- newLab 
@@ -1159,6 +1267,8 @@ sampler_CRP <- nimbleFunction(
         }
         xiCounts[model[[target]][i]] <- 1
       } else { # an existing label is sampled
+        if(sampler == 'CRP_nonconjugate')   # reset to previous marginalized node value
+            helperFunctions[[1]]$sample(i, 0)
         if( xiCounts[xi[i]] == 0 ) { # xi_i is a singleton, a component was deleted
           k <- k - 1
           xiUniques <- reorderXiUniques
@@ -1220,8 +1330,6 @@ CRP_nonconjugate_moreGeneral <- nimbleFunction(
     }
   )
 )
-
-
 
 #' @rdname samplers
 #' @export
@@ -1405,6 +1513,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
                         'CRP_nonconjugate_moreGeneral')  ## default if we don't have sampler set up for a conjugacy
     
     p <- length(tildeVars)
+    identityLink <- TRUE
     
     if(p == 2 && sampler == "CRP_conjugate_dnorm_invgamma_dnorm") {
       for(i in seq_along(tildeVars)) {
@@ -1418,12 +1527,17 @@ sampler_CRP_moreGeneral <- nimbleFunction(
       helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes1, marginalizedNodes2, dataNodes)
       calcNodes <- model$getDependencies(c(target, marginalizedNodes1, marginalizedNodes2))
     } else {
-      ## p and nTilde only needed for non-conjugate currently.
-      ## Note that the elements of tildeNodes will be in order such that the first element corresponds to the cluster
-      ## obtained when xi[i] = 1, the second when xi[i] = 2, etc.
+        ## p and nTilde only needed for non-conjugate currently.
+        ## Note that the elements of tildeNodes will be in order such that the first element corresponds to the cluster
+        ## obtained when xi[i] = 1, the second when xi[i] = 2, etc.
+      if(sampler == 'CRP_nonconjugate' && p > 3)
+          stop("sampler_CRP: CRP_nonconjugate sampler not yet set up to handle clustering of more than three variables.")  ## This is because of how we put old values back into model when proposing a new cluster that is not accepted.
       marginalizedNodes <- unlist(clusterVarInfo$clusterNodes)
-      helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, p, min_nTilde, J)
       calcNodes <- model$getDependencies(c(target, marginalizedNodes))
+      if(sampler == "CRP_conjugate_dnorm_dnorm_nonidentity") {
+          identityLink <- FALSE
+          helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, intermNodes, intermNodes2, intermNodes3, nInterm, calcNodes, type, p, min_nTilde)
+      } else helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, p, min_nTilde, J)
     }
     
     curLogProb <- numeric(n)
@@ -1640,190 +1754,6 @@ sampler_CRP_moreGeneral <- nimbleFunction(
 )
 
 
-#----------------------------------------------------------
-#----------------------------------------------------------
-
-
-
-#' @rdname samplers
-#' @export
-sampler_CRP_old <- nimbleFunction(
-  name = 'sampler_CRP_old',
-  contains=sampler_BASE,
-    
-  setup=function(model, mvSaved, target, control){
-    calcNodes <- model$getDependencies(target)
-    targetElements <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-    targetVar <- model$getVarNames(nodes = target)  
-    n <- length(targetElements) 
-    
-    # first check that the sampler can be used: we need one observation per random index
-    nObs <- length(model$getDependencies(targetElements, stochOnly = TRUE, self = FALSE))
-    if(n != nObs)
-        stop("sampler_CRP: The length of membership variable and observations has to be the same.\n")
-    
-    ## finding 'tilde' variables (the parameters that are being clustered):
-    tildeVars <- NULL
-    itildeVar <- 1
-    
-    dep <- model$getDependencies(targetElements[1], self = FALSE)
-    for(i in seq_along(dep)) { 
-      expr <- cc_getNodesInExpr(model$getValueExpr(dep[i])) 
-      for(j in seq_along(expr)) {
-        ## look for cases like thetatilde[xi[i]] to identify 'xi' and extract 'thetaTilde'
-        tmpexpr <- parse(text = expr[j])[[1]]
-        if(length(tmpexpr) >= 3 && is.call(tmpexpr) && tmpexpr[[1]] == '[') {   
-          foundTarget <- all.vars(tmpexpr[[3]]) == targetVar   
-          if( length(foundTarget) > 0 && sum(foundTarget) > 0 ) {
-            tildeVars[itildeVar] <- deparse(tmpexpr[[2]])
-            itildeVar <- itildeVar+1 
-          }
-        }
-      }
-    }
-    if(is.null(tildeVars))
-      stop('sampler_CRP:  The model should have at least one cluster variable.\n')
-    
-    nTilde <- sapply(tildeVars, function(x) length(model[[x]]))
-    
-    if(length(unique(nTilde)) != 1)
-      stop('sampler_CRP: In a model with multiple cluster parameters, the number of those parameters must all be the same.\n')
-    
-    min_nTilde <- min(nTilde) ## we need a scalar for use in run code
-    if(min_nTilde < n)
-      warning('sampler_CRP: The number of cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if it ever proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.\n')
-    
-    ## Here we try to set up some data structures that allow us to do observation-specific
-    ## computation, to save us from computing for all observations when a single cluster membership is being proposed.
-    ## At the moment, this is the only way we can easily handle dependencies for multiple node elements in a
-    ## 'vectorized' way.
-    nInterm <- length(model$getDependencies(targetElements[1], determOnly = TRUE))
-    dataNodes <- rep(targetElements[1], n) ## this serves as dummy nodes that may be replaced below
-    ## needs to be legitimate nodes because run code sets up calculate even if if() would never cause it to be used
-
-    type <- 'indivCalcs'
-    intermNodes <- dataNodes
-    intermNodes2 <- dataNodes
-    intermNodes3 <- dataNodes
-    if(nInterm > 3) {
-      type <- "allCalcs"  ## give up and do the inefficient approach
-    } else {
-      for(i in seq_len(n)) {
-        stochDeps <- model$getDependencies(targetElements[i], stochOnly = TRUE, self = FALSE) 
-        detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
-        if(length(stochDeps) != 1) 
-          stop("sampler_CRP: Nimble cannot currently assign a sampler to a dCRP node unless each membership element is associated with a single observation.\n")  ## reason for this is that we do getLogProb(dataNodes[i]), which assumes a single stochastic dependent
-        if(length(detDeps) != nInterm) {
-          type <- 'allCalcs'  # give up again; should only occur in strange situations
-        } else {
-          dataNodes[i] <- stochDeps[1]
-          
-          if(nInterm >= 1) 
-            intermNodes[i] <- detDeps[1]
-          if(nInterm >= 2)
-            intermNodes2[i] <- detDeps[2]
-          if(nInterm >= 3)
-            intermNodes3[i] <- detDeps[3]
-        }
-      }
-    }
-    
-    helperFunctions <- nimbleFunctionList(CRP_helper)
-    
-    ## use conjugacy to determine which helper functions to use
-    if(control$useConjugacy)
-        conjugacyResult <- checkCRPconjugacy(model, target) else conjugacyResult <- NULL
-    
-    if(is.null(conjugacyResult)) {
-      sampler <- 'CRP_nonconjugate'
-    } else 
-      sampler <- switch(conjugacyResult,
-                        conjugate_dnorm_dnorm = 'CRP_conjugate_dnorm_dnorm',
-                        conjugate_dbeta_dbern  = 'CRP_conjugate_dbeta_dbern',
-                        conjugate_dbeta_dbin = 'CRP_conjugate_dbeta_dbin',
-                        conjugate_dbeta_dnegbin = 'CRP_conjugate_dbeta_dnegbin',
-                        conjugate_dgamma_dpois = 'CRP_conjugate_dgamma_dpois',
-                        conjugate_dgamma_dexp = 'CRP_conjugate_dgamma_dexp',
-                        conjugate_dgamma_dgamma = 'CRP_conjugate_dgamma_dgamma',
-                        conjugate_dgamma_dnorm = 'CRP_conjugate_dgamma_dnorm',
-                        conjugate_dgamma_dweib = 'CRP_conjugate_dgamma_dweib',
-                        conjugate_dgamma_dinvgamma = 'CRP_conjugate_dgamma_dinvgamma',
-                        conjugate_ddirch_dmulti = 'CRP_conjugate_ddirch_dmulti',
-                        'CRP_nonconjugate')  ## default if we don't have sampler set up for a conjugacy
-    ## we use [1] here because the 2nd/3rd args only used for conjugate cases and currently that is only setup for
-    ## single parameters
-    helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeVars[1], model$expandNodeNames(tildeVars[1]), dataNodes)
-    
-    curLogProb <- numeric(n) 
-  },
-  
-  
-  run = function() {
-    conc <- model$getParam(target, 'conc')
-    helperFunctions[[1]]$storeParams()
-    for(i in 1:n) { # updates one cluster membership at the time , i=1,...,n
-      xi <- model[[target]]
-      cond <- sum(xi[i]==xi) # if cond=1, xi_i is a singleton
-      for(j in 1:n) { # calculate probability of sampling indexes 1,...,n   
-        if(i==j) { # index i denotes a new indicator xi[i]
-          if(cond>1) { # a new parameter has to be created to calculate the prob
-            newind <- 1
-            mySum <- sum(xi == newind)
-            while(mySum>0 & newind < n) { # need to make sure don't go beyond length of vector
-              newind <- newind+1
-              mySum <- sum(xi == newind)
-            }
-            if(newind > min_nTilde) {
-                nimCat('CRP_sampler: This MCMC is not fully nonparametric. The MCMC attempted to use more components than the number of cluster parameters.\n')
-                newind <- xi[i]
-            }
-            model[[target]][i] <<- newind
-            if(type == 'indivCalcs') {
-              if(nInterm >= 1) model$calculate(intermNodes[i])
-              if(nInterm >= 2) model$calculate(intermNodes2[i])
-              if(nInterm >= 3) model$calculate(intermNodes3[i])
-              model$calculate(dataNodes[i])
-            } else model$calculate(calcNodes) 
-          } else { # we keep the old parameter as the "new" one
-            newind <- xi[i]
-            model[[target]][i] <<- newind
-            if(type == 'indivCalcs') {
-              if(nInterm >= 1) model$calculate(intermNodes[i])
-              if(nInterm >= 2) model$calculate(intermNodes2[i])
-              if(nInterm >= 3) model$calculate(intermNodes3[i])
-              model$calculate(dataNodes[i])
-            } else model$calculate(calcNodes)  
-          }
-          curLogProb[j] <<- log(conc) + helperFunctions[[1]]$calculate_prior_predictive(i)
-        } else { ## consider making the new membership the same as the membership of other element
-          model[[target]][i] <<- model[[target]][j]
-          if(type == 'indivCalcs') {
-            if(nInterm >= 1) model$calculate(intermNodes[i])
-            if(nInterm >= 2) model$calculate(intermNodes2[i])
-            if(nInterm >= 3) model$calculate(intermNodes3[i])
-            model$calculate(dataNodes[i])
-          } else model$calculate(calcNodes) 
-          curLogProb[j] <<- model$getLogProb(dataNodes[i])
-        }  
-      } 
-      
-      index <- rcat(n=1, exp(curLogProb-max(curLogProb)))#
-      if(index==i) { # creates a new component: one that is not used
-          if(newind != xi[i]) {
-              model[[target]][i] <<- newind
-              helperFunctions[[1]]$sample(i, newind)
-          }  ## when newind == xi[i], it means we tried to create a cluster beyond min_nTilde, so don't sample new cluster parameters
-      } else{
-        model[[target]][i] <<- model[[target]][index]
-      } 
-    }
-    model$calculate(calcNodes)
-    
-    
-    copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-  },
-  methods = list( reset = function () {})
-)
 
 
 findClusterNodes <- function(model, target) {
@@ -1863,6 +1793,9 @@ findClusterNodes <- function(model, target) {
   varIdx <- 0
 
   targetNonIndex <- NULL
+
+  modelVars <- model$getVarNames()
+  modelVars <- modelVars[!modelVars == targetVar]
   
   for(idx in seq_along(exampleDeps)) {
     ## Pull out expressions, either as RHS of deterministic or parameters of stochastic
@@ -1889,6 +1822,10 @@ findClusterNodes <- function(model, target) {
                     whichIndex <- k
                 }
             }
+            ## We will need to relax this when allow crossed clustering.
+            if(sum(all.vars(subExpr[[k]]) %in% modelVars))  ## cases like mu[xi[i],eta[j]]
+                warning("findClusterNodes: multiple indexing variables in '", deparse(subExpr),
+                         "'. NIMBLE's CRP MCMC sampling not designed for this situation.")
             k <- k+1
         }
         if(!foundTarget) stop("findClusterNodes: conflicting information about presence of CRP variable in expression.")
@@ -1923,7 +1860,7 @@ findClusterNodes <- function(model, target) {
         ## clusterNodes will be grouped in chunks of unique cluster IDs for correct
         ## sampling of new clusters when have multiple obs per cluster.
         ord <- order(unrolledIndices[ , loopIndex[varIdx]])
-        unrolledIndices <- unrolledIndices[ord, ]
+        unrolledIndices <- unrolledIndices[ord, , drop = FALSE]
         clusterIDs[[varIdx]] <- unrolledIndices[ , loopIndex[varIdx]]
         
         n <- nrow(unrolledIndices)
@@ -1992,6 +1929,10 @@ findClusterNodes <- function(model, target) {
         ## }
     }
   }
+  for(varIdx in seq_along(clusterVars)) 
+      if(any(model$isDeterm(clusterNodes[[varIdx]])))
+          stop("findClusterNodes: detected that deterministic nodes are being clustered. Please use the dCRP node to cluster stochastic nodes.")
+
   return(list(clusterNodes = clusterNodes, clusterVars = clusterVars, nTilde = nTilde,
               clusterIDs = clusterIDs, loopIndex = loopIndex,
               targetIsIndex = targetIsIndex, indexPosition = indexPosition, indexExpr = indexExpr,
@@ -2057,3 +1998,19 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo) {
     }
     return(conjugate)
 }
+
+sampler_CRP_cluster_wrapper <- nimbleFunction(
+    name = "CRP_cluster_wrapper", 
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        regular_sampler <- nimbleFunctionList(sampler_BASE)
+        regular_sampler[[1]] <- control$wrapped_conf$buildSampler(model, mvSaved)
+        dcrpNode <- control$dcrpNode
+        clusterID <- control$clusterID
+    },
+    run = function() {
+        if(any(model[[dcrpNode]] == clusterID)) regular_sampler[[1]]$run()
+    },
+    methods = list(
+        reset = function() {regular_sampler[[1]]$reset()}
+    ))

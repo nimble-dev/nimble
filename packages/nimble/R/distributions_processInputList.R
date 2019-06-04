@@ -259,8 +259,17 @@ checkDistributionFunctions <- function(distributionInput, userEnv) {
         densityName <- as.character(parse(text = inputString)[[1]][[1]])
     } else densityName <- distributionInput
     simulateName <- sub('^d', 'r', densityName)
-    if(!exists(densityName, where = userEnv) ||
-        !is.rcf(get(densityName, pos = userEnv)))
+    nofun <- FALSE
+    if(exists(densityName, where = userEnv)) {
+        rcf <- get(densityName, pos = userEnv)
+        if(!is.rcf(rcf)) {
+            nofun <- TRUE
+        } else if(environment(rcf)$nfMethodRCobject$returnType != quote(double()) &&
+                  environment(rcf)$nfMethodRCobject$returnType != quote(double(0)))
+              stop(paste0("checkDistributionFunctions: density function for ", densityName,
+                          " has invalid or missing returnType, which must be 'double(0)' (or equivalently 'double()')."))
+    } else nofun <- TRUE
+    if(nofun)
         stop(paste0("checkDistributionFunctions: density function for ", densityName,
                     " is not available.  It must be a nimbleFunction (with no setup code)."))
     if(!exists(simulateName, where = userEnv) || !is.rcf(get(simulateName, pos = userEnv))) {

@@ -1,7 +1,90 @@
+                            CHANGES IN VERSION 0.8.0 (June 2019)
+USER LEVEL CHANGES
+
+-- Added reversible jump MCMC for variable selection via configureRJ().
+
+-- Greatly improved speed of MCMC sampling for Bayesian nonparametric models
+   with the dCRP distribution by not sampling parameters of empty clusters.
+   (PR #855)
+
+-- Improved speed of MCMC configuration (i.e., configureMCMC()) is available
+   by setting nimbleOptions(oldConjugacyChecking = FALSE) and/or
+   nimbleOptions(useNewConfigureMCMC = TRUE).  These new features are considered
+   to be in beta testing.  Default values for these nimbleOptions give old
+   behavior. (PR #910, PR #896)
+
+-- Removed compareMCMCs() and MCMCsuite(), which are being re-written for
+   release in a separate package available currently at
+   https://github.com/nimble-dev/compareMCMCs.
+
+-- Added printing option for MCMC configuration objects:
+   conf$printSamplers(byType = TRUE), will display the node names being sampled,
+   grouped together by the sampling algorithm acting on them (e.g., RW sampler).
+   (PR #901)
+
+-- Added options for control of MCMC behavior: MCMCmonitorAllSampledNodes to
+   monitor all sampled nodes and multivariateNodesAsScalars for sampling scalars
+   within multivariate nodes. (PR #895, #893)
+
+-- Added detection of dCRP clustering of regression coefficients by detecting
+   conjugacy when a linear combination is present.
+
+-- Added support for recycling-rule in compiled code for dlogis, rlogis,
+   qlogis, and plogis. (PR #911)
 
 BUG FIXES
 
--- Fixed bug in conjugacy checking of CAR model structures
+-- Fixed bug in conjugacy checking of CAR model structures. (PR #871)
+
+-- model setInits method now checks for unnamed list elements. (PR #880)
+
+-- Allow use of TRUE/FALSE for non-parameter arguments in functions in model
+   code. (PR #904)
+
+-- Correctly manage the RNG state when calling from C++ to R via a nimbleRcall.
+   (PR # 897)
+
+-- Handle issues when numerical underflow causes exact zeros as proposals in
+   RW_dirichlet sampler. (PR #885)
+
+-- Fixed a bug in conjugacy detection when models use sum(x[1:n]). (PR #890)
+
+-- Fixed bugs in copying in certain cases when the LHS and RHS involve the same
+   variable. (PR #886)
+
+-- Fixed inefficient handling in configureMCMC of some models with gamma
+   distributions. (PR #896)
+
+DEVELOPER LEVEL CHANGES
+
+-- Improved scoping of nimbleFunctions without setup code and nimbleRcall
+   and nimbleExternalCall to avoid issues in packages that depend on NIMBLE.
+   (PR #889)
+
+-- Added a check to detect and error out when clustering deterministic nodes
+   in dCRP-based models. (PR #906)
+
+-- Added a check to detect and error out if multiple CRP indexes used in an
+   expression. (PR #892). 
+
+-- Added better error messages for when the slice sampler reaches maximum number
+   of contractions (PR #903) and when MCEM optimization calculates a non-valid
+   log-density (PR #887).
+
+-- Added some links and tweaked documentation for various functions.
+
+-- Improved speed in some uses of getNodeNames(). (PR #902)
+
+-- Added error trap for a case of incorrect syntax accessing modelValues.
+   (PR #899)
+
+-- Added various other error traps. (PR #884, #883)
+
+-- Removed unused support for running via Tensorflow rather than generating
+   and compiling C++. (PR # 882)
+
+-- Only calculate eigenvalues in CAR handling to avoid slow (and unneeded)
+   eigen computations of eigenvectors. (PR #872)
 
                             CHANGES IN VERSION 0.7.1 (March 2019)
 
@@ -11,23 +94,33 @@ USER LEVEL CHANGES
 
 -- Allow use of besselK in model code.
 
--- Add normal-normal conjugacy detection in multivariate regression structures using inprod, sum, and matrix multiplication.
+-- Add normal-normal conjugacy detection in multivariate regression structures
+   using inprod, sum, and matrix multiplication.
 
--- Allow use of 'x' in addition to 'value' in 'types' argument to registerDistributions.
+-- Allow use of 'x' in addition to 'value' in 'types' argument to
+   registerDistributions.
 
 BUG FIXES
 
--- Fix bug in MCMC sampling of dCRP nodes in non-conjugate situations introduced in Version 0.7.0. (Issue #859)
+-- Fix bug in MCMC sampling of dCRP nodes in non-conjugate situations
+   introduced in Version 0.7.0. (Issue #859)
 
--- Fix bug in findClusterNodes for dCRP nodes that was not detecting certain cases of clustering of multiple parameters in a model code statement and thereby not properly handling MCMC configuration for such nodes. (PR #861)
+-- Fix bug in findClusterNodes for dCRP nodes that was not detecting certain
+   cases of clustering of multiple parameters in a model code statement and
+   thereby not properly handling MCMC configuration for such nodes. (PR #861)
 
--- Avoid protection stack overflow in working with large models, a problem introduced in 0.7.0 due to modifications of how PROTECT is used C++ code in response to new CRAN checks. (Issue #852)
+-- Avoid protection stack overflow in working with large models, a problem
+   introduced in 0.7.0 due to modifications of how PROTECT is used C++ code
+   in response to new CRAN checks. (Issue #852)
 
 -- Fix bug in corner case of model initialization. (Issue #857)
 
 DEVELOPER LEVEL CHANGES
 
--- Per CRAN request, remove use of hard-coded paths. One case was linking to libnimble.so from nimble.so - everything is now compiled into nimble.so. Second case was determination of path to libnimble.so at install time; this is now done at run-time. (Issue #858)
+-- Per CRAN request, remove use of hard-coded paths. One case was linking
+   to libnimble.so from nimble.so - everything is now compiled into nimble.so.
+   Second case was determination of path to libnimble.so at install time;
+   this is now done at run-time. (Issue #858)
 
                             CHANGES IN VERSION 0.7.0 (January 2019)
 
@@ -37,7 +130,9 @@ raised by CRAN.)
 
 USER LEVEL CHANGES
 
--- Greatly reduced time for setting up model initialization in buildMCMC, fixing some computational slowdowns introduced in version 0.6.13's fix of a shortcoming in model initialization.
+-- Greatly reduced time for setting up model initialization in buildMCMC, fixing
+   some computational slowdowns introduced in version 0.6.13's fix of a
+   shortcoming in model initialization.
 
 DEVELOPER LEVEL CHANGES
 

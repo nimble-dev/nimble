@@ -196,7 +196,7 @@ test_that("Use of user-supplied distributions and registerDistributions", {
             ddirchmulti = list(
                 BUGSdist = "ddirchmulti(alpha, size)",
                 types = c('x = double(1)', 'alpha = double(1)', 'size = double(0)'))
-        )), "found 'x' in 'types'")
+        )), "Found 'x' in 'types'")
 
     code1 <- nimbleCode({
         for(i in 1:n1) {

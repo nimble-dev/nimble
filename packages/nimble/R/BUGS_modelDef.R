@@ -24,7 +24,7 @@ graphNode <- setRefClass(
 #'
 #' Class for NIMBLE model definition that is not usually needed directly by a user.
 #'
-#' @details See \code{?modelBaseClass} for information about creating NIMBLE BUGS models.
+#' @details See \code{\link{modelBaseClass}} for information about creating NIMBLE BUGS models.
 modelDefClass <- setRefClass('modelDefClass',
                              fields = list(
                                  ## set in the call modelDefClass$new(name)
@@ -917,7 +917,7 @@ replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) 
             return(list(code = code,
                         replaceable = FALSE))
         }
-        if( is.numeric(code)) {
+        if( is.numeric(code) || is.logical(code) ) {
             return(list(code = code,
                         replaceable = TRUE))
         }
@@ -1047,6 +1047,8 @@ isExprLiftable <- function(paramExpr, type = NULL) {
     ## determines whether a parameter expression is worthy of lifiting up to a new node
     if(is.name(paramExpr))       return(FALSE)
     if(is.numeric(paramExpr))    return(FALSE)
+    if(is.logical(paramExpr))
+        stop("isExprLiftable: NIMBLE is not expecting a logical/boolean value; please use a numeric value in place of ", paramExpr, ".") 
     if(is.call(paramExpr)) {
         callText <- getCallText(paramExpr)
         if(callText == 'chol')         return(TRUE)    ## do lift calls to chol(...)
@@ -1069,7 +1071,7 @@ isExprLiftable <- function(paramExpr, type = NULL) {
         if(is.vectorized(paramExpr))        return(FALSE)   ## don't lift any expression with vectorized indexing,  funName(x[1:10])
         return(TRUE)
     }
-    stop(paste0('error, I need to figure out how to process this parameter expression: ', deparse(paramExpr)))
+    stop(paste0('isExprLiftable: NIMBLE cannot process this parameter expression: ', deparse(paramExpr)))
 }
 addNecessaryIndexingToNewNode <- function(newNodeNameExpr, paramExpr, indexVarExprs) {
     if(is.call(paramExpr) && deparse(paramExpr[[1]]) %in% names(liftedCallsGetIndexingFromArgumentNumbers))
@@ -2764,7 +2766,7 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     }
     nonVarIndices <- !names(inits) %in% model$getVarNames()
     if(sum(nonVarIndices))
-        warning("newModel: ", paste(names(inits)[nonVarIndices], collapse = ','),
+        warning("newModel: ", paste(names(inits)[nonVarIndices], collapse = ', '),
                 " ", ifelse(sum(nonVarIndices) > 1, "are", "is"), " not ", ifelse(sum(nonVarIndices) > 1, "variables", "a variable"), " in the model; initial value ignored.")
     model$setInits(inits[!nonVarIndices])
     ## basic size/dimension, NA checking

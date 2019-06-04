@@ -344,7 +344,7 @@ In addition, NIMBLE supports alternative distribution names, known as aliases, a
 
 <!--- TODO: WHAT IS THE STATUS OF THE NEXT STATEMENT?: I've added inverse gamma in 0.6-4 and will do inverse wishart in 0.6-5. Hopefully will get to some others as well soon-ish - CJP. -->
 
-We plan to, but do not currently, include the following distributions as part of core NIMBLE: double exponential (Laplace), beta-binomial, Dirichlet-multinomial, F, Pareto, or forms of the multivariate t other than the standard one provided. 
+We plan to, but do not currently, include the following distributions as part of core NIMBLE: beta-binomial, Dirichlet-multinomial, F, Pareto, or forms of the multivariate t other than the standard one provided. 
 <!---  [F is easy to add as it has R functions] -->
 
 
