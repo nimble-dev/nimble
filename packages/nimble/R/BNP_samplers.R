@@ -1309,6 +1309,7 @@ CRP_nonconjugate_moreGeneral <- nimbleFunction(
   },
   methods = list(
     storeParams = function() {},  ## nothing needed for non-conjugate
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       out <- 0
