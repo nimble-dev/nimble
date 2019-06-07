@@ -95,8 +95,8 @@ nimDerivs <- function(nimFxn = NA,
 }
 
 calcDerivs_internal <- function(func, X, order, resultIndices ) {
-      if(!require('numDeriv'))
-      stop("The 'numDeriv' package must be installed to use derivatives in
+    if(!require('numDeriv'))
+        stop("The 'numDeriv' package must be installed to use derivatives in
          uncompiled nimbleFunctions.")
 
     hessianFlag <- 2 %in% order
@@ -105,34 +105,62 @@ calcDerivs_internal <- function(func, X, order, resultIndices ) {
     ## because value will be obtained later (if requested) after restoring
     ## model variables.
     valueFlag <- 0 %in% order
+    outVal <- NULL
+
     if(hessianFlag) {
-        ## If hessians are requested, derivatives taken using numDeriv's genD() 
-        ## function.  After that, we extract the various derivative elements and 
-        ## arrange them properly.
-        derivList <- genD(func, X)
-        if(valueFlag) outVal <- derivList$f0 
-        if(jacobianFlag) outGrad <- derivList$D[,1:derivList$p, drop = FALSE]
-        outHessVals <- derivList$D[,(derivList$p + 1):dim(derivList$D)[2],
-                                   drop = FALSE]
-        outHess <- array(NA, dim = c(derivList$p, derivList$p, length(derivList$f0)))
-        singleDimMat <- matrix(NA, nrow = derivList$p, ncol = derivList$p)
-        singleDimMatUpperTriDiag <- upper.tri(singleDimMat, diag = TRUE)
-        singleDimMatLowerTriDiag <- lower.tri(singleDimMat)
-        for(outDim in seq_along(derivList$f0)){
-            singleDimMat[singleDimMatUpperTriDiag] <- outHessVals[outDim,]
-            singleDimMat[singleDimMatLowerTriDiag] <- t(singleDimMat)[singleDimMatLowerTriDiag]
-            outHess[,,outDim] <- singleDimMat
+        ## determine output size
+        returnType_scalar <- FALSE
+        funcEnv <- environment(func)
+        if (deparse(funcEnv$fxnCall[[1]]) == 'nimDerivs_nf') {
+            fxnEnv <- funcEnv[['fxnEnv']]
+            derivFxnCall <- funcEnv[['derivFxnCall']]
+            genFunEnv <- environment(
+                environment(
+                    eval(derivFxnCall[[1]], envir = fxnEnv)
+                )[['.generatorFunction']]
+            )
+            returnType <- argType2symbol(
+                genFunEnv$methodList[[funcEnv$derivFxnName]]$returnType
+            )
+            returnType_scalar <- all(returnType$size == 1)
+        } else {
+            outVal <- func(X)
+            returnType_scalar <- length(outVal) == 1
         }
-    } else
-        if(jacobianFlag){
-            ## If jacobians are requested, derivatives taken using numDeriv's jacobian() 
-            ## function.  After that, we extract the various derivative elements and 
-            ## arrange them properly.
-            outVal <- func(X) 
-            outGrad <- jacobian(func, X)
-        } else 
-            if(valueFlag)
-                outVal <- func(X)
+
+        if (returnType_scalar) {
+            ## numDeriv's hessian() only works for scalar-valued functions
+            hess <- hessian(func, X)
+            outHess <- array(NA, dim = c(dim(hess)[1], dim(hess)[2], 1))
+            outHess[,,1]  <- hess
+            if(jacobianFlag) outGrad <- jacobian(func, X)
+            if(valueFlag && is.null(outVal)) outVal <- func(X)
+        } else {
+            ## If hessians are requested for a non-scalar valued function,
+            ## derivatives taken using numDeriv's genD() function.  After that,
+            ## we extract the various derivative elements and arrange them properly.
+            derivList <- genD(func, X)
+            if(valueFlag && is.null(outVal)) outVal <- derivList$f0
+            if(jacobianFlag) outGrad <- derivList$D[,1:derivList$p, drop = FALSE]
+            outHessVals <- derivList$D[,(derivList$p + 1):dim(derivList$D)[2],
+                                       drop = FALSE]
+            outHess <- array(NA, dim = c(derivList$p, derivList$p, length(derivList$f0)))
+            singleDimMat <- matrix(NA, nrow = derivList$p, ncol = derivList$p)
+            singleDimMatUpperTriDiag <- upper.tri(singleDimMat, diag = TRUE)
+            singleDimMatLowerTriDiag <- lower.tri(singleDimMat)
+            for(outDim in seq_along(derivList$f0)){
+                singleDimMat[singleDimMatUpperTriDiag] <- outHessVals[outDim,]
+                singleDimMat[singleDimMatLowerTriDiag] <- t(singleDimMat)[singleDimMatLowerTriDiag]
+                outHess[,,outDim] <- singleDimMat
+            }
+        }
+    } else if(jacobianFlag){
+        ## If jacobians are requested, derivatives taken using numDeriv's jacobian()
+        ## function.
+        if(valueFlag) outVal <- func(X)
+        outGrad <- jacobian(func, X)
+    } else if(valueFlag)
+        outVal <- func(X)
     
     outList <- ADNimbleList$new()
     if(!missing(resultIndices)) {
