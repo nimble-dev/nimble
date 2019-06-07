@@ -387,7 +387,7 @@ wrap_if_true <- function(test, wrapper, expr, wrap_in_try = FALSE) {
   wrap <- if (isTRUE(wrap_in_try))
             function(x) try(x, silent = TRUE)
           else identity
-  if (!is.null(test) && test) wrap(wrapper(expr)) else wrap(expr)
+  if (isTRUE(test)) wrap(wrapper(expr)) else wrap(expr)
 }
 
 ## This is a parametrized test, where `param` is a list with names:
@@ -1553,7 +1553,8 @@ make_op_param <- function(op, argTypes, more_args = NULL) {
     op_args <- sapply(arg_names, as.name, simplify = FALSE)
   }
 
-  name <- paste(op, paste0(arg_names, ' = ', argTypes, collapse = ' '))
+  args_string <- paste0(arg_names, ' = ', argTypes, collapse = ' ')
+  name <- paste(op, args_string)
 
   expr <- substitute(
     out <- this_call,

@@ -1,5 +1,72 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+#####################
+## knownFailure utils
+#####################
+
+## test_param_name: an AD test parameterization name as produced by
+##                  make_op_param()
+##
+## returns: a length 2 character vector with the op and args
+##
+split_test_param_name <- function(test_param_name) {
+  first_space <- regexpr(' ', test_param_name)
+  op <- substr(test_param_name, 1, first_space - 1)
+  args <- substr(test_param_name, first_space + 1, nchar(test_param_name))
+  return(c(op, args))
+}
+
+## test_param_name: an AD test parameterization name as produced by
+##                  make_op_param()
+## knownFailures:   a list of known test failures, e.g. in the format of
+##                  AD_knownFailures
+## 
+## returns: TRUE if the test param is known to lead to a compilation failure and
+##          FALSE otherwise
+## 
+is_compilation_failure <- function(test_param_name, knownFailures = list()) {
+  if (length(knownFailures) == 0) return(FALSE)
+  op_and_args <- split_test_param_name(test_param_name)
+  op <- op_and_args[1]
+  args <- op_and_args[2]
+  if (!is.null(knownFailures[[op]])) {
+    return(
+      isTRUE(knownFailures[[op]][[args]]$compilation) ||
+      isTRUE(knownFailures[[op]][['*']]$compilation)
+    )
+  }
+  return(FALSE)
+}
+
+is_method_failure <- function(test_param_name, method_name,
+                              output_name = c('value', 'jacobian', 'hessian'),
+                              knownFailures = list()) {
+  if (length(knownFailures) == 0) return(FALSE)
+  output_name <- match.arg(output_name)
+  op_and_args <- split_test_param_name(test_param_name)
+  op <- op_and_args[1]
+  args <- op_and_args[2]
+  if (!is.null(knownFailures[[op]])) {
+    this_arg_fails <- all_args_fail <- FALSE
+    if (!is.null(knownFailures[[op]][[args]]))
+      this_arg_fails <- identical(
+        knownFailures[[op]][[args]][[output_name]],
+        method_name
+      )
+    if (!is.null(knownFailures[[op]][['*']]))
+      all_args_fail <- identical(
+        knownFailures[[op]][['*']][[output_name]],
+        method_name
+      )
+    return(this_arg_fails || all_args_fail)
+  }
+  return(FALSE)
+}
+
+########################
+## Main AD testing utils
+########################
+
 ## Take a test parameterization created by make_AD_test() or
 ## make_distribution_fun_AD_test(), generate a random input, and test for
 ## matching nimDerivs outputs from uncompiled and compiled versions of a
@@ -23,7 +90,8 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
                     control = list(), verbose = nimbleOptions('verbose'),
                     catch_failures = FALSE, seed = 0,
-                    nimbleProject_name = '', return_compiled_nf = FALSE) {
+                    nimbleProject_name = '', return_compiled_nf = FALSE,
+                    knownFailures = list()) {
   if (!is.null(param$debug) && param$debug) browser()
   if (verbose) cat(paste0("### Testing ", param$name, "\n"))
 
@@ -37,9 +105,12 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
     enableDerivs = param$enableDerivs
   )
   nfInst <- nf()
+  temporarilyAssignInGlobalEnv(nfInst)
 
+  ##
+  ## generate inputs for the nimbleFunction methods
+  ##
   opParam <- param$opParam
-
   if (is.null(param$input_gen_funs) || is.null(names(param$input_gen_funs)))
     if (length(param$input_gen_funs) <= 1)
       input <- lapply(opParam$args, arg_type_2_input, param$input_gen_funs)
@@ -56,7 +127,9 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
       simplify = FALSE
     )
   }
-
+  ##
+  ## generate inputs that depend on the other inputs
+  ##
   is_fun <- sapply(input, is.function)
   input[is_fun] <- lapply(
     input[is_fun], function(fun) {
@@ -64,6 +137,9 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
     }
   )
 
+  ##
+  ## call R versions of nimbleFunction methods with generated input
+  ##
   if (verbose) cat("## Calling R versions of nimbleFunction methods\n")
   Rderivs <- try(
     sapply(names(param$methods), function(method) {
@@ -84,14 +160,19 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
       stop(msg, call. = FALSE) ## throw an error here
   }
 
-  temporarilyAssignInGlobalEnv(nfInst)
-
+  ##
+  ## compile the nimbleFunction
+  ##
   if (!is.null(param$dir)) dir <- param$dir
+  compilation_fails <- is_compilation_failure(param$name, knownFailures)
   CnfInst <- param$CnfInst ## user provided compiled nimbleFunction?
   if (is.null(CnfInst)) {
     if (verbose) cat("## Compiling nimbleFunction \n")
-    CnfInst <- wrap_if_true(isTRUE(param$knownFailures$compilation), expect_error, {
-      compileNimble(nfInst, dirName = dir, projectName = nimbleProject_name)
+    CnfInst <- wrap_if_true(compilation_fails, expect_error, {
+      compileNimble(
+        nfInst, dirName = dir, projectName = nimbleProject_name,
+        control = control
+      )
     }, wrap_in_try = isTRUE(catch_failures))
   }
   if (isTRUE(catch_failures) && inherits(CnfInst, 'try-error')) {
@@ -105,9 +186,12 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
     )
     ## stop the test here because it didn't compile
     return(invisible(NULL))
-  } else if (is.null(CnfInst)) { ## compilation failure was in knownFailures
+  } else if (compilation_fails) {
     if (verbose) cat("## Compilation failed, as expected \n")
   } else {
+    ##
+    ## call compiled nimbleFunction methods with generated input
+    ##
     Cderivs <- sapply(names(param$methods), function(method) {
       do.call(
         ## same issue as with Rderivs
@@ -127,8 +211,14 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
         do.call(CnfInst[[method]], input2)
       }, USE.NAMES = TRUE)
     }
-    tol1 <- if (is.null(param$tol1)) 0.00001 else param$tol1
-    tol2 <- if (is.null(param$tol2)) 0.0001 else param$tol2
+    
+    ##
+    ## loop over test methods (each with a different wrt arg)
+    ##
+    ## set expect_equal tolerances
+    tol1 <- if (is.null(param$tol1)) 1e-8 else param$tol1
+    tol2 <- if (is.null(param$tol1)) 1e-7 else param$tol2
+    tol3 <- if (is.null(param$tol2)) 1e-6 else param$tol3
     for (method_name in names(param$methods)) {
       if (verbose) {
         cat(paste0(
@@ -137,29 +227,38 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
           '\n'
         ))
       }
-      value_test <- wrap_if_true(
-        !is.null(param$knownFailures[[method_name]]$value),
-        param$knownFailures[[method_name]]$value, {
-          if (verbose) cat("## Checking values\n")
-          expect_equal(
-            Cderivs[[method_name]]$value,
-            Rderivs[[method_name]]$value
-          )
-          if ('log' %in% names(opParam$args)) {
-            if (verbose) cat("## Checking log behavior for values\n")
-            expect_equal(
-              Cderivs2[[method_name]]$value,
-              Rderivs2[[method_name]]$value
-            )
-            expect_false(isTRUE(all.equal(
-              Rderivs[[method_name]]$value, Rderivs2[[method_name]]$value
-            )))
-            expect_false(isTRUE(all.equal(
-              Cderivs[[method_name]]$value, Cderivs2[[method_name]]$value
-            )))
-          }
-        }, wrap_in_try = isTRUE(catch_failures)
+      ##
+      ## test values
+      ##
+      value_test_fails <- is_method_failure(
+        param$name, method_name, 'value', knownFailures
       )
+      value_test <- wrap_if_true(value_test_fails, expect_failure, {
+        if (verbose) cat("## Checking values\n")
+        expect_equal(
+          Cderivs[[method_name]]$value,
+          Rderivs[[method_name]]$value,
+          tolerance = tol1
+        )
+        if ('log' %in% names(opParam$args)) {
+          if (verbose) cat("## Checking log behavior for values\n")
+          expect_equal(
+            Cderivs2[[method_name]]$value,
+            Rderivs2[[method_name]]$value,
+            tolerance = tol1
+          )
+          expect_false(isTRUE(all.equal(
+            Rderivs[[method_name]]$value,
+            Rderivs2[[method_name]]$value,
+            tolerance = tol1
+          )))
+          expect_false(isTRUE(all.equal(
+            Cderivs[[method_name]]$value,
+            Cderivs2[[method_name]]$value,
+            tolerance = tol1
+          )))
+        }
+      }, wrap_in_try = isTRUE(catch_failures))
       if (isTRUE(catch_failures) && inherits(value_test, 'try-error')) {
         warning(
           paste0(
@@ -171,7 +270,7 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
           call. = FALSE,
           immediate. = TRUE
         )
-      } else if (!is.null(param$knownFailures[[method_name]]$value)) {
+      } else if (value_test_fails) {
         if (verbose) {
           cat(paste0(
             "## As expected, test of values failed for ", method_name, ' with wrt: ',
@@ -182,31 +281,38 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
         ## stop testing after an expected failure
         break
       }
-      jacobian_test <- wrap_if_true(
-        !is.null(param$knownFailures[[method_name]]$jacobian),
-        param$knownFailures[[method_name]]$jacobian, {
-          if (verbose) cat("## Checking jacobians\n")
-          expect_equal(
-            Cderivs[[method_name]]$jacobian,
-            Rderivs[[method_name]]$jacobian,
-            tolerance = tol1
-          )
-          if ('log' %in% names(opParam$args)) {
-            if (verbose) cat("## Checking log behavior for jacobians\n")
-            expect_equal(
-              Cderivs2[[method_name]]$jacobian,
-              Rderivs2[[method_name]]$jacobian,
-              tolerance = tol1
-            )
-            expect_false(isTRUE(all.equal(
-              Rderivs[[method_name]]$jacobian, Rderivs2[[method_name]]$jacobian
-            )))
-            expect_false(isTRUE(all.equal(
-              Cderivs[[method_name]]$jacobian, Cderivs2[[method_name]]$jacobian
-            )))
-          }
-        }, wrap_in_try = isTRUE(catch_failures)
+      ##
+      ## test jacobians
+      ##
+      jacobian_test_fails <- is_method_failure(
+        param$name, method_name, 'jacobian', knownFailures
       )
+      jacobian_test <- wrap_if_true(jacobian_test_fails, expect_failure, {
+        if (verbose) cat("## Checking jacobians\n")
+        expect_equal(
+          Cderivs[[method_name]]$jacobian,
+          Rderivs[[method_name]]$jacobian,
+          tolerance = tol2
+        )
+        if ('log' %in% names(opParam$args)) {
+          if (verbose) cat("## Checking log behavior for jacobians\n")
+          expect_equal(
+            Cderivs2[[method_name]]$jacobian,
+            Rderivs2[[method_name]]$jacobian,
+            tolerance = tol2
+          )
+          expect_false(isTRUE(all.equal(
+            Rderivs[[method_name]]$jacobian,
+            Rderivs2[[method_name]]$jacobian,
+            tolerance = tol2
+          )))
+          expect_false(isTRUE(all.equal(
+            Cderivs[[method_name]]$jacobian,
+            Cderivs2[[method_name]]$jacobian,
+            tolerance = tol2
+          )))
+        }
+      }, wrap_in_try = isTRUE(catch_failures))
       if (isTRUE(catch_failures) && inherits(jacobian_test, 'try-error')) {
         warning(
           paste0(
@@ -218,7 +324,7 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
           call. = FALSE,
           immediate. = TRUE
         )
-      } else if (!is.null(param$knownFailures[[method_name]]$jacobian)) {
+      } else if (jacobian_test_fails) {
         if (verbose) {
           cat(paste0(
             "## As expected, test of jacobian failed for ", method_name, ' with wrt: ',
@@ -229,31 +335,38 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
         ## stop testing after an expected failure
         break
       }
-      hessian_test <- wrap_if_true(
-        !is.null(param$knownFailures[[method_name]]$hessian),
-        param$knownFailures[[method_name]]$hessian, {
-          if (verbose) cat("## Checking hessians\n")
-          expect_equal(
-            Cderivs[[method_name]]$hessian,
-            Rderivs[[method_name]]$hessian,
-            tolerance = tol2
-          )
-          if ('log' %in% names(opParam$args)) {
-            if (verbose) cat("## Checking log behavior for hessians\n")
-            expect_equal(
-              Cderivs2[[method_name]]$hessian,
-              Rderivs2[[method_name]]$hessian,
-              tolerance = tol2
-            )
-            expect_false(isTRUE(all.equal(
-              Rderivs[[method_name]]$hessian, Rderivs2[[method_name]]$hessian
-            )))
-            expect_false(isTRUE(all.equal(
-              Cderivs[[method_name]]$hessian, Cderivs2[[method_name]]$hessian
-            )))
-          }
-        }, wrap_in_try = isTRUE(catch_failures)
+      ##
+      ## test hessians
+      ##
+      hessian_test_fails <- is_method_failure(
+        param$name, method_name, 'hessian', knownFailures
       )
+      hessian_test <- wrap_if_true(hessian_test_fails, expect_failure, {
+        if (verbose) cat("## Checking hessians\n")
+        expect_equal(
+          Cderivs[[method_name]]$hessian,
+          Rderivs[[method_name]]$hessian,
+          tolerance = tol3
+        )
+        if ('log' %in% names(opParam$args)) {
+          if (verbose) cat("## Checking log behavior for hessians\n")
+          expect_equal(
+            Cderivs2[[method_name]]$hessian,
+            Rderivs2[[method_name]]$hessian,
+            tolerance = tol3
+          )
+          expect_false(isTRUE(all.equal(
+            Rderivs[[method_name]]$hessian,
+            Rderivs2[[method_name]]$hessian,
+            tolerance = tol3
+          )))
+          expect_false(isTRUE(all.equal(
+            Cderivs[[method_name]]$hessian,
+            Cderivs2[[method_name]]$hessian,
+            tolerance = tol3
+          )))
+        }
+      }, wrap_in_try = isTRUE(catch_failures))
       if (isTRUE(catch_failures) && inherits(hessian_test, 'try-error')) {
         warning(
           paste0(
@@ -265,7 +378,7 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
           call. = FALSE,
           immediate. = TRUE
         )
-      } else if (!is.null(param$knownFailures[[method_name]]$hessian)) {
+      } else if (hessian_test_fails) {
         if (verbose) {
           cat(paste0(
             "## As expected, test of hessian failed for ", method_name, ' with wrt: ',
@@ -281,7 +394,7 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
   if (verbose) cat("### Test successful \n\n")
   if (return_compiled_nf)
     invisible(list(CnfInst = CnfInst, input = input))
-  else if(!isTRUE(param$knownFailures$compilation)) {
+  else if(!compilation_fails) {
     nimble:::clearCompiled(CnfInst)
     invisible(list(input = input))
   }
@@ -291,16 +404,21 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
 test_AD_batch <- function(batch, dir = file.path(tempdir(), "nimble_generatedCode"),
                           control = list(), verbose = nimbleOptions('verbose'),
                           catch_failures = FALSE, seed = 0,
-                          nimbleProject_name = '') {
+                          nimbleProject_name = '', knownFailures = list()) {
   ## could try to do something more clever here, like putting the entire batch
   ## into one giant nimbleFunction generator so we only have to compile once
   ## (perhaps conditional on having no knownFailures in the entire batch)
   lapply(
     batch, test_AD,
-    dir, control, verbose, catch_failures, seed, nimbleProject_name
+    dir, control, verbose, catch_failures, seed,
+    nimbleProject_name, FALSE, knownFailures
   )
   invisible(NULL)
 }
+
+#########################################
+## AD test parameterization builder utils
+#########################################
 
 ## Takes a named list of `argTypes` and returns a list of character
 ## vectors, each of which is valid as the `wrt` argument of `nimDerivs()`.
@@ -401,7 +519,7 @@ make_wrt <- function(argTypes, n_random = 10, n_arg_reps = 1) {
 ## seed:           A seed to use in set.seed().
 ##
 ## returns: A list with the following elements:
-##          name:           character string, the operator
+##          name:           character string, the operator and args
 ##          opParam:        result from make_op_param
 ##          run:            result from calling gen_runFunCore with opParam
 ##          methods:        a list of nimbleFunction method expressions that are

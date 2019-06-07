@@ -33,37 +33,18 @@ modify_on_match(unaryOpTests, '(logit|probit|cloglog) .+', 'input_gen_funs', run
 modify_on_match(unaryOpTests, '(acos|asin|atanh) .+', 'input_gen_funs', function(x) runif(x, -1, 1))
 modify_on_match(unaryOpTests, 'acosh .+', 'input_gen_funs', function(x) abs(rnorm(x)) + 1)
 
-## see knownFailure below
+## see AD_knownFailures entry for factorial
 modify_on_match(unaryOpTests, '^(gammafn|factorial) .+', 'input_gen_funs', function(x) abs(rnorm(x)))
 
-## R implements lgamma as "the natural logarithm of _the absolute value of_ the
-## gamma function", and since we use exp(lgamma(x)) for gammafn(x) we get the
-## sign of the output flipped when gamma(x) < 0.
-modify_on_match(
-  unaryOpTests, '^(gammafn|factorial) .*', 'knownFailures',
-  list(
-    compilation = FALSE, ## no need to set this, but showing here by way of example
-    input = list( # currently doesn't do anything, just a reminder
-      cpp = -0.245, # any input x where gamma(x) < 0
-      R = NULL ## if the R version had errors too, we could say so here
-    )
-  )
-)
-
-## the following unaryExpr operators are not currently supported
-modify_on_match(
-  unaryOpTests, '(nimRound|ftrunc|ceil|floor) .*',
-  'knownFailures',
-  list(
-    compilation = TRUE
-  )
-)
-
 ## abs fails on negative inputs
-## modify_on_match(unaryOpTests, 'abs .+', 'input_gen_funs', function(x) -abs(rnorm(x)))
+modify_on_match(unaryOpTests, 'abs .+', 'input_gen_funs', function(x) abs(rnorm(x)))
 
-## e.g. of how to set tolerances (default is tol1 = 0.00001 and tol2 = 0.0001)
-## modify_on_match(unaryOpTests, 'ilogit .+', 'tol2', 0.1)
+## e.g. of how to set tolerances
+## defaults are:
+##   tol1 = 1e-8 (values)
+##   tol2 = 1e-7 (jacobians)
+##   tol3 = 1e-6 (hessians)
+modify_on_match(unaryOpTests, 'ilogit .+', 'tol2', 1e-7)
 
 ######################
 ## unary reduction ops
@@ -78,15 +59,6 @@ unaryReductionOps <- c(
 
 unaryReductionOpTests <- make_AD_test_batch(
   unaryReductionOps, unaryReductionArgs
-)
-
-## nimble doesn't support var of matrices, see sizeUnaryReduction
-modify_on_match(
-  unaryReductionOpTests, 'var double\\(2, c\\(3, 4\\)\\)',
-  'knownFailures',
-  list(
-    compilation = TRUE
-  )
 )
 
 #############
@@ -111,14 +83,6 @@ binaryOps <- c(
 
 binaryOpTests <- make_AD_test_batch(
   binaryOps, binaryArgs
-)
-
-modify_on_match(
-  binaryOpTests, '%% .*',
-  'knownFailures',
-  list(
-    compilation = TRUE
-  )
 )
 
 ## set tolerances (default is tol1 = 0.00001 and tol2 = 0.0001)

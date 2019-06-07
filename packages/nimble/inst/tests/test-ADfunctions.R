@@ -1,6 +1,7 @@
 source(system.file(file.path('tests', 'AD_test_utils.R'), package = 'nimble'))
 source(system.file(file.path('tests', 'AD_math_test_lists.R'), package = 'nimble'))
 source(system.file(file.path('tests', 'AD_distribution_test_lists.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'AD_knownFailures.R'), package = 'nimble'))
 nimbleOptions(experimentalEnableDerivs = TRUE)
 nimbleOptions(allowDynamicIndexing = FALSE)
 
@@ -200,14 +201,15 @@ test_that('Derivatives of matrix exponentiation function correctly.',
 #######################
 
 ## from AD_math_test_lists.R
-test_AD_batch(unaryOpTests)
-test_AD_batch(unaryReductionOpTests)
-test_AD_batch(binaryOpTests)
-test_AD_batch(powOpTests)
-test_AD_batch(binaryReductionOpTests)
-test_AD_batch(squareMatrixOpTests)
-test_AD_batch(binaryMatrixOpTests) 
+test_AD_batch(unaryOpTests, knownFailures = AD_knownFailures)
+test_AD_batch(unaryReductionOpTests, knownFailures = AD_knownFailures)
+test_AD_batch(binaryOpTests, knownFailures = AD_knownFailures)
+test_AD_batch(powOpTests, knownFailures = AD_knownFailures)
+test_AD_batch(binaryReductionOpTests, knownFailures = AD_knownFailures)
+test_AD_batch(squareMatrixOpTests, knownFailures = AD_knownFailures)
+test_AD_batch(binaryMatrixOpTests, knownFailures = AD_knownFailures)
 
 ## from AD_distribution_test_lists.R
-test_AD_batch(distn_tests)
-test_AD_batch(distn_with_log_tests)
+test_AD_batch(distn_tests,  knownFailures = AD_knownFailures)
+test_AD_batch(distn_with_log_tests, knownFailures = AD_knownFailures)
+
