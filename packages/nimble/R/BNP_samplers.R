@@ -1326,7 +1326,9 @@ CRP_nonconjugate_moreGeneral <- nimbleFunction(
         }
       } else {
         for(l in 1:p) {  ## marginalized nodes should be in correct order based on findClusterNodes.
-          model$simulate(marginalizedNodes[(l-1)*nTilde + j])
+          for(j1 in 1:J) {
+            model$simulate(marginalizedNodes[(l-1)*nTilde + (j-1)*J + j1])   # model$simulate(marginalizedNodes[(l-1)*nTilde + j])
+          }
         }
       }
     }
