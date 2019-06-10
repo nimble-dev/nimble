@@ -11,6 +11,138 @@ nimbleOptions(MCMCprogressBar = FALSE)
 
 context('Testing of BNP functionality')
 
+
+test_that("Test that CRP sampler works fine for non conjugate models with more than one observation per cluster ID", {
+  set.seed(1)
+  
+  # y_{i,j} ~ N(mu_{xi_i, j}, 1) 
+  code <- nimbleCode({
+    for(i in 1:5) {
+      for(j in 1:8) {
+        y[i,j] ~ dnorm( thetaTilde[xi[i], j] , var = 1) 
+        thetaTilde[i, j] ~ dt(0, 1, 1)
+      }
+    }
+    xi[1:5] ~ dCRP(1, size=5)
+  })
+  Inits <- list(xi = c(1, 1, 1, 1, 1), 
+                thetaTilde = matrix(rep(0, 5*8), nrow=5,  ncol=8))
+  y <- matrix(5, nrow=5, ncol=8)
+  y[4:5, ] <- -5
+  Data <- list(y=y)
+  model <- nimbleModel(code, data=Data, inits=Inits,  dimensions=list(thetaTilde=c(5,8)), calculate=TRUE)
+  cmodel<-compileNimble(model)
+  mConf <- configureMCMC(model, monitors = c('xi','thetaTilde'))
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = model)
+  cMCMC$run(1000)
+  xiLast <- cMCMC$mvSamples[['xi']][[1000]]
+  thetaLast <- cMCMC$mvSamples[['thetaTilde']][[1000]][xiLast, ]
+  
+  expect_equal(apply(thetaLast, 1, mean), apply(Data$y, 1, mean), tol=2, 
+               info = paste0("incorrect update of cluster parameters in normal data"))
+  
+  
+  # y_{i,j} ~ N(mu_{i, xi_j}, 1) 
+  # not only occupied cluster parameters updated!
+  code <- nimbleCode({
+    for(i in 1:5) {
+      for(j in 1:8) {
+        y[i,j] ~ dnorm( thetaTilde[i, xi[j]] , var = 1) 
+        thetaTilde[i, j] ~ dt(0, 1, 1)
+      }
+    }
+    xi[1:8] ~ dCRP(1, size=8)
+  })
+  Inits <- list(xi = rep(1, 8), 
+                thetaTilde = matrix(rep(0, 5*8), nrow=5,  ncol=8))
+  y <- matrix(5, nrow=5, ncol=8)
+  y[, 5:8] <- -5
+  Data <- list(y=y)
+  model <- nimbleModel(code, data=Data, inits=Inits,  dimensions=list(thetaTilde=c(5,8)), calculate=TRUE)
+  cmodel<-compileNimble(model)
+  mConf <- configureMCMC(model, monitors = c('xi','thetaTilde'))
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = model)
+  cMCMC$run(2000)
+  xiLast <- cMCMC$mvSamples[['xi']][[2000]]
+  thetaLast <- cMCMC$mvSamples[['thetaTilde']][[2000]][, xiLast]
+  
+  expect_equal(apply(thetaLast, 2, mean), apply(Data$y, 2, mean), tol=2,
+               info = paste0("incorrect update of cluster parameters in normal data")) 
+  
+  
+  # testing Quinn's model
+  code <- nimbleCode({
+    for(i in 1:I) {
+      for(j in 1:J) {
+        y[i,j] ~ dbern( thetaTilde[xi[i], j] ) 
+        thetaTilde[i, j] ~ dunif(0, 1) #dbeta(1, 1)
+      }
+    }
+    xi[1:I] ~ dCRP(1, size=I)
+  })
+  I <- 10; J <- 4  
+  Consts <- list(I = 10, J = 4) 
+  Inits=list(xi = rep(1, I), 
+             thetaTilde = matrix(rep(0.5, I*J), nrow=I,  ncol=J))
+  set.seed(1)
+  y <- matrix(rbinom(I*J, size=1, prob = 0.1), nrow=I, ncol=J)
+  y[6:10, ] <- rbinom(20, size=1, prob = 0.9)
+  Data <- list(y=y)
+  model <- nimbleModel(code, data=Data, inits=Inits,  dimensions=list(thetaTilde=c(I,J)), 
+                       constants = Consts, calculate=TRUE)
+  cmodel<-compileNimble(model)
+  mConf <- configureMCMC(model, monitors = c('xi','thetaTilde'))
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = model)
+  cMCMC$run(10000)
+  xiLast <- cMCMC$mvSamples[['xi']][[10000]]
+  thetaLast <- cMCMC$mvSamples[['thetaTilde']][[10000]][xiLast, ]
+  
+  trueProbs <- c(rep(0.1, 5), rep(0.9,5))
+  expect_equal(apply(thetaLast, 1, mean), trueProbs , tol=2*sqrt(trueProbs*(1-trueProbs)),
+               info = paste0("incorrect update of cluster parameters in Quinn's model")) #
+  
+  
+  # test with two cluster parameter:
+  # y_{i,j} ~ N(mu_{xi_i, j}, sigma^2_{xi_i, j}) 
+  code <- nimbleCode({
+    for(i in 1:5) {
+      for(j in 1:8) {
+        y[i,j] ~ dnorm( theta[i, j] , var = sigma2[i, j]) 
+        theta[i, j] <- thetaTilde[xi[i], j]
+        sigma2[i, j] <- sigma2Tilde[xi[i], j]
+        
+        thetaTilde[i, j] ~ dnorm(0, var=10)
+        sigma2Tilde[i, j] ~ dunif(0.9, 1.1)
+      }
+    }
+    xi[1:5] ~ dCRP(1, size=5)
+  })
+  I <- 5; J <- 8
+  Inits <- list(xi = rep(1, I), 
+                thetaTilde = matrix(rep(0, I*J), nrow=I,  ncol=J),
+                sigma2Tilde = matrix(rep(1, I*J), nrow=I,  ncol=J))
+  y <- matrix(5, nrow=5, ncol=8)
+  y[4:5, ] <- -5
+  Data <- list(y=y)
+  model <- nimbleModel(code, data=Data, inits=Inits,  dimensions=list(thetaTilde=c(I,J), 
+                                                                      sigma2Tilde=c(I,J)), calculate=TRUE)
+  cmodel<-compileNimble(model)
+  mConf <- configureMCMC(model, monitors = c('xi','thetaTilde', 'sigma2Tilde'))
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = model)
+  cMCMC$run(2000)
+  xiLast <- cMCMC$mvSamples[['xi']][[2000]]
+  thetaLast <- cMCMC$mvSamples[['thetaTilde']][[2000]][xiLast, ]
+  
+  expect_equal(apply(thetaLast, 1, mean), apply(Data$y, 1, mean), tol=2,
+               info = paste0("incorrect update of cluster parameters in normal data with two cluster parameters")) 
+  
+})
+
+
 test_that("Test that sampleDPmeasure can be used for more complicated models", {
   set.seed(1)
   
