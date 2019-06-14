@@ -1892,7 +1892,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
                         conjugate_dgamma_dgamma = 'CRP_conjugate_dgamma_dgamma_moreGeneral',
                         conjugate_dgamma_dnorm = 'CRP_conjugate_dgamma_dnorm_moreGeneral',
                         conjugate_dgamma_dweib = 'CRP_conjugate_dgamma_dweib_moreGeneral',
-                        conjugate_dgamma_dinvgamma = 'CRP_conjugate_dgamma_dinvgamma',
+                        conjugate_dgamma_dinvgamma = 'CRP_conjugate_dgamma_dinvgamma_moreGeneral',
                         conjugate_ddirch_dmulti = 'CRP_conjugate_ddirch_dmulti',
                         'CRP_nonconjugate_moreGeneral')  ## default if we don't have sampler set up for a conjugacy
     
