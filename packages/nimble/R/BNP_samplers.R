@@ -1335,6 +1335,44 @@ CRP_nonconjugate_moreGeneral <- nimbleFunction(
   )
 )
 
+
+CRP_conjugate_dnorm_dnorm_moreGeneral <- nimbleFunction(
+  name = "CRP_conjugate_dnorm_dnorm_moreGeneral",
+  contains = CRP_helper,
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
+    priorMean <- nimNumeric(J)
+    priorVar <- nimNumeric(J)
+  },
+  methods = list(
+    storeParams = function() {
+      for(j1 in 1:J) {
+        priorMean[j1] <<- model$getParam(marginalizedNodes[j1], 'mean')
+        priorVar[j1] <<- model$getParam(marginalizedNodes[j1], 'var')
+      }
+    },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
+    calculate_prior_predictive = function(i = integer()) {
+      returnType(double())
+      out <- 0
+      for(j1 in 1:J) {
+        dataVar <- model$getParam(dataNodes[(i-1)*J+j1], 'var')
+        y <- values(model, dataNodes[(i-1)*J+j1])[1]
+        out <- out + dnorm(y, priorMean[j1], sqrt(priorVar[j1] + dataVar), log=TRUE) #model$getLogProb(dataNodes[(i-1)*J+j1])
+      }
+      return(out)
+    },
+    sample = function(i = integer(), j = integer()) {
+      for(j1 in 1:J) {
+        dataVar <- model$getParam(dataNodes[(i-1)*J+j1], 'var')
+        y <- values(model, dataNodes[(i-1)*J+j1])[1]
+        postVar <- 1 / (1 / dataVar + 1 / priorVar[j1])
+        postMean <- postVar * (y / dataVar + priorMean[j1] / priorVar[j1])
+        values(model, marginalizedNodes[(j-1)*J+j1]) <<- c(rnorm(1, postMean, sqrt(postVar)))
+      }
+    }
+  )
+)
+
 #' @rdname samplers
 #' @export
 sampler_CRP_moreGeneral <- nimbleFunction(
@@ -1404,6 +1442,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     if(length(intersect(dataNodes, allTildeNodes)))
       stop("sampler_CRP: Cluster parameters have to be independent of cluster membership variable.")
     
+    # need to find conjugacy
     conjugacyResult <- nimble:::checkCRPconjugacy(model, target) # rm nimble:::
     
     if(is.null(conjugacyResult) || conjugacyResult != "conjugate_dnorm_invgamma_dnorm") {
@@ -1430,10 +1469,30 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     if(length(unique(nTilde)) != 1)
       stop('sampler_CRP: In a model with multiple cluster parameters, the number of those parameters must all be the same.\n')
     
-    #### End of checks of model structure. ####
-    
     nData <- length(dataNodes)
     J <- nData / n # equal to one in standard CRP model
+    
+    ## Check that cluster parameters are IID (by rows or columns) when J>1
+    #if( J > 1) {
+    #  isIID <- TRUE
+    #  for(i in seq_along(clusterVarInfo$clusterNodes)) {
+    #    valueExprs <- sapply(clusterVarInfo$clusterNodes[[i]], function(x) model$getValueExpr(x))
+    #    names(valueExprs) <- NULL
+    #    if(length(unique(valueExprs)) != 1) {
+    #      isIID <- FALSE
+    #    }
+    #  }
+    #  
+    #  if(!isIID && length(tildeVars) == 2 && checkNormalInvGammaConjugacy(model, clusterVarInfo))
+    #    isIID <- TRUE
+    #  ## Tricky as MCMC might not be using conjugacy, but presumably ok to proceed regardless of how
+    #  ## MCMC was done, since conjugacy existing would guarantee IID.
+    #  if(!isIID) stop('sampleDPmeasure: cluster parameters have to be independent and identically distributed. \n')
+    #}
+    
+    
+    #### End of checks of model structure. ####
+    
     min_nTilde <- min(nTilde) ## we need a scalar for use in run code, but note that given check above, all nTilde values are the same...
     if(min_nTilde/J < n)
       warning('sampler_CRP: The number of cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if it ever proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.\n')
@@ -1497,7 +1556,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
       sampler <- 'CRP_nonconjugate_moreGeneral'
     } else 
       sampler <- switch(conjugacyResult,
-                        conjugate_dnorm_dnorm = 'CRP_conjugate_dnorm_dnorm',
+                        conjugate_dnorm_dnorm = 'CRP_conjugate_dnorm_dnorm_moreGeneral',
                         conjugate_dnorm_dnorm_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity',
                         conjugate_dnorm_invgamma_dnorm = 'CRP_conjugate_dnorm_invgamma_dnorm',
                         conjugate_dbeta_dbern  = 'CRP_conjugate_dbeta_dbern',
