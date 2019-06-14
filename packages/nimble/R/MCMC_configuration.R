@@ -870,7 +870,7 @@ checkCRPconjugacy <- function(model, target) {
     
     targetElementExample <- model$expandNodeNames(target, returnScalarComponents=TRUE)[1]
 
-    clusterVarInfo <- findClusterNodes(model, target)
+    clusterVarInfo <- nimble:::findClusterNodes(model, target)
  
     ## Check conjugacy for one cluster node (for efficiency reasons) and then make sure all
     ## cluster nodes are IID and dependent nodes are from same declaration so conjugacy check for one should hold for all.
@@ -899,10 +899,12 @@ checkCRPconjugacy <- function(model, target) {
             if(length(unique(model$getDeclID(depNodes))) != 1)  ## make sure all dependent nodes from same declaration (i.e., exchangeable)
                 conjugate <- FALSE
 
-            ## Check that cluster nodes are IID
+            ## Check that cluster nodes are IID. Extended to work with models with more than one observation per cluster ID. Not sure if this is the more robust way to do it
+            J <- clusterVarInfo$nTilde / length(unique(clusterVarInfo$clusterIDs[[1]]))
             valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
             names(valueExprs) <- NULL
-            if(length(unique(valueExprs)) != 1)
+            # the following condition covers cases like thetaTilde[xi,j] ~ N(j, 1), j=1,..,J, and thetaTilde[xi,j] ~ N(0, 1), j=1,...,J, but not cases with thetaTilde[xi,1] ~ N(0, 1) and thetaTilde[xi,j] ~ N(j, 1), j=2,...,J
+            if(length(unique(valueExprs)) != 1 && length(unique(valueExprs)) != J) 
                 conjugate <- FALSE
         }
     }
