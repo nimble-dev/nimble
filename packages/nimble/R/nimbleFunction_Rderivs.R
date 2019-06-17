@@ -1,139 +1,3 @@
-
-## Creates a wrapper function for a call to calculate(model, nodes).
-## Arguments:
-##  calcNodeName: A character vector of node names that will be used as the 
-##                nodes argument in a call to calculate(model, nodes).
-##  wrtName:      A character vector of node names that will be arguments to the
-##                wrapper function.
-##
-## The returned wrapper function takes as arguments values for all parameters
-## specified by the 'wrtName' argument, and returns the value of a call to
-## calculate(model, nodes) evaluated at those parameter values.  The 'nodes' 
-## argument to the calculate function is specified by the 'calcNodeName'
-## argument to makeADCalcWrapperFunction.
-makeDerivCalcWrapperFunction <- function(calcNodeName, wrtName){
-  calcFunctionArgNames <- list('model' = NA)
-  for(i in seq_along(wrtName)){
-    calcFunctionArgNames[[ wrtName[[i]][1]]] <- NA
-  }
-  argSaveLines <- list()
-  argSaveLines[[1]] <- substitute(origVals <- list())
-  for(i in seq_along(calcFunctionArgNames[-1])){
-    argSaveLines[[i+1]] <- substitute({origVals[[I]] <- model[[ARGNAME]];
-    model[[ARGNAME]] <- ARGNAMEEXPR},
-    list(I = i,
-         ARGNAME = names(calcFunctionArgNames)[i+1],
-         ARGNAMEEXPR = as.name(names(calcFunctionArgNames)[i+1])))
-  }
-  callLine <-  list(substitute(outVal <- calculate(model, CALCNODENAME),
-                               list(CALCNODENAME = calcNodeName)))
-  argReplaceLines <- list()
-  for(i in seq_along(calcFunctionArgNames[-1])){
-    argReplaceLines[[i]] <- substitute(model[[ARGNAME]] <- origVals[[I]],
-                                       list(I = i, ARGNAME = names(
-                                         calcFunctionArgNames)[i+1] ))
-  }
-  returnLine <- substitute(return(outVal))
-  calcWrapperFunction <- function(){}
-  body(calcWrapperFunction) <- putCodeLinesInBrackets(c(argSaveLines, callLine, 
-                                                        argReplaceLines, 
-                                                        returnLine))
-  formals(calcWrapperFunction) <- calcFunctionArgNames
-  return(calcWrapperFunction)
-}
-
-makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
-  ## The code below matches the wrt arguemnts provided to the call to nimDerivs
-  ## to the formal arguments taken by the nimbleFunction, and gets dimension and
-    ## indexing information about each of these wrt arguments.
-    
-    fA <- formalArgs(eval(nf[[1]], envir = fxnEnv))
-    wrtNames <- strsplit(wrt, '\\[')
-    wrtArgIndices <- c(sapply(wrtNames, function(x){
-        return(which(x[1] == fA))}))
-    flatteningInfo <- list()
-    thisIndex <- 1
-    for(i in seq_along(wrt)){
-        arg <- nf[[wrtArgIndices[i] + 1]]
-        indText <- ''
-        if(length(wrtNames[[i]]) > 1){
-            indText <-  paste0('[', wrtNames[[i]][[2]])
-        }
-        argSym <- parse(text = paste0(paste0(deparse(arg), collapse = ''),
-                                      indText))[[1]]
-        dimInfo <- dimOrLength(eval(argSym, envir = fxnEnv))
-        ##if(is.null(dimInfo)) dimInfo <- length(eval(argSym, envir = fxnEnv))
-        lineInds <- thisIndex:(thisIndex + prod(dimInfo) - 1)
-        argDimInfo <- dim(eval(nf[[wrtArgIndices[i] + 1]],envir = fxnEnv))
-        flatteningInfo[[i]] <- list()
-        flatteningInfo[[i]][[1]] <- argDimInfo
-        flatteningInfo[[i]][[2]] <- indText
-        flatteningInfo[[i]][[3]] <- lineInds
-        thisIndex <- thisIndex + prod(dimInfo)
-    }
-    ## The wrappedFun created below is a wrapper for a call to the nimFxn argument
-    ## to nimDerivs.  The wrapped version takes a single vector argument x, as 
-    ## required by the numDeriv package.  It then unpacks the elements of the 
-    ## vector x, using them as arguments to the nimFxn as appropriate.
-    wrappedFun <- function(x) {
-        args <- list()
-        for(i in 1:(length(nf)-1)){
-            if(i %in% wrtArgIndices){
-                thisWrtIndex <- which(i == wrtArgIndices)
-                thisSize <- sum(sapply(flatteningInfo[thisWrtIndex],
-                                       function(x){return(prod(x[[1]]))})) #total length
-                if(length(wrtNames[[thisWrtIndex[1]]]) > 1){
-                    args[[i]] <-  eval(nf[[i+1]], envir = fxnEnv)
-                    argBracketExpr <- parse(
-                        text = paste0('args[[i]]', flatteningInfo[[thisWrtIndex[1]]][[2]],
-                                      ' <- x[flatteningInfo[[thisWrtIndex[1]]][[3]]]')
-                    )[[1]]
-                    eval(argBracketExpr)
-                    if(length(thisWrtIndex) > 1){
-                        for(j in 2:length(wrtNames[thisWrtIndex])){
-                            argBracketExpr <- parse(
-                                text = paste0('args[[i]]', 
-                                              flatteningInfo[[thisWrtIndex[j]]][[2]],
-                                              ' <- x[flatteningInfo[[thisWrtIndex[j]]][[3]]]')
-                            )[[1]]
-                            eval(argBracketExpr)
-                        }
-                    }
-                }
-                else{
-                    args[[i]] <-  x[flatteningInfo[[thisWrtIndex[1]]][[3]]]
-                }
-                if(length( flatteningInfo[[thisWrtIndex[1]]][[1]]) > 1 )
-                    dim(  args[[i]]) <-  flatteningInfo[[thisWrtIndex[1]]][[1]]
-            }
-            else{
-                args[[i]] <- nf[[i+1]] 
-            }
-        }
-        c(do.call(paste(nf[[1]]), args, envir = fxnEnv))
-    }
-    ## The makeSingleArg function created below extracts the values of the 
-    ## variables specified in the wrt arguemnt to nimDerivs and concatenates them
-    ## into a single vector.
-    makeSingleArg <- function(){
-        singleArg <- c()
-        for(i in seq_along(wrtNames)){
-            if(length(wrtNames[[i]]) > 1){
-                arg <- eval(nf[[wrtArgIndices[i]+1]], envir = fxnEnv)
-                singleArg <- c(singleArg, c(
-                                              eval(parse(text =  paste0('arg', flatteningInfo[[i]][[2]]))[1])))
-            }
-            else{
-                singleArg <- c(singleArg, c(eval(nf[[wrtArgIndices[i]+1]],
-                                                 envir = fxnEnv)))
-            }
-        }
-        return(singleArg)
-    }
-    return(list(wrappedFun, makeSingleArg))
-}
-
-
 #' Nimble Derivatives
 #' 
 #' EXPERIMENTAL Computes the value, Jacobian, and Hessian of a given  
@@ -174,32 +38,20 @@ makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
 #' }
 #' 
 #' @export
-nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NA,
-                      wrt = NULL, silent = TRUE){
+nimDerivs <- function(nimFxn = NA,
+                      order = nimC(0,1,2),
+                      dropArgs = NA,
+                      wrt = NULL, calcNodes = NULL){
   fxnEnv <- parent.frame()
-  fxnCall <- match.call(function(nimFxn, order, dropArgs, wrt
-                                 ){})
-                                        #,chainRuleDerivs){})
+  fxnCall <- match.call()
   if(is.null(fxnCall[['order']])) fxnCall[['order']] <- order
   derivFxnCall <- fxnCall[['nimFxn']]
-  wrtNames <- sapply(wrt, function(x){strsplit(x, '\\[')[[1]][1]})
   ## Below are two checks to see if the nimFxn argument is a model calculate 
   ## call. If so,  a wrapper function will be made and nimDerivs will be called 
   ## again on that wrapper function.
+  model_calculate_case <- FALSE
   if(deparse(derivFxnCall[[1]]) == 'calculate'){
-    model <- eval(derivFxnCall[['model']], envir = fxnEnv)
-    RCalcDerivsFunction <- makeDerivCalcWrapperFunction(eval(derivFxnCall[[
-      'nodes']], envir = fxnEnv), wrtNames)
-    argList <- list('model' = quote(model))
-    for(k in seq_along(wrtNames)){
-      argList[[wrtNames[[k]][1]]] <- model[[wrtNames[[k]][1]]]
-    }
-    argList <- c(list('RCalcDerivsFunction'), argList)
-    fxnCall <- as.call(argList)
-    fxnCall[[1]] <- quote(RCalcDerivsFunction)
-    return(eval(substitute(nimDerivs(FXNCALL, wrt = WRT, order = order),
-                           list(FXNCALL = fxnCall,
-                                WRT = wrt))))
+      model_calculate_case <- TRUE
   }
   if(length(derivFxnCall[[1]]) == 3 && deparse(derivFxnCall[[1]][[1]]) == '$'){
     if(deparse(derivFxnCall[[1]][[3]]) == 'calculate'){
@@ -207,95 +59,466 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NA,
                                                         envir = fxnEnv)),
                              error = function(e) e)
       if(!inherits(modelError, 'error')){
-        model <-  eval(derivFxnCall[[1]][[2]], envir = fxnEnv)
-        if(length(derivFxnCall) < 2){
-          nodes <- model$getMaps('nodeNamesLHSall')
-        }
-        else{
-          nodes <- eval(derivFxnCall[[2]], envir = fxnEnv)
-        }
-        RCalcDerivsFunction <- makeDerivCalcWrapperFunction(nodes, wrtNames)
-        argList <- list('model' = quote(model))
-        for(k in seq_along(wrtNames)){
-          argList[[wrtNames[[k]][1]]] <- model[[wrtNames[[k]][1]]]
-        }
-        argList <- c(list('RCalcDerivsFunction'), argList)
-        fxnCall <- as.call(argList)
-        fxnCall[[1]] <- quote(RCalcDerivsFunction)
-        return(eval(substitute(nimDerivs(FXNCALL, wrt = WRT, order = order),
-                               list(FXNCALL = fxnCall,
-                                    WRT = wrt))))
-        
+          model_calculate_case <- TRUE
       }
     }
   }
-  fA <- formalArgs(eval(derivFxnCall[[1]], envir = fxnEnv))
-  if(!all(wrtNames %in% fA)){
-    stop('Error:  the wrt argument to nimDerivs() contains names that are not
-         arguments to the nimFxn argument.')
+  ## Handle case of nimFxn argument being a calcNodes call for faster
+  ## AD testing of model calculate calls. 
+  model_calcNodes_case <- FALSE
+  if(length(derivFxnCall[[1]]) == 3 && deparse(derivFxnCall[[1]][[1]]) == '$'){
+      if(deparse(derivFxnCall[[1]][[3]]) == 'run'){
+          nf <- eval(derivFxnCall[[1]][[2]], envir = fxnEnv)
+          if(is(nf, "calcNodes_refClass")) {
+              model <- eval(nf$Robject$model, envir = fxnEnv)
+              if(!(exists('CobjectInterface', model) && !is(model$CobjectInterface, 'uninitializedField'))) { ## but, model should always be compiled because existence of calcNodes_refClass implies that.
+                  cModel <- compileNimble(model)
+              } else cModel <- eval(quote(model$CobjectInterface))
+              model_calcNodes_case <- TRUE
+          }
+      }
   }
-  ## libError <- try(library('numDeriv'), silent = TRUE)
-  ## if(inherits(libError, 'try-error')){
-  ##   stop("The 'numDeriv' package must be installed to use derivatives in
-  ##        uncompiled nimbleFunctions.")
-  ## }
-  if(!require('numDeriv'))
-      stop("The 'numDeriv' package must be installed to use derivatives in
-         uncompiled nimbleFunctions.")
 
-  if(is.null(wrt)){
-    wrt <- fA
-  }
   if(!is.na(dropArgs)){
     removeArgs <- which(wrt == dropArgs)
     if(length(removeArgs) > 0)
       wrt <- wrt[-removeArgs]
   }
-  ## derivFxnList will be a list with two elements:
-  ## The first element is a wrapper function to the nimFxn that the numDeriv 
-  ## package will actually take derivatives of.
-  ## The second element is a function that will take all arguments to the nimFxn
-  ## and wrap them into a single vector argument.
-  derivFxnList <- makeSingleArgWrapper(derivFxnCall, wrt, fxnEnv)
-  singleArg <- derivFxnList[[2]]()
-  hessianFlag <- 2 %in% order
-  jacobianFlag <- 1 %in% order
-  valueFlag <- 0 %in% order
-  if(hessianFlag){
-    ## If hessians are requested, derivatives taken using numDeriv's genD() 
-    ## function.  After that, we extract the various derivative elements and 
-    ## arrange them properly.
-    derivList <- genD(derivFxnList[[1]], singleArg)
-    if(valueFlag) outVal <- derivList$f0 
-    if(jacobianFlag) outGrad <- derivList$D[,1:derivList$p, drop = FALSE]
-    outHessVals <- derivList$D[,(derivList$p + 1):dim(derivList$D)[2],
-                               drop = FALSE]
-    outHess <- array(NA, dim = c(derivList$p, derivList$p, length(derivList$f0)))
-    singleDimMat <- matrix(NA, nrow = derivList$p, ncol = derivList$p)
-    singleDimMatUpperTriDiag <- upper.tri(singleDimMat, diag = TRUE)
-    for(outDim in seq_along(derivList$f0)){
-      singleDimMat[singleDimMatUpperTriDiag] <- outHessVals[outDim,]
-      singleDimMat[lower.tri(singleDimMat)] <-   t(singleDimMat)[
-        lower.tri(singleDimMat)]
-      outHess[,,outDim] <- singleDimMat
+  if(model_calculate_case) {
+      ans <- nimDerivs_model( order = order, wrt = wrt, derivFxnCall = derivFxnCall, fxnEnv = fxnEnv )
+  } else {
+      if(model_calcNodes_case) {
+          ans <- nimDerivs_calcNodes( order = order, wrt = wrt, derivFxnCall = derivFxnCall, fxnEnv = fxnEnv, model = cModel, nodes = calcNodes)
+      } else ans <- nimDerivs_nf( order = order, wrt = wrt, derivFxnCall = derivFxnCall, fxnEnv = fxnEnv )
+  }
+  ans
+}
+
+calcDerivs_internal <- function(func, X, order, resultIndices ) {
+      if(!require('numDeriv'))
+      stop("The 'numDeriv' package must be installed to use derivatives in
+         uncompiled nimbleFunctions.")
+
+    hessianFlag <- 2 %in% order
+    jacobianFlag <- 1 %in% order
+    ## When called for a model$calculate, valueFlag will always be 0 here
+    ## because value will be obtained later (if requested) after restoring
+    ## model variables.
+    valueFlag <- 0 %in% order
+    if(hessianFlag) {
+        ## If hessians are requested, derivatives taken using numDeriv's genD() 
+        ## function.  After that, we extract the various derivative elements and 
+        ## arrange them properly.
+        derivList <- genD(func, X)
+        if(valueFlag) outVal <- derivList$f0 
+        if(jacobianFlag) outGrad <- derivList$D[,1:derivList$p, drop = FALSE]
+        outHessVals <- derivList$D[,(derivList$p + 1):dim(derivList$D)[2],
+                                   drop = FALSE]
+        outHess <- array(NA, dim = c(derivList$p, derivList$p, length(derivList$f0)))
+        singleDimMat <- matrix(NA, nrow = derivList$p, ncol = derivList$p)
+        singleDimMatUpperTriDiag <- upper.tri(singleDimMat, diag = TRUE)
+        singleDimMatLowerTriDiag <- lower.tri(singleDimMat)
+        for(outDim in seq_along(derivList$f0)){
+            singleDimMat[singleDimMatUpperTriDiag] <- outHessVals[outDim,]
+            singleDimMat[singleDimMatLowerTriDiag] <- t(singleDimMat)[singleDimMatLowerTriDiag]
+            outHess[,,outDim] <- singleDimMat
+        }
+    } else
+        if(jacobianFlag){
+            ## If jacobians are requested, derivatives taken using numDeriv's jacobian() 
+            ## function.  After that, we extract the various derivative elements and 
+            ## arrange them properly.
+            outVal <- func(X) 
+            outGrad <- jacobian(func, X)
+        } else 
+            if(valueFlag)
+                outVal <- func(X)
+    
+    outList <- ADNimbleList$new()
+    if(!missing(resultIndices)) {
+        if(jacobianFlag) outGrad <- outGrad[, resultIndices, drop=FALSE]
+        if(hessianFlag) outHess <- outHess[resultIndices, resultIndices, , drop=FALSE]
     }
+    if(valueFlag) outList$value <- outVal
+    if(jacobianFlag) outList$jacobian <- outGrad
+    if(hessianFlag) outList$hessian <- outHess
+    return(outList)
+}
+
+
+nimDerivs_model <- function( nimFxn, order = c(0, 1, 2), wrt = NULL, derivFxnCall = NULL, fxnEnv = parent.frame()) {
+    fxnCall <- match.call()
+    ## This may be called directly (for testing) or from nimDerivs (typically).
+    ## In the former case, we get derivFxnCall from the nimFxn argument.
+    ## In the latter case, it is already match.call()ed and is passed here via derivFxnCall
+    if(is.null(derivFxnCall))
+        derivFxnCall <- fxnCall[['nimFxn']] ## either calculate(model, nodes) or model$calculate(nodes)
+    else
+        if(is.null(fxnCall[['order']]))
+            fxnCall[['order']] <- order
+
+    valueFlag <- 0 %in% order
+    
+    if(deparse(derivFxnCall[[1]]) == 'calculate'){
+        ## calculate(model, nodes) format
+        derivFxnCall <- match.call(nimble:::calculate, derivFxnCall)
+        model <- eval(derivFxnCall[['model']], envir = fxnEnv)
+        nodes <- eval(derivFxnCall[['nodes']], envir = fxnEnv)
+        if(is.null(nodes))
+            nodes <- model$getMaps('nodeNamesLHSall')
+    } else {
+        ## model$calculate(nodes) format, where nodes could be missing
+        model <-  eval(derivFxnCall[[1]][[2]], envir = fxnEnv)
+        if(length(derivFxnCall) < 2){ ## nodes is missing: default to all nodes
+          nodes <- model$getMaps('nodeNamesLHSall')
+        } else {
+          nodes <- eval(derivFxnCall[[2]], envir = fxnEnv)
+        }
+    }
+    ## We rely on fact that model$expandNodeNames will return column-major order.
+    ## That makes it suitable for the canonical ordering of any blocks in wrt.
+
+    ## We need to expandNodeNames (among other reasons) to determine
+    ## any duplicates in wrt, such as "x" and "x[2]".
+    
+    ## It might also be possible to make use of values() and values()<- here.
+    ## However, we instead are using a single model utility function (expandNodeNames)
+    ## and basing every step on the result of that.  The hope is this will
+    ## minimize risk of errors in case values() would somehow handle wrt in
+    ## a different order than expandNodeNames.  (It shouldn't, but values() and values()<-
+    ## have implementations that are hard to follow.)
+
+    wrt_unique_names <- unique(.Call(nimble:::parseVar, wrt))
+    if(!all(wrt_unique_names %in% model$getVarNames())){
+        stop('Error:  the wrt argument to nimDerivs() contains variable names that are not
+         in the model.')
+    }
+    
+    ## scalar node elements, in order for results
+    wrt_expanded <- model$expandNodeNames(wrt, returnScalarComponents = TRUE, unique = FALSE)
+    ## unique scalar node elements
+    wrt_expanded_unique <- unique(wrt_expanded)
+    ## indices of original node elements in unique elements, for construction of results after getting derivatives wrt unique elements
+    wrt_orig_indices <- match(wrt_expanded, wrt_expanded_unique)
+    
+    ## List of lines like "model$beta[2] <- x[i]", where "beta[2]" is an expanded wrt node and x[i] is a variable inside func.
+    wrt_expanded_unique_assign_code <- mapply(
+        function(node, I)
+            parse(text = paste0("model$", node, " <- x[", I, "]"), keep.source = FALSE)[[1]],
+        wrt_expanded_unique,
+        seq_along(wrt_expanded_unique))
+    ## We could consider doing the above step by substitute, but it would take some care to handle nodes with indices.
+    
+    length_wrt <- length(wrt_expanded_unique_assign_code)
+    
+    ## func could be made more efficient if we re-block wrt nodes that are in the same variable.
+    ## makeVertexNamesFromIndexArray2 might be helpful for that purpose.
+    func <- function(x) {
+        do.call("{", wrt_expanded_unique_assign_code)
+        ## equivalent to:
+        ##        for(i in 1:length_wrt) {
+        ##            eval(wrt_expanded_unique_assign_code[[i]])
+        ##        }
+        model$calculate(nodes)
+    }
+    
+    ## make current values in single vector.
+    ## This list will have code like `currentX[3] <- model$beta[2]`
+    wrt_expanded_unique_get_code <- mapply(
+        function(node, I)
+            parse(text = paste0("currentX[",I,"] <- model$", node), keep.source = FALSE)[[1]],
+        wrt_expanded_unique,
+        seq_along(wrt_expanded_unique))
+    
+    currentX <- numeric(length_wrt)
+    do.call("{", wrt_expanded_unique_get_code)
+    
+    ## Determine what nodes to restore.  We will do this by variable because in many cases
+    ## it will be faster to copy and restore a whole variable in one line that to do elements
+    ## with one line for each element.
+    ##
+    ## If value is not being returned, we restore wrt vars, nodes vars, and any logProb vars for nodes
+    ## If value is being returned, we recalculate at the end, using func.  This restores any wrt nodes that
+    ## may have been perturbed during finite-element derivatives as well as updating all nodes
+    if(!valueFlag) {
+        wrtVars <- unique(.Call(nimble:::parseVar, wrt))
+        calcNodeVars <- unique(.Call(nimble:::parseVar, nodes))
+                                        # determine any stochastic nodes and include their logProb nodes
+        anyStoch_calcNodeVars <- unlist(lapply(calcNodeVars, function(x) model$getVarInfo(x)$anyStoch))
+        logProbVars <- nimble:::makeLogProbName( calcNodeVars[anyStoch_calcNodeVars] )
+        varsToRestore <- c(union(wrtVars, calcNodeVars), logProbVars)
+        savedVars <- new.env()
+    } else {
+        varsToRestore <- character()
+    }
+    for(i in varsToRestore)
+        savedVars[[i]] <- model[[i]]
+    
+    ## outGrad <- jacobian(func, currentX)
+    ## We do not want calcDerivs_internal to calculate the value,
+    ## because we want to restore variables first.
+    if(valueFlag) order <- order[ order != 0 ]
+    if(length(order) > 0) {
+        ans <- calcDerivs_internal(func, currentX, order, wrt_orig_indices)
+    } else ans <- NULL
+    for(i in varsToRestore)
+        model[[i]] <- savedVars[[i]]
+    
+    if(valueFlag) {
+        ans$value <- func(currentX)
+    }
+    ans
+}
+
+nimDerivs_calcNodes <- function( nimFxn, order = c(0, 1, 2), wrt = NULL, derivFxnCall = NULL, fxnEnv = parent.frame(), model, nodes) {
+    ## Handles nimDerivs(calcNodes$run()) case, used in AD testing. This function could be merged
+    ## into nimDerivs_model as much of the code is duplicated but given nimDerivs for calculate
+    ## is user facing and this is not, it's standalone code for now.
+    
+    fxnCall <- match.call()
+    ## This may be called directly (for testing) or from nimDerivs (typically).
+    ## In the former case, we get derivFxnCall from the nimFxn argument.
+    ## In the latter case, it is already match.call()ed and is passed here via derivFxnCall
+    if(is.null(derivFxnCall))
+        derivFxnCall <- fxnCall[['nimFxn']] ## either calculate(model, nodes) or model$calculate(nodes)
+    else
+        if(is.null(fxnCall[['order']]))
+            fxnCall[['order']] <- order
+
+    valueFlag <- 0 %in% order
+    
+    ## We rely on fact that model$expandNodeNames will return column-major order.
+    ## That makes it suitable for the canonical ordering of any blocks in wrt.
+
+    ## We need to expandNodeNames (among other reasons) to determine
+    ## any duplicates in wrt, such as "x" and "x[2]".
+    
+    ## It might also be possible to make use of values() and values()<- here.
+    ## However, we instead are using a single model utility function (expandNodeNames)
+    ## and basing every step on the result of that.  The hope is this will
+    ## minimize risk of errors in case values() would somehow handle wrt in
+    ## a different order than expandNodeNames.  (It shouldn't, but values() and values()<-
+    ## have implementations that are hard to follow.)
+
+    wrt_unique_names <- unique(.Call(nimble:::parseVar, wrt))
+    if(!all(wrt_unique_names %in% model$getVarNames())){
+        stop('Error:  the wrt argument to nimDerivs() contains variable names that are not
+         in the model.')
+    }
+    
+    ## scalar node elements, in order for results
+    wrt_expanded <- model$expandNodeNames(wrt, returnScalarComponents = TRUE, unique = FALSE)
+    ## unique scalar node elements
+    wrt_expanded_unique <- unique(wrt_expanded)
+    ## indices of original node elements in unique elements, for construction of results after getting derivatives wrt unique elements
+    wrt_orig_indices <- match(wrt_expanded, wrt_expanded_unique)
+    
+    ## List of lines like "model$beta[2] <- x[i]", where "beta[2]" is an expanded wrt node and x[i] is a variable inside func.
+    wrt_expanded_unique_assign_code <- mapply(
+        function(node, I)
+            parse(text = paste0("model$", node, " <- x[", I, "]"), keep.source = FALSE)[[1]],
+        wrt_expanded_unique,
+        seq_along(wrt_expanded_unique))
+    ## We could consider doing the above step by substitute, but it would take some care to handle nodes with indices.
+    
+    length_wrt <- length(wrt_expanded_unique_assign_code)
+    
+    ## func could be made more efficient if we re-block wrt nodes that are in the same variable.
+    ## makeVertexNamesFromIndexArray2 might be helpful for that purpose.
+    func <- eval(substitute(function(x) {
+        do.call("{", wrt_expanded_unique_assign_code)
+        ## equivalent to:
+        ##        for(i in 1:length_wrt) {
+        ##            eval(wrt_expanded_unique_assign_code[[i]])
+        ##        }
+        CALCCALL
+    }, list(CALCCALL = derivFxnCall)))
+    
+    ## make current values in single vector.
+    ## This list will have code like `currentX[3] <- model$beta[2]`
+    wrt_expanded_unique_get_code <- mapply(
+        function(node, I)
+            parse(text = paste0("currentX[",I,"] <- model$", node), keep.source = FALSE)[[1]],
+        wrt_expanded_unique,
+        seq_along(wrt_expanded_unique))
+    
+    currentX <- numeric(length_wrt)
+    do.call("{", wrt_expanded_unique_get_code)
+    
+    ## Determine what nodes to restore.  We will do this by variable because in many cases
+    ## it will be faster to copy and restore a whole variable in one line that to do elements
+    ## with one line for each element.
+    ##
+    ## If value is not being returned, we restore wrt vars, nodes vars, and any logProb vars for nodes
+    ## If value is being returned, we recalculate at the end, using func.  This restores any wrt nodes that
+    ## may have been perturbed during finite-element derivatives as well as updating all nodes
+    if(!valueFlag) {
+        wrtVars <- unique(.Call(nimble:::parseVar, wrt))
+        calcNodeVars <- unique(.Call(nimble:::parseVar, nodes))
+                                        # determine any stochastic nodes and include their logProb nodes
+        anyStoch_calcNodeVars <- unlist(lapply(calcNodeVars, function(x) model$getVarInfo(x)$anyStoch))
+        logProbVars <- nimble:::makeLogProbName( calcNodeVars[anyStoch_calcNodeVars] )
+        varsToRestore <- c(union(wrtVars, calcNodeVars), logProbVars)
+        savedVars <- new.env()
+    } else {
+        varsToRestore <- character()
+    }
+    for(i in varsToRestore)
+        savedVars[[i]] <- model[[i]]
+    
+    ## outGrad <- jacobian(func, currentX)
+    ## We do not want calcDerivs_internal to calculate the value,
+    ## because we want to restore variables first.
+    if(valueFlag) order <- order[ order != 0 ]
+    if(length(order) > 0) {
+        ans <- calcDerivs_internal(func, currentX, order, wrt_orig_indices)
+    } else ans <- NULL
+    for(i in varsToRestore)
+        model[[i]] <- savedVars[[i]]
+    
+    if(valueFlag) {
+        ans$value <- func(currentX)
+    }
+    ans
+}
+
+
+nimDerivs_nf <- function(nimFxn = NA, order = nimC(0,1,2),
+                         wrt = NULL, derivFxnCall = NULL, fxnEnv = parent.frame()){
+    fxnCall <- match.call()
+    ## This may be called directly (for testing) or from nimDerivs (typically).
+    ## In the former case, we get derivFxnCall from the nimFxn argument.
+    ## In the latter case, it is already match.call()ed and is passed here via derivFxnCall
+    if(is.null(derivFxnCall))
+        derivFxnCall <- fxnCall[['nimFxn']] ## either calculate(model, nodes) or model$calculate(nodes)
+    else
+        if(is.null(fxnCall[['order']]))
+            fxnCall[['order']] <- order
+
+  fA <- formalArgs(eval(derivFxnCall[[1]], envir = fxnEnv))
+  if(is.null(wrt)) {
+    wrt <- fA
   }
-  else if(jacobianFlag){
-    ## If jacobians are requested, derivatives taken using numDeriv's jacobian() 
-    ## function.  After that, we extract the various derivative elements and 
-    ## arrange them properly.
-    if(valueFlag) outVal <- nimFxn 
-    outGrad <- jacobian(derivFxnList[[1]], singleArg)
+  ## convert 'x[2]' to quote(x[2]).
+  wrt_code <- lapply(wrt,
+                     function(x) parse(text = x, keep.source = FALSE)[[1]])
+
+  ## convert quote(x[2]) to quote(x)
+  wrt_names <- lapply(wrt_code,
+                      function(x) if(is.name(x)) x else x[[2]])
+
+  wrt_name_strings <- as.character(wrt_names)
+  
+  ## Get unique names and track indices from wrt to unique names
+  wrt_unique_names <- unique(wrt_names)
+
+  if(!all(wrt_unique_names %in% fA)){
+    stop('Error:  the wrt argument to nimDerivs() contains names that are not
+         arguments to the nimFxn argument.')
   }
-  else if(valueFlag){
-    ## Otherwise just evaluate the function.
-    outVal <- nimFxn
+  
+  wrt_names_orig_indices <- match(wrt_names, wrt_unique_names)
+  wrt_unique_name_strings <- as.character(wrt_unique_names)
+  
+  ## get original argument values from fxnEnv.
+  ## These will be modified in func.
+  ## This is ordered by fA, the arguments of the target function
+  fxnArgs <- lapply(fA,
+                    function(x) 
+                        get(x, envir = fxnEnv))
+  names(fxnArgs) <- as.character(fA)
+  
+  ## Get length or dimensions
+  ## ordered by fxnArgs
+  unique_dims <- sapply(fxnArgs,
+                 function(x) 
+                     nimble:::dimOrLength(x))
+
+  ## Get product of dimensions, which we call size
+  ## ordered by fxnArgs
+  unique_sizes <- sapply(unique_dims, prod)
+
+  ## 
+  scalar_index_objects <- lapply(unique_dims,
+                                 function(x)
+                                     array(1:prod(x), dim = x))
+
+  eval_env <- new.env()
+  ## iterate over names in any wrt.
+
+  current_x_index <- 1
+  fxnArgs_assign_code <- list()
+  get_init_values_code <- list()
+  result_x_indices_by_wrt <- list()
+  for(i in seq_along(wrt_unique_names)) {
+      ## Below, x represents the input argument to func
+      this_unique_wrt_string <- wrt_unique_name_strings[i]
+      ##
+      dims <- nimble:::dimOrLength(fxnArgs[[this_unique_wrt_string]])
+      ##
+      assign(this_unique_wrt_string, array(1:prod(dims), dim = dims), envir = eval_env)
+      
+      ## which wrt arguments use this wrt variable
+      i_wrt_orig <- which(this_unique_wrt_string == wrt_name_strings)     
+
+      flat_indices <- lapply(wrt_code[i_wrt_orig], ## quote(x[2]) and so on for any wrt using x
+                             function(wrt_code_) {
+                                 eval(wrt_code_, envir = eval_env)
+                             })
+      unique_flat_indices <- unique(unlist(flat_indices))
+      ## I is this_unique_wrt_string
+      ## J is an element of unique_flat_indices
+      ## K is a running element of x
+
+      x_indices <- current_x_index - 1 + 1:length(unique_flat_indices)
+      
+      fxnArgs_assign_code[[i]] <- mapply(
+          function(jval, kval)
+              substitute(fxnArgs[[ I ]][J] <<- x[K], list(I = this_unique_wrt_string,
+                                                         J = jval,
+                                                         K = kval)),
+          unique_flat_indices,
+          x_indices)
+      get_init_values_code[[i]] <- mapply(
+          function(jval, kval)
+              substitute(currentX[K] <- fxnArgs[[ I ]][J], list(I = this_unique_wrt_string,
+                                                             J = jval,
+                                                             K = kval)),
+          unique_flat_indices,
+          x_indices)
+
+      result_x_indices <- lapply(flat_indices,
+                                      function(fi) x_indices[match(fi, unique_flat_indices)]
+                                      )
+      result_x_indices_by_wrt[i_wrt_orig] <- result_x_indices
+      
+     current_x_index <- current_x_index + length(unique_flat_indices)
   }
-  outList <- ADNimbleList$new()
-  if(valueFlag) outList$value = outVal
-  if(jacobianFlag) outList$jacobian = outGrad
-  if(hessianFlag) outList$hessian = outHess
-  return(outList)
+  fxnArgs_assign_code <- unlist(fxnArgs_assign_code, recursive = FALSE)
+  get_init_values_code <- unlist(get_init_values_code, recursive = FALSE)
+  result_x_indices_all <- unlist(result_x_indices_by_wrt)
+
+  length_x <- current_x_index - 1
+  currentX <- numeric(length_x)
+  do.call("{", get_init_values_code)
+  ## equivalent to:
+  ##  for(i in 1:length_x) {
+  ##      eval(get_init_values_code[[i]])
+  ##  }
+
+  derivFxnName <- as.character(derivFxnCall[[1]])
+  func <- function(x) {
+      do.call("{", fxnArgs_assign_code)
+      ## for(i in 1:length_x) {
+      ##     ## Each line is like fxnArgs[[ 2 ]][23] <- x[5]
+      ##     eval(fxnArgs_assign_code[[i]])
+      ## }
+      c(do.call(derivFxnName, fxnArgs, envir = fxnEnv)) #c() unrolls any answer to a vector
+  }
+
+  ans <- calcDerivs_internal(func, currentX, order, result_x_indices_all)
+##  jacobian(func, currentX)
+  ans
 }
 
 convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
