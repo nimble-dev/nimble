@@ -702,7 +702,7 @@ CRP_conjugate_dbeta_dbin <- nimbleFunction(
       returnType(double())
       y <- values(model, dataNodes[i])[1]
       dataSize <- model$getParam(dataNodes[i], 'size')
-      return(lgamma(priorShape1+priorShape2) + lgamma(priorShape1+y) + lgamma(priorShape1+dataSize-y) -
+      return(lgamma(priorShape1+priorShape2) + lgamma(priorShape1+y) + lgamma(priorShape2+dataSize-y) -
                lgamma(priorShape1) - lgamma(priorShape2) - lgamma(priorShape1+priorShape2+dataSize) +
                lfactorial(dataSize) - lfactorial(y) - lfactorial(dataSize-y))
     },
@@ -733,7 +733,7 @@ CRP_conjugate_dbeta_dnegbin <- nimbleFunction(
       returnType(double())
       y <- values(model, dataNodes[i])[1]
       dataSize <- model$getParam(dataNodes[i], 'size')
-      return(lgamma(priorShape1+priorShape2) + lgamma(priorShape1+dataSize) + lgamma(priorShape1+y) -
+      return(lgamma(priorShape1+priorShape2) + lgamma(priorShape1+dataSize) + lgamma(priorShape2+y) -
                lgamma(priorShape1) - lgamma(priorShape2) - lgamma(priorShape1+priorShape2+dataSize+y) +
                lfactorial(y+dataSize-1) - lfactorial(y) - lfactorial(dataSize-1))
     },
@@ -1500,7 +1500,7 @@ CRP_conjugate_dbeta_dbin_moreGeneral <- nimbleFunction(
       for(j1 in 1:J) {
         y <- values(model, dataNodes[(i-1)*J+j1])[1]
         dataSize <- model$getParam(dataNodes[(i-1)*J+j1], 'size')
-        out <- out + lgamma(priorShape1[j1]+priorShape2[j1]) + lgamma(priorShape1[j1]+y) + lgamma(priorShape1[j1]+dataSize-y) -
+        out <- out + lgamma(priorShape1[j1]+priorShape2[j1]) + lgamma(priorShape1[j1]+y) + lgamma(priorShape2[j1]+dataSize-y) -
           lgamma(priorShape1[j1]) - lgamma(priorShape2[j1]) - lgamma(priorShape1[j1]+priorShape2[j1]+dataSize) +
           lfactorial(dataSize) - lfactorial(y) - lfactorial(dataSize-y)
       }
@@ -1538,7 +1538,7 @@ CRP_conjugate_dbeta_dnegbin_moreGeneral <- nimbleFunction(
       for(j1 in 1:J) {
         dataSize <- model$getParam(dataNodes[(i-1)*J+j1], 'size')
         y <- values(model, dataNodes[(i-1)*J+j1])[1]
-        out <- out + lgamma(priorShape1[j1]+priorShape2[j1]) + lgamma(priorShape1[j1]+dataSize) + lgamma(priorShape1[j1]+y) -
+        out <- out + lgamma(priorShape1[j1]+priorShape2[j1]) + lgamma(priorShape1[j1]+dataSize) + lgamma(priorShape2[j1]+y) -
           lgamma(priorShape1[j1]) - lgamma(priorShape2[j1]) - lgamma(priorShape1[j1]+priorShape2[j1]+dataSize+y) +
           lfactorial(y+dataSize-1) - lfactorial(y) - lfactorial(dataSize-1)
       }
