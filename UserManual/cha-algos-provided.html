@@ -1,13 +1,12 @@
 <!DOCTYPE html>
-<html >
-
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
 <head>
 
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title></title>
-  <meta name="description" content="This is the NIMBLE User Manual.">
-  <meta name="generator" content="bookdown 0.7 and GitBook 2.6.7">
+  <meta name="description" content="This is the NIMBLE User Manual." />
+  <meta name="generator" content="bookdown 0.11 and GitBook 2.6.7" />
 
   <meta property="og:title" content="" />
   <meta property="og:type" content="book" />
@@ -25,15 +24,16 @@
 
 
 
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
 <link rel="prev" href="cha-mcmc.html">
 <link rel="next" href="cha-spatial.html">
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
@@ -355,27 +355,27 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Building a simple linear state-space model. </span>
 <span class="co"># x is latent space, y is observed data</span>
 timeModelCode &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-  x[<span class="dv">1</span>] ~<span class="st"> </span><span class="kw">dnorm</span>(mu_0, <span class="dv">1</span>)
-  y[<span class="dv">1</span>] ~<span class="st"> </span><span class="kw">dnorm</span>(x[<span class="dv">1</span>], <span class="dv">1</span>)
-  for(i in <span class="dv">2</span>:t){
-    x[i] ~<span class="st"> </span><span class="kw">dnorm</span>(x[i<span class="dv">-1</span>] *<span class="st"> </span>a +<span class="st"> </span>b, <span class="dv">1</span>)
-    y[i] ~<span class="st"> </span><span class="kw">dnorm</span>(x[i] *<span class="st"> </span>c, <span class="dv">1</span>)
+  x[<span class="dv">1</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(mu_<span class="dv">0</span>, <span class="dv">1</span>)
+  y[<span class="dv">1</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(x[<span class="dv">1</span>], <span class="dv">1</span>)
+  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">2</span><span class="op">:</span>t){
+    x[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(x[i<span class="op">-</span><span class="dv">1</span>] <span class="op">*</span><span class="st"> </span>a <span class="op">+</span><span class="st"> </span>b, <span class="dv">1</span>)
+    y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(x[i] <span class="op">*</span><span class="st"> </span>c, <span class="dv">1</span>)
   }
   
-  a ~<span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)
-  b ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)
-  c ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">1</span>,<span class="dv">1</span>)
-  mu_0 ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)
+  a <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)
+  b <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)
+  c <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">1</span>,<span class="dv">1</span>)
+  mu_<span class="dv">0</span> <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)
 })
 
 <span class="co"># simulate some data</span>
-t &lt;-<span class="st"> </span><span class="dv">25</span>; mu_0 &lt;-<span class="st"> </span><span class="dv">1</span>
-x &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1</span> ,mu_0, <span class="dv">1</span>)
+t &lt;-<span class="st"> </span><span class="dv">25</span>; mu_<span class="dv">0</span> &lt;-<span class="st"> </span><span class="dv">1</span>
+x &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1</span> ,mu_<span class="dv">0</span>, <span class="dv">1</span>)
 y &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1</span>, x, <span class="dv">1</span>)
 a &lt;-<span class="st"> </span><span class="fl">0.5</span>; b &lt;-<span class="st"> </span><span class="dv">1</span>; c &lt;-<span class="st"> </span><span class="dv">1</span>
-for(i in <span class="dv">2</span>:t){
-  x[i] &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1</span>, x[i<span class="dv">-1</span>] *<span class="st"> </span>a +<span class="st"> </span>b, <span class="dv">1</span>)
-  y[i] &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1</span>, x[i] *<span class="st"> </span>c, <span class="dv">1</span>)
+<span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">2</span><span class="op">:</span>t){
+  x[i] &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1</span>, x[i<span class="op">-</span><span class="dv">1</span>] <span class="op">*</span><span class="st"> </span>a <span class="op">+</span><span class="st"> </span>b, <span class="dv">1</span>)
+  y[i] &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1</span>, x[i] <span class="op">*</span><span class="st"> </span>c, <span class="dv">1</span>)
 }
 
 <span class="co"># build the model</span>
@@ -383,10 +383,10 @@ rTimeModel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(tim
                           data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> y), <span class="dt">check =</span> <span class="ot">FALSE</span> )
 
 <span class="co"># Set parameter values and compile the model</span>
-rTimeModel$a &lt;-<span class="st"> </span><span class="fl">0.5</span>
-rTimeModel$b &lt;-<span class="st"> </span><span class="dv">1</span>
-rTimeModel$c &lt;-<span class="st"> </span><span class="dv">1</span>
-rTimeModel$mu_0 &lt;-<span class="st"> </span><span class="dv">1</span>
+rTimeModel<span class="op">$</span>a &lt;-<span class="st"> </span><span class="fl">0.5</span>
+rTimeModel<span class="op">$</span>b &lt;-<span class="st"> </span><span class="dv">1</span>
+rTimeModel<span class="op">$</span>c &lt;-<span class="st"> </span><span class="dv">1</span>
+rTimeModel<span class="op">$</span>mu_<span class="dv">0</span> &lt;-<span class="st"> </span><span class="dv">1</span>
 
 cTimeModel &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rTimeModel)</code></pre></div>
 <p>Here is an example of building and running the bootstrap filter.</p>
@@ -399,13 +399,13 @@ cBootF &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rBoot
 <span class="co"># Set number of particles</span>
 parNum &lt;-<span class="st"> </span><span class="dv">5000</span>
 <span class="co"># Run bootstrap filter, which returns estimate of model log-likelihood</span>
-bootLLEst &lt;-<span class="st"> </span>cBootF$<span class="kw">run</span>(parNum)
+bootLLEst &lt;-<span class="st"> </span>cBootF<span class="op">$</span><span class="kw">run</span>(parNum)
 <span class="co"># The bootstrap filter can also return an estimate of the effective </span>
 <span class="co"># sample size (ESS) at each time point</span>
-bootESS &lt;-<span class="st"> </span>cBootF$<span class="kw">returnESS</span>()</code></pre></div>
+bootESS &lt;-<span class="st"> </span>cBootF<span class="op">$</span><span class="kw">returnESS</span>()</code></pre></div>
 <p>Next, we provide an example of building and running the auxiliary particle filter. Note that a filter cannot be built on a model that already has a filter specialized to it, so we create a new copy of our state space model first.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Copy our state-space model for use with the auxiliary filter</span>
-auxTimeModel &lt;-<span class="st"> </span>rTimeModel$<span class="kw">newModel</span>(<span class="dt">replicate =</span> <span class="ot">TRUE</span>)
+auxTimeModel &lt;-<span class="st"> </span>rTimeModel<span class="op">$</span><span class="kw">newModel</span>(<span class="dt">replicate =</span> <span class="ot">TRUE</span>)
 <span class="kw">compileNimble</span>(auxTimeModel)
 <span class="co"># Build auxiliary filter</span>
 rAuxF &lt;-<span class="st"> </span><span class="kw">buildAuxiliaryFilter</span>(auxTimeModel, <span class="st">&quot;x&quot;</span>, 
@@ -413,13 +413,13 @@ rAuxF &lt;-<span class="st"> </span><span class="kw">buildAuxiliaryFilter</span>
 <span class="co"># Compile filter   </span>
 cAuxF &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rAuxF,<span class="dt">project =</span> auxTimeModel)
 <span class="co"># Run auxiliary filter, which returns estimate of model log-likelihood</span>
-auxLLEst &lt;-<span class="st"> </span>cAuxF$<span class="kw">run</span>(parNum)
+auxLLEst &lt;-<span class="st"> </span>cAuxF<span class="op">$</span><span class="kw">run</span>(parNum)
 <span class="co"># The auxiliary filter can also return an estimate of the effective </span>
 <span class="co"># sample size (ESS) at each time point</span>
-auxESS &lt;-<span class="st"> </span>cAuxF$<span class="kw">returnESS</span>()</code></pre></div>
+auxESS &lt;-<span class="st"> </span>cAuxF<span class="op">$</span><span class="kw">returnESS</span>()</code></pre></div>
 <p>Now we give an example of building and running the Liu and West filter, which can sample from the posterior distribution of top-level parameters as well as latent states. The Liu and West filter accepts an additional <code>params</code> argument, specifying the top-level parameters to be sampled.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Copy model</span>
-LWTimeModel &lt;-<span class="st"> </span>rTimeModel$<span class="kw">newModel</span>(<span class="dt">replicate =</span> <span class="ot">TRUE</span>)
+LWTimeModel &lt;-<span class="st"> </span>rTimeModel<span class="op">$</span><span class="kw">newModel</span>(<span class="dt">replicate =</span> <span class="ot">TRUE</span>)
 <span class="kw">compileNimble</span>(LWTimeModel)
 <span class="co"># Build Liu-West filter, also </span>
 <span class="co"># specifying which top level parameters to estimate</span>
@@ -431,34 +431,34 @@ rLWF &lt;-<span class="st"> </span><span class="kw">buildLiuWestFilter</span>(LW
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Compile filter   </span>
 cLWF &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rLWF,<span class="dt">project =</span> LWTimeModel)
 <span class="co"># Run Liu-West filter</span>
-cLWF$<span class="kw">run</span>(parNum)</code></pre></div>
+cLWF<span class="op">$</span><span class="kw">run</span>(parNum)</code></pre></div>
 <p>Finally, we give an example of building and running the ensemble Kalman filter, which can sample from the posterior distribution of latent states.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Copy model</span>
-ENKFTimeModel &lt;-<span class="st"> </span>rTimeModel$<span class="kw">newModel</span>(<span class="dt">replicate =</span> <span class="ot">TRUE</span>)
+ENKFTimeModel &lt;-<span class="st"> </span>rTimeModel<span class="op">$</span><span class="kw">newModel</span>(<span class="dt">replicate =</span> <span class="ot">TRUE</span>)
 <span class="kw">compileNimble</span>(ENKFTimeModel)
 <span class="co"># Build and compile ensemble Kalman filter</span>
 rENKF &lt;-<span class="st"> </span><span class="kw">buildEnsembleKF</span>(ENKFTimeModel, <span class="st">&quot;x&quot;</span>,
                          <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">saveAll =</span> <span class="ot">FALSE</span>))  
 cENKF &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rENKF,<span class="dt">project =</span> ENKFTimeModel)
 <span class="co"># Run ensemble Kalman filter</span>
-cENKF$<span class="kw">run</span>(parNum)</code></pre></div>
+cENKF<span class="op">$</span><span class="kw">run</span>(parNum)</code></pre></div>
 <p>Once each filter has been run, we can extract samples from the posterior distribution of our latent states as follows:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Equally-weighted samples (available from all filters)</span>
-bootEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cBootF$mvEWSamples)
-auxEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cAuxF$mvEWSamples)
-LWFEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cLWF$mvEWSamples)
-ENKFEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cENKF$mvEWSamples)
+bootEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cBootF<span class="op">$</span>mvEWSamples)
+auxEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cAuxF<span class="op">$</span>mvEWSamples)
+LWFEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cLWF<span class="op">$</span>mvEWSamples)
+ENKFEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cENKF<span class="op">$</span>mvEWSamples)
 
 <span class="co"># Unequally-weighted samples, along with weights (available </span>
 <span class="co"># from bootstrap, auxiliary, and Liu and West filters)</span>
-bootWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cBootF$mvWSamples, <span class="st">&quot;x&quot;</span>)
-bootWts &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cBootF$mvWSamples, <span class="st">&quot;wts&quot;</span>)
-auxWSamp &lt;-<span class="st">  </span><span class="kw">as.matrix</span>(xAuxF$mvWSamples, <span class="st">&quot;x&quot;</span>)
-auxWts &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cAuxF$mvWSamples, <span class="st">&quot;wts&quot;</span>)
+bootWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cBootF<span class="op">$</span>mvWSamples, <span class="st">&quot;x&quot;</span>)
+bootWts &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cBootF<span class="op">$</span>mvWSamples, <span class="st">&quot;wts&quot;</span>)
+auxWSamp &lt;-<span class="st">  </span><span class="kw">as.matrix</span>(xAuxF<span class="op">$</span>mvWSamples, <span class="st">&quot;x&quot;</span>)
+auxWts &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cAuxF<span class="op">$</span>mvWSamples, <span class="st">&quot;wts&quot;</span>)
 
 <span class="co"># Liu and West filter also returns samples </span>
 <span class="co"># from posterior distribution of top-level parameters:</span>
-aEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cLWF$mvEWSamples, <span class="st">&quot;a&quot;</span>)</code></pre></div>
+aEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cLWF<span class="op">$</span>mvEWSamples, <span class="st">&quot;a&quot;</span>)</code></pre></div>
 </div>
 <div id="sec:particle-mcmc" class="section level3">
 <h3><span class="header-section-number">8.1.2</span> Particle MCMC (PMCMC)</h3>
@@ -467,7 +467,7 @@ aEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cLWF$mvE
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">timeConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(rTimeModel)   <span class="co"># default MCMC configuration</span>
 
 <span class="co"># Add random walk PMCMC sampler with particle number optimization.</span>
-timeConf$<span class="kw">addSampler</span>(<span class="dt">target =</span> <span class="kw">c</span>(<span class="st">&quot;a&quot;</span>, <span class="st">&quot;b&quot;</span>, <span class="st">&quot;c&quot;</span>, <span class="st">&quot;mu_0&quot;</span>), <span class="dt">type =</span> <span class="st">&quot;RW_PF_block&quot;</span>,
+timeConf<span class="op">$</span><span class="kw">addSampler</span>(<span class="dt">target =</span> <span class="kw">c</span>(<span class="st">&quot;a&quot;</span>, <span class="st">&quot;b&quot;</span>, <span class="st">&quot;c&quot;</span>, <span class="st">&quot;mu_0&quot;</span>), <span class="dt">type =</span> <span class="st">&quot;RW_PF_block&quot;</span>,
                     control &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">propCov=</span> <span class="kw">diag</span>(<span class="dv">4</span>), <span class="dt">adaptScaleOnly =</span> <span class="ot">FALSE</span>,
                                  <span class="dt">latents =</span> <span class="st">&quot;x&quot;</span>, <span class="dt">pfOptimizeNparticles =</span> <span class="ot">TRUE</span>))</code></pre></div>
 <p>The <code>type = &quot;RW_PF&quot;</code> and <code>type = &quot;RW_PF_block&quot;</code> samplers default to using a bootstrap filter. However, more efficient results can often be obtained by using a custom filtering algorithm. Choice of filtering algorithm can be controlled by the <code>pfType</code> control list entry. The <code>pfType</code> entry can be set either to <code>'bootstrap'</code> (the default), <code>'auxiliary'</code>, or the name of a user-defined nimbleFunction that returns a likelihood approximation.</p>
@@ -510,7 +510,7 @@ pumpMCEM &lt;-<span class="st"> </span><span class="kw">buildMCEM</span>(<span c
 <p>The value of the <code>buffer</code> argument shrinks the <code>boxConstraints</code> by this amount. This can help protect against non-finite values occurring when a parameter is on the boundary.</p>
 <p>In addition, the MCEM has some extra control options that can be used to further tune the convergence criterion. See <code>help(buildMCEM)</code> for more information.</p>
 <p>The <code>buildMCEM</code> function returns a list with two elements. The first element is a function called <code>run</code>, which will use the MCEM algorithm to estimate the MLEs. The second function is called <code>estimateCov</code>, and is described in Section <a href="cha-algos-provided.html#sec:estimate-mcem-cov">8.2.1</a>. The <code>run</code> function can be run as follows. There is only one run-time argument, <code>initM</code>, which is the number of MCMC iterations to use when the algorithm is initialized.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpMLE &lt;-<span class="st"> </span>pumpMCEM$<span class="kw">run</span>(<span class="dt">initM =</span> <span class="dv">1000</span>)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpMLE &lt;-<span class="st"> </span>pumpMCEM<span class="op">$</span><span class="kw">run</span>(<span class="dt">initM =</span> <span class="dv">1000</span>)</code></pre></div>
 <pre><code>## Iteration Number: 1.
 ## Current number of MCMC iterations: 1000.
 ## Parameter Estimates: 
@@ -545,13 +545,13 @@ pumpMCEM &lt;-<span class="st"> </span><span class="kw">buildMCEM</span>(<span c
 <div id="sec:estimate-mcem-cov" class="section level3">
 <h3><span class="header-section-number">8.2.1</span> Estimating the asymptotic covariance From MCEM</h3>
 <p>The second element of the list returned by a call to <code>buildMCEM</code> is a function called <code>estimateCov</code>, which estimates the asymptotic covariance of the parameters at their MLE values. If the <code>run</code> function has been called previously, the <code>estimateCov</code> function will automatically use the MLE values produced by the <code>run</code> function to estimate the covariance. Alternatively, a user can supply their own MLE values using the <code>MLEs</code> argument, which allows the covariance to be estimated without having called the <code>run</code> function. More details about the <code>estimateCov</code> function can be found by calling <code>help(buildMCEM)</code>. Below is an example of using the <code>estimateCov</code> function.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpCov &lt;-<span class="st"> </span>pumpMCEM$<span class="kw">estimateCov</span>()
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpCov &lt;-<span class="st"> </span>pumpMCEM<span class="op">$</span><span class="kw">estimateCov</span>()
 pumpCov</code></pre></div>
 <pre><code>##           alpha      beta
 ## alpha 0.1243461 0.2083908
 ## beta  0.2083908 0.6087121</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Alternatively, you can manually specify the MLE values as a named vector.</span>
-pumpCov &lt;-<span class="st"> </span>pumpMCEM$<span class="kw">estimateCov</span>(<span class="dt">MLEs =</span> <span class="kw">c</span>(<span class="dt">alpha =</span> <span class="fl">0.823</span>, <span class="dt">beta =</span> <span class="fl">1.261</span>))</code></pre></div>
+pumpCov &lt;-<span class="st"> </span>pumpMCEM<span class="op">$</span><span class="kw">estimateCov</span>(<span class="dt">MLEs =</span> <span class="kw">c</span>(<span class="dt">alpha =</span> <span class="fl">0.823</span>, <span class="dt">beta =</span> <span class="fl">1.261</span>))</code></pre></div>
 
 <!--- % See http://yihui.name/knitr/demo/child/ for documentation on the parent/child document system of knitr -->
 <!---  
@@ -592,7 +592,7 @@ gitbook.start({
 "google": false,
 "linkedin": false,
 "weibo": false,
-"instapper": false,
+"instapaper": false,
 "vk": false,
 "all": ["facebook", "google", "twitter", "linkedin", "weibo", "instapaper"]
 },
@@ -602,6 +602,10 @@ gitbook.start({
 "size": 2
 },
 "edit": {
+"link": null,
+"text": null
+},
+"history": {
 "link": null,
 "text": null
 },
@@ -620,7 +624,7 @@ gitbook.start({
     var script = document.createElement("script");
     script.type = "text/javascript";
     var src = "";
-    if (src === "" || src === "true") src = "https://cdn.bootcss.com/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML";
+    if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
     if (location.protocol !== "file:" && /^https?:/.test(src))
       src = src.replace(/^https?:/, '');
     script.src = src;

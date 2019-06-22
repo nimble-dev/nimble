@@ -1,13 +1,12 @@
 <!DOCTYPE html>
-<html >
-
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
 <head>
 
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title></title>
-  <meta name="description" content="This is the NIMBLE User Manual.">
-  <meta name="generator" content="bookdown 0.7 and GitBook 2.6.7">
+  <meta name="description" content="This is the NIMBLE User Manual." />
+  <meta name="generator" content="bookdown 0.11 and GitBook 2.6.7" />
 
   <meta property="og:title" content="" />
   <meta property="og:type" content="book" />
@@ -25,15 +24,16 @@
 
 
 
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
 <link rel="prev" href="cha-installing-nimble.html">
 <link rel="next" href="cha-building-models.html">
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
@@ -397,12 +397,12 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <p>Here is the code to define and create a simple linear regression model with four observations.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(nimble)
 mc &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-    intercept ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
-    slope ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
-    sigma ~<span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)
-    for(i in <span class="dv">1</span>:<span class="dv">4</span>) {
-        predicted.y[i] &lt;-<span class="st"> </span>intercept +<span class="st"> </span>slope *<span class="st"> </span>x[i]
-        y[i] ~<span class="st"> </span><span class="kw">dnorm</span>(predicted.y[i], <span class="dt">sd =</span> sigma)
+    intercept <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
+    slope <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
+    sigma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)
+    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">4</span>) {
+        predicted.y[i] &lt;-<span class="st"> </span>intercept <span class="op">+</span><span class="st"> </span>slope <span class="op">*</span><span class="st"> </span>x[i]
+        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(predicted.y[i], <span class="dt">sd =</span> sigma)
     }
 })
 
@@ -443,7 +443,7 @@ fill.color &lt;-<span class="st"> </span><span class="kw">c</span>(
 )
 
 
-<span class="kw">plot</span>(model$graph, <span class="dt">vertex.shape =</span> <span class="st">&quot;crectangle&quot;</span>,
+<span class="kw">plot</span>(model<span class="op">$</span>graph, <span class="dt">vertex.shape =</span> <span class="st">&quot;crectangle&quot;</span>,
      <span class="dt">vertex.size =</span> sizes,
      <span class="dt">vertex.size2 =</span> <span class="dv">20</span>,
      <span class="dt">layout =</span> layout,
@@ -461,22 +461,22 @@ Figure 5.1: Graph of a linear regression model
 <p>The graph representing the model is shown in Figure <a href="cha-writing-models.html#fig:linearRegressionGraph">5.1</a>. Each observation, <code>y[i]</code>, is a node whose edges say that it follows a normal distribution depending on a predicted value, <code>predicted.y[i]</code>, and standard deviation, <code>sigma</code>, which are each nodes. Each predicted value is a node whose edges say how it is calculated from <code>slope</code>, <code>intercept</code>, and one value of an explanatory variable, <code>x[i]</code>, which are each nodes.</p>
 <p>This graph is created from the following BUGS code:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">{
-    intercept ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
-    slope ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
-    sigma ~<span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)
-    for(i in <span class="dv">1</span>:<span class="dv">4</span>) {
-        predicted.y[i] &lt;-<span class="st"> </span>intercept +<span class="st"> </span>slope *<span class="st"> </span>x[i]
-        y[i] ~<span class="st"> </span><span class="kw">dnorm</span>(predicted.y[i], <span class="dt">sd =</span> sigma)
+    intercept <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
+    slope <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
+    sigma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)
+    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">4</span>) {
+        predicted.y[i] &lt;-<span class="st"> </span>intercept <span class="op">+</span><span class="st"> </span>slope <span class="op">*</span><span class="st"> </span>x[i]
+        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(predicted.y[i], <span class="dt">sd =</span> sigma)
     }
 }</code></pre></div>
 <p>In this code, stochastic relationships are declared with ‘<span class="math inline">\(\sim\)</span>’ and deterministic relationships are declared with ‘<code>&lt;-</code>’. For example, each <code>y[i]</code> follows a normal distribution with mean <code>predicted.y[i]</code> and standard deviation <code>sigma</code>. Each <code>predicted.y[i]</code> is the result of <code>intercept + slope * x[i]</code>. The for-loop yields the equivalent of writing four lines of code, each with a different value of <code>i</code>. It does not matter in what order the nodes are declared. Imagine that each line of code draws part of Figure <a href="cha-writing-models.html#fig:linearRegressionGraph">5.1</a>, and all that matters is that the everything gets drawn in the end. Available distributions, default and alternative parameterizations, and functions are listed in Section <a href="cha-writing-models.html#subsec:dists-and-functions">5.2.4</a>.</p>
 <p>An equivalent graph can be created by this BUGS code:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">{
-    intercept ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
-    slope ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
-    sigma ~<span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)
-    for(i in <span class="dv">1</span>:<span class="dv">4</span>) {
-        y[i] ~<span class="st"> </span><span class="kw">dnorm</span>(intercept +<span class="st"> </span>slope *<span class="st"> </span>x[i], <span class="dt">sd =</span> sigma)
+    intercept <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
+    slope <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
+    sigma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)
+    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">4</span>) {
+        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(intercept <span class="op">+</span><span class="st"> </span>slope <span class="op">*</span><span class="st"> </span>x[i], <span class="dt">sd =</span> sigma)
     }
 }</code></pre></div>
 <p>In this case, the <code>predicted.y[i]</code> nodes in Figure <a href="cha-writing-models.html#fig:linearRegressionGraph">5.1</a> will be created automatically by NIMBLE and will have a different name, generated by NIMBLE.</p>
@@ -486,24 +486,24 @@ Figure 5.1: Graph of a linear regression model
 <p>Here are some examples of valid lines of BUGS code. This code does not describe a sensible or complete model, and it includes some arbitrary indices (e.g. <code>mvx[8:10, i]</code>) to illustrate flexibility. Instead the purpose of each line is to illustrate a feature of NIMBLE’s version of BUGS.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">{
     <span class="co"># 1. normal distribution with BUGS parameter order</span>
-    x ~<span class="st"> </span><span class="kw">dnorm</span>(a +<span class="st"> </span>b *<span class="st"> </span>c, tau) 
+    x <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(a <span class="op">+</span><span class="st"> </span>b <span class="op">*</span><span class="st"> </span>c, tau) 
     <span class="co"># 2. normal distribution with a named parameter</span>
-    y ~<span class="st"> </span><span class="kw">dnorm</span>(a +<span class="st"> </span>b *<span class="st"> </span>c, <span class="dt">sd =</span> sigma) 
+    y <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(a <span class="op">+</span><span class="st"> </span>b <span class="op">*</span><span class="st"> </span>c, <span class="dt">sd =</span> sigma) 
     <span class="co"># 3. For-loop and nested indexing</span>
-    for(i in <span class="dv">1</span>:N) {
-        for(j in <span class="dv">1</span>:M[i]) {
-            z[i,j] ~<span class="st"> </span><span class="kw">dexp</span>(r[ blockID[i] ]) 
+    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {
+        <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>M[i]) {
+            z[i,j] <span class="op">~</span><span class="st"> </span><span class="kw">dexp</span>(r[ blockID[i] ]) 
         }
     }
     <span class="co"># 4. multivariate distribution with arbitrary indexing</span>
-    for(i in <span class="dv">1</span>:<span class="dv">3</span>) 
-        mvx[<span class="dv">8</span>:<span class="dv">10</span>, i] ~<span class="st"> </span><span class="kw">dmnorm</span>(mvMean[<span class="dv">3</span>:<span class="dv">5</span>], <span class="dt">cov =</span> mvCov[<span class="dv">1</span>:<span class="dv">3</span>, <span class="dv">1</span>:<span class="dv">3</span>, i])
+    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">3</span>) 
+        mvx[<span class="dv">8</span><span class="op">:</span><span class="dv">10</span>, i] <span class="op">~</span><span class="st"> </span><span class="kw">dmnorm</span>(mvMean[<span class="dv">3</span><span class="op">:</span><span class="dv">5</span>], <span class="dt">cov =</span> mvCov[<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>, <span class="dv">1</span><span class="op">:</span><span class="dv">3</span>, i])
     <span class="co"># 5. User-provided distribution</span>
-    w ~<span class="st"> </span><span class="kw">dMyDistribution</span>(<span class="dt">hello =</span> x, <span class="dt">world =</span> y) 
+    w <span class="op">~</span><span class="st"> </span><span class="kw">dMyDistribution</span>(<span class="dt">hello =</span> x, <span class="dt">world =</span> y) 
     <span class="co"># 6. Simple deterministic node</span>
-    d1 &lt;-<span class="st"> </span>a +<span class="st"> </span>b
+    d1 &lt;-<span class="st"> </span>a <span class="op">+</span><span class="st"> </span>b
     <span class="co"># 7. Vector deterministic node with matrix multiplication</span>
-    d2[] &lt;-<span class="st"> </span>A[ , ] %*%<span class="st"> </span>mvMean[<span class="dv">1</span>:<span class="dv">5</span>] 
+    d2[] &lt;-<span class="st"> </span>A[ , ] <span class="op">%*%</span><span class="st"> </span>mvMean[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>] 
     <span class="co"># 8. Deterministic node with user-provided function</span>
     d3 &lt;-<span class="st"> </span><span class="kw">foo</span>(x, <span class="dt">hooray =</span> y) 
 }</code></pre></div>
@@ -542,13 +542,13 @@ Figure 5.1: Graph of a linear regression model
 <h3><span class="header-section-number">5.2.3</span> Vectorized versus scalar declarations</h3>
 <p>Suppose you need nodes <code>logY[i]</code> that should be the log of the corresponding <code>Y[i]</code>, say for <code>i</code> from 1 to 10. Conventionally this would be created with a for loop:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">{
-    for(i in <span class="dv">1</span>:<span class="dv">10</span>) {
+    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">10</span>) {
         logY[i] &lt;-<span class="st"> </span><span class="kw">log</span>(Y[i])
     }
 }</code></pre></div>
 <p>Since NIMBLE supports R-like algebraic expressions, an alternative in NIMBLE’s dialect of BUGS is to use a vectorized declaration like this:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">{
-    logY[<span class="dv">1</span>:<span class="dv">10</span>] &lt;-<span class="st"> </span><span class="kw">log</span>(Y[<span class="dv">1</span>:<span class="dv">10</span>])
+    logY[<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>] &lt;-<span class="st"> </span><span class="kw">log</span>(Y[<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>])
 }</code></pre></div>
 <p>There is an important difference between the models that are created by the above two methods. The first creates 10 scalar nodes, <code>logY[1]</code> <span class="math inline">\(,\ldots,\)</span> <code>logY[10]</code>. The second creates one vector node, <code>logY[1:10]</code>. If each <code>logY[i]</code> is used separately by an algorithm, it may be more efficient computationally if they are declared as scalars. If they are all used together, it will often make sense to declare them as a vector.</p>
 </div>
@@ -564,8 +564,8 @@ Figure 5.1: Graph of a linear regression model
 <th align="left">Name</th>
 <th align="left">Usage</th>
 <th align="left">Density</th>
-<th align="left">Lower</th>
-<th align="left">Upper</th>
+<th>Lower</th>
+<th>Upper</th>
 </tr>
 </thead>
 <tbody>
@@ -573,351 +573,351 @@ Figure 5.1: Graph of a linear regression model
 <td align="left">Bernoulli</td>
 <td align="left"><code>dbern(prob = p)</code></td>
 <td align="left"><span class="math inline">\(p^x (1 - p)^{1 -x}\)</span></td>
-<td align="left"><span class="math inline">\(0\)</span></td>
-<td align="left"><span class="math inline">\(1\)</span></td>
+<td><span class="math inline">\(0\)</span></td>
+<td><span class="math inline">\(1\)</span></td>
 </tr>
 <tr class="even">
 <td align="left"></td>
 <td align="left"><span class="math inline">\(0 &lt; p &lt; 1\)</span></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left">Beta</td>
 <td align="left"><code>dbeta(shape1 = a,</code></td>
 <td align="left"><span class="math inline">\(\frac{x^{a-1}(1-x)^{b-1}}{\beta(a,b)}\)</span></td>
-<td align="left"><span class="math inline">\(0\)</span></td>
-<td align="left"><span class="math inline">\(1\)</span></td>
+<td><span class="math inline">\(0\)</span></td>
+<td><span class="math inline">\(1\)</span></td>
 </tr>
 <tr class="even">
 <td align="left"></td>
 <td align="left"><code>shape2 = b)</code>, <span class="math inline">\(a &gt; 0\)</span>, <span class="math inline">\(b &gt; 0\)</span></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left">Binomial</td>
 <td align="left"><code>dbin(prob = p, size = n)</code></td>
 <td align="left"><span class="math inline">\({n \choose x} p^x (1-p)^{n-x}\)</span></td>
-<td align="left"><span class="math inline">\(0\)</span></td>
-<td align="left"><span class="math inline">\(n\)</span></td>
+<td><span class="math inline">\(0\)</span></td>
+<td><span class="math inline">\(n\)</span></td>
 </tr>
 <tr class="even">
 <td align="left"></td>
 <td align="left"><span class="math inline">\(0 &lt; p &lt; 1\)</span>, <span class="math inline">\(n \in \mathbb{N}^*\)</span></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left">CAR</td>
 <td align="left"><code>dcar_normal(adj, weights,</code></td>
 <td align="left">see chapter <a href="cha-spatial.html#cha:spatial">9</a> for details</td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="even">
 <td align="left">(intrinsic)</td>
-<td align="left"><code>num, tau, c, zero_mean</code></td>
+<td align="left"><code>num, tau, c, zero_mean)</code></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left">CAR</td>
 <td align="left"><code>dcar_proper(mu, C, adj,</code></td>
 <td align="left">see chapter <a href="cha-spatial.html#cha:spatial">9</a> for details</td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="even">
 <td align="left">(proper)</td>
 <td align="left"><code>num, M, tau, gamma)</code></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left">Categorical</td>
 <td align="left"><code>dcat(prob = p)</code></td>
 <td align="left"><span class="math inline">\(\frac{p_x}{\sum_i p_i}\)</span></td>
-<td align="left"><span class="math inline">\(1\)</span></td>
-<td align="left"><span class="math inline">\(N\)</span></td>
+<td><span class="math inline">\(1\)</span></td>
+<td><span class="math inline">\(N\)</span></td>
 </tr>
 <tr class="even">
 <td align="left"></td>
 <td align="left"><span class="math inline">\(p \in (\mathbb{R}^+)^N\)</span></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left">Chi-square</td>
 <td align="left"><code>dchisq(df = k)</code>, <span class="math inline">\(k &gt; 0\)</span></td>
 <td align="left"><span class="math inline">\(\frac{x^{\frac{k}{2}-1} \exp(-x/2)}{2^{\frac{k}{2}} \Gamma(\frac{k}{2})}\)</span></td>
-<td align="left"><span class="math inline">\(0\)</span></td>
-<td align="left"></td>
+<td><span class="math inline">\(0\)</span></td>
+<td></td>
 </tr>
 <tr class="even">
 <td align="left">Double</td>
-<td align="left"><code>ddexp(location =</code> <span class="math inline">\(\mu\)</span><code>, rate =$\tau$)</code></td>
+<td align="left"><code>ddexp(location =</code> <span class="math inline">\(\mu\)</span><code>, rate =</code> <span class="math inline">\(\tau\)</span><code>)</code></td>
 <td align="left"><span class="math inline">\(\frac{\tau}{2} \exp(-\tau |x - \mu|)\)</span></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left">exponential</td>
 <td align="left"><span class="math inline">\(\tau &gt; 0\)</span></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="even">
 <td align="left">Dirichlet</td>
 <td align="left"><code>ddirch(alpha =</code> <span class="math inline">\(\alpha\)</span><code>)</code></td>
 <td align="left"><span class="math inline">\(\Gamma(\sum_j \alpha_j) \prod_j \frac{ x_j^{\alpha_j - 1}}{ \Gamma(\alpha_j)}\)</span></td>
-<td align="left"><span class="math inline">\(0\)</span></td>
-<td align="left"></td>
+<td><span class="math inline">\(0\)</span></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left"></td>
 <td align="left"><span class="math inline">\(\alpha_j \geq 0\)</span></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="even">
 <td align="left">Exponential</td>
 <td align="left"><code>dexp(rate =</code> <span class="math inline">\(\lambda\)</span><code>)</code>, <span class="math inline">\(\lambda &gt; 0\)</span></td>
 <td align="left"><span class="math inline">\(\lambda \exp(-\lambda x)\)</span></td>
-<td align="left"><span class="math inline">\(0\)</span></td>
-<td align="left"></td>
+<td><span class="math inline">\(0\)</span></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left">Flat</td>
 <td align="left"><code>dflat()</code></td>
 <td align="left"><span class="math inline">\(\propto 1\)</span> (improper)</td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="even">
 <td align="left">Gamma</td>
 <td align="left"><code>dgamma(shape = r, rate =</code> <span class="math inline">\(\lambda\)</span><code>)</code></td>
 <td align="left"><span class="math inline">\(\frac{ \lambda^r x^{r - 1} \exp(-\lambda x)}{ \Gamma(r)}\)</span></td>
-<td align="left"><span class="math inline">\(0\)</span></td>
-<td align="left"></td>
+<td><span class="math inline">\(0\)</span></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left"></td>
 <td align="left"><span class="math inline">\(\lambda &gt; 0\)</span>, <span class="math inline">\(r &gt; 0\)</span></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="even">
 <td align="left">Half flat</td>
 <td align="left"><code>dhalfflat()</code></td>
 <td align="left"><span class="math inline">\(\propto 1\)</span> (improper)</td>
-<td align="left"><span class="math inline">\(0\)</span></td>
-<td align="left"></td>
+<td><span class="math inline">\(0\)</span></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left">Inverse</td>
 <td align="left"><code>dinvgamma(shape = r, scale =</code> <span class="math inline">\(\lambda\)</span><code>)</code></td>
 <td align="left"><span class="math inline">\(\frac{ \lambda^r x^{-(r + 1)} \exp(-\lambda / x)}{ \Gamma(r)}\)</span></td>
-<td align="left"><span class="math inline">\(0\)</span></td>
-<td align="left"></td>
+<td><span class="math inline">\(0\)</span></td>
+<td></td>
 </tr>
 <tr class="even">
 <td align="left">gamma</td>
 <td align="left"><span class="math inline">\(\lambda &gt; 0\)</span>, <span class="math inline">\(r &gt; 0\)</span></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left">Logistic</td>
 <td align="left"><code>dlogis(location =</code> <span class="math inline">\(\mu\)</span>,</td>
 <td align="left"><span class="math inline">\(\frac{ \tau \exp\{(x - \mu) \tau\}}{\left[1 + \exp\{(x - \mu) \tau\}\right]^2}\)</span></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="even">
 <td align="left"></td>
 <td align="left"><code>rate =</code> <span class="math inline">\(\tau\)</span><code>),</code><span class="math inline">\(\tau &gt; 0\)</span></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left">Log-normal</td>
 <td align="left"><code>dlnorm(meanlog =</code> <span class="math inline">\(\mu\)</span>,</td>
 <td align="left"><span class="math inline">\(\left(\frac{\tau}{2\pi}\right)^{\frac{1}{2}} x^{-1} \exp \left\{-\tau (\log(x) - \mu)^2 / 2 \right\}\)</span></td>
-<td align="left"><span class="math inline">\(0\)</span></td>
-<td align="left"></td>
+<td><span class="math inline">\(0\)</span></td>
+<td></td>
 </tr>
 <tr class="even">
 <td align="left"></td>
 <td align="left"><code>taulog =</code> <span class="math inline">\(\tau\)</span><code>),</code> <span class="math inline">\(\tau &gt; 0\)</span></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left">Multinomial</td>
 <td align="left"><code>dmulti(prob = p, size = n)</code></td>
 <td align="left"><span class="math inline">\(n! \prod_j \frac{ p_j^{x_j}}{ x_j!}\)</span></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="even">
 <td align="left"></td>
 <td align="left"><span class="math inline">\(\sum_j x_j = n\)</span></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left">Multivariate</td>
 <td align="left"><code>dmnorm(mean =</code> <span class="math inline">\(\mu\)</span><code>, prec =</code> <span class="math inline">\(\Lambda\)</span><code>)</code></td>
 <td align="left"><span class="math inline">\((2\pi)^{-\frac{d}{2}}|\Lambda|^{\frac{1}{2}} \exp\{-\frac{(x-\mu)^T \Lambda (x-\mu)}{2}\}\)</span></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="even">
 <td align="left">normal</td>
 <td align="left"><span class="math inline">\(\Lambda\)</span> positive definite</td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left">Multivariate</td>
 <td align="left"><code>dmvt(mu =</code> <span class="math inline">\(\mu\)</span><code>, prec =</code> <span class="math inline">\(\Lambda\)</span><code>)</code></td>
 <td align="left"><span class="math inline">\(\frac{\Gamma(\frac{\nu+d}{2})}{\Gamma(\frac{\nu}{2})(\nu\pi)^{d/2}}|\Lambda|^{1/2}(1+\frac{(x-\mu)^T\Lambda(x-\mu)}{\nu})^{-\frac{\nu+d}{2}}\)</span></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="even">
-<td align="left">Student t</td>
-<td align="left"><code>df =</code> <span class="math inline">\(\nu\)</span><code>),</code> <span class="math inline">\(\Lambda\)</span> positive def.</td>
+<td align="left">t</td>
+<td align="left"><span class="math inline">\(\Lambda\)</span> positive definite</td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left">Negative</td>
 <td align="left"><code>dnegbin(prob = p, size = r)</code></td>
 <td align="left"><span class="math inline">\({x + r -1 \choose x} p^r (1-p)^x\)</span></td>
-<td align="left"><span class="math inline">\(0\)</span></td>
-<td align="left"></td>
+<td><span class="math inline">\(0\)</span></td>
+<td></td>
 </tr>
 <tr class="even">
 <td align="left">binomial</td>
 <td align="left"><span class="math inline">\(0 &lt; p \leq 1\)</span>, <span class="math inline">\(r \geq 0\)</span></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left">Normal</td>
 <td align="left"><code>dnorm(mean =</code> <span class="math inline">\(\mu\)</span><code>, tau =</code> <span class="math inline">\(\tau\)</span><code>)</code></td>
 <td align="left"><span class="math inline">\(\left(\frac{\tau}{2\pi}\right)^{\frac{1}{2}} \exp\{- \tau (x - \mu)^2 / 2\}\)</span></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="even">
 <td align="left"></td>
 <td align="left"><span class="math inline">\(\tau &gt; 0\)</span></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left">Poisson</td>
 <td align="left"><code>dpois(lambda =</code> <span class="math inline">\(\lambda\)</span><code>)</code></td>
 <td align="left"><span class="math inline">\(\frac{ \exp(-\lambda)\lambda^x}{ x!}\)</span></td>
-<td align="left"><span class="math inline">\(0\)</span></td>
-<td align="left"></td>
+<td><span class="math inline">\(0\)</span></td>
+<td></td>
 </tr>
 <tr class="even">
 <td align="left"></td>
 <td align="left"><span class="math inline">\(\lambda &gt; 0\)</span></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left">Student t</td>
 <td align="left"><code>dt(mu =</code> <span class="math inline">\(\mu\)</span><code>, tau =</code> <span class="math inline">\(\tau\)</span><code>, df = k)</code></td>
 <td align="left"><span class="math inline">\(\frac{\Gamma(\frac{k+1}{2})}{\Gamma(\frac{k}{2})}\left(\frac{\tau}{k\pi}\right)^{\frac{1}{2}}\left\{1+\frac{\tau(x-\mu)^2}{k} \right\}^{-\frac{(k+1)}{2}}\)</span></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="even">
 <td align="left"></td>
 <td align="left"><span class="math inline">\(\tau &gt; 0\)</span>, <span class="math inline">\(k &gt; 0\)</span></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left">Uniform</td>
 <td align="left"><code>dunif(min = a, max = b)</code></td>
 <td align="left"><span class="math inline">\(\frac{ 1}{ b - a}\)</span></td>
-<td align="left"><span class="math inline">\(a\)</span></td>
-<td align="left"><span class="math inline">\(b\)</span></td>
+<td><span class="math inline">\(a\)</span></td>
+<td><span class="math inline">\(b\)</span></td>
 </tr>
 <tr class="even">
 <td align="left"></td>
 <td align="left"><span class="math inline">\(a &lt; b\)</span></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left">Weibull</td>
 <td align="left"><code>dweib(shape = v, lambda =</code> <span class="math inline">\(\lambda\)</span><code>)</code></td>
 <td align="left"><span class="math inline">\(v \lambda x^{v - 1} \exp (- \lambda x^v)\)</span></td>
-<td align="left"><span class="math inline">\(0\)</span></td>
-<td align="left"></td>
+<td><span class="math inline">\(0\)</span></td>
+<td></td>
 </tr>
 <tr class="even">
 <td align="left"></td>
 <td align="left"><span class="math inline">\(v &gt; 0\)</span>, <span class="math inline">\(\lambda &gt; 0\)</span></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left">Wishart</td>
 <td align="left"><code>dwish(R = R, df = k)</code></td>
 <td align="left"><span class="math inline">\(\frac{ |x|^{(k-p-1)/2} |R|^{k/2} \exp\{-\text{tr}(Rx)/2\}}{ 2^{pk/2} \pi^{p(p-1)/4} \prod_{i=1}^{p} \Gamma((k+1-i)/2)}\)</span></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="even">
 <td align="left"></td>
 <td align="left"><code>R</code> <span class="math inline">\(p \times p\)</span> pos. def., <span class="math inline">\(k \geq p\)</span></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left">Inverse</td>
 <td align="left"><code>dinvwish(S = S, df = k)</code></td>
 <td align="left"><span class="math inline">\(\frac{ |x|^{-(k+p+1)/2} |S|^{k/2} \exp\{-\text{tr}(Sx^{-1})/2\}}{ 2^{pk/2} \pi^{p(p-1)/4} \prod_{i=1}^{p} \Gamma((k+1-i)/2)}\)</span></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="even">
 <td align="left">Wishart</td>
 <td align="left"><code>S</code> <span class="math inline">\(p \times p\)</span> pos. def., <span class="math inline">\(k \geq p\)</span></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 </tbody>
 </table>
@@ -1023,7 +1023,7 @@ Figure 5.1: Graph of a linear regression model
 </tr>
 <tr class="even">
 <td align="left"><code>dlogis(location, rate)</code></td>
-<td align="left"><code>dlogis(location, scale = 1 / rate</code></td>
+<td align="left"><code>dlogis(location, scale = 1 / rate)</code></td>
 </tr>
 <tr class="odd">
 <td align="left"><code>dlnorm(meanlog, sdlog)</code></td>
@@ -1031,11 +1031,11 @@ Figure 5.1: Graph of a linear regression model
 </tr>
 <tr class="even">
 <td align="left"><code>dlnorm(meanlog, taulog)</code></td>
-<td align="left"><code>dlnorm(meanlog, sdlog = 1 / sqrt(taulog)</code></td>
+<td align="left"><code>dlnorm(meanlog, sdlog = 1 / sqrt(taulog))</code></td>
 </tr>
 <tr class="odd">
 <td align="left"><code>dlnorm(meanlog, varlog)</code></td>
-<td align="left"><code>dlnorm(meanlog, sdlog = sqrt(varlog)</code></td>
+<td align="left"><code>dlnorm(meanlog, sdlog = sqrt(varlog))</code></td>
 </tr>
 <tr class="even">
 <td align="left"><code>dmulti(prob, size)</code></td>
@@ -1135,7 +1135,7 @@ Figure 5.1: Graph of a linear regression model
 </tr>
 <tr class="even">
 <td align="left"><code>dweib(shape, lambda)</code></td>
-<td align="left"><code>dweib(shape, scale = lambda^(- 1 / shape)</code></td>
+<td align="left"><code>dweib(shape, scale = lambda^(- 1 / shape))</code></td>
 </tr>
 <tr class="odd">
 <td align="left"><code>dwish(cholesky, df,</code></td>
@@ -1266,8 +1266,8 @@ no meaning of "indirect" use of a parameterization?   --></p>
 <th align="left">Usage</th>
 <th align="left">Description</th>
 <th align="left">Comments</th>
-<th align="left">Status</th>
-<th align="left">Vector input</th>
+<th>Status</th>
+<th>Vector input</th>
 </tr>
 </thead>
 <tbody>
@@ -1275,337 +1275,337 @@ no meaning of "indirect" use of a parameterization?   --></p>
 <td align="left"><code>x | y</code>, <code>x &amp; y</code></td>
 <td align="left">logical OR (<span class="math inline">\(|\)</span>) and AND(&amp;)</td>
 <td align="left"></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>!x</code></td>
 <td align="left">logical not</td>
 <td align="left"></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>x &gt; y, x &gt;= y</code></td>
 <td align="left">greater than (and or equal to)</td>
 <td align="left"></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>x &lt; y, x &lt;= y</code></td>
 <td align="left">less than (and or equal to)</td>
 <td align="left"></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>x != y, x == y</code></td>
 <td align="left">(not) equals</td>
 <td align="left"></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>x + y, x - y, x * y</code></td>
 <td align="left">component-wise operators</td>
 <td align="left">mix of scalar and vector</td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>x / y</code></td>
 <td align="left">component-wise division</td>
 <td align="left">vector <span class="math inline">\(x\)</span> and scalar <span class="math inline">\(y\)</span></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>x^y, pow(x, y)</code></td>
 <td align="left">power</td>
 <td align="left"><span class="math inline">\(x^y\)</span>; vector <span class="math inline">\(x\)</span>,scalar <span class="math inline">\(y\)</span></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>x %% y</code></td>
 <td align="left">modulo (remainder)</td>
 <td align="left"></td>
-<td align="left">yes</td>
-<td align="left">no</td>
+<td>yes</td>
+<td>no</td>
 </tr>
 <tr class="even">
 <td align="left"><code>min(x1, x2),</code></td>
 <td align="left">min. (max.) of two scalars</td>
 <td align="left"></td>
-<td align="left">yes</td>
-<td align="left">See <code>pmin</code>,</td>
+<td>yes</td>
+<td>See <code>pmin</code>,</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>max(x1, x2)</code></td>
 <td align="left"></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"><code>pmax</code></td>
+<td></td>
+<td><code>pmax</code></td>
 </tr>
 <tr class="even">
 <td align="left"><code>exp(x)</code></td>
 <td align="left">exponential</td>
 <td align="left"></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>log(x)</code></td>
 <td align="left">natural logarithm</td>
 <td align="left"></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>sqrt(x)</code></td>
 <td align="left">square root</td>
 <td align="left"></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>abs(x)</code></td>
 <td align="left">absolute value</td>
 <td align="left"></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>step(x)</code></td>
 <td align="left">step function at 0</td>
 <td align="left">0 if <span class="math inline">\(x&lt;0\)</span>, 1 if <span class="math inline">\(x&gt;=0\)</span></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>equals(x)</code></td>
 <td align="left">equality of two scalars</td>
 <td align="left">1 if <span class="math inline">\(x==y\)</span>, 0 if <span class="math inline">\(x != y\)</span></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>cube(x)</code></td>
 <td align="left">third power</td>
 <td align="left"><span class="math inline">\(x^3\)</span></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>sin(x), cos(x),</code></td>
 <td align="left">trigonometric functions</td>
 <td align="left"></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>tan(x)</code></td>
 <td align="left"></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left"><code>asin(x), acos(x),</code></td>
 <td align="left">inverse trigonometric functions</td>
 <td align="left"></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>atan(x)</code></td>
 <td align="left"></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left"><code>asinh(x), acosh(x),</code></td>
 <td align="left">inv. hyperbolic trig. functions</td>
 <td align="left"></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>atanh(x)</code></td>
 <td align="left"></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left"><code>logit(x)</code></td>
 <td align="left">logit</td>
 <td align="left"><span class="math inline">\(\log(x/(1-x))\)</span></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>ilogit(x), expit(x)</code></td>
 <td align="left">inverse logit</td>
 <td align="left"><span class="math inline">\(\exp(x)/(1 + \exp(x))\)</span></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>probit(x)</code></td>
 <td align="left">probit (Gaussian quantile)</td>
 <td align="left"><span class="math inline">\(\Phi^{-1}(x)\)</span></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>iprobit(x), phi(x)</code></td>
 <td align="left">inverse probit (Gaussian CDF)</td>
 <td align="left"><span class="math inline">\(\Phi(x)\)</span></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>cloglog(x)</code></td>
 <td align="left">complementary log log</td>
 <td align="left"><span class="math inline">\(\log(-\log(1-x))\)</span></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>icloglog(x)</code></td>
 <td align="left">inverse complementary log log</td>
 <td align="left"><span class="math inline">\(1 - \exp(-\exp(x))\)</span></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>ceiling(x)</code></td>
 <td align="left">ceiling function</td>
 <td align="left"><span class="math inline">\(\lceil(x)\rceil\)</span></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>floor(x)</code></td>
 <td align="left">floor function</td>
 <td align="left"><span class="math inline">\(\lfloor(x)\rfloor\)</span></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>round(x)</code></td>
 <td align="left">round to integer</td>
 <td align="left"></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>trunc(x)</code></td>
 <td align="left">truncation to integer</td>
 <td align="left"></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>lgamma(x), loggam(x)</code></td>
 <td align="left">log gamma function</td>
 <td align="left"><span class="math inline">\(\log \Gamma(x)\)</span></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>besselK(k, nu,</code></td>
 <td align="left">modified bessel function</td>
 <td align="left">returns vector even if</td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>...expon.scaled)</code></td>
 <td align="left">of the second kind</td>
 <td align="left"><span class="math inline">\(k\)</span> a matrix/array</td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="even">
 <td align="left"><code>log1p(x)</code></td>
 <td align="left">log of 1 + x</td>
 <td align="left"><span class="math inline">\(\log(1+x)\)</span></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>lfactorial(x),</code></td>
 <td align="left">log factorial</td>
 <td align="left"><span class="math inline">\(\log x!\)</span></td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>logfact(x)</code></td>
 <td align="left"></td>
 <td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left"><code>qDIST(x, PARAMS)</code></td>
 <td align="left">“q” distribution functions</td>
 <td align="left">canonical parameterization</td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>pDIST(x, PARAMS)</code></td>
 <td align="left">“p” distribution functions</td>
 <td align="left">canonical parameterization</td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>rDIST(x, PARAMS)</code></td>
 <td align="left">“r” distribution functions</td>
 <td align="left">canonical parameterization</td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>dDIST(x, PARAMS)</code></td>
 <td align="left">“d” distribution functions</td>
 <td align="left">canonical parameterization</td>
-<td align="left">yes</td>
-<td align="left">yes</td>
+<td>yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>sort(x)</code></td>
 <td align="left"></td>
 <td align="left"></td>
-<td align="left">no</td>
-<td align="left"></td>
+<td>no</td>
+<td></td>
 </tr>
 <tr class="even">
 <td align="left"><code>rank(x, s)</code></td>
 <td align="left"></td>
 <td align="left"></td>
-<td align="left">no</td>
-<td align="left"></td>
+<td>no</td>
+<td></td>
 </tr>
 <tr class="odd">
 <td align="left"><code>ranked(x, s)</code></td>
 <td align="left"></td>
 <td align="left"></td>
-<td align="left">no</td>
-<td align="left"></td>
+<td>no</td>
+<td></td>
 </tr>
 <tr class="even">
 <td align="left"><code>order(x)</code></td>
 <td align="left"></td>
 <td align="left"></td>
-<td align="left">no</td>
-<td align="left"></td>
+<td>no</td>
+<td></td>
 </tr>
 </tbody>
 </table>
@@ -1616,7 +1616,7 @@ no meaning of "indirect" use of a parameterization?   --></p>
 <th align="left">Usage</th>
 <th align="left">Description</th>
 <th align="left">Comments</th>
-<th align="left">Status</th>
+<th>Status</th>
 </tr>
 </thead>
 <tbody>
@@ -1624,151 +1624,151 @@ no meaning of "indirect" use of a parameterization?   --></p>
 <td align="left"><code>inverse(x)</code></td>
 <td align="left">matrix inverse</td>
 <td align="left"><span class="math inline">\(x\)</span> symmetric, positive def.</td>
-<td align="left">yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>chol(x)</code></td>
 <td align="left">matrix Cholesky factorization</td>
 <td align="left"><span class="math inline">\(x\)</span> symmetric, positive def.</td>
-<td align="left">yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"></td>
 <td align="left"></td>
 <td align="left">returns upper triang. matrix</td>
-<td align="left"></td>
+<td></td>
 </tr>
 <tr class="even">
 <td align="left"><code>t(x)</code></td>
 <td align="left">matrix transpose</td>
 <td align="left"><span class="math inline">\(x^\top\)</span></td>
-<td align="left">yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>x%*%y</code></td>
 <td align="left">matrix multiply</td>
 <td align="left"><span class="math inline">\(xy\)</span>; <span class="math inline">\(x\)</span>, <span class="math inline">\(y\)</span> conformant</td>
-<td align="left">yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>inprod(x, y)</code></td>
 <td align="left">dot product</td>
 <td align="left"><span class="math inline">\(x^\top y\)</span>; <span class="math inline">\(x\)</span> and <span class="math inline">\(y\)</span> vectors</td>
-<td align="left">yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>solve(x,y)</code></td>
 <td align="left">solve system of equations</td>
 <td align="left"><span class="math inline">\(x^{-1} y\)</span>; <span class="math inline">\(y\)</span> matrix or vector</td>
-<td align="left">yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>forwardsolve(x, y)</code></td>
 <td align="left">solve lower-triangular system of equations</td>
 <td align="left"><span class="math inline">\(x^{-1} y\)</span>; <span class="math inline">\(x\)</span> lower-triangular</td>
-<td align="left">yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>backsolve(x, y)</code></td>
 <td align="left">solve upper-triangular system of equations</td>
 <td align="left"><span class="math inline">\(x^{-1} y\)</span>; <span class="math inline">\(x\)</span> upper-triangular</td>
-<td align="left">yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>logdet(x)</code></td>
 <td align="left">log matrix determinant</td>
 <td align="left"><span class="math inline">\(\log|x|\)</span></td>
-<td align="left">yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>asRow(x)</code></td>
 <td align="left">convert vector to 1-row matrix</td>
 <td align="left">sometimes automatic</td>
-<td align="left">yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>asCol(x)</code></td>
 <td align="left">convert vector to 1-column matrix</td>
 <td align="left">sometimes automatic</td>
-<td align="left">yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>sum(x)</code></td>
 <td align="left">sum of elements of <code>x</code></td>
 <td align="left"></td>
-<td align="left">yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>mean(x)</code></td>
 <td align="left">mean of elements of <code>x</code></td>
 <td align="left"></td>
-<td align="left">yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>sd(x)</code></td>
 <td align="left">standard deviation of elements of <code>x</code></td>
 <td align="left"></td>
-<td align="left">yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>prod(x)</code></td>
 <td align="left">product of elements of <code>x</code></td>
 <td align="left"></td>
-<td align="left">yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>min(x), max(x)</code></td>
 <td align="left">min. (max.) of elements of <code>x</code></td>
 <td align="left"></td>
-<td align="left">yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>pmin(x, y), pmax(x,y)</code></td>
 <td align="left">vector of mins (maxs) of elements of</td>
 <td align="left"></td>
-<td align="left">yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"></td>
 <td align="left"><code>x</code> and <code>y</code></td>
 <td align="left"></td>
-<td align="left"></td>
+<td></td>
 </tr>
 <tr class="even">
 <td align="left"><code>interp.lin(x, v1, v2)</code></td>
 <td align="left">linear interpolation</td>
 <td align="left"></td>
-<td align="left">no</td>
+<td>no</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>eigen(x)$values</code></td>
 <td align="left">matrix eigenvalues</td>
 <td align="left"><span class="math inline">\(x\)</span> symmetric</td>
-<td align="left">yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>eigen(x)$vectors</code></td>
 <td align="left">matrix eigenvectors</td>
 <td align="left"><span class="math inline">\(x\)</span> symmetric</td>
-<td align="left">yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>svd(x)$d</code></td>
 <td align="left">matrix singular values</td>
 <td align="left"></td>
-<td align="left">yes</td>
+<td>yes</td>
 </tr>
 <tr class="even">
 <td align="left"><code>svd(x)$u</code></td>
 <td align="left">matrix left singular vectors</td>
 <td align="left"></td>
-<td align="left">yes</td>
+<td>yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>svd(x)$v</code></td>
 <td align="left">matrix right singular vectors</td>
 <td align="left"></td>
-<td align="left">yes</td>
+<td>yes</td>
 </tr>
 </tbody>
 </table>
@@ -1838,8 +1838,8 @@ x ~ T(dnorm(0, sd = 10), 0, a)</code></pre>
 <div id="censoring" class="section level4">
 <h4><span class="header-section-number">5.2.7.2</span> Censoring</h4>
 <p>Censoring refers to the situation where one datum gives the lower or upper bound on an unobserved random variable. This is common in survival analysis, when for an individual still surviving at the end of a study, the age of death is not known and hence is ‘censored’ (right-censoring). NIMBLE adopts JAGS syntax for censoring, as follows:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">censored[i] ~<span class="st"> </span><span class="kw">dinterval</span>(t[i], c[i])
-t[i] ~<span class="st"> </span><span class="kw">dweib</span>(r, mu[i])</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">censored[i] <span class="op">~</span><span class="st"> </span><span class="kw">dinterval</span>(t[i], c[i])
+t[i] <span class="op">~</span><span class="st"> </span><span class="kw">dweib</span>(r, mu[i])</code></pre></div>
 <p>In the case of right-censoring, <code>censored[i]</code> should be given as <code>data</code> with a value of 1 if <code>t[i]</code> is right-censored (<code>t[i] &gt; c[i]</code>) and 0 if it is observed. The data vector for <code>t</code> should have <code>NA</code> (indicating missing data) for any censored <code>t[i]</code> entries. (As a result, these nodes will be sampled in an MCMC.) The data vector for <code>c</code> should give the censoring times corresponding to censored entries and a value above the observed times for uncensored entries (e.g., <code>Inf</code>). Left-censored observations would be specified by setting <code>censored[i]</code> to 0 and <code>t[i]</code> to <code>NA</code>.</p>
 <p>The <code>dinterval</code> is not really a distribution but rather a trick: in the above example when <code>censored[i] = 1</code> it gives a ‘probability’ of 1 if <code>t[i] &gt; c[i]</code> and 0 otherwise. This means that <code>t[i] &lt;= c[i]</code> is treated as impossible. More generally than simple right- or left-censoring, <code>censored[i] ~ dinterval(t[i], c[i, ])</code> is defined such that for a vector of increasing cutpoints, <code>c[i, ]</code>, <code>t[i]</code> is enforced to fall within the <code>censored[i]</code>-th cutpoint interval. This is done by setting data <code>censored[i]</code> as follows:</p>
 <p><code>censored[i] = 0</code> if <code>t[i]</code> &lt;= <code>c[i, 1]</code></p>
@@ -1854,9 +1854,9 @@ t[i] ~<span class="st"> </span><span class="kw">dweib</span>(r, mu[i])</code></p
 <div id="constraints-and-ordering" class="section level4">
 <h4><span class="header-section-number">5.2.7.3</span> Constraints and ordering</h4>
 <p>NIMBLE provides a more general way to enforce constraints using <code>dconstraint(cond)</code>. For example, we could specify that the sum of <code>mu1</code> and <code>mu2</code> must be positive like this:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mu1 ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) 
-mu2 ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) 
-constraint_data ~<span class="st"> </span><span class="kw">dconstraint</span>( mu1 +<span class="st"> </span>mu2 &gt;<span class="st"> </span><span class="dv">0</span> )</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mu1 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) 
+mu2 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) 
+constraint_data <span class="op">~</span><span class="st"> </span><span class="kw">dconstraint</span>( mu1 <span class="op">+</span><span class="st"> </span>mu2 <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span> )</code></pre></div>
 <p>with <code>constraint_data</code> set (as <code>data</code>) to 1. This is equivalent to a half-normal distribution on the half-plane <span class="math inline">\(\mu_1 + \mu_2 &gt; 0\)</span>. Nodes following <code>dconstraint</code> should be provided as data for the same reason of avoiding unintended initialization described above for <code>dinterval</code>. <!--- If one simulates from the model using the `simulate` functions and the condition is not satisfied, then `const` will be 0 and the log probability of `const` (and therefore of the model as whole) will be $-\infty$. --></p>
 <p>Formally, <code>dconstraint(cond)</code> is a probability distribution on <span class="math inline">\(\left\{ 0, 1 \right\}\)</span> such that <span class="math inline">\(P(1) = 1\)</span> if <code>cond</code> is <code>TRUE</code> and <span class="math inline">\(P(0) = 1\)</span> if <code>cond</code> is <code>FALSE</code>. <!---  TODO: Chris thought this wording is confusing: 
 %Like `dinterval`, `dconstraint` results in distributions that are not normalized (e.g. for (`mu1`, `mu2`)), which makes most sense if the constraint is observed rather than established a priori. --></p>
@@ -1864,17 +1864,17 @@ constraint_data ~<span class="st"> </span><span class="kw">dconstraint</span>( m
 <div id="ordering" class="section level5">
 <h5><span class="header-section-number">5.2.7.3.1</span> Ordering</h5>
 <p>To specify an ordering of parameters, such as <span class="math inline">\(\alpha_1 &lt;= \alpha_2 &lt;= \alpha_3\)</span> one can use <code>dconstraint</code> as follows:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">constraint_data ~<span class="st"> </span><span class="kw">dconstraint</span>( alpha1 &lt;=<span class="st"> </span>alpha2 &amp;<span class="st"> </span>alpha2 &lt;=<span class="st"> </span>alpha3 )</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">constraint_data <span class="op">~</span><span class="st"> </span><span class="kw">dconstraint</span>( alpha1 <span class="op">&lt;=</span><span class="st"> </span>alpha2 <span class="op">&amp;</span><span class="st"> </span>alpha2 <span class="op">&lt;=</span><span class="st"> </span>alpha3 )</code></pre></div>
 <p>Note that unlike in BUGS, one cannot specify prior ordering using syntax such as</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">alpha[<span class="dv">1</span>] ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">I</span>(, alpha[<span class="dv">2</span>])
-alpha[<span class="dv">2</span>] ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">I</span>(alpha[<span class="dv">1</span>], alpha[<span class="dv">3</span>])
-alpha[<span class="dv">3</span>] ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">I</span>(alpha[<span class="dv">2</span>], )</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">alpha[<span class="dv">1</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">I</span>(, alpha[<span class="dv">2</span>])
+alpha[<span class="dv">2</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">I</span>(alpha[<span class="dv">1</span>], alpha[<span class="dv">3</span>])
+alpha[<span class="dv">3</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">I</span>(alpha[<span class="dv">2</span>], )</code></pre></div>
 <p>as this does not represent a directed acyclic graph. <!---  TODO: CHRIS, WOULDN'T THIS WORK WITH `alpha[1] $\sim$ dnorm(0, 1)`?  DOES BUGS REALLY ALLOW THIS NON-DAG? 
 % PERRY, JAGS manual indicates the above is allowed in BUGS. Are you asking if it would work in NIMBLE with alpha1~dnorm(0,1) -- no because alpha2 still depends on alpha3 and vice versa --></p>
 <p>Also note that specifying prior ordering using <code>T(,)</code> can result in possibly unexpected results. For example:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">alpha1 ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)
-alpha2 ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">T</span>(alpha1, )
-alpha3 ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">T</span>(alpha2, )</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">alpha1 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)
+alpha2 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">T</span>(alpha1, )
+alpha3 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">T</span>(alpha2, )</code></pre></div>
 <p>will enforce <code>alpha1</code> <span class="math inline">\(\le\)</span> <code>alpha2</code> <span class="math inline">\(\le\)</span> <code>alpha3</code>, but it does not treat the three parameters symmetrically. Instead it puts a marginal prior on <code>alpha1</code> that is standard normal and then constrains <code>alpha2</code> and <code>alpha3</code> to follow truncated normal distributions. This is not equivalent to a symmetric prior on the three <code>alpha</code>s that assigns zero probability density when values are not in order.</p>
 <p>NIMBLE does not support the JAGS <code>sort</code> syntax.</p>
 
@@ -1922,7 +1922,7 @@ gitbook.start({
 "google": false,
 "linkedin": false,
 "weibo": false,
-"instapper": false,
+"instapaper": false,
 "vk": false,
 "all": ["facebook", "google", "twitter", "linkedin", "weibo", "instapaper"]
 },
@@ -1932,6 +1932,10 @@ gitbook.start({
 "size": 2
 },
 "edit": {
+"link": null,
+"text": null
+},
+"history": {
 "link": null,
 "text": null
 },
@@ -1950,7 +1954,7 @@ gitbook.start({
     var script = document.createElement("script");
     script.type = "text/javascript";
     var src = "";
-    if (src === "" || src === "true") src = "https://cdn.bootcss.com/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML";
+    if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
     if (location.protocol !== "file:" && /^https?:/.test(src))
       src = src.replace(/^https?:/, '');
     script.src = src;

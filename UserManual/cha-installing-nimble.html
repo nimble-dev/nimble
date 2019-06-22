@@ -1,13 +1,12 @@
 <!DOCTYPE html>
-<html >
-
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
 <head>
 
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title></title>
-  <meta name="description" content="This is the NIMBLE User Manual.">
-  <meta name="generator" content="bookdown 0.7 and GitBook 2.6.7">
+  <meta name="description" content="This is the NIMBLE User Manual." />
+  <meta name="generator" content="bookdown 0.11 and GitBook 2.6.7" />
 
   <meta property="og:title" content="" />
   <meta property="og:type" content="book" />
@@ -25,15 +24,16 @@
 
 
 
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
 <link rel="prev" href="cha-more-introduction.html">
 <link rel="next" href="cha-writing-models.html">
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
@@ -372,7 +372,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <div id="linux" class="section level3">
 <h3><span class="header-section-number">4.2.2</span> Linux</h3>
 <p>On Linux, you can install the GNU compiler suite (<em>gcc</em>/<em>g++</em>). You can use the package manager to install pre-built binaries. On Ubuntu, the following command will install or update <em>make</em>, <em>gcc</em> and <em>libc</em>.</p>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">sudo</span> apt-get install build-essential</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="fu">sudo</span> apt-get install build-essential</code></pre></div>
 </div>
 <div id="windows" class="section level3">
 <h3><span class="header-section-number">4.2.3</span> Windows</h3>
@@ -406,7 +406,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <div id="using-libnimble" class="section level3">
 <h3><span class="header-section-number">4.4.2</span> Using libnimble</h3>
 <p>NIMBLE generates specialized C++ code for user-specified models and nimbleFunctions. This code uses some NIMBLE C++ library classes and functions. By default, on Linux the library code is compiled once as a linkable library - <em>libnimble.so</em>. This single instance of the library is then linked with the code for each generated model. In contrast, the default for Windows and Mac OS X is to compile the library code as a static library - <em>libnimble.a</em> - that is compiled into each model’s and each algorithm’s own dynamically loadable library (DLL). This does repeat the same code across models and so occupies more memory. There may be a marginal speed advantage. If one would like to enable the linkable library in place of the static library (do this only on Mac OS X and other UNIX variants and not on Windows), one can install the source package with the configuration argument <code>--enable-dylib</code> set to true. First obtain the NIMBLE source package (which will have the extension <code>.tar.gz</code> from <a href="https://r-nimble.org/download">our website</a> and then install as follows, replacing <code>VERSION</code> with the appropriate version number:</p>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">R</span> CMD INSTALL --configure-args=<span class="st">&#39;--enable-dylib=true&#39;</span> nimble_VERSION.tar.gz</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">R</span> CMD INSTALL --configure-args=<span class="st">&#39;--enable-dylib=true&#39;</span> nimble_VERSION.tar.gz</code></pre></div>
 </div>
 <div id="sec:blas" class="section level3">
 <h3><span class="header-section-number">4.4.3</span> BLAS and LAPACK</h3>
@@ -458,7 +458,7 @@ gitbook.start({
 "google": false,
 "linkedin": false,
 "weibo": false,
-"instapper": false,
+"instapaper": false,
 "vk": false,
 "all": ["facebook", "google", "twitter", "linkedin", "weibo", "instapaper"]
 },
@@ -468,6 +468,10 @@ gitbook.start({
 "size": 2
 },
 "edit": {
+"link": null,
+"text": null
+},
+"history": {
 "link": null,
 "text": null
 },
@@ -486,7 +490,7 @@ gitbook.start({
     var script = document.createElement("script");
     script.type = "text/javascript";
     var src = "";
-    if (src === "" || src === "true") src = "https://cdn.bootcss.com/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML";
+    if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
     if (location.protocol !== "file:" && /^https?:/.test(src))
       src = src.replace(/^https?:/, '');
     script.src = src;
