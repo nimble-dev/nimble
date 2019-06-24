@@ -899,13 +899,24 @@ checkCRPconjugacy <- function(model, target) {
             if(length(unique(model$getDeclID(depNodes))) != 1)  ## make sure all dependent nodes from same declaration (i.e., exchangeable)
                 conjugate <- FALSE
 
-            ## Check that cluster nodes are IID. Extended to work with models with more than one observation per cluster ID. Not sure if this is the more robust way to do it
+            ## Check that cluster nodes are IID. Extended to work with models with more than one observation per cluster ID. 
             J <- clusterVarInfo$nTilde / length(unique(clusterVarInfo$clusterIDs[[1]]))
             valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
             names(valueExprs) <- NULL
-            # the following condition covers cases like thetaTilde[xi,j] ~ N(j, 1), j=1,..,J, and thetaTilde[xi,j] ~ N(0, 1), j=1,...,J, but not cases with thetaTilde[xi,1] ~ N(0, 1) and thetaTilde[xi,j] ~ N(j, 1), j=2,...,J
-            if(length(unique(valueExprs)) != 1 && length(unique(valueExprs)) != J) 
+            # the following condition covers cases like thetaTilde[xi,j] ~ N(j, 1), j=1,..,J,  thetaTilde[xi,j] ~ N(0, 1), j=1,...,J, and cases with thetaTilde[xi,j] ~ N(0, 1), j=1,2 and thetaTilde[xi,j] ~ N(j, 1), j=3,...,J
+            if( J > 1 ) {
+              allUniqueExpr <- unique(valueExprs)
+              n <- clusterVarInfo$nTilde / J
+              for(i in 1:n) {
+                iUniqueExpr <- sapply( ((i-1)*J + 1):(i*J), function(i) model$getValueExpr(clusterNodes[i]))
+                if(length(unique(iUniqueExpr)) != length(unique(allUniqueExpr))) {
+                  conjugate <- FALSE
+                }  
+              }
+            } else { # case J=1
+              if(length(unique(valueExprs)) != 1) 
                 conjugate <- FALSE
+            }
         }
     }
     ## check for dnorm_dinvgamma conjugacy
