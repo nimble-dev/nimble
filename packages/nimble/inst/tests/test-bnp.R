@@ -143,6 +143,65 @@ test_that("Test that CRP sampler works fine for non conjugate models with more t
 })
 
 
+test_that("Test that CRP sampler works fine for  conjugate models with more than one observation per cluster ID", {
+
+  set.seed(0)
+  ## conjugate normal-normal model, (i,j) iid cluster params
+  code <- nimbleCode({
+    for(i in 1:5) {
+      for(j in 1:8) {
+        y[i,j] ~ dnorm( thetaTilde[xi[i], j] , var = 1) 
+        thetaTilde[i, j] ~ dnorm(0, var=100) # thetaTilde_{i,j} are iid
+      }
+    }
+    xi[1:5] ~ dCRP(1, size=5)
+  })
+  Inits <- list(xi = c(1, 1, 1, 1, 1), 
+                thetaTilde = matrix(rep(0, 5*8), nrow=5,  ncol=8))
+  y <- matrix(10, nrow=5, ncol=8)
+  y[4:5, ] <- -10
+  Data <- list(y=y)
+  model <- nimbleModel(code, data=Data, inits=Inits,  dimensions=list(thetaTilde=c(5,8)), calculate=TRUE)
+  cmodel<-compileNimble(model)
+  mConf <- configureMCMC(model, monitors = c('xi','thetaTilde'))  
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = model)
+  cMCMC$run(1)
+  theta <- cMCMC$mvSamples[['thetaTilde']][cMCMC$mvSamples[['xi']], ] 
+  expect_equal(apply(theta, 1, mean), apply(Data$y, 1, mean), tol=2,
+               info = paste0("incorrect update of cluster parameters in conjugate normal-normal CRP more general model")) 
+  
+  
+  ## conjugate normal-invgamma-normal model, (i,j) iid cluster params
+  code <- nimbleCode({
+    for(i in 1:5) {
+      for(j in 1:8) {
+        y[i,j] ~ dnorm( thetaTilde[xi[i], j] , var = sigma2Tilde[xi[i], j]) 
+        thetaTilde[i, j] ~ dnorm(0, var=100) # thetaTilde_{i,j} are iid
+        sigma2Tilde[i, j] ~ dinvgamma(1, 1) # thetaTilde_{i,j} are iid
+      }
+    }
+    xi[1:5] ~ dCRP(1, size=5)
+  })
+  Inits <- list(xi = c(1, 1, 1, 1, 1), 
+                thetaTilde = matrix(rep(0, 5*8), nrow=5,  ncol=8), 
+                sigma2Tilde = matrix(rep(10, 5*8), nrow=5,  ncol=8))
+  y <- matrix(10, nrow=5, ncol=8)
+  y[4:5, ] <- -10
+  Data <- list(y=y)
+  model <- nimbleModel(code, data=Data, inits=Inits,  dimensions=list(thetaTilde=c(5,8), sigma2Tilde=c(5,8)), calculate=TRUE)
+  cmodel<-compileNimble(model)
+  mConf <- configureMCMC(model, monitors = c('xi','thetaTilde', 'sigma2Tilde'))  
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = model)
+  cMCMC$run(1)
+  theta <- cMCMC$mvSamples[['thetaTilde']][cMCMC$mvSamples[['xi']], ] 
+  expect_equal(apply(theta, 1, mean), apply(Data$y, 1, mean), tol=2,
+               info = paste0("incorrect update of cluster parameters in conjugate normal-invgamma-normal CRP more general model")) 
+  
+})
+
+
 test_that("Test that CRP sampler detects iid cluster parameters for models with more than one observation per cluster ID", {
   set.seed(0)
   ## conjugate normal-normal model, (i,j) iid cluster params
@@ -223,91 +282,53 @@ test_that("Test that CRP sampler detects iid cluster parameters for models with 
 })
 
 
-test_that("Test that CRP sampler works fine for  conjugate models with more than one observation per cluster ID", {
+test_that("Testing posterior sampling and prior predictive computation with conjugate models using CRP with more than one observation per cluster ID", { 
+  
+  ## dnorm_dnorm
+  code = nimbleCode({
+    xi[1:4] ~ dCRP(conc=1, size=4)
+    for(i in 1:4) {
+      for(j in 1:2) {
+        mu[i,j] ~ dnorm(0,1)
+        y[i,j] ~ dnorm(mu[xi[i],j], sd = 1) 
+      }
+    }
+  })
+  data = list(y = matrix(rnorm(4*2), ncol=2, nrow=4))
+  inits = list(xi = rep(1,4), mu=matrix(rnorm(4*2), ncol=2, nrow=4))
+  m = nimbleModel(code, data=data, inits= inits)
+  conf = configureMCMC(m)
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  mcmc = buildMCMC(conf)
+  
+  pYgivenT <- sum(c(m$getLogProb('y[1, 1]'), m$getLogProb('y[1, 2]')))
+  pT <- sum(c(m$getLogProb('mu[1, 1]'), m$getLogProb('mu[1, 2]')))
+  
+  dataVar <- c(m$getParam('y[1,1]', 'var') , m$getParam('y[1,2]', 'var') )
+  priorVar <- c(m$getParam('mu[1, 1]', 'var'), m$getParam('mu[1, 2]', 'var'))
+  priorMean <- c(m$getParam('mu[1, 1]', 'mean') , m$getParam('mu[1, 2]', 'mean'))
+  postVar <- 1 / (1 / dataVar + 1 / priorVar) # from conjugate sampler
+  postMean <- postVar * (c(data$y[1, 1], data$y[1, 2]) / dataVar + priorMean / priorVar) # from conjugate sampler
+  pTgivenY <- dnorm(m$mu[1, 1] , postMean[1], sqrt(postVar[1]), log = TRUE)  + dnorm(m$mu[1, 2] , postMean[2], sqrt(postVar[2]), log = TRUE)# from conjugate sampler
+  
+  mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
+  pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
+  
+  expect_equal(pY, pT + pYgivenT - pTgivenY)
+  
+  set.seed(1)
+  mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$sample(1, 1)
+  mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$sample(1, 2)
+  set.seed(1)
+  smp <- rnorm(2 , postMean, sqrt(postVar))
+  expect_identical(smp, c(m$mu[1, 1], m$mu[1, 2]))
+  
+  
+  
+  
+  
+  
 
-  set.seed(0)
-  ## conjugate normal-normal model, (i,j) iid cluster params
-  code <- nimbleCode({
-    for(i in 1:5) {
-      for(j in 1:8) {
-        y[i,j] ~ dnorm( thetaTilde[xi[i], j] , var = 1) 
-        thetaTilde[i, j] ~ dnorm(0, var=100) # thetaTilde_{i,j} are iid
-      }
-    }
-    xi[1:5] ~ dCRP(1, size=5)
-  })
-  Inits <- list(xi = c(1, 1, 1, 1, 1), 
-                thetaTilde = matrix(rep(0, 5*8), nrow=5,  ncol=8))
-  y <- matrix(10, nrow=5, ncol=8)
-  y[4:5, ] <- -10
-  Data <- list(y=y)
-  model <- nimbleModel(code, data=Data, inits=Inits,  dimensions=list(thetaTilde=c(5,8)), calculate=TRUE)
-  cmodel<-compileNimble(model)
-  mConf <- configureMCMC(model, monitors = c('xi','thetaTilde'))  
-  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
-  mMCMC <- buildMCMC(mConf)
-  cMCMC <- compileNimble(mMCMC, project = model)
-  cMCMC$run(1)
-  theta <- cMCMC$mvSamples[['thetaTilde']][cMCMC$mvSamples[['xi']], ] 
-  expect_equal(apply(theta, 1, mean), apply(Data$y, 1, mean), tol=2,
-               info = paste0("incorrect update of cluster parameters in conjugate normal-normal CRP more general model")) 
-  
-  
-  ## conjugate normal-normal model, (i, 1:J) iid cluster params
-  code <- nimbleCode({
-    for(i in 1:5) {
-      for(j in 1:8) {
-        y[i,j] ~ dnorm( thetaTilde[xi[i], j] , var = 1) 
-        thetaTilde[i, j] ~ dnorm(j, var=100) # thetaTilde_{i,1:J} are iid
-      }
-    }
-    xi[1:5] ~ dCRP(1, size=5)
-  })
-  Inits <- list(xi = c(1, 1, 1, 1, 1), 
-                thetaTilde = matrix(rep(0, 5*8), nrow=5,  ncol=8))
-  y <- matrix(10, nrow=5, ncol=8)
-  y[4:5, ] <- -10
-  Data <- list(y=y)
-  model <- nimbleModel(code, data=Data, inits=Inits,  dimensions=list(thetaTilde=c(5,8)), calculate=TRUE)
-  cmodel<-compileNimble(model)
-  mConf <- configureMCMC(model, monitors = c('xi','thetaTilde'))  
-  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
-  mMCMC <- buildMCMC(mConf)
-  cMCMC <- compileNimble(mMCMC, project = model)
-  cMCMC$run(1)
-  theta <- cMCMC$mvSamples[['thetaTilde']][cMCMC$mvSamples[['xi']], ] 
-  expect_equal(apply(theta, 1, mean), apply(Data$y, 1, mean), tol=2,
-               info = paste0("incorrect update of cluster parameters in conjugate normal-normal CRP more general model")) 
-  
-  
-  ## conjugate normal-invgamma-normal model, (i,j) iid cluster params
-  code <- nimbleCode({
-    for(i in 1:5) {
-      for(j in 1:8) {
-        y[i,j] ~ dnorm( thetaTilde[xi[i], j] , var = sigma2Tilde[xi[i], j]) 
-        thetaTilde[i, j] ~ dnorm(0, var=100) # thetaTilde_{i,j} are iid
-        sigma2Tilde[i, j] ~ dinvgamma(1, 1) # thetaTilde_{i,j} are iid
-      }
-    }
-    xi[1:5] ~ dCRP(1, size=5)
-  })
-  Inits <- list(xi = c(1, 1, 1, 1, 1), 
-                thetaTilde = matrix(rep(0, 5*8), nrow=5,  ncol=8), 
-                sigma2Tilde = matrix(rep(10, 5*8), nrow=5,  ncol=8))
-  y <- matrix(10, nrow=5, ncol=8)
-  y[4:5, ] <- -10
-  Data <- list(y=y)
-  model <- nimbleModel(code, data=Data, inits=Inits,  dimensions=list(thetaTilde=c(5,8), sigma2Tilde=c(5,8)), calculate=TRUE)
-  cmodel<-compileNimble(model)
-  mConf <- configureMCMC(model, monitors = c('xi','thetaTilde', 'sigma2Tilde'))  
-  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
-  mMCMC <- buildMCMC(mConf)
-  cMCMC <- compileNimble(mMCMC, project = model)
-  cMCMC$run(1)
-  theta <- cMCMC$mvSamples[['thetaTilde']][cMCMC$mvSamples[['xi']], ] 
-  expect_equal(apply(theta, 1, mean), apply(Data$y, 1, mean), tol=2,
-               info = paste0("incorrect update of cluster parameters in conjugate normal-invgamma-normal CRP more general model")) 
-  
 })
 
 
