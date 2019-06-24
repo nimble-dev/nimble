@@ -1814,7 +1814,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     # need to find conjugacy
     conjugacyResult <- nimble:::checkCRPconjugacy(model, target) # rm nimble:::
     
-    if(is.null(conjugacyResult) || conjugacyResult != "conjugate_dnorm_invgamma_dnorm_moreGeneral") {
+    if(is.null(conjugacyResult) || conjugacyResult != "conjugate_dnorm_invgamma_dnorm") {
       ## Check that all cluster parameters are independent as it it tricky to make sure we
       ## are correctly simulating from the prior otherwise. 
       tmp <- sapply(allTildeNodes, function(x) {
@@ -2387,7 +2387,7 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo) {
         conjugacy_dnorm <- model$checkConjugacy(exampleNodes[1], restrictLink = 'identity')
         conjugacy_dinvgamma <- model$checkConjugacy(exampleNodes[2])
         if(length(conjugacy_dnorm) && length(conjugacy_dinvgamma) &&
-           sum(conjugacy_dinvgamma[[1]]$control$dep_dnorm == conjugacy_dinvgamma[[1]]$control$dep_dnorm)) #conjugacy_dinvgamma[[1]]$control$dep_dnorm == exampleNodes[1]
+           sum(conjugacy_dinvgamma[[1]]$control$dep_dnorm == exampleNodes[1])) 
             conjugate <- TRUE
     }
     if(conjugate) {  ## Now check that conjugacy holds for all cluster nodes.
