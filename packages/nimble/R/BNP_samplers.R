@@ -2395,9 +2395,10 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo) {
         if(any(model$getDistribution(clusterNodes1) != "dnorm"))
             conjugate <- FALSE
         ## Check that mean for cluster mean nodes are same
+        J <- clusterVarInfo$nTilde[1] / length(unique(clusterVarInfo$clusterIDs[[1]])) # Chris: is there better way to get J from clusterVarInfo?
         meanExprs <- sapply(clusterNodes1, function(x) model$getParamExpr(x, 'mean'))
         names(meanExprs) <- NULL
-        if(length(unique(meanExprs)) != 1)
+        if(length(unique(meanExprs)) > J) # length(unique(meanExprs)) != 1
             conjugate <- FALSE
         ## Check that variance for cluster mean nodes are same except for dependence on variance
         varExprs <- sapply(clusterNodes1, function(x) model$getParamExpr(x, 'var'))
@@ -2407,13 +2408,13 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo) {
             if(length(grep(clusterNodes2[i], varText, fixed = TRUE)))  ## remove clusterNodes2[i] from expression so var expressions will be the same
                 varExprs[[i]] <- parse(text = gsub(clusterNodes2[i], "a", varText, fixed = TRUE))[[1]]
         }
-        if(length(unique(varExprs)) != 1)
+        if(length(unique(varExprs)) > J) # length(unique(varExprs)) != 1
             conjugate <- FALSE
 
         ## Check that cluster variance nodes are IID
         valueExprs <- sapply(clusterNodes2, function(x) model$getValueExpr(x))
         names(valueExprs) <- NULL
-        if(length(unique(valueExprs)) != 1)
+        if(length(unique(valueExprs)) > J) # length(unique(valueExprs)) != 1
             conjugate <- FALSE
 
         ## Check that dependent nodes ('observations') from same declaration.
