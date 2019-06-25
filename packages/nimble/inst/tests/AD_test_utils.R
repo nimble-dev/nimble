@@ -98,6 +98,7 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
   ## by default, reset the seed for every test
   if (is.numeric(seed)) set.seed(seed)
 
+  ## TODO: use nClass instead?
   nf <- nimbleFunction(
     setup = function() {},
     run = param$run,
