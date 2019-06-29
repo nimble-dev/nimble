@@ -67,6 +67,8 @@ void nimStop() {NIMERROR("");}
 
 bool nimNot(bool x) {return(!x);}
 
+bool isTRUE(bool x) {return(x);}
+
 double ilogit(double x) {return(1./(1. + exp(-x)));}
 
 double icloglog(double x) {return(1.-exp(-exp(x)));}
