@@ -1340,8 +1340,8 @@ CRP_conjugate_dnorm_dnorm_moreGeneral <- nimbleFunction(
   name = "CRP_conjugate_dnorm_dnorm_moreGeneral",
   contains = CRP_helper,
   setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
-    priorMean <- nimNumeric(J)
-    priorVar <- nimNumeric(J)
+    priorMean <- nimNumeric(J+1)
+    priorVar <- nimNumeric(J+1)
   },
   methods = list(
     storeParams = function() {
@@ -1378,10 +1378,10 @@ CRP_conjugate_dnorm_invgamma_dnorm_moreGeneral <- nimbleFunction(
   name = "CRP_conjugate_dnorm_invgamma_dnorm_moreGeneral",
   contains = CRP_helper,
   setup = function(model, marginalizedNodes1, marginalizedNodes2, dataNodes, J) {
-    priorMean <- nimNumeric(J)
-    kappa <- nimNumeric(J)
-    priorShape <- nimNumeric(J)
-    priorScale <- nimNumeric(J)
+    priorMean <- nimNumeric(J+1)
+    kappa <- nimNumeric(J+1)
+    priorShape <- nimNumeric(J+1)
+    priorScale <- nimNumeric(J+1)
   },
   methods = list(
     storeParams = function() {
@@ -1422,8 +1422,8 @@ CRP_conjugate_dgamma_dpois_moreGeneral <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dpois_moreGeneral",
   contains = CRP_helper,
   setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
-    priorShape <- nimNumeric(J)
-    priorRate <- nimNumeric(J)
+    priorShape <- nimNumeric(J+1)
+    priorRate <- nimNumeric(J+1)
   },
   methods = list(
     storeParams = function() {
@@ -1457,8 +1457,8 @@ CRP_conjugate_dgamma_dnorm_moreGeneral <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dnorm_moreGeneral",
   contains = CRP_helper,
   setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
-    priorShape <- nimNumeric(J)
-    priorRate <- nimNumeric(J)
+    priorShape <- nimNumeric(J+1)
+    priorRate <- nimNumeric(J+1)
   },
   methods = list(
     storeParams = function() {
@@ -1494,8 +1494,8 @@ CRP_conjugate_dbeta_dbern_moreGeneral <- nimbleFunction(
   name = "CRP_conjugate_dbeta_dbern_moreGeneral",
   contains = CRP_helper,
   setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
-    priorShape1 <- nimNumeric(J)
-    priorShape2 <- nimNumeric(J)
+    priorShape1 <- nimNumeric(J+1)
+    priorShape2 <- nimNumeric(J+1)
   },
   methods = list(
     storeParams = function() {
@@ -1527,8 +1527,8 @@ CRP_conjugate_dbeta_dbin_moreGeneral <- nimbleFunction(
   name = "CRP_conjugate_dbeta_dbin_moreGeneral",
   contains = CRP_helper,
   setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
-    priorShape1 <- nimNumeric(J)
-    priorShape2 <- nimNumeric(J)
+    priorShape1 <- nimNumeric(J+1)
+    priorShape2 <- nimNumeric(J+1)
   },
   methods = list(
     storeParams = function() {
@@ -1565,8 +1565,8 @@ CRP_conjugate_dbeta_dnegbin_moreGeneral <- nimbleFunction(
   name = "CRP_conjugate_dbeta_dnegbin_moreGeneral",
   contains = CRP_helper,
   setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
-    priorShape1 <- nimNumeric(J)
-    priorShape2 <- nimNumeric(J)
+    priorShape1 <- nimNumeric(J+1)
+    priorShape2 <- nimNumeric(J+1)
   },
   methods = list(
     storeParams = function() {
@@ -1602,8 +1602,8 @@ CRP_conjugate_dgamma_dexp_moreGeneral <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dexp_moreGeneral",
   contains = CRP_helper,
   setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
-    priorShape <- nimNumeric(J)
-    priorRate <- nimNumeric(J)
+    priorShape <- nimNumeric(J+1)
+    priorRate <- nimNumeric(J+1)
   },
   methods = list(
     storeParams = function() {
@@ -1636,8 +1636,8 @@ CRP_conjugate_dgamma_dgamma_moreGeneral <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dgamma_moreGeneral",
   contains = CRP_helper,
   setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
-    priorShape <- nimNumeric(J)
-    priorRate <- nimNumeric(J)
+    priorShape <- nimNumeric(J+1)
+    priorRate <- nimNumeric(J+1)
   },
   methods = list(
     storeParams = function() {
@@ -1672,8 +1672,8 @@ CRP_conjugate_dgamma_dweib_moreGeneral <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dweib_moreGeneral",
   contains = CRP_helper,
   setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
-    priorShape <- nimNumeric(J)
-    priorRate <- nimNumeric(J)
+    priorShape <- nimNumeric(J+1)
+    priorRate <- nimNumeric(J+1)
   },
   methods = list(
     storeParams = function() {
@@ -1708,8 +1708,8 @@ CRP_conjugate_dgamma_dinvgamma_moreGeneral <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dinvgamma_moreGeneral",
   contains = CRP_helper,
   setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
-    priorShape <- nimNumeric(J)
-    priorRate <- nimNumeric(j)
+    priorShape <- nimNumeric(J+1)
+    priorRate <- nimNumeric(J+1)
   },
   methods = list(
     storeParams = function() {
