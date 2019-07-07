@@ -689,7 +689,7 @@ CRP_conjugate_dbeta_dbern <- nimbleFunction(
 CRP_conjugate_dbeta_dbin <- nimbleFunction(
   name = "CRP_conjugate_dbeta_dbin",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
     priorShape1 <- nimNumeric(1)
     priorShape2 <- nimNumeric(1)
   },
@@ -703,8 +703,8 @@ CRP_conjugate_dbeta_dbin <- nimbleFunction(
       returnType(double())
       y <- values(model, dataNodes[i])[1]
       dataSize <- model$getParam(dataNodes[i], 'size')
-      return(lgamma(priorShape1+priorShape2) + lgamma(priorShape1+y) + lgamma(priorShape1+dataSize-y) -
-               lgamma(priorShape1) - lgamma(priorShape2) - lgamma(priorShape1+priorShape1+dataSize) +
+      return(lgamma(priorShape1+priorShape2) + lgamma(priorShape1+y) + lgamma(priorShape2+dataSize-y) -
+               lgamma(priorShape1) - lgamma(priorShape2) - lgamma(priorShape1+priorShape2+dataSize) +
                lfactorial(dataSize) - lfactorial(y) - lfactorial(dataSize-y))
     },
     sample = function(i = integer(), j = integer()) {
@@ -720,7 +720,7 @@ CRP_conjugate_dbeta_dbin <- nimbleFunction(
 CRP_conjugate_dbeta_dnegbin <- nimbleFunction(
   name = "CRP_conjugate_dbeta_dnegbin",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
     priorShape1 <- nimNumeric(1)
     priorShape2 <- nimNumeric(1)
   },
@@ -734,8 +734,8 @@ CRP_conjugate_dbeta_dnegbin <- nimbleFunction(
       returnType(double())
       y <- values(model, dataNodes[i])[1]
       dataSize <- model$getParam(dataNodes[i], 'size')
-      return(lgamma(priorShape1+priorShape2) + lgamma(priorShape1+dataSize) + lgamma(priorShape1+y) -
-               lgamma(priorShape1) - lgamma(priorShape2) - lgamma(priorShape1+priorShape1+dataSize+y) +
+      return(lgamma(priorShape1+priorShape2) + lgamma(priorShape1+dataSize) + lgamma(priorShape2+y) -
+               lgamma(priorShape1) - lgamma(priorShape2) - lgamma(priorShape1+priorShape2+dataSize+y) +
                lfactorial(y+dataSize-1) - lfactorial(y) - lfactorial(dataSize-1))
     },
     sample = function(i = integer(), j = integer()) {
@@ -745,6 +745,7 @@ CRP_conjugate_dbeta_dnegbin <- nimbleFunction(
     }
   )
 )
+
 
 CRP_conjugate_dgamma_dexp <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dexp",
