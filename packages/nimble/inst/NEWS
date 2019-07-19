@@ -1,3 +1,10 @@
+
+USER LEVEL CHANGES
+
+BUG FIXES
+
+-- Fixed bug in MCMC crossLevel sampler, so that underlying conjugate sampler functions no longer modify the target node value.
+
                             CHANGES IN VERSION 0.8.0 (June 2019)
 USER LEVEL CHANGES
 
