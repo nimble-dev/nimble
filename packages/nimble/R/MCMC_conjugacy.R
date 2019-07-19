@@ -622,7 +622,7 @@ conjugacyClass <- setRefClass(
             if(getNimbleOption('verifyConjugatePosteriors')) {
                 functionBody$addCode({
                     modelLogProb0 <- getLogProb(model, calcNodes)
-                    origValue <- model[[target]]
+                    origTargetValue <- model[[target]]
                 })
             }
 
@@ -632,8 +632,8 @@ conjugacyClass <- setRefClass(
             ## generate new value, store, calculate, copy, etc...
             functionBody$addCode(posteriorObject$prePosteriorCodeBlock, quote = FALSE)
             functionBody$addCode({
-                newValue <- RPOSTERIORCALL
-                model[[target]] <<- newValue
+                newTargetValue <- RPOSTERIORCALL
+                model[[target]] <<- newTargetValue
                 calculate(model, calcNodes)
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
             }, list(RPOSTERIORCALL = posteriorObject$rCallExpr))
@@ -647,8 +647,8 @@ conjugacyClass <- setRefClass(
                     if(abs(posteriorVerification) > 1e-8)     {
                         nimPrint('conjugate posterior density appears to be wrong, off by ', posteriorVerification)
                     }
-                }, list(DPOSTERIORCALL_ORIG = eval(substitute(substitute(expr, list(VALUE=quote(origValue))), list(expr=posteriorObject$dCallExpr))),
-                        DPOSTERIORCALL_NEW  = eval(substitute(substitute(expr, list(VALUE=quote(newValue))),  list(expr=posteriorObject$dCallExpr)))))
+                }, list(DPOSTERIORCALL_ORIG = eval(substitute(substitute(expr, list(VALUE=quote(origTargetValue))), list(expr=posteriorObject$dCallExpr))),
+                        DPOSTERIORCALL_NEW  = eval(substitute(substitute(expr, list(VALUE=quote(newTargetValue))),  list(expr=posteriorObject$dCallExpr)))))
             }
 
             functionDef <- quote(function() {})
@@ -659,18 +659,21 @@ conjugacyClass <- setRefClass(
 
         genGetPosteriorLogDensityFunction = function(dependentCounts, doDependentScreen = FALSE) {
             functionBody <- codeBlockClass()
-
+            
+            functionBody$addCode(origTargetValue <- model[[target]])
+            
             ## adds code to generate the quantities prior_xxx, and contribution_xxx
             addPosteriorQuantitiesGenerationCode(functionBody = functionBody, dependentCounts = dependentCounts, doDependentScreen = doDependentScreen)
 
             ## calculate and return the (log)density for the current value of target
             functionBody$addCode(posteriorObject$prePosteriorCodeBlock, quote = FALSE)
             functionBody$addCode({
-                targetValue <- model[[target]]
+                model[[target]] <<- origTargetValue
+                model$calculate(calcNodesDeterm)
                 posteriorLogDensity <- DPOSTERIORCALL
                 returnType(double())
                 return(posteriorLogDensity)
-            }, list(DPOSTERIORCALL = eval(substitute(substitute(expr, list(VALUE=quote(targetValue))), list(expr=posteriorObject$dCallExpr)))))
+            }, list(DPOSTERIORCALL = eval(substitute(substitute(expr, list(VALUE=quote(origTargetValue))), list(expr=posteriorObject$dCallExpr)))))
 
             functionDef <- quote(function() {})
             functionDef[[3]] <- functionBody$getCode()
