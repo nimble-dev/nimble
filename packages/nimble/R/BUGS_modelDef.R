@@ -563,6 +563,13 @@ addMissingIndexingRecurse <- function(code, dimensionsList) {
       code[[2]][[2]] <- addMissingIndexingRecurse(code[[2]][[2]], dimensionsList)
       return(code)
     }
+    ## handle cases like (x[1:2]%*%y[1:2, i])[1,1]
+    if(length(code[[2]]) > 1 && code[[2]][[1]] == '(') {
+        if(any(unlist(lapply(as.list(code[3:length(code)]), is.blank))))
+            stop(paste0('addMissingIndexingRecurse: the model definition includes the code ', deparse(code), ', which contains missing indices. When indexing expressions (as opposed to explicit variables), all indices must be provided.'), call. = FALSE)
+        code[[2]][[2]] <- addMissingIndexingRecurse(code[[2]][[2]], dimensionsList)
+        return(code)
+    }
     if(!any(code[[2]] == names(dimensionsList))) {
       ## dimension information was NOT provided for this variable
       ## let's check to make sure all indexes are present
