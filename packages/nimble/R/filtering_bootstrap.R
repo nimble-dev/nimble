@@ -17,16 +17,29 @@ bootStepVirtual <- nimbleFunctionVirtual(
 # uses weights from previous time point to calculate likelihood estimate.
 
 bootFStep <- nimbleFunction(
-    name = 'bootFStep',
+  name = 'bootFStep',
   contains = bootStepVirtual,
-  setup = function(model, mvEWSamples, mvWSamples, nodes, iNode, names, saveAll,
-                   smoothing, resamplingMethod, silent = FALSE) {
+  setup = function(model,
+                   mvEWSamples,
+                   mvWSamples,
+                   nodes,
+                   iNode,
+                   names,
+                   saveAll,
+                   smoothing,
+                   resamplingMethod,
+                   silent = FALSE) {
     notFirst <- iNode != 1
+    modelSteps <- particleFilter_splitModelSteps(model, nodes, iNode, notFirst)
+    prevDeterm <- modelSteps$prevDeterm
+    calc_thisNode_self <- modelSteps$calc_thisNode_self
+    calc_thisNode_deps <- modelSteps$calc_thisNode_deps
+    
     prevNode <- nodes[if(notFirst) iNode-1 else iNode]
     thisNode <- nodes[iNode]
-    prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
-    thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
-    thisData   <- model$getDependencies(thisNode, dataOnly = TRUE)
+    ## prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
+    ## thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
+    ## thisData   <- model$getDependencies(thisNode, dataOnly = TRUE)
     ## t is the current time point.
     t <- iNode
     ## Get names of xs node for current and previous time point (used in copy)
@@ -36,7 +49,7 @@ bootFStep <- nimbleFunction(
       thisXName <- thisNode
       currInd <- t
       prevInd <- t-1
-      if(smoothing == T){
+      if(isTRUE(smoothing)){
         currInd <- 1
         prevInd <- 1
       }
@@ -64,7 +77,9 @@ bootFStep <- nimbleFunction(
     if(resamplingMethod == 'systematic')
       resamplerFunctionList[[1]] <- systematicResampleFunction()
   },
-  run = function(m = integer(), threshNum = double(), prevSamp = logical()) {
+  run = function(m = integer(),
+                 threshNum = double(),
+                 prevSamp = logical()) {
     returnType(double(1))
     wts <- numeric(m, init=FALSE)
     ids <- integer(m, 0)
@@ -78,18 +93,18 @@ bootFStep <- nimbleFunction(
                nodesTo = allPrevNodes, row = i, rowTo=i)
         }
         copy(mvEWSamples, model, nodes = prevXName, nodesTo = prevNode, row = i)
-        calculate(model, prevDeterm) 
+        model$calculate(prevDeterm) 
       }
-      simulate(model, thisNode)
+      model$simulate(calc_thisNode_self)
+      ## The logProbs of calc_thisNode_self are, correctly, not calculated.
       copy(model, mvWSamples, nodes = thisNode, nodesTo = thisXName, row = i)
-      calculate(model, thisDeterm)
-      wts[i]  <- calculate(model, thisData)
+      wts[i]  <- model$calculate(calc_thisNode_deps)
       if(is.nan(wts[i])){
         out[1] <- -Inf
         out[2] <- 0
         return(out)
       }
-      if(prevSamp == 0){
+      if(prevSamp == 0){ ## defaults to 1 for first step and then comes from the previous step
         wts[i] <- wts[i] + mvWSamples['wts',i][prevInd]
         llEst[i] <- wts[i]
       }

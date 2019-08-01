@@ -74,7 +74,7 @@ auxFStep <- nimbleFunction(
       }
     }
     else{
-      allPrevNodes <- names
+      allPrevNodes <- names # dummy value -- not used.
       prevXName <- names    
       thisXName <- names
       currInd <- 1
@@ -124,7 +124,7 @@ auxFStep <- nimbleFunction(
           copy(mvEWSamples, mvWSamples, nodes = allPrevNodes,
                nodesTo = allPrevNodes, row = i, rowTo=i)
         }
-        copy(mvWSamples, model, prevXName, prevNode, row=i)        
+        copy(mvWSamples, model, prevXName, prevNode, row=i)     
         calculate(model, prevDeterm)
         if(lookahead == "mean"){
           for(j in 1:numLatentNodes)
@@ -155,7 +155,7 @@ auxFStep <- nimbleFunction(
     }   
     for(i in 1:m) {
       if(notFirst) {
-        copy(mvWSamples, model, nodes = prevXName, nodesTo = prevNode,
+        copy(mvEWSamples, model, nodes = prevXName, nodesTo = prevNode, ## Previously copied from mvWSamples -- buggy if saveAll is FALSE
              row = ids[i])
         calculate(model, prevDeterm) 
       }
@@ -206,7 +206,6 @@ auxFStep <- nimbleFunction(
       outLL <- sum(exp(wts))/m
     }
     return(log(outLL))
-return(0)
   }, 
   methods = list(
     returnESS = function() {
