@@ -56,9 +56,16 @@ The easiest way to install NIMBLE is via CRAN:
 install.packages("nimble")
 ```
 
-To install with extra functionality in `compareMCMCs` and `MCMCsuite`, install through the NIMBLE website:
+To install from the NIMBLE website:
 ```r
+library(devtools)
 install.packages("nimble", type = "source", repos = "https://r-nimble.org")
+```
+
+Note that `MCMCsuite` and `compareMCMCs` are being migrated to the `compareMCMCs` package.  To install this:
+```r
+library(devtools)
+install_github("nimble-dev/compareMCMCs", subdir = "compareMCMCs")
 ```
 
 ## Citation
@@ -72,7 +79,7 @@ NIMBLE. Journal of Computational and Graphical Statistics 26:403-413. [https://d
 
 To cite a version of the package, please cite:
 
-NIMBLE Development Team. 2019. NIMBLE: MCMC, Particle Filtering, and Programmable Hierarchical Modeling.  doi: 10.5281/zenodo.1211190.. R package version 0.7.1, https://cran.r-project.org/package=nimble.
+NIMBLE Development Team. 2019. NIMBLE: MCMC, Particle Filtering, and Programmable Hierarchical Modeling.  doi: 10.5281/zenodo.1211190.. R package version 0.8.0, https://cran.r-project.org/package=nimble.
 
 ## Licenses
 
