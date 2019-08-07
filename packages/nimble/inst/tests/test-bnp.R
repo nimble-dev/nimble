@@ -1708,7 +1708,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   inits = list(xi = rep(1,4), mu=rnorm(4))
   m = nimbleModel(code, data=data, inits= inits)
   conf = configureMCMC(m)
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc = buildMCMC(conf)
   
   pYgivenT <- m$getLogProb('y[1]')
@@ -1747,7 +1747,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   inits = list(xi = rep(1,4), mu=rnorm(4), s2=rinvgamma(4, 2, 1))
   m = nimbleModel(code, data=data, inits=inits)
   conf = configureMCMC(m)
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc = buildMCMC(conf)
   
   pYgivenT <- m$getLogProb('y[1]')
@@ -1803,7 +1803,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   priorRate <- m$getParam('mu[1]', 'rate')
   pTgivenY <- dgamma(m$mu[1], shape = priorShape + data$y[1], rate = priorRate + 1, log=TRUE)
   
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   
@@ -1838,7 +1838,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   priorShape2 <- m$getParam('mu[1]', 'shape2')
   pTgivenY <- dbeta(m$mu[1], shape1=priorShape1+data$y[1], shape2=priorShape2+1-data$y[1], log=TRUE)
   
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   
@@ -1873,7 +1873,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   dataSize <- m$getParam('y[1]', 'size')
   pTgivenY <- dbeta(m$mu[1], shape1=priorShape1+data$y[1], shape2=priorShape2+dataSize-data$y[1], log=TRUE)
   
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   
@@ -1908,7 +1908,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   dataSize <- m$getParam('y[1]', 'size')
   pTgivenY <- dbeta(m$mu[1], shape1=priorShape1+dataSize, shape2=priorShape2+data$y[1], log=TRUE)
   
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   
@@ -1942,7 +1942,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   priorRate <- m$getParam('mu[1]', 'rate')
   pTgivenY <- dgamma(m$mu[1], shape=priorShape+1, rate=priorRate+data$y[1], log=TRUE)
   
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   
@@ -1978,7 +1978,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   dataShape <- m$getParam('y[1]', 'shape')
   pTgivenY <- dgamma(m$mu[1], shape=dataShape+priorShape, rate=priorRate+data$y[1], log=TRUE)
   
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   
@@ -2013,7 +2013,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   dataShape <- m$getParam('y[1]', 'shape')
   pTgivenY <- dgamma(m$mu[1], shape=1+priorShape, rate=priorRate+data$y[1]^dataShape, log=TRUE)
   
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   
@@ -2056,7 +2056,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   priorAlpha <- m$getParam('p[1, 1:3]', 'alpha')
   pTgivenY <- ddirch(m$p[1,1:3], alpha = priorAlpha+data$y[1, 1:3], log=TRUE)
   
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   
@@ -2091,7 +2091,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   dataShape <- m$getParam('y[1]', 'shape')
   pTgivenY <- dgamma(m$mu[1], shape=dataShape+priorShape, rate=priorRate+1/data$y[1], log=TRUE)
   
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   
@@ -2126,7 +2126,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   priorRate <- m$getParam('mu[1]', 'rate')
   pTgivenY <- dgamma(m$mu[1], shape = priorShape + 0.5, rate = (priorRate + 0.5*(data$y[1]-dataMean)^2), log=TRUE)
   
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   

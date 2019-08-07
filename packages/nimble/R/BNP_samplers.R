@@ -689,7 +689,7 @@ CRP_conjugate_dbeta_dbern <- nimbleFunction(
 CRP_conjugate_dbeta_dbin <- nimbleFunction(
   name = "CRP_conjugate_dbeta_dbin",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
     priorShape1 <- nimNumeric(1)
     priorShape2 <- nimNumeric(1)
   },
@@ -720,7 +720,7 @@ CRP_conjugate_dbeta_dbin <- nimbleFunction(
 CRP_conjugate_dbeta_dnegbin <- nimbleFunction(
   name = "CRP_conjugate_dbeta_dnegbin",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
     priorShape1 <- nimNumeric(1)
     priorShape2 <- nimNumeric(1)
   },
