@@ -841,9 +841,6 @@ test_that("Test that CRP sampler works fine for non conjugate models with more t
 })
 
 
-
-
-
 test_that("Test that sampleDPmeasure can be used for more complicated models", {
   set.seed(1)
   
@@ -1273,9 +1270,6 @@ test_that("sampleDPmeasure: testing that required variables in MCMC modelValues 
 })
 
 
-
-
-
 test_that("check iid assumption in sampleDPmeasure", {
   set.seed(1)
   
@@ -1408,8 +1402,6 @@ test_that("check iid assumption in sampleDPmeasure", {
 })
 
 
-
-
 test_that("check use of epsilon parameters in getSamplesDPmeasure", {
   set.seed(1)
   
@@ -1456,6 +1448,7 @@ test_that("check use of epsilon parameters in getSamplesDPmeasure", {
       nimble:::clearCompiled(model)
   }
 })
+
 
 test_that("Test that new cluster parameters are correctly updated in CRP sampler", {
     ## Note: CP thinks these checks are not all that helpful - because of the small sample
@@ -1634,8 +1627,6 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
 })
 
 
-
-
 test_that("Test that the nonconjugate CRP sampler works fine ", {
   ## CP:  these are short runs and small sample sizes; we should consider more robust tests.
     
@@ -1691,6 +1682,7 @@ test_that("Test that the nonconjugate CRP sampler works fine ", {
       nimble:::clearCompiled(m)
   }
 })
+
 
 test_that("Test opening of new clusters in CRP sampler ", {
 
@@ -1876,6 +1868,7 @@ test_that("Test opening of new clusters in CRP sampler ", {
   }
 })
 
+
 test_that("Test reset frunction in CRP sampler ", {
   set.seed(1)
   
@@ -1994,6 +1987,7 @@ test_that("Test that cluster parameters and membership variable are independent 
   
 })
 
+
 test_that("Test only data depends on cluster variable in CRP sampler", {
 
   ## not only data depends on xi and mu: case is safe because length of data and xi is different
@@ -2053,7 +2047,6 @@ test_that("Test only data depends on cluster variable in CRP sampler", {
 })
 
 
-
 test_that("testing multivariate normal mixture models with CRP", {
   set.seed(1)
   
@@ -2094,11 +2087,11 @@ test_that("testing multivariate normal mixture models with CRP", {
   muSam1Unique <- sapply(1:nrow(xiSam), function(i) unique(muSam1[i, xiSam[i, ]]) )
   muSam2Unique <- sapply(1:nrow(xiSam), function(i) unique(muSam2[i, xiSam[i, ]]) )
   
-  cond <- sapply(1:nrow(xiSam), function(i) sum(weights[[i]]*muSam1Unique[[i]]))
+  cond <- sapply(1:nrow(xiSam), function(i) sum(weights[,i]*muSam1Unique[,i]))
   expect_equal(mean(cond), 10, tol=2*1, scale=1,
                info = paste0("incorrect update of cluster parameters in bivariate normal data with unknown mean. First component"))
   
-  cond <- sapply(1:nrow(xiSam), function(i) sum(weights[[i]]*muSam2Unique[[i]]))
+  cond <- sapply(1:nrow(xiSam), function(i) sum(weights[,i]*muSam2Unique[,i]))
   expect_equal(mean(cond), 20, tol=2*1, scale=1,
                info = paste0("incorrect update of cluster parameters in bivariate normal data with unknown mean. Second component"))
   
@@ -2231,7 +2224,6 @@ test_that("testing multivariate normal mixture models with CRP", {
                info = paste0("incorrect update of covariance matrix parameters in bivariate normal data with unknown mean and variance. [1, 1] component"))
   
 })
-
 
 
 test_that("Test that not nonparametric MCMC message in CRP sampler is printed", {
@@ -2380,6 +2372,7 @@ test_that("Test that not nonparametric MCMC message in CRP sampler is printed", 
   
 })
 
+
 test_that("Check error given when model has no cluster variables", {
     ## Originally this tested whether there are no tildeVars but with new check for 'xi' appearing
     ## in non-index role, the error is caught differently.
@@ -2400,6 +2393,7 @@ test_that("Check error given when model has no cluster variables", {
                'sampler_CRP: Detected that the CRP variable is used in some way not as an index')
   
 })
+
 
 test_that("dCRP nimble function calculates density correctly",{
   
@@ -2435,7 +2429,6 @@ test_that("dCRP nimble function calculates density correctly",{
   expect_error(dCRP(x, conc=1, size=10, log=FALSE), "length of 'x' has to be equal to 'size'")
   
 })
-
 
 
 test_that("CRP model calculation and dimensions are correct:", {
@@ -2526,7 +2519,6 @@ test_that("random sampling from CRP in model with additional levels", {
 })
 
 
-
 test_that("Testing posterior sampling and prior predictive computation with conjugate models using CRP", { 
   
   ## dnorm_dnorm
@@ -2566,6 +2558,47 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   expect_identical(smp, m$mu[1])
   
   
+  ## dmnorm_dmnorm
+  set.seed(1)
+  code=nimbleCode( {
+      for(i in 1:10){
+        muTilde[i,1:4] ~ dmnorm(mu0[1:4], cov=Cov0[1:4, 1:4])
+        y[i,1:4] ~ dmnorm(muTilde[xi[i],1:4], cov=Sigma0[1:4, 1:4])
+      }
+      xi[1:10] ~ dCRP(conc=1, size=10)
+    }
+  )
+  y <- matrix(rnorm(40, 5, 1), ncol=4, nrow=10)
+  y[6:10, 1:4] <- rnorm(20, -5, 1)
+  data = list(y = y)
+  inits = list(xi = 1:10, muTilde=matrix(rnorm(40, 0, sqrt(10)), ncol=4, nrow=10))
+  constants=list(mu0 = rnorm(4), Cov0 = diag(1:4), Sigma0 = diag(5:8))
+  m = nimbleModel(code, data=data, inits=inits, constants=constants)
+  conf <- configureMCMC(m)
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  mcmc <- buildMCMC(conf)
+  
+  pYgivenT <- m$getLogProb('y[1]')
+  pT <- m$getLogProb('muTilde[1, 1:4]')
+  
+  dataCov <- m$getParam('y[1]', 'cov') 
+  priorCov <- m$getParam('muTilde[1]', 'cov')
+  priorMean <- m$getParam('muTilde[1]', 'mean')
+  postCov <- inverse(inverse(dataCov) + inverse(priorCov)) # from conjugate sampler
+  postMean <- postCov %*% (inverse(dataCov)%*%data$y[1, 1:4] + inverse(priorCov)%*%priorMean) # from conjugate sampler
+  pTgivenY <- dmnorm_chol(m$muTilde[1, 1:4], postMean, chol(postCov), prec_param = FALSE, log = TRUE) # from conjugate sampler
+  
+  mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
+  pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
+
+  expect_equal(pY, pT + pYgivenT - pTgivenY)
+  
+  set.seed(1)
+  mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$sample(1, 1)
+  set.seed(1)
+  smp <- rmnorm_chol(1 , postMean, chol(postCov), prec_param = FALSE)
+  expect_identical(smp, m$muTilde[1, 1:4])
+
   
   ## dnorm_invgamma_dnorm
   code = nimbleCode({
@@ -2988,7 +3021,7 @@ test_that("Testing conjugacy detection with models using CRP", {
                   inits = list(xi = rep(1,4), mu=rnorm(4)))
   conf <- configureMCMC(m)
   mcmc=buildMCMC(conf)
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
   expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   
   ## dnorm_dnorm with truncation
@@ -3464,7 +3497,7 @@ test_that("Testing conjugacy detection with models using CRP", {
   expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
   
   
-})
+}) # pendiente!!!!!!
 
 
 test_that("Testing handling (including error detection) with non-standard CRP model specification",{
@@ -4393,8 +4426,23 @@ model <- function() {
 inits =  list(xi = rep(1,4), mu=rbeta(4, 1, 1))
 data = list(y = rnbinom(4, size=10, prob=0.5))
 
-testBUGSmodel(example = 'test11', dir = "",
+testBUGSmodel(example = 'test12', dir = "",
               model = model, data = data, inits = inits,
+              useInits = TRUE)
+
+model <- function() {
+  for(i in 1:4){
+    mu[i,1:4] ~ dmnorm(mu0[1:4], cov=Cov0[1:4, 1:4])
+    y[i,1:4] ~ dmnorm(mu[xi[i],1:4], cov=Sigma0[1:4, 1:4])
+  }
+  xi[1:4] ~ dCRP(conc=1, size=4)
+}
+inits = list(xi = 1:4, mu=matrix(rnorm(16), 4, 4))
+data = list(y = matrix(rnorm(16), 4, 4))
+constants = list(mu0 = rep(0,4), Cov0 = diag(10, 4), Sigma0 = diag(1, 4))
+
+testBUGSmodel(example = 'test13', dir = "",
+              model = model, data = data, inits = inits, constants = constants,
               useInits = TRUE)
 
 
