@@ -504,35 +504,6 @@ CRP_conjugate_dnorm_dnorm <- nimbleFunction(
   )
 )
 
-CRP_conjugate_dmnorm_dmnorm <- nimbleFunction(
-  name = "CRP_conjugate_dmnorm_dmnorm",
-  contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
-    d <- length(model[[marginalizedNodes[1]]])
-    priorMean <- nimNumeric(d)
-    priorCov <- matrix(0, ncol=d, nrow=d)
-  },
-  methods = list(
-    storeParams = function() {
-      priorMean <<- model$getParam(marginalizedNodes[1], 'mean')
-      priorCov <<- model$getParam(marginalizedNodes[1], 'cov')
-    },
-    calculate_offset_coeff = function(i = integer(), j = integer()) {},
-    calculate_prior_predictive = function(i = integer()) {
-      returnType(double())
-      dataCov <- model$getParam(dataNodes[i], 'cov')
-      y <- values(model, dataNodes[i])
-      return(dmnorm_chol(y, priorMean, chol(priorCov + dataCov), prec_param = FALSE, log=TRUE))
-    },
-    sample = function(i = integer(), j = integer()) {
-      dataCov <- model$getParam(dataNodes[i], 'cov')
-      y <- values(model, dataNodes[i])
-      postCov <- inverse( inverse(dataCov) + inverse(priorCov) )
-      postMean <- postCov %*% ( inverse(dataCov) %*% y + inverse(priorCov) %*% priorMean )
-      values(model, marginalizedNodes[j]) <<- rmnorm_chol(1, postMean, chol(postCov), prec_param = FALSE)
-    }
-    )
-)
 
 CRP_conjugate_dnorm_dnorm_nonidentity <- nimbleFunction(
   name = "CRP_conjugate_dnorm_dnorm_nonidentity",
@@ -1075,7 +1046,6 @@ sampler_CRP <- nimbleFunction(
     } else 
       sampler <- switch(conjugacyResult,
                         conjugate_dnorm_dnorm = 'CRP_conjugate_dnorm_dnorm',
-                        conjugate_dmnorm_dmnorm = 'CRP_conjugate_dmnorm_dmnorm',
                         conjugate_dnorm_dnorm_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity',
                         conjugate_dnorm_invgamma_dnorm = 'CRP_conjugate_dnorm_invgamma_dnorm',
                         conjugate_dbeta_dbern  = 'CRP_conjugate_dbeta_dbern',
@@ -1957,7 +1927,6 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     } else 
       sampler <- switch(conjugacyResult,
                         conjugate_dnorm_dnorm = 'CRP_conjugate_dnorm_dnorm_moreGeneral',
-                        conjugate_dmnorm_dmnorm = 'CRP_conjugate_dmnorm_dmnorm',
                         conjugate_dnorm_dnorm_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity',
                         conjugate_dnorm_invgamma_dnorm = 'CRP_conjugate_dnorm_invgamma_dnorm_moreGeneral',
                         conjugate_dbeta_dbern  = 'CRP_conjugate_dbeta_dbern_moreGeneral',
