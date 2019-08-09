@@ -3007,7 +3007,25 @@ test_that("Testing posterior sampling and prior predictive computation with conj
 })
 
 
+# these tests need to be updated: these are based on CRP sampler and now we are using CRP_moreGeneral
 test_that("Testing conjugacy detection with models using CRP", { 
+  
+  ## dmnorm_dmnorm
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i, 1:4] ~ dmnorm(mu0[1:4], cov = cov0[1:4, 1:4])
+      y[i, 1:4] ~ dmnorm(mu[xi[i], 1:4], cov = sigma0[1:4, 1:4])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  m = nimbleModel(code, data = list(y = matrix(rnorm(16), 4, 4)),
+                  inits = list(xi = rep(1,4), mu=matrix(rnorm(16), 4, 4)),
+                  constants = list(mu0=rnorm(4), cov0=diag(10, 4), sigma0=diag(1,4)))
+  conf <- configureMCMC(m)
+  mcmc <- buildMCMC(conf)
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dmnorm_dmnorm")
+  
   
   ## dnorm_dnorm
   code = nimbleCode({
@@ -3021,7 +3039,7 @@ test_that("Testing conjugacy detection with models using CRP", {
                   inits = list(xi = rep(1,4), mu=rnorm(4)))
   conf <- configureMCMC(m)
   mcmc=buildMCMC(conf)
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   
   ## dnorm_dnorm with truncation
@@ -3497,7 +3515,7 @@ test_that("Testing conjugacy detection with models using CRP", {
   expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
   
   
-}) # pendiente!!!!!!
+}) # 
 
 
 test_that("Testing handling (including error detection) with non-standard CRP model specification",{
@@ -4906,6 +4924,7 @@ test_that("Testing more BNP models based on CRP", {
                 useInits = TRUE)
 })
 
+
 test_that("stick_breaking nimble function calculation and use is correct", {
   set.seed(0)
   x <- rbeta(5, 1, 1)
@@ -5147,6 +5166,7 @@ test_that("Testing conjugacy detection with bnp stick breaking models", {
                info = "failed to detect categorical-beta conjugacy")
   
 })
+
 
 test_that("Testing BNP model using stick breaking representation", { 
   
@@ -5432,6 +5452,7 @@ test_that("Testing sampler assignment and misspecification of priors for conc pa
   
 })
 
+
 test_that("Testing dnorm_dnorm non-identity conjugacy setting, regression setting", { 
 
     ## Conjugacy detection and calculation of offset/coeff
@@ -5524,7 +5545,8 @@ test_that("Testing dnorm_dnorm non-identity conjugacy setting, regression settin
     smp2 <- runMCMC(cmcmc, 1000, setSeed = 1)
     expect_identical(smp1, smp2, "sampling for identity and special case of non-identity not identical")
 })    
-    
+   
+ 
 test_that("Testing that cluster parameters are appropriately updated and mvSaved in good state", {
     ## Should always reject new clusters
     set.seed(1)
@@ -5681,6 +5703,7 @@ test_that("Testing that cluster parameters are appropriately updated and mvSaved
   
 })
   
+
 test_that("Testing wrapper sampler that avoids sampling empty clusters", {
     set.seed(1)
     code = nimbleCode({
