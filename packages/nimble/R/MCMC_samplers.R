@@ -1046,6 +1046,7 @@ sampler_RW_PF <- nimbleFunction(
         scale          <- if(!is.null(control$scale))                control$scale                else 1
         m              <- if(!is.null(control$pfNparticles))         control$pfNparticles         else 1000
         resample       <- if(!is.null(control$pfResample))           control$pfResample           else FALSE
+        existingPF     <- if(!is.null(control$pf))                   control$pf                   else NULL
         filterType     <- if(!is.null(control$pfType))               control$pfType               else 'bootstrap'
         filterControl  <- if(!is.null(control$pfControl))            control$pfControl            else list()
         optimizeM      <- if(!is.null(control$pfOptimizeNparticles)) control$pfOptimizeNparticles else FALSE
@@ -1096,30 +1097,33 @@ sampler_RW_PF <- nimbleFunction(
         ## Nested function and function list definitions.
         my_setAndCalculate <- setAndCalculateOne(model, target)
         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
-        if(latentSamp == TRUE) { 
-          filterControl$saveAll <- TRUE
-          filterControl$smoothing <- TRUE
+        if(!is.null(existingPF)) {
+            my_particleFilter <- existingPF
         } else {
-          filterControl$saveAll <- FALSE
-          filterControl$smoothing <- FALSE
-        }
-        filterControl$initModel <- FALSE
-        if(is.character(filterType) && filterType == 'auxiliary') {
-            my_particleFilter <- buildAuxiliaryFilter(model, latents, 
-                                                      control = filterControl)
-        }
-        else if(is.character(filterType) && filterType == 'bootstrap') {
-            my_particleFilter <- buildBootstrapFilter(model, latents,
-                                                      control = filterControl)
-        }
-        else if(is.nfGenerator(filterType)){
-          my_particleFilter <- filterType(model, latents,
-                                          control = filterControl)
-                              
-        }
-        else stop('filter type must be either "bootstrap", "auxiliary", or a
+            if(latentSamp == TRUE) { 
+                filterControl$saveAll <- TRUE
+                filterControl$smoothing <- TRUE
+            } else {
+                filterControl$saveAll <- FALSE
+                filterControl$smoothing <- FALSE
+            }
+            filterControl$initModel <- FALSE
+            if(is.character(filterType) && filterType == 'auxiliary') {
+                my_particleFilter <- buildAuxiliaryFilter(model, latents, 
+                                                          control = filterControl)
+            }
+            else if(is.character(filterType) && filterType == 'bootstrap') {
+                my_particleFilter <- buildBootstrapFilter(model, latents,
+                                                          control = filterControl)
+            }
+            else if(is.nfGenerator(filterType)){
+                my_particleFilter <- filterType(model, latents,
+                                                control = filterControl)
+            }
+            else stop('filter type must be either "bootstrap", "auxiliary", or a
                   user defined filtering algorithm created by a call to 
                   nimbleFunction(...).')
+        }
         particleMV <- my_particleFilter$mvEWSamples
         ## checks
         if(any(target%in%model$expandNodeNames(latents)))   stop('PMCMC \'target\' argument cannot include latent states')
@@ -1220,6 +1224,7 @@ sampler_RW_PF_block <- nimbleFunction(
         adaptInterval  <- if(!is.null(control$adaptInterval))        control$adaptInterval        else 200
         scale          <- if(!is.null(control$scale))                control$scale                else 1
         propCov        <- if(!is.null(control$propCov))              control$propCov              else 'identity'
+        existingPF     <- if(!is.null(control$pf))                   control$pf                   else NULL
         m              <- if(!is.null(control$pfNparticles))         control$pfNparticles         else 1000
         resample       <- if(!is.null(control$pfResample))           control$pfResample           else FALSE
         filterType     <- if(!is.null(control$pfType))               control$pfType               else 'bootstrap'
@@ -1274,30 +1279,34 @@ sampler_RW_PF_block <- nimbleFunction(
         my_setAndCalculate <- setAndCalculate(model, target)
         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
         my_calcAdaptationFactor <- calcAdaptationFactor(d)
-        if(latentSamp == TRUE) { 
-          filterControl$saveAll <- TRUE
-          filterControl$smoothing <- TRUE
+        if(!is.null(existingPF)) {
+            my_particleFilter <- existingPF
         } else {
-          filterControl$saveAll <- FALSE
-          filterControl$smoothing <- FALSE
-        }
-        filterControl$initModel <- FALSE
-        if(is.character(filterType) && filterType == 'auxiliary') {
-          my_particleFilter <- buildAuxiliaryFilter(model, latents, 
-                                                    control = filterControl)
-        }
-        else if(is.character(filterType) && filterType == 'bootstrap') {
-          my_particleFilter <- buildBootstrapFilter(model, latents,
-                                                    control = filterControl)
-        }
-        else if(is.nfGenerator(filterType)){
-          my_particleFilter <- filterType(model, latents,
-                                          control = filterControl)
-          
-        }
-        else stop('filter type must be either "bootstrap", "auxiliary", or a
+            if(latentSamp == TRUE) { 
+                filterControl$saveAll <- TRUE
+                filterControl$smoothing <- TRUE
+            } else {
+                filterControl$saveAll <- FALSE
+                filterControl$smoothing <- FALSE
+            }
+            filterControl$initModel <- FALSE
+            if(is.character(filterType) && filterType == 'auxiliary') {
+                my_particleFilter <- buildAuxiliaryFilter(model, latents, 
+                                                          control = filterControl)
+            }
+            else if(is.character(filterType) && filterType == 'bootstrap') {
+                my_particleFilter <- buildBootstrapFilter(model, latents,
+                                                          control = filterControl)
+            }
+            else if(is.nfGenerator(filterType)){
+                my_particleFilter <- filterType(model, latents,
+                                                control = filterControl)
+                
+            }
+            else stop('filter type must be either "bootstrap", "auxiliary", or a
                   user defined filtering algorithm created by a call to 
                   nimbleFunction(...).')
+        }
         particleMV <- my_particleFilter$mvEWSamples
         ## checks
         if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')

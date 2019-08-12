@@ -153,7 +153,7 @@ auxFStep <- nimbleFunction(
           return(-Inf)
         }
         ## Multiply by p(x_t+1 | x_t).
-        auxll[i] <- auxll[i] + model$calculate(calc_thisNode_self)
+##        auxll[i] <- auxll[i] + model$calculate(calc_thisNode_self)
 ##        auxll[i] <- auxll[i]+calculate(model, thisNode) ## This line was included previously.  Removing it has only trivial impact on established test results.  Maybe try with more extensive test.
         ## Multiply by weight from time t.
         auxWts[i] <- auxll[i] + mvWSamples['wts',i][prevInd] 
