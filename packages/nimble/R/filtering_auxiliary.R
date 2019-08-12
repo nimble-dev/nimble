@@ -41,7 +41,7 @@ auxSimFunc = nimbleFunction(
   setup = function(model, node){},
   methods = list(
     lookahead = function(){
-      simulate(model, node)
+      model$simulate(node)
     }), where = getLoadingNamespace()
 )
 
@@ -52,11 +52,19 @@ auxFStep <- nimbleFunction(
                    saveAll, smoothing, lookahead, resamplingMethod,
                    silent = TRUE) {
     notFirst <- iNode != 1
+    last <- iNode == length(nodes)
     prevNode <- nodes[if(notFirst) iNode-1 else iNode]
-    prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
+
+    notFirst <- iNode != 1
+    modelSteps <- particleFilter_splitModelSteps(model, nodes, iNode, notFirst)
+    prevDeterm <- modelSteps$prevDeterm
+    calc_thisNode_self <- modelSteps$calc_thisNode_self
+    calc_thisNode_deps <- modelSteps$calc_thisNode_deps
+
+    ## prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
     thisNode <- nodes[iNode]
-    thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
-    thisData   <- model$getDependencies(thisNode, dataOnly = TRUE) 
+    ## thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
+    ## thisData   <- model$getDependencies(thisNode, dataOnly = TRUE) 
     ## t is the current time point.
     t <- iNode
     ## Get names of x and xs node for current and previous time point,
@@ -83,7 +91,7 @@ auxFStep <- nimbleFunction(
     isLast <- (iNode == length(nodes))
 
     auxFuncList <- nimbleFunctionList(auxFuncVirtual) 
-    allLatentNodes <- model$expandNodeNames(thisNode)
+    allLatentNodes <- model$expandNodeNames(calc_thisNode_self, sort = TRUE) ## They should already be sorted, but sorting here is a failsafe.
     numLatentNodes <- length(allLatentNodes)
     if(lookahead == "mean"){
        for(i in 1:numLatentNodes)
@@ -121,26 +129,32 @@ auxFStep <- nimbleFunction(
     if(notFirst){ 
       for(i in 1:m) {
         if(smoothing == 1){
+          ## smoothing is only allowed if saveAll is TRUE, so this should be ok.
+          ## i.e., mvEWSamples have been resampled.
           copy(mvEWSamples, mvWSamples, nodes = allPrevNodes,
                nodesTo = allPrevNodes, row = i, rowTo=i)
         }
-        copy(mvWSamples, model, prevXName, prevNode, row=i)     
-        calculate(model, prevDeterm)
+        copy(mvWSamples, model, prevXName, prevNode, row=i)
+        model$calculate(prevDeterm)
+        ##        calculate(model, prevDeterm)
+        ## The lookahead steps may include determ and stoch steps.
         if(lookahead == "mean"){
           for(j in 1:numLatentNodes)
               auxFuncList[[j]]$lookahead()
         }
         else
           auxFuncList[[1]]$lookahead()
-  
-        calculate(model, thisDeterm)
+
+        ##        calculate(model, thisDeterm)
         ## Get p(y_t+1 | x_t+1).
-        auxll[i] <- calculate(model, thisData)  
+        ##        auxll[i] <- calculate(model, thisData)
+        auxll[i] <- model$calculate(calc_thisNode_deps)
         if(is.nan(auxll[i])){
           return(-Inf)
         }
         ## Multiply by p(x_t+1 | x_t).
-        auxll[i] <- auxll[i]+calculate(model, thisNode) 
+        auxll[i] <- auxll[i] + model$calculate(calc_thisNode_self)
+##        auxll[i] <- auxll[i]+calculate(model, thisNode) ## This line was included previously.  Removing it has only trivial impact on established test results.  Maybe try with more extensive test.
         ## Multiply by weight from time t.
         auxWts[i] <- auxll[i] + mvWSamples['wts',i][prevInd] 
       }
@@ -155,16 +169,20 @@ auxFStep <- nimbleFunction(
     }   
     for(i in 1:m) {
       if(notFirst) {
-        copy(mvEWSamples, model, nodes = prevXName, nodesTo = prevNode, ## Previously copied from mvWSamples -- buggy if saveAll is FALSE
+        copy(mvWSamples, model, nodes = prevXName, nodesTo = prevNode, 
              row = ids[i])
-        calculate(model, prevDeterm) 
+        model$calculate(prevDeterm)
+        ##calculate(model, prevDeterm) 
       }
       # Simulate from x_t+1 | x_t.
-      simulate(model, thisNode)  
-      copy(model, mvWSamples, nodes = thisNode, nodesTo = thisXName, row=i)
-      calculate(model, thisDeterm)
+      model$simulate(calc_thisNode_self)
+      #simulate(model, thisNode)
+      ## copy(model, mvWSamples, nodes = thisNode, nodesTo = thisXName, row=i)
+      copy(model, mvEWSamples, nodes = thisNode, nodesTo = thisXName, row=i) ## Changed mvWSamples to mvEWSamples
+      ##      calculate(model, thisDeterm)
       ## Get p(y_t+1 | x_t+1).
-      ll[i]  <- calculate(model, thisData)  
+     ## ll[i]  <- calculate(model, thisData)  
+      ll[i] <- model$calculate(calc_thisNode_deps)
       if(is.nan(ll[i])){
         return(-Inf)
       }
@@ -190,11 +208,24 @@ auxFStep <- nimbleFunction(
       ids <- resamplerFunctionList[[1]]$run(normWts)  
     }
     for(i in 1:m){
-      if(smoothing == 1){
-        copy(mvWSamples, mvEWSamples, nodes = allPrevNodes, 
-             nodesTo = allPrevNodes, row = ids[i], rowTo=i)
+      ## if(smoothing == 1){
+      ##   copy(mvWSamples, mvEWSamples, nodes = allPrevNodes, ## This will not be correct due to above change.
+      ##        nodesTo = allPrevNodes, row = ids[i], rowTo=i)
+      ## }
+     ##copy(mvWSamples, mvEWSamples, thisXName, thisXName, ids[i], i)
+     copy(mvEWSamples, mvWSamples, thisXName, thisXName, row = i,  rowTo = i) ## Corresponds to change above.  EWSamples no longer accurate.
+    }
+
+    ## Corresponds to change above.
+    if(saveAll | last) {
+      for(i in 1:m) {
+        if(smoothing == 1){
+          copy(mvWSamples, mvEWSamples, nodes = allPrevNodes, 
+               nodesTo = allPrevNodes, row = ids[i], rowTo=i)
+        }
+
+        copy(mvWSamples, mvEWSamples, thisXName, thisXName, ids[i], i)
       }
-      copy(mvWSamples, mvEWSamples, thisXName, thisXName, ids[i], i)
     }
     
     ##  Calculate likelihood p(y_t+1 | y_1:t) as in equation (3) of paper.
@@ -422,5 +453,3 @@ buildAuxiliaryFilter <- nimbleFunction(
     }
   ),where = getLoadingNamespace()
 )
-
-
