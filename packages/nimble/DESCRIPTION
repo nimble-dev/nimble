@@ -120,6 +120,7 @@ Collate:
     filtering_resamplers.R
     filtering_auxiliary.R
     filtering_liuwest.R
+    filtering_IF2.R
     filtering_enkf.R
     filtering_bootstrap.R
     filtering_utils.R

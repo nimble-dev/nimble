@@ -162,81 +162,34 @@ IF2Step <- nimbleFunction(
     for(i in 1:m) {
       ids[i] <- i ## for initial weights copying
     }
-    if(useStoredSamples == 1){
-     for(j in 1:numParamVars){
-       if(varSize[j] == 1){
-         tmpPars[paramInds[j+1], ] <- doVarList[[j]]$scalarGet(0,m)
-       }
-       else{
-         tmpPars[(paramInds[j]+1):paramInds[j+1], ] <- doVarList[[j]]$vectorGet(0, m, varSize[j])
-       }
-     }
-    }
     for(i in 1:m) {
-       if(useStoredSamples == 1) {
-         if(singleParam == 1){
-           tmpPars[1,i] <- rnorm(1, tmpPars[1,i],  coolSigma[1])
-           values(model, paramNodes) <<- tmpPars[,i]
-         }
-         else{
-           for(j in 1:numParamVars){
-              tmpPars[j, i] <- rnorm(1, tmpPars[j, i],
-                                                coolSigma[j])
-          
-          }
-          
-           
-           values(model, paramNodes) <<- tmpPars[,i] 
-         }
-         if(notFirst){
-           copy(mvEWSamples, model, nodes = prevXName, nodesTo = prevNode, row = i)
-         }
-       }
-       else{
-         for(j in 1:numParamVars){
-           if(varSize[j] == 1){
-             tmpPars[paramInds[j+1], i] <- rnorm(1, values(model, paramVars[j])[1],
-                                                 coolSigma[paramInds[j+1]])
-           }
-           else{
-             tmpPars[paramInds[j]+j, i] <- rnorm(1, values(model, paramVars[j])[j],
-                                                coolSigma[j])
-             
-           }
-         }
-         values(model, paramNodes) <<- tmpPars[,i]
-      }
-      calculate(model, parAndPrevDeterm)
-      simulate(model, thisNode)
-      copy(model, mvWSamples, nodes = thisNode, nodesTo = thisXName, rowTo = i)
-      calculate(model, thisDeterm)
-      wts[i]  <- exp(calculate(model, thisData))
-      if(is.nan(wts[i])) wts[i] <- 0
-      if(calculate(model, paramNodes) == -Inf) 
-        wts[i] <- 0
-    }
-    for(j in 1:numParamVars){
-      if(varSize[j] == 1){
-        doVarList[[j]]$scalarSet(tmpPars[paramInds[j+1], ], 1, m, ids)
-      }
-      else{
-        doVarList[[j]]$vectorSet(tmpPars[(paramInds[j]+1):paramInds[j+1], ], 1, m, ids)
-      }
+        if(useStoredSamples == 1) { 
+            nimCopy(mvEWSamples, model, nodes = paramNodes, row = i)
+            if(notFirst)
+                copy(mvEWSamples, model, nodes = prevXName, nodesTo = prevNode, row = i)
+        }
+        currentValues <- values(model, paramNodes)
+        for(j in 1:numParams)
+            currentValues[j] <- rnorm(1, currentValues[j], coolSigma[j])
+        values(model, paramNodes) <<- currentValues
+        calculate(model, parAndPrevDeterm)
+        simulate(model, thisNode)
+        calculate(model, thisDeterm)
+        wts[i]  <- exp(calculate(model, thisData))
+        if(is.nan(wts[i])) wts[i] <- 0
+        logProb <- calculate(model, paramNodes)
+        if(is.na(logProb) | logProb == -Inf)
+            wts[i] <- 0
+        nimCopy(model, mvWSamples, nodes = thisNode, nodesTo = thisXName, rowTo = i)
+        nimCopy(model, mvWSamples, nodes = paramNodes, rowTo = i)
     }
     wts <- wts/sum(wts)
     rankSample(wts, m, ids, silent)
     for(i in 1:m){
       copy(mvWSamples, mvEWSamples, nodes = thisXName, nodesTo = thisXName, row = ids[i], rowTo = i)
+      copy(mvWSamples, mvEWSamples, nodes = paramNodes, row = ids[i], rowTo = i)
       mvWSamples['wts',i][currInd] <<- log(wts[i])
     }
-    for(j in 1:numParamVars){
-      if(varSize[j] == 1){
-         doVarList[[j]]$scalarSet(tmpPars[paramInds[j+1], ], 0, m, ids)
-       }
-       else{
-         doVarList[[j]]$vectorSet(tmpPars[(paramInds[j]+1):paramInds[j+1], ], 0, m, ids)
-       }
-     }   
   return(0)
   },  where = getLoadingNamespace()
 )
@@ -370,7 +323,8 @@ buildIteratedFilter2 <- nimbleFunction(
         stop("buildIteratedFilter2: IF2 doesn't work for matrix-valued top-level parameters.")
     })
     dims <- lapply(nodes, function(var) nimDim(model[[var]]))
-    if(length(unique(dims)) > 1) stop("buildIteratedFilter2: sizes or dimension of latent states cannot vary.")
+      if(length(unique(dims)) > 1)
+          stop("buildIteratedFilter2: sizes or dimension of latent states cannot vary.")
     paramDims <-   sapply(params, function(n) nimDim(model[[n]]))
     
     my_initializeModel <- initializeModel(model, silent = silent)
