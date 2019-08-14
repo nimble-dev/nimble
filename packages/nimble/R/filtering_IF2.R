@@ -14,148 +14,28 @@ IF2StepVirtual <- nimbleFunctionVirtual(
     returnType(double())
 )
 
-IF2SetParVirtual <- nimbleFunctionVirtual(
-  methods = list(
-    scalarSet = function(scalars = double(1), mvWset = integer(), m = integer(),
-                         ids = integer(1)){},
-    vectorSet = function(vectors = double(2), mvWset = integer(), m = integer(),
-                         ids = integer(1)){},
-    scalarGet = function(mvWset = integer(), m = integer()){
-      returnType(double(1))},
-    vectorGet = function(mvWset = integer(), m = integer(), length = integer()){
-      returnType(double(2))},
-    calcScalarMean = function(m = integer()){returnType(double())},
-    calcVectorMean = function(m = integer(), length = integer()){
-      returnType(double(1))}
-  )
-)
-
-doPars1 <- nimbleFunction(
-  contains = IF2SetParVirtual,
-  setup = function(parName, mvWSamples, mvEWSamples) {
-  },
-  methods = list(
-    scalarSet = function(scalars = double(1), mvWset = integer(), m = integer(), ids = integer(1)){
-      if(mvWset == 1){
-        for(i in 1:m){
-          mvWSamples[parName, i][1] <<- scalars[ids[i]]
-        }
-      }
-      else{
-        for(i in 1:m){
-          mvEWSamples[parName, i][1] <<- scalars[ids[i]]
-        }
-      }
-    },
-    vectorSet = function(vectors = double(2), mvWset = integer(), m = integer(), ids = integer(1)){
-      if(mvWset == 1){
-        for(i in 1:m){
-          mvWSamples[parName, i] <<- vectors[,ids[i]]
-        }
-      }
-      else{
-        for(i in 1:m){
-          mvEWSamples[parName, i] <<- vectors[,ids[i]]
-        }
-      }
-    },
-    scalarGet = function(mvWset = integer(), m = integer()){
-        vecOut <- numeric(m, init=FALSE)
-        if(mvWset == 1){
-            for(i in 1:m){
-          vecOut[i] <- mvWSamples[parName, i][1]
-        }
-      }
-      else{
-        for(i in 1:m){
-          vecOut[i] <- mvEWSamples[parName, i][1]
-        }
-      }
-      returnType(double(1))
-      return(vecOut)
-    },
-    vectorGet = function(mvWset = integer(), m = integer(), length = integer()){
-        matOut <- matrix(nrow = length, ncol = m, init=FALSE)
-        if(mvWset == 1){
-        for(i in 1:m){
-          matOut[,i] <- mvWSamples[parName, i]
-        }
-      }
-      else{
-        for(i in 1:m){
-          matOut[,i] <- mvEWSamples[parName, i]
-        }
-      }
-      returnType(double(2))
-      return(matOut)
-    },
-    calcScalarMean = function(m = integer()){
-      returnType(double())
-      sumMean = 0
-      for(i in 1:m){
-        sumMean <- sumMean + mvWSamples[parName, i][1]*1/m
-
-      }
-      return(sumMean)
-    },
-    calcVectorMean = function(m = integer(), length = integer()){
-      returnType(double(1))
-      sumMean <- numeric(length)
-      for(i in 1:m){
-        sumMean[1:length] <- sumMean[1:length] + 
-          mvWSamples[parName, i][1:length]*1/m 
-      }
-      return(sumMean)
-    }
-  ), where = getLoadingNamespace())
-
-
 IF2Step <- nimbleFunction(
   contains = IF2StepVirtual,
-  setup = function(model, mvWSamples, mvEWSamples, nodes, paramVarDims,
-                   iNode, paramNodes, paramVars, names,
-                   sigma, silent = FALSE) {
+  setup = function(model, mvWSamples, mvEWSamples, latentNodes, latentVar,
+                   iNode, paramNodes, numParams, sigma, silent = FALSE) {
     notFirst <- iNode != 1
     isSecond <- iNode == 2
-    prevNode <- nodes[if(notFirst) iNode-1 else iNode]
+    prevNode <- latentNodes[if(notFirst) iNode-1 else iNode]
     prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
-    thisNode <- nodes[iNode]
+    thisNode <- latentNodes[iNode]
     parDeterm <- model$getDependencies(paramNodes, determOnly=TRUE)
     parAndPrevDeterm <- c(parDeterm, prevDeterm)
     thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
     thisData   <- model$getDependencies(thisNode, dataOnly = TRUE)
     t <- iNode  # current time point
-    totalTime <- length(nodes)     
+    totalTime <- length(latentNodes)
     isLast <- (t == totalTime)
-    
-    # Get names of xs node for current and previous time point (used in copy)
-
-    prevXName <- names    
-    thisXName <- names
-    currInd <- 1
-    prevInd <- 1 
-
-    numParams <- sum(paramVarDims)
-    numParamVars <- length(paramVars)
-    paramInds <- c(0,cumsum(paramVarDims)) 
-    singleParam <- (numParams == 1)
-    
-    ##  varSize keeps track of the size of each parameter we are estimating
-    varSize <- rep(0, length(paramInds)-1)
-    doVarList <- nimbleFunctionList(IF2SetParVirtual)
-    for(i in 1:numParamVars){
-      doVarList[[i]] <- doPars1(paramVars[i], mvWSamples, mvEWSamples)
-      varSize[i] <- paramInds[i+1]-paramInds[i]
-    }
-    if(singleParam)
-      varSize = c(varSize, 0)  # ensure that varSize is treated as a vector even with only one parameter
   },
   run = function(m = integer(), j = integer(), coolingRate = double(), useStoredSamples = integer()) {
     returnType(double())
     l <- numeric(m, init=FALSE)
     wts <- numeric(m, init=FALSE)
     ids <- integer(m, 0)
-    tmpPars <- matrix(nrow = numParams, ncol = m, init=FALSE)
     coolParam <- (coolingRate)^((t-1+(j - 1)*totalTime)/(50*totalTime))
     coolSigma <- coolParam*sigma
     
@@ -166,7 +46,7 @@ IF2Step <- nimbleFunction(
         if(useStoredSamples == 1) { 
             nimCopy(mvEWSamples, model, nodes = paramNodes, row = i)
             if(notFirst)
-                copy(mvEWSamples, model, nodes = prevXName, nodesTo = prevNode, row = i)
+                copy(mvEWSamples, model, nodes = latentVar, nodesTo = prevNode, row = i)
         }
         currentValues <- values(model, paramNodes)
         for(j in 1:numParams)
@@ -180,15 +60,15 @@ IF2Step <- nimbleFunction(
         logProb <- calculate(model, paramNodes)
         if(is.na(logProb) | logProb == -Inf)
             wts[i] <- 0
-        nimCopy(model, mvWSamples, nodes = thisNode, nodesTo = thisXName, rowTo = i)
+        nimCopy(model, mvWSamples, nodes = thisNode, nodesTo = latentVar, rowTo = i)
         nimCopy(model, mvWSamples, nodes = paramNodes, rowTo = i)
     }
     wts <- wts/sum(wts)
     rankSample(wts, m, ids, silent)
     for(i in 1:m){
-      copy(mvWSamples, mvEWSamples, nodes = thisXName, nodesTo = thisXName, row = ids[i], rowTo = i)
+      copy(mvWSamples, mvEWSamples, nodes = latentVar, row = ids[i], rowTo = i)
       copy(mvWSamples, mvEWSamples, nodes = paramNodes, row = ids[i], rowTo = i)
-      mvWSamples['wts',i][currInd] <<- log(wts[i])
+      mvWSamples['wts',i][1] <<- log(wts[i])
     }
   return(0)
   },  where = getLoadingNamespace()
@@ -259,12 +139,30 @@ buildIteratedFilter2 <- nimbleFunction(
     if(is.null(silent)) silent <- TRUE
     if(is.null(initModel)) initModel <- TRUE
 
-    paramsLength <- length(model$expandNodeNames(params, 
-                                                 returnScalarComponents = TRUE))
-    if(is.null(sigma)){
-      sigma <- rep(1, paramsLength)
+    # if unspecified, parameter nodes are specified as all stochastic top level nodes which
+    # are not in the set of latent nodes above
+    if(all(is.null(params))){
+      params <-  model$getNodeNames(stochOnly = TRUE, includeData = FALSE,
+                                    topOnly = TRUE)
+      params <- params[!params %in% nodes]
     }
-    if(length(sigma) < paramsLength)
+    params <- model$expandNodeNames(params)
+    numParams <- length(params)
+    parDeterm <- model$getDependencies(params, determOnly=TRUE)
+
+    if(identical(params, character(0)))
+      stop('buildIteratedFilter2: There must be at least one parameter for IF2 to optimize with respect to.')
+    if(any(params %in% nodes))
+      stop('buildIteratedFilter2: Parameters cannot be latent states.')
+    if(!all(params %in% model$getNodeNames(stochOnly = TRUE)))
+        stop('buildIteratedFilter2: Parameters must be stochastic nodes.')
+      
+    paramVars <-  model$getVarNames(nodes = params)
+
+    if(is.null(sigma)){
+      sigma <- rep(1, numParams)
+    }
+    if(length(sigma) != numParams)
        stop("buildIteratedFilter2: The 'sigma' control list argument must be a vector specifying a
             non-negative perturbation magnitude for each element of 'params'. The length of 'sigma'
             does not match the length of 'params'.")
@@ -276,16 +174,16 @@ buildIteratedFilter2 <- nimbleFunction(
     if(is.null(inits)){
       inits <- values(model, params)
     }
-    if(length(inits) < paramsLength)
+    if(length(inits) < numParams)
       stop("buildIteratedFilter2: The 'inits' control list argument must be a vector specifying initial values for each element of 'params'. The length of 'inits' does not match the number of parameters.")
     
     #get latent state info
-    varName <- sapply(nodes, function(x) { return(model$getVarNames(nodes = x)) } )
-    if(length(unique(varName)) > 1){
+    latentVar <- model$getVarNames(nodes = nodes) 
+    if(length(unique(latentVar)) > 1){
       stop("buildIteratedFilter2: All latent nodes must be in the same variable.")
     }
-    varName <- varName[1]
-    info <- model$getVarInfo(varName)
+
+    info <- model$getVarInfo(latentVar)
     latentDims <- info$nDim
     if(is.null(timeIndex)){
       timeIndex <- which.max(info$maxs)
@@ -298,44 +196,22 @@ buildIteratedFilter2 <- nimbleFunction(
      ## CJP note: this assumes nodes in variable are in time order. Should we tell the user this is our assumption?  
     nodes <- paste(info$varName, "[", rep(",", timeIndex-1), 1:timeLength,
                    rep(",", info$nDim - timeIndex), "]", sep="")
-    latentVars <- model$getVarNames(nodes = nodes)
-      
-    # if unspecified, parameter nodes are specified as all stochastic top level nodes which
-    # are not in the set of latent nodes above
-    if(all(is.null(params))){
-      params <-  model$getNodeNames(stochOnly = TRUE, includeData = FALSE,
-                                           topOnly = TRUE)
-      parLatents <- sapply(params, function(x){ return(model$getVarNames(nodes = x) %in% latentVars)})
-      params <- params[!parLatents]
-    }
-    unsortParams <- model$expandNodeNames(params, sort = FALSE)
-    params <- model$expandNodeNames(params, sort = TRUE)
-    sortingOrder <- sapply(unsortParams, function(x) return(which(x == params)))
-    if(identical(params, character(0)))
-      stop('buildIteratedFilter2: There must be at least one higher level parameter for IF2 to work.')
-    if(any(params %in% nodes))
-      stop('buildIteratedFilter2: Parameters cannot be latent states.')
-    if(!all(params%in%model$getNodeNames(stochOnly = TRUE)))
-      stop('buildIteratedFilter2: Parameters must be stochastic nodes.')
-    paramVars <-  model$getVarNames(nodes =  params)  # need var names too
-    pardimcheck <- sapply(paramVars, function(var){
-      if(length(nimDim(model[[var]]))>1)
-        stop("buildIteratedFilter2: IF2 doesn't work for matrix-valued top-level parameters.")
-    })
-    dims <- lapply(nodes, function(var) nimDim(model[[var]]))
-      if(length(unique(dims)) > 1)
-          stop("buildIteratedFilter2: sizes or dimension of latent states cannot vary.")
-    paramDims <-   sapply(params, function(n) nimDim(model[[n]]))
-    
+             
+    dims <- lapply(nodes, function(node) nimDim(model[[node]]))
+    if(length(unique(dims)) > 1) stop('sizes or dimension of latent 
+                                      states varies')
+
     my_initializeModel <- initializeModel(model, silent = silent)
-    modelSymbolObjects <- model$getSymbolTable()$getSymbolObjects()[c(latentVars, paramVars)]
+
+    modelSymbolObjects <- model$getSymbolTable()$getSymbolObjects()[c(latentVar, paramVars)]
     names <- sapply(modelSymbolObjects, function(x) return(x$name))
     type <- sapply(modelSymbolObjects, function(x) return(x$type))
     size <- lapply(modelSymbolObjects, function(x) {
       if(identical(x$size, numeric(0))) return(1)
       return(x$size)})
-    
-    size[[latentVars]] <- as.numeric(dims[[1]])      
+
+    ## check why size for latent is not already ok
+    size[[latentVar]] <- as.numeric(dims[[1]])      
     mvEWSamples <- modelValues(modelValuesConf(vars = names,
                                             types = type,
                                             sizes = size))
@@ -346,32 +222,13 @@ buildIteratedFilter2 <- nimbleFunction(
                                             types = type,
                                             sizes = size))
     
-    names <- names[1]
-    varSymbolObjects <- model$getSymbolTable()$getSymbolObjects()[paramVars]
-    paramVarDims <- unlist(lapply(varSymbolObjects, function(x){
-      if(identical(x$size, numeric(0))) return(1)
-      return(x$size)}))
-
     IF2StepFunctions <- nimbleFunctionList(IF2StepVirtual)
     for(iNode in seq_along(nodes))
-      IF2StepFunctions[[iNode]] <- IF2Step(model,  mvWSamples, mvEWSamples, nodes, paramVarDims, 
-                                         iNode, params, paramVars, names, sigma, silent)
-    
-    numParams <- sum(paramVarDims)
-    numParamVars <- length(paramVars)
-    paramInds <- c(0, cumsum(paramVarDims)) 
-    singleParam <- (numParams == 1)
-    
-    ##  varSize keeps track of the size of each parameter we are estimating
-    varSize <- rep(0, length(paramInds)-1)
-    doVarList <- nimbleFunctionList(IF2SetParVirtual)
-    for(i in 1:numParamVars){
-      doVarList[[i]] <- doPars1(paramVars[i], mvWSamples, mvEWSamples)
-      varSize[i] <- paramInds[i+1]-paramInds[i]
-    }
-    if(singleParam)
-      varSize = c(varSize, 0)  # ensure that varSize is treated as a vector even with only one parameter
-    
+      IF2StepFunctions[[iNode]] <- IF2Step(model,  mvWSamples, mvEWSamples, nodes, latentVar,
+                                           iNode, params, numParams, sigma, silent)
+
+    estimate <- nimNumeric(numParams)  
+  
     oldJ <- 0
     oldM <- 0
   },
@@ -382,8 +239,7 @@ buildIteratedFilter2 <- nimbleFunction(
     my_initializeModel$run()
     resize(mvWSamples, m)
     resize(mvEWSamples, m)
-    outPars <- numeric(numParams)
-    sortedOutPars <- numeric(numParams)
+
     for(i in 1:m)
       mvWSamples['wts',i][1] <<- log(1/m)
    
@@ -393,28 +249,26 @@ buildIteratedFilter2 <- nimbleFunction(
        IF2StepFunctions[[iNode]]$run(m, j, coolingRate, useStoredSamples)
       }
     }
-    for(k in 1:numParamVars){
-      if(varSize[k] == 1){
-        outPars[paramInds[k+1]] <- doVarList[[k]]$calcScalarMean(m)
+
+      ## Calculate mean as final estimate.
+    estimate <<- rep(0, numParams)
+      for(i in 1:m) {
+          nimCopy(mvWSamples, model, nodes = params, row = i)
+          estimate <<- estimate + values(model, params)
       }
-      else{
-        outPars[(paramInds[k]+1):paramInds[k+1]] <- 
-          doVarList[[k]]$calcVectorMean(m, varSize[k])
-      }
-    }
+      estimate <<- estimate / m
+
+    ## Leave model with parameter estimates.  
+      values(model, params) <<- estimate
+      model$calculate(parDeterm)
     oldM <<- m
     oldJ <<- j 
     
-    for(i in 1:paramsLength)
-      sortedOutPars[i] <- outPars[i] 
-    
     returnType(double(1))
-    return(sortedOutPars)
+    return(estimate)
   },
   methods = list(
     continueRun = function(n = integer(default = 5), coolingRate = double(default = 0.2)){
-      outPars <- numeric(numParams)
-      sortedOutPars <- numeric(numParams)
       useStoredSamples <- 1
       newN <- oldJ + n
       for(j in (oldJ+1):newN){
@@ -423,20 +277,23 @@ buildIteratedFilter2 <- nimbleFunction(
                                         useStoredSamples)
         }
       }
-      for(k in 1:numParamVars){
-        if(varSize[k] == 1){
-          outPars[paramInds[k+1]] <- doVarList[[k]]$calcScalarMean(oldM)
-        }
-        else{
-          outPars[(paramInds[k]+1):paramInds[k+1]] <- 
-            doVarList[[k]]$calcVectorMean(oldM, varSize[k])
-        }
+
+      ## Calculate mean as final estimate.
+    estimate <<- rep(0, numParams)
+      for(i in 1:oldM) {
+          nimCopy(mvWSamples, model, nodes = params, row = i)
+          estimate <<- estimate + values(model, params)
       }
+      estimate <<- estimate / oldM
+
+    ## Leave model with parameter estimates.  
+      values(model, params) <<- estimate
+      model$calculate(parDeterm)
+
       oldJ <<- newN
-      for(i in 1:paramsLength)
-        sortedOutPars[i] <- outPars[i]
+
       returnType(double(1))
-      return(sortedOutPars)
+      return(estimate)
     }
   ),
   where = getLoadingNamespace()
