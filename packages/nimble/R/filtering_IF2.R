@@ -21,12 +21,16 @@ IF2Step <- nimbleFunction(
     notFirst <- iNode != 1
     isSecond <- iNode == 2
     prevNode <- latentNodes[if(notFirst) iNode-1 else iNode]
-    prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
+
+    modelSteps <- particleFilter_splitModelSteps(model, latentNodes, iNode, notFirst)
+    prevDeterm <- modelSteps$prevDeterm
+    calc_thisNode_self <- modelSteps$calc_thisNode_self
+    calc_thisNode_deps <- modelSteps$calc_thisNode_deps
+    
     thisNode <- latentNodes[iNode]
     parDeterm <- model$getDependencies(paramNodes, determOnly=TRUE)
     parAndPrevDeterm <- c(parDeterm, prevDeterm)
-    thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
-    thisData   <- model$getDependencies(thisNode, dataOnly = TRUE)
+
     t <- iNode  # current time point
     totalTime <- length(latentNodes)
     isLast <- (t == totalTime)
@@ -53,9 +57,9 @@ IF2Step <- nimbleFunction(
             currentValues[j] <- rnorm(1, currentValues[j], coolSigma[j])
         values(model, paramNodes) <<- currentValues
         calculate(model, parAndPrevDeterm)
-        simulate(model, thisNode)
-        calculate(model, thisDeterm)
-        wts[i]  <- exp(calculate(model, thisData))
+        simulate(model, calc_thisNode_self)
+        logProb <- calculate(model, calc_thisNode_deps)
+        wts[i]  <- exp(logProb)
         if(is.nan(wts[i])) wts[i] <- 0
         logProb <- calculate(model, paramNodes)
         if(is.na(logProb) | logProb == -Inf)
