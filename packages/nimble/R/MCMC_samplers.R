@@ -1130,6 +1130,7 @@ sampler_RW_PF <- nimbleFunction(
         if(length(targetAsScalar) > 1)                      stop('more than one top-level target; cannot use RW_PF sampler, try RW_PF_block sampler')
     },
     run = function() {
+        storeParticleLP <<- my_particleFilter$getLastLogLik()
         if(resample) {
             modelLP0 <- my_particleFilter$run(m)
             modelLP0 <- modelLP0 + getLogProb(model, target)
@@ -1140,6 +1141,9 @@ sampler_RW_PF <- nimbleFunction(
         particleLP <- my_particleFilter$run(m)
         modelLP1 <- particleLP + getLogProb(model, target)
         jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
+        if(!jump) {
+            my_particleFilter$setLastLogLik(storeParticleLP)
+        }
         if(jump & latentSamp){
             ## if we jump, randomly sample latent nodes from pf output and put into model so that they can be monitored
             index <- ceiling(runif(1, 0, m))
@@ -1151,7 +1155,7 @@ sampler_RW_PF <- nimbleFunction(
             ## if we don't jump, replace model latent nodes with saved latent nodes
             copy(from = mvSaved, to = model, nodes = latentDep, row = 1, logProb = TRUE)
         }
-        if(jump & !resample)  storeParticleLP <<- particleLP
+##        if(jump & !resample)  storeParticleLP <<- particleLP
         if(jump & optimizeM) optimM()
         if(adaptive)     adaptiveProcedure(jump)
     },
@@ -1317,6 +1321,7 @@ sampler_RW_PF_block <- nimbleFunction(
         if(any(target%in%model$expandNodeNames(latents)))   stop('PMCMC \'target\' argument cannot include latent states')
     },
     run = function() {
+        storeParticleLP <<- my_particleFilter$getLastLogLik()
         if(resample) {
             modelLP0 <- my_particleFilter$run(m)
             modelLP0 <- modelLP0 + getLogProb(model, target)
@@ -1327,6 +1332,9 @@ sampler_RW_PF_block <- nimbleFunction(
         particleLP <- my_particleFilter$run(m)
         modelLP1 <- particleLP + getLogProb(model, target)
         jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
+        if(!jump) {
+            my_particleFilter$setLastLogLik(storeParticleLP)
+        }
         if(jump & latentSamp) {
             ## if we jump, randomly sample latent nodes from pf output and put
             ## into model so that they can be monitored
@@ -1339,7 +1347,7 @@ sampler_RW_PF_block <- nimbleFunction(
             ## if we don't jump, replace model latent nodes with saved latent nodes
             copy(from = mvSaved, to = model, nodes = latentDep, row = 1, logProb = TRUE)
         }
-        if(jump & !resample)  storeParticleLP <<- particleLP
+      ##  if(jump & !resample)  storeParticleLP <<- particleLP
         if(jump & optimizeM) optimM()
         if(adaptive)     adaptiveProcedure(jump)
     },

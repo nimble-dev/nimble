@@ -424,6 +424,7 @@ buildAuxiliaryFilter <- nimbleFunction(
                                             resamplingMethod, silent)
     
     essVals <- rep(0, length(nodes))
+    lastLogLik <- -Inf
   },
   run = function(m = integer(default = 10000)) {
     returnType(double())
@@ -435,18 +436,25 @@ buildAuxiliaryFilter <- nimbleFunction(
     for(iNode in seq_along(auxStepFunctions)) {
       logL <- logL + auxStepFunctions[[iNode]]$run(m)
       essVals[iNode] <<- auxStepFunctions[[iNode]]$returnESS()
-      
+
       ## When all particles have 0 weight, likelihood becomes NAN
       ## this happens if top-level params have bad values - possible
       ## during pmcmc for example.
-      if(is.nan(logL)) return(-Inf)
-      if(logL == -Inf) return(logL) 
-      if(logL == Inf) return(-Inf) 
+      if(is.nan(logL)) {lastLogLik <<- -Inf; return(-Inf)}
+      if(logL == -Inf) {lastLogLik <<- logL; return(logL)} 
+      if(logL == Inf) {lastLogLik <<- -Inf; return(-Inf)} 
     }
-  
+    lastLogLik <<- logL
     return(logL)
   },
   methods = list(
+    getLastLogLik = function() {
+      return(lastLogLik)
+      returnType(double())
+    },
+    setLastLogLik = function(lll = double()) {
+      lastLogLik <<- lll
+    },
     returnESS = function(){
       returnType(double(1))
       return(essVals)
