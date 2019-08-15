@@ -1400,6 +1400,7 @@ sampler_RW_PF_block <- nimbleFunction(
             scale   <<- scaleOriginal
             propCov <<- propCovOriginal
             chol_propCov <<- chol(propCov)
+            chol_propCov_scale <<- chol_propCov * scale
             storeParticleLP <<- -Inf
             timesRan      <<- 0
             timesAccepted <<- 0
