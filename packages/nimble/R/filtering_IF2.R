@@ -296,7 +296,8 @@ buildIteratedFilter2 <- nimbleFunction(
 
         if(is.null(baselineNode)) {
             ## set up a dummy function
-            IF2Step0Function <- IF2Step0(model,  mvEWSamples, params[1], latentVar,
+            baselineNode <- params[1]
+            IF2Step0Function <- IF2Step0(model,  mvEWSamples, baselineNode, latentVar,
                                          params, numParams, sigma, initParamSigma, timeLength, silent)
             baseline <- FALSE
         } else {
