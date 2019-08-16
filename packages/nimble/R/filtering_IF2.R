@@ -87,6 +87,8 @@ IF2Step <- nimbleFunction(
         parDeterm <- model$getDependencies(paramNodes, determOnly=TRUE)
         parAndPrevDeterm <- c(parDeterm, prevDeterm)
 
+        if(is.null(baselineNode))
+            baseline <- FALSE else baseline <- TRUE
         isLast <- (iNode == timeLength)
     },
     run = function(m = integer(), j = integer(), coolingRate = double(), useStoredSamples = integer()) {
@@ -106,7 +108,8 @@ IF2Step <- nimbleFunction(
                 if(notFirst) {
                     copy(mvEWSamples, model, nodes = latentVar, nodesTo = prevNode, row = i)
                 } else {
-                    copy(mvEWSamples, model, nodes = latentVar, nodesTo = baselineNode, row = i)
+                    if(baseline)
+                        copy(mvEWSamples, model, nodes = latentVar, nodesTo = baselineNode, row = i)
                 }
             }
             currentValues <- values(model, paramNodes)
@@ -123,6 +126,7 @@ IF2Step <- nimbleFunction(
                 wts[i] <- 0
             nimCopy(model, mvWSamples, nodes = thisNode, nodesTo = latentVar, rowTo = i)
             nimCopy(model, mvWSamples, nodes = paramNodes, rowTo = i)
+            mvWSamples['wts', i][1] <<- wts[i]
         }
         lik <- mean(wts)
         wts <- wts/sum(wts)
@@ -130,7 +134,6 @@ IF2Step <- nimbleFunction(
         for(i in 1:m){
             copy(mvWSamples, mvEWSamples, nodes = latentVar, row = ids[i], rowTo = i)
             copy(mvWSamples, mvEWSamples, nodes = paramNodes, row = ids[i], rowTo = i)
-            mvWSamples['wts',i][1] <<- log(wts[i])
         }
         return(lik)
     },  where = getLoadingNamespace()
@@ -148,6 +151,7 @@ IF2Step <- nimbleFunction(
 #' @param params A character vector specifying the top-level parameters to obtain maximum likelihood estimates of. 
 #'   If unspecified, parameter nodes are specified as all stochastic top level nodes which
 #'  are not in the set of latent nodes specified in \code{nodes}.
+#' @param baselineNode A character vector specifying the node that is the latent node at the "0th" time step. The first node in \code{nodes} should depend on this baseline, but it should have no data depending on it. If \code{NULL} (the default), any initial state is taken to be fixed at the values present in the model at the time the algorithm is run.
 #' @param control  A list specifying different control options for the IF2 algorithm.  Options are described in the \sQuote{details} section below.
 
 #' @author Nicholas Michaud, Dao Nguyen, and Christopher Paciorek
@@ -157,6 +161,7 @@ IF2Step <- nimbleFunction(
 #' Each of the \code{control()} list options are described in detail below:
 #' \describe{
 #'  \item{sigma}{A vector specifying a non-negative perturbation magnitude for each element of the \code{params} argument.  Defaults to a vector of 1's.}
+#'  \item{initParamSigma}{A vector specifying a vector of standard deviations to use when simulating an initial particle swarm centered on the initial value of the parameters.}
 #'  \item{inits}{A vector specifying an initial value for each element of the \code{params} argument.  Defaults to the parameter values in the model at the time the model is built.}
 #'  \item{timeIndex}{An integer used to manually specify which dimension of the latent state variable indexes time.  
 #'  Only needs to be set if the number of time points is less than or equal to the size of the latent state at each time point.}
@@ -190,7 +195,7 @@ IF2Step <- nimbleFunction(
 #' sigma_x_MLE <- Cmy_IF2$continueRun(n = 10) 
 #' }
 buildIteratedFilter2 <- nimbleFunction(
-    setup = function(model, nodes, params = NULL, baselineNode, control = list()){
+    setup = function(model, nodes, params = NULL, baselineNode = NULL, control = list()){
         
         ## control list extraction
         silent <- control[['silent']]
@@ -203,11 +208,12 @@ buildIteratedFilter2 <- nimbleFunction(
         if(is.null(silent)) silent <- TRUE
         if(is.null(initModel)) initModel <- TRUE
 
-        if(length(model$getDependencies(baselineNode, dataOnly = TRUE)))
-            stop("buildIteratedFilter2: 'baselineNode' should not have any data nodes as dependents.")
+        if(!is.null(baselineNode))
+            if(length(model$getDependencies(baselineNode, dataOnly = TRUE)))
+                stop("buildIteratedFilter2: 'baselineNode' should not have any data nodes as dependents.")
 
-                                        # if unspecified, parameter nodes are specified as all stochastic top level nodes which
-                                        # are not in the set of latent nodes above
+        ## if unspecified, parameter nodes are specified as all stochastic top level nodes which
+        ## are not in the set of latent nodes above
         if(all(is.null(params))){
             params <-  model$getNodeNames(stochOnly = TRUE, includeData = FALSE,
                                           topOnly = TRUE)
@@ -244,7 +250,6 @@ buildIteratedFilter2 <- nimbleFunction(
         if(length(inits) < numParams)
             stop("buildIteratedFilter2: The 'inits' control list argument must be a vector specifying initial values for each element of 'params'. The length of 'inits' does not match the number of parameters.")
         
-                                        #get latent state info
         latentVar <- model$getVarNames(nodes = nodes) 
         if(length(unique(latentVar)) > 1){
             stop("buildIteratedFilter2: All latent nodes must be in the same variable.")
@@ -260,7 +265,8 @@ buildIteratedFilter2 <- nimbleFunction(
         } else{
             timeLength <- info$maxs[timeIndex]
         }
-        ## CJP note: this assumes nodes in variable are in time order. Should we tell the user this is our assumption?  
+        ## CJP note: this assumes nodes in variable are in time order.
+        ## Should we tell the user this is our assumption?  
         nodes <- paste(info$varName, "[", rep(",", timeIndex-1), 1:timeLength,
                        rep(",", info$nDim - timeIndex), "]", sep="")
         
@@ -272,26 +278,34 @@ buildIteratedFilter2 <- nimbleFunction(
 
         modelSymbolObjects <- model$getSymbolTable()$getSymbolObjects()[c(latentVar, paramVars)]
         names <- sapply(modelSymbolObjects, function(x) return(x$name))
-        type <- sapply(modelSymbolObjects, function(x) return(x$type))
-        size <- lapply(modelSymbolObjects, function(x) {
+        types <- sapply(modelSymbolObjects, function(x) return(x$type))
+        sizes <- lapply(modelSymbolObjects, function(x) {
             if(identical(x$size, numeric(0))) return(1)
             return(x$size)})
+        sizes[[latentVar]] <- as.numeric(dims[[1]])      
 
-        ## check why size for latent is not already ok
-        size[[latentVar]] <- as.numeric(dims[[1]])      
         mvEWSamples <- modelValues(modelValuesConf(vars = names,
-                                                   types = type,
-                                                   sizes = size))
+                                                   types = types,
+                                                   sizes = sizes))
         names <- c(names, "wts")
-        type <- c(type, "double")
-        size$wts <- 1
+        types <- c(types, "double")
+        sizes$wts <- 1
         mvWSamples  <- modelValues(modelValuesConf(vars = names,
-                                                   types = type,
-                                                   sizes = size))
+                                                   types = types,
+                                                   sizes = sizes))
+
+        if(is.null(baselineNode)) {
+            ## set up a dummy function
+            IF2Step0Function <- IF2Step0(model,  mvEWSamples, params[1], latentVar,
+                                         params, numParams, sigma, initParamSigma, timeLength, silent)
+            baseline <- FALSE
+        } else {
+            IF2Step0Function <- IF2Step0(model,  mvEWSamples, baselineNode, latentVar,
+                                         params, numParams, sigma, initParamSigma, timeLength, silent)
+            baseline <- TRUE
+        }
         
         IF2StepFunctions <- nimbleFunctionList(IF2StepVirtual)
-        IF2Step0Function <- IF2Step0(model,  mvEWSamples, baselineNode, latentVar,
-                                     params, numParams, sigma, initParamSigma, timeLength, silent)
         for(iNode in seq_along(nodes))
             IF2StepFunctions[[iNode]] <- IF2Step(model,  mvWSamples, mvEWSamples, nodes, latentVar, baselineNode,
                                                  iNode, params, numParams, sigma, timeLength, silent)
@@ -300,7 +314,7 @@ buildIteratedFilter2 <- nimbleFunction(
         
         oldJ <- 0
         oldM <- 0
-        logLik <- 0
+        logLik <- nimNumeric(2)
         estimates <- nimMatrix(0, 1, numParams)
         estSD <- nimMatrix(0, 1, numParams)
     },
@@ -313,27 +327,27 @@ buildIteratedFilter2 <- nimbleFunction(
         resize(mvEWSamples, m)
         estSD <<- nimMatrix(0, n, numParams)
         estimates <<- nimMatrix(0, n, numParams)
-
-        for(i in 1:m)
-            mvWSamples['wts',i][1] <<- log(1/m)
-        
+        logLik <<- nimNumeric(n, value = 0)
 
         for(j in 1:n){
-            logLik <<- 0
-            useStoredSamples <- j > 1    
-            IF2Step0Function$run(oldM, j, coolingRate, useStoredSamples)
+            useStoredSamples <- j > 1
+            ## Initialize latent process and params at time 0.
+            if(baseline)
+                IF2Step0Function$run(oldM, j, coolingRate, useStoredSamples)
             for(iNode in seq_along(IF2StepFunctions)) {
                 useStoredSamples <- ((iNode > 1) | j > 1)
-                logLik <<- logLik + log(IF2StepFunctions[[iNode]]$run(m, j, coolingRate, useStoredSamples))
+                logLik[j] <<- logLik[j] + log(IF2StepFunctions[[iNode]]$run(m, j, coolingRate, useStoredSamples))
             }
+            
             ## Compute estimate and sd of particles at each iteration for diagnostics.
+            ## Revisit possibility of weighted sample (when changed to that, got strange results.)
             for(i in 1:m) {
-                nimCopy(mvWSamples, model, nodes = params, row = i)
-                estimates[j, ] <<- estimates[j, ] + values(model, params)
+                nimCopy(mvEWSamples, model, nodes = params, row = i)
+                estimates[j, ] <<- estimates[j, ] + values(model, params) 
             }
             estimates[j, ] <<- estimates[j, ] / m
             for(i in 1:m) {
-                nimCopy(mvWSamples, model, nodes = params, row = i)
+                nimCopy(mvEWSamples, model, nodes = params, row = i)
                 estSD[j, ] <<- estSD[j, ] + (values(model, params) - estimates[j,])^2
             }
             estSD[j, ] <<- sqrt(estSD[j, ] / m)
@@ -341,7 +355,7 @@ buildIteratedFilter2 <- nimbleFunction(
 
         estimate <<- estimates[n, ]
 
-        ## Leave model with parameter estimates.  
+        ## Put final parameter estimates into model.
         values(model, params) <<- estimate
         model$calculate(parDeterm)
         oldM <<- m
