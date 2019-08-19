@@ -407,7 +407,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
             addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, print = print, name = nameToPrint)
         },
         
-        addSampler = function(target, type = 'RW', control = list(), print = FALSE, name, silent = FALSE, ...) {
+        addSampler = function(target, type = 'RW', control = list(), print = FALSE, name, scalarComponents = FALSE, silent = FALSE, ...) {
             '
 Adds a sampler to the list of samplers contained in the MCMCconf object.
 
@@ -422,6 +422,8 @@ control: A list of control arguments specific to the sampler function. These wil
 print: Logical argument, specifying whether to print the details of the newly added sampler, as well as its position in the list of MCMC samplers.
 
 name: Optional character string name for the sampler, which is used by the printSamplers method.  If \'name\' is not provided, the \'type\' argument is used to generate the sampler name.
+
+scalarComponents: Logical argument, indicating whether the specified sampler \'type\' should be assigned independently to each scalar (univariate) component of the specified \'target\' node or variable.  This option should only be specified as TRUE when the sampler \'type\' specifies a univariate sampler.
 
 silent: Logical argument, specifying whether to print warning messages when assigning samplers.
 
@@ -480,12 +482,26 @@ Invisibly returns a list of the current sampler configurations, which are sample
             controlArgs <- c(control, list(...))
             thisControlList <- mcmc_generateControlListArgument(control=controlArgs, controlDefaults=controlDefaults)  ## should name arguments
             
-            newSamplerInd <- length(samplerConfs) + 1
-            samplerConfs[[newSamplerInd]] <<- samplerConf(name=thisSamplerName, samplerFunction=samplerFunction, target=target, control=thisControlList, model=model)
-            samplerExecutionOrder <<- c(samplerExecutionOrder, newSamplerInd)
+            if(!scalarComponents) {
+                addSamplerOne(thisSamplerName, samplerFunction, target, thisControlList)
+            } else {  ## assign sampler type to each scalar component of target
+                targetAsScalars <- model$expandNodeNames(target)
+                for(i in seq_along(targetAsScalars)) {
+                    addSamplerOne(thisSamplerName, samplerFunction, targetAsScalars[i], thisControlList)
+                }
+            }
             
             if(print) printSamplers(newSamplerInd)
             return(invisible(samplerConfs))
+        },
+
+        addSamplerOne = function(thisSamplerName, samplerFunction, targetOne, thisControlList) {
+            '
+For internal use only
+'
+            newSamplerInd <- length(samplerConfs) + 1
+            samplerConfs[[newSamplerInd]] <<- samplerConf(name=thisSamplerName, samplerFunction=samplerFunction, target=targetOne, control=thisControlList, model=model)
+            samplerExecutionOrder <<- c(samplerExecutionOrder, newSamplerInd)
         },
         
         removeSamplers = function(ind, print = FALSE) {
