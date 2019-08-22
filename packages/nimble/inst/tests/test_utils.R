@@ -1277,6 +1277,7 @@ test_getBound <- function(model, cmodel, test, node, bnd, truth, info) {
     invisible(NULL)
 }
 
+## Nick's version of a nf that embeds deriv of model calculate
 testCompiledModelDerivsNimFxn <- nimbleFunction(
   setup = function(model, calcNodes, wrtNodes, order){
   },
@@ -1287,6 +1288,20 @@ testCompiledModelDerivsNimFxn <- nimbleFunction(
   }
 )
 
+## Chris' version of a nf that embeds deriv of model calculate
+derivsNimbleFunction <- nimbleFunction(
+  setup = function(model, calcNodes = "", wrt){
+      all <- calcNodes == ""
+      if(all) calcNodes <- model$getNodeNames()
+  },
+  run = function(order = double(1)){
+      if(all) {
+          ansList <- nimDerivs(model$calculate(), wrt = wrt, order = order)
+      } else ansList <- nimDerivs(model$calculate(calcNodes), wrt = wrt, order = order)
+      returnType(ADNimbleList())
+      return(ansList)
+  }
+)
 
 ## Tests taking derivatives of calls to model$calculate(nodes) (or equivalently calculate(model, nodes))
 ## Arguments:
@@ -1303,7 +1318,7 @@ testCompiledModelDerivsNimFxn <- nimbleFunction(
 ##   testCompiled:  A logical argument.  Currently only checks whether the model can compile.
 ##   tolerance:     A numeric argument, the tolerance to use when comparing wrapperDerivs to chainRuleDerivs.
 ##   verbose:       A logical argument.  Currently serves no purpose.
-test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt = NULL, order = c(0,1,2), 
+test_ADModelCalculate_nick <- function(model, name = NULL, calcNodeNames = NULL, wrt = NULL, order = c(0,1,2), 
                                   testCompiled = TRUE, tolerance = .001,  verbose = TRUE){
   temporarilyAssignInGlobalEnv(model)  
 
@@ -1329,6 +1344,216 @@ test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt 
     }
   }
 }
+
+## Chris' version of test_ADModelCalculate
+## Tests using a full wrt and then random wrts
+## calcNodes is taken to be fixed - to make these random, we'd need somewhat different code
+## than make_wrt since calculation is always at the level of nodes not elements
+## For a few models, we may simply want to run this with a few sets of calcNodes to test
+## having calcNodes be a subset of model nodes.
+test_ADModelCalculate <- function(model, name = 'unknown', calcNodes = NULL, wrt = NULL, order = c(0,1,2), 
+                                  relTol = c(1e-15, 1e-6, 1e-3), verbose = FALSE, debug = FALSE){
+    cModel <- compileNimble(model)
+    if(!is.null(wrt)) 
+        wrt <- unlist(lapply(wrt, function(x) model$expandNodeNames(x)))
+
+    ## Apply test to user-provided sets of nodes
+    test_ADModelCalculate_internal(model, name = name, calcNodes = calcNodes, wrt = wrt, order = order, relTol = relTol,
+                                   verbose = verbose, debug = debug)
+
+    ## Now loop through randomly-selected subsets of with-respect-to elements
+
+    ## Do random selection based on variables rather than strictly on 'wrt',
+    ## as more complicated to figure out how to handled arbitrary wrt values
+    if(is.null(wrt))
+        wrt <- model$getNodeNames()
+    wrtVars <- model$getVarNames(nodes = wrt)
+    dims <- model$modelDef$dimensionsList
+    template0 <- quote(double(0))
+    template1 <- quote(double(1,1))
+    argTypes <- as.list(rep(NA, length(wrtVars)))
+    names(argTypes) <- wrtVars
+    for(i in seq_along(wrtVars)) {
+        d <- length(dims[[wrtVars[i]]])
+        if(d == 0) {
+            argTypes[[i]] <- template0
+        } else {                
+            argTypes[[i]] <- template1
+            argTypes[[i]][2] <- d
+            argTypes[[i]][[3]] <- dims[[wrtVars[i]]]
+        }
+    }
+    wrtList <- make_wrt(argTypes, n_random = 10)
+    if(verbose) print(wrtList)
+
+    ## Note that a case like 'y[3:5]' where y[4] is not a node could cause problems.
+    ## This is not currently trapped as not sure how to extract the "counterfactual" node of y[4]
+    ## and see it is not in the list of nodes.
+    sapply(seq_along(wrtList), function(i) test_ADModelCalculate_internal(model, name = paste0(name, ' - wrt case ', i),
+                                                                          calcNodes = calcNodes, wrt = wrtList[[i]],
+                                                                          order = order, relTol = relTol, verbose = verbose, debug = debug))
+}
+
+## test of a model with a single wrt arg
+test_ADModelCalculate_internal <- function(model, name = 'unknown', calcNodes = NULL, wrt = NULL, order = c(0,1,2), 
+                                  relTol = c(1e-15, 1e-6, 1e-3), verbose = TRUE, uniqueWrt = TRUE, debug = FALSE){
+    test_that(paste0("Derivatives of calculate for model ", name), {
+        if(exists('paciorek')) browser()
+        if(is.null(calcNodes)) {
+            useAllNodes <- TRUE
+            calcNodes <- model$getNodeNames()
+        }
+        if(!(exists('CobjectInterface', model) && !is(model$CobjectInterface, 'uninitializedField'))) {
+              cModel <- compileNimble(model)
+        } else cModel <- eval(quote(model$CobjectInterface))
+
+        if(is.null(wrt)) wrt <- calcNodes
+        wrt <- model$expandNodeNames(wrt, unique = FALSE)
+        discrete <- sapply(wrt, function(x) model$isDiscrete(x))
+        wrt <- wrt[is.na(discrete) | !discrete]  # NAs from deterministic nodes, which in most cases should be continuous
+	if(length(wrt)) {
+	if(uniqueWrt)	
+            wrt <- unique(wrt)
+        
+        ## Store current values before derivs changes them so we can check back if needed; not currently used.
+        orig_rLP <- model$getLogProb()
+        orig_cLP <- cModel$getLogProb()
+        orig_rVals <- values(model, calcNodes)
+        orig_cVals <- values(cModel, calcNodes)
+        
+        rDerivs <- derivsNimbleFunction(model, calcNodes = ifelse(useAllNodes, "", calcNodes), wrt = wrt)
+        cDerivs <- compileNimble(rDerivs, project = model)
+
+        ## Set up a nf so R derivs use a model calculate that is done fully in compiled code (cModel$calculate loops over nodes in R)
+        rCalcNodes <- calcNodes(model, nodes = calcNodes)
+        cCalcNodes <- compileNimble(rCalcNodes, project = model)
+        temporarilyAssignInGlobalEnv(cCalcNodes)
+
+        ## We do individual orders as uncompiled nimDerivs currently does not return lower-order derivs
+        if(0 %in% order)
+            rOutput0 <- nimDerivs(cCalcNodes$run(), wrt = wrt, order = 0, calcNodes = calcNodes) 
+        if(1 %in% order)
+            rOutput1 <- nimDerivs(cCalcNodes$run(), wrt = wrt, order = 1, calcNodes = calcNodes) 
+        if(2 %in% order)
+            rOutput2 <- nimDerivs(cCalcNodes$run(), wrt = wrt, order = 2, calcNodes = calcNodes)
+    
+        cOutput <- cDerivs$run(max(order))  # this prints out '1' for some reason
+
+        new_rVals <- values(model, calcNodes)
+        new_cVals <- values(cModel, calcNodes)
+        new_rLP <- model$getLogProb()
+        new_cLP <- cModel$getLogProb()
+        
+        correct_rLP <- model$calculate(calcNodes)
+        correct_cLP <- cModel$calculate(calcNodes)
+        correct_rVals <- values(model, calcNodes)
+        correct_cVals <- values(cModel, calcNodes)
+
+        if(debug) browser()
+        
+        ## Expect_equal behaving strangely when given vectors so just do this manually using all() for vectors.
+        if(0 %in% order) {
+            expect_equal(rOutput0$value, cOutput$value, tolerance = relTol[1]*abs(rOutput0$value),
+                         info = "mismatch in 0th derivative for compiled and uncompiled")
+            expect_equal(sum(is.na(rOutput0$value)), 0, info = "NAs found in uncompiled 0th derivative")
+            expect_equal(sum(is.na(cOutput$value)), 0, info = "NAs found in compiled 0th derivative")
+        }
+        if(1 %in% order) {
+            delta <- abs(rOutput1$jacobian-cOutput$jacobian)
+            nonzero <- cOutput$jacobian != 0
+            delta[nonzero] <- delta[nonzero]/abs(cOutput$jacobian[nonzero])
+            if(!all(delta < relTol[2])) 
+                cat("Largest relative difference in gradient is ", max(delta), " for wrt of ", paste0(wrt, sep = ','), ".\n")
+            expect_true(all(delta < relTol[2], na.rm = TRUE),
+                         info = "mismatch in 1st derivative for compiled and uncompiled")
+            expect_equal(sum(is.na(rOutput1$jacobian)), 0, info = "NAs found in uncompiled 1st derivative")
+            expect_equal(sum(is.na(cOutput$jacobian)), 0, info = "NAs found in compiled 1st derivative")
+        }
+        if(2 %in% order) {
+            delta <- abs(rOutput2$hessian-cOutput$hessian)
+            nonzero <- cOutput$hessian != 0
+            delta[nonzero] <- delta[nonzero]/abs(cOutput$hessian[nonzero])
+            if(!all(delta < relTol[3])) 
+                cat("Largest relative difference in Hessian is ", max(delta), " for wrt of ", paste0(wrt, sep = ','), ".\n")
+            expect_true(all(delta < relTol[3], na.rm = TRUE),
+                         info = "mismatch in 2nd derivative for compiled and uncompiled")
+            expect_equal(sum(is.na(rOutput2$hessian)), 0, info = "NAs found in uncompiled 2nd derivative")
+            expect_equal(sum(is.na(cOutput$hessian)), 0, info = "NAs found in compiled 2nd derivative")
+        }
+
+        expect_identical(new_rVals, correct_rVals, info = "mismatch in final uncompiled model values")
+        expect_equal(new_cVals, correct_cVals, info = "mismatch in final compiled model values",
+                     tolerance = relTol[1]*abs(new_cVals))
+        expect_identical(new_rLP, correct_rLP, info = "mismatch in final uncompiled model logProb")
+        expect_equal(new_cLP, correct_cLP, info = "mismatch in final compiled model logProb",
+                     tolerance = relTol[1]*abs(new_cLP))
+        }
+    })
+}
+
+## Makes random vectors of wrt elements, following James Duncan's code
+make_wrt <- function(argTypes, n_random = 10, allCombinations = FALSE) {
+    ## always include each arg on its own, and all combinations of the args
+    ## Note that for models with a large number of variables this might turn out to be too much.
+    wrts <- as.list(names(argTypes))
+    if(allCombinations) {
+        if (length(argTypes) > 1)
+            for (m in 2:length(argTypes)) {
+                this_combn <- combn(names(argTypes), m)
+                wrts <- c(
+                    wrts,
+                    unlist(apply(this_combn, 2, list), recursive = FALSE)
+                )
+            }
+    }
+    
+  while (n_random > 0) {
+    n_random  <- n_random - 1
+    n <- sample(1:length(argTypes), 1) # how many of the args to use?
+    ## grab a random subset of the args of length n
+    args <- sample(argTypes, n)
+    ## may repeat an arg up to 2 times
+    reps <- sample(1:2, length(args), replace = TRUE)
+    argSymbols <- lapply(args, nimble:::argType2symbol)
+    this_wrt <- c()
+    for (i in 1:length(args)) {
+      while (reps[i] > 0) {
+        reps[i] <- reps[i] - 1
+        ## coin flip determines whether to index vectors/matrices
+        use_indexing <- sample(c(TRUE, FALSE), 1)
+        if (use_indexing && argSymbols[[i]]$nDim > 0) {
+          rand_row <- sample(1:argSymbols[[i]]$size[1], size = 1)
+          ## another coin flip determines whether to use : in indexing or not
+          use_colon <- sample(c(TRUE, FALSE), 1)
+          if (use_colon && rand_row < argSymbols[[i]]$size[1]) {
+            end_row <- rand_row +
+              sample(1:(argSymbols[[i]]$size[1] - rand_row), size = 1)
+            rand_row <- paste0(rand_row, ':', end_row)
+          }
+          index <- rand_row
+          if (argSymbols[[i]]$nDim == 2) {
+            rand_col <- sample(1:argSymbols[[i]]$size[2], size = 1)
+            ## one more coin flip to subscript second dimension
+            use_colon_again <- sample(c(TRUE, FALSE), 1)
+            if (use_colon_again && rand_col < argSymbols[[i]]$size[2]) {
+              end_col <- rand_col +
+                sample(1:(argSymbols[[i]]$size[2] - rand_col), size = 1)
+              rand_col <- paste0(rand_col, ':', end_col)
+            }
+            index <- paste0(index, ',', rand_col)
+          }
+          this_wrt <- c(this_wrt, paste0(names(args)[i], '[', index, ']'))
+        }
+        ## if first coin flip was FALSE, just
+        ## use the arg name without indexing
+        else this_wrt <- c(this_wrt, names(args)[i])
+      }
+    }
+    if (!is.null(this_wrt)) wrts <- c(wrts, list(unique(this_wrt)))
+  }
+  wrts <- unique(wrts)
+}
+
 
 makeADDistributionTestList <- function(distnList){
   argsList <- lapply(distnList$args, function(x){
