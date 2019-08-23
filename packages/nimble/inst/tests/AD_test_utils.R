@@ -139,29 +139,6 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
   )
 
   ##
-  ## call R versions of nimbleFunction methods with generated input
-  ##
-  if (verbose) cat("## Calling R versions of nimbleFunction methods\n")
-  Rderivs <- try(
-    sapply(names(param$methods), function(method) {
-      do.call(
-        ## can't access nfInst[[method]] until $ has been used :(
-        eval(substitute(nfInst$method, list(method = as.name(method)))), input
-      )
-    }, USE.NAMES = TRUE), silent = TRUE
-  )
-  if (inherits(Rderivs, 'try-error')) {
-    msg <- paste(
-      'Calling R version of test', opParam$name,
-      'resulted in an error:\n', Rderivs[1]
-    )
-    if (isTRUE(catch_failures)) ## continue to compilation
-      warning(msg, call. = FALSE, immediate. = TRUE)
-    else
-      stop(msg, call. = FALSE) ## throw an error here
-  }
-
-  ##
   ## compile the nimbleFunction
   ##
   if (!is.null(param$dir)) dir <- param$dir
@@ -191,6 +168,29 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
     if (verbose) cat("## Compilation failed, as expected \n")
   } else {
     ##
+    ## call R versions of nimbleFunction methods with generated input
+    ##
+    if (verbose) cat("## Calling R versions of nimbleFunction methods\n")
+    Rderivs <- try(
+      sapply(names(param$methods), function(method) {
+        do.call(
+          ## can't access nfInst[[method]] until $ has been used :(
+          eval(substitute(nfInst$method, list(method = as.name(method)))), input
+        )
+      }, USE.NAMES = TRUE), silent = TRUE
+    )
+    if (inherits(Rderivs, 'try-error')) {
+      msg <- paste(
+        'Calling R version of test', opParam$name,
+        'resulted in an error:\n', Rderivs[1]
+      )
+      if (isTRUE(catch_failures)) ## continue to compilation
+        warning(msg, call. = FALSE, immediate. = TRUE)
+      else
+        stop(msg, call. = FALSE) ## throw an error here
+    }
+
+    ##
     ## call compiled nimbleFunction methods with generated input
     ##
     Cderivs <- sapply(names(param$methods), function(method) {
@@ -218,9 +218,13 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
     ##
     ## set expect_equal tolerances
     tol1 <- if (is.null(param$tol1)) 1e-8 else param$tol1
-    tol2 <- if (is.null(param$tol1)) 1e-7 else param$tol2
-    tol3 <- if (is.null(param$tol2)) 1e-6 else param$tol3
+    tol2 <- if (is.null(param$tol2)) 1e-7 else param$tol2
+    tol3 <- if (is.null(param$tol3)) 1e-6 else param$tol3
     for (method_name in names(param$methods)) {
+      info <- paste0(
+        param$name, ', wrt = ',
+        paste0(param$wrts[[method_name]], collapse = ', ')
+      )
       if (verbose) {
         cat(paste0(
           "## Testing ", method_name, ': ',
@@ -239,24 +243,24 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
         expect_equal(
           Cderivs[[method_name]]$value,
           Rderivs[[method_name]]$value,
-          tolerance = tol1
+          tolerance = tol1, info = info
         )
         if ('log' %in% names(opParam$args)) {
           if (verbose) cat("## Checking log behavior for values\n")
           expect_equal(
             Cderivs2[[method_name]]$value,
             Rderivs2[[method_name]]$value,
-            tolerance = tol1
+            tolerance = tol1, info = info
           )
           expect_false(isTRUE(all.equal(
             Rderivs[[method_name]]$value,
             Rderivs2[[method_name]]$value,
-            tolerance = tol1
+            tolerance = tol1, info = info
           )))
           expect_false(isTRUE(all.equal(
             Cderivs[[method_name]]$value,
             Cderivs2[[method_name]]$value,
-            tolerance = tol1
+            tolerance = tol1, info = info
           )))
         }
       }, wrap_in_try = isTRUE(catch_failures))
@@ -293,24 +297,24 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
         expect_equal(
           Cderivs[[method_name]]$jacobian,
           Rderivs[[method_name]]$jacobian,
-          tolerance = tol2
+          tolerance = tol2, info = info
         )
         if ('log' %in% names(opParam$args)) {
           if (verbose) cat("## Checking log behavior for jacobians\n")
           expect_equal(
             Cderivs2[[method_name]]$jacobian,
             Rderivs2[[method_name]]$jacobian,
-            tolerance = tol2
+            tolerance = tol2, info = info
           )
           expect_false(isTRUE(all.equal(
             Rderivs[[method_name]]$jacobian,
             Rderivs2[[method_name]]$jacobian,
-            tolerance = tol2
+            tolerance = tol2, info = info
           )))
           expect_false(isTRUE(all.equal(
             Cderivs[[method_name]]$jacobian,
             Cderivs2[[method_name]]$jacobian,
-            tolerance = tol2
+            tolerance = tol2, info = info
           )))
         }
       }, wrap_in_try = isTRUE(catch_failures))
@@ -347,24 +351,24 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
         expect_equal(
           Cderivs[[method_name]]$hessian,
           Rderivs[[method_name]]$hessian,
-          tolerance = tol3
+          tolerance = tol3, info = info
         )
         if ('log' %in% names(opParam$args)) {
           if (verbose) cat("## Checking log behavior for hessians\n")
           expect_equal(
             Cderivs2[[method_name]]$hessian,
             Rderivs2[[method_name]]$hessian,
-            tolerance = tol3
+            tolerance = tol3, info = info
           )
           expect_false(isTRUE(all.equal(
             Rderivs[[method_name]]$hessian,
             Rderivs2[[method_name]]$hessian,
-            tolerance = tol3
+            tolerance = tol3, info = info
           )))
           expect_false(isTRUE(all.equal(
             Cderivs[[method_name]]$hessian,
             Cderivs2[[method_name]]$hessian,
-            tolerance = tol3
+            tolerance = tol3, info = info
           )))
         }
       }, wrap_in_try = isTRUE(catch_failures))

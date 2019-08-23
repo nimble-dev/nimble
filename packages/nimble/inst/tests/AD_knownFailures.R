@@ -69,7 +69,7 @@ AD_knownFailures <- list( ## not complete:
     )
   ),
   var = list(
-    'var arg1 = double(2, c(3, 4))' = list(
+    'arg1 = double(2, c(3, 4))' = list(
       compilation = TRUE,
       notes = "nimble doesn't support var of matrices, see sizeUnaryReduction"
     )
