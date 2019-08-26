@@ -1857,7 +1857,8 @@ return_type_string <- function(op, argTypes) {
   reductionOperators <- c(
     nimble:::reductionUnaryOperators,
     nimble:::matrixSquareReductionOperators,
-    nimble:::reductionBinaryOperatorsEither
+    nimble:::reductionBinaryOperatorsEither,
+    'dmulti'
   )
 
   nDim <- if (op %in% reductionOperators) 0

@@ -16,6 +16,20 @@ split_test_param_name <- function(test_param_name) {
   return(c(op, args))
 }
 
+is_failure <- function(test_param_name, failure_name, knownFailures = list()) {
+  if (length(knownFailures) == 0) return(FALSE)
+  op_and_args <- split_test_param_name(test_param_name)
+  op <- op_and_args[1]
+  args <- op_and_args[2]
+  if (!is.null(knownFailures[[op]])) {
+    return(
+      isTRUE(knownFailures[[op]][[args]][[failure_name]]) ||
+      isTRUE(knownFailures[[op]][['*']][[failure_name]])
+    )
+  }
+  return(FALSE)
+}
+
 ## test_param_name: an AD test parameterization name as produced by
 ##                  make_op_param()
 ## knownFailures:   a list of known test failures, e.g. in the format of
@@ -25,17 +39,11 @@ split_test_param_name <- function(test_param_name) {
 ##          FALSE otherwise
 ## 
 is_compilation_failure <- function(test_param_name, knownFailures = list()) {
-  if (length(knownFailures) == 0) return(FALSE)
-  op_and_args <- split_test_param_name(test_param_name)
-  op <- op_and_args[1]
-  args <- op_and_args[2]
-  if (!is.null(knownFailures[[op]])) {
-    return(
-      isTRUE(knownFailures[[op]][[args]]$compilation) ||
-      isTRUE(knownFailures[[op]][['*']]$compilation)
-    )
-  }
-  return(FALSE)
+  return(is_failure(test_param_name, 'compilation', knownFailures))
+}
+
+is_segfault_failure <- function(test_param_name, knownFailures = list()) {
+  return(is_failure(test_param_name, 'segfault', knownFailures))
 }
 
 is_method_failure <- function(test_param_name, method_name,
@@ -137,6 +145,12 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
       eval(as.call(c(fun, input[names(formals(fun))])))
     }
   )
+
+  if (is_segfault_failure(param$name, knownFailures)) {
+    if (verbose) cat("## Skipping the rest of test before compilation",
+                     "due to known segmentation fault\n")
+    return(invisible(NULL))
+  }
 
   ##
   ## compile the nimbleFunction
