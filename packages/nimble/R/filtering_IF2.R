@@ -89,7 +89,7 @@ IF2Step <- nimbleFunction(
 
         isLast <- (iNode == timeLength)
         coolSigma <- numeric(numParams)
-        coolParam <- coolParam
+        coolParam <- 0
     },
     run = function(m = integer(), j = integer(), coolingRate = double(), useStoredSamples = integer()) {
         returnType(double())
