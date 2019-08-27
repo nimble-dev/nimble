@@ -8,16 +8,27 @@
 ##
 ##  Implementing follows Ionides et. all 2015 and adapted Liu and West filter of Nicholas Michaud
 
-IF2StepVirtual <- nimbleFunctionVirtual(
-    run = function(m = integer(), n = integer(), coolingRate = double(),
-                   useStoredSamples = integer())
+initializeParamSwarm <- nimbleFunction(
+    setup = function(model, mvEWSamples, paramNodes, numParams, sigma) {
+    },
+    run = function(m = integer()) {
         returnType(double())
+        initialValues <- values(model, paramNodes)
+        currentValues <- initialValues
+        for(i in 1:m) {
+            for(j in 1:numParams)
+                currentValues[j] <- rnorm(1, initialValues[j], sigma[j])
+            values(model, paramNodes) <<- currentValues
+            nimCopy(model, mvEWSamples, nodes = paramNodes, row = i)
+        }
+        return(0)
+    }
 )
 
+
 IF2Step0 <- nimbleFunction(
-    contains = IF2StepVirtual,
     setup = function(model, mvEWSamples, baselineNode, latentVar,
-                     paramNodes, numParams, sigma, initParamSigma, timeLength, silent = FALSE) {
+                     paramNodes, numParams, sigma, timeLength, silent = FALSE) {
 
         thisNodeExpanded <- model$expandNodeNames(baselineNode, sort = TRUE)
         ## Code simplified from particleFilter_splitModelSteps.
@@ -41,7 +52,7 @@ IF2Step0 <- nimbleFunction(
         parDeterm <- model$getDependencies(paramNodes, determOnly=TRUE)
 
     },
-    run = function(m = integer(), j = integer(), coolingRate = double(), useStoredSamples = integer()) {
+    run = function(m = integer(), j = integer(), coolingRate = double()) {
         returnType(double())
         l <- numeric(m, init=FALSE)
         ## use same sigma as for t=1
@@ -49,14 +60,8 @@ IF2Step0 <- nimbleFunction(
         coolSigma <- coolParam*sigma
         
         for(i in 1:m) {
-            if(useStoredSamples == 1) { 
-                nimCopy(mvEWSamples, model, nodes = paramNodes, row = i)
-                currentValues <- values(model, paramNodes)
-            } else {  ## initialize with values that are variable around initial parameter values
-                currentValues <- values(model, paramNodes)
-                for(j in 1:numParams)
-                    currentValues[j] <- rnorm(1, currentValues[j], initParamSigma[j])
-            }
+            nimCopy(mvEWSamples, model, nodes = paramNodes, row = i)
+            currentValues <- values(model, paramNodes)
             for(j in 1:numParams)
                 currentValues[j] <- rnorm(1, currentValues[j], coolSigma[j])
             values(model, paramNodes) <<- currentValues
@@ -68,6 +73,11 @@ IF2Step0 <- nimbleFunction(
         }
         return(0)
     },  where = getLoadingNamespace()
+)
+
+IF2StepVirtual <- nimbleFunctionVirtual(
+    run = function(m = integer(), n = integer(), coolingRate = double())
+        returnType(double())
 )
 
 IF2Step <- nimbleFunction(
@@ -91,7 +101,7 @@ IF2Step <- nimbleFunction(
         coolSigma <- numeric(numParams)
         coolParam <- 0
     },
-    run = function(m = integer(), j = integer(), coolingRate = double(), useStoredSamples = integer()) {
+    run = function(m = integer(), j = integer(), coolingRate = double()) {
         returnType(double())
         l <- numeric(m, init=FALSE)
         wts <- numeric(m, init=FALSE)
@@ -100,17 +110,13 @@ IF2Step <- nimbleFunction(
         coolSigma <<- coolParam*sigma
         
         for(i in 1:m) {
-            ids[i] <- i ## for initial weights copying
-        }
-        for(i in 1:m) {
-            if(useStoredSamples == 1) { 
-                nimCopy(mvEWSamples, model, nodes = paramNodes, row = i)
-                if(notFirst) {
-                    copy(mvEWSamples, model, nodes = latentVar, nodesTo = prevNode, row = i)
-                } else {
-                    if(baseline)
-                        copy(mvEWSamples, model, nodes = latentVar, nodesTo = baselineNode, row = i)
-                }
+            ids[i] <- i  ## use of 1:m causes type mismatch
+            nimCopy(mvEWSamples, model, nodes = paramNodes, row = i)
+            if(notFirst) {
+                copy(mvEWSamples, model, nodes = latentVar, nodesTo = prevNode, row = i)
+            } else {
+                if(baseline)
+                    copy(mvEWSamples, model, nodes = latentVar, nodesTo = baselineNode, row = i)
             }
             currentValues <- values(model, paramNodes)
             for(j in 1:numParams)
@@ -294,15 +300,17 @@ buildIteratedFilter2 <- nimbleFunction(
                                                    types = types,
                                                    sizes = sizes))
 
+        initializeParamSwarmFunction <- initializeParamSwarm(model, mvEWSamples, params,
+                                                       numParams, initParamSigma)
         if(is.null(baselineNode)) {
             ## use params[1] simply as a dummy as IF2Step0Function needs to exist
             baselineNode <- params[1]
             IF2Step0Function <- IF2Step0(model,  mvEWSamples, params[1], latentVar,
-                                          params, numParams, sigma, initParamSigma, timeLength, silent)
+                                          params, numParams, sigma, timeLength, silent)
             baseline <- FALSE
         } else {
             IF2Step0Function <- IF2Step0(model,  mvEWSamples, baselineNode, latentVar,
-                                         params, numParams, sigma, initParamSigma, timeLength, silent)
+                                         params, numParams, sigma, timeLength, silent)
             baseline <- TRUE
         }
         
@@ -329,15 +337,14 @@ buildIteratedFilter2 <- nimbleFunction(
         estSD <<- nimMatrix(0, n, numParams)
         estimates <<- nimMatrix(0, n, numParams)
         logLik <<- nimNumeric(n, value = 0)
-        
+
+        initializeParamSwarmFunction$run(m)
         for(j in 1:n){
-            useStoredSamples <- j > 1
             ## Initialize latent process and params at time 0.
             if(baseline)
-                IF2Step0Function$run(m, j, coolingRate, useStoredSamples)
+                IF2Step0Function$run(m, j, coolingRate)
             for(iNode in seq_along(IF2StepFunctions)) {
-                useStoredSamples <- ((iNode > 1) | j > 1)
-                logLik[j] <<- logLik[j] + log(IF2StepFunctions[[iNode]]$run(m, j, coolingRate, useStoredSamples))
+                logLik[j] <<- logLik[j] + log(IF2StepFunctions[[iNode]]$run(m, j, coolingRate))
             }
             
             ## Compute estimate and sd of particles at each iteration for diagnostics.
@@ -367,14 +374,14 @@ buildIteratedFilter2 <- nimbleFunction(
     },
     methods = list(
         continueRun = function(n = integer(default = 5), coolingRate = double(default = 0.2)){
-            ## add storage of estimates and particle SDs as in main $run
+            ## add storage of logLik, estimates and particle SDs as in main $run
             useStoredSamples <- 1
             newN <- oldJ + n
             for(j in (oldJ+1):newN){
-                IF2Step0Function$run(oldM, j, coolingRate, useStoredSamples)
+                if(baseline) 
+                    IF2Step0Function$run(oldM, j, coolingRate)
                 for(iNode in seq_along(IF2StepFunctions)) {
-                    IF2StepFunctions[[iNode]]$run(oldM, j, coolingRate, 
-                                                  useStoredSamples)
+                    IF2StepFunctions[[iNode]]$run(oldM, j, coolingRate)
                 }
             }
 
