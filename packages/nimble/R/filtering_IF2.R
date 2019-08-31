@@ -52,11 +52,11 @@ IF2Step0 <- nimbleFunction(
         parDeterm <- model$getDependencies(paramNodes, determOnly=TRUE)
 
     },
-    run = function(m = integer(), j = integer(), coolingFactor = double()) {
+    run = function(m = integer(), j = integer(), alpha = double()) {
         returnType(double())
         l <- numeric(m, init=FALSE)
         ## use same sigma as for t=1
-        coolParam <- (coolingFactor)^(((j - 1)*timeLength)/(50*timeLength))
+        coolParam <- (alpha)^(((j - 1)*timeLength)/(50*timeLength))
         coolSigma <- coolParam*sigma
         
         for(i in 1:m) {
@@ -76,7 +76,7 @@ IF2Step0 <- nimbleFunction(
 )
 
 IF2StepVirtual <- nimbleFunctionVirtual(
-    run = function(m = integer(), n = integer(), coolingFactor = double())
+    run = function(m = integer(), n = integer(), alpha = double())
         returnType(double())
 )
 
@@ -101,12 +101,12 @@ IF2Step <- nimbleFunction(
         coolSigma <- numeric(numParams)
         coolParam <- 0
     },
-    run = function(m = integer(), j = integer(), coolingFactor = double()) {
+    run = function(m = integer(), j = integer(), alpha = double()) {
         returnType(double())
         l <- numeric(m, init=FALSE)
         wts <- numeric(m, init=FALSE)
         ids <- integer(m, 0)
-        coolParam <<- (coolingFactor)^((iNode-1+(j - 1)*timeLength)/(50*timeLength))
+        coolParam <<- (alpha)^((iNode-1+(j - 1)*timeLength)/(50*timeLength))
         coolSigma <<- coolParam*sigma
         
         for(i in 1:m) {
@@ -181,7 +181,7 @@ IF2Step <- nimbleFunction(
 #'  \describe{
 #'    \item{m}{A single integer specifying the number of particles to use for each run of the filter.  Defaults to 10,000.}
 #'    \item{n}{A single integer specifying the number of overall filter iterations to run.  Defaults to 5.}
-#'    \item{coolingFactor}{A double specifying the cooling rate to use for the IF2 algorithm.  Defaults to 0.2.}
+#'    \item{alpha}{A double specifying the cooling factor to use for the IF2 algorithm.  Defaults to 0.2.}
 #'
 #'  The \code{run} fuction will return a vector with MLE estimates.  Additionally, once the specialized algorithm has been run, it can be continued for additional iterations by calling the \code{continueRun} method.
 #'  
@@ -329,7 +329,7 @@ buildIteratedFilter2 <- nimbleFunction(
         estSD <- nimMatrix(0, 1, numParams)
     },
     run = function(m = integer(default = 10000), n = integer(default = 5), 
-                   coolingFactor = double(default = 0.2)) {
+                   alpha = double(default = 0.2)) {
         
         values(model, params) <<- inits
         my_initializeModel$run()
@@ -343,9 +343,9 @@ buildIteratedFilter2 <- nimbleFunction(
         for(j in 1:n){
             ## Initialize latent process and params at time 0.
             if(baseline)
-                IF2Step0Function$run(m, j, coolingFactor)
+                IF2Step0Function$run(m, j, alpha)
             for(iNode in seq_along(IF2StepFunctions)) {
-                logLik[j] <<- logLik[j] + log(IF2StepFunctions[[iNode]]$run(m, j, coolingFactor))
+                logLik[j] <<- logLik[j] + log(IF2StepFunctions[[iNode]]$run(m, j, alpha))
             }
             
             ## Compute estimate and sd of particles at each iteration for diagnostics.
@@ -374,15 +374,15 @@ buildIteratedFilter2 <- nimbleFunction(
         return(estimate)
     },
     methods = list(
-        continueRun = function(n = integer(default = 5), coolingFactor = double(default = 0.2)){
+        continueRun = function(n = integer(default = 5), alpha = double(default = 0.2)){
             ## add storage of logLik, estimates and particle SDs as in main $run
             useStoredSamples <- 1
             newN <- oldJ + n
             for(j in (oldJ+1):newN){
                 if(baseline) 
-                    IF2Step0Function$run(oldM, j, coolingFactor)
+                    IF2Step0Function$run(oldM, j, alpha)
                 for(iNode in seq_along(IF2StepFunctions)) {
-                    IF2StepFunctions[[iNode]]$run(oldM, j, coolingFactor)
+                    IF2StepFunctions[[iNode]]$run(oldM, j, alpha)
                 }
             }
 
