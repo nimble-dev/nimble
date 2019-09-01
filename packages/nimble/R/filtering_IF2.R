@@ -179,9 +179,9 @@ IF2Step <- nimbleFunction(
 #'  The resulting specialized IF2 algorithm will accept the following arguments:
 #'  
 #'  \describe{
-#'    \item{m}{A single integer specifying the number of particles to use for each run of the filter.  Defaults to 10,000.}
-#'    \item{n}{A single integer specifying the number of overall filter iterations to run.  Defaults to 5.}
-#'    \item{alpha}{A double specifying the cooling factor to use for the IF2 algorithm.  Defaults to 0.2.}
+#'    \item{m}{A single integer specifying the number of particles to use for each run of the filter. }
+#'    \item{n}{A single integer specifying the number of overall filter iterations to run. }
+#'    \item{alpha}{A double specifying the cooling factor to use for the IF2 algorithm. }
 #'
 #'  The \code{run} fuction will return a vector with MLE estimates.  Additionally, once the specialized algorithm has been run, it can be continued for additional iterations by calling the \code{continueRun} method.
 #'  
@@ -328,8 +328,9 @@ buildIteratedFilter2 <- nimbleFunction(
         estimates <- nimMatrix(0, 1, numParams)
         estSD <- nimMatrix(0, 1, numParams)
     },
-    run = function(m = integer(default = 10000), n = integer(default = 5), 
-                   alpha = double(default = 0.2)) {
+    run = function(m = integer(),
+                   niter = integer(), 
+                   alpha = double()) {
         
         values(model, params) <<- inits
         my_initializeModel$run()
