@@ -2362,7 +2362,13 @@ findClusterNodes <- function(model, target) {
       if(any(model$isDeterm(clusterNodes[[varIdx]])))
           stop("findClusterNodes: detected that deterministic nodes are being clustered. Please use the dCRP node to cluster stochastic nodes.")
 
-  return(list(clusterNodes = clusterNodes, clusterVars = clusterVars, nTilde = nTilde,
+  numNodesPerCluster <- sapply(clusterIDs, function(x)
+      tbl <- table(x)
+      num <- unique(tbl)
+      if(length(num) > 1) stop("findClusterNodes: detected differing numbers of nodes (i.e., parameters) per cluster. NIMBLE's CRP sampling not designed for this case.")
+      return(num))
+      
+  return(list(clusterNodes = clusterNodes, clusterVars = clusterVars, nTilde = nTilde, numNodesPerCluster,
               clusterIDs = clusterIDs, loopIndex = loopIndex,
               targetIsIndex = targetIsIndex, indexPosition = indexPosition, indexExpr = indexExpr,
               numIndexes = numIndexes, targetIndexedByFunction = targetIndexedByFunction,
