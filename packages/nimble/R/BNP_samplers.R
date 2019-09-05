@@ -2327,12 +2327,24 @@ findClusterNodes <- function(model, target) {
     if(nTilde[varIdx]) {
         if(any(is.na(clusterNodes[[varIdx]])))  
             stop("findClusterNodes: fewer cluster IDs in ", target, " than elements being clustered.")
+        ## Handle case where multiple model nodes are used in a vector in the dynamic indexing.
+        ## Need to figure out the real nodes that the clusterNodes represent.
+        clusterNodes[[varIdx]] <- sapply(clusterNodes[[varIdx]], function(x) {
+            if(!x %in% modelNodes)
+                x <- model$expandNodeNames(x) 
+            return(x) })
+                                                     
+        ## Handle case where subsets (e.g., scalar elements) of a model node are used in dynamic indexing.
+        dups <- duplicated(clusterNodes[[varIdx]])
+        clusterNodes[[varIdx]] <- clusterNodes[[varIdx]][!dups]
+        clusterIDs[[varIdx]] <- clusterIDs[[varIdx]][!dups]
 
         ## Formerly we were checking that we had a contiguous set of cluster nodes
         ## starting with the first one, but for clusterNodes with more than one index and
         ## truncation this is hard to do, so just fall back to returning the clusterNodes
         ## that are actually part of the model.
         validNodes <- clusterNodes[[varIdx]] %in% modelNodes
+        
         if(!all(validNodes)) {  # i.e., truncated representation
             clusterNodes[[varIdx]] <- clusterNodes[[varIdx]][validNodes]
             nTilde[varIdx] <- length(clusterNodes[[varIdx]])
