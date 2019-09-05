@@ -2368,8 +2368,8 @@ findClusterNodes <- function(model, target) {
       if(length(num) > 1) stop("findClusterNodes: detected differing numbers of nodes (i.e., parameters) per cluster. NIMBLE's CRP sampling not designed for this case.")
       return(num)})
       
-  return(list(clusterNodes = clusterNodes, clusterVars = clusterVars, nTilde = nTilde, numNodesPerCluster,
-              clusterIDs = clusterIDs, loopIndex = loopIndex,
+  return(list(clusterNodes = clusterNodes, clusterVars = clusterVars, nTilde = nTilde,
+              numNodesPerCluster = numNodesPerCluster, clusterIDs = clusterIDs, loopIndex = loopIndex,
               targetIsIndex = targetIsIndex, indexPosition = indexPosition, indexExpr = indexExpr,
               numIndexes = numIndexes, targetIndexedByFunction = targetIndexedByFunction,
               targetNonIndex = targetNonIndex))
