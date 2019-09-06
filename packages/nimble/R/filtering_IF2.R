@@ -355,12 +355,12 @@ buildIteratedFilter2 <- nimbleFunction(
         my_initializeModel$run()
         resize(mvWSamples, m)
         resize(mvEWSamples, m)
-        estSD <<- nimMatrix(0, n, numParams)
-        estimates <<- nimMatrix(0, n, numParams)
-        logLik <<- nimNumeric(n, value = 0)
+        estSD <<- nimMatrix(0, niter, numParams)
+        estimates <<- nimMatrix(0, niter, numParams)
+        logLik <<- nimNumeric(niter, value = 0)
 
         initializeParamSwarmFunction$run(m)
-        for(j in 1:n){
+        for(j in 1:niter){
             ## Initialize latent process and params at time 0.
             if(baseline)
                 IF2Step0Function$run(m, j, alpha)
@@ -382,7 +382,7 @@ buildIteratedFilter2 <- nimbleFunction(
             estSD[j, ] <<- sqrt(estSD[j, ] / m)
         }
 
-        estimate <<- estimates[n, ]
+        estimate <<- estimates[niter, ]
 
         ## Put final parameter estimates into model.
         values(model, params) <<- estimate
