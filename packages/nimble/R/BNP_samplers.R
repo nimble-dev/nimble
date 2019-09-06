@@ -2323,18 +2323,27 @@ findClusterNodes <- function(model, target) {
   ## muTilde[2], ..., muTilde[4] is not (unless the model nodes are muTilde[2], ...., muTilde[4]).
   nTilde <- sapply(clusterNodes, length)
   modelNodes <- model$getNodeNames()
+
   for(varIdx in seq_along(clusterVars)) {
     if(nTilde[varIdx]) {
         if(any(is.na(clusterNodes[[varIdx]])))  
             stop("findClusterNodes: fewer cluster IDs in ", target, " than elements being clustered.")
-        ## Handle case where multiple model nodes are used in a vector in the dynamic indexing.
-        ## Need to figure out the real nodes that the clusterNodes represent.
-        clusterNodes[[varIdx]] <- sapply(clusterNodes[[varIdx]], function(x) {
-            if(!x %in% modelNodes)
-                x <- model$expandNodeNames(x) 
-            return(x) })
-                                                     
-        ## Handle case where subsets (e.g., scalar elements) of a model node are used in dynamic indexing.
+
+        ## Handle cases where indexing of variables in dynamic indexing does not correspond to actual
+        ## stochastic model nodes.
+        if(any(!clusterNodes[[varIdx]] %in% modelNodes)) {
+            tmp <- mapply(function(node, id) {
+                if(!node %in% modelNodes) {
+                    node <- model$expandNodeNames(node)
+                    id <- rep(id, length(node))
+                }
+                return(list(nodes = node, ids = id))
+            }, clusterNodes[[varIdx]], clusterIDs[[varIdx]])
+            dimnames(tmp) <- NULL
+            clusterNodes[[varIdx]] <- unlist(tmp[1, ])
+            clusterIDs[[varIdx]] <- unlist(tmp[2, ])
+        }
+        ## Now remove duplicates when indexed variables correspond to same model node.
         dups <- duplicated(clusterNodes[[varIdx]])
         clusterNodes[[varIdx]] <- clusterNodes[[varIdx]][!dups]
         clusterIDs[[varIdx]] <- clusterIDs[[varIdx]][!dups]
@@ -2347,7 +2356,6 @@ findClusterNodes <- function(model, target) {
         
         if(!all(validNodes)) {  # i.e., truncated representation
             clusterNodes[[varIdx]] <- clusterNodes[[varIdx]][validNodes]
-            nTilde[varIdx] <- length(clusterNodes[[varIdx]])
             clusterIDs[[varIdx]] <- clusterIDs[[varIdx]][validNodes]
         }
         ## if(!all(clusterNodes[[varIdx]] %in% modelNodes)) {  # i.e., truncated representation
@@ -2374,6 +2382,7 @@ findClusterNodes <- function(model, target) {
       if(any(model$isDeterm(clusterNodes[[varIdx]])))
           stop("findClusterNodes: detected that deterministic nodes are being clustered. Please use the dCRP node to cluster stochastic nodes.")
 
+  nTilde <- sapply(clusterNodes, length)
   numNodesPerCluster <- sapply(clusterIDs, function(x) {
       tbl <- table(x)
       num <- unique(tbl)
