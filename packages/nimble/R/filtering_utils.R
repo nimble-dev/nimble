@@ -36,7 +36,7 @@ particleFilter_splitModelSteps <- function(model,
   ##
   ## The bootFstep only ever does thisDeterm and thisData in sequence, so they can be combined. Same for auxFstep
   ##
-  ## In bootFstep, the prevDeterm and thisNode could be combine, but that is not the case in auxFstep,
+  ## In bootFstep, the prevDeterm and thisNode could be combined, but that is not the case in auxFstep,
   ## because it breaks apart thisNode for doing the lookahead
   prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
   ## Weed out any prevDeterm elements that do not lead to part of thisNode

@@ -65,9 +65,9 @@ IF2Step0 <- nimbleFunction(
             for(j in 1:numParams)
                 currentValues[j] <- rnorm(1, currentValues[j], coolSigma[j])
             values(model, paramNodes) <<- currentValues
-            calculate(model, parDeterm)
-            simulate(model, calc_thisNode_self)
-            calculate(model, calc_thisNode_deps)
+            model$calculate(parDeterm)
+            model$simulate(calc_thisNode_self)
+            model$calculate(calc_thisNode_deps)
             nimCopy(model, mvEWSamples, nodes = baselineNode, nodesTo = latentVar, rowTo = i)
             nimCopy(model, mvEWSamples, nodes = paramNodes, rowTo = i)
         }
@@ -95,8 +95,19 @@ IF2Step <- nimbleFunction(
         
         thisNode <- latentNodes[iNode]
         parDeterm <- model$getDependencies(paramNodes, determOnly=TRUE)
+        ## Remove any element of parDeterm that is not needed by prevDeterm, calc_thisNode_self or calc_thisNode_deps
+        nodes_that_matter <- c(prevDeterm, calc_thisNode_self, calc_thisNode_deps)
+        if(length(parDeterm) > 0) {
+            thisDeterm_is_intermediate <- logical(length(parDeterm))
+            for(i in seq_along(parDeterm)) {
+                theseDeps <- model$getDependencies(parDeterm[i])
+                thisDeterm_is_intermediate[i] <- !(parDeterm[i] %in% nodes_that_matter) & any(theseDeps %in% nodes_that_matter)
+            }
+            parDeterm <- parDeterm[thisDeterm_is_intermediate]
+        }
         parAndPrevDeterm <- c(parDeterm, prevDeterm)
-
+        parAndPrevDeterm <- model$expandNodeNames(parAndPrevDeterm, sort = TRUE) ## Ensure sorting, because a node in parDeterm that is also in prevDeterm will have been removed from parDeterm, but that is where it potentially comes first.
+        
         isLast <- (iNode == timeLength)
         coolSigma <- numeric(numParams)
         coolParam <- 0
@@ -122,12 +133,12 @@ IF2Step <- nimbleFunction(
             for(j in 1:numParams)
                 currentValues[j] <- rnorm(1, currentValues[j], coolSigma[j])
             values(model, paramNodes) <<- currentValues
-            calculate(model, parAndPrevDeterm)
-            simulate(model, calc_thisNode_self)
-            logProb <- calculate(model, calc_thisNode_deps)
+            model$calculate(parAndPrevDeterm)
+            model$simulate(calc_thisNode_self)
+            logProb <- model$calculate(calc_thisNode_deps)
             wts[i]  <- exp(logProb)
             if(is.nan(wts[i])) wts[i] <- 0
-            logProb <- calculate(model, paramNodes)
+            logProb <- model$calculate(paramNodes)
             if(is.na(logProb) | logProb == -Inf)
                 wts[i] <- 0
             nimCopy(model, mvWSamples, nodes = thisNode, nodesTo = latentVar, rowTo = i)
@@ -238,7 +249,12 @@ buildIteratedFilter2 <- nimbleFunction(
             stop('buildIteratedFilter2: Parameters must be stochastic nodes.')
         
         paramVars <-  model$getVarNames(nodes = params)
-
+        ## Be sure baselineNode is not in paramVars
+        if(!is.null(baselineNode)) {
+            if(baselineNode %in% paramVars)
+                paramVars <- paramVars[paramVars != baselineNode]
+        }
+        
         if(is.null(sigma)){
             sigma <- rep(1, numParams)
         }
@@ -283,6 +299,9 @@ buildIteratedFilter2 <- nimbleFunction(
 
         my_initializeModel <- initializeModel(model, silent = silent)
 
+        if(any(latentVar %in% paramVars)) {
+            stop("Latent variables and parameters are not full distinct.  You might need to provide more explicit or correct arguments for nodes and params.")
+        }
         modelSymbolObjects <- model$getSymbolTable()$getSymbolObjects()[c(latentVar, paramVars)]
         names <- sapply(modelSymbolObjects, function(x) return(x$name))
         types <- sapply(modelSymbolObjects, function(x) return(x$type))
