@@ -635,7 +635,7 @@ ind: A numeric vector or character vector.  A numeric vector may be used to spec
             which(unlist(lapply(samplerConfs, function(ss) any(nodes %in% ss$targetAsScalar))))
         },
 
-        getSamplerDefinition = function(ind) {
+        getSamplerDefinition = function(ind, print = FALSE) {
             '
 Returns the nimbleFunction definition of an MCMC sampler.
 
@@ -651,7 +651,7 @@ Returns a list object, containing the setup function, run function, and addition
                 ind <- ind[1]
             }
             if((ind <= 0) || (ind > length(samplerConfs))) stop('Invalid sampler specified')
-            printSamplers(ind)
+            if(print) printSamplers(ind)
             def <- getDefinition(samplerConfs[[ind]]$samplerFunction)
             return(def)
         },
