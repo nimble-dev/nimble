@@ -1321,7 +1321,7 @@ CRP_nonconjugate_moreGeneral <- nimbleFunction(
     },
     sample = function(i = integer(), j = integer() ) {
       ## sample from prior
-      if( p == 1 ) {
+      if( p == 1 ) { # the more general version in lines 1329-1335 should be enough. For now I leave this here.
         for(j1 in 1:M[1]) { # works for more general (J>1) and standard (J=1) CRP_nonconjugate
           model$simulate(marginalizedNodes[(j-1)*M[1]+j1])  
         }
@@ -1329,7 +1329,7 @@ CRP_nonconjugate_moreGeneral <- nimbleFunction(
         nTildeAux <- 0
         for(l in 1:p) {  ## marginalized nodes should be in correct order based on findClusterNodes.
           for(j1 in 1:M[l]) {
-            model$simulate(marginalizedNodes[nTildeAux + (j-1)*M[l] + j1])   # model$simulate(marginalizedNodes[(l-1)*nTilde + j])
+            model$simulate(marginalizedNodes[nTildeAux + (j-1)*M[l] + j1])
           }
           nTildeAux <- nTildeAux + nTilde[l]
         }
@@ -1840,11 +1840,12 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     nData <- length(dataNodes)
     nObsPerClusID <- nData / n # equal to one in standard CRP model (former J)
     
-    p <- length(tildeVars)
+    # changes in lines 1844 - 1850 are for always having a nTilde vector to be used in crp_nonconjugate_moreGeneral
+    p <- length(tildeVars) 
     nTilde <- numeric(p+1)
     nTilde[1:p] <- clusterVarInfo$nTilde
-    if(nObsPerClusID == 1) {
-      if(length(unique(nTilde[nTilde > 0])) != 1)
+    if(nObsPerClusID == 1) { # will be checked only for nObsPerClusID to avoid stoping models such as J
+      if(length(unique(nTilde[nTilde > 0])) != 1) 
         stop('sampler_CRP: In a model with multiple cluster parameters, the number of those parameters must all be the same.\n') 
     }
     
@@ -1869,7 +1870,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     
     #### End of checks of model structure. ####
     
-    min_nTilde <- min(nTilde[nTilde>0]) ## we need a scalar for use in run code, but note that given check above, all nTilde values are the same...
+    min_nTilde <- min(nTilde[nTilde>0]) ## we need a scalar for use in run code, but note that given check above, all nTilde values are the same.... In the case nObsPerClusID >1 nTildes could be different
     if(min_nTilde < n)
       warning('sampler_CRP: The number of cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if it ever proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.\n')
     
@@ -1895,13 +1896,13 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     ## 'vectorized' way.
     dataNodes <- rep(targetElements[1], nData) ## this serves as dummy nodes that may be replaced below
     ## needs to be legitimate nodes because run code sets up calculate even if if() would never cause it to be used
-    for(i in seq_len(n)) {
+    for(i in seq_len(n)) { # dataNodes are always needed so I create them before creating  intermNodes
       stochDeps <- model$getDependencies(targetElements[i], stochOnly = TRUE, self = FALSE) 
       for(j in 1:nObsPerClusID) {
         dataNodes[(i-1)*nObsPerClusID + j] <- stochDeps[j]         
       }
     }
-    ntotalClusNodesPerClusID <- sum(clusterVarInfo$numNodesPerCluster)
+    ntotalClusNodesPerClusID <- sum(clusterVarInfo$numNodesPerCluster) # to be used in condition that decide if we do 'indivCalcs' or 'allCalcs. If clusterVarInfo also returns when a node has a reparametrization could be more robust
     nIntermClusNodesPerClusID <- length(model$getDependencies(targetElements[1], determOnly = TRUE))  #nInterm
     type <- 'indivCalcs'
     if(nIntermClusNodesPerClusID == ntotalClusNodesPerClusID) { # does ineficient computations when node with reparametrization and deterministic definition is used
@@ -1912,7 +1913,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
           intermNodes[(i-1)*nIntermClusNodesPerClusID + j] <- detDeps[j]
         }
       }
-      intermNodes2 <- intermNodes
+      intermNodes2 <- intermNodes 
       intermNodes3 <- intermNodes
     }  else {
       type <- "allCalcs"
@@ -1943,7 +1944,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
                         conjugate_ddirch_dmulti = 'CRP_conjugate_ddirch_dmulti',
                         'CRP_nonconjugate_moreGeneral')  ## default if we don't have sampler set up for a conjugacy
     
-    nClusNodesPerClusID <- numeric(p+1)
+    nClusNodesPerClusID <- numeric(p+1) # changes in lines 1947 - 1948 are for always having a nTilde vector to be used in crp_nonconjugate_moreGeneral
     nClusNodesPerClusID[1:p] <- clusterVarInfo$numNodesPerCluster
     identityLink <- TRUE
     
