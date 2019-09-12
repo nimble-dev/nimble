@@ -1322,14 +1322,16 @@ CRP_nonconjugate_moreGeneral <- nimbleFunction(
     sample = function(i = integer(), j = integer() ) {
       ## sample from prior
       if( p == 1 ) {
-        for(j1 in 1:M) { # works for more general (J>1) and standard (J=1) CRP_nonconjugate
-          model$simulate(marginalizedNodes[(j-1)*M+j1])  
+        for(j1 in 1:M[1]) { # works for more general (J>1) and standard (J=1) CRP_nonconjugate
+          model$simulate(marginalizedNodes[(j-1)*M[1]+j1])  
         }
       } else {
+        nTildeAux <- 0
         for(l in 1:p) {  ## marginalized nodes should be in correct order based on findClusterNodes.
-          for(j1 in 1:M) {
-            model$simulate(marginalizedNodes[(l-1)*nTilde + (j-1)*M + j1])   # model$simulate(marginalizedNodes[(l-1)*nTilde + j])
+          for(j1 in 1:M[l]) {
+            model$simulate(marginalizedNodes[nTildeAux + (j-1)*M[l] + j1])   # model$simulate(marginalizedNodes[(l-1)*nTilde + j])
           }
+          nTildeAux <- nTildeAux + nTilde[l]
         }
       }
     }
@@ -1835,12 +1837,16 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     if(n > length(dataNodes))
       stop("sampler_CRP: At least one variable has to be clustered for each cluster membershipID.\n")
     
-    nTilde <- clusterVarInfo$nTilde
-    if(length(unique(nTilde)) != 1)
-      stop('sampler_CRP: In a model with multiple cluster parameters, the number of those parameters must all be the same.\n')
-    
     nData <- length(dataNodes)
     nObsPerClusID <- nData / n # equal to one in standard CRP model (former J)
+    
+    p <- length(tildeVars)
+    nTilde <- numeric(p+1)
+    nTilde[1:p] <- clusterVarInfo$nTilde
+    if(nObsPerClusID == 1) {
+      if(length(unique(nTilde[nTilde > 0])) != 1)
+        stop('sampler_CRP: In a model with multiple cluster parameters, the number of those parameters must all be the same.\n') 
+    }
     
     ## Check that cluster parameters are IID (by rows or columns) when J>1
     #if( J > 1) {
@@ -1863,7 +1869,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     
     #### End of checks of model structure. ####
     
-    min_nTilde <- min(nTilde) ## we need a scalar for use in run code, but note that given check above, all nTilde values are the same...
+    min_nTilde <- min(nTilde[nTilde>0]) ## we need a scalar for use in run code, but note that given check above, all nTilde values are the same...
     if(min_nTilde < n)
       warning('sampler_CRP: The number of cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if it ever proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.\n')
     
@@ -1887,36 +1893,32 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     ## computation, to save us from computing for all observations when a single cluster membership is being proposed.
     ## At the moment, this is the only way we can easily handle dependencies for multiple node elements in a
     ## 'vectorized' way.
-    nInterm <- length(model$getDependencies(targetElements[1], determOnly = TRUE)) / nObsPerClusID
     dataNodes <- rep(targetElements[1], nData) ## this serves as dummy nodes that may be replaced below
     ## needs to be legitimate nodes because run code sets up calculate even if if() would never cause it to be used
+    for(i in seq_len(n)) {
+      stochDeps <- model$getDependencies(targetElements[i], stochOnly = TRUE, self = FALSE) 
+      for(j in 1:nObsPerClusID) {
+        dataNodes[(i-1)*nObsPerClusID + j] <- stochDeps[j]         
+      }
+    }
+    ntotalClusNodesPerClusID <- sum(clusterVarInfo$numNodesPerCluster)
+    nIntermClusNodesPerClusID <- length(model$getDependencies(targetElements[1], determOnly = TRUE))  #nInterm
     type <- 'indivCalcs'
-    intermNodes <- dataNodes
-    intermNodes2 <- dataNodes
-    intermNodes3 <- dataNodes
-    if(nInterm > 3) {
-      type <- "allCalcs"  ## give up and do the inefficient approach
-    } else {
+    if(nIntermClusNodesPerClusID == ntotalClusNodesPerClusID) { # does ineficient computations when node with reparametrization and deterministic definition is used
+      intermNodes <- rep(0, nIntermClusNodesPerClusID * n)
       for(i in seq_len(n)) {
-        ## We need to do individual dataNodes[i] <- model$getDependencies(targetElements[i], stochOnly = TRUE) because we are not guaranteed that xi[i] is the cluster membership for y[i]; it could be xi[i] is associated with y[n-i+1], e.g.
-        stochDeps <- model$getDependencies(targetElements[i], stochOnly = TRUE, self = FALSE) 
         detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
-        #if(length(stochDeps) != 1)  not for more general CRP model
-        #  stop("sampler_CRP: NIMBLE cannot currently assign a sampler to a dCRP node unless each membership element is associated with a single component of the variable to be clustered.\n")  ## reason for this is that we do getLogProb(dataNodes[i]), which assumes a single stochastic dependent
-        if(length(detDeps) / nObsPerClusID != nInterm) {
-          type <- 'allCalcs'  # give up again; should only occur in strange situations
-        } else {
-          for(j in 1:nObsPerClusID) {
-            dataNodes[(i-1)*nObsPerClusID + j] <- stochDeps[j]         
-            if(nInterm >= 1) 
-              intermNodes[(i-1)*nObsPerClusID + j] <- detDeps[j]
-            if(nInterm >= 2)
-              intermNodes2[(i-1)*nObsPerClusID + j] <- detDeps[nObsPerClusID+j]
-            if(nInterm >= 3)
-              intermNodes3[(i-1)*nObsPerClusID + j] <- detDeps[2*nObsPerClusID+j] 
-          }
+        for(j in 1:nIntermClusNodesPerClusID) {
+          intermNodes[(i-1)*nIntermClusNodesPerClusID + j] <- detDeps[j]
         }
       }
+      intermNodes2 <- intermNodes
+      intermNodes3 <- intermNodes
+    }  else {
+      type <- "allCalcs"
+      intermNodes <- dataNodes # should be used
+      intermNodes2 <- intermNodes
+      intermNodes3 <- intermNodes
     }
     
     helperFunctions <- nimble:::nimbleFunctionList(CRP_helper)
@@ -1941,8 +1943,8 @@ sampler_CRP_moreGeneral <- nimbleFunction(
                         conjugate_ddirch_dmulti = 'CRP_conjugate_ddirch_dmulti',
                         'CRP_nonconjugate_moreGeneral')  ## default if we don't have sampler set up for a conjugacy
     
-    nClusVarsPerClusID <- clusterVarInfo$numNodesPerCluster
-    p <- length(tildeVars)
+    nClusNodesPerClusID <- numeric(p+1)
+    nClusNodesPerClusID[1:p] <- clusterVarInfo$numNodesPerCluster
     identityLink <- TRUE
     
     if(p == 2 && sampler == "CRP_conjugate_dnorm_invgamma_dnorm_moreGeneral") {
@@ -1967,7 +1969,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
       if(sampler == "CRP_conjugate_dnorm_dnorm_nonidentity") {
           identityLink <- FALSE
           helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, intermNodes, intermNodes2, intermNodes3, nInterm, calcNodes, type, p, min_nTilde)
-      } else helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, p, min_nTilde, nObsPerClusID, nClusVarsPerClusID)
+      } else helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, p, nTilde, nObsPerClusID, nClusNodesPerClusID)
     }
     
     curLogProb <- numeric(n)
@@ -2037,11 +2039,13 @@ sampler_CRP_moreGeneral <- nimbleFunction(
           if( xiCounts[xiUniques[j]] >= 1 ) { 
             model[[target]][i] <<- xiUniques[j] # <<-
             if(type == 'indivCalcs') {
+              for(j1 in 1:nIntermClusNodesPerClusID) {
+                model$calculate(intermNodes[(i-1)*nIntermClusNodesPerClusID+j1])  
+                model$calculate(intermNodes2[(i-1)*nIntermClusNodesPerClusID+j1])  
+                model$calculate(intermNodes3[(i-1)*nIntermClusNodesPerClusID+j1])  
+              }
               for(j1 in 1:nObsPerClusID) {
-                if(nInterm >= 1) model$calculate(intermNodes[(i-1)*nObsPerClusID+j1])
-                if(nInterm >= 2) model$calculate(intermNodes2[(i-1)*nObsPerClusID+j1])
-                if(nInterm >= 3) model$calculate(intermNodes3[(i-1)*nObsPerClusID+j1])
-                model$calculate(dataNodes[(i-1)*nObsPerClusID+j1]) 
+                model$calculate(dataNodes[(i-1)*nObsPerClusID+j1])       
               }
             } else model$calculate(calcNodes) 
             curLogProb[iprob] <<- 0 # <<-
@@ -2059,11 +2063,13 @@ sampler_CRP_moreGeneral <- nimbleFunction(
         if(sampler == 'CRP_nonconjugate_moreGeneral'){ # simulate tildeVars[xi[i]] # do this everytime there is a singleton so we ensure this comes always from the prior
           helperFunctions[[1]]$sample(i, model[[target]][i])
           if(type == 'indivCalcs') {
+            for(j1 in 1:nIntermClusNodesPerClusID) {
+              model$calculate(intermNodes[(i-1)*nIntermClusNodesPerClusID+j1])  
+              model$calculate(intermNodes2[(i-1)*nIntermClusNodesPerClusID+j1])  
+              model$calculate(intermNodes3[(i-1)*nIntermClusNodesPerClusID+j1])  
+            }
             for(j1 in 1:nObsPerClusID) {
-              if(nInterm >= 1) model$calculate(intermNodes[(i-1)*nObsPerClusID+j1])
-              if(nInterm >= 2) model$calculate(intermNodes2[(i-1)*nObsPerClusID+j1])
-              if(nInterm >= 3) model$calculate(intermNodes3[(i-1)*nObsPerClusID+j1])
-              model$calculate(dataNodes[(i-1)*nObsPerClusID+j1]) 
+              model$calculate(dataNodes[(i-1)*nObsPerClusID+j1])       
             }
           } else model$calculate(calcNodes) 
         }
@@ -2084,11 +2090,13 @@ sampler_CRP_moreGeneral <- nimbleFunction(
         for(j in 1:k) { 
           model[[target]][i] <<- xiUniques[j]  # <<-
           if(type == 'indivCalcs') {
+            for(j1 in 1:nIntermClusNodesPerClusID) {
+              model$calculate(intermNodes[(i-1)*nIntermClusNodesPerClusID+j1])  
+              model$calculate(intermNodes2[(i-1)*nIntermClusNodesPerClusID+j1])  
+              model$calculate(intermNodes3[(i-1)*nIntermClusNodesPerClusID+j1])  
+            }
             for(j1 in 1:nObsPerClusID) {
-              if(nInterm >= 1) model$calculate(intermNodes[(i-1)*nObsPerClusID+j1])
-              if(nInterm >= 2) model$calculate(intermNodes2[(i-1)*nObsPerClusID+j1])
-              if(nInterm >= 3) model$calculate(intermNodes3[(i-1)*nObsPerClusID+j1])
-              model$calculate(dataNodes[(i-1)*nObsPerClusID+j1]) 
+              model$calculate(dataNodes[(i-1)*nObsPerClusID+j1])       
             }
           } else model$calculate(calcNodes) 
           curLogProb[j] <<- 0 # <<-
@@ -2105,11 +2113,13 @@ sampler_CRP_moreGeneral <- nimbleFunction(
           if(sampler == 'CRP_nonconjugate_moreGeneral'){
             helperFunctions[[1]]$sample(i, model[[target]][i])
             if(type == 'indivCalcs') {
+              for(j1 in 1:nIntermClusNodesPerClusID) {
+                model$calculate(intermNodes[(i-1)*nIntermClusNodesPerClusID+j1])  
+                model$calculate(intermNodes2[(i-1)*nIntermClusNodesPerClusID+j1])  
+                model$calculate(intermNodes3[(i-1)*nIntermClusNodesPerClusID+j1])  
+              }
               for(j1 in 1:nObsPerClusID) {
-                if(nInterm >= 1) model$calculate(intermNodes[(i-1)*nObsPerClusID+j1])
-                if(nInterm >= 2) model$calculate(intermNodes2[(i-1)*nObsPerClusID+j1])
-                if(nInterm >= 3) model$calculate(intermNodes3[(i-1)*nObsPerClusID+j1])
-                model$calculate(dataNodes[(i-1)*nObsPerClusID+j1]) 
+                model$calculate(dataNodes[(i-1)*nObsPerClusID+j1])       
               }
             } else model$calculate(calcNodes) 
           }
