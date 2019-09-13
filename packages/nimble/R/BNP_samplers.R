@@ -1902,24 +1902,14 @@ sampler_CRP_moreGeneral <- nimbleFunction(
         dataNodes[(i-1)*nObsPerClusID + j] <- stochDeps[j]         
       }
     }
-    ntotalClusNodesPerClusID <- sum(clusterVarInfo$numNodesPerCluster) # to be used in condition that decide if we do 'indivCalcs' or 'allCalcs. If clusterVarInfo also returns when a node has a reparametrization could be more robust
     nIntermClusNodesPerClusID <- length(model$getDependencies(targetElements[1], determOnly = TRUE))  #nInterm
-    type <- 'indivCalcs'
-    if(nIntermClusNodesPerClusID == ntotalClusNodesPerClusID) { # does ineficient computations when node with reparametrization and deterministic definition is used
+    intermNodes <- dataNodes # initialized nodes in case if it is not used
+    if(nIntermClusNodesPerClusID > 0) {
       intermNodes <- rep(0, nIntermClusNodesPerClusID * n)
       for(i in seq_len(n)) {
         detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
-        for(j in 1:nIntermClusNodesPerClusID) {
-          intermNodes[(i-1)*nIntermClusNodesPerClusID + j] <- detDeps[j]
-        }
+        intermNodes[((i-1)*nIntermClusNodesPerClusID+1):(i*nIntermClusNodesPerClusID)] <- detDeps
       }
-      intermNodes2 <- intermNodes 
-      intermNodes3 <- intermNodes
-    }  else {
-      type <- "allCalcs"
-      intermNodes <- dataNodes # should be used
-      intermNodes2 <- intermNodes
-      intermNodes3 <- intermNodes
     }
     
     helperFunctions <- nimble:::nimbleFunctionList(CRP_helper)
@@ -2039,16 +2029,10 @@ sampler_CRP_moreGeneral <- nimbleFunction(
         for(j in 1:k) {
           if( xiCounts[xiUniques[j]] >= 1 ) { 
             model[[target]][i] <<- xiUniques[j] # <<-
-            if(type == 'indivCalcs') {
-              for(j1 in 1:nIntermClusNodesPerClusID) {
-                model$calculate(intermNodes[(i-1)*nIntermClusNodesPerClusID+j1])  
-                model$calculate(intermNodes2[(i-1)*nIntermClusNodesPerClusID+j1])  
-                model$calculate(intermNodes3[(i-1)*nIntermClusNodesPerClusID+j1])  
-              }
-              for(j1 in 1:nObsPerClusID) {
-                model$calculate(dataNodes[(i-1)*nObsPerClusID+j1])       
-              }
-            } else model$calculate(calcNodes) 
+            if(nIntermClusNodesPerClusID > 0) {
+              model$calculate(intermNodes[((i-1)*nIntermClusNodesPerClusID+1):(i*nIntermClusNodesPerClusID)]) 
+            }
+            model$calculate(dataNodes[((i-1)*nObsPerClusID+1):(i*nObsPerClusID)])       
             curLogProb[iprob] <<- 0 # <<-
             for(j1 in 1:nObsPerClusID) {
               curLogProb[iprob] <<- curLogProb[iprob] + model$getLogProb(dataNodes[(i-1)*nObsPerClusID+j1])   # <<-
@@ -2063,16 +2047,10 @@ sampler_CRP_moreGeneral <- nimbleFunction(
         model[[target]][i] <<- xi[i] # <<- label of new component
         if(sampler == 'CRP_nonconjugate_moreGeneral'){ # simulate tildeVars[xi[i]] # do this everytime there is a singleton so we ensure this comes always from the prior
           helperFunctions[[1]]$sample(i, model[[target]][i])
-          if(type == 'indivCalcs') {
-            for(j1 in 1:nIntermClusNodesPerClusID) {
-              model$calculate(intermNodes[(i-1)*nIntermClusNodesPerClusID+j1])  
-              model$calculate(intermNodes2[(i-1)*nIntermClusNodesPerClusID+j1])  
-              model$calculate(intermNodes3[(i-1)*nIntermClusNodesPerClusID+j1])  
-            }
-            for(j1 in 1:nObsPerClusID) {
-              model$calculate(dataNodes[(i-1)*nObsPerClusID+j1])       
-            }
-          } else model$calculate(calcNodes) 
+          if(nIntermClusNodesPerClusID > 0) {
+            model$calculate(intermNodes[((i-1)*nIntermClusNodesPerClusID+1):(i*nIntermClusNodesPerClusID)]) 
+          }
+          model$calculate(dataNodes[((i-1)*nObsPerClusID+1):(i*nObsPerClusID)])       
         }
         curLogProb[k] <<- log(conc) + helperFunctions[[1]]$calculate_prior_predictive(i) # <<- probability of sampling a new label, only k components because xi_i is a singleton
         
@@ -2090,16 +2068,10 @@ sampler_CRP_moreGeneral <- nimbleFunction(
         ## First, compute probability of sampling an existing label.
         for(j in 1:k) { 
           model[[target]][i] <<- xiUniques[j]  # <<-
-          if(type == 'indivCalcs') {
-            for(j1 in 1:nIntermClusNodesPerClusID) {
-              model$calculate(intermNodes[(i-1)*nIntermClusNodesPerClusID+j1])  
-              model$calculate(intermNodes2[(i-1)*nIntermClusNodesPerClusID+j1])  
-              model$calculate(intermNodes3[(i-1)*nIntermClusNodesPerClusID+j1])  
-            }
-            for(j1 in 1:nObsPerClusID) {
-              model$calculate(dataNodes[(i-1)*nObsPerClusID+j1])       
-            }
-          } else model$calculate(calcNodes) 
+          if(nIntermClusNodesPerClusID > 0) {
+            model$calculate(intermNodes[((i-1)*nIntermClusNodesPerClusID+1):(i*nIntermClusNodesPerClusID)]) 
+          }
+          model$calculate(dataNodes[((i-1)*nObsPerClusID+1):(i*nObsPerClusID)])       
           curLogProb[j] <<- 0 # <<-
           for(j1 in 1:nObsPerClusID) {
             curLogProb[j] <<- curLogProb[j] + model$getLogProb(dataNodes[(i-1)*nObsPerClusID+j1])   # <<-
@@ -2113,16 +2085,10 @@ sampler_CRP_moreGeneral <- nimbleFunction(
           model[[target]][i] <<- kNew # <<-
           if(sampler == 'CRP_nonconjugate_moreGeneral'){
             helperFunctions[[1]]$sample(i, model[[target]][i])
-            if(type == 'indivCalcs') {
-              for(j1 in 1:nIntermClusNodesPerClusID) {
-                model$calculate(intermNodes[(i-1)*nIntermClusNodesPerClusID+j1])  
-                model$calculate(intermNodes2[(i-1)*nIntermClusNodesPerClusID+j1])  
-                model$calculate(intermNodes3[(i-1)*nIntermClusNodesPerClusID+j1])  
-              }
-              for(j1 in 1:nObsPerClusID) {
-                model$calculate(dataNodes[(i-1)*nObsPerClusID+j1])       
-              }
-            } else model$calculate(calcNodes) 
+            if(nIntermClusNodesPerClusID > 0) {
+              model$calculate(intermNodes[((i-1)*nIntermClusNodesPerClusID+1):(i*nIntermClusNodesPerClusID)]) 
+            }
+            model$calculate(dataNodes[((i-1)*nObsPerClusID+1):(i*nObsPerClusID)])       
           }
           curLogProb[k+1] <<- log(conc) + helperFunctions[[1]]$calculate_prior_predictive(i) # # <<- probability of sampling a new label
         }
