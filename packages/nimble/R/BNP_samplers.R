@@ -1963,8 +1963,8 @@ sampler_CRP_moreGeneral <- nimbleFunction(
         ## p and nTilde only needed for non-conjugate currently.
         ## Note that the elements of tildeNodes will be in order such that the first element corresponds to the cluster
         ## obtained when xi[i] = 1, the second when xi[i] = 2, etc.
-      if(sampler == 'CRP_nonconjugate_moreGeneral' && p > 3)
-          stop("sampler_CRP: CRP_nonconjugate sampler not yet set up to handle clustering of more than three variables.")  ## This is because of how we put old values back into model when proposing a new cluster that is not accepted.
+      #if(sampler == 'CRP_nonconjugate_moreGeneral' && p > 3) # was printed for model F
+      #    stop("sampler_CRP: CRP_nonconjugate sampler not yet set up to handle clustering of more than three variables.")  ## This is because of how we put old values back into model when proposing a new cluster that is not accepted.
       marginalizedNodes <- unlist(clusterVarInfo$clusterNodes)
       calcNodes <- model$getDependencies(c(target, marginalizedNodes))
       if(sampler == "CRP_conjugate_dnorm_dnorm_nonidentity") {
