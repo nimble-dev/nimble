@@ -944,7 +944,7 @@ sampler_HMC <- nimbleFunction(
         calcNodes <- model$getDependencies(targetNodes)
         originalTargetAsScalars <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         targetNodesAsScalars <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)
-        IND_ID   <- 1   ## transformation ID: 1=itentity, 2=log, 3=logit
+        IND_ID   <- 1   ## transformation ID: 1=identity, 2=log, 3=logit
         IND_LB   <- 2   ## interval-bounded parameters: lower-bound
         IND_RNG  <- 3   ## interval-bounded parameters: range
         IND_LRNG <- 4   ## interval-bounded parameters: log(range)
@@ -996,6 +996,7 @@ sampler_HMC <- nimbleFunction(
         ## numeric value generation
         timesRan <- 0;   epsilon <- 0;   mu <- 0;   logEpsilonBar <- 0;   Hbar <- 0
         jacSaveL <- numeric(d);   jacSaveR <- numeric(d)
+        log2 <- log(2)
         ## nested function and function list definitions
         qpNLDef <- nimbleList(q  = double(1), p  = double(1))
         btNLDef <- nimbleList(q1 = double(1), p1 = double(1), q2 = double(1), p2 = double(1), q3 = double(1), n = double(), s = double(), a = double(), na = double())
@@ -1047,7 +1048,7 @@ sampler_HMC <- nimbleFunction(
         transformedModelValues = function() {
             q <- values(model, targetNodes)
             for(i in 1:d) {
-                x <- q[i];      id <- transformInfo[i, IND_ID]    ## 1 = itentity, 2 = log, 3 = logit
+                x <- q[i];      id <- transformInfo[i, IND_ID]    ## 1 = identity, 2 = log, 3 = logit
                 if(id == 2) q[i] <- log(x)
                 if(id == 3) q[i] <- logit( (x-transformInfo[i, IND_LB]) / transformInfo[i, IND_RNG] )
             }
@@ -1056,7 +1057,7 @@ sampler_HMC <- nimbleFunction(
         inverseTransformValues = function(qArg = double(1)) {
             transformed <- qArg
             for(i in 1:d) {
-                x <- qArg[i];   id <- transformInfo[i, IND_ID]    ## 1 = itentity, 2 = log, 3 = logit
+                x <- qArg[i];   id <- transformInfo[i, IND_ID]    ## 1 = identity, 2 = log, 3 = logit
                 if(id == 2) transformed[i] <- exp(x)
                 if(id == 3) transformed[i] <- transformInfo[i, IND_LB] + transformInfo[i, IND_RNG]*expit(x)
             }
@@ -1066,7 +1067,7 @@ sampler_HMC <- nimbleFunction(
             values(model, targetNodes) <<- inverseTransformValues(qArg)
             lp <- model$calculate(calcNodes) - sum(pArg^2)/2
             for(i in 1:d) {
-                x <- qArg[i];   id <- transformInfo[i, IND_ID]    ## 1 = itentity, 2 = log, 3 = logit
+                x <- qArg[i];   id <- transformInfo[i, IND_ID]    ## 1 = identity, 2 = log, 3 = logit
                 if(id == 2) lp <- lp + x
                 if(id == 3) lp <- lp + transformInfo[i, IND_LRNG] - log(exp(x)+exp(-x)+2)   ## alternate: -2*log(1+exp(-x))-x
             }
@@ -1079,7 +1080,7 @@ sampler_HMC <- nimbleFunction(
             grad <- numeric(d)
             grad[1:d] <- derivsOutput$jacobian[1, 1:d]            ## preserve 1D vector object
             for(i in 1:d) {
-                x <- qArg[i];   id <- transformInfo[i, IND_ID]    ## 1 = itentity, 2 = log, 3 = logit
+                x <- qArg[i];   id <- transformInfo[i, IND_ID]    ## 1 = identity, 2 = log, 3 = logit
                 if(id == 2) grad[i] <- grad[i]*exp(x) + 1
                 if(id == 3) grad[i] <- grad[i]*transformInfo[i, IND_RNG]*expit(x)^2*exp(-x) + 2/(1+exp(x)) - 1
             }
@@ -1119,7 +1120,7 @@ sampler_HMC <- nimbleFunction(
             qpLogH <- logH(q, p)
             a <- 2*nimStep(exp(logH(qpNL$q, qpNL$p) - qpLogH) - 0.5) - 1
             if(warnings > 0) { if(is.nan(a)) print('caught acceptance prob = NaN, in HMC initializeEpsilon routine'); warnings <<- warnings - 1 }
-            while((exp(logH(qpNL$q, qpNL$p) - qpLogH))^a > 2^(-a)) {
+            while(a * (logH(qpNL$q, qpNL$p) - qpLogH) > -a * log2)) {
                 epsilon <<- epsilon * 2^a
                 qpNL <- leapfrog(q, p, epsilon, 0, 2)        ## v = 2 is a special case for initializeEpsilon routine
             }
