@@ -915,7 +915,7 @@ sampler_CRP <- nimbleFunction(
     
     if(is.null(tildeVars))
       stop('sampler_CRP: The model should have at least one cluster variable.\n')
-    
+
     ## Avoid case like y[i] ~ dnorm(mu[xi[i]], exp(mu[xi[i]])) as it would complicate p>1 case below.
     ## Also catches cases like:  mu[1] <- muTilde[xi[1]]; mu[2] <- exp(muTilde[xi[2]]) that break conjugacy.
     if(length(tildeVars) != length(unique(tildeVars)))
@@ -1774,10 +1774,12 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     if(is.null(tildeVars))
       stop('sampler_CRP: The model should have at least one cluster variable.\n')
     
-    ## Avoid case like y[i] ~ dnorm(mu[xi[i]], exp(mu[xi[i]])) as it would complicate p>1 case below.
-    ## Also catches cases like:  mu[1] <- muTilde[xi[1]]; mu[2] <- exp(muTilde[xi[2]]) that break conjugacy.
-    if(length(tildeVars) != length(unique(tildeVars)))
-      stop("sampler_CRP: Cluster membership variable used in multiple declarations. NIMBLE's CRP MCMC sampling not designed for this case.")
+    ## Removing check now that we have more robust handling of getting all cluster nodes within a cluster
+    ## We should think/check that cases like y[i] ~ dnorm(mu[xi[i]], exp(mu[xi[i]])) are ok.
+    ## ## Avoid case like y[i] ~ dnorm(mu[xi[i]], exp(mu[xi[i]])) as it would complicate p>1 case below.
+    ## ## Also catches cases like:  mu[1] <- muTilde[xi[1]]; mu[2] <- exp(muTilde[xi[2]]) that break conjugacy.
+    ## if(length(tildeVars) != length(unique(tildeVars)))
+    ##   stop("sampler_CRP: Cluster membership variable used in multiple declarations. NIMBLE's CRP MCMC sampling not designed for this case.")
     
     ## Cases like 'muTilde[xi[n-i+1]]'. sampler_CRP may be ok with this, but when we wrap the cluster node sampling
     ## to avoid sampling empty clusters, this kind of indexing will cause incorrect behavior.
@@ -1947,7 +1949,6 @@ sampler_CRP_moreGeneral <- nimbleFunction(
         })
         ## Determine correct order of clusterNodes, including any intermediate nodes standing between different clusterNodes
         ## Note that this could be slow to loop over all clusters; revisit this.
-        browser()
         allNodes <- unlist(clusterVarInfo$clusterNodes)
         dataIntermNodes <- c(dataNodes, intermNodes)
         ids <- unlist(clusterVarInfo$clusterIDs)
@@ -1967,7 +1968,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
         }
     } else {
         marginalizedNodes <- clusterVarInfo$clusterNodes[[1]]
-        nClusNodesPerClusID <- length(marginalizeNodes) / n
+        nClusNodesPerClusID <- length(marginalizedNodes) / n
     }
     ## Number of cluster nodes per cluster should be the same for all clusters.
     ## Think about if we need a check for how this might go wrong.        
