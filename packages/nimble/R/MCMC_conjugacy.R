@@ -667,9 +667,12 @@ conjugacyClass <- setRefClass(
 
             ## calculate and return the (log)density for the current value of target
             functionBody$addCode(posteriorObject$prePosteriorCodeBlock, quote = FALSE)
+            if(link != 'identity') {
+                functionBody$addCode({
+                    model[[target]] <<- origTargetValue
+                    model$calculate(calcNodesDeterm)})
+            }
             functionBody$addCode({
-                model[[target]] <<- origTargetValue
-                model$calculate(calcNodesDeterm)
                 posteriorLogDensity <- DPOSTERIORCALL
                 returnType(double())
                 return(posteriorLogDensity)
