@@ -10,13 +10,13 @@ is denoted by $x$.
   Binomial      `dbin(prob = p, size = n)`                  ${n \choose x} p^x (1-p)^{n-x}$                                                                                                                              $0$   $n$
                 $0 < p < 1$, $n \in \mathbb{N}^*$
   CAR           `dcar_normal(adj, weights,`                 see chapter \@ref(cha:spatial) for details
-   (intrinsic)  `num, tau, c, zero_mean`
+   (intrinsic)  `num, tau, c, zero_mean)`
   CAR           `dcar_proper(mu, C, adj,`                   see chapter \@ref(cha:spatial) for details
    (proper)     `num, M, tau, gamma)`
   Categorical   `dcat(prob = p)`                            $\frac{p_x}{\sum_i p_i}$                                                                                                                                     $1$   $N$ 
                 $p \in (\mathbb{R}^+)^N$
   Chi-square    `dchisq(df = k)`, $k > 0$                   $\frac{x^{\frac{k}{2}-1} \exp(-x/2)}{2^{\frac{k}{2}} \Gamma(\frac{k}{2})}$                                                                                   $0$ 
-  Double        `ddexp(location = ` $\mu$`, rate =$\tau$)`  $\frac{\tau}{2} \exp(-\tau |x - \mu|)$
+  Double        `ddexp(location = `$\mu$`, rate = `$\tau$`)`$\frac{\tau}{2} \exp(-\tau |x - \mu|)$
    exponential  $\tau > 0$
   Dirichlet     `ddirch(alpha = ` $\alpha$`)`               $\Gamma(\sum_j \alpha_j) \prod_j \frac{ x_j^{\alpha_j - 1}}{ \Gamma(\alpha_j)}$                                                                              $0$
                 $\alpha_j \geq 0$
@@ -35,7 +35,7 @@ is denoted by $x$.
                 $\sum_j x_j = n$
   Multivariate  `dmnorm(mean =` $\mu$`, prec =` $\Lambda$`)`$(2\pi)^{-\frac{d}{2}}|\Lambda|^{\frac{1}{2}} \exp\{-\frac{(x-\mu)^T \Lambda (x-\mu)}{2}\}$
   normal        $\Lambda$ positive definite
-  Multivariate  `dmvt(mu =` $\mu$`, prec =` $\Lambda$`)`    $\frac{\Gamma(\frac{\nu+d}{2})}{\Gamma(\frac{\nu}{2})(\nu\pi)^{d/2}}|\Lambda|^{1/2}(1+\frac{(x-\mu)^T\Lambda(x-\mu)}{\nu})^{-\frac{\nu+d}{2}}$
+  Multivariate  `dmvt(mu =` $\mu$`, prec =` $\Lambda$``     $\frac{\Gamma(\frac{\nu+d}{2})}{\Gamma(\frac{\nu}{2})(\nu\pi)^{d/2}}|\Lambda|^{1/2}(1+\frac{(x-\mu)^T\Lambda(x-\mu)}{\nu})^{-\frac{\nu+d}{2}}$
   Student t     `df =` $\nu$`), ` $\Lambda$ positive def.  
   Negative      `dnegbin(prob = p, size = r)`               ${x + r -1 \choose x} p^r (1-p)^x$                                                                                                                           $0$
   binomial      $0 < p \leq 1$, $r \geq 0$

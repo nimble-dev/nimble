@@ -1282,6 +1282,9 @@ cc_checkLinearity <- function(expr, targetNode) {
         checkLinearityRHS <- cc_checkLinearity(expr[[3]], targetNode)
         if(is.null(checkLinearityLHS) || is.null(checkLinearityRHS)) return(NULL)
         if((checkLinearityLHS$scale != 0) && (checkLinearityRHS$scale != 0)) stop('cc_checkLinearity: incompatible scales in * operation')
+        if((checkLinearityLHS$scale == 0) && (checkLinearityRHS$scale == 0)) {
+            return(list(offset = cc_combineExprsMultiplication(checkLinearityLHS$offset, checkLinearityRHS$offset, isMatrixMult),
+                        scale  = 0)) }
         if(checkLinearityLHS$scale != 0) {
             return(list(offset = cc_combineExprsMultiplication(checkLinearityLHS$offset, checkLinearityRHS$offset, isMatrixMult),
                         scale  = cc_combineExprsMultiplication(checkLinearityLHS$scale,  checkLinearityRHS$offset, isMatrixMult))) }

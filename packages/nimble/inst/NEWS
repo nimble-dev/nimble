@@ -1,9 +1,13 @@
 
 USER LEVEL CHANGES
 
+-- Added the scalarComponents argument to addSampler method of MCMC configuration objects, which enables adding independent univariate samplers to all scalar componets of a specified target node or variable.
+
 BUG FIXES
 
 -- Fixed bug in MCMC crossLevel sampler, so that underlying conjugate sampler functions no longer modify the target node value.
+
+-- Fixed a bug in corner case of MCMC conjugacy checking system, when linear scale of target node is identically equal to zero.
 
                             CHANGES IN VERSION 0.8.0 (June 2019)
 USER LEVEL CHANGES
