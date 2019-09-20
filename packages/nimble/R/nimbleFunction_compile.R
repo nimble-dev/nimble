@@ -274,6 +274,8 @@ nfProcessing$methods(doSetupTypeInference = function(setupOrig, setupNew) {
     outputNames <- character()
     if(setupOrig) {
     	setupSymTab <<- symbolTable(parentST = NULL)
+        setupSymTab$addSymbol(symbolNimbleFunctionSelf(name = ".self",
+                                                       nfProc = .self) )
     	outputNames <- c(outputNames, nf_getSetupOutputNames(nfGenerator))
     	if(length(outputNames)>0) outputNames <- unique(outputNames)
     }

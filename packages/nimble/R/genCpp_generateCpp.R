@@ -394,8 +394,13 @@ cppOutputNFmethod <- function(code, symTab) {
         paste0( nimGenerateCpp(code$args[[1]], symTab), '.', code$args[[2]]) ##, ## No nimGenerateCpp on code$args[[2]] because it should be a string
     } else {
         ## This bound method obj$run is not part of a call, so we transform it to NimBoundMethod<T>(&T::run, obj).
+        
         objectName <- code$args[[1]]$name
-        typeName <- symTab$getSymbolObject(objectName, inherits = TRUE)$baseType
+        if(objectName == "this") {
+            typeName <- code$args[[1]]$type
+        } else {
+            typeName <- symTab$getSymbolObject(objectName, inherits = TRUE)$baseType
+        }
         methodName <- code$args[[2]]
         #paste0('NimBoundMethod<', typeName, '>(&', typeName, '::', methodName, ', ', objectName, ')')
         paste0('NimBind(&', typeName, '::', methodName, ', ', objectName, ')')

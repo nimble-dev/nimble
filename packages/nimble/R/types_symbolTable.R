@@ -558,10 +558,25 @@ symbolNimbleFunction <-
                     initialize = function(...) {callSuper(...)},
                     show = function() writeLines(paste('symbolNimbleFunction', name)),
                     genCppVar = function(...) {
-                        return(cppVarFull(name = name, baseType = environment(nfProc$nfGenerator)$name, ptr = 1)) ## selfDerefence idea is not general for A$B$C, selfDereference = TRUE))
+                        cppName <- if(name == ".self") "this" else name
+                        return(cppVarFull(name = cppName, baseType = environment(nfProc$nfGenerator)$name, ptr = 1)) 
                     }
                     ))
 
+symbolNimbleFunctionSelf <-
+    setRefClass(Class = 'symbolNimbleFunctionSelf',
+                contains = 'symbolBase',
+                fields = list(baseType = 'ANY'),
+                methods = list(
+                    initialize = function(name, nfProc) {
+                        callSuper(name = name, type = "Ronly");
+                        baseType <<- environment(nfProc$nfGenerator)$name
+                    },
+                    show = function() writeLines(paste('symbolNimbleFunctionSelf', name)),
+                    genCppVar = function(...) {
+                        stop("Should not be creating a cppVar from a symbolNimbleFunctionSelf")
+                    }
+                ))
 
 symbolVoidPtr <- setRefClass(Class = 'symbolVoidPtr',
                              contains = 'symbolBase',

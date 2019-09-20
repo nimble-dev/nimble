@@ -167,7 +167,7 @@ scalarOutputTypes <- list(decide = 'logical',
 ## Then the exprClass object for mean(`+`(B, C)) will create a size expression of 1 (with the same dimensions as B+C)
 ## Then the exprClass object for `<-`(A, mean(`+`(B, C))) will generate assertions that the size of A must be 1
 ## and it will set the size expressions for A and for itself to 1.
-expressionSymbolTypeReplacements <- c('symbolNimbleListGenerator', 'symbolNimbleList', 'symbolNimbleFunction')
+expressionSymbolTypeReplacements <- c('symbolNimbleListGenerator', 'symbolNimbleList', 'symbolNimbleFunction', 'symbolMemberFunction')
 
 exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprClass
     ## name:
@@ -1298,9 +1298,23 @@ sizeOptim <- function(code, symTab, typeEnv) {
     code$toEigenize <- "no"
     code$nDim <- 0
 
+    if(inherits(code$args[[1]], 'exprClass')) {
+        if(!(code$args[[1]]$isName))
+            asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+    }
+    
     fnCode <- code$args$fn
+    if(!inherits(fnCode, 'exprClass')) {
+        stop(exprClassProcessingErrorMsg(code, 'In sizeOptim.  fn is not valid.'), call. = FALSE)
+    }
     if (fnCode$name == 'nfMethod') {
         # This is handled in cppOutputNFmethod.
+    } else if(identical(fnCode$type, 'Ronly') & identical(class(fnCode$sizeExprs)[1], 'symbolMemberFunction')) {
+        fnCode$name <- fnCode$sizeExprs$RCfunProc$name
+        newCode <- substitute(nfMethod(this, FUN), list(FUN = fnCode$name))
+        newExpr <- RparseTree2ExprClasses(newCode)
+        newExpr$args[[1]]$type <- symTab$getSymbolObject(".self", TRUE)$baseType
+        setArg(code, 2, newExpr)
     } else if(exists(fnCode$name) && is.rcf(get(fnCode$name))) {
         # Handle fn arguments that are RCfunctions.
         fnCode$name <- environment(get(fnCode$name))$nfMethodRCobject$uniqueName
@@ -1313,6 +1327,12 @@ sizeOptim <- function(code, symTab, typeEnv) {
         # We simply emit "NULL".
     } else if (grCode$name == 'nfMethod') {
         # This is handled in cppOutputNFmethod.
+    } else if(identical(grCode$type, 'Ronly') & identical(class(grCode$sizeExprs)[1], 'symbolMemberFunction')) {
+        grCode$name <- grCode$sizeExprs$RCfunProc$name
+        newCode <- substitute(nfMethod(this, FUN), list(FUN = grCode$name))
+        newExpr <- RparseTree2ExprClasses(newCode)
+        newExpr$args[[1]]$type <- symTab$getSymbolObject(".self", TRUE)$baseType
+        setArg(code, 2, newExpr)
     } else if(exists(grCode$name) && is.rcf(get(grCode$name))) {
         # Handle gr arguments that are RCfunctions.
         grCode$name <- environment(get(grCode$name))$nfMethodRCobject$uniqueName
