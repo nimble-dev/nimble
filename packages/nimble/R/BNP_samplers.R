@@ -1321,19 +1321,7 @@ CRP_nonconjugate_moreGeneral <- nimbleFunction(
     },
     sample = function(i = integer(), j = integer() ) {
       ## sample from prior
-      if( p == 1 ) { # the more general version in lines 1329-1335 should be enough. For now I leave this here.
-        for(j1 in 1:M[1]) { # works for more general (J>1) and standard (J=1) CRP_nonconjugate
-          model$simulate(marginalizedNodes[(j-1)*M[1]+j1])  
-        }
-      } else {
-        nTildeAux <- 0
-        for(l in 1:p) {  ## marginalized nodes should be in correct order based on findClusterNodes.
-          for(j1 in 1:M[l]) {
-            model$simulate(marginalizedNodes[nTildeAux + (j-1)*M[l] + j1])
-          }
-          nTildeAux <- nTildeAux + nTilde[l]
-        }
-      }
+      model$simulate(marginalizedNodes[ ((j-1)*M+1):(j*M) ])
     }
   )
 )
