@@ -1134,6 +1134,7 @@ sampler_HMC <- nimbleFunction(
                 qpNL <- leapfrog(qArg, pArg, v*eps, first, v)
                 q <- qpNL$q;   p <- qpNL$p;   qpLogH <- logH(q, p)
                 n <- nimStep(qpLogH - logu)          ## step(x) = 1 iff x >= 0, and zero otherwise
+                ## lowering the initial step size, and increasing the target acceptance rate may keep the step size small to avoid divergent paths.
                 s <- nimStep(qpLogH - logu + 1000)   ## use delta_max = 1000
                 a <- min(1, exp(qpLogH - logH0))
                 if(is.nan.vec(q) | is.nan.vec(p)) { n <- 0; s <- 0; a <- 0 }     ## my addition
