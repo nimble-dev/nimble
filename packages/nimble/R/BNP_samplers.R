@@ -2230,6 +2230,7 @@ findClusterNodes <- function(model, target) {
   varIdx <- 0
 
   targetNonIndex <- NULL
+  multipleStochIndexes <- NULL
 
   modelVars <- model$getVarNames()
   modelVars <- modelVars[!modelVars == targetVar]
@@ -2242,8 +2243,10 @@ findClusterNodes <- function(model, target) {
       len <- length(subExpr)
       ## Look for target variable within expression, but only when used within index
       if(len >= 3 && is.call(subExpr) && subExpr[[1]] == '[' &&
-         sum(all.vars(subExpr) == targetVar) && subExpr[[2]] != targetVar) {
+        sum(all.vars(subExpr) == targetVar) && subExpr[[2]] != targetVar) {
         varIdx <- varIdx + 1
+        multipleStochIndexes <- c(multipleStochIndexes, FALSE)
+          
         clusterVars <- c(clusterVars, deparse(subExpr[[2]]))
         
         ## Determine which index the target variable occurs in.
@@ -2253,16 +2256,18 @@ findClusterNodes <- function(model, target) {
             if(sum(all.vars(subExpr[[k]]) == targetVar)) {
                 if(foundTarget) {
                     stop("findClusterNodes: CRP variable used multiple times in ", deparse(subExpr),
-                         ". NIMBLE's CRP MCMC sampling not designed for this situation.")
+                           ". NIMBLE's CRP MCMC sampling not designed for this situation.")
                 } else {
                     foundTarget <- TRUE
                     whichIndex <- k
                 }
             }
             ## We will need to relax this when allow crossed clustering.
-            if(sum(all.vars(subExpr[[k]]) %in% modelVars))  ## cases like mu[xi[i],eta[j]]
+            if(sum(all.vars(subExpr[[k]]) %in% modelVars)) { ## cases like mu[xi[i],eta[j]]
                 warning("findClusterNodes: multiple indexing variables in '", deparse(subExpr),
-                         "'. NIMBLE's CRP MCMC sampling not designed for this situation.")
+                          "'. NIMBLE's CRP MCMC sampling not designed for this situation.")
+                multipleStochIndexes[varIdx] <- TRUE
+            }                
             k <- k+1
         }
         if(!foundTarget) stop("findClusterNodes: conflicting information about presence of CRP variable in expression.")
@@ -2406,7 +2411,7 @@ findClusterNodes <- function(model, target) {
               numNodesPerCluster = numNodesPerCluster, clusterIDs = clusterIDs, loopIndex = loopIndex,
               targetIsIndex = targetIsIndex, indexPosition = indexPosition, indexExpr = indexExpr,
               numIndexes = numIndexes, targetIndexedByFunction = targetIndexedByFunction,
-              targetNonIndex = targetNonIndex))
+              targetNonIndex = targetNonIndex, multipleStochIndexes = multipleStochIndexes))
 }
 
 checkNormalInvGammaConjugacy <- function(model, clusterVarInfo) {
