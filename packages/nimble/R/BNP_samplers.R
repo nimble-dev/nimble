@@ -2264,8 +2264,9 @@ findClusterNodes <- function(model, target) {
             }
             ## We will need to relax this when allow crossed clustering.
             if(sum(all.vars(subExpr[[k]]) %in% modelVars)) { ## cases like mu[xi[i],eta[j]]
-                warning("findClusterNodes: multiple indexing variables in '", deparse(subExpr),
-                          "'. NIMBLE's CRP MCMC sampling not designed for this situation.")
+                ## We are adding support for this case.
+                ## warning("findClusterNodes: multiple indexing variables in '", deparse(subExpr),
+                ##          "'. NIMBLE's CRP MCMC sampling not designed for this situation.")
                 multipleStochIndexes[varIdx] <- TRUE
             }                
             k <- k+1
