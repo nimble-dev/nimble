@@ -938,6 +938,7 @@ sampler_HMC <- nimbleFunction(
         messages      <- if(!is.null(control$messages))      control$messages      else TRUE
         warnings      <- if(!is.null(control$warnings))      control$warnings      else 5
         maxAdaptIter  <- if(!is.null(control$maxAdaptIter))  control$maxAdaptIter  else 1000
+        maxTreeDepth  <- if(!is.null(control$maxTreeDepth))  control$maxTreeDepth  else 10
         ## node list generation, and processing of bounds and transformations
         targetNodes <- model$expandNodeNames(target)
         if(length(targetNodes) <= 0) stop('HMC sampler must operate on at least one node')
@@ -1026,9 +1027,11 @@ sampler_HMC <- nimbleFunction(
             qDiff <- qR - qL
             ##s <- btNL$s * nimStep(inprod(qDiff, pL)) * nimStep(inprod(qDiff, pR))                      ## this line replaced with the next,
             if(btNL$s == 0) s <- 0 else s <- nimStep(inprod(qDiff, pL)) * nimStep(inprod(qDiff, pR))     ## which acccounts for NaN's in btNL elements
+            if(j >= maxTreeDepth) s <- 0
             if(printJ) {   if(j == 0) cat('j = ', j) else cat(', ', j)
                            cat('(');   if(v==1) cat('R') else cat('L');   cat(')')
                            if(s != 1) print(' ')   }
+            if(j >= maxTreeDepth) if(warnings > 0) { print('HMC sampler encountered maximum search tree depth of ', maxTreeDepth); warnings <<- warnings - 1 }
             j <- j + 1
             checkInterrupt()
         }
@@ -2484,6 +2487,7 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item messages.  A logical argument, specifying whether to print informative messages (default = TRUE)
 #' \item warnings.  A numeric argument, specifying how many warnings messages to emit (for example, when NaN values are encountered). (default = 5)
 #' \item maxAdaptIter.  The number of sampling iterations to adapt the leapfrog stepsize. (default = 1000)
+#' \item maxTreeDepth.  The maximum allowable depth of the binary leapfrog search tree for generating candidate transitions. (default = 10)
 #' }
 #'
 #' @section crossLevel sampler:
