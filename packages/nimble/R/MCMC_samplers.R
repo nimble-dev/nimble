@@ -1000,6 +1000,7 @@ sampler_HMC <- nimbleFunction(
         jacSaveL <- numeric(d+1);   jacSaveR <- numeric(d+1)
         qL <- numeric(d+1);   qR <- numeric(d+1);  qDiff <- numeric(d+1);   qNew <- numeric(d+1)
         pL <- numeric(d+1);   pR <- numeric(d+1)
+        grad <- numeric(d+1); gradFirst <- numeric(d+1)
         log2 <- log(2)
         ## nested function and function list definitions
         qpNLDef <- nimbleList(q  = double(1), p  = double(1))
@@ -1083,30 +1084,29 @@ sampler_HMC <- nimbleFunction(
             values(model, targetNodes) <<- inverseTransformValues(qArg)
             if(printJacobian) { jacQ <- array(0, c(1,d)); jacQ[1,1:d] <- values(model, targetNodes); print(jacQ) }
             derivsOutput <- derivs(model$calculate(calcNodes), order = 1, wrt = targetNodes)
-            grad <- numeric(d)
-            grad[1:d] <- derivsOutput$jacobian[1, 1:d]            ## preserve 1D vector object
+            grad <<- derivsOutput$jacobian[1, 1:d]
             for(i in 1:d) {
                 x <- qArg[i];   id <- transformInfo[i, IND_ID]    ## 1 = identity, 2 = log, 3 = logit
-                if(id == 2) grad[i] <- grad[i]*exp(x) + 1
-                if(id == 3) grad[i] <- grad[i]*transformInfo[i, IND_RNG]*expit(x)^2*exp(-x) + 2/(1+exp(x)) - 1
+                if(id == 2) grad[i] <<- grad[i]*exp(x) + 1
+                if(id == 3) grad[i] <<- grad[i]*transformInfo[i, IND_RNG]*expit(x)^2*exp(-x) + 2/(1+exp(x)) - 1
             }
-            returnType(double(1));   return(grad)
         },
         leapfrog = function(qArg = double(1), pArg = double(1), eps = double(), first = double(), v = double()) {
             ## Algorithm 1 from Hoffman and Gelman (2014)
-            if(first == 1) { jac <- jacobian(qArg)
-                         } else { if(v ==  1) jac <- jacSaveR
-                                  if(v == -1) jac <- jacSaveL
-                                  if(v ==  2) jac <- jacSaveL }
-            p2 <- pArg + eps/2 * jac
+            if(first == 1) { jacobian(qArg)     ## member data 'grad' is set in jacobian() method
+                         } else { if(v ==  1) grad <<- jacSaveR
+                                  if(v == -1) grad <<- jacSaveL
+                                  if(v ==  2) grad <<- jacSaveL }
+            p2 <- pArg + eps/2 * grad
             q2 <- qArg + eps   * p2
-            jac2 <- jacobian(q2)
-            p3 <- p2   + eps/2 * jac2
-            if(first == 1) { if(v ==  1) { jacSaveL <<- jac;   jacSaveR <<- jac2 }
-                             if(v == -1) { jacSaveR <<- jac;   jacSaveL <<- jac2 }
-                             if(v ==  2) { jacSaveL <<- jac                      }
-                         } else { if(v ==  1) jacSaveR <<- jac2
-                                  if(v == -1) jacSaveL <<- jac2 }
+            gradFirst <<- grad
+            jacobian(q2)                        ## member data 'grad' is set in jacobian() method
+            p3 <- p2   + eps/2 * grad
+            if(first == 1) { if(v ==  1) { jacSaveL <<- gradFirst;   jacSaveR <<- grad }
+                             if(v == -1) { jacSaveR <<- gradFirst;   jacSaveL <<- grad }
+                             if(v ==  2) { jacSaveL <<- gradFirst                      }
+                         } else { if(v ==  1) jacSaveR <<- grad
+                                  if(v == -1) jacSaveL <<- grad }
             if(warnings > 0) if(is.nan.vec(c(q2, p3))) { print('encountered a NaN value in HMC leapfrog routine, with timesRan = ', timesRan); warnings <<- warnings - 1 }
             returnType(qpNLDef());   return(qpNLDef$new(q = q2, p = p3))
         },
