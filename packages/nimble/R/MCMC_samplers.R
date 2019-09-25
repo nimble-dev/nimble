@@ -997,10 +997,9 @@ sampler_HMC <- nimbleFunction(
         if(messages && length(logitTransformNodes) > 0) message('HMC sampler is using a logit-transformation for: ', paste0(logitTransformNodes, collapse = ', '))
         ## numeric value generation
         timesRan <- 0;   epsilon <- 0;   mu <- 0;   logEpsilonBar <- 0;   Hbar <- 0
-        jacSaveL <- numeric(d+1);   jacSaveR <- numeric(d+1)
         qL <- numeric(d+1);   qR <- numeric(d+1);  qDiff <- numeric(d+1);   qNew <- numeric(d+1)
         pL <- numeric(d+1);   pR <- numeric(d+1)
-        grad <- numeric(d+1); gradFirst <- numeric(d+1)
+        grad <- numeric(d+1);   gradFirst <- numeric(d+1);   gradSaveL <- numeric(d+1);   gradSaveR <- numeric(d+1)
         log2 <- log(2)
         ## nested function and function list definitions
         qpNLDef <- nimbleList(q  = double(1), p  = double(1))
@@ -1094,19 +1093,19 @@ sampler_HMC <- nimbleFunction(
         leapfrog = function(qArg = double(1), pArg = double(1), eps = double(), first = double(), v = double()) {
             ## Algorithm 1 from Hoffman and Gelman (2014)
             if(first == 1) { jacobian(qArg)     ## member data 'grad' is set in jacobian() method
-                         } else { if(v ==  1) grad <<- jacSaveR
-                                  if(v == -1) grad <<- jacSaveL
-                                  if(v ==  2) grad <<- jacSaveL }
+                         } else { if(v ==  1) grad <<- gradSaveR
+                                  if(v == -1) grad <<- gradSaveL
+                                  if(v ==  2) grad <<- gradSaveL }
             p2 <- pArg + eps/2 * grad
             q2 <- qArg + eps   * p2
             gradFirst <<- grad
             jacobian(q2)                        ## member data 'grad' is set in jacobian() method
             p3 <- p2   + eps/2 * grad
-            if(first == 1) { if(v ==  1) { jacSaveL <<- gradFirst;   jacSaveR <<- grad }
-                             if(v == -1) { jacSaveR <<- gradFirst;   jacSaveL <<- grad }
-                             if(v ==  2) { jacSaveL <<- gradFirst                      }
-                         } else { if(v ==  1) jacSaveR <<- grad
-                                  if(v == -1) jacSaveL <<- grad }
+            if(first == 1) { if(v ==  1) { gradSaveL <<- gradFirst;   gradSaveR <<- grad }
+                             if(v == -1) { gradSaveR <<- gradFirst;   gradSaveL <<- grad }
+                             if(v ==  2) { gradSaveL <<- gradFirst                       }
+                         } else { if(v ==  1) gradSaveR <<- grad
+                                  if(v == -1) gradSaveL <<- grad }
             if(warnings > 0) if(is.nan.vec(c(q2, p3))) { print('encountered a NaN value in HMC leapfrog routine, with timesRan = ', timesRan); warnings <<- warnings - 1 }
             returnType(qpNLDef());   return(qpNLDef$new(q = q2, p = p3))
         },
