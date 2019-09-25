@@ -998,6 +998,8 @@ sampler_HMC <- nimbleFunction(
         ## numeric value generation
         timesRan <- 0;   epsilon <- 0;   mu <- 0;   logEpsilonBar <- 0;   Hbar <- 0
         jacSaveL <- numeric(d);   jacSaveR <- numeric(d)
+        qL <- numeric(d);   qR <- numeric(d);  qDiff <- numeric(d);   qNew <- numeric(d)
+        pL <- numeric(d);   pR <- numeric(d)
         log2 <- log(2)
         ## nested function and function list definitions
         qpNLDef <- nimbleList(q  = double(1), p  = double(1))
@@ -1016,16 +1018,16 @@ sampler_HMC <- nimbleFunction(
         for(i in 1:d)     p[i] <- rnorm(1, 0, 1)
         qpLogH <- logH(q, p)
         logu <- qpLogH - rexp(1, 1)    ## logu <- lp - rexp(1, 1) => exp(logu) ~ uniform(0, exp(lp))
-        qL <- q;   qR <- q;   pL <- p;   pR <- p;   j  <- 0;   n <- 1;   s <- 1;   qNew <- q
+        qL <<- q;   qR <<- q;   pL <<- p;   pR <<- p;   j  <- 0;   n <- 1;   s <- 1;   qNew <<- q
         while(s == 1) {
             v <- 2*rbinom(1, 1, 0.5) - 1    ## -1 or 1
             if(v == -1) { btNL <- buildtree(qL, pL, logu, v, j, epsilon, qpLogH, 1)        ## first call: first = 1
-                          qL <- btNL$q1;   pL <- btNL$p1
+                          qL <<- btNL$q1;   pL <<- btNL$p1
                       } else { btNL <- buildtree(qR, pR, logu, v, j, epsilon, qpLogH, 1)   ## first call: first = 1
-                               qR <- btNL$q2;   pR <- btNL$p2 }
-            if(btNL$s == 1)   if(runif(1) < btNL$n / n)   qNew <- btNL$q3
+                               qR <<- btNL$q2;   pR <<- btNL$p2 }
+            if(btNL$s == 1)   if(runif(1) < btNL$n / n)   qNew <<- btNL$q3
             n <- n + btNL$n
-            qDiff <- qR - qL
+            qDiff <<- qR - qL
             ##s <- btNL$s * nimStep(inprod(qDiff, pL)) * nimStep(inprod(qDiff, pR))                      ## this line replaced with the next,
             if(btNL$s == 0) s <- 0 else s <- nimStep(inprod(qDiff, pL)) * nimStep(inprod(qDiff, pR))     ## which acccounts for NaN's in btNL elements
             if(j >= maxTreeDepth) s <- 0
@@ -1156,7 +1158,7 @@ sampler_HMC <- nimbleFunction(
                                   btNL1$q2 <- btNL2$q2;   btNL1$p2 <- btNL2$p2 }
                     nSum <- btNL1$n + btNL2$n
                     if(nSum > 0)   if(runif(1) < btNL2$n / nSum)   btNL1$q3 <- btNL2$q3
-                    qDiff <- btNL1$q2-btNL1$q1
+                    qDiff <<- btNL1$q2-btNL1$q1
                     btNL1$a  <- btNL1$a  + btNL2$a
                     btNL1$na <- btNL1$na + btNL2$na
                     btNL1$s  <- btNL2$s * nimStep(inprod(qDiff, btNL1$p1)) * nimStep(inprod(qDiff, btNL1$p2))
