@@ -997,9 +997,9 @@ sampler_HMC <- nimbleFunction(
         if(messages && length(logitTransformNodes) > 0) message('HMC sampler is using a logit-transformation for: ', paste0(logitTransformNodes, collapse = ', '))
         ## numeric value generation
         timesRan <- 0;   epsilon <- 0;   mu <- 0;   logEpsilonBar <- 0;   Hbar <- 0
-        jacSaveL <- numeric(d);   jacSaveR <- numeric(d)
-        qL <- numeric(d);   qR <- numeric(d);  qDiff <- numeric(d);   qNew <- numeric(d)
-        pL <- numeric(d);   pR <- numeric(d)
+        jacSaveL <- numeric(d+1);   jacSaveR <- numeric(d+1)
+        qL <- numeric(d+1);   qR <- numeric(d+1);  qDiff <- numeric(d+1);   qNew <- numeric(d+1)
+        pL <- numeric(d+1);   pR <- numeric(d+1)
         log2 <- log(2)
         ## nested function and function list definitions
         qpNLDef <- nimbleList(q  = double(1), p  = double(1))
