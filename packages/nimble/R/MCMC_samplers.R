@@ -1123,7 +1123,8 @@ sampler_HMC <- nimbleFunction(
             qpLogH <- logH(q, p)
             a <- 2*nimStep(exp(logH(qpNL$q, qpNL$p) - qpLogH) - 0.5) - 1
             if(is.nan(a)) if(warnings > 0) { print('caught acceptance prob = NaN, in HMC initializeEpsilon routine'); warnings <<- warnings - 1 }
-            while(a * (logH(qpNL$q, qpNL$p) - qpLogH) > -a * log2) {
+            ## while(a * (logH(qpNL$q, qpNL$p) - qpLogH) > -a * log2) {   ## replaced by simplified expression:
+            while(a * (logH(qpNL$q, qpNL$p) - qpLogH + log2) > 0) {
                 epsilon <<- epsilon * 2^a
                 qpNL <- leapfrog(q, p, epsilon, 0, 2)        ## v = 2 is a special case for initializeEpsilon routine
             }
