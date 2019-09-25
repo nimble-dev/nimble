@@ -937,6 +937,7 @@ sampler_HMC <- nimbleFunction(
         printJ        <- if(!is.null(control$printJ))        control$printJ        else FALSE
         messages      <- if(!is.null(control$messages))      control$messages      else TRUE
         warnings      <- if(!is.null(control$warnings))      control$warnings      else 5
+        deltaMax      <- if(!is.null(control$deltaMax))      control$deltaMax      else 1000
         maxAdaptIter  <- if(!is.null(control$maxAdaptIter))  control$maxAdaptIter  else 1000
         maxTreeDepth  <- if(!is.null(control$maxTreeDepth))  control$maxTreeDepth  else 10
         ## node list generation, and processing of bounds and transformations
@@ -1138,8 +1139,10 @@ sampler_HMC <- nimbleFunction(
                 qpNL <- leapfrog(qArg, pArg, v*eps, first, v)
                 q <- qpNL$q;   p <- qpNL$p;   qpLogH <- logH(q, p)
                 n <- nimStep(qpLogH - logu)          ## step(x) = 1 iff x >= 0, and zero otherwise
+                s <- nimStep(qpLogH - logu + deltaMax)
                 ## lowering the initial step size, and increasing the target acceptance rate may keep the step size small to avoid divergent paths.
-                s <- nimStep(qpLogH - logu + 1000)   ## use delta_max = 1000
+                if(s == 0) if(warnings > 0) { print('encountered a divergent path on HMC iteration ', timesRan, ', with divergence = ', logu - qpLogH)
+                                              warnings <<- warnings - 1 }
                 a <- min(1, exp(qpLogH - logH0))
                 if(is.nan.vec(q) | is.nan.vec(p)) { n <- 0; s <- 0; a <- 0 }     ## my addition
                 return(btNLDef$new(q1 = q, p1 = p, q2 = q, p2 = p, q3 = q, n = n, s = s, a = a, na = 1))
@@ -2487,6 +2490,7 @@ sampler_CAR_proper <- nimbleFunction(
 #' \itemize{
 #' \item messages.  A logical argument, specifying whether to print informative messages (default = TRUE)
 #' \item warnings.  A numeric argument, specifying how many warnings messages to emit (for example, when NaN values are encountered). (default = 5)
+#' \item deltaMax.  A numeric argument, specifying the maximum allowable divergence from the Hamiltonian value. Paths which exceed this value are considered divergent, and will not proceed further. (default = 1000)
 #' \item maxAdaptIter.  The number of sampling iterations to adapt the leapfrog stepsize. (default = 1000)
 #' \item maxTreeDepth.  The maximum allowable depth of the binary leapfrog search tree for generating candidate transitions. (default = 10)
 #' }
