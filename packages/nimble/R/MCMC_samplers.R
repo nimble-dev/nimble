@@ -952,6 +952,7 @@ sampler_HMC <- nimbleFunction(
         IND_LRNG <- 4   ## interval-bounded parameters: log(range)
         maxInd <- max(sapply(grep('^IND_', ls(), value = TRUE), function(x) eval(as.name(x))))
         d <- length(targetNodesAsScalars)
+        d2 <- max(d, 2) ## for pre-allocating vectors
         transformInfo <- array(0, c(d, maxInd))
         logTransformNodes   <- character()
         logitTransformNodes <- character()
@@ -997,9 +998,9 @@ sampler_HMC <- nimbleFunction(
         if(messages && length(logitTransformNodes) > 0) message('HMC sampler is using a logit-transformation for: ', paste0(logitTransformNodes, collapse = ', '))
         ## numeric value generation
         timesRan <- 0;   epsilon <- 0;   mu <- 0;   logEpsilonBar <- 0;   Hbar <- 0
-        qL <- numeric(d+1);   qR <- numeric(d+1);  qDiff <- numeric(d+1);   qNew <- numeric(d+1)
-        pL <- numeric(d+1);   pR <- numeric(d+1);  p <- numeric(d+1);       p2 <- numeric(d+1);   p3 <- numeric(d+1)
-        grad <- numeric(d+1);   gradFirst <- numeric(d+1);   gradSaveL <- numeric(d+1);   gradSaveR <- numeric(d+1)
+        q <- numeric(d2);   qL <- numeric(d2);   qR <- numeric(d2);   qDiff <- numeric(d2);   qNew <- numeric(d2)
+        p <- numeric(d2);   pL <- numeric(d2);   pR <- numeric(d2);   p2 <- numeric(d2);      p3 <- numeric(d2)
+        grad <- numeric(d2);   gradFirst <- numeric(d2);   gradSaveL <- numeric(d2);   gradSaveR <- numeric(d2)
         log2 <- log(2)
         ## nested function and function list definitions
         qpNLDef <- nimbleList(q  = double(1), p  = double(1))
@@ -1013,7 +1014,7 @@ sampler_HMC <- nimbleFunction(
         timesRan <<- timesRan + 1
         if(printTimesRan) print('============ times ran = ', timesRan)
         if(printEpsilon)  print('epsilon = ', epsilon)
-        q <- transformedModelValues()
+        transformedModelValues()       ## sets value of member data 'q'
         for(i in 1:d)     p[i] <<- rnorm(1, 0, 1)
         qpLogH <- logH(q, p)
         logu <- qpLogH - rexp(1, 1)    ## logu <- lp - rexp(1, 1) => exp(logu) ~ uniform(0, exp(lp))
@@ -1051,20 +1052,19 @@ sampler_HMC <- nimbleFunction(
     },
     methods = list(
         transformedModelValues = function() {
-            q <- values(model, targetNodes)
+            q <<- values(model, targetNodes)
             for(i in 1:d) {
-                x <- q[i];      id <- transformInfo[i, IND_ID]    ## 1 = identity, 2 = log, 3 = logit
-                if(id == 2) q[i] <- log(x)
-                if(id == 3) q[i] <- logit( (x-transformInfo[i, IND_LB]) / transformInfo[i, IND_RNG] )
+                id <- transformInfo[i, IND_ID]                    ## 1 = identity, 2 = log, 3 = logit
+                if(id == 2) q[i] <<- log(q[i])
+                if(id == 3) q[i] <<- logit( (q[i]-transformInfo[i, IND_LB]) / transformInfo[i, IND_RNG] )
             }
-            returnType(double(1));   return(q)
         },
         inverseTransformValues = function(qArg = double(1)) {
             transformed <- qArg
             for(i in 1:d) {
-                x <- qArg[i];   id <- transformInfo[i, IND_ID]    ## 1 = identity, 2 = log, 3 = logit
-                if(id == 2) transformed[i] <- exp(x)
-                if(id == 3) transformed[i] <- transformInfo[i, IND_LB] + transformInfo[i, IND_RNG]*expit(x)
+                id <- transformInfo[i, IND_ID]                    ## 1 = identity, 2 = log, 3 = logit
+                if(id == 2) transformed[i] <- exp(qArg[i])
+                if(id == 3) transformed[i] <- transformInfo[i, IND_LB] + transformInfo[i, IND_RNG]*expit(qArg[i])
             }
             returnType(double(1));   return(transformed)
         },
@@ -1072,9 +1072,9 @@ sampler_HMC <- nimbleFunction(
             values(model, targetNodes) <<- inverseTransformValues(qArg)
             lp <- model$calculate(calcNodes) - sum(pArg^2)/2
             for(i in 1:d) {
-                x <- qArg[i];   id <- transformInfo[i, IND_ID]    ## 1 = identity, 2 = log, 3 = logit
-                if(id == 2) lp <- lp + x
-                if(id == 3) lp <- lp + transformInfo[i, IND_LRNG] - log(exp(x)+exp(-x)+2)   ## alternate: -2*log(1+exp(-x))-x
+                id <- transformInfo[i, IND_ID]    ## 1 = identity, 2 = log, 3 = logit
+                if(id == 2) lp <- lp + qArg[i]
+                if(id == 3) lp <- lp + transformInfo[i, IND_LRNG] - log(exp(qArg[i])+exp(-qArg[i])+2)   ## alternate: -2*log(1+exp(-x))-x
             }
             returnType(double());   return(lp)
         },
@@ -1110,7 +1110,7 @@ sampler_HMC <- nimbleFunction(
         },
         initializeEpsilon = function() {
             ## Algorithm 4 from Hoffman and Gelman (2014)
-            q <- transformedModelValues()
+            transformedModelValues()            ## sets value of member data 'q'
             p <<- numeric(d)                    ## keep, sets 'p' to size d on first iteration
             for(i in 1:d)     p[i] <<- rnorm(1, 0, 1)
             epsilon <<- 1
@@ -1137,7 +1137,7 @@ sampler_HMC <- nimbleFunction(
             returnType(btNLDef())
             if(j == 0) {    ## one leapfrog step in the direction of v
                 qpNL <- leapfrog(qArg, pArg, v*eps, first, v)
-                q <- qpNL$q;   p <<- qpNL$p;   qpLogH <- logH(q, p)
+                q <<- qpNL$q;   p <<- qpNL$p;   qpLogH <- logH(q, p)
                 n <- nimStep(qpLogH - logu)          ## step(x) = 1 iff x >= 0, and zero otherwise
                 s <- nimStep(qpLogH - logu + deltaMax)
                 ## lowering the initial step size, and increasing the target acceptance rate may keep the step size small to avoid divergent paths.
