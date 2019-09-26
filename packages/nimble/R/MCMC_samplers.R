@@ -998,7 +998,7 @@ sampler_HMC <- nimbleFunction(
         ## numeric value generation
         timesRan <- 0;   epsilon <- 0;   mu <- 0;   logEpsilonBar <- 0;   Hbar <- 0
         qL <- numeric(d+1);   qR <- numeric(d+1);  qDiff <- numeric(d+1);   qNew <- numeric(d+1)
-        pL <- numeric(d+1);   pR <- numeric(d+1)
+        pL <- numeric(d+1);   pR <- numeric(d+1);  p <- numeric(d+1);       p2 <- numeric(d+1);   p3 <- numeric(d+1)
         grad <- numeric(d+1);   gradFirst <- numeric(d+1);   gradSaveL <- numeric(d+1);   gradSaveR <- numeric(d+1)
         log2 <- log(2)
         ## nested function and function list definitions
@@ -1014,8 +1014,7 @@ sampler_HMC <- nimbleFunction(
         if(printTimesRan) print('============ times ran = ', timesRan)
         if(printEpsilon)  print('epsilon = ', epsilon)
         q <- transformedModelValues()
-        p <- numeric(d)
-        for(i in 1:d)     p[i] <- rnorm(1, 0, 1)
+        for(i in 1:d)     p[i] <<- rnorm(1, 0, 1)
         qpLogH <- logH(q, p)
         logu <- qpLogH - rexp(1, 1)    ## logu <- lp - rexp(1, 1) => exp(logu) ~ uniform(0, exp(lp))
         qL <<- q;   qR <<- q;   pL <<- p;   pR <<- p;   j  <- 0;   n <- 1;   s <- 1;   qNew <<- q
@@ -1096,11 +1095,11 @@ sampler_HMC <- nimbleFunction(
                          } else { if(v ==  1) grad <<- gradSaveR
                                   if(v == -1) grad <<- gradSaveL
                                   if(v ==  2) grad <<- gradSaveL }
-            p2 <- pArg + eps/2 * grad
-            q2 <- qArg + eps   * p2
+            p2 <<- pArg + eps/2 * grad
+            q2 <-  qArg + eps   * p2
             gradFirst <<- grad
             jacobian(q2)                        ## member data 'grad' is set in jacobian() method
-            p3 <- p2   + eps/2 * grad
+            p3 <<- p2   + eps/2 * grad
             if(first == 1) { if(v ==  1) { gradSaveL <<- gradFirst;   gradSaveR <<- grad }
                              if(v == -1) { gradSaveR <<- gradFirst;   gradSaveL <<- grad }
                              if(v ==  2) { gradSaveL <<- gradFirst                       }
@@ -1112,8 +1111,8 @@ sampler_HMC <- nimbleFunction(
         initializeEpsilon = function() {
             ## Algorithm 4 from Hoffman and Gelman (2014)
             q <- transformedModelValues()
-            p <- numeric(d)
-            for(i in 1:d)     p[i] <- rnorm(1, 0, 1)
+            p <<- numeric(d)                    ## keep, sets 'p' to size d on first iteration
+            for(i in 1:d)     p[i] <<- rnorm(1, 0, 1)
             epsilon <<- 1
             qpNL <- leapfrog(q, p, epsilon, 1, 2)            ## v = 2 is a special case for initializeEpsilon routine
             while(is.nan.vec(qpNL$q) | is.nan.vec(qpNL$p)) {              ## my addition
@@ -1138,7 +1137,7 @@ sampler_HMC <- nimbleFunction(
             returnType(btNLDef())
             if(j == 0) {    ## one leapfrog step in the direction of v
                 qpNL <- leapfrog(qArg, pArg, v*eps, first, v)
-                q <- qpNL$q;   p <- qpNL$p;   qpLogH <- logH(q, p)
+                q <- qpNL$q;   p <<- qpNL$p;   qpLogH <- logH(q, p)
                 n <- nimStep(qpLogH - logu)          ## step(x) = 1 iff x >= 0, and zero otherwise
                 s <- nimStep(qpLogH - logu + deltaMax)
                 ## lowering the initial step size, and increasing the target acceptance rate may keep the step size small to avoid divergent paths.
