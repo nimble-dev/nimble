@@ -942,7 +942,7 @@ sampler_HMC <- nimbleFunction(
         maxTreeDepth  <- if(!is.null(control$maxTreeDepth))  control$maxTreeDepth  else 10
         ## node list generation, and processing of bounds and transformations
         targetNodes <- model$expandNodeNames(target)
-        if(length(targetNodes) <= 0) stop('HMC sampler must operate on at least one node')
+        if(length(targetNodes) <= 0) stop('HMC sampler must operate on at least one node', call. = FALSE)
         calcNodes <- model$getDependencies(targetNodes)
         originalTargetAsScalars <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         targetNodesAsScalars <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)
@@ -958,8 +958,8 @@ sampler_HMC <- nimbleFunction(
         logitTransformNodes <- character()
         for(i in 1:d) {
             node <- targetNodesAsScalars[i]
-            if(model$isDeterm(node))      stop(paste0('HMC sampler doesn\'t operate on deterministic nodes: ', node))
-            if(model$isDiscrete(node))    stop(paste0('HMC sampler doesn\'t operate on discrete nodes: ', node))
+            if(model$isDeterm(node))      stop(paste0('HMC sampler doesn\'t operate on deterministic nodes: ', node), call. = FALSE)
+            if(model$isDiscrete(node))    stop(paste0('HMC sampler doesn\'t operate on discrete nodes: ', node), call. = FALSE)
             dist <- model$getDistribution(node)
             bounds <- c(model$getBound(node, 'lower'), model$getBound(node, 'upper'))
             if(!model$isMultivariate(node)) {   ## univariate node
@@ -969,16 +969,27 @@ sampler_HMC <- nimbleFunction(
                     logTransformNodes <- c(logTransformNodes, node)
                     transformInfo[i, IND_ID] <- 2
                 } else if(isValid(bounds[1]) & isValid(bounds[2])) {   ## 3 = logit, support = (a, b)
+                    if(dist == 'dunif') {   ## uniform distribution
+                        lowerBdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, 'min'))
+                        upperBdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, 'max'))
+                        if(length(all.vars(lowerBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant lower bound.  HMC sampler does not yet handle that, please contant the NIMBLE development team.', call. = FALSE)
+                        if(length(all.vars(upperBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant upper bound.  HMC sampler does not yet handle that, please contant the NIMBLE development team.', call. = FALSE)
+                    } else {   ## some other distribution with finite support
+                        message('HMC sampler is not familiar with the ', dist, ' distribution of node ', node, '.')
+                        message('We\'re going to use a logit-transformation for sampling this node, but')
+                        message('this requires the upper and lower bounds of the ', dist, ' distribution are *constant*.')
+                        message('If you\'re uncertain about this, please get in touch with the NIMBLE development team.')
+                    }
                     logitTransformNodes <- c(logitTransformNodes, node)
                     transformInfo[i, IND_ID] <- 3
                     transformInfo[i, IND_LB] <- bounds[1]
                     range <- bounds[2] - bounds[1]
-                    if(range <= 0) stop(paste0('HMC sampler doesn\'t have a transformation for the bounds of node: ', node))
+                    if(range <= 0) stop(paste0('HMC sampler doesn\'t have a transformation for the bounds of node: ', node), call. = FALSE)
                     transformInfo[i, IND_RNG]  <- range
                     transformInfo[i, IND_LRNG] <- log(range)
-                } else stop(paste0('HMC sampler doesn\'t have a transformation for the bounds of node: ', node, ', which are (', bounds[1], ', ', bounds[2], ')'))
+                } else stop(paste0('HMC sampler doesn\'t have a transformation for the bounds of node: ', node, ', which are (', bounds[1], ', ', bounds[2], ')'), call. = FALSE)
             } else {                            ## multivariate node
-                if(!(node %in% originalTargetAsScalars)) stop(paste0('HMC sampler only operates on complete multivariate nodes. Must specify full node: ', model$expandNodeNames(node), ', or none of it'))
+                if(!(node %in% originalTargetAsScalars)) stop(paste0('HMC sampler only operates on complete multivariate nodes. Must specify full node: ', model$expandNodeNames(node), ', or none of it'), call. = FALSE)
                 if(dist %in% c('dmnorm', 'dmvt')) {
                     message('waiting for derivatives of dmnorm() to be implemented.')  ## waiting for dmnorm() derivatives
                     message('otherwise, HMC sampler already works on dmnorm nodes.')   ## waiting for dmnorm() derivatives
@@ -991,7 +1002,7 @@ sampler_HMC <- nimbleFunction(
                     ## NOTE: implementing for dwish() and dinvwish() will require a slightly deeper re-design
                     ## d <- d + sqrt(len) * (sqrt(len)+1) / 2
                     ## dmodel <- dmodel + len
-                } else stop(paste0('HMC sampler yet doesn\'t handle \'', dist, '\' distributions.'))   ## Dirichlet ?
+                } else stop(paste0('HMC sampler yet doesn\'t handle \'', dist, '\' distributions.'), call. = FALSE)   ## Dirichlet ?
             }
         }
         if(messages && length(logTransformNodes)   > 0) message('HMC sampler is using a log-transformation for: ',   paste0(logTransformNodes,   collapse = ', '))
@@ -1006,7 +1017,7 @@ sampler_HMC <- nimbleFunction(
         qpNLDef <- nimbleList(q  = double(1), p  = double(1))
         btNLDef <- nimbleList(q1 = double(1), p1 = double(1), q2 = double(1), p2 = double(1), q3 = double(1), n = double(), s = double(), a = double(), na = double())
         ## checks
-        if(!nimbleOptions('experimentalEnableDerivs')) stop('must enable NIMBLE derivates, use: nimbleOptions(experimentalEnableDerivs = TRUE)')
+        if(!nimbleOptions('experimentalEnableDerivs')) stop('must enable NIMBLE derivates, use: nimbleOptions(experimentalEnableDerivs = TRUE)', call. = FALSE)
     },
     run = function() {
         ## No-U-Turm Sampler with Dual Averaging, Algorithm 6 from Hoffman and Gelman (2014)
