@@ -1121,6 +1121,7 @@ sampler_HMC <- nimbleFunction(
         },
         initializeEpsilon = function() {
             ## Algorithm 4 from Hoffman and Gelman (2014)
+            savedCalcNodeValues <- values(model, calcNodes)
             transformValues()                   ## sets value of member data 'q'
             p <<- numeric(d)                    ## keep, sets 'p' to size d on first iteration
             for(i in 1:d)     p[i] <<- rnorm(1, 0, 1)
@@ -1140,7 +1141,7 @@ sampler_HMC <- nimbleFunction(
                 epsilon <<- epsilon * 2^a
                 qpNL <- leapfrog(q, p, epsilon, 0, 2)        ## v = 2 is a special case for initializeEpsilon routine
             }
-            values(model, targetNodes) <<- inverseTransformValues(q)      ## necessary
+            values(model, calcNodes) <<- savedCalcNodeValues
             mu <<- log(10*epsilon)
         },
         buildtree = function(qArg = double(1), pArg = double(1), logu = double(), v = double(), j = double(), eps = double(), logH0 = double(), first = double()) {
