@@ -1025,7 +1025,7 @@ sampler_HMC <- nimbleFunction(
         timesRan <<- timesRan + 1
         if(printTimesRan) print('============ times ran = ', timesRan)
         if(printEpsilon)  print('epsilon = ', epsilon)
-        transformedModelValues()       ## sets value of member data 'q'
+        transformValues()              ## sets value of member data 'q'
         for(i in 1:d)     p[i] <<- rnorm(1, 0, 1)
         qpLogH <- logH(q, p)
         logu <- qpLogH - rexp(1, 1)    ## logu <- lp - rexp(1, 1) => exp(logu) ~ uniform(0, exp(lp))
@@ -1062,7 +1062,7 @@ sampler_HMC <- nimbleFunction(
         if(warnings > 0) if(is.nan(epsilon)) { print('value of epsilon is NaN in HMC sampler, with timesRan = ', timesRan); warnings <<- warnings - 1 }
     },
     methods = list(
-        transformedModelValues = function() {
+        transformValues = function() {
             q <<- values(model, targetNodes)
             for(i in 1:d) {
                 id <- transformInfo[i, IND_ID]                    ## 1 = identity, 2 = log, 3 = logit
@@ -1121,7 +1121,7 @@ sampler_HMC <- nimbleFunction(
         },
         initializeEpsilon = function() {
             ## Algorithm 4 from Hoffman and Gelman (2014)
-            transformedModelValues()            ## sets value of member data 'q'
+            transformValues()                   ## sets value of member data 'q'
             p <<- numeric(d)                    ## keep, sets 'p' to size d on first iteration
             for(i in 1:d)     p[i] <<- rnorm(1, 0, 1)
             epsilon <<- 1
