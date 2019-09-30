@@ -932,7 +932,7 @@ sampler_HMC <- nimbleFunction(
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
         printTimesRan <- if(!is.null(control$printTimesRan)) control$printTimesRan else FALSE
-        printJacobian <- if(!is.null(control$printJacobian)) control$printJacobian else FALSE
+        printGradient <- if(!is.null(control$printGradient)) control$printGradient else FALSE
         printEpsilon  <- if(!is.null(control$printEpsilon))  control$printEpsilon  else FALSE
         printJ        <- if(!is.null(control$printJ))        control$printJ        else FALSE
         messages      <- if(!is.null(control$messages))      control$messages      else TRUE
@@ -1089,9 +1089,9 @@ sampler_HMC <- nimbleFunction(
             }
             returnType(double());   return(lp)
         },
-        jacobian = function(qArg = double(1)) {
+        gradient = function(qArg = double(1)) {
             values(model, targetNodes) <<- inverseTransformValues(qArg)
-            if(printJacobian) { jacQ <- array(0, c(1,d)); jacQ[1,1:d] <- values(model, targetNodes); print(jacQ) }
+            if(printGradient) { gradQ <- array(0, c(1,d)); gradQ[1,1:d] <- values(model, targetNodes); print(gradQ) }
             derivsOutput <- derivs(model$calculate(calcNodes), order = 1, wrt = targetNodes)
             grad <<- derivsOutput$jacobian[1, 1:d]
             for(i in 1:d) {
@@ -1102,14 +1102,14 @@ sampler_HMC <- nimbleFunction(
         },
         leapfrog = function(qArg = double(1), pArg = double(1), eps = double(), first = double(), v = double()) {
             ## Algorithm 1 from Hoffman and Gelman (2014)
-            if(first == 1) { jacobian(qArg)     ## member data 'grad' is set in jacobian() method
+            if(first == 1) { gradient(qArg)     ## member data 'grad' is set in gradient() method
                          } else { if(v ==  1) grad <<- gradSaveR
                                   if(v == -1) grad <<- gradSaveL
                                   if(v ==  2) grad <<- gradSaveL }
             p2 <<- pArg + eps/2 * grad
             q2 <-  qArg + eps   * p2
             gradFirst <<- grad
-            jacobian(q2)                        ## member data 'grad' is set in jacobian() method
+            gradient(q2)                        ## member data 'grad' is set in gradient() method
             p3 <<- p2   + eps/2 * grad
             if(first == 1) { if(v ==  1) { gradSaveL <<- gradFirst;   gradSaveR <<- grad }
                              if(v == -1) { gradSaveR <<- gradFirst;   gradSaveL <<- grad }
