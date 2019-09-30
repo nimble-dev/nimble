@@ -937,6 +937,10 @@ sampler_HMC <- nimbleFunction(
         printJ        <- if(!is.null(control$printJ))        control$printJ        else FALSE
         messages      <- if(!is.null(control$messages))      control$messages      else TRUE
         warnings      <- if(!is.null(control$warnings))      control$warnings      else 5
+        gamma         <- if(!is.null(control$gamma))         control$gamma         else 0.05
+        t0            <- if(!is.null(control$t0))            control$t0            else 10
+        kappa         <- if(!is.null(control$kappa))         control$kappa         else 0.75
+        delta         <- if(!is.null(control$delta))         control$delta         else 0.65
         deltaMax      <- if(!is.null(control$deltaMax))      control$deltaMax      else 1000
         maxAdaptIter  <- if(!is.null(control$maxAdaptIter))  control$maxAdaptIter  else 1000
         maxTreeDepth  <- if(!is.null(control$maxTreeDepth))  control$maxTreeDepth  else 10
@@ -1053,10 +1057,11 @@ sampler_HMC <- nimbleFunction(
         model$calculate(calcNodes)
         nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
         if(timesRan <= maxAdaptIter) {
-            Hbar <<- (1 - 1/(timesRan+10)) * Hbar + 1/(timesRan+10) * (0.65 - btNL$a/btNL$na)
-            logEpsilon <- mu - sqrt(timesRan)/0.05 * Hbar
+            Hbar <<- (1 - 1/(timesRan+t0)) * Hbar + 1/(timesRan+t0) * (delta - btNL$a/btNL$na)
+            logEpsilon <- mu - sqrt(timesRan)/gamma * Hbar
             epsilon <<- exp(logEpsilon)
-            logEpsilonBar <<- timesRan^(-0.75) * logEpsilon + (1 - timesRan^(-0.75)) * logEpsilonBar
+            timesRanToNegativeKappa <- timesRan^(-kappa)
+            logEpsilonBar <<- timesRanToNegativeKappa * logEpsilon + (1 - timesRanToNegativeKappa) * logEpsilonBar
             if(timesRan == maxAdaptIter)   epsilon <<- exp(logEpsilonBar)
         }
         if(warnings > 0) if(is.nan(epsilon)) { print('value of epsilon is NaN in HMC sampler, with timesRan = ', timesRan); warnings <<- warnings - 1 }
@@ -2502,7 +2507,11 @@ sampler_CAR_proper <- nimbleFunction(
 #' \itemize{
 #' \item messages.  A logical argument, specifying whether to print informative messages (default = TRUE)
 #' \item warnings.  A numeric argument, specifying how many warnings messages to emit (for example, when NaN values are encountered). (default = 5)
-#' \item deltaMax.  A numeric argument, specifying the maximum allowable divergence from the Hamiltonian value. Paths which exceed this value are considered divergent, and will not proceed further. (default = 1000)
+#' \item gamma.  A positive numeric argument, specifying the degree of shrinkage used during the initial period of stepsize adaptation. (default = 0.05)
+#' \item t0.  A non-negative numeric argument, where larger values stabilize (attenuate) the initial period of stepsize adaptation. (default = 10)
+#' \item kappa.  A numeric argument between zero and one, where smaller values give a higher weighting to more recent iterations during the initial period of stepsize adaptation. (default = 0.75)
+#' \item delta.  A numeric argument, specifying the target acceptance probability used during the initial period of stepsize adaptation. (default = 0.65)
+#' \item deltaMax.  A positive numeric argument, specifying the maximum allowable divergence from the Hamiltonian value. Paths which exceed this value are considered divergent, and will not proceed further. (default = 1000)
 #' \item maxAdaptIter.  The number of sampling iterations to adapt the leapfrog stepsize. (default = 1000)
 #' \item maxTreeDepth.  The maximum allowable depth of the binary leapfrog search tree for generating candidate transitions. (default = 10)
 #' }
