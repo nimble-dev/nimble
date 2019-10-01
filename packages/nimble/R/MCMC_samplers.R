@@ -995,13 +995,13 @@ sampler_HMC <- nimbleFunction(
             } else {                            ## multivariate node
                 if(!(node %in% originalTargetAsScalars)) stop(paste0('HMC sampler only operates on complete multivariate nodes. Must specify full node: ', model$expandNodeNames(node), ', or none of it'), call. = FALSE)
                 if(dist %in% c('dmnorm', 'dmvt')) {
-                    message('waiting for derivatives of dmnorm() to be implemented.')  ## waiting for dmnorm() derivatives
-                    message('otherwise, HMC sampler already works on dmnorm nodes.')   ## waiting for dmnorm() derivatives
-                    stop()                                                             ## waiting for dmnorm() derivatives
+                    message('HMC sampler is waiting for derivatives of dmnorm() to be implemented.')  ## waiting for dmnorm() derivatives
+                    message('otherwise, HMC sampler already works on dmnorm nodes.')                  ## waiting for dmnorm() derivatives
+                    stop()                                                                            ## waiting for dmnorm() derivatives
                     transformInfo[i, IND_ID] <- 1                      ## dmnorm: identity
                 } else if(dist %in% c('dwish', 'dinvwish')) {
-                    message('waiting for derivatives of dwish() to be implemented.')   ## waiting for dwish() derivatives
-                    stop()                                                             ## waiting for dwish() derivatives
+                    message('HMC sampler is waiting for derivatives of dwish() to be implemented.')   ## waiting for dwish() derivatives
+                    stop()                                                                            ## waiting for dwish() derivatives
                     transformInfo[i, IND_ID] <- 5                      ## wishart: log-cholesky
                     ## NOTE: implementing for dwish() and dinvwish() will require a slightly deeper re-design
                     ## d <- d + sqrt(len) * (sqrt(len)+1) / 2
@@ -1064,7 +1064,7 @@ sampler_HMC <- nimbleFunction(
             logEpsilonBar <<- timesRanToNegativeKappa * logEpsilon + (1 - timesRanToNegativeKappa) * logEpsilonBar
             if(timesRan == maxAdaptIter)   epsilon <<- exp(logEpsilonBar)
         }
-        if(warnings > 0) if(is.nan(epsilon)) { print('value of epsilon is NaN in HMC sampler, with timesRan = ', timesRan); warnings <<- warnings - 1 }
+        if(warnings > 0) if(is.nan(epsilon)) { print('HMC sampler value of epsilon is NaN, with timesRan = ', timesRan); warnings <<- warnings - 1 }
     },
     methods = list(
         transformValues = function() {
@@ -1121,7 +1121,7 @@ sampler_HMC <- nimbleFunction(
                              if(v ==  2) { gradSaveL <<- gradFirst                       }
                          } else { if(v ==  1) gradSaveR <<- grad
                                   if(v == -1) gradSaveL <<- grad }
-            if(warnings > 0) if(is.nan.vec(c(q2, p3))) { print('encountered a NaN value in HMC leapfrog routine, with timesRan = ', timesRan); warnings <<- warnings - 1 }
+            if(warnings > 0) if(is.nan.vec(c(q2, p3))) { print('HMC sampler encountered a NaN value in leapfrog routine, with timesRan = ', timesRan); warnings <<- warnings - 1 }
             returnType(qpNLDef());   return(qpNLDef$new(q = q2, p = p3))
         },
         initializeEpsilon = function() {
@@ -1140,7 +1140,7 @@ sampler_HMC <- nimbleFunction(
             }                                                             ## my addition
             qpLogH <- logH(q, p)
             a <- 2*nimStep(exp(logH(qpNL$q, qpNL$p) - qpLogH) - 0.5) - 1
-            if(is.nan(a)) if(warnings > 0) { print('caught acceptance prob = NaN, in HMC initializeEpsilon routine'); warnings <<- warnings - 1 }
+            if(is.nan(a)) if(warnings > 0) { print('HMC sampler caught acceptance prob = NaN in initializeEpsilon routine'); warnings <<- warnings - 1 }
             ## while(a * (logH(qpNL$q, qpNL$p) - qpLogH) > -a * log2) {   ## replaced by simplified expression:
             while(a * (logH(qpNL$q, qpNL$p) - qpLogH + log2) > 0) {
                 epsilon <<- epsilon * 2^a
@@ -1158,7 +1158,7 @@ sampler_HMC <- nimbleFunction(
                 n <- nimStep(qpLogH - logu)          ## step(x) = 1 iff x >= 0, and zero otherwise
                 s <- nimStep(qpLogH - logu + deltaMax)
                 ## lowering the initial step size, and increasing the target acceptance rate may keep the step size small to avoid divergent paths.
-                if(s == 0) if(warnings > 0) { print('encountered a divergent path on HMC iteration ', timesRan, ', with divergence = ', logu - qpLogH)
+                if(s == 0) if(warnings > 0) { print('HMC sampler encountered a divergent path on iteration ', timesRan, ', with divergence = ', logu - qpLogH)
                                               warnings <<- warnings - 1 }
                 a <- min(1, exp(qpLogH - logH0))
                 if(is.nan.vec(q) | is.nan.vec(p)) { n <- 0; s <- 0; a <- 0 }     ## my addition
