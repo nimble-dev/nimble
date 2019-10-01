@@ -931,19 +931,20 @@ sampler_HMC <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        printTimesRan <- if(!is.null(control$printTimesRan)) control$printTimesRan else FALSE
-        printGradient <- if(!is.null(control$printGradient)) control$printGradient else FALSE
-        printEpsilon  <- if(!is.null(control$printEpsilon))  control$printEpsilon  else FALSE
-        printJ        <- if(!is.null(control$printJ))        control$printJ        else FALSE
-        messages      <- if(!is.null(control$messages))      control$messages      else TRUE
-        warnings      <- if(!is.null(control$warnings))      control$warnings      else 5
-        gamma         <- if(!is.null(control$gamma))         control$gamma         else 0.05
-        t0            <- if(!is.null(control$t0))            control$t0            else 10
-        kappa         <- if(!is.null(control$kappa))         control$kappa         else 0.75
-        delta         <- if(!is.null(control$delta))         control$delta         else 0.65
-        deltaMax      <- if(!is.null(control$deltaMax))      control$deltaMax      else 1000
-        maxAdaptIter  <- if(!is.null(control$maxAdaptIter))  control$maxAdaptIter  else 1000
-        maxTreeDepth  <- if(!is.null(control$maxTreeDepth))  control$maxTreeDepth  else 10
+        printTimesRan  <- if(!is.null(control$printTimesRan))  control$printTimesRan  else FALSE
+        printGradient  <- if(!is.null(control$printGradient))  control$printGradient  else FALSE
+        printEpsilon   <- if(!is.null(control$printEpsilon))   control$printEpsilon   else FALSE
+        printJ         <- if(!is.null(control$printJ))         control$printJ         else FALSE
+        messages       <- if(!is.null(control$messages))       control$messages       else TRUE
+        warnings       <- if(!is.null(control$warnings))       control$warnings       else 5
+        initialEpsilon <- if(!is.null(control$initialEpsilon)) control$initialEpsilon else 0
+        gamma          <- if(!is.null(control$gamma))          control$gamma          else 0.05
+        t0             <- if(!is.null(control$t0))             control$t0             else 10
+        kappa          <- if(!is.null(control$kappa))          control$kappa          else 0.75
+        delta          <- if(!is.null(control$delta))          control$delta          else 0.65
+        deltaMax       <- if(!is.null(control$deltaMax))       control$deltaMax       else 1000
+        maxAdaptIter   <- if(!is.null(control$maxAdaptIter))   control$maxAdaptIter   else 1000
+        maxTreeDepth   <- if(!is.null(control$maxTreeDepth))   control$maxTreeDepth   else 10
         ## node list generation, and processing of bounds and transformations
         targetNodes <- model$expandNodeNames(target)
         if(length(targetNodes) <= 0) stop('HMC sampler must operate on at least one node', call. = FALSE)
@@ -1022,10 +1023,15 @@ sampler_HMC <- nimbleFunction(
         btNLDef <- nimbleList(q1 = double(1), p1 = double(1), q2 = double(1), p2 = double(1), q3 = double(1), n = double(), s = double(), a = double(), na = double())
         ## checks
         if(!nimbleOptions('experimentalEnableDerivs')) stop('must enable NIMBLE derivates, use: nimbleOptions(experimentalEnableDerivs = TRUE)', call. = FALSE)
+        if(initialEpsilon < 0) stop('HMC sampler initialEpsilon must be positive', call. = FALSE)
     },
     run = function() {
         ## No-U-Turm Sampler with Dual Averaging, Algorithm 6 from Hoffman and Gelman (2014)
-        if(timesRan == 0)    initializeEpsilon()
+        if(timesRan == 0) {
+            if(initialEpsilon == 0) { initializeEpsilon()                 ## no initialEpsilon value was provided
+                                  } else { epsilon <<- initialEpsilon }   ## user provided initialEpsilon
+            mu <<- log(10*epsilon)
+        }
         timesRan <<- timesRan + 1
         if(printTimesRan) print('============ times ran = ', timesRan)
         if(printEpsilon)  print('epsilon = ', epsilon)
@@ -1147,7 +1153,6 @@ sampler_HMC <- nimbleFunction(
                 qpNL <- leapfrog(q, p, epsilon, 0, 2)        ## v = 2 is a special case for initializeEpsilon routine
             }
             values(model, calcNodes) <<- savedCalcNodeValues
-            mu <<- log(10*epsilon)
         },
         buildtree = function(qArg = double(1), pArg = double(1), logu = double(), v = double(), j = double(), eps = double(), logH0 = double(), first = double()) {
             ## Algorithm 6 (second half) from Hoffman and Gelman (2014)
@@ -2490,12 +2495,12 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' @section langevin sampler:
 #'
-#' The langevin sampler implements a special case of Hamiltonian Monte Carlo (HMC) sampling where only a single leapfrog step is taken on each sampling iteration, and the leapfrog stepsize is adapted to match the scale of the posterior distribution (independently for each dimension being sampled).  The single leapfrog step is done by introducing auxiliary momentum variables, and using first-order derivatives to simulate Hamiltonian dynamics on this augmented paramter space (Neal, 2011).  Langevin sampling can operate on one or more continuous-valued posterior dimensions.  This sampling technique is also known as Langevin Monte Carlo (LMC), and the Metropolis-Adjusted Langevin Algorithm (MALA).
+#' The langevin sampler implements a special case of Hamiltonian Monte Carlo (HMC) sampling where only a single leapfrog step is taken on each sampling iteration, and the leapfrog step-size is adapted to match the scale of the posterior distribution (independently for each dimension being sampled).  The single leapfrog step is done by introducing auxiliary momentum variables, and using first-order derivatives to simulate Hamiltonian dynamics on this augmented paramter space (Neal, 2011).  Langevin sampling can operate on one or more continuous-valued posterior dimensions.  This sampling technique is also known as Langevin Monte Carlo (LMC), and the Metropolis-Adjusted Langevin Algorithm (MALA).
 #
 #' The langevin sampler accepts the following control list elements:
 #' \itemize{
-#' \item scale. An optional multiplier, to scale the stepsize of the leapfrog steps. If adaptation is turned off, this uniquely determines the leapfrog stepsize (default = 1)
-#' \item adaptive. A logical argument, specifying whether the sampler will adapt the leapfrog stepsize (scale) throughout the course of MCMC execution. The scale is adapted independently for each dimension being sampled. (default = TRUE)
+#' \item scale. An optional multiplier, to scale the step-size of the leapfrog steps. If adaptation is turned off, this uniquely determines the leapfrog step-size (default = 1)
+#' \item adaptive. A logical argument, specifying whether the sampler will adapt the leapfrog step-size (scale) throughout the course of MCMC execution. The scale is adapted independently for each dimension being sampled. (default = TRUE)
 #' \item adaptInterval. The interval on which to perform adaptation. (default = 200)
 #' }
 #'
@@ -2507,12 +2512,13 @@ sampler_CAR_proper <- nimbleFunction(
 #' \itemize{
 #' \item messages.  A logical argument, specifying whether to print informative messages (default = TRUE)
 #' \item warnings.  A numeric argument, specifying how many warnings messages to emit (for example, when NaN values are encountered). (default = 5)
-#' \item gamma.  A positive numeric argument, specifying the degree of shrinkage used during the initial period of stepsize adaptation. (default = 0.05)
-#' \item t0.  A non-negative numeric argument, where larger values stabilize (attenuate) the initial period of stepsize adaptation. (default = 10)
-#' \item kappa.  A numeric argument between zero and one, where smaller values give a higher weighting to more recent iterations during the initial period of stepsize adaptation. (default = 0.75)
-#' \item delta.  A numeric argument, specifying the target acceptance probability used during the initial period of stepsize adaptation. (default = 0.65)
+#' \item gamma.  A positive numeric argument, specifying the degree of shrinkage used during the initial period of step-size adaptation. (default = 0.05)
+#' \item initialEpsilon.  A positive numeric argument, specifying the initial step-size value. If not provided, an appropriate initial value is selected.
+#' \item t0.  A non-negative numeric argument, where larger values stabilize (attenuate) the initial period of step-size adaptation. (default = 10)
+#' \item kappa.  A numeric argument between zero and one, where smaller values give a higher weighting to more recent iterations during the initial period of step-size adaptation. (default = 0.75)
+#' \item delta.  A numeric argument, specifying the target acceptance probability used during the initial period of step-size adaptation. (default = 0.65)
 #' \item deltaMax.  A positive numeric argument, specifying the maximum allowable divergence from the Hamiltonian value. Paths which exceed this value are considered divergent, and will not proceed further. (default = 1000)
-#' \item maxAdaptIter.  The number of sampling iterations to adapt the leapfrog stepsize. (default = 1000)
+#' \item maxAdaptIter.  The number of sampling iterations to adapt the leapfrog step-size. (default = 1000)
 #' \item maxTreeDepth.  The maximum allowable depth of the binary leapfrog search tree for generating candidate transitions. (default = 10)
 #' }
 #'
