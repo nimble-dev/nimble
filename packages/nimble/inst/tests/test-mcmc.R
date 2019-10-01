@@ -1728,6 +1728,70 @@ test_that('CAR conjugacy checking new skipExpansionsNode system', {
 })
 
 
+
+test_that('HMC sampler exact samples for different maxTreeDepths', {
+    nimbleOptions(experimentalEnableDerivs = TRUE)
+    ##
+    code <- nimbleCode({
+        sigma ~ dunif(0, 100)
+        a ~ dnorm(0, 0.01)
+        y1 ~ dnorm(a, sd = sigma)
+        y2 ~ dnorm(a, sd = 2*sigma)
+    })
+    constants <- list()
+    data <- list(y1 = 1, y2 = 10)
+    inits <- list(sigma = 1, a = 0)
+    ##
+    Rmodel1 <- nimbleModel(code, constants, data, inits)
+    conf1 <- configureMCMC(Rmodel1)
+    conf1$removeSamplers(c('sigma', 'a'))
+    conf1$addSampler(c('sigma', 'a'), type = 'HMC')
+    Rmcmc1 <- buildMCMC(conf1)
+    ##
+    Rmodel2 <- nimbleModel(code, constants, data, inits)
+    conf2 <- configureMCMC(Rmodel2)
+    conf2$removeSamplers(c('sigma', 'a'))
+    conf2$addSampler(c('sigma', 'a'), type = 'HMC', control = list(maxTreeDepth = 4))
+    Rmcmc2 <- buildMCMC(conf2)
+    ##
+    Rmodel3 <- nimbleModel(code, constants, data, inits)
+    conf3 <- configureMCMC(Rmodel3)
+    conf3$removeSamplers('sigma')
+    conf3$addSampler('sigma', type = 'HMC')
+    Rmcmc3 <- buildMCMC(conf3)
+    ##
+    compiledList <- compileNimble(list(model1=Rmodel1, mcmc1=Rmcmc1, model2=Rmodel2, mcmc2=Rmcmc2, model3=Rmodel3, mcmc3=Rmcmc3))
+    Cmodel1 <- compiledList$model1; Cmcmc1 <- compiledList$mcmc1
+    Cmodel2 <- compiledList$model2; Cmcmc2 <- compiledList$mcmc2
+    Cmodel3 <- compiledList$model3; Cmcmc3 <- compiledList$mcmc3
+    ##
+    set.seed(0);   samples1 <- runMCMC(Cmcmc1, 10000)
+    expect_true(all(round(as.numeric(samples1[10000,]),6) == c(1.057482, 11.073346)))
+    set.seed(0);   samples2 <- runMCMC(Cmcmc2, 10000)
+    expect_true(all(round(as.numeric(samples2[10000,]),6) == c(-1.698464, 8.469846)))
+    set.seed(0);   samples3 <- runMCMC(Cmcmc3, 10000)
+    expect_true(all(round(as.numeric(samples3[10000,]),6) == c(2.785040, 8.364911)))
+})
+
+
+test_that('HMC sampler error messages for transformations with non-constant bounds', {
+    nimbleOptions(experimentalEnableDerivs = TRUE)
+    ##
+    code <- nimbleCode({ x ~ dexp(1); y ~ dunif(1, x) })
+    Rmodel <- nimbleModel(code, inits = list(x = 10))
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('y', 'HMC')
+    expect_error(Rmcmc <- buildMCMC(conf))
+    ##
+    code <- nimbleCode({ x ~ dexp(1); y ~ dunif(x, 10) })
+    Rmodel <- nimbleModel(code, inits = list(x = 1))
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('y', 'HMC')
+    expect_error(Rmcmc <- buildMCMC(conf))
+})
+
+
+
 sink(NULL)
 
 if(!generatingGoldFile) {
