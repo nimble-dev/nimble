@@ -162,13 +162,14 @@ IF2Step <- nimbleFunction(
 #'
 #' @param model A NIMBLE model object, typically representing a state 
 #'  space model or a hidden Markov model.
-#' @param nodes A character vector specifying the latent model nodes 
+#' @param nodes A character vector specifying the latent model nodes or model variable
 #'  over which the particle filter will stochastically integrate to
-#'  estimate the log-likelihood function.
+#'  estimate the log-likelihood function. All nodes must be part of one variable and the algorithm assumes
+#' that all nodes in that variable are latent nodes in time order from earliest to latest.
 #' @param params A character vector specifying the top-level parameters to obtain maximum likelihood estimates of. 
 #'   If unspecified, parameter nodes are specified as all stochastic top level nodes which
 #'  are not in the set of latent nodes specified in \code{nodes}.
-#' @param baselineNode A character vector specifying the node that is the latent node at the "0th" time step. The first node in \code{nodes} should depend on this baseline, but it should have no data depending on it. If \code{NULL} (the default), any initial state is taken to be fixed at the values present in the model at the time the algorithm is run.
+#' @param baselineNode A character vector specifying the node that is the latent node at the "0th" time step. The first node in \code{nodes} should depend on this baseline, but \code{baselineNode} should have no data depending on it. If \code{NULL} (the default), any initial state is taken to be fixed at the values present in the model at the time the algorithm is run. This should not be part of the same variable as \code{nodes}.
 #' @param control  A list specifying different control options for the IF2 algorithm.  Options are described in the \sQuote{details} section below.
 
 #' @author Nicholas Michaud, Dao Nguyen, and Christopher Paciorek
@@ -178,7 +179,7 @@ IF2Step <- nimbleFunction(
 #' Each of the \code{control()} list options are described in detail below:
 #' \describe{
 #'  \item{sigma}{A vector specifying a non-negative perturbation magnitude for each element of the \code{params} argument.  Defaults to a vector of 1's.}
-#'  \item{initParamSigma}{A vector specifying a vector of standard deviations to use when simulating an initial particle swarm centered on the initial value of the parameters.}
+#'  \item{initParamSigma}{An optional vector specifying a vector of standard deviations to use when simulating an initial particle swarm centered on the initial value of the parameters. Defaults to \code{sigma}.}
 #'  \item{inits}{A vector specifying an initial value for each element of the \code{params} argument.  Defaults to the parameter values in the model at the time the model is built.}
 #'  \item{timeIndex}{An integer used to manually specify which dimension of the latent state variable indexes time.  
 #'  Only needs to be set if the number of time points is less than or equal to the size of the latent state at each time point.}
@@ -194,11 +195,23 @@ IF2Step <- nimbleFunction(
 #'    \item{n}{A single integer specifying the number of overall filter iterations to run. }
 #'    \item{alpha}{A double specifying the cooling factor to use for the IF2 algorithm. }
 #'
-#'  The \code{run} fuction will return a vector with MLE estimates.  Additionally, once the specialized algorithm has been run, it can be continued for additional iterations by calling the \code{continueRun} method.
+#'  The \code{run} fuction will return a vector with the estimated MLE.  Additionally, once the specialized algorithm has been run, it can be continued for additional iterations by calling the \code{continueRun} method.
+#'
+#' @section Reparameterization:
+#'
+#' The IF2 algorithm perturbs the parameters using a normal distribution, which may not be optimal for parameters whose support is not the whole real line, such as variance parameters, which are restricted to be positive. We recommend that users reparameterize the model in advance, e.g., writing variances and standard deviations on the log scale and probabilities on the logit scale. This requires specifying priors directly on the transformed parameters. 
+#'  
+#' @section Parameter prior distributions:
+#'
+#' While NIMBLE's IF2 algorithm requires prior distributions on the parameters, the IF2 algorithm produces maximum likelihood estimates and does not directly use those prior distributions. We require the prior distributions to be stated only so that we can automatically determine which model nodes are the parameters. The IF2 algorithm also makes use of any bounds on the parameters.
+#'
+#' @section Diagnostics and information stored in the algorithm object:
+#'
+#' The IF2 algorithm stores the estimated MLEs, one from each iteration, in \code{estimates}. It also stores standard deviation of the particles from each iteration, one per parameter, in \code{estSD}. Finally it stores the estimated log-likelihood at the estimated MLE from each iteration in \code{logLik}.
 #'  
 #' @export
 #' 
-#' @references Ionides, E.L., D. Nguyen, Y. Atchad{\'e}, S. Stoev, and A.A. King (2-15). Inference for dynamic and latent variable models via iterated, perturbed Bayes maps. \emph{Proceedings of the National Academy of Sciences}, 112(3), 719-724.
+#' @references Ionides, E.L., D. Nguyen, Y. Atchad{\'e}, S. Stoev, and A.A. King (2015). Inference for dynamic and latent variable models via iterated, perturbed Bayes maps. \emph{Proceedings of the National Academy of Sciences}, 112(3), 719-724.
 #' 
 #' @examples
 #' \dontrun{
@@ -209,7 +222,9 @@ IF2Step <- nimbleFunction(
 #' # MLE estimate of a top level parameter named sigma_x:
 #' sigma_x_MLE <- Cmy_IF2$run(m = 10000, n = 10)
 #' # Continue running algorithm for more precise estimate:
-#' sigma_x_MLE <- Cmy_IF2$continueRun(n = 10) 
+#' sigma_x_MLE <- Cmy_IF2$continueRun(n = 10)
+#' # visualize progression of the estimated log-likelihood
+#' ts.plot(CmyIF2$logLik)
 #' }
 buildIteratedFilter2 <- nimbleFunction(
     setup = function(model, nodes, params = NULL, baselineNode = NULL, control = list()){
@@ -219,16 +234,19 @@ buildIteratedFilter2 <- nimbleFunction(
         inits <- control[['inits']]
         sigma <- control[['sigma']]
         ## Still need to allow user to provide initial param particles
-        initParamSigma <- control[['initParamSigma']]  
+        initParamSigma <- control[['initParamSigma']]
+        if(is.null(initParamSigma)) initParamSigma <- sigma
         timeIndex <- control[['timeIndex']]
         initModel <- control[['initModel']]
         if(is.null(silent)) silent <- TRUE
         if(is.null(initModel)) initModel <- TRUE
 
-        if(!is.null(baselineNode))
+        if(!is.null(baselineNode)) {
+            baselineNode <- model$expandNodeNames(baselineNode)
             if(length(model$getDependencies(baselineNode, dataOnly = TRUE)))
                 stop("buildIteratedFilter2: 'baselineNode' should not have any data nodes as dependents.")
-
+        }
+        
         ## if unspecified, parameter nodes are specified as all stochastic top level nodes which
         ## are not in the set of latent nodes above
         if(all(is.null(params))){
@@ -240,19 +258,22 @@ buildIteratedFilter2 <- nimbleFunction(
         numParams <- length(params)
         parDeterm <- model$getDependencies(params, determOnly=TRUE)
 
+        expandedNodes <- model$expandNodeNames(nodes)
+        
         if(identical(params, character(0)))
             stop('buildIteratedFilter2: There must be at least one parameter for IF2 to optimize with respect to.')
-        if(any(params %in% nodes))
+        if(any(params %in% expandedNodes))
             stop('buildIteratedFilter2: Parameters cannot be latent states.')
         ## Parameters do not need priors for IF2, so the following two lines should not be needed.  Currently they are needed to avert a crash.
         if(!all(params %in% model$getNodeNames(stochOnly = TRUE)))
             stop('buildIteratedFilter2: Parameters must be stochastic nodes.')
         
         paramVars <-  model$getVarNames(nodes = params)
+        
         ## Be sure baselineNode is not in paramVars
         if(!is.null(baselineNode)) {
-            if(baselineNode %in% paramVars)
-                paramVars <- paramVars[paramVars != baselineNode]
+            if(any(baselineNode %in% params))
+                params <- params[!params %in% baselineNode]
         }
         
         if(is.null(sigma)){
@@ -278,6 +299,7 @@ buildIteratedFilter2 <- nimbleFunction(
             stop("buildIteratedFilter2: All latent nodes must be in the same variable.")
         }
 
+        ## We assume all nodes in variable are latent nodes, except possibly the baselineNode
         info <- model$getVarInfo(latentVar)
         latentDims <- info$nDim
         if(is.null(timeIndex)){
@@ -288,10 +310,15 @@ buildIteratedFilter2 <- nimbleFunction(
         } else{
             timeLength <- info$maxs[timeIndex]
         }
-        ## CJP note: this assumes nodes in variable are in time order.
-        ## Should we tell the user this is our assumption?  
+        ## We assume nodes are in time order.
         nodes <- paste(info$varName, "[", rep(",", timeIndex-1), 1:timeLength,
                        rep(",", info$nDim - timeIndex), "]", sep="")
+
+        finalExpandedNodes <- model$expandNodeNames(nodes)
+        if(any(baselineNode %in% finalExpandedNodes))
+            stop("buildIteratedFilter2: 'baselineNode' should be in a variable distinct from the variable containing the latent nodes.")        
+        if(!identical(finalExpandedNodes, expandedNodes))
+            stop("buildIteratedFilter2: 'nodes' should include all nodes in ", latentVar, ".")
         
         dims <- lapply(nodes, function(node) nimDim(model[[node]]))
         if(length(unique(dims)) > 1) stop('sizes or dimension of latent 
@@ -300,7 +327,7 @@ buildIteratedFilter2 <- nimbleFunction(
         my_initializeModel <- initializeModel(model, silent = silent)
 
         if(any(latentVar %in% paramVars)) {
-            stop("Latent variables and parameters are not full distinct.  You might need to provide more explicit or correct arguments for nodes and params.")
+            stop("buildIteratedFilter2: latent nodes and parameters must be in distinct variables.")
         }
         modelSymbolObjects <- model$getSymbolTable()$getSymbolObjects()[c(latentVar, paramVars)]
         names <- sapply(modelSymbolObjects, function(x) return(x$name))
@@ -361,6 +388,7 @@ buildIteratedFilter2 <- nimbleFunction(
 
         initializeParamSwarmFunction$run(m)
         for(j in 1:niter){
+            checkInterrupt()
             ## Initialize latent process and params at time 0.
             if(baseline)
                 IF2Step0Function$run(m, j, alpha)
@@ -394,25 +422,42 @@ buildIteratedFilter2 <- nimbleFunction(
         return(estimate)
     },
     methods = list(
-        continueRun = function(n = integer(default = 5), alpha = double(default = 0.2)){
-            ## add storage of logLik, estimates and particle SDs as in main $run
+        continueRun = function(niter = integer(), alpha = double()) {
+            tmpEstimate <- estimate
+            tmpEstSD <- estSD
+            tmpLogLik <- logLik
+            niter_old <- dim(estimate)[1]
+            niter_total <- niter_old + niter
+            setSize(estimate, niter_total, numParams, fillZeros = TRUE)
+            setSize(estSD, niter_total, numParams, fillZeros = TRUE)
+            setSize(logLik, niter_total, fillZeros = TRUE)
+            estimate[1:niter_old, ] <<- tmpEstimate
+            estSD[1:niter_old, ] <<- tmpEstSD
+            logLik[1:niter_old] <<- tmpLogLik
+            
             useStoredSamples <- 1
             newN <- oldJ + n
             for(j in (oldJ+1):newN){
+                checkInterrupt()
                 if(baseline) 
                     IF2Step0Function$run(oldM, j, alpha)
                 for(iNode in seq_along(IF2StepFunctions)) {
-                    IF2StepFunctions[[iNode]]$run(oldM, j, alpha)
+                    logLik[j] <<- logLik[j] + log(IF2StepFunctions[[iNode]]$run(oldM, j, alpha))
                 }
+                ## Compute estimate and sd of particles at each iteration for diagnostics.
+                for(i in 1:oldM) {
+                    nimCopy(mvEWSamples, model, nodes = params, row = i)
+                    estimates[j, ] <<- estimates[j, ] + values(model, params) 
+                }
+                estimates[j, ] <<- estimates[j, ] / oldM
+                for(i in 1:oldM) {
+                    nimCopy(mvEWSamples, model, nodes = params, row = i)
+                    estSD[j, ] <<- estSD[j, ] + (values(model, params) - estimates[j,])^2
+                }
+                estSD[j, ] <<- sqrt(estSD[j, ] / oldM)
             }
 
-            ## Calculate mean as final estimate.
-            estimate <<- rep(0, numParams)
-            for(i in 1:oldM) {
-                nimCopy(mvWSamples, model, nodes = params, row = i)
-                estimate <<- estimate + values(model, params)
-            }
-            estimate <<- estimate / oldM
+            estimate <<- estimates[niter_total, ]
 
             ## Leave model with parameter estimates.  
             values(model, params) <<- estimate
