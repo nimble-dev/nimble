@@ -957,8 +957,10 @@ sampler_CRP <- nimbleFunction(
     if(length(intersect(dataNodes, allTildeNodes)))
         stop("sampler_CRP: Cluster parameters have to be independent of cluster membership variable.")
 
-    conjugacyResult <- checkCRPconjugacy(model, target)
-
+    if(control$useConjugacy) {
+        conjugacyResult <- checkCRPconjugacy(model, target)
+    } else conjugacyResult <- NULL
+    
     if(is.null(conjugacyResult) || conjugacyResult != "conjugate_dnorm_invgamma_dnorm") {
         ## Check that all cluster parameters are independent as it it tricky to make sure we
         ## are correctly simulating from the prior otherwise. 

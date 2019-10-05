@@ -606,8 +606,18 @@ byType: A logical argument, specifying whether the nodes being sampled should be
             }
             makeSpaces <- if(length(ind) > 0) newSpacesFunction(max(ind)) else NULL
             if(executionOrder)      ind <- samplerExecutionOrder[samplerExecutionOrder %in% ind]
-            for(i in ind)
-                cat(paste0('[', i, '] ', makeSpaces(i), samplerConfs[[i]]$toStr(displayControlDefaults, displayNonScalars, displayConjugateDependencies), '\n'))
+            for(i in ind) {
+                info <- paste0('[', i, '] ', makeSpaces(i), samplerConfs[[i]]$toStr(displayControlDefaults, displayNonScalars, displayConjugateDependencies))
+                if(samplerConfs[[i]]$name %in% c('CRP', 'CRP_moreGeneral')) {
+                    if(exists('useConjugacy', samplerConfs[[i]]$control) &&
+                       samplerConfs[[i]]$control$useConjugacy) {
+                        conjInfo <- checkCRPconjugacy(model, samplerConfs[[i]]$target)
+                        if(is.null(conjInfo)) conjInfo <- "non-conjugate"
+                    } else conjInfo <- "non-conjugate"
+                    info <- paste0(info, ",  ", conjInfo)
+                }
+                cat(paste0(info, "\n"))
+            }
             if(!executionOrder && !identical(as.numeric(samplerExecutionOrder), as.numeric(seq_along(samplerConfs)))) {
                 cat('These sampler functions have a modified order of execution.\n')
                 cat('To print samplers in the modified order of execution, use printSamplers(executionOrder = TRUE).\n')
