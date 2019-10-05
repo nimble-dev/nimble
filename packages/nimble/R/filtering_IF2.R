@@ -275,6 +275,7 @@ buildIteratedFilter2 <- nimbleFunction(
             if(any(baselineNode %in% params))
                 params <- params[!params %in% baselineNode]
         }
+        cat("IF2 algorithm built to maximize parameters: ", paste(params, collapse = ', '), ".\n", sep = '')
         
         if(is.null(sigma)){
             sigma <- rep(1, numParams)
