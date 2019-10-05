@@ -144,7 +144,7 @@ update version number in DESC in devel
 
 ### updating Github README
 
-Update version number in README.md.
+Update version number in README.md, including in the citation section.
 
 Might as well add a release to Github under Releases tab based on new version tag. This used to autogenerate a zenodo page and DOI but per below comment I don't think this linking is still in effect. Make sure new release is tagged in GH as 'latest release' (figure out how to do this). Also add a blurb about the release.  
 
