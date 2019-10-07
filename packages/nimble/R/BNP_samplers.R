@@ -590,9 +590,16 @@ CRP_conjugate_dmnorm_dmnorm <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       dataCov <- model$getParam(dataNodes[i], 'cov')
       y <- values(model, dataNodes[i])
-      postCov <- inverse( inverse(dataCov) + inverse(priorCov) )
-      postMean <- postCov %*% ( inverse(dataCov) %*% y + inverse(priorCov) %*% priorMean )
-      values(model, marginalizedNodes[j]) <<- rmnorm_chol(1, postMean, chol(postCov), prec_param = FALSE)
+      
+      dataPrec <- inverse(dataCov)
+      priorPrec <- inverse(priorCov)
+      postPrecChol <- chol(dataPrec + priorPrec)
+      postMean <- backsolve(postPrecChol, forwardsolve(t(postPrecChol), (dataPrec %*% y + priorPrec %*% priorMean)[,1]))
+      values(model, marginalizedNodes[j]) <<- rmnorm_chol(1, postMean, postPrecChol, prec_param = TRUE)
+
+      ## postCov <- inverse( inverse(dataCov) + inverse(priorCov) )
+      ## postMean <- (postCov %*% ( inverse(dataCov) %*% y + inverse(priorCov) %*% priorMean ))[,1]
+      ## values(model, marginalizedNodes[j]) <<- rmnorm_chol(1, postMean, chol(postCov), prec_param = FALSE)
     }
   )
 )
