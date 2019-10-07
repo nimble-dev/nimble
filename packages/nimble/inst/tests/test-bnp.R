@@ -102,14 +102,6 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
   expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm_moreGeneral")
   
-  # correctly update of labels and cluster params in one iteration:
-  #cmcmc <- compileNimble(mcmc, project = model)
-  #cmcmc$run(1)
-  #theta <- cmcmc$mvSamples[['mu']][cmcmc$mvSamples[['xi']], ] 
-  #expect_equal(length(unique(cmcmc$mvSamples[['xi']])), 2, info = "incorrect update of cluster labels in conjugate normal-normal CRP with mu(i, 1:J) being iid and more than one observation pero cluster ID")
-  #expect_equal(apply(theta, 1, mean), apply(data$y, 1, mean), tol=2,
-  #             info = "incorrect update of cluster parameters in conjugate normal-normal CRP  with mu(i, 1:J) being iid  and more than one observation pero cluster ID") 
-  
   
   ## conjugate normal-normal model, thetaTilde(i, 1:3) and  thetaTilde(i, 4:8) iid cluster params
   code <- nimbleCode({
@@ -142,14 +134,6 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
   expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm_moreGeneral")
   
-  # correctly update of labels and cluster params in one iteration: cluster parameters not updated correctly
-  #cmcmc <- compileNimble(mcmc, project = model)
-  #cmcmc$run(1)
-  #theta <- cmcmc$mvSamples[['mu']][cmcmc$mvSamples[['xi']], ] 
-  #expect_equal(length(unique(cmcmc$mvSamples[['xi']])), 2, info = "incorrect update of cluster labels in conjugate normal-normal CRP with mu(i, 1:3) and mu(i, 4:8) being iid and more than one observation pero cluster ID")
-  #expect_equal(apply(theta, 1, mean), apply(data$y, 1, mean), tol=2,
-  #             info = "incorrect update of cluster parameters in conjugate normal-normal CRP  with mu(i, 1:3) and mu(i, 4:8) being iid  and more than one observation pero cluster ID") 
-  
   
   
   ## conjugate dnorm_invgamma_dnorm model with iid cluster params
@@ -163,7 +147,7 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
       }
     }
     for(j in 1:2) {
-      kappa[j] <- 2
+      kappa[j] <- 2+j
     }
   })
   y <- matrix(rnorm(5*2, 10, 1), ncol=2, nrow=5)
@@ -220,21 +204,12 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   expect_identical(smp1, c(model$s2[1, 1], model$s2[1, 2]))
   expect_identical(smp2, c(model$mu[1, 1], model$mu[1, 2]) )
   
-  # correctly update of labels and cluster params in one iteration: NOT WORKING!
-  #cmcmc <- compileNimble(mcmc, project = model)
-  #cmcmc$run(11)
-  #theta <- cmcmc$mvSamples[['mu']][cmcmc$mvSamples[['xi']], ] 
-  #sigma2 <- cmcmc$mvSamples[['s2']][cmcmc$mvSamples[['xi']], ] 
-  #expect_equal(length(unique(cmcmc$mvSamples[['xi']])), 2, info = "incorrect update of cluster labels in conjugate normal-normal CRP  more than one observation pero cluster ID")
-  #expect_equal(apply(theta, 1, mean), apply(data$y, 1, mean), tol=2,
-  #             info = "incorrect update of cluster parameters in conjugate normal-invgamm-normal CRP    and more than one observation pero cluster ID") 
-  
   
   ## dgamma_dpois
   code = nimbleCode({
     for(i in 1:5) {
       for(j in 1:2) {
-        mu[i, j] ~ dgamma(1,j)
+        mu[i, j] ~ dgamma(j,j+1)
         y[i, j] ~ dpois(mu[xi[i], j]) 
       }
     }
@@ -274,20 +249,13 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
            rgamma(1 , shape = priorShape[2] + data$y[1, 2], rate = priorRate[2] + 1))
   expect_identical(smp, c(m$mu[1, 1], m$mu[1, 2]))
   
-  # correctly update of labels and cluster params in one iteration: not updating cluster parameters correctly
-  #cmcmc <- compileNimble(mcmc, project = m)
-  #cmcmc$run(20)
-  #mu <- cmcmc$mvSamples[['mu']][cmcmc$mvSamples[['xi']], ] 
-  #expect_equal(length(unique(cmcmc$mvSamples[['xi']])), 2, info = "incorrect update of cluster labels in conjugate normal-normal CRP with mu(i, 1:3) and mu(i, 4:8) being iid and more than one observation pero cluster ID")
-  #expect_equal(apply(mu, 1, mean), apply(data$y, 1, mean), tol=2,
-  #             info = "incorrect update of cluster parameters in conjugate gamma-poisson CRP and more than one observation pero cluster ID") 
-  
+
   
   ## dbeta_dbern
   code = nimbleCode({
     for(i in 1:5) {
       for(j in 1:2) {
-        mu[i, j] ~ dbeta(1,j)
+        mu[i, j] ~ dbeta(1+j,j)
         y[i, j] ~ dbern(mu[xi[i], j]) 
       }
     }
@@ -331,7 +299,7 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   code = nimbleCode({
     for(i in 1:5) {
       for(j in 1:2) {
-        mu[i, j] ~ dbeta(j,5)
+        mu[i, j] ~ dbeta(j,5+j)
         y[i, j] ~ dbinom(size=10, prob=mu[xi[i], j]) 
       }
     }
@@ -376,7 +344,7 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   code = nimbleCode({
     for(i in 1:5) {
       for(j in 1:2) {
-        mu[i, j] ~ dbeta(1,j)
+        mu[i, j] ~ dbeta(j,j+1)
         y[i, j] ~ dnegbin(size=10, prob=mu[xi[i], j]) 
       }
     }
@@ -421,7 +389,7 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   code = nimbleCode({
     for(i in 1:5) {
       for(j in 1:2) {
-        mu[i, j] ~ dgamma(1,j)
+        mu[i, j] ~ dgamma(1,j+1)
         y[i, j] ~ dexp(mu[xi[i], j]) 
       }
     }
@@ -465,7 +433,7 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   code = nimbleCode({
     for(i in 1:5) {
       for(j in 1:2) {
-        mu[i, j] ~ dgamma(1,j)
+        mu[i, j] ~ dgamma(1,j+1)
         y[i, j] ~ dgamma(4, mu[xi[i], j]) 
       }
     }
@@ -509,7 +477,7 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   code = nimbleCode({
     for(i in 1:5) {
       for(j in 1:2) {
-        mu[i, j] ~ dgamma(j,5)
+        mu[i, j] ~ dgamma(j,5+j)
         y[i, j] ~ dweib(shape=4, lambda = mu[xi[i], j]) 
       }
     }
@@ -555,7 +523,7 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   code = nimbleCode({
     for(i in 1:5) {
       for(j in 1:2) {
-        mu[i, j] ~ dgamma(j, rate=5)
+        mu[i, j] ~ dgamma(j, rate=5+j)
         y[i, j] ~ dinvgamma(shape=4, scale = mu[xi[i], j]) 
       }
     }
@@ -601,7 +569,7 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   code = nimbleCode({
     for(i in 1:5) {
       for(j in 1:2) {
-        mu[i, j] ~ dgamma(j,5)
+        mu[i, j] ~ dgamma(j,5+j)
         y[i, j] ~ dnorm(0, tau = mu[xi[i], j]) 
       }
     }
@@ -644,7 +612,7 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   
   #-------------------------------------------------
   # non conjugate samplers are assigned
-  #  think of other type of check ofr the sampling. Maybe larger sample size?
+  #  think of other type of check for the sampling. Maybe larger sample size?
   
   ## conjugate normal-normal model mu(i,j) are not iid: non conjugate sampler is assigned
   code <- nimbleCode({
