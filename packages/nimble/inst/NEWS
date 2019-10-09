@@ -3,7 +3,7 @@ USER LEVEL CHANGES
 
 -- Added the scalarComponents argument to addSampler method of MCMC configuration objects, which enables adding independent univariate samplers to all scalar componets of a specified target node or variable.
 
--- removeSamplers method of MCMC configuration object now also accepts node names (or sampler indices) through the "..." argument.
+-- removeSamplers and setSamplers methods of MCMC configuration object now also accepts node names (or sampler indices) through the "..." argument.
 
 BUG FIXES
 
