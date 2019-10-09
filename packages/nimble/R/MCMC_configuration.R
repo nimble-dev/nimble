@@ -529,7 +529,7 @@ print: A logical argument specifying whether to print the current list of sample
             return(invisible(NULL))
         },
 
-        removeSampler = function(...){
+        removeSampler = function(...) {
             '
 Alias for removeSamplers method
 '
@@ -565,6 +565,13 @@ print: A logical argument specifying whether to print the new list of samplers (
             samplerExecutionOrder <<- seq_along(samplerConfs)
             if(print) printSamplers()
             return(invisible(NULL))
+        },
+
+        setSampler = function(...) {
+            '
+Alias for setSamplers method
+'
+            setSamplers(...)
         },
         
         printSamplers = function(ind, type, displayControlDefaults = FALSE, displayNonScalars = FALSE, displayConjugateDependencies = FALSE, executionOrder = FALSE, byType = FALSE) {
