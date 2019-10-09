@@ -504,7 +504,7 @@ For internal use only
             samplerExecutionOrder <<- c(samplerExecutionOrder, newSamplerInd)
         },
         
-        removeSamplers = function(ind, print = FALSE) {
+        removeSamplers = function(..., ind, print = FALSE) {
             '
 Removes one or more samplers from an MCMCconf object.
 
@@ -516,7 +516,11 @@ ind: A numeric vector or character vector specifying the samplers to remove.  A 
 
 print: A logical argument specifying whether to print the current list of samplers once the removal has been done (default FALSE).
 '      
-            if(missing(ind))        ind <- seq_along(samplerConfs)
+            if(missing(ind)) {
+                ind <- list(...)
+                ind <- unname(unlist(ind))
+                if(length(ind) == 0)   ind <- seq_along(samplerConfs)
+            }
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
             if(length(ind) > 0 && max(ind) > length(samplerConfs)) stop('MCMC configuration doesn\'t have that many samplers')
             samplerConfs[ind] <<- NULL
