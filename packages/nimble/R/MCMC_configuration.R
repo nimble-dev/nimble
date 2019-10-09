@@ -512,6 +512,8 @@ Arguments:
 
 This function also has the side effect of resetting the sampler execution ordering so as to iterate over the remaining set of samplers, sequentially, executing each sampler once.
 
+...: Character node names or numeric indices.  Character node names specify the node names for samplers to remove, or numeric indices can provide the indices of samplers to remove.
+
 ind: A numeric vector or character vector specifying the samplers to remove.  A numeric vector may specify the indices of the samplers to be removed.  Alternatively, a character vector may be used to specify a set of model nodes and/or variables, and all samplers whose \'target\' is among these nodes will be removed.  If omitted, then all samplers are removed.
 
 print: A logical argument specifying whether to print the current list of samplers once the removal has been done (default FALSE).
@@ -543,6 +545,8 @@ Sets the ordering of the list of MCMC samplers.
 This function also has the side effect of resetting the sampler execution ordering so as to iterate over the specified set of samplers, sequentially, executing each sampler once.
 
 Arguments:
+
+...: Chracter strings or numeric indices.  Character names may be used to specify the node names for samplers to retain.  A numeric indices may be used to specify the indicies for the new list of MCMC samplers, in terms of the current ordered list of samplers.
 
 ind: A numeric vector or character vector.  A numeric vector may be used to specify the indicies for the new list of MCMC samplers, in terms of the current ordered list of samplers.
 For example, if the MCMCconf object currently has 3 samplers, then the ordering may be reversed by calling MCMCconf$setSamplers(3:1), or all samplers may be removed by calling MCMCconf$setSamplers(numeric(0)).
