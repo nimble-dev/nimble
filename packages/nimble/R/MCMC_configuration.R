@@ -587,7 +587,7 @@ byType: A logical argument, specifying whether the nodes being sampled should be
             if(!missing(type)) {
                 if(!is.character(type)) stop('type argument must have type character')
                 ## find sampler indices with 'name' matching anything in 'type' argument:
-                typeInd <- unique(unname(unlist(lapply(type, grep, x = lapply(conf$samplerConfs, `[[`, 'name')))))
+                typeInd <- unique(unname(unlist(lapply(type, grep, x = lapply(samplerConfs, `[[`, 'name')))))
                 ind <- intersect(ind, typeInd)
             }
             if(byType) {
@@ -617,9 +617,9 @@ byType: A logical argument, specifying whether the nodes being sampled should be
 
         printSamplersByType = function(ind) {
             if(length(ind) == 0) return(invisible(NULL))
-            samplerTypes <- unlist(lapply(ind, function(i) conf$samplerConfs[[i]]$name))
+            samplerTypes <- unlist(lapply(ind, function(i) samplerConfs[[i]]$name))
             uniqueSamplerTypes <- sort(unique(samplerTypes), decreasing = TRUE)
-            nodesSortedBySamplerType <- lapply(uniqueSamplerTypes, function(type) sapply(conf$samplerConfs[which(samplerTypes == type)], `[[`, 'target'))
+            nodesSortedBySamplerType <- lapply(uniqueSamplerTypes, function(type) sapply(samplerConfs[which(samplerTypes == type)], `[[`, 'target'))
             names(nodesSortedBySamplerType) <- uniqueSamplerTypes
             cat('\n')
             for(i in seq_along(nodesSortedBySamplerType)) {
