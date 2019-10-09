@@ -1208,6 +1208,7 @@ nimOptim_model <- function(model, wrt, nodes, use.gr = TRUE, method = "BFGS",
             numDeriv::grad(fn, par)
         }
     }
+    control$fnscale <- -1
     nimOptim(par = par, fn = fn, gr = gr,
              method = method, lower = lower, upper = upper,
              control = control, hessian = hessian)
