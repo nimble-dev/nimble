@@ -553,7 +553,11 @@ As another alternative, a list of samplerConf objects may be used as the argumen
 
 print: A logical argument specifying whether to print the new list of samplers (default FALSE).
 '   
-            if(missing(ind))        ind <- numeric(0)
+            if(missing(ind)) {
+                ind <- list(...)
+                ind <- unname(unlist(ind))
+                if(length(ind) == 0)   ind <- numeric(0)
+            }
             if(is.list(ind)) {
                 if(!all(sapply(ind, class) == 'samplerConf')) stop('item in list argument to setSamplers is not a samplerConf object')
                 samplerConfs <<- ind
