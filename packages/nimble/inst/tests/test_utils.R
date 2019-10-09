@@ -519,7 +519,7 @@ test_mcmc_internal <- function(Rmodel, ##data = NULL, inits = NULL,
     # single multivar sampler: samplers(type = "RW_block", target = 'x')
     # multiple multivar samplers: samplers(type = "RW_block", target = list('x', c('theta', 'mu')))
 
-    setSampler <- function(var, conf) {
+    setSampler_testing_method <- function(var, conf) {
         currentTargets <- sapply(conf$samplerConfs, function(x) x$target)
                                         # remove already defined scalar samplers
         inds <- which(unlist(var$target) %in% currentTargets)
@@ -550,7 +550,7 @@ test_mcmc_internal <- function(Rmodel, ##data = NULL, inits = NULL,
     if(removeAllDefaultSamplers) mcmcConf$removeSamplers()
     
     if(!is.null(samplers)) {
-        sapply(samplers, setSampler, mcmcConf)
+        sapply(samplers, setSampler_testing_method, mcmcConf)
             cat("Setting samplers to:\n")
             print(mcmcConf$getSamplers())
     }
