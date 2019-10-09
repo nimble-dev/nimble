@@ -538,7 +538,7 @@ Alias for removeSamplers method
             removeSamplers(...)
         },
         
-        setSamplers = function(ind, print = FALSE) {
+        setSamplers = function(..., ind, print = FALSE) {
             '
 Sets the ordering of the list of MCMC samplers.
 
