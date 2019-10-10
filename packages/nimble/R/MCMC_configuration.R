@@ -521,7 +521,7 @@ print: A logical argument specifying whether to print the current list of sample
             if(missing(ind)) {
                 ind <- list(...)
                 ind <- unname(unlist(ind))
-                if(length(ind) == 0)   ind <- seq_along(samplerConfs)
+                if(is.null(ind))   ind <- seq_along(samplerConfs)
             }
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
             if(length(ind) > 0 && max(ind) > length(samplerConfs)) stop('MCMC configuration doesn\'t have that many samplers')
