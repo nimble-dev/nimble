@@ -146,7 +146,7 @@ conjugacyRelationshipsInputList <- list(
          ## changing to only use link='identity' case, since the link='linear' case was not correct.
          ## -DT March 2017
          ## link = 'linear',
-         link = 'identity',
+         link = 'multiplicative',
          dependents = list(
              ## parentheses added to the contribution_R calculation:
              ## colVec * (rowVec * matrix)
@@ -155,16 +155,16 @@ conjugacyRelationshipsInputList <- list(
              ## changing to only use link='identity' case, since the link='linear' case was not correct
              ## -DT March 2017
              ## dmnorm = list(param = 'prec', contribution_R = 'asCol(value-mean) %*% (asRow(value-mean) %*% coeff)', contribution_df = '1')),
-             dmnorm = list(param = 'prec', contribution_R = 'asCol(value-mean) %*% asRow(value-mean)', contribution_df = '1')),
+             dmnorm = list(param = 'prec', contribution_R = 'coeff * asCol(value-mean) %*% asRow(value-mean)', contribution_df = '1')),
          posterior = 'dwish_chol(cholesky    = chol(prior_R + contribution_R),
                                  df          = prior_df + contribution_df,
                                  scale_param = 0)'),
 
     ## inverse wishart
     list(prior = 'dinvwish',
-         link = 'identity',
+         link = 'multiplicative',
          dependents = list(
-             dmnorm = list(param = 'cov', contribution_S = 'asCol(value-mean) %*% asRow(value-mean)', contribution_df = '1')),
+             dmnorm = list(param = 'cov', contribution_S = 'asCol(value-mean) %*% asRow(value-mean) / coeff', contribution_df = '1')),
          posterior = 'dinvwish_chol(cholesky    = chol(prior_S + contribution_S),
                                     df          = prior_df + contribution_df,
                                     scale_param = 1)')
