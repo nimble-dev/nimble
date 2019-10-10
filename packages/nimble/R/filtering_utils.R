@@ -91,3 +91,73 @@ particleFilter_splitModelSteps <- function(model,
        calc_thisNode_self = calc_thisNode_self,
        calc_thisNode_deps = calc_thisNode_deps)
 }
+
+fillIndices <- function(node, info, returnExpr = FALSE) {
+    ## Fill missing indexes with full extent of that dimension.
+    node <- parse(text = node)[[1]]
+    if(info$nDim != length(node) - 2 || node[[1]] != '[')
+        stop("findLatentNodes: invalid node expression: ", node, ".")
+    for(i in seq_len(info$nDim)) { 
+        if(node[[i+2]] == "") {
+            node[[i+2]] <- substitute(A:B,
+                                      list(A = info$mins[i], B = info$maxs[i]))
+            if(info$mins[i] == info$maxs[i])  # avoid things like 3:3
+                node[[i+2]] <- info$mins[i]
+        }
+    }
+    if(!returnExpr)
+        node <- deparse(node)
+    return(node)    
+}
+
+findLatentNodes <- function(model, nodes, timeIndex = NULL) {
+    ## Determine set of latent 'nodes', one per time point.
+    ## Note that each time point might have one node or a set of nodes.
+    varName <- sapply(nodes, function(x) {
+        return(model$getVarNames(nodes = x))
+    })
+    if(length(unique(varName)) > 1){
+        stop("findLatentNodes: all latent nodes must come from same variable.")
+    }
+    varName <- varName[1]
+    info <- model$getVarInfo(varName)
+
+    if(length(nodes) > 1) {
+        ## Check for and fill in empty dimensions if more than 1 dimension.
+        ## Otherwise, assume user-provided indexing is valid.
+        nodes <- sapply(nodes, fillIndices, info, returnExpr = FALSE,
+                        USE.NAMES = FALSE)
+    } else {
+        if(nodes == varName)
+            ## 'nodes' is a variable, so setup indexing
+            nodes <- paste0(varName, '[', paste0(rep(',', info$nDim - 1), collapse = ''), ']')
+        
+        nodeExpr <- fillIndices(nodes, info, returnExpr = TRUE)
+        indexLengths <- sapply(nodeExpr[3:length(nodeExpr)],
+                               function(x) length(eval(x)))
+        ## Determine time index as longest dimension if not provided
+        if(is.null(timeIndex)){
+            maxLength <- max(indexLengths)
+            if(sum(indexLengths == maxLength) > 1)         
+                stop("findLatentNodes: unable to determine which dimension indexes time. Specify manually using the 'timeIndex' control list argument.")
+            timeIndex <- which.max(indexLengths)
+            timeLength <- maxLength
+        } else{
+            timeLength <- indexLengths[timeIndex]
+        }
+        
+        timeIndices <- nodeExpr[[timeIndex+2]]  # timeIndices is unevaluated
+        
+        ## Expand so will have one 'node' per time point, overwriting time dimension.
+        nodes <- rep('', timeLength)
+        cnt <- 1
+        for(i in eval(timeIndices)) {
+            nodeExpr[[2+timeIndex]] <- as.numeric(i)
+            nodes[cnt] <- deparse(nodeExpr)
+            cnt <- cnt + 1
+        }
+    }
+    return(nodes)
+}
+
+

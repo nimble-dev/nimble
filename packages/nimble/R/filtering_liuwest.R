@@ -319,9 +319,13 @@ LWparFunc <- nimbleFunction(
 #'
 #' @param model A NIMBLE model object, typically representing a state 
 #'  space model or a hidden Markov model
-#' @param nodes A character vector specifying the latent model nodes 
-#'  over which the particle filter will stochastically integrate over to
-#'  estimate the log-likelihood function.  All provided nodes must be stochastic, and must come from the same variable in the model. 
+#' @param nodes  A character vector specifying the latent model nodes 
+#'  over which the particle filter will stochastically integrate to
+#'  estimate the log-likelihood function.  All provided nodes must be stochastic.
+#'  Can be one of three forms: a variable name, in which case all elements in the variable
+#'  are taken to be latent (e.g., 'x'); an indexed variable, in which case all indexed elements are taken
+#'  to be latent (e.g., 'x[1:100]' or 'x[1:100, 1:2]'); or a vector of multiple nodes, one per time point,
+#'  in increasing time order (e.g., c("x[1:2, 1]", "x[1:2, 2]", "x[1:2, 3]", "x[1:2, 4]")).
 #' @param params A character vector specifying the top-level parameters to estimate the posterior distribution of. 
 #'   If unspecified, parameter nodes are specified as all stochastic top level nodes which
 #'  are not in the set of latent nodes specified in \code{nodes}.
@@ -388,25 +392,8 @@ buildLiuWestFilter <- nimbleFunction(
     if(is.null(saveAll)) saveAll <- FALSE
     if(is.null(d)) d <- .99
     if(is.null(initModel)) initModel <- TRUE
-    #get latent state info
-    varName <- sapply(nodes, function(x){return(model$getVarNames(nodes = x))})
-    if(length(unique(varName))>1){
-      stop("All latent nodes must come from same variable.")
-    }
-    varName <- varName[1]
-    info <- model$getVarInfo(varName)
-    latentDims <- info$nDim
-    if(is.null(timeIndex)){
-      timeIndex <- which.max(info$maxs)
-      timeLength <- max(info$maxs)
-      if(sum(info$maxs==timeLength)>1) # check if multiple dimensions share the max index size
-        stop("Unable to determine which dimension indexes time. 
-             Specify manually using the 'timeIndex' control list argument.")
-    } else{
-      timeLength <- info$maxs[timeIndex]
-    }
-    nodes <- paste(info$varName,"[",rep(",", timeIndex-1), 1:timeLength,
-                   rep(",", info$nDim - timeIndex),"]", sep="")
+    ## get latent state info
+    nodes <- findLatentNodes(model, nodes, timeIndex)
     latentVars <- model$getVarNames(nodes = nodes)
     
     # if unspecified, parameter nodes are specified as all stochastic top level nodes which

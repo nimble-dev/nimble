@@ -162,14 +162,17 @@ IF2Step <- nimbleFunction(
 #'
 #' @param model A NIMBLE model object, typically representing a state 
 #'  space model or a hidden Markov model.
-#' @param nodes A character vector specifying the latent model nodes or model variable
+#' @param nodes  A character vector specifying the latent model nodes 
 #'  over which the particle filter will stochastically integrate to
-#'  estimate the log-likelihood function. All nodes must be part of one variable and the algorithm assumes
-#' that all nodes in that variable are latent nodes in time order from earliest to latest.
+#'  estimate the log-likelihood function.  All provided nodes must be stochastic.
+#'  Can be one of three forms: a variable name, in which case all elements in the variable
+#'  are taken to be latent (e.g., 'x'); an indexed variable, in which case all indexed elements are taken
+#'  to be latent (e.g., 'x[1:100]' or 'x[1:100, 1:2]'); or a vector of multiple nodes, one per time point,
+#'  in increasing time order (e.g., c("x[1:2, 1]", "x[1:2, 2]", "x[1:2, 3]", "x[1:2, 4]")).
 #' @param params A character vector specifying the top-level parameters to obtain maximum likelihood estimates of. 
 #'   If unspecified, parameter nodes are specified as all stochastic top level nodes which
 #'  are not in the set of latent nodes specified in \code{nodes}.
-#' @param baselineNode A character vector specifying the node that is the latent node at the "0th" time step. The first node in \code{nodes} should depend on this baseline, but \code{baselineNode} should have no data depending on it. If \code{NULL} (the default), any initial state is taken to be fixed at the values present in the model at the time the algorithm is run. This should not be part of the same variable as \code{nodes}.
+#' @param baselineNode A character vector specifying the node that is the latent node at the "0th" time step. The first node in \code{nodes} should depend on this baseline, but \code{baselineNode} should have no data depending on it. If \code{NULL} (the default), any initial state is taken to be fixed at the values present in the model at the time the algorithm is run. 
 #' @param control  A list specifying different control options for the IF2 algorithm.  Options are described in the \sQuote{details} section below.
 
 #' @author Nicholas Michaud, Dao Nguyen, and Christopher Paciorek
@@ -258,13 +261,8 @@ buildIteratedFilter2 <- nimbleFunction(
         numParams <- length(params)
         parDeterm <- model$getDependencies(params, determOnly=TRUE)
 
-        expandedNodes <- model$expandNodeNames(nodes)
-        
         if(identical(params, character(0)))
             stop('buildIteratedFilter2: There must be at least one parameter for IF2 to optimize with respect to.')
-        if(any(params %in% expandedNodes))
-            stop('buildIteratedFilter2: Parameters cannot be latent states.')
-        ## Parameters do not need priors for IF2, so the following two lines should not be needed.  Currently they are needed to avert a crash.
         if(!all(params %in% model$getNodeNames(stochOnly = TRUE)))
             stop('buildIteratedFilter2: Parameters must be stochastic nodes.')
         
@@ -272,10 +270,12 @@ buildIteratedFilter2 <- nimbleFunction(
         
         ## Be sure baselineNode is not in paramVars
         if(!is.null(baselineNode)) {
-            if(any(baselineNode %in% params))
+            if(any(baselineNode %in% params)) {
                 params <- params[!params %in% baselineNode]
+                cat("buildIteratedFilter2: removing baselineNode from parameters.\n")
+            }
         }
-        cat("IF2 algorithm built to maximize parameters: ", paste(params, collapse = ', '), ".\n", sep = '')
+        cat("buildIteratedFilter2: IF2 algorithm built to maximize parameters: ", paste(params, collapse = ', '), ".\n", sep = '')
         
         if(is.null(sigma)){
             sigma <- rep(1, numParams)
@@ -295,41 +295,24 @@ buildIteratedFilter2 <- nimbleFunction(
         if(length(inits) < numParams)
             stop("buildIteratedFilter2: The 'inits' control list argument must be a vector specifying initial values for each element of 'params'. The length of 'inits' does not match the number of parameters.")
         
-        latentVar <- model$getVarNames(nodes = nodes) 
+        latentVar <- model$getVarNames(nodes = nodes)
+        ## This check may not strictly be needed.
         if(length(unique(latentVar)) > 1){
             stop("buildIteratedFilter2: All latent nodes must be in the same variable.")
         }
-
-        ## We assume all nodes in variable are latent nodes, except possibly the baselineNode
-        info <- model$getVarInfo(latentVar)
-        latentDims <- info$nDim
-        if(is.null(timeIndex)){
-            timeIndex <- which.max(info$maxs)
-            timeLength <- max(info$maxs)
-            if(sum(info$maxs == timeLength) > 1) # check if multiple dimensions share the max index size
-                stop("buildIteratedFilter2: Unable to determine which dimension indexes time. Specify manually using the 'timeIndex' control list argument.")
-        } else{
-            timeLength <- info$maxs[timeIndex]
-        }
-        ## We assume nodes are in time order.
-        nodes <- paste(info$varName, "[", rep(",", timeIndex-1), 1:timeLength,
-                       rep(",", info$nDim - timeIndex), "]", sep="")
-
-        finalExpandedNodes <- model$expandNodeNames(nodes)
-        if(any(baselineNode %in% finalExpandedNodes))
-            stop("buildIteratedFilter2: 'baselineNode' should be in a variable distinct from the variable containing the latent nodes.")        
-        if(!identical(finalExpandedNodes, expandedNodes))
-            stop("buildIteratedFilter2: 'nodes' should include all nodes in ", latentVar, ".")
+        nodes <- findLatentNodes(model, nodes, timeIndex)
         
+        expandedNodes <- model$expandNodeNames(nodes)
+        if(any(baselineNode %in% expandedNodes))
+            stop("buildIteratedFilter2: 'baselineNode' cannot be part of latent states.")
+        if(any(params %in% expandedNodes))
+            stop('buildIteratedFilter2: Parameters cannot be latent states.')
+
         dims <- lapply(nodes, function(node) nimDim(model[[node]]))
-        if(length(unique(dims)) > 1) stop('sizes or dimension of latent 
-                                      states varies')
+        if(length(unique(dims)) > 1) stop('buildIteratedFilter2: sizes or dimension of latent states varies; this is not allowed.')
 
         my_initializeModel <- initializeModel(model, silent = silent)
 
-        if(any(latentVar %in% paramVars)) {
-            stop("buildIteratedFilter2: latent nodes and parameters must be in distinct variables.")
-        }
         modelSymbolObjects <- model$getSymbolTable()$getSymbolObjects()[c(latentVar, paramVars)]
         names <- sapply(modelSymbolObjects, function(x) return(x$name))
         types <- sapply(modelSymbolObjects, function(x) return(x$type))

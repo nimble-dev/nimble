@@ -246,6 +246,61 @@ test_mcmc(model = code, name = 'block pmcmc', inits = inits, data = c(testdata, 
 ##   resultsTolerance = list(mean = list(sigma_x = .1,
 ##                                       sigma_y = .1)))
 
+test_that("Test findLatentNodes", {
+    code <- nimbleCode({
+        for(j in 1:p)
+            x[j, 1] ~ dnorm(0,1)
+        for(i in 2:n)
+            for(j in 1:p)
+                x[j,i] ~ dnorm(x[j,i-1], 1)
+    })
+    model <- nimbleModel(code,constants = list(n = 6, p = 4))
+    expect_identical(findLatentNodes(model,'x'),
+                     paste0('x[1:4, ', 1:6, ']'))
+    expect_identical(findLatentNodes(model, 'x[2:3,3:5]'),
+                     paste0('x[2:3, ', 3:5, ']'))
+    expect_identical(findLatentNodes(model, 'x[,2:6]'),
+                     paste0('x[1:4, ', 2:6, ']'))
+    expect_identical(findLatentNodes(model, 'x[,2:4]'),
+                     paste0('x[', 1:4, ', 2:4]'))
+
+    expect_identical(findLatentNodes(model, c('x[1:3,1]', 'x[1:3,2]', 'x[1:3,3]', 'x[1:3,4]')),
+                     paste0('x[1:3, ', 1:4, ']'))
+    expect_identical(findLatentNodes(model, c('x[,1]', 'x[,2]', 'x[,3]', 'x[,4]', 'x[,5]')), 
+                     paste0('x[1:4, ', 1:5, ']'))
+    expect_identical(findLatentNodes(model, c('x[ ,1]', 'x[ ,2]', 'x[ ,3]', 'x[ ,4]', 'x[,5]')),
+                     paste0('x[1:4, ', 1:5, ']'))
+    expect_error(findLatentNodes(model, 'x[ ,1:4]'),
+                 "unable to determine which dimension")
+
+    code = nimbleCode({
+        for(j in 1:p)
+            x[j, 1, 3] ~ dnorm(0,1)
+        for(i in 2:n)
+            for(j in 1:p)
+                x[j,i, 3] ~ dnorm(x[j,i-1, 3], 1)
+    })
+    model = nimbleModel(code,constants = list(n=10, p =5))
+    expect_identical(findLatentNodes(model, 'x[2:4, 3:8, 3]'),
+                     paste0('x[2:4, ', 3:8, ',3]'))
+    expect_identical(findLatentNodes(model, 'x'),
+                     paste0('x[1:5, ', 1:10, ', 3]'))
+
+    code = nimbleCode({
+        x[1] ~ dnorm(0,1)
+        for(i in 2:6)
+            x[i] ~ dnorm(x[i-1], 1)
+    })
+    model = nimbleModel(code)
+    nodes = 'x[2:6]'
+    expect_identical(findLatentNodes(model, 'x[2:6]'),
+                     paste0('x[', 2:6, ']'))
+    expect_identical(findLatentNodes(model, 'x'),
+                     paste0('x[', 1:6, ']'))    
+})
+
+
+
 sink(NULL)
 
 if(!generatingGoldFile) {
