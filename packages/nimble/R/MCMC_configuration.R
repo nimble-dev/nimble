@@ -587,21 +587,11 @@ byType: A logical argument, specifying whether the nodes being sampled should be
             if(!missing(type)) {
                 if(!is.character(type)) stop('type argument must have type character')
                 ## find sampler indices with 'name' matching anything in 'type' argument:
-                typeInd <- unique(unname(unlist(lapply(type, grep, x = lapply(conf$samplerConfs, `[[`, 'name')))))
+                typeInd <- unique(unname(unlist(lapply(type, grep, x = lapply(samplerConfs, `[[`, 'name')))))
                 ind <- intersect(ind, typeInd)
             }
-            if(byType && length(ind) > 0) {
-                samplerTypes <- unlist(lapply(ind, function(i) conf$samplerConfs[[i]]$name))
-                uniqueSamplerTypes <- sort(unique(samplerTypes), decreasing = TRUE)
-                nodesSortedBySamplerType <- lapply(uniqueSamplerTypes, function(type) sapply(conf$samplerConfs[which(samplerTypes == type)], `[[`, 'target'))
-                names(nodesSortedBySamplerType) <- uniqueSamplerTypes
-                cat('\n')
-                for(i in seq_along(nodesSortedBySamplerType)) {
-                    theseSampledNodes <- nodesSortedBySamplerType[[i]]
-                    cat(paste0(names(nodesSortedBySamplerType)[i], ' sampler (', length(theseSampledNodes), '):  '))
-                    cat(paste0(theseSampledNodes, collapse = ', '))
-                    cat('\n\n')
-                }
+            if(byType) {
+                printSamplersByType(ind)
                 return(invisible(NULL))
             }
             makeSpaces <- if(length(ind) > 0) newSpacesFunction(max(ind)) else NULL
@@ -623,6 +613,66 @@ byType: A logical argument, specifying whether the nodes being sampled should be
                 cat('To print samplers in the modified order of execution, use printSamplers(executionOrder = TRUE).\n')
             }
             return(invisible(NULL))
+        },
+
+        printSamplersByType = function(ind) {
+            if(length(ind) == 0) return(invisible(NULL))
+            samplerTypes <- unlist(lapply(ind, function(i) samplerConfs[[i]]$name))
+            uniqueSamplerTypes <- sort(unique(samplerTypes), decreasing = TRUE)
+            nodesSortedBySamplerType <- lapply(uniqueSamplerTypes, function(type) sapply(samplerConfs[which(samplerTypes == type)], `[[`, 'target'))
+            names(nodesSortedBySamplerType) <- uniqueSamplerTypes
+            cat('\n')
+            for(i in seq_along(nodesSortedBySamplerType)) {
+                theseSampledNodes <- nodesSortedBySamplerType[[i]]
+                cat(paste0(names(nodesSortedBySamplerType)[i], ' sampler (', length(theseSampledNodes), '):  '))
+                ## now to print the node names:
+                ##cat(paste0(theseSampledNodes, collapse = ', '))  ## before compression
+                anyMultivariate <- any(grepl(':', theseSampledNodes))
+                anyNonScalar <- any(grepl(',', theseSampledNodes))
+                if(anyMultivariate) {
+                    cat(paste0(theseSampledNodes, collapse = ', '))
+                } else {
+                    if(anyNonScalar) {
+                        ## the hard case
+                        ## really should update this!
+                        ## punt for now, and just collapse on the *final* index location:
+                        theseVars <- model$getVarNames(nodes = theseSampledNodes)
+                        nodesListByVar <- lapply(theseVars, function(var) grep(paste0('^', var, '\\['), theseSampledNodes, value = TRUE))
+                        for(j in seq_along(nodesListByVar)) {
+                            theseNodes <- nodesListByVar[[j]]
+                            initialIndexStrings <- gsub('^[[:alpha:]]+\\[(.*), [[:digit:]]+\\]$', '\\1', theseNodes)
+                            uniqueInitialStrings <- unique(initialIndexStrings)
+                            nodeListByInitString <- lapply(uniqueInitialStrings, function(uis) grep(paste0('^[[:alpha:]]+\\[',uis,', [[:digit:]]+\\]$'), theseNodes, value = TRUE))
+                            for(k in seq_along(nodeListByInitString)) {
+                                theseNodes <- nodeListByInitString[[k]]
+                                numIndices <- length(strsplit(theseNodes[1], ',')[[1]])
+                                indices <- mcmc_getIndexNumberFromNodeNames(theseNodes, numIndices)
+                                indexRangeList <- mcmc_compressIndexRanges(indices)
+                                printNodesList <- lapply(indexRangeList, deparse)
+                                printNodesList <- lapply(printNodesList, function(n) paste0(theseVars[j], '[', uniqueInitialStrings[k], ',', n, ']'))
+                                printNodesList <- sapply(printNodesList, function(n) if(grepl(':',n)) paste0('components of ',n) else n)
+                                cat(paste0(printNodesList, collapse = ', '))
+                                if(j < length(nodesListByVar) || k < length(nodeListByInitString)) cat(', ')
+                            }
+                        }
+                    } else {
+                        ## all scalar nodes, with single numeric index:
+                        theseVars <- model$getVarNames(nodes = theseSampledNodes)
+                        nodesListByVar <- lapply(theseVars, function(var) grep(paste0('^', var, '\\['), theseSampledNodes, value = TRUE))
+                        for(j in seq_along(nodesListByVar)) {
+                            theseNodes <- nodesListByVar[[j]]
+                            indices <- mcmc_getIndexNumberFromNodeNames(theseNodes, 1)
+                            indexRangeList <- mcmc_compressIndexRanges(indices)
+                            printNodesList <- lapply(indexRangeList, deparse)
+                            printNodesList <- lapply(printNodesList, function(n) paste0(theseVars[j], '[', n, ']'))
+                            printNodesList <- sapply(printNodesList, function(n) if(grepl(':',n)) paste0('components of ',n) else n)
+                            cat(paste0(printNodesList, collapse = ', '))
+                            if(j < length(nodesListByVar)) cat(', ')
+                        }
+                    }
+                }
+                cat('\n\n')
+            }
         },
 
         getSamplers = function(ind) {
