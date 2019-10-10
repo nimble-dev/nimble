@@ -504,7 +504,7 @@ For internal use only
             samplerExecutionOrder <<- c(samplerExecutionOrder, newSamplerInd)
         },
         
-        removeSamplers = function(ind, print = FALSE) {
+        removeSamplers = function(..., ind, print = FALSE) {
             '
 Removes one or more samplers from an MCMCconf object.
 
@@ -512,11 +512,17 @@ Arguments:
 
 This function also has the side effect of resetting the sampler execution ordering so as to iterate over the remaining set of samplers, sequentially, executing each sampler once.
 
+...: Character node names or numeric indices.  Character node names specify the node names for samplers to remove, or numeric indices can provide the indices of samplers to remove.
+
 ind: A numeric vector or character vector specifying the samplers to remove.  A numeric vector may specify the indices of the samplers to be removed.  Alternatively, a character vector may be used to specify a set of model nodes and/or variables, and all samplers whose \'target\' is among these nodes will be removed.  If omitted, then all samplers are removed.
 
 print: A logical argument specifying whether to print the current list of samplers once the removal has been done (default FALSE).
 '      
-            if(missing(ind))        ind <- seq_along(samplerConfs)
+            if(missing(ind)) {
+                ind <- list(...)
+                ind <- unname(unlist(ind))
+                if(is.null(ind))   ind <- seq_along(samplerConfs)
+            }
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
             if(length(ind) > 0 && max(ind) > length(samplerConfs)) stop('MCMC configuration doesn\'t have that many samplers')
             samplerConfs[ind] <<- NULL
@@ -525,20 +531,22 @@ print: A logical argument specifying whether to print the current list of sample
             return(invisible(NULL))
         },
 
-        removeSampler = function(...){
+        removeSampler = function(...) {
             '
 Alias for removeSamplers method
 '
             removeSamplers(...)
         },
         
-        setSamplers = function(ind, print = FALSE) {
+        setSamplers = function(..., ind, print = FALSE) {
             '
 Sets the ordering of the list of MCMC samplers.
 
 This function also has the side effect of resetting the sampler execution ordering so as to iterate over the specified set of samplers, sequentially, executing each sampler once.
 
 Arguments:
+
+...: Chracter strings or numeric indices.  Character names may be used to specify the node names for samplers to retain.  A numeric indices may be used to specify the indicies for the new list of MCMC samplers, in terms of the current ordered list of samplers.
 
 ind: A numeric vector or character vector.  A numeric vector may be used to specify the indicies for the new list of MCMC samplers, in terms of the current ordered list of samplers.
 For example, if the MCMCconf object currently has 3 samplers, then the ordering may be reversed by calling MCMCconf$setSamplers(3:1), or all samplers may be removed by calling MCMCconf$setSamplers(numeric(0)).
@@ -549,7 +557,11 @@ As another alternative, a list of samplerConf objects may be used as the argumen
 
 print: A logical argument specifying whether to print the new list of samplers (default FALSE).
 '   
-            if(missing(ind))        ind <- numeric(0)
+            if(missing(ind)) {
+                ind <- list(...)
+                ind <- unname(unlist(ind))
+                if(length(ind) == 0)   ind <- numeric(0)
+            }
             if(is.list(ind)) {
                 if(!all(sapply(ind, class) == 'samplerConf')) stop('item in list argument to setSamplers is not a samplerConf object')
                 samplerConfs <<- ind
@@ -562,12 +574,21 @@ print: A logical argument specifying whether to print the new list of samplers (
             if(print) printSamplers()
             return(invisible(NULL))
         },
+
+        setSampler = function(...) {
+            '
+Alias for setSamplers method
+'
+            setSamplers(...)
+        },
         
-        printSamplers = function(ind, type, displayControlDefaults = FALSE, displayNonScalars = FALSE, displayConjugateDependencies = FALSE, executionOrder = FALSE, byType = FALSE) {
+        printSamplers = function(..., ind, type, displayControlDefaults = FALSE, displayNonScalars = FALSE, displayConjugateDependencies = FALSE, executionOrder = FALSE, byType = FALSE) {
             '
 Prints details of the MCMC samplers.
 
 Arguments:
+
+...: Character node or variable names, or numeric indices.  Numeric indices may be used to specify the indices of the samplers to print, or character strings may be used to indicate a set of target nodes and/or variables, for which all samplers acting on these nodes will be printed. For example, printSamplers(\'x\') will print all samplers whose target is model node \'x\', or whose targets are contained (entirely or in part) in the model variable \'x\'.  If omitted, then all samplers are printed.
 
 ind: A numeric vector or character vector.  A numeric vector may be used to specify the indices of the samplers to print, or a character vector may be used to indicate a set of target nodes and/or variables, for which all samplers acting on these nodes will be printed. For example, printSamplers(\'x\') will print all samplers whose target is model node \'x\', or whose targets are contained (entirely or in part) in the model variable \'x\'.  If omitted, then all samplers are printed.
 
@@ -581,7 +602,11 @@ executionOrder: A logical argument, specifying whether to print the sampler func
 
 byType: A logical argument, specifying whether the nodes being sampled should be printed, sorted and organized according to the type of sampler (the sampling algorithm) which is acting on the nodes (default FALSE).
 '
-            if(missing(ind))        ind <- seq_along(samplerConfs)
+            if(missing(ind)) {
+                ind <- list(...)
+                ind <- unname(unlist(ind))
+                if(length(ind) == 0)   ind <- seq_along(samplerConfs)
+            }
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
             if(length(ind) > 0 && max(ind) > length(samplerConfs)) stop('MCMC configuration doesn\'t have that many samplers')
             if(!missing(type)) {
