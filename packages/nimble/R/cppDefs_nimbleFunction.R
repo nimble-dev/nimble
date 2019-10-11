@@ -16,7 +16,11 @@ cppVirtualNimbleFunctionClass <- setRefClass('cppVirtualNimbleFunctionClass',
             } else {
                 if(is.character(baseClassObj)) addInheritance(baseClassObj)
                 else {
-                    baseClassName <- environment(baseClassObj)$CclassName
+                    virtual <- environment(baseClassObj)$virtual
+                    if(isTRUE(virtual))
+                        baseClassName <- environment(baseClassObj)$className
+                    else
+                        baseClassName <- environment(baseClassObj)$CclassName
                     addInheritance(baseClassName)
                 }
             }
