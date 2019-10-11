@@ -604,7 +604,11 @@ Details: If a provided value (or the current value in the model when only a name
                                               scalarize <- FALSE else scalarize <- TRUE  ## if non-scalar, check actual dimensionality of input
                                           if(length(nimbleInternalFunctions$dimOrLength(varValue, scalarize = scalarize)) != length(isDataVars[[varName]]))   stop(paste0('incorrect size or dim in data: ', varName))
                                           if(!(all(nimbleInternalFunctions$dimOrLength(varValue, scalarize = scalarize) == isDataVars[[varName]])))   stop(paste0('incorrect size or dim in data: ', varName))
-                                          assign(varName, varValue, inherits = TRUE)
+                                          ##assign(varName, varValue, inherits = TRUE)   ## formerly
+                                          ## assigns the "varName" variable in *enclosing* environment,
+                                          ## to prevent assigning over the local "data" list, defined here,
+                                          ## in the case where one of the "data list" elements is named "data":
+                                          assign(varName, varValue, inherits = TRUE, pos = parent.env(environment()))
                                           isDataVarValue <- !is.na(varValue)
                                           assign(varName, isDataVarValue, envir = isDataEnv)
                                       }
