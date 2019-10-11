@@ -285,6 +285,20 @@ inline nimSmartPtr<OptimResultNimbleList> nimOptim_model(
   return NimOptimProblem_model(nodes, use_gr, method, lower_vector, upper_vector, control, hessian ).solve( );
 }
 
+inline nimSmartPtr<OptimResultNimbleList> nimOptim_model(
+							 NodeVectorClassNew_derivs &nodes,
+							 bool use_gr,
+							 const std::string& method,
+							 NimArr<1, double> &lower_vector,
+							 NimArr<1, double> &upper_vector,
+							 nimSmartPtr<OptimControlNimbleList> control,
+							 bool hessian = false
+							 ) {
+  control->fnscale = -1.;
+  return NimOptimProblem_model(nodes, use_gr, method, lower_vector, upper_vector, control, hessian ).solve( );
+}
+
+
 template <class Fn, class Gr>
 inline nimSmartPtr<OptimResultNimbleList> nimOptim(
     NimArr<1, double>& par, Fn fn, Gr gr, const std::string& method,
