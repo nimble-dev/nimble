@@ -1772,7 +1772,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$sample(1, 1)
   set.seed(1)
   smp <- rmnorm_chol(1 , postMean, chol(postCov), prec_param = FALSE)
-  expect_identical(smp, m$muTilde[1, 1:4])
+  expect_equal(smp, m$muTilde[1, 1:4])
   
   
   ## dnorm_invgamma_dnorm
