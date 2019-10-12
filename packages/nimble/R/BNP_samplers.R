@@ -1678,11 +1678,20 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo) {
         if(length(unique(valueExprs)) != 1)
             conjugate <- FALSE
 
+#        browser()
+        
         ## Check that dependent nodes ('observations') from same declaration.
         ## This should ensure they have same distribution and parameters are being
         ## clustered in same way.
         depNodes <- model$getDependencies(clusterNodes1, stochOnly = TRUE, self = FALSE)
         if(length(unique(model$getDeclID(depNodes))) != 1)
+            conjugate <- FALSE
+
+        ## Check that dependent node variance is simply the variance of the cluster and not,
+        ## e.g., scaled, such as 'dnorm(mu[xi[i]], var = lambda * s2[xi[i]])'.
+        varExprs <- sapply(seq_along(depNodes), function(i) cc_expandDetermNodesInExpr(model,
+                                  model$getParamExpr(depNodes[i], 'var'), clusterNodes2[i]))
+        if(!identical(sapply(varExprs, deparse), clusterNodes2))
             conjugate <- FALSE
 
     }
