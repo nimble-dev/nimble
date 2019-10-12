@@ -1665,7 +1665,7 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo) {
         varExprs <- sapply(clusterNodes1, function(x) model$getParamExpr(x, 'var'))
         names(varExprs) <- NULL
         for(i in seq_along(varExprs)) {
-            varText <- deparse(varExprs[[i]])
+            varText <- deparse(cc_expandDetermNodesInExpr(model, varExprs[[i]], targetNode = clusterNodes2[i]))
             if(length(grep(clusterNodes2[i], varText, fixed = TRUE)))  ## remove clusterNodes2[i] from expression so var expressions will be the same
                 varExprs[[i]] <- parse(text = gsub(clusterNodes2[i], "a", varText, fixed = TRUE))[[1]]
         }
