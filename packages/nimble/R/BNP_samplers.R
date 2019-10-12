@@ -1678,8 +1678,6 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo) {
         if(length(unique(valueExprs)) != 1)
             conjugate <- FALSE
 
-#        browser()
-        
         ## Check that dependent nodes ('observations') from same declaration.
         ## This should ensure they have same distribution and parameters are being
         ## clustered in same way.

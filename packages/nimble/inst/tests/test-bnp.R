@@ -2538,6 +2538,24 @@ test_that("Testing conjugacy detection with models using CRP", {
   mcmc=buildMCMC(conf)
   expect_equal(nimble:::checkCRPconjugacy(m, 'xi[1:4]'), "conjugate_dnorm_invgamma_dnorm")
   expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_invgamma_dnorm")
+
+  ## dnorm_invgamma; we skip conjugacy if data nodes have scaled variance
+  code = nimbleCode({
+    for(i in 1:4) {
+      s2tilde[i] ~ dinvgamma(a,b)
+      mu[i] ~ dnorm(0, var = s2tilde[i]/kappa)
+      s2[i] <- lambda * s2tilde[xi[i]]
+      y[i] ~ dnorm(mu[xi[i]], var = s2[i])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+    kappa ~ dgamma(1, 1)
+    a ~ dgamma(1, 1)
+    b ~ dgamma(1, 1)
+  })
+  m = nimbleModel(code, data = list(y = rnorm(4)),
+                  inits = list(xi = rep(1,4), mu=rnorm(4), s2=rinvgamma(4, 1,1), a=1, b=1, kappa=2))
+  expect_equal(nimble:::checkCRPconjugacy(m, 'xi[1:4]'), NULL)
+
   
   ## model with deterministic nodes
   code = nimbleCode({
