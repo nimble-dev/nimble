@@ -7,6 +7,8 @@ USER LEVEL CHANGES
 
 BUG FIXES
 
+-- Fixed bug in MCMC crossLevel sampler, so that underlying conjugate sampler functions no longer modify the target node value.
+
 -- Fixed a bug in corner case of MCMC conjugacy checking system, when linear scale of target node is identically equal to zero.
 
                             CHANGES IN VERSION 0.8.0 (June 2019)
