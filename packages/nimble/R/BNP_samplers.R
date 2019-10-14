@@ -1822,7 +1822,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     ## Check that observations are independent of each other.
     sapply(dataNodes, function(x) {
       if(any(dataNodes %in% model$getDependencies(x, self = FALSE, stochOnly = TRUE)))
-        stop("sampler_CRP: Variables being clustered must be conditionally independent.")
+        stop("sampler_CRP: Variables being clustered must be conditionally independent. To model dependent variables being clustered jointly, you may use a multivariate distribution.")
     })
     
     ## Check for one or more "observation" per random index to handle the 'Quinn' model.
