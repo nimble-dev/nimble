@@ -1835,13 +1835,12 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     
     # changes in lines 1844 - 1850 are for always having a nTilde vector to be used in crp_nonconjugate_moreGeneral
     p <- length(tildeVars) 
-    # maybe this can be deleted
-    nTilde <- numeric(p+1)
-    nTilde[1:p] <- clusterVarInfo$nTilde
-    if(nObsPerClusID == 1) { # will be checked only for nObsPerClusID to avoid stoping models such as J
-      if(length(unique(nTilde[nTilde > 0])) != 1) 
-        stop('sampler_CRP: In a model with multiple cluster parameters, the number of those parameters must all be the same.\n') 
-    }
+    nTilde <- clusterVarInfo$nTilde / clusterVarInfo$numNodesPerCluster  ## implied number of potential clusters
+    if(length(unique(nTilde)) != 1)
+        stop('sampler_CRP: In a model with multiple cluster parameters, the number of those parameters must all be the same.\n')
+    min_nTilde <- nTilde[1]
+    if(min_nTilde < n)
+      warning('sampler_CRP: The number of cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if it ever proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.\n')
     
     ## Check that cluster parameters are IID (by rows or columns) when J>1
     #if( J > 1) {
@@ -1861,12 +1860,6 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     #  if(!isIID) stop('sampleDPmeasure: cluster parameters have to be independent and identically distributed. \n')
     #}
     
-    
-    #### End of checks of model structure. ####
-    # maybe this can be deleted
-    min_nTilde <- min(nTilde[nTilde>0]) ## we need a scalar for use in run code, but note that given check above, all nTilde values are the same.... In the case nObsPerClusID >1 nTildes could be different
-    if(min_nTilde < n)
-      warning('sampler_CRP: The number of cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if it ever proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.\n')
     
     
     ## Determine if concentration parameter is fixed or random (code similar to the one in sampleDPmeasure function).
@@ -1928,7 +1921,11 @@ sampler_CRP_moreGeneral <- nimbleFunction(
                         conjugate_ddirch_dmulti = 'CRP_conjugate_ddirch_dmulti',
                         'CRP_nonconjugate_moreGeneral')  ## default if we don't have sampler set up for a conjugacy
 
-   
+    nClusNodesPerClusID <- sum(clusterVarInfo$numNodesPerCluster)
+
+    ## Check that number of clusters implied by findClusterNodes are all consistent
+    ## and consistent with min_nTilde
+    
     clusterIDs <- unique(clusterVarInfo$clusterIDs[[1]])
     if(length(clusterVarInfo$clusterIDs) > 1) {
         nClusters <- length(clusterVarInfo$clusterIDs)
@@ -1943,34 +1940,34 @@ sampler_CRP_moreGeneral <- nimbleFunction(
         dataIntermNodes <- c(dataNodes, intermNodes)
         ids <- unlist(clusterVarInfo$clusterIDs)
         for(id in seq_along(clusterIDs)) {
-            nodes <- allNodes[ids == id]
-            nodes <- model$getDependencies(nodes)
+            origNodes <- allNodes[ids == id]
+            nodes <- model$getDependencies(origNodes)
             nodes <- nodes[!nodes %in% dataIntermNodes]        
             ## CJP: could first id be something other than 1? 
             if(id == 1) {
-                nClusNodesPerClusID <- length(nodes)
-                marginalizedNodes <- rep('', nClusNodesPerClusID * n)
+                marginalizedNodes <- rep('', nClusNodesPerClusID * min_nTilde)
             }
             marginalizedNodes[((id-1)*nClusNodesPerClusID+1):(id*nClusNodesPerClusID)] <- nodes
             ## Check for independence across clusters.
-            if(id > 1)
-                if(any(nodes %in% marginalizedNodes[1:((id-1)*nClusNodesPerClusID)]))
-                    stop("sampler_CRP: parameters of each cluster must be independent of parameters in other clusters.")
+            margNodesNoSelf <- marginalizeNodes[!marginalizedNodes %in% origNodes]
+            nodesNoSelf <- nodes[!nodes %in% origNodes]
+            if(any(nodesNoSelf %in% margNodesNoSelf))
+                stop("sampler_CRP: parameters of each cluster must be independent of parameters in other clusters.")
         }
     } else {
         marginalizedNodes <- clusterVarInfo$clusterNodes[[1]]
-        nClusNodesPerClusID <- length(marginalizedNodes) / n
         allNodes <- unlist(clusterVarInfo$clusterNodes)
         dataIntermNodes <- c(dataNodes, intermNodes)
         ids <- unlist(clusterVarInfo$clusterIDs)
         for(id in seq_along(clusterIDs)) {
-            nodes <- allNodes[ids == id]
-            nodes <- model$getDependencies(nodes)
+            origNodes <- allNodes[ids == id]
+            nodes <- model$getDependencies(origNodes)
             nodes <- nodes[!nodes %in% dataIntermNodes]        
             ## Check for independence across clusters.
-            if(id > 1)
-                if(any(nodes %in% marginalizedNodes[1:((id-1)*nClusNodesPerClusID)]))
-                    stop("sampler_CRP: parameters of each cluster must be independent of parameters in other clusters.")
+            margNodesNoSelf <- marginalizedNodes[!marginalizedNodes %in% origNodes]
+            nodesNoSelf <- nodes[!nodes %in% origNodes]
+            if(any(nodesNoSelf %in% margNodesNoSelf))
+                stop("sampler_CRP: parameters of each cluster must be independent of parameters in other clusters.")
         }
     }
     ## Number of cluster nodes per cluster should be the same for all clusters.
@@ -2375,8 +2372,10 @@ findClusterNodes <- function(model, target) {
             clusterNodes[[varIdx]] <- unlist(tmp[1, ])
             clusterIDs[[varIdx]] <- unlist(tmp[2, ])
         }
-        ## Now remove duplicates when indexed variables correspond to same model node.
-        dups <- duplicated(clusterNodes[[varIdx]])
+        ## Now remove duplicates when indexed variables correspond to same model node,
+        ## but only for duplicates within a cluster.
+        groups <- split(clusterNodes[[varIdx]], clusterIDs[[varIdx]])
+        dups <- unlist(lapply(groups, duplicated))
         clusterNodes[[varIdx]] <- clusterNodes[[varIdx]][!dups]
         clusterIDs[[varIdx]] <- clusterIDs[[varIdx]][!dups]
 
@@ -2390,6 +2389,13 @@ findClusterNodes <- function(model, target) {
             clusterNodes[[varIdx]] <- clusterNodes[[varIdx]][validNodes]
             clusterIDs[[varIdx]] <- clusterIDs[[varIdx]][validNodes]
         }
+
+        ## Check that nodes in different clusters are distinct.
+        ## E.g., this would not be the case if a user specified a joint prior on
+        ## all cluster nodes
+        if(length(unique(clusterNodes[[varIdx]])) != length(clusterNodes[[varIdx]]))
+            stop("findClusterNodes: cluster parameters in different clusters must be part of conditionally independent nodes.")
+        
         ## if(!all(clusterNodes[[varIdx]] %in% modelNodes)) {  # i.e., truncated representation
         ##     cnt <- nTilde[varIdx]
         ##     while(cnt > 0) {
