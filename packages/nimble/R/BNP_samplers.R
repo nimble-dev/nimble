@@ -1952,6 +1952,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
                 marginalizedNodes <- rep('', nClusNodesPerClusID * n)
             }
             marginalizedNodes[((id-1)*nClusNodesPerClusID+1):(id*nClusNodesPerClusID)] <- nodes
+            ## Check for independence across clusters.
             if(id > 1)
                 if(any(nodes %in% marginalizedNodes[1:((id-1)*nClusNodesPerClusID)]))
                     stop("sampler_CRP: parameters of each cluster must be independent of parameters in other clusters.")
@@ -1959,6 +1960,18 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     } else {
         marginalizedNodes <- clusterVarInfo$clusterNodes[[1]]
         nClusNodesPerClusID <- length(marginalizedNodes) / n
+        allNodes <- unlist(clusterVarInfo$clusterNodes)
+        dataIntermNodes <- c(dataNodes, intermNodes)
+        ids <- unlist(clusterVarInfo$clusterIDs)
+        for(id in seq_along(clusterIDs)) {
+            nodes <- allNodes[ids == id]
+            nodes <- model$getDependencies(nodes)
+            nodes <- nodes[!nodes %in% dataIntermNodes]        
+            ## Check for independence across clusters.
+            if(id > 1)
+                if(any(nodes %in% marginalizedNodes[1:((id-1)*nClusNodesPerClusID)]))
+                    stop("sampler_CRP: parameters of each cluster must be independent of parameters in other clusters.")
+        }
     }
     ## Number of cluster nodes per cluster should be the same for all clusters.
     ## Think about if we need a check for how this might go wrong.        
