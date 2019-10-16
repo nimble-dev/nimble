@@ -40,7 +40,7 @@ nimbleFunctionVirtual <- function(contains = NULL,
 #' create a nimbleFunction from a setup function, run function, possibly other methods, and possibly inheritance via \code{contains}
 #'
 #' @param setup An optional R function definition for setup processing.
-#' @param run An optional NIMBLE function definition the executes the primary job of the nimbleFunction
+#' @param run An optional NIMBLE function definition that executes the primary job of the nimbleFunction
 #' @param methods An optional named list of NIMBLE function definitions for other class methods.
 #' @param globalSetup For internal use only
 #' @param contains An optional object returned from \code{\link{nimbleFunctionVirtual}} that defines arguments and returnTypes for \code{run} and/or methods, to which the current nimbleFunction must conform
@@ -75,16 +75,17 @@ nimbleFunction <- function(setup         = NULL,
                            check         = getNimbleOption('checkNimbleFunction'),
                            where         = getNimbleFunctionEnvironment()
                            ) {
+    force(where) # so that we can get to namespace where a nf is defined by using topenv(parent.frame(2)) in getNimbleFunctionEnvironment()
     if(is.logical(setup)) if(setup) setup <- function() {} else setup <- NULL
 
     if(is.null(setup)) {
         if(length(methods) > 0) stop('Cannot provide multiple methods if there is no setup function.  Use "setup = function(){}" or "setup = TRUE" if you need a setup function that does not do anything', call. = FALSE)
         if(!is.null(contains)) stop('Cannot provide a contains argument if there is no setup function.  Use "setup = function(){}" or "setup = TRUE" if you need a setup function that does not do anything', call. = FALSE)
-        return(RCfunction(run, name = name, check = check, enableDerivs = isTRUE(enableDerivs)))
+        return(RCfunction(run, name = name, check = check, enableDerivs = isTRUE(enableDerivs), where = where))
     }
 
     virtual <- FALSE
-    force(where) # so that we can get to namespace where a nf is defined by using topenv(parent.frame(2)) in getNimbleFunctionEnvironment()
+
     # we now include the namespace in the name of the RefClass to avoid two nfs having RefClass of same name but existing in different namespaces
     if(is.na(name)) name <- nf_refClassLabelMaker(envName = environmentName(where))
     className <- name

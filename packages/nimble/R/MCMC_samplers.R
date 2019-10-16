@@ -164,7 +164,7 @@ sampler_RW <- nimbleFunction(
         timesAdapted  <- 0
         scaleHistory  <- c(0, 0)   ## scaleHistory
         acceptanceHistory  <- c(0, 0)   ## scaleHistory
-        if(nimbleOptions('saveMCMChistory')) {
+        if(nimbleOptions('MCMCsaveHistory')) {
             saveMCMChistory <- TRUE
         } else saveMCMChistory <- FALSE
         optimalAR     <- 0.44
@@ -235,7 +235,7 @@ sampler_RW <- nimbleFunction(
             if(saveMCMChistory) {
                 return(scaleHistory)
             } else {
-                print("Please set 'nimbleOptions(saveMCMChistory = TRUE)' before building the MCMC")
+                print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC")
                 return(numeric(1, 0))
             }
         },          
@@ -244,7 +244,7 @@ sampler_RW <- nimbleFunction(
             if(saveMCMChistory) {
                 return(acceptanceHistory)
             } else {
-                print("Please set 'nimbleOptions(saveMCMChistory = TRUE)' before building the MCMC")
+                print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC")
                 return(numeric(1, 0))
             }
         },          
@@ -307,7 +307,7 @@ sampler_RW_block <- nimbleFunction(
         scaleHistory  <- c(0, 0)                                                 ## scaleHistory
         acceptanceHistory  <- c(0, 0)                                            ## scaleHistory
         propCovHistory <- if(d<=10) array(0, c(2,d,d)) else array(0, c(2,2,2))   ## scaleHistory
-        saveMCMChistory <- if(nimbleOptions('saveMCMChistory')) TRUE else FALSE
+        saveMCMChistory <- if(nimbleOptions('MCMCsaveHistory')) TRUE else FALSE
         if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
         propCovOriginal <- propCov
         chol_propCov <- chol(propCov)
@@ -394,17 +394,17 @@ sampler_RW_block <- nimbleFunction(
             }
         },
         getScaleHistory = function() {  ## scaleHistory
-            if(!saveMCMChistory)   print("Please set 'nimbleOptions(saveMCMChistory = TRUE)' before building the MCMC")
+            if(!saveMCMChistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC")
             returnType(double(1))
             return(scaleHistory)
         },          
         getAcceptanceHistory = function() {  ## scaleHistory
             returnType(double(1))
-            if(!saveMCMChistory)   print("Please set 'nimbleOptions(saveMCMChistory = TRUE)' before building the MCMC")
+            if(!saveMCMChistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC")
             return(acceptanceHistory)
         },                  
         getPropCovHistory = function() { ## scaleHistory
-            if(!saveMCMChistory | d > 10)   print("Please set 'nimbleOptions(saveMCMChistory = TRUE)' before building the MCMC and note that to reduce memory use we only save the proposal covariance history for parameter vectors of length 10 or less")
+            if(!saveMCMChistory | d > 10)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC and note that to reduce memory use we only save the proposal covariance history for parameter vectors of length 10 or less")
             returnType(double(3))
             return(propCovHistory)
         },
@@ -554,7 +554,7 @@ sampler_slice <- nimbleFunction(
         }
         if((R-L)/(abs(R)+abs(L)+eps) <= eps | numContractions == maxContractions) {
             if(maxContractionsWarning)
-                cat("Warning: slice sampler reached maximum number of contractions.\n")
+                cat("Warning: slice sampler reached maximum number of contractions for '", target, "'. Current parameter value is ", x0, ".\n")
             nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
         } else {
             nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
@@ -1923,11 +1923,13 @@ sampler_RW_dirichlet <- nimbleFunction(
             currentValue <- thetaVec[i]
             propLogScale <- rnorm(1, mean = 0, sd = scaleVec[i])
             propValue <- currentValue * exp(propLogScale)
-            thetaVecProp <- thetaVec
-            thetaVecProp[i] <- propValue
-            values(model, target) <<- thetaVecProp / sum(thetaVecProp)
-            logMHR <- alphaVec[i]*propLogScale + currentValue - propValue + calculateDiff(model, depNodes)
-            jump <- decide(logMHR)
+            if(propValue != 0) {
+                thetaVecProp <- thetaVec
+                thetaVecProp[i] <- propValue
+                values(model, target) <<- thetaVecProp / sum(thetaVecProp)
+                logMHR <- alphaVec[i]*propLogScale + currentValue - propValue + calculateDiff(model, depNodes)
+                jump <- decide(logMHR)
+            } else jump <- FALSE
             if(adaptive & jump)   timesAcceptedVec[i] <<- timesAcceptedVec[i] + 1
             if(jump) { thetaVec <<- thetaVecProp
                        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
@@ -2664,9 +2666,20 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' The posterior_predictive sampler accepts no control list arguments.
 #'
+#' @section RJ sampler:
+#'  
+#' This sampler performs reversible jump MCMC steps for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{configureRJ} function, when the model code is written without using indicator variables. See \code{help{configureRJ}} for details. It is not intended for direct assignment by users.
+#'
+#' @section RJ_indicator sampler:
+#'  
+#' This sampler performs reversible jump MCMC steps for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{configureRJ} function, when the model code is written using indicator variables. See \code{help{configureRJ}} for details. It is not intended for direct assignment by users.
+#'
+#' @section toggled sampler:
+#' This sampler wraps around the assigned sampler for a node and does sampling only when the target is in the model, as part of reversible jump MCMC. This is a specialized sampler used by \code{configureRJ} when adding a reversible jump MCMC . See \code{help{configureRJ}} for details. It is not intended for direct assignment by users.
+#'
 #' @name samplers
 #'
-#' @aliases sampler posterior_predictive RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block RW_PF RW_PF_block sampler_posterior_predictive sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block sampler_RW_PF sampler_RW_PF_block CRP CRP_concentration DPmeasure
+#' @aliases sampler posterior_predictive RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block RW_PF RW_PF_block sampler_posterior_predictive sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block sampler_RW_PF sampler_RW_PF_block CRP CRP_concentration DPmeasure RJ RJ_indicator toggled
 #'
 #' @examples
 #' ## y[1] ~ dbern() or dbinom():

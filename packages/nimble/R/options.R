@@ -7,13 +7,14 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
 # These options are for development use at this point.
 .nimbleOptions <- as.environment(
     list(
+        useNewConfigureMCMC = FALSE,
+        oldConjugacyChecking = TRUE,
         disallow_multivariate_argument_expressions = TRUE,
         stop_after_processing_model_code = FALSE,
         enableModelMacros = FALSE,
         allowDynamicIndexing = TRUE,
         nimbleProjectForTesting = NULL,  ## only used by withTempProject and compileNimble in testing code.
         stopCompilationBeforeLinking = NULL,
-        experimentalUseTensorflow = FALSE,
         experimentalNewSizeProcessing = FALSE,
         experimentalSelfLiftStage = FALSE,
         enableSpecialHandling = FALSE,
@@ -52,15 +53,17 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         ## update May 2016: old (non-dynamic) system is no longer supported -DT
         ##useDynamicConjugacy = TRUE,
 
-        MCMCprogressBar = TRUE,
 
         ## samplerAssignmentRules object that controls the default sampler assignments by configureMCMC.
         ## value is set to samplerAssignmentRules() (the defaults) in MCMC_configuration.R
+        MCMCprogressBar = TRUE,
         MCMCuseSamplerAssignmentRules = FALSE,
-        saveMCMChistory = FALSE,
+        MCMCsaveHistory = FALSE,
         MCMCdefaultSamplerAssignmentRules = NULL,
+        MCMCmultivariateNodesAsScalars = FALSE,
+        MCMCmonitorAllSampledNodes = FALSE,
+        MCMCenableWAIC = FALSE
         
-        enableWAIC = FALSE
         ## default settings for MCMC samplers
         ## control list defaults for MCMC samplers are
         ## now part of the sampler functions (setup code).

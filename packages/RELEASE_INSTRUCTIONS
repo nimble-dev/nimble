@@ -34,7 +34,18 @@ run tests on all OS ideally
 change version number in UserManual/src/{title.tex,_output.yml}
 rebuild manual as further test of package
 
-download .tar.gz for reverse dependencies (currently 'bcgam') and run R CMD check on it (having trouble with tools::tools::check_packages_in_dir, but should figure that out and add a Make task for this) (however note that currently the compilation in bcgam is failing upon testing)
+check reverse dependencies:
+
+from nimble/packages, with the current nimble .tar.gz in that directory, do:
+out <- tools::check_packages_in_dir('.', reverse = list())
+summary(out)
+Can also do this to see if anything has changed:
+tools::check_packages_in_dir_changes('.', reverse = list()) # for this you need an the most recent version of nimble as the 'old'
+
+If have problems with check_packages_in_dir, can
+download .tar.gz for reverse dependencies and run R CMD check on it.
+
+At one point bcgam testing was failing, but seems fine as of 2019-10-04.
 
 we could put new version of manual in inst/doc, but not doing that because we don't want to add to the size of the tarball/package install)
 
@@ -43,8 +54,6 @@ make sure no calls to compileNimble are in any examples that are not wrapped in 
 Now in a separate branch: vX.Y-Z-cran, do this:
 
 before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in (it will pass R CMD check with "# $(FLIBS)" presumably because they are doing some sort of grep, but that is not kosher of course)
-and comment out rstan usage as in packages/MCMC_suite_rstan_monkeying_for_cran.R
-and change to requireNamespace('rstan') from require('rstan')
 
 (note that given R CMD check now errors if this is not addressed, we've changed this so this change is now already in devel)
 before release to CRAN make sure we disable Eigen pragmas that suppress warnings that CRAN dislikes:
@@ -63,6 +72,8 @@ can test on Windows using win-builder
 submit to CRAN - potentially making use of notes in CJP's cranSubmit.txt file
 
 Once CRAN package accepted:
+
+(make sure both html and pdf versions of manual are updated and in repo before doing zenodo upload)
 
 create new version with tarball and manual in Zenodo. Note that inst/CITATION uses the version-independent DOI so don't need to update DOI in CITATION or on badge on r-nimble.org.
 However we might revisit this as that means that users will cite the version independent DOI at the same time they refer to a specific NIMBLE version. Probably ok and means we don't have to mint the DOI just as we are about to submit to CRAN and then shunt aside the new Zenodo version if there is a CRAN problem.
@@ -135,7 +146,7 @@ update version number in DESC in devel
 
 Update version number in README.md.
 
-Might as well add a release to Github under Releases tab based on new version tag. This used to autogenerate a zenodo page and DOI but per below comment I don't think this linking is still in effect. 
+Might as well add a release to Github under Releases tab based on new version tag. This used to autogenerate a zenodo page and DOI but per below comment I don't think this linking is still in effect. Make sure new release is tagged in GH as 'latest release' (figure out how to do this). Also add a blurb about the release.  
 
 Unfortunately in v0.6-10 zenodo integration was somehow turned off and in the process of trying to add it manually, Chris got an entirely different zenodo instnace.
 

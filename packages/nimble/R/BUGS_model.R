@@ -5,7 +5,7 @@
 #' This class underlies all NIMBLE model objects: both R model objects created from the return value of nimbleModel(), and compiled model objects.
 #' The model object contains a variety of member functions, for providing information about the model structure, setting or querying properties of the model, or accessing various internal components of the model.
 #' These member functions of the modelBaseClass are commonly used in the body of the \code{setup} function argument to nimbleFunction(), to aid in preparation of node vectors, nimbleFunctionLists, and other runtime inputs.
-#' See documentation for \code{nimbleModel} for details of creating an R model object.
+#' See documentation for \code{\link{nimbleModel}} for details of creating an R model object.
 #' @author Daniel Turek
 #' @examples
 #' code <- nimbleCode({
@@ -400,12 +400,14 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                       if(determOnly)			validValues[modelDef$maps$types != 'determ']	<- FALSE
                                       if(stochOnly)			validValues[modelDef$maps$types != 'stoch']	<- FALSE
 
-                                      boolIsData <- rep(FALSE, length(modelDef$maps$graphIDs))
-                                      possibleDataIDs <- modelDef$maps$graphIDs[modelDef$maps$types == 'RHSonly' | modelDef$maps$types == 'stoch']
-                                      boolIsData[possibleDataIDs] <- isDataFromGraphID(possibleDataIDs)
-
-                                      if(!includeData)		        validValues[boolIsData] <- FALSE
-                                      if(dataOnly)			validValues[!boolIsData] <- FALSE
+                                      if(!includeData | dataOnly) {
+                                          boolIsData <- rep(FALSE, length(modelDef$maps$graphIDs))
+                                          possibleDataIDs <- modelDef$maps$graphIDs[modelDef$maps$types == 'RHSonly' | modelDef$maps$types == 'stoch']
+                                          boolIsData[possibleDataIDs] <- isDataFromGraphID(possibleDataIDs)
+                                          
+                                          if(!includeData)		        validValues[boolIsData] <- FALSE
+                                          if(dataOnly)			validValues[!boolIsData] <- FALSE
+                                      }
                                       if(topOnly)			validValues[-modelDef$maps$top_IDs] <- FALSE
                                       if(latentOnly)			validValues[-modelDef$maps$latent_IDs] <- FALSE
                                       if(endOnly)				validValues[-modelDef$maps$end_IDs] <- FALSE
@@ -682,7 +684,16 @@ Details: This provides a fairly raw representation of the graph (model) structur
                                           stop("getDependencyPathCountOneNode: argument 'node' should be a character node name or a numeric node ID.")
                                       modelDef$maps$nimbleGraph$getDependencyPathCountOneNode(node = node)
                                   },
-
+getDependencyPaths = function(node) {
+    if(length(node) > 1)
+        stop("getDependencyPaths: argument 'node' should provide a single node.")
+    if(inherits(node, 'character')) {
+        node <- modelDef$nodeName2GraphIDs(node)
+    }
+    if(!inherits(node, 'numeric'))
+        stop("getDependencyPaths: argument 'node' should be a character node name or a numeric node ID.")
+    modelDef$maps$nimbleGraph$getDependencyPaths(node = node)
+},
                                   getDependencies = function(nodes, omit = character(), self = TRUE,
                                       determOnly = FALSE, stochOnly = FALSE,
                                       includeData = TRUE, dataOnly = FALSE,
@@ -810,7 +821,7 @@ Arguments:
 
 inits: A named list.  The names of list elements must correspond to model variable names.  The elements of the list must be of class numeric, with size and dimension each matching the corresponding model variable.
 '
-                                      if(is.list(inits) && length(inits) > 0 && is.null(names(inits))) {
+                                      if(!is.list(inits) || (is.list(inits) && length(inits) > 0 && is.null(names(inits)))) {
                                           warning('inits argument should be a named list; not adding initial values to model.')
                                           return(invisible(NULL))
                                       }

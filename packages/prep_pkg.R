@@ -140,7 +140,7 @@ cat(paste(text, collapse = "\n"), file = file.path("nimble", "man", "nimble-math
 imports <- c("methods", "igraph")
 imports <- paste("import(", imports, ")", sep = '', collapse = "\n")
 
-importFroms <- c("coda, effectiveSize, as.mcmc, is.mcmc.list",
+importFroms <- c("coda, effectiveSize, as.mcmc, as.mcmc.list",
                  "R6, R6Class",
                  "grDevices, dev.off, jpeg",
                  "graphics, lines, plot, text",

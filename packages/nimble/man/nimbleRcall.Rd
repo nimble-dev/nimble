@@ -4,7 +4,8 @@
 \alias{nimbleRcall}
 \title{Make an R function callable from compiled nimbleFunctions (including nimbleModels).}
 \usage{
-nimbleRcall(prototype, returnType, Rfun, envir = .GlobalEnv)
+nimbleRcall(prototype, returnType, Rfun,
+  where = getNimbleFunctionEnvironment())
 }
 \arguments{
 \item{prototype}{Argument type information for Rfun.  This can be provided as an R function using \code{nimbleFunction} type declarations or as a list of \code{nimbleType} objects.}
@@ -13,7 +14,7 @@ nimbleRcall(prototype, returnType, Rfun, envir = .GlobalEnv)
 
 \item{Rfun}{The name of an R function to be called from compiled nimbleFunctions.}
 
-\item{envir}{The environment where the nimbleFunction wrapping the call to Rfun should be created.}
+\item{where}{An optional \code{where} argument passed to \code{setRefClass} for where the reference class definition generated for this nimbleFunction will be stored.  This is needed due to R package namespace issues but should never need to be provided by a user.}
 }
 \value{
 A \code{nimbleFunction} that wraps a call to \code{Rfun} with type-declared arguments and return object.
@@ -33,7 +34,7 @@ add2 <- function(x) {
    x + 2 
 }
 Radd2 <- nimbleRcall(function(x = double(1)){}, Rfun = 'add2',
-returnType = double(1), envir = .GlobalEnv)
+returnType = double(1))
 demoCode <- nimbleCode({
     for(i in 1:4) {x[i] ~ dnorm(0,1)} 
     z[1:4] <- Radd2(x[1:4])

@@ -103,9 +103,10 @@ ind: A numeric vector or character vector.  A numeric vector may be used to spec
 
 \item{\code{initialize(model, nodes, control = list(), rules, monitors, thin = 1,
   monitors2 = character(), thin2 = 1, useConjugacy = TRUE,
-  onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
-  enableWAIC = nimbleOptions("enableWAIC"), warnNoSamplerAssigned = TRUE,
-  print = FALSE, ...)}}{Creates a MCMC configuration for a given model.  The resulting object is suitable as an argument to buildMCMC.
+  onlyRW = FALSE, onlySlice = FALSE,
+  multivariateNodesAsScalars = getNimbleOption("MCMCmultivariateNodesAsScalars"),
+  enableWAIC = getNimbleOption("MCMCenableWAIC"),
+  warnNoSamplerAssigned = TRUE, print = FALSE, ...)}}{Creates a MCMC configuration for a given model.  The resulting object is suitable as an argument to buildMCMC.
 
 Arguments:
 
@@ -140,7 +141,7 @@ onlySlice: A logical argument, with default value FALSE.  If specified as TRUE, 
 
 multivariateNodesAsScalars: A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided useConjugacy == TRUE), regardless of the value of this argument.
 
-enableWAIC: A logical argument, specifying whether to enable WAIC calculations for the resulting MCMC algorithm.  Defaults to the value of nimbleOptions('enableWAIC'), which in turn defaults to FALSE.  Setting nimbleOptions('enableWAIC' = TRUE) will ensure that WAIC is enabled for all calls to configureMCMC and buildMCMC.
+enableWAIC: A logical argument, specifying whether to enable WAIC calculations for the resulting MCMC algorithm.  Defaults to the value of nimbleOptions('MCMCenableWAIC'), which in turn defaults to FALSE.  Setting nimbleOptions('MCMCenableWAIC' = TRUE) will ensure that WAIC is enabled for all calls to configureMCMC and buildMCMC.
 
 warnNoSamplerAssigned: A logical argument specifying whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule. Default is TRUE.
 
@@ -155,7 +156,7 @@ Details: See the initialize() function
 
 \item{\code{printSamplers(ind, type, displayControlDefaults = FALSE,
   displayNonScalars = FALSE, displayConjugateDependencies = FALSE,
-  executionOrder = FALSE)}}{Prints details of the MCMC samplers.
+  executionOrder = FALSE, byType = FALSE)}}{Prints details of the MCMC samplers.
 
 Arguments:
 
@@ -167,7 +168,9 @@ displayConjugateDependencies: A logical argument, specifying whether to display 
 
 displayNonScalars: A logical argument, specifying whether to display the values of non-scalar control list elements (default FALSE).
 
-executionOrder: A logical argument, specifying whether to print the sampler functions in the (possibly modified) order of execution (default FALSE).}
+executionOrder: A logical argument, specifying whether to print the sampler functions in the (possibly modified) order of execution (default FALSE).
+
+byType: A logical argument, specifying whether the nodes being sampled should be printed, sorted and organized according to the type of sampler (the sampling algorithm) which is acting on the nodes (default FALSE).}
 
 \item{\code{removeSampler(...)}}{Alias for removeSamplers method}
 
