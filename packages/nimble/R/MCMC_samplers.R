@@ -952,13 +952,13 @@ sampler_HMC <- nimbleFunction(
         originalTargetAsScalars <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         targetNodesAsScalars <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)
         IND_ID   <- 1   ## transformation ID: 1=identity, 2=log, 3=logit
-        IND_LB   <- 2   ## interval-bounded parameters: lower-bound
-        IND_RNG  <- 3   ## interval-bounded parameters: range
-        IND_LRNG <- 4   ## interval-bounded parameters: log(range)
+        IND_LB   <- 2   ## one-sided-bound: offset; interval-bounded parameters: lower-bound
+        IND_RNG  <- 3   ## one-sided-bound: -1/1;   interval-bounded parameters: range
+        IND_LRNG <- 4   ## one-sided-bound: N/A;    interval-bounded parameters: log(range)
         maxInd <- max(sapply(grep('^IND_', ls(), value = TRUE), function(x) eval(as.name(x))))
         d <- length(targetNodesAsScalars)
         d2 <- max(d, 2) ## for pre-allocating vectors
-        transformInfo <- array(0, c(d, maxInd))
+        transformInfo <- array(0, c(d2, maxInd))
         logTransformNodes   <- character()
         logitTransformNodes <- character()
         for(i in 1:d) {
@@ -968,13 +968,22 @@ sampler_HMC <- nimbleFunction(
             dist <- model$getDistribution(node)
             bounds <- c(model$getBound(node, 'lower'), model$getBound(node, 'upper'))
             if(!model$isMultivariate(node)) {   ## univariate node
-                if(bounds[1] == -Inf & bounds[2] == Inf) {             ## 1 = identity, support = (-Inf, Inf)
+                if(bounds[1] == -Inf & bounds[2] == Inf) {               ## 1 = identity: support = (-Inf, Inf)
                     transformInfo[i, IND_ID] <- 1
-                } else if(bounds[1] == 0 & bounds[2] == Inf) {         ## 2 = log, support = (0, Inf)
+                } else if((isValid(bounds[1]) && bounds[2] ==  Inf) ||   ## 2 = log: support = (a, Inf)
+                          (isValid(bounds[2]) && bounds[1] == -Inf)) {   ##      or: support = (-Inf, b)
+                    if(model$isTruncated(node)) {
+                        bdName  <- if(isValid(bounds[1])) 'lower'  else 'upper'
+                        bdParam <- if(isValid(bounds[1])) 'lower_' else 'upper_'
+                        bdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, bdParam))
+                        if(length(all.vars(bdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant ', bdName, ' bound.  HMC sampler does not yet handle that, please contant the NIMBLE development team.', call. = FALSE)
+                    }
                     logTransformNodes <- c(logTransformNodes, node)
-                    transformInfo[i, IND_ID] <- 2
-                } else if(isValid(bounds[1]) & isValid(bounds[2])) {   ## 3 = logit, support = (a, b)
-                    if(dist == 'dunif' || model$isTruncated(node)) {   ## uniform distribution, or a truncated node
+                    transformInfo[i, IND_ID]  <- 2
+                    transformInfo[i, IND_LB]  <- if(isValid(bounds[1])) bounds[1] else bounds[2]
+                    transformInfo[i, IND_RNG] <- if(isValid(bounds[1])) 1 else -1
+                } else if(isValid(bounds[1]) && isValid(bounds[2])) {    ## 3 = logit: support = (a, b)
+                    if(dist == 'dunif' || model$isTruncated(node)) {     ## uniform distribution, or a truncated node
                         if(dist == 'dunif')         { lParam <- 'min';    uParam <- 'max'    }
                         if(model$isTruncated(node)) { lParam <- 'lower_'; uParam <- 'upper_' }
                         lowerBdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, lParam))
@@ -1079,7 +1088,7 @@ sampler_HMC <- nimbleFunction(
             q <<- values(model, targetNodes)
             for(i in 1:d) {
                 id <- transformInfo[i, IND_ID]                    ## 1 = identity, 2 = log, 3 = logit
-                if(id == 2) q[i] <<- log(q[i])
+                if(id == 2) q[i] <<- log(   (q[i]-transformInfo[i, IND_LB]) / transformInfo[i, IND_RNG] )
                 if(id == 3) q[i] <<- logit( (q[i]-transformInfo[i, IND_LB]) / transformInfo[i, IND_RNG] )
             }
         },
@@ -1087,7 +1096,7 @@ sampler_HMC <- nimbleFunction(
             transformed <- qArg
             for(i in 1:d) {
                 id <- transformInfo[i, IND_ID]                    ## 1 = identity, 2 = log, 3 = logit
-                if(id == 2) transformed[i] <- exp(qArg[i])
+                if(id == 2) transformed[i] <- transformInfo[i, IND_LB] + transformInfo[i, IND_RNG]*  exp(qArg[i])
                 if(id == 3) transformed[i] <- transformInfo[i, IND_LB] + transformInfo[i, IND_RNG]*expit(qArg[i])
             }
             returnType(double(1));   return(transformed)
@@ -1096,7 +1105,7 @@ sampler_HMC <- nimbleFunction(
             values(model, targetNodes) <<- inverseTransformValues(qArg)
             lp <- model$calculate(calcNodes) - sum(pArg^2)/2
             for(i in 1:d) {
-                id <- transformInfo[i, IND_ID]    ## 1 = identity, 2 = log, 3 = logit
+                id <- transformInfo[i, IND_ID]                    ## 1 = identity, 2 = log, 3 = logit
                 if(id == 2) lp <- lp + qArg[i]
                 if(id == 3) lp <- lp + transformInfo[i, IND_LRNG] - log(exp(qArg[i])+exp(-qArg[i])+2)   ## alternate: -2*log(1+exp(-x))-x
             }

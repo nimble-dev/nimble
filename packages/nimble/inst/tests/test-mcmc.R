@@ -1657,8 +1657,8 @@ test_that('HMC sampler asymptotic correctness', {
     meansHMC <- apply(samplesHMC, 2, mean)
     sdsHMC <- apply(samplesHMC, 2, sd)
     ##
-    expect_true(all(abs(means - meansHMC) < 0.03))
-    expect_true(all(abs(sds   - sdsHMC)   < 0.03))
+    expect_true(all(abs(means - meansHMC) < 0.05))
+    expect_true(all(abs(sds   - sdsHMC)   < 0.05))
 })
 
 
@@ -1814,6 +1814,24 @@ test_that('HMC sampler error messages for transformations with non-constant boun
     conf <- configureMCMC(Rmodel, nodes = NULL)
     conf$addSampler('y', 'HMC')
     expect_error(Rmcmc <- buildMCMC(conf), NA)   ## means: expect_no_error
+    ##
+    code <- nimbleCode({ x <- 3; y ~ T(dnorm(0, 1), 1, x) })
+    Rmodel <- nimbleModel(code, inits = list(y = 2))
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('y', 'HMC')
+    expect_error(Rmcmc <- buildMCMC(conf), NA)   ## means: expect_no_error
+    ##
+    code <- nimbleCode({ x ~ dexp(1); y ~ T(dnorm(0, 1), 1, x) })
+    Rmodel <- nimbleModel(code, inits = list(x = 3, y = 2))
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('y', 'HMC')
+    expect_error(Rmcmc <- buildMCMC(conf))
+    ##
+    code <- nimbleCode({ x ~ dexp(1); y ~ T(dnorm(0, 1), x, 10) })
+    Rmodel <- nimbleModel(code, inits = list(x = 1, y = 2))
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('y', 'HMC')
+    expect_error(Rmcmc <- buildMCMC(conf))
 })
 
 
