@@ -1027,7 +1027,7 @@ Checks for errors in model specification and for missing values that prevent use
                                           for(nn in nns) {
                                               val <- .self[[nn]]
                                               type <- getNodeType(nn)
-                                              if(length(type) > 1) stop('something wrong with Daniel\'s understanding of nimbleModel')
+                                              if(length(type) > 1) type <- type[1] ##stop('something wrong with Daniel\'s understanding of nimbleModel')
                                               if(type == 'RHSonly') {
                                                   if(!nimble:::isValid(val)) badVars[[nimble:::whyInvalid(val)]] <- c(badVars[[nimble:::whyInvalid(val)]], nn)
                                               } else if(type == 'determ') {
