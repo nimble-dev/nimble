@@ -974,9 +974,11 @@ sampler_HMC <- nimbleFunction(
                     logTransformNodes <- c(logTransformNodes, node)
                     transformInfo[i, IND_ID] <- 2
                 } else if(isValid(bounds[1]) & isValid(bounds[2])) {   ## 3 = logit, support = (a, b)
-                    if(dist == 'dunif') {   ## uniform distribution
-                        lowerBdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, 'min'))
-                        upperBdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, 'max'))
+                    if(dist == 'dunif' || model$isTruncated(node)) {   ## uniform distribution, or a truncated node
+                        if(dist == 'dunif')         { lParam <- 'min';    uParam <- 'max'    }
+                        if(model$isTruncated(node)) { lParam <- 'lower_'; uParam <- 'upper_' }
+                        lowerBdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, lParam))
+                        upperBdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, uParam))
                         if(length(all.vars(lowerBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant lower bound.  HMC sampler does not yet handle that, please contant the NIMBLE development team.', call. = FALSE)
                         if(length(all.vars(upperBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant upper bound.  HMC sampler does not yet handle that, please contant the NIMBLE development team.', call. = FALSE)
                     } else {   ## some other distribution with finite support

@@ -1802,6 +1802,18 @@ test_that('HMC sampler error messages for transformations with non-constant boun
     conf <- configureMCMC(Rmodel, nodes = NULL)
     conf$addSampler('y', 'HMC')
     expect_error(Rmcmc <- buildMCMC(conf))
+    ##
+    code <- nimbleCode({ x ~ dexp(1); y ~ T(dnorm(0, 1), 0, x) })
+    Rmodel <- nimbleModel(code, inits = list(x = 1))
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('y', 'HMC')
+    expect_error(Rmcmc <- buildMCMC(conf))
+    ##
+    code <- nimbleCode({ x <- 2+c; y ~ T(dnorm(0, 1), 0, x) })
+    Rmodel <- nimbleModel(code, constants = list(c = 1), inits = list(y = 1))
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('y', 'HMC')
+    expect_error(Rmcmc <- buildMCMC(conf), NA)   ## means: expect_no_error
 })
 
 
