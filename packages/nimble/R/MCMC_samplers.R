@@ -958,7 +958,6 @@ sampler_HMC <- nimbleFunction(
         maxInd <- max(sapply(grep('^IND_', ls(), value = TRUE), function(x) eval(as.name(x))))
         d <- length(targetNodesAsScalars)
         d2 <- max(d, 2) ## for pre-allocating vectors
-        ##transformInfo_old <- array(0, c(d2, maxInd))
         transformNodeNums <- c(0, 0)               ## always a vector
         transformInfo <- array(0, c(2, maxInd))    ## always an array
         logTransformNodes   <- character()
@@ -971,7 +970,6 @@ sampler_HMC <- nimbleFunction(
             bounds <- c(model$getBound(node, 'lower'), model$getBound(node, 'upper'))
             if(!model$isMultivariate(node)) {   ## univariate node
                 if(bounds[1] == -Inf & bounds[2] == Inf) {               ## 1 = identity: support = (-Inf, Inf)
-                    ##transformInfo_old[i, IND_ID] <- 1
                     1
                 } else if((isValid(bounds[1]) && bounds[2] ==  Inf) ||   ## 2 = log: support = (a, Inf)
                           (isValid(bounds[2]) && bounds[1] == -Inf)) {   ##      or: support = (-Inf, b)
@@ -982,9 +980,6 @@ sampler_HMC <- nimbleFunction(
                         if(length(all.vars(bdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant ', bdName, ' bound.  HMC sampler does not yet handle that, please contant the NIMBLE development team.', call. = FALSE)
                     }
                     logTransformNodes <- c(logTransformNodes, node)
-                    ##transformInfo_old[i, IND_ID]  <- 2
-                    ##transformInfo_old[i, IND_LB]  <- if(isValid(bounds[1])) bounds[1] else bounds[2]
-                    ##transformInfo_old[i, IND_RNG] <- if(isValid(bounds[1])) 1 else -1
                     transformNodeNums <- c(transformNodeNums, i)
                     newRow <- numeric(maxInd)
                     newRow[IND_ID]  <- 2
@@ -1008,10 +1003,6 @@ sampler_HMC <- nimbleFunction(
                     logitTransformNodes <- c(logitTransformNodes, node)
                     range <- bounds[2] - bounds[1]
                     if(range <= 0) stop(paste0('HMC sampler doesn\'t have a transformation for the bounds of node: ', node), call. = FALSE)
-                    ##transformInfo_old[i, IND_ID] <- 3
-                    ##transformInfo_old[i, IND_LB] <- bounds[1]
-                    ##transformInfo_old[i, IND_RNG]  <- range
-                    ##transformInfo_old[i, IND_LRNG] <- log(range)
                     transformNodeNums <- c(transformNodeNums, i)
                     newRow <- numeric(maxInd)
                     newRow[IND_ID]   <- 3
@@ -1022,15 +1013,16 @@ sampler_HMC <- nimbleFunction(
                 } else stop(paste0('HMC sampler doesn\'t have a transformation for the bounds of node: ', node, ', which are (', bounds[1], ', ', bounds[2], ')'), call. = FALSE)
             } else {                            ## multivariate node
                 if(!(node %in% originalTargetAsScalars)) stop(paste0('HMC sampler only operates on complete multivariate nodes. Must specify full node: ', model$expandNodeNames(node), ', or none of it'), call. = FALSE)
-                if(dist %in% c('dmnorm', 'dmvt')) {
+                if(dist %in% c('dmnorm', 'dmvt')) {                      ## dmnorm: identity
                     message('HMC sampler is waiting for derivatives of dmnorm() to be implemented.')  ## waiting for dmnorm() derivatives
                     message('otherwise, HMC sampler already works on dmnorm nodes.')                  ## waiting for dmnorm() derivatives
                     stop()                                                                            ## waiting for dmnorm() derivatives
-                    ##transformInfo_old[i, IND_ID] <- 1                      ## dmnorm: identity
-                } else if(dist %in% c('dwish', 'dinvwish')) {
+                    ## NOTE: no transformation should be necessary for dmnorm and dmvt nodes (??)
+                } else if(dist %in% c('dwish', 'dinvwish')) {            ## wishart: log-cholesky
                     message('HMC sampler is waiting for derivatives of dwish() to be implemented.')   ## waiting for dwish() derivatives
                     stop()                                                                            ## waiting for dwish() derivatives
-                    ##transformInfo_old[i, IND_ID] <- 5                      ## wishart: log-cholesky
+                    ##transformInfo[xxx, IND_ID] <- 5
+                    ## NOTE: not sure what transformation ID for this (??)  5?
                     ## NOTE: implementing for dwish() and dinvwish() will require a slightly deeper re-design
                     ## d <- d + sqrt(len) * (sqrt(len)+1) / 2
                     ## dmodel <- dmodel + len
@@ -1103,15 +1095,10 @@ sampler_HMC <- nimbleFunction(
     methods = list(
         transformValues = function() {
             q <<- values(model, targetNodes)
-            ##for(i in 1:d) {
-            ##    id <- transformInfo_old[i, IND_ID]                    ## 1 = identity, 2 = log, 3 = logit
-            ##    if(id == 2) q[i] <<- log(   (q[i]-transformInfo_old[i, IND_LB]) / transformInfo_old[i, IND_RNG] )
-            ##    if(id == 3) q[i] <<- logit( (q[i]-transformInfo_old[i, IND_LB]) / transformInfo_old[i, IND_RNG] )
-            ##}
             if(length(transformNodeNums) > 2) {
                 for(i in 3:length(transformNodeNums)) {
-                    nn <- transformNodeNums[i]                    ## 1 = identity, 2 = log, 3 = logit
-                    id <- transformInfo[i, IND_ID]
+                    nn <- transformNodeNums[i]
+                    id <- transformInfo[i, IND_ID]                ## 1 = identity, 2 = log, 3 = logit
                     if(id == 2) q[nn] <<- log(   (q[nn] - transformInfo[i, IND_LB]) / transformInfo[i, IND_RNG] )
                     if(id == 3) q[nn] <<- logit( (q[nn] - transformInfo[i, IND_LB]) / transformInfo[i, IND_RNG] )
                 }
@@ -1119,15 +1106,10 @@ sampler_HMC <- nimbleFunction(
         },
         inverseTransformValues = function(qArg = double(1)) {
             transformed <- qArg
-            ##for(i in 1:d) {
-            ##    id <- transformInfo_old[i, IND_ID]                    ## 1 = identity, 2 = log, 3 = logit
-            ##    if(id == 2) transformed[i] <- transformInfo_old[i, IND_LB] + transformInfo_old[i, IND_RNG]*  exp(qArg[i])
-            ##    if(id == 3) transformed[i] <- transformInfo_old[i, IND_LB] + transformInfo_old[i, IND_RNG]*expit(qArg[i])
-            ##}
             if(length(transformNodeNums) > 2) {
                 for(i in 3:length(transformNodeNums)) {
-                    nn <- transformNodeNums[i]                    ## 1 = identity, 2 = log, 3 = logit
-                    id <- transformInfo[i, IND_ID]
+                    nn <- transformNodeNums[i]
+                    id <- transformInfo[i, IND_ID]                ## 1 = identity, 2 = log, 3 = logit
                     x <- qArg[nn]
                     if(id == 2) transformed[nn] <- transformInfo[i, IND_LB] + transformInfo[i, IND_RNG]*  exp(x)
                     if(id == 3) transformed[nn] <- transformInfo[i, IND_LB] + transformInfo[i, IND_RNG]*expit(x)
@@ -1138,15 +1120,10 @@ sampler_HMC <- nimbleFunction(
         logH = function(qArg = double(1), pArg = double(1)) {
             values(model, targetNodes) <<- inverseTransformValues(qArg)
             lp <- model$calculate(calcNodes) - sum(pArg^2)/2
-            ##for(i in 1:d) {
-            ##    id <- transformInfo_old[i, IND_ID]                    ## 1 = identity, 2 = log, 3 = logit
-            ##    if(id == 2) lp <- lp + qArg[i]
-            ##    if(id == 3) lp <- lp + transformInfo_old[i, IND_LRNG] - log(exp(qArg[i])+exp(-qArg[i])+2)   ## alternate: -2*log(1+exp(-x))-x
-            ##}
             if(length(transformNodeNums) > 2) {
                 for(i in 3:length(transformNodeNums)) {
-                    nn <- transformNodeNums[i]                    ## 1 = identity, 2 = log, 3 = logit
-                    id <- transformInfo[i, IND_ID]
+                    nn <- transformNodeNums[i]
+                    id <- transformInfo[i, IND_ID]                ## 1 = identity, 2 = log, 3 = logit
                     x <- qArg[nn]
                     if(id == 2) lp <- lp + x
                     if(id == 3) lp <- lp + transformInfo[i, IND_LRNG] - log(exp(x)+exp(-x)+2)   ## alternate: -2*log(1+exp(-x))-x
@@ -1159,15 +1136,10 @@ sampler_HMC <- nimbleFunction(
             if(printGradient) { gradQ <- array(0, c(1,d)); gradQ[1,1:d] <- values(model, targetNodes); print(gradQ) }
             derivsOutput <- derivs(model$calculate(calcNodes), order = 1, wrt = targetNodes)
             grad <<- derivsOutput$jacobian[1, 1:d]
-            ##for(i in 1:d) {
-            ##    x <- qArg[i];   id <- transformInfo_old[i, IND_ID]    ## 1 = identity, 2 = log, 3 = logit
-            ##    if(id == 2) grad[i] <<- grad[i]*exp(x) + 1
-            ##    if(id == 3) grad[i] <<- grad[i]*transformInfo_old[i, IND_RNG]*expit(x)^2*exp(-x) + 2/(1+exp(x)) - 1
-            ##}
             if(length(transformNodeNums) > 2) {
                 for(i in 3:length(transformNodeNums)) {
-                    nn <- transformNodeNums[i]                    ## 1 = identity, 2 = log, 3 = logit
-                    id <- transformInfo[i, IND_ID]
+                    nn <- transformNodeNums[i]
+                    id <- transformInfo[i, IND_ID]                ## 1 = identity, 2 = log, 3 = logit
                     x <- qArg[nn]
                     if(id == 2) grad[nn] <<- grad[nn]*exp(x) + 1
                     if(id == 3) grad[nn] <<- grad[nn]*transformInfo[i, IND_RNG]*expit(x)^2*exp(-x) + 2/(1+exp(x)) - 1
