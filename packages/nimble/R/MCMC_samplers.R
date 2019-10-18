@@ -928,7 +928,9 @@ sampler_HMC_BASE <- nimbleFunctionVirtual(
     contains = sampler_BASE,
     methods = list(
         reset = function() { },
-        getNumDivergences = function() { returnType(double()) }
+        getMaxTreeDepth         = function() { returnType(double()) },
+        getNumDivergences       = function() { returnType(double()) },
+        getNumTimesMaxTreeDepth = function() { returnType(double()) }
     )
 )
 
@@ -1048,6 +1050,7 @@ sampler_HMC <- nimbleFunction(
         log2 <- log(2)
         warningsOrig <- warnings
         numDivergences <- 0
+        numTimesMaxTreeDepth <- 0
         ## nested function and function list definitions
         qpNLDef <- nimbleList(q  = double(1), p  = double(1))
         btNLDef <- nimbleList(q1 = double(1), p1 = double(1), q2 = double(1), p2 = double(1), q3 = double(1), n = double(), s = double(), a = double(), na = double())
@@ -1085,7 +1088,9 @@ sampler_HMC <- nimbleFunction(
             if(printJ) {   if(j == 0) cat('j = ', j) else cat(', ', j)
                            cat('(');   if(v==1) cat('R') else cat('L');   cat(')')
                            if(s != 1) print(' ')   }
-            if(j >= maxTreeDepth) if(warnings > 0) { print('HMC sampler encountered maximum search tree depth of ', maxTreeDepth); warnings <<- warnings - 1 }
+            if(j >= maxTreeDepth) { numTimesMaxTreeDepth <<- numTimesMaxTreeDepth + 1 }
+            ##                      if(warnings > 0) { print('HMC sampler encountered maximum search tree depth of ', maxTreeDepth);
+            ##                                         warnings <<- warnings - 1 } }
             j <- j + 1
             checkInterrupt()
         }
@@ -1208,9 +1213,9 @@ sampler_HMC <- nimbleFunction(
                 n <- nimStep(qpLogH - logu)          ## step(x) = 1 iff x >= 0, and zero otherwise
                 s <- nimStep(qpLogH - logu + deltaMax)
                 ## lowering the initial step size, and increasing the target acceptance rate may keep the step size small to avoid divergent paths.
-                if(s == 0) { numDivergences <<- numDivergences + 1
-                             if(warnings > 0) { print('HMC sampler encountered a divergent path on iteration ', timesRan, ', with divergence = ', logu - qpLogH)
-                                                warnings <<- warnings - 1 } }
+                if(s == 0) { numDivergences <<- numDivergences + 1 }
+                ##           if(warnings > 0) { print('HMC sampler encountered a divergent path on iteration ', timesRan, ', with divergence = ', logu - qpLogH)
+                ##                              warnings <<- warnings - 1 } }
                 a <- min(1, exp(qpLogH - logH0))
                 if(is.nan.vec(q) | is.nan.vec(p)) { n <- 0; s <- 0; a <- 0 }     ## my addition
                 return(btNLDef$new(q1 = q, p1 = p, q2 = q, p2 = p, q3 = q, n = n, s = s, a = a, na = 1))
@@ -1233,10 +1238,9 @@ sampler_HMC <- nimbleFunction(
                 return(btNL1)
             }
         },
-        getNumDivergences = function() {
-            returnType(double())
-            return(numDivergences)
-        },
+        getMaxTreeDepth         = function() { returnType(double());   return(maxTreeDepth)         },
+        getNumDivergences       = function() { returnType(double());   return(numDivergences)       },
+        getNumTimesMaxTreeDepth = function() { returnType(double());   return(numTimesMaxTreeDepth) },
         reset = function() {
             timesRan       <<- 0
             epsilon        <<- 0
@@ -1244,6 +1248,7 @@ sampler_HMC <- nimbleFunction(
             logEpsilonBar  <<- 0
             Hbar           <<- 0
             numDivergences <<- 0
+            numTimesMaxTreeDepth <<- 0
             warnings       <<- warningsOrig
         }
     ), where = getLoadingNamespace()

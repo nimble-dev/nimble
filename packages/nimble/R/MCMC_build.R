@@ -223,8 +223,11 @@ buildMCMC <- nimbleFunction(
         if(progressBar) print('|')
         if(length(samplerFunctionsHMC) > 0) {
             for(i in seq_along(samplerFunctionsHMC)) {
+                maxTreeDepth <- samplerFunctionsHMC[[i]]$getMaxTreeDepth()
                 numDivergences <- samplerFunctionsHMC[[i]]$getNumDivergences()
-                print('HMC sampler encountered a total of ', numDivergences, ' divergent paths')
+                numTimesMaxTreeDepth <- samplerFunctionsHMC[[i]]$getNumTimesMaxTreeDepth()
+                if(numDivergences > 0) print('HMC sampler encountered a total of ', numDivergences, ' divergent paths')
+                if(numTimesMaxTreeDepth > 0) print('HMC sampler reached the maximum search tree depth (', maxTreeDepth, ') a total of ', numTimesMaxTreeDepth, ' times')
             }
         }
         returnType(void())
