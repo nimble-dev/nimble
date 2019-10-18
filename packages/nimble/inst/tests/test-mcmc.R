@@ -1835,6 +1835,40 @@ test_that('HMC sampler error messages for transformations with non-constant boun
 })
 
 
+test_that('HMC sampler reports correct number of divergences and max tree depths', {
+    nimbleOptions(experimentalEnableDerivs = TRUE)
+    ##
+    code <- nimbleCode({
+        mu ~ dnorm(0, sd = 10)
+        tau ~ dgamma(0.01, 0.01)
+        sigma ~ dunif(0, 10)
+        p ~ dunif(0, 1)
+        mu4 <- mu * p
+        y1 ~ dnorm(mu, tau)
+        y2 ~ dnorm(mu, tau)
+        y3 ~ dnorm(mu, sd = sigma)
+        y4 ~ dnorm(mu4, tau)
+    })
+    constants <- list()
+    data <- list(y1 = 10, y2 = 9, y3 = 9, y4 = 7)
+    inits <- list(mu = 0, tau = 1, sigma = 1, p = 0.5)
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    ##
+    conf <- configureMCMC(Rmodel)
+    conf$addSampler(target = c('mu','tau','sigma','p'), type = 'HMC',
+                    control = list(maxTreeDepth = 5))
+    Rmcmc <- buildMCMC(conf)
+    ##
+    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
+    Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
+    ##
+    set.seed(0)
+    samples <- runMCMC(Cmcmc, 10000)
+    ##
+    expect_equal(valueInCompiledNimbleFunction(Cmcmc$samplerFunctions[[5]], 'numDivergences'), 457)
+    expect_equal(valueInCompiledNimbleFunction(Cmcmc$samplerFunctions[[5]], 'numTimesMaxTreeDepth'), 16)
+})
+
 
 sink(NULL)
 
