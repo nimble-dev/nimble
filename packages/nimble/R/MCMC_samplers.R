@@ -924,11 +924,19 @@ sampler_langevin <- nimbleFunction(
 ### Hamiltonian Monte Carlo (HMC) sampler using NUTS ###############
 ####################################################################
 
+sampler_HMC_BASE <- nimbleFunctionVirtual(
+    contains = sampler_BASE,
+    methods = list(
+        reset = function() { },
+        getNumDivergences = function() { returnType(double()) }
+    )
+)
+
 #' @rdname samplers
 #' @export
 sampler_HMC <- nimbleFunction(
     name = 'sampler_HMC',
-    contains = sampler_BASE,
+    contains = sampler_HMC_BASE,     ## note: different contains for HMC sampler
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
         printTimesRan  <- if(!is.null(control$printTimesRan))  control$printTimesRan  else FALSE
@@ -945,12 +953,13 @@ sampler_HMC <- nimbleFunction(
         deltaMax       <- if(!is.null(control$deltaMax))       control$deltaMax       else 1000
         maxAdaptIter   <- if(!is.null(control$maxAdaptIter))   control$maxAdaptIter   else 1000
         maxTreeDepth   <- if(!is.null(control$maxTreeDepth))   control$maxTreeDepth   else 10
-        ## node list generation, and processing of bounds and transformations
+        ## node list generation
         targetNodes <- model$expandNodeNames(target)
         if(length(targetNodes) <= 0) stop('HMC sampler must operate on at least one node', call. = FALSE)
         calcNodes <- model$getDependencies(targetNodes)
         originalTargetAsScalars <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         targetNodesAsScalars <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)
+        ## processing of bounds and transformations
         IND_ID   <- 1   ## transformation ID: 1=identity, 2=log, 3=logit
         IND_LB   <- 2   ## one-sided-bound: offset; interval-bounded parameters: lower-bound
         IND_RNG  <- 3   ## one-sided-bound: -1/1;   interval-bounded parameters: range
@@ -1038,6 +1047,7 @@ sampler_HMC <- nimbleFunction(
         grad <- numeric(d2);   gradFirst <- numeric(d2);   gradSaveL <- numeric(d2);   gradSaveR <- numeric(d2)
         log2 <- log(2)
         warningsOrig <- warnings
+        numDivergences <- 0
         ## nested function and function list definitions
         qpNLDef <- nimbleList(q  = double(1), p  = double(1))
         btNLDef <- nimbleList(q1 = double(1), p1 = double(1), q2 = double(1), p2 = double(1), q3 = double(1), n = double(), s = double(), a = double(), na = double())
@@ -1198,8 +1208,9 @@ sampler_HMC <- nimbleFunction(
                 n <- nimStep(qpLogH - logu)          ## step(x) = 1 iff x >= 0, and zero otherwise
                 s <- nimStep(qpLogH - logu + deltaMax)
                 ## lowering the initial step size, and increasing the target acceptance rate may keep the step size small to avoid divergent paths.
-                if(s == 0) if(warnings > 0) { print('HMC sampler encountered a divergent path on iteration ', timesRan, ', with divergence = ', logu - qpLogH)
-                                              warnings <<- warnings - 1 }
+                if(s == 0) { numDivergences <<- numDivergences + 1
+                             if(warnings > 0) { print('HMC sampler encountered a divergent path on iteration ', timesRan, ', with divergence = ', logu - qpLogH)
+                                                warnings <<- warnings - 1 } }
                 a <- min(1, exp(qpLogH - logH0))
                 if(is.nan.vec(q) | is.nan.vec(p)) { n <- 0; s <- 0; a <- 0 }     ## my addition
                 return(btNLDef$new(q1 = q, p1 = p, q2 = q, p2 = p, q3 = q, n = n, s = s, a = a, na = 1))
@@ -1222,13 +1233,18 @@ sampler_HMC <- nimbleFunction(
                 return(btNL1)
             }
         },
+        getNumDivergences = function() {
+            returnType(double())
+            return(numDivergences)
+        },
         reset = function() {
-            timesRan      <<- 0
-            epsilon       <<- 0
-            mu            <<- 0
-            logEpsilonBar <<- 0
-            Hbar          <<- 0
-            warnings      <<- warningsOrig
+            timesRan       <<- 0
+            epsilon        <<- 0
+            mu             <<- 0
+            logEpsilonBar  <<- 0
+            Hbar           <<- 0
+            numDivergences <<- 0
+            warnings       <<- warningsOrig
         }
     ), where = getLoadingNamespace()
 )

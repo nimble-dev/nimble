@@ -113,8 +113,13 @@ buildMCMC <- nimbleFunction(
         my_initializeModel <- initializeModel(model)
         mvSaved <- modelValues(model)
         samplerFunctions <- nimbleFunctionList(sampler_BASE)
-        for(i in seq_along(conf$samplerConfs))
-            samplerFunctions[[i]] <- conf$samplerConfs[[i]]$buildSampler(model=model, mvSaved=mvSaved)
+        samplerFunctionsHMC <- nimbleFunctionList(sampler_HMC_BASE)
+        for(i in seq_along(conf$samplerConfs)) {
+            newSF <- conf$samplerConfs[[i]]$buildSampler(model=model, mvSaved=mvSaved)
+            samplerFunctions[[i]] <- newSF
+            if(conf$samplerConfs[[i]]$name %in% c('HMC', 'HMC2'))
+                samplerFunctionsHMC[[length(samplerFunctionsHMC)+1]] <- newSF
+        }
         samplerExecutionOrderFromConfPlusTwoZeros <- c(conf$samplerExecutionOrder, 0, 0)  ## establish as a vector
         monitors  <- mcmc_processMonitorNames(model, conf$monitors)
         monitors2 <- mcmc_processMonitorNames(model, conf$monitors2)
@@ -216,6 +221,7 @@ buildMCMC <- nimbleFunction(
             }
         }
         if(progressBar) print('|')
+        print('length(samplerFunctionsHMC) = ', length(samplerFunctionsHMC))f
         returnType(void())
     },
     methods = list(
