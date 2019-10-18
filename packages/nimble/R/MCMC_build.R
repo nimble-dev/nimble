@@ -221,7 +221,12 @@ buildMCMC <- nimbleFunction(
             }
         }
         if(progressBar) print('|')
-        print('length(samplerFunctionsHMC) = ', length(samplerFunctionsHMC))f
+        if(length(samplerFunctionsHMC) > 0) {
+            for(i in seq_along(samplerFunctionsHMC)) {
+                numDivergences <- samplerFunctionsHMC[[i]]$getNumDivergences
+                print('HMC sampler encountered a total of ', numDivergences, ' divergent paths')
+            }
+        }
         returnType(void())
     },
     methods = list(
