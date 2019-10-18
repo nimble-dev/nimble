@@ -1045,6 +1045,7 @@ sampler_HMC <- nimbleFunction(
         p <- numeric(d2);   pL <- numeric(d2);   pR <- numeric(d2);   p2 <- numeric(d2);      p3 <- numeric(d2)
         grad <- numeric(d2);   gradFirst <- numeric(d2);   gradSaveL <- numeric(d2);   gradSaveR <- numeric(d2)
         log2 <- log(2)
+        warningsOrig <- warnings
         ## nested function and function list definitions
         qpNLDef <- nimbleList(q  = double(1), p  = double(1))
         btNLDef <- nimbleList(q1 = double(1), p1 = double(1), q2 = double(1), p2 = double(1), q3 = double(1), n = double(), s = double(), a = double(), na = double())
@@ -1255,6 +1256,7 @@ sampler_HMC <- nimbleFunction(
             mu            <<- 0
             logEpsilonBar <<- 0
             Hbar          <<- 0
+            warnings      <<- warningsOrig
         }
     ), where = getLoadingNamespace()
 )
