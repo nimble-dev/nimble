@@ -953,7 +953,7 @@ sampler_HMC <- nimbleFunction(
         kappa          <- if(!is.null(control$kappa))          control$kappa          else 0.75
         delta          <- if(!is.null(control$delta))          control$delta          else 0.65
         deltaMax       <- if(!is.null(control$deltaMax))       control$deltaMax       else 1000
-        maxAdaptIter   <- if(!is.null(control$maxAdaptIter))   control$maxAdaptIter   else 1000
+        nwarmup        <- if(!is.null(control$nwarmup))        control$nwarmup        else 1000
         maxTreeDepth   <- if(!is.null(control$maxTreeDepth))   control$maxTreeDepth   else 10
         ## node list generation
         targetNodes <- model$expandNodeNames(target)
@@ -1097,13 +1097,13 @@ sampler_HMC <- nimbleFunction(
         values(model, targetNodes) <<- inverseTransformValues(qNew)
         model$calculate(calcNodes)
         nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-        if(timesRan <= maxAdaptIter) {
+        if(timesRan <= nwarmup) {
             Hbar <<- (1 - 1/(timesRan+t0)) * Hbar + 1/(timesRan+t0) * (delta - btNL$a/btNL$na)
             logEpsilon <- mu - sqrt(timesRan)/gamma * Hbar
             epsilon <<- exp(logEpsilon)
             timesRanToNegativeKappa <- timesRan^(-kappa)
             logEpsilonBar <<- timesRanToNegativeKappa * logEpsilon + (1 - timesRanToNegativeKappa) * logEpsilonBar
-            if(timesRan == maxAdaptIter)   epsilon <<- exp(logEpsilonBar)
+            if(timesRan == nwarmup)   epsilon <<- exp(logEpsilonBar)
         }
         if(warnings > 0) if(is.nan(epsilon)) { print('HMC sampler value of epsilon is NaN, with timesRan = ', timesRan); warnings <<- warnings - 1 }
     },
@@ -2577,7 +2577,7 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item kappa.  A numeric argument between zero and one, where smaller values give a higher weighting to more recent iterations during the initial period of step-size adaptation. (default = 0.75)
 #' \item delta.  A numeric argument, specifying the target acceptance probability used during the initial period of step-size adaptation. (default = 0.65)
 #' \item deltaMax.  A positive numeric argument, specifying the maximum allowable divergence from the Hamiltonian value. Paths which exceed this value are considered divergent, and will not proceed further. (default = 1000)
-#' \item maxAdaptIter.  The number of sampling iterations to adapt the leapfrog step-size. (default = 1000)
+#' \item nwarmup.  The number of sampling iterations to adapt the leapfrog step-size. (default = 1000)
 #' \item maxTreeDepth.  The maximum allowable depth of the binary leapfrog search tree for generating candidate transitions. (default = 10)
 #' }
 #'
