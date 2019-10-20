@@ -1605,7 +1605,7 @@ test_that('HMC sampler seems to work', {
     Rmodel <- nimbleModel(code, constants, data, inits)
     Rmodel$calculate()
     conf <- configureMCMC(Rmodel, nodes = NULL)
-    conf$addSampler('a', 'HMC')
+    conf$addSampler('a', 'HMC', control = list(nwarmup = 1000))
     Rmcmc <- buildMCMC(conf)
     Cmodel <- compileNimble(Rmodel)
     Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
@@ -1648,7 +1648,7 @@ test_that('HMC sampler asymptotic correctness', {
     Rmodel <- nimbleModel(code, constants, data, inits)
     Rmodel$calculate()
     conf <- configureMCMC(Rmodel, nodes = NULL)
-    conf$addSampler(c('mu','tau','sigma','p'), 'HMC')
+    conf$addSampler(c('mu','tau','sigma','p'), 'HMC', control = list(nwarmup = 1000))
     Rmcmc <- buildMCMC(conf)
     compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
     Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
@@ -1759,19 +1759,20 @@ test_that('HMC sampler exact samples for different maxTreeDepths', {
     Rmodel1 <- nimbleModel(code, constants, data, inits)
     conf1 <- configureMCMC(Rmodel1)
     conf1$removeSamplers(c('sigma', 'a'))
-    conf1$addSampler(c('sigma', 'a'), type = 'HMC')
+    conf1$addSampler(c('sigma', 'a'), type = 'HMC', control = list(nwarmup = 1000))
     Rmcmc1 <- buildMCMC(conf1)
     ##
     Rmodel2 <- nimbleModel(code, constants, data, inits)
     conf2 <- configureMCMC(Rmodel2)
     conf2$removeSamplers(c('sigma', 'a'))
-    conf2$addSampler(c('sigma', 'a'), type = 'HMC', control = list(maxTreeDepth = 4))
+    conf2$addSampler(c('sigma', 'a'), type = 'HMC',
+                     control = list(nwarmup = 1000, maxTreeDepth = 4))
     Rmcmc2 <- buildMCMC(conf2)
     ##
     Rmodel3 <- nimbleModel(code, constants, data, inits)
     conf3 <- configureMCMC(Rmodel3)
     conf3$removeSamplers('sigma')
-    conf3$addSampler('sigma', type = 'HMC')
+    conf3$addSampler('sigma', type = 'HMC', control = list(nwarmup = 1000))
     Rmcmc3 <- buildMCMC(conf3)
     ##
     compiledList <- compileNimble(list(model1=Rmodel1, mcmc1=Rmcmc1, model2=Rmodel2, mcmc2=Rmcmc2, model3=Rmodel3, mcmc3=Rmcmc3))
@@ -1856,7 +1857,7 @@ test_that('HMC sampler reports correct number of divergences and max tree depths
     ##
     conf <- configureMCMC(Rmodel)
     conf$addSampler(target = c('mu','tau','sigma','p'), type = 'HMC',
-                    control = list(maxTreeDepth = 5))
+                    control = list(nwarmup = 1000, maxTreeDepth = 5))
     Rmcmc <- buildMCMC(conf)
     ##
     compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))

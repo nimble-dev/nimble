@@ -928,9 +928,11 @@ sampler_HMC_BASE <- nimbleFunctionVirtual(
     contains = sampler_BASE,
     methods = list(
         reset = function() { },
+        getNwarmup              = function() { returnType(double()) },
         getMaxTreeDepth         = function() { returnType(double()) },
         getNumDivergences       = function() { returnType(double()) },
-        getNumTimesMaxTreeDepth = function() { returnType(double()) }
+        getNumTimesMaxTreeDepth = function() { returnType(double()) },
+        setNwarmup              = function(x = double()) { }
     )
 )
 
@@ -953,7 +955,7 @@ sampler_HMC <- nimbleFunction(
         kappa          <- if(!is.null(control$kappa))          control$kappa          else 0.75
         delta          <- if(!is.null(control$delta))          control$delta          else 0.65
         deltaMax       <- if(!is.null(control$deltaMax))       control$deltaMax       else 1000
-        nwarmup        <- if(!is.null(control$nwarmup))        control$nwarmup        else 1000
+        nwarmup        <- if(!is.null(control$nwarmup))        control$nwarmup        else -1
         maxTreeDepth   <- if(!is.null(control$maxTreeDepth))   control$maxTreeDepth   else 10
         ## node list generation
         targetNodes <- model$expandNodeNames(target)
@@ -1049,6 +1051,7 @@ sampler_HMC <- nimbleFunction(
         grad <- numeric(d2);   gradFirst <- numeric(d2);   gradSaveL <- numeric(d2);   gradSaveR <- numeric(d2)
         log2 <- log(2)
         warningsOrig <- warnings
+        nwarmupOrig <- nwarmup
         numDivergences <- 0
         numTimesMaxTreeDepth <- 0
         ## nested function and function list definitions
@@ -1061,6 +1064,7 @@ sampler_HMC <- nimbleFunction(
     run = function() {
         ## No-U-Turm Sampler with Dual Averaging, Algorithm 6 from Hoffman and Gelman (2014)
         if(timesRan == 0) {
+            if(nwarmup == -1) stop('nwarmup was not set correctly')
             if(initialEpsilon == 0) { initializeEpsilon()                 ## no initialEpsilon value was provided
                                   } else { epsilon <<- initialEpsilon }   ## user provided initialEpsilon
             mu <<- log(10*epsilon)
@@ -1238,9 +1242,11 @@ sampler_HMC <- nimbleFunction(
                 return(btNL1)
             }
         },
+        getNwarmup              = function() { returnType(double());   return(nwarmup)              },
         getMaxTreeDepth         = function() { returnType(double());   return(maxTreeDepth)         },
         getNumDivergences       = function() { returnType(double());   return(numDivergences)       },
         getNumTimesMaxTreeDepth = function() { returnType(double());   return(numTimesMaxTreeDepth) },
+        setNwarmup              = function(x = double()) { nwarmup <<- x },
         reset = function() {
             timesRan       <<- 0
             epsilon        <<- 0
@@ -1250,6 +1256,7 @@ sampler_HMC <- nimbleFunction(
             numDivergences <<- 0
             numTimesMaxTreeDepth <<- 0
             warnings       <<- warningsOrig
+            nwarmup        <<- nwarmupOrig
         }
     ), where = getLoadingNamespace()
 )
@@ -2577,7 +2584,7 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item kappa.  A numeric argument between zero and one, where smaller values give a higher weighting to more recent iterations during the initial period of step-size adaptation. (default = 0.75)
 #' \item delta.  A numeric argument, specifying the target acceptance probability used during the initial period of step-size adaptation. (default = 0.65)
 #' \item deltaMax.  A positive numeric argument, specifying the maximum allowable divergence from the Hamiltonian value. Paths which exceed this value are considered divergent, and will not proceed further. (default = 1000)
-#' \item nwarmup.  The number of sampling iterations to adapt the leapfrog step-size. (default = 1000)
+#' \item nwarmup.  The number of sampling iterations to adapt the leapfrog step-size.  This defaults to half the number of MCMC iterations, up to a maximum of 1000.
 #' \item maxTreeDepth.  The maximum allowable depth of the binary leapfrog search tree for generating candidate transitions. (default = 10)
 #' }
 #'
