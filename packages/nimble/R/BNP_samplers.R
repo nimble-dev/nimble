@@ -1334,7 +1334,7 @@ CRP_nonconjugate_moreGeneral <- nimbleFunction(
 CRP_conjugate_dnorm_dnorm_moreGeneral <- nimbleFunction(
   name = "CRP_conjugate_dnorm_dnorm_moreGeneral",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, J, M) { # J = M
+  setup = function(model, marginalizedNodes, dataNodes, J, M) { 
     priorMean <- nimNumeric(J+1)
     priorVar <- nimNumeric(J+1)
   },
@@ -1745,14 +1745,15 @@ sampler_CRP_moreGeneral <- nimbleFunction(
   
   setup=function(model, mvSaved, target, control){
     targetElements <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-    targetVar <- model$getVarNames(nodes = target)  
-    n <- length(targetElements) 
-    
-    ## Find nodes indexed by the CRP node.
-    clusterVarInfo <- nimble:::findClusterNodes(model, target) # rm nimble:::
+    targetVar <- model$getVarNames(nodes = target)
+    n <- length(targetElements)
+
     tildeVars <- clusterVarInfo$clusterVars
     
-    ##  Various checks that model structure is consistent with our CRP sampler. ##
+    ## Find nodes indexed by the CRP node.
+    clusterVarInfo <- findClusterNodes(model, target)
+    
+    ##  Various checks that model structure is consistent with our CRP sampler. 
     
     if(!is.null(clusterVarInfo$targetNonIndex))
       stop("sampler_CRP: Detected that the CRP variable is used in some way not as an index: ", clusterVarInfo$targetNonIndex, ". NIMBLE's CRP sampling not set up to handle this case.")
@@ -1766,24 +1767,12 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     if(is.null(tildeVars))
       stop('sampler_CRP: The model should have at least one cluster variable.\n')
     
-    ## Removing check now that we have more robust handling of getting all cluster nodes within a cluster
-    ## We should think/check that cases like y[i] ~ dnorm(mu[xi[i]], exp(mu[xi[i]])) are ok.
-    ## ## Avoid case like y[i] ~ dnorm(mu[xi[i]], exp(mu[xi[i]])) as it would complicate p>1 case below.
-    ## ## Also catches cases like:  mu[1] <- muTilde[xi[1]]; mu[2] <- exp(muTilde[xi[2]]) that break conjugacy.
-    ## if(length(tildeVars) != length(unique(tildeVars)))
-    ##   stop("sampler_CRP: Cluster membership variable used in multiple declarations. NIMBLE's CRP MCMC sampling not designed for this case.")
-    
     ## Cases like 'muTilde[xi[n-i+1]]'. sampler_CRP may be ok with this, but when we wrap the cluster node sampling
     ## to avoid sampling empty clusters, this kind of indexing will cause incorrect behavior.
     ## This case is trapped in findClusterNodes, which isn't set up to be able to finish successfully,
     ## so don't need this check here.
     ## if(any(clusterVarInfo$targetIndexedByFunction))
     ##   stop("sampler_CRP: Detected that CRP variable is indexed by a function such as 'mu[xi[n-i+1]]' rather than simple indexing such as 'mu[xi[i]]'. NIMBLE's CRP MCMC sampling not designed for this case.")
-    
-    ## Check for indexing that would cause errors in using sample() with 'j' as the index of the set of cluster nodes, e.g., mu[xi[i]+2] or mu[some_function(xi[i])]
-    ## This case should be correctly handled now by use of findClusterNodes to determine ordering of cluster nodes.  
-    #if(any(!clusterVarInfo$targetIsIndex))
-    #    stop("sampler_CRP: At the moment, NIMBLE's CRP MCMC sampling requires simple indexing and cannot work with indexing such as 'mu[xi[i]+2]'.\n")
     
     allTildeNodes <- unlist(clusterVarInfo$clusterNodes)
     dataNodes <- model$getDependencies(target, stochOnly = TRUE, self = FALSE) # only data
@@ -1810,66 +1799,32 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     if(length(intersect(dataNodes, allTildeNodes)))
       stop("sampler_CRP: Cluster parameters have to be independent of cluster membership variable.")
     
-    if(control$checkConjugacy) {
-        conjugacyResult <- checkCRPconjugacy(model, target) 
-    } else conjugacyResult <- NULL
-    
-    ## Removing this check as we now allow dependence of nodes within a cluster.
-    ## We will check independence across clusters below
-    ## if(is.null(conjugacyResult) || conjugacyResult != "conjugate_dnorm_invgamma_dnorm") {
-    ##   ## Check that all cluster parameters are independent as it it tricky to make sure we
-    ##   ## are correctly simulating from the prior otherwise. 
-    ##   tmp <- sapply(allTildeNodes, function(x) {
-    ##     if(any(allTildeNodes %in% model$getDependencies(x, self = FALSE, stochOnly = TRUE)))
-    ##       stop("sampler_CRP: Cluster parameters must be conditionally independent except for conjugate settings.")
-    ##   })
-    ## }
-
     ## Check that observations are independent of each other.
+    ## In non-conjugate case, this could potentially be relaxed, provided we figure
+    ## out correct ordering of dataNodes plus intermNodes in calculate().
     sapply(dataNodes, function(x) {
       if(any(dataNodes %in% model$getDependencies(x, self = FALSE, stochOnly = TRUE)))
         stop("sampler_CRP: Variables being clustered must be conditionally independent. To model dependent variables being clustered jointly, you may use a multivariate distribution.")
     })
     
+    nData <- length(dataNodes)
+
     ## Check for one or more "observation" per random index to handle the 'Quinn' model.
     ## Note that cases like mu[xi[i],xi[j]] are being trapped in findClusterNodes().
-    if(n > length(dataNodes))
-      stop("sampler_CRP: At least one variable has to be clustered for each cluster membershipID.\n")
+    if(n > nData)
+       stop("sampler_CRP: At least one variable has to be clustered for each cluster membership ID.\n")
     
-    nData <- length(dataNodes)
-    nObsPerClusID <- nData / n # equal to one in standard CRP model (former J)
-    
-    # changes in lines 1844 - 1850 are for always having a nTilde vector to be used in crp_nonconjugate_moreGeneral
+   
     p <- length(tildeVars) 
     nTilde <- clusterVarInfo$nTilde / clusterVarInfo$numNodesPerCluster  ## implied number of potential clusters
     if(length(unique(nTilde)) != 1)
         stop('sampler_CRP: In a model with multiple cluster parameters, the number of those parameters must all be the same.\n')
     min_nTilde <- nTilde[1]
     if(min_nTilde < n)
-      warning('sampler_CRP: The number of cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if it ever proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.\n')
-    
-    ## Check that cluster parameters are IID (by rows or columns) when J>1
-    #if( J > 1) {
-    #  isIID <- TRUE
-    #  for(i in seq_along(clusterVarInfo$clusterNodes)) {
-    #    valueExprs <- sapply(clusterVarInfo$clusterNodes[[i]], function(x) model$getValueExpr(x))
-    #    names(valueExprs) <- NULL
-    #    if(length(unique(valueExprs)) != 1) {
-    #      isIID <- FALSE
-    #    }
-    #  }
-    #  
-    #  if(!isIID && length(tildeVars) == 2 && checkNormalInvGammaConjugacy(model, clusterVarInfo))
-    #    isIID <- TRUE
-    #  ## Tricky as MCMC might not be using conjugacy, but presumably ok to proceed regardless of how
-    #  ## MCMC was done, since conjugacy existing would guarantee IID.
-    #  if(!isIID) stop('sampleDPmeasure: cluster parameters have to be independent and identically distributed. \n')
-    #}
-    
-    
+      warning('sampler_CRP: The number of clusters based on the cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if it ever proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.\n')
     
     ## Determine if concentration parameter is fixed or random (code similar to the one in sampleDPmeasure function).
-    ## This is used if truncated case to tell user if model is proper or not.
+    ## This is used in truncated case to tell user if model is proper or not.
     fixedConc <- TRUE
     parentNodesTarget <- NULL
     candidateParentNodes <- model$getNodeNames(includeData = FALSE)
@@ -1887,18 +1842,17 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     ## computation, to save us from computing for all observations when a single cluster membership is being proposed.
     ## At the moment, this is the only way we can easily handle dependencies for multiple node elements in a
     ## 'vectorized' way.
+    nObsPerClusID <- nData / n # equal to one in standard CRP model (former J)
     dataNodes <- rep(targetElements[1], nData) ## this serves as dummy nodes that may be replaced below
     ## needs to be legitimate nodes because run code sets up calculate even if if() would never cause it to be used
-    for(i in seq_len(n)) { # dataNodes are always needed so I create them before creating  intermNodes
-      stochDeps <- model$getDependencies(targetElements[i], stochOnly = TRUE, self = FALSE) 
-      for(j in 1:nObsPerClusID) {
-        dataNodes[(i-1)*nObsPerClusID + j] <- stochDeps[j]         
-      }
+    for(i in seq_len(n)) { # dataNodes are always needed so only create them before creating  intermNodes
+      stochDeps <- model$getDependencies(targetElements[i], stochOnly = TRUE, self = FALSE)
+      dataNodes[((i-1)*nObsPerClusID + 1) : (i*nObsPerClusID)] <- stochDeps
     }
     nIntermClusNodesPerClusID <- length(model$getDependencies(targetElements[1], determOnly = TRUE))  #nInterm
-    intermNodes <- dataNodes # initialized nodes in case if it is not used
+    intermNodes <- dataNodes # initialize nodes in case not used (needed for compilation to go through)
     if(nIntermClusNodesPerClusID > 0) {
-      intermNodes <- rep(0, nIntermClusNodesPerClusID * n)
+      intermNodes <- rep(as.character(NA), nIntermClusNodesPerClusID * n)
       for(i in seq_len(n)) {
         detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
         intermNodes[((i-1)*nIntermClusNodesPerClusID+1):(i*nIntermClusNodesPerClusID)] <- detDeps
@@ -1908,6 +1862,10 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     helperFunctions <- nimble:::nimbleFunctionList(CRP_helper)
         
     ## use conjugacy to determine which helper functions to use
+    if(control$checkConjugacy) {
+        conjugacyResult <- checkCRPconjugacy(model, target) 
+    } else conjugacyResult <- NULL
+    
     if(is.null(conjugacyResult)) {
       sampler <- 'CRP_nonconjugate_moreGeneral'
     } else 
@@ -1927,17 +1885,18 @@ sampler_CRP_moreGeneral <- nimbleFunction(
                         conjugate_ddirch_dmulti = 'CRP_conjugate_ddirch_dmulti',
                         'CRP_nonconjugate_moreGeneral')  ## default if we don't have sampler set up for a conjugacy
 
-    nClusNodesPerClusID <- sum(clusterVarInfo$numNodesPerCluster)
 
     clusterIDs <- unique(clusterVarInfo$clusterIDs[[1]])
-    if(length(clusterVarInfo$clusterIDs) > 1) {
-        nClusters <- length(clusterVarInfo$clusterIDs)
+    nClusters <- length(clusterVarInfo$clusterIDs)
+    if(nClusters > 1) {
         ## Check that each set of tildeNodes indicate same number of clusters.        
         sapply(2:nClusters, function(i) {
             if(!identical(clusterIDs, unique(clusterVarInfo$clusterIDs[[i]])))
                 stop("sampler_CRP: differing number of clusters indicated by ", paste0(clusterVarInfo$clusterNodes[[1]], collapse = ', '), " and ", paste0(clusterVarInfo$clusterNodes[[i]], collapse = ', '), ".")
         })
     }
+
+    nClusNodesPerClusID <- sum(clusterVarInfo$numNodesPerCluster)
     ## Determine correct order of clusterNodes, including any intermediate nodes
     ## standing between different clusterNodes
     ## Note that this could be slow to loop over all clusters; revisit this.
@@ -1963,20 +1922,14 @@ sampler_CRP_moreGeneral <- nimbleFunction(
         
     } else {
         marginalizedNodes <- clusterVarInfo$clusterNodes[[1]]
-        nClusNodesPerClusID <- 1
         deps <- unlist(sapply(marginalizedNodes, function(x)
-            model$getDependencies(x, self=FALSE, stochOnly = TRUE)))
+            model$getDependencies(x, self = FALSE, stochOnly = TRUE)))
         if(any(marginalizedNodes %in% deps))
             stop("sampler_CRP: cluster parameters must be independent across clusters.")
         if(sort(deps) != sort(dataNodes)) 
             warning("sampler_CRP: dependencies of cluster parameters include unexpected nodes: ",
                     paste0(deps[!deps %in% dataNodes], collapse = ', '))
     }
-    
-    ## Number of cluster nodes per cluster should be the same for all clusters.
-    ## Think about if we need a check for how this might go wrong.        
-    ## nClusNodesPerClusID <- numeric(p+1) # changes in lines 1947 - 1948 are for always having a nTilde vector to be used in crp_nonconjugate_moreGeneral
-    ## nClusNodesPerClusID[1:p] <- clusterVarInfo$numNodesPerCluster
     
     identityLink <- TRUE
 
@@ -2000,10 +1953,16 @@ sampler_CRP_moreGeneral <- nimbleFunction(
       #if(sampler == 'CRP_nonconjugate_moreGeneral' && p > 3) # was printed for model F
       #    stop("sampler_CRP: CRP_nonconjugate sampler not yet set up to handle clustering of more than three variables.")  ## This is because of how we put old values back into model when proposing a new cluster that is not accepted.
       calcNodes <- model$getDependencies(c(target, marginalizedNodes))
+      ## Fix non-identity sampler for moreGeneral situation  
       if(sampler == "CRP_conjugate_dnorm_dnorm_nonidentity") {
           identityLink <- FALSE
-          helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, intermNodes, intermNodes2, intermNodes3, nInterm, calcNodes, type, p, min_nTilde)
-      } else helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, nObsPerClusID, nClusNodesPerClusID)
+          helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, intermNodes, nInterm, calcNodes, type, p, min_nTilde)
+      } else {
+          if(sampler != "CRP_nonconjugate_moreGeneral" && nObsPerClusID != nClusNodesPerClusID)
+              ## We shouldn't get to this point (based on conjugacy checking), but catch this if we do.
+              stop("Number of observations per group does not equal number of cluster parameters per group. NIMBLE's CRP sampling is not set up to handle this except for the non-conjugate sampler.")
+          helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, nObsPerClusID, nClusNodesPerClusID)
+      }
     }
     
     curLogProb <- numeric(n)
