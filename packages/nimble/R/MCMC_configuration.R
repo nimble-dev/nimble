@@ -877,8 +877,10 @@ checkCRPconjugacy <- function(model, target) {
     ## We don't yet handle conjugacies with non-identity relationships.
     
     conjugate <- FALSE 
-    
-    targetElementExample <- model$expandNodeNames(target, returnScalarComponents=TRUE)[1]
+
+    targetAsScalars <- model$expandNodeNames(target, returnScalarComponents=TRUE) 
+    targetElementExample <- targetAsScalars[1]
+    n <- length(targetAsScalars)
 
     clusterVarInfo <- nimble:::findClusterNodes(model, target)
  
@@ -888,15 +890,18 @@ checkCRPconjugacy <- function(model, target) {
     ## because we don't allow cluster ID to appear in multiple declarations, so can't have mu[1] <- muTilde[xi[1]]; mu[2] <- exp(muTilde[xi[2]])
     if(length(clusterVarInfo$clusterVars) == 1) {  ## for now avoid case of mixing over multiple parameters, but allow dnorm_dinvgamma below
         clusterNodes <- clusterVarInfo$clusterNodes[[1]]  # e.g., 'thetatilde[1]',...,
+        clusterIDs <- clusterVarInfo$clusterIDs[[1]]
+        clusterNodesFirst <- clusterNodes[clusterIDs == 1] # need to check for all nodes in a cluster
         ## Currently we only handle offsets and coeffs for dnorm case;
         ## will add Pois-gamma and possibly MVN cases.
         identityLink <- TRUE
-        conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
-        if(!length(conjugacy) && model$getDistribution(clusterNodes[1]) == 'dnorm') {
+        conjugacy <- model$checkConjugacy(clusterNodesFirst, restrictLink = 'identity')
+        if(!(length(conjugacy) == length(clusterNodesFirst)) && all(model$getDistribution(clusterNodesFirst) == 'dnorm')) {
             identityLink <- FALSE
-            conjugacy <- model$checkConjugacy(clusterNodes[1])  ## check non-identity link too
+            conjugacy <- model$checkConjugacy(clusterNodesFirst)  ## check non-identity link too
         }
-        if(length(conjugacy)) {
+        if(length(conjugacy) == length(clusterNodesFirst) && length(unique(sapply(conjugacy, '[[', 'type'))) == 1) {
+            ## All conjugate and all same conjugacy type.
             conjugacyType <- paste0(conjugacy[[1]]$type, '_', sub('dep_', '', names(conjugacy[[1]]$control)))
             if(!identityLink)
                 conjugacyType <- paste0(conjugacyType, '_nonidentity')
@@ -905,33 +910,29 @@ checkCRPconjugacy <- function(model, target) {
             ## This should ensure they have same distribution and parameters are being
             ## clustered in same way, but also allows other parameters to vary, e.g.,
             ## y[i] ~ dnorm(mu[xi[i]], s2[i])
-            depNodes <- model$getDependencies(clusterNodes[1], stochOnly = TRUE, self=FALSE)
+            depNodes <- model$getDependencies(clusterNodesFirst, stochOnly = TRUE, self=FALSE)
             if(length(unique(model$getDeclID(depNodes))) != 1)  ## make sure all dependent nodes from same declaration (i.e., exchangeable)
                 conjugate <- FALSE
-
-            ## Check that cluster nodes are IID. Extended to work with models with more than one observation per cluster ID. 
-            J <- clusterVarInfo$nTilde / length(unique(clusterVarInfo$clusterIDs[[1]]))
-            valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
-            names(valueExprs) <- NULL
-            # the following condition covers cases like thetaTilde[xi,j] ~ N(j, 1), j=1,..,J,  thetaTilde[xi,j] ~ N(0, 1), j=1,...,J, and cases with thetaTilde[xi,j] ~ N(0, 1), j=1,2 and thetaTilde[xi,j] ~ N(j, 1), j=3,...,J
-            if( J > 1 ) {
-              allUniqueExpr <- unique(valueExprs)
-              n <- clusterVarInfo$nTilde / J
-              for(i in 1:n) {
-                iUniqueExpr <- sapply( ((i-1)*J + 1):(i*J), function(i) model$getValueExpr(clusterNodes[i]))
-                if(length(unique(iUniqueExpr)) != length(unique(allUniqueExpr))) {
-                  conjugate <- FALSE
-                }  
-              }
-            } else { # case J=1
-              if(length(unique(valueExprs)) != 1) 
+            ## We need each data node to have corresponding cluster parameter.
+            if(length(depNodes) / n != length(clusterNodesFirst))
                 conjugate <- FALSE
-            }
+
+            ## Check that cluster nodes are IID (across clusters), since for efficiency we only
+            ## check the conjugacy for the first cluster above.
+            ## Extended to work with models with more than one observation per cluster ID.
+            splitNodes <- split(clusterNodes, clusterIDs)
+            valueExprs <- lapply(splitNodes, function(x) {
+                out <- sapply(x, model$getValueExpr)
+                names(out) <- NULL
+                out
+            })
+            if(length(unique(valueExprs)) != 1) 
+                conjugate <- FALSE
         }
     }
     ## check for dnorm_dinvgamma conjugacy
     if(length(clusterVarInfo$clusterVars) == 2 &&
-       checkNormalInvGammaConjugacy(model, clusterVarInfo)) {
+       checkNormalInvGammaConjugacy(model, clusterVarInfo, n)) {
         conjugate <- TRUE
         conjugacyType <- "conjugate_dnorm_invgamma_dnorm"
     }

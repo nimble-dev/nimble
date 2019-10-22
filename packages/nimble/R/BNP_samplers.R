@@ -150,7 +150,7 @@ sampleDPmeasure <- nimbleFunction(
         }
     }
     
-    if(!isIID && length(tildeVars) == 2 && checkNormalInvGammaConjugacy(model, clusterVarInfo))
+    if(!isIID && length(tildeVars) == 2 && checkNormalInvGammaConjugacy(model, clusterVarInfo, length(dcrpElements)))
         isIID <- TRUE
       ## Tricky as MCMC might not be using conjugacy, but presumably ok to proceed regardless of how
       ## MCMC was done, since conjugacy existing would guarantee IID.
@@ -924,7 +924,7 @@ sampler_CRP <- nimbleFunction(
     ## Cases like 'muTilde[xi[n-i+1]]'. sampler_CRP may be ok with this, but when we wrap the cluster node sampling
     ## to avoid sampling empty clusters, this kind of indexing will cause incorrect behavior.
     if(any(clusterVarInfo$targetIndexedByFunction))
-      stop("sampler_CRP: Detected that CRP variable is indexed by a function such as 'mu[xi[n-i+1]]' rather than simple indexing such as 'mu[xi[i]]'. NIMBLE's CRP MCMC sampling not designed for this case.")
+       stop("sampler_CRP: Detected that CRP variable is indexed by a function such as 'mu[xi[n-i+1]]' rather than simple indexing such as 'mu[xi[i]]'. NIMBLE's CRP MCMC sampling not designed for this case.")
     
     ## Check for indexing that would cause errors in using sample() with 'j' as the index of the set of cluster nodes, e.g., mu[xi[i]+2] or mu[some_function(xi[i])]
     ## This case should be correctly handled now by use of findClusterNodes to determine ordering of cluster nodes.  
@@ -980,7 +980,11 @@ sampler_CRP <- nimbleFunction(
     
     nTilde <- clusterVarInfo$nTilde
     if(length(unique(nTilde)) != 1)
-      stop('sampler_CRP: In a model with multiple cluster parameters, the number of those parameters must all be the same.\n')
+        stop('sampler_CRP: In a model with multiple cluster parameters, the number of those parameters must all be the same')
+
+    ## Avoid cases like mu[xi[i], xi[j]] or mu[xi[i]], s2[xi[j]]
+    if(length(unique(clusterVarInfo$loopIndex)) != 1)
+        stop('sampler_CRP: In a model with multiple cluster parameters, the cluster membership variable should use the same loop index variable.')
     
     #### End of checks of model structure. ####
     
@@ -1771,8 +1775,10 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     
     ## Cases like 'muTilde[xi[n-i+1]]'. sampler_CRP may be ok with this, but when we wrap the cluster node sampling
     ## to avoid sampling empty clusters, this kind of indexing will cause incorrect behavior.
-    if(any(clusterVarInfo$targetIndexedByFunction))
-      stop("sampler_CRP: Detected that CRP variable is indexed by a function such as 'mu[xi[n-i+1]]' rather than simple indexing such as 'mu[xi[i]]'. NIMBLE's CRP MCMC sampling not designed for this case.")
+    ## This case is trapped in findClusterNodes, which isn't set up to be able to finish successfully,
+    ## so don't need this check here.
+    ## if(any(clusterVarInfo$targetIndexedByFunction))
+    ##   stop("sampler_CRP: Detected that CRP variable is indexed by a function such as 'mu[xi[n-i+1]]' rather than simple indexing such as 'mu[xi[i]]'. NIMBLE's CRP MCMC sampling not designed for this case.")
     
     ## Check for indexing that would cause errors in using sample() with 'j' as the index of the set of cluster nodes, e.g., mu[xi[i]+2] or mu[some_function(xi[i])]
     ## This case should be correctly handled now by use of findClusterNodes to determine ordering of cluster nodes.  
@@ -1923,9 +1929,6 @@ sampler_CRP_moreGeneral <- nimbleFunction(
 
     nClusNodesPerClusID <- sum(clusterVarInfo$numNodesPerCluster)
 
-    ## Check that number of clusters implied by findClusterNodes are all consistent
-    ## and consistent with min_nTilde
-    
     clusterIDs <- unique(clusterVarInfo$clusterIDs[[1]])
     if(length(clusterVarInfo$clusterIDs) > 1) {
         nClusters <- length(clusterVarInfo$clusterIDs)
@@ -1934,42 +1937,42 @@ sampler_CRP_moreGeneral <- nimbleFunction(
             if(!identical(clusterIDs, unique(clusterVarInfo$clusterIDs[[i]])))
                 stop("sampler_CRP: differing number of clusters indicated by ", paste0(clusterVarInfo$clusterNodes[[1]], collapse = ', '), " and ", paste0(clusterVarInfo$clusterNodes[[i]], collapse = ', '), ".")
         })
-        ## Determine correct order of clusterNodes, including any intermediate nodes standing between different clusterNodes
-        ## Note that this could be slow to loop over all clusters; revisit this.
-        allNodes <- unlist(clusterVarInfo$clusterNodes)
-        dataIntermNodes <- c(dataNodes, intermNodes)
-        ids <- unlist(clusterVarInfo$clusterIDs)
+    }
+    ## Determine correct order of clusterNodes, including any intermediate nodes
+    ## standing between different clusterNodes
+    ## Note that this could be slow to loop over all clusters; revisit this.
+    ## Also check independence of cluster parameters across clusters.
+    allNodes <- unlist(clusterVarInfo$clusterNodes)
+    dataIntermNodes <- c(dataNodes, intermNodes)
+    ids <- unlist(clusterVarInfo$clusterIDs)
+    if(nClusNodesPerClusID > 1) {
         for(id in seq_along(clusterIDs)) {
             origNodes <- allNodes[ids == id]
             nodes <- model$getDependencies(origNodes)
             nodes <- nodes[!nodes %in% dataIntermNodes]        
-            ## CJP: could first id be something other than 1? 
-            if(id == 1) {
+            if(id == min(ids)) {
+                nClusNodesPerClusID <- length(nodes)  # now includes determ intermediates between cluster nodes
                 marginalizedNodes <- rep('', nClusNodesPerClusID * min_nTilde)
             }
+            if(length(nodes) != nClusNodesPerClusID)
+                stop("sampler_CRP: detected differing number of cluster parameters across clusters or dependence of parameters across clusters.") # unequal number could occur because of dependence across clusters
             marginalizedNodes[((id-1)*nClusNodesPerClusID+1):(id*nClusNodesPerClusID)] <- nodes
-            ## Check for independence across clusters.
-            margNodesNoSelf <- marginalizeNodes[!marginalizedNodes %in% origNodes]
-            nodesNoSelf <- nodes[!nodes %in% origNodes]
-            if(any(nodesNoSelf %in% margNodesNoSelf))
-                stop("sampler_CRP: parameters of each cluster must be independent of parameters in other clusters.")
+            if(any(nodes %in% allNodes[!allNodes %in% origNodes]))
+                stop("sampler_CRP: cluster parameters must be independent across clusters.")
         }
+        
     } else {
         marginalizedNodes <- clusterVarInfo$clusterNodes[[1]]
-        allNodes <- unlist(clusterVarInfo$clusterNodes)
-        dataIntermNodes <- c(dataNodes, intermNodes)
-        ids <- unlist(clusterVarInfo$clusterIDs)
-        for(id in seq_along(clusterIDs)) {
-            origNodes <- allNodes[ids == id]
-            nodes <- model$getDependencies(origNodes)
-            nodes <- nodes[!nodes %in% dataIntermNodes]        
-            ## Check for independence across clusters.
-            margNodesNoSelf <- marginalizedNodes[!marginalizedNodes %in% origNodes]
-            nodesNoSelf <- nodes[!nodes %in% origNodes]
-            if(any(nodesNoSelf %in% margNodesNoSelf))
-                stop("sampler_CRP: parameters of each cluster must be independent of parameters in other clusters.")
-        }
+        nClusNodesPerClusID <- 1
+        deps <- unlist(sapply(marginalizedNodes, function(x)
+            model$getDependencies(x, self=FALSE, stochOnly = TRUE)))
+        if(any(marginalizedNodes %in% deps))
+            stop("sampler_CRP: cluster parameters must be independent across clusters.")
+        if(sort(deps) != sort(dataNodes)) 
+            warning("sampler_CRP: dependencies of cluster parameters include unexpected nodes: ",
+                    paste0(deps[!deps %in% dataNodes], collapse = ', '))
     }
+    
     ## Number of cluster nodes per cluster should be the same for all clusters.
     ## Think about if we need a check for how this might go wrong.        
     ## nClusNodesPerClusID <- numeric(p+1) # changes in lines 1947 - 1948 are for always having a nTilde vector to be used in crp_nonconjugate_moreGeneral
@@ -2303,12 +2306,16 @@ findClusterNodes <- function(model, target) {
         unrolledIndices <- declInfo$unrolledIndicesMatrix
 
         if(targetIndexedByFunction[varIdx] && ncol(unrolledIndices) > 1)  ## Now that we allow cluster parameters with multiple indexes, this is very hard to handle in terms of identifying what column of unrolledIndices to use for sorting clusterNodes.
-            stop("findClusterNodes: found a cluster parameter indexed by a function: NIMBLE's CRP sampling not designed for this case.")
-        loopIndex[varIdx] <- unlist(sapply(declInfo$symbolicParentNodes,
+            stop("findClusterNodes: Detected that a cluster parameter is indexed by a function such as 'mu[xi[n-i+1]]' rather than simple indexing such as 'mu[xi[i]]'. NIMBLE's CRP MCMC sampling not designed for this case.")
+        loopIndexes <- unlist(sapply(declInfo$symbolicParentNodes,
                                     function(x) {
                                         if(length(x) >= 3 && x[[1]] == '[' &&
                                            x[[2]] == targetVar) return(deparse(x[[3]]))
                                         else return(NULL) }))
+        if(length(loopIndexes) != 1)
+            stop("findClusterNodes: found cluster membership parameters that use different indexing variables; NIMBLE's CRP sampling not designed for this case.")
+        ## Note not clear when NULL would be the result...
+        loopIndex[[varIdx]] <- loopIndexes
         
         ## Order so that loop over index of cluster ID in order of cluster ID so that
         ## clusterNodes will be grouped in chunks of unique cluster IDs for correct
@@ -2435,7 +2442,7 @@ findClusterNodes <- function(model, target) {
               targetNonIndex = targetNonIndex, multipleStochIndexes = multipleStochIndexes))
 }
 
-checkNormalInvGammaConjugacy <- function(model, clusterVarInfo) {
+checkNormalInvGammaConjugacy <- function(model, clusterVarInfo, n) {
     if(length(clusterVarInfo$clusterVars) != 2)
         stop("checkNormalInvGammaConjugacy: requires two cluster variables.")
     conjugate <- FALSE
@@ -2443,54 +2450,79 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo) {
     clusterNodes1 <- clusterVarInfo$clusterNodes[[1]]
     clusterNodes2 <- clusterVarInfo$clusterNodes[[2]]
 
-    if(!any(model$isDeterm(c(clusterNodes1, clusterNodes2)))) {
+    if(!any(model$isDeterm(c(clusterNodes1, clusterNodes2))) &&
+       length(clusterNodes1) == length(clusterNodes2) &&
+       identical(clusterVarInfo$clusterIDs[[1]], clusterVarInfo$clusterIDs[[2]])) {
         dists <- c(model$getDistribution(clusterNodes1[1]), model$getDistribution(clusterNodes2[1]))
         if(dists[1] == "dinvgamma" && dists[2] ==  "dnorm") {  ## put in order so dnorm node is first
             dists <- c("dnorm", "dinvgamma")
             tmp <- clusterNodes1; clusterNodes1 <- clusterNodes2; clusterNodes2 <- tmp
         }
+
+        clusterIDs <- clusterVarInfo$clusterIDs[[1]]
         
         ## Check conjugacy for example nodes.
-        exampleNodes <- c(clusterNodes1[1], clusterNodes2[1])
+        exampleNodes1 <- clusterNodes1[clusterIDs == 1]
+        exampleNodes2 <- clusterNodes2[clusterIDs == 1]
         if(dists[1] == "dnorm" && dists[2] == "dinvgamma") {
-            conjugacy_dnorm <- model$checkConjugacy(exampleNodes[1], restrictLink = 'identity')
-            conjugacy_dinvgamma <- model$checkConjugacy(exampleNodes[2])
-            if(length(conjugacy_dnorm) && length(conjugacy_dinvgamma) &&
-               sum(conjugacy_dinvgamma[[1]]$control$dep_dnorm == exampleNodes[1])) 
+            conjugacy_dnorm <- model$checkConjugacy(exampleNodes1, restrictLink = 'identity')
+            conjugacy_dinvgamma <- model$checkConjugacy(exampleNodes2)
+            if(length(conjugacy_dnorm) == length(exampleNodes1) &&
+               length(conjugacy_dinvgamma) == length(exampleNodes2) &&
+               sum(sapply(conjugacy_dnorm, '[[', 'type') == 'conjugate_dnorm') == length(exampleNodes1) &&
+               sum(sapply(conjugacy_dinvgamma, '[[', 'type') == 'conjugate_dinvgamma') == length(exampleNodes2) &&
+               all(sapply(seq_along(conjugacy_dinvgamma), function(idx)
+                   sum(conjugacy_dinvgamma[[idx]]$control$dep_dnorm == exampleNodes1[idx]) == 1)))
                 conjugate <- TRUE
         }
-        if(conjugate) {  ## Now check that conjugacy holds for all cluster nodes.
-            ## Check that distribution for cluster mean nodes are same
+        if(conjugate) {
+            ## Check that cluster nodes are IID (across clusters), since for efficiency above
+            ## we only check the fist cluster. Can have non-IID within a cluster.
             if(any(model$getDistribution(clusterNodes1) != "dnorm"))
                 conjugate <- FALSE
-            ## Check that mean for cluster mean nodes are same
-            J <- clusterVarInfo$nTilde[1] / length(unique(clusterVarInfo$clusterIDs[[1]])) # Chris: is there better way to get J from clusterVarInfo?
-            meanExprs <- sapply(clusterNodes1, function(x) model$getParamExpr(x, 'mean'))
-            names(meanExprs) <- NULL
-            if(length(unique(meanExprs)) > J) # length(unique(meanExprs)) != 1
+
+            splitNodes1 <- split(clusterNodes1, clusterIDs)
+            splitNodes2 <- split(clusterNodes2, clusterIDs)
+            ## Check that means of cluster mean nodes are same across clusters.
+            meanExprs <- lapply(splitNodes1, function(x) {
+                out <- sapply(x, function(z) model$getParamExpr(z, 'mean'))
+                names(out) <- NULL
+                out
+            })
+            if(length(unique(meanExprs)) != 1)
                 conjugate <- FALSE
-            ## Check that variance for cluster mean nodes are same except for dependence on variance
-            varExprs <- sapply(clusterNodes1, function(x) model$getParamExpr(x, 'var'))
-            names(varExprs) <- NULL
-            for(i in seq_along(varExprs)) {
-                varText <- deparse(varExprs[[i]])
-                if(length(grep(clusterNodes2[i], varText, fixed = TRUE)))  ## remove clusterNodes2[i] from expression so var expressions will be the same
-                    varExprs[[i]] <- parse(text = gsub(clusterNodes2[i], "a", varText, fixed = TRUE))[[1]]
-            }
-            if(length(unique(varExprs)) > J) # length(unique(varExprs)) != 1
+            ## Check that variance for cluster mean nodes are same except for dependence on variance.
+            varExprs <- lapply(seq_along(splitNodes1), function(idx) {
+                exprs <- sapply(splitNodes1[[idx]], function(z) model$getParamExpr(z, 'var'))
+                names(exprs) <- NULL
+                for(i in seq_along(exprs)) {
+                    varText <- deparse(exprs[[i]])
+                    if(length(grep(splitNodes2[[idx]][i], varText, fixed = TRUE)))  ## remove clusterNodes2[i] from expression so var expressions will be the same
+                        exprs[[i]] <- parse(text = gsub(splitNodes2[[idx]][i],
+                                                        "a", varText, fixed = TRUE))[[1]]
+                }
+                exprs
+            })
+            if(length(unique(varExprs)) != 1) 
                 conjugate <- FALSE
             
             ## Check that cluster variance nodes are IID
-            valueExprs <- sapply(clusterNodes2, function(x) model$getValueExpr(x))
-            names(valueExprs) <- NULL
-            if(length(unique(valueExprs)) > J) # length(unique(valueExprs)) != 1
+            valueExprs <- lapply(splitNodes2, function(x) {
+                out <- sapply(x, model$getValueExpr)
+                names(out) <- NULL
+                out
+            })
+            if(length(unique(valueExprs)) != 1)
                 conjugate <- FALSE
             
             ## Check that dependent nodes ('observations') from same declaration.
             ## This should ensure they have same distribution and parameters are being
             ## clustered in same way.
-            depNodes <- model$getDependencies(clusterNodes1, stochOnly = TRUE, self = FALSE)
+            depNodes <- model$getDependencies(exampleNodes1, stochOnly = TRUE, self = FALSE)
             if(length(unique(model$getDeclID(depNodes))) != 1)
+                conjugate <- FALSE
+            ## We are not set up to have multiple data nodes depend on a single normal-invgamma distribution
+            if(length(exampleNodes1) != length(depNodes) / n)
                 conjugate <- FALSE
         }
     }
