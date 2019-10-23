@@ -236,7 +236,7 @@ sampler_RW <- nimbleFunction(
                     lower <- model$getBound(target, 'lower')
                     upper <- model$getBound(target, 'upper')
                     if(scale >= 0.5*(upper-lower)) {
-                        scale <- 0.5*(upper-lower)
+                        scale <<- 0.5*(upper-lower)
                     }
                 }
 
