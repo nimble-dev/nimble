@@ -677,12 +677,12 @@ Type nimDerivs_gammafn(Type x) {
 
 /* AD recycling rule. See nimbleEigen.h for the non-AD equivalents. */
 template<>
-struct nimble_eigen_traits<CppAD::AD<double>> {
+struct nimble_eigen_traits<CppAD::AD<double> > {
   enum {nimbleUseLinearAccess = int(1)};
 };
 
 template<>
-struct nimble_size_impl<CppAD::AD<double>> {
+struct nimble_size_impl<CppAD::AD<double> > {
   static unsigned int getSize(const CppAD::AD<double> &arg) {return 1;}
 };
 
