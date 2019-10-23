@@ -276,8 +276,27 @@ double var(const ArrayBase<Derived>& v) { // array only for scalar -
   return(ans);
 }
 
+template<class Derived>
+typename Derived::Scalar nimDerivs_var(const ArrayBase<Derived>& v) {
+  typedef typename Derived::Scalar T;
+  T mean = v.mean();
+  int n = v.size();
+  T ans = (v-mean).matrix().squaredNorm() / T(n-1);
+  return ans;
+}
+
+template<class Derived>
+typename Derived::Scalar nimDerivs_sd(const ArrayBase<Derived>& v) {
+  return CppAD::sqrt(nimDerivs_var(v));
+}
+
 template <typename Derived>
-double logdet(const MatrixBase<Derived>& v) {
+typename Derived::Scalar det(const MatrixBase<Derived>& v) {
+  return(v.determinant());
+}
+
+template <typename Derived>
+typename Derived::Scalar logdet(const MatrixBase<Derived>& v) {
   return(log(v.determinant()));
 }
 

@@ -523,6 +523,24 @@ Type nimDerivs_dlnorm_logFixed(Type x, Type mean, Type sd, int give_log)
   return(res);
 }
 
+/* ddexp: double exponential (Lapalace) distribtuion */
+template<class Type>
+Type nimDerivs_ddexp(Type x, Type location, Type scale, Type give_log)
+{
+  Type res = Type(1.0/2.0) / scale * exp(-abs(x - location) / scale);
+  res = CppAD::CondExpEq(give_log, Type(1), log(res), res);
+  return(res);
+}
+
+template<class Type>
+Type nimDerivs_ddexp_logFixed(Type x, Type location, Type scale, int give_log)
+{
+  Type res = Type(1.0/2.0) / scale * exp(-abs(x - location) / scale);
+  if(give_log){
+	  res = log(res);
+  }
+  return(res);
+}
 
 /* ddirch: Dirichlet distribution */
 /* This is not in TMB */
@@ -650,5 +668,51 @@ template<class Type>
 Type nimDerivs_factorial(Type x) {
   return exp(nimDerivs_lfactorial<Type>(x));
 }
+
+/* gammafn */
+template<class Type>
+Type nimDerivs_gammafn(Type x) {
+  return exp(nimDerivs_lgammafn<Type>(x));
+}
+
+/* AD recycling rule. See nimbleEigen.h for the non-AD equivalents. */
+template<>
+struct nimble_eigen_traits<CppAD::AD<double>> {
+  enum {nimbleUseLinearAccess = int(1)};
+};
+
+template<>
+struct nimble_size_impl<CppAD::AD<double>> {
+  static unsigned int getSize(const CppAD::AD<double> &arg) {return 1;}
+};
+
+template<typename result_type, typename Index>
+struct nimble_eigen_coeff_impl<true, result_type, CppAD::AD<double>, Index> {
+  static result_type getCoeff(const CppAD::AD<double> Arg, Index i) {return Arg;}
+};
+
+template<typename result_type, typename Index>
+struct nimble_eigen_coeff_mod_impl<true, result_type, CppAD::AD<double>, Index> {
+  static result_type getCoeff(const CppAD::AD<double> Arg, Index i, unsigned int size) {return Arg;}
+};
+
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dbinom, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS2_1scalar(nimDerivs_dexp_nimble, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS2_1scalar(nimDerivs_dexp, CppAD::AD<double>) // broken
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dnbinom, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS2_1scalar(nimDerivs_dpois, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS2_1scalar(nimDerivs_dchisq, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dbeta, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dnorm, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dgamma, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dinvgamma, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dsqrtinvgamma, CppAD::AD<double>) // broken
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_ddexp, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dlnorm, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dlogis, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dunif, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dweibull, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dt_nonstandard, CppAD::AD<double>) // broken
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dt, CppAD::AD<double>) // broken
 
 #endif

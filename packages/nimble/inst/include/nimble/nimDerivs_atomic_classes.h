@@ -248,7 +248,7 @@ T nimDerivs_lgammafn(T x) {
 
 template<class T>
 T nimDerivs_pnorm1(T x) {
-  atomic_pnorm1_class static_atomic_pnorm1("nimDerivs_pnorm1");
+  static atomic_pnorm1_class static_atomic_pnorm1("nimDerivs_pnorm1");
   CppAD::vector<T> in(1);
   CppAD::vector<T> out(1);
   in[0] = x;
@@ -258,7 +258,7 @@ T nimDerivs_pnorm1(T x) {
 
 template<class T>
 T nimDerivs_qnorm1(T x) {
-  atomic_qnorm1_class static_atomic_qnorm1("nimDerivs_qnorm1");
+  static atomic_qnorm1_class static_atomic_qnorm1("nimDerivs_qnorm1");
   CppAD::vector<T> in(1);
   CppAD::vector<T> out(1);
   in[0] = x;

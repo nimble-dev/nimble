@@ -413,17 +413,23 @@ nimDerivs_calcNodes <- function( nimFxn, order = c(0, 1, 2), wrt = NULL, derivFx
 
 nimDerivs_nf <- function(nimFxn = NA, order = nimC(0,1,2),
                          wrt = NULL, derivFxnCall = NULL, fxnEnv = parent.frame()){
-    fxnCall <- match.call()
-    ## This may be called directly (for testing) or from nimDerivs (typically).
-    ## In the former case, we get derivFxnCall from the nimFxn argument.
-    ## In the latter case, it is already match.call()ed and is passed here via derivFxnCall
-    if(is.null(derivFxnCall))
-        derivFxnCall <- fxnCall[['nimFxn']] ## either calculate(model, nodes) or model$calculate(nodes)
-    else
-        if(is.null(fxnCall[['order']]))
-            fxnCall[['order']] <- order
+  fxnCall <- match.call()
+  ## This may be called directly (for testing) or from nimDerivs (typically).
+  ## In the former case, we get derivFxnCall from the nimFxn argument.
+  ## In the latter case, it is already match.call()ed and is passed here via derivFxnCall
+  if(is.null(derivFxnCall))
+    derivFxnCall <- fxnCall[['nimFxn']] ## either calculate(model, nodes) or model$calculate(nodes)
+  else
+    if(is.null(fxnCall[['order']]))
+      fxnCall[['order']] <- order
 
-  fA <- formalArgs(eval(derivFxnCall[[1]], envir = fxnEnv))
+  ## get the actual function
+  derivFxn <- eval(derivFxnCall[[1]], envir = fxnEnv)
+
+  ## standardize the derivFxnCall arguments
+  derivFxnCall <- match.call(derivFxn, derivFxnCall)
+
+  fA <- formalArgs(derivFxn)
   if(is.null(wrt)) {
     wrt <- fA
   }
@@ -447,13 +453,14 @@ nimDerivs_nf <- function(nimFxn = NA, order = nimC(0,1,2),
   
   wrt_names_orig_indices <- match(wrt_names, wrt_unique_names)
   wrt_unique_name_strings <- as.character(wrt_unique_names)
-  
-  ## get original argument values from fxnEnv.
+
+  ## get the user-supplied arguments to the nFunction
+  derivFxnCall_args <- as.list(derivFxnCall)[-1]
+
+  ## Get the value of the user-supplied args
   ## These will be modified in func.
   ## This is ordered by fA, the arguments of the target function
-  fxnArgs <- lapply(fA,
-                    function(x) 
-                        get(x, envir = fxnEnv))
+  fxnArgs <- lapply(derivFxnCall_args, function(x) eval(x, envir = fxnEnv))
   names(fxnArgs) <- as.character(fA)
   
   ## Get length or dimensions

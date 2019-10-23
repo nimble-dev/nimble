@@ -1,4 +1,7 @@
-source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'AD_test_utils.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'AD_math_test_lists.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'AD_distribution_test_lists.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'AD_knownFailures.R'), package = 'nimble'))
 nimbleOptions(experimentalEnableDerivs = TRUE)
 nimbleOptions(allowDynamicIndexing = FALSE)
 
@@ -32,8 +35,6 @@ test_that('Derivatives of dnorm function correctly.',
     expect_equal(cderivs$hessian, Rderivs$hessian)
   }
 )
-
-
 
 test_that('Derivatives of x^2 function correctly.',
           {
@@ -194,3 +195,21 @@ test_that('Derivatives of matrix exponentiation function correctly.',
 
 ## one for exp(mat)
 ## get order to owrk without c()!
+
+#######################
+## run all of the tests
+#######################
+
+## from AD_math_test_lists.R
+test_AD_batch(unaryOpTests, knownFailures = AD_knownFailures)
+test_AD_batch(unaryReductionOpTests, knownFailures = AD_knownFailures)
+test_AD_batch(binaryOpTests, knownFailures = AD_knownFailures)
+test_AD_batch(powOpTests, knownFailures = AD_knownFailures)
+test_AD_batch(binaryReductionOpTests, knownFailures = AD_knownFailures)
+test_AD_batch(squareMatrixOpTests, knownFailures = AD_knownFailures)
+test_AD_batch(binaryMatrixOpTests, knownFailures = AD_knownFailures)
+
+## from AD_distribution_test_lists.R
+test_AD_batch(distn_tests,  knownFailures = AD_knownFailures)
+test_AD_batch(distn_with_log_tests, knownFailures = AD_knownFailures)
+
