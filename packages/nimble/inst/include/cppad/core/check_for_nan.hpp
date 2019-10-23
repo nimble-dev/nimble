@@ -177,6 +177,9 @@ is the vector that is stored.
 \param [out] file_name
 is the file where the vector is stored
 */
+  /* COMMENTED OUT FOR NIMBLE BECAUSE IT NEVER SEEMS TO BE USED
+     IN EITHER CPPAD OR NIMBLE.  IT CAUSES PROBLEMS FROM THE MKSREMP
+     ISSUE.  THIS TRIGGERS NIMBLE PACKAGE BUILD ERROR ON WINDOWS. 
 template <class Base>
 void put_check_for_nan(const CppAD::vector<Base>& vec, std::string& file_name)
 {
@@ -212,7 +215,7 @@ void put_check_for_nan(const CppAD::vector<Base>& vec, std::string& file_name)
 # endif
     return;
 }
-
+  */
 /*!
 Gets a vector that was stored by put_check_for_nan.
 
