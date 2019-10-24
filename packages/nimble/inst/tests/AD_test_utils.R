@@ -232,8 +232,8 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
     ##
     ## set expect_equal tolerances
     tol1 <- if (is.null(param$tol1)) 1e-8 else param$tol1
-    tol2 <- if (is.null(param$tol2)) 1e-7 else param$tol2
-    tol3 <- if (is.null(param$tol3)) 1e-6 else param$tol3
+    tol2 <- if (is.null(param$tol2)) 1e-6 else param$tol2
+    tol3 <- if (is.null(param$tol3)) 1e-4 else param$tol3
     for (method_name in names(param$methods)) {
       info <- paste0(
         param$name, ', wrt = ',

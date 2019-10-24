@@ -26,18 +26,19 @@ AD_knownFailures <- list( ## not complete:
       compilation = TRUE
     )
   ),
-  exp = list(
-    ##
-    ## arg type when failure occured (copied from test param name)
-    ##
-    "arg1 = double(2, c(3, 4))" = list(
-      ##
-      ## first part of output that led to failure (value, jacobian, or hessian)
-      ##
-      ## numerical precision error
-      hessian = 'method1' ## give name of first method that led to failure
-    )
-  ),
+  ## FIXED BY MORE ACCURATE NUMERIC HESSIANS:
+  ## exp = list(
+  ##   ##
+  ##   ## arg type when failure occured (copied from test param name)
+  ##   ##
+  ##   "arg1 = double(2, c(3, 4))" = list(
+  ##     ##
+  ##     ## first part of output that led to failure (value, jacobian, or hessian)
+  ##     ##
+  ##     ## numerical precision error
+  ##     hessian = 'method1' ## give name of first method that led to failure
+  ##   )
+  ## ),
   floor = list(
     "*" = list(
       compilation = TRUE

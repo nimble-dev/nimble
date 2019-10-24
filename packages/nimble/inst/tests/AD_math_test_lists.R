@@ -46,6 +46,9 @@ modify_on_match(unaryOpTests, 'abs .+', 'input_gen_funs', function(x) abs(rnorm(
 ##   tol3 = 1e-6 (hessians)
 modify_on_match(unaryOpTests, 'ilogit .+', 'tol2', 1e-7)
 
+## lgammafn gets large Hessians and needs looser tolerance
+modify_on_match(unaryOpTests, 'lgammafn .+', 'tol3', 0.0003)
+
 ######################
 ## unary reduction ops
 ######################

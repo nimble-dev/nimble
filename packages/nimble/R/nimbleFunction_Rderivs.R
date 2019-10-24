@@ -94,6 +94,24 @@ nimDerivs <- function(nimFxn = NA,
   ans
 }
 
+calcDerivs_hessian <- function(func, X, n, deriv_package = "pracma") {
+    use_pracma <- deriv_package == "pracma"
+    if(missing(n)) {
+        check <- func(X)
+        n <- length(check)
+    }
+    p <- length(X)
+    outHess <- array(NA, dim = c(p, p, n))
+    for(i in 1:n) {
+        wrapped_func <- function(X) as.numeric(func(X))[i]
+        if(use_pracma)
+            outHess[, , i] <- pracma::hessian(wrapped_func, X)
+        else
+            outHess[, , i] <- numDeriv::hessian(wrapped_func, X)
+    }
+    outHess
+}
+
 calcDerivs_internal <- function(func, X, order, resultIndices ) {
     if(!require('numDeriv'))
         stop("The 'numDeriv' package must be installed to use derivatives in
@@ -128,9 +146,18 @@ calcDerivs_internal <- function(func, X, order, resultIndices ) {
             returnType_scalar <- length(outVal) == 1
         }
 
+        use_pracma <- requireNamespace("pracma")
+        if(!use_pracma) {
+            message("Install package pracma for more accurate numerical Hessians in uncompiled (R) execution (experimental).")
+        }
+        
         if (returnType_scalar) {
             ## numDeriv's hessian() only works for scalar-valued functions
-            hess <- hessian(func, X)
+            if(use_pracma) {
+                hess <- pracma::hessian(func, X)
+            } else {
+                hess <- numDeriv::hessian(func, X)
+            }
             outHess <- array(NA, dim = c(dim(hess)[1], dim(hess)[2], 1))
             outHess[,,1]  <- hess
             if(jacobianFlag) outGrad <- jacobian(func, X)
@@ -139,19 +166,26 @@ calcDerivs_internal <- function(func, X, order, resultIndices ) {
             ## If hessians are requested for a non-scalar valued function,
             ## derivatives taken using numDeriv's genD() function.  After that,
             ## we extract the various derivative elements and arrange them properly.
-            derivList <- genD(func, X)
-            if(valueFlag && is.null(outVal)) outVal <- derivList$f0
-            if(jacobianFlag) outGrad <- derivList$D[,1:derivList$p, drop = FALSE]
-            outHessVals <- derivList$D[,(derivList$p + 1):dim(derivList$D)[2],
-                                       drop = FALSE]
-            outHess <- array(NA, dim = c(derivList$p, derivList$p, length(derivList$f0)))
-            singleDimMat <- matrix(NA, nrow = derivList$p, ncol = derivList$p)
-            singleDimMatUpperTriDiag <- upper.tri(singleDimMat, diag = TRUE)
-            singleDimMatLowerTriDiag <- lower.tri(singleDimMat)
-            for(outDim in seq_along(derivList$f0)){
-                singleDimMat[singleDimMatUpperTriDiag] <- outHessVals[outDim,]
-                singleDimMat[singleDimMatLowerTriDiag] <- t(singleDimMat)[singleDimMatLowerTriDiag]
-                outHess[,,outDim] <- singleDimMat
+            if(use_pracma) {
+                value <- func(X)
+                if(valueFlag && is.null(outVal)) outVal <- value
+                if(jacobianFlag) outGrad <- jacobian(func, X)
+                outHess <- calcDerivs_hessian(func, X, n = length(value), deriv_package = "pracma") 
+            } else {
+                derivList <- genD(func, X)
+                if(valueFlag && is.null(outVal)) outVal <- derivList$f0
+                if(jacobianFlag) outGrad <- derivList$D[,1:derivList$p, drop = FALSE]
+                outHessVals <- derivList$D[,(derivList$p + 1):dim(derivList$D)[2],
+                                           drop = FALSE]
+                outHess <- array(NA, dim = c(derivList$p, derivList$p, length(derivList$f0)))
+                singleDimMat <- matrix(NA, nrow = derivList$p, ncol = derivList$p)
+                singleDimMatUpperTriDiag <- upper.tri(singleDimMat, diag = TRUE)
+                singleDimMatLowerTriDiag <- lower.tri(singleDimMat)
+                for(outDim in seq_along(derivList$f0)){
+                    singleDimMat[singleDimMatUpperTriDiag] <- outHessVals[outDim,]
+                    singleDimMat[singleDimMatLowerTriDiag] <- t(singleDimMat)[singleDimMatLowerTriDiag]
+                    outHess[,,outDim] <- singleDimMat
+                }
             }
         }
     } else if(jacobianFlag){
