@@ -165,7 +165,7 @@ void nimStop();
 
 bool nimNot(bool x);
 
-bool isTRUE(bool x);
+static inline bool isTRUE(bool x) {return(x);}
 
 // needed for link functions
 double ilogit(double x);

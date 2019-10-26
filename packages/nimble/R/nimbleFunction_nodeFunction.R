@@ -272,7 +272,7 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
                                                )), list( e = substCode)))
         } else {
             if(discrete && lower != -Inf) {
-                substCode <- quote(if(TRUE(CONDITION)) {
+                substCode <- quote(if(isTRUE(CONDITION)) {
                                        if(isTRUE(LOWER <= VALUE & VALUE <= UPPER))
                                            LOGPROB <<- DENSITY - log(PDIST_UPPER - PDIST_LOWER + DDIST_LOWER)
                                        else LOGPROB <<- -Inf
