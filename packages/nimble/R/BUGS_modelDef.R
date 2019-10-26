@@ -567,7 +567,7 @@ addMissingIndexingRecurse <- function(code, dimensionsList) {
         ## handle missing indexes within the indexing of an expression, e.g.,
         ## the 'k[ , 1]' in (x[1:2,1:2]%*%y[1:2,1:2])[k[ , 1], ]
         len <- length(code)
-        if(len > 2) {
+        if(len > 2) 
             for(idx in 3:len)
                 if(is.call(code[[idx]]))
                     code[[idx]] <- addMissingIndexingRecurse(code[[idx]], dimensionsList)

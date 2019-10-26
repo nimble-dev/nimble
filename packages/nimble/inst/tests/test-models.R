@@ -573,6 +573,43 @@ test_that("warnings for multiply-defined model nodes:", {
     expect_warning(m <- nimbleModel(code), "'j,k' on the left-hand side of 'mu[i + 2, 1, 1] ~ ", fixed = TRUE)
 })
 
+test_that("handling of missing indexes:", {
+    code = nimbleCode({
+    mn[1:2] <- (X[1:2,1:2] %*% beta[1:2,1:2])[,1]
+    y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
+    })
+    m = nimbleModel(code, data = list(y = rnorm(2)),
+                    inits = list(X = matrix(1, 2,2), beta = matrix(2,2,2), pr = diag(2)))
+    cm <- compileNimble(m)
+    expect_true(is.numeric(cm$calculate('y')), "incorrectly not dealing with missing index in ()[] expression")
+
+    code = nimbleCode({
+    mn[1:2] <- (X[1:2,] %*% beta[1:2,1:2])[,1]
+    y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
+    })
+    m = nimbleModel(code, data = list(y = rnorm(2)),
+                    inits = list(X = matrix(1, 2,2), beta = matrix(2,2,2), pr = diag(2)))
+    cm <- compileNimble(m)
+    expect_true(is.numeric(cm$calculate('y')), "incorrectly not dealing with missing index in ()[] expression")
+    
+    code = nimbleCode({
+    mn[1:2] <- (X[1:2,] %*% beta[1:2,1:2])[,1]
+    y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
+    })
+    m = nimbleModel(code, data = list(y = rnorm(2)),
+                    inits = list(beta = matrix(2,2,2), pr = diag(2)))
+    cm <- compileNimble(m)
+    expect_true(is.numeric(cm$calculate('y')), "incorrectly not dealing with missing index in ()[] expression")
+
+    code = nimbleCode({
+    mn[1:2] <- (X[1:2,] %*% beta[1:2,1:2])[,1]
+    y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
+    })
+    m = nimbleModel(code, data = list(y = rnorm(2)),
+                    inits = list(beta = matrix(2,2,2), pr = diag(2)),
+                    dimensions = list(X = c(2,2))
+    cm <- compileNimble(m)
+    expect_true(is.numeric(cm$calculate('y')), "incorrectly not dealing with missing index in ()[] expression")
 
 
 sink(NULL)
