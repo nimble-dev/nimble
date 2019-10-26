@@ -573,7 +573,7 @@ test_that("warnings for multiply-defined model nodes:", {
     expect_warning(m <- nimbleModel(code), "'j,k' on the left-hand side of 'mu[i + 2, 1, 1] ~ ", fixed = TRUE)
 })
 
-test_that("handling of missing indexes:", {
+test_that("handling of missing indexes of expressions:", {
     code = nimbleCode({
     mn[1:2] <- (X[1:2,1:2] %*% beta[1:2,1:2])[,1]
     y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
@@ -596,21 +596,37 @@ test_that("handling of missing indexes:", {
     mn[1:2] <- (X[1:2,] %*% beta[1:2,1:2])[,1]
     y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
     })
-    m = nimbleModel(code, data = list(y = rnorm(2)),
-                    inits = list(beta = matrix(2,2,2), pr = diag(2)))
-    cm <- compileNimble(m)
-    expect_true(is.numeric(cm$calculate('y')), "incorrectly not dealing with missing index in ()[] expression")
+    expect_error(m <- nimbleModel(code, data = list(y = rnorm(2)),
+                                  inits = list(beta = matrix(2,2,2), pr = diag(2))),
+                 "missing indices", info = "not catching missing indices")
 
     code = nimbleCode({
     mn[1:2] <- (X[1:2,] %*% beta[1:2,1:2])[,1]
     y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
     })
-    m = nimbleModel(code, data = list(y = rnorm(2)),
+    expect_output(m <- nimbleModel(code, data = list(y = rnorm(2)),
                     inits = list(beta = matrix(2,2,2), pr = diag(2)),
-                    dimensions = list(X = c(2,2))
-    cm <- compileNimble(m)
-    expect_true(is.numeric(cm$calculate('y')), "incorrectly not dealing with missing index in ()[] expression")
+                    dimensions = list(X = c(2,2))), "model building finished",
+                  info = "incorrectly handling missing indices with dims present")
 
+    code = nimbleCode({
+    mn[1:2] <- (X[1:2,1:2] %*% beta[1:2,1:2])[k[,1],1]
+    y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
+    })
+    expect_error(m <- nimbleModel(code, data = list(y = rnorm(2)),
+                                  inits = list(X = matrix(1, 2, 2), beta = matrix(2,2,2), pr = diag(2))),
+                 "missing indices", info = "not catching missing indices in model variable within indexing of ()")
+    
+    code = nimbleCode({
+    mn[1:2] <- (X[1:2,1:2] %*% beta[1:2,1:2])[k[,1],1]
+    y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
+    })
+    m = nimbleModel(code, data = list(y = rnorm(2)),
+                    inits = list(X = matrix(1, 2, 2), beta = matrix(2,2,2), pr = diag(2)),
+                    dimensions = list(k = c(2,2)))
+    expect_message(cm <- compileNimble(m), "compilation finished",
+                  info = "incorrectly not using dim to fill in missing index model variable within indexing of ()")
+})
 
 sink(NULL)
 
