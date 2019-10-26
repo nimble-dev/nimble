@@ -558,16 +558,19 @@ addMissingIndexingRecurse <- function(code, dimensionsList) {
         return(code)
     }
     if(code[[1]] != '[')   stop('something went wrong: expecting a [')
-    ## code must be an indexing call, e.g. x[.....]
-    if(length(code[[2]]) > 1 && code[[2]][[1]] == '$'){
-      code[[2]][[2]] <- addMissingIndexingRecurse(code[[2]][[2]], dimensionsList)
-      return(code)
-    }
+
     ## handle cases like (x[1:2]%*%y[1:2, i])[1,1]
     if(length(code[[2]]) > 1 && code[[2]][[1]] == '(') {
-        if(any(unlist(lapply(as.list(code[3:length(code)]), is.blank))))
-            # stop(paste0('addMissingIndexingRecurse: the model definition includes the code ', deparse(code), ', which contains missing indices. When indexing expressions (as opposed to explicit variables), all indices must be provided.'), call. = FALSE)
+        ## if(any(unlist(lapply(as.list(code[3:length(code)]), is.blank))))
+            ## stop(paste0('addMissingIndexingRecurse: the model definition includes the code ', deparse(code), ', which contains missing indices. When indexing expressions (as opposed to explicit variables), all indices must be provided.'), call. = FALSE)
         code[[2]][[2]] <- addMissingIndexingRecurse(code[[2]][[2]], dimensionsList)
+        ## handle missing indexes within the indexing of an expression, e.g.,
+        ## the 'k[ , 1]' in (x[1:2,1:2]%*%y[1:2,1:2])[k[ , 1], ]
+        len <- length(code)
+        if(len > 2) {
+            for(idx in 3:len)
+                if(is.call(code[[idx]]))
+                    code[[idx]] <- addMissingIndexingRecurse(code[[idx]], dimensionsList)
         return(code)
     }
     if(!any(code[[2]] == names(dimensionsList))) {
