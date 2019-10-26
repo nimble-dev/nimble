@@ -238,7 +238,7 @@ buildIteratedFilter2 <- nimbleFunction(
         sigma <- control[['sigma']]
         ## Still need to allow user to provide initial param particles
         initParamSigma <- control[['initParamSigma']]
-        if(is.null(initParamSigma)) initParamSigma <- sigma
+
         timeIndex <- control[['timeIndex']]
         initModel <- control[['initModel']]
         if(is.null(silent)) silent <- TRUE
@@ -287,7 +287,12 @@ buildIteratedFilter2 <- nimbleFunction(
         
         if(any(sigma < 0))
             stop("buildIteratedFilter2: All values of 'sigma' should be non-negative.")
-        
+
+        if(is.null(initParamSigma)) initParamSigma <- sigma
+        if(length(initParamSigma) != numParams)
+            stop("buildIteratedFilter2: If non-NULL, the 'initParamSigma' control list argument must be a vector specifying a non-negative perturbation magnitude for each element of 'params'. The length of 'initParamSigma' does not match the length of 'params'.")
+
+
         ## Check for inits values
         if(is.null(inits)){
             inits <- values(model, params)
@@ -301,6 +306,7 @@ buildIteratedFilter2 <- nimbleFunction(
             stop("buildIteratedFilter2: All latent nodes must be in the same variable.")
         }
         nodes <- findLatentNodes(model, nodes, timeIndex)
+        timeLength <- length(nodes)
         
         expandedNodes <- model$expandNodeNames(nodes)
         if(any(baselineNode %in% expandedNodes))
@@ -407,20 +413,20 @@ buildIteratedFilter2 <- nimbleFunction(
     },
     methods = list(
         continueRun = function(niter = integer(), alpha = double()) {
-            tmpEstimate <- estimate
+            tmpEstimates <- estimates
             tmpEstSD <- estSD
             tmpLogLik <- logLik
-            niter_old <- dim(estimate)[1]
+            niter_old <- dim(estimates)[1]
             niter_total <- niter_old + niter
-            setSize(estimate, niter_total, numParams, fillZeros = TRUE)
+            setSize(estimates, niter_total, numParams, fillZeros = TRUE)
             setSize(estSD, niter_total, numParams, fillZeros = TRUE)
             setSize(logLik, niter_total, fillZeros = TRUE)
-            estimate[1:niter_old, ] <<- tmpEstimate
+            estimates[1:niter_old, ] <<- tmpEstimates
             estSD[1:niter_old, ] <<- tmpEstSD
             logLik[1:niter_old] <<- tmpLogLik
             
             useStoredSamples <- 1
-            newN <- oldJ + n
+            newN <- oldJ + niter
             for(j in (oldJ+1):newN){
                 checkInterrupt()
                 if(baseline) 

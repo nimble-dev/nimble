@@ -9,16 +9,14 @@ require(nimble)
 
 
 The NIMBLE algorithm library is growing and as of version 0.6-7 includes a suite of Sequential Monte Carlo algorithms as well as a more robust MCEM and k-fold cross-validation. 
-
  
-
 ## Particle Filters / Sequential Monte Carlo
 
 ### Filtering algorithms
 
-  NIMBLE includes algorithms for four different types of sequential Monte Carlo (also known as particle filters), which can be used to sample from the latent states and approximate the log likelihood of a state space model.  The particle filters currently implemented in NIMBLE are the bootstrap filter, the auxiliary particle filter, the Liu-West filter, and the ensemble Kalman filter, which can be built, respectively, with calls to `buildBootstrapFilter`, `buildAuxiliaryFilter`, `buildLiuWestFilter`, and `buildEnsembleKF`.  Each particle filter requires setup arguments  `model` and `nodes`; the latter should be a character vector specifying latent model nodes.  In addition, each particle filter can be customized using a `control` list argument.  Details on the control options and specifics of the filtering algorithms can be found in the help pages for the functions.
+  NIMBLE includes algorithms for five different types of sequential Monte Carlo (also known as particle filters), which can be used to sample from the latent states and approximate the log likelihood of a state space model.  The particle filters currently implemented in NIMBLE are the bootstrap filter, the auxiliary particle filter, the Liu-West filter, the ensemble Kalman filter, and the iterated filter 2 (IF2), which can be built, respectively, with calls to `buildBootstrapFilter`, `buildAuxiliaryFilter`, `buildLiuWestFilter`, `buildEnsembleKF`, and `buildIteratedFilter2`.  Each particle filter requires setup arguments  `model` and `nodes`; the latter should be a character vector specifying latent model nodes.  In addition, each particle filter can be customized using a `control` list argument.  Details on the control options and specifics of the filtering algorithms can be found in the help pages for the functions.
   
-  Once built, each filter can be run by specifying the number of particles.  Each filter has a modelValues object named `mvEWSamples` that is populated with equally-weighted samples from the posterior distribution of the latent states (and in the case of the Liu-West filter, the posterior distribution of the top level parameters as well) as the filter is run.  The bootstrap, auxiliary, and Liu-West filters also have another modelValues object, `mvWSamples`, which has unequally-weighted samples from the posterior distribution of the latent states, along with weights for each particle.   In addition, the bootstrap and auxiliary particle filters return estimates of the log-likelihood of the given state space model.
+  Once built, each filter can be run by specifying the number of particles.  Each filter has a modelValues object named `mvEWSamples` that is populated with equally-weighted samples from the posterior distribution of the latent states (and in the case of the Liu-West filter, the posterior distribution of the top level parameters as well) as the filter is run.  The bootstrap, auxiliary, Liu-West, and IF2 filters also have another modelValues object, `mvWSamples`, which has unequally-weighted samples from the posterior distribution of the latent states, along with weights for each particle.   In addition, the bootstrap and auxiliary particle filters return estimates of the log-likelihood of the given state space model.
   
  We first create a linear state-space model to use as an example for our particle filter algorithms. 
  
@@ -99,7 +97,7 @@ auxLLEst <- cAuxF$run(parNum)
 auxESS <- cAuxF$returnESS()
 ```
   
-Now we give an example of building and running the Liu and West filter, which can sample from the posterior distribution of top-level parameters as well as latent states.  The Liu and West filter accepts an additional `params` argument, specifying the top-level parameters to be sampled. 
+Now we give an example of building and running the Liu and West filter, which can sample from the posterior distribution of top-level parameters as well as latent states. Note that the Liu-West filter ofen performs poorly and is provided primarily for didactic purposes. The Liu and West filter accepts an additional `params` argument, specifying the top-level parameters to be sampled. 
 
 ```{r, lw_Filter_Chunk, results = "hide"}
 
@@ -149,6 +147,83 @@ auxWts <- as.matrix(cAuxF$mvWSamples, "wts")
 # Liu and West filter also returns samples 
 # from posterior distribution of top-level parameters:
 aEWSamp <- as.matrix(cLWF$mvEWSamples, "a")
+```
+
+The IF2 is somewhat different than the other filters in that the goal of the algorithm is to find the maximum likelihood estimates of the model parameters. To do so, the algorithm represents both latent states and parameters using particles that are weighted and resampled during the iterations, where the perturbations to the parameter particles follow a schedule of decreasing magnitude to yield convergence to the MLE.
+
+Here we apply IF2 to Nile River flow data, specifying a changepoint in the year the Aswan Dam was constructed, as the dam altered river flows.
+
+```{r, if2-model}
+library(FKF)
+y <- Nile
+
+flowCode <- nimbleCode({
+    for(t in 1:n)
+        y[t] ~ dnorm(x[t], sd = sigmaMeasurements)
+    x[1] ~ dnorm(x0, sd = sigmaInnovations)    
+    for(t in 2:n)
+        x[t] ~ dnorm((t-1==28)*meanShift1899 + x[t-1], sd = sigmaInnovations)
+    logSigmaInnovations ~ dnorm(0, sd = 100)
+    logSigmaMeasurements ~ dnorm(0, sd = 100)
+    sigmaInnovations <- exp(logSigmaInnovations)
+    sigmaMeasurements <- exp(logSigmaMeasurements)
+    x0 ~ dnorm(1120, var = 100)
+    meanShift1899 ~ dnorm(0, sd = 100)
+})
+
+flowModel <- nimbleModel(flowCode, data = list(y = Nile),
+                 constants = list(n = length(Nile)),
+                 inits = list(logSigmaInnovations = log(sd(Nile)),
+                              logSigmaMeasurements = log(sd(Nile)),
+                              meanShift1899 = -100))
+```
+
+Note that the prior distributions for the parameters are not used by IF2, except possibly to obtain boundaries of valid parameter values (not the case here).
+
+Now we build the filter, specifying user-controlled standard deviations (in this case the same as the perturbation `sigma` values) for use in generating the initial particles for the parameters via the `control` list.
+
+```{r, if2-filter}
+filter <- buildIteratedFilter2(model = flowModel,
+                           nodes = 'x',
+                           params = c('logSigmaInnovations',
+                                      'logSigmaMeasurements',
+                                      'meanShift1899'),
+                           baselineNode = 'x0',
+                           control = list(sigma = c(0.1, 0.1, 5),
+                                          initParamSigma = c(0.1, 0.1, 5)))
+cFlowModel <- compileNimble(flowModel)
+cFilter  <- compileNimble(filter, project = flowModel)
+```
+
+We now run the algorithm with 1000 particles for 100 iterations with the schedule parameter equal to 0.2.
+
+In addition to the estimates, we can extract the values of the log-likelihood, the estimates and the standard deviation of the parameter particles as they evolve over the iterations, so as to assess convergence.
+
+
+```{r, if2-run}
+set.seed(1)
+est <- cFilter$run(m = 1000, niter = 100, alpha = 0.2)
+
+cFilter$estimates[95:100,]
+cFilter$logLik[90:100]
+```
+
+Comparing to use of the the Kalman Filter from the FKF package, we see the log-likelihood is fairly similar:
+
+
+```{r, if2-compare}
+dtpred <- matrix(0, ncol = length(Nile))
+dtpred[28] <- est[3]
+ct <- matrix(0)
+Zt <- Tt <- matrix(1)
+
+fkfResult <- fkf(HHt = matrix(exp(2*est[1])),
+                 GGt = matrix(exp(2*est[2])),
+                 yt = rbind(y),
+                 a0 = 1120,
+                 P0 = matrix(100),
+                 dt = dtpred, ct = ct, Zt = Zt, Tt = Tt)
+fkfResult$logLik
 ```
 
     
