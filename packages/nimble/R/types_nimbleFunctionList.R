@@ -29,9 +29,21 @@ nimbleFunctionList <- setRefClass('nimbleFunctionList',
                                   methods = list(
                                       isBaseClassValid = function(x) {
                                           if(!is.nf(x)) return(FALSE)
-                                          if(is.null(nfGetDefVar(x, 'contains'))) return(FALSE)
-                                          if(!identical(nfGetDefVar(x, 'contains'), baseClass)) return(FALSE)
-                                          TRUE
+                                          this_contains <- nfGetDefVar(x, 'contains')
+                                          done <- FALSE
+                                          ok <- FALSE
+                                          while(!done) {
+                                              if(is.null(this_contains)) {
+                                                  done <- TRUE
+                                              }
+                                              else if(identical(this_contains, baseClass)) {
+                                                  ok <- TRUE
+                                                  done <- TRUE
+                                              }
+                                              ## recurse up inheritance path
+                                              this_contains <- nfGetDefVar(this_contains, 'contains')
+                                          }
+                                          ok
                                       },
                                       checkAllContents = function(x) {
                                           all( unlist( lapply( contentsList, isBaseClassValid ) ) ) 
@@ -57,6 +69,11 @@ setMethod('[[<-', 'nimbleFunctionList',
           })
 
 checkNimbleFunctionListCpp <- function(nfl) {
+    return(TRUE)
+    ## We have disabled this test because it does not look up an multiple inheritance tree.
+    ## At this point, that would take some effort.
+    ## However, inheritance validity is checked by the `[[<-` method for a nimbleFunctionList,
+    ## so there "shouldn't" be a downstream problem here if everything checked ok when the nimbleFunctionList was populated. 
     otherProblem <- try(
         {
             baseClassName <- environment(nfl$baseClass)$name
