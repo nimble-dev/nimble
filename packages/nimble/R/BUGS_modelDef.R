@@ -558,6 +558,13 @@ addMissingIndexingRecurse <- function(code, dimensionsList) {
         return(code)
     }
     if(code[[1]] != '[')   stop('something went wrong: expecting a [')
+    ## code must be an indexing call, e.g. x[.....]
+
+    ## handle cases like covMat[1:5,1:5] <- eigen(constMat[1:5,])$vectors[1:5,1:5]%*%t(eigen(constMat[1:5,1:5])$vectors[,])
+    if(length(code[[2]]) > 1 && code[[2]][[1]] == '$'){
+      code[[2]][[2]] <- addMissingIndexingRecurse(code[[2]][[2]], dimensionsList)
+      return(code)
+    }
 
     ## handle cases like (x[1:2]%*%y[1:2, i])[1,1]
     if(length(code[[2]]) > 1 && code[[2]][[1]] == '(') {
