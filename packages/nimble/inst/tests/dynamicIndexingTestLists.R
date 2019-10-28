@@ -200,7 +200,7 @@ testsDynIndex <- list(
                             list(parent = 'mu', result = c(paste0('mu[', 1:5, ']'),
                                                            paste0('y[',1:4,']')))),
         validIndexes =list(list(var = c('k[8]','j[1]'), value = c(5,7))),
-        invalidIndexes = list(list(var = c('k[1]', 'j[1]'), value = c(1,8), expect_R_calc_error = TRUE),  ## mu[k[j[1]+1]] = mu[k[9]] = mu[NA] 
+        invalidIndexes = list(list(var = c('k[1]', 'j[1]'), value = c(1,8)),  ## mu[k[j[1]+1]] = mu[k[9]] = mu[NA] 
                               list(var = c('k[2]', 'j[1]'), value = c(6,1)))
     ),
     list(  
@@ -388,7 +388,7 @@ testsDynIndex <- list(
                             list(parent = 'mu', result = c(expandNames('mu', 1:2, 1:3),
                                                            expandNames('y', 1:4)))),
         validIndexes =list(list(var = c('j[1]','k[2,4]'), value = c(4, 3))),
-        invalidIndexes =list(list(var = c('j[1]','k[2,4]'), value = c(0,1), expect_R_calc_error = TRUE),  ## mu[1, k[2, j[1]]] = mu[1, k[2, 0]] = mu[1, NA] 
+        invalidIndexes =list(list(var = c('j[1]','k[2,4]'), value = c(0,1)),  ## mu[1, k[2, j[1]]] = mu[1, k[2, 0]] = mu[1, NA]  
                              list(var = c('j[1]','k[2,1]'), value = c(1,4)))
     ),
     list(  
@@ -536,7 +536,7 @@ testsDynIndex <- list(
         }), 
         inits = list(mu = array(rnorm(120), c(5,3,8)), k = rep(1,4), j = rep(1, 4), d = rep(1,4), p = rep(1/5, 5)),
         data = list(y = rnorm(4)),
-        invalidIndexes =list(list(var = c('d[1]', 'k[1]','j[1]'), value = c(5,4,4), expect_R_calc_error = TRUE))  ## mu[k[d[1]]] = mu[k[5]] = mu[NA]
+        invalidIndexes =list(list(var = c('d[1]', 'k[1]','j[1]'), value = c(5,4,4)))  ## mu[k[d[1]]] = mu[k[5]] = mu[NA]  
     )
 )
 

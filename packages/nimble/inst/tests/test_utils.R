@@ -1298,15 +1298,8 @@ test_dynamic_indexing_model_internal <- function(param) {
                     
                     cm[[param$invalidIndexes[[i]]$var[j]]] <- param$invalidIndexes[[i]]$value[j]
                 }
-                ## use expect_equal not expect_identical because in certain cases we get NA not NaN (having to do with other components of calc/sim output)
-                if(any(is.na(param$invalidIndexes[[i]]$value)) || (!is.null(param$invalidIndexes[[i]]$expect_R_calc_error) && param$invalidIndexes[[i]]$expect_R_calc_error)) {
-                    expect_error(calculate(m), "(missing value where|argument is of length zero)", info = paste0("problem with lack of error in R calculate with NA indexes, case: ", i))
-                    ## When NA is given, R calculate fails with missing value and dynamic index error not flagged explicitly
-                    ## When 0 is the nested index, R calculate fails with length zero argument and dynamic index error not flagged
-                } else {
-                    expect_output(out <- calculate(m), "dynamic index out of bounds", info = paste0("problem with lack of warning in R calculate with non-NA invalid indexes, case: ", i))
-                    expect_equal(out, NaN, info = paste0("problem with lack of NaN in R calculate with non-NA invalid indexes, case: ", i))
-                }
+                expect_output(out <- calculate(m), "dynamic index out of bounds", info = paste0("problem with lack of warning in R calculate with non-NA invalid indexes, case: ", i))
+                expect_equal(out, NaN, info = paste0("problem with lack of NaN in R calculate with non-NA invalid indexes, case: ", i))
                 expect_output(out <- calculate(cm), "dynamic index out of bounds", info = paste0("problem with lack of warning in C calculate with invalid indexes, case: ", i))
                 expect_equal(out, NaN, info = paste0("problem with lack of NaN in C calculate with invalid indexes, case: ", i))
                 expect_output(out <- calculateDiff(cm), "dynamic index out of bounds", info = paste0("problem with lack of warning in C calculateDiff with invalid indexes, case: ", i))

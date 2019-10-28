@@ -4602,7 +4602,7 @@ test_that("Testing sampler assignment and misspecification of priors for conc pa
   ## we do not warn of negative concentration values because there could be many such
   ## warnings in certain MCMC samplers for the concentration parameter
   expect_failure(expect_output(m$simulate(), "value of concentration parameter"))
-  expect_error(m$calculate())
+  expect_output(out <- m$calculate(), "Warning: dynamic index out of bounds")
   ## think about better way to tell the user that the prior for alpha is wrong
   
   
@@ -4618,7 +4618,7 @@ test_that("Testing sampler assignment and misspecification of priors for conc pa
   ## we do not warn of negative concentration values because there could be many such
   ## warnings in certain MCMC samplers for the concentration parameter
   expect_failure(expect_output(m$simulate(), "value of concentration parameter has to be larger than zero"))
-  expect_error(m$calculate())
+  expect_output(out <- m$calculate(), "Warning: dynamic index out of bounds")
   
 })
 
