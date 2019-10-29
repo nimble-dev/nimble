@@ -1687,12 +1687,10 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo) {
 
         ## Check that dependent node variance is simply the variance of the cluster and not,
         ## e.g., scaled, such as 'dnorm(mu[xi[i]], var = lambda * s2[xi[i]])'.
-        if(length(depNodes) == length(clusterNodes2)) {
-            varExprs <- sapply(seq_along(depNodes), function(i) cc_expandDetermNodesInExpr(model,
-                                       model$getParamExpr(depNodes[i], 'var'), clusterNodes2[i]))
-            if(!identical(sapply(varExprs, deparse), clusterNodes2))
-                conjugate <- FALSE
-        } else conjugate <- FALSE ## mismatch of number of clusterNodes1 and clusterNodes2 will be trapped in sampler_CRP_setup
+        varExprs <- sapply(seq_along(depNodes), function(i) cc_expandDetermNodesInExpr(model,
+                    model$getParamExpr(depNodes[i], 'var'), clusterNodes2[1])) ## use first as we may have ntilde < n
+        if(!identical(unique(sapply(varExprs, deparse)), clusterNodes2[1]))
+            conjugate <- FALSE
     }
     return(conjugate)
 }
