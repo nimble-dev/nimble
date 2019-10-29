@@ -629,7 +629,7 @@ In many cases one would want $\theta$ to be the set of all stochastic nodes in t
 
 The `runCrossValidate` function in NIMBLE performs k-fold cross-validation on a `nimbleModel` fit via MCMC.  More information can be found by calling `help(runCrossValidate)`. 
 
-## Reversible Jump MCMC {#sec:rjmcmc}
+## Reversible Jump MCMC for variable selection {#sec:rjmcmc}
 
 Reversible Jump MCMC [@Green_1995] (RJMCMC) is a general framework for MCMC simulation in which the dimension of the parameter space can vary between iterates of the Markov chain. The reversible jump sampler can be viewed as an extension of the Metropolis-Hastings algorithm onto more general state spaces.
 
