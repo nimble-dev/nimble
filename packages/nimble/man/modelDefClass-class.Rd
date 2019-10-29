@@ -9,6 +9,6 @@
 Class for NIMBLE model definition that is not usually needed directly by a user.
 }
 \details{
-See \code{?modelBaseClass} for information about creating NIMBLE BUGS models.
+See \code{\link{modelBaseClass}} for information about creating NIMBLE BUGS models.
 }
 

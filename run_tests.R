@@ -50,12 +50,11 @@ if (length(grep('^-', argv, invert = TRUE))) {
     doNotTest <- c(
         doNotTest,
         'test-ADfunctions.R',
-        'test-ADmodels.R',
-        'test-ADdsl.R',
-        'test-tfize.R',   # at some point in 0.6-7 development this was fully passing on Chris' machine with sufficiently new tensorflow version (1.3.0?), but as of 0.6-7 release multiple errors of invalid GraphDef
-        'test-benchmarks.R')  # some issue with version conflicts causing tensorflow to fail on Travis with errors such as 'nimble-tensorflow_11_20_18_17_45.so: undefined symbol: TF_DeleteImportGraphDefOptions'
+        'test-ADmodels.R')
+        ## 'test-benchmarks.R')  # some issue with version conflicts causing tensorflow to fail on Travis with errors such as 'nimble-tensorflow_11_20_18_17_45.so: undefined symbol: TF_DeleteImportGraphDefOptions'
     cat('SKIPPING', doNotTest, sep = '\n  ')
     allTests <- setdiff(allTests, doNotTest)
+>>>>>>> devel
 }
 
 # Sort tests by duration, running the shortest tests first.

@@ -35,12 +35,7 @@ The lengthier and more customizable approach to invoking the MCMC engine on a pa
   1. Run the MCMC and extract the samples (Sections \@ref(sec:runMCMC), \@ref(sec:executing-the-mcmc-algorithm) and \@ref(sec:extracting-samples)).
   1. Optionally, calculate the WAIC using the posterior samples (Section \@ref(sec:WAIC)).
 
-
-NIMBLE provides two additional functions which facilitate the comparison of multiple, different, MCMC algorithms:
-
-  - `MCMCsuite` can run multiple, different MCMCs for the same model.  These can include multiple NIMBLE MCMCs from different configurations as well as external MCMCs such as from WinBUGS, OpenBUGS, JAGS or Stan (Section \@ref(mcmc-suite-compare-mcmcs)).
-  - `compareMCMCs` manages multiple calls to `MCMCsuite` and generates html pages comparing performance of different MCMCs.
-
+Prior to version 0.8.0, NIMBLE provided two additional functions, `MCMCsuite` and `compareMCMCs`, to facilitate comparison of multiple MCMC algorithms, either internal or external to NIMBLE.  Those capabilities have been redesigned and moved into a separate package called `compareMCMCs`.
 
 End-to-end examples of MCMC in NIMBLE can be found in Sections \@ref(sec:creating-mcmc)-\@ref(sec:customizing-mcmc) and Section \@ref(sec:mcmc-example-litters).
 <!---  ### Creating an MCMC algorithm -->
@@ -451,7 +446,7 @@ Rmcmc <- buildMCMC(mcmcConf, enableWAIC = TRUE)
 
 `buildMCMC` is a nimbleFunction.  The returned object `Rmcmc` is an instance  of the nimbleFunction specific to configuration `mcmcConf` (and of course its associated model).  
 
-Note that if you would like to be able to calculate the WAIC of the model after the MCMC function has been run, you must set `enableWAIC = TRUE` as an argument to either `configureMCMC` or `buildMCMC`, or set `nimbleOptions(enableWAIC = TRUE)`, which will enable WAIC calculations for all subsequently built MCMC functions.  For more information on WAIC calculations, see Section \@ref(sec:WAIC) or `help(buildMCMC)` in R.
+Note that if you would like to be able to calculate the WAIC of the model after the MCMC function has been run, you must set `enableWAIC = TRUE` as an argument to either `configureMCMC` or `buildMCMC`, or set `nimbleOptions(MCMCenableWAIC = TRUE)`, which will enable WAIC calculations for all subsequently built MCMC functions.  For more information on WAIC calculations, see Section \@ref(sec:WAIC) or `help(buildMCMC)` in R.
 
 When no customization is needed, one can skip `configureMCMC` and simply provide a model object to `buildMCMC`. The following two MCMC functions will be identical:
 
@@ -486,7 +481,7 @@ Cmcmc$Rmcmc$run(niter = 1000)
 
 Once an MCMC algorithm has been created using `buildMCMC`, the function `runMCMC` can be used to run multiple chains and extract posterior samples, summary statistics and/or a WAIC value.  This is a simpler approach to executing an MCMC algorithm, than the process of executing and extracting samples as described in Sections \@ref(sec:executing-the-mcmc-algorithm) and \@ref(sec:extracting-samples).
 
-`runMCMC` also provides several user-friendly options such as burn-in, thinning, running multiple chains, and different initial values for each chain.  However, using `runMCMC` does not support several lower-level options, such as timing the individual samplers internal to the MCMC, continuing an exisiting MCMC run (picking up where it left off), or modifying the sampler execution ordering.
+`runMCMC` also provides several user-friendly options such as burn-in, thinning, running multiple chains, and different initial values for each chain.  However, using `runMCMC` does not support several lower-level options, such as timing the individual samplers internal to the MCMC, continuing an existing MCMC run (picking up where it left off), or modifying the sampler execution ordering.
 
 `runMCMC` takes arguments that will control the following aspects of the MCMC:
 <!---  `runMCMC` has one mandatory argument: the (compiled or uncompiled) MCMC algorithm.  Other arguments to `runMCMC` are available to control: -->
@@ -574,6 +569,21 @@ will return a vector of the total time spent in each sampler, measured in second
 % Cmcmc$run(niter, samplerExecutionOrder = c(1, 2, 1, 3, 1, 4, 1, 5))
 -->
 
+### Assessing the adaption process of *RW* and *RW_block* samplers
+
+If you'd like to see the evolution (over the iterations) of the acceptance proportion and proposal scale information, you can use some internal methods provided by NIMBLE, after setting two options to make the history accessible. Here we assume that `cMCMC` is the compiled MCMC object and `idx` is the numeric index of the sampler function you want to access from amongst the list of sampler functions that are part of the MCMC.
+
+```{r, eval=FALSE}
+## set options to make history accessible
+nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions = TRUE)
+nimbleOptions(MCMCsaveHistory = TRUE)
+## Next, set up and run your MCMC.
+## Now access the history information:
+cmcmc$samplerFunctions[[idx]]$getScaleHistory()
+cmcmc$samplerFunctions[[idx]]$getAcceptanceHistory()
+cmcmc$samplerFunctions[[idx]]getPropCovHistory   ## only for RW_block
+```
+
 ## Extracting MCMC samples {#sec:extracting-samples}
 
 After executing the MCMC, the output samples can be extracted as follows:
@@ -619,7 +629,150 @@ In many cases one would want $\theta$ to be the set of all stochastic nodes in t
 
 The `runCrossValidate` function in NIMBLE performs k-fold cross-validation on a `nimbleModel` fit via MCMC.  More information can be found by calling `help(runCrossValidate)`. 
 
+## Reversible Jump MCMC for variable selection {#sec:rjmcmc}
 
+Reversible Jump MCMC [@Green_1995] (RJMCMC) is a general framework for MCMC simulation in which the dimension of the parameter space can vary between iterates of the Markov chain. The reversible jump sampler can be viewed as an extension of the Metropolis-Hastings algorithm onto more general state spaces.
+
+A common use case for RJMCMC is for variable selection in regression-style problems, where the dimension of the parameter space varies as variables are included and excluded from the regression specification. Variable selection can be set up in NIMBLE without using RJMCMC by using indicator variables to turn regression parameters off and on (see model code below for an example of how indicator variables can be used). However, with that approach MCMC sampling can be inefficient because a given regression parameter can wander widely in the parameter space when the corresponding variable is not in the model if the parameter has a non-informative prior. RJMCMC sampling results in the MCMC not sampling the regression coefficients for variables for iterations where the variables are not in the model.  
+
+Given two models $M_1$ and $M_2$ of possibly different dimensions, the core idea of RJMCMC is to remove the difference in the dimensions of models $M_1$ and $M_2$ by supplementing the corresponding parameters $\boldsymbol{\theta_1}$ and $\boldsymbol{\theta_2}$ with auxiliary variables $\boldsymbol{u}_{1 \rightarrow 2}$ and $\boldsymbol{u}_{2 \rightarrow 1}$ such that $(\boldsymbol{\theta_1}, \boldsymbol{u}_{1 \rightarrow 2})$ and $(\boldsymbol{\theta_2}, \boldsymbol{u}_{2 \rightarrow 1})$
+are in bijection, $(\boldsymbol{\theta_2}, \boldsymbol{u}_{2 \rightarrow 1}) = \Psi(\boldsymbol{\theta_1}, \boldsymbol{u}_{1 \rightarrow 2})$. The corresponding Metropolis-Hastings acceptance probability is generalized accounting for the proposal density for the auxiliary variables.  
+
+NIMBLE implements RJMCMC for variable selection using a univariate normal distribution as proposal density and supports two types of model specifications, depending on whether or not indicator variables are included. A reversible jump sampler can be added to an MCMC configuration object by calling the function `configureRJ`. The `configureRJ` function modifies the MCMC configuration to (1) assign samplers that turn on and off variables in the model and (2) modify the existing samplers for the regression coefficients to use 'toggled' versions that are only used when the corresponding variable is currently in the model. In the case where indicator variables are included in the model, sampling to turn on and off variables is done using `RJ_indicator` samplers and in the case where indicator variables are not included, sampling is done using `RJ` samplers. 
+
+<!--  See `help(configureRJ)` for details. -->
+
+The `RJ` and `RJ_indicator` both use a univariate normal distribution as proposal density, whose mean and scale can be provided in the `control` list argument of `configureRJ` (by default `mean = 0` and `scale = 1`). An optional argument called `fixedValue` can be provided in the non-indicator setting; this indicates the value taken by nodes in `targetNodes` when out of the model (by default 0). 
+All arguments in `control` can accept one value that will be used for all samplers assigned to nodes `targetNodes`; alternatively each sampler can be customized by passing a vector of values whose length must equal the length of `targetNodes`.
+
+In the following we provide an example for the two different model specifications. 
+
+### Using indicator variables {#sec:rjmcmc-indicator}
+
+Here we consider a normal linear regression in which two covariates `x1` and `x2` are given and only `x1` has to be included in the model.  
+
+```{r indicators, results = "hide"}
+## Linear regression with intercept and two covariates
+code <- nimbleCode({
+  beta0 ~ dnorm(0, sd = 100)
+  beta1 ~ dnorm(0, sd = 100)
+  beta2 ~ dnorm(0, sd = 100)
+  sigma ~ dunif(0, 100) 
+  
+  z1 ~ dbern(psi)  ## indicator variable associated with beta1
+  z2 ~ dbern(psi)  ## indicator variable associated with beta2
+  psi ~ dbeta(1, 1) ## hyperprior on inclusion probability
+  for(i in 1:N) {
+    Ypred[i] <- beta0 + beta1 * z1 * x1[i] + beta2 * z2 * x2[i]
+    Y[i] ~ dnorm(Ypred[i], sd = sigma)
+  }
+})
+
+## simulate some data
+set.seed(1)
+N <- 100
+x1 <- runif(N, -1, 1)
+x2 <- runif(N, -1, 1) ## this covariate is not included
+Y <- rnorm(N, 1.5 + 2 * x1, sd = 1)
+
+
+## build the model and configure default MCMC
+
+rIndicatorModel <- nimbleModel(code, constants = list(N = N),
+                               data = list(Y = Y, x1 = x1, x2 = x2), 
+                               inits=  list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y),
+                               z2 = 1, z1 = 1, psi = 0.5))
+
+indicatorModelConf <- configureMCMC(rIndicatorModel)
+```
+
+```{r print samplers}
+## print NIMBLE default samplers
+indicatorModelConf$printSamplers()
+```
+
+At this point we may want to modify the current configuration by adding a reversible jump sampler to allow for selection on `beta[1]` and `beta[2]` variables, which can be done by calling the `configureRJ` function.
+
+
+```{r indicators: configureRJ, results = "hide"}
+configureRJ(mcmcConf = indicatorModelConf,     
+            targetNodes = c("beta1", "beta2"),
+            indicatorNodes = c('z1', 'z2'),
+            control = list(mean = c(1, 0), scale = 2))
+```
+
+The `targetNodes` argument should indicate the nodes for which we want to do variable selection. `targetNodes` will be expanded as described in Section \@ref(sec:arbitr-coll-nodes). I.e., either `targetNodes = "beta"` or `targetNodes = c("beta[1]", "beta[2]")` will assign a RJ sampler to each of `beta[1]` and `beta[2]` if `beta` is a vector of two values.
+The same applies to `indicatorNodes`, which provides the indicator variables paired with nodes in `targetNodes`. Notice that `indicatorNodes` must be provided consistently with respect to `targetNodes`. E.g. if `targetNodes = "beta"` is a vector, then one should have `indicatorNodes = "z"` with `z` a vector as well; something like `indicatorNodes = c("z1", "z2")` will throw an error.
+
+
+```{r indicators: print samplers after configureRJ}
+indicatorModelConf$printSamplers()
+```
+
+An `RJ_indicator` sampler is assigned to `z[1]` and `z[2]` in place of the `binary` sampler, while the samplers for `beta[1]`and `beta[2]` have been changed to  `toggled` samplers, which still use the default `conjugate_dnorm_dnorm` sampler but only when the corresponding indicator variable is equal to $1$, thereby including the coefficient in the model. The two `RJ_indicator` samplers have different means for the proposal distribution but the same scale, as given in the `control` list of `configureRJ`.
+
+Notice that the order of the sampler has changed, since `configureRJ` calls `removeSampler` for nodes in `targetNodes` and `indicatorNodes`, and subsequently `addSampler`, which appends the sampler to the end of current sampler list. Order can be modified by using `setSamplers`.
+
+Also note that `configureRJ` modifies the existing sampler and returns `NULL`.
+
+### Without indicator variables {#sec:rjmcmc-no-indicator}
+
+
+We consider the same regression setting, but writing the model without the use of indicator variables. 
+
+```{r no_indicators, results = "hide"}
+
+## Linear regression with intercept and two covariates
+code <- nimbleCode({
+  beta0 ~ dnorm(0, sd = 100)
+  beta1 ~ dnorm(0, sd = 100)
+  beta2 ~ dnorm(0, sd = 100)
+  sigma ~ dunif(0, 100)
+  for(i in 1:N) {
+    Ypred[i] <- beta0 + beta1 * x1[i] + beta2 * x2[i]
+    Y[i] ~ dnorm(Ypred[i], sd = sigma)
+  }
+})
+
+## build the model
+rNoIndicatorModel <- nimbleModel(code, constants = list(N = N),
+                               data = list(Y = Y, x1 = x1, x2 = x2), 
+                               inits=  list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y)))
+
+noIndicatorModelConf <- configureMCMC(rNoIndicatorModel)
+```
+
+```{r no indicators: print samplers}
+## print NIMBLE default samplers
+noIndicatorModelConf$printSamplers()
+```
+
+In this case, since there are no indicator variables, we need to pass to `configureRJ` the prior inclusion probabilities for each node in `targetNodes`, by specifying either one common value or a vector of values for the argument `priorProb`. Notice that this case does not allow for a stochastic prior. 
+
+
+```{r no indicators: configureRJ, results = "hide"}
+configureRJ(mcmcConf = noIndicatorModelConf,     
+            targetNodes = c("beta1", "beta2"),
+            priorProb = 0.5,
+            control = list(mean = 0, scale = 2, fixedValue = c(1.5, 0)))
+```
+
+```{r no indicators: print samplers after configureRJ}
+## print samplers after configureRJ
+noIndicatorModelConf$printSamplers()
+```
+
+Since there are no indicator variables, the `RJ` sampler is assigned directly to `beta[1]` and `beta[2]` along with the `toggled` sampler, which still uses the default sampler for the node, but only if the corresponding variable is in the model at a given iteration. In addition in this case one can set the coefficient to a value different from $0$ via the `fixedValue` argument in the `control` list. 
+
+If `fixedValue` is given when using `indicatorNodes` the values provided in `fixedValue` are ignored.  However the same behavior can be obtained in this situation, using a different model specification. For example, the model in \@ref(sec:rjmcmc-indicator) can be modified to have `beta1` equal to $1.5$ when in the model as follows:
+
+```{r indicators v2, results = "hide", eval = FALSE}
+  for(i in 1:N) {
+    Ypred[i] <- beta0 + (1 - z1) * 1.5 * beta1 * x1[i] +
+                z1 * beta1 * x1[i] + beta2 * z2 * x2[i]
+    Y[i] ~ dnorm(Ypred[i], sd = sigma)
+  }
+```
 
 ## Samplers provided with NIMBLE {#sec:samplers-provided}
 
@@ -678,7 +831,7 @@ If one wants information about conjugate node relationships for other purposes, 
 
 <!---  ### Elliptical slice sampling: `ess sampler` -->
 
-<!---  The `ess` sampler performs elliptical slice sampling of a single node, which must follow a multivariate normal distribution [@2010arXiv1001.0175M].  The algorithm is an extension of slice sampling [@Neal2003], generalized to the multivariate normal context.  An auxilliary variable is used to identify points on an ellipse (which passes through the current node value) as candidate samples, which are accepted contingent upon a likelihood evaluation at that point.  This algorithm requires no tuning parameters and therefore no period of adaptation, and may result in very efficient sampling from multivariate Gaussian distributions. -->
+<!---  The `ess` sampler performs elliptical slice sampling of a single node, which must follow a multivariate normal distribution [@2010arXiv1001.0175M].  The algorithm is an extension of slice sampling [@Neal2003], generalized to the multivariate normal context.  An auxiliary variable is used to identify points on an ellipse (which passes through the current node value) as candidate samples, which are accepted contingent upon a likelihood evaluation at that point.  This algorithm requires no tuning parameters and therefore no period of adaptation, and may result in very efficient sampling from multivariate Gaussian distributions. -->
 
 <!---  The `ess` sampler accepts no control list arguments.  See `help(samplers)` for details. -->
 
@@ -862,158 +1015,4 @@ lapply(samplesList, dim)
 
 ## Comparing different MCMCs with *MCMCsuite* and *compareMCMCs* {#mcmc-suite-compare-mcmcs}
 
-NIMBLE's `MCMCsuite` function automatically runs WinBUGS, OpenBUGS, JAGS, Stan, and/or multiple NIMBLE configurations on the same model.  Note that the BUGS code must be compatible with whichever BUGS packages are included, and separate Stan code must be provided.  NIMBLE's `compareMCMCs` manages calls to `MCMCsuite` for multiple sets of comparisons and organizes the output(s) for generating html pages summarizing results.  It also allows multiple results to be combined and allows some different options for how results are processed, such as how effective sample size is estimated.
-
-We first show how to use `MCMCsuite` for the same `litters` example used in Section \@ref(sec:mcmc-example-litters).  Subsequently, additional details of the `MCMCsuite` are given.  Since use of `compareMCMCs` is similar, we refer readers to `help(compareMCMCs)` and the functions listed under 'See also' on that R help page.
-
-### MCMC Suite example: *litters*
-
-The following code executes the following MCMC algorithms on the `litters` example:
-
-  - WinBUGS
-  - JAGS
-  - NIMBLE default configuration
-  - NIMBLE custom configuration using two `crossLevel` samplers
-
-
-```{r, MCMCsuite, eval=FALSE}
-output <- MCMCsuite(
-    code = litters_code,
-    constants = constants,
-    data = data,
-    inits = inits,
-    monitors = 'mu',
-    MCMCs = c('winbugs', 'jags', 'nimble', 'nimble_CL'),
-    MCMCdefs = list(
-        nimble_CL = quote({
-            mcmcConf <- configureMCMC(Rmodel, nodes = NULL)
-            mcmcConf$addSampler(target = c('a[1]', 'b[1]'), 
-                                type = 'crossLevel')
-            mcmcConf$addSampler(target = c('a[2]', 'b[2]'), 
-                                type = 'crossLevel')
-            mcmcConf
-        })),
-    plotName = 'littersSuite'
-)
-```
-
-### MCMC Suite outputs {#sec:mcmcsuite-outputs}
-
-Executing the MCMC Suite returns a named list containing various outputs, as well as generates and saves traceplots and posterior density plots.  The default elements of this return list object are:
-
-**Samples**
-
-`samples` is a three-dimensional array, containing all MCMC samples from each algorithm.  The first dimension of the `samples` array corresponds to each MCMC algorithm, and may be indexed by the name of the algorithm.  The second dimension of the `samples` array corresponds to each node which was monitored, and may be indexed by the node name.  The third dimension of `samples` contains the MCMC samples, and has length `niter/thin - burnin`.
-
-**Summary**
-
-The MCMC suite output contains a variety of pre-computed summary statistics, which are stored in the `summary` matrix.  For each monitored node and each MCMC algorithm, the following default summary statistics are calculated: `mean`, `median`, `sd`, the 2.5\% quantile, and the 97.5\% quantile.  These summary statistics are easily viewable, as:
-
-```{r, mcmcsuite-output, eval=FALSE}
-output$summary
-# , , mu[1]
-#                   mean    median         sd  quant025  quant975
-# winbugs      0.8795868 0.8889000 0.04349589 0.7886775 0.9205025
-# jags         0.8872778 0.8911989 0.02911325 0.8287991 0.9335317
-# nimble       0.8562232 0.8983763 0.12501395 0.4071524 0.9299781
-# nimble_CL    0.8871314 0.8961146 0.05243039 0.7640730 0.9620532
-# 
-# , , mu[2]
-#                   mean    median         sd  quant025  quant975
-# winbugs      0.7626974 0.7678000 0.04569705 0.6745975 0.8296025
-# jags         0.7635539 0.7646913 0.03803033 0.6824946 0.8313314
-# nimble       0.7179094 0.7246935 0.06061116 0.6058669 0.7970130
-# nimble_CL    0.7605938 0.7655945 0.09138471 0.5822785 0.9568195
-```
-
-**Timing**
-
-`timing` contains a named vector of the runtime for each MCMC algorithm, the total compile time for the NIMBLE model and MCMC algorithms, and the compile time for Stan (if specified).  All run- and compile- times are given in seconds.
-
-**Efficiency**
-
-Using the `MCMCsuite` option `calculateEfficiency = TRUE` will also provide several measures of MCMC sampling efficiency.  Additional summary statistics are provided for each node: the total number of samples collected (`n`), the effective sample size resulting from these samples (`ess`), and the effective sample size per second of algorithm runtime (`efficiency`).
-
-In addition to these node-by-node measures of efficiency, an additional return list element is also provided.  This element, `efficiency`, is itself a named list containing two elements: `min` and `mean`, which contain the minimal and mean efficiencies (effective sample size per second of algorithm run-time) across all monitored nodes, separately for each algorithm.
-
-**Plots**
-
-Executing `MCMCsuite` provides and saves several plots.  These include trace plots and posterior density plots for each monitored node, under each algorithm.
-
-Note that the generation of MCMC Suite plots *in Rstudio* may result in several warning messages from R (regarding graphics devices), but will function without any problems.
-
-### Customizing MCMC Suite
-<!---  CJP: much of this could probably be omitted and simply point to help(MCMCsuite)... -->
-
-`MCMCsuite` is customizable in terms of all of the following: 
-
-  - MCMC algorithms to execute, optionally including WinBUGS, OpenBUGS, JAGS, Stan, and various flavors of NIMBLE's MCMC;
-  - custom-configured NIMBLE MCMC algorithms;
-  - automated parameter blocking for efficient MCMC sampling;
-  - nodes to monitor;
-  - number of MCMC iterations;
-  - thinning interval;
-  - burn-in;
-  - summary statistics to report;
-  - calculating sampling efficiency (effective sample size per second of algorithm run-time); and 
-  - generating and saving plots.
-
-NIMBLE MCMC algorithms may be specified using the `MCMCs` argument to `MCMCsuite`, which is character vector defining the MCMC algorithms to run.  The `MCMCs` argument may include any of the following algorithms: 
-
-  - "winbugs": WinBUGS MCMC algorithm 
-  - "openbugs": OpenBUGS MCMC algorithm 
-  - "jags": JAGS MCMC algorithm 
-  - "Stan": Stan default MCMC algorithm 
-  - "nimble": NIMBLE MCMC using the default configuration 
-  - "nimble_noConj": NIMBLE MCMC using the default configuration with `useConjugacy = FALSE` 
-  - "autoBlock": NIMBLE MCMC algorithm with block sampling of dynamically determined parameter groups attempting to maximize sampling efficiency 
-
-
-The default value for the `MCMCs` argument is `"nimble"`, which specifies only the default NIMBLE MCMC algorithm.  
- 
-The names of additional, custom, MCMC algorithms may also be provided in the `MCMCs` argument, so long as these custom algorithms are defined in the `MCMCdefs` argument.  An example of this usage is given with the `crossLevel` algorithm in the `litters` example in \@ref(sec:mcmcsuite-outputs).
-
-The `MCMCdefs` argument should be a named list of definitions, for any custom MCMC algorithms specified in the `MCMCs` argument.  If `MCMCs` specified an algorithm called `"myMCMC"`, then `MCMCdefs` must contain an element named `"myMCMC"`.  The contents of this element must be a block of code that, when executed, returns the desired MCMC configuration object.  This block of code may assume the existence of the R model object, `Rmodel`.  Further, this block of code need not worry about adding monitors to the MCMC configuration; it need only specify the samplers.  
- 
-As a final important point, execution of this block of code must *return* the MCMC configuration object.  Therefore, elements supplied in the `MCMCdefs` argument should usually take the form:
-
-```{r, MCMCdefs, eval=FALSE}
-MCMCdefs = list(
-     myMCMC = quote({
-          mcmcConf <- configureMCMC(Rmodel, ....)  
-          mcmcConf$addSampler(.....)
-          mcmcConf     # returns the MCMC configuration object  
-     })  
-)  
-```
- 
-Full details of the arguments and customization of the MCMC Suite is available via `help(MCMCsuite)`.
-
-<!--- #### argument: `monitors` -->
-<!--- Character vector specifying the nodes and/or vectors to monitor. -->
-<!--- #### argument: `niter` -->
-<!--- Integer specifying the number of MCMC iterations to run. -->
-<!--- #### argument: `thin` -->
-<!--- Integer specifying the thinning interval. -->
-<!--- #### argument: `burnin` -->
-<!--- Integer specifying the number of samples to discard from all chains of MCMC samples.  Samples are discarded subsequent to thinning. -->
-<!--- #### argument: `summaryStats` -->
-<!--- A character vector, providing the name of any function which operates on a numeric vector, and returns a numeric scalar.  Likewise, a character string defining such a function is admissible, for example ``function(x) mean(abs(x))'`. -->
-<!--- The default value for `summaryStats` is the set: `mean`, `median`, `sd`, the 2.5\% quantile, and the 97.5\% quantile. -->
-<!--- #### argument: `makePlot` -->
-<!--- A logical specifying whether to generate the trace plots and posterior density plots.  Default value is `TRUE`. -->
-<!--- #### argument: `savePlot` -->
-<!--- A logical specifying whether to save the generated plots.  Only used if `makePlot = TRUE`.  Default value is `TRUE`. -->
-<!--- #### argument: `plotName` -->
-<!--- A character string giving the filename for saving plots.  Only used if `savePlot = TRUE`.  Default value is ``MCMCsuite'`. -->
-<!--- #### argument: `setSeed` -->
-<!--- A logical argument, specifying whether to set.seed(0) prior to MCMC sampling.  Default value is `TRUE`. -->
-<!--- #### argument: `bugs_directory` -->
-<!--- A character string giving the path to the directory containing the WinBUGS executable.  The default value is `'C:/WinBUGS14'`. -->
-<!--- #### argument: `bugs_program` -->
-<!--- A character string giving the name of the WiBUGS program to execute.  This will be passed directly to the `bugs` function.  The default value is `'WinBUGS'`. -->
-<!--- #### argument: `stan_model` -->
-<!--- A character string specifying the location and name of the model file (``modelName.stan'`) for use with the Stan MCMC program.  This argument must include the ".stan" extension, and must be provided whenever the `MCMCs` argument includes ``stan'`. -->
-<!--- In addition, the Stan data file (``modelName.data.R'`) must also reside in the same directory as the Stan model file. -->
-<!--- Optionally, the Stan initial values file (``modelName.init.R'`) may also be in this same directory; it will be used if present. -->
-
+Please see the `compareMCMCs` package for the features previously provided by `MCMCsuite` and `compareMCMCs` in NIMBLE (until version 0.8.0).  The `compareMCMCs` package provides tools to automatically run MCMC in nimble (including multiple sampler configurations), WinBUGS, OpenBUGS, JAGS, Stan, or any other engine for which you provide a simple common interface.  The package makes it easy to manage comparison metrics and generate html pages with comparison figures.

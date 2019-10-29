@@ -18,16 +18,3 @@ for (package in requirements) {
     }
 }
 
-## Tensorflow requires custom installation.
-if (Sys.getenv('NIMBLE_USE_TENSORFLOW') %in% c('', '1')) {
-    if (!require(tensorflow)) {
-        install.packages('tensorflow', repos = 'http://cran.us.r-project.org')
-        library(tensorflow)
-    }
-    tryCatch({
-        ## Calling tf$ triggers loading of the python tensorflow library. 
-        cat('Found Tensorflow version', tf$`__version__`, '\n')
-    }, error = function(e) {
-        install_tensorflow()
-    })
-}

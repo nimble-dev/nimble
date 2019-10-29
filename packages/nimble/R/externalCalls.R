@@ -7,6 +7,7 @@
 #' @param Cfun Name of the external function (character).
 #' @param headerFile Name (possibly including file path) of the header file where Cfun is declared.
 #' @param oFile Name (possibly including path) of the .o file where Cfun has been compiled.  Spaces in the path may cause problems.
+#' @param where An optional \code{where} argument passed to \code{setRefClass} for where the reference class definition generated for this nimbleFunction will be stored.  This is needed due to R package namespace issues but should never need to be provided by a user.
 #'
 #' @author Perry de Valpine
 #' @export
@@ -67,8 +68,9 @@
 #' check = FALSE, calculate = FALSE)
 #' CdemoModel <- compileNimble(demoModel, showCompilerOutput = TRUE)
 #' }
-nimbleExternalCall <- function(prototype, returnType, Cfun, headerFile, oFile) {
+nimbleExternalCall <- function(prototype, returnType, Cfun, headerFile, oFile, where = getNimbleFunctionEnvironment()) {
     ## construct a nimbleFunction to wrap a call to Cfun
+    force(where)
     returnTypeExpr <- substitute(returnType)
     if(is.list(prototype)) {
         args <- nimbleTypeList2argTypeList(prototype)
@@ -123,7 +125,7 @@ nimbleExternalCall <- function(prototype, returnType, Cfun, headerFile, oFile) {
     ## put all the lines together
     allLines <- c(list(as.name("{")), convertLines, list(externalCallLine), unconvertLines, returnLines)
     body(fun) <- as.call(allLines)
-    ans <- RCfunction(fun, check = FALSE)
+    ans <- RCfunction(fun, check = FALSE, where = where)
     ## Stick header information into the nfMethodRC
     environment(ans)$nfMethodRCobject$externalHincludes <- paste0('\"',headerFile,'\"')
     ## If the user provided the ofile with a .c or .o ending, remove and replace with .cpp. That is a kluge because later .cpp is replaced with .o.
@@ -143,7 +145,7 @@ nimbleExternalCall <- function(prototype, returnType, Cfun, headerFile, oFile) {
 #' @param prototype Argument type information for Rfun.  This can be provided as an R function using \code{nimbleFunction} type declarations or as a list of \code{nimbleType} objects.
 #' @param returnType Return object type information.  This can be provided similarly to \code{prototype} as either a \code{nimbleFunction} type declaration or as a \code{nimbleType} object.  In the latter case, the name will be ignored. If there is no return value this should be \code{void()}.
 #' @param Rfun The name of an R function to be called from compiled nimbleFunctions.
-#' @param envir The environment where the nimbleFunction wrapping the call to Rfun should be created.
+#' @param where An optional \code{where} argument passed to \code{setRefClass} for where the reference class definition generated for this nimbleFunction will be stored.  This is needed due to R package namespace issues but should never need to be provided by a user.
 #'
 #' @details The \code{nimbleFunction} returned by \code{nimbleRcall} can be used in other \code{nimbleFunction}s.  When called from a compiled \code{nimbleFunction} (including from a model), arguments will be copied according to the declared types, the function named by \code{Rfun} will be called, and the returned object will be copied if necessary.  The example below shows use of an R function in a compiled \code{nimbleModel}.
 #'
@@ -164,7 +166,7 @@ nimbleExternalCall <- function(prototype, returnType, Cfun, headerFile, oFile) {
 #'    x + 2 
 #' }
 #' Radd2 <- nimbleRcall(function(x = double(1)){}, Rfun = 'add2',
-#' returnType = double(1), envir = .GlobalEnv)
+#' returnType = double(1))
 #' demoCode <- nimbleCode({
 #'     for(i in 1:4) {x[i] ~ dnorm(0,1)} 
 #'     z[1:4] <- Radd2(x[1:4])
@@ -173,7 +175,8 @@ nimbleExternalCall <- function(prototype, returnType, Cfun, headerFile, oFile) {
 #' check = FALSE, calculate = FALSE)
 #' CdemoModel <- compileNimble(demoModel)
 #' }
-nimbleRcall <- function(prototype, returnType, Rfun, envir = .GlobalEnv) {
+nimbleRcall <- function(prototype, returnType, Rfun, where = getNimbleFunctionEnvironment()) {
+    force(where)
     returnTypeExpr <- substitute(returnType)
     if(is.list(prototype)) {
         args <- nimbleTypeList2argTypeList(prototype)
@@ -207,7 +210,9 @@ nimbleRcall <- function(prototype, returnType, Rfun, envir = .GlobalEnv) {
     else
         returnType <- returnTypeExpr
     returnSymbol <- argType2symbol(returnType)
-    externalCallLine <- quote(SANS <- PROTECT(Rf_eval(SLANG, R_GlobalEnv)))
+    externalCallLines <- list(quote(nimVerbatim(PutRNGstate())),
+                              quote(SANS <- PROTECT(Rf_eval(SLANG, R_GlobalEnv))),
+                              quote(nimVerbatim(GetRNGstate())))
     if(returnSymbol$type != 'void') {
         resultLines <- list(substitute(declare(ans, RT), list(RT = returnType)),
                             quote(nimVerbatim(SEXP_2_NimArr(SANS, ans))),
@@ -220,9 +225,9 @@ nimbleRcall <- function(prototype, returnType, Rfun, envir = .GlobalEnv) {
                             substitute(returnType(RT), list(RT = returnType))
                             )
     }
-    allLines <- c(list(as.name("{")), convertLines, SEXPsetupLines, list(externalCallLine), resultLines)
+    allLines <- c(list(as.name("{")), convertLines, SEXPsetupLines, externalCallLines, resultLines)
     body(fun) <- as.call(allLines)
-    ans <- quote(RCfunction(fun, check = FALSE))
+    ans <- quote(RCfunction(fun, check = FALSE, where = where))
     ans <- eval(ans)
     ## By calling RCfunction, there is an nfMethodRC with the necessary body
     ## for subsequent compiler processing.

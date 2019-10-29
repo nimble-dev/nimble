@@ -10,7 +10,7 @@
 \title{Class \code{samplerAssignmentRules}}
 \description{
 Objects of this class specify an ordered set of rules for assigning MCMC sampling algorithms to the stochastic nodes in a BUGS model.
-This feature can be enabled by setting the NIMBLE option \code{MCMCuseSamplerAssignmentRules} to \code{TRUE}.
+This feature can be enabled by setting \code{nimbleOptions(MCMCuseSamplerAssignmentRules = TRUE)}.
 The rules can be modified to alter under what circumstances various samplers are assigned, and with what precedence.
 When assigning samplers to each stochastic node, the set of rules is traversed beginning with the first, until a matching rule is found.
 When a matching rule is found, the sampler specified by that rule is assigned (or general code for sampler assignment is executed),
@@ -19,8 +19,8 @@ If no matching rule is found, an (optional) warning is issued and no sampler is 
 Objects of this class may be passed using the \code{rules} argument to \code{\link{configureMCMC}} to customize the sampler assignment process.
 See documentation below for method \code{initialize()} for details of creating a samplerAssignmentRules object, 
 and methods \code{addRule()} and \code{reorder()} for adding and modifying the sampler assignment rules.
-The default behaviour of \code{configureMCMC} can be modified by setting the nimble option \'MCMCsamplerAssignmentRules\' to a customized samplerAssignmentRules object.
-The default behaviour of \code{configureMCMC} can be restored using \code{nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())}.
+The default behaviour of \code{\link{configureMCMC}} can be modified by setting the nimble option \'MCMCsamplerAssignmentRules\' to a customized samplerAssignmentRules object.
+The default behaviour of \code{\link{configureMCMC}} can be restored using \code{nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())}.
 }
 \section{Methods}{
 

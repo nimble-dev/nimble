@@ -109,7 +109,7 @@ test_that('ice example reworked', {
 })
 
 test_mcmc('beetles', model = 'beetles-logit.bug', inits = 'beetles-inits.R',
-          data = 'beetles-data.R', numItsC = 1000, resampleData = TRUE, avoidNestedTest = TRUE)
+          data = 'beetles-data.R', numItsC = 1000, resampleData = TRUE)
                                         # getting warning; deterministic model node is NA or NaN in model initialization
                                         # weirdness with llike.sat[8] being NaN on init (actually that makes sense), and with weird lifting of RHS of llike.sat
 
@@ -1652,6 +1652,20 @@ test_that('CAR conjugacy checking new skipExpansionsNode system', {
     ##
     expect_true(all(round(as.numeric(Rsamples[10,Rcolnames]),8) == expectedSamples))
     expect_true(all(round(as.numeric(Csamples[10,Rcolnames]),8) == expectedSamples))
+})
+
+test_that('checkConjugacy corner case when linear scale is identically zero', {
+    targetNode <- 'beta[4]'
+    linearityCheckExpr <- quote(beta[4] * 0 * alpha.smrcent[3])
+    conjugacyCheck <- nimble:::cc_checkLinearity(linearityCheckExpr, targetNode)
+    expect_identical(conjugacyCheck, list(offset = 0, scale = 0))
+    
+    targetNode <- 'beta[4]'
+    linearityCheckExpr <- quote(beta[1] + beta[2] * 0 + beta[3] * alpha.smrcent[3] + beta[4] * 0 * alpha.smrcent[3] + alpha.stream[1] + alpha.family[3, 1])
+    conjugacyCheck <- nimble:::cc_checkLinearity(linearityCheckExpr, targetNode)
+    expect_identical(conjugacyCheck,
+                     list(offset = quote(beta[1] + beta[2] * 0 + beta[3] * alpha.smrcent[3] + alpha.stream[1] + alpha.family[3, 1]),
+                          scale = 0))
 })
 
 

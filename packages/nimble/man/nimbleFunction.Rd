@@ -12,7 +12,7 @@ nimbleFunction(setup = NULL, run = function() { }, methods = list(),
 \arguments{
 \item{setup}{An optional R function definition for setup processing.}
 
-\item{run}{An optional NIMBLE function definition the executes the primary job of the nimbleFunction}
+\item{run}{An optional NIMBLE function definition that executes the primary job of the nimbleFunction}
 
 \item{methods}{An optional named list of NIMBLE function definitions for other class methods.}
 

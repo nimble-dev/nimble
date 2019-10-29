@@ -9,7 +9,7 @@ readBUGSmodel(model, data = NULL, inits = NULL, dir = NULL,
   check = getNimbleOption("checkModel"), calculate = TRUE)
 }
 \arguments{
-\item{model}{one of (1) a character string giving the file name containing the BUGS model code, with relative or absolute path, (2) an R function whose body is the BUGS model code, or (3) the output of \code{nimbleCode}. If a file name, the file can contain a 'var' block and 'data' block in the manner of the JAGS versions of the BUGS examples but should not contain references to other input data files nor a const block. The '.bug' or '.txt' extension can be excluded.}
+\item{model}{one of (1) a character string giving the file name containing the BUGS model code, with relative or absolute path, (2) an R function whose body is the BUGS model code, or (3) the output of \code{\link{nimbleCode}}. If a file name, the file can contain a 'var' block and 'data' block in the manner of the JAGS versions of the BUGS examples but should not contain references to other input data files nor a const block. The '.bug' or '.txt' extension can be excluded.}
 
 \item{data}{(optional) (1) character string giving the file name for an R file providing the input constants and data as R code [assigning individual objects or as a named list], with relative or absolute path, or (2) a named list providing the input constants and data. If neither is provided, the function will look for a file named 'name_of_model-data' including extensions .R, .r, or .txt.}
 
@@ -19,13 +19,13 @@ readBUGSmodel(model, data = NULL, inits = NULL, dir = NULL,
 
 \item{useInits}{boolean indicating whether to set the initial values, either based on \code{inits} or by finding the '-inits' file corresponding to the input model file}
 
-\item{debug}{logical indicating whether to put the user in a browser for debugging when \code{readBUGSmodel} calls \code{nimbleModel}.  Intended for developer use.}
+\item{debug}{logical indicating whether to put the user in a browser for debugging when \code{\link{readBUGSmodel}} calls \code{\link{nimbleModel}}.  Intended for developer use.}
 
 \item{returnComponents}{logical indicating whether to return pieces of model  object without building the model. Default is FALSE.}
 
-\item{check}{logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel', see help on \code{nimbleOptions} for details.}
+\item{check}{logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel'. See \code{\link{nimbleOptions}} for details.}
 
-\item{calculate}{logical indicating whether to run \code{calculate} on the model after building it; this will calculate all deterministic nodes and logProbability values given the current state of all nodes. Default is TRUE. For large models, one might want to disable this, but note that deterministic nodes, including nodes introduced into the model by NIMBLE, may be \code{NA}.}
+\item{calculate}{logical indicating whether to run \code{\link{calculate}} on the model after building it; this will calculate all deterministic nodes and logProbability values given the current state of all nodes. Default is TRUE. For large models, one might want to disable this, but note that deterministic nodes, including nodes introduced into the model by NIMBLE, may be \code{NA}.}
 }
 \value{
 returns a NIMBLE BUGS R model
@@ -34,9 +34,11 @@ returns a NIMBLE BUGS R model
 \code{readBUGSmodel} processes inputs providing the model and values for constants, data, initial values of the model in a variety of forms, returning a NIMBLE BUGS R model
 }
 \details{
-Note that \code{readBUGSmodel} should handle most common ways of providing information on a model as used in BUGS and JAGS but does not handle input model files that refer to additional files containing data. Please see the BUGS examples provided with JAGS (\url{http://sourceforge.net/projects/mcmc-jags/files/Examples/}) for examples of supported formats. Also, \code{readBUGSmodel} takes both constants and data via the 'data' argument, unlike \code{nimbleModel}, in which these are distinguished. The reason for allowing both to be given via 'data' is for backwards compatibility with the BUGS examples, in which constants and data are not distinguished.
+Note that \code{readBUGSmodel} should handle most common ways of providing information on a model as used in BUGS and JAGS but does not handle input model files that refer to additional files containing data. Please see the BUGS examples provided with NIMBLE in the \code{classic-bugs} directory of the installed NIMBLE package or JAGS (\url{http://sourceforge.net/projects/mcmc-jags/files/Examples/}) for examples of supported formats. Also, \code{readBUGSmodel} takes both constants and data via the 'data' argument, unlike \code{\link{nimbleModel}}, in which these are distinguished. The reason for allowing both to be given via 'data' is for backwards compatibility with the BUGS examples, in which constants and data are not distinguished.
 }
 \examples{
+## Reading a model defined in the R session
+
 code <- nimbleCode({
     x ~ dnorm(mu, sd = 1)
     mu ~ dnorm(0, sd = prior_sd)
@@ -46,8 +48,18 @@ model <- readBUGSmodel(code, data = data, inits = list(mu = 0))
 model$x
 model[['mu']]
 model$calculate('x')
+
+## Reading a classic BUGS model
+
+pumpModel <- readBUGSmodel('pump.bug', dir = getBUGSexampleDir('pump'))
+pumpModel$getVarNames()
+pumpModel$x
+
 }
 \author{
 Christopher Paciorek
+}
+\seealso{
+\code{\link{nimbleModel}}
 }
 

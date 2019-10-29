@@ -306,7 +306,26 @@ recyclingRuleTests <- list(
     list(name = "dnorm case 4", expr = quote(out <- dnorm(arg1, arg2, arg3)), args = list(arg1 = quote(double(1)), arg2 = quote(double(0)), arg3 = quote(double(0))),
          setArgVals = quote({arg1 <- as.numeric(1:2); arg2 <- as.numeric(3.5); arg3 <- as.numeric(4.1)}), outputType = quote(double(1))),
     list(name = "dnorm case 4 [with expressions]", expr = quote(out <- (dnorm(arg1 + 1.5, arg2 + 1.5, arg3) + 1)^2), args = list(arg1 = quote(double(1)), arg2 = quote(double(0)), arg3 = quote(double(0))),
-         setArgVals = quote({arg1 <- as.numeric(1:2); arg2 <- as.numeric(3.5); arg3 <- as.numeric(4.1)}), outputType = quote(double(1)))
+         setArgVals = quote({arg1 <- as.numeric(1:2); arg2 <- as.numeric(3.5); arg3 <- as.numeric(4.1)}), outputType = quote(double(1))),
+    list(name = "dlogis all vector",
+         expr = quote(out <- dlogis(arg1, arg2, arg3)),
+         args = list(arg1 = quote(double(1)), arg2 = quote(double(1)), arg3 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(4:2); arg3 <- as.numeric(c(2, 3, 5, 8))}),
+         outputType = quote(double(1)))
+)
+
+pRecyclingRuleTests <- list(
+    list(name = "plogis case 1", expr = quote(out <- plogis(arg1, arg2, arg3)),
+         args = list(arg1 = quote(double(1)), arg2 = quote(double(1)), arg3 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2  <- as.numeric(1:4); arg3 <- as.numeric(1:5);}),
+         outputType = quote(double(1)))
+)
+
+qRecyclingRuleTests <- list(
+    list(name = "qlogis case 1", expr = quote(out <- qlogis(arg1, arg2, arg3)),
+         args = list(arg1 = quote(double(1)), arg2 = quote(double(1)), arg3 = quote(double(1))),
+         setArgVals = quote({arg1 <- seq(.1, .4, length = 3); arg2  <- as.numeric(1:4); arg3 <- as.numeric(1:5);}),
+         outputType = quote(double(1)))
 )
 
 rRecyclingRuleTests <- list(
@@ -365,7 +384,17 @@ rRecyclingRuleTests <- list(
              setArgVals = quote({arg1 <- seq(0.1, 0.4, length = 10); arg2 <- seq(0.9, 0.7, length = 3)}),
              outputType = quote(double(1))),
 
- list(name = "rlnorm case 1", expr = quote(out <- rgamma(5, arg1, arg2)),
+  list(name = "rinvgamma case 1", expr = quote(out <- rinvgamma(5, arg1, arg2)),
+             args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
+             setArgVals = quote({arg1 <- seq(0.1, 0.4, length = 10); arg2 <- seq(0.9, 0.7, length = 3)}),
+             outputType = quote(double(1))),
+
+ list(name = "rlnorm case 1", expr = quote(out <- rlnorm(5, arg1, arg2)),
+             args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
+             setArgVals = quote({arg1 <- seq(0.1, 0.4, length = 10); arg2 <- seq(0.9, 0.7, length = 3)}),
+             outputType = quote(double(1))),
+
+ list(name = "rlogis case 1", expr = quote(out <- rlogis(5, arg1, arg2)),
              args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
              setArgVals = quote({arg1 <- seq(0.1, 0.4, length = 10); arg2 <- seq(0.9, 0.7, length = 3)}),
              outputType = quote(double(1))),
@@ -863,12 +892,113 @@ higherDimBlockTests <- list(
          outputType = quote(double(2)))
 )
 
+aliasTests <- list(
+    list(name = "x <- rep(x, 2)",   ## Fails due to lack of eval with eigenBlock map
+         expr = quote({
+             x <- arg1
+             x <- rep(x, 2)
+             out <- x}),
+         args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3)}),
+         outputType = quote(double(1))),
+    list(name = "x <- rep(x, length = 6)",   ## Fails due to lack of eval with eigenBlock map
+         expr = quote({
+             x <- arg1
+             x <- rep(x, length = 6)
+             out <- x}),
+         args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3)}),
+         outputType = quote(double(1))),
+    list(name = "x <- rep(x, each = 2)",   ## Fails due to lack of eval with eigenBlock map
+         expr = quote({
+             x <- arg1
+             x <- rep(x, each = 2)
+             out <- x}),
+         args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3)}),
+         outputType = quote(double(1))),
+    list(name = "x <- c(x, arg2)",   ## Fails due to lack of eval with eigenBlock map
+         expr = quote({
+             x <- arg1
+             x <- c(x, arg2)
+             out <- x}),
+         args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(4:6)}),
+         outputType = quote(double(1))),    
+    list(name = "x[2:3] <- x[1:2]",   ## Fails due to lack of eval with eigenBlock map
+         expr = quote({
+             x <- arg1
+             x[2:3] <- x[1:2]
+             out <- x}),
+         args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3)}),
+         outputType = quote(double(1))),
+    list(name = "x[c(2, 3)] <- x[1:2]",   ## Fails due to lack of eval with eigenBlock map
+         expr = quote({
+             x <- arg1
+             x[c(2, 3)] <- x[1:2]
+             out <- x}),
+         args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3)}),
+         outputType = quote(double(1))),
+    list(name = "x[c(FALSE, TRUE, TRUE)] <- x[1:2]",   ## Fails due to lack of eval with eigenBlock map
+         expr = quote({
+             x <- arg1
+             x[c(FALSE, TRUE, TRUE)] <- x[1:2]
+             out <- x}),
+         args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3)}),
+         outputType = quote(double(1))),
+    list(name = "x[2:3, 1:2] <- x[1:2, 1:2]",   ## Fails due to lack of eval with eigenBlock map
+         expr = quote({
+             x <- arg1
+             x[2:3, 1:2] <- x[1:2, 1:2]
+             out <- x}),
+         args = list(arg1 = quote(double(2))),
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:9), nrow = 3)}),
+         outputType = quote(double(2))),
+    ## No blocking in >2D supported
+    list(name = "x <- x[1:2]",   ## Fails due to x being resized before the Eigen assignment
+         expr = quote({
+             x <- arg1
+             x <- x[1:2]
+             out <- x}),
+         args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3)}),
+         outputType = quote(double(1))),
+    list(name = "x <- t(x)",   ## Fails due to x being resized before the Eigen assignment
+         expr = quote({
+             x <- arg1
+             x <- t(x)
+             out <- x}),
+         args = list(arg1 = quote(double(2))),
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:6), nrow = 2)}),
+         outputType = quote(double(2))),
+    list(name = "x <- t(x) + 1",   ## Fails due to x being resized before the Eigen assignment
+         expr = quote({
+             x <- arg1
+             x <- t(x) + 1
+             out <- x}),
+         args = list(arg1 = quote(double(2))),
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:6), nrow = 2)}),
+         outputType = quote(double(2))),
+    list(name = "x <- dnorm(x, arg2) with length(x) < length(arg2)",   ## Fails due to x being resized before the Eigen assignment
+         expr = quote({
+             x <- arg1
+             x <- dnorm(x, arg2) ## should handle recycling rule on x, but x is resized first
+             out <- x}),
+         args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
+         setArgVals = quote({arg1 = 0.1; arg2 <- 0.1 * (1:6)}),
+         outputType = quote(double(1)))
+)
 
 cTestsResults <- test_coreRfeature_batch(cTests, 'cTests') ##lapply(cTests, test_coreRfeature)
 blockTestsResults <- test_coreRfeature_batch(blockTests, 'blockTests') ##lapply(blockTests, test_coreRfeature)
 repTestsResults <- test_coreRfeature_batch(repTests, 'repTests') ## lapply(repTests, test_coreRfeature)
 diagTestsResults <- test_coreRfeature_batch(diagTests, 'diagTests') ## lapply(diagTests, test_coreRfeature)
 recyclingRuleTestsResults <- test_coreRfeature_batch(recyclingRuleTests, 'recyclingRuleTests') ## lapply(recyclingRuleTests, test_coreRfeature)
+pRecyclingRuleTestsResults <- test_coreRfeature_batch(pRecyclingRuleTests, 'pRecyclingRuleTests')
+qRecyclingRuleTestsResults <- test_coreRfeature_batch(qRecyclingRuleTests, 'qRecyclingRuleTests')
 rRecyclingRuleTestsResults <- test_coreRfeature_batch(rRecyclingRuleTests, 'rRecyclingRuleTests') ## lapply(rRecyclingRuleTests, test_coreRfeature)
 seqTestsResults <- test_coreRfeature_batch(seqTests, 'seqTests') ## lapply(seqTests, test_coreRfeature)
 nonSeqIndexTestsResults <- test_coreRfeature_batch(nonSeqIndexTests, 'nonSeqIndexTests') ## lapply(nonSeqIndexTests, test_coreRfeature)
@@ -877,8 +1007,7 @@ logicalTestsResults <- test_coreRfeature_batch(logicalTests, 'logicalTests') ## 
 returnTestResults <- test_coreRfeature_batch(returnTests, 'returnTests') ## lapply(returnTests, test_coreRfeature)
 simpleCopyTestResults <- test_coreRfeature_batch(simpleCopyTests, 'simpleCopyTests') 
 higherDimBlockTestResults <- test_coreRfeature_batch(higherDimBlockTests, 'higherDimBlockTests') 
-
-
+aliasTestResults <- test_coreRfeature_batch(aliasTests, 'aliasTests')
 
 ## basic seq_along test
 

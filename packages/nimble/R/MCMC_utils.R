@@ -238,8 +238,11 @@ mcmc_generateControlListArgument <- function(control, controlDefaults) {
 
 mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonScalars=FALSE, displayConjugateDependencies=FALSE) {
     ##if(any(unlist(lapply(ls, is.function)))) warning('probably provided wrong type of function argument')
-    if(!displayConjugateDependencies)
+    if(!displayConjugateDependencies) {
         if(grepl('^conjugate_d', names(ls)[1])) ls <- ls[1]    ## for conjugate samplers, remove all 'dep_dnorm', etc, control elements (don't print them!)
+        if(grepl('^CRP_cluster_wrapper', names(ls)[1]) && 'wrapped_type' %in% names(ls) &&
+           grepl('conjugate_d', ls$wrapped_type)[1]) ls <- ls[!names(ls) %in% c('wrapped_conf')]
+    }
     ls <- lapply(ls, function(el) if(is.nf(el) || is.function(el)) 'function' else el)   ## functions -> 'function'
     ls2 <- list()
     ## to make displayControlDefaults argument work again, would need to code process
@@ -261,6 +264,7 @@ mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonS
             if(is.numeric(controlValue) || is.logical(controlValue))
                 if(length(controlValue) > 1)
                     controlValue <- ifelse(is.null(dim(controlValue)), 'custom vector', 'custom array')
+        if(class(controlValue) == 'samplerConf')   controlValue <- controlValue$name
         deparsedItem <- deparse(controlValue)
         if(length(deparsedItem) > 1) deparsedItem <- paste0(deparsedItem, collapse='')
         ls2[[i]] <- paste0(controlName, ': ', deparsedItem)
@@ -358,5 +362,44 @@ mcmc_checkWAICmonitors <- function(model, monitors, dataNodes) {
     }
     message('Monitored nodes are valid for WAIC')
 }
+
+
+mcmc_compressIndexRanges <- function(nums) {
+    nums <- sort(unique(nums))
+    rangeStartInd <- c(1, which(diff(nums) != 1) + 1)
+    ranges <- vector('list', length(rangeStartInd))
+    for(i in seq_along(rangeStartInd)) {
+        startInd <- rangeStartInd[i]
+        if(i == length(rangeStartInd)) {
+            if(rangeStartInd[i] == length(nums)) {
+                ranges[[i]] <- nums[startInd]
+            } else {
+                ranges[[i]] <- substitute(START:END, list(START = as.numeric(nums[startInd]),
+                                                          END = as.numeric(nums[length(nums)])))
+            }
+        } else {
+            if(startInd+1 < rangeStartInd[i+1]) {
+                ranges[[i]] <- substitute(START:END, list(START = as.numeric(nums[startInd]),
+                                                          END = as.numeric(nums[rangeStartInd[i+1]-1])))
+            } else ranges[[i]] <- nums[startInd]
+        }
+    }
+    return(ranges)
+}
+
+
+mcmc_getIndexNumberFromNodeNames <- function(nodeNames, indNumber) {
+    (nodeInsideBrackets <- gsub('^[[:alpha:]]+\\[(.+)\\]$', '\\1', nodeNames))
+    splitList <- strsplit(nodeInsideBrackets, ',')
+    if(length(splitList[[1]]) < indNumber) stop('in mcmc_getIndexNumberFromNodeNames: indNumber exceeds node dimension', call. = FALSE)
+    indices <- as.numeric(sapply(splitList, function(el) el[indNumber]))
+    return(indices)
+}
+
+
+
+
+
+
 
 
