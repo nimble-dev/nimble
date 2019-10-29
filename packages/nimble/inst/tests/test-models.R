@@ -575,8 +575,8 @@ test_that("warnings for multiply-defined model nodes:", {
 
 test_that("handling of missing indexes of expressions:", {
     code = nimbleCode({
-    mn[1:2] <- (X[1:2,1:2] %*% beta[1:2,1:2])[,1]
-    y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
+        mn[1:2] <- (X[1:2,1:2] %*% beta[1:2,1:2])[,1]
+        y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
     })
     m = nimbleModel(code, data = list(y = rnorm(2)),
                     inits = list(X = matrix(1, 2,2), beta = matrix(2,2,2), pr = diag(2)))
@@ -584,8 +584,8 @@ test_that("handling of missing indexes of expressions:", {
     expect_true(is.numeric(cm$calculate('y')), "incorrectly not dealing with missing index in ()[] expression")
 
     code = nimbleCode({
-    mn[1:2] <- (X[1:2,] %*% beta[1:2,1:2])[,1]
-    y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
+        mn[1:2] <- (X[1:2,] %*% beta[1:2,1:2])[,1]
+        y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
     })
     m = nimbleModel(code, data = list(y = rnorm(2)),
                     inits = list(X = matrix(1, 2,2), beta = matrix(2,2,2), pr = diag(2)))
@@ -593,8 +593,8 @@ test_that("handling of missing indexes of expressions:", {
     expect_true(is.numeric(cm$calculate('y')), "incorrectly not dealing with missing index in ()[] expression")
     
     code = nimbleCode({
-    mn[1:2] <- (X[1:2,] %*% beta[1:2,1:2])[,1]
-    y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
+        mn[1:2] <- (X[1:2,] %*% beta[1:2,1:2])[,1]
+        y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
     })
     expect_error(m <- nimbleModel(code, data = list(y = rnorm(2)),
                                   inits = list(beta = matrix(2,2,2), pr = diag(2))),
@@ -613,22 +613,21 @@ test_that("handling of missing indexes of expressions:", {
                   ## info = "incorrectly handling missing indices with dims present")
 
     code = nimbleCode({
-    mn[1:2] <- (X[1:2,1:2] %*% beta[1:2,1:2])[k[,1],1]
-    y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
+        mn[1:2] <- (X[1:2,1:2] %*% beta[1:2,1:2])[k[,1],1]
+        y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
     })
     expect_error(m <- nimbleModel(code, data = list(y = rnorm(2)),
                                   inits = list(X = matrix(1, 2, 2), beta = matrix(2,2,2), pr = diag(2))),
                  "missing indices", info = "not catching missing indices in model variable within indexing of ()")
     
     code = nimbleCode({
-    mn[1:2] <- (X[1:2,1:2] %*% beta[1:2,1:2])[k[,1],1]
-    y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
+        mn[1:2] <- (X[1:2,1:2] %*% beta[1:2,1:2])[k[,1],1]
+        y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
     })
     m = nimbleModel(code, data = list(y = rnorm(2)),
                     inits = list(X = matrix(1, 2, 2), beta = matrix(2,2,2), pr = diag(2)),
                     dimensions = list(k = c(2,2)))
-    expect_silent(cm <- compileNimble(m)),
-                  info = "incorrectly not using dim to fill in missing index model variable within indexing of ()")
+    cm <- compileNimble(m)  # use expect_message?
 })
 
 sink(NULL)
