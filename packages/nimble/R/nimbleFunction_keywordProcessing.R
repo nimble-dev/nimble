@@ -874,6 +874,10 @@ keywordList[['dinvgamma']] <- d_gamma_keywordInfo
 keywordList[['pinvgamma']] <- pq_gamma_keywordInfo
 keywordList[['qinvgamma']] <- pq_gamma_keywordInfo
 keywordList[['rinvgamma']] <- rgamma_keywordInfo
+keywordList[['dsqrtinvgamma']] <- d_gamma_keywordInfo
+keywordList[['psqrtinvgamma']] <- pq_gamma_keywordInfo
+keywordList[['qsqrtinvgamma']] <- pq_gamma_keywordInfo
+keywordList[['rsqrtinvgamma']] <- rgamma_keywordInfo
 keywordList[['ddexp']] <- d_gamma_keywordInfo
 keywordList[['pdexp']] <- pq_gamma_keywordInfo
 keywordList[['qdexp']] <- pq_gamma_keywordInfo
@@ -934,10 +938,10 @@ matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
 matchFunctions[['rgamma']] <- function(n, shape, rate = 1, scale){}
 matchFunctions[['qgamma']] <- function(p, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}
 matchFunctions[['pgamma']] <- function(q, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}
-matchFunctions[['dinvgamma']] <- function(x, shape, scale = 1, rate, log = FALSE){}
-matchFunctions[['rinvgamma']] <- function(n, shape, scale = 1, rate){}
-matchFunctions[['qinvgamma']] <- function(p, shape, scale = 1, rate, lower.tail = TRUE, log.p = FALSE){}
-matchFunctions[['pinvgamma']] <- function(q, shape, scale = 1, rate, lower.tail = TRUE, log.p = FALSE){}
+matchFunctions[['dinvgamma']] <- matchFunctions[['dsqrtinvgamma']] <- function(x, shape, scale = 1, rate, log = FALSE){}
+matchFunctions[['rinvgamma']] <- matchFunctions[['rsqrtinvgamma']] <- function(n, shape, scale = 1, rate){}
+matchFunctions[['qinvgamma']] <- matchFunctions[['qsqrtinvgamma']] <- function(p, shape, scale = 1, rate, lower.tail = TRUE, log.p = FALSE){}
+matchFunctions[['pinvgamma']] <- matchFunctions[['psqrtinvgamma']] <- function(q, shape, scale = 1, rate, lower.tail = TRUE, log.p = FALSE){}
 matchFunctions[['dexp']] <- function(x, rate = 1, log = FALSE){}
 matchFunctions[['rexp']] <- function(n, rate = 1){}
 matchFunctions[['qexp']] <- function(p, rate = 1, lower.tail = TRUE, log.p = FALSE){}
@@ -1748,20 +1752,38 @@ makeSingleIndexAccessCodeNames <- function(baseName) {
 }
 
 handleScaleAndRateForGamma <- function(code){
+    ## This is moderately klugey.  For invgamma and gamma, what happens below works because
+    ## the argument for which there is a default is also the non-canonical param.
+    ## For ddexp, trickier logic is needed.
+
     ## also handles core R dexp, as well as ddexp, and dinvgamma
     scaleArg <- code$scale
     rateArg <- code$rate
     if(is.null(scaleArg) && is.null(rateArg))	stop('neither scale nor rate defined in dgamma, invgamma, dexp, or ddexp')
     codeName <- deparse(code[[1]])
     dist <- substring(codeName, 2, nchar(codeName))
-    if(dist == 'invgamma') {
+    if(dist == 'invgamma' || dist == 'sqrtinvgamma') {  ## For [drpq]invgamma
             if(is.null(rateArg)) {
             rateArg <- substitute(1.0/(A), list(A = code$scale)) 
             code$scale <- rateArg
             names(code)[which(names(code) == 'scale')] <- 'rate'  # to preserve correct order
         }
         code$scale <- NULL
-    } else {
+    } else if(dist == 'dexp') { ## This is for [drpq]dexp
+        ## The logic here is trickier.  scale has a default value and is canonical (what is needed for C).
+        ## If rate was provided, then by the time we are here, matchFunctions has been used (matchAndFill.call),
+        ## so there will also be a scale, since it has a default
+        setScaleArg <- FALSE
+        if(is.null(scaleArg)) setScaleArg <- TRUE ## scale is not expected to be null ever (see previous comment), but this is defensive.
+        if(!is.null(scaleArg) & !is.null(rateArg)) setScaleArg <- TRUE ## Both are there, so set scale from the provided rate
+        if(setScaleArg) {
+            code$scale <- NULL
+            scaleArg <- substitute(1.0/(A), list(A = code$rate)) 
+            code$rate <- scaleArg
+            names(code)[which(names(code) == 'rate')] <- 'scale'  # to preserve correct order
+        }
+        code$rate <- NULL
+    } else {  ## dgamma: convert rate to scale
         if(is.null(scaleArg)) {
             scaleArg <- substitute(1.0/(A), list(A = code$rate)) 
             code$rate <- scaleArg

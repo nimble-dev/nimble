@@ -206,10 +206,44 @@ test_AD_batch(unaryReductionOpTests, knownFailures = AD_knownFailures)
 test_AD_batch(binaryOpTests, knownFailures = AD_knownFailures)
 test_AD_batch(powOpTests, knownFailures = AD_knownFailures)
 test_AD_batch(binaryReductionOpTests, knownFailures = AD_knownFailures)
-test_AD_batch(squareMatrixOpTests, knownFailures = AD_knownFailures)
+test_AD_batch(squareMatrixOpTests, knownFailures = AD_knownFailures) ## These don't work and aren't in AD_knownFailures:chol, inverse (3 works, 4 fails), det (5 works, 6 fails), log det not sure (8 gets a NaN), trace (which is in knownFailures for compilation failure).
 test_AD_batch(binaryMatrixOpTests, knownFailures = AD_knownFailures)
 
 ## from AD_distribution_test_lists.R
-test_AD_batch(distn_tests,  knownFailures = AD_knownFailures)
-test_AD_batch(distn_with_log_tests, knownFailures = AD_knownFailures)
+test_AD_batch(distn_tests,  knownFailures = AD_knownFailures) ## 56 is known failure that didn't fail. 91 failed, huge numbers.
+nimbleOptions(pauseAfterWritingFiles = TRUE)
+test_AD_batch(distn_with_log_tests[27], knownFailures = AD_knownFailures)
+tempdir()
+test_AD_batch(distn_tests[141])
+
+test_AD_batch(distn_tests[141], knownFailures = AD_knownFailures)
+test_AD_batch(distn_with_log_tests[141], knownFailures = AD_knownFailures)
+debug(test_AD)
+test_AD_batch(distn_with_log_tests[141])
+
+idexp <- which(grepl("exp_R", names(distn_tests)))
+test_AD_batch(distn_tests[idexp])
+test_AD_batch(distn_with_log_tests[idexp])
+
+idexp <- which(grepl("exp_nimble", names(distn_tests)))
+test_AD_batch(distn_tests[idexp], knownFailures = AD_knownFailures)
+test_AD_batch(distn_with_log_tests[idexp], knownFailures = AD_knownFailures)
+
+idig <- which(grepl("invgamma", names(distn_tests)))
+test_AD_batch(distn_tests[idig], knownFailures = AD_knownFailures)
+test_AD_batch(distn_tests[idig[2]], knownFailures = AD_knownFailures)
+test_AD_batch(distn_with_log_tests[idig], knownFailures = AD_knownFailures)
+
+id <- which(grepl("sqrtinvgamma", names(distn_tests))) ## Something weird happening
+test_AD_batch(distn_tests[id[1]])
+test_AD_batch(distn_with_log_tests[id], knownFailures = AD_knownFailures)
+test_AD_batch(distn_tests[id], knownFailures = AD_knownFailures)
+test_AD_batch(distn_with_log_tests[id], knownFailures = AD_knownFailures)
+
+id <- which(grepl("^gamma", names(distn_tests)))
+test_AD_batch(distn_tests[id], knownFailures = AD_knownFailures)
+test_AD_batch(distn_with_log_tests[id], knownFailures = AD_knownFailures)
+
+id <- which(grepl("^t_R", names(distn_tests))) ## Review what happens here.
+test_AD_batch(distn_tests[id])
 

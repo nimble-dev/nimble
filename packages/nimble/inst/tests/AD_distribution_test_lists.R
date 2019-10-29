@@ -246,7 +246,7 @@ dexp_base$wrt <- c('location', 'x')
 ## scale parameterization
 distn_params[['dexp_scale']] <- dexp_base
 distn_params[['dexp_scale']]$args[['scale']] <- list(
-  distn = function(n) runif(n, max = 10),
+  input_gen_fun = function(n) runif(n, max = 10),
   type = c('double(0)', 'double(1, 7)')
 )
 distn_params[['dexp_scale']]$wrt <- c(dexp_base$wrt, 'scale')
@@ -254,7 +254,7 @@ distn_params[['dexp_scale']]$wrt <- c(dexp_base$wrt, 'scale')
 ## rate parameterization
 distn_params[['dexp_rate']] <- dexp_base
 distn_params[['dexp_rate']]$args[['rate']] <-
-  distn_params[['dexp_scale']]$args[['scale']]
+    distn_params[['dexp_scale']]$args[['scale']]
 distn_params[['dexp_rate']]$wrt <- c(dexp_base$wrt, 'rate')
 
 ###########################
@@ -479,7 +479,7 @@ distn_params[['dirch_base']]$args <- list(
     type = c('double(1, 5)')
   ),
   alpha = list(
-    input_gen_fun = function(n) runif(n, max = 1000),
+    input_gen_fun = function(n) runif(n, max = 3), ## large values might not work well
     type = c('double(1, 5)')
   )
 )

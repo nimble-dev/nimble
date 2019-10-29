@@ -332,7 +332,8 @@ operatorRank <- c(
          '||' = 14)
 )
 
-nimDerivsPrependTypeOperators <- c("dnorm", "dpois", "dgamma", "dinvgamma", "dexp_nimble", "dexp", "dlnorm", "dweibull",
+nimDerivsPrependTypeOperators <- c("dnorm", "dpois", "dgamma", "dinvgamma", "dsqrtinvgamma",
+                                   "dexp_nimble", "dexp", "ddexp", "dlnorm", "dweibull",
                                    "dbinom", "dbeta", "dchisq", "dlogis", "dt",
                                    "dt_nonstandard", "nimArr_dmulti", "dnbinom", "dunif", "pairmax", "pairmin", 
                                    "nimArr_ddirch", "nimArr_dmvt_chol", "nimArr_dmnorm_chol", "nimArr_dwish_chol",

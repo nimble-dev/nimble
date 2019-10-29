@@ -255,7 +255,8 @@ template<class Type>
 Type nimDerivs_dinvgamma(Type x, Type shape, Type rate, Type give_log)
 {
   Type xinv = Type(1.0)/x;
-  Type res = CppAD::CondExpEq(give_log, Type(1), nimDerivs_dgamma(xinv, shape, rate, give_log) - 2*log(x), nimDerivs_dgamma(xinv, shape, rate, give_log) * xinv * xinv);
+  Type res = nimDerivs_dgamma_logFixed(xinv, shape, rate, 1) - 2*log(x);
+  res = CondExpEq(give_log, Type(1), res, exp(res));
   return(res);
 }
 
@@ -263,15 +264,31 @@ template<class Type>
 Type nimDerivs_dinvgamma_logFixed(Type x, Type shape, Type rate, int give_log)
 {
   Type xinv = Type(1.0)/x;
-  Type res;
-  if(give_log){
-    res = nimDerivs_dgamma_logFixed(xinv, shape, rate, give_log) - 2*log(x);
-  }
-  else{
-    res = nimDerivs_dgamma_logFixed(xinv, shape, rate, give_log) * xinv * xinv;
+  Type res = nimDerivs_dgamma_logFixed(xinv, shape, rate, 1) - 2*log(x);
+  if(!give_log){
+    res = exp(res); //nimDerivs_dgamma_logFixed(xinv, shape, rate, give_log) * xinv * xinv;
   }
   return(res);
 }
+
+template<class Type>
+Type nimDerivs_dsqrtinvgamma(Type x, Type shape, Type rate, Type give_log)
+{
+  Type res = nimDerivs_dinvgamma_logFixed(x*x, shape, rate, 1) + log(2*x);
+  res = CppAD::CondExpEq(give_log, Type(1), res, exp(res));
+  return(res);
+}
+
+template<class Type>
+Type nimDerivs_dsqrtinvgamma_logFixed(Type x, Type shape, Type rate, int give_log)
+{
+  Type res = nimDerivs_dinvgamma_logFixed(x*x, shape, rate, 1) + log(2*x);
+  if(!give_log){
+    res = exp(res);
+  }
+  return(res);
+}
+
 
 /* Negative binomial */
 /* Code modified from TMB */
@@ -326,9 +343,13 @@ inline Type nimDerivs_dpois_logFixed(const Type &x, const Type &lambda, int give
 template<class Type> 
 Type nimDerivs_dexp_nimble(Type x, Type rate, Type give_log)
 {
-	Type res = CppAD::CondExpEq(give_log, Type(0),
-				    rate*exp(-rate*x),
-				    log(rate)-rate*x);
+  Type res = log(rate)-rate*x;
+  res = CppAD::CondExpEq(give_log, Type(1),
+			 res,
+			 exp(res));
+	/* Type res = CppAD::CondExpEq(give_log, Type(0), */
+	/* 			    rate*exp(-rate*x), */
+	/* 			    log(rate)-rate*x); */
 	return(res);
 }
 
@@ -351,7 +372,9 @@ Type nimDerivs_dexp_nimble_logFixed(Type x, Type rate, int give_log)
 template<class Type>
 Type nimDerivs_dexp(Type x, Type scale, Type give_log)
 {
-	Type res = CppAD::CondExpEq(give_log, Type(0), exp(-x/scale)/scale, -log(scale)-x/scale);
+  Type res = -log(scale)-x/scale;
+  res = CppAD::CondExpEq(give_log, Type(1), res, exp(res));
+    //	Type res = CppAD::CondExpEq(give_log, Type(0), exp(-x/scale)/scale, -log(scale)-x/scale);
 	return(res);
 }
 
@@ -442,7 +465,7 @@ template<class Type>
 Type nimDerivs_dchisq(Type x, Type df, Type give_log)
 {	
   Type res = (df/Type(2.0) - Type(1.0))*log(x) - (x/Type(2.0)) - (df/Type(2.0))*log(Type(2.0)) - nimDerivs_lgammafn(df/Type(2.0));
-  res = CondExpEq(give_log, Type(0), exp(res), res);
+  res = CondExpEq(give_log, Type(1), res, exp(res));
   return(res);
 }
 
@@ -461,11 +484,16 @@ Type nimDerivs_dchisq_logFixed(Type x, Type df, int give_log)
 template <class Type>
 Type nimDerivs_dbeta(Type x, Type shape1, Type shape2, Type give_log)
 {
-  Type res = CondExpEq(give_log, Type(0), 
-		       exp(nimDerivs_lgammafn(shape1+shape2) - nimDerivs_lgammafn(shape1) - 
-			   nimDerivs_lgammafn(shape2)) * pow(x,shape1-1) * pow(1-x,shape2-1),
-		       nimDerivs_lgammafn(shape1+shape2) - nimDerivs_lgammafn(shape1) - nimDerivs_lgammafn(shape2) + 
-		       (shape1-1)*log(x) + (shape2-1)*log(1-x));
+  Type res = nimDerivs_lgammafn(shape1+shape2) - nimDerivs_lgammafn(shape1) - nimDerivs_lgammafn(shape2) + 
+    (shape1-1)*log(x) + (shape2-1)*log(1-x);
+  res = CondExpEq(give_log, Type(1), res, exp(res));
+
+  /* The following code, when used with tape optimize()ation, gives a crash when the wrong bracnch of CondExpEq is triggered */
+  /* Type res = CondExpEq(give_log, Type(0),  */
+  /* 		       exp(nimDerivs_lgammafn(shape1+shape2) - nimDerivs_lgammafn(shape1) -  */
+  /* 			   nimDerivs_lgammafn(shape2)) * pow(x,shape1-1) * pow(1-x,shape2-1), */
+  /* 		       nimDerivs_lgammafn(shape1+shape2) - nimDerivs_lgammafn(shape1) - nimDerivs_lgammafn(shape2) +  */
+  /* 		       (shape1-1)*log(x) + (shape2-1)*log(1-x)); */
   return(res);
 }
 
@@ -523,21 +551,24 @@ Type nimDerivs_dlnorm_logFixed(Type x, Type mean, Type sd, int give_log)
   return(res);
 }
 
-/* ddexp: double exponential (Lapalace) distribtuion */
+/* ddexp: double exponential (Lapalace) distribution */
 template<class Type>
 Type nimDerivs_ddexp(Type x, Type location, Type scale, Type give_log)
 {
-  Type res = Type(1.0/2.0) / scale * exp(-abs(x - location) / scale);
-  res = CppAD::CondExpEq(give_log, Type(1), log(res), res);
+  Type res = log(Type(0.5)) - log(scale) - abs(x-location)/scale;
+  //  Type res = (Type(1.0/2.0) / scale) * exp(-abs(x - location) / scale);
+  //  res = CppAD::CondExpEq(give_log, Type(1), log(res), res);
+  res = CppAD::CondExpEq(give_log, Type(1), res, exp(res));
   return(res);
 }
 
 template<class Type>
 Type nimDerivs_ddexp_logFixed(Type x, Type location, Type scale, int give_log)
 {
-  Type res = Type(1.0/2.0) / scale * exp(-abs(x - location) / scale);
-  if(give_log){
-	  res = log(res);
+  Type res = log(Type(0.5)) - log(scale) - abs(x-location)/scale;
+  //  Type res = Type(1.0/2.0) / scale * exp(-abs(x - location) / scale);
+  if(!give_log){
+	  res = exp(res);
   }
   return(res);
 }

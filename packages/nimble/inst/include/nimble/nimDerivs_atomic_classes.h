@@ -51,17 +51,17 @@ private:
       const CppAD::vector<double>&               taylor_x     ,
       CppAD::vector<double>&                     taylor_y     )
   {
-    //   std::cout<<"forward "<<order_low<<" "<<order_up<<" "<<taylor_x[0]<<std::endl;
+    //    std::cout<<"forward "<<order_low<<" "<<order_up<<" "<<taylor_x[0]<<std::endl;
     if(order_low <= 0 & order_up >= 0) {
       taylor_y[0] = Rf_lgammafn(taylor_x[0]);
-      //   std::cout<<"taylor_y[0] "<<taylor_y[0]<<std::endl;
+      //      std::cout<<"taylor_y[0] "<<taylor_y[0]<<std::endl;
     }
     double fprime;
     if(order_low <= 2 & order_up >= 1)
       fprime = Rf_psigamma(taylor_x[0], 0);
     if(order_low <= 1 & order_up >= 1) {
       taylor_y[1] = fprime * taylor_x[1];
-      //   std::cout<<"taylor_y[1] "<<taylor_y[1]<<std::endl;
+      // std::cout<<"taylor_y[1] "<<taylor_y[1]<<std::endl;
       // f'(x) (x')
     }
     if(order_low <= 2 & order_up >= 2) {
@@ -81,17 +81,17 @@ private:
       CppAD::vector<double>&                     partial_x   ,
       const CppAD::vector<double>&               partial_y   )
   {
-    //  std::cout<<"reverse "<<order_up<<" "<<taylor_x[0]<<" "<<partial_y[0]<<std::endl;
+    //    std::cout<<"reverse "<<order_up<<" "<<taylor_x[0]<<" "<<partial_y[0]<<std::endl;
     partial_x[0] = 0;
     if(order_up >= 1) partial_x[1] = 0;
     double fprime = Rf_psigamma(taylor_x[0], 0);
     if(order_up >= 1) {
       partial_x[1] += partial_y[1] * fprime;
       partial_x[0] += partial_y[1] * Rf_psigamma(taylor_x[0], 1) * taylor_x[1];
-      //    std::cout<<partial_x[1]<<" ";
+      // std::cout<<partial_x[1]<<" ";
     }
     partial_x[0] += partial_y[0] * fprime;
-    //  std::cout<<partial_x[0]<<std::endl;
+    // std::cout<<partial_x[0]<<std::endl;
     // dG/dx = dG/dy  dy/dx 
     return true;
   }

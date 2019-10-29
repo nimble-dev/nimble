@@ -88,6 +88,8 @@ binaryOpTests <- make_AD_test_batch(
   binaryOps, binaryArgs
 )
 
+modify_on_match(binaryOpTests, "/ arg1 = double\\(0\\) arg2 = double\\(2, c\\(3, 4\\)\\)", 'input_gen_funs', function(x) {res <- rnorm(x);res <- res + sign(res)*0.1; res}) ## This generator avoids small numbers that, in the denominator, give huge hessians that are hard to numerically match from finite elements
+
 ## set tolerances (default is tol1 = 0.00001 and tol2 = 0.0001)
 ##modify_on_match(binaryOpTests, '(\\+|-) double\\(0\\) double\\(1, 4\\)', 'tol2', 0.001)
 ##modify_on_match(binaryOpTests, '(\\+|-) double\\(1, 4\\) double\\(0\\)', 'tol2', 0.001)

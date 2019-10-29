@@ -465,7 +465,11 @@ ddexp <- function(x, location = 0, scale = 1, rate = 1/scale, log = FALSE) {
           warning("specify 'scale' or 'rate' but not both")
       else stop("specify 'scale' or 'rate' but not both")
   }
-  .Call(C_ddexp, as.double(x), as.double(location), as.double(scale), as.logical(log))
+  if(missing(rate)) {
+    .Call(C_ddexp, as.double(x), as.double(location), as.double(scale), as.logical(log))
+  } else {
+    .Call(C_ddexp, as.double(x), as.double(location), as.double(1/rate), as.logical(log))
+  }
 }
 
 #' @rdname Double-Exponential
@@ -476,7 +480,11 @@ rdexp <- function(n, location = 0, scale = 1, rate = 1/scale) {
           warning("specify 'scale' or 'rate' but not both")
       else stop("specify 'scale' or 'rate' but not both")
   }
-  .Call(C_rdexp, as.integer(n), as.double(location), as.double(scale))
+  if(missing(rate)) {
+    .Call(C_rdexp, as.integer(n), as.double(location), as.double(scale))
+  } else {
+    .Call(C_rdexp, as.integer(n), as.double(location), as.double(1/rate))
+  }
 }
 
 #' @rdname Double-Exponential
@@ -487,8 +495,13 @@ pdexp <- function(q, location = 0, scale = 1, rate = 1/scale, lower.tail = TRUE,
           warning("specify 'scale' or 'rate' but not both")
       else stop("specify 'scale' or 'rate' but not both")
   }
-  .Call(C_pdexp, as.double(q), as.double(location), as.double(scale), as.logical(lower.tail), as.logical(log.p))
+  if(missing(rate)) {
+    .Call(C_pdexp, as.double(q), as.double(location), as.double(scale), as.logical(lower.tail), as.logical(log.p))
+  } else {
+    .Call(C_pdexp, as.double(q), as.double(location), as.double(1/rate), as.logical(lower.tail), as.logical(log.p))
+  }
 }
+  
 
 #' @rdname Double-Exponential
 #' @export
@@ -498,7 +511,11 @@ qdexp <- function(p, location = 0, scale = 1, rate = 1/scale, lower.tail = TRUE,
           warning("specify 'scale' or 'rate' but not both")
       else stop("specify 'scale' or 'rate' but not both")
   }
-  .Call(C_qdexp, as.double(p), as.double(location), as.double(scale), as.logical(lower.tail), as.logical(log.p))
+  if(missing(rate)) {
+    .Call(C_qdexp, as.double(p), as.double(location), as.double(scale), as.logical(lower.tail), as.logical(log.p))
+  } else {
+    .Call(C_qdexp, as.double(p), as.double(location), as.double(1/rate), as.logical(lower.tail), as.logical(log.p))    
+  }
 }
 
 

@@ -1813,6 +1813,11 @@ make_op_param <- function(op, argTypes, more_args = NULL) {
 ##
 return_type_string <- function(op, argTypes) {
 
+  ## multivariate distributions ops.  These do not support recycling rule behavior, so the return type is always double(0)
+  mvdist_ops <- names(nimble:::sizeCalls)[nimble:::sizeCalls == 'sizeScalarRecurseAllowMaps'] 
+  if(op %in% mvdist_ops)
+    return("double(0)")
+  
   ## see ops handled by eigenize_recyclingRuleFunction in genCpp_eigenization.R
   recycling_rule_ops <- c(
     nimble:::scalar_distribution_dFuns,

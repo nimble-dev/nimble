@@ -86,7 +86,7 @@ AD_knownFailures <- list( ## not complete:
     )
   ),
   ### distribution tests
-  dbeta = list(
+  dbeta = list( ## These are failures in the "with_log" cases. (index 27 is the all-scalar case)
     'x = double(1, 5) shape1 = double(0) shape2 = double(0) log = double(0)' = list(
       segfault = TRUE
     ),
@@ -114,15 +114,17 @@ AD_knownFailures <- list( ## not complete:
       compilation = TRUE
     )
   ),
+  ## ddexp: Recycling-rule is not implemented in R.  Although it works in C++, it is considered unsupported.
   ddexp = list(
-    'x = double(0) location = double(0) scale = double(0)' = list(
-      compilation = TRUE
-    ),
-    'x = double(0) location = double(0) scale = double(0) log = double(0)' = list(
-      compilation = TRUE
-    ),
+    ## 'x = double(0) location = double(0) scale = double(0)' = list(
+    ##   compilation = TRUE
+    ## ),
+    ## 'x = double(0) location = double(0) scale = double(0) log = double(0)' = list(
+    ##   compilation = TRUE
+    ## ),
+      ## The following known failures occur from lack of recycling-rule in uncompiled.
     'x = double(0) location = double(1, 3) scale = double(0)' = list(
-      ## compiled and uncompiled output lengths differ
+      ## compiled and uncompiled output lengths differ (index 41)
       value = 'method1'
     ),
     'x = double(0) location = double(0) scale = double(1, 7)' = list(
@@ -141,27 +143,21 @@ AD_knownFailures <- list( ## not complete:
       ## compiled and uncompiled output lengths differ
       value = 'method1'
     ),
-    'x = double(0) location = double(0) rate = double(0)' = list(
-      compilation = TRUE
-    ),
-    'x = double(0) location = double(0) rate = double(0) log = double(0)' = list(
-      compilation = TRUE
-    ),
+    ## 'x = double(0) location = double(0) rate = double(0)' = list(
+    ##   compilation = TRUE
+    ## ),
+    ## 'x = double(0) location = double(0) rate = double(0) log = double(0)' = list(
+    ##   compilation = TRUE
+    ## ),
     'x = double(0) location = double(1, 3) rate = double(0)' = list(
       ## compiled and uncompiled output lengths differ
       value = 'method1'
     ),
     'x = double(0) location = double(0) rate = double(1, 7)' = list(
-      ## Error : Number of dimensions 0 of the return() argument does not match number 1 given in the returnType() statement.
-      ## This occurred for: return(out)
-      ## This was part of the call:  {
-      ##   out <- ddexp(x=ARG1_x_,location=ARG2_location_,scale=1,log=1)
-      ##   return(out)
-      ## }
-      compilation = TRUE
+      value = 'method1'
     ),
     'x = double(0) location = double(0) rate = double(1, 7) log = double(0)' = list(
-      compilation = TRUE
+      value = 'method1'
     ),
     'x = double(1, 5) location = double(0) rate = double(1, 7)' = list(
       ## compiled and uncompiled output lengths differ
@@ -184,17 +180,17 @@ AD_knownFailures <- list( ## not complete:
       ##   out <- nimArr_ddirch(x=ARG1_x_,alpha=ARG2_alpha_,log=1)
       ##   return(out)
       ## }
-      compilation = TRUE
+      jacobian = 'method2'
     ),
     'x = double(1, 5) alpha = double(1, 5) log = double(0)' = list(
-      compilation = TRUE
+      jacobian = 'method2'
     )
   ),
-  dexp = list(
-    'x = double(0) rate = double(1, 3)' = list(
-      compilation = TRUE
-    )
-  ),
+  ## dexp = list(
+  ##   'x = double(0) rate = double(1, 3)' = list(
+  ##     compilation = TRUE
+  ##   )
+  ## ),
   dexp_nimble = list(
     'x = double(0) rate = double(1, 3)' = list(
       ## compiled and uncompiled output lengths differ
@@ -203,57 +199,91 @@ AD_knownFailures <- list( ## not complete:
     'x = double(0) scale = double(1, 3)' = list(
       ## compiled and uncompiled output lengths differ
       value = 'method1'
+    ),'x = double(0) rate = double(1, 3) log = double(0)' = list(
+      ## compiled and uncompiled output lengths differ
+      value = 'method1'
+    ),
+    'x = double(0) scale = double(1, 3) log = double(0)' = list(
+      ## compiled and uncompiled output lengths differ
+      value = 'method1'
     )
   ),
   dinvgamma = list(
-    'x = double(0) scale = double(0) shape = double(0) log = double(0)' = list(
-      segfault = TRUE
-    ),
+    ## 'x = double(0) scale = double(0) shape = double(0) log = double(0)' = list(
+    ##   segfault = TRUE
+    ## ),
     'x = double(0) scale = double(1, 3) shape = double(0)' = list(
       ## compiled and uncompiled output lengths differ
       value = 'method1'
     ),
     'x = double(0) scale = double(1, 3) shape = double(0) log = double(0)' = list(
-      segfault = TRUE
+      ## compiled and uncompiled output lengths differ
+      value = 'method1'
     ),
+    ## 'x = double(0) scale = double(1, 3) shape = double(0) log = double(0)' = list(
+    ##   segfault = TRUE
+    ## ),
     'x = double(0) scale = double(0) shape = double(1, 7)' = list(
       ## compiled and uncompiled output lengths differ
       value = 'method1'
     ),
     'x = double(0) scale = double(0) shape = double(1, 7) log = double(0)' = list(
-      segfault = TRUE
+      ## compiled and uncompiled output lengths differ
+      value = 'method1'
     ),
+    ## 'x = double(0) scale = double(0) shape = double(1, 7) log = double(0)' = list(
+    ##   segfault = TRUE
+    ## ),
     'x = double(0) scale = double(1, 3) shape = double(1, 7)' = list(
       ## compiled and uncompiled output lengths differ
       value = 'method1'
     ),
     'x = double(0) scale = double(1, 3) shape = double(1, 7) log = double(0)' = list(
-      segfault = TRUE
+      ## compiled and uncompiled output lengths differ
+      value = 'method1'
     ),
-    'x = double(0) rate = double(0) shape = double(0) log = double(0)' = list(
-      segfault = TRUE
-    ),
+    ## 'x = double(0) scale = double(1, 3) shape = double(1, 7) log = double(0)' = list(
+    ##   segfault = TRUE
+    ## ),
+    ## 'x = double(0) rate = double(0) shape = double(0) log = double(0)' = list(
+    ##   segfault = TRUE
+    ## ),
     'x = double(0) rate = double(1, 3) shape = double(0)' = list(
       ## compiled and uncompiled output lengths differ
       value = 'method1'
     ),
     'x = double(0) rate = double(1, 3) shape = double(0) log = double(0)' = list(
-      segfault = TRUE
+      ## compiled and uncompiled output lengths differ
+      value = 'method1'
     ),
+
+    ## 'x = double(0) rate = double(1, 3) shape = double(0) log = double(0)' = list(
+    ##   segfault = TRUE
+    ## ),
     'x = double(0) rate = double(0) shape = double(1, 7)' = list(
       ## compiled and uncompiled output lengths differ
       value = 'method1'
     ),
     'x = double(0) rate = double(0) shape = double(1, 7) log = double(0)' = list(
-      segfault = TRUE
+      ## compiled and uncompiled output lengths differ
+      value = 'method1'
     ),
+
+    ## 'x = double(0) rate = double(0) shape = double(1, 7) log = double(0)' = list(
+    ##   segfault = TRUE
+    ## ),
     'x = double(0) rate = double(1, 3) shape = double(1, 7)' = list(
       ## compiled and uncompiled output lengths differ
       value = 'method1'
     ),
     'x = double(0) rate = double(1, 3) shape = double(1, 7) log = double(0)' = list(
-      segfault = TRUE
+      ## compiled and uncompiled output lengths differ
+      value = 'method1'
     )
+   ## ,
+    ## 'x = double(0) rate = double(1, 3) shape = double(1, 7) log = double(0)' = list(
+    ##   segfault = TRUE
+    ## )
   ),
   dlnorm = list(
     ## NaN's produced by uncompiled output vs non-sense from compiled output
@@ -355,11 +385,11 @@ AD_knownFailures <- list( ## not complete:
       compilation = TRUE
     )
   ),
-  dsqrtinvgamma = list(
-    "*" = list(
-      compilation = TRUE
-    )
-  ),
+  ## dsqrtinvgamma = list(
+  ##   "*" = list(
+  ##     compilation = TRUE
+  ##   )
+  ## ),
   ## dt fails on all inputs 'x = double(0) df = double(0)' because of missing
   ## ncp argument
   dt = list(
