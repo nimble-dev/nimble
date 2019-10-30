@@ -519,9 +519,9 @@ AD_knownFailures <- list( ## not complete:
   ##     value = 'method1'
   ##   )
   ## ),
-  dweibull = list(
-    'x = double(0) scale = double(1, 3) shape = double(1, 7)' = list(
-      value = 'method1'
-    )
-  )
+  ## dweibull = list(
+  ##   'x = double(0) scale = double(1, 3) shape = double(1, 7)' = list(
+  ##     value = 'method1'
+  ##   )
+  ## )
 )

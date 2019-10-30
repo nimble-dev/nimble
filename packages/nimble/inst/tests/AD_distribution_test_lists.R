@@ -440,22 +440,19 @@ distn_params[['t_nonstandard']]$args[['rand_variate']]$input_gen_fun <- function
 
 distn_params[['unif_base']] <- distn_base
 distn_params[['unif_base']]$name <- 'unif'
-## For uniform, we ensure that all variates are within all ranges created by recycling-rule combinations.
-## Furthermore, large values of (max - min) can yield hessians wrt max (or min) that are very close in value
-## with log = 0 or log = 1.  One of the tests checks that log = 0 and log = 1 return different values, so we
-## use smallish max-min to ensure those are meaningfully different.
+## For uniform, we ensure that all variates are within all ranges created by recycling-rule combinations
 ## NB: Uncompiled derivatives will be NaN for -Inf values, but compiled derivatives will have nonsense values.
 distn_params[['unif_base']]$args <- list(
   rand_variate = list(
-    input_gen_fun = function(n) runif(n, -0.99, 0.99),
+    input_gen_fun = function(n) runif(n, -9.9, 9.9),
     type = c('double(0)', 'double(1, 5)')
   ),
   min = list(
-    input_gen_fun = function(n) runif(n, min = -5, max = -1),
+    input_gen_fun = function(n) runif(n, min = -100, max = -10),
     type = c('double(0)', 'double(1, 3)')
   ),
   max = list(
-    input_gen_fun = function(n) runif(n, min = 1, max = 5),
+    input_gen_fun = function(n) runif(n, min = 10, max = 100),
     type = c('double(0)', 'double(1, 7)')
   )
 )
@@ -465,11 +462,24 @@ distn_params[['unif_base']]$wrt <- c('min', 'max', 'x')
 ## Weibull distribution
 #######################
 
-distn_params[['weibull_base']] <- distn_params[['gamma_scale']]
+distn_params[['weibull_base']] <- distn_base   ## distn_params[['gamma_scale']]
 distn_params[['weibull_base']]$name <- 'weibull'
-distn_params[['weibull_base']]$args[['rand_variate']]$input_gen_fun <- function(n) {
-  function(shape, scale) rweibull(n, shape, scale)
-}
+distn_params[['weibull_base']]$args <- list(
+  rand_variate = list(
+    input_gen_fun = function(n) {function(shape, scale) rweibull(n, shape, scale)},
+    type = c('double(0)', 'double(1, 5)')
+  ),
+  shape = list(
+    input_gen_fun = function(n) runif(n, 0.1, 5),
+    type = c('double(0)', 'double(1, 3)')
+  ),
+  scale = list(
+    input_gen_fun = function(n) runif(n, 0.1, 5),
+    type = c('double(0)', 'double(1, 7)')
+  )
+)
+distn_params[['weibull_base']]$wrt <- c('shape', 'scale', 'x')
+
 
 #########################
 ## Dirichlet distribution
