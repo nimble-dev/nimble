@@ -627,7 +627,7 @@ test_that("handling of missing indexes of expressions:", {
     m = nimbleModel(code, data = list(y = rnorm(2)),
                     inits = list(X = matrix(1, 2, 2), beta = matrix(2,2,2), pr = diag(2)),
                     dimensions = list(k = c(2,2)))
-    cm <- compileNimble(m)  # use expect_message?
+    cm <- compileNimble(m)  # if compilation fails, test_that should catch this; having trouble using expect_message as behavior of whether a message is detected seems to differ when running tests locally versus Travis.
 })
 
 sink(NULL)
