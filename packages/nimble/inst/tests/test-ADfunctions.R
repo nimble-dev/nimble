@@ -261,4 +261,5 @@ id <- which(grepl("dunif", names(distn_tests))) ## Review what happens here.
 test_AD_batch(distn_tests[id])
 undebug(test_AD)
 test_AD_batch(distn_tests[136])
+debug(test_AD)
 test_AD_batch(distn_with_log_tests[id])

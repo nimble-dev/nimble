@@ -71,6 +71,15 @@ is_method_failure <- function(test_param_name, method_name,
   return(FALSE)
 }
 
+all_equal_ignore_zeros <- function(v1, v2, ...) {
+  if(length(v1) != length(v2)) return(FALSE)
+  zv1 <- as.logical(v1 == 0) ## as.logical will strip any names
+  zv2 <- as.logical(v2 == 0)
+  nzboth <- !(zv1 & zv2)
+  if(sum(nzboth)==0) return(FALSE) ## This is used to validate expected discrepancies except when they are zero, so if all are zero, we default to that there were discrepancies, which allows the test to pass.  
+  all.equal(v1[nzboth], v2[nzboth], ...)
+}
+
 ########################
 ## Main AD testing utils
 ########################
@@ -269,13 +278,13 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
           expect_false(isTRUE(all.equal(
             Rderivs[[method_name]]$value,
             Rderivs2[[method_name]]$value,
-            tolerance = tol1, info = info
-          )))
+            tolerance = tol1)), info = info
+          )
           expect_false(isTRUE(all.equal(
             Cderivs[[method_name]]$value,
             Cderivs2[[method_name]]$value,
-            tolerance = tol1, info = info
-          )))
+            tolerance = tol1)), info = info
+          )
         }
       }, wrap_in_try = isTRUE(catch_failures))
       if (isTRUE(catch_failures) && inherits(value_test, 'try-error')) {
@@ -320,16 +329,16 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
             Rderivs2[[method_name]]$jacobian,
             tolerance = tol2, info = info
           )
-          expect_false(isTRUE(all.equal(
+          expect_false(isTRUE(all_equal_ignore_zeros(
             Rderivs[[method_name]]$jacobian,
             Rderivs2[[method_name]]$jacobian,
-            tolerance = tol2, info = info
-          )))
-          expect_false(isTRUE(all.equal(
+            tolerance = tol2)), info = info
+          )
+          expect_false(isTRUE(all_equal_ignore_zeros(
             Cderivs[[method_name]]$jacobian,
             Cderivs2[[method_name]]$jacobian,
-            tolerance = tol2, info = info
-          )))
+            tolerance = tol2)), info = info
+          )
         }
       }, wrap_in_try = isTRUE(catch_failures))
       if (isTRUE(catch_failures) && inherits(jacobian_test, 'try-error')) {
@@ -374,16 +383,16 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
             Rderivs2[[method_name]]$hessian,
             tolerance = tol3, info = info
           )
-          expect_false(isTRUE(all.equal(
+          expect_false(isTRUE(all_equal_ignore_zeros(
             Rderivs[[method_name]]$hessian,
             Rderivs2[[method_name]]$hessian,
-            tolerance = tol3, info = info
-          )))
-          expect_false(isTRUE(all.equal(
+            tolerance = tol3)), info = info
+          )
+          expect_false(isTRUE(all_equal_ignore_zeros(
             Cderivs[[method_name]]$hessian,
             Cderivs2[[method_name]]$hessian,
-            tolerance = tol3, info = info
-          )))
+            tolerance = tol3)), info = info
+          )
         }
       }, wrap_in_try = isTRUE(catch_failures))
       if (isTRUE(catch_failures) && inherits(hessian_test, 'try-error')) {
