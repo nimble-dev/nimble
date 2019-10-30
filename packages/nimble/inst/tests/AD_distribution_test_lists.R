@@ -363,11 +363,11 @@ distn_params[['lnorm_base']]$args <- list(
     type = c('double(0)', 'double(1, 5)')
   ),
   meanlog = list(
-    input_gen_fun = function(n) runif(n, min = -100, max = 100),
+    input_gen_fun = function(n) runif(n, min = -2, max = 2),
     type = c('double(0)', 'double(1, 3)')
   ),
   sdlog = list(
-    input_gen_fun = function(n) runif(n, max = 100),
+    input_gen_fun = function(n) runif(n, max = 3),
     type = c('double(0)', 'double(1, 7)')
   )
 )
@@ -440,18 +440,19 @@ distn_params[['t_nonstandard']]$args[['rand_variate']]$input_gen_fun <- function
 
 distn_params[['unif_base']] <- distn_base
 distn_params[['unif_base']]$name <- 'unif'
-
+## For uniform, we ensure that all variates are within all ranges created by recycling-rule combinations
+## NB: Uncompiled derivatives will be NaN for -Inf values, but compiled derivatives will have nonsense values.
 distn_params[['unif_base']]$args <- list(
   rand_variate = list(
-    input_gen_fun = function(n) function(min, max) runif(n, min, max),
+    input_gen_fun = function(n) runif(n, -9.9, 9.9),
     type = c('double(0)', 'double(1, 5)')
   ),
   min = list(
-    input_gen_fun = function(n) runif(n, min = -1000, max = 100),
+    input_gen_fun = function(n) runif(n, min = -100, max = -10),
     type = c('double(0)', 'double(1, 3)')
   ),
   max = list(
-    input_gen_fun = function(n) runif(n, min = 100, max = 1000),
+    input_gen_fun = function(n) runif(n, min = 10, max = 100),
     type = c('double(0)', 'double(1, 7)')
   )
 )

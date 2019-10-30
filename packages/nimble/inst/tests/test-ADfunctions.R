@@ -247,3 +247,18 @@ test_AD_batch(distn_with_log_tests[id], knownFailures = AD_knownFailures)
 id <- which(grepl("^t_R", names(distn_tests))) ## Review what happens here.
 test_AD_batch(distn_tests[id])
 
+id <- which(grepl("dlnorm", names(distn_tests))) ## Review what happens here.
+test_AD_batch(distn_tests[id])
+test_AD_batch(distn_tests[88])
+test_AD_batch(distn_tests[89:92])
+test_AD_batch(distn_with_log_tests[id])
+
+id <- which(grepl("dlogis", names(distn_tests))) ## Review what happens here.
+test_AD_batch(distn_tests[id])
+test_AD_batch(distn_with_log_tests[id])
+
+id <- which(grepl("dunif", names(distn_tests))) ## Review what happens here.
+test_AD_batch(distn_tests[id])
+undebug(test_AD)
+test_AD_batch(distn_tests[136])
+test_AD_batch(distn_with_log_tests[id])

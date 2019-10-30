@@ -285,59 +285,59 @@ AD_knownFailures <- list( ## not complete:
     ##   segfault = TRUE
     ## )
   ),
-  dlnorm = list(
-    ## NaN's produced by uncompiled output vs non-sense from compiled output
-    'x = double(1, 5) meanlog = double(1, 3) sdlog = double(0)' = list(
-      jacobian = 'method2' ## wrt 'x'
-    ),
-    'x = double(1, 5) meanlog = double(1, 3) sdlog = double(1, 7)' = list(
-      jacobian = 'method2' ## wrt 'x'
-    )
-  ),
-  dlogis = list(
-    'x = double(1, 5) location = double(0) scale = double(0)' = list(
-      compilation = TRUE
-    ),
-    'x = double(1, 5) location = double(0) scale = double(0) log = double(0)' = list(
-      compilation = TRUE
-    ),
-    'x = double(0) location = double(1, 3) scale = double(0)' = list(
-      compilation = TRUE
-    ),
-    'x = double(0) location = double(1, 3) scale = double(0) log = double(0)' = list(
-      compilation = TRUE
-    ),
-    'x = double(1, 5) location = double(1, 3) scale = double(0)' = list(
-      compilation = TRUE
-    ),
-    'x = double(1, 5) location = double(1, 3) scale = double(0) log = double(0)' = list(
-      compilation = TRUE
-    ),
-    'x = double(0) location = double(0) scale = double(1, 7)' = list(
-      compilation = TRUE
-    ),
-    'x = double(0) location = double(0) scale = double(1, 7) log = double(0)' = list(
-      compilation = TRUE
-    ),
-    'x = double(1, 5) location = double(0) scale = double(1, 7)' = list(
-      compilation = TRUE
-    ),
-    'x = double(1, 5) location = double(0) scale = double(1, 7) log = double(0)' = list(
-      compilation = TRUE
-    ),
-    'x = double(0) location = double(1, 3) scale = double(1, 7)' = list(
-      compilation = TRUE
-    ),
-    'x = double(0) location = double(1, 3) scale = double(1, 7) log = double(0)' = list(
-      compilation = TRUE
-    ),
-    'x = double(1, 5) location = double(1, 3) scale = double(1, 7)' = list(
-      compilation = TRUE
-    ),
-    'x = double(1, 5) location = double(1, 3) scale = double(1, 7) log = double(0)' = list(
-      compilation = TRUE
-    )
-  ),
+  ## dlnorm = list(
+  ##   ## NaN's produced by uncompiled output vs non-sense from compiled output
+  ##   'x = double(1, 5) meanlog = double(1, 3) sdlog = double(0)' = list(
+  ##     jacobian = 'method2' ## wrt 'x'
+  ##   ),
+  ##   'x = double(1, 5) meanlog = double(1, 3) sdlog = double(1, 7)' = list(
+  ##     jacobian = 'method2' ## wrt 'x'
+  ##   )
+  ## ),
+  ## dlogis = list(
+  ##   'x = double(1, 5) location = double(0) scale = double(0)' = list(
+  ##     compilation = TRUE
+  ##   ),
+  ##   'x = double(1, 5) location = double(0) scale = double(0) log = double(0)' = list(
+  ##     compilation = TRUE
+  ##   ),
+  ##   'x = double(0) location = double(1, 3) scale = double(0)' = list(
+  ##     compilation = TRUE
+  ##   ),
+  ##   'x = double(0) location = double(1, 3) scale = double(0) log = double(0)' = list(
+  ##     compilation = TRUE
+  ##   ),
+  ##   'x = double(1, 5) location = double(1, 3) scale = double(0)' = list(
+  ##     compilation = TRUE
+  ##   ),
+  ##   'x = double(1, 5) location = double(1, 3) scale = double(0) log = double(0)' = list(
+  ##     compilation = TRUE
+  ##   ),
+  ##   'x = double(0) location = double(0) scale = double(1, 7)' = list(
+  ##     compilation = TRUE
+  ##   ),
+  ##   'x = double(0) location = double(0) scale = double(1, 7) log = double(0)' = list(
+  ##     compilation = TRUE
+  ##   ),
+  ##   'x = double(1, 5) location = double(0) scale = double(1, 7)' = list(
+  ##     compilation = TRUE
+  ##   ),
+  ##   'x = double(1, 5) location = double(0) scale = double(1, 7) log = double(0)' = list(
+  ##     compilation = TRUE
+  ##   ),
+  ##   'x = double(0) location = double(1, 3) scale = double(1, 7)' = list(
+  ##     compilation = TRUE
+  ##   ),
+  ##   'x = double(0) location = double(1, 3) scale = double(1, 7) log = double(0)' = list(
+  ##     compilation = TRUE
+  ##   ),
+  ##   'x = double(1, 5) location = double(1, 3) scale = double(1, 7)' = list(
+  ##     compilation = TRUE
+  ##   ),
+  ##   'x = double(1, 5) location = double(1, 3) scale = double(1, 7) log = double(0)' = list(
+  ##     compilation = TRUE
+  ##   )
+  ## ),
   dmnorm_chol = list(
     ## Error : Number of dimensions 0 of the return() argument does not match number 1 given in the returnType() statement.
     ## This occurred for: return(out)
