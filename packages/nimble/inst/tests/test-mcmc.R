@@ -1679,6 +1679,7 @@ sink(NULL)
 
 if(!generatingGoldFile) {
     trialResults <- readLines(tempFileName)
+    trialResults <- trialResults[grep(trialResults, 'Error in x$.self$finalize() : attempt to apply non-function', invert = TRUE, fixed = TRUE)]
     correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
     compareFilesByLine(trialResults, correctResults)
 }
