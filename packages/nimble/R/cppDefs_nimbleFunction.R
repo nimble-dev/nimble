@@ -418,6 +418,46 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                           ),
                                       )
 
+## The next block of code has the initial setup for an AST processing stage
+## to make modifications for AD based on context etc.
+modifyForAD_handlers <- list(eigenBlock = 'modifyForAD_eigenBlock')
+
+exprClasses_modifyForAD <- function(code, symTab, workEnv = list2env(list(wrap_in_value = FALSE))) {
+  if(code$isName) {
+    if(!isTRUE(workEnv[['wrap_in_value']]))
+      return(invisible())
+    else {
+      symObj <- symTab$getSymbolObject(code$name)
+      if(!is.null(symObj)) {
+        if(identical(symObj$baseType, "CppAD::AD")) {
+          insertExprClassLayer(code$caller, code$callerArgID, 'Value') ## It is ok to leave some fields (type, sizeExpr) unpopulated at this late processing stage
+        }
+        ##code$name <- paste0("Value(", code$name, ")") ## For any more generality, Value should be in the AST, but for now paste it.
+      }
+    }
+  }
+  if(code$isCall) {
+    recurse_modifyForAD(code, symTab, workEnv)
+    handler <- modifyForAD_handlers[[code$name]]
+    if(!is.null(handler)) eval(call(handler, code, symTab, workEnv))
+  }
+}
+
+recurse_modifyForAD <- function(code, symTab, workEnv) {
+  for(i in seq_along(code$args)) {
+    if(inherits(code$args[[i]], 'exprClass')) {
+      exprClasses_modifyForAD(code$args[[i]], symTab, workEnv)
+    }
+  }
+}
+
+modifyForAD_eigenBlock <- function(code, symTab, workEnv) {
+  orig_wrap_in_value <- workEnv$wrap_in_value
+  workEnv$wrap_in_value <- TRUE
+  recurse_modifyForAD(code, symTab, workEnv)
+  workEnv$wrap_in_value <- orig_wrap_in_value
+}
+
 updateADproxyModelMethods <- function(.self) {
     ## Update return type and names of functions like dnorm -> nimDerivs_dnorm
     functionNames <- names(.self$functionDefs)
@@ -444,6 +484,7 @@ updateADproxyModelMethods <- function(.self) {
         ADtypeDefs <- symbolTable()
         ADtypeDefs$addSymbol(cppVarFull(baseType = "typedef Matrix<CppAD::AD<double>, Dynamic, Dynamic>", name = "MatrixXd") )
         thisDef$code$typeDefs <- ADtypeDefs
+        exprClasses_modifyForAD(thisDef$code$code, thisDef$code$objectDefs)
     }
     classST <- .self$objectDefs
     classSymNames <- classST$getSymbolNames()
@@ -455,6 +496,7 @@ updateADproxyModelMethods <- function(.self) {
                                             replacementTemplateArgs = "double")
         classST$addSymbol(newSym, allowReplace = TRUE)
     }
+  
     NULL
 }
 
