@@ -277,9 +277,7 @@ test_that("Testing initialization of uninitialized dynamic indexes", {
     consts <- list(n = n, K = K)
     data <- list(y = y1, alpha = rep(1,K))
 
-    if(nimbleOptions('verbose')) {
-        expect_message(model1 <- nimbleModel(code = mix_normal, constants = consts, data = data), "missing value where TRUE/FALSE needed")
-    } else expect_silent(model1 <- nimbleModel(code = mix_normal, constants = consts, data = data))
+    expect_output(model1 <- nimbleModel(code = mix_normal, constants = consts, data = data), "Warning: dynamic index out of bounds")
     
     conf1 <- configureMCMC(model1)
     Rmcmc <- buildMCMC(model1)

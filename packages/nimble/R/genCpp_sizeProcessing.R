@@ -1365,8 +1365,8 @@ sizeChainedCall <- function(code, symTab, typeEnv) { ## options include nfMethod
         asserts <- generalFunSizeHandlerFromSymbols(code, symTab, typeEnv, returnSymbol, argSymTab, chainedCall = TRUE)
         return(asserts)
     }
-    invisible(NULL)    
-    writeLines('Warning')
+    writeLines('Warning: no return type determined from a chained call such as nimbleFunction call.')
+    invisible(NULL)
 }
 
 sizeValues <- function(code, symTab, typeEnv) {

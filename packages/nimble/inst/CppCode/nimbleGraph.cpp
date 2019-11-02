@@ -500,7 +500,7 @@ multipleDepPaths getDependencyPaths_recurse(const graphNode *currentNode, depPat
       multipleDepPaths result_oneChild = getDependencyPaths_recurse(currentNode->children[i],
 								    root_path,
 								    currentNode->childrenParentExpressionIDs[i]);      
-      for(int j = 0; j < result_oneChild.size(); ++j) {
+      for(unsigned int j = 0; j < result_oneChild.size(); ++j) {
 	result.push_back( result_oneChild[j] );
       }
     }
@@ -516,7 +516,7 @@ SEXP C_getDependencyPaths(SEXP SgraphExtPtr, SEXP Snodes) {
     PRINTF("Input to C_getDependencyPaths should be one and only one nodeID.");
     return R_NilValue;
   }
-  if(nodes[0] >= graphPtr->graphNodeVec.size()) {
+  if(nodes[0] >= static_cast<int>(graphPtr->graphNodeVec.size())) {
     PRINTF("Input to C_getDependencyPaths has a nodeID that is too large.");
     return R_NilValue;
 
@@ -530,7 +530,7 @@ SEXP C_getDependencyPaths(SEXP SgraphExtPtr, SEXP Snodes) {
   						       INT_MIN); //R_defines.h says INT_MIN is NA_INTEGER
   SEXP Sresult = PROTECT(Rf_allocVector(VECSXP, result.size()));
   SEXP Sdim;
-  for(int i = 0; i < result.size(); ++i) {
+  for(unsigned int i = 0; i < result.size(); ++i) {
     SEXP SdepPath = PROTECT(Rf_allocVector(INTSXP, 2*result[i].size()));
     int *depPathPtr = INTEGER(SdepPath);
     int thisResultSize = result[i].size();
