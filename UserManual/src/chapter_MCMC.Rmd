@@ -97,7 +97,7 @@ Based on its arguments, `nimbleMCMC` optionally returns any combination of
   - WAIC value.
 
 
-The above are calculated and returned for each MCMC chain.  Additionally, posterior summary statistics are calculated for all chains combined when multiple chains are run.
+The above are calculated and returned for each MCMC chain, using the post-burn-in and thinned samples.  Additionally, posterior summary statistics are calculated for all chains combined when multiple chains are run.
 
 Several example usages of `nimbleMCMC` are shown below:
 
@@ -495,7 +495,7 @@ Once an MCMC algorithm has been created using `buildMCMC`, the function `runMCMC
   - Setting the random number seed;
   - Returning the posterior samples as a `coda` `mcmc` object;
   - Returning summary statistics calculated from each chains; and
-  - Returning a WAIC value calculated using samples from all chains.
+  - Returning a WAIC value calculated using (post-burn-in and thinned) samples from all chains.
 
 <!---  See `help(runMCMC)` for details of these arguments. -->
 
@@ -509,7 +509,7 @@ The following examples demonstrate some uses of `runMCMC`, and assume the existe
 # run a single chain, and return a matrix of samples
 mcmc.out <- runMCMC(Cmcmc)
 
-# run three chains of 10000 samples, discard initial burnin of 1000,
+# run three chains of 10000 samples, discard initial burn-in of 1000,
 # record samples thereafter using a thinning interval of 10,
 # and return of list of sample matrices
 mcmc.out <- runMCMC(Cmcmc, niter=10000, nburnin=1000, thin=10, nchains=3)
@@ -541,7 +541,7 @@ See `help(runMCMC)` for further details.
 
 The MCMC algorithm (either the compiled or uncompiled version) can be executed using the member method `mcmc$run` (see `help(buildMCMC)` in R).  The `run` method has one required argument, `niter`, the number of iterations to be run.
 
-The `run` method has optional arguments `nburnin`, `thin` and `thin2`.  These can be used to specify the number of pre-thinning burnin samples to discard, and the post-burnin thinning intervals for recording samples (corresponding to `monitors` and `monitors2`).  If either `thin` and `thin2` are provided, they will override the thinning intervals that were specified in the original MCMC configuration object.
+The `run` method has optional arguments `nburnin`, `thin` and `thin2`.  These can be used to specify the number of pre-thinning burn-in samples to discard, and the post-burnin thinning intervals for recording samples (corresponding to `monitors` and `monitors2`).  If either `thin` and `thin2` are provided, they will override the thinning intervals that were specified in the original MCMC configuration object.
 
 The `run` method has an optional `reset` argument.  When `reset = TRUE` (the default value), the following occurs prior to running the MCMC:
 
@@ -612,7 +612,7 @@ Obtaining samples as matrices is most common, but see Section \@ref(sec:modelVal
 
 Once an MCMC algorithm has been run, as described in Section \@ref(sec:executing-the-mcmc-algorithm), the WAIC [@Watanabe_2010] can be calculated from the posterior samples produced by the MCMC algorithm.  Note that in order to calculate the WAIC value after running an MCMC algorithm, the argument `enableWAIC = TRUE` must have been supplied to `configureMCMC` or to `buildMCMC`, or the `enableWAIC` NIMBLE option must have been set to `TRUE`.
 
-The WAIC is calculated by calling the member method `mcmc$calculateWAIC` (see `help(buildMCMC)` in R for more details).  The `calculateWAIC` method has one required argument, `nburnin`, the number of initial samples to discard prior to WAIC calculation.  `nburnin` defaults to 0.
+The WAIC is calculated by calling the member method `mcmc$calculateWAIC` (see `help(buildMCMC)` in R for more details).  The `calculateWAIC` method has one required argument, `nburnin`, the number of initial samples to discard prior to WAIC calculation.  `nburnin` defaults to 0. This burn-in is done in addition to any burn-in specified when running the MCMC, and the burn-in is applied to the samples before any thinning specified when setting up or running the MCMC. 
 
 ```{r, eval=FALSE}
 Cmcmc$calculateWAIC(nburnin = 100)
