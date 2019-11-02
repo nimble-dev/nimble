@@ -1045,7 +1045,6 @@ sampler_RW_PF <- nimbleFunction(
         adaptInterval  <- if(!is.null(control$adaptInterval))        control$adaptInterval        else 200
         scale          <- if(!is.null(control$scale))                control$scale                else 1
         m              <- if(!is.null(control$pfNparticles))         control$pfNparticles         else 1000
-        resample       <- if(!is.null(control$pfResample))           control$pfResample           else FALSE
         existingPF     <- if(!is.null(control$pf))                   control$pf                   else NULL
         filterType     <- if(!is.null(control$pfType))               control$pfType               else 'bootstrap'
         filterControl  <- if(!is.null(control$pfControl))            control$pfControl            else list()
@@ -1131,11 +1130,7 @@ sampler_RW_PF <- nimbleFunction(
     },
     run = function() {
         storeParticleLP <<- my_particleFilter$getLastLogLik()
-        if(resample) {
-            modelLP0 <- my_particleFilter$run(m)
-            modelLP0 <- modelLP0 + getLogProb(model, target)
-        }
-        else   modelLP0 <- storeParticleLP + getLogProb(model, target)
+        modelLP0 <- storeParticleLP + getLogProb(model, target)
         propValue <- rnorm(1, mean = model[[target]], sd = scale)
         my_setAndCalculate$run(propValue)
         particleLP <- my_particleFilter$run(m)
@@ -1179,9 +1174,7 @@ sampler_RW_PF <- nimbleFunction(
             else {  # once enough var estimates have been taken, use their average to compute m
                 m <<- m*storeLLVar/(0.92^2)
                 m <<- ceiling(m)
-                if(!resample) {  #reset LL with new m value after burn-in period
-                  storeParticleLP <<- my_particleFilter$run(m)
-                }
+                storeParticleLP <<- my_particleFilter$run(m)
                 optimizeM <<- 0
             }
         },
@@ -1230,7 +1223,6 @@ sampler_RW_PF_block <- nimbleFunction(
         propCov        <- if(!is.null(control$propCov))              control$propCov              else 'identity'
         existingPF     <- if(!is.null(control$pf))                   control$pf                   else NULL
         m              <- if(!is.null(control$pfNparticles))         control$pfNparticles         else 1000
-        resample       <- if(!is.null(control$pfResample))           control$pfResample           else FALSE
         filterType     <- if(!is.null(control$pfType))               control$pfType               else 'bootstrap'
         filterControl  <- if(!is.null(control$pfControl))            control$pfControl            else list()
         optimizeM      <- if(!is.null(control$pfOptimizeNparticles)) control$pfOptimizeNparticles else FALSE
@@ -1322,11 +1314,7 @@ sampler_RW_PF_block <- nimbleFunction(
     },
     run = function() {
         storeParticleLP <<- my_particleFilter$getLastLogLik()
-        if(resample) {
-            modelLP0 <- my_particleFilter$run(m)
-            modelLP0 <- modelLP0 + getLogProb(model, target)
-        }
-        else   modelLP0 <- storeParticleLP + getLogProb(model, target)
+        modelLP0 <- storeParticleLP + getLogProb(model, target)
         propValueVector <- generateProposalVector()
         my_setAndCalculate$run(propValueVector)
         particleLP <- my_particleFilter$run(m)
@@ -1371,9 +1359,7 @@ sampler_RW_PF_block <- nimbleFunction(
             else {  # once enough var estimates have been taken, use their average to compute m
                 m <<- m*storeLLVar/(0.92^2)
                 m <<- ceiling(m)
-                if(!resample){  #reset LL with new m value after burn-in period
-                  storeParticleLP <<- my_particleFilter$run(m)
-                }
+                storeParticleLP <<- my_particleFilter$run(m)
                 optimizeM <<- 0
             }
         },
@@ -2204,7 +2190,6 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item latents.  Character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function.
 #' \item pfType.  Character argument specifying the type of particle filter that should be used for likelihood approximation.  Choose from \code{"bootstrap"} and \code{"auxiliary"}.  Defaults to \code{"bootstrap"}.
 #' \item pfControl.  A control list that is passed to the particle filter function.  For details on control lists for bootstrap or auxiliary particle filters, see \code{\link{buildBootstrapFilter}} or \code{\link{buildAuxiliaryFilter}} respectively.  Additionally, this can be used to pass custom arguments into a user defined particle filter.
-#' \item pfResample.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each MCMC step, or whether to use log likelihood from previous step.
 #' \item pfOptimizeNparticles.  A logical argument, specifying whether to use an experimental procedure to automatically determine the optimal number of particles to use, based on Pitt and Shephard (2011).  This will override any value of \code{pfNparticles} specified above.
 #' }
 #' 
@@ -2225,7 +2210,6 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item latents.  Character vector specifying the latent model nodes over which the particle filter will stochastically integrate to estimate the log-likelihood function.
 #' \item pfType.  Character argument specifying the type of particle filter that should be used for likelihood approximation.  Choose from \code{"bootstrap"} and \code{"auxiliary"}.  Defaults to \code{"bootstrap"}.
 #' \item pfControl.  A control list that is passed to the particle filter function.  For details on control lists for bootstrap or auxiliary particle filters, see \code{\link{buildBootstrapFilter}} or \code{\link{buildAuxiliaryFilter}} respectively.  Additionally, this can be used to pass custom arguments into a user defined particle filter.
-#' \item pfResample.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each mcmc step, or whether to use log likelihood from previous step.
 #' \item pfOptimizeNparticles.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt and Shephard (2011).  This will override any value of \code{pfNparticles} specified above.
 #' }
 #'
