@@ -1059,8 +1059,14 @@ test_that('RW_multinomial sampler', {
     X         <- rmultinom(1, N, pVecX)[,1]
     Y         <- rmultinom(1, N, pVecY)[,1]
     Z         <- rbeta(nGroups, 1+X, 1+Y)
-    Xini      <- rmultinom(1, N, sample(pVecX))[,1]
-    Yini      <- rmultinom(1, N, sample(pVecY))[,1]
+    ## Hard code in the results of sample() since output from sample
+    ## changed as of R 3.6.0 to fix a long-standing bug in R.
+    smpX <- pVecX[c(2,1,4,3,5)]
+    smpY <- pVecY[c(1,4,2,3,5)]
+    fakeSample <- sample(pVecX)  # to keep random number stream as before
+    Xini      <- rmultinom(1, N, smpX)[,1]
+    fakeSample <- sample(pVecY)  # to keep random number stream as before
+    Yini      <- rmultinom(1, N, smpY)[,1]
     Constants <- list(nGroups=nGroups)
     Inits     <- list(X=Xini, Y=Yini, pVecX=pVecX, pVecY=pVecY, N=N)
     Data      <- list(Z=Z)
@@ -1673,6 +1679,7 @@ sink(NULL)
 
 if(!generatingGoldFile) {
     trialResults <- readLines(tempFileName)
+    trialResults <- trialResults[grep('Error in x$.self$finalize() : attempt to apply non-function', trialResults, invert = TRUE, fixed = TRUE)]
     correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
     compareFilesByLine(trialResults, correctResults)
 }

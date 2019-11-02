@@ -34,7 +34,18 @@ run tests on all OS ideally
 change version number in UserManual/src/{title.tex,_output.yml}
 rebuild manual as further test of package
 
-download .tar.gz for reverse dependencies (currently 'bcgam') and run R CMD check on it (having trouble with tools::tools::check_packages_in_dir, but should figure that out and add a Make task for this) (however note that currently the compilation in bcgam is failing upon testing)
+check reverse dependencies:
+
+from nimble/packages, with the current nimble .tar.gz in that directory, do:
+out <- tools::check_packages_in_dir('.', reverse = list())
+summary(out)
+Can also do this to see if anything has changed:
+tools::check_packages_in_dir_changes('.', reverse = list()) # for this you need an the most recent version of nimble as the 'old'
+
+If have problems with check_packages_in_dir, can
+download .tar.gz for reverse dependencies and run R CMD check on it.
+
+At one point bcgam testing was failing, but seems fine as of 2019-10-04.
 
 we could put new version of manual in inst/doc, but not doing that because we don't want to add to the size of the tarball/package install)
 
@@ -133,9 +144,9 @@ update version number in DESC in devel
 
 ### updating Github README
 
-Update version number in README.md.
+Update version number in README.md, including in the citation section.
 
-Might as well add a release to Github under Releases tab based on new version tag. This used to autogenerate a zenodo page and DOI but per below comment I don't think this linking is still in effect. 
+Might as well add a release to Github under Releases tab based on new version tag. This used to autogenerate a zenodo page and DOI but per below comment I don't think this linking is still in effect. Make sure new release is tagged in GH as 'latest release' (figure out how to do this). Also add a blurb about the release.  
 
 Unfortunately in v0.6-10 zenodo integration was somehow turned off and in the process of trying to add it manually, Chris got an entirely different zenodo instnace.
 

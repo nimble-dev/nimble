@@ -604,7 +604,7 @@ Details: If a provided value (or the current value in the model when only a name
                                               scalarize <- FALSE else scalarize <- TRUE  ## if non-scalar, check actual dimensionality of input
                                           if(length(nimbleInternalFunctions$dimOrLength(varValue, scalarize = scalarize)) != length(isDataVars[[varName]]))   stop(paste0('incorrect size or dim in data: ', varName))
                                           if(!(all(nimbleInternalFunctions$dimOrLength(varValue, scalarize = scalarize) == isDataVars[[varName]])))   stop(paste0('incorrect size or dim in data: ', varName))
-                                          assign(varName, varValue, inherits = TRUE)
+                                          .self[[varName]] <- varValue
                                           isDataVarValue <- !is.na(varValue)
                                           assign(varName, isDataVarValue, envir = isDataEnv)
                                       }
@@ -821,7 +821,7 @@ Arguments:
 
 inits: A named list.  The names of list elements must correspond to model variable names.  The elements of the list must be of class numeric, with size and dimension each matching the corresponding model variable.
 '
-                                      if(is.list(inits) && length(inits) > 0 && is.null(names(inits))) {
+                                      if(!is.list(inits) || (is.list(inits) && length(inits) > 0 && is.null(names(inits)))) {
                                           warning('inits argument should be a named list; not adding initial values to model.')
                                           return(invisible(NULL))
                                       }

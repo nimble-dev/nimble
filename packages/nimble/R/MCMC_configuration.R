@@ -14,6 +14,7 @@ samplerConf <- setRefClass(
             samplerFunction <<- samplerFunction
             target <<- target
             control <<- control
+            if(name == 'crossLevel')   control <<- c(control, list(dependent_nodes = model$getDependencies(target, self = FALSE, stochOnly = TRUE)))  ## special case for printing dependents of crossLevel sampler (only)
             targetAsScalar <<- model$expandNodeNames(target, returnScalarComponents = TRUE)
         },
         setName = function(name) name <<- name,
@@ -406,7 +407,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
             addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, print = print, name = nameToPrint)
         },
         
-        addSampler = function(target, type = 'RW', control = list(), print = FALSE, name, silent = FALSE, ...) {
+        addSampler = function(target, type = 'RW', control = list(), print = FALSE, name, scalarComponents = FALSE, silent = FALSE, ...) {
             '
 Adds a sampler to the list of samplers contained in the MCMCconf object.
 
@@ -421,6 +422,8 @@ control: A list of control arguments specific to the sampler function. These wil
 print: Logical argument, specifying whether to print the details of the newly added sampler, as well as its position in the list of MCMC samplers.
 
 name: Optional character string name for the sampler, which is used by the printSamplers method.  If \'name\' is not provided, the \'type\' argument is used to generate the sampler name.
+
+scalarComponents: Logical argument, indicating whether the specified sampler \'type\' should be assigned independently to each scalar (univariate) component of the specified \'target\' node or variable.  This option should only be specified as TRUE when the sampler \'type\' specifies a univariate sampler.
 
 silent: Logical argument, specifying whether to print warning messages when assigning samplers.
 
@@ -479,15 +482,29 @@ Invisibly returns a list of the current sampler configurations, which are sample
             controlArgs <- c(control, list(...))
             thisControlList <- mcmc_generateControlListArgument(control=controlArgs, controlDefaults=controlDefaults)  ## should name arguments
             
-            newSamplerInd <- length(samplerConfs) + 1
-            samplerConfs[[newSamplerInd]] <<- samplerConf(name=thisSamplerName, samplerFunction=samplerFunction, target=target, control=thisControlList, model=model)
-            samplerExecutionOrder <<- c(samplerExecutionOrder, newSamplerInd)
+            if(!scalarComponents) {
+                addSamplerOne(thisSamplerName, samplerFunction, target, thisControlList)
+            } else {  ## assign sampler type to each scalar component of target
+                targetAsScalars <- model$expandNodeNames(target)
+                for(i in seq_along(targetAsScalars)) {
+                    addSamplerOne(thisSamplerName, samplerFunction, targetAsScalars[i], thisControlList)
+                }
+            }
             
             if(print) printSamplers(newSamplerInd)
             return(invisible(samplerConfs))
         },
+
+        addSamplerOne = function(thisSamplerName, samplerFunction, targetOne, thisControlList) {
+            '
+For internal use only
+'
+            newSamplerInd <- length(samplerConfs) + 1
+            samplerConfs[[newSamplerInd]] <<- samplerConf(name=thisSamplerName, samplerFunction=samplerFunction, target=targetOne, control=thisControlList, model=model)
+            samplerExecutionOrder <<- c(samplerExecutionOrder, newSamplerInd)
+        },
         
-        removeSamplers = function(ind, print = FALSE) {
+        removeSamplers = function(..., ind, print = FALSE) {
             '
 Removes one or more samplers from an MCMCconf object.
 
@@ -495,11 +512,17 @@ Arguments:
 
 This function also has the side effect of resetting the sampler execution ordering so as to iterate over the remaining set of samplers, sequentially, executing each sampler once.
 
+...: Character node names or numeric indices.  Character node names specify the node names for samplers to remove, or numeric indices can provide the indices of samplers to remove.
+
 ind: A numeric vector or character vector specifying the samplers to remove.  A numeric vector may specify the indices of the samplers to be removed.  Alternatively, a character vector may be used to specify a set of model nodes and/or variables, and all samplers whose \'target\' is among these nodes will be removed.  If omitted, then all samplers are removed.
 
 print: A logical argument specifying whether to print the current list of samplers once the removal has been done (default FALSE).
 '      
-            if(missing(ind))        ind <- seq_along(samplerConfs)
+            if(missing(ind)) {
+                ind <- list(...)
+                ind <- unname(unlist(ind))
+                if(is.null(ind))   ind <- seq_along(samplerConfs)
+            }
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
             if(length(ind) > 0 && max(ind) > length(samplerConfs)) stop('MCMC configuration doesn\'t have that many samplers')
             samplerConfs[ind] <<- NULL
@@ -508,20 +531,22 @@ print: A logical argument specifying whether to print the current list of sample
             return(invisible(NULL))
         },
 
-        removeSampler = function(...){
+        removeSampler = function(...) {
             '
 Alias for removeSamplers method
 '
             removeSamplers(...)
         },
         
-        setSamplers = function(ind, print = FALSE) {
+        setSamplers = function(..., ind, print = FALSE) {
             '
 Sets the ordering of the list of MCMC samplers.
 
 This function also has the side effect of resetting the sampler execution ordering so as to iterate over the specified set of samplers, sequentially, executing each sampler once.
 
 Arguments:
+
+...: Chracter strings or numeric indices.  Character names may be used to specify the node names for samplers to retain.  A numeric indices may be used to specify the indicies for the new list of MCMC samplers, in terms of the current ordered list of samplers.
 
 ind: A numeric vector or character vector.  A numeric vector may be used to specify the indicies for the new list of MCMC samplers, in terms of the current ordered list of samplers.
 For example, if the MCMCconf object currently has 3 samplers, then the ordering may be reversed by calling MCMCconf$setSamplers(3:1), or all samplers may be removed by calling MCMCconf$setSamplers(numeric(0)).
@@ -532,7 +557,11 @@ As another alternative, a list of samplerConf objects may be used as the argumen
 
 print: A logical argument specifying whether to print the new list of samplers (default FALSE).
 '   
-            if(missing(ind))        ind <- numeric(0)
+            if(missing(ind)) {
+                ind <- list(...)
+                ind <- unname(unlist(ind))
+                if(length(ind) == 0)   ind <- numeric(0)
+            }
             if(is.list(ind)) {
                 if(!all(sapply(ind, class) == 'samplerConf')) stop('item in list argument to setSamplers is not a samplerConf object')
                 samplerConfs <<- ind
@@ -545,12 +574,21 @@ print: A logical argument specifying whether to print the new list of samplers (
             if(print) printSamplers()
             return(invisible(NULL))
         },
+
+        setSampler = function(...) {
+            '
+Alias for setSamplers method
+'
+            setSamplers(...)
+        },
         
-        printSamplers = function(ind, type, displayControlDefaults = FALSE, displayNonScalars = FALSE, displayConjugateDependencies = FALSE, executionOrder = FALSE, byType = FALSE) {
+        printSamplers = function(..., ind, type, displayControlDefaults = FALSE, displayNonScalars = FALSE, displayConjugateDependencies = FALSE, executionOrder = FALSE, byType = FALSE) {
             '
 Prints details of the MCMC samplers.
 
 Arguments:
+
+...: Character node or variable names, or numeric indices.  Numeric indices may be used to specify the indices of the samplers to print, or character strings may be used to indicate a set of target nodes and/or variables, for which all samplers acting on these nodes will be printed. For example, printSamplers(\'x\') will print all samplers whose target is model node \'x\', or whose targets are contained (entirely or in part) in the model variable \'x\'.  If omitted, then all samplers are printed.
 
 ind: A numeric vector or character vector.  A numeric vector may be used to specify the indices of the samplers to print, or a character vector may be used to indicate a set of target nodes and/or variables, for which all samplers acting on these nodes will be printed. For example, printSamplers(\'x\') will print all samplers whose target is model node \'x\', or whose targets are contained (entirely or in part) in the model variable \'x\'.  If omitted, then all samplers are printed.
 
@@ -564,38 +602,102 @@ executionOrder: A logical argument, specifying whether to print the sampler func
 
 byType: A logical argument, specifying whether the nodes being sampled should be printed, sorted and organized according to the type of sampler (the sampling algorithm) which is acting on the nodes (default FALSE).
 '
-            if(missing(ind))        ind <- seq_along(samplerConfs)
+            if(missing(ind)) {
+                ind <- list(...)
+                ind <- unname(unlist(ind))
+                if(length(ind) == 0)   ind <- seq_along(samplerConfs)
+            }
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
             if(length(ind) > 0 && max(ind) > length(samplerConfs)) stop('MCMC configuration doesn\'t have that many samplers')
             if(!missing(type)) {
                 if(!is.character(type)) stop('type argument must have type character')
                 ## find sampler indices with 'name' matching anything in 'type' argument:
-                typeInd <- unique(unname(unlist(lapply(type, grep, x = lapply(conf$samplerConfs, `[[`, 'name')))))
+                typeInd <- unique(unname(unlist(lapply(type, grep, x = lapply(samplerConfs, `[[`, 'name')))))
                 ind <- intersect(ind, typeInd)
             }
-            if(byType && length(ind) > 0) {
-                samplerTypes <- unlist(lapply(ind, function(i) conf$samplerConfs[[i]]$name))
-                uniqueSamplerTypes <- sort(unique(samplerTypes), decreasing = TRUE)
-                nodesSortedBySamplerType <- lapply(uniqueSamplerTypes, function(type) sapply(conf$samplerConfs[which(samplerTypes == type)], `[[`, 'target'))
-                names(nodesSortedBySamplerType) <- uniqueSamplerTypes
-                cat('\n')
-                for(i in seq_along(nodesSortedBySamplerType)) {
-                    theseSampledNodes <- nodesSortedBySamplerType[[i]]
-                    cat(paste0(names(nodesSortedBySamplerType)[i], ' sampler (', length(theseSampledNodes), '):  '))
-                    cat(paste0(theseSampledNodes, collapse = ', '))
-                    cat('\n\n')
-                }
+            if(byType) {
+                printSamplersByType(ind)
                 return(invisible(NULL))
             }
             makeSpaces <- if(length(ind) > 0) newSpacesFunction(max(ind)) else NULL
             if(executionOrder)      ind <- samplerExecutionOrder[samplerExecutionOrder %in% ind]
-            for(i in ind)
-                cat(paste0('[', i, '] ', makeSpaces(i), samplerConfs[[i]]$toStr(displayControlDefaults, displayNonScalars, displayConjugateDependencies), '\n'))
+            for(i in ind) {
+                info <- paste0('[', i, '] ', makeSpaces(i), samplerConfs[[i]]$toStr(displayControlDefaults, displayNonScalars, displayConjugateDependencies))
+                if(samplerConfs[[i]]$name %in% c('CRP', 'CRP_moreGeneral')) {
+                    if(exists('useConjugacy', samplerConfs[[i]]$control) &&
+                       samplerConfs[[i]]$control$useConjugacy) {
+                        conjInfo <- checkCRPconjugacy(model, samplerConfs[[i]]$target)
+                        if(is.null(conjInfo)) conjInfo <- "non-conjugate"
+                    } else conjInfo <- "non-conjugate"
+                    info <- paste0(info, ",  ", conjInfo)
+                }
+                cat(paste0(info, "\n"))
+            }
             if(!executionOrder && !identical(as.numeric(samplerExecutionOrder), as.numeric(seq_along(samplerConfs)))) {
                 cat('These sampler functions have a modified order of execution.\n')
                 cat('To print samplers in the modified order of execution, use printSamplers(executionOrder = TRUE).\n')
             }
             return(invisible(NULL))
+        },
+
+        printSamplersByType = function(ind) {
+            if(length(ind) == 0) return(invisible(NULL))
+            samplerTypes <- unlist(lapply(ind, function(i) samplerConfs[[i]]$name))
+            uniqueSamplerTypes <- sort(unique(samplerTypes), decreasing = TRUE)
+            nodesSortedBySamplerType <- lapply(uniqueSamplerTypes, function(type) sapply(samplerConfs[which(samplerTypes == type)], `[[`, 'target'))
+            names(nodesSortedBySamplerType) <- uniqueSamplerTypes
+            cat('\n')
+            for(i in seq_along(nodesSortedBySamplerType)) {
+                theseSampledNodes <- nodesSortedBySamplerType[[i]]
+                cat(paste0(names(nodesSortedBySamplerType)[i], ' sampler (', length(theseSampledNodes), '):  '))
+                ## now to print the node names:
+                ##cat(paste0(theseSampledNodes, collapse = ', '))  ## before compression
+                anyMultivariate <- any(grepl(':', theseSampledNodes))
+                anyNonScalar <- any(grepl(',', theseSampledNodes))
+                if(anyMultivariate) {
+                    cat(paste0(theseSampledNodes, collapse = ', '))
+                } else {
+                    if(anyNonScalar) {
+                        ## the hard case
+                        ## really should update this!
+                        ## punt for now, and just collapse on the *final* index location:
+                        theseVars <- model$getVarNames(nodes = theseSampledNodes)
+                        nodesListByVar <- lapply(theseVars, function(var) grep(paste0('^', var, '\\['), theseSampledNodes, value = TRUE))
+                        for(j in seq_along(nodesListByVar)) {
+                            theseNodes <- nodesListByVar[[j]]
+                            initialIndexStrings <- gsub('^[[:alpha:]]+\\[(.*), [[:digit:]]+\\]$', '\\1', theseNodes)
+                            uniqueInitialStrings <- unique(initialIndexStrings)
+                            nodeListByInitString <- lapply(uniqueInitialStrings, function(uis) grep(paste0('^[[:alpha:]]+\\[',uis,', [[:digit:]]+\\]$'), theseNodes, value = TRUE))
+                            for(k in seq_along(nodeListByInitString)) {
+                                theseNodes <- nodeListByInitString[[k]]
+                                numIndices <- length(strsplit(theseNodes[1], ',')[[1]])
+                                indices <- mcmc_getIndexNumberFromNodeNames(theseNodes, numIndices)
+                                indexRangeList <- mcmc_compressIndexRanges(indices)
+                                printNodesList <- lapply(indexRangeList, deparse)
+                                printNodesList <- lapply(printNodesList, function(n) paste0(theseVars[j], '[', uniqueInitialStrings[k], ',', n, ']'))
+                                printNodesList <- sapply(printNodesList, function(n) if(grepl(':',n)) paste0('components of ',n) else n)
+                                cat(paste0(printNodesList, collapse = ', '))
+                                if(j < length(nodesListByVar) || k < length(nodeListByInitString)) cat(', ')
+                            }
+                        }
+                    } else {
+                        ## all scalar nodes, with single numeric index:
+                        theseVars <- model$getVarNames(nodes = theseSampledNodes)
+                        nodesListByVar <- lapply(theseVars, function(var) grep(paste0('^', var, '\\['), theseSampledNodes, value = TRUE))
+                        for(j in seq_along(nodesListByVar)) {
+                            theseNodes <- nodesListByVar[[j]]
+                            indices <- mcmc_getIndexNumberFromNodeNames(theseNodes, 1)
+                            indexRangeList <- mcmc_compressIndexRanges(indices)
+                            printNodesList <- lapply(indexRangeList, deparse)
+                            printNodesList <- lapply(printNodesList, function(n) paste0(theseVars[j], '[', n, ']'))
+                            printNodesList <- sapply(printNodesList, function(n) if(grepl(':',n)) paste0('components of ',n) else n)
+                            cat(paste0(printNodesList, collapse = ', '))
+                            if(j < length(nodesListByVar)) cat(', ')
+                        }
+                    }
+                }
+                cat('\n\n')
+            }
         },
 
         getSamplers = function(ind) {
@@ -618,7 +720,7 @@ ind: A numeric vector or character vector.  A numeric vector may be used to spec
             which(unlist(lapply(samplerConfs, function(ss) any(nodes %in% ss$targetAsScalar))))
         },
 
-        getSamplerDefinition = function(ind) {
+        getSamplerDefinition = function(ind, print = FALSE) {
             '
 Returns the nimbleFunction definition of an MCMC sampler.
 
@@ -634,7 +736,7 @@ Returns a list object, containing the setup function, run function, and addition
                 ind <- ind[1]
             }
             if((ind <= 0) || (ind > length(samplerConfs))) stop('Invalid sampler specified')
-            printSamplers(ind)
+            if(print) printSamplers(ind)
             def <- getDefinition(samplerConfs[[ind]]$samplerFunction)
             return(def)
         },

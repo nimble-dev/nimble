@@ -221,11 +221,25 @@ sampler_RW <- nimbleFunction(
                     scaleHistory[timesAdapted] <<- scale        ## scaleHistory
                     setSize(acceptanceHistory, timesAdapted)         ## scaleHistory
                     acceptanceHistory[timesAdapted] <<- acceptanceRate  ## scaleHistory
-                }   
+                }
                 gamma1 <<- 1/((timesAdapted + 3)^0.8)
                 gamma2 <- 10 * gamma1
                 adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
                 scale <<- scale * adaptFactor
+                ## If there are upper and lower bounds, enforce a maximum scale of
+                ## 0.5 * (upper-lower).  This is arbitrary but reasonable.
+                ## Otherwise, for a poorly-informed posterior,
+                ## the scale could grow without bound to try to reduce
+                ## acceptance probability.  This creates enormous cost of
+                ## reflections.
+                if(reflective) {
+                    lower <- model$getBound(target, 'lower')
+                    upper <- model$getBound(target, 'upper')
+                    if(scale >= 0.5*(upper-lower)) {
+                        scale <<- 0.5*(upper-lower)
+                    }
+                }
+
                 timesRan <<- 0
                 timesAccepted <<- 0
             }

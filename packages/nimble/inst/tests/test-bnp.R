@@ -1703,7 +1703,6 @@ test_that("Testing posterior sampling and prior predictive computation with conj
       mu[i] ~ dnorm(0,1)
       y[i] ~ dnorm(mu[xi[i]], sd = 1)
     }
-    
   })
   data = list(y = rnorm(4))
   inits = list(xi = rep(1,4), mu=rnorm(4))
@@ -1733,6 +1732,46 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   smp <- rnorm(1 , postMean, sqrt(postVar))
   expect_identical(smp, m$mu[1])
   
+  ## dmnorm_dmnorm
+  set.seed(1)
+  code=nimbleCode( {
+    for(i in 1:10){
+      muTilde[i,1:4] ~ dmnorm(mu0[1:4], cov=Cov0[1:4, 1:4])
+      y[i,1:4] ~ dmnorm(muTilde[xi[i],1:4], cov=Sigma0[1:4, 1:4])
+    }
+    xi[1:10] ~ dCRP(conc=1, size=10)
+  }
+  )
+  y <- matrix(rnorm(40, 5, 1), ncol=4, nrow=10)
+  y[6:10, 1:4] <- rnorm(20, -5, 1)
+  data = list(y = y)
+  inits = list(xi = 1:10, muTilde=matrix(rnorm(40, 0, sqrt(10)), ncol=4, nrow=10))
+  constants=list(mu0 = rnorm(4), Cov0 = diag(1:4), Sigma0 = diag(5:8))
+  m = nimbleModel(code, data=data, inits=inits, constants=constants)
+  conf <- configureMCMC(m)
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  mcmc <- buildMCMC(conf)
+  
+  pYgivenT <- m$getLogProb('y[1]')
+  pT <- m$getLogProb('muTilde[1, 1:4]')
+  
+  dataCov <- m$getParam('y[1]', 'cov') 
+  priorCov <- m$getParam('muTilde[1]', 'cov')
+  priorMean <- m$getParam('muTilde[1]', 'mean')
+  postCov <- inverse(inverse(dataCov) + inverse(priorCov)) # from conjugate sampler
+  postMean <- postCov %*% (inverse(dataCov)%*%data$y[1, 1:4] + inverse(priorCov)%*%priorMean) # from conjugate sampler
+  pTgivenY <- dmnorm_chol(m$muTilde[1, 1:4], postMean, chol(postCov), prec_param = FALSE, log = TRUE) # from conjugate sampler
+  
+  mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
+  pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
+  
+  expect_equal(pY, pT + pYgivenT - pTgivenY)
+  
+  set.seed(1)
+  mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$sample(1, 1)
+  set.seed(1)
+  smp <- rmnorm_chol(1 , postMean, chol(postCov), prec_param = FALSE)
+  expect_equal(smp, m$muTilde[1, 1:4])
   
   
   ## dnorm_invgamma_dnorm
@@ -1786,13 +1825,13 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   ## dgamma_dpois
   code = nimbleCode({
     for(i in 1:4) {
-      mu[i] ~ dgamma(1,1)
+      mu[i] ~ dgamma(1,5)
       y[i] ~ dpois(mu[xi[i]])
     }
     xi[1:4] ~ dCRP(conc=1, size=4)
   })
   data = list(y = rpois(4, 4))
-  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1))
+  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 5))
   m = nimbleModel(code, data=data, inits= inits)
   conf = configureMCMC(m)
   mcmc = buildMCMC(conf)
@@ -1803,7 +1842,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   priorShape <- m$getParam('mu[1]', 'shape')
   priorRate <- m$getParam('mu[1]', 'rate')
   pTgivenY <- dgamma(m$mu[1], shape = priorShape + data$y[1], rate = priorRate + 1, log=TRUE)
-
+  
   crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
@@ -1821,13 +1860,13 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   ## dbeta_dbern
   code = nimbleCode({
     for(i in 1:4) {
-      mu[i] ~ dbeta(1,1)
+      mu[i] ~ dbeta(1,5)
       y[i] ~ dbern(mu[xi[i]])
     }
     xi[1:4] ~ dCRP(conc=1, size=4)
   })
   data = list(y = rbinom(4, size=1, prob=0.5))
-  inits = list(xi = rep(1,4), mu=rbeta(4, 1, 1))
+  inits = list(xi = rep(1,4), mu=rbeta(4, 1, 5))
   m = nimbleModel(code, data=data, inits= inits)
   conf = configureMCMC(m)
   mcmc = buildMCMC(conf)
@@ -1838,7 +1877,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   priorShape1 <- m$getParam('mu[1]', 'shape1')
   priorShape2 <- m$getParam('mu[1]', 'shape2')
   pTgivenY <- dbeta(m$mu[1], shape1=priorShape1+data$y[1], shape2=priorShape2+1-data$y[1], log=TRUE)
-
+  
   crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
@@ -1855,13 +1894,13 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   ## dbeta_dbin
   code = nimbleCode({
     for(i in 1:4) {
-      mu[i] ~ dbeta(1,1)
+      mu[i] ~ dbeta(1,5)
       y[i] ~ dbinom(size=10, prob=mu[xi[i]])
     }
     xi[1:4] ~ dCRP(conc=1, size=4)
   })
   data = list(y = rbinom(4, size=10, prob=0.5))
-  inits = list(xi = rep(1,4), mu=rbeta(4, 1, 1))
+  inits = list(xi = rep(1,4), mu=rbeta(4, 1, 5))
   m = nimbleModel(code, data=data, inits= inits)
   conf = configureMCMC(m)
   mcmc = buildMCMC(conf)
@@ -1890,13 +1929,13 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   ## dbeta_dnegbin
   code = nimbleCode({
     for(i in 1:4) {
-      mu[i] ~ dbeta(1,1)
+      mu[i] ~ dbeta(1,5)
       y[i] ~ dnegbin(size=10, prob=mu[xi[i]])
     }
     xi[1:4] ~ dCRP(conc=1, size=4)
   })
   data = list(y = rnbinom(4, size=10, prob=0.5))
-  inits = list(xi = rep(1,4), mu=rbeta(4, 1, 1))
+  inits = list(xi = rep(1,4), mu=rbeta(4, 1, 5))
   m = nimbleModel(code, data=data, inits= inits)
   conf = configureMCMC(m)
   mcmc = buildMCMC(conf)
@@ -1925,13 +1964,13 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   ## dgamma_dexp:
   code = nimbleCode({
     for(i in 1:4) {
-      mu[i] ~ dgamma(1,1)
+      mu[i] ~ dgamma(1,5)
       y[i] ~ dexp(mu[xi[i]])
     }
     xi[1:4] ~ dCRP(conc=1, size=4)
   })
   data = list(y = rexp(4, 4))
-  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1))
+  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 5))
   m = nimbleModel(code, data=data, inits= inits)
   conf = configureMCMC(m)
   mcmc = buildMCMC(conf)
@@ -1960,13 +1999,13 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   ## dgamma_dgamma:
   code = nimbleCode({
     for(i in 1:4) {
-      mu[i] ~ dgamma(1,1)
+      mu[i] ~ dgamma(1,5)
       y[i] ~ dgamma(4, mu[xi[i]])
     }
     xi[1:4] ~ dCRP(conc=1, size=4)
   })
   data = list(y = rgamma(4, 4, 4))
-  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1))
+  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 5))
   m = nimbleModel(code, data=data, inits= inits)
   conf = configureMCMC(m)
   mcmc = buildMCMC(conf)
@@ -1995,13 +2034,13 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   ## dgamma_dweib:
   code = nimbleCode({
     for(i in 1:4) {
-      mu[i] ~ dgamma(1,1)
+      mu[i] ~ dgamma(1,5)
       y[i] ~ dweib(shape=4, lambda = mu[xi[i]])
     }
     xi[1:4] ~ dCRP(conc=1, size=4)
   })
   data = list(y = rweibull(4, 4, 4))
-  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1))
+  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 5))
   m = nimbleModel(code, data=data, inits= inits)
   conf = configureMCMC(m)
   mcmc = buildMCMC(conf)
@@ -2041,7 +2080,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   p0 <- matrix(0, ncol=3, nrow=4)
   y0 <- matrix(0, ncol=3, nrow=4)
   for(i in 1:4){
-    p0[i,]=rdirch(1, c(1, 1, 1))
+    p0[i,]=rdirch(1, c(1, 2, 3))
     y0[i,] = rmulti(1, prob=c(0.3,0.3,0.4), size=3)
   }
   data = list(y = y0)
@@ -2073,13 +2112,13 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   ## dgamma_dinvgamma:
   code = nimbleCode({
     for(i in 1:4) {
-      mu[i] ~ dgamma(1, rate=1)
+      mu[i] ~ dgamma(1, rate=5)
       y[i] ~ dinvgamma(shape=4, scale = mu[xi[i]])
     }
     xi[1:4] ~ dCRP(conc=1, size=4)
   })
-  data = list(y = rinvgamma(4, 4, 4))
-  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1))
+  data = list(y = rinvgamma(4, 4, 3))
+  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 5))
   m = nimbleModel(code, data=data, inits= inits)
   conf = configureMCMC(m)
   mcmc = buildMCMC(conf)
@@ -2108,13 +2147,13 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   ## dgamma_dnorm:
   code = nimbleCode({
     for(i in 1:4) {
-      mu[i] ~ dgamma(1,1)
+      mu[i] ~ dgamma(1,5)
       y[i] ~ dnorm(0, tau = mu[xi[i]])
     }
     xi[1:4] ~ dCRP(conc=1, size=4)
   })
   data = list(y = rnorm(4, 0, 4))
-  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1))
+  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 5))
   m = nimbleModel(code, data=data, inits= inits)
   conf = configureMCMC(m)
   mcmc = buildMCMC(conf)
@@ -2143,6 +2182,23 @@ test_that("Testing posterior sampling and prior predictive computation with conj
 
 
 test_that("Testing conjugacy detection with models using CRP", { 
+  
+  ## dmnorm_dmnorm
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i, 1:4] ~ dmnorm(mu0[1:4], cov = cov0[1:4, 1:4])
+      y[i, 1:4] ~ dmnorm(mu[xi[i], 1:4], cov = sigma0[1:4, 1:4])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  m = nimbleModel(code, data = list(y = matrix(rnorm(16), 4, 4)),
+                  inits = list(xi = rep(1,4), mu=matrix(rnorm(16), 4, 4)),
+                  constants = list(mu0=rnorm(4), cov0=diag(10, 4), sigma0=diag(1,4)))
+  conf <- configureMCMC(m)
+  mcmc <- buildMCMC(conf)
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dmnorm_dmnorm")
+  
   
   ## dnorm_dnorm
   code = nimbleCode({
@@ -3561,10 +3617,24 @@ model <- function() {
 inits =  list(xi = rep(1,4), mu=rbeta(4, 1, 1))
 data = list(y = rnbinom(4, size=10, prob=0.5))
 
-testBUGSmodel(example = 'test11', dir = "",
+testBUGSmodel(example = 'test12', dir = "",
               model = model, data = data, inits = inits,
               useInits = TRUE)
 
+model <- function() {
+  for(i in 1:4){
+    mu[i,1:4] ~ dmnorm(mu0[1:4], cov=Cov0[1:4, 1:4])
+    y[i,1:4] ~ dmnorm(mu[xi[i],1:4], cov=Sigma0[1:4, 1:4])
+  }
+  xi[1:4] ~ dCRP(conc=1, size=4)
+}
+inits = list(xi = 1:4, mu=matrix(rnorm(16), 4, 4))
+data = list(y = matrix(rnorm(16), 4, 4))
+constants = list(mu0 = rep(0,4), Cov0 = diag(10, 4), Sigma0 = diag(1, 4))
+
+testBUGSmodel(example = 'test13', dir = "",
+              model = model, data = data, inits = inits, constants = constants,
+              useInits = TRUE)
 
 ## testing misspecification of dimension in a model
 
@@ -4532,7 +4602,7 @@ test_that("Testing sampler assignment and misspecification of priors for conc pa
   ## we do not warn of negative concentration values because there could be many such
   ## warnings in certain MCMC samplers for the concentration parameter
   expect_failure(expect_output(m$simulate(), "value of concentration parameter"))
-  expect_error(m$calculate())
+  expect_output(out <- m$calculate(), "Warning: dynamic index out of bounds")
   ## think about better way to tell the user that the prior for alpha is wrong
   
   
@@ -4548,7 +4618,7 @@ test_that("Testing sampler assignment and misspecification of priors for conc pa
   ## we do not warn of negative concentration values because there could be many such
   ## warnings in certain MCMC samplers for the concentration parameter
   expect_failure(expect_output(m$simulate(), "value of concentration parameter has to be larger than zero"))
-  expect_error(m$calculate())
+  expect_output(out <- m$calculate(), "Warning: dynamic index out of bounds")
   
 })
 

@@ -567,6 +567,39 @@ CRP_conjugate_dnorm_dnorm_nonidentity <- nimbleFunction(
   )
 )
 
+CRP_conjugate_dmnorm_dmnorm <- nimbleFunction(
+  name = "CRP_conjugate_dmnorm_dmnorm",
+  contains = CRP_helper,
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, J) {
+    d <- length(model[[marginalizedNodes[1]]])
+    priorMean <- nimNumeric(d)
+    priorCov <- matrix(0, ncol=d, nrow=d)
+  },
+  methods = list(
+    storeParams = function() {
+      priorMean <<- model$getParam(marginalizedNodes[1], 'mean')
+      priorCov <<- model$getParam(marginalizedNodes[1], 'cov')
+    },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
+    calculate_prior_predictive = function(i = integer()) {
+      returnType(double())
+      dataCov <- model$getParam(dataNodes[i], 'cov')
+      y <- values(model, dataNodes[i])
+      return(dmnorm_chol(y, priorMean, chol(priorCov + dataCov), prec_param = FALSE, log=TRUE))
+    },
+    sample = function(i = integer(), j = integer()) {
+      dataCov <- model$getParam(dataNodes[i], 'cov')
+      y <- values(model, dataNodes[i])
+      
+      dataPrec <- inverse(dataCov)
+      priorPrec <- inverse(priorCov)
+      postPrecChol <- chol(dataPrec + priorPrec)
+      postMean <- backsolve(postPrecChol, forwardsolve(t(postPrecChol), (dataPrec %*% y + priorPrec %*% priorMean)[,1]))
+      values(model, marginalizedNodes[j]) <<- rmnorm_chol(1, postMean, postPrecChol, prec_param = TRUE)
+    }
+  )
+)
+
 
 CRP_conjugate_dnorm_invgamma_dnorm <- nimbleFunction(
   name = "CRP_conjugate_dnorm_invgamma_dnorm",
@@ -703,8 +736,8 @@ CRP_conjugate_dbeta_dbin <- nimbleFunction(
       returnType(double())
       y <- values(model, dataNodes[i])[1]
       dataSize <- model$getParam(dataNodes[i], 'size')
-      return(lgamma(priorShape1+priorShape2) + lgamma(priorShape1+y) + lgamma(priorShape1+dataSize-y) -
-               lgamma(priorShape1) - lgamma(priorShape2) - lgamma(priorShape1+priorShape1+dataSize) +
+      return(lgamma(priorShape1+priorShape2) + lgamma(priorShape1+y) + lgamma(priorShape2+dataSize-y) -
+               lgamma(priorShape1) - lgamma(priorShape2) - lgamma(priorShape1+priorShape2+dataSize) +
                lfactorial(dataSize) - lfactorial(y) - lfactorial(dataSize-y))
     },
     sample = function(i = integer(), j = integer()) {
@@ -734,8 +767,8 @@ CRP_conjugate_dbeta_dnegbin <- nimbleFunction(
       returnType(double())
       y <- values(model, dataNodes[i])[1]
       dataSize <- model$getParam(dataNodes[i], 'size')
-      return(lgamma(priorShape1+priorShape2) + lgamma(priorShape1+dataSize) + lgamma(priorShape1+y) -
-               lgamma(priorShape1) - lgamma(priorShape2) - lgamma(priorShape1+priorShape1+dataSize+y) +
+      return(lgamma(priorShape1+priorShape2) + lgamma(priorShape1+dataSize) + lgamma(priorShape2+y) -
+               lgamma(priorShape1) - lgamma(priorShape2) - lgamma(priorShape1+priorShape2+dataSize+y) +
                lfactorial(y+dataSize-1) - lfactorial(y) - lfactorial(dataSize-1))
     },
     sample = function(i = integer(), j = integer()) {
@@ -745,6 +778,7 @@ CRP_conjugate_dbeta_dnegbin <- nimbleFunction(
     }
   )
 )
+
 
 CRP_conjugate_dgamma_dexp <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dexp",
@@ -956,8 +990,10 @@ sampler_CRP <- nimbleFunction(
     if(length(intersect(dataNodes, allTildeNodes)))
         stop("sampler_CRP: Cluster parameters have to be independent of cluster membership variable.")
 
-    conjugacyResult <- checkCRPconjugacy(model, target)
-
+    if(control$useConjugacy) {
+        conjugacyResult <- checkCRPconjugacy(model, target)
+    } else conjugacyResult <- NULL
+    
     if(is.null(conjugacyResult) || conjugacyResult != "conjugate_dnorm_invgamma_dnorm") {
         ## Check that all cluster parameters are independent as it it tricky to make sure we
         ## are correctly simulating from the prior otherwise. 
@@ -1047,6 +1083,7 @@ sampler_CRP <- nimbleFunction(
       sampler <- switch(conjugacyResult,
                         conjugate_dnorm_dnorm = 'CRP_conjugate_dnorm_dnorm',
                         conjugate_dnorm_dnorm_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity',
+                        conjugate_dmnorm_dmnorm = 'CRP_conjugate_dmnorm_dmnorm',
                         conjugate_dnorm_invgamma_dnorm = 'CRP_conjugate_dnorm_invgamma_dnorm',
                         conjugate_dbeta_dbern  = 'CRP_conjugate_dbeta_dbern',
                         conjugate_dbeta_dbin = 'CRP_conjugate_dbeta_dbin',
@@ -1662,7 +1699,7 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo) {
         varExprs <- sapply(clusterNodes1, function(x) model$getParamExpr(x, 'var'))
         names(varExprs) <- NULL
         for(i in seq_along(varExprs)) {
-            varText <- deparse(varExprs[[i]])
+            varText <- deparse(cc_expandDetermNodesInExpr(model, varExprs[[i]], targetNode = clusterNodes2[i]))
             if(length(grep(clusterNodes2[i], varText, fixed = TRUE)))  ## remove clusterNodes2[i] from expression so var expressions will be the same
                 varExprs[[i]] <- parse(text = gsub(clusterNodes2[i], "a", varText, fixed = TRUE))[[1]]
         }

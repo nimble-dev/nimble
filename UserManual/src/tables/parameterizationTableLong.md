@@ -25,10 +25,10 @@ relationship to the *canonical* parameterization used in NIMBLE.
   `dinvgamma(shape, rate)`  canonical
   `dinvgamma(shape, scale)` `dgamma(shape, rate = 1 / scale)`
   `dlogis(location, scale)` canonical
-  `dlogis(location, rate)`  `dlogis(location, scale = 1 / rate`
+  `dlogis(location, rate)`  `dlogis(location, scale = 1 / rate)`
   `dlnorm(meanlog, sdlog)`  canonical
-  `dlnorm(meanlog, taulog)` `dlnorm(meanlog, sdlog = 1 / sqrt(taulog)`
-  `dlnorm(meanlog, varlog)` `dlnorm(meanlog, sdlog = sqrt(varlog)`
+  `dlnorm(meanlog, taulog)` `dlnorm(meanlog, sdlog = 1 / sqrt(taulog))`
+  `dlnorm(meanlog, varlog)` `dlnorm(meanlog, sdlog = sqrt(varlog))`
   `dmulti(prob, size)`      canonical
   `dmnorm(mean, cholesky, ` canonical (precision)
   `...prec_param=1)` 
@@ -53,7 +53,7 @@ relationship to the *canonical* parameterization used in NIMBLE.
   `dunif(min, max)`         canonical
   `dweib(shape, scale)`     canonical
   `dweib(shape, rate)`      `dweib(shape, scale = 1 / rate)`
-  `dweib(shape, lambda)`    `dweib(shape, scale = lambda^(- 1 / shape)`
+  `dweib(shape, lambda)`    `dweib(shape, scale = lambda^(- 1 / shape))`
   `dwish(cholesky, df,`     canonical (scale) 
   `...scale_param=1)`
   `dwish(cholesky, df,`     canonical (inverse scale)
