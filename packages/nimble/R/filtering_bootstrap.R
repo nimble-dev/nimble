@@ -167,13 +167,6 @@ bootFStep <- nimbleFunction(
     return(out)
   },
   methods = list(
-    getLastLogLik = function() {
-      return(lastLogLik)
-      returnType(double())
-    },
-    setLastLogLik = function(lll = double()) {
-      lastLogLik <<- lll
-    },
     returnESS = function(){
       returnType(double(0))
       return(ess)
@@ -336,6 +329,7 @@ buildBootstrapFilter <- nimbleFunction(
                                               silent) 
     }
     essVals <- rep(0, length(nodes))
+    lastLogLik <- -Inf
   },
   run = function(m = integer(default = 10000)) {
     returnType(double())
@@ -352,13 +346,21 @@ buildBootstrapFilter <- nimbleFunction(
       logL <- logL + out[1]
       prevSamp <- out[2]
       essVals[iNode] <<- bootStepFunctions[[iNode]]$returnESS()
-      if(logL == -Inf) return(logL)
-      if(is.nan(logL)) return(-Inf)
-      if(logL == Inf) return(-Inf) 
+      if(logL == -Inf) {lastLogLik <<- logL; return(logL)} 
+      if(is.nan(logL)) {lastLogLik <<- -Inf; return(-Inf)}
+      if(logL == Inf) {lastLogLik <<- -Inf; return(-Inf)} 
     }
+    lastLogLik <<- logL
     return(logL)
   },
   methods = list(
+    getLastLogLik = function() {
+      return(lastLogLik)
+      returnType(double())
+    },
+    setLastLogLik = function(lll = double()) {
+      lastLogLik <<- lll
+    },
     returnESS = function(){
       returnType(double(1))
       return(essVals)

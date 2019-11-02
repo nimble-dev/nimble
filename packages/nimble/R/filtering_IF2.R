@@ -414,8 +414,8 @@ buildIteratedFilter2 <- nimbleFunction(
 
         estimate <<- estimates[niter, ]
 
-        ## Put final parameter estimates into model (RHS indexing because of single param case).
-        values(model, params) <<- estimate[1:numParams]
+        ## Put final parameter estimates into model.
+        values(model, params) <<- estimate  
         model$calculate(parDeterm)
         oldM <<- m
         oldJ <<- j 
@@ -462,7 +462,7 @@ buildIteratedFilter2 <- nimbleFunction(
             estimate <<- estimates[niter_total, ]
 
             ## Leave model with parameter estimates.  
-            values(model, params) <<- estimate[1:numParams]
+            values(model, params) <<- estimate
             model$calculate(parDeterm)
 
             oldJ <<- newN
