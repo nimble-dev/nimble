@@ -282,7 +282,7 @@ test_that("Test findLatentNodes", {
     })
     model = nimbleModel(code,constants = list(n=10, p =5))
     expect_identical(findLatentNodes(model, 'x[2:4, 3:8, 3]'),
-                     paste0('x[2:4, ', 3:8, ',3]'))
+                     paste0('x[2:4, ', 3:8, ', 3]'))
     expect_identical(findLatentNodes(model, 'x'),
                      paste0('x[1:5, ', 1:10, ', 3]'))
 
