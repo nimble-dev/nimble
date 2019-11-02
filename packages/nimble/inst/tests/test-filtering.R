@@ -191,8 +191,8 @@ test_filter(model = code, name = 'scalar lwf', inits = inits, data = c(testdata,
 
 
 test_mcmc(model = code, name = 'scalar pmcmc', inits = inits, data = c(testdata, consts),  samplers = list(
-  list(type = 'RW_PF', target = 'sigma_x', control = list(latents = 'x', m = 1000, resample = F)),
-  list(type = 'RW_PF', target = 'sigma_y', control = list(latents = 'x', m = 1000, resample = F))),
+  list(type = 'RW_PF', target = 'sigma_x', control = list(latents = 'x', m = 1000)),
+  list(type = 'RW_PF', target = 'sigma_y', control = list(latents = 'x', m = 1000))),
   removeAllDefaultSamplers = TRUE, numItsC = 1000, results = list(
   mean = list( sigma_x = sigma_x,
               sigma_y = sigma_y)),

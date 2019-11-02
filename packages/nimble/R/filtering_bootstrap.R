@@ -167,6 +167,13 @@ bootFStep <- nimbleFunction(
     return(out)
   },
   methods = list(
+    getLastLogLik = function() {
+      return(lastLogLik)
+      returnType(double())
+    },
+    setLastLogLik = function(lll = double()) {
+      lastLogLik <<- lll
+    },
     returnESS = function(){
       returnType(double(0))
       return(ess)

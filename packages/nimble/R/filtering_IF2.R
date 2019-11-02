@@ -6,7 +6,7 @@
 ##  explicitly calling the variable name.
 ##  
 ##
-##  Implementing follows Ionides et. all 2015 and adapted Liu and West filter of Nicholas Michaud
+##  Implementation follows Ionides et. all 2015 and adapted Liu and West filter of Nicholas Michaud
 
 initializeParamSwarm <- nimbleFunction(
     setup = function(model, mvEWSamples, paramNodes, numParams, sigma) {
@@ -110,6 +110,8 @@ IF2Step <- nimbleFunction(
         
         isLast <- (iNode == timeLength)
         coolSigma <- numeric(numParams)
+        if(numParams == 1)
+            coolSigma <- c(coolSigma, 0)
         coolParam <- 0
     },
     run = function(m = integer(), j = integer(), alpha = double()) {
@@ -299,6 +301,8 @@ buildIteratedFilter2 <- nimbleFunction(
         }
         if(length(inits) < numParams)
             stop("buildIteratedFilter2: The 'inits' control list argument must be a vector specifying initial values for each element of 'params'. The length of 'inits' does not match the number of parameters.")
+        if(length(inits) == 1)
+            inits <- c(inits, 0)
         
         latentVar <- model$getVarNames(nodes = nodes)
         ## This check may not strictly be needed.
@@ -337,6 +341,12 @@ buildIteratedFilter2 <- nimbleFunction(
                                                    types = types,
                                                    sizes = sizes))
 
+        ## need vector for compilation
+        if(length(initParamSigma) == 1)
+            initParamSigma <- c(initParamSigma, 0)
+        if(length(sigma) == 1)
+            sigma <- c(sigma, 0)
+        
         initializeParamSwarmFunction <- initializeParamSwarm(model, mvEWSamples, params,
                                                        numParams, initParamSigma)
         if(is.null(baselineNode)) {
@@ -356,7 +366,9 @@ buildIteratedFilter2 <- nimbleFunction(
             IF2StepFunctions[[iNode]] <- IF2Step(model,  mvWSamples, mvEWSamples, nodes, latentVar, baselineNode,
                                                  baseline, iNode, params, numParams, sigma, timeLength, silent)
 
-        estimate <- nimNumeric(numParams)  
+        if(numParams == 1) {
+            estimate <- nimNumeric(2)  # need vector for compilation
+        } else estimate <- nimNumeric(numParams)  
         
         oldJ <- 0
         oldM <- 0
@@ -368,7 +380,7 @@ buildIteratedFilter2 <- nimbleFunction(
                    niter = integer(), 
                    alpha = double()) {
         
-        values(model, params) <<- inits
+        values(model, params) <<- inits[1:numParams]
         my_initializeModel$run()
         resize(mvWSamples, m)
         resize(mvEWSamples, m)
@@ -402,8 +414,8 @@ buildIteratedFilter2 <- nimbleFunction(
 
         estimate <<- estimates[niter, ]
 
-        ## Put final parameter estimates into model.
-        values(model, params) <<- estimate
+        ## Put final parameter estimates into model (RHS indexing because of single param case).
+        values(model, params) <<- estimate[1:numParams]
         model$calculate(parDeterm)
         oldM <<- m
         oldJ <<- j 
@@ -450,7 +462,7 @@ buildIteratedFilter2 <- nimbleFunction(
             estimate <<- estimates[niter_total, ]
 
             ## Leave model with parameter estimates.  
-            values(model, params) <<- estimate
+            values(model, params) <<- estimate[1:numParams]
             model$calculate(parDeterm)
 
             oldJ <<- newN
