@@ -246,6 +246,51 @@ test_mcmc(model = code, name = 'block pmcmc', inits = inits, data = c(testdata, 
 ##   resultsTolerance = list(mean = list(sigma_x = .1,
 ##                                       sigma_y = .1)))
 
+test_that("IF2", {
+    Nile <- c(1120,1160,963,1210,1160,1160,813,1230,1370,1140,995,935,1110,994,1020,960,1180,799,958,1140,1100,1210,1150,1250,1260,1220,1030,1100,774,840,874,694,940,833,701,916,692,1020,1050,969,831,726,456,824,702,1120,1100,832,764,821,768,845,864,862,698,845,744,796,1040,759,781,865,845,944,984,897,822,1010,771,676,649,846,812,742,801,1040,860,874,848,890,744,749,838,1050,918,986,797,923,975,815,1020,906,901,1170,912,746,919,718,714,740)  # avoid FKF suggests dependency
+    flowCode <- nimbleCode({
+        for(t in 1:n)
+            y[t] ~ dnorm(x[t], sd = sigmaMeasurements)
+        x[1] ~ dnorm(x0, sd = sigmaInnovations)    
+        for(t in 2:n)
+            x[t] ~ dnorm((t-1==28)*meanShift1899 + x[t-1], sd = sigmaInnovations)
+        logSigmaInnovations ~ dnorm(0, sd = 100)
+        logSigmaMeasurements ~ dnorm(0, sd = 100)
+        sigmaInnovations <- exp(logSigmaInnovations)
+        sigmaMeasurements <- exp(logSigmaMeasurements)
+        x0 ~ dnorm(1120, var = 100)
+        meanShift1899 ~ dnorm(0, sd = 100)
+    })
+    
+    flowModel <- nimbleModel(flowCode, data = list(y = Nile),
+                             constants = list(n = length(Nile)),
+                             inits = list(logSigmaInnovations = log(sd(Nile)),
+                                          logSigmaMeasurements = log(sd(Nile)),
+                                          meanShift1899 = -100))
+    
+    filter <- buildIteratedFilter2(model = flowModel,
+                                   nodes = 'x',
+                                   params = c('logSigmaInnovations',
+                                              'logSigmaMeasurements',
+                                              'meanShift1899'),
+                                   baselineNode = 'x0',
+                                   control = list(sigma = c(0.1, 0.1, 5),
+                                                  initParamSigma = c(0.1, 0.1, 5)))
+    cFlowModel <- compileNimble(flowModel)
+    cFilter  <- compileNimble(filter, project = flowModel)
+    
+    set.seed(1)
+    niter <- 100
+    est <- cFilter$run(m = 1000, niter = niter, alpha = 0.2)
+
+    ## Expect values similar to what obtained in version 0.9.0.
+    expect_gt(cFilter$logLik[niter], -627.5, ) 
+    expect_lt(exp(est[1]), 10)
+    expect_equal(exp(est[2]), 126, tolerance = 10)
+    expect_equal(est[3], -271, tolerance = 10)
+})
+
+
 test_that("Test findLatentNodes", {
     code <- nimbleCode({
         for(j in 1:p)
