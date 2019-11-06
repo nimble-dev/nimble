@@ -283,8 +283,21 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   newFunName <- paste0(funName, '_ADargumentTransfer_')
                                                   regularFun <- RCfunDefs[[funName]]
                                                   funIndex <- which(environment(nfProc$nfGenerator)$enableDerivs == funName) ## needed for correct index for allADtapePtrs_
-                                                  functionDefs[[newFunName]] <<- makeADargumentTransferFunction(newFunName, regularFun, independentVarNames, funIndex, parentsSizeAndDims,
+                                                  functionDefs[[newFunName]] <<- makeADargumentTransferFunction(newFunName,
+                                                                                                                regularFun,
+                                                                                                                independentVarNames,
+                                                                                                                funIndex,
+                                                                                                                parentsSizeAndDims,
                                                                                                                 ADconstantsInfo)
+                                                  ## Version 2 is for the "reconfig" version
+                                                  newFunName2 <- paste0(newFunName, "2_")
+                                                  ## For now, use same funIndex since this will use the non-static tape vector, but we may want to be more careful
+                                                  functionDefs[[newFunName2]] <<- makeADargumentTransferFunction_2(newFunName,
+                                                                                                                   regularFun,
+                                                                                                                   independentVarNames,
+                                                                                                                   funIndex,
+                                                                                                                   parentsSizeAndDims,
+                                                                                                                   ADconstantsInfo)
                                               },
                                               addStaticInitClass = function() {
                                                   neededTypeDefs[['staticInitClass']] <<- makeStaticInitClass(.self, environment(nfProc$nfGenerator)$enableDerivs) ##
