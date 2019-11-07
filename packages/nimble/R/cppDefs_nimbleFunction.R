@@ -276,7 +276,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   ADfunName <- paste0(funName, '_AD_')
                                                   regularFun <- RCfunDefs[[funName]]
                                                   newFunName <- paste0(funName, '_callForADtaping_')
-                                                  functionDefs[[newFunName]] <<- makeADtapingFunction(newFunName, regularFun, ADfunName, independentVarNames, dependentVarNames, nfProc$isNode, functionDefs, className = name)
+                                                  functionDefs[[newFunName]] <<- makeADtapingFunction(newFunName, regularFun, ADfunName, independentVarNames, dependentVarNames, nfProc$isNode, className = name)
                                                   invisible(NULL)
                                               },
                                               addADargumentTransferFunction = function( funName, independentVarNames ) {
@@ -292,7 +292,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   ## Version 2 is for the "reconfig" version
                                                   newFunName2 <- paste0(newFunName, "2_")
                                                   ## For now, use same funIndex since this will use the non-static tape vector, but we may want to be more careful
-                                                  functionDefs[[newFunName2]] <<- makeADargumentTransferFunction_2(newFunName,
+                                                  functionDefs[[newFunName2]] <<- makeADargumentTransferFunction2(newFunName,
                                                                                                                    regularFun,
                                                                                                                    independentVarNames,
                                                                                                                    funIndex,

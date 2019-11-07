@@ -101,7 +101,7 @@ makeTypeTemplateFunction <- function(newName, .self) {
 ## (which is in permanent C++, not generated from R)
 ## We do not assume that in the target function the arguments are independent variables and the
 ## returned value is the dependent variable.  Those are set by the independentVarNames and dependentVarNames
-makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, ADfunName, independentVarNames, dependentVarNames, isNode, allFunDefs, className = "className") {
+makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, ADfunName, independentVarNames, dependentVarNames, isNode, className = "className") {
     ## Make new function definition to call for taping (CFT)
     CFT <- RCfunctionDef$new(static = TRUE)
     CFT$returnType <- cppVarFull(baseType = "CppAD::ADFun", templateArgs = list('double'), ptr = 1, name = 'RETURN_TAPE_') ##cppVoid()
@@ -268,14 +268,13 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
                                   independentVarNames,
                                   dependentVarNames,
                                   isNode,
-                                  allFunDefs,
                                   className = "className") {
     ## Make new function definition to call for taping (CFT)
   if(isNode) warning("makeADtapingFunction2 has not been updated for isNode==TRUE")
   CFT <- RCfunctionDef$new(static = TRUE)
     CFT$returnType <- cppVarFull(baseType = "CppAD::ADFun", templateArgs = list('double'), ptr = 1, name = 'RETURN_TAPE_') ##cppVoid()
     CFT$name <- newFunName
-    CTF$args <- targetFunDef$args
+  CFT$args <- targetFunDef$args
     ## create vector< CppAD::AD<double> > ADindependentVars
     ADindependentVarsSym <- cppVarFull(name = 'ADindependentVars', baseType = 'vector', templateArgs = list( cppVarFull(baseType = 'CppAD::AD', templateArgs = 'double', name = character()) ), ref = FALSE) ## was ref = TRUE if taking as argument
     ## create vector< CppAD::AD<double> ADresponseVars
@@ -290,6 +289,17 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
                                                    clearRef = TRUE,
                                                    replacementBaseType = 'CppAD::AD',
                                                    replacementTemplateArgs = list('double'))
+  makeADname <- function(x) paste0(x, "AD_")
+  for(varName in CFT$args$getSymbolNames()) {
+    ## Move this to a symbolTable$changeSymbolName method
+    iName <- which(names(localVars$symbols)==varName)
+    newName <- makeADname(varName)
+    if(length(iName) > 0) {
+      localVars$symbols[[iName[1] ]]$name <- newName
+      names(localVars$symbols)[iName[1] ] <- newName
+    }
+      
+  }
     if(isNode){
       localVars$removeSymbol('ARG1_INDEXEDNODEINFO__')
       indexNodeInfoSymbol <- symbolInternalType(name = 'ARG1_INDEXEDNODEINFO__', argList = list('indexedNodeInfoClass'))
@@ -302,8 +312,9 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
                                             replacementBaseType = 'CppAD::AD',
                                             replacementTemplateArgs = list('double'))
     ansSym$name <- 'ANS_'
-    localVars$addSymbol(ansSym)
-    symNames <- localVars$getSymbolNames()
+  localVars$addSymbol(ansSym)
+  ## Make a separate resize line for ADresponseVars.  ANS_ does not need a resize line.
+    symNames <- CFT$args$getSymbolNames()
     ## set up a set of index variables for copying code, up to six to be arbitrary (allowing up to 6-dimensional nimble objects to be handled)
     indexVarNames <- paste0(letters[9:14],'_')
     ## set any sizes, which must be known
@@ -311,19 +322,26 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
 
     ## This creates lines like setSize(z, 2 3)
     ## which the C++ output generator turns into something like z.resize(2, 3)
-    setSizeLines <- vector('list', length(symNames) + 2) ## extra 2 are for the ADindependentVars and ADresponseVars
+    setSizeLines <- vector('list', length(symNames) + 1) ## extra 1 is for the ADindependentVars. ADresponseVars is one at a later step
     iNextLine <- 1
     
     for(iSym in seq_along(symNames)) {
-        thisSymName <- symNames[iSym]
-        if(thisSymName == 'ANS_') {
-            thisSym <- targetFunDef$RCfunProc$compileInfo$returnSymbol
-        } else {
-            thisSym <- nimbleSymTab$getSymbolObject(thisSymName)
-        }
+      thisSymName <- symNames[iSym]
+      thisADname <- makeADname(thisSymName)
+        ## if(thisSymName == 'ANS_') {
+        ##     thisSym <- targetFunDef$RCfunProc$compileInfo$returnSymbol
+        ## } else {
+        ##     thisSym <- nimbleSymTab$getSymbolObject(thisSymName)
+        ## }
+        thisSym <- nimbleSymTab$getSymbolObject(thisSymName)
         if(thisSym$nDim > 0) {
-            setSizeCall <- do.call('call',c(list('setSize', quote(as.name(thisSymName))), as.list(thisSym$size))) 
-            setSizeLines[[iNextLine]] <- setSizeCall ##RparseTree2ExprClasses(setSizeCall)
+            dimExprs <- lapply(1:thisSym$nDim,
+                               function(i)
+                                   substitute(dim(NAME)[i],
+                                              list(NAME = as.name(thisSymName),
+                                                   i = i)))
+            setSizeCall <- do.call('call',c(list('setSize', as.name(thisADname)), dimExprs), quote = TRUE) 
+            setSizeLines[[iNextLine]] <- setSizeCall 
             iNextLine <- iNextLine + 1
         } else {
             setSizeLines[[iNextLine]] <- NULL
@@ -349,34 +367,56 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
     ## getting the sizes is going to be trickier when an independent var is really an expression, in particular with indexing, like model$x[3]
     ## for now let's assume only cleanly defined vars.
     ## one approach would be intermediate variables
-    totalIndependentLength <- 0
+    ## totalIndependentLength <- 0
+    initADindependentVarsCode <- vector('list', numIndependentVars+1)
+    initADindependentVarsCode[[1]] <- quote(netIncrement_ <- 1)
+    
     maxSize <- 1
     for(ivn in seq_along(independentVarNames)) {
-        thisName <- independentVarNames[ivn]
+      thisName <- independentVarNames[ivn]
+      thisNameAD <- paste0(thisName, "AD_")
         thisSym <- nimbleSymTab$getSymbolObject(thisName)
         if(thisSym$nDim > 0) {
             thisSizes <- thisSym$size
-            sizeList <- lapply(thisSizes, function(x) c(1, x))
+            sizeList <- lapply(1:thisSym$nDim,
+                                 function(x) list(1,
+                                                  substitute(dim(RHS)[INDEX],
+                                                             list(RHS = as.name(thisName),
+                                                                  INDEX = x))))
             names(sizeList) <- indexVarNames[1:length(sizeList)]
             if(length(sizeList) > maxSize) maxSize <- length(sizeList)
-            newRcode <- makeCopyingCodeBlock(as.name(thisName), quote(ADindependentVars), sizeList, indicesRHS = FALSE, incrementIndex = quote(netIncrement_), isNode)
-            copyIntoIndepVarCode[[ivn+1]] <- newRcode 
-            totalIndependentLength <- totalIndependentLength + prod(thisSizes)
+            
+            newRcode <- makeCopyingCodeBlock(as.name(thisNameAD), quote(ADindependentVars), sizeList, indicesRHS = FALSE, incrementIndex = quote(netIncrement_), isNode)
+            copyIntoIndepVarCode[[ivn+1]] <- newRcode
+            newRcode <- makeCopyingCodeBlock(quote(ADindependentVars),
+                                             as.name(thisName),
+                                             sizeList,
+                                             indicesRHS = TRUE,
+                                             incrementIndex = quote(netIncrement_),
+                                             isNode)
+            initADindependentVarsCode[[ivn+1]] <- newRcode
+      ##      totalIndependentLength <- totalIndependentLength + prod(thisSizes)
         } else {
-            copyIntoIndepVarCode[[ivn+1]] <- substitute({LHS <- ADindependentVars[netIncrement_]; netIncrement_ <- netIncrement_ + 1}, list(LHS = as.name(thisName))) 
-            totalIndependentLength <- totalIndependentLength + 1
+            copyIntoIndepVarCode[[ivn+1]] <- substitute({LHS <- ADindependentVars[netIncrement_]; netIncrement_ <- netIncrement_ + 1},
+                                                        list(LHS = as.name(thisNameAD)))
+            initADindependentVarsCode[[ivn+1]] <- substitute({ADindependentVars[netIncrement_] <- RHS; netIncrement_ <- netIncrement_ + 1},
+                                                             list(RHS = as.name(thisName)))
+      ##      totalIndependentLength <- totalIndependentLength + 1
         }
     }
 
     ## put dummy values in ADindependentVars
-    dummyValueRcode <- substitute(for(III in 1:TOTLENGTH) ADindependentVars[III] = 1, list(III = as.name(indexVarNames[1]), TOTLENGTH = totalIndependentLength))
+    ## dummyValueRcode <- substitute(for(III in 1:TOTLENGTH) ADindependentVars[III] = 1, list(III = as.name(indexVarNames[1]), TOTLENGTH = totalIndependentLength))
     
     if(isNode){
       dummyIndexNodeInfoCode <- list(cppLiteral('indexedNodeInfo ARG1_INDEXEDNODEINFO__ = generateDummyIndexedNodeInfo();'))
     }
     else   dummyIndexNodeInfoCode <- list()
     ## call the taping function
-    TCFcall <- do.call('call', c(list(ADfunName), lapply(targetFunDef$args$getSymbolNames(), as.name)), quote = TRUE)
+  TCFcall <- do.call('call', c(list(ADfunName),
+                               lapply(targetFunDef$args$getSymbolNames(),
+                                      function(x) as.name(makeADname(x)))),
+                     quote = TRUE)
     tapingCallRCode <- substitute(ANS_ <- TCF, list(TCF = TCFcall))
     
     ## make copying blocks from dependent vars
@@ -384,7 +424,7 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
     copyFromDepVarCode <- vector('list', numDependentVars+1)
     copyFromDepVarCode[[1]] <- quote(netIncrement_ <- 1) 
     totalDepLength <- 0;
-    for(ivn in seq_along(dependentVarNames)) {
+    for(ivn in seq_along(dependentVarNames)) { ## typically this will just be "ANS_"  It could also be an argument that will be used to get results.
         thisName <- dependentVarNames[ivn]
         if(thisName == 'ANS_') {
             thisSym <- targetFunDef$RCfunProc$compileInfo$returnSymbol
@@ -393,7 +433,11 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
         }
         if(thisSym$nDim > 0) {
             thisSizes <- thisSym$size
-            sizeList <- lapply(thisSizes, function(x) c(1, x))
+            sizeList <- lapply(1:thisSym$nDim,
+                               function(x) list(1,
+                                                substitute(dim(RHS)[INDEX],
+                                                           list(RHS = as.name(thisName),
+                                                                INDEX = x))))
             names(sizeList) <- indexVarNames[1:length(sizeList)]
             if(length(sizeList) > maxSize) maxSize <- length(sizeList)
             newRcode <- makeCopyingCodeBlock(quote(ADresponseVars), as.name(thisName), sizeList, indicesRHS = TRUE, incrementIndex = quote(netIncrement_))
@@ -412,9 +456,20 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
     ## Now that we know how big ADindependenVars and ADresponseVars should be, 
     ## we can make two more entries to setSizeCalls for them
     ## Note that code for these will appear above code that uses them.
-    setSizeLines[[iNextLine]] <- substitute(cppMemberFunction(resize(ADindependentVars, TIL)), list(TIL = totalIndependentLength))
-    iNextLine <- iNextLine + 1
-    setSizeLines[[iNextLine]] <- substitute(cppMemberFunction(resize(ADresponseVars, TDL)), list(TDL = totalDepLength))
+    calcTotalLengthCode <- makeCalcTotalLengthBlock(independentVarNames,
+                                                    nimbleSymTab,
+                                                    "totalIndependentLength_")
+  ansNDim <- targetFunDef$RCfunProc$compileInfo$returnSymbol$nDim
+  if(ansNDim > 0)
+    calcTotalResponseLengthCode <- quote(cppLiteral("totalDepLength_ = ANS_.size();"))
+  else
+    calcTotalResponseLengthCode <- quote(cppLiteral("totalDepLength_ = 1;"))
+      ## calcTotalResponseLengthCode <- makeCalcTotalLengthBlock("ANS_",
+    ##                                                         localVars,
+    ##                                                         "totalDepLength_")
+    setSizeLines[[iNextLine]] <- substitute(cppMemberFunction(resize(ADindependentVars, totalIndependentLength_)))
+    
+    setADresponseVarsSizeLine <- substitute(cppMemberFunction(resize(ADresponseVars, totalDepLength_)))
 
     ## line to finish taping
     finishTapingCall <- cppLiteral('RETURN_TAPE_->Dependent(ADindependentVars, ADresponseVars);')
@@ -429,7 +484,19 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
     
     ## Finally put together all the code, parse it into the nimble exprClass system,
     ## and add it to the result (CFT)
-    allRcode <- do.call('call', c(list('{'), setSizeLines, dummyIndexNodeInfoCode, list(initADptrCode, dummyValueRcode, CppADindependentCode), copyIntoIndepVarCode, list(tapingCallRCode), copyFromDepVarCode, list(finishTapingCall), ADoptimizeCalls, list(returnCall)), quote=TRUE)
+    allRcode <- do.call('call', c(list('{'),
+                                  calcTotalLengthCode,
+                                  setSizeLines,
+                                  dummyIndexNodeInfoCode,
+                                  initADindependentVarsCode,
+                                  list(initADptrCode, CppADindependentCode),
+                                  copyIntoIndepVarCode,
+                                  list(tapingCallRCode, calcTotalResponseLengthCode, setADresponseVarsSizeLine),
+                                  copyFromDepVarCode,
+                                  list(finishTapingCall),
+                                  ADoptimizeCalls,
+                                  list(returnCall)),
+                        quote=TRUE)
     allCode <- RparseTree2ExprClasses(allRcode)
     CFT$code <- cppCodeBlock(code = allCode, objectDefs = localVars)
     CFT
@@ -569,7 +636,7 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
 
 ## 1. Use myADtapePtrs_
 ## 2. Don't assume declared known lengths.
-makeADargumentTransferFunction_2 <- function(newFunName = 'arguments2cppad', targetFunDef, independentVarNames, funIndex = 0, parentsSizeAndDims,
+makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad', targetFunDef, independentVarNames, funIndex = 0, parentsSizeAndDims,
                                            ADconstantsInfo) {
     ## modeled closely parts of /*  */
     ## needs to set the ADtapePtr to one element of the ADtape
@@ -707,7 +774,8 @@ makeCalcTotalLengthBlock <- function(independentVarNames,
   calcTotalLengthLines[[1]] <- substitute(TOTALLENGTH <- 0,  ## Potential for extraInputDummy dimension here.
                                           list(TOTALLENGTH = as.name(totalLengthName))) 
   for(ivn in seq_along(independentVarNames)) {
-    thisSym <- symTab$getSymbolObject(thisName)
+      thisName <- independentVarNames[ivn]
+      thisSym <- symTab$getSymbolObject(thisName)
     if(thisSym$nDim > 0) 
       calcTotalLengthLines[[ivn+1]] <- substitute(cppLiteral(LITERAL_CODE),
                                                   list(LITERAL_CODE =
