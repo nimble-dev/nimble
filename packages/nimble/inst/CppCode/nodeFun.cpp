@@ -1,6 +1,115 @@
 #include "nimble/nodeFun.h"
 #include "nimble/accessorClasses.h"
 
+
+// useADreconfigure version ("2")
+// Need to call this at the start of a function that will use a model in a tape.
+// Need to think about nested cases.
+// Need to think about extraInputVar and extraOutputVar
+void nodeFun::prepare_to_record_model_tape(NodeVectorClassNew_derivs &NV, CppAD::AD<double> &extraInputDummy) { // move extraInputDummy in NV? Careful with compilation units.
+  //  vector< CppAD::AD<double> > dependentVars(1);
+  NimArr<1, double> NimArrValues;
+  NimArr<1, CppAD::AD<double> > NimArrValues_AD;
+  
+  // 1. Copy all constantNodes values from model -> model_AD
+  int length_constant = NV.model_constant_accessor.getTotalLength();
+  if(length_constant > 0) {
+    NimArr<1, double> NimArrValues;
+    NimArr<1, CppAD::AD<double> > NimArrValues_AD;
+    NimArrValues.setSize(length_constant);
+    NimArrValues_AD.setSize(length_constant);
+    getValues(NimArrValues, NV.model_constant_accessor);
+    std::copy( NimArrValues.getPtr(),
+	       NimArrValues.getPtr() + length_constant,
+	       NimArrValues_AD.getPtr());
+    setValues_AD_AD(NimArrValues_AD, NV.model_AD_constant_accessor);
+  }
+  
+  // Do the same for modelOutput nodes -- somewhat defensive -- code might use getLogProb before calculate but in that case it might not record correctly anyway
+  int length_modelOutput = NV.model_modelOutput_accessor.getTotalLength();
+  if(length_modelOutput > 0) {
+    NimArr<1, double> NimArrValues;
+    NimArr<1, CppAD::AD<double> > NimArrValues_AD;
+    NimArrValues.setSize(length_modelOutput);
+    NimArrValues_AD.setSize(length_modelOutput);
+    getValues(NimArrValues, NV.model_modelOutput_accessor);
+    std::copy( NimArrValues.getPtr(),
+	       NimArrValues.getPtr() + length_modelOutput,
+	       NimArrValues_AD.getPtr());
+    setValues_AD_AD(NimArrValues_AD, NV.model_AD_modelOutput_accessor);
+  }
+  
+  int length_wrt = NV.model_wrt_accessor.getTotalLength();
+  if(length_wrt > 0) {
+    NimArrValues.setSize(length_wrt);
+    getValues(NimArrValues, NV.model_wrt_accessor);
+    // 2
+    NimArrValues_AD.setSize(length_wrt);
+    std::copy( NimArrValues.getPtr(),
+	       NimArrValues.getPtr() + length_wrt,
+	       NimArrValues_AD.getPtr());
+    setValues_AD_AD(NimArrValues_AD, NV.model_AD_wrt_accessor);
+  }
+  
+  // 5. Copy all extraInputNodes values from model -> model_AD (ditto, may be redundant)  
+  int length_extraInput = NV.model_extraInput_accessor.getTotalLength();
+  if(length_extraInput > 0) {
+    NimArrValues.setSize(length_extraInput);
+    NimArrValues_AD.setSize(length_extraInput);
+    getValues(NimArrValues, NV.model_extraInput_accessor);
+    std::copy( NimArrValues.getPtr(),
+	       NimArrValues.getPtr() + length_extraInput,
+	       NimArrValues_AD.getPtr());
+    setValues_AD_AD(NimArrValues_AD, NV.model_AD_extraInput_accessor);
+  }
+
+  // record extraInputObject
+  if(length_extraInput > 0) {
+    std::vector< CppAD::AD<double> > extraInputDummyInput(1);
+    extraInputDummyInput[0] = extraInputOutputVars[ 0 ];
+    std::vector< CppAD::AD<double> > extraInputResults(length_extraInput);
+      // After this, the tape treats extraInputResults as a function of
+      // extraInputDummy.  This means during tape use, the extraInputObject
+      // functor will be called, and the extraInputResults will contain
+      // node values from the model.  By copying those during taping
+      // into the model_AD, those nodes play the right roles in the tape.
+      // 7.
+
+    NV.extraInputObject = 
+      runExtraInputObject(NV,
+    			  extraInputDummyInput,
+    			  extraInputResults);
+
+    /* TO-DO: Make the runExtraInputObject actually copy the values, so that valid values go into the model for taping.*/
+    // Actually I think this could go with above steps.
+    
+    // During recording this will not put values in extraInputResults
+    // but I don't think that will be a problem.  We are recording via
+    // ADtape.Dependent(X, Y), which does not call Forward(0) for values.
+    // 8.
+    
+    NimArrValues_AD.setSize(length_extraInput);
+    std::copy(extraInputResults.begin(),
+	      extraInputResults.end(),
+	      NimArrValues_AD.getPtr());
+    setValues_AD_AD(NimArrValues_AD, NV.model_AD_extraInput_accessor);
+  }
+}
+
+void nodeFun::update_model_after_taping(NodeVectorClassNew_derivs &NV) {
+  int length_extraInput = NV.model_extraInput_accessor.getTotalLength();  
+ 
+
+    NV.extraOutputObject = 
+      runExtraOutputObject(NV,
+    			   // extraOutputs,
+    			   //extraOutputDummyResult,
+    			   logProb);
+    dependentVars[0] = logProb;
+        
+}
+
+// Original version
 void nodeFun::recordTape(NodeVectorClassNew_derivs &NV) {
   vector< CppAD::AD<double> > dependentVars(1);
   NimArr<1, double> NimArrValues;

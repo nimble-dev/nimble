@@ -197,6 +197,9 @@ class nodeFun : public NamedObjects {
   NimArr<2, double> getBound_2D_double_block(int boundID, int operand) const {
     return(getBound_2D_double(boundID, indexedNodeInfoTable[operand]));
   }
+
+  void prepare_to_record_model_tape(NodeVectorClassNew_derivs &NV, CppAD::AD<double> &extraInputDummy);
+  void update_model_after_taping(NodeVectorClassNew_derivs &NV);
   // Next 3 functions are virtual to ensure the code in the model DLL
   // will be used so that the correct CppAD globals / statics will be found.
   void recordTape(NodeVectorClassNew_derivs &NV);
