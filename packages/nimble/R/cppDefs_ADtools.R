@@ -524,7 +524,7 @@ makeStaticInitClass <- function(cppDef, derivMethods) {
     cppClass
 }
 
-makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targetFunDef, independentVarNames, funIndex = 0, parentsSizeAndDims,
+makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targetFunDef, independentVarNames, funIndex = 1, parentsSizeAndDims,
                                            ADconstantsInfo) {
     ## modeled closely parts of /*  */
     ## needs to set the ADtapePtr to one element of the ADtape
@@ -636,7 +636,7 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
 
 ## 1. Use myADtapePtrs_
 ## 2. Don't assume declared known lengths.
-makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad', targetFunDef, independentVarNames, funIndex = 0, parentsSizeAndDims,
+makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad', targetFunDef, independentVarNames, funIndex = 1, parentsSizeAndDims,
                                            ADconstantsInfo) {
     ## modeled closely parts of /*  */
     ## needs to set the ADtapePtr to one element of the ADtape
@@ -659,6 +659,12 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad', targ
     indexVarNames <- paste0(letters[9:14],'_')
     nimbleSymTab <- targetFunDef$RCfunProc$compileInfo$newLocalSymTab
 
+    ## record tape if needed
+    runCallForTapingCode <- do.call('call', c(list("run_callForTaping2_"), lapply(TF$args$getSymbolNames(), as.name)), quote = TRUE)
+    recordIfNeededCode <- substitute(if(!myADtapePtrs_[FUNINDEX]) {myADtapePtrs_[FUNINDEX] <- RUNCALLFORTAPING },
+                                        list(FUNINDEX = funIndex,
+                                             RUNCALLFORTAPING = runCallForTapingCode))
+    
     ## assign tape ptr code
     assignTapePtrCode <- substitute(memberData(ADtapeSetup, ADtape) <- myADtapePtrs_[FUNINDEX], list(FUNINDEX = funIndex)) ## This will have to become a unique index in general. -1 added during output
     
@@ -753,6 +759,7 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad', targ
     }
     
   allRcode <- do.call('call', c(list('{'),
+                                list(recordIfNeededCode),
                                 calcTotalLengthCode,
                                 list(setSizeLine),
                                 list(assignTapePtrCode),

@@ -1172,7 +1172,7 @@ sizeNFvar <- function(code, symTab, typeEnv) {
 
 
 sizeNimDerivs <- function(code, symTab, typeEnv){
-  code$args[[1]]$name <- paste0(code$args[[1]]$name, '_deriv')
+  code$args[[1]]$name <- paste0(code$args[[1]]$name, '_deriv_')
   setArg(code$caller, code$callerArgID, code$args[[1]])
   setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[2]]) # Set order argument.
   setArg(code$args[[1]], length(code$args[[1]]$args) + 1, 

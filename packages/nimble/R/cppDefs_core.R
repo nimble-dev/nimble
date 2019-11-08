@@ -312,7 +312,9 @@ cppFunctionDef <- setRefClass('cppFunctionDef',
                                               ## There is no code. This can occur for a nimbleFunctionVirtual, which is an abstract base class.
                                               return(character(0))
                                           }
-                                          c(paste(generateFunctionHeader(returnType, name, argsToUse, scopes, template, static = FALSE, ...), if(const) ' const ' else character(0), '{'),
+                                          c(paste(generateFunctionHeader(returnType, name, argsToUse, scopes, template, static = FALSE, ...),
+                                                  if(const) ' const ' else character(0),
+                                                  '{'),
                                             code$generate(...),
                                             list('}'))
                                       }
