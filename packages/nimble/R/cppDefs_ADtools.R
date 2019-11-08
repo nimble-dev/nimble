@@ -456,6 +456,8 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
     ## Now that we know how big ADindependenVars and ADresponseVars should be, 
     ## we can make two more entries to setSizeCalls for them
     ## Note that code for these will appear above code that uses them.
+    localVars$addSymbol(cppInt(name = "totalIndependentLength_"))
+    localVars$addSymbol(cppInt(name = "totalDepLength_"))
     calcTotalLengthCode <- makeCalcTotalLengthBlock(independentVarNames,
                                                     nimbleSymTab,
                                                     "totalIndependentLength_")
@@ -660,7 +662,7 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad', targ
     nimbleSymTab <- targetFunDef$RCfunProc$compileInfo$newLocalSymTab
 
     ## record tape if needed
-    runCallForTapingCode <- do.call('call', c(list("run_callForTaping2_"), lapply(TF$args$getSymbolNames(), as.name)), quote = TRUE)
+    runCallForTapingCode <- do.call('call', c(list("run_callForADtaping2_"), lapply(TF$args$getSymbolNames(), as.name)), quote = TRUE)
     recordIfNeededCode <- substitute(if(!myADtapePtrs_[FUNINDEX]) {myADtapePtrs_[FUNINDEX] <- RUNCALLFORTAPING },
                                         list(FUNINDEX = funIndex,
                                              RUNCALLFORTAPING = runCallForTapingCode))
