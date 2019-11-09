@@ -550,20 +550,122 @@ test_that("ddexp usage", {
 
 
 test_that("recycling behavior from R and within nimbleFunctions for non-R-native distributions", {
-    n <- 6
-    x <- rt_nonstandard(n, 3, 1:3, 2)
-    expect_equal(length(x), n)
 
-    d <- dt_nonstandard(x[1:3], 3, c(1:3,1:3), 2)
+    ## dt_nonstandard
+    set.seed(1)
+    param <- runif(3)
+    x <- rt_nonstandard(6, 3, param, 2)
+    expect_equal(length(x), 6)
+    param <- rep(param, 2)
+    d <- dt_nonstandard(x[1:3], 3, param, 2)
+    expect_identical(d[1:3], d[4:6])
+    p <- pt_nonstandard(x[1:3], 3, param, 2)
+    q <- qt_nonstandard(p, 3, param, 2)
+    expect_equal(rep(x[1:3], 2), q)
+    expect_identical(p[1:3], p[4:6])
+    expect_identical(q[1:3], q[4:6])
 
-    x <- 1:4
-    p <- pt_nonstandard(x, 3, 1, 2)
-    q <- qt_nonstandard(p, 3, 1, 2)
-    expect_equal(x, q)
+    f <- nimbleFunction(
+        run = function(x = double(1), theta = double(1)) {
+            d <- dt_nonstandard(x, 3, theta, 2)
+            p <- pt_nonstandard(x, 3, theta, 2)
+            q <- qt_nonstandard(p, 3, theta, 2)
+            returnType(double(1))
+            return(c(d, p, q))
+        })
+    ## compilation error: issue #953
+    if(FALSE) {
+        cf <- compileNimble(f)
+        out <- cf(x[1:3], param) 
+        expect_identical(out, c(d, p, q))
+    })
 
-    p <- pt_nonstandard(1.5, 3, 1:3, 2)
-    qt_nonstandard(p, 3, 1:3, 2)
+    ## dexp_nimble
+    set.seed(1)
+    param <- runif(3)
+    x <- rexp_nimble(6, param)
+    expect_equal(length(x), 6)
+    param <- rep(param, 2)
+    d <- dexp_nimble(x[1:3], param)
+    expect_identical(d[1:3], d[4:6])
+    p <- pexp_nimble(x[1:3], param)
+    q <- qexp_nimble(p, param)
+    expect_equal(rep(x[1:3], 2), q)
+    expect_identical(p[1:3], p[4:6])
+    expect_identical(q[1:3], q[4:6])
+
+    f <- nimbleFunction(
+        run = function(x = double(1), theta = double(1)) {
+            d <- dexp_nimble(x, theta)
+            p <- pexp_nimble(x, theta)
+            q <- qexp_nimble(p, theta)
+            returnType(double(1))
+            return(c(d, p, q))
+        })
+    cf <- compileNimble(f)
+    out <- cf(x[1:3], param) 
+    expect_identical(out, c(d, p, q))
+
+    ## ddexp
+    set.seed(1)
+    param <- runif(3)
+    x <- rdexp(6, 0.5, param)
+    expect_equal(length(x), 6)
+    param <- rep(param, 2)
+    d <- ddexp(x[1:3], 0.5, param)
+    expect_identical(d[1:3], d[4:6])
+    p <- pdexp(x[1:3], 0.5, param)
+    q <- qdexp(p, 0.5, param)
+    expect_equal(rep(x[1:3], 2), q)
+    expect_identical(p[1:3], p[4:6])
+    expect_identical(q[1:3], q[4:6])
+
+    f <- nimbleFunction(
+        run = function(x = double(1), theta = double(1)) {
+            d <- ddexp(x, 0.5, theta)
+            p <- pdexp(x, 0.5, theta)
+            q <- qdexp(p, 0.5, theta)
+            returnType(double(1))
+            return(c(d, p, q))
+        })
+    cf <- compileNimble(f)
+    out <- cf(x[1:3], param) 
+    expect_identical(out, c(d, p, q))
+
+    ## dsqrt_invgamma (no p or q functions; not available in nimbleFunction)
+    set.seed(1)
+    param <- runif(3)
+    x <- rsqrtinvgamma(6, 0.5, param)
+    expect_equal(length(x), 6)
+    param <- rep(param, 2)
+    d <- dsqrtinvgamma(x[1:3], 0.5, param)
+    expect_identical(d[1:3], d[4:6])
     
+    ## dinvgamma
+    set.seed(1)
+    param <- runif(3)
+    x <- rinvgamma(6, 0.5, param)
+    expect_equal(length(x), 6)
+    param <- rep(param, 2)
+    d <- dinvgamma(x[1:3], 0.5, param)
+    expect_identical(d[1:3], d[4:6])
+    p <- pinvgamma(x[1:3], 0.5, param)
+    q <- qinvgamma(p, 0.5, param)
+    expect_equal(rep(x[1:3], 2), q)
+    expect_identical(p[1:3], p[4:6])
+    expect_identical(q[1:3], q[4:6])
+
+    f <- nimbleFunction(
+        run = function(x = double(1), theta = double(1)) {
+            d <- dinvgamma(x, 0.5, theta)
+            p <- pinvgamma(x, 0.5, theta)
+            q <- qinvgamma(p, 0.5, theta)
+            returnType(double(1))
+            return(c(d, p, q))
+        })
+    cf <- compileNimble(f)
+    out <- cf(x[1:3], param) 
+    expect_identical(out, c(d, p, q))
 })
     
    
