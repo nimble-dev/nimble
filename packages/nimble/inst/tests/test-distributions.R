@@ -547,6 +547,24 @@ test_that("ddexp usage", {
     cm$simulate('mu')
     expect_identical(smp[1], cm$mu, "incorrect compiled simulate for ddexp")
 })
+
+
+test_that("recycling behavior from R and within nimbleFunctions for non-R-native distributions", {
+    n <- 6
+    x <- rt_nonstandard(n, 3, 1:3, 2)
+    expect_equal(length(x), n)
+
+    d <- dt_nonstandard(x[1:3], 3, c(1:3,1:3), 2)
+
+    x <- 1:4
+    p <- pt_nonstandard(x, 3, 1, 2)
+    q <- qt_nonstandard(p, 3, 1, 2)
+    expect_equal(x, q)
+
+    p <- pt_nonstandard(1.5, 3, 1:3, 2)
+    qt_nonstandard(p, 3, 1:3, 2)
+    
+})
     
    
 sink(NULL)
