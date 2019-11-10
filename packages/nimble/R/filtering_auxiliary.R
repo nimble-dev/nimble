@@ -376,7 +376,7 @@ buildAuxiliaryFilter <- nimbleFunction(
       type <- c(type, "double")
       size$wts <- length(dims)
       ## Only need one weight per particle (at time T) if smoothing == TRUE.
-      if(smoothing == T){
+      if(smoothing){
         size$wts <- 1 
       }
       mvWSamples  <- modelValues(modelValuesConf(vars = names,

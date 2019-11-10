@@ -60,6 +60,17 @@ test_filter(model = code, name = 'basic auxiliary', data = testdata, filterType 
                                      var = list(x = rep(.2,3)),
                                      ll = list(2)))
 
+if(FALSE) { ## add this and adjust gold file
+test_filter(model = code, name = 'basic auxiliary, saveAll = FALSE', data = testdata, filterType = "auxiliary", latentNodes = "x", filterControl = list(saveAll = FALSE), 
+             inits = inits,
+             results = list(mean = list(x = c(0,0.454,1.209)),
+                            var = list(x = c(.667, .909, .977)),
+                            ll = list(ActualLL)),
+             resultsTolerance = list(mean = list(x = rep(.2,3)),
+                                     var = list(x = rep(.2,3)),
+                                     ll = list(2)))
+}
+
 test_filter(model = code, name = 'basic auxiliary w/ mean lookahead', data = testdata, filterType = "auxiliary",
              latentNodes = "x", filterControl = list(lookahead = "mean", saveAll = TRUE),
              inits = inits,
