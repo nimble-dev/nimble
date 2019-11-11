@@ -43,6 +43,8 @@ But IIUC it would be possible, similar to the bootstrap filter, to make this opt
 
 -- Fixed bug that prevented recycling for distributions ddexp, dexp_nimble, dt_nonstandard, and dinvgamma (and their 'p' and 'q' versions) when one or more parameter vectors were longer than the primary argument (PR #954).
 
+-- Fixed bug preventing recycling for distributions dt and dt_nonstandard (PR #956).
+
 -- Fixed bug in MCMC crossLevel sampler affecting models with non-identity link functions, so that underlying conjugate sampler functions no longer modify the target node value (PR #925).
 
 -- Fixed a bug in corner case of MCMC conjugacy checking system, when linear scale of target node is identically equal to zero.
