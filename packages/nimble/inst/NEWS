@@ -1,15 +1,62 @@
+                            CHANGES IN VERSION 0.9.0 (November 2019)
 
 USER LEVEL CHANGES
 
+-- Added iterated filtering 2 (IF2) algorithm for estimating parameters by maximum likelihood in models for which SMC algorithms can be used. 
+
+-- Added dmnorm-dmnorm conjugacy for BNP mixture models using the dCRP distribution (PR #936).
+
+-- Added detection of normal-inverse-gamma conjugacy in BNP mixture models using the dCRP distribution in the case when intermediate nodes are present (PR #944).
+
+-- Cleaned up handling of linear predictors in regression-style models to avoid an incorrect warning when indexing the result of matrix multiplication (PR #929).
+
+-- Modified handling of NAs in model nodes under truncation or dynamic indexing to avoid printing warnings when calculating the uncompiled model (PR #920). 
+
 -- Added the scalarComponents argument to addSampler method of MCMC configuration objects, which enables adding independent univariate samplers to all scalar componets of a specified target node or variable.
 
--- removeSamplers, setSamplers, and printSamplers methods of MCMC configuration object now also accepts node names (or sampler indices) through the "..." argument.
+-- removeSamplers, setSamplers, and printSamplers methods of MCMC configuration object now also accept node names (or sampler indices) through the "..." argument.
+
+-- Fixed a corner case of pathological behavior in the reflection version of the RW sampler when there are both lower and upper bounds and the posterior is poorly informed, in which case the proposal scale can grow to be very large (PR #948).
+
+-- Improved output from printSamplers, including indicating if conjugacy is actually used in BNP mixture models using the dCRP distribution.
+
+-- Added a warning when 'inits' argument to nimbleModel is not a list. 
 
 BUG FIXES
 
--- Fixed bug in MCMC crossLevel sampler, so that underlying conjugate sampler functions no longer modify the target node value.
+[PdV: please add text on various changes to particle filters not yet reflected here.]
+[In particular I see this note in email and want to see whether changes were made in this regard:
+But IIUC it would be possible, similar to the bootstrap filter, to make this optional and instead carry forward the weights to the next iteration.  In fact the first part of an iteration looks like it is set up to have unequal weights from the previous iteration ( auxWts[i] <- auxll[i] + mvWSamples['wts',i][prevInd] ), but currently they will never be unequal because of the final resampling at the end of each iteration.  I want to ask if this makes sense or if you have recollections on complications I'm not seeing.]
+
+-- Remove 'pfResample' option (not the default) for particle MCMC (PMCMC) samplers as resampling is not justified by the theory of PMCMC samplers.
+
+-- Fixed bug concerning incorrect dependency tracking that affected particle filtering for models with intermediate deterministic nodes between latent states.
+[PdV: should we clarify which such cases were affected? I'm forgetting if all such cases...]
+
+-- Fixed bug in auxiliary particle filter in the default 'saveAll=FALSE' case.
+
+-- Modified auxiliary particle filter to omit multiplication by p(x_t+1 | x_t) in look-ahead. This now follows Pitt and Shephard (1999).
+
+-- Fixed incorrect handling of rate parameter in ddexp distribution for nimbleFunctions and direct use from R that was causing rate to be ignored and default scale value to be used. Use of rate parameter in ddexp in models was not affected by this issue (PR #950).
+
+-- Fixed bug causing incorrect sampling in BNP mixture models with beta-binomial or beta-negative-binomial conjugacy (PR #922).
+
+-- Fixed bug that prevented recycling for distributions ddexp, dexp_nimble, dt_nonstandard, and dinvgamma (and their 'p' and 'q' versions) when one or more parameter vectors were longer than the primary argument (PR #954).
+
+-- Fixed bug in MCMC crossLevel sampler affecting models with non-identity link functions, so that underlying conjugate sampler functions no longer modify the target node value (PR #925).
 
 -- Fixed a bug in corner case of MCMC conjugacy checking system, when linear scale of target node is identically equal to zero.
+
+-- Fixed a bug in corner case of MCMC conjugacy checking for BNP models - removing conjugacy detection in normal-inverse-gamma case where the data (i.e., dependent node) variance is scaled.
+
+-- Fixed a bug preventing use of 'data' as the name of a data node in the model (PR #946).
+
+DEVELOPER LEVEL CHANGES
+
+-- Add rudimentary support for multiple inheritance (PR #943).
+
+-- Match int and unsigned int to silence Windows compiler warnings (PR #914).
+
 
                             CHANGES IN VERSION 0.8.0 (June 2019)
 USER LEVEL CHANGES
