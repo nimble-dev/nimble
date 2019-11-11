@@ -111,11 +111,28 @@ LWStep <- nimbleFunction(
   setup = function(model, mvWSamples, mvEWSamples, nodes, paramVarDims, iNode, paramNodes, paramVars, names, saveAll, d, silent = FALSE) {
     notFirst <- iNode != 1
     prevNode <- nodes[if(notFirst) iNode-1 else iNode]
-    prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
+
+    modelSteps <- particleFilter_splitModelSteps(model, nodes, iNode, notFirst)
+    prevDeterm <- modelSteps$prevDeterm
+    calc_thisNode_self <- modelSteps$calc_thisNode_self
+    calc_thisNode_deps <- modelSteps$calc_thisNode_deps
+    
     thisNode <- nodes[iNode]
     parDeterm <- model$getDependencies(paramNodes, determOnly=TRUE)
-    thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
-    thisData   <- model$getDependencies(thisNode, dataOnly = TRUE)
+    ## Remove any element of parDeterm that is not needed by prevDeterm, calc_thisNode_self or calc_thisNode_deps
+    nodes_that_matter <- c(prevDeterm, calc_thisNode_self, calc_thisNode_deps)
+    if(length(parDeterm) > 0) {
+        thisDeterm_is_intermediate <- logical(length(parDeterm))
+        for(i in seq_along(parDeterm)) {
+            theseDeps <- model$getDependencies(parDeterm[i])
+            thisDeterm_is_intermediate[i] <- !(parDeterm[i] %in% nodes_that_matter) & any(theseDeps %in% nodes_that_matter)
+        }
+        parDeterm <- parDeterm[thisDeterm_is_intermediate]
+    }
+    parAndPrevDeterm <- c(parDeterm, prevDeterm)
+    parAndPrevDeterm <- model$expandNodeNames(parAndPrevDeterm, sort = TRUE) ## Ensure sorting, because a node in parDeterm that is also in prevDeterm will have been removed from parDeterm, but that is where it potentially comes first.
+    
+
     isLast <- (iNode == length(nodes))
             
     t <- iNode  # current time point
@@ -186,13 +203,12 @@ LWStep <- nimbleFunction(
        for(i in 1:m) {
          copy(mvWSamples, model, prevXName, prevNode, row=i)
          values(model, paramNodes) <<- meanVec[,i]
-         calculate(model, parDeterm) 
-         calculate(model, prevDeterm) 
+         calculate(model, parAndPrevDeterm) 
          for(j in 1:numLatentNodes){
            setMeanList[[j]]$run()
          }
-         calculate(model, thisDeterm)
-         auxWts[i] <- exp(calculate(model, thisData))
+         calculate(model, calc_thisNode_self)
+         auxWts[i] <- exp(calculate(model, calc_thisNode_deps))
          if(is.nan(auxWts[i])) auxWts[i] <- 0 #check for ok param values
          preWts[i] <- exp(log(auxWts[i]))*wts[i] #first resample weights
        }
@@ -228,11 +244,10 @@ LWStep <- nimbleFunction(
          simulate(model, paramNodes)
          tmpPars[,i] <- values(model,paramNodes)
        }
-      calculate(model, parDeterm) 
-      simulate(model, thisNode)
+      calculate(model, parAndPrevDeterm) 
+      simulate(model, calc_thisNode_self)
       copy(model, mvWSamples, nodes = thisNode, nodesTo = thisXName, rowTo = i)
-      calculate(model, thisDeterm)
-      l[i]  <- exp(calculate(model, thisData))
+      l[i]  <- exp(calculate(model, calc_thisNode_deps))
       if(is.nan(l[i])) l[i] <- 0
       #rescale weights by pre-sampling weight
       if(notFirst)
