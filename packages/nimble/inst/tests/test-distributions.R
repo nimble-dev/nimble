@@ -604,12 +604,9 @@ test_that("recycling behavior from R and within nimbleFunctions for non-R-native
             returnType(double(1))
             return(c(d, p, q))
         })
-    ## compilation error: issue #953
-    if(FALSE) {
-        cf <- compileNimble(f)
-        out <- cf(x[1:3], param) 
-        expect_identical(out, c(d, p, q))
-    }
+    cf <- compileNimble(f)
+    out <- cf(x[1:3], param) 
+    expect_identical(out, c(d, p, q))
 
     ## dexp_nimble
     set.seed(1)
