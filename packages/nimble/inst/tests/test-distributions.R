@@ -546,6 +546,37 @@ test_that("ddexp usage", {
     set.seed(1)
     cm$simulate('mu')
     expect_identical(smp[1], cm$mu, "incorrect compiled simulate for ddexp")
+
+    ## check use of rate
+    set.seed(1)
+    x <- rdexp(1, 0.5, scale = 0.25)
+    d1 <- ddexp(x, 0.5, 0.25)
+    d2 <- ddexp(x, 0.5, rate = 4)
+    expect_identical(d1, d2)
+
+    ## nimbleFunction
+    f <- nimbleFunction(
+        run = function(x = double(), location = double(), par2 = double()) {
+            returnType(double(1))
+            out1 <- ddexp(x, location, par2)
+            out2 <- ddexp(x, location, rate = 1/par2)
+            return(c(out1, out2))
+        })
+    cf <- compileNimble(f)
+    out <- cf(x, 0.5, 0.25)
+    expect_identical(out, c(d1, d2))
+
+    ## in a model
+    code <- nimbleCode({
+        x1 ~ ddexp(mu, scale = scale)
+        x2 ~ ddexp(mu, rate)
+    })
+    m <- nimbleModel(code, data = list(x1 = x, x2 = x), inits = list(mu = 0.5, scale = 0.25, rate = 4))
+    cm <- compileNimble(m)
+    out1 <- cm$calculate('x1')
+    out2 <- cm$calculate('x2')
+    expect_identical(exp(c(out1, out2)), c(d1, d2))
+
 })
     
    
