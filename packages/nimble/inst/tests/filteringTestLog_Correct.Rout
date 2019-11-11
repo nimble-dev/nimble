@@ -7,11 +7,18 @@ sd     0.81422064  0.9458056  0.9960634
 ===== Finished bootstrap filter test for basic bootstrap, always resamp. =====
 ===== Starting Filter test for basic auxiliary using auxiliary. =====
              x[1]       x[2]       x[3]
-mean   0.02625837  0.4819173  1.2134764
-sd     0.81422064  0.9678505  0.9774409
-2.5%  -1.57686702 -1.3920861 -0.6835369
-97.5%  1.61527486  2.4263665  3.1279726
+mean   0.02625837  0.4665380  1.2392648
+sd     0.81422064  0.9738338  0.9880561
+2.5%  -1.57686702 -1.4380076 -0.7181285
+97.5%  1.61527486  2.3983282  3.1301995
 ===== Finished auxiliary filter test for basic auxiliary. =====
+===== Starting Filter test for basic auxiliary, saveAll = FALSE using auxiliary. =====
+            x[1]
+mean   1.2392648
+sd     0.9880561
+2.5%  -0.7181285
+97.5%  3.1301995
+===== Finished auxiliary filter test for basic auxiliary, saveAll = FALSE. =====
 ===== Starting Filter test for basic auxiliary w/ mean lookahead using auxiliary. =====
              x[1]       x[2]       x[3]
 mean   0.02625837  0.4422192  1.1805595
@@ -39,16 +46,16 @@ sd     1.1253605  1.4873218  1.750032
 97.5%  2.7585060  3.8372356  5.035827
 ===== Finished bootstrap filter test for multivariate bootstrap, always resamp. =====
 ===== Starting Filter test for multivariate auxiliary using auxiliary. =====
-         x[1, 1]    x[2, 1]   x[3, 1]    x[1, 2]    x[2, 2]   x[3, 2]
-mean   0.3219980  0.5744718 1.6773793  0.6825467  0.1811593  0.923409
-sd     0.5847179  0.5672615 0.5389983  1.0300398  1.3581685  1.554067
-2.5%  -0.7948388 -0.2379396 0.6135172 -1.3024659 -1.2691858 -2.055761
-97.5%  1.4724973  1.7688809 2.7446284  2.6290376  3.5505267  3.697264
-         x[1, 3]   x[2, 3]   x[3, 3]
-mean   0.4937738  1.978648  1.842363
-sd     1.1253605  1.569715  1.538758
-2.5%  -1.6594215 -1.728842 -1.000195
-97.5%  2.7585060  3.399407  5.011510
+         x[1, 1]    x[2, 1]   x[3, 1]    x[1, 2]   x[2, 2]   x[3, 2]    x[1, 3]
+mean   0.3219980  0.8901487 1.7312170  0.6825467  1.120018  1.796722  0.4937738
+sd     0.5847179  0.6299706 0.6032666  1.0300398  1.430706  1.706976  1.1253605
+2.5%  -0.7948388 -0.3687001 0.4792759 -1.3024659 -1.561987 -1.736663 -1.6594215
+97.5%  1.4724973  2.0250402 2.8072585  2.6290376  3.823310  4.822284  2.7585060
+         x[2, 3]    x[3, 3]
+mean   0.8038698  0.9809071
+sd     1.5411159  1.8019986
+2.5%  -2.2030694 -2.6059457
+97.5%  3.6847844  4.7553646
 ===== Finished auxiliary filter test for multivariate auxiliary. =====
 ===== Starting Filter test for multivariate auxiliary mean lookahead using auxiliary. =====
          x[1, 1]    x[2, 1]   x[3, 1]    x[1, 2]    x[2, 2]   x[3, 2]
@@ -79,9 +86,9 @@ sd     0.3494247  0.2161070 0.6228014 0.4325777 0.4156712 0.357436 0.4760495
 ===== Starting MCMC test for scalar pmcmc. =====
 Setting samplers to:
 [[1]]
-RW_PF sampler: sigma_x,  latents: x,  m: 1000,  resample: FALSE
+RW_PF sampler: sigma_x,  latents: x,  m: 1000
 [[2]]
-RW_PF sampler: sigma_y,  latents: x,  m: 1000,  resample: FALSE
+RW_PF sampler: sigma_y,  latents: x,  m: 1000
         sigma_x     sigma_y      x[1]      x[2]      x[3]      x[4]      x[5]
 mean  1.0175051 0.290362394 1.2217282 2.5871739 2.7522003 2.1159484 2.2805495
 sd    0.2661122 0.240954057 0.2576929 0.3642905 0.3314082 0.3317011 0.3319414
@@ -98,3 +105,4 @@ sd    0.2611773 0.248528683 0.2995668 0.3387693 0.3333205 0.3103522 0.3662519
 2.5%  0.6670515 0.003591207 0.6022247 1.8481076 1.8934463 1.4500097 1.4916266
 97.5% 1.7865719 1.048503339 1.9688815 3.2230874 3.4812492 2.9196129 3.0290851
 ===== Finished MCMC test for block pmcmc. =====
+buildIteratedFilter2: IF2 algorithm built to maximize parameters: logSigmaInnovations, logSigmaMeasurements, meanShift1899.
