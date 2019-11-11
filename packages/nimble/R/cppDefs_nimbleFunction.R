@@ -270,8 +270,11 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               addTypeTemplateFunction = function( funName ) {
                                                   newFunName <- paste0(funName, '_AD_')
                                                   regularFun <- RCfunDefs[[funName]]
-                                                  functionDefs[[newFunName]] <<- makeTypeTemplateFunction(newFunName, regularFun)
-
+                                                  ## We need the template<TYPE_> function and also
+                                                  ## whether a calculate was detected and if so its nodeFxnVector_name
+                                                  res <-  makeTypeTemplateFunction(newFunName, regularFun)
+                                                  functionDefs[[newFunName]] <<- res$fun
+                                                  
                                                   ## Currently there is no need for a separate one
                                                   ## if(isTRUE(nimbleOptions('useADreconfigure'))) {
                                                   ##     newFunName <- paste0(funName, '_AD2_')
@@ -279,13 +282,20 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   ##     functionDefs[[newFunName]] <<- makeTypeTemplateFunction(newFunName, regularFun)
                                                   ## }
                                                   
-                                                  invisible(NULL)
+                                                  res[['nodeFxnVector_name']]
                                               },
-                                              addADtapingFunction = function( funName, independentVarNames, dependentVarNames ) {
+                                              addADtapingFunction = function( funName, independentVarNames, dependentVarNames,
+                                                                             nodeFxnVector_name = NULL) {
                                                   ADfunName <- paste0(funName, '_AD_')
                                                   regularFun <- RCfunDefs[[funName]]
                                                   newFunName <- paste0(funName, '_callForADtaping_')
-                                                  functionDefs[[newFunName]] <<- makeADtapingFunction(newFunName, regularFun, ADfunName, independentVarNames, dependentVarNames, nfProc$isNode, className = name)
+                                                  functionDefs[[newFunName]] <<- makeADtapingFunction(newFunName,
+                                                                                                      regularFun,
+                                                                                                      ADfunName,
+                                                                                                      independentVarNames,
+                                                                                                      dependentVarNames,
+                                                                                                      nfProc$isNode,
+                                                                                                      className = name)
                                                   if(isTRUE(nimbleOptions("useADreconfigure"))) {
                                                       newFunName2 <- paste0(funName, '_callForADtaping2_')
                                                       functionDefs[[newFunName2]] <<- makeADtapingFunction2(newFunName2,
@@ -294,7 +304,8 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                                                                            independentVarNames,
                                                                                                            dependentVarNames,
                                                                                                            nfProc$isNode,
-                                                                                                           className = name)
+                                                                                                           className = name,
+                                                                                                           nodeFxnVector_name = nodeFxnVector_name)
                                                   }
                                                   invisible(NULL)
                                               },
@@ -337,10 +348,10 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                           checkADargument(funName, argSym, argName = argName)
                                                       }
                                                   }
-                                                  addTypeTemplateFunction(funName)
+                                                  nodeFxnVector_name <- addTypeTemplateFunction(funName) ## returns either NULL (if there is no model$calculate) or a nodeFxnVector name (if there is)
                                                   independentVarNames <- names(functionDefs[[funName]]$args$symbols)
                                                   if(nfProc$isNode) independentVarNames <- independentVarNames[-1]  ## remove ARG1_INDEXEDNODEINFO__ from independentVars
-                                                  addADtapingFunction(funName, independentVarNames = independentVarNames, dependentVarNames = 'ANS_' )
+                                                  addADtapingFunction(funName, independentVarNames = independentVarNames, dependentVarNames = 'ANS_', nodeFxnVector_name )
                                                   addADargumentTransferFunction(funName, independentVarNames = independentVarNames)
                                               },
                                               checkADargument = function(funName, argSym, argName = NULL, returnType = FALSE){
@@ -486,9 +497,11 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
 
 ## The next block of code has the initial setup for an AST processing stage
 ## to make modifications for AD based on context etc.
-modifyForAD_handlers <- list(eigenBlock = 'modifyForAD_eigenBlock')
+modifyForAD_handlers <- list(eigenBlock = 'modifyForAD_eigenBlock',
+                             calculate = 'modifyForAD_calculate')
 
-exprClasses_modifyForAD <- function(code, symTab, workEnv = list2env(list(wrap_in_value = FALSE))) {
+exprClasses_modifyForAD <- function(code, symTab,
+                                    workEnv = list2env(list(wrap_in_value = FALSE))) {
   if(code$isName) {
     if(!isTRUE(workEnv[['wrap_in_value']]))
       return(invisible())
@@ -505,8 +518,32 @@ exprClasses_modifyForAD <- function(code, symTab, workEnv = list2env(list(wrap_i
   if(code$isCall) {
     recurse_modifyForAD(code, symTab, workEnv)
     handler <- modifyForAD_handlers[[code$name]]
-    if(!is.null(handler)) eval(call(handler, code, symTab, workEnv))
+    if(!is.null(handler))
+      eval(call(handler, code, symTab, workEnv))
   }
+  if(is.null(code$caller)) { ## It is the top level `{`
+    if(identical(code$name, "{")) {
+      if(isTRUE(workEnv[['hasCalculate']])) {
+        if(is.null( workEnv[['nodeFxnVector_name']] ) )
+          stop("While setting up C++ AD code: calculate found but nodeFxnVector_name not set.")
+        ## insert setup_extraInput_step(nfv)
+        setupExtraInputLine <- RparseTree2ExprClasses(
+          substitute(setup_extraInput_step(NFV),
+                     list(NFV = as.name(workEnv$nodeFxnVector_name)))
+        )
+        ## This inserts a single line at the beginning by
+        ## creating a new `{` block.
+        ## If anything more general is needed later, we could use
+        ## the exprClasses_insertAssertions system
+        newExpr <- newBracketExpr(args = c(list(setupExtraInputLine),
+                                           code$args))
+        code$args <- list()
+        setArg(code, 1, newExpr)
+      }
+    }
+  }
+  
+  invisible(NULL)
 }
 
 recurse_modifyForAD <- function(code, symTab, workEnv) {
@@ -515,13 +552,24 @@ recurse_modifyForAD <- function(code, symTab, workEnv) {
       exprClasses_modifyForAD(code$args[[i]], symTab, workEnv)
     }
   }
+  invisible(NULL)
 }
 
 modifyForAD_eigenBlock <- function(code, symTab, workEnv) {
-  orig_wrap_in_value <- workEnv$wrap_in_value
-  workEnv$wrap_in_value <- TRUE
+  orig_wrap_in_value <- workEnv[['wrap_in_value']]
+  workEnv[['wrap_in_value']] <- TRUE
   recurse_modifyForAD(code, symTab, workEnv)
-  workEnv$wrap_in_value <- orig_wrap_in_value
+  workEnv[['wrap_in_value']] <- orig_wrap_in_value
+  invisible(NULL)
+}
+
+modifyForAD_calculate <- function(code, symTab, workEnv) {
+  workEnv$hasCalculate <- TRUE
+  workEnv$nodeFxnVector_name <- code$args[[1]]$name
+  recurse_modifyForAD(code, symTab, workEnv)
+  code$name <- "calculate_ADproxyModel"
+  code$args[[2]] <- 1 ## this sets includeExtraOutputStep = true
+  invisible(NULL)
 }
 
 updateADproxyModelMethods <- function(.self) {
@@ -550,7 +598,7 @@ updateADproxyModelMethods <- function(.self) {
         ADtypeDefs <- symbolTable()
         ADtypeDefs$addSymbol(cppVarFull(baseType = "typedef Matrix<CppAD::AD<double>, Dynamic, Dynamic>", name = "MatrixXd") )
         thisDef$code$typeDefs <- ADtypeDefs
-        exprClasses_modifyForAD(thisDef$code$code, thisDef$code$objectDefs)
+##        exprClasses_modifyForAD(thisDef$code$code, thisDef$code$objectDefs)
     }
     classST <- .self$objectDefs
     classSymNames <- classST$getSymbolNames()

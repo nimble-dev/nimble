@@ -742,7 +742,10 @@ indexedNodeInfo generateDummyIndexedNodeInfo();
 
 class NodeVectorClassNew_derivs;
 
-CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes);
+CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
+					 bool includeExtraOutputStep = false);
+
+void initialize_AD_model_before_recording(NodeVectorClassNew_derivs &nodes);
 
 class NodeVectorClassNew_derivs : public NodeVectorClassNew {
  public:

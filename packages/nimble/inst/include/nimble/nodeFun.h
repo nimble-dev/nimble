@@ -198,8 +198,13 @@ class nodeFun : public NamedObjects {
     return(getBound_2D_double(boundID, indexedNodeInfoTable[operand]));
   }
 
-  void prepare_to_record_model_tape(NodeVectorClassNew_derivs &NV, CppAD::AD<double> &extraInputDummy);
-  void update_model_after_taping(NodeVectorClassNew_derivs &NV);
+  // useADreconfigure functions (version "2")
+  void initialize_AD_model_before_recording(NodeVectorClassNew_derivs &NV);
+  void setup_extraInput_step(NodeVectorClassNew_derivs &NV,
+			     CppAD::AD<double> &extraInputDummy);
+  void setup_extraOutput_step(NodeVectorClassNew_derivs &NV,
+			      CppAD::AD<double> &logProb);
+
   // Next 3 functions are virtual to ensure the code in the model DLL
   // will be used so that the correct CppAD globals / statics will be found.
   void recordTape(NodeVectorClassNew_derivs &NV);

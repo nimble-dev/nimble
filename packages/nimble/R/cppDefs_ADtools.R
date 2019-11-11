@@ -86,9 +86,13 @@ makeTypeTemplateFunction <- function(newName, .self) {
     newCppFunDef$args <- symbolTable2templateTypeSymbolTable(.self$args, addRef = TRUE)
     localArgs <- symbolTable2templateTypeSymbolTable(.self$code$objectDefs)
     newCppFunDef$returnType <- cppVarSym2templateTypeCppVarSym(.self$returnType)
-    newCppFunDef$code <- cppCodeBlock(code = .self$code$code, objectDefs = localArgs, typeDefs = typeDefs, 
+    newCode <- copyExprClass(.self$code$code)
+    workEnv <- new.env()
+    exprClasses_modifyForAD(newCode, localArgs, workEnv = workEnv)
+    newCppFunDef$code <- cppCodeBlock(code = newCode, objectDefs = localArgs, typeDefs = typeDefs, 
                                       generatorSymTab = .self$code$objectDefs, cppADCode = 2L)
-    newCppFunDef
+    list(fun = newCppFunDef,
+         nodeFxnVector_name = workEnv[['nodeFxnVector_name']])
 }
 
 ## This makes the function to be called once for CppAD taping
@@ -268,7 +272,8 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
                                   independentVarNames,
                                   dependentVarNames,
                                   isNode,
-                                  className = "className") {
+                                  className = "className",
+                                  nodeFxnVector_name = character()) {
     ## Make new function definition to call for taping (CFT)
   if(isNode) warning("makeADtapingFunction2 has not been updated for isNode==TRUE")
   CFT <- RCfunctionDef$new(static = TRUE)
@@ -313,7 +318,17 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
                                             replacementTemplateArgs = list('double'))
     ansSym$name <- 'ANS_'
   localVars$addSymbol(ansSym)
-  ## Make a separate resize line for ADresponseVars.  ANS_ does not need a resize line.
+
+
+    ## Add a model initialization step if a model is used.
+    ## Arguably this should go in the TypeTemplateFunction, using CppAD::Value() to copy values without recording in the tape.
+    modelInitCode <- NULL
+    if(length(nodeFxnVector_name) > 0) {
+        modelInitCode <- substitute(initialize_AD_model_before_recording(NV),
+                                    list(NV = as.name(nodeFxnVector_name[1])))
+    }
+
+    ## Make a separate resize line for ADresponseVars.  ANS_ does not need a resize line.
     symNames <- CFT$args$getSymbolNames()
     ## set up a set of index variables for copying code, up to six to be arbitrary (allowing up to 6-dimensional nimble objects to be handled)
     indexVarNames <- paste0(letters[9:14],'_')
@@ -487,6 +502,7 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
     ## Finally put together all the code, parse it into the nimble exprClass system,
     ## and add it to the result (CFT)
     allRcode <- do.call('call', c(list('{'),
+                                  list(modelInitCode),
                                   calcTotalLengthCode,
                                   setSizeLines,
                                   dummyIndexNodeInfoCode,
