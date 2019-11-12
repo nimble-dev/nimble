@@ -1747,12 +1747,11 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     targetElements <- model$expandNodeNames(target, returnScalarComponents = TRUE)
     targetVar <- model$getVarNames(nodes = target)
     n <- length(targetElements)
-
-    tildeVars <- clusterVarInfo$clusterVars
     
     ## Find nodes indexed by the CRP node.
     clusterVarInfo <- findClusterNodes(model, target)
-    
+    tildeVars <- clusterVarInfo$clusterVars
+
     ##  Various checks that model structure is consistent with our CRP sampler. 
     
     if(!is.null(clusterVarInfo$targetNonIndex))
@@ -1859,7 +1858,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
       }
     }
     
-    helperFunctions <- nimble:::nimbleFunctionList(CRP_helper)
+    helperFunctions <- nimbleFunctionList(CRP_helper)
         
     ## use conjugacy to determine which helper functions to use
     if(control$checkConjugacy) {
@@ -1922,11 +1921,11 @@ sampler_CRP_moreGeneral <- nimbleFunction(
         
     } else {
         marginalizedNodes <- clusterVarInfo$clusterNodes[[1]]
-        deps <- unlist(sapply(marginalizedNodes, function(x)
-            model$getDependencies(x, self = FALSE, stochOnly = TRUE)))
+        deps <- unique(unlist(lapply(marginalizedNodes, function(x)
+            model$getDependencies(x, self = FALSE, stochOnly = TRUE))))
         if(any(marginalizedNodes %in% deps))
             stop("sampler_CRP: cluster parameters must be independent across clusters.")
-        if(sort(deps) != sort(dataNodes)) 
+        if(!identical(sort(deps), sort(dataNodes)))
             warning("sampler_CRP: dependencies of cluster parameters include unexpected nodes: ",
                     paste0(deps[!deps %in% dataNodes], collapse = ', '))
     }
