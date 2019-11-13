@@ -651,7 +651,7 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
     if(length(x) == 1) return(1)
     if(x[[2]] == 0) return(1)
     if(length(x) < 3) stop('Sizes of arguments to nimbleFunctions must be
-                           explictly specified (e.g. x = double(1, 4)) in order
+                           explicitly specified (e.g. x = double(1, 4)) in order
                            to take derivatives.')
     if(x[[2]] == 1){
       if(length(x[[3]]) == 1) return(x[[3]])

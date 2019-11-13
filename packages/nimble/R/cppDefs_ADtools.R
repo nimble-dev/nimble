@@ -322,7 +322,7 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
 
     ## Add a model initialization step if a model is used.
     ## Arguably this should go in the TypeTemplateFunction, using CppAD::Value() to copy values without recording in the tape.
-    modelInitCode <- NULL
+    modelInitCode <- quote(blank())
     if(length(nodeFxnVector_name) > 0) {
         modelInitCode <- substitute(initialize_AD_model_before_recording(NV),
                                     list(NV = as.name(nodeFxnVector_name[1])))
