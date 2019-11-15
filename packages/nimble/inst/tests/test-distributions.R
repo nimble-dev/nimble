@@ -606,7 +606,7 @@ test_that("recycling behavior from R and within nimbleFunctions for non-R-native
         })
     cf <- compileNimble(f)
     out <- cf(x[1:3], param) 
-    expect_identical(out, c(d, p, q))
+    expect_identical(out, c(d, p, q), info = 'dt_nonstandard nf')
 
     ## dexp_nimble
     set.seed(1)
@@ -632,7 +632,7 @@ test_that("recycling behavior from R and within nimbleFunctions for non-R-native
         })
     cf <- compileNimble(f)
     out <- cf(x[1:3], param) 
-    expect_identical(out, c(d, p, q))
+    expect_identical(out, c(d, p, q), info = 'dexp_nimble nf')
 
     ## ddexp
     set.seed(1)
@@ -658,7 +658,7 @@ test_that("recycling behavior from R and within nimbleFunctions for non-R-native
         })
     cf <- compileNimble(f)
     out <- cf(x[1:3], param) 
-    expect_identical(out, c(d, p, q))
+    expect_identical(out, c(d, p, q), info = 'ddexp nf')
 
     ## dsqrt_invgamma (no p or q functions; not available in nimbleFunction)
     set.seed(1)
@@ -693,7 +693,7 @@ test_that("recycling behavior from R and within nimbleFunctions for non-R-native
         })
     cf <- compileNimble(f)
     out <- cf(x[1:3], param) 
-    expect_identical(out, c(d, p, q))
+    expect_identical(out, c(d, p, q), info = 'dinvgamma nf')
 })
     
    

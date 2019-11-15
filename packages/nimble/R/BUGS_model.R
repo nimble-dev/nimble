@@ -584,7 +584,7 @@ Details: If a provided value (or the current value in the model when only a name
                                               ## it is possible that the constants don't exist on LHS of BUGS decls
                                               ## and so are not variables in the model.  In that case we don't want to issue the warning.
                                               if(warnAboutMissingNames
-                                                 & nimbleOptions("verbose")) {
+                                                 & nimble::nimbleOptions("verbose")) {
                                                   if(varName == '') {
                                                       warning('unnamed element provided to setData')
                                                   } else 
@@ -602,8 +602,8 @@ Details: If a provided value (or the current value in the model when only a name
                                           }
                                           if(length(isDataVars[[varName]]))
                                               scalarize <- FALSE else scalarize <- TRUE  ## if non-scalar, check actual dimensionality of input
-                                          if(length(nimbleInternalFunctions$dimOrLength(varValue, scalarize = scalarize)) != length(isDataVars[[varName]]))   stop(paste0('incorrect size or dim in data: ', varName))
-                                          if(!(all(nimbleInternalFunctions$dimOrLength(varValue, scalarize = scalarize) == isDataVars[[varName]])))   stop(paste0('incorrect size or dim in data: ', varName))
+                                          if(length(nimble::nimbleInternalFunctions$dimOrLength(varValue, scalarize = scalarize)) != length(isDataVars[[varName]]))   stop(paste0('incorrect size or dim in data: ', varName))
+                                          if(!(all(nimble::nimbleInternalFunctions$dimOrLength(varValue, scalarize = scalarize) == isDataVars[[varName]])))   stop(paste0('incorrect size or dim in data: ', varName))
                                           .self[[varName]] <- varValue
                                           isDataVarValue <- !is.na(varValue)
                                           assign(varName, isDataVarValue, envir = isDataEnv)
@@ -886,9 +886,9 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                               if(declInfo$type == 'determ') {
                                                   # check LHS and RHS are same size/dim
                                                   # need to eval within nf; constants not present otherwise
-                                                  RHSsize <- try(nimbleInternalFunctions$dimOrLength(eval(codeSubstitute(declInfo$valueExprReplaced, as.list(nf)))), silent = TRUE)
+                                                  RHSsize <- try(nimble::nimbleInternalFunctions$dimOrLength(eval(codeSubstitute(declInfo$valueExprReplaced, as.list(nf)))), silent = TRUE)
 
-                                                  LHSsize <- try(nimbleInternalFunctions$dimOrLength(eval(codeSubstitute(declInfo$targetExprReplaced, as.list(nf)))), silent = TRUE)
+                                                  LHSsize <- try(nimble::nimbleInternalFunctions$dimOrLength(eval(codeSubstitute(declInfo$targetExprReplaced, as.list(nf)))), silent = TRUE)
                                                   # apparently implicit dropping of size 1 dimensions is ok in determ node calcs
                                                   if(!is(RHSsize, 'try-error') && !is(LHSsize, 'try-error')) {
                                                       if(length(RHSsize) > 1 && any(RHSsize == 1))
@@ -928,7 +928,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
 
                                                       if(!is(e, "try-error")) {
                                                           if(!is.null(e)) {
-                                                              sizes[[nms[k]]] <- nimbleInternalFunctions$dimOrLength(e)
+                                                              sizes[[nms[k]]] <- nimble::nimbleInternalFunctions$dimOrLength(e)
                                                               if(prod(sizes[[nms[[k]]]]) == 1) sizes[[nms[[k]]]] <- numeric()
                                                           } else sizes[[nms[[k]]]] <- NA # when have param with dim > 2
                                                       } else warning(paste0("Unable to calculate parameter '", nms[k], "'; this may simply reflect that there are missing values in model variables."))
@@ -980,7 +980,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                               }
                                       }
                                     
-                                      if(isTRUE(nimbleOptions('verbose'))){
+                                      if(isTRUE(nimble::nimbleOptions('verbose'))){
                                         varsWithNAs <- NULL
                                         for(v in .self$getVarNames()){
                                           if(!nimble:::isValid(.self[[v]])){
@@ -1193,7 +1193,7 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            code <- nimble:::insertSingleIndexBrackets(code, modelDef$varInfo)
                                            LHS <- code[[2]]
                                            RHS <- code[[3]]
-                                           if(nimbleOptions('experimentalEnableDerivs')){
+                                           if(nimble::nimbleOptions('experimentalEnableDerivs')){
                                              parents <- BUGSdecl$allParentVarNames()
                                              selfWithNoInds <-  strsplit(deparse(LHS), '[', fixed = TRUE)[[1]][1]
                                              parents <- c(selfWithNoInds, parents)
@@ -1202,7 +1202,7 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                                                                                allSizeAndDimList = parentsSizeAndDims, checkRagged = TRUE)
                                            } else parentsSizeAndDims <- list()
 
-                                           if(nimbleOptions()$allowDynamicIndexing && length(BUGSdecl$dynamicIndexInfo)) {  ## need dim for node for generating NaN with invalid dynamic indexes
+                                           if(nimble::nimbleOptions()$allowDynamicIndexing && length(BUGSdecl$dynamicIndexInfo)) {  ## need dim for node for generating NaN with invalid dynamic indexes
                                                nodeSizeAndDims <- nimble:::makeSizeAndDimList(LHS, deparse(BUGSdecl$targetVarExpr),
                                                                                               BUGSdecl$unrolledIndicesMatrix,
                                                                                               checkRagged = FALSE)
@@ -1222,7 +1222,7 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            ## This can be necessary in a case like for(j in ...) for(i in ...) x[i,j] ~ ...; because x uses inner index first
 
                                            dynamicIndexInfo <- BUGSdecl$dynamicIndexInfo
-                                           if(nimbleOptions()$allowDynamicIndexing) {
+                                           if(nimble::nimbleOptions()$allowDynamicIndexing) {
                                                for(iI in seq_along(dynamicIndexInfo))
                                                    dynamicIndexInfo[[iI]]$indexCode <- nimble:::insertSingleIndexBrackets(dynamicIndexInfo[[iI]]$indexCode, modelDef$varInfo)
                                            }
