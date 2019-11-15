@@ -58,14 +58,13 @@ void nodeFun::initialize_AD_model_before_recording(NodeVectorClassNew_derivs &NV
   }
 }
 
-void nodeFun::setup_extraInput_step(NodeVectorClassNew_derivs &NV,
-				    CppAD::AD<double> &extraInputDummy) {
+void nodeFun::setup_extraInput_step(NodeVectorClassNew_derivs &NV) {
   NimArr<1, CppAD::AD<double> > NimArrValues_AD;
   // This should be called as the first step after CppAD::Independent
   int length_extraInput = NV.model_extraInput_accessor.getTotalLength();
   if(length_extraInput > 0) {
     std::vector< CppAD::AD<double> > extraInputDummyInput(1);
-    extraInputDummyInput[0] = extraInputDummy;
+    extraInputDummyInput[0] = NV.extraInputDummy;
     std::vector< CppAD::AD<double> > extraInputResults(length_extraInput);
       // After this, the tape treats extraInputResults as a function of
       // extraInputDummy.  This means during tape use, the extraInputObject

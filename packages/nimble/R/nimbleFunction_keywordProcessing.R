@@ -858,6 +858,34 @@ nimDerivs_keywordInfo <- keywordInfoClass(
   }
 )
 
+derivInfo_keywordInfo <- keywordInfoClass(
+  keyword = 'derivInfo',
+  processor = function(code, nfProc) {
+    fxnCall <- code[[2]][[1]]
+    calculateCase <- FALSE
+    if(deparse(fxnCall) == 'calculate'){
+      calculateCase <- TRUE
+    } 
+    else if(length(fxnCall) == 3 &&
+              (deparse(fxnCall[[1]]) == '$' &&
+                 deparse(fxnCall[[3]]) == 'calculate')){
+      ## re-arrange nimDerivs(model$calculate(...), ...) to nimDerivs(calculate(model, ...), ...)
+      code[[2]] <- modelMemberFun_keywordInfo$processor(code[[2]], nfProc)
+      code[[2]] <- matchKeywordCode(code[[2]], nfProc)
+      calculateCase <- TRUE
+    }
+    if(!calculateCase) {
+      stop('The first argument to derivInfo must be a call to calculate(model, ...) or model$calculate(...)')
+    }
+    innerCode <- code[[2]]
+    if(is.null(code$wrt))
+      stop("derivInfo must provide 'wrt' argument.")
+    innerCode$wrt <- code$wrt
+    newCode <- calculate_keywordInfo$processor(innerCode, nfProc)
+    return(newCode)
+  }
+)
+
 #	KeywordList
 keywordList <- new.env()
 keywordList[['nimSeq']] <- nimSeq_keywordInfo
@@ -902,8 +930,9 @@ keywordList[['rexp_nimble']] <- rexp_nimble_keywordInfo
 
 keywordList[['length']] <- length_char_keywordInfo ## active only if argument has type character
 
-keywordList[['nimDerivs']] <- nimDerivs_keywordInfo 
+keywordList[['nimDerivs']] <- nimDerivs_keywordInfo
 keywordList[['nimOptim_model']] <- nimOptim_model_keywordInfo 
+keywordList[['derivInfo']] <- derivInfo_keywordInfo
 
 keywordListModelMemberFuns <- new.env()
 keywordListModelMemberFuns[['calculate']] <- modelMemberFun_keywordInfo
@@ -940,6 +969,7 @@ matchFunctions[['nimEigen']] <- function(squareMat, symmetric = FALSE, only.valu
 matchFunctions[['nimSvd']] <- function(mat, vectors = 'full'){}
 matchFunctions[['nimOptim_model']] <- function(model, wrt, nodes, use.gr = TRUE, method = "BFGS", lower = -Inf, upper = Inf, control = nimOptimDefaultControl(), hessian = FALSE) {} ## Any changes here need to be reflected in the keyword processor, which has to re-insert arguments to a modified call.
 matchFunctions[['nimDerivs']] <- nimDerivs
+matchFunctions[['derivInfo']] <- derivInfo
 matchFunctions[['besselK']] <- function(x, nu, expon.scaled = FALSE){}
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
 matchFunctions[['rgamma']] <- function(n, shape, rate = 1, scale){}

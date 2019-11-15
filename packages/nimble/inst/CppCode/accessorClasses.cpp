@@ -77,6 +77,22 @@ CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
   return(ans);
 }
 
+void assign_extraInputDummy(NodeVectorClassNew_derivs &nodes,
+			    CppAD::AD<double> &extraInputDummy) {
+  nodes.extraInputDummy = extraInputDummy;
+}
+
+
+void setup_extraInput_step(NodeVectorClassNew_derivs &nodes) {
+  const vector<NodeInstruction> &instructions = nodes.getInstructions();
+  if(instructions.size() == 0) {
+      printf("No nodes for initialize_AD_model_before_recording\n");
+      return;
+  }
+  nodeFun* nodeFunInModelDLL = instructions[0].nodeFunPtr;
+  nodeFunInModelDLL->setup_extraInput_step(nodes);
+}
+
 void initialize_AD_model_before_recording(NodeVectorClassNew_derivs &nodes) {
   const vector<NodeInstruction> &instructions = nodes.getInstructions();
   if(instructions.size() == 0) {

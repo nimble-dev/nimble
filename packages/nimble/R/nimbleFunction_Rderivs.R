@@ -1,3 +1,5 @@
+derivInfo <- function(x, ...) x
+
 #' Nimble Derivatives
 #' 
 #' EXPERIMENTAL Computes the value, Jacobian, and Hessian of a given  

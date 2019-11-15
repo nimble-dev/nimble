@@ -75,8 +75,10 @@ symbolTable2templateTypeSymbolTable <- function(symTab, addRef = FALSE, clearRef
 ## This makes a Cpp function definition object wrapped in template<class TYPE_> and with
 ## doubles converted to TYPE_s (including in templated use if NimArr and Eigen).
 ## This is called from an existing version of the cppFunctionDef and returns a separate one
-makeTypeTemplateFunction <- function(newName, .self) {
-    newCppFunDef <- RCfunctionDef$new(static = TRUE)
+makeTypeTemplateFunction <- function(newName,
+                                     .self,
+                                     static = TRUE) {
+    newCppFunDef <- RCfunctionDef$new(static = static)
     ## use typedefs to change nimble's general typedefs for Eigen locally
     typeDefs <- symbolTable()
     typeDefs$addSymbol(cppVarFull(baseType = "typedef typename EigenTemplateTypes<TYPE_>::typeEigenMapStrd", name = "EigenMapStrd") ) ## these coerces the cppVar system to generate a line of typedef code for us
@@ -273,10 +275,12 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
                                   dependentVarNames,
                                   isNode,
                                   className = "className",
-                                  nodeFxnVector_name = character()) {
+                                  useModelInfo = list()) {
+    nodeFxnVector_name <- useModelInfo[['nodeFxnVector_name']]
+    usesModelCalculate <- length(nodeFxnVector_name) > 0
     ## Make new function definition to call for taping (CFT)
   if(isNode) warning("makeADtapingFunction2 has not been updated for isNode==TRUE")
-  CFT <- RCfunctionDef$new(static = TRUE)
+  CFT <- RCfunctionDef$new(static = FALSE)
     CFT$returnType <- cppVarFull(baseType = "CppAD::ADFun", templateArgs = list('double'), ptr = 1, name = 'RETURN_TAPE_') ##cppVoid()
     CFT$name <- newFunName
   CFT$args <- targetFunDef$args
@@ -323,7 +327,7 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
     ## Add a model initialization step if a model is used.
     ## Arguably this should go in the TypeTemplateFunction, using CppAD::Value() to copy values without recording in the tape.
     modelInitCode <- quote(blank())
-    if(length(nodeFxnVector_name) > 0) {
+    if(usesModelCalculate) {
         modelInitCode <- substitute(initialize_AD_model_before_recording(NV),
                                     list(NV = as.name(nodeFxnVector_name[1])))
     }
@@ -475,7 +479,8 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
     localVars$addSymbol(cppInt(name = "totalDepLength_"))
     calcTotalLengthCode <- makeCalcTotalLengthBlock(independentVarNames,
                                                     nimbleSymTab,
-                                                    "totalIndependentLength_")
+                                                    "totalIndependentLength_",
+                                                    if(usesModelCalculate) 1 else 0) ## for extraInputDummy
   ansNDim <- targetFunDef$RCfunProc$compileInfo$returnSymbol$nDim
   if(ansNDim > 0)
     calcTotalResponseLengthCode <- quote(cppLiteral("totalDepLength_ = ANS_.size();"))
@@ -498,6 +503,12 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
         #                     cppLiteral("std::cout<<\"size after optimize = \"<< RETURN_TAPE_->size_var() <<\"\\n\";"))
 
     returnCall <- cppLiteral("return(RETURN_TAPE_);")
+
+    setExtraInputDummyCode <- if(usesModelCalculate)
+                                  substitute(assign_extraInputDummy(NV, ADindependentVars[totalIndependentLength_]),
+                                             list(NV = as.name(nodeFxnVector_name[1])))
+                              else
+                                  quote(blank())
     
     ## Finally put together all the code, parse it into the nimble exprClass system,
     ## and add it to the result (CFT)
@@ -507,7 +518,7 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
                                   setSizeLines,
                                   dummyIndexNodeInfoCode,
                                   initADindependentVarsCode,
-                                  list(initADptrCode, CppADindependentCode),
+                                  list(initADptrCode, CppADindependentCode, setExtraInputDummyCode),
                                   copyIntoIndepVarCode,
                                   list(tapingCallRCode, calcTotalResponseLengthCode, setADresponseVarsSizeLine),
                                   copyFromDepVarCode,
@@ -654,8 +665,14 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
 
 ## 1. Use myADtapePtrs_
 ## 2. Don't assume declared known lengths.
-makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad', targetFunDef, independentVarNames, funIndex = 1, parentsSizeAndDims,
-                                           ADconstantsInfo) {
+makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
+                                            targetFunDef,
+                                            independentVarNames,
+                                            funIndex = 1,
+                                            parentsSizeAndDims,
+                                            ADconstantsInfo,
+                                            useModelInfo = list()) {
+    usesModelCalculate <- length(useModelInfo[['nodeFxnVector_name']]) > 0
     ## modeled closely parts of /*  */
     ## needs to set the ADtapePtr to one element of the ADtape
     TF <- RCfunctionDef$new() ## should it be static?
@@ -768,7 +785,8 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad', targ
   
   calcTotalLengthCode <- makeCalcTotalLengthBlock(independentVarNames,
                                                   nimbleSymTab,
-                                                  "totalIndependentVarLength_")
+                                                  "totalIndependentVarLength_",
+                                                  if(usesModelCalculate) 1 else 0)
   setSizeLine <- quote(cppMemberFunction(resize(memberData(ADtapeSetup, independentVars), totalIndependentVarLength_)))
   returnCall <- cppLiteral("return(ADtapeSetup);")
     if(maxSize > 0){
@@ -793,11 +811,13 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad', targ
 ## scalar or non-scalar.
 makeCalcTotalLengthBlock <- function(independentVarNames,
                                     symTab,
-                                    totalLengthName) {
+                                    totalLengthName,
+                                    initLength = 0) {
   numIndependentVars <- length(independentVarNames)
   calcTotalLengthLines <- vector('list', numIndependentVars + 1)
-  calcTotalLengthLines[[1]] <- substitute(TOTALLENGTH <- 0,  ## Potential for extraInputDummy dimension here.
-                                          list(TOTALLENGTH = as.name(totalLengthName))) 
+  calcTotalLengthLines[[1]] <- substitute(TOTALLENGTH <- INITLENGTH,  ## Potential for extraInputDummy dimension here.
+                                          list(TOTALLENGTH = as.name(totalLengthName),
+                                               INITLENGTH = as.numeric(initLength))) 
   for(ivn in seq_along(independentVarNames)) {
       thisName <- independentVarNames[ivn]
       thisSym <- symTab$getSymbolObject(thisName)

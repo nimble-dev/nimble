@@ -200,8 +200,7 @@ class nodeFun : public NamedObjects {
 
   // useADreconfigure functions (version "2")
   void initialize_AD_model_before_recording(NodeVectorClassNew_derivs &NV);
-  void setup_extraInput_step(NodeVectorClassNew_derivs &NV,
-			     CppAD::AD<double> &extraInputDummy);
+  void setup_extraInput_step(NodeVectorClassNew_derivs &NV);
   void setup_extraOutput_step(NodeVectorClassNew_derivs &NV,
 			      CppAD::AD<double> &logProb);
 

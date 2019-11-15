@@ -744,7 +744,9 @@ class NodeVectorClassNew_derivs;
 
 CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
 					 bool includeExtraOutputStep = false);
-
+void setup_extraInput_step(NodeVectorClassNew_derivs &nodes);
+void assign_extraInputDummy(NodeVectorClassNew_derivs &nodes,
+			    CppAD::AD<double> &extraInputDummy);
 void initialize_AD_model_before_recording(NodeVectorClassNew_derivs &nodes);
 
 class NodeVectorClassNew_derivs : public NodeVectorClassNew {
@@ -793,6 +795,7 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
   ManyVariablesMapAccessor model_constant_accessor;
   ManyVariablesMapAccessor model_AD_constant_accessor;
   CppAD::ADFun< double > ADtape;
+  CppAD::AD<double> extraInputDummy;
   atomic_extraInputObject *extraInputObject;
   atomic_extraOutputObject *extraOutputObject;
   bool tapeRecorded_;
