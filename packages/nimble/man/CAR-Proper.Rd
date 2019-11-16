@@ -6,8 +6,9 @@
 \alias{rcar_proper}
 \title{The CAR-Proper Distribution}
 \usage{
-dcar_proper(x, mu, C = CAR_calcC(adj, num), adj, num, M = CAR_calcM(num),
-  tau, gamma, evs = CAR_calcEVs3(C, adj, num), log = FALSE)
+dcar_proper(x, mu, C = CAR_calcC(adj, num), adj, num,
+  M = CAR_calcM(num), tau, gamma, evs = CAR_calcEVs3(C, adj, num),
+  log = FALSE)
 
 rcar_proper(n = 1, mu, C = CAR_calcC(adj, num), adj, num,
   M = CAR_calcM(num), tau, gamma, evs = CAR_calcEVs3(C, adj, num))
@@ -74,13 +75,12 @@ C2 <- CM2$C
 M2 <- CM2$M
 dcar_proper(x, mu, C2, adj, num, M2, tau = 1, gamma = 0.95)
 }
-\author{
-Daniel Turek
-}
 \references{
 Banerjee, S., Carlin, B.P., and Gelfand, A.E. (2015). \emph{Hierarchical Modeling and Analysis for Spatial Data}, 2nd ed. Chapman and Hall/CRC.
 }
 \seealso{
 \link{CAR-Normal}, \link{Distributions} for other standard distributions
 }
-
+\author{
+Daniel Turek
+}

@@ -19,4 +19,3 @@ Creates a simple getParam_info object, which has a list with a paramID and a typ
 \details{
 This is used internally by \code{\link{getParam}}.  It is not intended for direct use by a user or even a nimbleFunction programmer.
 }
-

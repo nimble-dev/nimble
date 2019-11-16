@@ -151,10 +151,10 @@ In Version `r nimbleVersion`, the NIMBLE algorithm library includes:
   scale), adaptive block random walk, and elliptical slice, among others. You can
   modify sampler choices and configurations from R before compiling
   the MCMC.  You can also write new samplers as nimbleFunctions.
+  1. Reversible jump MCMC for variable selection.
   1. WAIC calculation for model comparison after an MCMC algorithm has been run.
   1. A set of particle filter (sequential Monte Carlo) methods
-  including a basic bootstrap filter, auxiliary particle filter, and
-  Liu-West filter.
+  including a basic bootstrap filter, auxiliary particle filter, ensemble Kalman Filter, iterated filtering 2 filter (IF2), and  Liu-West filter.
   1. An ascent-based Monte Carlo Expectation Maximization (MCEM)
   algorithm.
   1. A variety of basic functions that can be used as programming

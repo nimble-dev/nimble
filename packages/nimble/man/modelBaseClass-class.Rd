@@ -2,35 +2,35 @@
 % Please edit documentation in R/BUGS_model.R
 \docType{class}
 \name{modelBaseClass-class}
-\alias{[[,modelBaseClass-method}
-\alias{[[<-,modelBaseClass-method}
-\alias{checkConjugacy}
-\alias{expandNodeNames}
-\alias{getCode}
-\alias{getDependencies}
-\alias{getDependenciesList}
-\alias{getDimension}
-\alias{getDistribution}
-\alias{getDownstream}
-\alias{getNodeNames}
-\alias{getVarNames}
-\alias{initializeInfo}
-\alias{isBinary}
-\alias{isData}
-\alias{isDeterm}
-\alias{isDiscrete}
-\alias{isEndNode}
-\alias{isMultivariate}
-\alias{isStoch}
-\alias{isTruncated}
-\alias{isUnivariate}
-\alias{modelBaseClass}
 \alias{modelBaseClass-class}
-\alias{newModel}
+\alias{modelBaseClass}
+\alias{getVarNames}
+\alias{getNodeNames}
+\alias{topologicallySortNodes}
 \alias{resetData}
 \alias{setData}
+\alias{isData}
+\alias{isEndNode}
+\alias{getDistribution}
+\alias{isDiscrete}
+\alias{isBinary}
+\alias{isStoch}
+\alias{isDeterm}
+\alias{isTruncated}
+\alias{isUnivariate}
+\alias{isMultivariate}
+\alias{getDimension}
+\alias{getDependencies}
+\alias{getDependenciesList}
+\alias{getDownstream}
+\alias{expandNodeNames}
 \alias{setInits}
-\alias{topologicallySortNodes}
+\alias{checkConjugacy}
+\alias{getCode}
+\alias{newModel}
+\alias{[[,modelBaseClass-method}
+\alias{[[<-,modelBaseClass-method}
+\alias{initializeInfo}
 \title{Class \code{modelBaseClass}}
 \description{
 This class underlies all NIMBLE model objects: both R model objects created from the return value of nimbleModel(), and compiled model objects.
@@ -303,6 +303,7 @@ returnType: character vector indicating return type. Choices are "names" or "ids
 
 Details: This function merely reorders its input argument.  This may be inportany prior to calls such as simulate(model, nodes) or calculate(model, nodes), to enforce that the operation is performed in topological order.}
 }}
+
 \examples{
 code <- nimbleCode({
     mu ~ dnorm(0, 1)
@@ -316,10 +317,9 @@ Rmodel$resetData()
 Rmodel$setData(list(x = c(1.2, NA)))   ## flags only 'x[1]' node as data
 Rmodel$isData(c('mu', 'x[1]', 'x[2]'))   ## returns c(FALSE, TRUE, FALSE)
 }
-\author{
-Daniel Turek
-}
 \seealso{
 \code{\link{initializeModel}}
 }
-
+\author{
+Daniel Turek
+}

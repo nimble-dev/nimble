@@ -126,4 +126,3 @@ registerDistributions(list(
 \author{
 Christopher Paciorek
 }
-

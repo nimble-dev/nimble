@@ -66,10 +66,9 @@ Creates a defaut MCMC configuration for a given model.  The resulting object is 
 \details{
 See \code{\link{MCMCconf}} for details on how to manipulate the \code{MCMCconf} object
 }
-\author{
-Daniel Turek
-}
 \seealso{
 \code{\link{samplerAssignmentRules}} \code{\link{buildMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}
 }
-
+\author{
+Daniel Turek
+}

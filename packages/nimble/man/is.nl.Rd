@@ -15,4 +15,3 @@ Checks an object to determine if it is a nimbleList (i.e., a list created by \co
 \seealso{
 \code{\link{nimbleList}} for how to create a nimbleList
 }
-

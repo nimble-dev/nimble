@@ -21,4 +21,3 @@ with \code{getParam}.
 \details{
 This is used internally by \code{\link{getBound}}.  It is not intended for direct use by a user or even a nimbleFunction programmer.
 }
-

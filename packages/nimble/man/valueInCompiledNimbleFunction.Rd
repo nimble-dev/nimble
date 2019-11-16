@@ -26,4 +26,3 @@ To see an example of a multi-interface, see \code{samplerFunctions} in a compile
 \author{
 Perry de Valpine
 }
-

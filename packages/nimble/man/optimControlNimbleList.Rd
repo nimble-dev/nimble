@@ -16,4 +16,3 @@ to \code{\link{nimOptim}}. See \code{\link{optim}} for details.
 \code{\link{optim}}, \code{\link{nimOptim}}
 }
 \keyword{datasets}
-

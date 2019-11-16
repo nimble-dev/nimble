@@ -5,8 +5,8 @@
 \title{create a nimbleFunction}
 \usage{
 nimbleFunction(setup = NULL, run = function() { }, methods = list(),
-  globalSetup = NULL, contains = NULL, enableDerivs = list(), name = NA,
-  check = getNimbleOption("checkNimbleFunction"),
+  globalSetup = NULL, contains = NULL, enableDerivs = list(),
+  name = NA, check = getNimbleOption("checkNimbleFunction"),
   where = getNimbleFunctionEnvironment())
 }
 \arguments{
@@ -47,4 +47,3 @@ For more information about the \code{contains} argument, see the section on nimb
 \author{
 NIMBLE development team
 }
-

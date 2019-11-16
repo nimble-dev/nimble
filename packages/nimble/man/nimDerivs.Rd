@@ -14,4 +14,3 @@ nimDerivs(nimFxn = NA, order = nimC(0, 1, 2))
 \description{
 EXPERIMENTAL Computes the value, gradient, and Hessian of a given  \code{nimbleFunction} method.  The R version is currently unimplemented.
 }
-

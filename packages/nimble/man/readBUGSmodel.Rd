@@ -56,10 +56,9 @@ pumpModel$getVarNames()
 pumpModel$x
 
 }
-\author{
-Christopher Paciorek
-}
 \seealso{
 \code{\link{nimbleModel}}
 }
-
+\author{
+Christopher Paciorek
+}

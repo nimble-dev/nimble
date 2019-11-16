@@ -25,4 +25,3 @@ Id <- identityMatrix(d = 3)
 \author{
 Daniel Turek
 }
-

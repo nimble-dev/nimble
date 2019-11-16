@@ -4,8 +4,9 @@
 \alias{configureRJ}
 \title{Configure Reversible Jump Sampler}
 \usage{
-configureRJ(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb = NULL,
-  control = list(mean = NULL, scale = NULL, fixedValue = NULL))
+configureRJ(mcmcConf, targetNodes, indicatorNodes = NULL,
+  priorProb = NULL, control = list(mean = NULL, scale = NULL,
+  fixedValue = NULL))
 }
 \arguments{
 \item{mcmcConf}{An \code{MCMCconf} object.}
@@ -147,4 +148,3 @@ Peter J. Green. (1995). Reversible jump Markov chain Monte Carlo computation and
 \seealso{
 \code{\link{sampler}} \code{\link{configureRJ}}
 }
-

@@ -2,11 +2,11 @@
 % Please edit documentation in R/distributions_processInputList.R
 \name{distributionInfo}
 \alias{distributionInfo}
-\alias{getDistributionInfo}
-\alias{getParamNames}
-\alias{getType}
 \alias{isUserDefined}
 \alias{pqDefined}
+\alias{getType}
+\alias{getParamNames}
+\alias{getDistributionInfo}
 \title{Get information about a distribution}
 \usage{
 getDistributionInfo(dist)
@@ -15,8 +15,8 @@ isUserDefined(dist)
 
 pqDefined(dist)
 
-getType(dist, params = NULL, valueOnly = is.null(params) && !includeParams,
-  includeParams = !is.null(params))
+getType(dist, params = NULL, valueOnly = is.null(params) &&
+  !includeParams, includeParams = !is.null(params))
 
 getParamNames(dist, includeValue = TRUE)
 }
@@ -82,4 +82,3 @@ getParamNames('dmnorm')
 \author{
 Christopher Paciorek
 }
-

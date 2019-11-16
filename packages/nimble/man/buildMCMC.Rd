@@ -48,7 +48,7 @@ After the MCMC has been run, calling the \code{calculateWAIC()} method of the MC
 
 \code{calculateWAIC()} accepts a single arugment:
 
-\code{nburnin}: The number of pre-thinning MCMC samples to remove from the beginning of the posterior samples for WAIC calculation (default = 0).
+\code{nburnin}: The number of pre-thinning MCMC samples to remove from the beginning of the posterior samples for WAIC calculation (default = 0). These samples are discarded in addition to any burn-in specified when running the MCMC.
 
 The \code{calculateWAIC} method can only be used if the \code{enableWAIC} 
 argument to \code{configureMCMC} or to \code{buildMCMC} is set to \code{TRUE}, or if the NIMBLE option
@@ -81,6 +81,7 @@ directly upstream from a data node. However, other combinations of monitored
 nodes are also valid.  If \code{enableWAIC = TRUE}, NIMBLE checks to see if
 the set of monitored nodes is valid, and returns an error if not.
 }
+
 \examples{
 \dontrun{
 code <- nimbleCode({
@@ -100,9 +101,6 @@ WAIC <- Cmcmc$calculateWAIC(nburnin = 1000)
 }
 
 }
-\author{
-Daniel Turek
-}
 \references{
 Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation and widely applicable information criterion in singular learning theory. \emph{Journal of Machine Learning Research} 11: 3571-3594.
 
@@ -111,4 +109,6 @@ Gelman, A., Hwang, J. and Vehtari, A. (2014). Understanding predictive informati
 \seealso{
 \code{\link{configureMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}
 }
-
+\author{
+Daniel Turek
+}
