@@ -598,11 +598,11 @@ test_that("recycling behavior from R and within nimbleFunctions for non-R-native
 
     f <- nimbleFunction(
         run = function(x = double(1), theta = double(1)) {
-            d <- dt_nonstandard(x, 3, theta, 2.5)
-            p <- pt_nonstandard(x, 3, theta, 2.5)
-            q <- qt_nonstandard(p, 3, theta, 2.5)
+            dd <- dt_nonstandard(x, 3, theta, 3.5)
+            pp <- pt_nonstandard(x, 3, theta, 3.5)
+            qq <- qt_nonstandard(p, 3, theta, 3.5)
             returnType(double(1))
-            return(c(d, p, q))
+            return(c(dd, pp, qq))
         })
     cf <- compileNimble(f)
     out <- cf(x[1:3], param) 
