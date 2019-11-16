@@ -87,6 +87,7 @@ makeTypeTemplateFunction <- function(newName,
     newCppFunDef$template <- cppVarFull(name = character(), baseType = 'template', templateArgs = list('class TYPE_'))
     newCppFunDef$args <- symbolTable2templateTypeSymbolTable(.self$args, addRef = TRUE)
     localArgs <- symbolTable2templateTypeSymbolTable(.self$code$objectDefs)
+    localArgs$setParentST( .self$code$objectDefs$getParentST() ) ## this is the argument symTab, but it should be ok b/c it's only used for names
     newCppFunDef$returnType <- cppVarSym2templateTypeCppVarSym(.self$returnType)
     newCode <- copyExprClass(.self$code$code)
     workEnv <- new.env()

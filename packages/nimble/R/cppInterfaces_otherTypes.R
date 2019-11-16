@@ -31,14 +31,11 @@ populateManyModelVarMapAccess <- function(fxnPtr, Robject, manyAccessName, dll) 
               Robject[[manyAccessName]][[1]],
               Robject[[manyAccessName]][[2]],
               Robject[[manyAccessName]][[3]]))
-    ## cModel <- Robject[[manyAccessName]][[1]]$CobjectInterface
-    ## if(is(cModel, 'uninitializedField'))
-    ##     stop('Compiled C++ model not available; please include the model in your compilation call (or compile it in advance).', call. = FALSE)
-
-    ## mapInfo <- makeMapInfoFromAccessorVectorFaster(Robject[[manyAccessName]])
-    ## if(length(mapInfo[[1]]) > 0) {
-    ##     eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$populateValueMapAccessorsFromNodeNames, manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModel$.basePtr))
-    ## }
+    ## For AD system, we will copy here also the AD case.
+    ## This is klugey, but it avoids re-doing  processModelVarAccess
+    ## and anticipates that in the future these objects might be
+    ## combined more naturally.
+    NULL
 }
 
 populateManyModelValuesMapAccess <- function(fxnPtr, Robject, manyAccessName, dll){ ## nearly identical to populateManyModelVarMapAccess

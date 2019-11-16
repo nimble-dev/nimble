@@ -573,7 +573,9 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
 ## The next block of code has the initial setup for an AST processing stage
 ## to make modifications for AD based on context etc.
 modifyForAD_handlers <- list(eigenBlock = 'modifyForAD_eigenBlock',
-                             calculate = 'modifyForAD_calculate')
+                             calculate = 'modifyForAD_calculate',
+                             getValues = 'modifyForAD_getSetValues',
+                             setValues = 'modifyForAD_getSetValues')
 
 exprClasses_modifyForAD <- function(code, symTab,
                                     workEnv = list2env(list(wrap_in_value = FALSE))) {
@@ -626,6 +628,21 @@ recurse_modifyForAD <- function(code, symTab, workEnv) {
     if(inherits(code$args[[i]], 'exprClass')) {
       exprClasses_modifyForAD(code$args[[i]], symTab, workEnv)
     }
+  }
+  invisible(NULL)
+}
+
+modifyForAD_getSetValues <- function(code, symTab, workEnv) {
+  if(code$name == 'setValues') {
+    code$name <- 'setValues_AD_AD'
+  }
+  accessorName <- code$args[[2]]$name
+  already_AD_name <- grepl("_AD_$", accessorName) ## _AD_ is at the end. I'm not sure it would ever already be there, so this is defensive.
+  if(!already_AD_name) {
+    classSymTab <- symTab$getParentST()$getParentST()
+    newSymbol <- classSymTab$getSymbolObject(accessorName)$copy()
+    newSymbol$name <- paste0(newSymbol$name, '_AD_')
+    classSymTab$addSymbol(newSymbol)
   }
   invisible(NULL)
 }
