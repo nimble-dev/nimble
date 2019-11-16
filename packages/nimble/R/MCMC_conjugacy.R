@@ -1233,9 +1233,10 @@ cc_checkLinearity <- function(expr, targetNode) {
             return(NULL)
         wh <- which(sapply(expr[2:length(expr)], function(x)
             cc_nodeInExpr(targetNode, x)))
-        checkLinearityStrucExp <- cc_checkLinearity(expr[[wh+1]], targetNode)
-        return(list(offset = cc_combineExprsAddition(expr, checkLinearityStrucExp$offset),  # was expr?,
-                    scale = checkLinearityStrucExp$scale))
+        checkLinearityStrucExpr <- cc_checkLinearity(expr[[wh+1]], targetNode)
+        if(is.null(checkLinearityStrucExpr)) return(NULL)
+        return(list(offset = cc_combineExprsAddition(expr, checkLinearityStrucExpr$offset),  # was expr?,
+                    scale = checkLinearityStrucExpr$scale))
     }
 
     ## we'll just have to skip over asRow() and asCol(), so they don't mess up the linearity check

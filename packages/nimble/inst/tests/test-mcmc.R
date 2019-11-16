@@ -1433,8 +1433,7 @@ test_that('dnorm-dmnorm conjugacies NIMBLE fails to detect', {
 ## dnorm prior in vectorized regression mean (inprod, matrix multiplication)
 
 test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
-    ## do unit testing of cc_checkLinearity too
-    
+
     code <- nimbleCode({
         for(i in 1:n) 
             y[i] ~ dnorm(b0 + inprod(beta[1:p], X[i, 1:p]), 1)
@@ -1568,6 +1567,90 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     check <- nimble:::cc_checkLinearity(quote(b0 + inprod(structureExpr(beta[1], beta[2], beta[3]), X[1, 1:3])), 'beta[1]')
     expect_identical(check, list(offset = quote(b0 + structureExpr(beta[1], beta[2], beta[3]) * X[1, 1:3]),
                                  scale = quote(X[1, 1:3])))
+
+    ## check nested specifications
+    
+    code <- nimbleCode({
+        for(i in 1:n) 
+            y[i] ~ dnorm(b0 + inprod(zbeta[1:p], X[i, 1:p]), 1)
+        for(i in 1:p) {
+            beta[i] ~ dnorm(0, 1)
+            zbeta[i] <- z[i] * beta[i]
+        }
+        b0 ~ dnorm(0, 1)
+    })
+    constants <- list(n = 5, p = 3)
+    data <- list(y = rnorm(constants$n),
+                 X = matrix(rnorm(constants$n * constants$p), constants$n))
+    inits <- list(b0 = 1, beta = rnorm(constants$p))
+    m <- nimbleModel(code, data = data, constants = constants)
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+                                   info = "conjugacy with inprod not detected")
+   
+    code <- nimbleCode({
+        for(i in 1:n) 
+            y[i] ~ dnorm(b0 + inprod(zbeta[1:p], X[i, 1:p]), 1)
+        for(i in 1:p) {
+            beta[i] ~ dnorm(0, 1)
+            wbeta[i] <- a + w * beta[i]
+            zbeta[i] <- z[i] * wbeta[i]
+        }
+        b0 ~ dnorm(0, 1)
+    })
+    constants <- list(n = 5, p = 3)
+    data <- list(y = rnorm(constants$n),
+                 X = matrix(rnorm(constants$n * constants$p), constants$n))
+    inits <- list(b0 = 1, beta = rnorm(constants$p))
+    m <- nimbleModel(code, data = data, constants = constants)
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+                                   info = "conjugacy with inprod not detected")
+
+    code <- nimbleCode({
+        for(i in 1:n) 
+            y[i] ~ dnorm((X[i, 1:p] %*% zbeta[1:p])[1], 1)
+        for(i in 1:p) {
+            beta[i] ~ dnorm(0, 1)
+            zbeta[i] <- z[i] * beta[i]
+        }
+    })
+    constants <- list(n = 5, p = 3)
+    data <- list(y = rnorm(constants$n),
+                 X = matrix(rnorm(constants$n * constants$p), constants$n))
+    inits <- list(b0 = 1, beta = rnorm(constants$p))
+    m <- nimbleModel(code, data = data, constants = constants)
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+                     info = "conjugacy with inprod not detected")
+
+   code <- nimbleCode({
+        for(i in 1:n) 
+            y[i] ~ dnorm(b0 + inprod(zbeta[1:p], X[i, 1:p]), 1)
+        for(i in 1:p) {
+            beta[i] ~ dnorm(0, 1)
+            wbeta[i] <- exp(w * beta[i])
+            zbeta[i] <- z[i] * wbeta[i]
+        }
+        b0 ~ dnorm(0, 1)
+    })
+    constants <- list(n = 5, p = 3)
+    data <- list(y = rnorm(constants$n),
+                 X = matrix(rnorm(constants$n * constants$p), constants$n))
+    inits <- list(b0 = 1, beta = rnorm(constants$p))
+    m <- nimbleModel(code, data = data, constants = constants)
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'RW',
+                     info = "conjugacy with inprod mistakenly detected")
+
+    expect_identical(nimble:::cc_checkLinearity(
+        quote(structureExpr(z[1] * exp(w * beta[1]), z[2] * exp(w * beta[2]))),
+        'beta[2]'), NULL)
+    output <- nimble:::cc_checkLinearity(
+        quote(structureExpr(z[1] * exp(w * beta[1]), a + z[2] * (d + w * beta[2]))),
+        'beta[2]')
+    expect_identical(is.list(output), TRUE)  ## should be a list with scale/offset
+    
 })
 
 
