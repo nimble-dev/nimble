@@ -609,13 +609,22 @@ test_that("recycling behavior from R and within nimbleFunctions for non-R-native
     expect_identical(out, c(d, p, q), info = 'dt_nonstandard nf')
 
     tmp <- nimbleFunction(
-        run = function() {
-            pp <- pt_nonstandard(1.7, 3, 2.1, 3.5)
+        run = function(x = double(0), theta = double(0)) {
+            pp <- pt_nonstandard(x, 3, theta, 3.5)
             returnType(double(0))
             return(pp)
         })
     ctmp <- compileNimble(tmp)
-    expect_identical(ctmp(), pt_nonstandard(1.7, 3, 2.1, 3.5))
+    expect_identical(ctmp(x[1], param[1]), pt_nonstandard(x[1], 3, param[1], 3.5), info = 'foo2')
+
+    tmp <- nimbleFunction(
+        run = function(x = double(0), theta = double(0)) {
+            pp <- pt_nonstandard(x, 3, theta, 3.5)
+            returnType(double(0))
+            return(pp)
+        })
+    ctmp <- compileNimble(tmp)
+    expect_identical(ctmp(1.7, 2.1), pt_nonstandard(1.7, 3, 2.1, 3.5), info = 'foo1')
 
     ## dexp_nimble
     set.seed(1)
