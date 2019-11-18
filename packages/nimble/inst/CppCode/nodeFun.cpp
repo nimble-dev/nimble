@@ -345,26 +345,32 @@ atomic_extraOutputObject*
 nodeFun::runExtraOutputObject(NodeVectorClassNew_derivs &NV,
 			      CppAD::AD<double> &logProb) {
   size_t length_modelOutput = NV.model_modelOutput_accessor.getTotalLength();
+  std::cout<<"runExtraOutputObject length_modelOutput = "<<length_modelOutput<<std::endl;
   NimArr<1, CppAD::AD<double> > NAV_AD;
   NAV_AD.setSize(length_modelOutput);
   std::vector< CppAD::AD<double> > extraOutputs(length_modelOutput);
   std::vector< CppAD::AD<double> > extraOutputDummyResult(1);
-  
+  std::cout<<"runExtraOutputObject A"<<std::endl;
   getValues_AD_AD( NAV_AD, NV.model_AD_modelOutput_accessor);
   
   for(size_t ii = 0; ii < length_modelOutput; ++ii) {
     extraOutputs[ii] = NAV_AD[ii];
   }
+  std::cout<<"runExtraOutputObject B"<<std::endl;
   
   // Calling the constructor with a local object will use statics in the correct DLL
+  std::cout<<"runExtraOutputObject C"<<std::endl;
   atomic_extraOutputObject* localExtraOutputObject =
     new atomic_extraOutputObject("extraOutputObject",
 				&NV);
   // And then calling operator() with the local object will again use statics in the correct DLL
+  std::cout<<"runExtraOutputObject D"<<std::endl;
   (*localExtraOutputObject)(extraOutputs, extraOutputDummyResult);
   // Should be ok to copy.  No further uses after taping involve statics,
   // so there should be no further issue with which DLL we are in.
+  std::cout<<"runExtraOutputObject E"<<std::endl;
   logProb += extraOutputDummyResult[0];
+  std::cout<<"runExtraOutputObject E"<<std::endl;
   return localExtraOutputObject;
 }
 
