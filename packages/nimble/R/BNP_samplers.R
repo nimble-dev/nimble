@@ -1805,13 +1805,24 @@ sampler_CRP_moreGeneral <- nimbleFunction(
       if(any(dataNodes %in% model$getDependencies(x, self = FALSE, stochOnly = TRUE)))
         stop("sampler_CRP: Variables being clustered must be conditionally independent. To model dependent variables being clustered jointly, you may use a multivariate distribution.")
     })
+
+    ## Check that if same clusterNodes used twice in a declaration that they are used identically
+    ## e.g., dnorm(thetaTilde[xi[i]], exp(thetaTilde[xi[i]])) is ok
+    ## but dnorm(thetaTilde[xi[i]], exp(thetaTilde[xi[i]+1])) is not as can't properly add a new cluster
+    ## (or account for when not to sample an empty cluster).
+    if(length(unique(tildeVars)) != length(tildeVars)) 
+        for(idx1 in 2:length(tildeVars))
+            for(idx2 in 1:(length(tildeVars)-1))
+                if(!identical(clusterVarInfo$clusterNodes[[idx1]], clusterVarInfo$clusterNodes[[idx2]]) &&
+                   any(clusterVarInfo$clusterNodes[[idx1]] %in% clusterVarInfo$clusterNodes[[idx2]]))
+                    stop("sampler_CRP: Inconsistent indexing in ", clusterVarInfo$indexExpr[[idx1]], " and ", clusterVarInfo$indexExpr[[idx2]], ".")
     
     nData <- length(dataNodes)
 
     ## Check for one or more "observation" per random index to handle the 'Quinn' model.
     ## Note that cases like mu[xi[i],xi[j]] are being trapped in findClusterNodes().
     if(n > nData)
-       stop("sampler_CRP: At least one variable has to be clustered for each cluster membership ID.\n")
+       stop("sampler_CRP: At least one variable has to be clustered for each cluster membership ID.")
     
    
     p <- length(tildeVars) 
