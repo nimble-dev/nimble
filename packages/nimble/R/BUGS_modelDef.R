@@ -2844,18 +2844,18 @@ modelDefClass$methods(graphIDs2indexedNodeInfo = function(graphIDs) {
     list(declIDs = as.integer(declIDs), unrolledIndicesMatrixRows = as.integer(rowIndices))
 })
 
-modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TRUE, unique = TRUE){
+modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TRUE, unique = TRUE, ignoreNotFound = FALSE){
     if(length(nodeName) == 0)
         return(NULL)
     ## If unique is FALSE, we still use unique for each element of nodeName
     ## but we allow non-uniqueness across elements in the result
     if(nodeFunctionID) {
         if(unique)
-            output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2GraphID_functions_and_RHSonly))
+            output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2GraphID_functions_and_RHSonly, ignoreNotFound = ignoreNotFound))
         else
             output2 <- unlist(lapply(parseEvalNumericManyList(nodeName, env = maps$vars2GraphID_functions_and_RHSonly), unique))
     } else {
-        output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2ID_elements))
+        output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2ID_elements, ignoreNotFound = ignoreNotFound))
     }
     output <- output2
     return(output[!is.na(output)])
@@ -2933,17 +2933,34 @@ parseEvalNumericManyHandleError <- function(cond, x, env) {
     invokeRestart('abort')
 }
 
-parseEvalNumericMany <- function(x, env) {
-    withCallingHandlers(
+parseEvalNumericMany <- function(x, env, ignoreNotFound = FALSE) {
+    if(ignoreNotFound) {  ## Return NA when not found.
         if(length(x) > 1) {
-            as.numeric(eval(parse(text = paste0('c(', paste0(x, collapse=','),')'), keep.source = FALSE)[[1]], envir = env))
-        } else 
-            as.numeric(eval(parse(text = x, keep.source = FALSE)[[1]], envir = env))
-       ,
-        error = function(cond) {
-           parseEvalNumericManyHandleError(cond, x, env)
+            ## First try to do as vectorized call.
+            output <- try(as.numeric(eval(parse(text = paste0('c(', paste0(x, collapse=','),')'), keep.source = FALSE)[[1]], envir = env)), silent = TRUE)
+            if(is(output, 'try-error')) {  ## Go through individually
+                output <- sapply(x, function(val) {
+                    tmp <- try(as.numeric(eval(parse(text = val, keep.source = FALSE)[[1]], envir = env)), silent = TRUE)
+                    if(is(tmp, 'try-error')) return(NA) else return(tmp)
+                }, USE.NAMES = FALSE)
+                return(output)
+            } else return(output)
+        } else {
+            output <- try(as.numeric(eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)), silent = TRUE)
+            if(is(output, 'try-error'))
+                return(NA) else return(output)
         }
-    )
+    } else {  ## Error out when not found.
+        withCallingHandlers(
+            if(length(x) > 1) {
+                as.numeric(eval(parse(text = paste0('c(', paste0(x, collapse=','),')'), keep.source = FALSE)[[1]], envir = env))
+            } else 
+                as.numeric(eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)),
+            error = function(cond) {
+                parseEvalNumericManyHandleError(cond, x, env)
+            }
+        )
+    }
 }
 
 
