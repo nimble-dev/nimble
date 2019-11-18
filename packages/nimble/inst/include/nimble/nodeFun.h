@@ -200,9 +200,9 @@ class nodeFun : public NamedObjects {
 
   // useADreconfigure functions (version "2")
   void initialize_AD_model_before_recording(NodeVectorClassNew_derivs &NV);
-  void setup_extraInput_step(NodeVectorClassNew_derivs &NV);
-  void setup_extraOutput_step(NodeVectorClassNew_derivs &NV,
-			      CppAD::AD<double> &logProb);
+  virtual void setup_extraInput_step(NodeVectorClassNew_derivs &NV);
+  virtual void setup_extraOutput_step(NodeVectorClassNew_derivs &NV,
+				      CppAD::AD<double> &logProb);
 
   // Next 3 functions are virtual to ensure the code in the model DLL
   // will be used so that the correct CppAD globals / statics will be found.

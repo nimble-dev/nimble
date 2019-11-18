@@ -844,6 +844,11 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
     // 5. Collect derivatives
     // 6. Sift derivatives into return object
   }
+  void setup_extraInput_step() {
+    nodeFun* nodeFunInModelDLL = instructions[0].nodeFunPtr;
+    nodeFunInModelDLL->setup_extraInput_step(*this);
+  }
+
   void runTape_runTape(std::vector<double> &independentVars,
 		       std::vector<double> &dependentVars,
 		       const NimArr<1, double> &derivOrders,
