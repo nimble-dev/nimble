@@ -643,6 +643,7 @@ modifyForAD_getSetValues <- function(code, symTab, workEnv) {
     newSymbol <- classSymTab$getSymbolObject(accessorName)$copy()
     newSymbol$name <- paste0(newSymbol$name, '_AD_')
     classSymTab$addSymbol(newSymbol)
+    code$args[[2]]$name <- newSymbol$name
   }
   invisible(NULL)
 }
