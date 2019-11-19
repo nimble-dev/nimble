@@ -606,7 +606,8 @@ test_that("recycling behavior from R and within nimbleFunctions for non-R-native
         })
     cf <- compileNimble(f)
     out <- cf(x[1:3], param) 
-    expect_identical(out, c(d, p, q), info = 'dt_nonstandard nf')
+    p2 <- pt_nonstandard(x[1:3], 3, param, 3.5, log.p = TRUE)
+    expect_identical(out, c(d, p2, q), info = 'dt_nonstandard nf')
 
     f <- nimbleFunction(
         run = function(x = double(1), theta = double(1)) {
