@@ -365,15 +365,11 @@ print: A logical argument specifying whether to print the ordered list of defaul
                     for(k in seq_along(clusterNodeInfo)) {
                         for(idx in seq_along(clusterNodeInfo[[k]]$clusterNodes)) {
                             clusterNodes <- clusterNodeInfo[[k]]$clusterNodes[[idx]]
-                            if(length(allClusterNodes) == 1 || !any(sapply(allClusterNodes[-k],
-                                                                           function(x)
-                                                                               any(sapply(x, function(y)
-                                                                               any(clusterNodes %in% y)))))) {
+                            if(length(allClusterNodes) == 1 || !any(clusterNodes %in% unlist(allClusterNodes[-k]))) {
                                 ## For now avoid wrapper if any overlap of clusterNodes, as hard to determine if cluster is occupied.
                                 ## We'll need to come back to this to handle the mu[xi[i],eta[j]] case if we want to
                                 ## avoid sampling empty clusters in that case.
-                                ## Note that we should probably check cases where xi[i] appears in two different declarations
-                                ## or where a clusterNode appears twice in a single declaration to be sure these are handled correctly.
+
                                 samplers <- getSamplers(clusterNodes)
                                 removeSamplers(clusterNodes)
                                 for(i in seq_along(samplers)) {

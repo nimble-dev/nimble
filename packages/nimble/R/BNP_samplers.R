@@ -2286,15 +2286,18 @@ findClusterNodes <- function(model, target) {
         ## Note not clear when NULL would be the result...
         loopIndex[[varIdx]] <- loopIndexes
         
-        ## Order so that loop over index of cluster ID in order of cluster ID so that
-        ## clusterNodes will be grouped in chunks of unique cluster IDs for correct
-        ## sampling of new clusters when have multiple obs per cluster.
-        ord <- order(unrolledIndices[ , loopIndex[varIdx]])
-        unrolledIndices <- unrolledIndices[ord, , drop = FALSE]
-        clusterIDs[[varIdx]] <- unrolledIndices[ , loopIndex[varIdx]]
-        
+        ## Rather than using indexing based on declaration that uses the tildeVar, we should probably substitute in
+        ## indexing based on the declaration of the xi node, so
+        ## thetaTilde[xi[1],j] would use all possible xi[i] values crossed with j values
         n <- nrow(unrolledIndices)
-        if(n > 0) {  # catch cases like use of xi[2] rather than xi[i]
+        if(n > 0 && loopIndex %in% dimnames(unrolledIndices)[[2]]) {  # catch cases like use of xi[2] rather than xi[i]
+            ## Order so that loop over index of cluster ID in order of cluster ID so that
+            ## clusterNodes will be grouped in chunks of unique cluster IDs for correct
+            ## sampling of new clusters when have multiple obs per cluster.
+            ord <- order(unrolledIndices[ , loopIndex[varIdx]])
+            unrolledIndices <- unrolledIndices[ord, , drop = FALSE]
+            clusterIDs[[varIdx]] <- unrolledIndices[ , loopIndex[varIdx]]
+
             clusterNodes[[varIdx]] <- rep(NA, n)
             
             ## Determine unevaluated expression, e.g., muTilde[xi[i],j] not muTilde[xi[1],2]
@@ -2311,7 +2314,10 @@ findClusterNodes <- function(model, target) {
                                                              c(as.list(unrolledIndices[i,]), e)))  # as.numeric avoids 1L, 2L, etc.
                 clusterNodes[[varIdx]][i] <- deparse(templateExpr)  # convert to node names
             }
-        } else clusterNodes[[varIdx]] <- character(0)
+        } else {
+            clusterNodes[[varIdx]] <- character(0)
+            clusterIDs[[varIdx]] <- numeric(0)
+        }
       } 
       if(len >= 3 && is.call(subExpr) && subExpr[[1]] == '[' && subExpr[[2]] == targetVar)
           targetNonIndex <- deparse(model$getDeclInfo(exampleDeps[idx])[[1]]$codeReplaced)
@@ -2410,6 +2416,75 @@ findClusterNodes <- function(model, target) {
               numIndexes = numIndexes, targetIndexedByFunction = targetIndexedByFunction,
               targetNonIndex = targetNonIndex, multipleStochIndexes = multipleStochIndexes))
 }
+
+
+checkCRPconjugacy <- function(model, target) {
+    ## Checks if can use conjugacy in drawing new components for dCRP node updating.
+    ## Should detect various univariate cases and normal-invgamma case.
+    ## We don't yet handle conjugacies with non-identity relationships.
+    
+    conjugate <- FALSE 
+
+    targetAsScalars <- model$expandNodeNames(target, returnScalarComponents=TRUE) 
+    targetElementExample <- targetAsScalars[1]
+    n <- length(targetAsScalars)
+
+    clusterVarInfo <- findClusterNodes(model, target)
+ 
+    ## Check conjugacy for one cluster node (for efficiency reasons) and then make sure all cluster nodes are IID.
+    ## Since we only allow one clusterVar, shouldn't need to worry that depNodes for difference clusters are
+    ## from different declarations (e.g.  y[1] ~ dnorm(thetaTilde[xi[1]],1) and y[2] ~ dt(thetaTilde[xi[2]],1,1).
+    if(length(clusterVarInfo$clusterVars) == 1) {  ## for now avoid case of mixing over multiple parameters, but allow dnorm_dinvgamma below
+        clusterNodes <- clusterVarInfo$clusterNodes[[1]]  # e.g., 'thetatilde[1]',...,
+        clusterIDs <- clusterVarInfo$clusterIDs[[1]]
+        clusterNodesFirst <- clusterNodes[clusterIDs == 1] # need to check for all nodes in a cluster
+        ## Currently we only handle offsets and coeffs for dnorm case;
+        ## will add Pois-gamma and possibly MVN cases.
+        identityLink <- TRUE
+        conjugacy <- model$checkConjugacy(clusterNodesFirst, restrictLink = 'identity')
+        if(!(length(conjugacy) == length(clusterNodesFirst)) && all(model$getDistribution(clusterNodesFirst) == 'dnorm')) {
+            identityLink <- FALSE
+            conjugacy <- model$checkConjugacy(clusterNodesFirst)  ## check non-identity link too
+        }
+        if(length(conjugacy) == length(clusterNodesFirst) && length(unique(sapply(conjugacy, '[[', 'type'))) == 1) {
+            ## All conjugate and all same conjugacy type.
+            conjugacyType <- paste0(conjugacy[[1]]$type, '_', sub('dep_', '', names(conjugacy[[1]]$control)))
+            if(!identityLink)
+                conjugacyType <- paste0(conjugacyType, '_nonidentity')
+            conjugate <- TRUE
+            ## Check that dependent nodes ('observations') from same declaration.
+            ## This should ensure they have same distribution and parameters are being
+            ## clustered in same way, but also allows other parameters to vary, e.g.,
+            ## y[i] ~ dnorm(mu[xi[i]], s2[i])
+            depNodes <- model$getDependencies(clusterNodesFirst, stochOnly = TRUE, self=FALSE)
+            if(length(unique(model$getDeclID(depNodes))) != 1)  ## make sure all dependent nodes from same declaration (i.e., exchangeable)
+                conjugate <- FALSE
+            ## We need each data node to have corresponding cluster parameter.
+            if(length(depNodes) / n != length(clusterNodesFirst))
+                conjugate <- FALSE
+
+            ## Check that cluster nodes are IID (across clusters), since for efficiency we only
+            ## check the conjugacy for the first cluster above.
+            ## Extended to work with models with more than one observation per cluster ID.
+            splitNodes <- split(clusterNodes, clusterIDs)
+            valueExprs <- lapply(splitNodes, function(x) {
+                out <- sapply(x, model$getValueExpr)
+                names(out) <- NULL
+                out
+            })
+            if(length(unique(valueExprs)) != 1) 
+                conjugate <- FALSE
+        }
+    }
+    ## check for dnorm_dinvgamma conjugacy
+    if(length(clusterVarInfo$clusterVars) == 2 &&
+       checkNormalInvGammaConjugacy(model, clusterVarInfo, n)) {
+        conjugate <- TRUE
+        conjugacyType <- "conjugate_dnorm_invgamma_dnorm"
+    }
+    if(conjugate) return(conjugacyType) else return(NULL)
+}
+
 
 checkNormalInvGammaConjugacy <- function(model, clusterVarInfo, n) {
     if(length(clusterVarInfo$clusterVars) != 2)
