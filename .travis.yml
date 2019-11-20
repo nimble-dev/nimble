@@ -1,6 +1,6 @@
 language: r
 r:
-    - 3.5    
+    - 3.5
 
 dist: bionic
 sudo: false
@@ -45,7 +45,6 @@ addons:
   apt:
     packages:
       - time  # For /usr/bin/time profiling.
-      - python-virtualenv  # For tensorflow::install_tensorflow().
 
 install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then mkdir $HOME/bin; ln -s $(which pip2) $HOME/bin/pip; fi

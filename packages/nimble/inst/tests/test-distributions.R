@@ -585,31 +585,43 @@ test_that("recycling behavior from R and within nimbleFunctions for non-R-native
     ## dt_nonstandard
     set.seed(1)
     param <- runif(3)
-    x <- rt_nonstandard(6, 3, param, 2)
+    x <- rt_nonstandard(6, 3, param, 3.5)
     expect_equal(length(x), 6)
     param <- rep(param, 2)
-    d <- dt_nonstandard(x[1:3], 3, param, 2)
+    d <- dt_nonstandard(x[1:3], 3, param, 3.5)
     expect_identical(d[1:3], d[4:6])
-    p <- pt_nonstandard(x[1:3], 3, param, 2)
-    q <- qt_nonstandard(p, 3, param, 2)
+    p <- pt_nonstandard(x[1:3], 3, param, 3.5)
+    q <- qt_nonstandard(p, 3, param, 3.5)
     expect_equal(rep(x[1:3], 2), q)
     expect_identical(p[1:3], p[4:6])
     expect_identical(q[1:3], q[4:6])
 
+    ## Use of recycling
+    ## On dev machines, this is fine, but on Travis,
+    ## pt_nonstandard seems to set log.p = TRUE if using recycling
+    ## Commenting out the expect_ for now
     f <- nimbleFunction(
         run = function(x = double(1), theta = double(1)) {
-            d <- dt_nonstandard(x, 3, theta, 2)
-            p <- pt_nonstandard(x, 3, theta, 2)
-            q <- qt_nonstandard(p, 3, theta, 2)
+            dd <- dt_nonstandard(x, 3, theta, 3.5)
+            pp <- pt_nonstandard(x, 3, theta, 3.5)
+            qq <- qt_nonstandard(pp, 3, theta, 3.5)
             returnType(double(1))
-            return(c(d, p, q))
+            return(c(dd, pp, qq))
         })
-    ## compilation error: issue #953
-    if(FALSE) {
-        cf <- compileNimble(f)
-        out <- cf(x[1:3], param) 
-        expect_identical(out, c(d, p, q))
-    }
+    cf <- compileNimble(f)
+    out <- cf(x[1:3], param) 
+    expect_identical(out, c(d, p, q), info = 'dt_nonstandard nf')
+
+    ## Without recycling this is fine on Travis.
+    f <- nimbleFunction(
+        run = function(x = double(0), theta = double(0)) {
+            pp <- pt_nonstandard(x, 3, theta, 3.5)
+            returnType(double(0))
+            return(pp)
+        })
+    cf <- compileNimble(f)
+    expect_identical(cf(x[1], param[1]), pt_nonstandard(x[1], 3, param[1], 3.5),
+                     info = 'dt_nonstandard nf no recycle')
 
     ## dexp_nimble
     set.seed(1)
@@ -635,7 +647,7 @@ test_that("recycling behavior from R and within nimbleFunctions for non-R-native
         })
     cf <- compileNimble(f)
     out <- cf(x[1:3], param) 
-    expect_identical(out, c(d, p, q))
+    expect_identical(out, c(d, p, q), info = 'dexp_nimble nf')
 
     ## ddexp
     set.seed(1)
@@ -661,7 +673,7 @@ test_that("recycling behavior from R and within nimbleFunctions for non-R-native
         })
     cf <- compileNimble(f)
     out <- cf(x[1:3], param) 
-    expect_identical(out, c(d, p, q))
+    expect_identical(out, c(d, p, q), info = 'ddexp nf')
 
     ## dsqrt_invgamma (no p or q functions; not available in nimbleFunction)
     set.seed(1)
@@ -696,7 +708,7 @@ test_that("recycling behavior from R and within nimbleFunctions for non-R-native
         })
     cf <- compileNimble(f)
     out <- cf(x[1:3], param) 
-    expect_identical(out, c(d, p, q))
+    expect_identical(out, c(d, p, q), info = 'dinvgamma nf')
 })
     
    
