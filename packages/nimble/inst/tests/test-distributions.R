@@ -610,7 +610,7 @@ test_that("recycling behavior from R and within nimbleFunctions for non-R-native
         })
     cf <- compileNimble(f)
     out <- cf(x[1:3], param) 
-    ## expect_identical(out, c(d, p, q), info = 'dt_nonstandard nf')
+    expect_identical(out, c(d, p, q), info = 'dt_nonstandard nf')
 
     ## Without recycling this is fine on Travis.
     f <- nimbleFunction(
