@@ -6,8 +6,8 @@
 \alias{rcar_normal}
 \title{The CAR-Normal Distribution}
 \usage{
-dcar_normal(x, adj, weights = adj/adj, num, tau,
-  c = CAR_calcNumIslands(adj, num), zero_mean = 0, log = FALSE)
+dcar_normal(x, adj, weights = adj/adj, num, tau, c = CAR_calcNumIslands(adj,
+  num), zero_mean = 0, log = FALSE)
 
 rcar_normal(n = 1, adj, weights = adj/adj, num, tau,
   c = CAR_calcNumIslands(adj, num), zero_mean = 0)
@@ -50,6 +50,9 @@ adj <- c(2, 1,3, 2,4, 3)
 weights <- c(1, 1, 1, 1, 1, 1)
 lp <- dcar_normal(x, adj, weights, num, tau = 1)
 }
+\author{
+Daniel Turek
+}
 \references{
 Banerjee, S., Carlin, B.P., and Gelfand, A.E. (2015). \emph{Hierarchical Modeling and Analysis for Spatial Data}, 2nd ed. Chapman and Hall/CRC.
 
@@ -58,6 +61,4 @@ Rue, H. and L. Held (2005). \emph{Gaussian Markov Random Fields}, Chapman and Ha
 \seealso{
 \link{CAR-Proper}, \link{Distributions} for other standard distributions
 }
-\author{
-Daniel Turek
-}
+

@@ -40,9 +40,10 @@ x <- rinterval(4, vals, endpoints)
 dinterval(x, vals, endpoints)
 dinterval(c(1, 5, 2, 3), vals, endpoints)
 }
-\seealso{
-\link{Distributions} for other standard distributions
-}
 \author{
 Christopher Paciorek
 }
+\seealso{
+\link{Distributions} for other standard distributions
+}
+

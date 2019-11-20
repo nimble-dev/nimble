@@ -39,9 +39,10 @@ dconstraint(0, 3 > 4)
 dconstraint(1, 3 > 4)
 rconstraint(1, 3 > 4)
 }
-\seealso{
-\link{Distributions} for other standard distributions
-}
 \author{
 Christopher Paciorek
 }
+\seealso{
+\link{Distributions} for other standard distributions
+}
+

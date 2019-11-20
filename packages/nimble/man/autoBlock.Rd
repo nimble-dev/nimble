@@ -36,12 +36,13 @@ Runs NIMBLE's automated blocking procedure for a given model object, to dynamica
 \details{
 This method allows for fine-tuned usage of the automated blocking procedure.  However, the main entry point to the automatic blocking procedure is intended to be through either buildMCMC(..., autoBlock = TRUE), or configureMCMC(..., autoBlock = TRUE).
 }
+\author{
+Daniel Turek
+}
 \references{
 Turek, D., de Valpine, P., Paciorek, C., and Anderson-Bergman, C. (2015). Automated Parameter Blocking for Efficient Markov-Chain Monte Carlo Sampling. <arXiv:1503.05621>.
 }
 \seealso{
 configureMCMC buildMCMC
 }
-\author{
-Daniel Turek
-}
+

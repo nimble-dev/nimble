@@ -35,6 +35,9 @@ The returned list contains a matrix with samples from the random measure (one sa
   truncation <- output$trunc
 }
 }
+\author{
+Claudia Wehrhahn and Christopher Paciorek
+}
 \references{
 Sethuraman, J. (1994). A constructive definition of Dirichlet priors. \emph{Statistica Sinica}, 639-650.
 
@@ -43,6 +46,4 @@ Gelfand, A.E. and Kottas, A. (2002). A computational approach for full nonparame
 \seealso{
 \code{\link{buildMCMC}}, \code{\link{configureMCMC}},
 }
-\author{
-Claudia Wehrhahn and Christopher Paciorek
-}
+

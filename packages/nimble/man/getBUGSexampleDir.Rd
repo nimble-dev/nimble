@@ -15,9 +15,10 @@ Character string of the fully pathed directory of the BUGS example.
 \description{
 NIMBLE comes with some of the classic BUGS examples.  \code{getBUGSexampleDir} looks up the location of an example from its name.
 }
-\seealso{
-\code{\link{readBUGSmodel}} for usage in creating a model from a classic BUGS example
-}
 \author{
 Christopher Paciorek
 }
+\seealso{
+\code{\link{readBUGSmodel}} for usage in creating a model from a classic BUGS example
+}
+

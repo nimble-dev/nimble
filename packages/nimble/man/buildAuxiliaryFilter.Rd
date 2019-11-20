@@ -64,6 +64,9 @@ ESS <- Cmy_AuxF$returnESS(m = 100000)
 hist(as.matrix(Cmy_Auxf$mvEWSamples, 'x'))
 }
 }
+\author{
+Nicholas Michaud
+}
 \references{
 Pitt, M.K., and Shephard, N. (1999). Filtering via simulation: Auxiliary particle filters. \emph{Journal of the American Statistical Association} 94(446): 590-599.
 }
@@ -72,7 +75,4 @@ Other particle filtering methods: \code{\link{buildBootstrapFilter}},
   \code{\link{buildEnsembleKF}},
   \code{\link{buildLiuWestFilter}}
 }
-\author{
-Nicholas Michaud
-}
-\concept{particle filtering methods}
+

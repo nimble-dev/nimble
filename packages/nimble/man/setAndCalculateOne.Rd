@@ -34,3 +34,4 @@ lp <- my_setAndCalc$run(2)
 \author{
 Daniel Turek
 }
+

@@ -24,9 +24,10 @@ Calculate the lower and upper bounds for the \code{gamma} parameter of the \code
 \details{
 Bounds for gamma are the inverse of the minimum and maximum eigenvalues of: \eqn{M^(-0.5) C M^(0.5)}.  The lower and upper bounds are returned in a numeric vector.
 }
-\seealso{
-\code{\link{CAR-Proper}}, \code{\link{carMinBound}}, \code{\link{carMaxBound}}
-}
 \author{
 Daniel Turek
 }
+\seealso{
+\code{\link{CAR-Proper}}, \code{\link{carMinBound}}, \code{\link{carMaxBound}}
+}
+

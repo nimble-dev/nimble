@@ -44,9 +44,10 @@ check = FALSE, calculate = FALSE)
 CdemoModel <- compileNimble(demoModel)
 }
 }
-\seealso{
-\code{\link{nimbleExternalCall}} for calling externally provided C (or other) compiled code.
-}
 \author{
 Perry de Valpine
 }
+\seealso{
+\code{\link{nimbleExternalCall}} for calling externally provided C (or other) compiled code.
+}
+

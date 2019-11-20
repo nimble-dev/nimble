@@ -45,6 +45,9 @@ parameter has to be larger than zero. Otherwise, \code{NaN} are returned.
 x <- rCRP(n=1, conc = 1, size=10)
 dCRP(x, conc = 1, size=10)
 }
+\author{
+Claudia Wehrhahn
+}
 \references{
 Blackwell, D., and MacQueen, J. B. (1973). Ferguson distributions via 
 P\'{o}lya urn schemes. \emph{The Annals of Statistics}, 1: 353-355.
@@ -56,6 +59,4 @@ Heidelberg.
 Pitman, J. (1996). Some developments of the Blackwell-MacQueen urn scheme. \emph{IMS Lecture
 Notes-Monograph Series}, 30: 245-267.
 }
-\author{
-Claudia Wehrhahn
-}
+

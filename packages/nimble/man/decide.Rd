@@ -18,3 +18,4 @@ The Metropolis-Hastings accept/reject decisions is made as follows.  If \code{lo
 \author{
 Daniel Turek
 }
+

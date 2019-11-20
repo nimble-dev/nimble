@@ -2,8 +2,8 @@
 % Please edit documentation in R/MCMC_utils.R
 \docType{class}
 \name{codeBlockClass-class}
-\alias{codeBlockClass-class}
 \alias{codeBlockClass}
+\alias{codeBlockClass-class}
 \title{Class \code{codeBlockClass}}
 \description{
 Classes used internally in NIMBLE and not expected to be called directly by users.

@@ -18,3 +18,4 @@ Function for use in nimbleFunction run code; when nimbleFunctions are run in R, 
 \author{
 NIMBLE Development Team
 }
+

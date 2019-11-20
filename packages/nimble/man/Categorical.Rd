@@ -34,9 +34,10 @@ x <- rcat(n = 30, probs)
 dcat(x, probs)
 
 }
-\seealso{
-\link{Distributions} for other standard distributions
-}
 \author{
 Christopher Paciorek
 }
+\seealso{
+\link{Distributions} for other standard distributions
+}
+

@@ -2,9 +2,9 @@
 % Please edit documentation in R/distributions_implementations.R
 \name{Wishart}
 \alias{Wishart}
-\alias{wishart}
 \alias{dwish_chol}
 \alias{rwish_chol}
+\alias{wishart}
 \title{The Wishart Distribution}
 \usage{
 dwish_chol(x, cholesky, df, scale_param = TRUE, log = FALSE)
@@ -40,12 +40,13 @@ x <- rwish_chol(1, ch, df = df)
 dwish_chol(x, ch, df = df)
 
 }
+\author{
+Christopher Paciorek
+}
 \references{
 Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
 }
 \seealso{
 \link{Distributions} for other standard distributions
 }
-\author{
-Christopher Paciorek
-}
+

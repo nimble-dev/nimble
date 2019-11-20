@@ -2,8 +2,8 @@
 % Please edit documentation in R/BUGS_modelDef.R
 \docType{class}
 \name{modelDefClass-class}
-\alias{modelDefClass-class}
 \alias{modelDefClass}
+\alias{modelDefClass-class}
 \title{Class for NIMBLE model definition}
 \description{
 Class for NIMBLE model definition that is not usually needed directly by a user.

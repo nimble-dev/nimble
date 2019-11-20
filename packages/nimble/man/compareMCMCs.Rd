@@ -12,3 +12,4 @@ compareMCMCs(...)
 \description{
 This function has been moved to a separate package
 }
+

@@ -47,6 +47,9 @@ ENKF_X <- as.matrix(Cmy_ENKF$mvSamples, 'x')
 hist(ENKF_X)
 }
 }
+\author{
+Nicholas Michaud
+}
 \references{
 Houtekamer, P.L., and H.L. Mitchell. (1998). Data assimilation using an ensemble Kalman filter technique. \emph{Monthly Weather Review}, 126(3), 796-811.
 }
@@ -55,8 +58,4 @@ Other particle filtering methods: \code{\link{buildAuxiliaryFilter}},
   \code{\link{buildBootstrapFilter}},
   \code{\link{buildLiuWestFilter}}
 }
-\author{
-Nicholas Michaud
-}
-\concept{filtering methods}
-\concept{particle filtering methods}
+

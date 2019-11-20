@@ -29,3 +29,4 @@ parameter known to the distribution.  For example, one can request
 the scale or rate parameter of a gamma distribution, regardless of
 which one was used to declare the node.
 }
+

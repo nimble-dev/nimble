@@ -43,3 +43,4 @@ These functions work in R and in NIMBLE run-time code that can be compiled.
 \author{
 NIMBLE development team
 }
+

@@ -81,9 +81,10 @@ check = FALSE, calculate = FALSE)
 CdemoModel <- compileNimble(demoModel, showCompilerOutput = TRUE)
 }
 }
-\seealso{
-\code{\link{nimbleRcall}} for calling arbitrary R code from compiled \code{nimbleFunction}s.
-}
 \author{
 Perry de Valpine
 }
+\seealso{
+\code{\link{nimbleRcall}} for calling arbitrary R code from compiled \code{nimbleFunction}s.
+}
+

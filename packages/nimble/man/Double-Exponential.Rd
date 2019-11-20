@@ -3,20 +3,20 @@
 \name{Double-Exponential}
 \alias{Double-Exponential}
 \alias{ddexp}
-\alias{rdexp}
 \alias{pdexp}
 \alias{qdexp}
+\alias{rdexp}
 \title{The Double Exponential (Laplace) Distribution}
 \usage{
 ddexp(x, location = 0, scale = 1, rate = 1/scale, log = FALSE)
 
 rdexp(n, location = 0, scale = 1, rate = 1/scale)
 
-pdexp(q, location = 0, scale = 1, rate = 1/scale,
-  lower.tail = TRUE, log.p = FALSE)
+pdexp(q, location = 0, scale = 1, rate = 1/scale, lower.tail = TRUE,
+  log.p = FALSE)
 
-qdexp(p, location = 0, scale = 1, rate = 1/scale,
-  lower.tail = TRUE, log.p = FALSE)
+qdexp(p, location = 0, scale = 1, rate = 1/scale, lower.tail = TRUE,
+  log.p = FALSE)
 }
 \arguments{
 \item{x}{vector of values.}
@@ -57,12 +57,13 @@ See Gelman et al., Appendix A or the BUGS manual for mathematical details.
 x <- rdexp(50, location = 2, scale = 1)
 ddexp(x, 2, 1)
 }
+\author{
+Christopher Paciorek
+}
 \references{
 Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
 }
 \seealso{
 \link{Distributions} for other standard distributions
 }
-\author{
-Christopher Paciorek
-}
+

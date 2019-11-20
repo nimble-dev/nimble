@@ -22,3 +22,4 @@ getNimbleOption('verifyConjugatePosteriors')
 \author{
 Christopher Paciorek
 }
+

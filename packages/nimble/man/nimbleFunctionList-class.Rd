@@ -2,8 +2,8 @@
 % Please edit documentation in R/types_nimbleFunctionList.R
 \docType{class}
 \name{nimbleFunctionList-class}
-\alias{nimbleFunctionList-class}
 \alias{nimbleFunctionList}
+\alias{nimbleFunctionList-class}
 \title{Create a list of nimbleFunctions}
 \description{
 Create an empty list of nimbleFunctions that all will inherit from a base class.
@@ -11,7 +11,7 @@ Create an empty list of nimbleFunctions that all will inherit from a base class.
 \details{
 See the User Manual for information about creating and populating a \code{nimbleFunctionList}.
 }
-
 \author{
 NIMBLE development team
 }
+

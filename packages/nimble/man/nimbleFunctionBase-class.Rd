@@ -2,8 +2,8 @@
 % Please edit documentation in R/nimbleFunction_core.R
 \docType{class}
 \name{nimbleFunctionBase-class}
-\alias{nimbleFunctionBase-class}
 \alias{nimbleFunctionBase}
+\alias{nimbleFunctionBase-class}
 \title{Class \code{nimbleFunctionBase}}
 \description{
 Classes used internally in NIMBLE and not expected to be called directly by users.

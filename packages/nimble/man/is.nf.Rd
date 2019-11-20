@@ -17,3 +17,4 @@ Checks an object to determine if it is a nimbleFunction (i.e., a function create
 \seealso{
 \code{\link{nimbleFunction}} for how to create a nimbleFunction
 }
+

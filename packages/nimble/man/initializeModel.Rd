@@ -42,3 +42,4 @@ myNewAlgorithm <- nimbleFunction(
 \author{
 Daniel Turek
 }
+

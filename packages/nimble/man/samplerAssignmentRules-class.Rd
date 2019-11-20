@@ -2,11 +2,11 @@
 % Please edit documentation in R/MCMC_configuration.R
 \docType{class}
 \name{samplerAssignmentRules-class}
-\alias{samplerAssignmentRules-class}
-\alias{samplerAssignmentRules}
 \alias{addRule}
-\alias{reorder}
 \alias{printRules}
+\alias{reorder}
+\alias{samplerAssignmentRules}
+\alias{samplerAssignmentRules-class}
 \title{Class \code{samplerAssignmentRules}}
 \description{
 Objects of this class specify an ordered set of rules for assigning MCMC sampling algorithms to the stochastic nodes in a BUGS model.
@@ -61,7 +61,6 @@ ind: The indices of the current set of rules to keep.  Assuming there are 10 rul
 
 print: Logical argument specifying whether to print the resulting ordered list of sampler assignment rules (default FALSE).}
 }}
-
 \examples{
 \dontrun{
 ## enable the use of samplerAssignmentRules:
@@ -91,9 +90,10 @@ nimbleOptions(MCMCdefaultSamplerAssignmentRules = my_rules)
 nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
 }
 }
-\seealso{
-\code{\link{configureMCMC}}
-}
 \author{
 Daniel Turek
 }
+\seealso{
+\code{\link{configureMCMC}}
+}
+

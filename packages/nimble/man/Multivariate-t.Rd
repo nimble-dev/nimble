@@ -2,9 +2,9 @@
 % Please edit documentation in R/distributions_implementations.R
 \name{Multivariate-t}
 \alias{Multivariate-t}
-\alias{mvt}
-\alias{multivariate-t}
 \alias{dmvt_chol}
+\alias{multivariate-t}
+\alias{mvt}
 \alias{rmvt_chol}
 \title{The Multivariate t Distribution}
 \usage{
@@ -44,12 +44,13 @@ x <- rmvt_chol(1, mu, ch, df = 1, prec_param = FALSE)
 dmvt_chol(x, mu, ch, df = 1, prec_param = FALSE)
 
 }
+\author{
+Peter Sujan
+}
 \references{
 Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
 }
 \seealso{
 \link{Distributions} for other standard distributions
 }
-\author{
-Peter Sujan
-}
+

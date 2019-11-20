@@ -12,3 +12,4 @@ getLoadingNamespace()
 \details{
 \code{nimbleFunction}s defined in the NIMBLE source code use \code{where = getLoadingNamespace()}.  Please let the NIMBLE developers know if you encounter problems with this.
 }
+

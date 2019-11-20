@@ -64,6 +64,9 @@ lw_X <- as.matrix(Cmy_LWF$mvEWSamples, 'x')
 lw_sigma_x <- as.matrix(Cmy_LWF$mvEWSamples, 'sigma_x')
 }
 }
+\author{
+Nicholas Michaud
+}
 \references{
 Liu, J., and M. West. (2001). Combined parameter and state estimation in simulation-based filtering. \emph{Sequential Monte Carlo methods in practice}. Springer New York, pages 197-223.
 }
@@ -72,7 +75,4 @@ Other particle filtering methods: \code{\link{buildAuxiliaryFilter}},
   \code{\link{buildBootstrapFilter}},
   \code{\link{buildEnsembleKF}}
 }
-\author{
-Nicholas Michaud
-}
-\concept{particle filtering methods}
+

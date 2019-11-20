@@ -24,9 +24,10 @@ Given a symmetric matrix of unnormalized weights, this function will calculate c
 
 Here, \code{C} is a sparse vector representation of the row-normalized adjacency matrix, and \code{M} is a vector containing the conditional variance for each region.  The resulting values of \code{C} and \code{M} are guaranteed to satisfy the symmetry constraint imposed on \eqn{C} and \eqn{M}, that \eqn{M^{-1} C} is symmetric, where \eqn{M} is a diagonal matrix and \eqn{C} is the row-normalized adjacency matrix.
 }
-\seealso{
-\code{\link{CAR-Normal}}, \code{\link{CAR-Proper}}
-}
 \author{
 Daniel Turek
 }
+\seealso{
+\code{\link{CAR-Normal}}, \code{\link{CAR-Proper}}
+}
+

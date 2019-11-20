@@ -11,10 +11,11 @@ eigenNimbleList
 \description{
 \code{nimbleList} definition for the type of \code{nimbleList} returned by \code{\link{nimEigen}}.
 }
-\seealso{
-\code{\link{nimEigen}}
-}
 \author{
 NIMBLE development team
 }
+\seealso{
+\code{\link{nimEigen}}
+}
 \keyword{datasets}
+

@@ -24,3 +24,4 @@ code <- nimbleCode({
 \author{
 Daniel Turek
 }
+

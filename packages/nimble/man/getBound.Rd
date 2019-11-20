@@ -27,3 +27,4 @@ where a bound is a parameter is for the uniform distribution. For nodes
 that are truncated, this will return the desired bound, which may be
 a functional of other quantities in the model or may be a constant.
 }
+

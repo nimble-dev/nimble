@@ -2,8 +2,8 @@
 % Please edit documentation in R/cppInterfaces_models.R
 \docType{class}
 \name{CmodelBaseClass-class}
-\alias{CmodelBaseClass-class}
 \alias{CmodelBaseClass}
+\alias{CmodelBaseClass-class}
 \title{Class \code{CmodelBaseClass}}
 \description{
 Classes used internally in NIMBLE and not expected to be called directly by users.

@@ -6,8 +6,8 @@
 \usage{
 nimbleModel(code, constants = list(), data = list(), inits = list(),
   dimensions = list(), returnDef = FALSE, where = globalenv(),
-  debug = FALSE, check = getNimbleOption("checkModel"),
-  calculate = TRUE, name = NULL, userEnv = parent.frame())
+  debug = FALSE, check = getNimbleOption("checkModel"), calculate = TRUE,
+  name = NULL, userEnv = parent.frame())
 }
 \arguments{
 \item{code}{code for the model in the form returned by \code{\link{nimbleCode}} or (equivalently) \code{\link{quote}}}
@@ -55,9 +55,10 @@ constants = list(prior_sd = 1)
 data = list(x = 4)
 Rmodel <- nimbleModel(code, constants = constants, data = data)
 }
-\seealso{
-\code{\link{readBUGSmodel}} for creating models from BUGS-format model files
-}
 \author{
 NIMBLE development team
 }
+\seealso{
+\code{\link{readBUGSmodel}} for creating models from BUGS-format model files
+}
+

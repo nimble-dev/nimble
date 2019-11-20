@@ -19,3 +19,4 @@ nimbleFunctions to detect if there are any NA or NaN values in a vector.
 \author{
 NIMBLE Development Team
 }
+

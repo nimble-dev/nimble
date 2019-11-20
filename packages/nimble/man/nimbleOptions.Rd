@@ -42,3 +42,4 @@ nimbleOptions(old)                        # Restores old options.
 \author{
 Christopher Paciorek
 }
+

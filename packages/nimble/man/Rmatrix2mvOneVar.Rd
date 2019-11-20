@@ -21,3 +21,4 @@ Normally a modelValues object is accessed one "row" at a time.  This function al
 \details{
 This function may be deprecated in the future when a more natural system for interacting with modelValues objects is developed.
 }
+
