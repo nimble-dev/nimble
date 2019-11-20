@@ -364,37 +364,40 @@ mcmc_checkWAICmonitors <- function(model, monitors, dataNodes) {
 }
 
 
-mcmc_compressIndexRanges <- function(nums) {
-    nums <- sort(unique(nums))
-    rangeStartInd <- c(1, which(diff(nums) != 1) + 1)
-    ranges <- vector('list', length(rangeStartInd))
-    for(i in seq_along(rangeStartInd)) {
-        startInd <- rangeStartInd[i]
-        if(i == length(rangeStartInd)) {
-            if(rangeStartInd[i] == length(nums)) {
-                ranges[[i]] <- nums[startInd]
-            } else {
-                ranges[[i]] <- substitute(START:END, list(START = as.numeric(nums[startInd]),
-                                                          END = as.numeric(nums[length(nums)])))
-            }
-        } else {
-            if(startInd+1 < rangeStartInd[i+1]) {
-                ranges[[i]] <- substitute(START:END, list(START = as.numeric(nums[startInd]),
-                                                          END = as.numeric(nums[rangeStartInd[i+1]-1])))
-            } else ranges[[i]] <- nums[startInd]
-        }
-    }
-    return(ranges)
-}
-
-
-mcmc_getIndexNumberFromNodeNames <- function(nodeNames, indNumber) {
-    (nodeInsideBrackets <- gsub('^[[:alpha:]]+\\[(.+)\\]$', '\\1', nodeNames))
-    splitList <- strsplit(nodeInsideBrackets, ',')
-    if(length(splitList[[1]]) < indNumber) stop('in mcmc_getIndexNumberFromNodeNames: indNumber exceeds node dimension', call. = FALSE)
-    indices <- as.numeric(sapply(splitList, function(el) el[indNumber]))
-    return(indices)
-}
+## formerly used in conf$printSamplers(byType = TRUE)
+## to compress scalar index ranges of variables.
+## deprecated Nov 2019.
+##mcmc_compressIndexRanges <- function(nums) {
+##    nums <- sort(unique(nums))
+##    rangeStartInd <- c(1, which(diff(nums) != 1) + 1)
+##    ranges <- vector('list', length(rangeStartInd))
+##    for(i in seq_along(rangeStartInd)) {
+##        startInd <- rangeStartInd[i]
+##        if(i == length(rangeStartInd)) {
+##            if(rangeStartInd[i] == length(nums)) {
+##                ranges[[i]] <- nums[startInd]
+##            } else {
+##                ranges[[i]] <- substitute(START:END, list(START = as.numeric(nums[startInd]),
+##                                                          END = as.numeric(nums[length(nums)])))
+##            }
+##        } else {
+##            if(startInd+1 < rangeStartInd[i+1]) {
+##                ranges[[i]] <- substitute(START:END, list(START = as.numeric(nums[startInd]),
+##                                                          END = as.numeric(nums[rangeStartInd[i+1]-1])))
+##            } else ranges[[i]] <- nums[startInd]
+##        }
+##    }
+##    return(ranges)
+##}
+##
+##
+##mcmc_getIndexNumberFromNodeNames <- function(nodeNames, indNumber) {
+##    (nodeInsideBrackets <- gsub('^[[:alpha:]]+\\[(.+)\\]$', '\\1', nodeNames))
+##    splitList <- strsplit(nodeInsideBrackets, ',')
+##    if(length(splitList[[1]]) < indNumber) stop('in mcmc_getIndexNumberFromNodeNames: indNumber exceeds node dimension', call. = FALSE)
+##    indices <- as.numeric(sapply(splitList, function(el) el[indNumber]))
+##    return(indices)
+##}
 
 
 
