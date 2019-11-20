@@ -1,6 +1,6 @@
 language: r
 r:
-    - 3.6    
+    - 3.5
 
 dist: bionic
 sudo: false
