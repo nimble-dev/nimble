@@ -642,8 +642,14 @@ test_that("warning when RHS only nodes used as dynamic indexes", {
                    "Detected use of non-constant indexes")
     expect_warning(m <- nimbleModel(code, data = list(k = rep(1,3))),
                    "Detected use of non-constant indexes")
+    expect_silent(m <- nimbleModel(code, constants = list(k = rep(1,3))))
     expect_message(m <- nimbleModel(code, constants = list(k = rep(1,3))))
 
+    myfun <- nimbleFunction(run = function(x = double()) {
+        returnType(double())
+        return(1)
+    })
+    
     code <- nimbleCode({
         for(i in 1:3) 
             y[i] ~ dnorm(mu[myfun(k[i])], 1)
