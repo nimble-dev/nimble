@@ -2732,9 +2732,10 @@ modelDefClass$methods(warnRHSonlyDynIdx = function() {
             vars <- unique(unlist(vars))
             vars <- vars[vars %in% decl$rhsVars]
             ## Evaluate indexing to determine nodes used in dynamic indexing.
+            nr <- min(50, nrow(decl$unrolledIndicesMatrix))  # avoid doing full expansion for speed
             nodes <- lapply(seq_along(vars), function(idx) {
                 parentNode <- decl$symbolicParentNodesReplaced[[which(vars[idx] == decl$rhsVars)]]
-                nr <- min(50, nrow(decl$unrolledIndicesMatrix))  # avoid doing full expansion for speed
+
                 return(sapply(seq_len(nr), function(row) {
                     deparse(eval(substitute(substitute(e, 
                                                        as.list(decl$unrolledIndicesMatrix[row, ])),
