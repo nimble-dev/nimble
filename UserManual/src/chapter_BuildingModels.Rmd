@@ -413,5 +413,8 @@ model$isData('z')
 model$isData('z[1:3, 1]')
 ``` 
 
+## Using models in parallel
 
+NIMBLE uses Reference Classes and R6 classes for models and algorithms. Objects of these classes are passed by reference and copies of such objects are simply new variable names that reference the same underlying object.
 
+Thus to run an algorithm in parallel on a given model, one must create multiple copies of the model and algorithm, and compiled versions of these, by calling `nimbleModel`, `buildMCMC`, `compileNimble`, etc. once for each copy. In other words all such calls should be within the parallelized block of code. 

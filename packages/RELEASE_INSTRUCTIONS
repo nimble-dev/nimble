@@ -12,6 +12,13 @@ Make sure src/Makevars.win is present.
 
 # before running 'make man' (i.e., prep_pkg.R) make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions (or do in separate copy of repository: make configure; cd nimble; ./configure - note that if do this the configure step will have an error in building libnimble.a and that a bunch of files will be created in src that should not be in the repository (all but *.in and nimble.cpp do not belong)
 
+config.R should be this:
+```
+NeedMakevarsFile = TRUE
+UseLibraryMakevars = TRUE
+.NimbleUseRegistration = TRUE
+```
+
 run 'make man' (formerly ./prep_pkg.R)
 # this creates man pages and updates NAMESPACE
 

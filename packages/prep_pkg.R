@@ -167,6 +167,10 @@ exportText <- readLines(file.path('nimble','NAMESPACE'))
 exportText <- exportText[grep("^#", exportText, invert = TRUE)]
 exportText <- exportText[grep("^$", exportText, invert = TRUE)]
 
+## fix incorrect S3method(is.na,vec), S3Method(is.nan,vec) produced by roxygen2
+exportText[exportText == "S3method(is.na,vec)"] <- "export(is.na.vec)"
+exportText[exportText == "S3method(is.nan,vec)"] <- "export(is.nan.vec)"
+
 additionalExports <- c(additionalExports, 'nimbleType')  # nimbleType needed it is being exported only as a class as it is officially a refClass not a function
 exportTextAdd <- paste0("export(", additionalExports, ")")
 exportText <- c(exportTextAdd, exportText)

@@ -1016,3 +1016,9 @@ lapply(samplesList, dim)
 ## Comparing different MCMCs with *MCMCsuite* and *compareMCMCs* {#mcmc-suite-compare-mcmcs}
 
 Please see the `compareMCMCs` package for the features previously provided by `MCMCsuite` and `compareMCMCs` in NIMBLE (until version 0.8.0).  The `compareMCMCs` package provides tools to automatically run MCMC in nimble (including multiple sampler configurations), WinBUGS, OpenBUGS, JAGS, Stan, or any other engine for which you provide a simple common interface.  The package makes it easy to manage comparison metrics and generate html pages with comparison figures.
+
+## Running MCMC chains in parallel
+
+It is possible to run multiple chains in parallel using standard R parallelization packages such as `parallal`, `foreach`, and `future`. However, you must create separate copies of all model and MCMC objects using `nimbleModel`, `buildMCMC`, `compileNimble`, etc. This is because NIMBLE uses Reference Classes and R6 classes, so copying such objects simply creates a new variable name that refers to the original object.
+
+Thus, in your parallel loop or lapply-style statement, you should run `nimbleModel` and all subsequent calls to create and compile the model and MCMC algorithm within the parallelized block of code, once for each MCMC chain being run in parallel.

@@ -51,7 +51,7 @@ Details: See the initialize() function
             }
 
 \item{\code{addSampler(target, type = "RW", control = list(), print = FALSE, name,
-  silent = FALSE, ...)}}{Adds a sampler to the list of samplers contained in the MCMCconf object.
+  scalarComponents = FALSE, silent = FALSE, ...)}}{Adds a sampler to the list of samplers contained in the MCMCconf object.
 
 Arguments:
 
@@ -65,6 +65,8 @@ print: Logical argument, specifying whether to print the details of the newly ad
 
 name: Optional character string name for the sampler, which is used by the printSamplers method.  If 'name' is not provided, the 'type' argument is used to generate the sampler name.
 
+scalarComponents: Logical argument, indicating whether the specified sampler 'type' should be assigned independently to each scalar (univariate) component of the specified 'target' node or variable.  This option should only be specified as TRUE when the sampler 'type' specifies a univariate sampler.
+
 silent: Logical argument, specifying whether to print warning messages when assigning samplers.
 
 ...: Additional named arguments passed through ... will be used as additional control list elements.
@@ -72,6 +74,8 @@ silent: Logical argument, specifying whether to print warning messages when assi
 Details: A single instance of the newly configured sampler is added to the end of the list of samplers for this MCMCconf object.
 
 Invisibly returns a list of the current sampler configurations, which are samplerConf reference class objects.}
+
+\item{\code{addSamplerOne(thisSamplerName, samplerFunction, targetOne, thisControlList)}}{For internal use only}
 
 \item{\code{getMonitors()}}{Returns a character vector of the current monitors
 
@@ -83,7 +87,7 @@ Details: See the initialize() function
 Details: See the initialize() function
             }
 
-\item{\code{getSamplerDefinition(ind)}}{Returns the nimbleFunction definition of an MCMC sampler.
+\item{\code{getSamplerDefinition(ind, print = FALSE)}}{Returns the nimbleFunction definition of an MCMC sampler.
 
 Arguments:
 
@@ -154,11 +158,13 @@ print: A logical argument specifying whether to print the ordered list of defaul
 Details: See the initialize() function
             }
 
-\item{\code{printSamplers(ind, type, displayControlDefaults = FALSE,
+\item{\code{printSamplers(..., ind, type, displayControlDefaults = FALSE,
   displayNonScalars = FALSE, displayConjugateDependencies = FALSE,
   executionOrder = FALSE, byType = FALSE)}}{Prints details of the MCMC samplers.
 
 Arguments:
+
+...: Character node or variable names, or numeric indices.  Numeric indices may be used to specify the indices of the samplers to print, or character strings may be used to indicate a set of target nodes and/or variables, for which all samplers acting on these nodes will be printed. For example, printSamplers('x') will print all samplers whose target is model node 'x', or whose targets are contained (entirely or in part) in the model variable 'x'.  If omitted, then all samplers are printed.
 
 ind: A numeric vector or character vector.  A numeric vector may be used to specify the indices of the samplers to print, or a character vector may be used to indicate a set of target nodes and/or variables, for which all samplers acting on these nodes will be printed. For example, printSamplers('x') will print all samplers whose target is model node 'x', or whose targets are contained (entirely or in part) in the model variable 'x'.  If omitted, then all samplers are printed.
 
@@ -174,11 +180,13 @@ byType: A logical argument, specifying whether the nodes being sampled should be
 
 \item{\code{removeSampler(...)}}{Alias for removeSamplers method}
 
-\item{\code{removeSamplers(ind, print = FALSE)}}{Removes one or more samplers from an MCMCconf object.
+\item{\code{removeSamplers(..., ind, print = FALSE)}}{Removes one or more samplers from an MCMCconf object.
 
 Arguments:
 
 This function also has the side effect of resetting the sampler execution ordering so as to iterate over the remaining set of samplers, sequentially, executing each sampler once.
+
+...: Character node names or numeric indices.  Character node names specify the node names for samplers to remove, or numeric indices can provide the indices of samplers to remove.
 
 ind: A numeric vector or character vector specifying the samplers to remove.  A numeric vector may specify the indices of the samplers to be removed.  Alternatively, a character vector may be used to specify a set of model nodes and/or variables, and all samplers whose 'target' is among these nodes will be removed.  If omitted, then all samplers are removed.
 
@@ -195,6 +203,8 @@ Arguments:
 
 waic: A logical argument, indicating whether to enable WAIC calculations in the resulting MCMC algorithm (default TRUE).}
 
+\item{\code{setSampler(...)}}{Alias for setSamplers method}
+
 \item{\code{setSamplerExecutionOrder(order, print = FALSE)}}{Sets the ordering in which sampler functions will execute.
 
 This allows some samplers to be "turned off", or others to execute multiple times in a single MCMC iteration.  The ordering in which samplers execute can also be interleaved.
@@ -205,11 +215,13 @@ order: A numeric vector, specifying the ordering in which the sampler functions 
 
 print: A logical argument specifying whether to print the current list of samplers in the modified order of execution (default FALSE).}
 
-\item{\code{setSamplers(ind, print = FALSE)}}{Sets the ordering of the list of MCMC samplers.
+\item{\code{setSamplers(..., ind, print = FALSE)}}{Sets the ordering of the list of MCMC samplers.
 
 This function also has the side effect of resetting the sampler execution ordering so as to iterate over the specified set of samplers, sequentially, executing each sampler once.
 
 Arguments:
+
+...: Chracter strings or numeric indices.  Character names may be used to specify the node names for samplers to retain.  A numeric indices may be used to specify the indicies for the new list of MCMC samplers, in terms of the current ordered list of samplers.
 
 ind: A numeric vector or character vector.  A numeric vector may be used to specify the indicies for the new list of MCMC samplers, in terms of the current ordered list of samplers.
 For example, if the MCMCconf object currently has 3 samplers, then the ordering may be reversed by calling MCMCconf$setSamplers(3:1), or all samplers may be removed by calling MCMCconf$setSamplers(numeric(0)).
