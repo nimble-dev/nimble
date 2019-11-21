@@ -198,6 +198,8 @@ buildMCMC <- nimbleFunction(
                     samplerFunctions[[ind]]$run()
                 }
             }
+            ## adding "accumulators" to MCMC?
+            ## https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
             if(iter > nburnin) {
                 sampleNumber <- iter - nburnin
                 if(sampleNumber %% thinToUseVec[1] == 0) {
