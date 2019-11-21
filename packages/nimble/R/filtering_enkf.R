@@ -205,7 +205,11 @@ ENKFStep <- nimbleFunction(
 #'
 #' @param model A NIMBLE model object, typically representing a state space model or a hidden Markov model
 #' @param nodes A character vector specifying the latent model nodes 
-#'  the Ensemble Kalman Filter will estimate.  All provided nodes must be stochastic, and must come from the same variable in the model. 
+#'  the Ensemble Kalman Filter will estimate. All provided nodes must be stochastic.
+#'  Can be one of three forms: a variable name, in which case all elements in the variable
+#'  are taken to be latent (e.g., 'x'); an indexed variable, in which case all indexed elements are taken
+#'  to be latent (e.g., 'x[1:100]' or 'x[1:100, 1:2]'); or a vector of multiple nodes, one per time point,
+#'  in increasing time order (e.g., c("x[1:2, 1]", "x[1:2, 2]", "x[1:2, 3]", "x[1:2, 4]")).
 #' @param control  A list specifying different control options for the particle filter.  Options are described in the details section below.
 #' @author Nicholas Michaud
 #' @family particle filtering methods
@@ -253,25 +257,8 @@ buildEnsembleKF <- nimbleFunction(
     if(is.null(silent)) silent <- FALSE
     if(is.null(saveAll)) saveAll <- FALSE
     if(is.null(initModel)) initModel <- TRUE 
-    #get latent state info
-    varName <- sapply(nodes, function(x){return(model$getVarNames(nodes = x))})
-    if(length(unique(varName))>1){
-      stop("all latent nodes must come from same variable")
-    }
-    varName <- varName[1]
-    info <- model$getVarInfo(varName)
-    latentDims <- info$nDim
-    if(is.null(timeIndex)){
-      timeIndex <- which.max(info$maxs)
-      timeLength <- max(info$maxs)
-      if(sum(info$maxs==timeLength)>1) # check if multiple dimensions share the max index size
-        stop("unable to determine which dimension indexes time. 
-             Specify manually using the 'timeIndex' control list argument")
-    } else{
-      timeLength <- info$maxs[timeIndex]
-    }
-    nodes <- paste(info$varName,"[",rep(",", timeIndex-1), 1:timeLength,
-                   rep(",", info$nDim - timeIndex),"]", sep="")
+    ## get latent state info
+    nodes <- findLatentNodes(model, nodes, timeIndex)
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
     if(length(unique(dims)) > 1) stop('sizes or dimension of latent states varies')
     xDim <- dims[[1]]

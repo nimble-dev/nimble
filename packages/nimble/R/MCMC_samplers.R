@@ -1059,7 +1059,7 @@ sampler_RW_PF <- nimbleFunction(
         adaptInterval  <- if(!is.null(control$adaptInterval))        control$adaptInterval        else 200
         scale          <- if(!is.null(control$scale))                control$scale                else 1
         m              <- if(!is.null(control$pfNparticles))         control$pfNparticles         else 1000
-        resample       <- if(!is.null(control$pfResample))           control$pfResample           else FALSE
+        existingPF     <- if(!is.null(control$pf))                   control$pf                   else NULL
         filterType     <- if(!is.null(control$pfType))               control$pfType               else 'bootstrap'
         filterControl  <- if(!is.null(control$pfControl))            control$pfControl            else list()
         optimizeM      <- if(!is.null(control$pfOptimizeNparticles)) control$pfOptimizeNparticles else FALSE
@@ -1110,46 +1110,49 @@ sampler_RW_PF <- nimbleFunction(
         ## Nested function and function list definitions.
         my_setAndCalculate <- setAndCalculateOne(model, target)
         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
-        if(latentSamp == TRUE) { 
-          filterControl$saveAll <- TRUE
-          filterControl$smoothing <- TRUE
+        if(!is.null(existingPF)) {
+            my_particleFilter <- existingPF
         } else {
-          filterControl$saveAll <- FALSE
-          filterControl$smoothing <- FALSE
-        }
-        filterControl$initModel <- FALSE
-        if(is.character(filterType) && filterType == 'auxiliary') {
-            my_particleFilter <- buildAuxiliaryFilter(model, latents, 
-                                                      control = filterControl)
-        }
-        else if(is.character(filterType) && filterType == 'bootstrap') {
-            my_particleFilter <- buildBootstrapFilter(model, latents,
-                                                      control = filterControl)
-        }
-        else if(is.nfGenerator(filterType)){
-          my_particleFilter <- filterType(model, latents,
-                                          control = filterControl)
-                              
-        }
-        else stop('filter type must be either "bootstrap", "auxiliary", or a
+            if(latentSamp == TRUE) { 
+                filterControl$saveAll <- TRUE
+                filterControl$smoothing <- TRUE
+            } else {
+                filterControl$saveAll <- FALSE
+                filterControl$smoothing <- FALSE
+            }
+            filterControl$initModel <- FALSE
+            if(is.character(filterType) && filterType == 'auxiliary') {
+                my_particleFilter <- buildAuxiliaryFilter(model, latents, 
+                                                          control = filterControl)
+            }
+            else if(is.character(filterType) && filterType == 'bootstrap') {
+                my_particleFilter <- buildBootstrapFilter(model, latents,
+                                                          control = filterControl)
+            }
+            else if(is.nfGenerator(filterType)){
+                my_particleFilter <- filterType(model, latents,
+                                                control = filterControl)
+            }
+            else stop('filter type must be either "bootstrap", "auxiliary", or a
                   user defined filtering algorithm created by a call to 
                   nimbleFunction(...).')
+        }
         particleMV <- my_particleFilter$mvEWSamples
         ## checks
         if(any(target%in%model$expandNodeNames(latents)))   stop('PMCMC \'target\' argument cannot include latent states')
         if(length(targetAsScalar) > 1)                      stop('more than one top-level target; cannot use RW_PF sampler, try RW_PF_block sampler')
     },
     run = function() {
-        if(resample) {
-            modelLP0 <- my_particleFilter$run(m)
-            modelLP0 <- modelLP0 + getLogProb(model, target)
-        }
-        else   modelLP0 <- storeParticleLP + getLogProb(model, target)
+        storeParticleLP <<- my_particleFilter$getLastLogLik()
+        modelLP0 <- storeParticleLP + getLogProb(model, target)
         propValue <- rnorm(1, mean = model[[target]], sd = scale)
         my_setAndCalculate$run(propValue)
         particleLP <- my_particleFilter$run(m)
         modelLP1 <- particleLP + getLogProb(model, target)
         jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
+        if(!jump) {
+            my_particleFilter$setLastLogLik(storeParticleLP)
+        }
         if(jump & latentSamp){
             ## if we jump, randomly sample latent nodes from pf output and put into model so that they can be monitored
             index <- ceiling(runif(1, 0, m))
@@ -1161,7 +1164,7 @@ sampler_RW_PF <- nimbleFunction(
             ## if we don't jump, replace model latent nodes with saved latent nodes
             copy(from = mvSaved, to = model, nodes = latentDep, row = 1, logProb = TRUE)
         }
-        if(jump & !resample)  storeParticleLP <<- particleLP
+##        if(jump & !resample)  storeParticleLP <<- particleLP
         if(jump & optimizeM) optimM()
         if(adaptive)     adaptiveProcedure(jump)
     },
@@ -1185,9 +1188,7 @@ sampler_RW_PF <- nimbleFunction(
             else {  # once enough var estimates have been taken, use their average to compute m
                 m <<- m*storeLLVar/(0.92^2)
                 m <<- ceiling(m)
-                if(!resample) {  #reset LL with new m value after burn-in period
-                  storeParticleLP <<- my_particleFilter$run(m)
-                }
+                storeParticleLP <<- my_particleFilter$run(m)
                 optimizeM <<- 0
             }
         },
@@ -1234,8 +1235,8 @@ sampler_RW_PF_block <- nimbleFunction(
         adaptInterval  <- if(!is.null(control$adaptInterval))        control$adaptInterval        else 200
         scale          <- if(!is.null(control$scale))                control$scale                else 1
         propCov        <- if(!is.null(control$propCov))              control$propCov              else 'identity'
+        existingPF     <- if(!is.null(control$pf))                   control$pf                   else NULL
         m              <- if(!is.null(control$pfNparticles))         control$pfNparticles         else 1000
-        resample       <- if(!is.null(control$pfResample))           control$pfResample           else FALSE
         filterType     <- if(!is.null(control$pfType))               control$pfType               else 'bootstrap'
         filterControl  <- if(!is.null(control$pfControl))            control$pfControl            else list()
         optimizeM      <- if(!is.null(control$pfOptimizeNparticles)) control$pfOptimizeNparticles else FALSE
@@ -1288,30 +1289,34 @@ sampler_RW_PF_block <- nimbleFunction(
         my_setAndCalculate <- setAndCalculate(model, target)
         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
         my_calcAdaptationFactor <- calcAdaptationFactor(d)
-        if(latentSamp == TRUE) { 
-          filterControl$saveAll <- TRUE
-          filterControl$smoothing <- TRUE
+        if(!is.null(existingPF)) {
+            my_particleFilter <- existingPF
         } else {
-          filterControl$saveAll <- FALSE
-          filterControl$smoothing <- FALSE
-        }
-        filterControl$initModel <- FALSE
-        if(is.character(filterType) && filterType == 'auxiliary') {
-          my_particleFilter <- buildAuxiliaryFilter(model, latents, 
-                                                    control = filterControl)
-        }
-        else if(is.character(filterType) && filterType == 'bootstrap') {
-          my_particleFilter <- buildBootstrapFilter(model, latents,
-                                                    control = filterControl)
-        }
-        else if(is.nfGenerator(filterType)){
-          my_particleFilter <- filterType(model, latents,
-                                          control = filterControl)
-          
-        }
-        else stop('filter type must be either "bootstrap", "auxiliary", or a
+            if(latentSamp == TRUE) { 
+                filterControl$saveAll <- TRUE
+                filterControl$smoothing <- TRUE
+            } else {
+                filterControl$saveAll <- FALSE
+                filterControl$smoothing <- FALSE
+            }
+            filterControl$initModel <- FALSE
+            if(is.character(filterType) && filterType == 'auxiliary') {
+                my_particleFilter <- buildAuxiliaryFilter(model, latents, 
+                                                          control = filterControl)
+            }
+            else if(is.character(filterType) && filterType == 'bootstrap') {
+                my_particleFilter <- buildBootstrapFilter(model, latents,
+                                                          control = filterControl)
+            }
+            else if(is.nfGenerator(filterType)){
+                my_particleFilter <- filterType(model, latents,
+                                                control = filterControl)
+                
+            }
+            else stop('filter type must be either "bootstrap", "auxiliary", or a
                   user defined filtering algorithm created by a call to 
                   nimbleFunction(...).')
+        }
         particleMV <- my_particleFilter$mvEWSamples
         ## checks
         if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
@@ -1322,16 +1327,16 @@ sampler_RW_PF_block <- nimbleFunction(
         if(any(target%in%model$expandNodeNames(latents)))   stop('PMCMC \'target\' argument cannot include latent states')
     },
     run = function() {
-        if(resample) {
-            modelLP0 <- my_particleFilter$run(m)
-            modelLP0 <- modelLP0 + getLogProb(model, target)
-        }
-        else   modelLP0 <- storeParticleLP + getLogProb(model, target)
+        storeParticleLP <<- my_particleFilter$getLastLogLik()
+        modelLP0 <- storeParticleLP + getLogProb(model, target)
         propValueVector <- generateProposalVector()
         my_setAndCalculate$run(propValueVector)
         particleLP <- my_particleFilter$run(m)
         modelLP1 <- particleLP + getLogProb(model, target)
         jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
+        if(!jump) {
+            my_particleFilter$setLastLogLik(storeParticleLP)
+        }
         if(jump & latentSamp) {
             ## if we jump, randomly sample latent nodes from pf output and put
             ## into model so that they can be monitored
@@ -1344,7 +1349,7 @@ sampler_RW_PF_block <- nimbleFunction(
             ## if we don't jump, replace model latent nodes with saved latent nodes
             copy(from = mvSaved, to = model, nodes = latentDep, row = 1, logProb = TRUE)
         }
-        if(jump & !resample)  storeParticleLP <<- particleLP
+      ##  if(jump & !resample)  storeParticleLP <<- particleLP
         if(jump & optimizeM) optimM()
         if(adaptive)     adaptiveProcedure(jump)
     },
@@ -1368,9 +1373,7 @@ sampler_RW_PF_block <- nimbleFunction(
             else {  # once enough var estimates have been taken, use their average to compute m
                 m <<- m*storeLLVar/(0.92^2)
                 m <<- ceiling(m)
-                if(!resample){  #reset LL with new m value after burn-in period
-                  storeParticleLP <<- my_particleFilter$run(m)
-                }
+                storeParticleLP <<- my_particleFilter$run(m)
                 optimizeM <<- 0
             }
         },
@@ -1405,6 +1408,7 @@ sampler_RW_PF_block <- nimbleFunction(
             scale   <<- scaleOriginal
             propCov <<- propCovOriginal
             chol_propCov <<- chol(propCov)
+            chol_propCov_scale <<- chol_propCov * scale
             storeParticleLP <<- -Inf
             timesRan      <<- 0
             timesAccepted <<- 0
@@ -2200,7 +2204,6 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item latents.  Character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function.
 #' \item pfType.  Character argument specifying the type of particle filter that should be used for likelihood approximation.  Choose from \code{"bootstrap"} and \code{"auxiliary"}.  Defaults to \code{"bootstrap"}.
 #' \item pfControl.  A control list that is passed to the particle filter function.  For details on control lists for bootstrap or auxiliary particle filters, see \code{\link{buildBootstrapFilter}} or \code{\link{buildAuxiliaryFilter}} respectively.  Additionally, this can be used to pass custom arguments into a user defined particle filter.
-#' \item pfResample.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each MCMC step, or whether to use log likelihood from previous step.
 #' \item pfOptimizeNparticles.  A logical argument, specifying whether to use an experimental procedure to automatically determine the optimal number of particles to use, based on Pitt and Shephard (2011).  This will override any value of \code{pfNparticles} specified above.
 #' }
 #' 
@@ -2221,7 +2224,6 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item latents.  Character vector specifying the latent model nodes over which the particle filter will stochastically integrate to estimate the log-likelihood function.
 #' \item pfType.  Character argument specifying the type of particle filter that should be used for likelihood approximation.  Choose from \code{"bootstrap"} and \code{"auxiliary"}.  Defaults to \code{"bootstrap"}.
 #' \item pfControl.  A control list that is passed to the particle filter function.  For details on control lists for bootstrap or auxiliary particle filters, see \code{\link{buildBootstrapFilter}} or \code{\link{buildAuxiliaryFilter}} respectively.  Additionally, this can be used to pass custom arguments into a user defined particle filter.
-#' \item pfResample.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each mcmc step, or whether to use log likelihood from previous step.
 #' \item pfOptimizeNparticles.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt and Shephard (2011).  This will override any value of \code{pfNparticles} specified above.
 #' }
 #'

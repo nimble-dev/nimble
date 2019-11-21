@@ -41,7 +41,7 @@ auxSimFunc = nimbleFunction(
   setup = function(model, node){},
   methods = list(
     lookahead = function(){
-      simulate(model, node)
+      model$simulate(node)
     }), where = getLoadingNamespace()
 )
 
@@ -52,11 +52,19 @@ auxFStep <- nimbleFunction(
                    saveAll, smoothing, lookahead, resamplingMethod,
                    silent = TRUE) {
     notFirst <- iNode != 1
+    last <- iNode == length(nodes)
     prevNode <- nodes[if(notFirst) iNode-1 else iNode]
-    prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
+
+    notFirst <- iNode != 1
+    modelSteps <- particleFilter_splitModelSteps(model, nodes, iNode, notFirst)
+    prevDeterm <- modelSteps$prevDeterm
+    calc_thisNode_self <- modelSteps$calc_thisNode_self
+    calc_thisNode_deps <- modelSteps$calc_thisNode_deps
+
+    ## prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
     thisNode <- nodes[iNode]
-    thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
-    thisData   <- model$getDependencies(thisNode, dataOnly = TRUE) 
+    ## thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
+    ## thisData   <- model$getDependencies(thisNode, dataOnly = TRUE) 
     ## t is the current time point.
     t <- iNode
     ## Get names of x and xs node for current and previous time point,
@@ -74,7 +82,7 @@ auxFStep <- nimbleFunction(
       }
     }
     else{
-      allPrevNodes <- names
+      allPrevNodes <- names # dummy value -- not used.
       prevXName <- names    
       thisXName <- names
       currInd <- 1
@@ -83,7 +91,7 @@ auxFStep <- nimbleFunction(
     isLast <- (iNode == length(nodes))
 
     auxFuncList <- nimbleFunctionList(auxFuncVirtual) 
-    allLatentNodes <- model$expandNodeNames(thisNode)
+    allLatentNodes <- model$expandNodeNames(calc_thisNode_self, sort = TRUE) ## They should already be sorted, but sorting here is a failsafe.
     numLatentNodes <- length(allLatentNodes)
     if(lookahead == "mean"){
        for(i in 1:numLatentNodes)
@@ -121,26 +129,32 @@ auxFStep <- nimbleFunction(
     if(notFirst){ 
       for(i in 1:m) {
         if(smoothing == 1){
+          ## smoothing is only allowed if saveAll is TRUE, so this should be ok.
+          ## i.e., mvEWSamples have been resampled.
           copy(mvEWSamples, mvWSamples, nodes = allPrevNodes,
                nodesTo = allPrevNodes, row = i, rowTo=i)
         }
-        copy(mvWSamples, model, prevXName, prevNode, row=i)        
-        calculate(model, prevDeterm)
+        copy(mvWSamples, model, prevXName, prevNode, row=i)
+        model$calculate(prevDeterm)
+        ##        calculate(model, prevDeterm)
+        ## The lookahead steps may include determ and stoch steps.
         if(lookahead == "mean"){
           for(j in 1:numLatentNodes)
               auxFuncList[[j]]$lookahead()
         }
         else
           auxFuncList[[1]]$lookahead()
-  
-        calculate(model, thisDeterm)
+
+        ##        calculate(model, thisDeterm)
         ## Get p(y_t+1 | x_t+1).
-        auxll[i] <- calculate(model, thisData)  
+        ##        auxll[i] <- calculate(model, thisData)
+        auxll[i] <- model$calculate(calc_thisNode_deps)
         if(is.nan(auxll[i])){
           return(-Inf)
         }
         ## Multiply by p(x_t+1 | x_t).
-        auxll[i] <- auxll[i]+calculate(model, thisNode) 
+##        auxll[i] <- auxll[i] + model$calculate(calc_thisNode_self)
+##        auxll[i] <- auxll[i]+calculate(model, thisNode) ## This line was included previously.  Removing it has only trivial impact on established test results.  Maybe try with more extensive test.
         ## Multiply by weight from time t.
         auxWts[i] <- auxll[i] + mvWSamples['wts',i][prevInd] 
       }
@@ -155,16 +169,20 @@ auxFStep <- nimbleFunction(
     }   
     for(i in 1:m) {
       if(notFirst) {
-        copy(mvWSamples, model, nodes = prevXName, nodesTo = prevNode,
+        copy(mvWSamples, model, nodes = prevXName, nodesTo = prevNode, 
              row = ids[i])
-        calculate(model, prevDeterm) 
+        model$calculate(prevDeterm)
+        ##calculate(model, prevDeterm) 
       }
       # Simulate from x_t+1 | x_t.
-      simulate(model, thisNode)  
-      copy(model, mvWSamples, nodes = thisNode, nodesTo = thisXName, row=i)
-      calculate(model, thisDeterm)
+      model$simulate(calc_thisNode_self)
+      #simulate(model, thisNode)
+      ## copy(model, mvWSamples, nodes = thisNode, nodesTo = thisXName, row=i)
+      copy(model, mvEWSamples, nodes = thisNode, nodesTo = thisXName, row=i) ## Changed mvWSamples to mvEWSamples
+      ##      calculate(model, thisDeterm)
       ## Get p(y_t+1 | x_t+1).
-      ll[i]  <- calculate(model, thisData)  
+     ## ll[i]  <- calculate(model, thisData)  
+      ll[i] <- model$calculate(calc_thisNode_deps)
       if(is.nan(ll[i])){
         return(-Inf)
       }
@@ -190,11 +208,24 @@ auxFStep <- nimbleFunction(
       ids <- resamplerFunctionList[[1]]$run(normWts)  
     }
     for(i in 1:m){
-      if(smoothing == 1){
-        copy(mvWSamples, mvEWSamples, nodes = allPrevNodes, 
-             nodesTo = allPrevNodes, row = ids[i], rowTo=i)
+      ## if(smoothing == 1){
+      ##   copy(mvWSamples, mvEWSamples, nodes = allPrevNodes, ## This will not be correct due to above change.
+      ##        nodesTo = allPrevNodes, row = ids[i], rowTo=i)
+      ## }
+     ##copy(mvWSamples, mvEWSamples, thisXName, thisXName, ids[i], i)
+     copy(mvEWSamples, mvWSamples, thisXName, thisXName, row = i,  rowTo = i) ## Corresponds to change above.  EWSamples no longer accurate.
+    }
+
+    ## Corresponds to change above.
+    if(saveAll | last) {
+      for(i in 1:m) {
+        if(smoothing == 1){
+          copy(mvWSamples, mvEWSamples, nodes = allPrevNodes, 
+               nodesTo = allPrevNodes, row = ids[i], rowTo=i)
+        }
+
+        copy(mvWSamples, mvEWSamples, thisXName, thisXName, ids[i], i)
       }
-      copy(mvWSamples, mvEWSamples, thisXName, thisXName, ids[i], i)
     }
     
     ##  Calculate likelihood p(y_t+1 | y_1:t) as in equation (3) of paper.
@@ -206,7 +237,6 @@ auxFStep <- nimbleFunction(
       outLL <- sum(exp(wts))/m
     }
     return(log(outLL))
-return(0)
   }, 
   methods = list(
     returnESS = function() {
@@ -223,9 +253,13 @@ return(0)
 #' @description Create an auxiliary particle filter algorithm for a given NIMBLE state space model.  
 #'
 #' @param model A NIMBLE model object, typically representing a state space model or a hidden Markov model.
-#' @param nodes A character vector specifying the latent model nodes 
-#'  over which the particle filter will stochastically integrate over to
-#'  estimate the log-likelihood function.  All provided nodes must be stochastic, and must come from the same variable in the model. 
+#' @param nodes  A character vector specifying the latent model nodes 
+#'  over which the particle filter will stochastically integrate to
+#'  estimate the log-likelihood function.  All provided nodes must be stochastic.
+#'  Can be one of three forms: a variable name, in which case all elements in the variable
+#'  are taken to be latent (e.g., 'x'); an indexed variable, in which case all indexed elements are taken
+#'  to be latent (e.g., 'x[1:100]' or 'x[1:100, 1:2]'); or a vector of multiple nodes, one per time point,
+#'  in increasing time order (e.g., c("x[1:2, 1]", "x[1:2, 2]", "x[1:2, 3]", "x[1:2, 4]")).
 #' @param control  A list specifying different control options for the particle filter.  Options are described in the details section below.
 #' @author  Nicholas Michaud
 #' @details 
@@ -316,28 +350,11 @@ buildAuxiliaryFilter <- nimbleFunction(
            "stratified", or "residual". ')
     
     ## Latent state info.
-    varName <- sapply(nodes, function(x){return(model$getVarNames(nodes = x))})
-    if(length(unique(varName))>1){
-      stop("all latent nodes must come from same variable")
-    }
-    varName <- varName[1]
-    info <- model$getVarInfo(varName)
-    latentDims <- info$nDim
-    if(is.null(timeIndex)){
-      timeIndex <- which.max(info$maxs)
-      timeLength <- max(info$maxs)
-      ## Check if multiple dimensions share the max index size.
-      if(sum(info$maxs==timeLength)>1) 
-        stop("unable to determine which dimension indexes time. 
-             Specify manually using the 'timeIndex' control list argument")
-    } else{
-      timeLength <- info$maxs[timeIndex]
-    }
-    nodes <- paste(info$varName,"[",rep(",", timeIndex-1), 1:timeLength,
-                   rep(",", info$nDim - timeIndex),"]", sep="")
+    nodes <- findLatentNodes(model, nodes, timeIndex)  
+
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
-    if(length(unique(dims)) > 1) stop('sizes or dimensions of latent states
-                                      varies')
+    if(length(unique(dims)) > 1)
+        stop('sizes or dimensions of latent states varies')
     vars <- model$getVarNames(nodes =  nodes) 
     
     my_initializeModel <- initializeModel(model, silent = silent)
@@ -359,7 +376,7 @@ buildAuxiliaryFilter <- nimbleFunction(
       type <- c(type, "double")
       size$wts <- length(dims)
       ## Only need one weight per particle (at time T) if smoothing == TRUE.
-      if(smoothing == T){
+      if(smoothing){
         size$wts <- 1 
       }
       mvWSamples  <- modelValues(modelValuesConf(vars = names,
@@ -394,6 +411,7 @@ buildAuxiliaryFilter <- nimbleFunction(
                                             resamplingMethod, silent)
     
     essVals <- rep(0, length(nodes))
+    lastLogLik <- -Inf
   },
   run = function(m = integer(default = 10000)) {
     returnType(double())
@@ -405,23 +423,28 @@ buildAuxiliaryFilter <- nimbleFunction(
     for(iNode in seq_along(auxStepFunctions)) {
       logL <- logL + auxStepFunctions[[iNode]]$run(m)
       essVals[iNode] <<- auxStepFunctions[[iNode]]$returnESS()
-      
+
       ## When all particles have 0 weight, likelihood becomes NAN
       ## this happens if top-level params have bad values - possible
       ## during pmcmc for example.
-      if(is.nan(logL)) return(-Inf)
-      if(logL == -Inf) return(logL) 
-      if(logL == Inf) return(-Inf) 
+      if(is.nan(logL)) {lastLogLik <<- -Inf; return(-Inf)}
+      if(logL == -Inf) {lastLogLik <<- logL; return(logL)} 
+      if(logL == Inf) {lastLogLik <<- -Inf; return(-Inf)} 
     }
-  
+    lastLogLik <<- logL
     return(logL)
   },
   methods = list(
+    getLastLogLik = function() {
+      return(lastLogLik)
+      returnType(double())
+    },
+    setLastLogLik = function(lll = double()) {
+      lastLogLik <<- lll
+    },
     returnESS = function(){
       returnType(double(1))
       return(essVals)
     }
   ),where = getLoadingNamespace()
 )
-
-

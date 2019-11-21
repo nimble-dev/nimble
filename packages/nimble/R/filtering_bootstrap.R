@@ -17,16 +17,29 @@ bootStepVirtual <- nimbleFunctionVirtual(
 # uses weights from previous time point to calculate likelihood estimate.
 
 bootFStep <- nimbleFunction(
-    name = 'bootFStep',
+  name = 'bootFStep',
   contains = bootStepVirtual,
-  setup = function(model, mvEWSamples, mvWSamples, nodes, iNode, names, saveAll,
-                   smoothing, resamplingMethod, silent = FALSE) {
+  setup = function(model,
+                   mvEWSamples,
+                   mvWSamples,
+                   nodes,
+                   iNode,
+                   names,
+                   saveAll,
+                   smoothing,
+                   resamplingMethod,
+                   silent = FALSE) {
     notFirst <- iNode != 1
+    modelSteps <- particleFilter_splitModelSteps(model, nodes, iNode, notFirst)
+    prevDeterm <- modelSteps$prevDeterm
+    calc_thisNode_self <- modelSteps$calc_thisNode_self
+    calc_thisNode_deps <- modelSteps$calc_thisNode_deps
+    
     prevNode <- nodes[if(notFirst) iNode-1 else iNode]
     thisNode <- nodes[iNode]
-    prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
-    thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
-    thisData   <- model$getDependencies(thisNode, dataOnly = TRUE)
+    ## prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
+    ## thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
+    ## thisData   <- model$getDependencies(thisNode, dataOnly = TRUE)
     ## t is the current time point.
     t <- iNode
     ## Get names of xs node for current and previous time point (used in copy)
@@ -36,7 +49,7 @@ bootFStep <- nimbleFunction(
       thisXName <- thisNode
       currInd <- t
       prevInd <- t-1
-      if(smoothing == T){
+      if(isTRUE(smoothing)){
         currInd <- 1
         prevInd <- 1
       }
@@ -64,7 +77,9 @@ bootFStep <- nimbleFunction(
     if(resamplingMethod == 'systematic')
       resamplerFunctionList[[1]] <- systematicResampleFunction()
   },
-  run = function(m = integer(), threshNum = double(), prevSamp = logical()) {
+  run = function(m = integer(),
+                 threshNum = double(),
+                 prevSamp = logical()) {
     returnType(double(1))
     wts <- numeric(m, init=FALSE)
     ids <- integer(m, 0)
@@ -78,18 +93,18 @@ bootFStep <- nimbleFunction(
                nodesTo = allPrevNodes, row = i, rowTo=i)
         }
         copy(mvEWSamples, model, nodes = prevXName, nodesTo = prevNode, row = i)
-        calculate(model, prevDeterm) 
+        model$calculate(prevDeterm) 
       }
-      simulate(model, thisNode)
+      model$simulate(calc_thisNode_self)
+      ## The logProbs of calc_thisNode_self are, correctly, not calculated.
       copy(model, mvWSamples, nodes = thisNode, nodesTo = thisXName, row = i)
-      calculate(model, thisDeterm)
-      wts[i]  <- calculate(model, thisData)
+      wts[i]  <- model$calculate(calc_thisNode_deps)
       if(is.nan(wts[i])){
         out[1] <- -Inf
         out[2] <- 0
         return(out)
       }
-      if(prevSamp == 0){
+      if(prevSamp == 0){ ## defaults to 1 for first step and then comes from the previous step
         wts[i] <- wts[i] + mvWSamples['wts',i][prevInd]
         llEst[i] <- wts[i]
       }
@@ -165,9 +180,13 @@ bootFStep <- nimbleFunction(
 #'
 #' @param model A nimble model object, typically representing a state 
 #'  space model or a hidden Markov model.
-#' @param nodes A character vector specifying the latent model nodes 
-#'  over which the particle filter will stochastically integrate over to
-#'  estimate the log-likelihood function.  All provided nodes must be stochastic, and must come from the same variable in the model. 
+#' @param nodes  A character vector specifying the latent model nodes 
+#'  over which the particle filter will stochastically integrate to
+#'  estimate the log-likelihood function.  All provided nodes must be stochastic.
+#'  Can be one of three forms: a variable name, in which case all elements in the variable
+#'  are taken to be latent (e.g., 'x'); an indexed variable, in which case all indexed elements are taken
+#'  to be latent (e.g., 'x[1:100]' or 'x[1:100, 1:2]'); or a vector of multiple nodes, one per time point,
+#'  in increasing time order (e.g., c("x[1:2, 1]", "x[1:2, 2]", "x[1:2, 3]", "x[1:2, 4]")).
 #' @param control  A list specifying different control options for the particle filter.  Options are described in the details section below.
 #' @author Daniel Turek and Nicholas Michaud
 #' @details 
@@ -246,33 +265,14 @@ buildBootstrapFilter <- nimbleFunction(
                                  'residual')))
        stop('resamplingMethod must be one of: "default", "multinomial", "systematic",
             "stratified", or "residual". ')
-    #latent state info
-    varName <- sapply(nodes, function(x){return(model$getVarNames(nodes = x))})
-    if(length(unique(varName))>1){
-      stop("all latent nodes must come from same variable")
-    }
-    varName <- varName[1]
-    info <- model$getVarInfo(varName)
-    latentDims <- info$nDim
-    if(is.null(timeIndex)){
-      timeIndex <- which.max(info$maxs)
-      timeLength <- max(info$maxs)
-      ## Check if multiple dimensions share the max index size.
-      if(sum(info$maxs==timeLength)>1)
-        stop("unable to determine which dimension indexes time. 
-             Specify manually using the 'timeIndex' control list argument")
-    } else{
-      timeLength <- info$maxs[timeIndex]
-    }
-    
-    my_initializeModel <- initializeModel(model, silent = silent)
-    
-    nodes <- paste(info$varName,"[",rep(",", timeIndex-1), 1:timeLength,
-                   rep(",", info$nDim - timeIndex),"]", sep="")
+    ## latent state info
+    nodes <- findLatentNodes(model, nodes, timeIndex)  
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
     if(length(unique(dims)) > 1) stop('sizes or dimensions of latent states
                                       varies')
     vars <- model$getVarNames(nodes =  nodes)  
+
+    my_initializeModel <- initializeModel(model, silent = silent)
     
     if(0>thresh || 1<thresh || !is.numeric(thresh)) stop('thresh must be between
                                                          0 and 1')
@@ -329,6 +329,7 @@ buildBootstrapFilter <- nimbleFunction(
                                               silent) 
     }
     essVals <- rep(0, length(nodes))
+    lastLogLik <- -Inf
   },
   run = function(m = integer(default = 10000)) {
     returnType(double())
@@ -345,13 +346,21 @@ buildBootstrapFilter <- nimbleFunction(
       logL <- logL + out[1]
       prevSamp <- out[2]
       essVals[iNode] <<- bootStepFunctions[[iNode]]$returnESS()
-      if(logL == -Inf) return(logL)
-      if(is.nan(logL)) return(-Inf)
-      if(logL == Inf) return(-Inf) 
+      if(logL == -Inf) {lastLogLik <<- logL; return(logL)} 
+      if(is.nan(logL)) {lastLogLik <<- -Inf; return(-Inf)}
+      if(logL == Inf) {lastLogLik <<- -Inf; return(-Inf)} 
     }
+    lastLogLik <<- logL
     return(logL)
   },
   methods = list(
+    getLastLogLik = function() {
+      return(lastLogLik)
+      returnType(double())
+    },
+    setLastLogLik = function(lll = double()) {
+      lastLogLik <<- lll
+    },
     returnESS = function(){
       returnType(double(1))
       return(essVals)
