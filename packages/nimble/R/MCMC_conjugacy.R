@@ -1227,10 +1227,16 @@ cc_checkLinearity <- function(expr, targetNode) {
 
     ## Look for individual nodes in vectorized use or other strange cases.
     if(expr[[1]] == 'structureExpr') {
-        if(sum(targetNode == sapply(expr[2:length(expr)], deparse)) == 1 &&
-           sum(sapply(expr[2:length(expr)], function(x)
-                      cc_nodeInExpr(targetNode, x))) == 1)
-            return(list(offset = expr, scale = 1)) else return(NULL)
+        ## Can't have target appear multiple times.
+	if(sum(sapply(expr[2:length(expr)], function(x)
+            cc_nodeInExpr(targetNode, x))) != 1)
+            return(NULL)
+        wh <- which(sapply(expr[2:length(expr)], function(x)
+            cc_nodeInExpr(targetNode, x)))
+        checkLinearityStrucExpr <- cc_checkLinearity(expr[[wh+1]], targetNode)
+        if(is.null(checkLinearityStrucExpr)) return(NULL)
+        return(list(offset = cc_combineExprsAddition(expr, checkLinearityStrucExpr$offset),  # was expr?,
+                    scale = checkLinearityStrucExpr$scale))
     }
 
     ## we'll just have to skip over asRow() and asCol(), so they don't mess up the linearity check
