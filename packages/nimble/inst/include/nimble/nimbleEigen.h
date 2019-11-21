@@ -1499,7 +1499,7 @@ public: \
   const DerivedA6 &Arg6;\
   unsigned int size1, size2, size3, size4, outputSize;			\
   FUNNAME ## RecyclingRuleClass(const DerivedA1 &A1, const DerivedA2 &A2, const DerivedA3 &A3, const DerivedA4 &A4, const DerivedA5 &A5, const DerivedA6 &A6 ) : \
-  Arg1(A1), Arg2(A2), Arg3(A3), Arg4(A4), Arg5(A5), Arg6(6)		\
+  Arg1(A1), Arg2(A2), Arg3(A3), Arg4(A4), Arg5(A5), Arg6(A6)		\
 {\
   outputSize = size1 = nimble_size_impl<DerivedA1>::getSize(Arg1); \
   size2 = nimble_size_impl<DerivedA2>::getSize(Arg2); \

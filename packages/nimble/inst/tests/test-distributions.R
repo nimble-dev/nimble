@@ -597,9 +597,6 @@ test_that("recycling behavior from R and within nimbleFunctions for non-R-native
     expect_identical(q[1:3], q[4:6])
 
     ## Use of recycling
-    ## On dev machines, this is fine, but on Travis,
-    ## pt_nonstandard seems to set log.p = TRUE if using recycling
-    ## Commenting out the expect_ for now
     f <- nimbleFunction(
         run = function(x = double(1), theta = double(1)) {
             dd <- dt_nonstandard(x, 3, theta, 3.5)
@@ -610,18 +607,7 @@ test_that("recycling behavior from R and within nimbleFunctions for non-R-native
         })
     cf <- compileNimble(f)
     out <- cf(x[1:3], param) 
-    ## expect_identical(out, c(d, p, q), info = 'dt_nonstandard nf')
-
-    ## Without recycling this is fine on Travis.
-    f <- nimbleFunction(
-        run = function(x = double(0), theta = double(0)) {
-            pp <- pt_nonstandard(x, 3, theta, 3.5)
-            returnType(double(0))
-            return(pp)
-        })
-    cf <- compileNimble(f)
-    expect_identical(cf(x[1], param[1]), pt_nonstandard(x[1], 3, param[1], 3.5),
-                     info = 'dt_nonstandard nf no recycle')
+    expect_identical(out, c(d, p, q), info = 'dt_nonstandard nf')
 
     ## dexp_nimble
     set.seed(1)
