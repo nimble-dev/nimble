@@ -642,13 +642,19 @@ test_that("warning when RHS only nodes used as dynamic indexes", {
                    "Detected use of non-constant indexes")
     expect_warning(m <- nimbleModel(code, data = list(k = rep(1,3))),
                    "Detected use of non-constant indexes")
-    expect_silent(m <- nimbleModel(code, constants = list(k = rep(1,3))))
-    expect_message(m <- nimbleModel(code, constants = list(k = rep(1,3))))
+    ## Hack, but this allows detection of lack of warning given that
+    ## Travis and non-Travis behave differently in terms of silent vs. message.
+    warnOptions <- options()$warn
+    options(warn = 2)
+    ## if this were to warn, it would cause error
+    m <- nimbleModel(code, constants = list(k = rep(1,3))))
+    options(warn = warnOptions)
 
     myfun <- nimbleFunction(run = function(x = double()) {
         returnType(double())
         return(1)
     })
+    temporarilyAssignInGlobalEnv(myfun)
     
     code <- nimbleCode({
         for(i in 1:3) 
