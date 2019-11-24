@@ -265,7 +265,6 @@ sampler_RJ_toggled <- nimbleFunction(
 #' 
 configureRJ <- function(conf, targetNodes, indicatorNodes = NULL, priorProb = NULL, control = list(mean = NULL, scale = NULL, fixedValue = NULL)) {
     model <- conf$model
-    targetNodes <- model$expandNodeNames(targetNodes)
     nNodes <- length(targetNodes)
     fixedValue <- if(!is.null(control$fixedValue)) control$fixedValue else 0
     mean       <- if(!is.null(control$mean))       control$mean       else 0
@@ -326,7 +325,6 @@ configureRJ <- function(conf, targetNodes, indicatorNodes = NULL, priorProb = NU
     }
     ##
     if(indicatorFlag) {   ## indicator variables; ues RJ_indicator sampler
-        indicatorNodes <- model$expandNodeNames(indicatorNodes)
         if(length(indicatorNodes) != nNodes)
             stop("configureRJ: Length of 'indicatorNodes' vector must match 'targetNodes' length.")
         for(i in 1:nNodes) {
