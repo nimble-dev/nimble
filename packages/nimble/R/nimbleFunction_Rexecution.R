@@ -1121,14 +1121,14 @@ declare <- function(name, def){
 #'
 #' @param x vector of values
 #'
-#' @aliases is.nan.vec
+#' @aliases any_nan
 #' @author NIMBLE Development Team
 #' @export
-is.na.vec <- function(x) any(is.na(x))
+any_na <- function(x) any(is.na(x))
 
-#' @rdname is.na.vec
+#' @rdname any_na
 #' @export
-is.nan.vec <- function(x) any(is.nan(x))
+any_nan <- function(x) any(is.nan(x))
 
 #' @export
 nimRound <- round
