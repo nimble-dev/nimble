@@ -1,16 +1,16 @@
 
-## configureRJ:           modifies the MCMC configuration object, to make use of the following RJ samplers:
-## sampler_RJ_prior:      proposes addition/removal for variable of interest, using a specified prior probability
-## sampler_RJ_indicator:  proposes transitions of a binary indicator variable, corresponding to a variable of interest
-## sampler_RJ_toggled:    samples the variable of interest using the original sampling configuration, when variable is "in the model"
+## configureRJ:            modifies the MCMC configuration object, to make use of the following RJ samplers:
+## sampler_RJ_fixed_prior: proposes addition/removal for variable of interest, using a specified prior probability
+## sampler_RJ_indicator:   proposes transitions of a binary indicator variable, corresponding to a variable of interest
+## sampler_RJ_toggled:     samples the variable of interest using the original sampling configuration, when variable is "in the model"
 
 
 
 #' @rdname RJ_samplers
 #' @export
 #'
-sampler_RJ_prior <- nimbleFunction(
-    name = 'sampler_RJ_prior',
+sampler_RJ_fixed_prior <- nimbleFunction(
+    name = 'sampler_RJ_fixed_prior',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -284,7 +284,7 @@ configureRJ <- function(conf, targetNodes, indicatorNodes = NULL, priorProb = NU
     ## fixedValue can be used only with priorProb
     if(indicatorFlag && any(fixedValue != 0)) warning("configureRJ: 'fixedValue' can be provided only when using 'priorProb'; it will be ignored.")
     ##
-    if(priorFlag) {    ## no indicator variables; ues RJ_prior sampler
+    if(priorFlag) {    ## no indicator variables; ues RJ_fixed_prior sampler
         ## check that priorProb values are in [0,1]
         if(any(priorProb < 0 | priorProb > 1)) stop("configureRJ: elements in priorProb must be probabilities in [0,1].")
         ## if one value for prior is given, it is used for each variable
@@ -305,7 +305,7 @@ configureRJ <- function(conf, targetNodes, indicatorNodes = NULL, priorProb = NU
                     warning(paste0("configureRJ: There are no samplers for '", nodeAsScalar[j],"'. Skipping it."))
                     next
                 }
-                else if(any(sapply(currentConf,'[[','name') == 'RJ_prior' |
+                else if(any(sapply(currentConf,'[[','name') == 'RJ_fixed_prior' |
                                 sapply(currentConf,'[[','name') == 'RJ_indicator' |
                                     sapply(currentConf,'[[','name') == 'RJ_toggled')) {
                     stop(paste0("configureRJ: node '", nodeAsScalar[j],"' is already configured for reversible jump."))
@@ -314,7 +314,7 @@ configureRJ <- function(conf, targetNodes, indicatorNodes = NULL, priorProb = NU
                     warning(paste0("configureRJ: There is more than one sampler for '", nodeAsScalar[j], "'. Only the first will be used by RJ_toggled sampler, and others will be removed."))
                 ## substitute node sampler
                 conf$removeSamplers(nodeAsScalar[j])
-                conf$addSampler(type = sampler_RJ_prior,
+                conf$addSampler(type = sampler_RJ_fixed_prior,
                                     target = nodeAsScalar[j],
                                     control = nodeControl)
                 conf$addSampler(type = sampler_RJ_toggled,
@@ -343,7 +343,7 @@ configureRJ <- function(conf, targetNodes, indicatorNodes = NULL, priorProb = NU
                 ## check on node configuration
                 if(length(currentConf) == 0) {
                     warning(paste0("configureRJ: There are no samplers for '", nodeAsScalar[j],"'. Skipping it."))
-                } else if(any(sapply(currentConf,'[[','name') == 'RJ_prior' |
+                } else if(any(sapply(currentConf,'[[','name') == 'RJ_fixed_prior' |
                                   sapply(currentConf,'[[','name') == 'RJ_indicator' |
                                       sapply(currentConf,'[[','name') == 'RJ_toggled')) {
                     stop(paste0("configureRJ: Node '", nodeAsScalar[j],"' is already configured for reversible jump."))
