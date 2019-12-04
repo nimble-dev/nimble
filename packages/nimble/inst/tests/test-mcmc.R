@@ -1778,7 +1778,7 @@ test_that('MCMC accumulators', {
     Rmodel <- nimbleModel(code, constants, data, inits)
     ##
     conf <- configureMCMC(Rmodel)
-    conf$setAccumulators(c('x', 'y', 'v', 'arr'))
+    conf$setAccumulators(c('x', 'y', 'v', 'arr'), print = FALSE)
     Rmcmc <- buildMCMC(conf)
     ##
     Cmodel <- compileNimble(Rmodel)
