@@ -11,8 +11,12 @@ buildLiuWestFilter(model, nodes, params = NULL, control = list())
 space model or a hidden Markov model}
 
 \item{nodes}{A character vector specifying the latent model nodes 
-over which the particle filter will stochastically integrate over to
-estimate the log-likelihood function.  All provided nodes must be stochastic, and must come from the same variable in the model.}
+over which the particle filter will stochastically integrate to
+estimate the log-likelihood function.  All provided nodes must be stochastic.
+Can be one of three forms: a variable name, in which case all elements in the variable
+are taken to be latent (e.g., 'x'); an indexed variable, in which case all indexed elements are taken
+to be latent (e.g., 'x[1:100]' or 'x[1:100, 1:2]'); or a vector of multiple nodes, one per time point,
+in increasing time order (e.g., c("x[1:2, 1]", "x[1:2, 2]", "x[1:2, 3]", "x[1:2, 4]")).}
 
 \item{params}{A character vector specifying the top-level parameters to estimate the posterior distribution of. 
  If unspecified, parameter nodes are specified as all stochastic top level nodes which
@@ -73,6 +77,7 @@ Liu, J., and M. West. (2001). Combined parameter and state estimation in simulat
 \seealso{
 Other particle filtering methods: \code{\link{buildAuxiliaryFilter}},
   \code{\link{buildBootstrapFilter}},
-  \code{\link{buildEnsembleKF}}
+  \code{\link{buildEnsembleKF}},
+  \code{\link{buildIteratedFilter2}}
 }
 
