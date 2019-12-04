@@ -629,27 +629,35 @@ In many cases one would want $\theta$ to be the set of all stochastic nodes in t
 
 The `runCrossValidate` function in NIMBLE performs k-fold cross-validation on a `nimbleModel` fit via MCMC.  More information can be found by calling `help(runCrossValidate)`. 
 
-## Reversible Jump MCMC for variable selection {#sec:rjmcmc}
+## Variable selection using Reversible Jump MCMC {#sec:rjmcmc}
 
-Reversible Jump MCMC [@Green_1995] (RJMCMC) is a general framework for MCMC simulation in which the dimension of the parameter space can vary between iterates of the Markov chain. The reversible jump sampler can be viewed as an extension of the Metropolis-Hastings algorithm onto more general state spaces.
+A common method for Bayesian variable selection in regression-style problems is to define a space of different models and have MCMC sample over the models as well as the parameters for each model.  The models differ in which explanatory variables are included.  Often this idea is implemented in the BUGS language by writing the largest possible model and including indicator variables to turn regression parameters off and on (see model code below for an example of how indicator variables can be used).  Foramally, that approach doesn't sample between different models, instead embedding the models in one large model.  However, that approach can result in poor mixing and require compromises in choices of prior distributions because a given regression parameter will sample from its prior when the corresponding indicator is 0.  It is also computationally wasteful, because sampling effort will be spent on a coefficient even if it has no effect because the corresponding indicator is 0.
 
-A common use case for RJMCMC is for variable selection in regression-style problems, where the dimension of the parameter space varies as variables are included and excluded from the regression specification. Variable selection can be set up in NIMBLE without using RJMCMC by using indicator variables to turn regression parameters off and on (see model code below for an example of how indicator variables can be used). However, with that approach MCMC sampling can be inefficient because a given regression parameter can wander widely in the parameter space when the corresponding variable is not in the model if the parameter has a non-informative prior. RJMCMC sampling results in the MCMC not sampling the regression coefficients for variables for iterations where the variables are not in the model.  
+A different view of the problem is that the different combinations of coefficients represent models of different dimensions.  Reversible Jump MCMC [@Green_1995] (RJMCMC) is a general framework for MCMC simulation in which the dimension of the parameter space can vary between iterates of the Markov chain. The reversible jump sampler can be viewed as an extension of the Metropolis-Hastings algorithm onto more general state spaces.  NIMBLE provides an implementation of RJMCMC for variable selection that requires the user to write the largest model of interest and supports use of indicator variables but formally uses RJMCMC sampling for better mixing and efficiency.  When a coefficient is not in the model (or its indicator is 0), it will not be sampled, and it will therefore not follow its prior in that case.
 
-Given two models $M_1$ and $M_2$ of possibly different dimensions, the core idea of RJMCMC is to remove the difference in the dimensions of models $M_1$ and $M_2$ by supplementing the corresponding parameters $\boldsymbol{\theta_1}$ and $\boldsymbol{\theta_2}$ with auxiliary variables $\boldsymbol{u}_{1 \rightarrow 2}$ and $\boldsymbol{u}_{2 \rightarrow 1}$ such that $(\boldsymbol{\theta_1}, \boldsymbol{u}_{1 \rightarrow 2})$ and $(\boldsymbol{\theta_2}, \boldsymbol{u}_{2 \rightarrow 1})$
+In technical detail, given two models $M_1$ and $M_2$ of possibly different dimensions, the core idea of RJMCMC is to remove the difference in the dimensions of models $M_1$ and $M_2$ by supplementing the corresponding parameters $\boldsymbol{\theta_1}$ and $\boldsymbol{\theta_2}$ with auxiliary variables $\boldsymbol{u}_{1 \rightarrow 2}$ and $\boldsymbol{u}_{2 \rightarrow 1}$ such that $(\boldsymbol{\theta_1}, \boldsymbol{u}_{1 \rightarrow 2})$ and $(\boldsymbol{\theta_2}, \boldsymbol{u}_{2 \rightarrow 1})$
 are in bijection, $(\boldsymbol{\theta_2}, \boldsymbol{u}_{2 \rightarrow 1}) = \Psi(\boldsymbol{\theta_1}, \boldsymbol{u}_{1 \rightarrow 2})$. The corresponding Metropolis-Hastings acceptance probability is generalized accounting for the proposal density for the auxiliary variables.  
 
-NIMBLE implements RJMCMC for variable selection using a univariate normal distribution as proposal density and supports two types of model specifications, depending on whether or not indicator variables are included. A reversible jump sampler can be added to an MCMC configuration object by calling the function `configureRJ`. The `configureRJ` function modifies the MCMC configuration to (1) assign samplers that turn on and off variables in the model and (2) modify the existing samplers for the regression coefficients to use 'toggled' versions that are only used when the corresponding variable is currently in the model. In the case where indicator variables are included in the model, sampling to turn on and off variables is done using `RJ_indicator` samplers and in the case where indicator variables are not included, sampling is done using `RJ` samplers. 
+NIMBLE implements RJMCMC for variable selection using a univariate normal distribution centered on 0 (or some fixed value) as the proposal density for parameters being added to the model.  Two ways to set up models for RJMCMC are supported, which differ by whether the inclusion probabilities for each parameter are assumed known or must be written in the model:
+
+  - If the inclusion probabilities are assumed known, then RJMCMC may be used with regular model code, i.e. model code written without heed to variable selection.
+  - If the inclusion probability is a parameter in the model, perhaps with its own prior, then RJMCMC requires that indicator variables be written in the model code.  The indicator variables will be sampled using RJMCMC, but otherwise they are like any other nodes in the model.
+  
+The steps to set up variable selection using RJCMCM are:
+
+  1. Write the model with indicator variables if needed.
+  2. Configure the MCMC as usual with `configureMCMC`.
+  3. Modify the resulting MCMC configuration object with `configureRJ`.
+
+The `configureRJ` function modifies the MCMC configuration to (1) assign samplers that turn on and off variable in the model and (2) modify the existing samplers for the regression coefficients to use 'toggled' versions.  The toggled versions invoke the samplers only when corresponding variable is currently in the model. In the case where indicator variables are included in the model, sampling to turn on and off variables is done using `RJ_indicator` samplers. In the case where indicator variables are not included, sampling is done using `RJ_fixed_prior` samplers. 
 
 <!--  See `help(configureRJ)` for details. -->
-
-The `RJ` and `RJ_indicator` both use a univariate normal distribution as proposal density, whose mean and scale can be provided in the `control` list argument of `configureRJ` (by default `mean = 0` and `scale = 1`). An optional argument called `fixedValue` can be provided in the non-indicator setting; this indicates the value taken by nodes in `targetNodes` when out of the model (by default 0). 
-All arguments in `control` can accept one value that will be used for all samplers assigned to nodes `targetNodes`; alternatively each sampler can be customized by passing a vector of values whose length must equal the length of `targetNodes`.
 
 In the following we provide an example for the two different model specifications. 
 
 ### Using indicator variables {#sec:rjmcmc-indicator}
 
-Here we consider a normal linear regression in which two covariates `x1` and `x2` are given and only `x1` has to be included in the model.  
+Here we consider a normal linear regression in which two covariates `x1` and `x2` are candidates to be included in the model.  The two corresponding coefficients are `beta1` and `beta2`.  The indicator variables are `z1` and `z2`, and their inclusion probability is `psi`.  As described below, one can also use vectors for a set of coefficients and corresponding indicator variables.
 
 ```{r indicators, results = "hide"}
 ## Linear regression with intercept and two covariates
@@ -678,47 +686,48 @@ Y <- rnorm(N, 1.5 + 2 * x1, sd = 1)
 
 ## build the model and configure default MCMC
 
-rIndicatorModel <- nimbleModel(code, constants = list(N = N),
-                               data = list(Y = Y, x1 = x1, x2 = x2), 
-                               inits=  list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y),
-                               z2 = 1, z1 = 1, psi = 0.5))
+RJexampleModel <- nimbleModel(code, constants = list(N = N),
+                              data = list(Y = Y, x1 = x1, x2 = x2), 
+                              inits = list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y),
+                              z2 = 1, z1 = 1, psi = 0.5))
 
-indicatorModelConf <- configureMCMC(rIndicatorModel)
+RJexampleConf <- configureMCMC(RJexampleModel)
 ```
 
 ```{r print samplers}
-## print NIMBLE default samplers
-indicatorModelConf$printSamplers()
+## For illustration, look at the default sampler assignments
+RJexampleConf$printSamplers()
 ```
 
-At this point we may want to modify the current configuration by adding a reversible jump sampler to allow for selection on `beta[1]` and `beta[2]` variables, which can be done by calling the `configureRJ` function.
+At this point we can modify the MCMC configuration object, `RJexampleConf`, to use reversible jump samplers for selection on `beta1` and `beta2`.
 
 
 ```{r indicators: configureRJ, results = "hide"}
-configureRJ(mcmcConf = indicatorModelConf,     
+configureRJ(mcmcConf = RJexampleConf,     
             targetNodes = c("beta1", "beta2"),
             indicatorNodes = c('z1', 'z2'),
-            control = list(mean = c(1, 0), scale = 2))
+            control = list(mean = c(0, 0), scale = 2))
 ```
 
-The `targetNodes` argument should indicate the nodes for which we want to do variable selection. `targetNodes` will be expanded as described in Section \@ref(sec:arbitr-coll-nodes). I.e., either `targetNodes = "beta"` or `targetNodes = c("beta[1]", "beta[2]")` will assign a RJ sampler to each of `beta[1]` and `beta[2]` if `beta` is a vector of two values.
-The same applies to `indicatorNodes`, which provides the indicator variables paired with nodes in `targetNodes`. Notice that `indicatorNodes` must be provided consistently with respect to `targetNodes`. E.g. if `targetNodes = "beta"` is a vector, then one should have `indicatorNodes = "z"` with `z` a vector as well; something like `indicatorNodes = c("z1", "z2")` will throw an error.
+The `targetNodes` argument gives the coefficients (nodes) for which we want to do variable selection.  The `indicatorNodes` gives the corresponding indicator nodes, ordered to match `targetNodes`.  The `control` list gives the means and scale (standard deviation) for normal reversible jump proposals for `targetNodes`.  The means will typically be 0  (by default `mean = 0` and `scale = 1`), but they could be anything.   An optional `control` element called `fixedValue` can be provided in the non-indicator setting; this gives the value taken by nodes in `targetNodes` when they are out of the model (by default, `fixedValue` is 0). 
+All  `control` elements can be scalars or vectors.  A scalar values will be used for all `targetNodes`.  A vector value must be of equal length as `targetNodes` and will be used in order.
 
+To use RJMCMC on a vector of coefficients with a corresponding vector of indicator variables, simply provide the variable names for `targetNodes` and `indicatorNodes`.  For example, `targetNodes = "beta"` is equivalent to `targetNodes = c("beta[1]", "beta[2]")` and `indicatorNodes = "z"` is equivalent to `indicatorNodes = c("z[1]", "z[2]")`.   Expansion of variable names into a vector of node names will occur  as described in Section \@ref(sec:arbitr-coll-nodes).   When using this method, *both* arguments must be provided as variable names to be expanded.
 
+Next we can see the result of `configureRJ` by printing the modified list of samplers:
 ```{r indicators: print samplers after configureRJ}
-indicatorModelConf$printSamplers()
+RJexampleConf$printSamplers()
 ```
 
-An `RJ_indicator` sampler is assigned to `z[1]` and `z[2]` in place of the `binary` sampler, while the samplers for `beta[1]`and `beta[2]` have been changed to  `toggled` samplers, which still use the default `conjugate_dnorm_dnorm` sampler but only when the corresponding indicator variable is equal to $1$, thereby including the coefficient in the model. The two `RJ_indicator` samplers have different means for the proposal distribution but the same scale, as given in the `control` list of `configureRJ`.
+An `RJ_indicator` sampler was assigned to each of `z[1]` and `z[2]` in place of the `binary` sampler, while the samplers for `beta[1]`and `beta[2]` have been changed to  `RJ_toggled` samplers.  The latter samplers contain the original samplers, in this case `conjugate_dnorm_dnorm` samplers, and use them only when the corresponding indicator variable is equal to $1$ (i.e., when the coefficient is in the model). 
 
-Notice that the order of the sampler has changed, since `configureRJ` calls `removeSampler` for nodes in `targetNodes` and `indicatorNodes`, and subsequently `addSampler`, which appends the sampler to the end of current sampler list. Order can be modified by using `setSamplers`.
+Notice that the order of the samplers has changed, since `configureRJ` calls `removeSampler` for nodes in `targetNodes` and `indicatorNodes`, and subsequently `addSampler`, which appends the sampler to the end of current sampler list. Order can be modified by using `setSamplers`.
 
-Also note that `configureRJ` modifies the existing sampler and returns `NULL`.
+Also note that `configureRJ` modifies the MCMC configuration (first argument) and returns `NULL`.
 
 ### Without indicator variables {#sec:rjmcmc-no-indicator}
 
-
-We consider the same regression setting, but writing the model without the use of indicator variables. 
+We consider the same regression setting, but without the use of indicator variables and with fixed probabilities of including each coefficient in the model.
 
 ```{r no_indicators, results = "hide"}
 
@@ -735,23 +744,23 @@ code <- nimbleCode({
 })
 
 ## build the model
-rNoIndicatorModel <- nimbleModel(code, constants = list(N = N),
+RJexampleModel2 <- nimbleModel(code, constants = list(N = N),
                                data = list(Y = Y, x1 = x1, x2 = x2), 
                                inits=  list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y)))
 
-noIndicatorModelConf <- configureMCMC(rNoIndicatorModel)
+RJexampleConf2 <- configureMCMC(RJexampleModel2)
 ```
 
 ```{r no indicators: print samplers}
 ## print NIMBLE default samplers
-noIndicatorModelConf$printSamplers()
+RJexampleConf2$printSamplers()
 ```
 
 In this case, since there are no indicator variables, we need to pass to `configureRJ` the prior inclusion probabilities for each node in `targetNodes`, by specifying either one common value or a vector of values for the argument `priorProb`. Notice that this case does not allow for a stochastic prior. 
 
 
 ```{r no indicators: configureRJ, results = "hide"}
-configureRJ(mcmcConf = noIndicatorModelConf,     
+configureRJ(mcmcConf = RJexampleConf2,     
             targetNodes = c("beta1", "beta2"),
             priorProb = 0.5,
             control = list(mean = 0, scale = 2, fixedValue = c(1.5, 0)))
@@ -759,12 +768,12 @@ configureRJ(mcmcConf = noIndicatorModelConf,
 
 ```{r no indicators: print samplers after configureRJ}
 ## print samplers after configureRJ
-noIndicatorModelConf$printSamplers()
+RJexampleConf2$printSamplers()
 ```
 
-Since there are no indicator variables, the `RJ` sampler is assigned directly to `beta[1]` and `beta[2]` along with the `toggled` sampler, which still uses the default sampler for the node, but only if the corresponding variable is in the model at a given iteration. In addition in this case one can set the coefficient to a value different from $0$ via the `fixedValue` argument in the `control` list. 
+Since there are no indicator variables, the `RJ_fixed_prior` sampler is assigned directly to each of `beta[1]` and `beta[2]` along with the `RJ_toggled` sampler.  The former sets a coefficient to its `fixedValue` when it is out of the model.  The latter invokes the  regular sampler for the coefficient  only if it is in the model at a given iteration. 
 
-If `fixedValue` is given when using `indicatorNodes` the values provided in `fixedValue` are ignored.  However the same behavior can be obtained in this situation, using a different model specification. For example, the model in \@ref(sec:rjmcmc-indicator) can be modified to have `beta1` equal to $1.5$ when in the model as follows:
+If `fixedValue` is given when using `indicatorNodes` the values provided in `fixedValue` are ignored.  However the same behavior can be obtained in this situation, using a different model specification. For example, the model in \@ref(sec:rjmcmc-indicator) can be modified to have `beta1` equal to $1.5$ when not in the model as follows:
 
 ```{r indicators v2, results = "hide", eval = FALSE}
   for(i in 1:N) {
