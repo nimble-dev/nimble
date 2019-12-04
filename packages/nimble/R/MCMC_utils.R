@@ -364,6 +364,60 @@ mcmc_checkWAICmonitors <- function(model, monitors, dataNodes) {
 }
 
 
+accumulator_BASE <- nimbleFunctionVirtual(
+    methods = list( setToZero = function() {} )
+)
+
+accumulator_scalar <- nimbleFunction(
+    name = 'accumulator_scalar',
+    contains = accumulator_BASE,
+    setup = function(model, mv, var) { },
+    run = function() {
+        mv[var, 1][1] <<- mv[var, 1][1] + model[[var]]
+        mv[var, 2][1] <<- mv[var, 2][1] + model[[var]]^2
+    },
+    methods = list(
+        setToZero = function() {
+            mv[var, 1][1] <<- 0
+            mv[var, 2][1] <<- 0
+        }
+    )
+)
+
+accumulator_vector <- nimbleFunction(
+    name = 'accumulator_vector',
+    contains = accumulator_BASE,
+    setup = function(model, mv, var) { },
+    run = function() {
+        mv[var, 1] <<- mv[var, 1] + model[[var]]
+        mv[var, 2] <<- mv[var, 2] + model[[var]]^2
+    },
+    methods = list(
+        setToZero = function() {
+            mv[var, 1] <<- model[[var]] * 0
+            mv[var, 2] <<- model[[var]] * 0
+        }
+    )
+)
+
+accumulator_array2 <- nimbleFunction(
+    name = 'accumulator_array2',
+    contains = accumulator_BASE,
+    setup = function(model, mv, var) { },
+    run = function() {
+        mv[var, 1] <<- mv[var, 1] + model[[var]]
+        mv[var, 2] <<- mv[var, 2] + model[[var]]^2
+    },
+    methods = list(
+        setToZero = function() {
+            mv[var, 1] <<- model[[var]] * 0
+            mv[var, 2] <<- model[[var]] * 0
+        }
+    )
+)
+
+
+
 ## formerly used in conf$printSamplers(byType = TRUE)
 ## to compress scalar index ranges of variables.
 ## deprecated Nov 2019.

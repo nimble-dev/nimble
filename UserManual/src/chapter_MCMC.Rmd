@@ -154,6 +154,7 @@ The MCMC configuration contains information needed for building an MCMC.  When n
   - The model nodes which will be sampled (updated) by the MCMC
   - The samplers and their internal configurations, called control parameters
   - Two sets of variables that will be monitored (recorded) during execution of the MCMC and thinning intervals for how often each set will be recorded. Two sets are allowed because it can be useful to monitor different variables at different intervals
+  - Accumulator variables, to record the cumulative sums and sum-of-squares during sampling, without storing all MCMC samples.
 
 
 ### Default MCMC configuration {#sec:default-mcmc-conf}
@@ -201,6 +202,10 @@ As a lightweight alternative to using `samplerAssignmentRules`, very basic contr
 #### Default monitors
 
 The default MCMC configuration includes monitors on all top-level stochastic nodes of the model. Only variables that are monitored will have their samples saved for use outside of the MCMC. MCMC configurations include two sets of monitors, each with different thinning intervals.  By default, the second set of monitors (`monitors2`) is empty. 
+
+#### Default accumulators
+
+By default, the MCMC configuation contains no accumulator variables.
 
 #### Automated parameter blocking
 
@@ -435,6 +440,23 @@ samples <- as.matrix(Cmcmc$mvSamples)
 The `samples` matrix will contain both MCMC samples and model log-probabilities.
 
 
+#### Accumulator variables: *setAccumulators*, *resetAccumulators*, and *printAccumulators*
+
+Accumulator variables (for recording the cumulative sums and sums-of-squares) can be set using the `setAccumulators` method.  All accumulators can be turned off using `resetAccumulators`, and the current accumulator variables are printed using `printAccumulators`.
+
+A matrix containing the cumulative sums and sums-of-squares can be accessed from the compiled MCMC object as shown below.  The first matrix row contain cumulative sums, and the second row contains cumulative sums-of-squares.  In addition, the total number of accumulated samples can be accessed using the `getAccumulatorIterations` method of the MCMC object.  Note that values are accumulated regardless of any thinning or burn-in specified.
+
+```{r, eval=FALSE}
+mcmcConf <- configureMCMC(Rmodel)
+mcmcConf$setAccumulators("x", "y")
+Rmcmc <- buildMCMC(mcmcConf)
+Cmodel <- compileNimble(Rmodel)
+Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+Cmcmc$run(10000)
+accumulators <- as.matrix(Cmcmc$mvAccumulators)
+accumulatorIterations <- Cmcmc$getAccumulatorIterations()
+```
+
 
 ## Building and compiling the MCMC {#sec:build-compile-mcmc}
 
@@ -548,6 +570,7 @@ The `run` method has an optional `reset` argument.  When `reset = TRUE` (the def
   1. All model nodes are checked and filled or updated as needed, in valid (topological) order.  If a stochastic node is missing a value, it is populated using a call to `simulate` and its log probability value is calculated.  The values of deterministic nodes are calculated from their parent nodes.  If any right-hand-side-only nodes (e.g., explanatory variables) are missing a value, an error results.
   1. All MCMC sampler functions are reset to their initial state: the initial values of any sampler control parameters (e.g., `scale`, `sliceWidth`, or `propCov`) are reset to their initial values, as were specified by the original MCMC configuration.
   1. The internal modelValues objects `mvSamples` and `mvSamples2` are each resized to the appropriate length for holding the requested number of samples (`niter/thin`, and `niter/thin2`, respectively).
+  1. The internal modelValues `mvAccumulators` object for accumulator variables is reset to contain all zeros, and the number of accumulated iterations is reset to zero.
 
 
 When `mcmc$run(niter, reset = FALSE)` is called, the MCMC picks up from where it left off, continuing the previous chain and expanding the output as needed.  No values in the model are checked or altered, and sampler functions are not reset to their initial states.  

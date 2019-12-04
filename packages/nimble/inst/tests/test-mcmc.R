@@ -1758,6 +1758,60 @@ test_that('checkConjugacy corner case when linear scale is identically zero', {
 })
 
 
+test_that('MCMC accumulators', {
+    ## sketching out how MCMC "accumulators" would work
+    ##
+    code <- nimbleCode({
+        x ~ dnorm(0, 1)
+        y ~ dnorm(0, 1)
+        for(i in 1:2) {
+            v[i] ~ dnorm(0, 1)
+            for(j in 1:3) {
+                arr[i,j] ~ dnorm(0, 1)
+            }
+        }
+    })
+    ##
+    constants <- list()
+    data <- list()
+    inits <- list(x=0, y=0, v=rep(0,2), arr=array(0, c(2,3)))
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    ##
+    conf <- configureMCMC(Rmodel)
+    conf$setAccumulators(c('x', 'y', 'v', 'arr'))
+    Rmcmc <- buildMCMC(conf)
+    ##
+    Cmodel <- compileNimble(Rmodel)
+    Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+    ##
+    set.seed(0)
+    niter <- 1000
+    Cmcmc$run(niter)
+    names <- c(Rmodel$expandNodeNames(c('x', 'y', 'v', 'arr')))
+    samples <- as.matrix(Cmcmc$mvSamples)[, names]
+    accumulatorsMatrix <- as.matrix(Cmcmc$mvAccumulators)[, names]
+    ##
+    expect_true(Cmcmc$getAccumulatorIterations() == niter)
+    all(abs(apply(samples, 2, sum) - accumulatorsMatrix[1, ]) < 1e-12)
+    all(abs(apply(samples, 2, function(x) sum(x^2)) - accumulatorsMatrix[2, ]) < 1e-12)
+    ##
+    niter2 <- 10000
+    Cmcmc$run(niter2, reset = FALSE)
+    samples <- as.matrix(Cmcmc$mvSamples)[, names]
+    accumulatorsMatrix <- as.matrix(Cmcmc$mvAccumulators)[, names]
+    ##
+    expect_true(Cmcmc$getAccumulatorIterations() == niter + niter2)
+    all(abs(apply(samples, 2, sum) - accumulatorsMatrix[1, ]) < 1e-12)
+    all(abs(apply(samples, 2, function(x) sum(x^2)) - accumulatorsMatrix[2, ]) < 1e-10)
+    ##
+    Cmcmc$run(0)
+    accumulatorsMatrix <- as.matrix(Cmcmc$mvAccumulators)[, names]
+    ##
+    expect_true(Cmcmc$getAccumulatorIterations() == 0)
+    expect_true(all(accumulatorsMatrix == 0))
+})
+
+
 sink(NULL)
 
 if(!generatingGoldFile) {

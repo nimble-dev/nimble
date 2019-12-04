@@ -45,7 +45,7 @@ samplerConf <- setRefClass(
 ## NOTE: the empty lines are important in the final formatting, so please don't remove any of them in your own help info
 
 #' Class \code{MCMCconf}
-#' @aliases MCMCconf addSampler removeSamplers setSamplers printSamplers getSamplers setSamplerExecutionOrder getSamplerExecutionOrder addMonitors addMonitors2 resetMonitors getMonitors getMonitors2 printMonitors setThin setThin2
+#' @aliases MCMCconf addSampler removeSamplers setSamplers printSamplers getSamplers setSamplerExecutionOrder getSamplerExecutionOrder addMonitors addMonitors2 resetMonitors getMonitors getMonitors2 printMonitors setThin setThin2 setAccumulators resetAccumulators printAccumulators
 #' @export
 #' @description
 #' Objects of this class configure an MCMC algorithm, specific to a particular model.  Objects are normally created by calling \code{\link{configureMCMC}}.
@@ -78,6 +78,7 @@ MCMCconf <- setRefClass(
         monitors2           = 'ANY',
         thin                = 'ANY',
         thin2               = 'ANY',
+        accumulators        = 'ANY',
         enableWAIC          = 'ANY',
         samplerConfs        = 'ANY',
         samplerExecutionOrder = 'ANY',
@@ -92,6 +93,7 @@ MCMCconf <- setRefClass(
         initialize = function(model, nodes, control = list(), rules,
             monitors,                thin  = 1,
             monitors2 = character(), thin2 = 1,
+            accumulators = character(),
             useConjugacy = TRUE,
             onlyRW = FALSE,
             onlySlice = FALSE,
@@ -127,6 +129,10 @@ thin: The thinning interval for \'monitors\'.  Default value is one.
 
 thin2: The thinning interval for \'monitors2\'.  Default value is one.
 
+thin2: The thinning interval for \'monitors2\'.  Default value is one.
+
+accumulators: Variables for which to accumulate running sum, and sum-of-squares, during MCMC sampling.  This accumulation takes place regardless of the monitored variables and MCMC samples being collected.  Access accumulated values from the MCMC algorithm object.  See help(buildMCMC) for details.
+
 useConjugacy: A logical argument, with default value TRUE.  If specified as FALSE, then no conjugate samplers will be used, even when a node is determined to be in a conjugate relationship.
 
 onlyRW: A logical argument, with default value FALSE.  If specified as TRUE, then Metropolis-Hastings random walk samplers will be assigned for all non-terminal continuous-valued nodes nodes. Discrete-valued nodes are assigned a slice sampler, and terminal nodes are assigned a posterior_predictive sampler.
@@ -156,6 +162,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
             addMonitors2(monitors2, print = FALSE)
             thin  <<- thin
             thin2 <<- thin2
+            setAccumulators(accumulators, print = TRUE)
             enableWAIC <<- enableWAIC
             samplerConfs <<- list()
             samplerExecutionOrder <<- numeric()
@@ -846,7 +853,7 @@ Details: See the initialize() function
             '
             addMonitors(..., ind = 2, print = print)
         },
-        
+
         resetMonitors = function() {
             '
 Resets the current monitors and monitors2 lists to nothing.
@@ -925,6 +932,35 @@ Details: See the initialize() function
             thin2 <<- thin2
             if(print) printMonitors()
             return(invisible(NULL))
+        },
+
+        setAccumulators = function(..., print = TRUE) {
+            vars <- list(...)
+            if(length(vars) == 1 && is.null(vars[[1]])) {
+                vars <- character()
+            } else {
+                vars <- unlist(vars)
+            }
+            vars <- unique(removeIndexing(vars))
+            nl_checkVarNamesInModel(model, vars)
+            accumulators <<- vars
+            if(print)   printAccumulators()
+        },
+
+        resetAccumulators = function() {
+            accumulators <<- character()
+        },
+
+        printAccumulators = function() {
+            '
+Prints all current accumulator variables
+
+Details: See the initialize() function
+            '
+            if(length(accumulators)  > 0) {
+                ##message('Accumulators will accumulate the running sum, and running sum-of-squares for all accumulator variables, during the course of MCMC sampling.  This is independent of montitors, thinning, burn-in, and any posterior samples being recorded.  Accumulated sums and sums-of-squares can be retrieved after running an mcmc, using mcmc$getAccumulators(), which returns an (N+1)x2 array.  The first column contains cumulative sums, and the second column contains cumulative sums-of-squares.  Rows 1:N represent variables in the same order as given by model$expandNodeNames(accumulators).  The [N+1, 1] element of the array indicates the number of MCMC samples which were accumulated into the sums and sums-of-squares.  This interface is subject to change in later versios of NIMBLE.')
+                cat(paste0('Accumulator variables: ', paste0(accumulators,  collapse = ', '), '\n'))
+            }
         },
 
         setEnableWAIC = function(waic = TRUE) {
@@ -1309,6 +1345,7 @@ nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
 #'The default value is an empty character vector, i.e. no values will be recorded.
 #'@param thin The thinning interval for \code{monitors}.  Default value is one.
 #'@param thin2 The thinning interval for \code{monitors2}.  Default value is one.
+#'@param accumulators Variables for which to accumulate running sum, and sum-of-squares, during MCMC sampling.  This accumulation takes place regardless of the monitored variables and MCMC samples being collected.  Access accumulated values from the MCMC algorithm object.  See help(buildMCMC) for details.
 #'@param useConjugacy A logical argument, with default value TRUE.  If specified as FALSE, then no conjugate samplers will be used, even when a node is determined to be in a conjugate relationship.
 #'@param onlyRW A logical argument, with default value FALSE.  If specified as TRUE, then Metropolis-Hastings random walk samplers (\link{sampler_RW}) will be assigned for all non-terminal continuous-valued nodes nodes. Discrete-valued nodes are assigned a slice sampler (\link{sampler_slice}), and terminal nodes are assigned a posterior_predictive sampler (\link{sampler_posterior_predictive}).
 #'@param onlySlice A logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes. Terminal nodes are still assigned a posterior_predictive sampler.
@@ -1326,6 +1363,7 @@ nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
 #'@seealso \code{\link{samplerAssignmentRules}} \code{\link{buildMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}
 configureMCMC <- function(model, nodes, control = list(), 
                           monitors, thin = 1, monitors2 = character(), thin2 = 1,
+                          accumulators = character(),
                           useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE,
                           multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
                           enableWAIC = getNimbleOption('MCMCenableWAIC'),
@@ -1349,6 +1387,7 @@ configureMCMC <- function(model, nodes, control = list(),
 
     thisConf <- MCMCconf(model = model, nodes = nodes, control = control, rules = rules,
                          monitors = monitors, thin = thin, monitors2 = monitors2, thin2 = thin2,
+                         accumulators = accumulators,
                          useConjugacy = useConjugacy,
                          onlyRW = onlyRW, onlySlice = onlySlice,
                          multivariateNodesAsScalars = multivariateNodesAsScalars,

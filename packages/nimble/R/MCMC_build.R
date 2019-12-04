@@ -73,7 +73,14 @@
 #' directly upstream from a data node. However, other combinations of monitored
 #' nodes are also valid.  If \code{enableWAIC = TRUE}, NIMBLE checks to see if
 #' the set of monitored nodes is valid, and returns an error if not.
-#' 
+#'
+#' @section Accumulators:
+#'
+#' Accumulators can be used to calculate the cumulative sum, and sum-of-squares, for an arbitrary set of model variables during the course of MCMC sampling.  These accumulated values can subsequently be accessed and used to calculate posterior mean and posterior standard deviation, even when monitors are not assigned, and therefore samples are not recorded, for model variables.  Accumulator values are cumulatively summed regardless of any thinning or burn-in (which only affect the posterior samples recorded).
+#'
+#' Accumulator variables must be specified in the MCMC configuration object, using either the \code{setAccumulators} method of the MCMC configuration object as \code{conf$setAccumulators('x', 'y')}, or via the \code{accumulators} argument to \code{configureMCMC} as \code{conf <- configureMCMC(Rmodel, accumulators = c('x', 'y'))}.  Accumulator variables can be reset using \code{conf$resetAccumulators()}.
+#'
+#' After running an MCMC algorithm, a matrix containing the cumulative sums, and sums-of-squares, for the specified variables can be retrieved using \code{as.matrix(mcmc$mvAccumulators)}.  The first row of this matrix contains the cumulative sums, and the second row contains the cumulative sums-of-squares.  The total number of summed values (resulting from that many MCMC iterations) can be retrieved using the \code{getAccumulatorIterations} method of the MCMC object, as \code{mcmc$getAccumulatorIterations()}.
 #' 
 #' @examples
 #' \dontrun{
@@ -127,6 +134,28 @@ buildMCMC <- nimbleFunction(
         samplerTimes <- c(0,0) ## establish as a vector
         progressBarLength <- 52  ## multiples of 4 only
         progressBarDefaultSetting <- getNimbleOption('MCMCprogressBar')
+        ## accumulators:
+        accumulators <- conf$accumulators
+        ## ######## accumulators (using array):
+        ## ######numAccumulators <- length(values(model, accumulators))
+        ## ######accumulatorValues <- array(0, c(numAccumulators+1, 2))
+        ## accumulators (using modelValues):
+        modelSymbolObjects <- model$getSymbolTable()$getSymbolObjects()
+        if(!all(accumulators %in% names(modelSymbolObjects))) stop('some accumulator names are not in the model symbol table; this should never occur')
+        mvAccumulatorConf <- modelValuesConf(symbolTable(symbols = modelSymbolObjects[accumulators]))
+        mvAccumulators <- modelValues(mvAccumulatorConf)
+        resize(mvAccumulators, 2)
+        setupOutputs(mvAccumulators)
+        accumulatorsNFL <- nimbleFunctionList(accumulator_BASE)
+        for(i in seq_along(accumulators)) {
+            dim <- model$getVarInfo(accumulators[i])$nDim
+            if(dim == 0)      accumulatorsNFL[[i]] <- accumulator_scalar(model, mvAccumulators, accumulators[i])
+            else if(dim == 1) accumulatorsNFL[[i]] <- accumulator_vector(model, mvAccumulators, accumulators[i])
+            else if(dim == 2) accumulatorsNFL[[i]] <- accumulator_array2(model, mvAccumulators, accumulators[i])
+            else stop(paste0('accumulators not yet implemented for dimension = ', dim, ' variables; contact NIMBLE team'))
+        }
+        numAccumulatorVars <- length(accumulators)
+        nAccumulatorIterations <- 0
         ## WAIC setup:
         dataNodes <- model$getNodeNames(dataOnly = TRUE)
         dataNodeLength <- length(dataNodes)
@@ -162,6 +191,11 @@ buildMCMC <- nimbleFunction(
             samplerTimes <<- numeric(length(samplerFunctions) + 1)       ## default inititialization to zero
             mvSamples_copyRow  <- 0
             mvSamples2_copyRow <- 0
+            ## ####### accumulators (using array):
+            ## #####accumulatorValues <<- accumulatorValues * 0
+            ## accumulators (using modelValues):
+            if(numAccumulatorVars > 0)   for(i in 1:numAccumulatorVars)   accumulatorsNFL[[i]]$setToZero()
+            nAccumulatorIterations <<- 0
         } else {
             if(nburnin != 0)   stop('cannot specify nburnin when using reset = FALSE.')
             if(dim(samplerTimes)[1] != length(samplerFunctions) + 1)   samplerTimes <<- numeric(length(samplerFunctions) + 1)   ## first run: default inititialization to zero
@@ -198,8 +232,6 @@ buildMCMC <- nimbleFunction(
                     samplerFunctions[[ind]]$run()
                 }
             }
-            ## adding "accumulators" to MCMC?
-            ## https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
             if(iter > nburnin) {
                 sampleNumber <- iter - nburnin
                 if(sampleNumber %% thinToUseVec[1] == 0) {
@@ -211,6 +243,20 @@ buildMCMC <- nimbleFunction(
                     nimCopy(from = model, to = mvSamples2, row = mvSamples2_copyRow, nodes = monitors2)
                 }
             }
+            ## accumulators:
+            ## https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
+            ## ####### accumulators (using array):
+            ## #####if(numAccumulators > 0) {
+            ## #####    accumulatorValues[1:numAccumulators, 1] <<- accumulatorValues[1:numAccumulators, 1] + values(model, accumulators)
+            ## #####    accumulatorValues[1:numAccumulators, 2] <<- accumulatorValues[1:numAccumulators, 2] + values(model, accumulators)^2
+            ## #####    accumulatorValues[numAccumulators+1, 1] <<- accumulatorValues[numAccumulators+1, 1] + 1
+            ## #####}
+            ## accumulators (using modelValues):
+            if(numAccumulatorVars > 0) {
+                for(i in 1:numAccumulatorVars)   accumulatorsNFL[[i]]$run()
+                nAccumulatorIterations <<- nAccumulatorIterations + 1
+            }
+            ## progress bar:
             if(progressBar & (iter == progressBarNextFloor)) {
                 cat('-')
                 progressBarNext <- progressBarNext + progressBarIncrement
@@ -224,6 +270,16 @@ buildMCMC <- nimbleFunction(
         getTimes = function() {
             returnType(double(1))
             return(samplerTimes[1:(length(samplerTimes)-1)])
+        },
+        ## ####### accumulators (using array):
+        ## #####getAccumulators = function() {
+        ## #####    returnType(double(2))
+        ## #####    return(accumulatorValues)
+        ## #####},
+        ## accumulators (using modelValues):
+        getAccumulatorIterations = function() {
+            returnType(double(0))
+            return(nAccumulatorIterations)
         },
         calculateWAIC = function(nburnin = integer(default = 0),
             burnIn = integer(default = 0)) {
