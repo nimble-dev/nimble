@@ -1126,9 +1126,15 @@ declare <- function(name, def){
 #' @export
 any_na <- function(x) any(is.na(x))
 
+## Retained for backwards compatibility
+is.na.vec <- function(x) any(is.na(x))
+
 #' @rdname any_na
 #' @export
 any_nan <- function(x) any(is.nan(x))
+
+## Retained for backwards compatibility
+is.nan.vec <- function(x) any(is.nan(x))
 
 #' @export
 nimRound <- round
