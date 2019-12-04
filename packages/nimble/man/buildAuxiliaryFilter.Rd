@@ -10,8 +10,12 @@ buildAuxiliaryFilter(model, nodes, control = list())
 \item{model}{A NIMBLE model object, typically representing a state space model or a hidden Markov model.}
 
 \item{nodes}{A character vector specifying the latent model nodes 
-over which the particle filter will stochastically integrate over to
-estimate the log-likelihood function.  All provided nodes must be stochastic, and must come from the same variable in the model.}
+over which the particle filter will stochastically integrate to
+estimate the log-likelihood function.  All provided nodes must be stochastic.
+Can be one of three forms: a variable name, in which case all elements in the variable
+are taken to be latent (e.g., 'x'); an indexed variable, in which case all indexed elements are taken
+to be latent (e.g., 'x[1:100]' or 'x[1:100, 1:2]'); or a vector of multiple nodes, one per time point,
+in increasing time order (e.g., c("x[1:2, 1]", "x[1:2, 2]", "x[1:2, 3]", "x[1:2, 4]")).}
 
 \item{control}{A list specifying different control options for the particle filter.  Options are described in the details section below.}
 }
@@ -73,6 +77,7 @@ Pitt, M.K., and Shephard, N. (1999). Filtering via simulation: Auxiliary particl
 \seealso{
 Other particle filtering methods: \code{\link{buildBootstrapFilter}},
   \code{\link{buildEnsembleKF}},
+  \code{\link{buildIteratedFilter2}},
   \code{\link{buildLiuWestFilter}}
 }
 

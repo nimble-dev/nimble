@@ -9,6 +9,7 @@ link-citations: yes
 github-repo: nimble-dev/nimble
 description: "This is the NIMBLE User Manual."
 colorlinks: yes
+geometry: margin=1in
 ---
 
 
