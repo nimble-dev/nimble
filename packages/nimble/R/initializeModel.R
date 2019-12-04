@@ -102,13 +102,13 @@ initializeModel <- nimbleFunction(
         initialize_deterministic = function(i = integer()) {
             model$calculate(LHSnodes[i])
             nodeValue <- values(model, LHSnodes[i])
-            if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) {
+            if(any_na(nodeValue) | any_nan(nodeValue)) {
                 print('warning: value of deterministic node ',LHSnodes[i],': value is NA or NaN even after trying to calculate.')
             }
         },
         initialize_stoch_data_node = function(i = integer()) {
             nodeValue <- values(model, LHSnodes[i])
-            if(is.na.vec(nodeValue) | is.nan.vec(nodeValue))
+            if(any_na(nodeValue) | any_nan(nodeValue))
                 print('warning: value of data node ', LHSnodes[i],': value is NA or NaN.')
             lp <- model$calculate(LHSnodes[i])
             if(is.na(lp) | is.nan(lp)) {
@@ -123,10 +123,10 @@ initializeModel <- nimbleFunction(
         },
         initialize_stoch_non_data_node = function(i = integer()) {
             nodeValue <- values(model, LHSnodes[i])
-            if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) {
+            if(any_na(nodeValue) | any_nan(nodeValue)) {
                 model$simulate(LHSnodes[i], includeData = TRUE) ## includeData = TRUE suppresses a warning
                 nodeValue <- values(model, LHSnodes[i])
-                if(is.na.vec(nodeValue) | is.nan.vec(nodeValue))
+                if(any_na(nodeValue) | any_nan(nodeValue))
                     print('warning: value of stochastic node ', LHSnodes[i],': value is NA or NaN even after trying to simulate.')
             }
             lp <- model$calculate(LHSnodes[i])
@@ -152,7 +152,7 @@ checkRHSonlyInit <- nimbleFunction(
     setup = function(model, nodes, variable) {},
     run = function() {
         vals <- values(model, nodes)
-        if(is.na.vec(vals) | is.nan.vec(vals)) print('warning: value in right-hand-side-only variable is NA or NaN, in variable: ', variable)
+        if(any_na(vals) | any_nan(vals)) print('warning: value in right-hand-side-only variable is NA or NaN, in variable: ', variable)
     },    where = getLoadingNamespace()
 )
 
