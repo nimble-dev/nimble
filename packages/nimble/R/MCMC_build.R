@@ -152,6 +152,7 @@ buildMCMC <- nimbleFunction(
             if(dim == 0)      accumulatorsNFL[[i]] <- accumulator_scalar(model, mvAccumulators, accumulators[i])
             else if(dim == 1) accumulatorsNFL[[i]] <- accumulator_vector(model, mvAccumulators, accumulators[i])
             else if(dim == 2) accumulatorsNFL[[i]] <- accumulator_array2(model, mvAccumulators, accumulators[i])
+            else if(dim == 3) accumulatorsNFL[[i]] <- accumulator_array3(model, mvAccumulators, accumulators[i])
             else stop(paste0('accumulators not yet implemented for dimension = ', dim, ' variables; contact NIMBLE team'))
         }
         numAccumulatorVars <- length(accumulators)

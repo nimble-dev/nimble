@@ -416,6 +416,22 @@ accumulator_array2 <- nimbleFunction(
     )
 )
 
+accumulator_array3 <- nimbleFunction(
+    name = 'accumulator_array3',
+    contains = accumulator_BASE,
+    setup = function(model, mv, var) { },
+    run = function() {
+        mv[var, 1] <<- mv[var, 1] + model[[var]]
+        mv[var, 2] <<- mv[var, 2] + model[[var]]^2
+    },
+    methods = list(
+        setToZero = function() {
+            mv[var, 1] <<- model[[var]] * 0
+            mv[var, 2] <<- model[[var]] * 0
+        }
+    )
+)
+
 
 
 ## formerly used in conf$printSamplers(byType = TRUE)
