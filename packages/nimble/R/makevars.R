@@ -39,10 +39,10 @@ function(pkgFlags, pkgLibs, ..., dir = getwd(),
 
      ## file.copy(.copyFrom, target)  # file.link won't work across file systems.
      contents <- readLines(.copyFrom)
-     NIMBLE_INC_DIR <- system.file("include", package = "nimble")
-     NIMBLE_LIB_DIR <- system.file("CppCode", package = "nimble")      
-     NIMBLE_DIR <- system.file(package = "nimble")
-     RPATH <- sprintf("-Wl,-rpath %s", system.file("CppCode", package = "nimble"))
+     NIMBLE_INC_DIR <- normalizePath(system.file("include", package = "nimble"), winslash = "\\", mustWork=FALSE)
+     NIMBLE_LIB_DIR <- normalizePath(system.file("CppCode", package = "nimble"), winslash = "\\", mustWork=FALSE)
+     NIMBLE_DIR <- normalizePath(system.file(package = "nimble"), winslash = "\\", mustWork=FALSE)
+     RPATH <- sprintf("-Wl,-rpath %s", normalizePath(system.file("CppCode", package = "nimble"), winslash = "\\", mustWork=FALSE))
      contents <- gsub("__NIMBLE_INC_DIR__", NIMBLE_INC_DIR, contents)
      ## NIMBLE_LIB_DIR is being set relative to NIMBLE_DIR so this is not really necessary,
      ## but keeping in case of unexpected corner case.
@@ -79,10 +79,10 @@ function(target, vars = character(), .useLib = UseLibraryMakevars)
     cppad_inc <- paste0("'-I\"", nimbleOptions('CppADdir'), "\"'")
     vars = c(EIGEN_INC = "", ## AutoconfInfo$eigenInc, ## we used to generate an AutoconfInfo list. We'll need a new mechanism if a local Makevars needs to be generated and the user has non-nimble-provided Eigen
              CPPAD_INC = "", ##cppad_inc,  ## Currently, require cppad folder to be placed within include folder.  Todo: get CppAD_directory functional.
-             NIMBLE_INC_DIR =  system.file("include", package = "nimble"),
-             NIMBLE_LIB_DIR =  system.file("CppCode", package = "nimble"),        
-             NIMBLE_DIR =  system.file(package = "nimble"),
-             RPATH = sprintf("-rpath %s", system.file("CppCode", package = "nimble")),
+             NIMBLE_INC_DIR =  normalizePath(system.file("include", package = "nimble"), winslash = "\\", mustWork=FALSE),
+             NIMBLE_LIB_DIR =  normalizePath(system.file("CppCode", package = "nimble"), winslash = "\\", mustWork=FALSE),
+             NIMBLE_DIR =  normalizePath(system.file(package = "nimble"), winslash = "\\", mustWork=FALSE),
+             RPATH = sprintf("-rpath %s", normalizePath(system.file("CppCode", package = "nimble"), winslash = "\\", mustWork=FALSE)),
              vars)
     varDefs = mapply(function(id, val) paste(id, val, sep = "="), names(vars), vars)
 
