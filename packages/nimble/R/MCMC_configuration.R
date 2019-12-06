@@ -1297,7 +1297,7 @@ configureMCMC <- function(model, nodes, control = list(),
                           useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE,
                           multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
                           enableWAIC = getNimbleOption('MCMCenableWAIC'),
-                          print = getNimbleOption('verbose'),
+                          print = FALSE, getNimbleOption('verbose'),
                           autoBlock = FALSE, oldConf,
                           rules = getNimbleOption('MCMCdefaultSamplerAssignmentRules'),
                           warnNoSamplerAssigned = TRUE, ...) {
