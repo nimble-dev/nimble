@@ -651,74 +651,39 @@ byType: A logical argument, specifying whether the nodes being sampled should be
             for(i in seq_along(nodesSortedBySamplerType)) {
                 theseSampledNodes <- nodesSortedBySamplerType[[i]]
                 cat(paste0(names(nodesSortedBySamplerType)[i], ' sampler (', length(theseSampledNodes), ')\n'))
-                ##cat(paste0(theseSampledNodes, collapse = ', '))  ## prints all nodes
-                anyMultivariate <- any(grepl(':', theseSampledNodes))
-                anyLengthGTone <- any(lapply(theseSampledNodes, length) > 1)
-                if(anyMultivariate || anyLengthGTone) {
-                    ## multivariate samplers:
-                    nodesCompressed <- sapply(theseSampledNodes, function(nns) if(length(nns)==1) nns else paste0('{ ', paste0(nns, collapse = ', '), ' }'))
-                    nodesCompressedIndent <- paste0(indent, nodesCompressed)
-                    cat(paste0(nodesCompressedIndent, collapse = '\n'))
-                } else {
+                colonBool <- grepl(':', theseSampledNodes)
+                lengthGToneBool <- sapply(theseSampledNodes, length) > 1
+                multivariateBool <- colonBool | lengthGToneBool
+                univariateList <- theseSampledNodes[!multivariateBool]
+                multivariateList <- theseSampledNodes[multivariateBool]
+                if(length(univariateList) > 0) {
                     ## univariate samplers:
-                    theseVars <- model$getVarNames(nodes = theseSampledNodes)
-                    nodesListByVar <- lapply(theseVars, function(var)
-                        unlist(theseSampledNodes[(theseSampledNodes == var) |
-                                                     grepl(paste0('^', var, '\\['), theseSampledNodes)]))
-                    if(length(unlist(nodesListByVar)) != length(theseSampledNodes)) stop('something went wrong')
-                    for(j in seq_along(nodesListByVar)) {
-                        theseNodes <- nodesListByVar[[j]]
+                    theseUniVars <- model$getVarNames(nodes = univariateList)
+                    uniNodesListByVar <- lapply(theseUniVars, function(var)
+                        unlist(univariateList[(univariateList == var) |
+                                                  grepl(paste0('^', var, '\\['), univariateList)]))
+                    if(length(unlist(uniNodesListByVar)) != length(univariateList)) stop('something went wrong')
+                    for(j in seq_along(uniNodesListByVar)) {
+                        theseNodes <- uniNodesListByVar[[j]]
                         isIndexed <- grepl("\\[", theseNodes[1])
                         if(isIndexed) {
                             numElements <- length(theseNodes)
                             sTag <- ifelse(numElements>1, 's', '')
-                            cat(paste0(indent, theseVars[j], '[]  (', numElements, ' element', sTag, ')'))
+                            cat(paste0(indent, theseUniVars[j], '[]  (', numElements, ' element', sTag, ')'))
                         } else {
                             if(length(theseNodes) > 1) stop('something wrong')
                             cat(paste0(indent, theseNodes))
                         }
-                        if(j < length(nodesListByVar)) cat('\n')
+                        cat('\n')
                     }
-                    ##if(anyCommas) {
-                    ##    ## the hard case
-                    ##    ## really should update this!
-                    ##    ## punt for now, and just collapse on the *final* index location:
-                    ##    theseVars <- model$getVarNames(nodes = theseSampledNodes)
-                    ##    nodesListByVar <- lapply(theseVars, function(var) grep(paste0('^', var, '\\['), theseSampledNodes, value = TRUE))
-                    ##    for(j in seq_along(nodesListByVar)) {
-                    ##        theseNodes <- nodesListByVar[[j]]
-                    ##        initialIndexStrings <- gsub('^[[:alpha:]]+\\[(.*), [[:digit:]]+\\]$', '\\1', theseNodes)
-                    ##        uniqueInitialStrings <- unique(initialIndexStrings)
-                    ##        nodeListByInitString <- lapply(uniqueInitialStrings, function(uis) grep(paste0('^[[:alpha:]]+\\[',uis,', [[:digit:]]+\\]$'), theseNodes, value = TRUE))
-                    ##        for(k in seq_along(nodeListByInitString)) {
-                    ##            theseNodes <- nodeListByInitString[[k]]
-                    ##            numIndices <- length(strsplit(theseNodes[1], ',')[[1]])
-                    ##            indices <- mcmc_getIndexNumberFromNodeNames(theseNodes, numIndices)
-                    ##            indexRangeList <- mcmc_compressIndexRanges(indices)
-                    ##            printNodesList <- lapply(indexRangeList, deparse)
-                    ##            printNodesList <- lapply(printNodesList, function(n) paste0(theseVars[j], '[', uniqueInitialStrings[k], ',', n, ']'))
-                    ##            printNodesList <- sapply(printNodesList, function(n) if(grepl(':',n)) paste0('components of ',n) else n)
-                    ##            cat(paste0(printNodesList, collapse = ', '))
-                    ##            if(j < length(nodesListByVar) || k < length(nodeListByInitString)) cat(', ')
-                    ##        }
-                    ##    }
-                    ##} else {
-                    ##    ## all scalar nodes, with single numeric index:
-                    ##    theseVars <- model$getVarNames(nodes = theseSampledNodes)
-                    ##    nodesListByVar <- lapply(theseVars, function(var) grep(paste0('^', var, '\\['), theseSampledNodes, value = TRUE))
-                    ##    for(j in seq_along(nodesListByVar)) {
-                    ##        theseNodes <- nodesListByVar[[j]]
-                    ##        indices <- mcmc_getIndexNumberFromNodeNames(theseNodes, 1)
-                    ##        indexRangeList <- mcmc_compressIndexRanges(indices)
-                    ##        printNodesList <- lapply(indexRangeList, deparse)
-                    ##        printNodesList <- lapply(printNodesList, function(n) paste0(theseVars[j], '[', n, ']'))
-                    ##        printNodesList <- sapply(printNodesList, function(n) if(grepl(':',n)) paste0('components of ',n) else n)
-                    ##        cat(paste0(printNodesList, collapse = ', '))
-                    ##        if(j < length(nodesListByVar)) cat(', ')
-                    ##    }
-                    ##}
                 }
-                cat('\n\n')
+                if(length(multivariateList) > 0) {
+                    ## multivariate samplers:
+                    multivariateCompressed <- sapply(multivariateList, function(nns) if(length(nns)==1) nns else paste0(nns, collapse = ', '))
+                    multivariateCompressedIndent <- paste0(indent, multivariateCompressed)
+                    cat(paste0(multivariateCompressedIndent, collapse = '\n'), '\n')
+                }
+                cat('\n')
             }
         },
 
