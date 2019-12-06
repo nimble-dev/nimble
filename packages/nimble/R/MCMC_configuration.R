@@ -642,22 +642,23 @@ byType: A logical argument, specifying whether the nodes being sampled should be
 
         printSamplersByType = function(ind) {
             if(length(ind) == 0) return(invisible(NULL))
-            indent <- '  - '
+            indent1 <- '  '
+            indent2 <- '    - '
             samplerTypes <- unlist(lapply(ind, function(i) samplerConfs[[i]]$name))
             uniqueSamplerTypes <- sort(unique(samplerTypes), decreasing = TRUE)
             nodesSortedBySamplerType <- lapply(uniqueSamplerTypes, function(type) sapply(samplerConfs[which(samplerTypes == type)], `[[`, 'target', simplify = FALSE))
             names(nodesSortedBySamplerType) <- uniqueSamplerTypes
-            cat('\n')
+            ##cat('\n')
             for(i in seq_along(nodesSortedBySamplerType)) {
                 theseSampledNodes <- nodesSortedBySamplerType[[i]]
-                cat(paste0(names(nodesSortedBySamplerType)[i], ' sampler (', length(theseSampledNodes), ')\n'))
+                cat(paste0(indent1, names(nodesSortedBySamplerType)[i], ' sampler (', length(theseSampledNodes), ')\n'))
                 ##cat(paste0(theseSampledNodes, collapse = ', '))  ## prints all nodes
                 anyMultivariate <- any(grepl(':', theseSampledNodes))
                 anyLengthGTone <- any(lapply(theseSampledNodes, length) > 1)
                 if(anyMultivariate || anyLengthGTone) {
                     ## multivariate samplers:
                     nodesCompressed <- sapply(theseSampledNodes, function(nns) if(length(nns)==1) nns else paste0('{ ', paste0(nns, collapse = ', '), ' }'))
-                    nodesCompressedIndent <- paste0(indent, nodesCompressed)
+                    nodesCompressedIndent <- paste0(indent2, nodesCompressed)
                     cat(paste0(nodesCompressedIndent, collapse = '\n'))
                 } else {
                     ## univariate samplers:
@@ -672,10 +673,10 @@ byType: A logical argument, specifying whether the nodes being sampled should be
                         if(isIndexed) {
                             numElements <- length(theseNodes)
                             sTag <- ifelse(numElements>1, 's', '')
-                            cat(paste0(indent, theseVars[j], '[]  (', numElements, ' element', sTag, ')'))
+                            cat(paste0(indent2, theseVars[j], '[]  (', numElements, ' element', sTag, ')'))
                         } else {
                             if(length(theseNodes) > 1) stop('something wrong')
-                            cat(paste0(indent, theseNodes))
+                            cat(paste0(indent2, theseNodes))
                         }
                         if(j < length(nodesListByVar)) cat('\n')
                     }
@@ -718,7 +719,7 @@ byType: A logical argument, specifying whether the nodes being sampled should be
                     ##    }
                     ##}
                 }
-                cat('\n\n')
+                cat('\n')
             }
         },
 
@@ -971,7 +972,11 @@ waic: A logical argument, indicating whether to enable WAIC calculations in the 
         },
 
         show = function() {
-            printSamplers(byType = TRUE)   ##cat('MCMC configuration object\n')
+            ##cat('MCMC configuration object\n')
+            cat('Monitors:\n')
+            printMonitors()
+            cat('Samplers:\n')
+            printSamplers(byType = TRUE)
         }
     )
 )
