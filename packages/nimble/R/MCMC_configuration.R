@@ -98,7 +98,7 @@ MCMCconf <- setRefClass(
             multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
             enableWAIC = getNimbleOption('MCMCenableWAIC'),
             warnNoSamplerAssigned = TRUE,
-            print = FALSE, ...) {
+            print = TRUE, ...) {
             '
 Creates a MCMC configuration for a given model.  The resulting object is suitable as an argument to buildMCMC.
 
@@ -381,7 +381,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
 
             }
             
-            if(print)   printSamplers()
+            if(print)   show()    ##printSamplers()
         },
 
         addConjugateSampler = function(conjugacyResult, dynamicallyIndexed = FALSE, dcrpNode = NULL, clusterID = NULL, print = FALSE) {
@@ -971,7 +971,7 @@ waic: A logical argument, indicating whether to enable WAIC calculations in the 
         },
 
         show = function() {
-            cat('MCMC configuration object\n')
+            printSamplers(byType = TRUE)   ##cat('MCMC configuration object\n')
         }
     )
 )
