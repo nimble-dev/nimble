@@ -645,10 +645,10 @@ byType: A logical argument, specifying whether the nodes being sampled should be
             indent1 <- ''
             indent2 <- '  - '
             samplerTypes <- unlist(lapply(ind, function(i) samplerConfs[[i]]$name))
+            samplerTypes <- gsub('^conjugate_.+', 'conjugate', samplerTypes)
             uniqueSamplerTypes <- sort(unique(samplerTypes), decreasing = TRUE)
             nodesSortedBySamplerType <- lapply(uniqueSamplerTypes, function(type) sapply(samplerConfs[which(samplerTypes == type)], `[[`, 'target', simplify = FALSE))
             names(nodesSortedBySamplerType) <- uniqueSamplerTypes
-            ##cat('\n')
             for(i in seq_along(nodesSortedBySamplerType)) {
                 theseSampledNodes <- nodesSortedBySamplerType[[i]]
                 cat(paste0(indent1, names(nodesSortedBySamplerType)[i], ' sampler (', length(theseSampledNodes), ')\n'))
