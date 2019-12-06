@@ -269,7 +269,7 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
   zBeta <- qnorm(beta, 0, 1, lower.tail=FALSE)
   zGamma <- qnorm(gamma, 0, 1, lower.tail=FALSE)
   
-  mcmc_Latent_Conf <- configureMCMC(Rmodel, nodes = latentNodes, monitors = model$getVarNames(), control = mcmcControl) 
+  mcmc_Latent_Conf <- configureMCMC(Rmodel, nodes = latentNodes, monitors = model$getVarNames(), control = mcmcControl, print = FALSE)
   Rmcmc_Latent <- buildMCMC(mcmc_Latent_Conf)
   sampledMV <- Rmcmc_Latent$mvSamples
   mvBlock <- modelValues(Rmodel)
