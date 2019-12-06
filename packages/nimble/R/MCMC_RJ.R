@@ -293,7 +293,7 @@ configureRJ <- function(conf, targetNodes, indicatorNodes = NULL, priorProb = NU
         for(i in 1:nNodes) {
             nodeAsScalar <- model$expandNodeNames(targetNodes[i], returnScalarComponents = TRUE)
             ## if the node is multivariate throw an error
-            if(model$isMultivariate(targetNodes[i]))
+            if(any(model$isMultivariate(targetNodes[i])))
                 stop(paste0("configureRJ: '", targetNodes[i], "' is multivariate; only univariate nodes can be used with reversible jump sampling."))
             ## Create RJ control list for the node
             nodeControl <- list(priorProb = priorProb[i], mean = mean[i],
@@ -331,7 +331,7 @@ configureRJ <- function(conf, targetNodes, indicatorNodes = NULL, priorProb = NU
             nodeAsScalar <- model$expandNodeNames(targetNodes[i], returnScalarComponents = TRUE)
             indicatorsAsScalar <- model$expandNodeNames(indicatorNodes[i], returnScalarComponents = TRUE)
             ## if the node is multivariate throw an error
-            if(model$isMultivariate(targetNodes[i])) 
+            if(any(model$isMultivariate(targetNodes[i]))) 
                 stop(paste0("configureRJ: '", targetNodes[i], "' is multivariate; only univariate nodes can be used with reversible jump sampling."))
             ## check that length of indicatorNodes matches targetNodes
             if(length(nodeAsScalar) != length(indicatorsAsScalar))
