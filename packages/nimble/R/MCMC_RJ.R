@@ -284,7 +284,7 @@ configureRJ <- function(conf, targetNodes, indicatorNodes = NULL, priorProb = NU
     ## fixedValue can be used only with priorProb
     if(indicatorFlag && any(fixedValue != 0)) warning("configureRJ: 'fixedValue' can be provided only when using 'priorProb'; it will be ignored.")
     ##
-    if(priorFlag) {    ## no indicator variables; ues RJ_fixed_prior sampler
+    if(priorFlag) {    ## no indicator variables; use RJ_fixed_prior sampler
         ## check that priorProb values are in [0,1]
         if(any(priorProb < 0 | priorProb > 1)) stop("configureRJ: elements in priorProb must be probabilities in [0,1].")
         ## if one value for prior is given, it is used for each variable
@@ -292,9 +292,9 @@ configureRJ <- function(conf, targetNodes, indicatorNodes = NULL, priorProb = NU
             if(length(priorProb) == 1) priorProb <- rep(priorProb, nNodes) else stop("configureRJ: Length of 'priorProb' vector must match 'targetNodes' length.")
         for(i in 1:nNodes) {
             nodeAsScalar <- model$expandNodeNames(targetNodes[i], returnScalarComponents = TRUE)
-            ## if the node is multivariate check that samplers are univariate
-            if(model$isMultivariate(targetNodes[i]) && length(conf$getSamplers(targetNodes[i])) == 1)
-                stop(paste0("configureRJ: '", targetNodes[i], "' is multivariate and uses a joint sampler; only univariate samplers can be used with reversible jump sampling."))
+            ## if the node is multivariate throw an error
+            if(model$isMultivariate(targetNodes[i]))
+                stop(paste0("configureRJ: '", targetNodes[i], "' is multivariate; only univariate nodes can be used with reversible jump sampling."))
             ## Create RJ control list for the node
             nodeControl <- list(priorProb = priorProb[i], mean = mean[i],
                                 scale = scale[i], fixedValue = fixedValue[i])
@@ -324,15 +324,15 @@ configureRJ <- function(conf, targetNodes, indicatorNodes = NULL, priorProb = NU
         }
     }
     ##
-    if(indicatorFlag) {   ## indicator variables; ues RJ_indicator sampler
+    if(indicatorFlag) {   ## indicator variables; use RJ_indicator sampler
         if(length(indicatorNodes) != nNodes)
             stop("configureRJ: Length of 'indicatorNodes' vector must match 'targetNodes' length.")
         for(i in 1:nNodes) {
             nodeAsScalar <- model$expandNodeNames(targetNodes[i], returnScalarComponents = TRUE)
             indicatorsAsScalar <- model$expandNodeNames(indicatorNodes[i], returnScalarComponents = TRUE)
-            ## if the node is multivariate check that samplers are univariate
-            if(model$isMultivariate(targetNodes[i]) && length(conf$getSamplers(targetNodes[i])) == 1)
-                stop(paste0("configureRJ: '", targetNodes[i], "' is multivariate and uses a joint sampler; only univariate samplers can be used with reversible jump sampling."))
+            ## if the node is multivariate throw an error
+            if(model$isMultivariate(targetNodes[i])) 
+                stop(paste0("configureRJ: '", targetNodes[i], "' is multivariate; only univariate nodes can be used with reversible jump sampling."))
             ## check that length of indicatorNodes matches targetNodes
             if(length(nodeAsScalar) != length(indicatorsAsScalar))
                 stop(paste0("configureRJ: indicatorNodes node '", indicatorNodes[i] ,"' does not match '", targetNodes[i], "' size."))
