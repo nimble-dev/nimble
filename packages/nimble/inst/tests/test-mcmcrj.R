@@ -109,27 +109,9 @@ test_that("Test configureRJ with multivariate node - no indicator", {
   m <- nimbleModel(code, data=data, inits=inits)
   mConf <- configureMCMC(m)
   
-  ## test multivariate node with joint sampler
+  ## test multivariate node
   expect_error(configureRJ(mConf, "beta", prior =0.5), 
-              'is multivariate and uses a joint sampler; only univariate samplers can be used with reversible jump sampling.')
-
-  ## test multivariate node with univariate samplers 
-  nodeAsScalar <- mConf$model$expandNodeNames("beta", returnScalarComponents = TRUE)
-  ## acceptable case
-  mConf$removeSamplers("beta")
-  for(node in nodeAsScalar){
-    mConf$addSampler(node, type = "RW")
-  }
-  
-  targetNodes <-  c("beta")
-  control <-  list(fixedValue = 0, mean = 0, scale = 2)
-  ## this should work
-  expect_error(configureRJ(conf = mConf, targetNodes = targetNodes, priorProb = 0.5, control = control), NA)
-  
-  ## test double call to configureRJ
-  expect_error(configureRJ(conf = mConf, targetNodes = targetNodes, priorProb = 0.5, control = control), 
-  "is already configured for reversible jump")
-
+              'is multivariate; only univariate nodes can be used with reversible jump sampling.')
 })
 
 
@@ -369,25 +351,10 @@ test_that("Test configureRJ with multivariate node - indicator", {
   m <- nimbleModel(code, data=data, inits=inits)
   mConf <- configureMCMC(m)
   
-  ## test multivariate node with joint sampler
+  ## test multivariate node 
   expect_error(configureRJ(mConf, "beta", indicatorNodes = "z"), 
-               'is multivariate and uses a joint sampler; only univariate samplers can be used with reversible jump sampling.')
+               'is multivariate; only univariate nodes can be used with reversible jump sampling.')
   
-  ## test multivariate node with univariate samplers 
-  nodeAsScalar <- mConf$model$expandNodeNames("beta", returnScalarComponents = TRUE)
-  ## acceptable case
-  mConf$removeSamplers("beta")
-  for(node in nodeAsScalar){
-    mConf$addSampler(node, type = "RW")
-  }
-  
-  ## this should work
-  control <-  list(fixedValue = 0, mean = 0, scale = 2)
-  expect_error(configureRJ(conf = mConf, targetNodes = "beta", indicatorNodes = "z", control = control), NA)
-  
-  ## test double call to configureRJ
-  expect_error(configureRJ(conf = mConf, targetNodes = "beta", indicatorNodes = "z", control = control), 
-               'is already configured for reversible jump')
 })
 
 
