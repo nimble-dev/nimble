@@ -98,7 +98,7 @@ MCMCconf <- setRefClass(
             multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
             enableWAIC = getNimbleOption('MCMCenableWAIC'),
             warnNoSamplerAssigned = TRUE,
-            print = TRUE, ...) {
+            print = FALSE, ...) {
             '
 Creates a MCMC configuration for a given model.  The resulting object is suitable as an argument to buildMCMC.
 
@@ -1329,7 +1329,7 @@ configureMCMC <- function(model, nodes, control = list(),
                           useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE,
                           multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
                           enableWAIC = getNimbleOption('MCMCenableWAIC'),
-                          print = FALSE, autoBlock = FALSE, oldConf,
+                          print = TRUE, autoBlock = FALSE, oldConf,
                           rules = getNimbleOption('MCMCdefaultSamplerAssignmentRules'),
                           warnNoSamplerAssigned = TRUE, ...) {
     
