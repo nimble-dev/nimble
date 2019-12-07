@@ -972,9 +972,11 @@ waic: A logical argument, indicating whether to enable WAIC calculations in the 
         },
 
         show = function() {
-            cat('===== Monitors =====\n')
+            cat('==== Accumulators ====\n')
+            printAccumulators()
+            cat('====== Monitors ======\n')
             printMonitors()
-            cat('===== Samplers =====\n')
+            cat('====== Samplers ======\n')
             printSamplers(byType = TRUE)
         }
     )
