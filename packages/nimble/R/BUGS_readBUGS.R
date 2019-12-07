@@ -309,7 +309,8 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
   if(is.function(model) || is.character(model)) {
       if(is.function(model)) modelText <- mergeMultiLineStatements(deparse(body(model)))
       if(is.character(model)) {
-          if(skip.file.path) modelFile <- model else modelFile <- file.path(dir, model)  # check for "" avoids having "/model.bug" when user provides ""
+          if(skip.file.path) modelFile <- model
+          else modelFile <- normalizePath(file.path(dir, model), winslash = "\\", mustWork=FALSE)  # check for "" avoids having "/model.bug" when user provides ""
           modelName <- gsub("\\..*", "", basename(model))
           if(!file.exists(modelFile)) {
               possibleNames <- c(paste0(modelFile, '.bug'), paste0(modelFile, '.txt'))
@@ -340,7 +341,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
   if(useInits) {
     initsFile <-  NULL
     if(is.character(inits)) {
-      initsFile <- if(skip.file.path) inits else file.path(dir, inits)
+      initsFile <- if(skip.file.path) inits else normalizePath(file.path(dir, inits), winslash = "\\", mustWork=FALSE)
       if(!file.exists(initsFile))
         stop("readBUGSmodel: 'inits' input does not reference an existing file.")
     }
@@ -358,7 +359,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
                       ## possibleNames <- c(possibleNames,
                       ##          file.path(dir, paste0(modelName, "-init.r")),
                       ##          file.path(dir, paste0(modelName, "-inits.r")))
-        if(!skip.file.path) possibleNames <- file.path(dir, possibleNames)
+        if(!skip.file.path) possibleNames <- normalizePath(file.path(dir, possibleNames), winslash = "\\", mustWork=FALSE)
         fileExistence <- file.exists(possibleNames)
         if(sum(fileExistence) > 1)
             stop("readBUGSmodel: multiple possible initial value files; please pass as explicit 'inits' argument.")
@@ -386,7 +387,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
 
   dataFile <-  NULL
   if(is.character(data)) {
-    dataFile <- if(skip.file.path) data else file.path(dir, data)
+    dataFile <- if(skip.file.path) data else normalizePath(file.path(dir, data), winslash = "\\", mustWork=FALSE)
     if(!file.exists(dataFile))
       stop("readBUGSmodel: 'data' input does not reference an existing file.")
   }
@@ -400,7 +401,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
         possibleNames <- c(possibleNames,
                            paste0(modelName, "-data.r"))
 ##                         file.path(dir, paste0(modelName, "-data.r")))
-      if(!skip.file.path) possibleNames <- file.path(dir, possibleNames)
+      if(!skip.file.path) possibleNames <- normalizePath(file.path(dir, possibleNames), winslash = "\\", mustWork=FALSE)
       fileExistence <- file.exists(possibleNames)
       if(sum(fileExistence) > 1)
           stop("readBUGSmodel: multiple possible initial value files; please pass as explicit 'data' argument.")
@@ -505,12 +506,12 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
 #' 
 #' @export
 getBUGSexampleDir <- function(example){
-	dir <- system.file("classic-bugs", package = "nimble")
+    dir <- normalizePath(system.file("classic-bugs", package = "nimble"), winslash = "\\", mustWork=FALSE)
     vol <- NULL
-    if(file.exists(file.path(dir, "vol1", example))) vol <- "vol1"
-    if(file.exists(file.path(dir, "vol2", example))) vol <- "vol2"
+    if(file.exists(normalizePath(file.path(dir, "vol1", example), winslash = "\\", mustWork=FALSE))) vol <- "vol1"
+    if(file.exists(normalizePath(file.path(dir, "vol2", example), winslash = "\\", mustWork=FALSE))) vol <- "vol2"
     if(is.null(vol)) stop("Can't find path to ", example, ".\n")
-    dir <- file.path(dir, vol, example)
+    dir <- normalizePath(file.path(dir, vol, example), winslash = "\\", mustWork=FALSE)
     return(dir)
 }
 
