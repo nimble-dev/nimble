@@ -1,8 +1,8 @@
-                            CHANGES IN VERSION 0.9.0 (November 2019)
+                            CHANGES IN VERSION 0.9.0 (December 2019)
 
 USER LEVEL CHANGES
 
--- Added iterated filtering 2 (IF2) algorithm for estimating parameters by maximum likelihood in models for which SMC algorithms can be used. 
+-- Added iterated filtering 2 (IF2) algorithm for estimating parameters by maximum likelihood in models for which SMC algorithms (particle filters) can be used. 
 
 -- Added dmnorm-dmnorm conjugacy for BNP mixture models using the dCRP distribution (PR #936).
 
@@ -16,11 +16,13 @@ USER LEVEL CHANGES
 
 -- removeSamplers, setSamplers, and printSamplers methods of MCMC configuration object now also accept node names (or sampler indices) through the "..." argument.
 
--- Fixed a corner case of pathological behavior in the reflection version of the RW sampler when there are both lower and upper bounds and the posterior is poorly informed, in which case the proposal scale can grow to be very large (PR #948).
+-- Fixed a corner case of pathological behavior in the reflection version of the RW sampler when there are both lower and upper bounds and the posterior is poorly informed, in which case the proposal scale could grow to be very large (PR #948).
 
 -- Improved output from printSamplers, including indicating if conjugacy is actually used in BNP mixture models using the dCRP distribution.
 
--- Added a warning when 'inits' argument to nimbleModel is not a list. 
+-- Added a warning when 'inits' argument to nimbleModel is not a list.
+
+-- Modified file path handling in Windows that should work on more file-system configurations.
 
 BUG FIXES
 
@@ -30,10 +32,9 @@ But IIUC it would be possible, similar to the bootstrap filter, to make this opt
 
 -- Remove 'pfResample' option (not the default) for particle MCMC (PMCMC) samplers as resampling is not justified by the theory of PMCMC samplers.
 
--- Fixed bug concerning incorrect dependency tracking that affected particle filtering for models with intermediate deterministic nodes between latent states.
-[PdV: should we clarify which such cases were affected? I'm forgetting if all such cases...]
+-- Fixed bug concerning incorrect dependency tracking that affected particle filtering for models with deterministic nodes between multiple latent states of the same time step.
 
--- Fixed bug in auxiliary particle filter in the default 'saveAll=FALSE' case.
+-- Fixed bug concerning tracking re-weighting and resampling in auxiliary particle filter in the default 'saveAll=FALSE' case.
 
 -- Modified auxiliary particle filter to omit multiplication by p(x_t+1 | x_t) in look-ahead. This now follows Pitt and Shephard (1999).
 
@@ -41,9 +42,9 @@ But IIUC it would be possible, similar to the bootstrap filter, to make this opt
 
 -- Fixed bug causing incorrect sampling in BNP mixture models with beta-binomial or beta-negative-binomial conjugacy (PR #922).
 
--- Fixed bug that prevented recycling for distributions ddexp, dexp_nimble, dt_nonstandard, and dinvgamma (and their 'p' and 'q' versions) when one or more parameter vectors were longer than the primary argument (PR #954).
+-- Fixed bug that prevented recycling rule for distributions ddexp, dexp_nimble, dt_nonstandard, and dinvgamma (and their 'p' and 'q' versions) when one or more parameter vectors were longer than the primary argument (PR #954).
 
--- Fixed bug preventing recycling for distributions dt and dt_nonstandard (PR #956).
+-- Fixed bug preventing recycling rule for distributions dt and dt_nonstandard (PR #956).
 
 -- Fixed bug in MCMC crossLevel sampler affecting models with non-identity link functions, so that underlying conjugate sampler functions no longer modify the target node value (PR #925).
 

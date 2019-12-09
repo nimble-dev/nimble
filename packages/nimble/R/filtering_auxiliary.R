@@ -88,7 +88,6 @@ auxFStep <- nimbleFunction(
       currInd <- 1
       prevInd <- 1 
     }
-    isLast <- (iNode == length(nodes))
 
     auxFuncList <- nimbleFunctionList(auxFuncVirtual) 
     allLatentNodes <- model$expandNodeNames(calc_thisNode_self, sort = TRUE) ## They should already be sorted, but sorting here is a failsafe.
@@ -136,7 +135,6 @@ auxFStep <- nimbleFunction(
         }
         copy(mvWSamples, model, prevXName, prevNode, row=i)
         model$calculate(prevDeterm)
-        ##        calculate(model, prevDeterm)
         ## The lookahead steps may include determ and stoch steps.
         if(lookahead == "mean"){
           for(j in 1:numLatentNodes)
@@ -145,16 +143,11 @@ auxFStep <- nimbleFunction(
         else
           auxFuncList[[1]]$lookahead()
 
-        ##        calculate(model, thisDeterm)
         ## Get p(y_t+1 | x_t+1).
-        ##        auxll[i] <- calculate(model, thisData)
         auxll[i] <- model$calculate(calc_thisNode_deps)
         if(is.nan(auxll[i])){
           return(-Inf)
         }
-        ## Multiply by p(x_t+1 | x_t).
-##        auxll[i] <- auxll[i] + model$calculate(calc_thisNode_self)
-##        auxll[i] <- auxll[i]+calculate(model, thisNode) ## This line was included previously.  Removing it has only trivial impact on established test results.  Maybe try with more extensive test.
         ## Multiply by weight from time t.
         auxWts[i] <- auxll[i] + mvWSamples['wts',i][prevInd] 
       }
@@ -172,16 +165,11 @@ auxFStep <- nimbleFunction(
         copy(mvWSamples, model, nodes = prevXName, nodesTo = prevNode, 
              row = ids[i])
         model$calculate(prevDeterm)
-        ##calculate(model, prevDeterm) 
       }
       # Simulate from x_t+1 | x_t.
       model$simulate(calc_thisNode_self)
-      #simulate(model, thisNode)
-      ## copy(model, mvWSamples, nodes = thisNode, nodesTo = thisXName, row=i)
-      copy(model, mvEWSamples, nodes = thisNode, nodesTo = thisXName, row=i) ## Changed mvWSamples to mvEWSamples
-      ##      calculate(model, thisDeterm)
+      copy(model, mvEWSamples, nodes = thisNode, nodesTo = thisXName, row=i)
       ## Get p(y_t+1 | x_t+1).
-     ## ll[i]  <- calculate(model, thisData)  
       ll[i] <- model$calculate(calc_thisNode_deps)
       if(is.nan(ll[i])){
         return(-Inf)
@@ -208,15 +196,9 @@ auxFStep <- nimbleFunction(
       ids <- resamplerFunctionList[[1]]$run(normWts)  
     }
     for(i in 1:m){
-      ## if(smoothing == 1){
-      ##   copy(mvWSamples, mvEWSamples, nodes = allPrevNodes, ## This will not be correct due to above change.
-      ##        nodesTo = allPrevNodes, row = ids[i], rowTo=i)
-      ## }
-     ##copy(mvWSamples, mvEWSamples, thisXName, thisXName, ids[i], i)
-     copy(mvEWSamples, mvWSamples, thisXName, thisXName, row = i,  rowTo = i) ## Corresponds to change above.  EWSamples no longer accurate.
+     copy(mvEWSamples, mvWSamples, thisXName, thisXName, row = i,  rowTo = i)
     }
 
-    ## Corresponds to change above.
     if(saveAll | last) {
       for(i in 1:m) {
         if(smoothing == 1){
