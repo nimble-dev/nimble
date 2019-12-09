@@ -14,6 +14,8 @@ otherDSLcalls <- c("{",
                    "nimOptim",
                    "nimOptimDefaultControl",
                    "nimDerivs",
+                   "any_na",
+                   "any_nan",
                    "void")
 
 nimKeyWords <- list(copy = 'nimCopy',
