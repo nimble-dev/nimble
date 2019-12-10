@@ -642,8 +642,7 @@ byType: A logical argument, specifying whether the nodes being sampled should be
 
         printSamplersByType = function(ind) {
             if(length(ind) == 0) return(invisible(NULL))
-            indent1 <- ''
-            indent2 <- '  - '
+            indent <- '  - '
             samplerTypes <- unlist(lapply(ind, function(i) samplerConfs[[i]]$name))
             samplerTypes <- gsub('^conjugate_.+', 'conjugate', samplerTypes)
             uniqueSamplerTypes <- sort(unique(samplerTypes), decreasing = TRUE)
@@ -651,14 +650,13 @@ byType: A logical argument, specifying whether the nodes being sampled should be
             names(nodesSortedBySamplerType) <- uniqueSamplerTypes
             for(i in seq_along(nodesSortedBySamplerType)) {
                 theseSampledNodes <- nodesSortedBySamplerType[[i]]
-                cat(paste0(indent1, names(nodesSortedBySamplerType)[i], ' sampler (', length(theseSampledNodes), ')\n'))
+                cat(paste0(names(nodesSortedBySamplerType)[i], ' sampler (', length(theseSampledNodes), ')\n'))
                 colonBool <- grepl(':', theseSampledNodes)
                 lengthGToneBool <- sapply(theseSampledNodes, length) > 1
                 multivariateBool <- colonBool | lengthGToneBool
                 univariateList <- theseSampledNodes[!multivariateBool]
                 multivariateList <- theseSampledNodes[multivariateBool]
-                if(length(univariateList) > 0) {
-                    ## univariate samplers:
+                if(length(univariateList) > 0) {   ## univariate samplers:
                     theseUniVars <- model$getVarNames(nodes = univariateList)
                     uniNodesListByVar <- lapply(theseUniVars, function(var)
                         unlist(univariateList[(univariateList == var) |
@@ -667,22 +665,37 @@ byType: A logical argument, specifying whether the nodes being sampled should be
                     for(j in seq_along(uniNodesListByVar)) {
                         theseNodes <- uniNodesListByVar[[j]]
                         isIndexed <- grepl("\\[", theseNodes[1])
-                        if(isIndexed) {
-                            numElements <- length(theseNodes)
-                            sTag <- ifelse(numElements>1, 's', '')
-                            cat(paste0(indent2, theseUniVars[j], '[]  (', numElements, ' element', sTag, ')'))
-                        } else {
-                            if(length(theseNodes) > 1) stop('something wrong')
-                            cat(paste0(indent2, theseNodes))
-                        }
-                        cat('\n')
-                    }
+                        if(isIndexed) { numElements <- length(theseNodes)
+                                        sTag <- ifelse(numElements>1, 's', '')
+                                        cat(paste0(indent, theseUniVars[j], '[]  (', numElements, ' element', sTag, ')'))
+                                    } else cat(paste0(indent, theseNodes))
+                        cat('\n') }
                 }
-                if(length(multivariateList) > 0) {
-                    ## multivariate samplers:
-                    multivariateCompressed <- sapply(multivariateList, function(nns) if(length(nns)==1) nns else paste0(nns, collapse = ', '))
-                    multivariateCompressedIndent <- paste0(indent2, multivariateCompressed)
-                    cat(paste0(multivariateCompressedIndent, collapse = '\n'), '\n')
+                if(length(multivariateList) > 0) {   ## multivariate samplers:
+                    multiLengthGToneBool <- sapply(multivariateList, length) > 1
+                    LGoneNodes <- multivariateList[multiLengthGToneBool]
+                    LEoneNodes <- multivariateList[!multiLengthGToneBool]
+                    if(length(LEoneNodes) > 0) {
+                        theseMultiVars <- model$getVarNames(nodes = LEoneNodes)
+                        multiNodesListByVar <- lapply(theseMultiVars, function(var)
+                            unlist(LEoneNodes[ grepl(paste0('^', var, '\\['), LEoneNodes) ]))
+                        if(length(unlist(multiNodesListByVar)) != length(LEoneNodes)) stop('something went wrong')
+                        for(j in seq_along(multiNodesListByVar)) {
+                            theseNodes <- multiNodesListByVar[[j]]
+                            numElements <- length(theseNodes)
+                            if(numElements > 4) {
+                                sTag <- ifelse(numElements>1, 's', '')
+                                cat(paste0(indent, theseMultiVars[j], '[]  (', numElements, ' multivariate element', sTag, ')'))
+                                cat('\n')
+                            } else { theseNodesIndent <- paste0(indent, theseNodes)
+                                     cat(paste0(theseNodesIndent, collapse = '\n'), '\n') }
+                        }
+                    }
+                    if(length(LGoneNodes) > 0) {
+                        LGoneNodesCompressed <- sapply(LGoneNodes, function(nns) if(length(nns)==1) nns else paste0(nns, collapse = ', '))
+                        LGoneNodesCompressedIndent <- paste0(indent, LGoneNodesCompressed)
+                        cat(paste0(LGoneNodesCompressedIndent, collapse = '\n'), '\n')
+                    }
                 }
             }
         },
