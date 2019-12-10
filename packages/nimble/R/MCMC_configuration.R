@@ -174,7 +174,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
                         stop('assigning samplers to non-stochastic nodes: ',
                              paste0(nodes[!model$isStoch(nodes)],
                                     collapse=', ')) }    ## ensure all target node(s) are stochastic
-            }
+                }
             }
             
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
