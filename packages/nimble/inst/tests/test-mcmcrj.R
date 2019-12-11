@@ -111,7 +111,7 @@ test_that("Test configureRJ with multivariate node - no indicator", {
   
   ## test multivariate node
   expect_error(configureRJ(mConf, "beta", prior =0.5), 
-              'is multivariate; only univariate nodes can be used with reversible jump sampling.')
+              'is multivariate; only univariate priors can be used with reversible jump sampling.')
 })
 
 
