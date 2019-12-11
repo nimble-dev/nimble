@@ -433,6 +433,55 @@ accumulator_array3 <- nimbleFunction(
 )
 
 
+#' Generates estimates of the mean and standard deviation of accumulator variables
+#' 
+#' This function will estimate the mean and standard deviation of all variables which were assigned accumulators in the MCMC algorithm.  This uses the interal accumulator sums and sums-of-squares, and number of accumulator iterations.
+#'
+#' The mean is estimated as: sum / iterations.
+#'
+#' The variance is estimated as: (sumSq - sum^2/iterations) / (iterations-1), and the square root of this is returned as an estimate of standard deviation.
+#' 
+#' @param mcmc A compiled or uncompiled MCMC algorithm, as created by buildMCMC
+#'
+#' @return A numeric matrix, first row containing estimated means, and second row containing estimated standard deviations.
+#' 
+#' @author Daniel Turek
+#' 
+#' @export
+accumulatorSummary <- function(mcmc) {
+    n <- mcmc$getAccumulatorIterations()
+    if(n < 2) stop(paste0('Need more than ', n, ' accumulator iterations'))
+    accumulatorMatrix <- as.matrix(mcmc$mvAccumulators)
+    sums <- accumulatorMatrix[1,]
+    sumSqs <- accumulatorMatrix[2,]
+    summaryMatrix <- accumulatorMatrix
+    rownames(summaryMatrix) <- c('Mean', 'St.Dev.')
+    summaryMatrix[1,] <- sums / n
+    summaryMatrix[2,] <- sqrt( (sumSqs - sums^2/n) / (n-1) )
+    return(summaryMatrix)
+}
+
+
+#' Generates estimates of the mean and standard deviation of accumulator variables
+#' 
+#' This function will estimate the mean and standard deviation of all variables which were assigned accumulators in the MCMC algorithm.  This uses the interal accumulator sums and sums-of-squares, and number of accumulator iterations.
+#'
+#' The mean is estimated as: sum / iterations.
+#'
+#' The variance is estimated as: (sumSq - sum^2/iterations) / (iterations-1), and the square root of this is returned as an estimate of standard deviation.
+#' 
+#' @param mcmc A compiled or uncompiled MCMC algorithm, as created by buildMCMC
+#'
+#' @return A numeric matrix, first row containing estimated means, and second row containing estimated standard deviations.
+#' 
+#' @author Daniel Turek
+#' 
+#' @export
+accumulatorsSummary <- accumulatorSummary
+
+
+
+
 
 ## formerly used in conf$printSamplers(byType = TRUE)
 ## to compress scalar index ranges of variables.

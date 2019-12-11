@@ -81,6 +81,8 @@
 #' Accumulator variables must be specified in the MCMC configuration object, using either the \code{setAccumulators} method of the MCMC configuration object as \code{conf$setAccumulators('x', 'y')}, or via the \code{accumulators} argument to \code{configureMCMC} as \code{conf <- configureMCMC(Rmodel, accumulators = c('x', 'y'))}.  Accumulator variables can be reset using \code{conf$resetAccumulators()}.
 #'
 #' After running an MCMC algorithm, a matrix containing the cumulative sums, and sums-of-squares, for the specified variables can be retrieved using \code{as.matrix(mcmc$mvAccumulators)}.  The first row of this matrix contains the cumulative sums, and the second row contains the cumulative sums-of-squares.  The total number of summed values (resulting from that many MCMC iterations) can be retrieved using the \code{getAccumulatorIterations} method of the MCMC object, as \code{mcmc$getAccumulatorIterations()}.
+#'
+#' A convenience function \code{accumulatorSummary} is also provided, which operates on an MCMC object as \code{accumulatorSummary(mcmc)}, and returns estimates of the posterior mean and standard deviation for each accumulator variable.  See \code{help(accumulatorSummary)} for the calculations used.
 #' 
 #' @examples
 #' \dontrun{

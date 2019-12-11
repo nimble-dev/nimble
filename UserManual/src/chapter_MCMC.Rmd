@@ -446,6 +446,8 @@ Accumulator variables (for recording the cumulative sums and sums-of-squares) ca
 
 A matrix containing the cumulative sums and sums-of-squares can be accessed from the compiled MCMC object as shown below.  The first matrix row contain cumulative sums, and the second row contains cumulative sums-of-squares.  In addition, the total number of accumulated samples can be accessed using the `getAccumulatorIterations` method of the MCMC object.  Note that values are accumulated regardless of any thinning or burn-in specified.
 
+A convenience function `accumulatorSummary` is also provided, which returns estimates of the posterior mean and standard deviation for each accumulator variable.  See `help(accumulatorSummary)` for the calculations used.
+
 ```{r, eval=FALSE}
 mcmcConf <- configureMCMC(Rmodel)
 mcmcConf$setAccumulators("x", "y")
@@ -455,6 +457,7 @@ Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
 Cmcmc$run(10000)
 accumulators <- as.matrix(Cmcmc$mvAccumulators)
 accumulatorIterations <- Cmcmc$getAccumulatorIterations()
+accumulatorSummary(Cmcmc)   ## estimated mean and sd
 ```
 
 
