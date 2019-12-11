@@ -81,6 +81,7 @@ nimbleModel <- function(code,
     if(is.null(name)) name <- paste0(gsub(" ", "_", substr(deparse(substitute(code))[1], 1, 10)),
                                      '_',
                                      nimbleModelID())
+    name <- gsub("::", "_cc_", name) ## :: can arise from a call via do.call, for example, giving name with "base::quote_"...
     if(length(constants) && sum(names(constants) == ""))
       stop("BUGSmodel: 'constants' must be a named list")
     if(length(dimensions) && sum(names(dimensions) == ""))
