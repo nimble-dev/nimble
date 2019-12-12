@@ -653,7 +653,7 @@ The `configureRJ` function modifies the MCMC configuration to (1) assign sampler
 
 <!--  See `help(configureRJ)` for details. -->
 
-In the following we provide an example for the two different model specifications. 
+In the following we provide an example for the two different model specifications.
 
 ### Using indicator variables {#sec:rjmcmc-indicator}
 
@@ -666,7 +666,6 @@ code <- nimbleCode({
   beta1 ~ dnorm(0, sd = 100)
   beta2 ~ dnorm(0, sd = 100)
   sigma ~ dunif(0, 100) 
-  
   z1 ~ dbern(psi)  ## indicator variable associated with beta1
   z2 ~ dbern(psi)  ## indicator variable associated with beta2
   psi ~ dbeta(1, 1) ## hyperprior on inclusion probability
@@ -756,7 +755,7 @@ RJexampleConf2 <- configureMCMC(RJexampleModel2)
 RJexampleConf2$printSamplers()
 ```
 
-In this case, since there are no indicator variables, we need to pass to `configureRJ` the prior inclusion probabilities for each node in `targetNodes`, by specifying either one common value or a vector of values for the argument `priorProb`. Notice that this case does not allow for a stochastic prior. 
+In this case, since there are no indicator variables, we need to pass to `configureRJ` the prior inclusion probabilities for each node in `targetNodes`, by specifying either one common value or a vector of values for the argument `priorProb`. This case does not allow for a stochastic prior. 
 
 
 ```{r no indicators: configureRJ, results = "hide"}
