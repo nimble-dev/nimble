@@ -5,8 +5,9 @@
 \alias{CRP}
 \alias{CRP_concentration}
 \alias{DPmeasure}
-\alias{RJ}
+\alias{RJ_fixed_prior}
 \alias{RJ_indicator}
+\alias{RJ_toggled}
 \alias{RW}
 \alias{RW_PF}
 \alias{RW_PF_block}
@@ -26,8 +27,9 @@
 \alias{sampler_CRP}
 \alias{sampler_CRP_concentration}
 \alias{sampler_CRP_old}
-\alias{sampler_RJ}
+\alias{sampler_RJ_fixed_prior}
 \alias{sampler_RJ_indicator}
+\alias{sampler_RJ_toggled}
 \alias{sampler_RW}
 \alias{sampler_RW_PF}
 \alias{sampler_RW_PF_block}
@@ -43,10 +45,8 @@
 \alias{sampler_ess}
 \alias{sampler_posterior_predictive}
 \alias{sampler_slice}
-\alias{sampler_toggled}
 \alias{samplers}
 \alias{slice}
-\alias{toggled}
 \title{MCMC Sampling Algorithms}
 \usage{
 sampler_BASE()
@@ -87,11 +87,11 @@ sampler_CAR_normal(model, mvSaved, target, control)
 
 sampler_CAR_proper(model, mvSaved, target, control)
 
-sampler_RJ(model, mvSaved, target, control)
+sampler_RJ_fixed_prior(model, mvSaved, target, control)
 
 sampler_RJ_indicator(model, mvSaved, target, control)
 
-sampler_toggled(model, mvSaved, target, control)
+sampler_RJ_toggled(model, mvSaved, target, control)
 
 sampler_CRP_concentration(model, mvSaved, target, control)
 
@@ -253,9 +253,9 @@ The RW_llFunctionBlock sampler accepts the following control list elements:
 \section{RW_PF sampler}{
 
 
-The particle filter sampler allows the user to perform PMCMC (Andrieu et al., 2010), integrating over latent nodes in the model to sample top-level parameters.  The \code{RW_PF} sampler uses a Metropolis-Hastings algorithm with a univariate normal proposal distribution for a scalar parameter.  Note that latent states can be sampled as well, but the top-level parameter being sampled must be a scalar.   A bootstrap, auxiliary, or user defined particle filter can be used to integrate over latent states.
+The particle filter sampler allows the user to perform particle MCMC (PMCMC) (Andrieu et al., 2010), primarily for state-space or hidden Markov models of time-series data. This method uses Metropolis-Hastings samplers for top-level parameters but uses the likelihood approximation of a particle filter (sequential Monte Carlo) to integrate over latent nodes in the time-series.  The \code{RW_PF} sampler uses an adaptive Metropolis-Hastings algorithm with a univariate normal proposal distribution for a scalar parameter.  Note that samples of the latent states can be retained as well, but the top-level parameter being sampled must be a scalar.   A bootstrap, auxiliary, or user defined particle filter can be used to integrate over latent states.
 
-For more information about using a user defined sampler within a PMCMC sampler, see the NIMBLE User Manual.
+For more information about user-defined samplers within a PMCMC sampler, see the NIMBLE User Manual.
 
 The \code{RW_PF} sampler accepts the following control list elements:
 \itemize{
@@ -263,32 +263,34 @@ The \code{RW_PF} sampler accepts the following control list elements:
 \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the RW sampler will perform its adaptation procedure.  This updates the scale variable, based upon the sampler's achieved acceptance rate over the past adaptInterval iterations. (default = 200)
 \item scale. The initial value of the normal proposal standard deviation.  If \code{adaptive = FALSE}, scale will never change. (default = 1)
 \item pfNparticles.  The number of particles to use in the approximation to the log likelihood of the data (default = 1000).
-\item latents.  Character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function.
+\item latents.  Character vector specifying the nodes that are latent states over which the particle filter will operate to approximate the log-likelihood function.
 \item pfType.  Character argument specifying the type of particle filter that should be used for likelihood approximation.  Choose from \code{"bootstrap"} and \code{"auxiliary"}.  Defaults to \code{"bootstrap"}.
-\item pfControl.  A control list that is passed to the particle filter function.  For details on control lists for bootstrap or auxiliary particle filters, see \code{\link{buildBootstrapFilter}} or \code{\link{buildAuxiliaryFilter}} respectively.  Additionally, this can be used to pass custom arguments into a user defined particle filter.
+\item pfControl.  A control list that is passed to the particle filter function.  For details on control lists for bootstrap or auxiliary particle filters, see \code{\link{buildBootstrapFilter}} or \code{\link{buildAuxiliaryFilter}} respectively.  Additionally, this can be used to pass custom arguments into a user-defined particle filter.
 \item pfOptimizeNparticles.  A logical argument, specifying whether to use an experimental procedure to automatically determine the optimal number of particles to use, based on Pitt and Shephard (2011).  This will override any value of \code{pfNparticles} specified above.
+\item pf.  A user-defined particle filter object, if a bootstrap or auxiliary particle filter is not adequate.
 }
 }
 
 \section{RW_PF_block sampler}{
 
 
-The particle filter sampler allows the user to perform PMCMC (Andrieu et al., 2010), integrating over latent nodes in the model to sample top-level parameters.  The \code{RW_PF_block} sampler uses a Metropolis-Hastings algorithm with a multivariate normal proposal distribution.  A bootstrap, auxiliary, or user defined particle filter can be used to integrate over latent states.
+The particle filter block sampler allows the user to perform particle MCMC (PMCMC) (Andrieu et al., 2010) for multiple parameters jointly, primarily for state-space or hidden Markov models of time-series data.  This method uses Metropolis-Hastings block samplers for top-level parameters but uses the likelihood approximation of a particle filter (sequential Monte Carlo) to integrate over latent nodes in the time-series.  The \code{RW_PF} sampler uses an adaptive Metropolis-Hastings algorithm with a multivariate normal proposal distribution.  Note that samples of the latent states can be retained as well, but the top-level parameter being sampled must be a scalar.   A bootstrap, auxiliary, or user defined particle filter can be used to integrate over latent states.
 
-For more information about using a user defined sampler within a PMCMC sampler, see the NIMBLE User Manual.
+For more information about user-defined samplers within a PMCMC sampler, see the NIMBLE User Manual.
 
 The \code{RW_PF_block} sampler accepts the following control list elements:
 \itemize{
 \item adaptive. A logical argument, specifying whether the sampler should adapt the proposal covariance throughout the course of MCMC execution. (default = TRUE)
-\item adaptScaleOnly. A logical argument, specifying whether adaption should be done only for \code{scale} (TRUE) or also for \code{provCov} (FALSE).  This argument is only relevant when \code{adaptive = TRUE}.  When \code{adaptScaleOnly = FALSE}, both \code{scale} and \code{propCov} undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When \code{adaptScaleOnly = TRUE}, only the proposal scale is adapted. (default = FALSE)
+\item adaptScaleOnly. A logical argument, specifying whether adaptation should be done only for \code{scale} (TRUE) or also for \code{provCov} (FALSE).  This argument is only relevant when \code{adaptive = TRUE}.  When \code{adaptScaleOnly = FALSE}, both \code{scale} and \code{propCov} undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When \code{adaptScaleOnly = TRUE}, only the proposal scale is adapted. (default = FALSE)
 \item adaptInterval. The interval on which to perform adaptation. (default = 200)
 \item scale. The initial value of the scalar multiplier for \code{propCov}.  If \code{adaptive = FALSE}, \code{scale} will never change. (default = 1)
 \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the \code{'identity'}, in which case the identity matrix of the appropriate dimension will be used for the initial proposal covariance matrix. (default is \code{'identity'})
 \item pfNparticles.  The number of particles to use in the approximation to the log likelihood of the data (default = 1000).
-\item latents.  Character vector specifying the latent model nodes over which the particle filter will stochastically integrate to estimate the log-likelihood function.
+\item latents.  Character vector specifying the nodes that are latent states over which the particle filter will operate to approximate the log-likelihood function.
 \item pfType.  Character argument specifying the type of particle filter that should be used for likelihood approximation.  Choose from \code{"bootstrap"} and \code{"auxiliary"}.  Defaults to \code{"bootstrap"}.
 \item pfControl.  A control list that is passed to the particle filter function.  For details on control lists for bootstrap or auxiliary particle filters, see \code{\link{buildBootstrapFilter}} or \code{\link{buildAuxiliaryFilter}} respectively.  Additionally, this can be used to pass custom arguments into a user defined particle filter.
 \item pfOptimizeNparticles.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt and Shephard (2011).  This will override any value of \code{pfNparticles} specified above.
+\item pf.  A user-defined particle filter object, if a bootstrap or auxiliary particle filter is not adequate.
 }
 }
 
@@ -380,21 +382,22 @@ The posterior_predictive sampler functions by calling the simulate() method of r
 The posterior_predictive sampler accepts no control list arguments.
 }
 
-\section{RJ sampler}{
+\section{RJ_fixed_prior sampler}{
 
- 
-This sampler performs reversible jump MCMC steps for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{configureRJ} function, when the model code is written without using indicator variables. See \code{help{configureRJ}} for details. It is not intended for direct assignment by users.
+
+This sampler proposes addition/removal for variable of interest in the framework of variable selection using reversible jump MCMC, with a specified prior probability of inclusion.  A normal proposal distribution is used to generate proposals for the addition of the variable. This is a specialized sampler used by \code{configureRJ} function, when the model code is written without using indicator variables. See \code{help{configureRJ}} for details. It is not intended for direct assignment.
 }
 
 \section{RJ_indicator sampler}{
 
- 
-This sampler performs reversible jump MCMC steps for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{configureRJ} function, when the model code is written using indicator variables. See \code{help{configureRJ}} for details. It is not intended for direct assignment by users.
+
+This sampler proposes transitions of a binary indicator variable, corresponding to a variable of interest, in the framework of variable selection using reversible jump MCMC.  This is a specialized sampler used by \code{configureRJ} function, when the model code is written using indicator variables. See \code{help{configureRJ}} for details. It is not intended for direct assignment.
 }
 
-\section{toggled sampler}{
+\section{RJ_toggled sampler}{
 
-This sampler wraps around the assigned sampler for a node and does sampling only when the target is in the model, as part of reversible jump MCMC. This is a specialized sampler used by \code{configureRJ} when adding a reversible jump MCMC . See \code{help{configureRJ}} for details. It is not intended for direct assignment by users.
+
+This sampler operates in the framework of variable selection using reversible jump MCMC.  Specifically, it conditionally performs updates of the target variable of interest using the originally-specified sampling configuration, when variable is "in the model".  This is a specialized sampler used by \code{configureRJ} when adding a reversible jump MCMC . See \code{help{configureRJ}} for details. It is not intended for direct assignment.
 }
 \examples{
 ## y[1] ~ dbern() or dbinom():

@@ -6,7 +6,7 @@
 
 
 
-#' @rdname RJ_samplers
+#' @rdname samplers
 #' @export
 #'
 sampler_RJ_fixed_prior <- nimbleFunction(
