@@ -10,7 +10,9 @@ USER LEVEL CHANGES
 
 -- Cleaned up handling of linear predictors in regression-style models to avoid an incorrect warning when indexing the result of matrix multiplication (PR #929).
 
--- Modified handling of NAs in model nodes under truncation or dynamic indexing to avoid printing warnings when calculating the uncompiled model (PR #920). 
+-- Modified handling of NAs in model nodes under truncation or dynamic indexing to avoid printing warnings when calculating the uncompiled model (PR #920).
+
+-- Improved speed of 'configureMCMC' (PR #972).
 
 -- Added the scalarComponents argument to addSampler method of MCMC configuration objects, which enables adding independent univariate samplers to all scalar componets of a specified target node or variable.
 
@@ -20,9 +22,13 @@ USER LEVEL CHANGES
 
 -- Improved output from printSamplers, including indicating if conjugacy is actually used in BNP mixture models using the dCRP distribution.
 
+-- Added a warning when user specifies a model with non-dynamic indexes specified in 'data' or 'inits' rather than the more computationally-efficient placement in 'constants' (PR #963).
+
 -- Added a warning when 'inits' argument to nimbleModel is not a list.
 
--- Modified file path handling in Windows that should work on more file-system configurations.
+-- Modified file path handling in Windows that should work on more file-system configurations (PR #957).
+
+-- Added tip for dealing with installation problems and added information on how to properly parallelize nimble functionality to the user manual.
 
 BUG FIXES
 
@@ -35,6 +41,8 @@ But IIUC it would be possible, similar to the bootstrap filter, to make this opt
 -- Fixed bug concerning incorrect dependency tracking that affected particle filtering for models with deterministic nodes between multiple latent states of the same time step.
 
 -- Fixed bug concerning tracking re-weighting and resampling in auxiliary particle filter in the default 'saveAll=FALSE' case.
+
+-- Modified bootstrap filter to always resample in last time step (even if 'threshold' control argument is less than 1) so that 'mvEWsamples' can always be considered equally-weighted.
 
 -- Modified auxiliary particle filter to omit multiplication by p(x_t+1 | x_t) in look-ahead. This now follows Pitt and Shephard (1999).
 
@@ -54,11 +62,19 @@ But IIUC it would be possible, similar to the bootstrap filter, to make this opt
 
 -- Fixed a bug preventing use of 'data' as the name of a data node in the model (PR #946).
 
+-- Fixed a bug preventing use of 'nimbleModel' via 'do.call' (PR #969).
+
+-- Fixed missing export of 'any_na' and 'any_nan' for use in nimbleFunctions.
+
+-- Fixed conjugacy checking to detect conjugacy in more complicated cases involving linear predictors (PR #958).
+
 DEVELOPER LEVEL CHANGES
 
 -- Add rudimentary support for multiple inheritance (PR #943).
 
 -- Match int and unsigned int to silence Windows compiler warnings (PR #914).
+
+-- Modified some naming involved in reversible jump MCMC for variable selection. Added error trapping if the node being considered has a multivariate prior (PR #964).
 
 
                             CHANGES IN VERSION 0.8.0 (June 2019)
