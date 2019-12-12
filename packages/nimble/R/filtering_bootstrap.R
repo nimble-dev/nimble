@@ -133,7 +133,7 @@ bootFStep <- nimbleFunction(
     
     ## Determine whether to resample by weights or not.
     if(ess < threshNum){
-      if(defaultResamplerFlag == TRUE){
+      if(defaultResamplerFlag){
         rankSample(wts, m, ids, silent)	 
       }
       else{
@@ -194,7 +194,7 @@ bootFStep <- nimbleFunction(
 #' Each of the \code{control()} list options are described in detail here:
 #' \describe{
 #'  \item{thresh}{ A number between 0 and 1 specifying when to resample: the resampling step will occur when the
-#'   effective sample size is less than \code{thresh} times the number of particles.  Defaults to 0.8.}
+#'   effective sample size is less than \code{thresh} times the number of particles. Defaults to 0.8. Note that at the last time step, resampling will always occur so that the \code{mvEWsamples} \code{modelValues} contains equally-weighted samples.}
 #'  \item{resamplingMethod}{The type of resampling algorithm to be used within the particle filter. Can choose between \code{'default'} (which uses NIMBLE's \code{rankSample()} function),  \code{'systematic'}, \code{'stratified'}, \code{'residual'}, and \code{'multinomial'}.  Defaults to \code{'default'}.  Resampling methods other than \code{'default'} are currently experimental.}
 #'  \item{saveAll}{Indicates whether to save state samples for all time points (TRUE), or only for the most recent time point (FALSE)}
 #'  \item{smoothing}{Decides whether to save smoothed estimates of latent states, i.e., samples from f(x[1:t]|y[1:t]) if \code{smoothing = TRUE}, or instead to save filtered samples from f(x[t]|y[1:t]) if \code{smoothing = FALSE}.  \code{smoothing = TRUE} only works if \code{saveAll = TRUE}.}
@@ -263,21 +263,20 @@ buildBootstrapFilter <- nimbleFunction(
     if(is.null(resamplingMethod)) resamplingMethod <- 'default'
     if(!(resamplingMethod %in% c('default', 'multinomial', 'systematic', 'stratified',
                                  'residual')))
-       stop('resamplingMethod must be one of: "default", "multinomial", "systematic",
-            "stratified", or "residual". ')
+      stop('buildBootstrapFilter: "resamplingMethod" must be one of: "default", "multinomial", "systematic", "stratified", or "residual". ')
     ## latent state info
     nodes <- findLatentNodes(model, nodes, timeIndex)  
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
-    if(length(unique(dims)) > 1) stop('sizes or dimensions of latent states
-                                      varies')
+    if(length(unique(dims)) > 1)
+      stop('buildBootstrapFilter: sizes or dimensions of latent states varies.')
     vars <- model$getVarNames(nodes =  nodes)  
 
     my_initializeModel <- initializeModel(model, silent = silent)
     
-    if(0>thresh || 1<thresh || !is.numeric(thresh)) stop('thresh must be between
-                                                         0 and 1')
-    if(!saveAll & smoothing) stop("must have saveAll = TRUE for smoothing to
-                                  work")
+    if(0 > thresh || 1 < thresh || !is.numeric(thresh))
+      stop('buildBootstrapFilter: "thresh" must be between 0 and 1.')
+    if(!saveAll & smoothing)
+      stop("buildBootstrapFilter: must have 'saveAll = TRUE' for smoothing to work.")
     ## Create mv variables for x state and sampled x states.  If saveAll=TRUE, 
     ## the sampled x states will be recorded at each time point.
     modelSymbolObjects <- model$getSymbolTable()$getSymbolObjects()[vars]
@@ -295,7 +294,7 @@ buildBootstrapFilter <- nimbleFunction(
       type <- c(type, "double")
       size$wts <- length(dims)
       ##  Only need one weight per particle (at time T) if smoothing == TRUE.
-      if(smoothing == TRUE)
+      if(smoothing)
         size$wts <- 1 
       mvWSamples  <- modelValues(modelValuesConf(vars = names,
                                               types = type,
@@ -333,22 +332,23 @@ buildBootstrapFilter <- nimbleFunction(
   },
   run = function(m = integer(default = 10000)) {
     returnType(double())
-    if(initModel == TRUE) my_initializeModel$run()
+    if(initModel) my_initializeModel$run()
     resize(mvWSamples, m)
     resize(mvEWSamples, m)
     threshNum <- ceiling(thresh*m)
     logL <- 0   
-    ## prevSamp indicates whether resampling took place at the
-    ## previous time point.
+    ## prevSamp indicates whether resampling took place at the previous time point.
     prevSamp <- 1
-    for(iNode in seq_along(bootStepFunctions)) { 
-      out <- bootStepFunctions[[iNode]]$run(m,threshNum, prevSamp)
+    for(iNode in seq_along(bootStepFunctions)) {
+      if(iNode == length(bootStepFunctions))
+        threshNum <- m  ## always resample at last time step so mvEWsamples is equally-weighted
+      out <- bootStepFunctions[[iNode]]$run(m, threshNum, prevSamp)
       logL <- logL + out[1]
       prevSamp <- out[2]
       essVals[iNode] <<- bootStepFunctions[[iNode]]$returnESS()
       if(logL == -Inf) {lastLogLik <<- logL; return(logL)} 
       if(is.nan(logL)) {lastLogLik <<- -Inf; return(-Inf)}
-      if(logL == Inf) {lastLogLik <<- -Inf; return(-Inf)} 
+      if(logL == Inf)  {lastLogLik <<- -Inf; return(-Inf)} 
     }
     lastLogLik <<- logL
     return(logL)
