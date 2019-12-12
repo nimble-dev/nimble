@@ -180,8 +180,11 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
     buildSymbolTable()                    ## 
     genIsDataVarInfo()                    ## only the maxs is ever used, in newModel
     genVarNames()                         ## sets varNames <<- c(names(varInfo), names(logProbVarInfo))
+    warnRHSonlyDynIdx()                   ## warns user if RHS-only nodes used in indexing (inefficient)
     return(NULL)        
 })
+
+
 
 codeProcessIfThenElse <- function(code, constants, envir = parent.frame()) {
     codeLength <- length(code)
@@ -2713,6 +2716,39 @@ modelDefClass$methods(genIsDataVarInfo = function() {
 modelDefClass$methods(genVarNames = function() {
     ## uses varInfo and logProbVarInfo to set field: varNames
     varNames <<- c(names(varInfo), names(logProbVarInfo))
+})
+
+modelDefClass$methods(warnRHSonlyDynIdx = function() {
+    ## Warn if dynamic indexing involves non-constant RHS-only nodes as this causes
+    ## additional dependencies and slower computations.
+    for(i in seq_along(declInfo)) {
+        decl <- declInfo[[i]]
+        if(exists('dynamicIndexInfo', decl) && length(decl[['dynamicIndexInfo']])) {
+            ## Determine vars used in dynamic indexing.
+            vars <- lapply(decl[['dynamicIndexInfo']], function(x) {
+                if(exists('indexCode', x))
+                    return(all.vars(x[['indexCode']]))
+            })
+            vars <- unique(unlist(vars))
+            vars <- vars[vars %in% decl$rhsVars]
+            ## Evaluate indexing to determine nodes used in dynamic indexing.
+            nr <- min(50, nrow(decl$unrolledIndicesMatrix))  # avoid doing full expansion for speed
+            nodes <- lapply(seq_along(vars), function(idx) {
+                parentNode <- decl$symbolicParentNodesReplaced[[which(vars[idx] == decl$rhsVars)]]
+
+                return(sapply(seq_len(nr), function(row) {
+                    deparse(eval(substitute(substitute(e, 
+                                                       as.list(decl$unrolledIndicesMatrix[row, ])),
+                                                       list(e = parentNode))))
+                }))
+            })
+            nodes <- unique(unlist(nodes))
+            nodes <- nodes[nodes %in% maps$nodeNamesRHSonly]
+            if(length(nodes))
+                warning("Detected use of non-constant indexes: ", paste(nodes, collapse = ', '), ifelse(nr == 50, ", ...", "."), " For computational efficiency we recommend specifying these in 'constants'.")
+        }
+    }
+    return(NULL)
 })
 
 modelDefClass$methods(buildSymbolTable = function() {
