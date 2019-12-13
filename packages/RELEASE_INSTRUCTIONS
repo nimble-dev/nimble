@@ -41,6 +41,8 @@ run tests on all OS ideally
 change version number in UserManual/src/{title.tex,_output.yml}
 rebuild manual as further test of package
 
+run examples in nimble-demos as further test
+
 check reverse dependencies:
 
 from nimble/packages, with the current nimble .tar.gz in that directory, do:

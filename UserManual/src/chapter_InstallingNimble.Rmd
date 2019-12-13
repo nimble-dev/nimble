@@ -99,7 +99,7 @@ The following are some troubleshooting tips that have helped users in some situa
 
 For Windows:
 
-  - Be sure to check box to set `PATH` when installing Rtools.exe.  Alternatively, one can set the `PATH` manually using syntax similar to this (after changing `C:\\Rtools\\bin;C:\\Rtools\\mingw_64\\bin` to be appropriate for your system):
+  - Be sure to check box to set `PATH` when installing Rtools.exe.  Alternatively, one can set the `PATH` manually using syntax similar to this (after changing  `C:\\Rtools\\bin;C:\\Rtools\\mingw_64\\bin` to be appropriate for your system):
 ```{r, eval=FALSE}
 path <- Sys.getenv('PATH')
 newPath <- paste("C:\\Rtools\\bin;C:\\Rtools\\mingw_64\\bin;",

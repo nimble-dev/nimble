@@ -58,8 +58,10 @@ rTimeModel$mu_0 <- 1
 
 cTimeModel <- compileNimble(rTimeModel)
 ```
+
+#### Bootstrap filter
   
-  Here is an example of building and running the bootstrap filter.
+Here is an example of building and running the bootstrap filter.
   
 ```{r, boot_Filter_Chunk}
 
@@ -77,7 +79,10 @@ bootLLEst <- cBootF$run(parNum)
 # sample size (ESS) at each time point
 bootESS <- cBootF$returnESS()
 ```
-  Next, we provide an example of building and running the auxiliary particle filter. Note that a filter cannot be built on a model that already has a filter specialized to it, so we create a new copy of our state space model first.
+
+#### Auxiliary particle filter
+
+Next, we provide an example of building and running the auxiliary particle filter. Note that a filter cannot be built on a model that already has a filter specialized to it, so we create a new copy of our state space model first.
   
 ```{r, aux_Filter_Chunk, results = "hide"}
 
@@ -95,7 +100,9 @@ auxLLEst <- cAuxF$run(parNum)
 # sample size (ESS) at each time point
 auxESS <- cAuxF$returnESS()
 ```
-  
+
+#### Liu and West filter
+
 Now we give an example of building and running the Liu and West filter, which can sample from the posterior distribution of top-level parameters as well as latent states. Note that the Liu-West filter ofen performs poorly and is provided primarily for didactic purposes. The Liu and West filter accepts an additional `params` argument, specifying the top-level parameters to be sampled. 
 
 ```{r, lw_Filter_Chunk, results = "hide"}
@@ -113,7 +120,9 @@ cLWF <- compileNimble(rLWF,project = LWTimeModel)
 cLWF$run(parNum)
 ```
 
-Finally, we give an example of building and running the ensemble Kalman filter, which can sample from the posterior distribution of latent states. 
+#### Ensemble Kalman filter
+
+Next we give an example of building and running the ensemble Kalman filter, which can sample from the posterior distribution of latent states. 
 
 ```{r, ENKF_Filter_Chunk, results = "hide"}
 # Copy model
@@ -147,6 +156,8 @@ auxWts <- as.matrix(cAuxF$mvWSamples, "wts")
 # from posterior distribution of top-level parameters:
 aEWSamp <- as.matrix(cLWF$mvEWSamples, "a")
 ```
+
+#### Iterated filtering 2 (IF2)
 
 The IF2 method accomplishes maximum likelihood estimation using a scheme wherein both latent states and parameters are represented by particles that are weighted and resampled during the iterations.  Iterations include perturbations to the parameter particles following a schedule of decreasing magnitude to yield convergence to the MLE.
 
