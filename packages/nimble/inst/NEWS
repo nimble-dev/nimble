@@ -32,10 +32,6 @@ USER LEVEL CHANGES
 
 BUG FIXES
 
-[PdV: please add text on various changes to particle filters not yet reflected here.]
-[In particular I see this note in email and want to see whether changes were made in this regard:
-But IIUC it would be possible, similar to the bootstrap filter, to make this optional and instead carry forward the weights to the next iteration.  In fact the first part of an iteration looks like it is set up to have unequal weights from the previous iteration ( auxWts[i] <- auxll[i] + mvWSamples['wts',i][prevInd] ), but currently they will never be unequal because of the final resampling at the end of each iteration.  I want to ask if this makes sense or if you have recollections on complications I'm not seeing.]
-
 -- Remove 'pfResample' option (not the default) for particle MCMC (PMCMC) samplers as resampling is not justified by the theory of PMCMC samplers.
 
 -- Fixed bug concerning incorrect dependency tracking that affected particle filtering for models with deterministic nodes between multiple latent states of the same time step.
