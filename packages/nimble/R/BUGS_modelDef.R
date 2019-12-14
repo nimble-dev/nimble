@@ -2853,7 +2853,7 @@ modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TR
         if(unique)
             output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2GraphID_functions_and_RHSonly, ignoreNotFound = ignoreNotFound))
         else
-            output2 <- unlist(lapply(parseEvalNumericManyList(nodeName, env = maps$vars2GraphID_functions_and_RHSonly), unique))
+            output2 <- unlist(lapply(parseEvalNumericManyList(nodeName, env = maps$vars2GraphID_functions_and_RHSonly, ignoreNotFound = ignoreNotFound), unique))
     } else {
         output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2ID_elements, ignoreNotFound = ignoreNotFound))
     }
@@ -2943,8 +2943,8 @@ parseEvalNumericMany <- function(x, env, ignoreNotFound = FALSE) {
                     tmp <- try(as.numeric(eval(parse(text = val, keep.source = FALSE)[[1]], envir = env)), silent = TRUE)
                     if(is(tmp, 'try-error')) return(NA) else return(tmp)
                 }, USE.NAMES = FALSE)
-                return(output)
-            } else return(output)
+            }
+            return(output)
         } else {
             output <- try(as.numeric(eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)), silent = TRUE)
             if(is(output, 'try-error'))
@@ -2964,19 +2964,36 @@ parseEvalNumericMany <- function(x, env, ignoreNotFound = FALSE) {
 }
 
 
-parseEvalNumericManyList <- function(x, env) {
-    withCallingHandlers(
-        eval(.Call(makeParsedVarList, x), envir = env)
-        ## Above line replaces:
-        ## if(length(x) > 1) {
-        ##     eval(parse(text = paste0('list(', paste0("as.numeric(",x,")", collapse=','),')'), keep.source = FALSE)[[1]], envir = env)
-        ## } else 
-        ##     eval(parse(text = paste0('list(as.numeric(',x,'))'), keep.source = FALSE)[[1]], envir = env)
-       ,
-        error = function(cond) {
-            parseEvalNumericManyHandleError(cond, x, env)
+parseEvalNumericManyList <- function(x, env, ignoreNotFound = FALSE) {
+    if(ignoreNotFound) {  ## Return NA when not found.
+        if(length(x) > 1) {
+            output <- try(eval(.Call(makeParsedVarList, x), envir = env), silent = TRUE)
+            if(is(output, 'try-error')) {  ## Go through individually
+                output <- sapply(x, function(val) {
+                    tmp <- try(eval(.Call(makeParsedVarList, val), envir = env), silent = TRUE)
+                    if(is(tmp, 'try-error')) return(NA) else return(tmp)
+                }, USE.NAMES = FALSE)
+            }
+            return(output)
+        } else {
+            output <- try(eval(.Call(makeParsedVarList, x), envir = env), silent = TRUE)
+            if(is(output, 'try-error'))
+                return(NA) else return(output)
         }
-    )
+    } else {
+        withCallingHandlers(
+            eval(.Call(makeParsedVarList, x), envir = env)
+            ## Above line replaces:
+            ## if(length(x) > 1) {
+            ##     eval(parse(text = paste0('list(', paste0("as.numeric(",x,")", collapse=','),')'), keep.source = FALSE)[[1]], envir = env)
+            ## } else 
+            ##     eval(parse(text = paste0('list(as.numeric(',x,'))'), keep.source = FALSE)[[1]], envir = env)
+           ,
+            error = function(cond) {
+                parseEvalNumericManyHandleError(cond, x, env)
+            }
+        )
+    }
 }
 
 parseEvalCharacter <- function(x, env){
