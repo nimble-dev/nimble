@@ -1331,6 +1331,8 @@ CRP_nonconjugate_moreGeneral <- nimbleFunction(
 )
 
 
+## All conjugate samplers assume J==M. This is checked in sampler_CRP.
+
 CRP_conjugate_dnorm_dnorm_moreGeneral <- nimbleFunction(
   name = "CRP_conjugate_dnorm_dnorm_moreGeneral",
   contains = CRP_helper,
@@ -1352,7 +1354,7 @@ CRP_conjugate_dnorm_dnorm_moreGeneral <- nimbleFunction(
       for(j1 in 1:J) {
         dataVar <- model$getParam(dataNodes[(i-1)*J+j1], 'var')
         y <- values(model, dataNodes[(i-1)*J+j1])[1]
-        out <- out + dnorm(y, priorMean[j1], sqrt(priorVar[j1] + dataVar), log=TRUE) #model$getLogProb(dataNodes[(i-1)*J+j1])
+        out <- out + dnorm(y, priorMean[j1], sqrt(priorVar[j1] + dataVar), log=TRUE) 
       }
       return(out)
     },
@@ -1363,6 +1365,67 @@ CRP_conjugate_dnorm_dnorm_moreGeneral <- nimbleFunction(
         postVar <- 1 / (1 / dataVar + 1 / priorVar[j1])
         postMean <- postVar * (y / dataVar + priorMean[j1] / priorVar[j1])
         values(model, marginalizedNodes[(j-1)*J+j1]) <<- c(rnorm(1, postMean, sqrt(postVar)))
+      }
+    }
+  )
+)
+
+CRP_conjugate_dnorm_dnorm_nonidentity_moreGeneral <- nimbleFunction(
+  name = "CRP_conjugate_dnorm_dnorm_nonidentity_moreGeneral",
+  contains = CRP_helper,
+  setup = function(model, marginalizedNodes, dataNodes, intermNodes, nInterm, J, M) {
+    priorMean <- nimNumeric(J+1)
+    priorVar <- nimNumeric(J+1)
+    offset <- nimNumeric(J+1)
+    coeff <- nimNumeric(J+1)
+    currentValue <- nimNumeric(J+1)
+  },
+  methods = list(
+    storeParams = function() {
+      for(j1 in 1:J) {
+          priorMean[j1] <<- model$getParam(marginalizedNodes[j1], 'mean')
+          priorVar[j1] <<- model$getParam(marginalizedNodes[j1], 'var')
+      }
+    },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {
+        ## In mean of observation, determine a,b in 'a + b*mu[xi[i]]'.
+        currentValue <<- values(model, marginalizedNodes[((j-1)*J+1):(j*J)])  
+        values(model, marginalizedNodes[((j-1)*J+1):(j*J)]) <<- 0
+        model$calculate(intermNodes[((i-1)*nInterm+1):(i*nInterm)])  
+        model$calculate(dataNodes[((i-1)*J+1):(i*J)])  ## is this necessary given getParam should just need intermediates?
+        for(j1 in 1:J)
+            offset[j1] <<- model$getParam(dataNodes[(i-1)*J+j1], 'mean')
+        values(model, marginalizedNodes[((j-1)*J+1):(j*J)]) <<- 1
+        model$calculate(intermNodes[((i-1)*nInterm+1):(i*nInterm)])  
+        model$calculate(dataNodes[((i-1)*J+1):(i*J)])  ## is this necessary given getParam should just need intermediates?
+        for(j1 in 1:J)
+            coeff[j1] <<- model$getParam(dataNodes[(i-1)*J+j1], 'mean') - offset[j1]
+        values(model, marginalizedNodes[((j-1)*J+1):(j*J)]) <<- currentValue
+        ## Note as this is currently used, we do not need to update
+        ## the intermediate nodes or dataNodes logProb as
+        ## ordering of calculations in sampler_CRP does not require it because of
+        ## 1:1 mapping of cluster IDs to observations.
+        ## However, to reduce change of future bugs, we are updating here.
+        model$calculate(intermNodes[((i-1)*nInterm+1):(i*nInterm)])  
+        model$calculate(dataNodes[((i-1)*J+1):(i*J)])
+    },
+    calculate_prior_predictive = function(i = integer()) {
+      returnType(double())
+      out <- 0
+      for(j1 in 1:J) {
+          dataVar <- model$getParam(dataNodes[(i-1)*J+j1], 'var')
+          y <- values(model, dataNodes[(i-1)*J+j1])[1]
+          out <- out + dnorm(y, offset[j1] + coeff[j1]*priorMean[j1], sqrt(coeff[j1]^2 * priorVar[j1] + dataVar), log=TRUE)
+      }
+      return(out)
+    },
+    sample = function(i = integer(), j = integer()) {
+      for(j1 in 1:J) {
+          dataVar <- model$getParam(dataNodes[(i-1)*J+j1], 'var')
+          y <- values(model, dataNodes[(i-1)*J+j1])[1]
+          postVar <- 1 / (coeff[j1]^2 / dataVar + 1 / priorVar[j1])
+          postMean <- postVar * (coeff[j1]*(y-offset[j1]) / dataVar + priorMean[j1] / priorVar[j1])
+          values(model, marginalizedNodes[(j-1)*J+j1]) <<- c(rnorm(1, postMean, sqrt(postVar)))
       }
     }
   )
@@ -1891,7 +1954,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     } else 
       sampler <- switch(conjugacyResult,
                         conjugate_dnorm_dnorm = 'CRP_conjugate_dnorm_dnorm_moreGeneral',
-                        conjugate_dnorm_dnorm_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity',
+                        conjugate_dnorm_dnorm_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity_moreGeneral',
                         conjugate_dnorm_invgamma_dnorm = 'CRP_conjugate_dnorm_invgamma_dnorm_moreGeneral',
                         conjugate_dbeta_dbern  = 'CRP_conjugate_dbeta_dbern_moreGeneral',
                         conjugate_dbeta_dbin = 'CRP_conjugate_dbeta_dbin_moreGeneral',
@@ -1976,10 +2039,11 @@ sampler_CRP_moreGeneral <- nimbleFunction(
       ## Fix non-identity sampler for moreGeneral situation  
       if(sampler == "CRP_conjugate_dnorm_dnorm_nonidentity") {
           identityLink <- FALSE
-          helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, intermNodes, nInterm, calcNodes, type, p, min_nTilde)
+          helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, intermNodes, nIntermClusNodesPerClusID, nObsPerClusID, nClusNodesPerClusID)
       } else {
           if(sampler != "CRP_nonconjugate_moreGeneral" && nObsPerClusID != nClusNodesPerClusID)
               ## We shouldn't get to this point (based on conjugacy checking), but catch this if we do.
+              ## Note that our conjugate samplers use J (nObsPerClusID) instead of M (nClusNodesPerClusID) because they assume J=M.
               stop("Number of observations per group does not equal number of cluster parameters per group. NIMBLE's CRP sampling is not set up to handle this except for the non-conjugate sampler.")
           helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, nObsPerClusID, nClusNodesPerClusID)
       }
@@ -2058,9 +2122,9 @@ sampler_CRP_moreGeneral <- nimbleFunction(
             curLogProb[iprob] <<- 0 # <<-
             for(j1 in 1:nObsPerClusID) {
                 ## getLogProb can be done on a vector of nodes to avoid loop here.
-              curLogProb[iprob] <<- curLogProb[iprob] + model$getLogProb(dataNodes[(i-1)*nObsPerClusID+j1])   # <<-
+              curLogProb[iprob] <<- curLogProb[iprob] + model$getLogProb(dataNodes[(i-1)*nObsPerClusID+j1])  
             }  
-            curLogProb[iprob] <<- log(xiCounts[xiUniques[j]]) + curLogProb[iprob] # <<-
+            curLogProb[iprob] <<- log(xiCounts[xiUniques[j]]) + curLogProb[iprob] 
             reorderXiUniques[iprob] <- xiUniques[j]
             iprob <- iprob + 1
           }
@@ -2075,6 +2139,8 @@ sampler_CRP_moreGeneral <- nimbleFunction(
           }
           model$calculate(dataNodes[((i-1)*nObsPerClusID+1):(i*nObsPerClusID)])       
         }
+        if(!identityLink) 
+            helperFunctions[[1]]$calculate_offset_coeff(i, model[[target]][i])
         curLogProb[k] <<- log(conc) + helperFunctions[[1]]$calculate_prior_predictive(i) # <<- probability of sampling a new label, only k components because xi_i is a singleton
         
         ## Sample new cluster.
@@ -2097,15 +2163,15 @@ sampler_CRP_moreGeneral <- nimbleFunction(
           model$calculate(dataNodes[((i-1)*nObsPerClusID+1):(i*nObsPerClusID)])       
           curLogProb[j] <<- 0 # <<-
           for(j1 in 1:nObsPerClusID) {
-            curLogProb[j] <<- curLogProb[j] + model$getLogProb(dataNodes[(i-1)*nObsPerClusID+j1])   # <<-
+            curLogProb[j] <<- curLogProb[j] + model$getLogProb(dataNodes[(i-1)*nObsPerClusID+j1])   
           }  
-          curLogProb[j] <<- log(xiCounts[xiUniques[j]]) + curLogProb[j] # <<-
+          curLogProb[j] <<- log(xiCounts[xiUniques[j]]) + curLogProb[j] 
         }
         ## Second, compute probability of sampling a new cluster depending on the value of kNew.       
         if(kNew == 0) { # no new cluster can be created 
           curLogProb[k+1] <<- log(0)  # <<- k+1 <= n always because k==n requires all singletons, handled above
         } else { # a new cluster can be created
-          model[[target]][i] <<- kNew # <<-
+          model[[target]][i] <<- kNew 
           if(sampler == 'CRP_nonconjugate_moreGeneral'){
             helperFunctions[[1]]$sample(i, model[[target]][i])
             if(nIntermClusNodesPerClusID > 0) {
@@ -2113,7 +2179,9 @@ sampler_CRP_moreGeneral <- nimbleFunction(
             }
             model$calculate(dataNodes[((i-1)*nObsPerClusID+1):(i*nObsPerClusID)])       
           }
-          curLogProb[k+1] <<- log(conc) + helperFunctions[[1]]$calculate_prior_predictive(i) # # <<- probability of sampling a new label
+          if(!identityLink) 
+            helperFunctions[[1]]$calculate_offset_coeff(i, model[[target]][i])
+          curLogProb[k+1] <<- log(conc) + helperFunctions[[1]]$calculate_prior_predictive(i) # <<- probability of sampling a new label
         }
         
         # sample an index from 1 to (k+1)
