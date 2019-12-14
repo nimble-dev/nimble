@@ -1786,6 +1786,16 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     ## Check that no other non-data nodes depend on cluster variables. 
     if(!identical(sort(dataNodes), sort(stochDepsTildeNodes)))
       stop("sampler_CRP: Only the variables being clustered can depend on the cluster parameters.")  
+
+    ## Check that nodes in different clusters are distinct.
+    ## E.g., this would not be the case if a user specified a joint prior on all cluster nodes
+    ## Also check that clustering is done on stochastic nodes.
+    for(varIdx in seq_along(clusterVarInfo$clusterVars)) {
+        if(length(unique(clusterVarInfo$clusterNodes[[varIdx]])) != length(clusterVarInfo$clusterNodes[[varIdx]]))
+            stop("sampler_CRP: cluster parameters in different clusters must be part of conditionally independent nodes.")
+        if(any(model$isDeterm(clusterVarInfo$clusterNodes[[varIdx]])))
+            stop("findClusterNodes: detected that deterministic nodes are being clustered. Please use the dCRP node to cluster stochastic nodes.")
+    }
     
     ## Check that membership variable is independent of cluster nodes.
     ## Should be redundant with check that no other non-data nodes depend on cluster variables.
@@ -2286,9 +2296,6 @@ findClusterNodes <- function(model, target) {
         ## Note not clear when NULL would be the result...
         loopIndex[[varIdx]] <- loopIndexes
         
-        ## Rather than using indexing based on declaration that uses the tildeVar, we should probably substitute in
-        ## indexing based on the declaration of the xi node, so
-        ## thetaTilde[xi[1],j] would use all possible xi[i] values crossed with j values
         n <- nrow(unrolledIndices)
         if(n > 0 && loopIndex %in% dimnames(unrolledIndices)[[2]]) {  # catch cases like use of xi[2] rather than xi[i]
             ## Order so that loop over index of cluster ID in order of cluster ID so that
@@ -2372,11 +2379,6 @@ findClusterNodes <- function(model, target) {
             clusterIDs[[varIdx]] <- clusterIDs[[varIdx]][validNodes]
         }
 
-        ## Check that nodes in different clusters are distinct.
-        ## E.g., this would not be the case if a user specified a joint prior on
-        ## all cluster nodes
-        if(length(unique(clusterNodes[[varIdx]])) != length(clusterNodes[[varIdx]]))
-            stop("findClusterNodes: cluster parameters in different clusters must be part of conditionally independent nodes.")
         
         ## if(!all(clusterNodes[[varIdx]] %in% modelNodes)) {  # i.e., truncated representation
         ##     cnt <- nTilde[varIdx]
@@ -2399,9 +2401,6 @@ findClusterNodes <- function(model, target) {
     }
   }
 
-  for(varIdx in seq_along(clusterVars)) 
-      if(any(model$isDeterm(clusterNodes[[varIdx]])))
-          stop("findClusterNodes: detected that deterministic nodes are being clustered. Please use the dCRP node to cluster stochastic nodes.")
 
   nTilde <- sapply(clusterNodes, length)
   numNodesPerCluster <- sapply(clusterIDs, function(x) {
