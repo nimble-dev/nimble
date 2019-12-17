@@ -1890,6 +1890,40 @@ CRP_conjugate_dgamma_dinvgamma_moreGeneral <- nimbleFunction(
   )
 )
 
+CRP_conjugate_ddirch_dmulti_moreGeneral <- nimbleFunction(
+  name = "CRP_conjugate_ddirch_dmulti_moreGeneral",
+  contains = CRP_helper,
+  setup = function(model, marginalizedNodes, dataNodes, J, M) {
+    d <- length(model[[marginalizedNodes[1]]])
+    priorAlpha <- matrix(0, ncol=d, nrow=J)
+  },
+  methods = list(
+    storeParams = function() {
+      for(j1 in 1:J) {
+        priorAlpha[j1, ] <<- model$getParam(marginalizedNodes[j1], 'alpha') 
+      }
+    },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
+    calculate_prior_predictive = function(i = integer()) {
+      returnType(double())
+      out <- 0
+      for(j1 in 1:J) {
+        y <- values(model, dataNodes[(i-1)*J+j1])
+        out <- out + lfactorial(d) - sum(lfactorial(y) + lgamma(priorAlpha[j1, ])) +
+          lgamma(sum(priorAlpha[j1, ])) + sum(lgamma(priorAlpha[j1, ]+y)) - lgamma(sum(priorAlpha[j1, ]+y))
+      }
+      return(out)
+    },
+    sample = function(i = integer(), j = integer()) {
+      for(j1 in 1:J) {
+        y <- values(model, dataNodes[(i-1)*J+j1])
+        values(model, marginalizedNodes[(j-1)*J+j1]) <<- rdirch(1, alpha = priorAlpha[j1, ]+y) 
+      }
+    }
+  )
+)
+
+
 
 
 #' @rdname samplers
@@ -2059,7 +2093,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
                         conjugate_dgamma_dnorm = 'CRP_conjugate_dgamma_dnorm_moreGeneral',
                         conjugate_dgamma_dweib = 'CRP_conjugate_dgamma_dweib_moreGeneral',
                         conjugate_dgamma_dinvgamma = 'CRP_conjugate_dgamma_dinvgamma_moreGeneral',
-                        conjugate_ddirch_dmulti = 'CRP_conjugate_ddirch_dmulti',
+                        conjugate_ddirch_dmulti = 'CRP_conjugate_ddirch_dmulti_moreGeneral',
                         'CRP_nonconjugate_moreGeneral')  ## default if we don't have sampler set up for a conjugacy
 
 
