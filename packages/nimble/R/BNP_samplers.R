@@ -1435,7 +1435,7 @@ CRP_conjugate_dnorm_dnorm_nonidentity_moreGeneral <- nimbleFunction(
 CRP_conjugate_dnorm_invgamma_dnorm_moreGeneral <- nimbleFunction(
   name = "CRP_conjugate_dnorm_invgamma_dnorm_moreGeneral",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes1, marginalizedNodes2, dataNodes, J, M) {
+  setup = function(model, marginalizedNodes1, marginalizedNodes2, dataNodes, J) {
     priorMean <- nimNumeric(J+1)
     kappa <- nimNumeric(J+1)
     priorShape <- nimNumeric(J+1)
@@ -1474,6 +1474,56 @@ CRP_conjugate_dnorm_invgamma_dnorm_moreGeneral <- nimbleFunction(
     }
   )
 )
+
+
+CRP_conjugate_dmnorm_invwish_dmnorm_moreGeneral <- nimbleFunction(
+  name = "CRP_conjugate_dmnorm_invwish_dmnorm_moreGeneral",
+  contains = CRP_helper,
+  setup = function(model, marginalizedNodes1, marginalizedNodes2, dataNodes, J) {
+    d <- length(model[[marginalizedNodes1[1]]])
+    priorMean <- matrix(0, ncol=d, nrow=J)  #nimNumeric(d)
+    kappa <- nimNumeric(J+1)
+    df0 <- nimNumeric(J+1)
+    priorScale <- array(0, c(d, d, J)) # matrix(0, ncol=d, nrow=d)
+    c1 <- nimNumeric(J+1)
+  },
+  methods = list(
+    storeParams = function() {
+      for(j1 in 1:J) {
+        priorMean[j1, ] <<- model$getParam(marginalizedNodes1[j1], 'mean') 
+        kappa[j1] <<- values(model, marginalizedNodes2[j1])[1] / model$getParam(marginalizedNodes1[j1], 'cov')[1,1]
+        df0[j1] <<- model$getParam(marginalizedNodes2[j1], 'df') 
+        priorScale[, , j1] <<- model$getParam(marginalizedNodes2[j1], 'S') 
+        c1[j1] <<- d*(log(kappa[j1]) - log(1+kappa[j1]) - log(pi))/2 + df0[j1]*logdet(priorScale[, , j1])/2 +
+          sum(lgamma((df0[j1]+2-1:d)/2) - lgamma((df0[j1]+1-1:d)/2)) 
+      }
+    },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
+    calculate_prior_predictive = function(i = integer()) {
+      returnType(double())
+      out <- 0
+      for(j1 in 1:J) {
+        y <- values(model, dataNodes[(i-1)*J+j1])
+        c2 <- -(df0[j1]+1) * logdet(priorScale[, , j1] + (kappa[j1]/(kappa[j1]+1)) * (y-priorMean[j1, ])%*%t(y-priorMean[j1, ]) ) / 2
+        out <- out + c1[j1] + c2
+      }
+      return(out)
+    },
+    sample = function(i = integer(), j = integer()) {
+      for(j1 in 1:J) {
+        y <- values(model, dataNodes[(i-1)*J+j1])
+        tmp <- rinvwish_chol(1, chol(priorScale[, , j1] + (kappa[j1]/(kappa[j1]+1)) * (y-priorMean[j1, ])%*%t(y-priorMean[j1, ])),
+                             df = (df0[j1]+1), scale_param=TRUE )
+        values(model, marginalizedNodes2[(j-1)*J+j1]) <<- c(tmp)
+        values(model, marginalizedNodes1[(j-1)*J+j1]) <<- c(rmnorm_chol(1, mean = (kappa[j1] * priorMean[j1, ] + y)/(1 + kappa[j1]), 
+                                                               chol( tmp / (1+kappa[j1]) ),
+                                                               prec_param = FALSE))
+      }
+    }
+  )
+)
+
+
 
 
 CRP_conjugate_dgamma_dpois_moreGeneral <- nimbleFunction(
@@ -1812,7 +1862,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     n <- length(targetElements)
     
     ## Find nodes indexed by the CRP node.
-    clusterVarInfo <- findClusterNodes(model, target)
+    clusterVarInfo <- nimble:::findClusterNodes(model, target)
     tildeVars <- clusterVarInfo$clusterVars
 
     ##  Various checks that model structure is consistent with our CRP sampler. 
@@ -1956,6 +2006,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
                         conjugate_dnorm_dnorm = 'CRP_conjugate_dnorm_dnorm_moreGeneral',
                         conjugate_dnorm_dnorm_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity_moreGeneral',
                         conjugate_dnorm_invgamma_dnorm = 'CRP_conjugate_dnorm_invgamma_dnorm_moreGeneral',
+                        conjugate_dmnorm_invwish_dmnorm = 'CRP_conjugate_dmnorm_invwish_dmnorm_moreGeneral',
                         conjugate_dbeta_dbern  = 'CRP_conjugate_dbeta_dbern_moreGeneral',
                         conjugate_dbeta_dbin = 'CRP_conjugate_dbeta_dbin_moreGeneral',
                         conjugate_dbeta_dnegbin = 'CRP_conjugate_dbeta_dnegbin_moreGeneral',
@@ -2018,14 +2069,26 @@ sampler_CRP_moreGeneral <- nimbleFunction(
 
     ## Will need to revise conjugate norm-ig-norm handling in light of changes to clusterNodes handling,
     ## but leave for the moment.
-    if(p == 2 && sampler == "CRP_conjugate_dnorm_invgamma_dnorm_moreGeneral") {
-      for(i in seq_along(tildeVars)) {
-        if(model$getDistribution(clusterVarInfo$clusterNodes[[i]][1]) == 'dnorm') {
-          marginalizedNodes1 <- clusterVarInfo$clusterNodes[[i]]
-        } 
-        if(model$getDistribution(clusterVarInfo$clusterNodes[[i]][1]) == 'dinvgamma') {
-          marginalizedNodes2 <- clusterVarInfo$clusterNodes[[i]]
-        }
+    if(p == 2) {
+      if(sampler == "CRP_conjugate_dnorm_invgamma_dnorm_moreGeneral") {
+        for(i in seq_along(tildeVars)) {
+          if(model$getDistribution(clusterVarInfo$clusterNodes[[i]][1]) == 'dnorm') {
+            marginalizedNodes1 <- clusterVarInfo$clusterNodes[[i]]
+          } 
+          if(model$getDistribution(clusterVarInfo$clusterNodes[[i]][1]) == 'dinvgamma') {
+            marginalizedNodes2 <- clusterVarInfo$clusterNodes[[i]]
+          }
+        }  
+      }
+      if(sampler == "CRP_conjugate_dmnorm_invwish_dmnorm_moreGeneral") {
+        for(i in seq_along(tildeVars)) {
+          if(model$getDistribution(clusterVarInfo$clusterNodes[[i]][1]) == 'dmnorm') {
+            marginalizedNodes1 <- clusterVarInfo$clusterNodes[[i]]
+          } 
+          if(model$getDistribution(clusterVarInfo$clusterNodes[[i]][1]) == 'dinvwish') {
+            marginalizedNodes2 <- clusterVarInfo$clusterNodes[[i]]
+          }
+        }  
       }
       helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes1, marginalizedNodes2, dataNodes, nObsPerClusID)
       calcNodes <- model$getDependencies(c(target, marginalizedNodes1, marginalizedNodes2))
