@@ -1370,6 +1370,48 @@ CRP_conjugate_dnorm_dnorm_moreGeneral <- nimbleFunction(
   )
 )
 
+CRP_conjugate_dmnorm_dmnorm_moreGeneral <- nimbleFunction(
+  name = "CRP_conjugate_dmnorm_dmnorm_moreGeneral",
+  contains = CRP_helper,
+  setup = function(model, marginalizedNodes, dataNodes, J, M) {
+    d <- length(model[[marginalizedNodes[1]]])
+    priorMean <- matrix(0, ncol=d, nrow=J)
+    priorCov <- array(0, c(d, d, J))
+  },
+  methods = list(
+    storeParams = function() {
+      for(j1 in 1:J) {
+        priorMean[j1, ] <<- model$getParam(marginalizedNodes[j1], 'mean')
+        priorCov[, , j1] <<- model$getParam(marginalizedNodes[j1], 'cov') 
+      }
+    },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
+    calculate_prior_predictive = function(i = integer()) {
+      returnType(double())
+      out <- 0
+      for(j1 in 1:J) {
+        dataCov <- model$getParam(dataNodes[(i-1)*J+j1], 'cov')
+        y <- values(model, dataNodes[(i-1)*J+j1])  
+        out <- out + dmnorm_chol(y, priorMean[j1, ], chol(priorCov[, , j1] + dataCov), prec_param = FALSE, log=TRUE)
+      }
+      return(out)
+    },
+    sample = function(i = integer(), j = integer()) {
+      for(j1 in 1:J) {
+        dataCov <- model$getParam(dataNodes[(i-1)*J+j1], 'cov')
+        y <- values(model, dataNodes[(i-1)*J+j1])
+        
+        dataPrec <- inverse(dataCov)
+        priorPrec <- inverse(priorCov[, , j1])
+        postPrecChol <- chol(dataPrec + priorPrec)
+        postMean <- backsolve(postPrecChol, forwardsolve(t(postPrecChol), (dataPrec %*% y + priorPrec %*% priorMean[j1, ])[,1]))
+        values(model, marginalizedNodes[(j-1)*J+j1]) <<- rmnorm_chol(1, postMean, postPrecChol, prec_param = TRUE) 
+      }
+    }
+  )
+)
+
+
 CRP_conjugate_dnorm_dnorm_nonidentity_moreGeneral <- nimbleFunction(
   name = "CRP_conjugate_dnorm_dnorm_nonidentity_moreGeneral",
   contains = CRP_helper,
@@ -1992,11 +2034,11 @@ sampler_CRP_moreGeneral <- nimbleFunction(
       }
     }
     
-    helperFunctions <- nimbleFunctionList(CRP_helper)
+    helperFunctions <- nimble:::nimbleFunctionList(CRP_helper)
         
     ## use conjugacy to determine which helper functions to use
     if(control$checkConjugacy) {
-        conjugacyResult <- checkCRPconjugacy(model, target) 
+        conjugacyResult <- nimble:::checkCRPconjugacy(model, target) 
     } else conjugacyResult <- NULL
     
     if(is.null(conjugacyResult)) {
@@ -2004,6 +2046,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     } else 
       sampler <- switch(conjugacyResult,
                         conjugate_dnorm_dnorm = 'CRP_conjugate_dnorm_dnorm_moreGeneral',
+                        conjugate_dmnorm_dmnorm = 'CRP_conjugate_dmnorm_dmnorm_moreGeneral',
                         conjugate_dnorm_dnorm_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity_moreGeneral',
                         conjugate_dnorm_invgamma_dnorm = 'CRP_conjugate_dnorm_invgamma_dnorm_moreGeneral',
                         conjugate_dmnorm_invwish_dmnorm = 'CRP_conjugate_dmnorm_invwish_dmnorm_moreGeneral',
