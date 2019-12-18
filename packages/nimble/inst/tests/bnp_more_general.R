@@ -708,9 +708,7 @@ conf <- configureMCMC(model)
 conf$printSamplers()
 mcmc <- buildMCMC(conf)
 
-## Chris needs to do more checking of the cases below this line.
-
-## 3-d cases
+## 3-d case with non-variable 3rd index
 code <- nimbleCode({
   for(i in 1:3) {
     for(j in 1:4) {
@@ -727,42 +725,18 @@ code <- nimbleCode({
   xi[1:3] ~ dCRP(1, size=3)
 })
 
-Inits <- list(xi = c(1, 1, 1), 
+inits <- list(xi = c(1, 1, 1), 
               thetaTilde = array(0, c(3,2,4)))
-
 y <- matrix(5, nrow=3, ncol=4) 
-Data <- list(y=y)
-model <- nimbleModel(code, data=Data, inits=Inits)
+data <- list(y = y)
+model <- nimbleModel(code, data = data, inits = inits)
 nimble:::findClusterNodes(model, 'xi[1:3]')
+nimble:::checkCRPconjugacy(model, 'xi[1:5]')
+conf <- configureMCMC(model)
+conf$printSamplers()
+mcmc <- buildMCMC(conf)
 
-## 3-d: this is ok but arbitrary ordering by k and j
-code <- nimbleCode({
-    for(i in 1:3) {
-        for(k in 1:2) {
-            for(j in 1:4) {
-                y[i,k,j] ~ dnorm(thetaTilde[xi[i], k, j] , var = 1)
-            }
-        }
-    }
-    for(i in 1:3) {
-        for(j in 1:4) {
-            for(k in 1:2) {
-                thetaTilde[i, k, j] ~ dnorm(0,1)
-            }
-        }
-    }
-    xi[1:3] ~ dCRP(1, size=3)
-})
-
-Inits <- list(xi = c(1, 1, 1), 
-              thetaTilde = array(0, c(3,2,4)))
-
-y <- array(5, c(3,2,4))
-Data <- list(y=y)
-model <- nimbleModel(code, data=Data, inits=Inits)
-nimble:::findClusterNodes(model, 'xi[1:3]')
-
-## more 3-d
+## 3-d case with full third index
 code <- nimbleCode({
     for(i in 1:3) {
         for(k in 1:2) {
@@ -781,17 +755,18 @@ code <- nimbleCode({
     xi[1:3] ~ dCRP(1, size=3)
 })
 
-Inits <- list(xi = c(1, 1, 1), 
+inits <- list(xi = c(1, 1, 1), 
               thetaTilde = array(0, c(2,3,4)))
-
 y <- array(5, c(2,3,4))
-Data <- list(y=y)
-model <- nimbleModel(code, data=Data, inits=Inits)
+data <- list(y = y)
+model <- nimbleModel(code, data = data, inits = inits)
 nimble:::findClusterNodes(model, 'xi[1:3]')
+nimble:::checkCRPconjugacy(model, 'xi[1:5]')
+conf <- configureMCMC(model)
+conf$printSamplers()
+mcmc <- buildMCMC(conf)
 
-
-## weird indexing
-
+## index is a function - not allowed
 code <- nimbleCode({
   for(i in 1:3) {
     for(j in 1:4) {
@@ -802,15 +777,14 @@ code <- nimbleCode({
   xi[1:3] ~ dCRP(1, size=3)
 })
 
-Inits <- list(xi = c(1, 1, 1), 
+inits <- list(xi = c(1, 1, 1), 
               thetaTilde = matrix(0, nrow=3,  ncol=4))
+y <- matrix(5, nrow=3, ncol=4) 
+data <- list(y = y)
+model <- nimbleModel(code, data = data, inits = inits)
+nimble:::findClusterNodes(model, 'xi[1:3]')  # correctly errors
 
-y <- matrix(5, nrow=3, ncol=4) #rnorm(5*8, 5, 1)
-Data <- list(y=y)
-model <- nimbleModel(code, data=Data, inits=Inits)
-nimble:::findClusterNodes(model, 'xi[1:3]')
-
-## weird indexing - findClusterNodes finds that 'i+j' is a function and errors
+## index is a function - not allowed
 code <- nimbleCode({
   for(i in 1:3) {
     for(j in 1:4) {
@@ -821,18 +795,17 @@ code <- nimbleCode({
   xi[1:7] ~ dCRP(1, size=7)
 })
 
-Inits <- list(xi = rep(1,7), 
+inits <- list(xi = rep(1,7), 
               thetaTilde = matrix(0, nrow=3,  ncol=4))
 
-y <- matrix(5, nrow=3, ncol=4) #rnorm(5*8, 5, 1)
-Data <- list(y=y)
-model <- nimbleModel(code, data=Data, inits=Inits)
-nimble:::findClusterNodes(model, 'xi[1:7]')
+y <- matrix(5, nrow=3, ncol=4) 
+data <- list(y = y)
+model <- nimbleModel(code, data = data, inits = inits)
+nimble:::findClusterNodes(model, 'xi[1:7]') # correctly errors
 
 ## Cases of multiple use of CRP node 
 
-## use of xi[i] and xi[j] in same statement - errors out (correctly)
-
+## use of xi[i] and xi[j] in same statement - not allowed
 code <- nimbleCode({
   for(i in 1:3) {
     for(j in 1:4) {
@@ -842,16 +815,15 @@ code <- nimbleCode({
   }
   xi[1:4] ~ dCRP(1, size=4)
 })
-Inits <- list(xi = rep(1,7), 
+inits <- list(xi = rep(1,7), 
               thetaTilde = matrix(0, nrow=3,  ncol=4))
 
-y <- matrix(5, nrow=3, ncol=4) #rnorm(5*8, 5, 1)
-Data <- list(y=y)
-model <- nimbleModel(code, data=Data, inits=Inits)
-nimble:::findClusterNodes(model, 'xi[1:4]')
+y <- matrix(5, nrow=3, ncol=4) 
+data <- list(y = y)
+model <- nimbleModel(code, data = data, inits = inits)
+nimble:::findClusterNodes(model, 'xi[1:4]')  # correctly errors
 
-## use of xi[i] and xi[i] in same parameter - errors out (correctly)
-
+## use of xi[i] and xi[i] in same parameter - not allowed
 code <- nimbleCode({
   for(i in 1:4) {
     for(j in 1:4) {
@@ -861,38 +833,15 @@ code <- nimbleCode({
   }
   xi[1:4] ~ dCRP(1, size=4)
 })
-Inits <- list(xi = rep(1,7), 
+inits <- list(xi = rep(1,7), 
               thetaTilde = matrix(0, nrow=4,  ncol=4))
 
 y <- matrix(5, nrow=4, ncol=4)
-Data <- list(y=y)
-model <- nimbleModel(code, data=Data, inits=Inits)
+data <- list(y = y)
+model <- nimbleModel(code, data = data, inits = inits)
 nimble:::findClusterNodes(model, 'xi[1:4]')
 
-## xi[i] and xi[j] in different parameters
-
-code <- nimbleCode({
-  for(i in 1:4) {
-    for(j in 1:3) {
-      y[i,j] ~ dnorm(thetaTilde[xi[i]], var = s2Tilde[xi[j]])
-    }
-  }
-  for(i in 1:4)
-      thetaTilde[i] ~ dnorm(0,1)
-  for(i in 1:3)
-      s2Tilde[i] ~ dnorm(0,1)
-  xi[1:4] ~ dCRP(1, size=4)
-})
-Inits <- list(xi = rep(1,4))
-y <- matrix(5, nrow=4, ncol=3)
-Data <- list(y=y)
-model <- nimbleModel(code, data=Data, inits=Inits)
-nimble:::findClusterNodes(model, 'xi[1:4]')
-nimble:::checkCRPconjugacy(model, 'xi[1:4]')
-conf <- configureMCMC(model)
-mcmc <- buildMCMC(conf) # errors as there are 3 thetatildes and 4 s2tildes
-
-## variation on the above
+## xi[i] and xi[j] in separate parameters - not allowed
 code <- nimbleCode({
   for(i in 1:4) {
     for(j in 1:4) {
@@ -905,16 +854,14 @@ code <- nimbleCode({
       s2Tilde[i] ~ dnorm(0,1)
   xi[1:4] ~ dCRP(1, size=4)
 })
-Inits <- list(xi = rep(1,4))
+inits <- list(xi = rep(1,4))
 y <- matrix(5, nrow=4, ncol=4)
-Data <- list(y=y)
-model <- nimbleModel(code, data=Data, inits=Inits)
-nimble:::findClusterNodes(model, 'xi[1:4]')  # errors
-nimble:::checkCRPconjugacy(model, 'xi[1:4]')
+data <- list(y = y)
+model <- nimbleModel(code, data = data, inits = inits)
+nimble:::findClusterNodes(model, 'xi[1:4]')  # correctly errors
 
-
-## xi[i] used twice in same parameter
-
+## xi[i] used twice in same parameter legitimately
+## conjugate but we are not set up to use this conjugacy
 code <- nimbleCode({
     for(i in 1:4) {
         y[i] ~ dnorm(b0[xi[i]] + b1[xi[i]]*x[i], var = 1)
@@ -928,12 +875,13 @@ code <- nimbleCode({
 data = list(y = rnorm(4))
 inits = list(x = rnorm(4), xi = rep(1,4))
 model <- nimbleModel(code, data = data, inits = inits)
+nimble:::findClusterNodes(model, 'xi[1:4]')  
 nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # conjugacy not detected
 conf <- configureMCMC(model)
+conf$printSamplers()
 mcmc <- buildMCMC(conf)
 
 ## xi[i] used twice in same parameter, variation
-
 code <- nimbleCode({
     for(i in 1:4) {
         y[i] ~ dnorm(beta[xi[i], 1] + beta[xi[i], 2]*x[i], var = 1)
@@ -947,12 +895,13 @@ code <- nimbleCode({
 data = list(y = rnorm(4))
 inits = list(x = rnorm(4), xi = rep(1,4))
 model <- nimbleModel(code, data = data, inits = inits)
+nimble:::findClusterNodes(model, 'xi[1:4]')  
 nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # conjugacy not detected
 conf <- configureMCMC(model)
+conf$printSamplers()
 mcmc <- buildMCMC(conf)
 
 ## xi[i] used twice in same parameter, another variation
-
 code <- nimbleCode({
     for(i in 1:4) {
         y[i] ~ dnorm(beta[xi[i], 1] + beta[xi[i], 2]*x[i], var = 1)
@@ -965,14 +914,37 @@ code <- nimbleCode({
 data = list(y = rnorm(4))
 inits = list(x = rnorm(4), xi = rep(1,4))
 model <- nimbleModel(code, data = data, inits = inits)
+nimble:::findClusterNodes(model, 'xi[1:4]')  
 nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # conjugacy not detected
 conf <- configureMCMC(model)
+conf$printSamplers()
 mcmc <- buildMCMC(conf)
 
 ## use of inprod
+## check why conjugacy not detected
 code <- nimbleCode({
     for(i in 1:4) {
-        y[i] ~ dnorm(inprod(beta[1:2, xi[i]], x[i]), var = 1)
+        y[i] ~ dnorm(inprod(beta[1:2, xi[i]], x[i,1:2]), var = 1)
+    }
+    for(i in 1:4)
+        for(j in 1:2)
+            beta[j, i] ~ dnorm(0,1)
+    xi[1:4] ~ dCRP(1, size=4)
+})
+data = list(y = rnorm(4))
+inits = list(x = matrix(rnorm(4*2),4,2), xi = rep(1,4))
+model <- nimbleModel(code, data = data, inits = inits)
+nimble:::findClusterNodes(model, 'xi[1:4]') 
+nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # non-identity conjugacy not detected
+conf <- configureMCMC(model)
+conf$printSamplers()
+mcmc <- buildMCMC(conf)
+
+## use of inprod
+## check why conjugacy not detected
+code <- nimbleCode({
+    for(i in 1:4) {
+        y[i] ~ dnorm(inprod(beta[1:2, xi[i]], x[i,1:2]), var = 1)
     }
   for(i in 1:4) {
       beta[1, i] ~ dnorm(0,1)
@@ -981,12 +953,12 @@ code <- nimbleCode({
   xi[1:4] ~ dCRP(1, size=4)
 })
 data = list(y = rnorm(4))
-inits = list(x = rnorm(4), xi = rep(1,4))
+inits = list(x = matrix(rnorm(4*2),4,2), xi = rep(1,4))
 model <- nimbleModel(code, data = data, inits = inits)
-nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # non-identity conjugacy detected
+nimble:::findClusterNodes(model, 'xi[1:4]')  
+nimble:::checkCRPconjugacy(model, 'xi[1:4]')   # non-identity conjugacy not detected
 
-## Cases of trickiness in structure of observations
-
+## non-independent observations within a group - not allowed
 code <- nimbleCode({
     for(i in 1:4) {
         for(j in 2:3) {
@@ -1001,11 +973,12 @@ code <- nimbleCode({
 data = list(y =matrix( rnorm(4*3), 4 ,3))
 inits = list(xi = rep(1,4))
 model <- nimbleModel(code, data = data, inits = inits)
-nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # non-identity conjugacy detected, but moreGeneral version not yet written
+nimble:::findClusterNodes(model, 'xi[1:4]') 
+nimble:::checkCRPconjugacy(model, 'xi[1:4]')  
 conf <- configureMCMC(model)
-mcmc <- buildMCMC(conf)  # errors with lack of independence
+mcmc <- buildMCMC(conf)  # correctly errors with lack of independence
 
-## another non-indep of y's case
+## another non-indep of observations within a group - not allowed
 code <- nimbleCode({
     for(i in 1:4) {
         for(j in 2:3) {
@@ -1020,12 +993,12 @@ code <- nimbleCode({
 data = list(y =matrix( rnorm(4*3), 4 ,3))
 inits = list(xi = rep(1,4))
 model <- nimbleModel(code, data = data, inits = inits)
-nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # non-identity conjugacy detected, but moreGeneral version not yet written
+nimble:::findClusterNodes(model, 'xi[1:4]')  
+nimble:::checkCRPconjugacy(model, 'xi[1:4]')  
 conf <- configureMCMC(model)
-mcmc <- buildMCMC(conf)  # errors with lack of independence
+mcmc <- buildMCMC(conf)  # correctly errors with lack of independence
 
-## obs dependent across group
-
+## observations dependent across group - not allowed
 code <- nimbleCode({
     for(i in 2:4) {
         for(j in 1:3) {
@@ -1040,10 +1013,12 @@ code <- nimbleCode({
 data = list(y =matrix( rnorm(4*3), 4 ,3))
 inits = list(xi = rep(1,4))
 model <- nimbleModel(code, data = data, inits = inits)
+nimble:::findClusterNodes(model, 'xi[1:4]')  
 nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # no conj as it checks y[1,1] first (I think)
 conf <- configureMCMC(model)
-mcmc <- buildMCMC(conf)  # errors with lack of independence but error indicates within group issue
+mcmc <- buildMCMC(conf)  # errors with lack of independence but error doesn't distinguish within vs. between group
 
+## observations dependent across group, second case - not allowed
 code <- nimbleCode({
     for(i in 1:3) {
         for(j in 1:3) {
@@ -1058,12 +1033,11 @@ code <- nimbleCode({
 data = list(y =matrix( rnorm(4*3), 4 ,3))
 inits = list(xi = rep(1,4))
 model <- nimbleModel(code, data = data, inits = inits)
-nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # no conj because of restrictLink
+nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # no conj
 conf <- configureMCMC(model)
-mcmc <- buildMCMC(conf)  # errors with lack of independence but error indicates within group issue
+mcmc <- buildMCMC(conf)  # errors with lack of independence but error doesn't distinguish within vs. between group
 
-## Cases of trickiness in structure of observations, but with multiple y declarations
-
+## non-independence across groups, third case - not allowed
 code <- nimbleCode({
     for(i in 1:4) {
         y[i,1] ~ dnorm(mu[xi[i]], 1)
@@ -1079,9 +1053,9 @@ code <- nimbleCode({
 data = list(y =matrix( rnorm(4*3), 4 ,3))
 inits = list(xi = rep(1,4))
 model <- nimbleModel(code, data = data, inits = inits)
-nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # no conjugacy - presumably because multiple decl so multiple clusterVars
+nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # no conjugacy
 conf <- configureMCMC(model)
-mcmc <- buildMCMC(conf)  # errors with lack of independence
+mcmc <- buildMCMC(conf)  # errors with lack of independence but error doesn't distinguish within vs. between group
 
 ## y dependence in multivariate way
 code <- nimbleCode({
@@ -1097,6 +1071,7 @@ inits = list(xi = rep(1,4), iden = diag(2))
 model <- nimbleModel(code, data = data, inits = inits)
 nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # not conjugate
 conf <- configureMCMC(model)
+conf$printSamplers()
 mcmc <- buildMCMC(conf)  
 
 ## should be conj once we have dmnorm-invwish-dmnorm
@@ -1114,10 +1089,11 @@ inits = list(xi = rep(1,4))
 model <- nimbleModel(code, data = data, inits = inits)
 nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # not conjugate
 conf <- configureMCMC(model)
+conf$printSamplers()
 mcmc <- buildMCMC(conf)  
 
 ## y dependence in multivariate way
-## check back on this when bnp_dmnorm_dmnorm is merged in
+## check back on this when moreGeneral dmnorm_dmnorm is present
 code <- nimbleCode({
     for(i in 1:4) {
         y[i,1:2] ~ dmnorm(mu[xi[i], 1:2], cov = sigma[1:2,1:2])
@@ -1130,11 +1106,11 @@ inits = list(xi = rep(1,4), iden = diag(2), sigma = diag(2))
 model <- nimbleModel(code, data = data, inits = inits)
 nimble:::checkCRPconjugacy(model, 'xi[1:4]') # we're detecting conjugacy
 conf <- configureMCMC(model)
-mcmc <- buildMCMC(conf)  # we print it is conjugate, but we assign nonconj
+conf$printSamplers()
+mcmc <- buildMCMC(conf)  # we print it is conjugate, but we assign non-conj
 mcmc$samplerFunctions[[1]]$helperFunctions
 
-## clusters not independent
-
+## clusters not independent - not allowed
 code <- nimbleCode({
     for(i in 1:4) 
         y[i] ~ dnorm(thetaTilde[xi[i]], 1)
@@ -1151,7 +1127,7 @@ nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # not conj
 conf <- configureMCMC(model)
 mcmc <- buildMCMC(conf)  # error - clusters not indep
 
-## clusters not indep - alternative case
+## clusters not indep - alternative case - not allowed
 code <- nimbleCode({
     for(i in 1:4) 
         y[i] ~ dnorm(thetaTilde[xi[i]], 1)
@@ -1168,8 +1144,7 @@ conf <- configureMCMC(model)
 mcmc <- buildMCMC(conf) # error - clusters not indep
 
 
-## clusters not indep, with mv decl
-
+## clusters not indep, with mv declaration - not allowed
 code <- nimbleCode({
     for(i in 1:4) 
         y[i] ~ dnorm(thetaTilde[xi[i]], 1)
@@ -1179,12 +1154,12 @@ code <- nimbleCode({
 data = list(y = rnorm(4))
 inits = list(xi = rep(1,4), iden = diag(4))
 model <- nimbleModel(code, data = data, inits = inits)
-nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # error - not indep
-conf <- configureMCMC(model) # error - not indep
+nimble:::checkCRPconjugacy(model, 'xi[1:4]') 
+conf <- configureMCMC(model) 
+mcmc <- buildMCMC(conf) # error - clusters not indep
 
 
 ## clusters indep G0 but not IID
-
 code <- nimbleCode({
     for(i in 1:4)  {
         y[i] ~ dnorm(thetaTilde[xi[i]], 1)
@@ -1195,100 +1170,31 @@ code <- nimbleCode({
 data = list(y = rnorm(4))
 inits = list(xi = rep(1,4))
 model <- nimbleModel(code, data = data, inits = inits)
+nimble:::findClusterNodes(model, 'xi[1:4]')  
 nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # not conj
-conf <- configureMCMC(model)  # non-conjugate
+conf <- configureMCMC(model)
+conf$printSamplers()
+mcmc <- buildMCMC(conf)
 
+## clusters indep G0 but not IID, case 2
 code <- nimbleCode({
     for(i in 1:4) 
         y[i] ~ dnorm(thetaTilde[xi[i]], 1)
     for(i in 1:3) 
-    thetaTilde[i] ~ dnorm(0, 1)
+        thetaTilde[i] ~ dnorm(0, 1)
     thetaTilde[4] ~ dnorm(5, 2)
   xi[1:4] ~ dCRP(1, size=4)
 })
 data = list(y = rnorm(4))
 inits = list(xi = rep(1,4))
 model <- nimbleModel(code, data = data, inits = inits)
+nimble:::findClusterNodes(model, 'xi[1:4]')  
 nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # not conj
-conf <- configureMCMC(model)  # non-conjugate
-mcmc <- buildMCMC(conf)
-
-## clusters IID G0; IID within cluster
-
-code <- nimbleCode({
-    for(i in 1:n) {
-        for(j in 1:J) {
-            y[i, j] ~ dnorm(thetaTilde[xi[i], j], 1)
-            thetaTilde[i, j] ~ dnorm(0, 1)
-        }}
-    xi[1:n] ~ dCRP(alpha, size = n)
-})
-
-n <- 5
-J <- 3
-constants <- list(n = n, J = J)
-data <- list(y = matrix(rnorm(n*J),n,J))
-inits <- list(alpha = 1, xi = rep(1, n),
-              thetaTilde = matrix(rnorm(J*n), n, J))
-model <- nimbleModel(code, data = data, constants = constants, inits = inits)
-nimble:::findClusterNodes(model, 'xi[1:5]')
-nimble:::checkCRPconjugacy(model, 'xi[1:5]')  # detects conj
-conf <- configureMCMC(model)
+conf <- configureMCMC(model) 
 conf$printSamplers()
 mcmc <- buildMCMC(conf)
 
-
-## clusters IID G0; indep within cluster
-
-code <- nimbleCode({
-    for(i in 1:n) {
-        for(j in 1:J) {
-            y[i, j] ~ dnorm(thetaTilde[xi[i], j], 1)
-            thetaTilde[i, j] ~ dnorm(j, 1)
-        }}
-    xi[1:n] ~ dCRP(alpha, size = n)
-})
-
-n <- 5
-J <- 3
-constants <- list(n = n, J = J)
-data <- list(y = matrix(rnorm(n*J),n,J))
-inits <- list(alpha = 1, xi = rep(1, n),
-              thetaTilde = matrix(rnorm(J*n), n, J))
-model <- nimbleModel(code, data = data, constants = constants, inits = inits)
-nimble:::findClusterNodes(model, 'xi[1:5]')
-nimble:::checkCRPconjugacy(model, 'xi[1:5]')  # detects conj
-conf <- configureMCMC(model)
-conf$printSamplers()  # uses conjugate sampler
-mcmc <- buildMCMC(conf)
-
-## indep and diff dists 
-
-code <- nimbleCode({
-    for(i in 1:n) {
-        for(j in 1:J) {
-            y[i, j] ~ dnorm(thetaTilde[xi[i], j], 1)
-        }
-        thetaTilde[i, 1] ~ dnorm(0, 1)
-        thetaTilde[i, 2] ~ dgamma(3, 1)
-        thetaTilde[i, 3] ~ dnorm(5, 1)
-    }
-    xi[1:n] ~ dCRP(alpha, size = n)
-})
-
-n <- 5
-J <- 3
-constants <- list(n = n, J = J)
-data <- list(y = matrix(rnorm(n*J),n,J))
-inits <- list(alpha = 1, xi = rep(1, n),
-              thetaTilde = matrix(rnorm(J*n), n, J))
-model <- nimbleModel(code, data = data, constants = constants, inits = inits)
-nimble:::findClusterNodes(model, 'xi[1:5]')
-nimble:::checkCRPconjugacy(model, 'xi[1:5]') 
-conf <- configureMCMC(model)
-conf$printSamplers()
-mcmc <- buildMCMC(conf)
-
+## various cases of clusters indep but not IID G0
 code <- nimbleCode({
     for(i in 1:3) {
             y[i] ~ dnorm(thetaTilde[xi[i]], 1)
@@ -1306,7 +1212,10 @@ inits <- list(alpha = 1, xi = rep(1, n),
               thetaTilde = rnorm(n))
 model <- nimbleModel(code, data = data, constants = constants, inits = inits)
 nimble:::findClusterNodes(model, 'xi[1:3]')
-nimble:::checkCRPconjugacy(model, 'xi[1:3]')  # correctly says no conjugacy
+nimble:::checkCRPconjugacy(model, 'xi[1:3]')  # not conj
+conf <- configureMCMC(model) 
+conf$printSamplers()
+mcmc <- buildMCMC(conf)
 
 code <- nimbleCode({
     for(i in 1:3) {
@@ -1326,8 +1235,12 @@ inits <- list(alpha = 1, xi = rep(1, n),
               thetaTilde = rnorm(n))
 model <- nimbleModel(code, data = data, constants = constants, inits = inits)
 nimble:::findClusterNodes(model, 'xi[1:3]')
-nimble:::checkCRPconjugacy(model, 'xi[1:3]')  # correctly says no conjugacy
+nimble:::checkCRPconjugacy(model, 'xi[1:3]')  # not conj
+conf <- configureMCMC(model) 
+conf$printSamplers()
+mcmc <- buildMCMC(conf)
 
+## case that is not allowed; would need to look in code to remember why
 code <- nimbleCode({
     for(i in 1:3) {
         y[i] ~ dnorm(theta[i], 1)
@@ -1346,7 +1259,10 @@ inits <- list(alpha = 1, xi = rep(1, n),
               thetaTilde = rnorm(n))
 model <- nimbleModel(code, data = data, constants = constants, inits = inits)
 nimble:::findClusterNodes(model, 'xi[1:3]')
-nimble:::checkCRPconjugacy(model, 'xi[1:3]')  # correctly says no conjugacy (because findClusterNodes gives character(0) 
+nimble:::checkCRPconjugacy(model, 'xi[1:3]')  # not conj
+conf <- configureMCMC(model) 
+conf$printSamplers()
+mcmc <- buildMCMC(conf)  # errors because of unusual setup - doesn't like indexing
 
 code <- nimbleCode({
     for(i in 1:4) {
@@ -1367,16 +1283,124 @@ inits <- list(alpha = 1, xi = rep(1, n),
               thetaTilde = rnorm(n))
 model <- nimbleModel(code, data = data, constants = constants, inits = inits)
 nimble:::findClusterNodes(model, 'xi[1:4]')
-nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # correctly says no conjugacy (because findClusterNodes gives character(0) 
+nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # not conj
+conf <- configureMCMC(model) 
+conf$printSamplers()
+mcmc <- buildMCMC(conf)  # errors because of unusual setup
 
+
+## cases of multiple obs per group regarding priors on cluster parameters
+
+## clusters indep G0; multiple obs per group
+code <- nimbleCode({
+    for(i in 1:n) {
+        for(j in 1:J) {
+            y[i, j] ~ dnorm(thetaTilde[xi[i], j], 1)
+            thetaTilde[i, j] ~ dnorm(i, 1)  # IID within cluster, indep across
+        }}
+    xi[1:n] ~ dCRP(alpha, size = n)
+})
+
+n <- 5
+J <- 3
+constants <- list(n = n, J = J)
+data <- list(y = matrix(rnorm(n*J),n,J))
+inits <- list(alpha = 1, xi = rep(1, n),
+              thetaTilde = matrix(rnorm(J*n), n, J))
+model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+nimble:::findClusterNodes(model, 'xi[1:5]')
+nimble:::checkCRPconjugacy(model, 'xi[1:5]')  # not conj
+conf <- configureMCMC(model)
+conf$printSamplers()  
+mcmc <- buildMCMC(conf)
+
+## clusters IID G0; indep but not identically distributed within cluster, 
+## this uses conjugacy
+## Claudia, please confirm this is ok.
+code <- nimbleCode({
+    for(i in 1:n) {
+        for(j in 1:J) {
+            y[i, j] ~ dnorm(thetaTilde[xi[i], j], 1)
+            thetaTilde[i, j] ~ dnorm(j, 1)   # indep within cluster, IID across
+        }}
+    xi[1:n] ~ dCRP(alpha, size = n)
+})
+
+n <- 5
+J <- 3
+constants <- list(n = n, J = J)
+data <- list(y = matrix(rnorm(n*J),n,J))
+inits <- list(alpha = 1, xi = rep(1, n),
+              thetaTilde = matrix(rnorm(J*n), n, J))
+model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+nimble:::findClusterNodes(model, 'xi[1:5]')
+nimble:::checkCRPconjugacy(model, 'xi[1:5]')  # detects conj
+conf <- configureMCMC(model)
+conf$printSamplers()  
+mcmc <- buildMCMC(conf)
+
+
+
+## clusters IID G0, indep within cluster
+## FIX - incorrect clusterID for wrapped sampler
+code <- nimbleCode({
+    for(i in 1:n) {
+        for(j in 1:J) {
+            y[i, j] ~ dnorm(thetaTilde[xi[i], j], 1)
+        }
+        thetaTilde[i, 1] ~ dnorm(0, 1)
+        thetaTilde[i, 2] ~ dgamma(3, 1)
+        thetaTilde[i, 3] ~ dnorm(5, 1)
+    }
+    xi[1:n] ~ dCRP(alpha, size = n)
+})
+
+n <- 5
+J <- 3
+constants <- list(n = n, J = J)
+data <- list(y = matrix(rnorm(n*J),n,J))
+inits <- list(alpha = 1, xi = rep(1, n),
+              thetaTilde = matrix(rnorm(J*n), n, J))
+model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+nimble:::findClusterNodes(model, 'xi[1:5]')
+nimble:::checkCRPconjugacy(model, 'xi[1:5]')  # not conj
+conf <- configureMCMC(model) 
+conf$printSamplers()
+mcmc <- buildMCMC(conf)
+
+## clusters IID G0; dep within cluster
+## uses non-conjugate; Claudia please check this is ok
+code <- nimbleCode({
+    for(i in 1:n) {
+        for(j in 1:J) {
+            y[i, j] ~ dnorm(thetaTilde[xi[i], j], 1)
+        }
+        thetaTilde[i, 1] ~ dnorm(0,1)
+        thetaTilde[i, 2] ~ dnorm(thetaTilde[i,1], 1)
+        thetaTilde[i, 3] ~ dnorm(thetaTilde[i,2], 1)
+    }
+    xi[1:n] ~ dCRP(alpha, size = n)
+})
+
+n <- 5
+J <- 3
+constants <- list(n = n, J = J)
+data <- list(y = matrix(rnorm(n*J),n,J))
+inits <- list(alpha = 1, xi = rep(1, n),
+              thetaTilde = matrix(rnorm(J*n), n, J))
+model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+nimble:::findClusterNodes(model, 'xi[1:5]')
+nimble:::checkCRPconjugacy(model, 'xi[1:5]')  # not conjugate
+conf <- configureMCMC(model)
+conf$printSamplers()  
+mcmc <- buildMCMC(conf)
 
 ## mutilde and s2tilde; not conjugate
-
 code <- nimbleCode({
     for(i in 1:n) {
         for(j in 1:J) {
             y[i, j] ~ dnorm(thetaTilde[xi[i], j], var = s2tilde[xi[i]])
-            thetaTilde[i, j] ~ dnorm(j, 1)
+            thetaTilde[i, j] ~ dnorm(0, 1)
         }
         s2tilde[i] ~ dinvgamma(1,1)
     }
@@ -1396,8 +1420,7 @@ conf <- configureMCMC(model)
 conf$printSamplers()   # non-conj
 mcmc <- buildMCMC(conf)
 
-## mutilde and s2tilde; not conjugate
-
+## mutilde and s2tilde; not conjugate, case 2
 code <- nimbleCode({
     for(i in 1:n) {
         for(j in 1:J) {
@@ -1419,65 +1442,10 @@ model <- nimbleModel(code, data = data, constants = constants, inits = inits)
 nimble:::findClusterNodes(model, 'xi[1:5]')
 nimble:::checkCRPconjugacy(model, 'xi[1:5]')   # not conjugate
 conf <- configureMCMC(model)
-conf$printSamplers()   # non-conj
+conf$printSamplers() 
 mcmc <- buildMCMC(conf)
 
-## another case
-code <- nimbleCode({
-    for(i in 1:n) {
-        for(j in 1:J) {
-            y[i, j] ~ dnorm(thetaTilde[xi[i]], sd = s2tilde[xi[i]])
-        }
-        thetaTilde[i] ~ dnorm(0, 1)
-        s2tilde[i] ~ dinvgamma(1,1)
-    }
-    xi[1:n] ~ dCRP(alpha, size = n)
-})
-
-n <- 5
-J <- 3
-constants <- list(n = n, J = J)
-data <- list(y = matrix(rnorm(n*J),n,J))
-inits <- list(alpha = 1, xi = rep(1, n),
-              thetaTilde = rnorm(n), s2tilde = rgamma(n, 1, 1))
-model <- nimbleModel(code, data = data, constants = constants, inits = inits)
-nimble:::findClusterNodes(model, 'xi[1:5]')
-nimble:::checkCRPconjugacy(model, 'xi[1:5]')   # not conjugate
-conf <- configureMCMC(model)
-conf$printSamplers()   # non-conj
-mcmc <- buildMCMC(conf)
-
-## mutilde and s2tilde, IID across cluster, indep within
-
-code <- nimbleCode({
-    for(i in 1:n) {
-        for(j in 1:J) {
-            y[i, j] ~ dnorm(thetaTilde[xi[i], j], var = s2tilde[xi[i], j])
-            thetaTilde[i, j] ~ dnorm(j, var = s2tilde[i, j]/kappa)
-            s2tilde[i, j] ~ dinvgamma(1,1)
-        }
-
-    }
-    xi[1:n] ~ dCRP(alpha, size = n)
-})
-
-n <- 5
-J <- 3
-constants <- list(n = n, J = J)
-data <- list(y = matrix(rnorm(n*J),n,J))
-inits <- list(alpha = 1, xi = rep(1, n),
-              thetaTilde = matrix(rnorm(J*n), n, J), s2tilde = matrix(rgamma(J*n, 1, 1),n,J))
-model <- nimbleModel(code, data = data, constants = constants, inits = inits)
-nimble:::findClusterNodes(model, 'xi[1:5]')
-nimble:::checkCRPconjugacy(model, 'xi[1:5]')   
-conf <- configureMCMC(model)  # conj
-conf$printSamplers()  
-mcmc <- buildMCMC(conf) 
-
-
-
-## mutilde and s2tilde; conj
-                                      
+## mutilde and s2tilde; standard conjugacy                      
 code <- nimbleCode({
     for(i in 1:n) {
         for(j in 1:J) {
@@ -1500,11 +1468,68 @@ model <- nimbleModel(code, data = data, constants = constants, inits = inits)
 nimble:::findClusterNodes(model, 'xi[1:5]')
 nimble:::checkCRPconjugacy(model, 'xi[1:5]')   #  conjugate
 conf <- configureMCMC(model)
-conf$printSamplers()   # conj
+conf$printSamplers()   
 mcmc <- buildMCMC(conf)  
 
-## mutilde and s2tilde; not conj because multiple obs per cluster param set
-                                      
+## mutilde and s2tilde; standard conjugacy but indexing is weird
+## this has deps for s2tilde[1,1], but I think ok as changing s2tilde[1,1]
+## doesn't impact likelihood so will amount to sample from prior
+code <- nimbleCode({
+    for(i in 1:n) {
+        for(j in 1:J) {
+            y[i, j] ~ dnorm(thetaTilde[xi[i], j], var = s2tilde[xi[i]+1, j])
+            thetaTilde[i, j] ~ dnorm(theta0, var = s2tilde[i+1, j]/kappa)
+        }
+    }
+    for(i in 1:(n+1)) {
+        for(j in 1:J) {
+            s2tilde[i, j] ~ dinvgamma(1,1)
+        }
+    }
+    xi[1:n] ~ dCRP(alpha, size = n)
+})
+
+n <- 5
+J <- 3
+constants <- list(n = n, J = J)
+data <- list(y = matrix(rnorm(n*J),n,J))
+inits <- list(alpha = 1, xi = rep(1, n),
+              thetaTilde = matrix(rnorm(J*n), n, J), s2tilde = matrix(rgamma(J*(n+1), 1, 1),n+1,J))
+model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+nimble:::findClusterNodes(model, 'xi[1:5]')
+nimble:::checkCRPconjugacy(model, 'xi[1:5]')   # conjugate
+conf <- configureMCMC(model)
+conf$printSamplers()   
+mcmc <- buildMCMC(conf)  
+
+## mutilde and s2tilde, IID across cluster, indep within, conjugate
+code <- nimbleCode({
+    for(i in 1:n) {
+        for(j in 1:J) {
+            y[i, j] ~ dnorm(thetaTilde[xi[i], j], var = s2tilde[xi[i], j])
+            thetaTilde[i, j] ~ dnorm(j, var = s2tilde[i, j]/kappa)
+            s2tilde[i, j] ~ dinvgamma(1,1)
+        }
+
+    }
+    xi[1:n] ~ dCRP(alpha, size = n)
+})
+
+n <- 5
+J <- 3
+constants <- list(n = n, J = J)
+data <- list(y = matrix(rnorm(n*J),n,J))
+inits <- list(alpha = 1, xi = rep(1, n),
+              thetaTilde = matrix(rnorm(J*n), n, J), s2tilde = matrix(rgamma(J*n, 1, 1),n,J))
+model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+nimble:::findClusterNodes(model, 'xi[1:5]')
+nimble:::checkCRPconjugacy(model, 'xi[1:5]')  # conj 
+conf <- configureMCMC(model)  
+conf$printSamplers()  
+mcmc <- buildMCMC(conf) 
+
+
+## mutilde and s2tilde; not conj because don't have one parameter set per obs
 code <- nimbleCode({
     for(i in 1:n) {
         for(j in 1:J) {
@@ -1530,7 +1555,6 @@ conf$printSamplers()
 mcmc <- buildMCMC(conf)
 
 ## weird case of multiple thetaTilde but not s2tilde
-
 code <- nimbleCode({
     for(i in 1:n) {
         for(j in 1:J) {
@@ -1555,34 +1579,8 @@ conf <- configureMCMC(model)
 conf$printSamplers()  
 mcmc <- buildMCMC(conf)
 
-## clusters IID G0; dep within cluster
 
-code <- nimbleCode({
-    for(i in 1:n) {
-        for(j in 1:J) {
-            y[i, j] ~ dnorm(thetaTilde[xi[i], j], 1)
-        }
-        thetaTilde[i, 1] ~ dnorm(0,1)
-        thetaTilde[i, 2] ~ dnorm(thetaTilde[i,1], 1)
-        thetaTilde[i, 3] ~ dnorm(thetaTilde[i,2], 1)
-        }}
-    xi[1:n] ~ dCRP(alpha, size = n)
-})
-
-n <- 5
-J <- 3
-constants <- list(n = n, J = J)
-data <- list(y = matrix(rnorm(n*J),n,J))
-inits <- list(alpha = 1, xi = rep(1, n),
-              thetaTilde = matrix(rnorm(J*n), n, J))
-model <- nimbleModel(code, data = data, constants = constants, inits = inits)
-nimble:::findClusterNodes(model, 'xi[1:5]')
-nimble:::checkCRPconjugacy(model, 'xi[1:5]')  # not conjugate
-conf <- configureMCMC(model)
-conf$printSamplers()  # uses conjugate sampler
-mcmc <- buildMCMC(conf)
-
-## function in index
+## function in index - not allowed
 code <- nimbleCode({
     for(i in 1:n) {
              y[i] ~ dnorm(thetaTilde[xi[n-i+1]], 1)
@@ -1601,6 +1599,7 @@ inits <- list(alpha = 1, xi = rep(1, n),
 model <- nimbleModel(code, data = data, constants = constants, inits = inits)
 nimble:::findClusterNodes(model, 'xi[1:5]')  # errors out
 
+## function in index - not allowed
 code <- nimbleCode({
     for(i in 1:n) {
              y[i] ~ dnorm(thetaTilde[xi[exp(i)]], 1)
@@ -1617,8 +1616,9 @@ data <- list(y = rnorm(n))
 inits <- list(alpha = 1, xi = rep(1, n),
               thetaTilde = rnorm(n))
 model <- nimbleModel(code, data = data, constants = constants, inits = inits)
-nimble:::findClusterNodes(model, 'xi[1:5]')  # errors out
+## errors because can't figure out indexing of xi
 
+## function in index - not allowed
 code <- nimbleCode({
     for(i in 1:n) {
              y[i] ~ dnorm(thetaTilde[xi[i]], s2tilde[xi[n-i+1]])
@@ -1639,8 +1639,7 @@ inits <- list(alpha = 1, xi = rep(1, n),
 model <- nimbleModel(code, data = data, constants = constants, inits = inits)
 nimble:::findClusterNodes(model, 'xi[1:5]')  # errors out
 
-## use of tilde var in two separate parameters
-
+## use of tilde var in two separate parameters; allowed, non-conj
 code <- nimbleCode({
     for(i in 1:n) {
              y[i] ~ dnorm(thetaTilde[xi[i]], exp(thetaTilde[xi[i]]))
@@ -1663,6 +1662,7 @@ conf <- configureMCMC(model)
 conf$printSamplers()  
 mcmc <- buildMCMC(conf)
 
+## use of tilde var in two separate parameters, partial intermediate; allowed, non-conj
 code <- nimbleCode({
     for(i in 1:n) {
              y[i] ~ dnorm(theta[i], exp(thetaTilde[xi[i]]))
@@ -1685,6 +1685,7 @@ nimble:::checkCRPconjugacy(model, 'xi[1:5]')  # not conjugate
 conf <- configureMCMC(model)
 conf$printSamplers()  
 mcmc <- buildMCMC(conf)
+
 
 ## case where inconsistent indexing would mess up cluster creation
 ## and nosample-empty-clusters
@@ -1710,6 +1711,7 @@ conf <- configureMCMC(model)
 conf$printSamplers()  # incorrect wrapping because of xi[i]+1
 mcmc <- buildMCMC(conf) # correct error trapping 
 
+## two obs declarations so conj not detected
 code <- nimbleCode({
     for(i in 1:n) {
         y1[i] ~ dnorm(thetaTilde[xi[i]], 1)
@@ -1728,9 +1730,10 @@ model <- nimbleModel(code, data = data, constants = constants, inits = inits)
 nimble:::findClusterNodes(model, 'xi[1:5]')
 nimble:::checkCRPconjugacy(model, 'xi[1:5]') # not detected - because two clusterVars
 conf <- configureMCMC(model)
+conf$printSamplers()
 mcmc <- buildMCMC(conf)
 
-## thetaTildes indexed by multiple cluster variables
+## thetaTildes indexed by multiple cluster variables - not allowed
 code <- nimbleCode({
     for(i in 1:n) {
         y[i] ~ dnorm(thetaTilde[xi[i]], 1)
@@ -1748,13 +1751,14 @@ inits <- list(alpha = 1, xi = rep(1, n), eta = rep(1,n),
               thetaTilde = rnorm(n))
 model <- nimbleModel(code, data = data, constants = constants, inits = inits)
 nimble:::findClusterNodes(model, 'xi[1:5]')
-nimble:::findClusterNodes(model, 'eta[1:5]')  # not conj
+nimble:::findClusterNodes(model, 'eta[1:5]')  
 nimble:::checkCRPconjugacy(model, 'xi[1:5]')  # not conj
+nimble:::checkCRPconjugacy(model, 'eta[1:5]')  # not conj
 conf <- configureMCMC(model)
 conf$printSamplers()  ## non-conjugate for xi and eta
 mcmc <- buildMCMC(conf)  ## correctly errors out because tildeNodes have deps other than dataNodes
 
-## what happens here - warning
+## too many xi values
 code <- nimbleCode({
     for(i in 1:n) {
         for(j in 1:J) {
@@ -1775,8 +1779,37 @@ data <- list(y = matrix(rnorm(n*J),n,J))
 inits <- list(alpha = 1, xi = rep(1, n+1),
               thetaTilde = matrix(rnorm(J*n), n, J))
 model <- nimbleModel(code, data = data, constants = constants, inits = inits)
-nimble:::findClusterNodes(model, 'xi[1:5]')
+nimble:::findClusterNodes(model, 'xi[1:5]')  # warns
+nimble:::findClusterNodes(model, 'xi[1:6]')  # no warning
+nimble:::checkCRPconjugacy(model, 'xi[1:5]')  # conj
+conf <- configureMCMC(model)
+conf$printSamplers()  ## non-conjugate for xi and eta
+mcmc <- buildMCMC(conf)  ## various errors
 
+## too few xi values
+code <- nimbleCode({
+    for(i in 1:n) {
+        for(j in 1:J) {
+            y[i, j] ~ dnorm(thetaTilde[xi[i], j], 1)
+        }}
+    for(i in 1:n) {
+        for(j in 1:J) {
+            thetaTilde[i, j] ~ dnorm(0, 1)
+        }}
+    xi[1:(n-1)] ~ dCRP(alpha, size = n-1)
+})
+
+n <- 5
+n2 <- 4
+J <- 3
+constants <- list(n = n, J = J)
+data <- list(y = matrix(rnorm(n*J),n,J))
+inits <- list(alpha = 1, xi = rep(1, n-1),
+              thetaTilde = matrix(rnorm(J*n), n, J))
+model <- nimbleModel(code, data = data, constants = constants, inits = inits) # warns
+
+
+## Model 3 not yet available, but here are some initial cases
 
 ## Crossed clustering (model 3)
 
@@ -1790,12 +1823,12 @@ code <- nimbleCode({
   xi[1:3] ~ dCRP(1, size=3)
   eta[1:4] ~ dCRP(1, size=4)
 })
-Inits <- list(xi = rep(1,3), eta = rep(1,4), 
+inits <- list(xi = rep(1,3), eta = rep(1,4), 
               thetaTilde = matrix(0, nrow=3,  ncol=4))
 
 y <- matrix(5, nrow=3, ncol=4)
-Data <- list(y=y)
-model <- nimbleModel(code, data=Data, inits=Inits)
+data <- list(y = y)
+model <- nimbleModel(code, data = data, inits = inits)
 nimble:::findClusterNodes(model, 'xi[1:3]')
 nimble:::findClusterNodes(model, 'eta[1:4]')
 nimble:::checkCRPconjugacy(model, 'xi[1:3]')
@@ -1817,12 +1850,12 @@ code <- nimbleCode({
   xi[1:3] ~ dCRP(1, size=3)
   eta[1:4] ~ dCRP(1, size=4)
 })
-Inits <- list(xi = rep(1,3), eta = rep(1,4), 
+inits <- list(xi = rep(1,3), eta = rep(1,4), 
               thetaTilde = matrix(0, nrow=3,  ncol=4))
 
 y <- matrix(5, nrow=3, ncol=4)
-Data <- list(y=y)
-model <- nimbleModel(code, data=Data, inits=Inits)
+data <- list(y = y)
+model <- nimbleModel(code, data = data, inits = inits)
 nimble:::findClusterNodes(model, 'xi[1:3]')
 nimble:::findClusterNodes(model, 'eta[1:4]')
 
