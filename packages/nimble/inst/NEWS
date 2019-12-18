@@ -12,7 +12,7 @@ USER LEVEL CHANGES
 
 -- Modified handling of NAs in model nodes under truncation or dynamic indexing to avoid printing warnings when calculating the uncompiled model (PR #920).
 
--- Improved speed of 'configureMCMC' (PR #972).
+-- Improved speed of 'configureMCMC' (PR #972 and PR #974).
 
 -- Added the scalarComponents argument to addSampler method of MCMC configuration objects, which enables adding independent univariate samplers to all scalar componets of a specified target node or variable.
 
