@@ -8,7 +8,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
 .nimbleOptions <- as.environment(
     list(
         useNewConfigureMCMC = TRUE,
-        oldConjugacyChecking = TRUE,
+        oldConjugacyChecking = FALSE,
         disallow_multivariate_argument_expressions = TRUE,
         stop_after_processing_model_code = FALSE,
         enableModelMacros = FALSE,
