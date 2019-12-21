@@ -146,6 +146,8 @@ git commit -am'merged new version onto master'
 
 probably best at this point also to merge master onto devel
 
+For version 0.10.0 before add tag as suggested here, try to add a release as per below and see if tag is auto-generated.
+
 git tag -a v$VERSION -m "NIMBLE version $VERSION release, December 31, 2014"
 git push --tags    ## this is how you push *tags* to the remote
 
