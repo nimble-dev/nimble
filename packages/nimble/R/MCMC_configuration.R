@@ -374,9 +374,13 @@ print: A logical argument specifying whether to print the ordered list of defaul
                                 removeSamplers(clusterNodes)
                                 for(i in seq_along(samplers)) {
                                     node <- samplers[[i]]$target
+                                    ## getSamplers() returns samplers in order of configuration not in order of input.
+                                    clusterID <- which(clusterNodes == node)
+                                    if(length(clusterID) != 1)
+                                       stop("Cannot determine wrapped sampler for cluster parameter ", node, ".")
                                     addSampler(target = node, type = 'CRP_cluster_wrapper',
                                                control = list(wrapped_type = samplers[[i]]$name, wrapped_conf = samplers[[i]],
-                                                              dcrpNode = dcrpNode[[k]], clusterID = clusterNodeInfo[[k]]$clusterIDs[[idx]][i]))
+                                                              dcrpNode = dcrpNode[[k]], clusterID = clusterNodeInfo[[k]]$clusterIDs[[idx]][clusterID]))
                                 }
                             }
                         }
