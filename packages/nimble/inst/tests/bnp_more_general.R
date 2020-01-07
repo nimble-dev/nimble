@@ -25,6 +25,7 @@ nimble:::findClusterNodes(model, 'xi[1:5]')
 nimble:::checkCRPconjugacy(model, 'xi[1:5]')  # detects conj
 conf <- configureMCMC(model)
 conf$printSamplers()
+mcmc <- buildMCMC(conf) 
 
 ### check wrapper sampler identifies clusterID correctly 
 samplers <- conf$getSamplers()
@@ -32,7 +33,11 @@ wh <- which(sapply(samplers, function(x) x$name == "CRP_cluster_wrapper"))
 ids <- sapply(wh, function(i) samplers[[i]]$control$clusterID)
 all(ids == rep(1:5, each = 3))
 
-## truncated: findClusterNodes gives same result
+## should add the check above to the various cases in this file, but
+## I haven't done that yet.
+
+## truncated: this is currently failing as we need a fix to expandNodeNames
+## that Chris is working on.
 code <- nimbleCode({
     for(i in 1:n) {
         for(j in 1:J) {
@@ -54,9 +59,10 @@ inits <- list(alpha = 1, xi = rep(1, n),
               thetaTilde = matrix(rnorm(J*n2), n2, J))
 model <- nimbleModel(code, data = data, constants = constants, inits = inits)
 nimble:::findClusterNodes(model, 'xi[1:5]')
-nimble:::checkCRPconjugacy(model, 'xi[1:5]')  # detects conj
+nimble:::checkCRPconjugacy(model, 'xi[1:5]')  
 conf <- configureMCMC(model)
 conf$printSamplers()
+mcmc <- buildMCMC(conf) 
 
 ## intermediate nodes
 code <- nimbleCode({
@@ -80,6 +86,7 @@ nimble:::findClusterNodes(model, 'xi[1:5]')
 nimble:::checkCRPconjugacy(model, 'xi[1:5]')  # detects conj
 conf <- configureMCMC(model)
 conf$printSamplers()
+mcmc <- buildMCMC(conf) 
 
 ## truncated and intermediate nodes
 
@@ -107,6 +114,7 @@ nimble:::findClusterNodes(model, 'xi[1:5]')
 nimble:::checkCRPconjugacy(model, 'xi[1:5]')  # detects conj
 conf <- configureMCMC(model)
 conf$printSamplers()
+mcmc <- buildMCMC(conf) 
 
 ## column in instead of row
 code <- nimbleCode({
@@ -129,9 +137,9 @@ nimble:::findClusterNodes(model, 'xi[1:5]')
 nimble:::checkCRPconjugacy(model, 'xi[1:5]')  # detects conj
 conf <- configureMCMC(model)
 conf$printSamplers()
+mcmc <- buildMCMC(conf) 
 
 ## column in instead of row, different loop ordering
-## FIX
 code <- nimbleCode({
     for(j in 1:J) {
         for(i in 1:n) {
@@ -151,7 +159,8 @@ model <- nimbleModel(code, data = data, constants = constants, inits = inits)
 nimble:::findClusterNodes(model, 'xi[1:5]')
 nimble:::checkCRPconjugacy(model, 'xi[1:5]')  # detects conj
 conf <- configureMCMC(model)
-conf$printSamplers()        # INCORRECT
+conf$printSamplers()       
+mcmc <- buildMCMC(conf) 
 
 ## column instead of row, intermediate nodes, indexes swapped
 code <- nimbleCode({
@@ -175,6 +184,7 @@ nimble:::findClusterNodes(model, 'xi[1:5]')
 nimble:::checkCRPconjugacy(model, 'xi[1:5]')  # detects conj
 conf <- configureMCMC(model)
 conf$printSamplers()
+mcmc <- buildMCMC(conf) 
 
 ## index offset
 code <- nimbleCode({
@@ -200,6 +210,7 @@ nimble:::findClusterNodes(model, 'xi[1:5]')
 nimble:::checkCRPconjugacy(model, 'xi[1:5]')  # detects conj
 conf <- configureMCMC(model)
 conf$printSamplers()
+mcmc <- buildMCMC(conf) 
 
 ## index offset, with intermediate
 code <- nimbleCode({
@@ -256,8 +267,6 @@ model <- nimbleModel(code, data = data, constants = constants, inits = inits)
 nimble:::findClusterNodes(model, 'xi[1:5]')
 conf <- configureMCMC(model)
 mcmc <- buildMCMC(conf)  # correctly errors out
-
-
 
 ## detection of differing number of cluster parameters, complicated indexing
 code <- nimbleCode({
@@ -406,7 +415,6 @@ conf$printSamplers()
 mcmc <- buildMCMC(conf)
 
 ## Model E: dmnorm obs, separate prior declarations
-## FIX this - the wrapped sampler doesn't set up clusterID correctly
 code <- nimbleCode({
     for(i in 1:n) {
         y[i, 1:2] ~ dmnorm(thetaTilde[xi[i],1:2], iden[1:2,1:2])
@@ -427,10 +435,11 @@ model <- nimbleModel(code, data = data, constants = constants, inits = inits)
 nimble:::findClusterNodes(model, 'xi[1:5]')
 nimble:::checkCRPconjugacy(model, 'xi[1:5]') # no conj because of dnorm vs. dmnorm
 conf <- configureMCMC(model)
-conf$printSamplers()         # INCORRECT
+conf$printSamplers()         
 mcmc <- buildMCMC(conf)
 
-
+## HERE
+## Bug here FIX
 ## Model F: dnorm obs, separate priors
 code <- nimbleCode({
     for(i in 1:n) {

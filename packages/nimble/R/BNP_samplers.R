@@ -2146,7 +2146,8 @@ sampler_CRP_moreGeneral <- nimbleFunction(
 
     ## Will need to revise conjugate norm-ig-norm handling in light of changes to clusterNodes handling,
     ## but leave for the moment.
-    if(p == 2) {
+    if(p == 2 && sampler %in% c("CRP_conjugate_dnorm_invgamma_dnorm_moreGeneral",
+                                "CRP_conjugate_dmnorm_invwish_dmnorm_moreGeneral")) {
       if(sampler == "CRP_conjugate_dnorm_invgamma_dnorm_moreGeneral") {
         for(i in seq_along(tildeVars)) {
           if(model$getDistribution(clusterVarInfo$clusterNodes[[i]][1]) == 'dnorm') {
