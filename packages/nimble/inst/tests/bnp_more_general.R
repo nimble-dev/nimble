@@ -438,8 +438,6 @@ conf <- configureMCMC(model)
 conf$printSamplers()         
 mcmc <- buildMCMC(conf)
 
-## HERE
-## Bug here FIX
 ## Model F: dnorm obs, separate priors
 code <- nimbleCode({
     for(i in 1:n) {
@@ -464,7 +462,6 @@ conf$printSamplers()
 mcmc <- buildMCMC(conf)
 
 ## Model F: non conjugate, non-identical priors
-## FIX 
 code <- nimbleCode({
     for(i in 1:n) {
         y[i] ~ dnorm(thetaTilde[xi[i]], 1)
@@ -484,7 +481,7 @@ model <- nimbleModel(code, data = data, constants = constants, inits = inits)
 nimble:::findClusterNodes(model, 'xi[1:5]')
 nimble:::checkCRPconjugacy(model, 'xi[1:5]') # non-conjugate
 conf <- configureMCMC(model)
-conf$printSamplers()   # INCORRECT
+conf$printSamplers()   
 mcmc <- buildMCMC(conf)
 
 ## Model F: non conjugate, non-identical priors, part 2
@@ -532,7 +529,7 @@ inits <- list(alpha = 1, xi = rep(1, n),
               thetaTilde = rnorm(n))
 model <- nimbleModel(code, data = data, constants = constants, inits = inits)
 nimble:::findClusterNodes(model, 'xi[1:5]')
-nimble:::checkCRPconjugacy(model, 'xi[1:5]') 
+nimble:::checkCRPconjugacy(model, 'xi[1:5]')  # not conj.
 conf <- configureMCMC(model)
 mcmc <- buildMCMC(conf)  # errors based on unusual indexing
 
@@ -558,7 +555,7 @@ inits <- list(alpha = 1, xi = rep(1, n),
               thetaTilde = matrix(rnorm(J*n), n, J))
 model <- nimbleModel(code, data = data, constants = constants, inits = inits)
 nimble:::findClusterNodes(model, 'xi[1:5]')
-nimble:::checkCRPconjugacy(model, 'xi[1:5]')  
+nimble:::checkCRPconjugacy(model, 'xi[1:5]')   # not conj.
 conf <- configureMCMC(model)
 conf$printSamplers()
 mcmc <- buildMCMC(conf)  # errors based on unusual indexing
@@ -612,7 +609,7 @@ conf <- configureMCMC(model)
 conf$printSamplers()
 mcmc <- buildMCMC(conf)
 
-## Model I: separate declartions for obs, dmnorm for prior
+## Model I: separate declarations for obs, dmnorm for prior
 code <- nimbleCode({
     for(i in 1:n) {
         y1[i] ~ dnorm(thetaTilde[xi[i], 1], 1)
@@ -770,7 +767,7 @@ y <- array(5, c(2,3,4))
 data <- list(y = y)
 model <- nimbleModel(code, data = data, inits = inits)
 nimble:::findClusterNodes(model, 'xi[1:3]')
-nimble:::checkCRPconjugacy(model, 'xi[1:5]')
+nimble:::checkCRPconjugacy(model, 'xi[1:3]')
 conf <- configureMCMC(model)
 conf$printSamplers()
 mcmc <- buildMCMC(conf)
@@ -929,8 +926,11 @@ conf <- configureMCMC(model)
 conf$printSamplers()
 mcmc <- buildMCMC(conf)
 
+
 ## use of inprod
-## check why conjugacy not detected
+## conj not detected as we are only set up for b0 + x[i]*b1[xi[i]] type conjugacy
+## not b0[xi[i]]+x[i]*b1[xi[i]]
+## need to think more about when the nonidentity dnorm-dnorm conjugacy would be used
 code <- nimbleCode({
     for(i in 1:4) {
         y[i] ~ dnorm(inprod(beta[1:2, xi[i]], x[i,1:2]), var = 1)
@@ -949,8 +949,26 @@ conf <- configureMCMC(model)
 conf$printSamplers()
 mcmc <- buildMCMC(conf)
 
+## a variation on the previous case, changing the prior
+code <- nimbleCode({
+    for(i in 1:4) {
+        y[i] ~ dnorm(inprod(beta[1:2, xi[i]], x[i,1:2]), var = 1)
+    }
+    for(i in 1:4)
+            beta[1:2, i] ~ dmnorm(z[1:2],pr[1:2,1:2])
+    xi[1:4] ~ dCRP(1, size=4)
+})
+data = list(y = rnorm(4))
+inits = list(x = matrix(rnorm(4*2),4,2), xi = rep(1,4))
+model <- nimbleModel(code, data = data, inits = inits)
+nimble:::findClusterNodes(model, 'xi[1:4]') 
+nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # not conj.
+conf <- configureMCMC(model)
+conf$printSamplers()
+mcmc <- buildMCMC(conf)
+
+
 ## use of inprod
-## check why conjugacy not detected
 code <- nimbleCode({
     for(i in 1:4) {
         y[i] ~ dnorm(inprod(beta[1:2, xi[i]], x[i,1:2]), var = 1)
@@ -966,6 +984,7 @@ inits = list(x = matrix(rnorm(4*2),4,2), xi = rep(1,4))
 model <- nimbleModel(code, data = data, inits = inits)
 nimble:::findClusterNodes(model, 'xi[1:4]')  
 nimble:::checkCRPconjugacy(model, 'xi[1:4]')   # non-identity conjugacy not detected
+
 
 ## non-independent observations within a group - not allowed
 code <- nimbleCode({
@@ -1102,7 +1121,6 @@ conf$printSamplers()
 mcmc <- buildMCMC(conf)  
 
 ## y dependence in multivariate way
-## check back on this when moreGeneral dmnorm_dmnorm is present
 code <- nimbleCode({
     for(i in 1:4) {
         y[i,1:2] ~ dmnorm(mu[xi[i], 1:2], cov = sigma[1:2,1:2])
@@ -1154,6 +1172,9 @@ mcmc <- buildMCMC(conf) # error - clusters not indep
 
 
 ## clusters not indep, with mv declaration - not allowed
+## errors when trying to wrap sampler because there is only
+## one cluster node. Might want have configureMCMC
+## give up on wrapping and then have error occur in buildMCMC().
 code <- nimbleCode({
     for(i in 1:4) 
         y[i] ~ dnorm(thetaTilde[xi[i]], 1)
@@ -1351,7 +1372,6 @@ mcmc <- buildMCMC(conf)
 
 
 ## clusters IID G0, indep within cluster
-## FIX - incorrect clusterID for wrapped sampler
 code <- nimbleCode({
     for(i in 1:n) {
         for(j in 1:J) {
