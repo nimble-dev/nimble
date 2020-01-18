@@ -2933,23 +2933,53 @@ parseEvalNumericManyHandleError <- function(cond, x, env) {
     invokeRestart('abort')
 }
 
+handleOutOfBounds <- function(x, env) {
+    ## Extend dimension of variable to match any greater extents indicated in 'x'
+    expr <- parse(text = x, keep.source = FALSE)[[1]]
+    if(length(expr) == 1) return(NA)  ## However, should never have non-indexed expression given only invoked when subscript out of bounds
+    var <- deparse(expr[[2]])
+    oldDims <- dim(env[[var]])
+    newDims <- sapply(expr[3:length(expr)], function(e) {
+        if(length(e) == 1) return(e)
+        return(e[[3]]) })
+    if(length(newDims) != length(oldDims))
+        return(NA)
+    newDims[newDims < oldDims] <- oldDims[newDims < oldDims]
+    env2 <- new.env()
+    env2[[var]] <- as.numeric(NA)
+    length(env2[[var]]) <- prod(newDims)
+    dim(env2[[var]]) <- newDims
+
+    ## Construct and evaluate "env2[[var]][1:oldDims[1],...] <- env[[var]]
+    subsetExpr <- quote(env2[[var]][1])
+    for(i in seq_along(oldDims))
+        subsetExpr[[2+i]] <- 1:oldDims[i]
+    fullExpr <- quote(tmp <- env[[var]])
+    fullExpr[[2]] <- subsetExpr
+    eval(fullExpr)
+    
+    tmp <- try(as.numeric(eval(parse(text = x, keep.source = FALSE)[[1]], envir = env2)), silent = TRUE)
+    if(is(tmp, 'try-error'))
+        return(NA) else return(tmp)
+}
+
 parseEvalNumericMany <- function(x, env, ignoreNotFound = FALSE) {
     if(ignoreNotFound) {  ## Return NA when not found.
         if(length(x) > 1) {
             ## First try to do as vectorized call.
             output <- try(as.numeric(eval(parse(text = paste0('c(', paste0(x, collapse=','),')'), keep.source = FALSE)[[1]], envir = env)), silent = TRUE)
-            if(is(output, 'try-error')) {  ## Go through individually
-                output <- sapply(x, function(val) {
-                    tmp <- try(as.numeric(eval(parse(text = val, keep.source = FALSE)[[1]], envir = env)), silent = TRUE)
-                    if(is(tmp, 'try-error')) return(NA) else return(tmp)
-                }, USE.NAMES = FALSE)
-            }
-            return(output)
-        } else {
-            output <- try(as.numeric(eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)), silent = TRUE)
-            if(is(output, 'try-error'))
-                return(NA) else return(output)
+            if(!is(output, 'try-error')) return(output)
         }
+        ## Go through one by one if errors, or if there is a single input.
+        output <- sapply(x, function(val) {
+            tmp <- try(as.numeric(eval(parse(text = val, keep.source = FALSE)[[1]], envir = env)), silent = TRUE)
+            if(is(tmp, 'try-error')) {
+                if(length(grep("subscript out of bounds", tmp))) {
+                    return(handleOutOfBounds(val, env))
+                } else return(NA)
+            } else return(tmp)
+        }, USE.NAMES = FALSE)
+        return(unlist(output))
     } else {  ## Error out when not found.
         withCallingHandlers(
             if(length(x) > 1) {
@@ -2967,19 +2997,20 @@ parseEvalNumericMany <- function(x, env, ignoreNotFound = FALSE) {
 parseEvalNumericManyList <- function(x, env, ignoreNotFound = FALSE) {
     if(ignoreNotFound) {  ## Return NA when not found.
         if(length(x) > 1) {
+            ## First try to do as vectorized call.
             output <- try(eval(.Call(makeParsedVarList, x), envir = env), silent = TRUE)
-            if(is(output, 'try-error')) {  ## Go through individually
-                output <- sapply(x, function(val) {
-                    tmp <- try(eval(.Call(makeParsedVarList, val), envir = env), silent = TRUE)
-                    if(is(tmp, 'try-error')) return(NA) else return(tmp)
-                }, USE.NAMES = FALSE)
-            }
-            return(output)
-        } else {
-            output <- try(eval(.Call(makeParsedVarList, x), envir = env), silent = TRUE)
-            if(is(output, 'try-error'))
-                return(NA) else return(output)
+            if(!is(output, 'try-error')) return(output)
         }
+        ## Go through one by one if errors, or if there is a single input.
+        output <- sapply(x, function(val) {
+            tmp <- try(eval(.Call(makeParsedVarList, val), envir = env), silent = TRUE)
+            if(is(tmp, 'try-error')) {
+                if(length(grep("subscript out of bounds", tmp))) {
+                    return(handleOutOfBounds(val, env))
+                } else return(NA)
+            } else return(tmp)
+        }, USE.NAMES = FALSE)
+        return(unlist(output))
     } else {
         withCallingHandlers(
             eval(.Call(makeParsedVarList, x), envir = env)
