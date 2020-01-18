@@ -2934,7 +2934,7 @@ parseEvalNumericManyHandleError <- function(cond, x, env) {
 }
 
 handleOutOfBounds <- function(x, env) {
-    ## Extend dimension of variable to match any greater extents indicated in 'x'
+    ## Extend dimension of variable to match any greater extents indicated in 'x'.
     expr <- parse(text = x, keep.source = FALSE)[[1]]
     if(length(expr) == 1) return(NA)  ## However, should never have non-indexed expression given only invoked when subscript out of bounds
     var <- deparse(expr[[2]])
@@ -2944,20 +2944,23 @@ handleOutOfBounds <- function(x, env) {
         return(e[[3]]) })
     if(length(newDims) != length(oldDims))
         return(NA)
+    ## Ensure new var is at least as big as old var.
     newDims[newDims < oldDims] <- oldDims[newDims < oldDims]
     env2 <- new.env()
     env2[[var]] <- as.numeric(NA)
     length(env2[[var]]) <- prod(newDims)
     dim(env2[[var]]) <- newDims
 
-    ## Construct and evaluate "env2[[var]][1:oldDims[1],...] <- env[[var]]
+    ## Put values from old into new by constructing and evaluating
+    ## `env2[[var]][1:oldDims[1],...] <- env[[var]]`
     subsetExpr <- quote(env2[[var]][1])
     for(i in seq_along(oldDims))
         subsetExpr[[2+i]] <- 1:oldDims[i]
     fullExpr <- quote(tmp <- env[[var]])
     fullExpr[[2]] <- subsetExpr
     eval(fullExpr)
-    
+
+    ## Now evaluate in new environment.
     tmp <- try(as.numeric(eval(parse(text = x, keep.source = FALSE)[[1]], envir = env2)), silent = TRUE)
     if(is(tmp, 'try-error'))
         return(NA) else return(tmp)
