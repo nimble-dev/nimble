@@ -149,7 +149,8 @@ void EIGEN_EIGEN_INTERNAL(const Eigen::MatrixBase<Derived> &x,  bool symmetric, 
 		std::sort(sortIndices.begin(),sortIndices.end());
 		std::reverse(sortIndices.begin(), sortIndices.end());
 		for(int i = 0; i < x.rows() ; ++i){
-			if(solver2.eigenvalues().imag()(sortIndices[i].second) != 0){
+			// if(solver2.eigenvalues().imag()(sortIndices[i].second) != 0){   // see issue 158 on nimbleCoreTeam
+			if(abs(solver2.eigenvalues().imag()(sortIndices[i].second)) > 1e-15){
 				_nimble_global_output <<"Run-time warning: matrix used in call to nimEigen() has a complex eigenvalue."<<"\n"; nimble_print_to_R(_nimble_global_output);
 				Eig_eigVals(i) = NAN;
 			}
