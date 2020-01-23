@@ -2974,14 +2974,14 @@ parseEvalNumericMany <- function(x, env, ignoreNotFound = FALSE) {
             if(!is(output, 'try-error')) return(output)
         }
         ## Go through one by one if errors, or if there is a single input.
-        output <- sapply(x, function(val) {
+        output <- lapply(x, function(val) {
             tmp <- try(as.numeric(eval(parse(text = val, keep.source = FALSE)[[1]], envir = env)), silent = TRUE)
             if(is(tmp, 'try-error')) {
                 if(length(grep("subscript out of bounds", tmp))) {
                     return(handleOutOfBounds(val, env))
                 } else return(NA)
             } else return(tmp)
-        }, USE.NAMES = FALSE)
+        })
         return(unlist(output))
     } else {  ## Error out when not found.
         withCallingHandlers(
@@ -3012,7 +3012,7 @@ parseEvalNumericManyList <- function(x, env, ignoreNotFound = FALSE) {
                     return(handleOutOfBounds(val, env))
                 } else return(NA)
             } else return(tmp)
-        }, USE.NAMES = FALSE)
+        })
         return(output)  
     } else {
         withCallingHandlers(

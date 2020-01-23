@@ -51,7 +51,7 @@ test_that("expandNodeNames works for various cases, including going beyond exten
    expect_equal(m$expandNodeNames("p[1:5]"), "p[1:4]")
    expect_equal(m$expandNodeNames("p[5:7]"), character(0))
    expect_equal(m$expandNodeNames(c("p[1:5]", "mu[3:5]")), c("p[1:4]", "mu[3]", "mu[4]"))
-                
+   expect_equal(m$expandNodeNames(c("p[1:5]", "p"), unique = FALSE), c("p[1:4]", "p[1:4]"))              
 })
 
    
