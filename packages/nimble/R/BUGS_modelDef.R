@@ -2999,21 +2999,21 @@ parseEvalNumericMany <- function(x, env, ignoreNotFound = FALSE) {
 
 parseEvalNumericManyList <- function(x, env, ignoreNotFound = FALSE) {
     if(ignoreNotFound) {  ## Return NA when not found.
-        if(length(x) > 1) {
-            ## First try to do as vectorized call.
-            output <- try(eval(.Call(makeParsedVarList, x), envir = env), silent = TRUE)
-            if(!is(output, 'try-error')) return(output)
-        }
+       output <- try(eval(.Call(makeParsedVarList, x), envir = env), silent = TRUE)
+        if(!is(output, 'try-error'))
+            return(output)
+        
         ## Go through one by one if errors, or if there is a single input.
-        output <- sapply(x, function(val) {
-            tmp <- try(eval(.Call(makeParsedVarList, val), envir = env), silent = TRUE)
+        output <- lapply(x, function(val) {
+            ## I don't think there is a need to use makeParsedVarList if input is one element.
+            tmp <- try(as.numeric(eval(parse(text = val, keep.source = FALSE)[[1]], envir = env)), silent = TRUE)
             if(is(tmp, 'try-error')) {
                 if(length(grep("subscript out of bounds", tmp))) {
                     return(handleOutOfBounds(val, env))
                 } else return(NA)
             } else return(tmp)
         }, USE.NAMES = FALSE)
-        return(unlist(output))
+        return(output)  
     } else {
         withCallingHandlers(
             eval(.Call(makeParsedVarList, x), envir = env)

@@ -15,8 +15,9 @@ test_that("expandNodeNames works for various cases, including going beyond exten
     for(i in 1:3)
         for(j in 1:3)
             theta[i,j] ~ dnorm(0,1)
+    p[1:4] ~ ddirch(alpha[1:4])
    })
-   m <- nimbleModel(code)
+   m <- nimbleModel(code, inits = list(alpha = rep(1, 4)))
 
    ## vector variable
    expect_equal(m$expandNodeNames("mu"), c("mu[1]","mu[2]","mu[3]","mu[4]"))
@@ -43,6 +44,14 @@ test_that("expandNodeNames works for various cases, including going beyond exten
                                   
    ## misformed
    expect_equal(m$expandNodeNames("theta[[[a"), character(0))
+
+   ## multivariate node
+   expect_equal(m$expandNodeNames("p[1:4]"), "p[1:4]")
+   expect_equal(m$expandNodeNames("p[1:2]"), "p[1:4]")
+   expect_equal(m$expandNodeNames("p[1:5]"), "p[1:4]")
+   expect_equal(m$expandNodeNames("p[5:7]"), character(0))
+   expect_equal(m$expandNodeNames(c("p[1:5]", "mu[3:5]")), c("p[1:4]", "mu[3]", "mu[4]"))
+                
 })
 
    
