@@ -313,7 +313,6 @@ conf <- configureMCMC(model)
 mcmc <- buildMCMC(conf)  # correctly errors out
 
 ## multiple obs, but only single thetaTilde in each group
-## check with Claudia it is ok to do non-conjugate here
 code <- nimbleCode({
     for(i in 1:n) {
         for(j in 1:J) {
@@ -1515,7 +1514,6 @@ all(ids == rep(1:n, each = J))
 
 ## clusters IID G0; indep but not identically distributed within cluster, 
 ## this uses conjugacy
-## Claudia, please confirm this is ok.
 code <- nimbleCode({
     for(i in 1:n) {
         for(j in 1:J) {
@@ -1541,6 +1539,37 @@ samplers <- conf$getSamplers()
 wh <- which(sapply(samplers, function(x) x$name == "CRP_cluster_wrapper"))
 ids <- sapply(wh, function(i) samplers[[i]]$control$clusterID)
 all(ids == rep(1:n, each = J))
+
+## clusters IID G0; indep but not identically distributed within cluster, 
+## this case is of interest, discussed 2020-01-24 at Berkeley meeting
+
+code <- nimbleCode({
+    for(i in 1:n) {
+        y[i, 1] ~ dnorm(thetaTilde[xi[i], 1], 1)
+        y[i, 2] ~ dgamma(thetaTilde[xi[i], 2], 1)
+        thetaTilde[i, 1] ~ dnorm(0, 1)   # indep within cluster, IID across
+        thetaTilde[i, 2] ~ dgamma(1, 1)   # indep within cluster, IID across
+    }
+    xi[1:n] ~ dCRP(alpha, size = n)
+})
+
+n <- 5
+J <- 2
+constants <- list(n = n, J = J)
+data <- list(y = matrix(rnorm(n*J),n,J))
+inits <- list(alpha = 1, xi = rep(1, n),
+              thetaTilde = cbind(rnorm(n), rgamma(n,1,1)))
+model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+nimble:::findClusterNodes(model, 'xi[1:5]')
+nimble:::checkCRPconjugacy(model, 'xi[1:5]')  # not conj
+conf <- configureMCMC(model)
+conf$printSamplers()  
+mcmc <- buildMCMC(conf)
+samplers <- conf$getSamplers()
+wh <- which(sapply(samplers, function(x) x$name == "CRP_cluster_wrapper"))
+ids <- sapply(wh, function(i) samplers[[i]]$control$clusterID)
+all(ids == rep(1:n, J))
+
 
 
 ## clusters IID G0, indep within cluster
