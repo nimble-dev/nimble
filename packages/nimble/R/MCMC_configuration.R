@@ -310,7 +310,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
                         if(nodeDist == 'dcar_normal')  { addSampler(target = node, type = 'CAR_normal');         next }
                         if(nodeDist == 'dcar_proper')  { addSampler(target = node, type = 'CAR_proper');         next }
                         if(nodeDist == 'dCRP')         {
-                            addSampler(target = node, type = 'CRP', control = list(useConjugacy = useConjugacy))
+                            addSampler(target = node, type = 'CRP_moreGeneral', control = list(checkConjugacy = useConjugacy))
                             numCRPnodes <- numCRPnodes + 1
                             clusterNodeInfo[[numCRPnodes]] <- findClusterNodes(model, node)
                             dcrpNode[numCRPnodes] <- node
@@ -362,29 +362,37 @@ print: A logical argument specifying whether to print the ordered list of defaul
 
                 ## For CRP-based models, wrap samplers for cluster parameters so not sampled if cluster is unoccupied.
                 if(!is.null(clusterNodeInfo)) {
+                    allClusterNodes <- lapply(clusterNodeInfo, function(x) x$clusterNodes)
                     for(k in seq_along(clusterNodeInfo)) {
-                        for(clusterNodes in clusterNodeInfo[[k]]$clusterNodes) {
-                            samplers <- getSamplers(clusterNodes)
-                            removeSamplers(clusterNodes)
-                            for(i in seq_along(samplers)) {
-                                node <- samplers[[i]]$target
-                                addSampler(target = node, type = 'CRP_cluster_wrapper',
-                                           control = list(wrapped_type = samplers[[i]]$name, wrapped_conf = samplers[[i]],
-                                                          dcrpNode = dcrpNode[[k]], clusterID = i))
-                                ## Note for more general clustering: will probably change to
-                                ## 'clusterID=clusterNodeInfo[[k]]$clusterIDs[[??]][i]'
-                                ## which means we probably need to change to for(clusterNodesIdx in seq_along(clusterNodeInfo[[k]]$clusterNodes))
+                        for(idx in seq_along(clusterNodeInfo[[k]]$clusterNodes)) {
+                            clusterNodes <- clusterNodeInfo[[k]]$clusterNodes[[idx]]
+                            if(length(allClusterNodes) == 1 || !any(clusterNodes %in% unlist(allClusterNodes[-k]))) {
+                                ## For now avoid wrapper if any overlap of clusterNodes, as hard to determine if cluster is occupied.
+                                ## We'll need to come back to this to handle the mu[xi[i],eta[j]] case if we want to
+                                ## avoid sampling empty clusters in that case.
+
+                                samplers <- getSamplers(clusterNodes)
+                                removeSamplers(clusterNodes)
+                                for(i in seq_along(samplers)) {
+                                    node <- samplers[[i]]$target
+                                    ## getSamplers() returns samplers in order of configuration not in order of input.
+                                    clusterID <- which(clusterNodes == node)
+                                    if(length(clusterID) != 1)
+                                       stop("Cannot determine wrapped sampler for cluster parameter ", node, ".")
+                                    addSampler(target = node, type = 'CRP_cluster_wrapper',
+                                               control = list(wrapped_type = samplers[[i]]$name, wrapped_conf = samplers[[i]],
+                                                              dcrpNode = dcrpNode[[k]], clusterID = clusterNodeInfo[[k]]$clusterIDs[[idx]][clusterID]))
+                                }
                             }
                         }
                     }
                 }
-
             }
             
             if(print)   show()    ##printSamplers()
         },
 
-        addConjugateSampler = function(conjugacyResult, dynamicallyIndexed = FALSE, dcrpNode = NULL, clusterID = NULL, print = FALSE) {
+        addConjugateSampler = function(conjugacyResult, dynamicallyIndexed = FALSE, print = FALSE) {
             ## update May 2016: old (non-dynamic) system is no longer supported -DT
             ##if(!getNimbleOption('useDynamicConjugacy')) {
             ##    addSampler(target = conjugacyResult$target, type = conjugacyResult$type, control = conjugacyResult$control)
@@ -957,59 +965,6 @@ waic: A logical argument, indicating whether to enable WAIC calculations in the 
     )
 )
 
-checkCRPconjugacy <- function(model, target) {
-    ## Checks if can use conjugacy in drawing new components for dCRP node updating.
-    ## Should detect various univariate cases and normal-invgamma case.
-    ## We don't yet handle conjugacies with non-identity relationships.
-    
-    conjugate <- FALSE 
-    
-    targetElementExample <- model$expandNodeNames(target, returnScalarComponents=TRUE)[1]
-
-    clusterVarInfo <- findClusterNodes(model, target)
- 
-    ## Check conjugacy for one cluster node (for efficiency reasons) and then make sure all
-    ## cluster nodes are IID and dependent nodes are from same declaration so conjugacy check for one should hold for all.
-    ## Note that cases where intermediate deterministic nodes are not from same declaration should be caught in sampler_CRP
-    ## because we don't allow cluster ID to appear in multiple declarations, so can't have mu[1] <- muTilde[xi[1]]; mu[2] <- exp(muTilde[xi[2]])
-    if(length(clusterVarInfo$clusterVars) == 1) {  ## for now avoid case of mixing over multiple parameters, but allow dnorm_dinvgamma below
-        clusterNodes <- clusterVarInfo$clusterNodes[[1]]  # e.g., 'thetatilde[1]',...,
-        ## Currently we only handle offsets and coeffs for dnorm case;
-        ## will add Pois-gamma and possibly MVN cases.
-        identityLink <- TRUE
-        conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
-        if(!length(conjugacy) && model$getDistribution(clusterNodes[1]) == 'dnorm') {
-            identityLink <- FALSE
-            conjugacy <- model$checkConjugacy(clusterNodes[1])  ## check non-identity link too
-        }
-        if(length(conjugacy)) {
-            conjugacyType <- paste0(conjugacy[[1]]$type, '_', sub('dep_', '', names(conjugacy[[1]]$control)))
-            if(!identityLink)
-                conjugacyType <- paste0(conjugacyType, '_nonidentity')
-            conjugate <- TRUE
-            ## Check that dependent nodes ('observations') from same declaration.
-            ## This should ensure they have same distribution and parameters are being
-            ## clustered in same way, but also allows other parameters to vary, e.g.,
-            ## y[i] ~ dnorm(mu[xi[i]], s2[i])
-            depNodes <- model$getDependencies(clusterNodes[1], stochOnly = TRUE, self=FALSE)
-            if(length(unique(model$getDeclID(depNodes))) != 1)  ## make sure all dependent nodes from same declaration (i.e., exchangeable)
-                conjugate <- FALSE
-
-            ## Check that cluster nodes are IID
-            valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
-            names(valueExprs) <- NULL
-            if(length(unique(valueExprs)) != 1)
-                conjugate <- FALSE
-        }
-    }
-    ## check for dnorm_dinvgamma conjugacy
-    if(length(clusterVarInfo$clusterVars) == 2 &&
-       checkNormalInvGammaConjugacy(model, clusterVarInfo)) {
-        conjugate <- TRUE
-        conjugacyType <- "conjugate_dnorm_invgamma_dnorm"
-    }
-    if(conjugate) return(conjugacyType) else return(NULL)
-}
 
 rule <- setRefClass(
     Class = 'rule',
