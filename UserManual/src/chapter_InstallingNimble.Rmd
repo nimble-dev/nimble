@@ -114,7 +114,7 @@ Sys.setenv(PATH = newPath)
 For MacOS:
 
   - Newly installed Xcode/command line tools may need to be started once manually to provide a one-time permission before they will work from NIMBLE.
-  - Use on MacOS Catalina (MacOS version 10.15, released in October 2019) may produce an error while installing NIMBLE. Please try running the following in the Terminal to reinstall Xcode/command line tools:
+  - Upgrading your MacOS version may result in an error while installing or using NIMBLE. Please try running the following in the Terminal to reinstall Xcode/command line tools:
   ```{bash, eval=FALSE}
 xcode-select --install
 ```
