@@ -764,6 +764,56 @@ test_that('conjugate Wishart setup', {
     
 })
 
+test_that('conjugate Wishart setup with scaling', {
+    set.seed(0)
+    
+    trueCor <- matrix(c(1, .3, .7, .3, 1, -0.2, .7, -0.2, 1), 3)
+    covs <- c(3, 2, .5)
+    tau <- 4
+    
+    trueCov = diag(sqrt(covs)) %*% trueCor %*% diag(sqrt(covs))
+    Omega = solve(trueCov) / tau
+    
+    n = 20
+    R = diag(rep(1,3))
+    mu = 1:3
+    Y = mu + t(chol(trueCov)) %*% matrix(rnorm(3*n), ncol = n)
+    M = 3
+    data <- list(Y = t(Y), n = n, M = M, mu = mu, R = R)
+    
+    code <- nimbleCode( {
+        for(i in 1:n) {
+            Y[i, 1:M] ~ dmnorm(mu[1:M], tmp[1:M,1:M])
+        }
+        tmp[1:M,1:M] <- tau * Omega[1:M,1:M]
+        Omega[1:M,1:M] ~ dwish(R[1:M,1:M], 4);
+    })
+    
+    newDf = 4 + n
+    newR = R + tcrossprod(Y - mu)*tau
+    OmegaTrueMean = newDf * solve(newR)
+    
+    wishRV <- array(0, c(M, M, 10000))
+    for(i in 1:10000) {
+        z <- t(chol(solve(newR))) %*% matrix(rnorm(3*newDf), ncol = newDf)
+        wishRV[ , , i] <- tcrossprod(z)
+    }
+    OmegaSimTrueSDs = apply(wishRV, c(1,2), sd)
+
+    m <- nimbleModel(code, data = data[1],constants=data[2:5],inits = list(Omega = OmegaTrueMean, tau = tau))
+    conf <- configureMCMC(m)
+    expect_equal(conf$getSamplers()[[1]]$name, "conjugate_dwish_dmnorm", info = "conjugate dmnorm-dwish with scaling not detected")
+    
+    test_mcmc(model = code, name = 'conjugate Wishart, scaled', data = data, seed = 0, numItsC = 1000, inits = list(Omega = OmegaTrueMean, tau = tau),
+              results = list(mean = list(Omega = OmegaTrueMean ),
+                             sd = list(Omega = OmegaSimTrueSDs)),
+              resultsTolerance = list(mean = list(Omega = matrix(.05, M,M)),
+                                      sd = list(Omega = matrix(0.06, M, M))), avoidNestedTest = TRUE)
+                                        # issue with Chol in R MCMC - probably same issue as in jaw-linear
+    
+})
+
+
 test_that('using RW_wishart sampler on non-conjugate Wishart node', {
     set.seed(0)
     trueCor <- matrix(c(1, .3, .7, .3, 1, -0.2, .7, -0.2, 1), 3)
