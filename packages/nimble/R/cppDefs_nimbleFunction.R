@@ -604,6 +604,8 @@ exprClasses_modifyForAD <- function(code, symTab,
         if(is.null( workEnv[['nodeFxnVector_name']] ) )
           stop("While setting up C++ AD code: calculate found but nodeFxnVector_name not set.")
         ## insert setup_extraInput_step(nfv)
+        set_model_tape_info_line <- RparseTree2ExprClasses(cppLiteral("set_CppAD_tape_info_for_model my_tape_info_RAII_(model_nodes_nodeFxnVector_includeData_TRUE_SU__derivs_, TYPE_::get_tape_id_nimble(), TYPE_::get_tape_handle_nimble());"))
+        
         setupExtraInputLine <- RparseTree2ExprClasses(
           substitute(setup_extraInput_step(NFV),
                      list(NFV = as.name(workEnv$nodeFxnVector_name)))
@@ -612,7 +614,8 @@ exprClasses_modifyForAD <- function(code, symTab,
         ## creating a new `{` block.
         ## If anything more general is needed later, we could use
         ## the exprClasses_insertAssertions system
-        newExpr <- newBracketExpr(args = c(list(setupExtraInputLine),
+        newExpr <- newBracketExpr(args = c(list(set_model_tape_info_line,
+                                                setupExtraInputLine),
                                            code$args))
         code$args <- list()
         setArg(code, 1, newExpr)
