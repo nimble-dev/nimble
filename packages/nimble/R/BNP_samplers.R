@@ -1477,7 +1477,7 @@ CRP_conjugate_dnorm_dnorm_nonidentity_moreGeneral <- nimbleFunction(
 CRP_conjugate_dnorm_invgamma_dnorm_moreGeneral <- nimbleFunction(
   name = "CRP_conjugate_dnorm_invgamma_dnorm_moreGeneral",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes1, marginalizedNodes2, dataNodes, J) {
+  setup = function(model, marginalizedNodes1, marginalizedNodes2, dataNodes, J, M) {
     priorMean <- nimNumeric(J+1)
     kappa <- nimNumeric(J+1)
     priorShape <- nimNumeric(J+1)
@@ -1521,7 +1521,7 @@ CRP_conjugate_dnorm_invgamma_dnorm_moreGeneral <- nimbleFunction(
 CRP_conjugate_dmnorm_invwish_dmnorm_moreGeneral <- nimbleFunction(
   name = "CRP_conjugate_dmnorm_invwish_dmnorm_moreGeneral",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes1, marginalizedNodes2, dataNodes, J) {
+  setup = function(model, marginalizedNodes1, marginalizedNodes2, dataNodes, J, M) {
     d <- length(model[[marginalizedNodes1[1]]])
     priorMean <- matrix(0, ncol=d, nrow=J)  #nimNumeric(d)
     kappa <- nimNumeric(J+1)
@@ -2083,6 +2083,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
                         conjugate_dmnorm_dmnorm = 'CRP_conjugate_dmnorm_dmnorm_moreGeneral',
                         conjugate_dnorm_dnorm_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity_moreGeneral',
                         conjugate_dnorm_invgamma_dnorm = 'CRP_conjugate_dnorm_invgamma_dnorm_moreGeneral',
+                        conjugate_dnorm_gamma_dnorm = 'CRP_conjugate_dnorm_gamma_dnorm_moreGeneral',
                         conjugate_dmnorm_invwish_dmnorm = 'CRP_conjugate_dmnorm_invwish_dmnorm_moreGeneral',
                         conjugate_dbeta_dbern  = 'CRP_conjugate_dbeta_dbern_moreGeneral',
                         conjugate_dbeta_dbin = 'CRP_conjugate_dbeta_dbin_moreGeneral',
@@ -2168,7 +2169,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
           }
         }  
       }
-      helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes1, marginalizedNodes2, dataNodes, nObsPerClusID)
+      helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes1, marginalizedNodes2, dataNodes, nObsPerClusID, nClusNodesPerClusID)
       calcNodes <- model$getDependencies(c(target, marginalizedNodes1, marginalizedNodes2))
     } else {
         ## p and nTilde only needed for non-conjugate currently.
@@ -2686,18 +2687,35 @@ checkCRPconjugacy <- function(model, target) {
     }
     ## check for dnorm_dinvgamma conjugacy
     if(length(clusterVarInfo$clusterVars) == 2 &&
-       checkNormalInvGammaConjugacy(model, clusterVarInfo, n)) {
+       checkNormalInvGammaConjugacy(model, clusterVarInfo, n, 'dgamma')) {
+        conjugate <- TRUE
+        conjugacyType <- "conjugate_dnorm_gamma_dnorm"
+    } else if(length(clusterVarInfo$clusterVars) == 2 &&
+       checkNormalInvGammaConjugacy(model, clusterVarInfo, n, 'dinvgamma')) {
         conjugate <- TRUE
         conjugacyType <- "conjugate_dnorm_invgamma_dnorm"
+    } else if(length(clusterVarInfo$clusterVars) == 2 &&
+       checkNormalInvWishartConjugacy(model, clusterVarInfo, n, 'dwish')) {
+        conjugate <- TRUE
+        conjugacyType <- "conjugate_dmnorm_wish_dmnorm"
+    } else if(length(clusterVarInfo$clusterVars) == 2 &&
+       checkNormalInvWishartConjugacy(model, clusterVarInfo, n, 'dinvwish')) {
+        conjugate <- TRUE
+        conjugacyType <- "conjugate_dmnorm_invwish_dmnorm"
     }
     if(conjugate) return(conjugacyType) else return(NULL)
 }
 
 
-checkNormalInvGammaConjugacy <- function(model, clusterVarInfo, n) {
+checkNormalInvGammaConjugacy <- function(model, clusterVarInfo, n, gammaDist = 'dinvgamma') {
+    ## This function can also check dnorm_gamma when 'gammaDist' is 'dgamma'.
     if(length(clusterVarInfo$clusterVars) != 2)
         stop("checkNormalInvGammaConjugacy: requires two cluster variables.")
     conjugate <- FALSE
+
+    varParam <- 'var'
+    if(gammaDist == 'dgamma')
+        varParam <- 'tau'
     
     clusterNodes1 <- clusterVarInfo$clusterNodes[[1]]
     clusterNodes2 <- clusterVarInfo$clusterNodes[[2]]
@@ -2706,8 +2724,8 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo, n) {
        length(clusterNodes1) == length(clusterNodes2) &&
        identical(clusterVarInfo$clusterIDs[[1]], clusterVarInfo$clusterIDs[[2]])) {
         dists <- c(model$getDistribution(clusterNodes1[1]), model$getDistribution(clusterNodes2[1]))
-        if(dists[1] == "dinvgamma" && dists[2] ==  "dnorm") {  ## put in order so dnorm node is first
-            dists <- c("dnorm", "dinvgamma")
+        if(dists[1] == gammaDist && dists[2] ==  "dnorm") {  ## put in order so dnorm node is first
+            dists <- c("dnorm", gammaDist)
             tmp <- clusterNodes1; clusterNodes1 <- clusterNodes2; clusterNodes2 <- tmp
         }
 
@@ -2716,13 +2734,13 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo, n) {
         ## Check conjugacy for example nodes.
         exampleNodes1 <- clusterNodes1[clusterIDs == 1]
         exampleNodes2 <- clusterNodes2[clusterIDs == 1]
-        if(dists[1] == "dnorm" && dists[2] == "dinvgamma") {
+        if(dists[1] == "dnorm" && dists[2] == gammaDist) {
             conjugacy_dnorm <- model$checkConjugacy(exampleNodes1, restrictLink = 'identity')
             conjugacy_dinvgamma <- model$checkConjugacy(exampleNodes2)
             if(length(conjugacy_dnorm) == length(exampleNodes1) &&
                length(conjugacy_dinvgamma) == length(exampleNodes2) &&
                sum(sapply(conjugacy_dnorm, '[[', 'type') == 'conjugate_dnorm') == length(exampleNodes1) &&
-               sum(sapply(conjugacy_dinvgamma, '[[', 'type') == 'conjugate_dinvgamma') == length(exampleNodes2) &&
+               sum(sapply(conjugacy_dinvgamma, '[[', 'type') == paste0('conjugate_', gammaDist)) == length(exampleNodes2) &&
                all(sapply(seq_along(conjugacy_dinvgamma), function(idx)
                    sum(conjugacy_dinvgamma[[idx]]$control$dep_dnorm == exampleNodes1[idx]) == 1)))
                 conjugate <- TRUE
@@ -2745,7 +2763,7 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo, n) {
                 conjugate <- FALSE
             ## Check that variance for cluster mean nodes are same except for dependence on variance.
             varExprs <- lapply(seq_along(splitNodes1), function(idx) {
-                exprs <- sapply(splitNodes1[[idx]], function(z) model$getParamExpr(z, 'var'))
+                exprs <- sapply(splitNodes1[[idx]], function(z) model$getParamExpr(z, varParam))
                 names(exprs) <- NULL
                 for(i in seq_along(exprs)) {
                     varText <- deparse(exprs[[i]])
@@ -2781,6 +2799,98 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo, n) {
     return(conjugate)
 }
     
+checkNormalInvWishartConjugacy <- function(model, clusterVarInfo, n, wishartDist = 'dinvwish') {
+    if(length(clusterVarInfo$clusterVars) != 2)
+        stop("checkNormalInvWishartConjugacy: requires two cluster variables.")
+    conjugate <- FALSE
+    
+    covParam <- 'cov'
+    if(wishartDist == 'dwish')
+        covParam <- 'prec'
+
+    clusterNodes1 <- clusterVarInfo$clusterNodes[[1]]
+    clusterNodes2 <- clusterVarInfo$clusterNodes[[2]]
+
+    if(!any(model$isDeterm(c(clusterNodes1, clusterNodes2))) &&
+       length(clusterNodes1) == length(clusterNodes2) &&
+       identical(clusterVarInfo$clusterIDs[[1]], clusterVarInfo$clusterIDs[[2]])) {
+        dists <- c(model$getDistribution(clusterNodes1[1]), model$getDistribution(clusterNodes2[1]))
+        if(dists[1] == wishartDist && dists[2] ==  "dmnorm") {  ## put in order so dmnorm node is first
+            dists <- c("dmnorm", wishartDist)
+            tmp <- clusterNodes1; clusterNodes1 <- clusterNodes2; clusterNodes2 <- tmp
+        }
+
+        clusterIDs <- clusterVarInfo$clusterIDs[[1]]
+        
+        ## Check conjugacy for example nodes.
+        exampleNodes1 <- clusterNodes1[clusterIDs == 1]
+        exampleNodes2 <- clusterNodes2[clusterIDs == 1]
+
+        if(dists[1] == "dmnorm" && dists[2] == wishartDist) {
+            conjugacy_dmnorm <- model$checkConjugacy(exampleNodes1, restrictLink = 'identity')
+            conjugacy_dinvwish <- model$checkConjugacy(exampleNodes2)
+            if(length(conjugacy_dmnorm) == length(exampleNodes1) &&
+               length(conjugacy_dinvwish) == length(exampleNodes2) &&
+               sum(sapply(conjugacy_dmnorm, '[[', 'type') == 'conjugate_dmnorm') == length(exampleNodes1) &&
+               sum(sapply(conjugacy_dinvwish, '[[', 'type') == paste0('conjugate_', wishartDist)) == length(exampleNodes2) &&
+               all(sapply(seq_along(conjugacy_dinvwish), function(idx)
+                   sum(conjugacy_dinvwish[[idx]]$control$dep_dmnorm == exampleNodes1[idx]) == 1)))
+                conjugate <- TRUE
+        }
+        if(conjugate) {  
+            ## Check that cluster nodes are IID (across clusters), since for efficiency above
+            ## we only check the fist cluster. Can have non-IID within a cluster.
+            if(any(model$getDistribution(clusterNodes1) != "dmnorm"))
+                conjugate <- FALSE
+            
+            splitNodes1 <- split(clusterNodes1, clusterIDs)
+            splitNodes2 <- split(clusterNodes2, clusterIDs)
+            ## Check that means of cluster mean nodes are same across clusters.
+            meanExprs <- lapply(splitNodes1, function(x) {
+                out <- sapply(x, function(z) model$getParamExpr(z, 'mean'))
+                names(out) <- NULL
+                out
+            })
+            if(length(unique(meanExprs)) != 1)
+                conjugate <- FALSE
+            ## Check that variance for cluster mean nodes are same except for dependence on variance.
+            varExprs <- lapply(seq_along(splitNodes1), function(idx) {
+                exprs <- sapply(splitNodes1[[idx]], function(z) model$getParamExpr(z, covParam))
+                names(exprs) <- NULL
+                for(i in seq_along(exprs)) {
+                    varText <- deparse(exprs[[i]])
+                    if(length(grep(splitNodes2[[idx]][i], varText, fixed = TRUE)))  ## remove clusterNodes2[i] from expression so var expressions will be the same
+                        exprs[[i]] <- parse(text = gsub(splitNodes2[[idx]][i],
+                                                        "a", varText, fixed = TRUE))[[1]]
+                }
+                exprs
+            })
+            if(length(unique(varExprs)) != 1) 
+                conjugate <- FALSE
+            
+            ## Check that cluster variance nodes are IID
+            valueExprs <- lapply(splitNodes2, function(x) {
+                out <- sapply(x, model$getValueExpr)
+                names(out) <- NULL
+                out
+            })
+            if(length(unique(valueExprs)) != 1)
+                conjugate <- FALSE
+            
+            ## Check that dependent nodes ('observations') from same declaration.
+            ## This should ensure they have same distribution and parameters are being
+            ## clustered in same way.
+            depNodes <- model$getDependencies(clusterNodes1, stochOnly = TRUE, self = FALSE)
+            if(length(unique(model$getDeclID(depNodes))) != 1)
+                conjugate <- FALSE
+            ## We are not set up to have multiple data nodes depend on a single normal-invgamma distribution
+            if(length(exampleNodes1) != length(depNodes) / n)
+                conjugate <- FALSE
+        }
+        return(conjugate)
+    }
+}
+
 sampler_CRP_cluster_wrapper <- nimbleFunction(
     name = "CRP_cluster_wrapper", 
     contains = sampler_BASE,
