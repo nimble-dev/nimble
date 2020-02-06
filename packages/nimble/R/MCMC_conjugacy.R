@@ -1125,7 +1125,8 @@ cc_linkCheck <- function(linearityCheck, link) {
     offset      <- linearityCheck$offset
     scale       <- linearityCheck$scale
     if(link == 'identity'       && offset == 0 && scale == 1)                  return(TRUE)
-    ## We currently have no conjugacies where the scale can be a matrix.
+    ## We currently have no conjugacies where the scale can be a matrix, so check
+    ## that 'scale' is a scalar.
     ## In particular we want to avoid that case when dealing with Wishart-related conjugacies.
     if(link == 'multiplicative' && offset == 0 && cc_checkScalar(scale))       return(TRUE)
     if(link == 'linear' || link == 'linear_plus_inprod')                       return(TRUE)
