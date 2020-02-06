@@ -200,6 +200,9 @@ class nodeFun : public NamedObjects {
 
   // useADreconfigure functions (version "2")
   void initialize_AD_model_before_recording(NodeVectorClassNew_derivs &NV);
+  virtual void set_tape_ptr_from_nodeFun(CppAD::tape_id_t tape_id,
+					 CppAD::local::ADTape<Base>* tape_handle_,
+					 bool recover);
   virtual void setup_extraInput_step(NodeVectorClassNew_derivs &NV);
   virtual void setup_extraOutput_step(NodeVectorClassNew_derivs &NV,
 				      CppAD::AD<double> &logProb);

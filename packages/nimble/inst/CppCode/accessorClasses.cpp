@@ -56,6 +56,18 @@ double calculate(NodeVectorClassNew &nodes) {
   return(ans);
 }
 
+void set_CppAD_tape_info_for_model(NodeVectorClassNew_derivs &nodes,
+				   CppAD::tape_id_t tape_id,
+				   CppAD::local::ADTape<Base>* tape_handle_,
+				   bool recover) { // tape handle
+  
+  const vector<NodeInstruction> &instructions = nodes.getInstructions();
+  bool not_empty  = instructions.size() > 0;
+  if(not_empty) {
+    instructions.begin()->nodeFunPtr->set_tape_ptr_from_nodeFun(tape_id, tape_handle_, recover);
+  }
+}
+
 CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
 					 bool includeExtraOutputStep) {
   std::cout <<"entering calculate_ADproxyModel"<< std::endl;//"entering calculate_ADproxyModel" << "\n";
@@ -64,7 +76,7 @@ CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
   vector<NodeInstruction>::const_iterator iNode(instructions.begin());
   vector<NodeInstruction>::const_iterator iNodeEnd(instructions.end());
   std::cout<<"starting node calcs in calculate_ADproxyModel"<<std::endl;
-  
+
   for(; iNode != iNodeEnd; iNode++)
     ans += iNode->nodeFunPtr->calculateBlock_ADproxyModel(iNode->operand);
   std::cout<<"starting extraOutputStep"<<std::endl;

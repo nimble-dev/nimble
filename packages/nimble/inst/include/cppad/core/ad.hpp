@@ -257,6 +257,8 @@ public:
     // ----------------------------------------------------------
     // static public member functions
 
+#include "nimble_ADbase_extensions.hpp"
+  
     // abort current AD<Base> recording
     static void        abort_recording(void);
 
