@@ -58,9 +58,9 @@ void nodeFun::initialize_AD_model_before_recording(NodeVectorClassNew_derivs &NV
   }
 }
 
-void set_tape_ptr_from_nodeFun(CppAD::tape_id_t tape_id,
-			       CppAD::local::ADTape<Base>* tape_handle_,
-			       bool recover) {
+void nodeFun::set_tape_ptr_from_nodeFun(CppAD::tape_id_t tape_id,
+					CppAD::local::ADTape<double>* tape_handle_,
+					bool recover) {
   CppAD::AD<double>::set_tape_info_nimble(tape_id, tape_handle_, recover);
 }
 

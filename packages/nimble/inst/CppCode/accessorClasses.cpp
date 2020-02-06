@@ -56,15 +56,20 @@ double calculate(NodeVectorClassNew &nodes) {
   return(ans);
 }
 
-void set_CppAD_tape_info_for_model(NodeVectorClassNew_derivs &nodes,
+set_CppAD_tape_info_for_model::set_CppAD_tape_info_for_model(NodeVectorClassNew_derivs &nodes,
 				   CppAD::tape_id_t tape_id,
-				   CppAD::local::ADTape<Base>* tape_handle_,
-				   bool recover) { // tape handle
-  
+				   CppAD::local::ADTape<double>* tape_handle_) { // tape handle
   const vector<NodeInstruction> &instructions = nodes.getInstructions();
-  bool not_empty  = instructions.size() > 0;
+  not_empty  = instructions.size() > 0;
   if(not_empty) {
-    instructions.begin()->nodeFunPtr->set_tape_ptr_from_nodeFun(tape_id, tape_handle_, recover);
+    nodeFunInModelDLL = instructions[0].nodeFunPtr;
+    nodeFunInModelDLL->set_tape_ptr_from_nodeFun(tape_id, tape_handle_, false);
+  }
+}
+
+set_CppAD_tape_info_for_model::~set_CppAD_tape_info_for_model() {
+  if(not_empty) {
+    nodeFunInModelDLL->set_tape_ptr_from_nodeFun(0, 0, true);
   }
 }
 

@@ -741,10 +741,16 @@ indexedNodeInfo generateDummyIndexedNodeInfo();
 #ifdef _DERIVS_FULLTAPE
 
 class NodeVectorClassNew_derivs;
-void set_CppAD_tape_info_for_model(NodeVectorClassNew_derivs &nodes,
+class set_CppAD_tape_info_for_model {
+ public:
+  set_CppAD_tape_info_for_model(NodeVectorClassNew_derivs &nodes,
 				   CppAD::tape_id_t tape_id,
-				   CppAD::local::ADTape<Base>* tape_handle_,
-				   bool recover);
+				   CppAD::local::ADTape<double>* tape_handle_);
+  ~set_CppAD_tape_info_for_model();
+ private:
+  nodeFun *nodeFunInModelDLL;
+  bool not_empty;
+};
 CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
 					 bool includeExtraOutputStep = false);
 void setup_extraInput_step(NodeVectorClassNew_derivs &nodes);

@@ -9,7 +9,6 @@ void AD<Base>::set_tape_info_nimble(tape_id_t tape_id, local::ADTape<Base>* tape
     );
   static tape_id_t saved_tape_id;
   static local::ADTape<Base>* saved_tape_handle;
-  local::ADTape<Base>** tape_handle_ptr = tape_handle(thread);
   if(recover) {
     *tape_id_ptr(thread) = saved_tape_id;
     *tape_handle(thread) = saved_tape_handle;
@@ -25,4 +24,17 @@ template<class Base>
 void* AD<Base>::get_handle_address_nimble() {
   void* ans = static_cast<void *>(tape_ptr());
   return ans;
+}
+
+template<class Base>
+tape_id_t AD<Base>::get_tape_id_nimble() {
+  size_t thread =  thread_alloc::thread_num();
+  tape_id_t current_tape_id = *tape_id_ptr(thread);
+  return current_tape_id;
+}
+
+template<class Base>
+local::ADTape<Base>* AD<Base>::get_tape_handle_nimble() {
+  local::ADTape<Base>* current_tape_handle = tape_ptr();
+  return current_tape_handle;
 }
