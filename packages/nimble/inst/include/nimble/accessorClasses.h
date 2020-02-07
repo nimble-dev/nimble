@@ -753,9 +753,16 @@ class set_CppAD_tape_info_for_model {
 };
 CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
 					 bool includeExtraOutputStep = false);
-void setup_extraInput_step(NodeVectorClassNew_derivs &nodes);
-void assign_extraInputDummy(NodeVectorClassNew_derivs &nodes,
-			    CppAD::AD<double> &extraInputDummy);
+/* void setup_extraInput_step(NodeVectorClassNew_derivs &nodes); */
+/* void assign_extraInputDummy(NodeVectorClassNew_derivs &nodes, */
+/* 			    CppAD::AD<double> &extraInputDummy); */
+void init_dynamicVars(NodeVectorClassNew_derivs &nodes,
+		      std::vector<CppAD::AD<double> > &dynamicVars);
+void copy_dynamicVars_to_model(NodeVectorClassNew_derivs &nodes,
+			       std::vector<CppAD::AD<double> > &dynamicVars);
+void update_dynamicVars(NodeVectorClassNew_derivs &NV,
+			std::vector<double> &dynamicVars);
+
 void initialize_AD_model_before_recording(NodeVectorClassNew_derivs &nodes);
 
 class NodeVectorClassNew_derivs : public NodeVectorClassNew {
@@ -853,10 +860,10 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
     // 5. Collect derivatives
     // 6. Sift derivatives into return object
   }
-  void setup_extraInput_step() {
-    nodeFun* nodeFunInModelDLL = instructions[0].nodeFunPtr;
-    nodeFunInModelDLL->setup_extraInput_step(*this);
-  }
+  /* void setup_extraInput_step() { */
+  /*   nodeFun* nodeFunInModelDLL = instructions[0].nodeFunPtr; */
+  /*   nodeFunInModelDLL->setup_extraInput_step(*this); */
+  /* } */
 
   void runTape_runTape(std::vector<double> &independentVars,
 		       std::vector<double> &dependentVars,

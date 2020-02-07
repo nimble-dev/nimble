@@ -46,16 +46,16 @@ void nodeFun::initialize_AD_model_before_recording(NodeVectorClassNew_derivs &NV
   }
   
   // And the same for extraInputNodes (may be redundant)  
-  int length_extraInput = NV.model_extraInput_accessor.getTotalLength();
-  if(length_extraInput > 0) {
-    NimArrValues.setSize(length_extraInput);
-    NimArrValues_AD.setSize(length_extraInput);
-    getValues(NimArrValues, NV.model_extraInput_accessor);
-    std::copy( NimArrValues.getPtr(),
-	       NimArrValues.getPtr() + length_extraInput,
-	       NimArrValues_AD.getPtr());
-    setValues_AD_AD(NimArrValues_AD, NV.model_AD_extraInput_accessor);
-  }
+  // int length_extraInput = NV.model_extraInput_accessor.getTotalLength();
+  // if(length_extraInput > 0) {
+  //   NimArrValues.setSize(length_extraInput);
+  //   NimArrValues_AD.setSize(length_extraInput);
+  //   getValues(NimArrValues, NV.model_extraInput_accessor);
+  //   std::copy( NimArrValues.getPtr(),
+  // 	       NimArrValues.getPtr() + length_extraInput,
+  // 	       NimArrValues_AD.getPtr());
+  //   setValues_AD_AD(NimArrValues_AD, NV.model_AD_extraInput_accessor);
+  // }
 }
 
 void nodeFun::set_tape_ptr_from_nodeFun(CppAD::tape_id_t tape_id,
@@ -64,41 +64,41 @@ void nodeFun::set_tape_ptr_from_nodeFun(CppAD::tape_id_t tape_id,
   CppAD::AD<double>::set_tape_info_nimble(tape_id, tape_handle_, recover);
 }
 
-void nodeFun::setup_extraInput_step(NodeVectorClassNew_derivs &NV) {
-  NimArr<1, CppAD::AD<double> > NimArrValues_AD;
-  // This should be called as the first step after CppAD::Independent
-  int length_extraInput = NV.model_extraInput_accessor.getTotalLength();
-  if(length_extraInput > 0) {
-    std::vector< CppAD::AD<double> > extraInputDummyInput(1);
-    extraInputDummyInput[0] = NV.extraInputDummy;
-    std::vector< CppAD::AD<double> > extraInputResults(length_extraInput);
-      // After this, the tape treats extraInputResults as a function of
-      // extraInputDummy.  This means during tape use, the extraInputObject
-      // functor will be called, and the extraInputResults will contain
-      // node values from the model.  By copying those during taping
-      // into the model_AD, those nodes play the right roles in the tape.
-      // 7.
+// void nodeFun::setup_extraInput_step(NodeVectorClassNew_derivs &NV) {
+//   NimArr<1, CppAD::AD<double> > NimArrValues_AD;
+//   // This should be called as the first step after CppAD::Independent
+//   int length_extraInput = NV.model_extraInput_accessor.getTotalLength();
+//   if(length_extraInput > 0) {
+//     std::vector< CppAD::AD<double> > extraInputDummyInput(1);
+//     extraInputDummyInput[0] = NV.extraInputDummy;
+//     std::vector< CppAD::AD<double> > extraInputResults(length_extraInput);
+//       // After this, the tape treats extraInputResults as a function of
+//       // extraInputDummy.  This means during tape use, the extraInputObject
+//       // functor will be called, and the extraInputResults will contain
+//       // node values from the model.  By copying those during taping
+//       // into the model_AD, those nodes play the right roles in the tape.
+//       // 7.
 
-    NV.extraInputObject = 
-      runExtraInputObject(NV,
-    			  extraInputDummyInput,
-    			  extraInputResults);
+//     NV.extraInputObject = 
+//       runExtraInputObject(NV,
+//     			  extraInputDummyInput,
+//     			  extraInputResults);
 
-    // During recording this will not put values in extraInputResults
-    // but I don't think that will be a problem.  We are recording via
-    // ADtape.Dependent(X, Y), which does not call Forward(0) for values.
-    // Also, we have initialized extraInputValues above.
+//     // During recording this will not put values in extraInputResults
+//     // but I don't think that will be a problem.  We are recording via
+//     // ADtape.Dependent(X, Y), which does not call Forward(0) for values.
+//     // Also, we have initialized extraInputValues above.
 
-    // Next we form a connection for the tape that extraInputResults
-    // go into the ADproxyModel
+//     // Next we form a connection for the tape that extraInputResults
+//     // go into the ADproxyModel
     
-    NimArrValues_AD.setSize(length_extraInput);
-    std::copy(extraInputResults.begin(),
-	      extraInputResults.end(),
-	      NimArrValues_AD.getPtr());
-    setValues_AD_AD(NimArrValues_AD, NV.model_AD_extraInput_accessor);
-  }
-}
+//     NimArrValues_AD.setSize(length_extraInput);
+//     std::copy(extraInputResults.begin(),
+// 	      extraInputResults.end(),
+// 	      NimArrValues_AD.getPtr());
+//     setValues_AD_AD(NimArrValues_AD, NV.model_AD_extraInput_accessor);
+//   }
+// }
 
 void nodeFun::setup_extraOutput_step(NodeVectorClassNew_derivs &NV,
 				     CppAD::AD<double> &logProb) {

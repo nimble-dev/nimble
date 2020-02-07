@@ -329,6 +329,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               addADargumentTransferFunction = function(funName,
                                                                                        independentVarNames,
                                                                                        funIndex,
+                                                                                       useModelInfo = NULL,
                                                                                        derivControl = list()) {
                                                   static <- isTRUE(derivControl[['static']])
                                                   regularFun <- RCfunDefs[[funName]]
@@ -351,7 +352,8 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                                                                                           independentVarNames,
                                                                                                                           funIndex,
                                                                                                                           parentsSizeAndDims,
-                                                                                                                          ADconstantsInfo)
+                                                                                                                          ADconstantsInfo,
+                                                                                                                          useModelInfo)
                                                       }
                                                   }
                                                   invisible(NULL)
@@ -386,6 +388,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   addADargumentTransferFunction(funName,
                                                                                 independentVarNames = independentVarNames,
                                                                                 funIndex = funIndex,
+                                                                                useModelInfo = useModelInfo,
                                                                                 derivControl = derivControl)
                                               },
                                               checkADargument = function(funName, argSym, argName = NULL, returnType = FALSE){
@@ -606,10 +609,12 @@ exprClasses_modifyForAD <- function(code, symTab,
         ## insert setup_extraInput_step(nfv)
         set_model_tape_info_line <- RparseTree2ExprClasses(cppLiteral("set_CppAD_tape_info_for_model my_tape_info_RAII_(model_nodes_nodeFxnVector_includeData_TRUE_SU__derivs_, TYPE_::get_tape_id_nimble(), TYPE_::get_tape_handle_nimble());"))
         
-        setupExtraInputLine <- RparseTree2ExprClasses(
-          substitute(setup_extraInput_step(NFV),
-                     list(NFV = as.name(workEnv$nodeFxnVector_name)))
-        )
+        ## setupExtraInputLine <- RparseTree2ExprClasses(
+        ##   substitute(setup_extraInput_step(NFV),
+        ##              list(NFV = as.name(workEnv$nodeFxnVector_name)))
+        ## )
+        setupExtraInputLine <- RparseTree2ExprClasses(quote(blank())) ## above was from before dynamic variables.  keeping a placeholder for it until sure it's obsolete. 
+
         ## This inserts a single line at the beginning by
         ## creating a new `{` block.
         ## If anything more general is needed later, we could use

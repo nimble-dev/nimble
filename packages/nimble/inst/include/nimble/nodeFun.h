@@ -203,7 +203,7 @@ class nodeFun : public NamedObjects {
   virtual void set_tape_ptr_from_nodeFun(CppAD::tape_id_t tape_id,
 					 CppAD::local::ADTape<double>* tape_handle_,
 					 bool recover);
-  virtual void setup_extraInput_step(NodeVectorClassNew_derivs &NV);
+  // virtual void setup_extraInput_step(NodeVectorClassNew_derivs &NV);
   virtual void setup_extraOutput_step(NodeVectorClassNew_derivs &NV,
 				      CppAD::AD<double> &logProb);
 

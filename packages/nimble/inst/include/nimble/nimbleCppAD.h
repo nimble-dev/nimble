@@ -127,6 +127,7 @@ void show_tick_id();
 class nimbleCppADinfoClass {
  public:
   std::vector<double> independentVars;
+  std::vector<double> dynamicVars;
   CppAD::ADFun<double> *ADtape;
 };
 

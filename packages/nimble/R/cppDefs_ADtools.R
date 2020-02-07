@@ -286,9 +286,11 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
     CFT$name <- newFunName
   CFT$args <- targetFunDef$args
     ## create vector< CppAD::AD<double> > ADindependentVars
-    ADindependentVarsSym <- cppVarFull(name = 'ADindependentVars', baseType = 'vector', templateArgs = list( cppVarFull(baseType = 'CppAD::AD', templateArgs = 'double', name = character()) ), ref = FALSE) ## was ref = TRUE if taking as argument
+    ADindependentVarsSym <- cppVarFull(name = 'ADindependentVars', baseType = 'vector', templateArgs = list( cppVarFull(baseType = 'CppAD::AD', templateArgs = 'double', name = character()) ), ref = FALSE) 
+    ## create vector< CppAD::AD<double> > ADdynamicVars (needed only when a model will be used)
+    ADdynamicVarsSym <- cppVarFull(name = 'ADdynamicVars', baseType = 'vector', templateArgs = list( cppVarFull(baseType = 'CppAD::AD', templateArgs = 'double', name = character()) ), ref = FALSE) 
     ## create vector< CppAD::AD<double> ADresponseVars
-    ADresponseVarsSym <- cppVarFull(name = 'ADresponseVars', baseType = 'vector', templateArgs = list( cppVarFull(baseType = 'CppAD::AD', templateArgs = 'double', name = character()) ), ref = FALSE) ## ditto
+    ADresponseVarsSym <- cppVarFull(name = 'ADresponseVars', baseType = 'vector', templateArgs = list( cppVarFull(baseType = 'CppAD::AD', templateArgs = 'double', name = character()) ), ref = FALSE) 
     ## Add them to arguments symbol table ## switch design and make these local
 ##    CFT$args$addSymbol( ADindependentVarsSym )
 ##    CFT$args$addSymbol( ADresponseVarsSym )
@@ -369,13 +371,16 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
     }
 
     localVars$addSymbol( ADindependentVarsSym )
+    localVars$addSymbol( ADdynamicVarsSym )
     localVars$addSymbol( ADresponseVarsSym )
     localVars$addSymbol( CFT$returnType )
 
     ## call CppAD::Independent(ADindependentVars)
     ## This starts CppADs taping system
-    CppADindependentCode <- quote(`CppAD::Independent`(ADindependentVars)) ##nimble:::RparseTree2ExprClasses(quote(`CppAD::Independent`(ADindependentVars)))
-
+    CppADindependentCode <- if(usesModelCalculate)
+                                quote(`CppAD::Independent`(ADindependentVars, 0, true, ADdynamicVars)) ## consider switching to false for speed?
+                            else
+                                quote(`CppAD::Independent`(ADindependentVars))
     ## make copying blocks into independent vars
     ## This looks like e.g.
     ## for(i_ in 1:3) {ADindependentVars[netIncrement_] = x[i]; netIncrement_ <- netIncrement + 1;}
@@ -505,8 +510,14 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
 
     returnCall <- cppLiteral("return(RETURN_TAPE_);")
 
-    setExtraInputDummyCode <- if(usesModelCalculate)
-                                  substitute(assign_extraInputDummy(NV, ADindependentVars[totalIndependentLength_]),
+    initADdynamicVarsCode <- if(usesModelCalculate)
+                                 substitute(init_dynamicVars(NV, ADdynamicVars),
+                                             list(NV = as.name(nodeFxnVector_name[1])))
+                              else
+                                 quote(blank())
+    
+    copyDynamicVarsToModelCode <- if(usesModelCalculate)
+                                  substitute(copy_dynamicVars_to_model(NV, ADdynamicVars),
                                              list(NV = as.name(nodeFxnVector_name[1])))
                               else
                                   quote(blank())
@@ -518,8 +529,9 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
                                   calcTotalLengthCode,
                                   setSizeLines,
                                   dummyIndexNodeInfoCode,
+                                  initADdynamicVarsCode,
                                   initADindependentVarsCode,
-                                  list(initADptrCode, CppADindependentCode, setExtraInputDummyCode),
+                                  list(initADptrCode, CppADindependentCode, copyDynamicVarsToModelCode),
                                   copyIntoIndepVarCode,
                                   list(tapingCallRCode, calcTotalResponseLengthCode, setADresponseVarsSizeLine),
                                   copyFromDepVarCode,
@@ -673,8 +685,8 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
                                             parentsSizeAndDims,
                                             ADconstantsInfo,
                                             useModelInfo = list()) {
-    usesModelCalculate <- length(useModelInfo[['nodeFxnVector_name']]) > 0
-    ## modeled closely parts of /*  */
+  nodeFxnVector_name <- useModelInfo[['nodeFxnVector_name']]
+    usesModelCalculate <- length(nodeFxnVector_name) > 0    ## modeled closely parts of /*  */
     ## needs to set the ADtapePtr to one element of the ADtape
     TF <- RCfunctionDef$new() ## should it be static?
     TF$returnType <- cppVarFull(baseType = 'nimbleCppADinfoClass', ref = TRUE, name = 'RETURN_OBJ')
@@ -787,20 +799,27 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
   calcTotalLengthCode <- makeCalcTotalLengthBlock(independentVarNames,
                                                   nimbleSymTab,
                                                   "totalIndependentVarLength_",
-                                                  if(usesModelCalculate) 1 else 0)
+                                                  0) ## from extraInput scheme: if(usesModelCalculate) 1 else 0)
   setSizeLine <- quote(cppMemberFunction(resize(memberData(ADtapeSetup, independentVars), totalIndependentVarLength_)))
   returnCall <- cppLiteral("return(ADtapeSetup);")
     if(maxSize > 0){
       for(ivn in 1:maxSize)
         localVars$addSymbol( cppVar(name = indexVarNames[ivn], baseType = 'int') )    
     }
-    
+
+  dynamicVarsLine <- if(usesModelCalculate) {
+    substitute(update_dynamicVars(NV, memberData(ADtapeSetup, dynamicVars)),
+               list(NV = as.name(nodeFxnVector_name[1])))
+  } else {
+    quote(blank())
+  }
   allRcode <- do.call('call', c(list('{'),
                                 list(recordIfNeededCode),
                                 calcTotalLengthCode,
                                 list(setSizeLine),
                                 list(assignTapePtrCode),
                                 copyIntoIndepVarCode,
+                                list(dynamicVarsLine),
                                 list(returnCall)),
                       quote=TRUE)
     allCode <- RparseTree2ExprClasses(allRcode)

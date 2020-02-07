@@ -101,21 +101,22 @@ CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
   return(ans);
 }
 
-void assign_extraInputDummy(NodeVectorClassNew_derivs &nodes,
-			    CppAD::AD<double> &extraInputDummy) {
-  nodes.extraInputDummy = extraInputDummy;
-}
+// void assign_extraInputDummy(NodeVectorClassNew_derivs &nodes,
+// 			    CppAD::AD<double> &extraInputDummy) {
+//   nodes.extraInputDummy = extraInputDummy;
+// }
 
 
-void setup_extraInput_step(NodeVectorClassNew_derivs &nodes) {
-  const vector<NodeInstruction> &instructions = nodes.getInstructions();
-  if(instructions.size() == 0) {
-      printf("No nodes for initialize_AD_model_before_recording\n");
-      return;
-  }
-  nodeFun* nodeFunInModelDLL = instructions[0].nodeFunPtr;
-  nodeFunInModelDLL->setup_extraInput_step(nodes);
-}
+
+// void setup_extraInput_step(NodeVectorClassNew_derivs &nodes) {
+//   const vector<NodeInstruction> &instructions = nodes.getInstructions();
+//   if(instructions.size() == 0) {
+//       printf("No nodes for initialize_AD_model_before_recording\n");
+//       return;
+//   }
+//   nodeFun* nodeFunInModelDLL = instructions[0].nodeFunPtr;
+//   nodeFunInModelDLL->setup_extraInput_step(nodes);
+// }
 
 void initialize_AD_model_before_recording(NodeVectorClassNew_derivs &nodes) {
   const vector<NodeInstruction> &instructions = nodes.getInstructions();
@@ -125,6 +126,49 @@ void initialize_AD_model_before_recording(NodeVectorClassNew_derivs &nodes) {
   }
   nodeFun* nodeFunInModelDLL = instructions[0].nodeFunPtr;
   nodeFunInModelDLL->initialize_AD_model_before_recording(nodes);
+}
+
+void init_dynamicVars(NodeVectorClassNew_derivs &NV,
+		      std::vector<CppAD::AD<double> > &dynamicVars) {
+  int length_extraInput = NV.model_extraInput_accessor.getTotalLength();
+  NimArr<1, double> NimArrValues;
+
+  if(length_extraInput > 0) {
+    NimArrValues.setSize(length_extraInput);
+    dynamicVars.resize(length_extraInput);
+    getValues(NimArrValues, NV.model_extraInput_accessor);
+    std::copy( NimArrValues.getPtr(),
+	       NimArrValues.getPtr() + length_extraInput,
+	       dynamicVars.begin());
+  }
+}
+
+void copy_dynamicVars_to_model(NodeVectorClassNew_derivs &NV,
+			       std::vector<CppAD::AD<double> > &dynamicVars) {
+  int length_extraInput = NV.model_extraInput_accessor.getTotalLength();
+  NimArr<1, CppAD::AD<double> > NimArrValues_AD;
+
+  if(length_extraInput > 0) {
+    NimArrValues_AD.setSize(length_extraInput);
+    std::copy( dynamicVars.begin(),
+	       dynamicVars.end(),
+	       NimArrValues_AD.getPtr());
+    setValues_AD_AD(NimArrValues_AD, NV.model_AD_extraInput_accessor);
+  }
+}
+
+void update_dynamicVars(NodeVectorClassNew_derivs &NV,
+			std::vector<double> &dynamicVars) {
+  int length_extraInput = NV.model_extraInput_accessor.getTotalLength();
+  NimArr<1, double> NimArrValues;
+  if(length_extraInput > 0) {
+    NimArrValues.setSize(length_extraInput);
+    dynamicVars.resize(length_extraInput);
+    getValues(NimArrValues, NV.model_extraInput_accessor);
+    std::copy( NimArrValues.getPtr(),
+	       NimArrValues.getPtr() + length_extraInput,
+	       dynamicVars.begin());
+  }
 }
 
 double calculate(NodeVectorClassNew &nodes, int iNodeFunction) {
