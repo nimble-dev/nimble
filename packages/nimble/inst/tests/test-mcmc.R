@@ -918,6 +918,56 @@ test_that('using RW_wishart sampler on inverse-Wishart distribution', {
 })
 
 
+test_that('detect conjugacy when scaling Wishart, inverse Wishart cases', {
+    code <- nimbleCode({
+        mycov[1:p, 1:p]  <- lambda * Sigma[1:p,1:p] / eta
+        y[1:p] ~ dmnorm(z[1:p], cov = mycov[1:p, 1:p])
+        Sigma[1:p,1:p] ~ dinvwish(S[1:p,1:p], nu)
+    })
+    m  <- nimbleModel(code, constants = list(p = 3))
+    expect_identical(length(m$checkConjugacy('Sigma')), 1L, 'inverse-Wishart case')
+
+    code <- nimbleCode({
+        mycov[1:p, 1:p]  <- lambda * Sigma[1:p,1:p] / eta
+        y[1:p] ~ dmnorm(z[1:p], prec = mycov[1:p, 1:p])
+        Sigma[1:p,1:p] ~ dwish(S[1:p,1:p], nu)
+    })
+    m  <- nimbleModel(code, constants = list(p = 3))
+    expect_identical(length(m$checkConjugacy('Sigma')), 1L, 'Wishart case')
+
+    code <- nimbleCode({
+        mycov[1:p, 1:p]  <- lambda * Sigma[1:p,1:p] / eta
+        y[1:p] ~ dmnorm(z[1:p], cov = mycov[1:p, 1:p])
+        Sigma[1:p,1:p] ~ dwish(S[1:p,1:p], nu)
+    })
+    m  <- nimbleModel(code, constants = list(p = 3))
+    expect_identical(length(m$checkConjugacy('Sigma')), 0L, 'inverse-Wishart not-conj case')
+
+    code <- nimbleCode({
+        mycov[1:p, 1:p]  <- lambda * Sigma[1:p,1:p] / eta
+        y[1:p] ~ dmnorm(z[1:p], prec = mycov[1:p, 1:p])
+        Sigma[1:p,1:p] ~ dinvwish(S[1:p,1:p], nu)
+    })
+    m  <- nimbleModel(code, constants = list(p = 3))
+    expect_identical(length(m$checkConjugacy('Sigma')), 0L, 'Wishart not-conj case')
+
+    code <- nimbleCode({
+        mycov[1:p, 1:p]  <- lambda[1:p,1:p] * Sigma[1:p,1:p]
+        y[1:p] ~ dmnorm(z[1:p], cov = mycov[1:p, 1:p])
+        Sigma[1:p,1:p] ~ dinvwish(S[1:p,1:p], nu)
+    })
+    m  <- nimbleModel(code, constants = list(p = 3))
+    expect_identical(length(m$checkConjugacy('Sigma')), 0L, 'Wishart case')
+
+    code <- nimbleCode({
+        mycov[1:p, 1:p]  <- lambda[1:p,1:p] %*% Sigma[1:p,1:p]
+        y[1:p] ~ dmnorm(z[1:p], cov = mycov[1:p, 1:p])
+        Sigma[1:p,1:p] ~ dinvwish(S[1:p,1:p], nu)
+    })
+    m  <- nimbleModel(code, constants = list(p = 3))
+    expect_identical(length(m$checkConjugacy('Sigma')), 0L, 'Wishart case')
+}
+
 
 ## testing conjugate MVN updating with ragged dependencies;
 ## that is, dmnorm dependents of different lengths from the target node
@@ -1718,6 +1768,18 @@ test_that('checkConjugacy corner case when linear scale is identically zero', {
                           scale = 0))
 })
 
+test_that('cc_checkScalar operates correctly', {
+    expect_true(cc_checkScalar(quote(lambda)))
+    expect_true(cc_checkScalar(quote(lambda*eta)))
+    expect_true(cc_checkScalar(quote(exp(lambda))))
+    expect_true(cc_checkScalar(quote(5+exp(lambda[2]))))
+
+    expect_false(cc_checkScalar(quote(exp(lambda[2:3]))))
+    expect_false(cc_checkScalar(quote(lambda[1:2,1:2])))
+    expect_false(cc_checkScalar(quote(lambda[1:2,1:2]/eta)))
+    expect_false(cc_checkScalar(quote(eta*(theta*lambda[1:2,1:2]))))
+    expect_false(cc_checkScalar(quote(lambda[1:2,1:2,1:5])))
+}
 
 sink(NULL)
 

@@ -1135,10 +1135,12 @@ cc_linkCheck <- function(linearityCheck, link) {
 
 cc_checkScalar <- function(expr) {
     if(length(expr) == 1) return(TRUE)
-    if(expr[[1]] == '[') return(FALSE)
+    if(expr[[1]] == '[') {
+        if(length(expr) == 3 && length(expr[[3]]) == 1)
+            return(TRUE) else return(FALSE)
+    }
     if(expr[[1]] == '(') return(cc_checkScalar(expr[[2]]))
-    if(length(expr) != 3) stop("cc_checkScalar: found unexpected expression: ", deparse(expr), ".")
-    return(all(sapply(expr[2:3], cc_checkScalar)))
+    return(all(sapply(expr[2:length(expr)], cc_checkScalar)))
 }
 
 ## checks the parameter expressions in the stochastic distribution of depNode
