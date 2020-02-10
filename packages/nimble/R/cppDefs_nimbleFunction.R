@@ -600,7 +600,7 @@ exprClasses_modifyForAD <- function(code, symTab,
     handler <- modifyForAD_handlers[[code$name]]
     if(!is.null(handler))
       eval(call(handler, code, symTab, workEnv))
-    if(grepl("_derivs_", code$name))
+    if(grepl("_deriv_", code$name))
       modifyForAD_meta_derivs(code, symTab, workEnv)
   }
   if(is.null(code$caller)) { ## It is the top level `{`
