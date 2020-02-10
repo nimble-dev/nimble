@@ -901,7 +901,7 @@ conjugacyClass <- setRefClass(
                     if(!(contributionName %in% dependents[[distName]]$contributionNames))     next
                     contributionExpr <- eval(substitute(substitute(EXPR, subList), list(EXPR=dependents[[distName]]$contributionExprs[[contributionName]])))
                     if(nimbleOptions()$allowDynamicIndexing && doDependentScreen) { ## FIXME: would be nice to only have one if() here when we loop through multiple parameters
-                        if(targetNdim == 0)
+                        if(targetCoeffNdim == 0)
                             forLoopBody$addCode(if(COEFF_EXPR != 0) CONTRIB_NAME <<- CONTRIB_NAME + CONTRIB_EXPR,
                                                 list(COEFF_EXPR = subList$coeff, CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
                         else forLoopBody$addCode(if(min(COEFF_EXPR) != 0 | max(COEFF_EXPR) != 0) CONTRIB_NAME <<- CONTRIB_NAME + CONTRIB_EXPR,

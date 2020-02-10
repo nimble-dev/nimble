@@ -1779,7 +1779,7 @@ test_that('cc_checkScalar operates correctly', {
     expect_false(cc_checkScalar(quote(lambda[1:2,1:2]/eta)))
     expect_false(cc_checkScalar(quote(eta*(theta*lambda[1:2,1:2]))))
     expect_false(cc_checkScalar(quote(lambda[1:2,1:2,1:5])))
-}
+})
 
 sink(NULL)
 
