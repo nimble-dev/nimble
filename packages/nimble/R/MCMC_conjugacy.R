@@ -822,13 +822,30 @@ conjugacyClass <- setRefClass(
                        },
                        `2` = {
                            if(!all(links == 'multiplicative')) stop("Found non-multiplicative link for 2-d variable.")
-                           ## modify to only calc coeff by putting a 1 in upper diagonal
+
                            functionBody$addCode({
-                               ## I <- model[[target]] * 0
-                               ## for(sizeIndex in 1:d)   { I[sizeIndex, sizeIndex] <- 1 }
-                               ## model[[target]] <<- I   ## initially, propogate through X = I
-                               I <- diag(d)
-                               model[[target]] <<- I   ## initially, propogate through X = I
+                               model[[target]] <<- matrix(0, d, d)
+                               calculate(model, calcNodesDeterm)
+                           })
+
+                           ## Use _COEFF_VAR to store value when target is zero; we need this for stoch indexing case
+                           ## where we determine that coeff = 0 because the potential dependency is not a dependency
+                           ## given current index values.
+                           for(iDepCount in seq_along(dependentCounts)) {
+                               distName <- names(dependentCounts)[iDepCount]
+                               functionBody$addCode({
+                                   for(iDep in 1:N_DEP) {
+                                       DEP_COEFF_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME)[1, 1]   ## DEP_COEFF_VAR = (A+2B)-(A+B) = B
+                                   }
+                               },
+                                                    list(N_DEP          = as.name(paste0('N_dep_', distName)),
+                                                         DEP_COEFF_VAR  = as.name(paste0('dep_', distName, '_coeff')),
+                                                         DEP_NODENAMES  = as.name(paste0('dep_', distName, '_nodeNames')),
+                                                         PARAM_NAME     = dependents[[distName]]$param))
+                           }
+
+                           functionBody$addCode({
+                               model[[target]] <<- diag(d)  
                                calculate(model, calcNodesDeterm)
                            })
 
@@ -836,12 +853,10 @@ conjugacyClass <- setRefClass(
                                distName <- names(dependentCounts)[iDepCount]
                                functionBody$addCode({
                                    for(iDep in 1:N_DEP) {
-                                       ##thisNodeSize <- DEP_NODESIZES[iDep]  ## not needed for targetDim=2 case ????
-                                       DEP_COEFF_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME)[1, 1]   ## DEP_COEFF_VAR = (A+2B)-(A+B) = B
+                                       DEP_COEFF_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME)[1, 1] - DEP_COEFF_VAR[iDep]
                                    }
                                },
                                                     list(N_DEP          = as.name(paste0('N_dep_', distName)),
-                                                         ##DEP_NODESIZES  = as.name(paste0('dep_', distName, '_nodeSizes')),  ## not needed for targetDim=2 case ????
                                                          DEP_COEFF_VAR  = as.name(paste0('dep_', distName, '_coeff')),
                                                          DEP_NODENAMES  = as.name(paste0('dep_', distName, '_nodeNames')),
                                                          PARAM_NAME     = dependents[[distName]]$param))
@@ -1135,13 +1150,15 @@ cc_linkCheck <- function(linearityCheck, link) {
 
 cc_checkScalar <- function(expr) {
     if(length(expr) == 1) return(TRUE)
-    if(expr[[1]] == '[') {
-        if(length(expr) == 3 && length(expr[[3]]) == 1)
-            return(TRUE) else return(FALSE)
-    }
-    if(expr[[1]] == '(') return(cc_checkScalar(expr[[2]]))
-    return(all(sapply(expr[2:length(expr)], cc_checkScalar)))
+    if(expr[[1]] == ":") return(FALSE)
+    ## We don't know the output dims of all functions,
+    ## as there can be user-defined functions that produce non-scalar output from scalar inputs,
+    ## so only say it could be scalar (based on input args) in specific known cases we enumerate.
+    if(deparse(expr[[1]]) %in% c('(','[','*','+','-','/','exp','log','^','pow','sqrt')) {
+        return(all(sapply(expr[2:length(expr)], cc_checkScalar)))
+    } else return(FALSE)
 }
+
 
 ## checks the parameter expressions in the stochastic distribution of depNode
 ## returns FALSE if we find 'targetNode' in ***more than one*** of these expressions

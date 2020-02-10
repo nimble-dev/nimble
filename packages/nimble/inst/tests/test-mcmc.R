@@ -966,7 +966,7 @@ test_that('detect conjugacy when scaling Wishart, inverse Wishart cases', {
     })
     m  <- nimbleModel(code, constants = list(p = 3))
     expect_identical(length(m$checkConjugacy('Sigma')), 0L, 'Wishart case')
-}
+})
 
 
 ## testing conjugate MVN updating with ragged dependencies;
@@ -1038,9 +1038,8 @@ test_that('conjugate MVN with ragged dependencies', {
     
 
     expect_true(all(abs(pmean - obsmean) / pmean < 0.01), info = 'ragged dmnorm conjugate posterior mean')
-    expect_true(all(abs(pprec - obsprec) / pprec < 0.005), info = 'ragged dmnorm conjugate posterior precision')
-    
-    })
+    expect_true(all(abs(pprec - obsprec) / pprec < 0.005), info = 'ragged dmnorm conjugate posterior precision')  
+})
     
 ## testing binary sampler
 test_that('binary sampler setup', {
@@ -1779,6 +1778,17 @@ test_that('cc_checkScalar operates correctly', {
     expect_false(cc_checkScalar(quote(lambda[1:2,1:2]/eta)))
     expect_false(cc_checkScalar(quote(eta*(theta*lambda[1:2,1:2]))))
     expect_false(cc_checkScalar(quote(lambda[1:2,1:2,1:5])))
+
+    expect_true(cc_checkScalar(quote(lambda[xi[i]])))
+    expect_true(cc_checkScalar(quote(lambda[xi[i],xi[j]])))
+    expect_false(cc_checkScalar(quote(lambda[xi[i]:3])))
+    expect_false(cc_checkScalar(quote(lambda[xi[i]:3,2])))
+
+    ## Ideally this case would evaluate to TRUE, but we would
+    ## have to handle knowing output dims of user-defined fxns.
+    expect_false(cc_checkScalar(quote(sum(lambda[1:5]))))
+    expect_false(cc_checkScalar(quote(foo(lambda))))
+
 })
 
 sink(NULL)
