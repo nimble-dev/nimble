@@ -824,11 +824,11 @@ conjugacyClass <- setRefClass(
                            if(!all(links == 'multiplicative')) stop("Found non-multiplicative link for 2-d variable.")
 
                            functionBody$addCode({
-                               model[[target]] <<- matrix(0, d, d)
+                               model[[target]] <<- diag(d)
                                calculate(model, calcNodesDeterm)
                            })
 
-                           ## Use _COEFF_VAR to store value when target is zero; we need this for stoch indexing case
+                           ## Use _COEFF_VAR to store value; we need this for stoch indexing case
                            ## where we determine that coeff = 0 because the potential dependency is not a dependency
                            ## given current index values.
                            for(iDepCount in seq_along(dependentCounts)) {
@@ -845,7 +845,9 @@ conjugacyClass <- setRefClass(
                            }
 
                            functionBody$addCode({
-                               model[[target]] <<- diag(d)  
+                               ## Can't use zeros matrix as Cholesky fails; this is solely to determine if
+                               ## potential dependency is not a dependency of target (due to stochastic indexing).
+                               model[[target]] <<- 2*diag(d)  
                                calculate(model, calcNodesDeterm)
                            })
 
