@@ -124,6 +124,26 @@ void show_tick_id();
    to generic CppAD driver wrappers like calcjacobian.
    Each nimbleFunction enabled for CppAD will have an object of this class. */
 
+class nimbleCppADrecordingInfoClass {
+ private:
+  bool recording_;
+  CppAD::tape_id_t tape_id_;
+  CppAD::local::ADTape<double>* tape_handle_;
+ public:
+  bool& recording() {return recording_;}
+  CppAD::tape_id_t& tape_id() {return tape_id_;}
+  CppAD::local::ADTape<double>* &tape_handle() {return tape_handle_;}
+ nimbleCppADrecordingInfoClass(bool r_, CppAD::tape_id_t tid_, CppAD::local::ADTape<double>* th_) :
+  recording_(r_),
+    tape_id_(tid_),
+    tape_handle_(th_) {}
+ nimbleCppADrecordingInfoClass(CppAD::tape_id_t tid_, CppAD::local::ADTape<double>* th_) :
+  recording_(false),
+    tape_id_(tid_),
+    tape_handle_(th_) {}
+ nimbleCppADrecordingInfoClass() : recording_(false) {}
+};
+
 class nimbleCppADinfoClass {
  public:
   std::vector<double> independentVars;

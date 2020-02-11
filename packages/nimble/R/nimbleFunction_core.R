@@ -117,6 +117,7 @@ nimbleFunction <- function(setup         = NULL,
                 methodList <- c(methodList,
                                 derivMethod2Info$derivMethodsList)
                 safeMethodNames <- c(safeMethodNames, derivMethod2Info$argTransferNames)
+                enableDerivs <- c(enableDerivs, derivMethod2Info$newEnableDerivs)
             }
         } 
     } else if(!nimbleOptions('experimentalEnableDerivs')
@@ -127,6 +128,14 @@ nimbleFunction <- function(setup         = NULL,
                          check = check,
                          methodNames = c(names(methodList), safeMethodNames),
                          setupVarNames = c(all.vars(body(setup)), names(formals(setup))))
+    if(nimbleOptions('experimentalEnableDerivs')
+       && length(enableDerivs)>0) {
+        for(iM in seq_along(methodList)) {
+            thisEnableDerivs <-  enableDerivs[[ names(methodList)[iM] ]]
+            if(!is.null(thisEnableDerivs))
+                methodList[[iM]]$enableDerivs <- thisEnableDerivs
+        }
+    }
     ## record any setupOutputs declared by setupOutput()
     setupOutputsDeclaration <- nf_processSetupFunctionBody(setup, returnSetupOutputDeclaration = TRUE)
     declaredSetupOutputNames <- nf_getNamesFromSetupOutputDeclaration(setupOutputsDeclaration)
@@ -213,6 +222,7 @@ buildDerivMethods <- function(methodsList, enableDerivs) {
 buildDerivMethods2 <- function(methodsList, enableDerivs) {
     derivMethodsList <- list()
     argTransferNames <- character()
+    newEnableDerivs <- list()
     for(i in seq_along(enableDerivs)) {
         derivMethodIndex <- which(names(methodsList) == enableDerivs[[i]])
         if(length(derivMethodIndex) == 0)
@@ -261,9 +271,13 @@ buildDerivMethods2 <- function(methodsList, enableDerivs) {
             )
         }
         names(derivMethodsList)[i] <-paste0(names(methodsList)[derivMethodIndex], '_deriv_') ## _deriv2_
+        newEnableDerivs[[ names(derivMethodsList)[i] ]] <- list(static = FALSE,
+                                                                meta = TRUE,
+                                                                nonTemplateArgs = names(newFormalsList)[length(newFormalsList)-c(1, 0)]) ## The [method]_deriv2_ functions themselves need to become templated.  This flags them for that.
     }
     list(derivMethodsList = derivMethodsList,
-         argTransferNames = argTransferNames)
+         argTransferNames = argTransferNames,
+         newEnableDerivs = newEnableDerivs)
 }
 
 

@@ -267,7 +267,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       RCfunDefs[[RCname]] <<- functionDefs[[RCname]]
                                                   }
                                               },
-                                              addTypeTemplateFunction = function( funName,
+                                              addTypeTemplateFunction = function(funName,
                                                                                  derivControl = list()) {
                                                   static <- isTRUE(derivControl[['static']])
                                                   regularFun <- RCfunDefs[[funName]]
@@ -285,7 +285,9 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                           newFunName <- paste0(funName, '_AD2_')
                                                           res <- makeTypeTemplateFunction(newFunName,
                                                                                           regularFun,
-                                                                                          static = FALSE)
+                                                                                          static = FALSE,
+                                                                                          useRecordingInfo = TRUE,
+                                                                                          derivControl)
                                                           functionDefs[[newFunName]] <<- res$fun
                                                           useModelInfo$nodeFxnVector_name <- res[['nodeFxnVector_name']]
                                                       }
@@ -347,8 +349,10 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       if(isTRUE(nimbleOptions("useADreconfigure"))) {
                                                           newFunName2 <- paste0(funName, '_ADargumentTransfer2_')
                                                           ## For now, use same funIndex since this will use the non-static tape vector, but we may want to be more careful
+                                                          callForTapingName <- paste0(funName, '_callForADtaping2_')
                                                           functionDefs[[newFunName2]] <<- makeADargumentTransferFunction2(newFunName2,
                                                                                                                           regularFun,
+                                                                                                                          callForTapingName,
                                                                                                                           independentVarNames,
                                                                                                                           funIndex,
                                                                                                                           parentsSizeAndDims,
@@ -366,9 +370,13 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                                                  derivControl,
                                                                                  funIndex) {
                                                   outSym <- nfProc$RCfunProcs[[funName]]$compileInfo$returnSymbol
-                                                  checkADargument(funName, outSym, returnType = TRUE)
-                                                  if(length(nfProc$RCfunProcs[[funName]]$nameSubList) == 0) stop(paste0('Derivatives cannot be enabled for method ', funName, ', since this method has no arguments.'))
-                                                  if(!nfProc$isNode){
+                                                  if(!isTRUE(derivControl[['meta']]))
+                                                    checkADargument(funName, outSym, returnType = TRUE)
+                                                  if(length(nfProc$RCfunProcs[[funName]]$nameSubList) == 0)
+                                                    stop(paste0('Derivatives cannot be enabled for method ',
+                                                                funName,
+                                                                ', since this method has no arguments.'))
+                                                  if(!nfProc$isNode & !isTRUE(derivControl[['meta']])){
                                                       for(iArg in seq_along(functionDefs[[funName]]$args$symbols)){
                                                           arg <- functionDefs[[funName]]$args$symbols[[iArg]]
                                                           argSym <- nfProc$RCfunProcs[[funName]]$compileInfo$origLocalSymTab$getSymbolObject(arg$name)
@@ -380,17 +388,19 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                                                           derivControl = derivControl) ## returns either NULL (if there is no model$calculate) or a nodeFxnVector name (if there is)
                                                   independentVarNames <- names(functionDefs[[funName]]$args$symbols)
                                                   if(nfProc$isNode) independentVarNames <- independentVarNames[-1]  ## remove ARG1_INDEXEDNODEINFO__ from independentVars
-                                                  addADtapingFunction(funName,
-                                                                      independentVarNames = independentVarNames,
-                                                                      dependentVarNames = 'ANS_',
-                                                                      useModelInfo,
-                                                                      derivControl = derivControl )
-                                                  addADargumentTransferFunction(funName,
-                                                                                independentVarNames = independentVarNames,
-                                                                                funIndex = funIndex,
-                                                                                useModelInfo = useModelInfo,
-                                                                                derivControl = derivControl)
-                                              },
+                                                  if(!isTRUE(derivControl[['meta']])) {
+                                                    addADtapingFunction(funName,
+                                                                        independentVarNames = independentVarNames,
+                                                                        dependentVarNames = 'ANS_',
+                                                                        useModelInfo,
+                                                                        derivControl = derivControl )
+                                                    addADargumentTransferFunction(funName,
+                                                                                  independentVarNames = independentVarNames,
+                                                                                  funIndex = funIndex,
+                                                                                  useModelInfo = useModelInfo,
+                                                                                  derivControl = derivControl)
+                                                    }
+                                                  },
                                               checkADargument = function(funName, argSym, argName = NULL, returnType = FALSE){
                                                   argTypeText <- if(returnType) 'returnType' else 'argument'
                                                   if(argSym$type != 'double')
@@ -600,8 +610,8 @@ exprClasses_modifyForAD <- function(code, symTab,
     handler <- modifyForAD_handlers[[code$name]]
     if(!is.null(handler))
       eval(call(handler, code, symTab, workEnv))
-    if(grepl("_deriv_", code$name))
-      modifyForAD_meta_derivs(code, symTab, workEnv)
+    if(workEnv$RsymTab$symbolExists(code$name, TRUE)) ## Could be a nimbleFunction class method
+      modifyForAD_recordable(code, symTab, workEnv)
   }
   if(is.null(code$caller)) { ## It is the top level `{`
     if(identical(code$name, "{")) {
@@ -633,8 +643,12 @@ exprClasses_modifyForAD <- function(code, symTab,
   invisible(NULL)
 }
 
-modifyForAD_meta_derivs <- function(code, symTab, workEnv) {
-  code$name <- paste0(code$name, "_meta_")
+modifyForAD_recordable <- function(code, symTab, workEnv) {
+  symObj <- workEnv$RsymTab$getSymbolObject(code$name, TRUE)
+  enableDerivs <- symObj$nfMethodRCobj$enableDerivs
+  if(!is.null(enableDerivs))
+    if(!isFALSE(enableDerivs))
+      code$name <- paste0(code$name, "_AD2_")
   invisible(NULL)
 }
 
