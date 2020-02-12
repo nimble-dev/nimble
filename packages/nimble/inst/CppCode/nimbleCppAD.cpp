@@ -1,5 +1,12 @@
 #include <nimble/nimbleCppAD.h>
 
+void copy_CppADdouble_to_double(CppAD::AD<double> *first, CppAD::AD<double> *last, double *output) {
+  CppAD::AD<double> *orig;
+  double *result = output;
+  for(orig = first; orig != last ; )
+    *result++ = CppAD::Value(*orig++);
+}
+
 #ifdef _TIME_AD
 ad_timer derivs_main_timer("derivs_main");
 ad_timer derivs_calc_timer("derivs_calc");
@@ -107,6 +114,14 @@ nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(
     NimArr<1, double> &derivOrders) {
   nimSmartPtr<NIMBLE_ADCLASS> ADlist = new NIMBLE_ADCLASS;
   return (ADlist);
+}
+
+
+void nimbleFunctionCppADbase::getDerivs_meta(nimbleCppADinfoClass &ADinfo,
+					     const NimArr<1, double> &derivOrders,
+					     const NimArr<1, double> &wrtVector,
+					     nimSmartPtr<NIMBLE_ADCLASS_META> &ansList) {
+
 }
 
 void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,

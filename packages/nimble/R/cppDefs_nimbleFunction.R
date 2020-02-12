@@ -661,6 +661,7 @@ modifyForAD_getDerivs_wrapper <- function(code, symTab, workEnv) {
   ## This really modifies the "argumentTransfer" call in the first argument of getDerivs_wrapper
   arg1 <- code$args[[1]]
   arg1$name <- paste0(arg1$name, "_AD2_")
+  code$name <- "getDerivs_wrapper_meta"
   invisible(NULL)
 }
 
@@ -668,8 +669,10 @@ modifyForAD_recordable <- function(code, symTab, workEnv) {
   symObj <- workEnv$RsymTab$getSymbolObject(code$name, TRUE)
   enableDerivs <- symObj$nfMethodRCobj$enableDerivs
   if(!is.null(enableDerivs))
-    if(!isFALSE(enableDerivs))
+    if(!isFALSE(enableDerivs)) {
       code$name <- paste0(code$name, "_AD2_")
+      setArg(code, length(code$args) + 1, RparseTree2ExprClasses(quote(recordingInfo_)))
+    }
   invisible(NULL)
 }
 

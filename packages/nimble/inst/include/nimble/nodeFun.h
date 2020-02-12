@@ -44,7 +44,7 @@ class NIMBLE_ADCLASS : public NamedObjects, public pointedToBase {
   NIMBLE_ADCLASS();
 };
 
-class NIMBLE_ADCLASS_META  {
+class NIMBLE_ADCLASS_META : public pointedToBase {
  public:
   NimArr<1, CppAD::AD<double> > value;
   NimArr<2, CppAD::AD<double> > jacobian;

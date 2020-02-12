@@ -57,6 +57,15 @@ cppVarSym2templateTypeCppVarSym <- function(oldSym,
                 newSym$ref <- FALSE
         }
     }
+    ## Next we replace nimSmartPtr<NIMBLE_ADCLASS> with nimSmartPtr<NIMBLE_ADCLASS_META>
+    ## It is somewhat ad hoc to do it here.
+    ## At the time of writing this, it always makes sense to do it here.
+    ## If there are more general use cases, it might become necessary to split this off to a
+    ## separate step
+    if(newSym$baseType == "nimSmartPtr")
+        if(newSym$templateArgs[[1]] == "NIMBLE_ADCLASS")
+            newSym$templateArgs[[1]] <- "NIMBLE_ADCLASS_META"
+    
     newSym
 }
 
@@ -74,14 +83,16 @@ symbolTable2templateTypeSymbolTable <- function(symTab,
   newSymTab <- symbolTable()
   symNames <- symTab$getSymbolNames()
   for(sn in symNames) {
-    if(sn %in% ignore)
-      next
     oldSym <- symTab$getSymbolObject(sn)
-    newSym <- cppVarSym2templateTypeCppVarSym(oldSym,
-                                              addRef = addRef,
-                                              clearRef = clearRef,
-                                              replacementBaseType = replacementBaseType,
-                                              replacementTemplateArgs = replacementTemplateArgs)
+    inIgnore <- any(unlist(lapply(ignore, function(x) grepl(x, sn))))
+    if(inIgnore)
+        newSym <- oldSym$copy()
+    else
+        newSym <- cppVarSym2templateTypeCppVarSym(oldSym,
+                                                  addRef = addRef,
+                                                  clearRef = clearRef,
+                                                  replacementBaseType = replacementBaseType,
+                                                  replacementTemplateArgs = replacementTemplateArgs)
     newSymTab$addSymbol(newSym)
   }
   newSymTab
@@ -734,9 +745,11 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
     if(!metaTape) {
       ADtape_independentVarsName <- as.name('independentVars')
       ADtape_dynamicVarsName <- as.name('dynamicVars')
+      update_dynamicVars_funName <- as.name("update_dynamicVars")
     } else {
       ADtape_independentVarsName <- as.name('independentVars_meta')
       ADtape_dynamicVarsName <- as.name('dynamicVars_meta')
+      update_dynamicVars_funName <- as.name("update_dynamicVars_meta")
     }
     nodeFxnVector_name <- useModelInfo[['nodeFxnVector_name']]
     usesModelCalculate <- length(nodeFxnVector_name) > 0    ## modeled closely parts of /*  */
@@ -753,7 +766,6 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
     if(!isNode) {
       TF$args <- targetFunDef$args$copy()
       if(metaTape) {
-        browser()
         symNames <- TF$args$getSymbolNames()
         newTempSymbols <- list()
         for(sn in symNames) {
@@ -778,7 +790,6 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
       copyToDoublesLines <- quote(blank())
       callForTapingNames <- TF$args$getSymbolNames()
     } else {
-      browser()
       copyToDoublesLines <- list()
       callForTapingNames <- character()
         for(ivn in seq_along(independentVarNames)) {
@@ -786,9 +797,10 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
           oldSym <- newTempSymbols[[ thisName ]]
           newName <- paste0(thisName, "_double_temp_")
           oldSym$name <- newName
+          oldSym$ref <- FALSE
           callForTapingNames <- c(callForTapingNames, newName)
           localVars$addSymbol(oldSym)
-          newRline <- "NEWV__.setSize(ORIGV__.getSizeVec(), false, false); std::copy(ORIGV__.begin(), ORIGV__.end(), NEWV__.begin());"
+          newRline <- "NEWV__.setSize(ORIGV__.getSizeVec(), false, false); copy_CppADdouble_to_double(ORIGV__.getPtr(), ORIGV__.getPtr() + ORIGV__.size(), NEWV__.getPtr());"
           newRline <- gsub("NEWV__", newName, newRline)
           newRline <- gsub("ORIGV__", thisName, newRline)
           newRline <- substitute(cppLiteral(LINE), list(LINE = newRline))
@@ -921,9 +933,10 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
     }
 
   dynamicVarsLine <- if(usesModelCalculate) {
-    substitute(update_dynamicVars(NV, memberData(ADtapeSetup, DVN)),
+    substitute(UDV(NV, memberData(ADtapeSetup, DVN)),
                list(NV = as.name(nodeFxnVector_name[1]),
-                    DVN = ADtape_dynamicVarsName))
+                    DVN = ADtape_dynamicVarsName,
+                    UDV = update_dynamicVars_funName))
   } else {
     quote(blank())
   }
@@ -931,7 +944,6 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
     if(!metaTape) {
       setMetaFlagLine <- quote(blank())
     } else {
-      browser()
       setMetaFlagLine <- cppLiteral("ADtapeSetup.metaFlag = true;")
     }
     

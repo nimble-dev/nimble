@@ -171,6 +171,20 @@ void update_dynamicVars(NodeVectorClassNew_derivs &NV,
   }
 }
 
+void update_dynamicVars_meta(NodeVectorClassNew_derivs &NV,
+			     std::vector< CppAD::AD<double> > &dynamicVars) {
+  int length_extraInput = NV.model_extraInput_accessor.getTotalLength();
+  NimArr<1, double> NimArrValues;
+  if(length_extraInput > 0) {
+    NimArrValues.setSize(length_extraInput);
+    dynamicVars.resize(length_extraInput);
+    getValues(NimArrValues, NV.model_extraInput_accessor);
+    std::copy( NimArrValues.getPtr(),
+	       NimArrValues.getPtr() + length_extraInput,
+	       dynamicVars.begin());
+  }
+}
+
 double calculate(NodeVectorClassNew &nodes, int iNodeFunction) {
   if(nodes.getInstructions().size() < static_cast<unsigned int>(iNodeFunction)) {
     PRINTF("Warning in calculate: index of requested set of nodes is too large\n");
