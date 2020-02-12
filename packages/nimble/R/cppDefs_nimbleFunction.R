@@ -357,7 +357,21 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                                                                                           funIndex,
                                                                                                                           parentsSizeAndDims,
                                                                                                                           ADconstantsInfo,
-                                                                                                                          useModelInfo)
+                                                                                                                          useModelInfo,
+                                                                                                                          derivControl)
+                                                          newFunName2meta <- paste0(funName, '_ADargumentTransfer2__AD2_')
+                                                          ## For now, use same funIndex since this will use the non-static tape vector, but we may want to be more careful
+                                                          callForTapingName <- paste0(funName, '_callForADtaping2_')
+                                                          functionDefs[[newFunName2meta]] <<- makeADargumentTransferFunction2(newFunName2meta,
+                                                                                                                              regularFun,
+                                                                                                                              callForTapingName,
+                                                                                                                              independentVarNames,
+                                                                                                                              funIndex,
+                                                                                                                              parentsSizeAndDims,
+                                                                                                                              ADconstantsInfo,
+                                                                                                                              useModelInfo,
+                                                                                                                              derivControl,
+                                                                                                                              metaTape = TRUE)
                                                       }
                                                   }
                                                   invisible(NULL)
@@ -389,18 +403,18 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   independentVarNames <- names(functionDefs[[funName]]$args$symbols)
                                                   if(nfProc$isNode) independentVarNames <- independentVarNames[-1]  ## remove ARG1_INDEXEDNODEINFO__ from independentVars
                                                   if(!isTRUE(derivControl[['meta']])) {
-                                                    addADtapingFunction(funName,
-                                                                        independentVarNames = independentVarNames,
-                                                                        dependentVarNames = 'ANS_',
-                                                                        useModelInfo,
-                                                                        derivControl = derivControl )
-                                                    addADargumentTransferFunction(funName,
-                                                                                  independentVarNames = independentVarNames,
-                                                                                  funIndex = funIndex,
-                                                                                  useModelInfo = useModelInfo,
-                                                                                  derivControl = derivControl)
-                                                    }
-                                                  },
+                                                      addADtapingFunction(funName,
+                                                                          independentVarNames = independentVarNames,
+                                                                          dependentVarNames = 'ANS_',
+                                                                          useModelInfo,
+                                                                          derivControl = derivControl )
+                                                      addADargumentTransferFunction(funName,
+                                                                                    independentVarNames = independentVarNames,
+                                                                                    funIndex = funIndex,
+                                                                                    useModelInfo = useModelInfo,
+                                                                                    derivControl = derivControl)
+                                                  }
+                                              },
                                               checkADargument = function(funName, argSym, argName = NULL, returnType = FALSE){
                                                   argTypeText <- if(returnType) 'returnType' else 'argument'
                                                   if(argSym$type != 'double')
@@ -588,7 +602,8 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
 modifyForAD_handlers <- list(eigenBlock = 'modifyForAD_eigenBlock',
                              calculate = 'modifyForAD_calculate',
                              getValues = 'modifyForAD_getSetValues',
-                             setValues = 'modifyForAD_getSetValues')
+                             setValues = 'modifyForAD_getSetValues',
+                             getDerivs_wrapper = 'modifyForAD_getDerivs_wrapper')
 
 exprClasses_modifyForAD <- function(code, symTab,
                                     workEnv = list2env(list(wrap_in_value = FALSE))) {
@@ -638,8 +653,14 @@ exprClasses_modifyForAD <- function(code, symTab,
         setArg(code, 1, newExpr)
       }
     }
-  }
-  
+  }  
+  invisible(NULL)
+}
+
+modifyForAD_getDerivs_wrapper <- function(code, symTab, workEnv) {
+  ## This really modifies the "argumentTransfer" call in the first argument of getDerivs_wrapper
+  arg1 <- code$args[[1]]
+  arg1$name <- paste0(arg1$name, "_AD2_")
   invisible(NULL)
 }
 

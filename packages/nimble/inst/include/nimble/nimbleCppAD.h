@@ -148,7 +148,11 @@ class nimbleCppADinfoClass {
  public:
   std::vector<double> independentVars;
   std::vector<double> dynamicVars;
+  std::vector< CppAD::AD<double> > independentVars_meta;
+  std::vector< CppAD::AD<double> > dynamicVars_meta;
+  bool metaFlag;
   CppAD::ADFun<double> *ADtape;
+ nimbleCppADinfoClass() : metaFlag(false) {}
 };
 
 /* nimbleFunctionCppADbase is a base class to be inherited by all

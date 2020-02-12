@@ -44,6 +44,13 @@ class NIMBLE_ADCLASS : public NamedObjects, public pointedToBase {
   NIMBLE_ADCLASS();
 };
 
+class NIMBLE_ADCLASS_META  {
+ public:
+  NimArr<1, CppAD::AD<double> > value;
+  NimArr<2, CppAD::AD<double> > jacobian;
+  NimArr<3, CppAD::AD<double> > hessian;
+};
+
 class NodeVectorClassNew_derivs;
 
 class atomic_extraInputObject : public CppAD::atomic_base<double> {

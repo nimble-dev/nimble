@@ -130,6 +130,13 @@ class NimArrBase : public NimArrType {
   virtual int calculateIndex(vector<int> &i) const = 0;
   T *getPtr() { return (&((*vPtr)[0])); }
   const T *getConstPtr() const { return (&((*vPtr)[0])); }
+  vector<int> getSizeVec() {
+    vector<int> ans;
+    ans.resize(numDims());
+    for(unsigned int i = 0; i < numDims(); ++i)
+      ans[i] = dim()[i];
+    return ans;
+  }
   virtual void setSize(vector<int> sizeVec, bool copyValues = true,
                        bool fillZeros = true) = 0;
   // Warning, this does not make sense if vPtr is pointing to someone else's
