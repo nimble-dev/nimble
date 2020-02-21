@@ -121,7 +121,9 @@ sampleDPmeasure <- nimbleFunction(
         }
     }
     
-    if(!isIID && length(tildeVars) == 2 && checkNormalInvGammaConjugacy(model, clusterVarInfo, length(dcrpElements)))
+    if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvGammaConjugacy(model, clusterVarInfo, length(dcrpElements)))
+        isIID <- TRUE
+    if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvWishartConjugacy(model, clusterVarInfo, length(dcrpElements)))
         isIID <- TRUE
       ## Tricky as MCMC might not be using conjugacy, but presumably ok to proceed regardless of how
       ## MCMC was done, since conjugacy existing would guarantee IID.
