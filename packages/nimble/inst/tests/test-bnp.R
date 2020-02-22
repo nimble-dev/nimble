@@ -45,8 +45,8 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   mcmc <- buildMCMC(mConf)
   
   # sampler assignment:
-  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
-  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm_moreGeneral")
+  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   
   # computation of prior predictive and posterior sampling of parameters:
   pYgivenT <- sum(c(model$getLogProb('y[1, 1]'), model$getLogProb('y[1, 2]')))
@@ -99,8 +99,8 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   mcmc <- buildMCMC(mConf)
   
   # sampler assignment:
-  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
-  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm_moreGeneral")
+  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   
   
   ## conjugate normal-normal model, thetaTilde(i, 1:3) and  thetaTilde(i, 4:8) iid cluster params
@@ -131,8 +131,8 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   mcmc <- buildMCMC(mConf)
   
   # sampler assignment:
-  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
-  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm_moreGeneral")
+  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   
   
   ## conjugate dmnorm_dmnorm model
@@ -174,8 +174,8 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   mcmc <- buildMCMC(conf)
   
   # sampler assignment:
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
-  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dmnorm_dmnorm_moreGeneral")
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dmnorm_dmnorm")
   
   # computation of prior predictive and posterior sampling of parameters:
   pYgivenT <- sum(c(model$getLogProb('y[1, 1:2, 1]'), model$getLogProb('y[1, 1:2, 2]')))
@@ -232,8 +232,8 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   mcmc = buildMCMC(mConf)
   
   # sampler assignment:
-  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
-  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_invgamma_dnorm_moreGeneral")
+  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_invgamma_dnorm")
   
   # computation of prior predictive and posterior sampling of parameters:
   pYgivenT <- sum(model$getLogProb('y[1, 1]'), model$getLogProb('y[1, 2]'))
@@ -321,8 +321,8 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   #mcmc = buildMCMC(mConf)
   
   # sampler assignment:
-  #crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
-  #expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dmnorm_invwish_dmnorm_moreGeneral")
+  #crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  #expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dmnorm_invwish_dmnorm")
   
   # computation of prior predictive and posterior sampling of parameters:
   #pYgivenT <- sum(model$getLogProb('y[1, 1:2, 1]'), model$getLogProb('y[1, 1:2, 2]'))
@@ -392,8 +392,8 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   mcmc = buildMCMC(conf)
   
   # sampler assignment:
-  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
-  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dpois_moreGeneral")
+  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dpois")
   
   # computation of prior predictive and posterior sampling of parameters:
   pYgivenT <- sum(m$getLogProb('y[1, 1]'), m$getLogProb('y[1, 2]'))
@@ -437,8 +437,8 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   mcmc = buildMCMC(conf)
   
   # sampler assignment:
-  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
-  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dbeta_dbern_moreGeneral")
+  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dbeta_dbern")
   
   # computation of prior predictive and posterior sampling of parameters:
   pYgivenT <- sum(m$getLogProb('y[1, 1]'), m$getLogProb('y[1, 2]'))
@@ -481,8 +481,8 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   mcmc = buildMCMC(conf)
   
   # sampler assignment:
-  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
-  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dbeta_dbin_moreGeneral")
+  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dbeta_dbin")
   
   # computation of prior predictive and posterior sampling of parameters:
   pYgivenT <- sum(m$getLogProb('y[1, 1]'), m$getLogProb('y[1, 2]'))
@@ -526,8 +526,8 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   mcmc = buildMCMC(conf)
   
   # sampler assignment:
-  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
-  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dbeta_dnegbin_moreGeneral")
+  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dbeta_dnegbin")
   
   # computation of prior predictive and posterior sampling of parameters:
   pYgivenT <- sum(m$getLogProb('y[1, 1]'), m$getLogProb('y[1, 2]'))
@@ -571,8 +571,8 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   mcmc = buildMCMC(conf)
   
   # sampler assignment:
-  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
-  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dexp_moreGeneral")
+  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dexp")
   
   # computation of prior predictive and posterior sampling of parameters:
   pYgivenT <- sum(m$getLogProb('y[1, 1]'),m$getLogProb('y[1, 2]')) 
@@ -615,8 +615,8 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   mcmc = buildMCMC(conf)
   
   # sampler assignment:
-  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
-  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dgamma_moreGeneral")
+  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dgamma")
   
   pYgivenT <- sum(m$getLogProb('y[1, 1]'), m$getLogProb('y[1, 2]'))
   pT <- sum(m$getLogProb('mu[1, 1]'), m$getLogProb('mu[1, 2]'))
@@ -659,8 +659,8 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   mcmc = buildMCMC(conf)
   
   # sampler assignment:
-  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
-  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dweib_moreGeneral")
+  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dweib")
   
   # computation of prior predictive and posterior sampling of parameters:
   pYgivenT <- sum(m$getLogProb('y[1, 1]'), m$getLogProb('y[1, 2]'))
@@ -672,7 +672,7 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   pTgivenY <- dgamma(m$mu[1, 1], shape=1+priorShape[1], rate=priorRate[1]+data$y[1,1]^dataShape[1], log=TRUE) +
     dgamma(m$mu[1, 2], shape=1+priorShape[2], rate=priorRate[2]+data$y[1, 2]^dataShape[2], log=TRUE)
   
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   
@@ -705,8 +705,8 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   mcmc = buildMCMC(conf)
   
   # sampler assignment:
-  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
-  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dinvgamma_moreGeneral")
+  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dinvgamma")
   
   # computation of prior predictive and posterior sampling of parameters:
   pYgivenT <- sum(m$getLogProb('y[1, 1]'), m$getLogProb('y[1, 2]'))
@@ -718,7 +718,7 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   pTgivenY <- dgamma(m$mu[1, 1], shape=dataShape[1]+priorShape[1], rate=priorRate[1]+1/data$y[1, 1], log=TRUE)+
     dgamma(m$mu[1, 2], shape=dataShape[2]+priorShape[2], rate=priorRate[2]+1/data$y[1, 2], log=TRUE)
   
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   
@@ -751,8 +751,8 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   mcmc = buildMCMC(conf)
   
   # sampler assignment:
-  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
-  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dnorm_moreGeneral")
+  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dnorm")
   
   # computation of prior predictive and posterior sampling of parameters:
   pYgivenT <- sum(m$getLogProb('y[1, 1]'), m$getLogProb('y[1, 2]'))
@@ -764,7 +764,7 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   pTgivenY <- dgamma(m$mu[1, 1], shape = priorShape[1] + 0.5, rate = (priorRate[1] + 0.5*(data$y[1, 1]-dataMean[1])^2), log=TRUE)+
     dgamma(m$mu[1, 2], shape = priorShape[2] + 0.5, rate = (priorRate[2] + 0.5*(data$y[1, 2]-dataMean[2])^2), log=TRUE)
   
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   
@@ -812,8 +812,8 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   mcmc = buildMCMC(mConf)
   
   # sampler assignment:
-  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
-  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_ddirch_dmulti_moreGeneral")
+  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_ddirch_dmulti")
   
   # computation of prior predictive and posterior sampling of parameters:
   pYgivenT <- sum(m$getLogProb('y[1, 1:3, 1]'), m$getLogProb('y[1, 1:3, 2]'))
@@ -862,8 +862,8 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   mcmc <- buildMCMC(mConf)
   
   # sampler assignment:
-  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
-  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate_moreGeneral")
+  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
   
   # correctly update of labels and cluster params in one iteration:
   #cmcmc <- compileNimble(mcmc, project = model)
@@ -897,8 +897,8 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   mcmc <- buildMCMC(mConf)
 
   # sampler assignment:
-  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
-  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate_moreGeneral")
+  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
   
   
   }
@@ -2728,7 +2728,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   inits = list(xi = rep(1,4), mu=rnorm(4))
   m = nimbleModel(code, data=data, inits= inits)
   conf = configureMCMC(m)
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc = buildMCMC(conf)
   
   pYgivenT <- m$getLogProb('y[1]')
@@ -2768,7 +2768,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   inits = list(xi = rep(1,4), mu=rnorm(4), s2=rinvgamma(4, 2, 1))
   m = nimbleModel(code, data=data, inits=inits)
   conf = configureMCMC(m)
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc = buildMCMC(conf)
   
   pYgivenT <- m$getLogProb('y[1]')
@@ -2824,7 +2824,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   priorRate <- m$getParam('mu[1]', 'rate')
   pTgivenY <- dgamma(m$mu[1], shape = priorShape + data$y[1], rate = priorRate + 1, log=TRUE)
 
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   
@@ -2859,7 +2859,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   priorShape2 <- m$getParam('mu[1]', 'shape2')
   pTgivenY <- dbeta(m$mu[1], shape1=priorShape1+data$y[1], shape2=priorShape2+1-data$y[1], log=TRUE)
 
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   
@@ -2894,7 +2894,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   dataSize <- m$getParam('y[1]', 'size')
   pTgivenY <- dbeta(m$mu[1], shape1=priorShape1+data$y[1], shape2=priorShape2+dataSize-data$y[1], log=TRUE)
   
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   
@@ -2929,7 +2929,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   dataSize <- m$getParam('y[1]', 'size')
   pTgivenY <- dbeta(m$mu[1], shape1=priorShape1+dataSize, shape2=priorShape2+data$y[1], log=TRUE)
   
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   
@@ -2963,7 +2963,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   priorRate <- m$getParam('mu[1]', 'rate')
   pTgivenY <- dgamma(m$mu[1], shape=priorShape+1, rate=priorRate+data$y[1], log=TRUE)
   
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   
@@ -2999,7 +2999,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   dataShape <- m$getParam('y[1]', 'shape')
   pTgivenY <- dgamma(m$mu[1], shape=dataShape+priorShape, rate=priorRate+data$y[1], log=TRUE)
   
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   
@@ -3034,7 +3034,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   dataShape <- m$getParam('y[1]', 'shape')
   pTgivenY <- dgamma(m$mu[1], shape=1+priorShape, rate=priorRate+data$y[1]^dataShape, log=TRUE)
   
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   
@@ -3077,7 +3077,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   priorAlpha <- m$getParam('p[1, 1:3]', 'alpha')
   pTgivenY <- ddirch(m$p[1,1:3], alpha = priorAlpha+data$y[1, 1:3], log=TRUE)
   
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   
@@ -3112,7 +3112,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   dataShape <- m$getParam('y[1]', 'shape')
   pTgivenY <- dgamma(m$mu[1], shape=dataShape+priorShape, rate=priorRate+1/data$y[1], log=TRUE)
   
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   
@@ -3147,7 +3147,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   priorRate <- m$getParam('mu[1]', 'rate')
   pTgivenY <- dgamma(m$mu[1], shape = priorShape + 0.5, rate = (priorRate + 0.5*(data$y[1]-dataMean)^2), log=TRUE)
   
-  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP_moreGeneral')
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
   pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   
