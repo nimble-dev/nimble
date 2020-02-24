@@ -1,5 +1,0 @@
-Fix the Windows  part in  cppDefs_cppProject.R
-   shortDirname = dirname(shortPathName(sprintf("%s/%s", NimbleCodeDir(), cppPermList[1])))
-
-
-Consolidate inst/make/Makevars.in and inst/make/Makevars_lib.in to just one file now that in both cases we are linking agains libnimble (.a and .so/.dylib)
