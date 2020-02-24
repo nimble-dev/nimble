@@ -151,7 +151,9 @@ buildMCMC <- nimbleFunction(
         nburnin               = integer(default =  0),
         thin                  = integer(default = -1),
         thin2                 = integer(default = -1)) {
-        if(nburnin < 0)   stop('cannot specify nburnin < 0')
+        if(niter < 0)       stop('cannot specify niter < 0')
+        if(nburnin < 0)     stop('cannot specify nburnin < 0')
+        if(nburnin > niter) stop('cannot specify nburnin > niter')
         thinToUseVec <<- thinFromConfVec
         if(thin  != -1)   thinToUseVec[1] <<- thin
         if(thin2 != -1)   thinToUseVec[2] <<- thin2

@@ -1855,6 +1855,7 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo, n, gammaDist = '
             ## Check that variance for cluster mean nodes are same except for dependence on variance.
             varExprs <- lapply(seq_along(splitNodes1), function(idx) {
                 exprs <- sapply(splitNodes1[[idx]], function(z) model$getParamExpr(z, varParam))
+                exprs <- sapply(exprs, function(expr) cc_expandDetermNodesInExpr(model, expr))
                 names(exprs) <- NULL
                 for(i in seq_along(exprs)) {
                     varText <- deparse(exprs[[i]])
@@ -1947,6 +1948,7 @@ checkNormalInvWishartConjugacy <- function(model, clusterVarInfo, n, wishartDist
             ## Check that variance for cluster mean nodes are same except for dependence on variance.
             varExprs <- lapply(seq_along(splitNodes1), function(idx) {
                 exprs <- sapply(splitNodes1[[idx]], function(z) model$getParamExpr(z, covParam))
+                exprs <- sapply(exprs, function(expr) cc_expandDetermNodesInExpr(model, expr))
                 names(exprs) <- NULL
                 for(i in seq_along(exprs)) {
                     varText <- deparse(exprs[[i]])
@@ -1974,7 +1976,7 @@ checkNormalInvWishartConjugacy <- function(model, clusterVarInfo, n, wishartDist
             depNodes <- model$getDependencies(clusterNodes1, stochOnly = TRUE, self = FALSE)
             if(length(unique(model$getDeclID(depNodes))) != 1)
                 conjugate <- FALSE
-            ## We are not set up to have multiple data nodes depend on a single normal-invgamma distribution
+            ## We are not set up to have multiple data nodes depend on a single normal-invwish distribution
             if(length(exampleNodes1) != length(depNodes) / n)
                 conjugate <- FALSE
         }
