@@ -3651,7 +3651,7 @@ data = list(y = matrix(rnorm(16), 4, 4))
 constants = list(mu0 = rep(0,4), Cov0 = diag(10, 4), Sigma0 = diag(1, 4))
 
 testBUGSmodel(example = 'test13', dir = "",
-              model = model, data = data, inits = inits, constants = constants,
+              model = model, data = c(data, constants), inits = inits, 
               useInits = TRUE)
 
 ## testing misspecification of dimension in a model
