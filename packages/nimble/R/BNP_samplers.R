@@ -114,11 +114,16 @@ sampleDPmeasure <- nimbleFunction(
     ## Check that cluster parameters are IID, as required for random measure G
     isIID <- TRUE
     for(i in seq_along(clusterVarInfo$clusterNodes)) {
-        valueExprs <- sapply(clusterVarInfo$clusterNodes[[i]], function(x) model$getValueExpr(x))
-        names(valueExprs) <- NULL
-        if(length(unique(valueExprs)) != 1) {
-            isIID <- FALSE
-        }
+      clusterNodes <- clusterVarInfo$clusterNodes[[i]]  # e.g., 'thetatilde[1]',...,
+      clusterIDs <- clusterVarInfo$clusterIDs[[i]]
+      splitNodes <- split(clusterNodes, clusterIDs)
+      valueExprs <- lapply(splitNodes, function(x) {
+        out <- sapply(x, model$getValueExpr)
+        names(out) <- NULL
+        out
+      })
+      if(length(unique(valueExprs)) != 1) 
+        isIID <- FALSE
     }
     
     if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvGammaConjugacy(model, clusterVarInfo, length(dcrpElements)))
@@ -1729,7 +1734,7 @@ checkCRPconjugacy <- function(model, target) {
     targetElementExample <- targetAsScalars[1]
     n <- length(targetAsScalars)
 
-    clusterVarInfo <- findClusterNodes(model, target)
+    clusterVarInfo <- nimble:::findClusterNodes(model, target)
  
     ## Check conjugacy for one cluster node (for efficiency reasons) and then make sure all cluster nodes are IID.
     ## Since we only allow one clusterVar, shouldn't need to worry that depNodes for difference clusters are
