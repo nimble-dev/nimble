@@ -2002,11 +2002,17 @@ sampler_CRP_cluster_wrapper <- nimbleFunction(
 getSamplesDPmeasureNames <- function(clusterVarInfo, model, truncG, p) {
   result <- NULL
   for(j in 1:p) {
-    cn <- clusterVarInfo$clusterNodes[[j]][clusterVarInfo$clusterIDs[[j]] == 1]  # pull out clusterNodes for first cluster
-    cn2 <- model$expandNodeNames(cn, returnScalarComponents = TRUE)
-    tmp <- matrix('', length(cn2), truncG)
-    for(i in seq_along(cn2)) {   # for each element of the cluster parameters, replicate 1:truncG times
-      expr <- parse(text = cn2[i])[[1]]
+    tildeNodesModel <- model$expandNodeNames(clusterVarInfo$clusterVars[j], returnScalarComponents=TRUE) # tilde nodes j in model
+    allIndexes <- 1:length(tildeNodesModel)
+    
+    clusterID <- 1
+    tildeNodesPerClusterID <- model$expandNodeNames(clusterVarInfo$clusterNodes[[j]][clusterVarInfo$clusterIDs[[j]] == clusterID], returnScalarComponents=TRUE) # tilde nodes in cluster with id 1
+    aux <- match(tildeNodesModel, tildeNodesPerClusterID, nomatch = 0) 
+    cn <-  tildeNodesModel[which(aux != 0)]
+    
+    tmp <- matrix('', length(cn), truncG)
+    for(i in seq_along(cn)) {   # for each element of the cluster parameters, replicate 1:truncG times
+      expr <- parse(text = cn[i])[[1]]
       tmp[i, ] <- sapply(seq_len(truncG),
                          function(idx) {
                            expr[[2+clusterVarInfo$indexPosition[j]]] <- as.numeric(idx)
