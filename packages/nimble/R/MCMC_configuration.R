@@ -632,8 +632,8 @@ byType: A logical argument, specifying whether the nodes being sampled should be
             for(i in ind) {
                 info <- paste0('[', i, '] ', makeSpaces(i), samplerConfs[[i]]$toStr(displayControlDefaults, displayNonScalars, displayConjugateDependencies))
                 if(samplerConfs[[i]]$name %in% c('CRP', 'CRP_moreGeneral')) {
-                    if(exists('useConjugacy', samplerConfs[[i]]$control) &&
-                       samplerConfs[[i]]$control$useConjugacy) {
+                    if(exists('checkConjugacy', samplerConfs[[i]]$control) &&
+                       samplerConfs[[i]]$control$checkConjugacy) {
                         conjInfo <- checkCRPconjugacy(model, samplerConfs[[i]]$target)
                         if(is.null(conjInfo)) conjInfo <- "non-conjugate"
                     } else conjInfo <- "non-conjugate"
