@@ -1210,9 +1210,10 @@ sampler_CRP <- nimbleFunction(
     ## Determine correct order of clusterNodes, including any intermediate nodes
     ## standing between different clusterNodes. This set of nodes are the
     ## 'marginalized' nodes.
-    ## Note that this could be slow to loop over all clusters; revisit this.
     ## Also check independence of cluster parameters across clusters.
+    ## This block seems to increase buildMCMC time by about 30%.
     allNodes <- unlist(clusterVarInfo$clusterNodes)
+    marginalizedNodes <- allNodes
     dataIntermNodes <- c(dataNodes, intermNodes)
     ids <- unlist(clusterVarInfo$clusterIDs)
     if(nClusNodesPerClusID > 1) {
