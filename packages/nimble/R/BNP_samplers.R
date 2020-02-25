@@ -114,11 +114,16 @@ sampleDPmeasure <- nimbleFunction(
     ## Check that cluster parameters are IID, as required for random measure G
     isIID <- TRUE
     for(i in seq_along(clusterVarInfo$clusterNodes)) {
-        valueExprs <- sapply(clusterVarInfo$clusterNodes[[i]], function(x) model$getValueExpr(x))
-        names(valueExprs) <- NULL
-        if(length(unique(valueExprs)) != 1) {
-            isIID <- FALSE
-        }
+      clusterNodes <- clusterVarInfo$clusterNodes[[i]]  # e.g., 'thetatilde[1]',...,
+      clusterIDs <- clusterVarInfo$clusterIDs[[i]]
+      splitNodes <- split(clusterNodes, clusterIDs)
+      valueExprs <- lapply(splitNodes, function(x) {
+        out <- sapply(x, model$getValueExpr)
+        names(out) <- NULL
+        out
+      })
+      if(length(unique(valueExprs)) != 1) 
+        isIID <- FALSE
     }
     
     if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvGammaConjugacy(model, clusterVarInfo, length(dcrpElements)))
@@ -1732,7 +1737,7 @@ checkCRPconjugacy <- function(model, target) {
     targetElementExample <- targetAsScalars[1]
     n <- length(targetAsScalars)
 
-    clusterVarInfo <- findClusterNodes(model, target)
+    clusterVarInfo <- nimble:::findClusterNodes(model, target)
  
     ## Check conjugacy for one cluster node (for efficiency reasons) and then make sure all cluster nodes are IID.
     ## Since we only allow one clusterVar, shouldn't need to worry that depNodes for difference clusters are
@@ -2007,11 +2012,17 @@ sampler_CRP_cluster_wrapper <- nimbleFunction(
 getSamplesDPmeasureNames <- function(clusterVarInfo, model, truncG, p) {
   result <- NULL
   for(j in 1:p) {
-    cn <- clusterVarInfo$clusterNodes[[j]][clusterVarInfo$clusterIDs[[j]] == 1]  # pull out clusterNodes for first cluster
-    cn2 <- model$expandNodeNames(cn, returnScalarComponents = TRUE)
-    tmp <- matrix('', length(cn2), truncG)
-    for(i in seq_along(cn2)) {   # for each element of the cluster parameters, replicate 1:truncG times
-      expr <- parse(text = cn2[i])[[1]]
+    tildeNodesModel <- model$expandNodeNames(clusterVarInfo$clusterVars[j], returnScalarComponents=TRUE) # tilde nodes j in model
+    allIndexes <- 1:length(tildeNodesModel)
+    
+    clusterID <- 1
+    tildeNodesPerClusterID <- model$expandNodeNames(clusterVarInfo$clusterNodes[[j]][clusterVarInfo$clusterIDs[[j]] == clusterID], returnScalarComponents=TRUE) # tilde nodes in cluster with id 1
+    aux <- match(tildeNodesModel, tildeNodesPerClusterID, nomatch = 0) 
+    cn <-  tildeNodesModel[which(aux != 0)]
+    
+    tmp <- matrix('', length(cn), truncG)
+    for(i in seq_along(cn)) {   # for each element of the cluster parameters, replicate 1:truncG times
+      expr <- parse(text = cn[i])[[1]]
       tmp[i, ] <- sapply(seq_len(truncG),
                          function(idx) {
                            expr[[2+clusterVarInfo$indexPosition[j]]] <- as.numeric(idx)
