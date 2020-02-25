@@ -1243,11 +1243,13 @@ wh <- which(sapply(samplers, function(x) x$name == "CRP_cluster_wrapper"))
 ids <- sapply(wh, function(i) samplers[[i]]$control$clusterID)
 all(ids == rep(1:4, 2))
 
-## should be conj once we have dmnorm-invwish-dmnorm
+## various dmnorm-invwish cases
+
+## single obs per clusterID
 code <- nimbleCode({
     for(i in 1:4) {
         y[i,1:2] ~ dmnorm(mu[xi[i], 1:2], cov = sigma[xi[i],1:2,1:2])
-        mu[i, 1:2] ~ dmnorm(mu0[1:2], sigmaAux[i,1:2,1:2])
+        mu[i, 1:2] ~ dmnorm(mu0[1:2], cov = sigmaAux[i,1:2,1:2])
         sigmaAux[i,1:2,1:2] <- sigma[i,1:2,1:2]/kappa
         sigma[i,1:2,1:2] ~ dinvwish(S[1:2,1:2], nu)
   }
@@ -1256,7 +1258,7 @@ code <- nimbleCode({
 data = list(y =matrix( rnorm(4*2), 4 ,2))
 inits = list(xi = rep(1,4))
 model <- nimbleModel(code, data = data, inits = inits)
-nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # not conjugate
+nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # conj
 conf <- configureMCMC(model)
 conf$printSamplers()
 mcmc <- buildMCMC(conf)  
@@ -1264,6 +1266,145 @@ samplers <- conf$getSamplers()
 wh <- which(sapply(samplers, function(x) x$name == "CRP_cluster_wrapper"))
 ids <- sapply(wh, function(i) samplers[[i]]$control$clusterID)
 all(ids == rep(1:4, 2))
+
+## standard case with multiple obs
+code <- nimbleCode({
+    for(i in 1:4) {
+      for(j in 1:2) {
+        y[i, j,1:2] ~ dmnorm(mu[xi[i], j, 1:2], cov = sigma[xi[i], j, 1:2,1:2])
+        mu[i, j, 1:2] ~ dmnorm(mu0[1:2], cov = sigmaAux[i, j, 1:2,1:2])
+        sigmaAux[i, j, 1:2,1:2] <- sigma[i, j, 1:2,1:2]/kappa
+        sigma[i, j, 1:2,1:2] ~ dinvwish(S[1:2,1:2], nu)
+  }}
+  xi[1:4] ~ dCRP(1, size=4)
+})
+data = list(y =array(rnorm(4*2*2), c(4, 2, 2)))
+inits = list(xi = rep(1,4))
+model <- nimbleModel(code, data = data, inits = inits)
+nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # conj
+conf <- configureMCMC(model)
+conf$printSamplers()
+mcmc <- buildMCMC(conf)  
+samplers <- conf$getSamplers()
+wh <- which(sapply(samplers, function(x) x$name == "CRP_cluster_wrapper"))
+ids <- sapply(wh, function(i) samplers[[i]]$control$clusterID)
+all(ids == rep(rep(1:4, each = 2), 2))
+
+## not IID across clusters
+code <- nimbleCode({
+    for(i in 1:4) {
+      for(j in 1:2) {
+        y[i, j,1:2] ~ dmnorm(mu[xi[i], j, 1:2], cov = sigma[xi[i], j, 1:2,1:2])
+        mu[i, j, 1:2] ~ dmnorm(mu0[i, 1:2], cov = sigmaAux[i, j, 1:2,1:2])
+        sigmaAux[i, j, 1:2,1:2] <- sigma[i, j, 1:2,1:2]/kappa
+        sigma[i, j, 1:2,1:2] ~ dinvwish(S[1:2,1:2], nu)
+  }}
+  xi[1:4] ~ dCRP(1, size=4)
+})
+data = list(y =array(rnorm(4*2*2), c(4, 2, 2)))
+inits = list(xi = rep(1,4))
+model <- nimbleModel(code, data = data, inits = inits)
+nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # not conj
+conf <- configureMCMC(model)
+conf$printSamplers()
+mcmc <- buildMCMC(conf)  
+samplers <- conf$getSamplers()
+wh <- which(sapply(samplers, function(x) x$name == "CRP_cluster_wrapper"))
+ids <- sapply(wh, function(i) samplers[[i]]$control$clusterID)
+all(ids == rep(rep(1:4, each = 2), 2))
+
+## IID across but not within clusters
+code <- nimbleCode({
+    for(i in 1:4) {
+      for(j in 1:2) {
+        y[i, j,1:2] ~ dmnorm(mu[xi[i], j, 1:2], cov = sigma[xi[i], j, 1:2,1:2])
+        mu[i, j, 1:2] ~ dmnorm(mu0[j, 1:2], cov = sigmaAux[i, j, 1:2,1:2])
+        sigmaAux[i, j, 1:2,1:2] <- sigma[i, j, 1:2,1:2]/kappa
+        sigma[i, j, 1:2,1:2] ~ dinvwish(S[1:2,1:2], nu)
+  }}
+  xi[1:4] ~ dCRP(1, size=4)
+})
+data = list(y =array(rnorm(4*2*2), c(4, 2, 2)))
+inits = list(xi = rep(1,4))
+model <- nimbleModel(code, data = data, inits = inits)
+nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # not conj
+conf <- configureMCMC(model)
+conf$printSamplers()
+mcmc <- buildMCMC(conf)  
+samplers <- conf$getSamplers()
+wh <- which(sapply(samplers, function(x) x$name == "CRP_cluster_wrapper"))
+ids <- sapply(wh, function(i) samplers[[i]]$control$clusterID)
+all(ids == rep(rep(1:4, each = 2), 2))
+
+## no dependence on sigma in mu prior
+code <- nimbleCode({
+    for(i in 1:4) {
+      for(j in 1:2) {
+        y[i, j,1:2] ~ dmnorm(mu[xi[i], j, 1:2], cov = sigma[xi[i], j, 1:2,1:2])
+        mu[i, j, 1:2] ~ dmnorm(mu0[1:2], cov = pr[1:2,1:2])
+        sigma[i, j, 1:2,1:2] ~ dinvwish(S[1:2,1:2], nu)
+  }}
+  xi[1:4] ~ dCRP(1, size=4)
+})
+data = list(y =array(rnorm(4*2*2), c(4, 2, 2)))
+inits = list(xi = rep(1,4))
+model <- nimbleModel(code, data = data, inits = inits)
+nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # not conj
+conf <- configureMCMC(model)
+conf$printSamplers()
+mcmc <- buildMCMC(conf)  
+samplers <- conf$getSamplers()
+wh <- which(sapply(samplers, function(x) x$name == "CRP_cluster_wrapper"))
+ids <- sapply(wh, function(i) samplers[[i]]$control$clusterID)
+all(ids == rep(rep(1:4, each = 2), 2))
+
+## only one sigma per cluster
+code <- nimbleCode({
+    for(i in 1:4) {
+      for(j in 1:2) {
+        y[i, j,1:2] ~ dmnorm(mu[xi[i], j, 1:2], cov = sigma[xi[i], 1:2,1:2])
+        mu[i, j, 1:2] ~ dmnorm(mu0[1:2], cov = sigmaAux[i, 1:2,1:2])
+      }
+      sigmaAux[i, 1:2,1:2] <- sigma[i, 1:2,1:2]/kappa
+      sigma[i, 1:2,1:2] ~ dinvwish(S[1:2,1:2], nu)
+  }
+  xi[1:4] ~ dCRP(1, size=4)
+})
+data = list(y =array(rnorm(4*2*2), c(4, 2, 2)))
+inits = list(xi = rep(1,4))
+model <- nimbleModel(code, data = data, inits = inits)
+nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # not conj
+conf <- configureMCMC(model)
+conf$printSamplers()
+mcmc <- buildMCMC(conf)  
+samplers <- conf$getSamplers()
+wh <- which(sapply(samplers, function(x) x$name == "CRP_cluster_wrapper"))
+ids <- sapply(wh, function(i) samplers[[i]]$control$clusterID)
+all(ids == c(1:4, rep(1:4, each = 2)))
+
+## only one mu and one sigma per cluster
+code <- nimbleCode({
+    for(i in 1:4) {
+      for(j in 1:2) 
+        y[i, j,1:2] ~ dmnorm(mu[xi[i], 1:2], cov = sigma[xi[i], 1:2,1:2])
+      mu[i, 1:2] ~ dmnorm(mu0[1:2], cov = sigmaAux[i, 1:2,1:2])
+      sigmaAux[i, 1:2,1:2] <- sigma[i, 1:2,1:2]/kappa
+      sigma[i, 1:2,1:2] ~ dinvwish(S[1:2,1:2], nu)
+  }
+  xi[1:4] ~ dCRP(1, size=4)
+})
+data = list(y =array(rnorm(4*2*2), c(4, 2, 2)))
+inits = list(xi = rep(1,4))
+model <- nimbleModel(code, data = data, inits = inits)
+nimble:::checkCRPconjugacy(model, 'xi[1:4]')  # not conj
+conf <- configureMCMC(model)
+conf$printSamplers()
+mcmc <- buildMCMC(conf)  
+samplers <- conf$getSamplers()
+wh <- which(sapply(samplers, function(x) x$name == "CRP_cluster_wrapper"))
+ids <- sapply(wh, function(i) samplers[[i]]$control$clusterID)
+all(ids == c(1:4, 2))
+
 
 ## y dependence in multivariate way
 code <- nimbleCode({
@@ -1786,6 +1927,35 @@ wh <- which(sapply(samplers, function(x) x$name == "CRP_cluster_wrapper"))
 ids <- sapply(wh, function(i) samplers[[i]]$control$clusterID)
 all(ids == rep(rep(1:n, each = J), 2))
 
+## mutilde and s2tilde, not IID across clusters
+code <- nimbleCode({
+    for(i in 1:n) {
+        for(j in 1:J) {
+            y[i, j] ~ dnorm(thetaTilde[xi[i], j], var = s2tilde[xi[i], j])
+            thetaTilde[i, j] ~ dnorm(i, var = s2tilde[i, j]/kappa)
+            s2tilde[i, j] ~ dinvgamma(1,1)
+        }
+
+    }
+    xi[1:n] ~ dCRP(alpha, size = n)
+})
+
+n <- 5
+J <- 3
+constants <- list(n = n, J = J)
+data <- list(y = matrix(rnorm(n*J),n,J))
+inits <- list(alpha = 1, xi = rep(1, n),
+              thetaTilde = matrix(rnorm(J*n), n, J), s2tilde = matrix(rgamma(J*n, 1, 1),n,J))
+model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+nimble:::findClusterNodes(model, 'xi[1:5]')
+nimble:::checkCRPconjugacy(model, 'xi[1:5]')  # not conj
+conf <- configureMCMC(model)  
+conf$printSamplers()  
+mcmc <- buildMCMC(conf) 
+samplers <- conf$getSamplers()
+wh <- which(sapply(samplers, function(x) x$name == "CRP_cluster_wrapper"))
+ids <- sapply(wh, function(i) samplers[[i]]$control$clusterID)
+all(ids == rep(rep(1:n, each = J), 2))
 
 ## mutilde and s2tilde; not conj because don't have one parameter set per obs
 code <- nimbleCode({

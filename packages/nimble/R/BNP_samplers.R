@@ -1176,6 +1176,7 @@ sampler_CRP <- nimbleFunction(
                         conjugate_dnorm_invgamma_dnorm = 'CRP_conjugate_dnorm_invgamma_dnorm',
                         conjugate_dnorm_gamma_dnorm = 'CRP_conjugate_dnorm_gamma_dnorm',
                         conjugate_dmnorm_invwish_dmnorm = 'CRP_conjugate_dmnorm_invwish_dmnorm',
+                        conjugate_dmnorm_wish_dmnorm = 'CRP_conjugate_dmnorm_wish_dmnorm',
                         conjugate_dbeta_dbern  = 'CRP_conjugate_dbeta_dbern',
                         conjugate_dbeta_dbin = 'CRP_conjugate_dbeta_dbin',
                         conjugate_dbeta_dnegbin = 'CRP_conjugate_dbeta_dnegbin',
@@ -1236,30 +1237,32 @@ sampler_CRP <- nimbleFunction(
     
     identityLink <- TRUE
 
-    ## Will need to revise conjugate norm-ig-norm handling in light of changes to clusterNodes handling,
-    ## but leave for the moment.
-    if(p == 2 && sampler %in% c("CRP_conjugate_dnorm_invgamma_dnorm",
-                                "CRP_conjugate_dmnorm_invwish_dmnorm")) {
-      if(sampler == "CRP_conjugate_dnorm_invgamma_dnorm") {
+    if(p == 2 && sampler %in% c("CRP_conjugate_dnorm_invgamma_dnorm", "CRP_conjugate_dnorm_gamma_dnorm", 
+                                "CRP_conjugate_dmnorm_invwish_dmnorm", "CRP_conjugate_dmnorm_wish_dmnorm")) {
+        if(sampler == "CRP_conjugate_dnorm_invgamma_dnorm") {
+            dist1 <- 'dnorm'
+            dist2 <- 'dinvgamma'
+        }
+        if(sampler == "CRP_conjugate_dnorm_gamma_dnorm") {
+            dist1 <- 'dnorm'
+            dist2 <- 'dgamma'
+        }
+        if(sampler == "CRP_conjugate_dmnorm_invwish_dmnorm") {
+            dist1 <- 'dmnorm'
+            dist2 <- 'dinvwish'
+        }
+        if(sampler == "CRP_conjugate_dmnorm_wish_dmnorm") {
+            dist1 <- 'dmnorm'
+            dist2 <- 'dwish'
+        }
         for(i in seq_along(tildeVars)) {
-          if(model$getDistribution(clusterVarInfo$clusterNodes[[i]][1]) == 'dnorm') {
-            marginalizedNodes1 <- clusterVarInfo$clusterNodes[[i]]
-          } 
-          if(model$getDistribution(clusterVarInfo$clusterNodes[[i]][1]) == 'dinvgamma') {
-            marginalizedNodes2 <- clusterVarInfo$clusterNodes[[i]]
-          }
+            if(model$getDistribution(clusterVarInfo$clusterNodes[[i]][1]) == dist1) {
+                marginalizedNodes1 <- clusterVarInfo$clusterNodes[[i]]
+            } 
+            if(model$getDistribution(clusterVarInfo$clusterNodes[[i]][1]) == dist2) {
+                marginalizedNodes2 <- clusterVarInfo$clusterNodes[[i]]
+            }
         }  
-      }
-      if(sampler == "CRP_conjugate_dmnorm_invwish_dmnorm") {
-        for(i in seq_along(tildeVars)) {
-          if(model$getDistribution(clusterVarInfo$clusterNodes[[i]][1]) == 'dmnorm') {
-            marginalizedNodes1 <- clusterVarInfo$clusterNodes[[i]]
-          } 
-          if(model$getDistribution(clusterVarInfo$clusterNodes[[i]][1]) == 'dinvwish') {
-            marginalizedNodes2 <- clusterVarInfo$clusterNodes[[i]]
-          }
-        }  
-      }
       helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes1, marginalizedNodes2, dataNodes, nObsPerClusID, nClusNodesPerClusID)
       calcNodes <- model$getDependencies(c(target, marginalizedNodes1, marginalizedNodes2))
     } else {
@@ -1980,8 +1983,8 @@ checkNormalInvWishartConjugacy <- function(model, clusterVarInfo, n, wishartDist
             if(length(exampleNodes1) != length(depNodes) / n)
                 conjugate <- FALSE
         }
-        return(conjugate)
     }
+    return(conjugate)
 }
 
 sampler_CRP_cluster_wrapper <- nimbleFunction(
