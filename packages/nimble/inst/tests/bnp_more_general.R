@@ -1474,7 +1474,7 @@ data = list(y = rnorm(4))
 inits = list(xi = rep(1,4), iden = diag(4))
 model <- nimbleModel(code, data = data, inits = inits)
 nimble:::checkCRPconjugacy(model, 'xi[1:4]') 
-conf <- configureMCMC(model) 
+conf <- configureMCMC(model)  # error in wrapping sampler
 mcmc <- buildMCMC(conf) # error - clusters not indep
 
 

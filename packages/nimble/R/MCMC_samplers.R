@@ -2301,7 +2301,13 @@ sampler_CAR_proper <- nimbleFunction(
 #' @section CRP sampler:
 #' 
 #' The CRP sampler is designed for fitting models involving Dirichlet process mixtures. It is exclusively assigned by NIMBLE's default MCMC configuration to nodes having the Chinese Restaurant Process distribution, \code{dCRP}. It executes sequential sampling of each component of the node (i.e., the cluster membership of each element being clustered). Internally, either of two samplers can be assigned, depending on conjugate or non-conjugate structures within the model. For conjugate and non-conjugate model structures, updates are based on Algorithm 2 and Algorithm 8 in Neal (2000), respectively.
-#'  
+#'
+#  The CRP sampler accepts the following control list elements:
+#' \itemize{
+#' \item \code{checkConjugacy}. A logical argument, specifying whether to assign conjugate samplers if valid. (default = \code{TRUE})
+#' \item \code{printTruncation}. A logical argument, specifying whether to print a warning when the MCMC attempts to use more clusters than the maximum number specified in the model. Only relevant where the user has specified the maximum number of clusters to be less than the number of observations. (default = \code{TRUE})
+#' }
+#' 
 #' @section CRP_concentration sampler:
 #' 
 #' The CRP_concentration sampler is designed for Bayesian nonparametric mixture modeling. It is exclusively assigned to the concentration parameter of the Dirichlet process when the model is specified using theChinese Restaurant Process distribution, \code{dCRP}. This sampler is assigned by default by NIMBLE's default MCMC configuration and is and can only be used when the prior for the concentration is a gamma distribution. The assigned sampler is an augmented beta-gamma sampler as discussed in Section 6 in Escobar and West (1995).
