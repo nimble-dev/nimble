@@ -528,12 +528,12 @@ CRP_conjugate_dnorm_dnorm_nonidentity <- nimbleFunction(
     calculate_offset_coeff = function(i = integer(), j = integer()) {
         ## In mean of observation, determine a,b in 'a + b*mu[xi[i]]'.
         currentValue <<- values(model, marginalizedNodes[((j-1)*J+1):(j*J)])  
-        values(model, marginalizedNodes[((j-1)*J+1):(j*J)]) <<- 0
+        values(model, marginalizedNodes[((j-1)*J+1):(j*J)]) <<- c(0)
         model$calculate(intermNodes[((i-1)*nInterm+1):(i*nInterm)])  
         model$calculate(dataNodes[((i-1)*J+1):(i*J)])  ## is this necessary given getParam should just need intermediates?
         for(j1 in 1:J)
             offset[j1] <<- model$getParam(dataNodes[(i-1)*J+j1], 'mean')
-        values(model, marginalizedNodes[((j-1)*J+1):(j*J)]) <<- 1
+        values(model, marginalizedNodes[((j-1)*J+1):(j*J)]) <<- c(1)
         model$calculate(intermNodes[((i-1)*nInterm+1):(i*nInterm)])  
         model$calculate(dataNodes[((i-1)*J+1):(i*J)])  ## is this necessary given getParam should just need intermediates?
         for(j1 in 1:J)

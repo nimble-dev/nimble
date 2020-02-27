@@ -5594,15 +5594,16 @@ test_that("Testing dnorm_dnorm non-identity conjugacy setting, regression settin
     m = nimbleModel(code, data = data, 
                     inits = list(xi = c(4,3,2,1), b1 = rnorm(4), beta = rnorm(1), b0 = rnorm(1)))
     conf <- configureMCMC(m)
-    mcmc=buildMCMC(conf)
-    expect_equal(class(mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm_nonidentity", info = 'dnorm_dnorm_nonidentity conjugacy not detected')
+    mcmc <- buildMCMC(conf)
+    crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+    expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm_nonidentity", info = 'dnorm_dnorm_nonidentity conjugacy not detected')
     mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$calculate_offset_coeff(1,4)  # xi[1] = 4
-    expect_identical(mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$offset, m$b0, info = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
-    expect_equal(mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$coeff, m$x[1], tolerance = 1e-15,
+    expect_identical(mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$offset[1], m$b0, info = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
+    expect_equal(mcmc$samplerFunctions[[crpIndex]]$helperFunctions[[1]]$coeff[1], m$x[1], tolerance = 1e-15,
                  info = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
     mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$calculate_offset_coeff(2,3)  # xi[2] = 3
-    expect_identical(mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$offset, m$b0, info = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
-    expect_equal(mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$coeff, m$x[2], tolerance = 1e-15,
+    expect_identical(mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$offset[1], m$b0, info = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
+    expect_equal(mcmc$samplerFunctions[[crpIndex]]$helperFunctions[[1]]$coeff[1], m$x[2], tolerance = 1e-15,
                  info = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
 
     ## Correct predictive distribution
@@ -5622,7 +5623,7 @@ test_that("Testing dnorm_dnorm non-identity conjugacy setting, regression settin
     expect_equal(pY, pT + pYgivenT - pTgivenY, info = "problem with predictive distribution for dnorm_dnorm_nonidentity")
     
     set.seed(1)
-    mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$sample(1, 4)
+    mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[crpIndex]]$sample(1, 4)
     set.seed(1)
     smp <- rnorm(1 , postMean, sqrt(postVar))
     expect_identical(smp, m$b1[4], info = "problem with predictive sample for dnorm_dnorm_nonidentity")
