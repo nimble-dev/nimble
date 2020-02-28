@@ -88,7 +88,7 @@ Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, Nim
 
   Eigen::Map<MatrixXt > eigenChol(chol.getPtr(), n, n);
   xCopy = CppAD::CondExpEq(prec_param, Type(1),
-                           eigenChol*xCopy,
+                           eigenChol.triangularView<Eigen::Upper>()*xCopy,
                            eigenChol.triangularView<Eigen::Upper>().solve<OnTheRight>(xCopy);
   /* more straightforward would be this (use this to check OnTheRight works)
   eigenChol.triangularView<Eigen::Upper>().transpose().solve(xCopy);
@@ -118,13 +118,43 @@ Type nimDerivs_nimArr_dmnorm_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &
 
   Eigen::Map<MatrixXt > eigenChol(chol.getPtr(), n, n);
   xCopy = CppAD::CondExpEq(prec_param, Type(1),
-                           eigenChol*xCopy,
+                           eigenChol.triangularView<Eigen::Upper>()*xCopy,
                            eigenChol.triangularView<Eigen::Upper>().solve<OnTheRight>(xCopy);
   xCopy = xCopy.array()*xCopy.array();
   dens += -Type(0.5)*xCopy.sum();
   if(!give_log){
     dens = exp(dens);
   }
+  return(dens);
+}
+
+/* dwish: Wishart distribution */
+template<class Type>
+Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type df, Type p, Type scale_param, Type give_log, Type overwrite_inputs) { 
+
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  int n = x.dimSize(0);
+  Eigen::Map<MatrixXt > eigenChol(chol.getPtr(), n, n);
+  Eigen::Map<MatrixXt > eigenX(x.getPtr(), n, n);
+  
+  Type dens = (df * eigenChol.diagonal().array().log()).sum()
+  dens = CppAD::CondExpEq(scale_param, Type(1), -dens, dens);
+
+  dens += Type(-(df*p/2 * M_LN2 + p*(p-1)*M_LN_SQRT_PI/2));
+  for(i = 0; i < p; i++)
+    dens -= nimDerivs_lgammafn((df - i) / 2);
+ 
+  /* Lower may be more efficient: https://eigen.tuxfamily.org/dox/classEigen_1_1LLT.html#details */
+  MatrixXt Lx = x.SelfAdjointView<Eigen::Lower>().llt().matrixL()
+  dens += Type(df - p + 1) * Lx.diagonal().array().log().sum();
+
+  dens -= Type(0.5) * CppAD::CondExpEq(scale_param, Type(1),
+                           eigenChol.transpose.solve(Lx).triangularView<Eigen::Lower>().array().square.sum(),             
+                           (eigenChol.triangularView<Eigen::Upper>().array()*(eigenChol.triangularView<Eigen::Upper>()*x).triangularView<Eigen::Upper>().array()).sum())
+  /* check that .array() on upper triangular view returns zeros for lower triangle and similar for lower case*/
+  /* sum(U * uppertri(U %*% X)) */
+
+  dens = CppAD::CondExpEq(give_log, Type(1), dens, exp(dens));
   return(dens);
 }
 
