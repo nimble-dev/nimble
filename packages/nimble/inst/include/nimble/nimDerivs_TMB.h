@@ -70,7 +70,6 @@ Type nimDerivs_qnorm(Type p, Type mean = 0., Type sd = 1.){
 
 /* dmnorm: Multivariate normal distribution */
 /* TMB uses specialized atomic classes.  nimble currently has a "naive" and likely less efficiency implementation: */
-/* TO-DO: support by prec_param = 0 and 1*/
 template<class Type>
 Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type prec_param, Type give_log, Type overwrite_inputs) { 
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
@@ -88,7 +87,13 @@ Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, Nim
     xCopy(i, 0) = x[i] - mean[i];
 
   Eigen::Map<MatrixXt > eigenChol(chol.getPtr(), n, n);
-  xCopy = eigenChol*xCopy;
+  xCopy = CppAD::CondExpEq(prec_param, Type(1),
+                           eigenChol*xCopy,
+                           eigenChol.triangularView<Eigen::Upper>().solve<OnTheRight>(xCopy);
+  /* more straightforward would be this (use this to check OnTheRight works)
+  eigenChol.triangularView<Eigen::Upper>().transpose().solve(xCopy);
+  Since transpose() is just a flag and not a distinct operation that will necessarily
+  be carried out, using .transpose may have no computational cost. */
   xCopy = xCopy.array()*xCopy.array();
   dens += -Type(0.5)*xCopy.sum();
   dens = CppAD::CondExpEq(give_log, Type(1), dens, exp(dens));
@@ -112,7 +117,9 @@ Type nimDerivs_nimArr_dmnorm_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &
     xCopy(i, 0) = x[i] - mean[i];
 
   Eigen::Map<MatrixXt > eigenChol(chol.getPtr(), n, n);
-  xCopy = eigenChol*xCopy;
+  xCopy = CppAD::CondExpEq(prec_param, Type(1),
+                           eigenChol*xCopy,
+                           eigenChol.triangularView<Eigen::Upper>().solve<OnTheRight>(xCopy);
   xCopy = xCopy.array()*xCopy.array();
   dens += -Type(0.5)*xCopy.sum();
   if(!give_log){
