@@ -517,6 +517,7 @@ CRP_conjugate_dnorm_dnorm_nonidentity <- nimbleFunction(
     offset <- nimNumeric(J+1)
     coeff <- nimNumeric(J+1)
     currentValue <- nimNumeric(J+1)
+    currentInterm <- nimNumeric(nInterm+1)
   },
   methods = list(
     storeParams = function() {
@@ -527,25 +528,20 @@ CRP_conjugate_dnorm_dnorm_nonidentity <- nimbleFunction(
     },
     calculate_offset_coeff = function(i = integer(), j = integer()) {
         ## In mean of observation, determine a,b in 'a + b*mu[xi[i]]'.
-        currentValue <<- values(model, marginalizedNodes[((j-1)*J+1):(j*J)])  
-        values(model, marginalizedNodes[((j-1)*J+1):(j*J)]) <<- c(0)
+        currentValue <<- values(model, marginalizedNodes[((j-1)*J+1):(j*J)])
+        currentInterm <<- values(model, intermNodes[((i-1)*nInterm+1):(i*nInterm)])
+        
+        values(model, marginalizedNodes[((j-1)*J+1):(j*J)]) <<- rep(0, J)
         model$calculate(intermNodes[((i-1)*nInterm+1):(i*nInterm)])  
-        model$calculate(dataNodes[((i-1)*J+1):(i*J)])  ## is this necessary given getParam should just need intermediates?
         for(j1 in 1:J)
             offset[j1] <<- model$getParam(dataNodes[(i-1)*J+j1], 'mean')
-        values(model, marginalizedNodes[((j-1)*J+1):(j*J)]) <<- c(1)
+        values(model, marginalizedNodes[((j-1)*J+1):(j*J)]) <<- rep(1, J)
         model$calculate(intermNodes[((i-1)*nInterm+1):(i*nInterm)])  
-        model$calculate(dataNodes[((i-1)*J+1):(i*J)])  ## is this necessary given getParam should just need intermediates?
         for(j1 in 1:J)
             coeff[j1] <<- model$getParam(dataNodes[(i-1)*J+j1], 'mean') - offset[j1]
+        
         values(model, marginalizedNodes[((j-1)*J+1):(j*J)]) <<- currentValue
-        ## Note as this is currently used, we do not need to update
-        ## the intermediate nodes or dataNodes logProb as
-        ## ordering of calculations in sampler_CRP does not require it because of
-        ## 1:1 mapping of cluster IDs to observations.
-        ## However, to reduce change of future bugs, we are updating here.
-        model$calculate(intermNodes[((i-1)*nInterm+1):(i*nInterm)])  
-        model$calculate(dataNodes[((i-1)*J+1):(i*J)])
+        values(model, intermNodes[((i-1)*nInterm+1):(i*nInterm)]) <<- currentInterm
     },
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
@@ -1275,7 +1271,6 @@ sampler_CRP <- nimbleFunction(
       calcNodes <- model$getDependencies(c(target, marginalizedNodes1, marginalizedNodes2))
     } else {
       calcNodes <- model$getDependencies(c(target, marginalizedNodes))
-      ## Fix non-identity sampler for moreGeneral situation  
       if(sampler == "CRP_conjugate_dnorm_dnorm_nonidentity") {
           identityLink <- FALSE
           helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, intermNodes, nIntermClusNodesPerClusID, nObsPerClusID, nClusNodesPerClusID)

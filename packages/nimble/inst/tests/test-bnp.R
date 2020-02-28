@@ -5582,41 +5582,48 @@ test_that("Testing dnorm_dnorm non-identity conjugacy setting, regression settin
     ## Conjugacy detection and calculation of offset/coeff
     set.seed(1)
     code = nimbleCode({
-        for(i in 1:4) {
-            b1[i] ~ dnorm(beta, 0.25)
-            y[i] ~ dnorm(b0 + b1[xi[i]]*x[i], sd = 0.7)
+        for(i in 1:n) {
+            for(j in 1:J) {
+                b1[i,j] ~ dnorm(beta, 0.25)
+                y[i,j] ~ dnorm(b0 + b1[xi[i],j]*x[i], sd = 0.7)
+            }
         }
-        xi[1:4] ~ dCRP(conc=1, size=4)
+        xi[1:n] ~ dCRP(conc=1, size=n)
         beta ~ dnorm(0,1)
         b0 ~ dnorm(0,1)
     })
-    data <- list(y = rnorm(4), x = rnorm(4))
-    m = nimbleModel(code, data = data, 
-                    inits = list(xi = c(4,3,2,1), b1 = rnorm(4), beta = rnorm(1), b0 = rnorm(1)))
+    n <- 4
+    J <- 2
+    constants <- list(n = n, J = J)
+    data <- list(y = matrix(rnorm(n*J),n,J), x = rnorm(n))
+    m = nimbleModel(code, data = data, constants = constants,
+                    inits = list(xi = c(4,3,2,1), b1 = matrix(rnorm(n*J),n,J), beta = rnorm(1), b0 = rnorm(1)))
     conf <- configureMCMC(m)
     mcmc <- buildMCMC(conf)
     crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
     expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm_nonidentity", info = 'dnorm_dnorm_nonidentity conjugacy not detected')
     mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$calculate_offset_coeff(1,4)  # xi[1] = 4
-    expect_identical(mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$offset[1], m$b0, info = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
-    expect_equal(mcmc$samplerFunctions[[crpIndex]]$helperFunctions[[1]]$coeff[1], m$x[1], tolerance = 1e-15,
+    expect_identical(mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$offset[1:J], rep(m$b0, J), info = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
+    expect_equal(mcmc$samplerFunctions[[crpIndex]]$helperFunctions[[1]]$coeff[1:J], rep(m$x[1], J), tolerance = 1e-15, 
                  info = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
     mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$calculate_offset_coeff(2,3)  # xi[2] = 3
-    expect_identical(mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$offset[1], m$b0, info = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
-    expect_equal(mcmc$samplerFunctions[[crpIndex]]$helperFunctions[[1]]$coeff[1], m$x[2], tolerance = 1e-15,
+    expect_identical(mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$offset[1:J], rep(m$b0, J), info = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
+    expect_equal(mcmc$samplerFunctions[[crpIndex]]$helperFunctions[[1]]$coeff[1:J], rep(m$x[2], J), tolerance = 1e-15,
                  info = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
 
     ## Correct predictive distribution
     tmp <- m$calculate()  ## in case we go back to having calculate_offset_coeff not recalculate after set to 0 and 1
-    pYgivenT <- m$getLogProb('y[1]')
-    pT <- m$getLogProb('b1[4]')
+    pYgivenT <- m$getLogProb('y[1, 1:2]')
+    pT <- m$getLogProb('b1[4, 1:2]')  # 4 since xi[1]=4
     
-    dataVar <- m$getParam('y[1]', 'var') 
-    priorVar <- m$getParam('b1[4]', 'var')
-    priorMean <- m$getParam('b1[4]', 'mean')
+    dataVar <- c(m$getParam('y[1, 1]', 'var'), m$getParam('y[1, 2]', 'var')) 
+    priorVar <- c(m$getParam('b1[4, 1]', 'var'), m$getParam('b1[4, 2]', 'var'))
+    priorMean <- c(m$getParam('b1[4, 1]', 'mean'), m$getParam('b1[4, 2]', 'mean'))
     postVar <- 1 / (m$x[1]^2 / dataVar + 1 / priorVar) # from conjugate sampler
-    postMean <- postVar * (m$x[1]*(data$y[1]-m$b0) / dataVar + priorMean / priorVar) # from conjugate sampler
-    pTgivenY <- dnorm(m$b1[4] , postMean, sqrt(postVar), log = TRUE) # from conjugate sampler
+    postMean <- postVar * (m$x[1]*(data$y[1, 1:2]-m$b0) / dataVar + priorMean / priorVar) # from conjugate sampler
+    pTgivenY <- dnorm(m$b1[4, 1] , postMean[1], sqrt(postVar[1]), log = TRUE) +
+                dnorm(m$b1[4, 2] , postMean[2], sqrt(postVar[2]), log = TRUE)  # from conjugate sampler
+
     mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$storeParams()
     mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$calculate_offset_coeff(1, 4)
     pY <- mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)  
@@ -5625,21 +5632,23 @@ test_that("Testing dnorm_dnorm non-identity conjugacy setting, regression settin
     set.seed(1)
     mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[crpIndex]]$sample(1, 4)
     set.seed(1)
-    smp <- rnorm(1 , postMean, sqrt(postVar))
-    expect_identical(smp, m$b1[4], info = "problem with predictive sample for dnorm_dnorm_nonidentity")
+    smp <- rnorm(2, postMean, sqrt(postVar))
+    expect_equal(smp, m$b1[4, 1:2], tolerance = 1e-15, info = "problem with predictive sample for dnorm_dnorm_nonidentity")
 
     ## Compare to identity conjugacy as special case.
     set.seed(1)
     n <- 100
-    data <- list(y = rnorm(n), x = rnorm(n))
-    constants <- list(n = n)
-    inits <- list(xi = rep(1, n), b1 = rep(4, n), beta =1)
+    data <- list(y = matrix(rnorm(n*J),n,J), x = rnorm(n))
+    constants <- list(n = n. J = J)
+    inits <- list(xi = rep(1, n), b1 = matrix(4,n,J), beta = 1)
     
     set.seed(1)
     code = nimbleCode({
         for(i in 1:n) {
-            b1[i] ~ dnorm(beta,1)
-            y[i] ~ dnorm(b0 + b1[xi[i]]*x[i], sd = 1)
+            for(j in 1:J) {
+                b1[i,j] ~ dnorm(beta, 1)
+                y[i,j] ~ dnorm(b0 + b1[xi[i],j]*x[i], sd = 1)
+            }
         }
         xi[1:n] ~ dCRP(conc=1, size=n)
         beta ~ dnorm(0,1)
@@ -5655,8 +5664,10 @@ test_that("Testing dnorm_dnorm non-identity conjugacy setting, regression settin
     set.seed(1)
     code = nimbleCode({
         for(i in 1:n) {
-            b1[i] ~ dnorm(beta,1)
-            y[i] ~ dnorm(b1[xi[i]]*x[i], sd = 1)
+            for(j in 1:J) {
+                b1[i,j] ~ dnorm(beta, 1)
+                y[i,j] ~ dnorm(b1[xi[i],j]*x[i], sd = 1)
+            }
         }
         xi[1:n] ~ dCRP(conc=1, size=n)
         beta ~ dnorm(0,1)
