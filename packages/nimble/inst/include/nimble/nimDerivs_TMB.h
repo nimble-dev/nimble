@@ -186,7 +186,7 @@ Type nimDerivs_nimArr_dwish_chol_logFixed(NimArr<2, Type> &x, NimArr<1, Type> &m
 
 /* dinvwish: Inverse Wishart distribution */
 template<class Type>
-Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type df, Type p, Type scale_param, Type give_log, Type overwrite_inputs) { 
+Type nimDerivs_nimArr_dinvwish_chol(NimArr<2, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type df, Type p, Type scale_param, Type give_log, Type overwrite_inputs) { 
 
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
   int n = x.dimSize(0);
@@ -212,6 +212,34 @@ Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &x, NimArr<1, Type> &mean, NimA
   return(dens);
 }
 
+template<class Type>
+Type nimDerivs_nimArr_dinvwish_chol_logFixed(NimArr<2, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type df, Type p, Type scale_param, int give_log, Type overwrite_inputs) { 
+
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  int n = x.dimSize(0);
+  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
+  Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
+  
+  Type dens = (df * mapChol.diagonal().array().log()).sum()
+  dens = CppAD::CondExpEq(scale_param, Type(1), dens, -dens);
+
+  dens += Type(-(df*p/2 * M_LN2 + p*(p-1)*M_LN_SQRT_PI/2));
+  for(i = 0; i < p; i++)
+    dens -= nimDerivs_lgammafn((df - i) / 2);
+ 
+  /* Lower may be more efficient: https://eigen.tuxfamily.org/dox/classEigen_1_1LLT.html#details */
+  MatrixXt Lx = mapX.selfadjointView<Eigen::Lower>().llt().matrixL()
+  dens -= Type(df + p + 1) * Lx.diagonal().array().log().sum();
+
+  dens -= Type(0.5) * CppAD::CondExpEq(scale_param, Type(1),
+                           (Lx.triangularView<Eigen::Lower>().solve(mapChol.transpose())).squaredNorm(),
+                           (Lx.triangularView<Eigen::Lower>().solve(mapChol.triangularView<Eigen::Upper>().solve(MatrixXd::Identity(n, n)))).squaredNorm());
+
+  if(!give_log){
+    dens = exp(dens);
+  }
+  return(dens);
+}
 
 /* Multinomial */
 template<class Type>
