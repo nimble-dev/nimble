@@ -74,8 +74,11 @@ set_CppAD_tape_info_for_model::~set_CppAD_tape_info_for_model() {
 }
 
 CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
-					 bool includeExtraOutputStep) {
+					 bool includeExtraOutputStep,
+					 bool recordingInfo__isRecording) {
   std::cout <<"entering calculate_ADproxyModel"<< std::endl;//"entering calculate_ADproxyModel" << "\n";
+  std::cout<<"handle address: "<<CppAD::AD<double>::get_handle_address_nimble()<<std::endl;
+
   CppAD::AD<double> ans = 0;
   const vector<NodeInstruction> &instructions = nodes.getInstructions();
   vector<NodeInstruction>::const_iterator iNode(instructions.begin());
@@ -85,19 +88,18 @@ CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
   for(; iNode != iNodeEnd; iNode++)
     ans += iNode->nodeFunPtr->calculateBlock_ADproxyModel(iNode->operand);
   std::cout<<"starting extraOutputStep"<<std::endl;
-  if(includeExtraOutputStep) {
+  if(includeExtraOutputStep && recordingInfo__isRecording) {
     if(instructions.begin() != iNodeEnd) {
       std::cout<<"will do extraOutputStep"<<std::endl;
       // It is arbitrary to call this for the first node,
       // but it is important to have it done by a nodeFun
       // because that will be in the right compilation unit
       // to access the right globals (statics) from CppAD.
-      //      instructions.begin()->nodeFunPtr->setup_extraOutput_step( nodes,
-      //								ans );
+      instructions.begin()->nodeFunPtr->setup_extraOutput_step( nodes,
+      								ans );
     }
   }
   std::cout<<"done with extraOutputStep"<<std::endl;
-						      
   return(ans);
 }
 

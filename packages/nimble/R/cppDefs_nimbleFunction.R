@@ -715,6 +715,7 @@ modifyForAD_calculate <- function(code, symTab, workEnv) {
   recurse_modifyForAD(code, symTab, workEnv)
   code$name <- "calculate_ADproxyModel"
   code$args[[2]] <- 1 ## this sets includeExtraOutputStep = true
+  setArg(code, length(code$args) + 1, RparseTree2ExprClasses(quote(cppLiteral("recordingInfo_.recording()"))))
   invisible(NULL)
 }
 

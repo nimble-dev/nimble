@@ -152,7 +152,9 @@ void getDerivs_internal(vector<BASE> &independentVars,
   #ifdef _TIME_AD
   derivs_run_tape_timer_start();
 #endif
+  std::cout<<"About to run ADtape->Forward"<<std::endl;
   value_ans = ADtape->Forward(0, independentVars);
+  std::cout<<"Done with ADtape->Forward"<<std::endl;
 #ifdef _TIME_AD
   derivs_run_tape_timer_stop();
 #endif

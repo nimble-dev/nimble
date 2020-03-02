@@ -544,7 +544,10 @@ atomic_extraOutputObject::atomic_extraOutputObject(const std::string& name,
 						   NodeVectorClassNew_derivs* NV) :
   CppAD::atomic_base<double>(name, bool_sparsity_enum),
   NV_(NV)
-{ }
+{
+  std::cout<< "Constructing atomic_extraOutputObject" <<std::endl;
+  std::cout<<"handle address: "<<CppAD::AD<double>::get_handle_address_nimble()<<std::endl;
+}
 
 
 bool atomic_extraOutputObject::forward(
@@ -556,8 +559,9 @@ bool atomic_extraOutputObject::forward(
 				      ADvector<double>&    ty
 				      )
 {
-  // std::cout<<"Entering atomic_extraOutputObject with p = "<<p<<" and q = "<<q<<std::endl;
-  // std::cout<<"tx.size() = "<<tx.size()<<" and ty.size() = "<<ty.size()<<std::endl;
+  std::cout<<"Entering atomic_extraOutputObject with p = "<<p<<" and q = "<<q<<std::endl;
+  std::cout<<"handle address: "<<CppAD::AD<double>::get_handle_address_nimble()<<std::endl;
+  std::cout<<"tx.size() = "<<tx.size()<<" and ty.size() = "<<ty.size()<<std::endl;
       
   // return flag
   bool ok = true;

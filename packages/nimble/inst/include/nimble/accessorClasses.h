@@ -752,7 +752,8 @@ class set_CppAD_tape_info_for_model {
   bool not_empty;
 };
 CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
-					 bool includeExtraOutputStep = false);
+					 bool includeExtraOutputStep = false,
+					 bool recordingInfo__isRecording = true);
 /* void setup_extraInput_step(NodeVectorClassNew_derivs &nodes); */
 /* void assign_extraInputDummy(NodeVectorClassNew_derivs &nodes, */
 /* 			    CppAD::AD<double> &extraInputDummy); */

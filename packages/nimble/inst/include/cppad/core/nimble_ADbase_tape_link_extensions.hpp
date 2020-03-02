@@ -22,6 +22,7 @@ void AD<Base>::set_tape_info_nimble(tape_id_t tape_id, local::ADTape<Base>* tape
 
 template<class Base>
 void* AD<Base>::get_handle_address_nimble() {
+  std::cout<<"in get_handle_address_nimble()"<<std::endl;
   void* ans = static_cast<void *>(tape_ptr());
   return ans;
 }
