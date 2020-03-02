@@ -1586,12 +1586,56 @@ test_that("check iid assumption in sampleDPmeasure", {
   mConf <- configureMCMC(m, monitors =  c('thetatilde', 's2tilde', 'xi'))
   expect_warning(mMCMC <- buildMCMC(mConf))
   cMCMC <- compileNimble(mMCMC, project = m) 
-  cMCMC$run(1)
-  cMCMC$run(1, reset=FALSE)  # Claudia, why do we call $run twice?
+  cMCMC$run(1, reset=FALSE) 
   expect_error(getSamplesDPmeasure(cMCMC),
                'sampleDPmeasure: cluster parameters have to be independent and identically')
   if(.Platform$OS.type != "windows") {
       nimble:::clearCompiled(m)
+  }
+  
+  # bivariate cluster parameters are not iid case in a model with multiple observations per cluster ID
+  code=nimbleCode(
+    {
+      for(j in 1:3) {
+        for(i in 1:4){
+          muj[j, 1:2, i] <- (i+j)*mu0[1:2]
+          muTilde[j, 1:2, i] ~ dmnorm(muj[j, 1:2, i], cov=Cov0[1:2, 1:2])
+          y[j, 1:2, i] ~ dmnorm(muTilde[j, 1:2, xi[i]], cov=Sigma0[1:2, 1:2])  
+        }
+      }
+      xi[1:4] ~ dCRP(conc=1, size=4)
+    }
+  )
+  muTilde <- array(0, c(3, 2, 4))
+  for(j in 1:3) {
+    muTilde[ j, ,] <- matrix(0, nrow=4, ncol=2)
+  }
+  y <- array(0, c(3, 2, 4))
+  for(i in 1:2) {
+    for(j in 1:2) {
+      y[j, ,i] <- rnorm(2, 5, sqrt(0.01))
+    }
+    y[3, ,i] <- rnorm(2,10, sqrt(0.01))
+  }
+  for(i in 3:4) {
+    for(j in 1:2) {
+      y[j, ,i] <- rnorm(2, -5, sqrt(0.01))
+    }
+    y[3, ,i] <- rnorm(2, -10, sqrt(0.01))
+  }
+  m = nimbleModel(code, 
+                  data = list(y = y),
+                  inits = list(xi = 1:4, muTilde=muTilde), 
+                  constants=list(mu0 = rep(0,2), Cov0 = diag(10, 2), Sigma0 = diag(1, 2)))
+  cmodel <- compileNimble(m)
+  conf <- configureMCMC(m, monitors=c('xi', 'muTilde'))
+  mcmc <- buildMCMC(conf)
+  cMCMC <- compileNimble(mcmc, project = m)
+  cMCMC$run(1)
+  expect_error(getSamplesDPmeasure(cMCMC),
+               'sampleDPmeasure: cluster parameters have to be independent and identically')
+  if(.Platform$OS.type != "windows") {
+    nimble:::clearCompiled(m)
   }
   
 })
