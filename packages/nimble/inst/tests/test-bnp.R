@@ -1562,8 +1562,7 @@ test_that("check iid assumption in sampleDPmeasure", {
   Data <- list(y = c(rnorm(10, 0,1)))
   m <- nimbleModel(code, data=Data, inits=Inits)
   mConf <- configureMCMC(m, monitors = c('mutilde','s2tilde', 'lambda', 'xi'))
-  expect_error(mMCMC <- buildMCMC(mConf),
-               "sampler_CRP: Cluster parameters must be conditionally independent")  
+  mMCMC <- buildMCMC(mConf)
   
   code=nimbleCode(
     {
