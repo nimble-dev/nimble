@@ -64,13 +64,15 @@ namespace CppAD { namespace local { // BEGIN_CPPAD_LOCAL_NAMESPACE
 \file atomic_index.hpp
 Map indices to atomic function information
 */
-
+    
 struct atomic_index_info {
     size_t      type;
     std::string name;
     void*       ptr;
 };
 
+#include "nimble_atomic_index.hpp"
+    
 template <class Base>
 size_t atomic_index(
     bool               set_null      ,
@@ -80,7 +82,12 @@ size_t atomic_index(
     void*&             ptr           )
 {   //
     // information for each index
+#ifndef USING_CPPAD_IN_NIMBLE
     static std::vector<atomic_index_info> vec;
+#else
+    std::vector<atomic_index_info> &vec = *atomic_index_info_vec_manager<Base>::manage();
+#endif
+    
 # ifndef NDEBUG
     if( index == 0 || set_null )
     {   CPPAD_ASSERT_KNOWN( ! thread_alloc::in_parallel(),

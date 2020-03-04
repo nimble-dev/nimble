@@ -741,6 +741,10 @@ indexedNodeInfo generateDummyIndexedNodeInfo();
 #ifdef _DERIVS_FULLTAPE
 
 class NodeVectorClassNew_derivs;
+
+void set_CppAD_atomic_info_for_model(NodeVectorClassNew_derivs &nodes,
+				     std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+
 class set_CppAD_tape_info_for_model {
  public:
   set_CppAD_tape_info_for_model(NodeVectorClassNew_derivs &nodes,

@@ -56,6 +56,18 @@ double calculate(NodeVectorClassNew &nodes) {
   return(ans);
 }
 
+/* This is a function because it should be done once and not undone. */
+void set_CppAD_atomic_info_for_model(NodeVectorClassNew_derivs &nodes,
+				     std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  const vector<NodeInstruction> &instructions = nodes.getInstructions();
+  if(instructions.size() > 0) {
+    nodeFun *nodeFunInModelDLL;
+    nodeFunInModelDLL = instructions[0].nodeFunPtr;
+    nodeFunInModelDLL->set_atomic_info_from_nodeFun(vec_ptr);
+  }
+}
+
+/* This is a class so it works by RAII */
 set_CppAD_tape_info_for_model::set_CppAD_tape_info_for_model(NodeVectorClassNew_derivs &nodes,
 				   CppAD::tape_id_t tape_id,
 				   CppAD::local::ADTape<double>* tape_handle_) { // tape handle

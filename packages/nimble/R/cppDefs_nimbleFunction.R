@@ -634,20 +634,23 @@ exprClasses_modifyForAD <- function(code, symTab,
         if(is.null( workEnv[['nodeFxnVector_name']] ) )
           stop("While setting up C++ AD code: calculate found but nodeFxnVector_name not set.")
         ## insert setup_extraInput_step(nfv)
-        set_model_tape_info_line <- RparseTree2ExprClasses(cppLiteral("set_CppAD_tape_info_for_model my_tape_info_RAII_(model_nodes_nodeFxnVector_includeData_TRUE_SU__derivs_, TYPE_::get_tape_id_nimble(), TYPE_::get_tape_handle_nimble());"))
+        set_model_tape_info_line <- RparseTree2ExprClasses(cppLiteral(
+            paste0("set_CppAD_tape_info_for_model my_tape_info_RAII_(",
+                   workEnv[['nodeFxnVector_name']],
+                   ", TYPE_::get_tape_id_nimble(), TYPE_::get_tape_handle_nimble());")))
         
-        ## setupExtraInputLine <- RparseTree2ExprClasses(
-        ##   substitute(setup_extraInput_step(NFV),
-        ##              list(NFV = as.name(workEnv$nodeFxnVector_name)))
-        ## )
-        setupExtraInputLine <- RparseTree2ExprClasses(quote(blank())) ## above was from before dynamic variables.  keeping a placeholder for it until sure it's obsolete. 
+
+            set_atomic_info_line <- RparseTree2ExprClasses(cppLiteral(
+                paste0("set_CppAD_atomic_info_for_model(",
+                       workEnv[['nodeFxnVector_name']],
+                       ", CppAD::local::atomic_index_info_vec_manager<double>::manage());")))
 
         ## This inserts a single line at the beginning by
         ## creating a new `{` block.
         ## If anything more general is needed later, we could use
         ## the exprClasses_insertAssertions system
         newExpr <- newBracketExpr(args = c(list(set_model_tape_info_line,
-                                                setupExtraInputLine),
+                                                set_atomic_info_line),
                                            code$args))
         code$args <- list()
         setArg(code, 1, newExpr)
