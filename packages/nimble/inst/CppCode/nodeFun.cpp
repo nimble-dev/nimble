@@ -372,7 +372,8 @@ nodeFun::runExtraOutputObject(NodeVectorClassNew_derivs &NV,
   std::cout<<"runExtraOutputObject C"<<std::endl;
   atomic_extraOutputObject* localExtraOutputObject =
     new atomic_extraOutputObject("extraOutputObject",
-				&NV);
+				 &(NV.model_modelOutput_accessor));
+				 //&NV);
   // And then calling operator() with the local object will again use statics in the correct DLL
   std::cout<<"runExtraOutputObject D"<<std::endl;
   (*localExtraOutputObject)(extraOutputs, extraOutputDummyResult);
@@ -545,11 +546,14 @@ atomic_extraInputObject::rev_sparse_jac(
 // By definition the value and any derivatives for this proxy f()
 // are zero.
 atomic_extraOutputObject::atomic_extraOutputObject(const std::string& name,
-						   NodeVectorClassNew_derivs* NV) :
+						   ManyVariablesMapAccessor* MVMA) :
+						   //NodeVectorClassNew_derivs* NV) :
   CppAD::atomic_base<double>(name, bool_sparsity_enum),
-  NV_(NV)
+  //  NV_(NV)
+  MVMA_(MVMA),
+  objName(name)
 {
-  std::cout<< "Constructing atomic_extraOutputObject" <<std::endl;
+  std::cout<< "Constructing atomic_extraOutputObject named "<< name <<std::endl;
   std::cout<<"handle address: "<<CppAD::AD<double>::get_handle_address_nimble()<<std::endl;
 }
 
@@ -563,10 +567,10 @@ bool atomic_extraOutputObject::forward(
 				      ADvector<double>&    ty
 				      )
 {
-  std::cout<<"Entering atomic_extraOutputObject with p = "<<p<<" and q = "<<q<<std::endl;
+  std::cout<<"Entering atomic_extraOutputObject named "<<objName<<" with p = "<<p<<" and q = "<<q<<std::endl;
   std::cout<<"handle address: "<<CppAD::AD<double>::get_handle_address_nimble()<<std::endl;
   std::cout<<"tx.size() = "<<tx.size()<<" and ty.size() = "<<ty.size()<<std::endl;
-      
+  
   // return flag
   bool ok = true;
     
@@ -575,7 +579,7 @@ bool atomic_extraOutputObject::forward(
       vy[i] = true;
   }
       
-  size_t length_modelOutput_accessor = NV_->model_modelOutput_accessor.getTotalLength();
+  size_t length_modelOutput_accessor = MVMA_->getTotalLength(); //NV_->model_modelOutput_accessor.getTotalLength();
   // std::cout << "length_modelOutput_accessor =" << length_modelOutput_accessor << std::endl;
   // if(length_modelOutput_accessor < tx.size()) {
   //   std::cout<<"Problem: length_modelOutput_accessor < vx.size()"<<std::endl;
@@ -592,7 +596,7 @@ bool atomic_extraOutputObject::forward(
       // std::cout<<NimArr_tx[i]<<" ";
     }
     // std::cout<<std::endl;
-    setValues(NimArr_tx, NV_->model_modelOutput_accessor);
+    setValues(NimArr_tx, *MVMA_); //NV_->model_modelOutput_accessor);
   }
 
   for(unsigned int i = 0; i < ty.size(); ++i) {

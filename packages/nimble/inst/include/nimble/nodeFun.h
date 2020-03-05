@@ -52,14 +52,15 @@ class NIMBLE_ADCLASS_META : public pointedToBase {
 };
 
 class NodeVectorClassNew_derivs;
+class ManyVariablesMapAccessor;
 
 class atomic_extraInputObject : public CppAD::atomic_base<double> {
   public:
  atomic_extraInputObject(const std::string& name,
 			 NodeVectorClassNew_derivs* NV);
  private:
-  NodeVectorClassNew_derivs* NV_;//for access to model_extraInput_accessor;
-  
+ NodeVectorClassNew_derivs* NV_;//for access to model_extraInput_accessor;
+ 
   virtual bool forward(
 		       size_t                    p ,
 		       size_t                    q ,
@@ -94,10 +95,13 @@ class atomic_extraInputObject : public CppAD::atomic_base<double> {
 class atomic_extraOutputObject : public CppAD::atomic_base<double> {
   public:
  atomic_extraOutputObject(const std::string& name,
-			  NodeVectorClassNew_derivs* NV);
+			  ManyVariablesMapAccessor* MVMA);
+			 // NodeVectorClassNew_derivs* NV);
  private:
-  NodeVectorClassNew_derivs* NV_;//for access to model_modelOutput_accessor;
-  
+ // NodeVectorClassNew_derivs* NV_;//for access to model_extraInput_accessor;
+ ManyVariablesMapAccessor* MVMA_;
+ std::string objName;
+
   virtual bool forward(
 		       size_t                    p ,
 		       size_t                    q ,

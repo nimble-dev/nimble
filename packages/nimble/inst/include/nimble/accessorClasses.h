@@ -389,6 +389,7 @@ void nimCopy(ManyVariablesMapAccessorBase &from, ManyVariablesMapAccessorBase &t
 void setValues(NimArrBase<double> &nimArr, ManyVariablesMapAccessor &MVA);
 void setValues(NimArrBase<int> &nimArr, ManyVariablesMapAccessor &MVA);
 void setValues_AD_AD(NimArrBase< CppAD::AD<double> > &nimArr, ManyVariablesMapAccessor &MVA);
+void setValues_AD_AD_taping(NimArr<1, CppAD::AD<double> > &v, ManyVariablesMapAccessor &MVA_AD, ManyVariablesMapAccessor &MVA_orig, bool recording);
 void setValues(NimArrBase<double> &nimArr, ManyVariablesMapAccessor &MVA, int index);
 void setValues(NimArrBase<int> &nimArr, ManyVariablesMapAccessor &MVA, int index);
 void getValues(NimArr<1, double> &nimArr, ManyVariablesMapAccessor &MVA);
@@ -827,7 +828,9 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
     if(instructions.size() == 0) return;
     nodeFun* nodeFunInModelDLL = instructions[0].nodeFunPtr;
     if(extraInputObject) nodeFunInModelDLL->delete_extraInputObject(*this);
-    if(extraOutputObject) nodeFunInModelDLL->delete_extraOutputObject(*this);
+    // the extraOutputObject needs to be deleted, but I wonder if the crashes upon exiting R
+    // could be due to deleting it here before the tape itself has gone through destruction?
+    //    if(extraOutputObject) nodeFunInModelDLL->delete_extraOutputObject(*this);
   }
   bool tapeRecorded() {return(tapeRecorded_);}
   void recordTape() {

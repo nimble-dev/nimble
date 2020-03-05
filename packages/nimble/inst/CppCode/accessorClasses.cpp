@@ -493,6 +493,41 @@ void setValues(NimArrBase<int> &nimArr, ManyVariablesMapAccessor &MVA){
 void setValues_AD_AD(NimArrBase< CppAD::AD<double> > &nimArr,  ManyVariablesMapAccessor &MVA){
   nimArr_2_ManyModelAccess_AD_AD(MVA, nimArr);
 }
+
+void setValues_AD_AD_taping(NimArr<1, CppAD::AD<double> > &v,
+			    ManyVariablesMapAccessor &MVA_AD,
+			    ManyVariablesMapAccessor &MVA_orig,
+			    bool recording){
+  size_t totalLength = MVA_orig.getTotalLength();  
+  if(!recording) {
+    NimArr<1, double> dv;
+    dv.setSize(totalLength);
+    for(size_t ii = 0; ii < totalLength; ++ii) {
+      dv[ii] = CppAD::Value(v[ii]);
+    }
+    setValues(dv, MVA_orig);
+  } else {
+    // Make a new extraOutputObject, which during tape execution will copy to the real (non-AD) model
+    std::vector< CppAD::AD<double> > extraOutputDummyResult(1);
+    std::vector< CppAD::AD<double> > extraOutputs(totalLength);
+    for(size_t ii = 0; ii < totalLength; ++ii) {
+      extraOutputs[ii] = v[ii];
+    }
+    std::cout << "remember to get the extraOutputObject destructed." << std::endl;
+    atomic_extraOutputObject* localExtraOutputObject =
+      new atomic_extraOutputObject("copying-extraOutputObject",
+				   &MVA_orig); // These objects are stable members of nimbleFunction classes, so the pointer should be stable.
+  // Operate the object so it is recorded in the tape
+    (*localExtraOutputObject)(extraOutputs, extraOutputDummyResult);
+    // It is unclear whether we then need to use the output in a way that forces CppAD to keep it as part of the calculation graph.
+    //   The concern is that otherwise CppAD might optimize it away by determining that nothing really depends on it.
+    //   The following line is essentially a no-operation for this purpose (extraOutputDummyResult[0] will always be 0 in value).
+    v[0] += extraOutputDummyResult[0];
+  }
+  setValues_AD_AD(v, MVA_AD); // record copying on the tape
+}
+
+
 void setValues(NimArrBase<double> &nimArr, ManyVariablesMapAccessor &MVA, int index){
   nimArr_2_ManyModelAccessIndex<double>(MVA, nimArr, index-1);
 }
