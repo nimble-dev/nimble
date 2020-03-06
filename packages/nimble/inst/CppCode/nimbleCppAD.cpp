@@ -426,6 +426,147 @@ void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
 // #endif
 }
 
+
+void calculate_recordTape(nimbleCppADinfoClass &ADinfo,
+			  NodeVectorClassNew_derivs &NV) {
+  vector< CppAD::AD<double> > dependentVars(1);
+  NimArr<1, double> NimArrValues;
+  NimArr<1, CppAD::AD<double> > NimArrValues_AD;
+  
+  // 1. Copy all constantNodes values from model -> model_AD
+  int length_constant = NV.model_constant_accessor.getTotalLength();
+  if(length_constant > 0) {
+    NimArr<1, double> NimArrValues;
+    NimArr<1, CppAD::AD<double> > NimArrValues_AD;
+    NimArrValues.setSize(length_constant);
+    NimArrValues_AD.setSize(length_constant);
+    getValues(NimArrValues, NV.model_constant_accessor);
+    std::copy( NimArrValues.getPtr(),
+	       NimArrValues.getPtr() + length_constant,
+	       NimArrValues_AD.getPtr());
+    setValues_AD_AD(NimArrValues_AD, NV.model_AD_constant_accessor);
+  }
+
+  // 2. Copy all wrtNodes values from model -> model_AD, AND
+  // 3. Copy all wrtNodes values from model -> independentVars, AND
+  // 4. [Deleted]
+  int length_wrt = NV.model_wrt_accessor.getTotalLength();
+  int length_independent = length_wrt;
+  vector< CppAD::AD<double> > independentVars(length_independent);
+  if(length_wrt > 0) {
+    NimArrValues.setSize(length_wrt);
+    getValues(NimArrValues, NV.model_wrt_accessor);
+    // 2
+    NimArrValues_AD.setSize(length_wrt);
+    std::copy( NimArrValues.getPtr(),
+	       NimArrValues.getPtr() + length_wrt,
+	       NimArrValues_AD.getPtr());
+    setValues_AD_AD(NimArrValues_AD, NV.model_AD_wrt_accessor);
+    // 3
+    std::copy(  NimArrValues.getPtr(),
+		NimArrValues.getPtr() + length_wrt,
+		independentVars.begin() );
+  }
+  // 5a. Copy all extraInputNodes values from model -> model_AD (ditto, may be redundant)
+  int length_extraInput = NV.model_extraInput_accessor.getTotalLength();
+  if(length_extraInput > 0) {
+    NimArrValues.setSize(length_extraInput);
+    NimArrValues_AD.setSize(length_extraInput);
+    getValues(NimArrValues, NV.model_extraInput_accessor);
+    std::copy( NimArrValues.getPtr(),
+	       NimArrValues.getPtr() + length_extraInput,
+	       NimArrValues_AD.getPtr());
+    setValues_AD_AD(NimArrValues_AD, NV.model_AD_extraInput_accessor);
+  }
+  // 5b. Copy all extraInputNodes into dynamicVars
+  std::cout<<"Don't forget to set the CppAD statics as needed"<<std::endl;
+  vector< CppAD::AD<double> > dynamicVars;
+  dynamicVars.resize(length_extraInput);
+  if(length_extraInput > 0) {
+    std::copy( NimArrValues_AD.getPtr(),
+	       NimArrValues_AD.getPtr() + length_extraInput,
+	       dynamicVars.begin() );
+  }
+  
+  // 6. Start taping
+  size_t abort_op_index = 0;    // per CppAD examples, these match CppAD default values
+  bool   record_compare = true; // but must be provided explicitly to get to the dynamic parameter (4th) argument
+  CppAD::Independent(independentVars, abort_op_index, record_compare, dynamicVars);
+    
+  // 7. [deleted]
+  // 8. [deleted]
+
+  // 9. Copy all wrtNodes AD objects from independentVars -> model_AD.
+  if(length_wrt > 0) {
+    NimArrValues_AD.setSize(length_wrt);
+    std::copy(independentVars.begin(),
+	      independentVars.begin() + length_wrt,
+	      NimArrValues_AD.getPtr());
+    setValues_AD_AD(NimArrValues_AD, NV.model_AD_wrt_accessor);
+  }
+  // 10. call calculate.  This also sets up the extraOutput step
+  CppAD::AD<double> logProb = calculate_ADproxyModel(NV,
+						     true,
+						     true);
+  dependentVars[0] = logProb;
+  // 13. Finish taping, AND
+  // 14. Call tape->optimize()
+  // make it locally to get the right globals during recording and playback
+  // DO NOT USE THE CONSTRUCTOR VERSION BECAUSE IT ALWAYS DOES .Forward(0)
+  // INSTEAD MAKE THE BLANK OBJECT AND USE .Dependent(...)
+  // TRY USING CppAD's vector type
+  ADinfo.ADtape->Dependent(independentVars, dependentVars);
+  ADinfo.ADtape->optimize(); //("no_compare_op") makes almost no difference;
+}
+
+void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass &ADinfo,
+							   NodeVectorClassNew_derivs &nodes,
+							   const NimArr<1, double> &derivOrders,
+							   const NimArr<1, double> &wrtVector,
+							   nimSmartPtr<NIMBLE_ADCLASS> ansList) {
+  if(!ADinfo.ADtape) {
+    calculate_recordTape(ADinfo,
+			 nodes);
+  }
+
+  /* set independent */
+  int length_wrt = nodes.model_wrt_accessor.getTotalLength();
+  int length_independent = length_wrt;
+  ADinfo.independentVars.resize(length_independent);
+    
+  NimArr<1, double > NimArrVars;
+  NimArrVars.setSize(length_wrt);
+  getValues(NimArrVars, nodes.model_wrt_accessor);
+  
+  std::copy(NimArrVars.getPtr(),
+	    NimArrVars.getPtr() + length_wrt,
+	    ADinfo.independentVars.begin());
+
+  
+  /* set dynamic */
+  size_t length_extraNodes_accessor = nodes.model_extraInput_accessor.getTotalLength();
+  if(length_extraNodes_accessor > 0) {
+    NimArr<1, double> NimArr_dynamicVars;
+    NimArr_dynamicVars.setSize(length_extraNodes_accessor);
+    getValues(NimArr_dynamicVars, nodes.model_extraInput_accessor);
+    std::vector<double> dynamicVars(length_extraNodes_accessor);
+    std::copy( NimArr_dynamicVars.getPtr(),
+	       NimArr_dynamicVars.getPtr() + length_extraNodes_accessor,
+	       dynamicVars.begin() );
+    ADinfo.ADtape->new_dynamic(dynamicVars);
+  }
+  /* manage orders */
+  
+  /* run tape */
+  getDerivs_internal<double,
+		     CppAD::ADFun<double>,
+		     NIMBLE_ADCLASS>(ADinfo.independentVars,
+				     ADinfo.ADtape,
+				     derivOrders,
+				     wrtVector,
+				     ansList);
+}
+
 NimArr<1, double> make_vector_if_necessary(int a){
       NimArr<1, double> intArray;
       intArray.setSize(1);
