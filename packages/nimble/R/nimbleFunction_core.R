@@ -101,7 +101,6 @@ nimbleFunction <- function(setup         = NULL,
                 lapply(enableDerivs, function(x) list(static = TRUE)),
                 names = enableDerivs)
         }
-        message('add more robustification of various enableDerivs formats')
 
         staticDerivNames <- names(enableDerivs)[unlist(lapply(enableDerivs, function(x) isTRUE(x[['static']])))]
         if(length(staticDerivNames) > 0) {

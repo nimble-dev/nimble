@@ -207,9 +207,13 @@ public:
 						  NodeVectorClassNew_derivs &nodes,
 						  const NimArr<1, double> &derivOrders) {
     NimArr<1, double> wrtVector;
-    wrtVector.initialize(1,
-			 true,
-			 nodes.model_wrt_accessor.getTotalLength());
+    int totlen = nodes.model_wrt_accessor.getTotalLength();
+    wrtVector.setSize(totlen,
+		      false,
+		      false);
+    for(int ii = 0; ii < totlen; ++ii) {
+      wrtVector[ii] = ii + 1; // This gets -1 in use, as if it were from R.
+    }
     nimSmartPtr<NIMBLE_ADCLASS> ansList = new NIMBLE_ADCLASS;
     getDerivs_calculate_internal(ADinfo, nodes, derivOrders, wrtVector, ansList);
     return(ansList);
