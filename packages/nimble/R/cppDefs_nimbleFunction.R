@@ -415,6 +415,16 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                                                     derivControl = derivControl)
                                                   }
                                               },
+                                              addNimDerivsCalculateContentOneFun = function(funName,
+                                                                                            derivControl,
+                                                                                            funIndex) {
+                                                  ## We only need to add one line here, which can go at the beginning
+                                                  ## set_tape_ptr(ADtapeSetup, myADtapePtrs_[<funIndex>-1], true);
+                                                  thisFunctionDef <- functionDefs[[funName]]
+                                                  thisCode <- thisFunctionDef$code$code ## lines of code
+                                                  newFunIndex <- exprClasses_updateNimDerivsCalculate(thisCode, funIndex)
+                                                  ## could check if the correct increment of funIndex to newFunIndex occurred.
+                                              },
                                               checkADargument = function(funName, argSym, argName = NULL, returnType = FALSE){
                                                   argTypeText <- if(returnType) 'returnType' else 'argument'
                                                   if(argSym$type != 'double')
@@ -431,16 +441,31 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   enableDerivs <- environment(nfProc$nfGenerator)$enableDerivs
                                                   numEnabledFuns <- length(enableDerivs) 
                                                   boolStaticAD <- unlist(lapply(enableDerivs,
-                                                                         function(x) isTRUE(x[['static']])))
+                                                                                function(x) isTRUE(x[['static']])))
+                                                  boolNonStaticAD <- unlist(lapply(enableDerivs,
+                                                                                   function(x) isFALSE(x[['static']])))
+                                                  numNimDerivsCalculate <- unlist(lapply(enableDerivs,
+                                                                                         function(x) {
+                                                                                             n <- x[['numNimDerivsCalculate']]
+                                                                                             if(is.null(n)) 0 else n
+                                                                                         }))
                                                   ## would maybe have been easier to split on boolStaticAD
                                                   includeStatic <- any(boolStaticAD)
-                                                  includeNonStatic <- any(!boolStaticAD)
-                                                  numNonStatic <- sum(!boolStaticAD)
-                                                  enableNames <- names(enableDerivs)
-                                                  staticNames <- enableNames[boolStaticAD]
-                                                  nonStaticNames <- enableNames[!boolStaticAD]
+                                                  includeNonStatic <- any(boolNonStaticAD)
+                                                  totalNimDerivsCalculate <- sum(numNimDerivsCalculate)
+                                                  includeNimDerivsCalculate <- totalNimDerivsCalculate > 0
+                                                  totalNonStatic <- sum(boolNonStaticAD)
                                                   
-                                                  if(includeNonStatic)
+                                                  enableNames <- names(enableDerivs)
+                                                  ## Be careful with using names for picking elements of enableDerivs, because
+                                                  ## there may be duplicate names (if a method has a nimDerivs_calculate and is itself deriv-enabled).
+                                                  staticNames <- enableNames[boolStaticAD]
+                                                  nonStaticNames <- enableNames[boolNonStaticAD]
+
+                                                  if(!(includeStatic || includeNonStatic || includeNimDerivsCalculate))
+                                                      return;
+                                                  
+                                                  if(includeNonStatic || includeNimDerivsCalculate)
                                                       Hincludes <<- c("<array>", Hincludes)
                                                   ## These are moved to CPPincludes so they are #included before Rmath.h
                                                   CPPincludes <<- c(nimbleIncludeFile("nimbleCppAD.h"),
@@ -461,14 +486,14 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                                                   funIndex = iiAD)
                                                       }
                                                   }
-                                                  if(includeNonStatic) {
+                                                  if(includeNonStatic || includeNimDerivsCalculate ) {
                                                       if(isTRUE(nimbleOptions('useADreconfigure'))) {
                                                           ## 1. Add myADtapePtrs_.  allADtapePtrs_ is static. myADtapePtrs_ is not static.
                                                           objectDefs$addSymbol(cppVarFull(baseType = 'std::array',
                                                                                           templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun',
                                                                                                                          templateArgs = list('double'),
                                                                                                                          ptr = 1),
-                                                                                                              numNonStatic),
+                                                                                                              totalNimDerivsCalculate + totalNonStatic),
                                                                                           static = FALSE,
                                                                                           name = 'myADtapePtrs_'))
                                                           ## 2. Add a destructor
@@ -478,7 +503,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                                                         if(myADtapePtrs_[i])
                                                                                             cppLiteral("delete myADtapePtrs_[(i)-1];")
                                                                                     },
-                                                                                    list(N = numNonStatic))
+                                                                                    list(N = totalNimDerivsCalculate + totalNonStatic))
                                                           destSymTab <- symbolTable$new()
                                                           destSymTab$addSymbol( nimble:::cppInt(name = "i") )
                                                           destCode <- putCodeLinesInBrackets(destForCode) ## placeholder
@@ -490,13 +515,24 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                                                                            objectDefs = destSymTab,
                                                                                                            skipBrackets = TRUE))
                                                           functionDefs[["destructor"]] <<- destFunDef
+
+                                                          currentFunIndex <- 1
+                                                          whichNimDerivsCalculate <- which(numNimDerivsCalculate > 0)
+                                                          for(iiAD in seq_along(whichNimDerivsCalculate)) {
+                                                              iAD <- whichNimDerivsCalculate[iiAD]
+                                                              addNimDerivsCalculateContentOneFun(enableNames[iAD],
+                                                                                                 enableDerivs[[iAD]],
+                                                                                                 funIndex = currentFunIndex)
+                                                              currentFunIndex <- currentFunIndex + enableDerivs[[iAD]][['numNimDerivsCalculate']]
+                                                          }
                                                           
-                                                          whichBoolNonStaticAD <- which(!boolStaticAD)
+                                                          whichBoolNonStaticAD <- which(boolNonStaticAD)
                                                           for(iiAD in seq_along(whichBoolNonStaticAD)) {
                                                               iAD <- whichBoolNonStaticAD[iiAD]
                                                               addADclassContentOneFun(enableNames[iAD],
                                                                                       enableDerivs[[iAD]],
-                                                                                      funIndex = iiAD)
+                                                                                      funIndex = currentFunIndex)
+                                                              currentFunIndex <- currentFunIndex + 1
                                                           }
                                                       } else {
                                                           warning(paste0('non-static AD case requested for ',
@@ -596,6 +632,36 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               }
                                           ),
                                       )
+
+
+updateNimDerivsCalculateHandlers <- list(nimDerivs_calculate = "updateNimDerivsCalculate_update")
+
+exprClasses_updateNimDerivsCalculate <- function(code, funIndex) {
+    if(code$isName) return(funIndex)
+    if(code$isCall) {
+        for(i in seq_along(code$args)) {
+            if(inherits(code$args[[i]], 'exprClass')) {
+                funIndex <- exprClasses_updateNimDerivsCalculate(code$args[[i]], funIndex)
+            }
+        }
+        handler <- updateNimDerivsCalculateHandlers[[code$name]]
+        if(!is.null(handler)) funIndex <- eval(call(handler, code, funIndex))
+    }
+    funIndex
+}
+
+updateNimDerivsCalculate_update <- function(code, funIndex) {
+    newExpr <- substitute(set_tape_ptr(ADtapeSetup, myADtapePtrs_[NUM], 1),
+                          list(NUM = funIndex))
+    newExpr <- RparseTree2ExprClasses(newExpr)
+    oldArgs <- code$args
+    for(i in rev(seq_along(code$args))) {
+        setArg(code, i+1, oldArgs[[i]])
+    }
+    setArg(code, 1, newExpr)
+    rm(oldArgs)
+    funIndex + 1
+}
 
 ## The next block of code has the initial setup for an AST processing stage
 ## to make modifications for AD based on context etc.

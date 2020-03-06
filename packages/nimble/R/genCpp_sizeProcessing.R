@@ -1211,6 +1211,11 @@ sizeNimDerivsCalculate <- function(code, symTab, typeEnv){
     symbolObject <- symbolNimbleListGenerator(name = className, nlProc = nlp)
     symTab$addSymbol(symbolObject)
   }
+  if(is.null(typeEnv[['numNimDerivsCalculate']])) { ## running count of nimDerivs_calculate calls in the nimbleFunction
+    typeEnv[['numNimDerivsCalculate']] <- 1
+  } else {
+    typeEnv[['numNimDerivsCalculate']] <- typeEnv[['numNimDerivsCalculate']] + 1
+  }
   code$sizeExprs <- symbolObject
   code$type <- 'nimbleList'
   code$nDim <- 0

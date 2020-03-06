@@ -143,6 +143,21 @@ nfProcessing <- setRefClass('nfProcessing',
                 ## could clear RCfunProc[[i]]$neededRCtypes, but instead will prevent them from being used at compilation
             }
         },
+        collect_nimDerivsCalculate_info = function() {
+            newEnableDerivs <- list()
+            for(i in seq_along(RCfunProcs)) {
+                numNimDerivsCalculate <- RCfunProcs[[i]]$compileInfo$typeEnv[['numNimDerivsCalculate']]
+                if(!is.null(numNimDerivsCalculate)) {
+                    methodName <- RCfunProcs[[i]]$name
+                    if(is.character(methodName)) ## not sure when it wouldn't be; this is defensive
+                        newEnableDerivs[[ methodName ]] <- list(numNimDerivsCalculate = numNimDerivsCalculate)
+                }
+            }
+            if(length(newEnableDerivs)) {
+                environment(nfGenerator)$enableDerivs <<- c(newEnableDerivs,
+                                                            environment(nfGenerator)$enableDerivs)
+            }
+        },
         addBaseClassTypes = function() {
             ## If this class has a virtual base class, we add it to the needed types here
             contains <- environment(nfGenerator)$contains
@@ -206,6 +221,10 @@ nfProcessing <- setRefClass('nfProcessing',
 
             collectRCfunNeededTypes()
 
+            if(isTRUE(nimbleOptions('experimentalEnableDerivs'))) {
+                collect_nimDerivsCalculate_info()
+            }
+            
             if(debug) {
                 print('done with RCfunProcessing')
                 browser()

@@ -193,8 +193,8 @@ public:
 				    const NimArr<1, double> &derivOrders,
 				    const NimArr<1, double> &wrtVector,
 				    nimSmartPtr<NIMBLE_ADCLASS> ansList);
-  
-  nimSmartPtr<NIMBLE_ADCLASS> getDerivs_calculate(nimbleCppADinfoClass &ADinfo,
+  /* This form is not actually generated in code at the time of this writing:*/
+  nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(nimbleCppADinfoClass &ADinfo,
 						  NodeVectorClassNew_derivs &nodes,
 						  const NimArr<1, double> &derivOrders,
 						  const NimArr<1, double> &wrtVector){
@@ -202,8 +202,26 @@ public:
     getDerivs_calculate_internal(ADinfo, nodes, derivOrders, wrtVector, ansList);
     return(ansList);
   }
-
+  /* This is the form that would be generated in code, with no wrtVector*/
+  nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(nimbleCppADinfoClass &ADinfo,
+						  NodeVectorClassNew_derivs &nodes,
+						  const NimArr<1, double> &derivOrders) {
+    NimArr<1, double> wrtVector;
+    wrtVector.initialize(1,
+			 true,
+			 nodes.model_wrt_accessor.getTotalLength());
+    nimSmartPtr<NIMBLE_ADCLASS> ansList = new NIMBLE_ADCLASS;
+    getDerivs_calculate_internal(ADinfo, nodes, derivOrders, wrtVector, ansList);
+    return(ansList);
+  }
 };
+
+inline nimbleCppADinfoClass& set_tape_ptr(nimbleCppADinfoClass &ADtapeSetup,
+					  CppAD::ADFun<double>* ADtapePtr,
+					  bool do_this) {
+  if(do_this) ADtapeSetup.ADtape = ADtapePtr;
+  return ADtapeSetup;
+}
 
 nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(
     NodeVectorClassNew_derivs &nodes, const NimArr<1, double> &derivOrders);

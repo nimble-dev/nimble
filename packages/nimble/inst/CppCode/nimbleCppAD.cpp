@@ -427,8 +427,7 @@ void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
 }
 
 
-void calculate_recordTape(nimbleCppADinfoClass &ADinfo,
-			  NodeVectorClassNew_derivs &NV) {
+CppAD::ADFun<double>* calculate_recordTape(NodeVectorClassNew_derivs &NV) {
   vector< CppAD::AD<double> > dependentVars(1);
   NimArr<1, double> NimArrValues;
   NimArr<1, CppAD::AD<double> > NimArrValues_AD;
@@ -492,7 +491,12 @@ void calculate_recordTape(nimbleCppADinfoClass &ADinfo,
   size_t abort_op_index = 0;    // per CppAD examples, these match CppAD default values
   bool   record_compare = true; // but must be provided explicitly to get to the dynamic parameter (4th) argument
   CppAD::Independent(independentVars, abort_op_index, record_compare, dynamicVars);
-    
+
+  set_CppAD_tape_info_for_model my_tape_info_RAII_(NV,
+						   CppAD::AD<double>::get_tape_id_nimble(),
+						   CppAD::AD<double>::get_tape_handle_nimble());
+  set_CppAD_atomic_info_for_model(NV, CppAD::local::atomic_index_info_vec_manager<double>::manage());
+
   // 7. [deleted]
   // 8. [deleted]
 
@@ -515,8 +519,11 @@ void calculate_recordTape(nimbleCppADinfoClass &ADinfo,
   // DO NOT USE THE CONSTRUCTOR VERSION BECAUSE IT ALWAYS DOES .Forward(0)
   // INSTEAD MAKE THE BLANK OBJECT AND USE .Dependent(...)
   // TRY USING CppAD's vector type
-  ADinfo.ADtape->Dependent(independentVars, dependentVars);
-  ADinfo.ADtape->optimize(); //("no_compare_op") makes almost no difference;
+  CppAD::ADFun<double>* RETURN_TAPE_;
+  RETURN_TAPE_ = new CppAD::ADFun<double>;
+  RETURN_TAPE_->Dependent(independentVars, dependentVars);
+  RETURN_TAPE_->optimize(); //("no_compare_op") makes almost no difference;
+  return RETURN_TAPE_;
 }
 
 void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass &ADinfo,
@@ -524,10 +531,15 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
 							   const NimArr<1, double> &derivOrders,
 							   const NimArr<1, double> &wrtVector,
 							   nimSmartPtr<NIMBLE_ADCLASS> ansList) {
+
+  std::cout<<"Entering getDerivs_calculate_internal"<<std::endl;
   if(!ADinfo.ADtape) {
-    calculate_recordTape(ADinfo,
-			 nodes);
+    std::cout<<"About to record tape"<<std::endl;
+    ADinfo.ADtape = calculate_recordTape(nodes);
+    std::cout<<"Done record tape"<<std::endl;
   }
+
+  std::cout<<"getDerivs_calculate_internal A"<<std::endl;
 
   /* set independent */
   int length_wrt = nodes.model_wrt_accessor.getTotalLength();
@@ -542,6 +554,7 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
 	    NimArrVars.getPtr() + length_wrt,
 	    ADinfo.independentVars.begin());
 
+  std::cout<<"getDerivs_calculate_internal B"<<std::endl;
   
   /* set dynamic */
   size_t length_extraNodes_accessor = nodes.model_extraInput_accessor.getTotalLength();
@@ -556,6 +569,7 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
     ADinfo.ADtape->new_dynamic(dynamicVars);
   }
   /* manage orders */
+  std::cout<<"getDerivs_calculate_internal C"<<std::endl;
   
   /* run tape */
   getDerivs_internal<double,
@@ -565,6 +579,8 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
 				     derivOrders,
 				     wrtVector,
 				     ansList);
+    std::cout<<"getDerivs_calculate_internal D"<<std::endl;
+
 }
 
 NimArr<1, double> make_vector_if_necessary(int a){
