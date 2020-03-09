@@ -1,0 +1,93 @@
+<!--- % See http://yihui.name/knitr/demo/child/ for documentation on the parent/child document system of knitr -->
+
+# (PART) Introduction {-}
+
+# Welcome to NIMBLE {#cha:welcome-nimble}
+
+NIMBLE is a system for building and sharing analysis methods for
+statistical models from R, especially for hierarchical models and
+computationally-intensive methods.  While NIMBLE is embedded in R, it
+goes beyond R by supporting separate programming of models and
+algorithms along with compilation for fast execution.  
+
+As of version `r nimbleVersion`, NIMBLE has been around for a while and is reasonably
+stable, but we have a lot of plans to expand and improve it.  The
+algorithm library provides MCMC with a lot of user control and ability
+to write new samplers easily.  Other algorithms include particle
+filtering (sequential Monte Carlo) and Monte Carlo Expectation
+Maximization (MCEM).  
+
+But NIMBLE is about much more than providing an algorithm library.  It
+provides a language for writing model-generic algorithms.  We hope you
+will program in NIMBLE and make an R package providing your method.
+Of course, NIMBLE is open source, so we also hope you'll contribute to
+its development.
+
+Please join the mailing lists
+(see [R-nimble.org/more/issues-and-groups](https://r-nimble.org/more/issues-and-groups)) and help improve NIMBLE by
+telling us what you want to do with it, what you like, and what could
+be better.  We have a lot of ideas for how to improve it, but we want
+your help and ideas too.  You can also follow and contribute to
+developer discussions on the
+[wiki of our GitHub
+  repository](https://github.com/nimble-dev/nimble/wiki).
+
+If you use NIMBLE in your work, please cite us, as this helps justify past and future funding
+for the development of NIMBLE. For more information, please call `citation('nimble')` in R.
+
+## What does NIMBLE do? {#sec:what-is-nimble}
+
+NIMBLE makes it easier to program statistical algorithms that will run
+efficiently and work on many different models from R.
+
+You can think of NIMBLE as comprising four pieces:
+
+
+  1. A system for writing statistical models flexibly, which is an
+  extension of the BUGS language^[See Chapter
+    \@ref(cha:writing-models) for information about NIMBLE's version of
+    BUGS.].
+  1. A library of algorithms such as MCMC.
+  1. A language, called NIMBLE, embedded within and similar in style
+  to R, for writing algorithms that operate on models written in BUGS.
+  1. A compiler that generates C++ for your models and algorithms,
+  compiles that C++, and lets you use it seamlessly from R without
+  knowing anything about C++.
+
+
+NIMBLE stands for Numerical Inference for statistical Models for
+Bayesian and Likelihood Estimation.  
+
+Although NIMBLE was motivated by algorithms for hierarchical
+statistical models, it's useful for other goals too.  You could use it
+for simpler models.  And since NIMBLE can automatically compile R-like
+functions into C++ that use the Eigen library for fast linear algebra,
+you can use it to program fast numerical functions without any model
+involved^[The packages [Rcpp](http://www.rcpp.org/) and
+  RcppEigen provide different ways of connecting C++, the Eigen
+  library and R.  In those packages you program directly in C++, while
+  in NIMBLE you program in R in a nimbleFunction and the NIMBLE compiler
+  turns it into C++.].
+
+One of the beauties of R is that many of the high-level analysis
+functions are themselves written in R, so it is easy to see their code and modify
+them.  The same is true for NIMBLE: the algorithms are themselves
+written in the NIMBLE language.
+
+## How to use this manual
+
+We suggest everyone start with the Lightning Introduction in Chapter \@ref(cha:lightning-intro).
+
+Then, if you want to jump into using NIMBLE's algorithms without learning
+about NIMBLE's programming system, go to Part II to
+learn how to build your model and Part III to learn
+how to apply NIMBLE's built-in algorithms to your model.
+
+If you want to learn about NIMBLE programming (nimbleFunctions), go to Part IV. This teaches how to program user-defined
+function or distributions to use in BUGS code, compile your R code for
+faster operations, and write algorithms with NIMBLE. These algorithms
+could be specific algorithms for your particular model (such as a
+user-defined MCMC sampler for a parameter in your model) or general
+algorithms you can distribute to others. In fact the algorithms
+provided as part of NIMBLE and described in Part III
+are written as nimbleFunctions.

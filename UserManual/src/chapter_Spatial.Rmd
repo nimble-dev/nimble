@@ -1,0 +1,281 @@
+<!--- % See http://yihui.name/knitr/demo/child/ for documentation on the parent/child document system of knitr -->
+<!---  
+% Rscript -e "library(knitr);  knit2pdf('includesSpatialOnly.Rnw')"; open -a "Google Chrome" includesSpatialOnly.pdf
+-->
+
+```{r, echo=FALSE}
+require(nimble)
+``` 
+
+# Spatial models {#cha:spatial}
+
+
+NIMBLE supports two variations of conditional autoregressive (CAR) model
+structures: the improper intrinsic Gaussian CAR (ICAR) model, and
+a proper Gaussian CAR model.  This includes distributions to represent these
+spatially-dependent model structures in a BUGS model,
+as well as specialized MCMC samplers for these distributions.
+
+ 
+
+## Intrinsic Gaussian CAR model: *dcar_normal*
+
+The intrinsic Gaussian conditional autoregressive (ICAR) model used to model dependence of block-level values (e.g., spatial areas or temporal blocks) is implemented in NIMBLE as the `dcar_normal`
+distribution. Additional details for using this distribution are available using `help('CAR-Normal')`.
+
+ICAR models are improper priors for random fields (e.g., temporal or spatial processes). The prior is a joint prior across a collection of latent process values. For more technical details on CAR models, including higher-order CAR models, please see @Rue_Held_2005, @Banerjee_etal_2015, and @Paciorek_2009. Since the distribution is improper it should not be used as the distribution for data values, but rather to specify a prior for an unknown process. As discussed in the references above, the distribution can be seen to be a proper density in a reduced dimension subspace; thus the impropriety only holds on one or more linear combinations of the latent process values. 
+
+In addition to our focus here on CAR modeling for spatial data, the ICAR model can also be used in other contexts, such as for temporal data in a discrete time context. 
+
+### Specification and density
+
+NIMBLE uses the same parameterization as WinBUGS / GeoBUGS for the `dcar_normal` distribution, providing
+compatibility with existing WinBUGS code.  NIMBLE also provides the WinBUGS name `car.normal` as an alias.
+
+#### Specification
+ 
+The `dcar_normal` distribution is specified for a set of `N` spatially dependent regions as:
+
+`x[1:N] ~ dcar_normal(adj, weights, num, tau, c, zero_mean)`
+
+The `adj`, `weights` and `num` parameters define the adjacency structure and associated weights of the spatially-dependent field.  See `help('CAR-Normal')` for details of these parameters.  When specifying a CAR distribution, these parameters must have constant values.  They do not necessarily have to be specified as `constants` when creating a model object using `nimbleModel`, but they should be defined in a static way: as right-hand-side only variables with initial values provided as `constants`, `data` or `inits`, or using fixed numerical deterministic declarations.  Each of these two approaches for specifying values are shown in the example.
+
+The adjacency structure defined by `adj` and the associated `weights` must be symmetric.  That is, if region $i$ is neighbor of region $j$, then region $j$ must also be a neighbor of region $i$.  Further, the weights associated with these reciprocating relationships must be equal.  NIMBLE performs a check of these symmetries and will issue an error message if asymmetry is detected.
+
+The scalar precision `tau` may be treated as an unknown model parameter and itself assigned a prior distribution.  Care should be taken in selecting a prior distribution for `tau`, and WinBUGS suggests that users be prepared to carry out a sensitivity analysis for this choice.
+
+When specifying a higher-order CAR process, the number of constraints `c` can be explicitly provided in the model specification.  This would be the case, for example, when specifying a thin-plate spline (second-order) CAR model, for which `c` should be 2 for a one-dimensional process and 3 for a two-dimensional (e.g., spatial) process, as discussed in @Rue_Held_2005 and @Paciorek_2009.  If `c` is omitted, NIMBLE will calculate `c` as the number of disjoint groups of regions in the adjacency structure, which implicitly assumes a first-order CAR process for each group.
+
+By default there is no zero-mean constraint imposed on the CAR process, and thus the mean is implicit within the CAR process values, with an implicit improper flat prior on the mean.  To avoid non-identifiability, one should not include an additional parameter for the mean (e.g., do not include an intercept term in a simple CAR model with first-order neighborhood structure). When there are disjoint groups of regions and the constraint is not imposed, there is an implicit distinct improper flat prior on the mean for each group, and it would not make sense to impose the constraint since the constraint holds across all regions. Similarly, if one sets up a neighborhood structure for higher-order CAR models, it would not make sense to impose the zero-mean constraint as that would account for only one of the eigenvalues that are zero. Imposing this constraint (by specifying the parameter `zero_mean = 1`) allows users to model the process mean separately, and hence a separate intercept term should be included in the model.
+
+NIMBLE provides a convenience function `as.carAdjacency` for converting other representations of the adjacency information into the required `adj`, `weights`, `num` format.  This function can convert:
+
+
+  - A symmetric adjacency matrix of weights (with diagonal elements equal to zero), using `as.carAdjacency(weightMatrix)`
+  - Two length-`N` lists with numeric vector elements giving the neighboring indices and associated weights for each region, using `as.carAdjacency(neighborList, weightList)`
+
+ 
+These conversions should be done in R, and the resulting `adj`, `weights`, `num` vectors can be passed as `constants` into `nimbleModel`.
+
+
+
+#### Density
+
+For process values $x = (x_1, \ldots, x_N)$ and precision $\tau$, the improper CAR density is given as:
+
+$$p(x | \tau) \propto \tau^{(N-c)/2} \; e^{ -\tfrac{\tau}{2} \sum_{i\ne j} w_{ij} \, (x_i-x_j)^2 }$$
+
+\noindent where the summation over all $(i,j)$ pairs, with the weight between regions $i$ and $j$ given by $w_{ij}$, is equivalent to summing over all pairs for which region $i$ is a neighbor of region $j$.  Note that the value of $c$ modifies the power to which the precision is raised, accounting for the impropriety of the density based on the number of zero eigenvalues in the implicit precision matrix for $x$.
+
+For the purposes of MCMC sampling the individual CAR process values, the resulting conditional prior of region $i$ is:
+
+$$p(x_i | x_{-i}, \tau) \sim \text{N} \left( \tfrac{1}{w_{i+}} \textstyle\sum_{j \in \mathcal{N}_i } w_{ij} \, x_j,  \; w_{i+} \tau \right)$$
+
+\noindent where $x_{-i}$ represents all elements of $x$ except $x_{i}$, the neighborhood $\mathcal{N}_i$ of region $i$ is the set of all $j$ for which region $j$ is a neighbor of region $i$, $w_{i+} = \sum_{j \in \mathcal{N}_i} w_{ij}$, and the Normal distribution is parameterized in terms of precision.
+
+
+
+### Example
+
+Here we provide an example model using the intrinsic Gaussian `dcar_normal` distribution. The CAR process values are used in a spatially-dependent Poisson regression.  
+
+To mimic the behavior of WinBUGS, we specify `zero_mean = 1` to enforce a zero-mean constraint on the CAR process, and therefore include a separate intercept term `alpha` in the model. Note that we do not necessarily recommend imposing this constraint, per the discussion earlier in this chapter.
+
+```{r, dcar_normal_Chunk, results = "hide", message = FALSE}
+code <- nimbleCode({
+    alpha ~ dflat()
+    beta ~ dnorm(0, 0.0001)
+    tau ~ dgamma(0.001, 0.001)
+    for(k in 1:L)
+        weights[k] <- 1
+    s[1:N] ~ dcar_normal(adj[1:L], weights[1:L], num[1:N], tau, zero_mean = 1)
+    for(i in 1:N) {
+        log(lambda[i]) <- alpha + beta*x[i] + s[i]
+        y[i] ~ dpois(lambda[i])
+    }
+})
+
+constants <- list(N = 4, L = 8, num = c(3, 2, 2, 1),
+                  adj = c(2,3,4,1,3,1,2,1), x = c(0, 2, 2, 8))
+data <- list(y = c(6, 9, 7, 12))
+inits <- list(alpha = 0, beta = 0, tau = 1, s = c(0, 0, 0, 0))
+Rmodel <- nimbleModel(code, constants, data, inits)
+```
+  
+The resulting model may be carried through to MCMC sampling.
+NIMBLE will assign a specialized sampler to the update the elements of the CAR process.
+See Chapter \@ref(cha:mcmc) for information about NIMBLE's MCMC engine, and Section
+\@ref(sec:spatial-mcmc-sampling-car) for details on MCMC sampling of the CAR processes.
+
+
+
+
+## Proper Gaussian CAR model: *dcar_proper*
+
+The proper Gaussian conditional autoregressive model used to model dependence of block-level values (e.g., spatial areas or temporal blocks) is implemented in NIMBLE as the `dcar_proper`
+distribution.  Additional details of using this distribution are available using `help('CAR-Proper')`.
+
+Proper CAR models are proper priors for random fields (e.g., temporal or spatial processes).
+The prior is a joint prior across a collection of latent process values. For more technical
+details on proper CAR models please see @Banerjee_etal_2015, including considerations of why the improper CAR model may be preferred.
+
+In addition to our focus here on CAR modeling for spatial data, the proper CAR model can also be used in other contexts, such as for temporal data in a discrete time context. 
+
+
+### Specification and density
+
+NIMBLE uses the same parameterization as WinBUGS / GeoBUGS for the `dcar_proper` distribution, providing
+compatibility with existing WinBUGS code.  NIMBLE also provides the WinBUGS name `car.proper` as an alias.
+
+
+#### Specification
+
+The `dcar_proper` distribution is specified for a set of `N` spatially dependent regions as:
+
+`x[1:N] ~ dcar_proper(mu, C, adj, num, M, tau, gamma)`
+
+There is no option of a zero-mean constraint for proper CAR process, and instead the mean for each region is specified by the `mu` parameter.  The elements of `mu` can be assigned fixed values or may be specified using one common, or multiple, prior distributions.
+
+The `C`, `adj`, `num` and `M` parameters define the adjacency structure, normalized weights, and conditional variances of the spatially-dependent field.  See `help('CAR-Proper')` for details of these parameters.  When specifying a CAR distribution, these parameters must have constant values.  They do not necessarily have to be specified as `constants` when creating a model object using `nimbleModel`, but they should be defined in a static way: as right-hand-side only variables with initial values provided as `constants`, `data` or `inits`, or using fixed numerical deterministic declarations.
+
+The adjacency structure defined by `adj` must be symmetric.  That is, if region $i$ is neighbor of region $j$, then region $j$ must also be a neighbor of region $i$.  In addition, the normalized weights specified in `C` must satisfy a symmetry constraint jointly with the conditional variances given in `M`.  This constraint requires that $M^{-1}C$ is symmetric, where $M$ is a diagonal matrix of conditional variances and $C$ is the normalized (each row sums to one) weight matrix.  Equivalently, this implies that $C_{ij}M_{jj} = C_{ji}M_{ii}$ for all pairs of neighboring regions $i$ and $j$.  NIMBLE performs a check of these symmetries and will issue an error message if asymmetry is detected.
+
+Two options are available to simplify the process of constructing the `C` and `M` arguments; both options are demonstrated in the example.  First, these arguments may be omitted from the `dcar_proper` specification.  In this case, values of `C` and `M` will be generated that correspond to all weights being equal to one, or equivalently, a symmetric weight matrix containing only zeros and ones.  Note that `C` and `M` should either *both* be provided, or *both* be omitted from the specification.
+
+Second, a convenience function `as.carCM` is provided to generate the `C` and `M` arguments corresponding to a specified set of symmetric unnormalized weights.  If `weights` contains the non-zero weights corresponding to an unnormalized weight matrix (`weights` is precisely the argument that can be used in the `dcar_normal` specification), then a list containing `C` and `M` can be generated using `as.carCM(adj, weights, num)`.  In this case, the resulting `C` contains the row-normalized weights, and the resulting `M` is a vector of the inverse row-sums of the unnormalized weight matrix.  
+<!--- Generating `C` to satisfy this symmetry constraint can be tedious.  NIMBLE provides a convenience function `CAR_calcC` to generate a suitable value of `C`.  Specifically, the values of the weights matrix are selected as $C_{ij} = \sqrt{\tfrac{M_{ii}}{M_{jj}}}$, which is easily seen to satisfy the constraint on `C` and `M`.  This choice is not unique, and it does impose a particular selection of the weight matrix.  The advantage of this approach is not needing to generate `C` yourself.  This approach to generating `C` is shown in the example. -->
+
+<!--- The `M` parameter, giving a vector of conditional variances of each region, may be omitted from the `dcar_proper` declaration *if* the `C` parameter is provided in row-normalized form.  In this case, the $i^\text{th}$ element of `M` will be calculated as $1/n_i$, where $n_i$ is the number of neighbors of region $i$.  This choice will satisfy the symmetry constraint on `C` and `M`, and also induces the bounds on `gamma` to be $[-1, 1]$.  Note, when omitting `M`, the remaining `tau` and `gamma` parameters should be provided as named arguments. -->
+
+The scalar precision `tau` may be treated as an unknown model parameter and itself assigned a prior distribution.  Care should be taken in selecting a prior distribution for `tau`, and WinBUGS suggests that users be prepared to carry out a sensitivity analysis for this choice.
+
+An appropriate value of the `gamma` parameter ensures the propriety of the `dcar_proper` distribution.  The value of `gamma` must lie between fixed bounds, which are given by the reciprocals of the largest and smallest eigenvalues of $M^{-1/2}CM^{1/2}$.  These bounds can be calculated using the function `carBounds` or separately using the functions `carMinBound` and `carMaxBound`.  For compatibility with WinBUGS, NIMBLE provides `min.bound` and `max.bound` as aliases for `carMinBound` and `carMaxBound`.  Rather than selecting a fixed value of `gamma` within these bounds, it is recommended that `gamma` be assigned a uniform prior distribution over the region of permissible values.
+
+Note that when `C` and `M` are omitted from the `dcar_proper` specification (and hence all weights are taken as one), or `C` and `M` are calculated from a symmetric weight matrix using the utility function `as.carCM`, then the bounds on `gamma` are necessarily $(-1, 1)$.  In this case, `gamma` can simply be assigned a prior over that region.  This approach is shown in both examples.
+
+
+
+
+#### Density
+
+The proper CAR density is given as:
+
+$$p(x | \mu, C, M, \tau, \gamma) \sim \text{MVN} \left( \mu, \; \tfrac{1}{\tau} (I-\gamma C)^{-1} M \right)$$
+
+\noindent where the multivariate normal distribution is parameterized in terms of covariance.
+
+For the purposes of MCMC sampling the individual CAR process values, the resulting conditional prior of region $i$ is:
+
+$$p(x_i | x_{-i}, \mu, C, M, \tau, \gamma) \sim \text{N} \left( \mu_i + \textstyle\sum_{j \in \mathcal{N}_i } \gamma \, C_{ij} \, (x_j - \mu_i),  \; \tfrac{M_{ii}}{\tau} \right)$$
+
+\noindent where $x_{-i}$ represents all elements of $x$ except $x_{i}$, the neighborhood $\mathcal{N}_i$ of region $i$ is the set of all $j$ for which region $j$ is a neighbor of region $i$, and the Normal distribution is parameterized in terms of variance.
+
+
+
+
+### Example
+
+We provide two example models using the proper Gaussian `dcar_proper` distribution. In both, the CAR process values are used in a spatially-dependent logistic regression to model binary presence/absence data.  In the first example, the `C` and `M` parameters are omitted, which uses weights equal to one for all neighbor relationships.  In the second example, symmetric unnormalized weights are specified, and `as.carCM` is used to construct the `C` and `M` parameters to the `dcar_proper` distribution.
+
+
+```{r, dcar_proper_Chunk, results = "hide", message = FALSE}
+# omitting C and M sets all non-zero weights to one
+code <- nimbleCode({
+    mu0 ~ dnorm(0, 0.0001)
+    tau ~ dgamma(0.001, 0.001)
+    gamma ~ dunif(-1, 1)
+    s[1:N] ~ dcar_proper(mu[1:N], adj=adj[1:L], num=num[1:N], tau=tau, 
+                         gamma=gamma)
+    for(i in 1:N) {
+        mu[i] <- mu0
+        logit(p[i]) <- s[i]
+        y[i] ~ dbern(p[i])
+    }
+})
+
+adj <- c(2, 1, 3, 2, 4, 3)
+num <- c(1, 2, 2, 1)
+constants <- list(adj = adj, num = num, N = 4, L = 6)
+data <- list(y = c(1, 0, 1, 1))
+inits <- list(mu0 = 0, tau = 1, gamma = 0, s = rep(0, 4))
+Rmodel <- nimbleModel(code, constants, data, inits)
+
+# specify symmetric unnormalized weights, use as.carCM to generate C and M
+code <- nimbleCode({
+    mu0 ~ dnorm(0, 0.0001)
+    tau ~ dgamma(0.001, 0.001)
+    gamma ~ dunif(-1, 1)
+    s[1:N] ~ dcar_proper(mu[1:N], C[1:L], adj[1:L], num[1:N], M[1:N], tau, 
+                         gamma)
+    for(i in 1:N) {
+        mu[i] <- mu0
+        logit(p[i]) <- s[i]
+        y[i] ~ dbern(p[i])
+    }
+})
+
+weights <- c(2, 2, 3, 3, 4, 4)
+CM <- as.carCM(adj, weights, num)
+constants <- list(C = CM$C, adj = adj, num = num, M = CM$M, N = 4, L = 6)
+Rmodel <- nimbleModel(code, constants, data, inits)
+```
+
+Each of the resulting models may be carried through to MCMC sampling.
+NIMBLE will assign a specialized sampler to update the elements of the CAR process.
+See Chapter \@ref(cha:mcmc) for information about NIMBLE's MCMC engine, and Section
+\@ref(sec:spatial-mcmc-sampling-car) for details on MCMC sampling of the CAR processes.
+
+
+
+
+
+## MCMC Sampling of CAR models {#sec:spatial-mcmc-sampling-car}
+
+NIMBLE's MCMC engine provides specialized samplers for the `dcar_normal` and `dcar_proper` distributions.  These samplers perform sequential univariate updates on the components of the CAR process.  Internally, each sampler assigns one of three specialized univariate samplers to each component, based on inspection of the model structure:
+
+
+  1. A conjugate sampler in the case of conjugate Normal dependencies.
+  1. A random walk Metropolis-Hastings sampler in the case of non-conjugate dependencies.
+  1. A posterior predictive sampler in the case of no dependencies.
+
+
+Note that these univariate CAR samplers are not the same as NIMBLE's standard `conjugate`, `RW`, and `posterior_predictive` samplers, but rather specialized versions for operating on a CAR distribution.  Details of these assignments are strictly internal to the CAR samplers.
+
+In future versions of NIMBLE we expect to provide block samplers that update the entire CAR process as a single sample.  This may provide improved MCMC performance by accounting for dependence between elements, particularly when conjugacy is available.
+
+
+### Initial values
+
+Valid initial values should be provided for all elements of the process specified by a CAR structure before running an MCMC.  This ensures that the conditional prior distribution is well-defined for each region.  A simple and safe choice of initial values is setting all components of the process equal to zero, as is done in the preceding CAR examples.
+
+For compatibility with WinBUGS, NIMBLE also allows an initial value of `NA` to be provided for regions with zero neighbors.  This particular initialization is required in WinBUGS, so this allows users to make use of existing WinBUGS code.
+
+
+
+### Zero-neighbor regions
+
+Regions with zero neighbors (defined by a 0 appearing in the `num` parameter) are a special case for both the `dcar_normal` and `dcar_proper` distribution.  The corresponding neighborhood $\mathcal{N}$ of such a region contains no elements, and hence the conditional prior is improper and uninformative, tantamount to a `dflat` prior distribution.  Thus, the conditional posterior distribution of those regions is entirely determined by the dependent nodes, if any.  Sampling of these zero-neighbor regions proceeds as:
+
+
+  1. In the conjugate case, sampling proceeds according to the conjugate posterior.
+  1. In the non-conjugate case, sampling proceeds using random walk Metropolis-Hastings, where the posterior is determined entirely by the dependencies.
+  1. In the case of no dependents, the posterior is entirely undefined.  Here, no changes will be made to the process value, and it will remain equal to its initial value throughout.  By virtue of having no neighbors, this region does not contribute to the density evaluation of the subsuming `dcar_normal` node nor to the conditional prior of any other regions, hence its value (even `NA`) is of no consequence.
+
+
+This behavior is different from that of WinBUGS, where the value of zero-neighbor regions of `car.normal` nodes is set to and fixed at zero.
+<!--- Regions with zero neighbors of a `dcar_proper` distribution, in contrast, have a well-defined conditional prior, undergo sampling the same as regions with neighbors, and do contribute to the density evaluation of the subsuming `dcar_proper` node. -->
+
+
+
+
+### Zero-mean constraint
+
+A zero-mean constraint is available for the intrinsic Gaussian `dcar_normal` distribution.  This constraint on the ICAR process values is imposed during MCMC sampling, if the argument `zero_mean = 1`, mimicking the behavior of WinBUGS.  Following the univariate updates on each component, the mean is subtracted away from all process values, resulting in a zero-mean process.
+
+Note that this is *not* equivalent to sampling under the constraint that the mean is zero (see p. 36 of @Rue_Held_2005) so should be treated as an ad hoc approach and employed with caution.
+
+
+
+
+
+

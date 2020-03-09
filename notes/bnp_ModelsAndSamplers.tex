@@ -1,0 +1,282 @@
+\documentclass[12pt]{article}
+\topmargin=0cm \oddsidemargin=0cm 
+\textheight=22cm
+\textwidth=17cm
+\parskip=0.1cm
+\parindent=0.5cm
+\pdfminorversion=4
+\renewcommand{\baselinestretch}{1.2}
+
+\usepackage{mathrsfs}
+
+\usepackage{latexsym}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{epsfig}
+\usepackage{subfigure}
+\usepackage{arydshln}
+
+
+\usepackage[nolists]{endfloat}
+
+\usepackage{natbib}
+\usepackage{times}
+\usepackage[usenames]{color}
+%\usepackage{rotating}
+\bibpunct{(}{)}{;}{a}{,}{,}
+
+
+% Nuevos comandos que estoy usando:
+\newcommand{\bx}{\boldsymbol{x}}
+\newcommand{\by}{\boldsymbol{y}}
+\newcommand{\bu}{\boldsymbol{u}}
+\newcommand{\bU}{\boldsymbol{U}}
+\newcommand{\bI}{\boldsymbol{I}}
+\newcommand{\bbeta}{\boldsymbol{\beta}}
+\newcommand{\bmu}{\boldsymbol{\mu}}
+\newcommand{\brho}{\boldsymbol{\rho}}
+\newcommand{\bm}{\boldsymbol{m}}
+\newcommand{\bS}{\boldsymbol{S}}
+\newcommand{\bPsi}{\boldsymbol{\Psi}}
+
+\newcommand{\Xcur}{\mathscr{X}}
+
+
+
+
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+\newtheorem{remark}{Remark}
+\pdfminorversion=4
+
+\newcommand{\afb}{\color{red}}
+
+\begin{document}
+
+\section{The models}
+In what follows, the three models that we are now considering are presented. The term $F(\cdot\mid \theta)$ and $H(\cdot \mid \mu)$ will denote general distribution functions with parameters (can be vectors) $\theta$ and $\mu$, respectively, otherwise the distribution will be explicit. \\
+
+Model 1:
+\begin{align*}
+&y_i\mid \theta_i \sim N(\theta_i, \sigma^2),\\
+&\theta_i= \theta^{\star}_{\xi_i^{\star}},\\
+&\xi_i^{\star}\mid \boldsymbol{w} \sim Categorical(\boldsymbol{w}),\\
+&w_k=z_k\prod_{l<k}(1-z_l), \hspace{0.5cm} k=2, \ldots, K, w_1=z_1\\
+&z_k \sim Beta(1, \alpha), \hspace{0.5cm} k=1, \ldots, K-1, z_K=1, \\
+&\theta^{\star}_k  \sim N(\mu, \tau^2), \hspace{0.5cm}k=1, \ldots, K.
+\end{align*} 
+
+Model 2:
+\begin{align*}
+&y_i\mid \theta_i \sim F(\cdot \mid \theta_i),\\
+&\theta_i= \tilde{\theta}_{\tilde{\xi}_i},\\
+&(\tilde{\xi}_1, \ldots, \tilde{\xi}_n) \sim CRP(\alpha),\\
+&\alpha \sim H_1,\\
+&\tilde{\theta}_k  \sim H(\cdot\mid \mu), \hspace{0.5cm}k=1, \ldots, 	\tilde{K}.
+\end{align*} 
+
+Model 3:
+\begin{align*}
+&y_i\mid \theta_i \sim N(\theta_i, \sigma^2),\\
+&\theta_i\mid G\sim G,\\
+&G  \sim DP(\alpha, N(\mu, \tau^2)).
+\end{align*} 
+
+
+
+
+\section{About Model 2}
+I'll give more details on the definition of the model in the BUGS code and describe the sampler. I will change the notation just to be consistent with the notation in code.
+\subsection{The model and its BUGS Code}
+\begin{minipage}{.5\textwidth}
+The model:
+\begin{align*}
+&\tilde{\theta}_i  \sim H(\cdot\mid \mu), \hspace{0.5cm}i=1, \ldots, 	n,\\
+&({\xi}_1, \ldots, {\xi}_n) \sim CRP(\alpha),\\
+& \alpha \sim H_1,\\ 
+&\theta_i= \tilde{\theta}_{{\xi}_i},\\
+&y_i\mid \theta_i \sim F(\cdot \mid \theta_i).
+\end{align*} 
+\end{minipage}
+\begin{minipage}{.5\textwidth}
+BUGS code:
+\begin{verbatim}
+Code=nimbleCode({
+    for(i in 1:n){ 
+    thetatilde[i] ~ H 
+    }
+    xi[1:n] ~ dCRP(conc)
+    conc ~ H_1
+    
+    for(i in 1:n){
+      theta[i] <- thetatilde[xi[i]]
+      y[i] ~ F
+    }
+  })
+\end{verbatim} 
+\end{minipage}
+\vspace{0.5cm}
+
+I have tried different combinations of $F$ and $H$: normal with known variance and normal, normal with unknown variance and normal, Poisson and gamma, Weibull and gamma.
+
+Saying that $({\xi}_1, \ldots, {\xi}_n) \sim CRP(\alpha)$ means that $\xi_1=1$, and
+\begin{align*}
+\xi_i\mid \xi_1, \ldots, \xi_{i-1} \sim \frac{1}{i-1+\alpha} \sum_{j=1}^{i-1}\delta_{\xi_j} + \frac{\alpha}{i-1+\alpha}\delta_{\xi^{new}}, 
+\end{align*}
+where $\xi^{new}=\max\{ \xi_1, \ldots, \xi_{i-1}\}+1$.
+
+\subsection{Samplers}
+\begin{enumerate}
+\item Sampling $\tilde{\theta}_k$: using NIMBLE's sampler.
+\item Sampling $\xi_i$:
+\begin{enumerate}
+\item when $H$ is not conjugate for $F$, a non conjugate sampler sampler based on algorithm 8 of \cite{neal;2000} is used.  More specifically, the $\xi_i$ are updated one at the time  from the following conditional distribution
+%each $\tilde{\theta}_k$ is updated from its  posterior based on  directly or an  random walk Metropolis-Hastings algorithm, which by the specification of the model, updates the  $\tilde{\theta}_k$ that are related to observations from the corresponding posterior distribution, or from the prior distribution if it is not related to observations. 
+\begin{align*}
+\xi_i\mid \boldsymbol{y}, \xi_{-i},... \sim \frac{1}{n-1+\alpha}\sum_{j \neq i}f(y_i\mid \tilde{\theta}_{\xi_j})\delta_{\xi_j} +\frac{\alpha}{n-1+\alpha}f(y_i\mid \tilde{\theta}_{\xi^{new}})\delta_{\xi^{new}},
+\end{align*}
+this is, $\xi_i$ is an already existing label, $\xi_j$,  or a new one, $\xi^{new}$, with probabilities proportional to $f(y_i\mid \tilde{\theta}_{\xi_j})$ and $\alpha f(y_i\mid \tilde{\theta}_{\xi^{new}})$, respectively,   $\xi^{new}$ is the smallest label related with no observations. 
+\item when $H$ is conjugate for $F$, a conjugate sampler based on algorithm 2  of \cite{neal;2000} is used. Here, the  $\xi_i$  are updated one at the time from the following conditional distribution
+\begin{align*}
+\xi_i\mid \boldsymbol{y}, \xi_{-i},... \sim \frac{1}{n-1+\alpha}\sum_{j \neq i}f(y_i\mid \tilde{\theta}_{\xi_j})\delta_{\xi_j} +\frac{\alpha}{n-1+\alpha}f(y_i)\delta_{\xi^{new}},
+\end{align*}
+where $f(y_i)$ is the prior predictive density function at $y_i$.  If a new component for $\xi_i$ is sampled, then the corresponding $\tilde{\theta}_{\xi_i}$ has to be updated. In this case $\tilde{\theta}_{\xi_i}$ is updated from its posterior distribution  based on observation $y_i$, which is conjugate.\\
+
+Here are the conjugate cases that are implemented in NIMBLE:
+\begin{itemize}
+\item $F=N(\theta, \sigma^2)$, with known variance $\sigma^2$, and $H=N(\mu, \tau^2)$: 
+$$\theta \mid y_i \sim N\left(\frac{y_i/\sigma^2 + \mu/\tau^2}{1/\sigma^2+1/\tau^2}, \frac{1}{1/\sigma^2 +1/\tau^2} \right), \hspace{0.2cm}f(y_i)=N(y_i \mid \mu, \sigma^2+\tau^2).$$
+\item $F=Poisson(\theta)$,  and $H=Gamma(a, b)$: 
+$$\theta \mid y_i \sim Gamma(a+y_i, b+1), \hspace{0.2cm}f(y_i)=\frac{b^a}{(b+1)^{a+y_i}}\frac{\Gamma(a+y_i)}{\Gamma(a)}\frac{1}{y_i!}.$$
+\item $F=Bernoulli(\theta)$,  and $H=Beta(a, b)$: 
+$$\theta \mid y_i \sim Beta(a+y_i, b+1-y_i), \hspace{0.2cm}f(y_i)=\frac{\Gamma(a+y_i)\Gamma(b+1-y_i)}{(a+b)\Gamma(a)\Gamma(b)}.$$
+\item $F=exp(\theta)$,  and $H=Gamma(a, b)$: 
+$$\theta \mid y_i \sim Gamma(a+1, b+y_i), \hspace{0.2cm}f(y_i)=\frac{ab^a}{(b+y_i)^{a+1}}.$$
+\item $F=Gamma(\lambda, \theta)$, with known $\lambda$, and $H=Gamma(a, b)$: 
+$$\theta \mid y_i \sim Gamma(a+\lambda, b+y_i), \hspace{0.2cm}f(y_i)=\frac{y_i^{\lambda-1}b^a \Gamma(\lambda+a)}{\Gamma(\lambda)\Gamma(a)(b+y_i)^{a+\lambda}}.$$
+\item $F=Multinomial(n, \boldsymbol{\theta})$,  with known $n$, and $H=Dirichlet(\boldsymbol{\alpha})$, where $\boldsymbol{\theta}=(\theta_1, \ldots, \theta_d)$,  $\boldsymbol{\alpha}=\alpha_1, \ldots, \alpha_d$: for $\by_i=(y_{i,1}, \ldots, y_{i,d})$,
+$$\boldsymbol{\theta} \mid \by_i \sim Dirichelt(\boldsymbol{\alpha}+\by_i), \hspace{0.2cm}f(\by_i)=\frac{n! \Gamma(\sum_{l=1}^d\alpha_l)}{\Gamma(\sum_{l=1}^d\alpha_l+y_{i,l})}\prod_{l=1}^d\left\{ \frac{\Gamma(\alpha_l+y_{i,l})}{y_{i,l}! \Gamma(\alpha_l)}\right\}.$$
+\end{itemize}
+
+
+
+
+\item when $H$ is conjugate for $F$, we can define a new sampler were we can integrate out $\tilde{\theta}$ eliminating them from the algorithm. In this case, the sampler is  based on algorithm 3 of \cite{neal;2000}. Let $1, 2, \ldots, K$, be the relabeled  $K$ unique values in $(\xi_1, \ldots, \xi_n)$, let and $m_{-i,k}$ be the number of times label $k$ appears in $\xi_{-i}=(\xi_1, \ldots, \xi_{i-1}, \xi_{i+1}, \ldots, \xi_n)$.  The $\xi_i$ are updated one at the time  from the following conditional distribution
+\begin{align*}
+\xi_i\mid \boldsymbol{y}, \xi_{-i},... \sim \sum_{k =1 }^K\frac{m_{-i,k}}{n-1+\alpha}f(y_i\mid \by_{-i,k})\delta_{k} +\frac{\alpha}{n-1+\alpha}f(y_i)\delta_{k+1},
+\end{align*}
+where $\by_{-i, k}$ denotes all observations $y_l$ such that $l\neq i$ and $\xi_l=k$,  $f(y_i\mid \by_{-i, k})$ is the posterior predictive density function  at $y_i$ based on data $\by_{-i, k}$ and the prior $H$, i.e., $f(y_i\mid \by_{-i, k})=\int f(y_i\mid \theta)\prod_{\{j : j\neq i, \xi_j=k\}}f(y_j\mid \theta)H(d\theta) $,  and $f(y_i)$ is the prior predictive density function at $y_i$, i.e., $f(y_i)=\int f(y_i\mid \theta)H(d\theta)$. 
+
+For instance, considering
+\begin{itemize}
+\item $F=N(\theta, \sigma^2)$, with known variance $\sigma^2$, and $H=N(\mu, \tau^2)$, it follows that \\$f(y_i\mid \by_{-i, k})=N\left(y_i \mid \mu_{-i,1}, \sigma^2+ \tau^2_{-i,1} \right)$, where $\tau^2_{-i,1}=1/\left(m_{-i,k}/\sigma^2 + 1/\tau^2 \right)$,  $\mu_{-i,1}=\tau^2_{-i,1}\left(\sum_{\{j: j\neq i, \xi_j=k\}}y_j/\sigma^2 +\mu/\tau^2 \right)$,  and $f(y_i)=N(y_i \mid \mu, \sigma^2+\tau^2)$
+\item $F=Poisson(\theta)$  and $\theta \sim Gamma(a,b)$, it follows that \\
+$f(y_i\mid \by_{-i, k})=\frac{b_{1}^{a_{1 }}}{(b_1+1)^{a_1+y_i}}\frac{\Gamma(a_1+y_i)}{\Gamma(a_{1})}\frac{1}{y_i!}$, where $a_1=a+\sum_{\{j: j\neq i, \xi_j=k\}}y_j$, $b_1=b+m_{-i,k}$, and $f(y_i)=\frac{b^a}{(b+1)^{a+y_i}}\frac{\Gamma(a+y_i)}{\Gamma(a)}\frac{1}{y_i!}$.
+\end{itemize}
+\end{enumerate} 
+ 
+ 
+\underline{Some inefficiencies}:  1) the \textit{calculate} function is used at each step, 2) maybe we could update only few more $\tilde{\theta}$ than the unique ones, rather than the whole vector, in the random walk Metropolis step. ( 3) The $\xi$ are updated one at the time, we could update only the ones related with observations (need of varying dimensions)).
+
+
+
+\item Sampling $\alpha$: if $H_1\equiv Gamma(a,b)$, then the following sampler can be used:
+\begin{itemize}
+\item sample $z\sim Beta(1+\alpha, n)$ and compute $w=\frac{a+K-1}{a+K-1+n(b-ln(z))},$ where $K$ is the number of unique values in $(\xi_1 ,\ldots, \xi_n)$.
+\item sample $\alpha\sim Gama(a+K, b-ln(z))$ with probability $w$, and sample $\alpha\sim Gamma(a+K-1, b-ln(z))$ with probability $1-w$.
+\end{itemize}
+\end{enumerate}
+
+\subsection{Output}
+Given samples  $(\tilde{\theta}, (\xi_1, \ldots, \xi_n)$  or $\theta$,  we compute an approximation of measure $G$ based on a truncation level, say $L$, given by the user. \\
+Measure $G$ is given by 
+$$G(\cdot)=\sum_{j=1}^Lw_j\delta_{\theta^{\star}_j}(\cdot), \hspace{0.5cm} w_1=v_1, \hspace{0.2cm}w_j=v_j\prod_{l<j}(1-v_l), l=2, \ldots, L-1, \hspace{0.2cm}w_L=\prod_{l<L}(1-v_l),$$
+where $v_l\sim Beta(1, \alpha+n)$, and $$\theta^{\star}_j\sim \frac{\alpha}{\alpha+n}G_0 + \sum_{j=1}^K\frac{m_j}{\alpha+n}\delta_{\overline{\theta}_j},$$
+where $K$ is the number of unique values in $(\xi_1 ,\ldots, \xi_n)$, $m_j$ denotes the number of relabeled $(\xi_1 ,\ldots, \xi_n)$ equal to $j$, and $\overline{\theta}_j$ denote the  unique values in $(\tilde{\theta}_{\xi_1}, \ldots, \tilde{\theta}_{\xi_n})$.\\
+
+\underline{Comments}: $K$, $m_j$, and $\overline{\theta}$ can be obtained from $\theta$.\\
+There are results relating $\alpha$, and acceptable error, $\epsilon$, and  the truncation level, $L$, of $G$. More specifically,  $\left(\frac{\alpha}{\alpha+1}\right)^{L-1}=\epsilon$, so we can give a warning when the truncation level is too small for the value (or samples) of $\alpha$ and $\epsilon$.
+
+
+\section{Model 1}
+We don't have a BUGS version for this model as is stated before. We have  BUGS code for another representation of this model that involves the random measure $G$ written as the truncation of its stick breaking representation  written as a matrix,  and integrating out the random indexes. 
+\subsection{The model and its BUGS Code}
+\begin{minipage}{.5\textwidth}
+The model:
+\begin{align*}
+&w_k=z_k\prod_{l<k}(1-z_l), \hspace{0.5cm} k=2, \ldots, T, w_1=z_1\\
+&z_k \sim Beta(1, \alpha), \hspace{0.5cm} k=1, \ldots, T-1, z_T=1, \\
+&\theta^{\star}_k  \sim N(\mu, \tau^2), \hspace{0.5cm}k=1, \ldots, T,\\
+&\theta_i= \theta^{\star}_{\xi_i^{\star}},\\
+&\xi_i^{\star}\mid \boldsymbol{w} \sim Categorical(\boldsymbol{w}),\\
+&y_i\mid \theta_i \sim N(\theta_i, \sigma^2).\\
+\end{align*} 
+\end{minipage}
+\begin{minipage}{.5\textwidth}
+BUGS code:
+\begin{verbatim}
+Code=nimbleCode(
+  {
+    G[1:T,1:2] ~ dtruncSBDPnormal(
+        conc=conc0, mean=mean0, sd=tau0)
+    theta[1:T] ~ dNPDiscreteV(G[1:T,1:2])
+    for(i in 1:n){
+      y[i] ~ dnorm(theta[i], sd=s0)
+    }
+    conc0 <-1;
+    mean0 <- 5; tau0 <- sqrt(10);
+     s0 <- sqrt(10)
+})
+\end{verbatim}
+\end{minipage}
+\vspace{0.5cm}
+
+For this  model only the conjugate normal-normal model has been considered. 
+
+In the BUGS code, saying \texttt{G[1:T,1:2] \~{} truncSBDPnormal(conc=conc0, mean=mean0, sd=tau0)} means that 
+ \begin{align*}
+ G(\cdot)=\sum_{k=1}^T w_k \delta_{\theta_k}(\cdot), \hspace{0.5cm}w_k=z_k\prod_{l<k}(1-z_l), \hspace{0.2cm}z_k \sim Beta(1, \alpha), \hspace{0.2cm} \theta_k  \sim N(\mu, \tau^2),
+ \end{align*}
+  and saying $theta[1:T] ~ dNPDiscreteV(G[1:T,1:2])$ means that 
+ \begin{align*}
+ \theta_k\sim \sum_{j=1}^T w_j \delta_{m_j},
+ \end{align*}
+ where $w_j$ are weights that add up to one, and $m_j$ are possible values for $\theta_k$.
+
+Note that lines 1 to 3 in the model correspond to \texttt{G[1:T,1:2] \~{} dtruncSBDPnormal(conc=conc0, mean=mean0, sd=tau0) } in the BUGS code, and lines 4 and 5 are related  to \texttt{theta[1:T] \~{} dNPDiscreteV(G[1:T,1:2])} in the BUGS code.
+
+\subsection{Sampler}
+The sampler that we have is the blocked Gibbs sampler and samples the random measure $G$ as a matrix whose first and second columns are the vector of $\theta^{\star}$ and $w$, respectively. The steps of the sampler are the following:
+\begin{itemize}
+\item[a)] updating $(\theta^{\star}_1, \ldots, \theta^{\star}_T)$: $\theta^{\star}_k$ is updated from the prior if it is no related with any observation. Otherwise, $\theta^{\star}_k$ is updated from the posterior (which is conjugate in this case) considering the observations that have label $k$. 
+\item[b)] updating the labels $\xi^{\star}$: 
+\begin{align*}
+\xi^{\star}_i\mid \boldsymbol{y}, ...\sim \sum_{k=1}^T w_kN(y_i\mid \theta^{\star}_k, \sigma^2)\delta_k.
+\end{align*}
+\item[c)] updating the weights $(w_1, \ldots, w_T)$: first the stick variables are updated as \begin{align*}
+z_k\mid \boldsymbol{y}, ... \sim Beta \left(1 + M_k, \alpha+\sum_{l=k+1}^TM_l\right),
+\end{align*}
+where $M_k$ denotes the number of observations that  have label $k$. Then $w_k=v_k\prod_{l<k}(1-z_l)$.
+\end{itemize}
+
+Several changes: 1) $\theta^{\star}$ could be updated using NIMBLE samplers, 2) I need to check the conjugacy between $z_k$, $w_k$ and $\xi^{\star}$ (Dirichlet-categorical), 3) if there is conjugacy, then use the NIMBLE sampler too, and 4) create a sampler only for the $\xi^{\star}$. 
+
+\bibliographystyle{biometrika}
+\bibliography{ref}
+\end{document}
+
+
+
+ 
+
+
+
+
+
+
+
