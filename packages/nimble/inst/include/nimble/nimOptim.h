@@ -34,24 +34,24 @@
 //   object->method(par) == NimBoundMethod<T>(&T::method, object)(par);
 //                       == NimBind(&T::method, object)(par);
 //                       == std::bind(&T::method, object)(par);
-template <class T>
+template <class RT, class T>
 class NimBoundMethod {
    public:
-    NimBoundMethod(double (T::*method)(NimArr<1, double>&), T* object)
+    NimBoundMethod(RT (T::*method)(NimArr<1, double>&), T* object)
         : method_(method), object_(object) {}
-    double operator()(NimArr<1, double>& par) {
+    RT operator()(NimArr<1, double>& par) {
         return (object_->*method_)(par);
     }
 
    private:
-    double (T::*method_)(NimArr<1, double>&);
+    RT (T::*method_)(NimArr<1, double>&);
     T* object_;
 };
 
-template <class T>
-inline NimBoundMethod<T> NimBind(double (T::*method)(NimArr<1, double>&),
+template <class RT, class T>
+inline NimBoundMethod<RT, T> NimBind(RT (T::*method)(NimArr<1, double>&),
                                  T* object) {
-    return NimBoundMethod<T>(method, object);
+  return NimBoundMethod<RT, T>(method, object);
 }
 
 // ---------------------------------------------------------------------------

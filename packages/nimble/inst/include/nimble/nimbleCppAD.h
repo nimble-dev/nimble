@@ -41,6 +41,7 @@
 #include <nimble/predefinedNimbleLists.h>
 #include <cstdio>
 #include <vector>
+#include <algorithm>
 
 void copy_CppADdouble_to_double(CppAD::AD<double> *first, CppAD::AD<double> *last, double *output);
 

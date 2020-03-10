@@ -1337,7 +1337,7 @@ sizeOptim <- function(code, symTab, typeEnv) {
         newCode <- substitute(nfMethod(this, FUN), list(FUN = grCode$name))
         newExpr <- RparseTree2ExprClasses(newCode)
         newExpr$args[[1]]$type <- symTab$getSymbolObject(".self", TRUE)$baseType
-        setArg(code, 2, newExpr)
+        setArg(code, 3, newExpr)
     } else if(exists(grCode$name) && is.rcf(get(grCode$name))) {
         # Handle gr arguments that are RCfunctions.
         grCode$name <- environment(get(grCode$name))$nfMethodRCobject$uniqueName

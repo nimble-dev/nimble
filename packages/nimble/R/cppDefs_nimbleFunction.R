@@ -413,6 +413,9 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                                                     funIndex = funIndex,
                                                                                     useModelInfo = useModelInfo,
                                                                                     derivControl = derivControl)
+                                                      funIndex + 1 ## function return value increments by one in non-meta case
+                                                  } else {
+                                                      funIndex ## but does tno increment in meta case
                                                   }
                                               },
                                               addNimDerivsCalculateContentOneFun = function(funName,
@@ -423,7 +426,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   thisFunctionDef <- functionDefs[[funName]]
                                                   thisCode <- thisFunctionDef$code$code ## lines of code
                                                   newFunIndex <- exprClasses_updateNimDerivsCalculate(thisCode, funIndex)
-                                                  ## could check if the correct increment of funIndex to newFunIndex occurred.
+                                                  newFunIndex
                                               },
                                               checkADargument = function(funName, argSym, argName = NULL, returnType = FALSE){
                                                   argTypeText <- if(returnType) 'returnType' else 'argument'
@@ -438,6 +441,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               },
                                               addADclassContent = function() {
                                         # CPPincludes <<- c("<TMB/distributions_R.hpp>", CPPincludes)
+                                                  constructorCode <- NULL ## default return object
                                                   enableDerivs <- environment(nfProc$nfGenerator)$enableDerivs
                                                   numEnabledFuns <- length(enableDerivs) 
                                                   boolStaticAD <- unlist(lapply(enableDerivs,
@@ -488,12 +492,33 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   }
                                                   if(includeNonStatic || includeNimDerivsCalculate ) {
                                                       if(isTRUE(nimbleOptions('useADreconfigure'))) {
+
+                                                          currentFunIndex <- 1
+                                                          whichNimDerivsCalculate <- which(numNimDerivsCalculate > 0)
+                                                          for(iiAD in seq_along(whichNimDerivsCalculate)) {
+                                                              iAD <- whichNimDerivsCalculate[iiAD]
+                                                              currentFunIndex <- addNimDerivsCalculateContentOneFun(enableNames[iAD],
+                                                                                                                    enableDerivs[[iAD]],
+                                                                                                                    funIndex = currentFunIndex)
+                                                            #  currentFunIndex <- currentFunIndex + enableDerivs[[iAD]][['numNimDerivsCalculate']]
+                                                          }
+                                                          
+                                                          whichBoolNonStaticAD <- which(boolNonStaticAD)
+                                                          for(iiAD in seq_along(whichBoolNonStaticAD)) {
+                                                              iAD <- whichBoolNonStaticAD[iiAD]
+                                                              currentFunIndex <- addADclassContentOneFun(enableNames[iAD],
+                                                                                                         enableDerivs[[iAD]],
+                                                                                                         funIndex = currentFunIndex)
+                                                          }
+
+                                                          lengthTapePtrs <- currentFunIndex - 1
+                                                          
                                                           ## 1. Add myADtapePtrs_.  allADtapePtrs_ is static. myADtapePtrs_ is not static.
                                                           objectDefs$addSymbol(cppVarFull(baseType = 'std::array',
                                                                                           templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun',
                                                                                                                          templateArgs = list('double'),
                                                                                                                          ptr = 1),
-                                                                                                              totalNimDerivsCalculate + totalNonStatic),
+                                                                                                              lengthTapePtrs),
                                                                                           static = FALSE,
                                                                                           name = 'myADtapePtrs_'))
                                                           ## 2. Add a destructor
@@ -503,7 +528,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                                                         if(myADtapePtrs_[i])
                                                                                             cppLiteral("delete myADtapePtrs_[(i)-1];")
                                                                                     },
-                                                                                    list(N = totalNimDerivsCalculate + totalNonStatic))
+                                                                                    list(N = lengthTapePtrs))
                                                           destSymTab <- symbolTable$new()
                                                           destSymTab$addSymbol( nimble:::cppInt(name = "i") )
                                                           destCode <- putCodeLinesInBrackets(destForCode) ## placeholder
@@ -516,24 +541,9 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                                                                            skipBrackets = TRUE))
                                                           functionDefs[["destructor"]] <<- destFunDef
 
-                                                          currentFunIndex <- 1
-                                                          whichNimDerivsCalculate <- which(numNimDerivsCalculate > 0)
-                                                          for(iiAD in seq_along(whichNimDerivsCalculate)) {
-                                                              iAD <- whichNimDerivsCalculate[iiAD]
-                                                              addNimDerivsCalculateContentOneFun(enableNames[iAD],
-                                                                                                 enableDerivs[[iAD]],
-                                                                                                 funIndex = currentFunIndex)
-                                                              currentFunIndex <- currentFunIndex + enableDerivs[[iAD]][['numNimDerivsCalculate']]
-                                                          }
-                                                          
-                                                          whichBoolNonStaticAD <- which(boolNonStaticAD)
-                                                          for(iiAD in seq_along(whichBoolNonStaticAD)) {
-                                                              iAD <- whichBoolNonStaticAD[iiAD]
-                                                              addADclassContentOneFun(enableNames[iAD],
-                                                                                      enableDerivs[[iAD]],
-                                                                                      funIndex = currentFunIndex)
-                                                              currentFunIndex <- currentFunIndex + 1
-                                                          }
+                                                          constructorCode <- quote( ## constructor still uses old style
+                                                              cppLiteral("std::fill(myADtapePtrs_.begin(), myADtapePtrs_.end(), static_cast<CppAD::ADFun<double> *>(0));") ## would be better to use nullptr
+                                                          )
                                                       } else {
                                                           warning(paste0('non-static AD case requested for ',
                                                                          paste(nonStaticNames, sep=" ", collapse = " "),
@@ -565,7 +575,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       
                                                       addStaticInitClass(staticNames)
                                                   }
-                                                  invisible(NULL)
+                                                  constructorCode                                                      
                                               },
                                               buildCmultiInterface = function(dll = NULL) {
                                                   sym <- if(!is.null(dll))
@@ -618,9 +628,10 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       addInheritance(baseClassName)
                                                       addAncestors('NamedObjects')
                                                   }
-                                                  if(nimbleOptions('experimentalEnableDerivs') &&
-                                                     length(environment(nfProc$nfGenerator)$enableDerivs) > 0) {
-                                                      addADclassContent()
+                                                  handleDerivs <- nimbleOptions('experimentalEnableDerivs') &&
+                                                      length(environment(nfProc$nfGenerator)$enableDerivs) > 0
+                                                  if(handleDerivs) {
+                                                      constructorCode <- addADclassContent() ## Might generate code to insert into constructor, which is built later
                                                   }
                                                   if('nodeFun' %in% .self$inheritance) {
                                                       updateADproxyModelMethods(.self)
@@ -629,6 +640,13 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   addCopyFromRobject()
                                                   
                                                   callSuper(where)
+                                                  if(handleDerivs) {
+                                                      if(!is.null(constructorCode)) { ## insert AD-related code to constructor
+                                                          conDef <- functionDefs[['constructor']] ## Very hacky way to insert this code.
+                                                          curlen <- length(conDef$code$code[[2]]$code)
+                                                          conDef$code$code[[2]]$code[[curlen + 1 ]] <- constructorCode
+                                                      }
+                                                  }
                                               }
                                           ),
                                       )
@@ -669,6 +687,8 @@ modifyForAD_handlers <- list(eigenBlock = 'modifyForAD_eigenBlock',
                              calculate = 'modifyForAD_calculate',
                              getValues = 'modifyForAD_getSetValues',
                              setValues = 'modifyForAD_getSetValues',
+                             nfMethod = 'modifyForAD_nfMethod',
+                             chainedCall = 'modifyForAD_chainedCall',
                              getDerivs_wrapper = 'modifyForAD_getDerivs_wrapper')
 
 exprClasses_modifyForAD <- function(code, symTab,
@@ -731,6 +751,35 @@ modifyForAD_getDerivs_wrapper <- function(code, symTab, workEnv) {
   arg1 <- code$args[[1]]
   arg1$name <- paste0(arg1$name, "_AD2_")
   code$name <- "getDerivs_wrapper_meta"
+  invisible(NULL)
+}
+
+modifyForAD_nfMethod <- function(code, symTab, workEnv) {
+  browser()
+  if(code$args[[1]]$name != "cppPointerDereference")
+    message("In modifyForAD_nfMethod, was expecting cppPointerDereference.  There must be another case that needs implementation.")
+  objName <- code$args[[1]]$args[[1]]$name
+  NFsymObj <- workEnv$RsymTab$getSymbolObject(objName, TRUE)
+  methodName <- code$args[[2]]
+  if(!is.character(methodName))
+    message("In modifyForAD_nfMethod, was expecting method name to be character.  There must be another case that needs implementation.")
+  methodSymObj <- NFsymObj$nfProc$compileInfos[[methodName]]$newLocalSymTab$getSymbolObject(methodName, TRUE)
+  enableDerivs <- methodSymObj$nfMethodRCobj$enableDerivs
+  if(!is.null(enableDerivs))
+    if(!isFALSE(enableDerivs)) {
+      code$args[[2]] <- paste0( code$args[[2]], "_AD2_")
+      code$name <- "nfMethodAD" ## This is a tag for modifyForAD_chainedCall
+    }
+  invisible(NULL)
+}
+
+modifyForAD_chainedCall <- function(code, symTab, workEnv) {
+  browser()
+  arg1name <- code$args[[1]]$name
+  if(arg1name == "nfMethodAD") { ## A tag set in modifyForAD_nfMethod
+    setArg(code, length(code$args) + 1, RparseTree2ExprClasses(quote(recordingInfo_)))
+    code$args[[1]]$name <- "nfMethod" ## tag is no longer needed. revert to regular nfMethodAD
+  }
   invisible(NULL)
 }
 
