@@ -27,6 +27,8 @@ is denoted by $x$.
   Half flat     `dhalfflat()`                               $\propto 1$ (improper)                                                                                                                                       $0$
   Inverse       `dinvgamma(shape = r, scale = ` $\lambda$`)`$\frac{ \lambda^r x^{-(r + 1)} \exp(-\lambda / x)}{ \Gamma(r)}$                                                                                              $0$
    gamma        $\lambda > 0$, $r > 0$
+  LKJ Correl'n  `dlkj_corr_cholesky(shape = ` $\eta$`)`,    $\prod_{i=2}^{p} x_{kk}^{p - i + 2\eta -2}    
+   Cholesky     $\eta > 0$
   Logistic      `dlogis(location = ` $\mu$,                 $\frac{ \tau \exp\{(x - \mu) \tau\}}{\left[1 + \exp\{(x - \mu) \tau\}\right]^2}$
                 `rate = ` $\tau$`), `$\tau > 0$
   Log-normal    `dlnorm(meanlog = ` $\mu$,                  $\left(\frac{\tau}{2\pi}\right)^{\frac{1}{2}} x^{-1} \exp \left\{-\tau (\log(x) - \mu)^2 / 2 \right\}$                                                       $0$

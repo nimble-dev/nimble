@@ -41,7 +41,8 @@ relationship to the *canonical* parameterization used in NIMBLE.
   `dmvt(mu, cholesky, df,`  canonical (scale)
   `...prec_param=0)`
   `dmvt(mu, prec, df)`      `dmvt(mu, cholesky = chol(prec), df, prec_param=1)`
-  `dmvt(mu, scale, df)`     `dmvt(mu, cholesky = chol(scale), df, prec_param=0)` 
+  `dmvt(mu, scale, df)`     `dmvt(mu, cholesky = chol(scale), df, prec_param=0)`
+  `dlkj_corr_cholesky(eta)` canonical
   `dnegbin(prob, size)`     canonical
   `dnorm(mean, sd)`         canonical
   `dnorm(mean, tau)`        `dnorm(mean, sd = 1 / sqrt(var))`

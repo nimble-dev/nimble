@@ -633,6 +633,45 @@ rmvt_chol <- function(n = 1, mu, cholesky, df, prec_param = TRUE) {
         as.double(df), as.double(prec_param))
 }
 
+#' The LKJ Distribution for the Cholesky Factor of a Correlation Matrix
+#'
+#' Density and random generation for the LKJ distribution for the Cholesky factor of a correlation matrix.
+#'
+#' @name LKJ
+#'
+#' @aliases lkj-corr lkj-corr-cholesky
+#' 
+#' @param x upper-triangular Cholesky factor of a correlation matrix.
+#' @param eta shape parameter.
+#' @param log logical; if TRUE, probability density is returned on the log scale.
+#' @author Christopher Paciorek
+#' @details See Stan Development Team for mathematical details. 
+#' @return \code{dlkj_corr_cholesky} gives the density and \code{rlkj_corr_cholesky} generates random deviates.
+#' @references Stan Development Team. Stan Reference Functions, version 2.22.
+#' @seealso \link{Distributions} for other standard distributions
+#' 
+#' @examples
+#' eta <- 5
+#' x <- rlkj_corr_cholesky(eta)
+#' dlkj_corr_cholesky(x, eta)
+#' 
+NULL
+
+#' @rdname LKJ
+#' @export
+dlkj_corr_cholesky <- function(x, eta, log = FALSE) {
+  # x should be upper triangular
+  # FIXME: allow x to be lower tri
+    .Call(C_dlkj_corr_cholesky, as.double(x), as.double(eta), as.logical(log))
+}
+
+#' @rdname LKJ
+#' @export
+rlkj_corr_cholesky <- function(n = 1, eta) {
+    if(n != 1) warning('rlkj_corr_cholesky only handles n = 1 at the moment')
+    .Call(C_rlkj_corr_cholesky, as.double(eta))
+}
+
 #' Interval calculations 
 #'
 #' Calculations to handle censoring

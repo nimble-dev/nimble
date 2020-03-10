@@ -222,6 +222,7 @@ Supported distributions, listed by their 'd' function, include:
   - `dunif(x, min, max, log)`
   - `dweibull(x, shape, scale, log)`
   - `ddirch(x, alpha, log)`
+  - `dlkj_corr_cholesky(x, eta, log)`
   - `dmnorm_chol(x, mean, cholesky, prec_param, log)`
   - `dmvt_chol(x, mu, cholesky, df, prec_param, log)`
   - `dwish_chol(x, cholesky, df, scale_param, log)`
