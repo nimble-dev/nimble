@@ -1283,7 +1283,9 @@ test_that("testing multivariate normal mixture models with CRP", {
     lambda ~ dgamma(1, 1)
   })
   n <- 100
-  Consts <- list(n = n, S0 = diag(1, 2), mu0=c(0,0), R0 = diag(1, 2))
+  ## 2020-03-09: Modified prior because now with conjugate sampling, tight prior and
+  ## conjugate updates for Sigma cause slow burnin.
+  Consts <- list(n = n, S0 = diag(100, 2), mu0=c(0,0), R0 = diag(1, 2))
   Sigma <- array(0, c(2,2,n))
   for(i in 1:n)
     Sigma[, , i] <- matrix(c(1, 0, 0, 1), 2, 2)
@@ -1326,11 +1328,13 @@ test_that("testing multivariate normal mixture models with CRP", {
   
   
   ## 4-dimensional normal kernel with unknown mean and unknown variance
+
+  ## Chris changed S0 prior so not so informative and set df=6 instead of 4 (the latter implies no mean)
   code <- nimbleCode({
     xi[1:n] ~ dCRP(alpha, n)
     for(i in 1:n){
       mu[i, 1:4] ~ dmnorm(mu0[1:4], cov = S0[1:4, 1:4])
-      Sigma[1:4, 1:4, i] ~ dinvwish(S = R0[1:4, 1:4], df = 4)
+      Sigma[1:4, 1:4, i] ~ dinvwish(S = R0[1:4, 1:4], df = 6)
       SigmaAux[1:4, 1:4, i] <- Sigma[1:4, 1:4, xi[i]] / lambda  
       y[i, 1:4] ~ dmnorm(mu[xi[i], 1:4],  cov = SigmaAux[1:4, 1:4, i] )
     }
@@ -1338,7 +1342,7 @@ test_that("testing multivariate normal mixture models with CRP", {
     lambda ~ dgamma(1, 1)
   })
   n <- 100
-  Consts <- list(n = n, S0 = diag(1, 4), mu0=c(0,0,0,0), R0 = diag(1, 4))
+  Consts <- list(n = n, S0 = diag(100, 4), mu0=c(0,0,0,0), R0 = diag(1, 4))
   Sigma <- array(0, c(4,4,n))
   for(i in 1:n)
     Sigma[, , i] <- diag(1, 4)
