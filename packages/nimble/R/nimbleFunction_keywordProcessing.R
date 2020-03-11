@@ -843,16 +843,27 @@ nimDerivs_keywordInfo <- keywordInfoClass(
     if(!is.null(nfProc$origMethods[[deparse(fxnCall)]])) {
       derivMethod <- nfProc$origMethods[[deparse(fxnCall)]]
       derivMethodArgs <- derivMethod$getArgInfo()
-      ##wrtArgIndices <- convertWrtArgToIndices(wrtArgs, derivMethodArgs, fxnName = deparse(fxnCall))
-      #if(length(wrtArgIndices) == 1) wrtArgIndices <- c(wrtArgIndices, -1)
-      wrt_argList <- list(fxnCall = fxnCall,
-                          wrt = code$wrt,
-       #                   vector = wrtArgIndices
-                          derivMethodArgs = derivMethodArgs)
-      accessName <- wrtVector_setupCodeTemplate$makeName(wrt_argList)
-      addNecessarySetupCode(accessName, wrt_argList, wrtVector_setupCodeTemplate, nfProc)
-      code[['wrt']] <- substitute(VECNAME,
-                                  list(VECNAME = as.name(accessName)))
+
+      ## Only make the wrt substitution if the names are baked in as character
+      wrtArg <- code$wrt
+      doPreprocess <- FALSE
+      if(deparse(wrtArg[[1]]) == 'nimC') {
+          if(is.character(wrtArg[[2]]))
+              doPreprocess <- TRUE
+      } else if(is.character(wrtArg[[1]])) {
+          doPreprocess <- TRUE
+      }
+      ##
+      if(doPreprocess) {
+          wrt_argList <- list(fxnCall = fxnCall,
+                              wrt = code$wrt,
+                                        #                   vector = wrtArgIndices
+                              derivMethodArgs = derivMethodArgs)
+          accessName <- wrtVector_setupCodeTemplate$makeName(wrt_argList)
+          addNecessarySetupCode(accessName, wrt_argList, wrtVector_setupCodeTemplate, nfProc)
+          code[['wrt']] <- substitute(VECNAME,
+                                      list(VECNAME = as.name(accessName)))
+      }
     }
     return(code)
   }
