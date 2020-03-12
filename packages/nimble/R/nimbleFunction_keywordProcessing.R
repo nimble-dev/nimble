@@ -847,22 +847,28 @@ nimDerivs_keywordInfo <- keywordInfoClass(
       ## Only make the wrt substitution if the names are baked in as character
       wrtArg <- code$wrt
       doPreprocess <- FALSE
-      if(deparse(wrtArg[[1]]) == 'nimC') {
-          if(is.character(wrtArg[[2]]))
-              doPreprocess <- TRUE
-      } else if(is.character(wrtArg[[1]])) {
+      if(is.list(wrtArg)) { ## wrt = NULL (default), set to NA, which will become -1 by convertWrtArgToIndices and then c(-1, -1) in the setup code
+        if(length(wrtArg) > 0)
+          if(is.null(wrtArg[[1]])) {
+            code$wrt <- NA
+            doPreprocess <- TRUE
+          }
+      } else if(deparse(wrtArg[[1]]) == 'nimC') { ## wrt = c('x', ...)
+        if(is.character(wrtArg[[2]]))
           doPreprocess <- TRUE
-      }
+      } else if(is.character(wrtArg[[1]])) { ## wrt = 'x'
+        doPreprocess <- TRUE
+      } ## In any other setting, it must be an index vector and we leave it alone here.
       ##
       if(doPreprocess) {
-          wrt_argList <- list(fxnCall = fxnCall,
-                              wrt = code$wrt,
-                                        #                   vector = wrtArgIndices
-                              derivMethodArgs = derivMethodArgs)
-          accessName <- wrtVector_setupCodeTemplate$makeName(wrt_argList)
-          addNecessarySetupCode(accessName, wrt_argList, wrtVector_setupCodeTemplate, nfProc)
-          code[['wrt']] <- substitute(VECNAME,
-                                      list(VECNAME = as.name(accessName)))
+        wrt_argList <- list(fxnCall = fxnCall,
+                            wrt = code$wrt,
+                            #                   vector = wrtArgIndices
+                            derivMethodArgs = derivMethodArgs)
+        accessName <- wrtVector_setupCodeTemplate$makeName(wrt_argList)
+        addNecessarySetupCode(accessName, wrt_argList, wrtVector_setupCodeTemplate, nfProc)
+        code[['wrt']] <- substitute(VECNAME,
+                                    list(VECNAME = as.name(accessName)))
       }
     }
     return(code)

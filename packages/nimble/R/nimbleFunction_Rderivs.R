@@ -594,7 +594,7 @@ nimDerivs_nf <- function(nimFxn = NA, order = nimC(0,1,2),
 
 convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
   ## If a vector of wrt args, get individual args.
-    if(deparse(wrtArgs[[1]]) == 'nimC'){ 
+  if(deparse(wrtArgs[[1]]) == 'nimC'){ 
     wrtArgs <- sapply(wrtArgs[-1], function(x){as.character(x)})
   }
   if(all(is.na(wrtArgs))){

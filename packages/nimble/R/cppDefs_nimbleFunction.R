@@ -756,7 +756,6 @@ modifyForAD_getDerivs_wrapper <- function(code, symTab, workEnv) {
 }
 
 modifyForAD_nfMethod <- function(code, symTab, workEnv) {
-  browser()
   if(code$args[[1]]$name != "cppPointerDereference")
     message("In modifyForAD_nfMethod, was expecting cppPointerDereference.  There must be another case that needs implementation.")
   objName <- code$args[[1]]$args[[1]]$name
@@ -775,7 +774,6 @@ modifyForAD_nfMethod <- function(code, symTab, workEnv) {
 }
 
 modifyForAD_chainedCall <- function(code, symTab, workEnv) {
-  browser()
   arg1name <- code$args[[1]]$name
   if(arg1name == "nfMethodAD") { ## A tag set in modifyForAD_nfMethod
     setArg(code, length(code$args) + 1, RparseTree2ExprClasses(quote(recordingInfo_)))

@@ -131,10 +131,13 @@ void getDerivs_internal(vector<BASE> &independentVars,
 
   std::size_t wrt_n = wrtVector.size();            // dim of wrt vars
   if(wrt_n == 2){
-    if(wrtVector[1] == -1){
+    if(wrtVector[1] == -1){ // 2nd element -1 is a filler to ensure there is a vector out of compilation
       wrt_n = 1;
     }
   }
+  bool wrtAll = wrtVector[0] == -1; // 1st element -1 is a flag to behave as if wrtVector has all elements
+  if(wrtAll) wrt_n = n;
+  
   int orderSize = derivOrders.size();
   double const* array_derivOrders = derivOrders.getConstPtr();
 
@@ -152,9 +155,9 @@ void getDerivs_internal(vector<BASE> &independentVars,
   #ifdef _TIME_AD
   derivs_run_tape_timer_start();
 #endif
-  std::cout<<"About to run ADtape->Forward"<<std::endl;
+  //  std::cout<<"About to run ADtape->Forward"<<std::endl;
   value_ans = ADtape->Forward(0, independentVars);
-  std::cout<<"Done with ADtape->Forward"<<std::endl;
+  // std::cout<<"Done with ADtape->Forward"<<std::endl;
 #ifdef _TIME_AD
   derivs_run_tape_timer_stop();
 #endif
@@ -196,7 +199,7 @@ void getDerivs_internal(vector<BASE> &independentVars,
       } else {
 	for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
 	  if(!infIndicators[dy_ind]){
-	    int dx1_ind = wrtVector[vec_ind] - 1;
+	    int dx1_ind = wrtAll ? vec_ind : wrtVector[vec_ind] - 1;
 	    std::vector<BASE> x1(n, 0);  // vector specifying first derivatives.
 	    // first specify coeffs for first dim
 	    // of s across all directions r, then
@@ -213,7 +216,7 @@ void getDerivs_internal(vector<BASE> &independentVars,
 	  }
 	  for (size_t vec_ind2 = 0; vec_ind2 < wrt_n; vec_ind2++) {
 	    if(!infIndicators[dy_ind]){
-	      int dx2_ind = wrtVector[vec_ind2] - 1;
+	      int dx2_ind = wrtAll ? vec_ind2 : wrtVector[vec_ind2] - 1;
 	      ansList->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] =
 		cppad_derivOut[dx2_ind * 2 + 1];
 	    }
@@ -227,11 +230,17 @@ void getDerivs_internal(vector<BASE> &independentVars,
       if (ordersFound[1]) {
 	BASE *LHS = ansList->jacobian.getPtr() + dy_ind;
 	if(!infIndicators[dy_ind]){
-	  double const *wrtVector_p = wrtVector.getConstPtr();
-	  double const *wrtVector_p_end = wrtVector_p + wrt_n;
+	  if(wrtAll) {
+	    for (size_t vec_ind3 = 0; vec_ind3 < wrt_n; ++vec_ind3, LHS += q) {
+	      *LHS = cppad_derivOut[vec_ind3 * maxOrder];
+	    }
+	  } else {
+	    double const *wrtVector_p = wrtVector.getConstPtr();
+	    double const *wrtVector_p_end = wrtVector_p + wrt_n;
 	    for(; wrtVector_p != wrtVector_p_end; LHS += q ) {
 	      *LHS = cppad_derivOut[(static_cast<int>(*wrtVector_p++) - 1) * maxOrder];
 	    }
+	  }
 	} else {
 	  for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
 	    *LHS = CppAD::numeric_limits<BASE>::quiet_NaN();
@@ -264,7 +273,7 @@ void nimbleFunctionCppADbase::getDerivs_meta(nimbleCppADinfoClass &ADinfo,
 					     const NimArr<1, double> &derivOrders,
 					     const NimArr<1, double> &wrtVector,
 					     nimSmartPtr<NIMBLE_ADCLASS_META> &ansList) {
-  std::cout<<"Entering getDerivs_meta"<<std::endl;
+  // std::cout<<"Entering getDerivs_meta"<<std::endl;
   CppAD::ADFun< CppAD::AD<double>, double > metaTape;
   metaTape = ADinfo.ADtape->base2ad();
   getDerivs_internal< CppAD::AD<double>,
@@ -274,14 +283,14 @@ void nimbleFunctionCppADbase::getDerivs_meta(nimbleCppADinfoClass &ADinfo,
 					   derivOrders,
 					   wrtVector,
 					   ansList);
-  std::cout<<"Exiting getDerivs_meta"<<std::endl;
+  // std::cout<<"Exiting getDerivs_meta"<<std::endl;
 }
   
 void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
                                         const NimArr<1, double> &derivOrders,
                                         const NimArr<1, double> &wrtVector,
                                         nimSmartPtr<NIMBLE_ADCLASS> &ansList) {
-  std::cout<<"Entering getDerivs"<<std::endl;
+  // std::cout<<"Entering getDerivs"<<std::endl;
   getDerivs_internal<double,
 		     CppAD::ADFun<double>,
 		     NIMBLE_ADCLASS>(ADinfo.independentVars,
@@ -289,7 +298,7 @@ void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
 		       derivOrders,
 		       wrtVector,
 		       ansList);
-  std::cout<<"Exiting getDerivs"<<std::endl;
+  // std::cout<<"Exiting getDerivs"<<std::endl;
     
 // #ifdef _TIME_AD
 //   derivs_getDerivs_timer_start();
@@ -478,7 +487,7 @@ CppAD::ADFun<double>* calculate_recordTape(NodeVectorClassNew_derivs &NV) {
     setValues_AD_AD(NimArrValues_AD, NV.model_AD_extraInput_accessor);
   }
   // 5b. Copy all extraInputNodes into dynamicVars
-  std::cout<<"Don't forget to set the CppAD statics as needed"<<std::endl;
+  // std::cout<<"Don't forget to set the CppAD statics as needed"<<std::endl;
   vector< CppAD::AD<double> > dynamicVars;
   dynamicVars.resize(length_extraInput);
   if(length_extraInput > 0) {
@@ -532,14 +541,14 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
 							   const NimArr<1, double> &wrtVector,
 							   nimSmartPtr<NIMBLE_ADCLASS> ansList) {
 
-  std::cout<<"Entering getDerivs_calculate_internal"<<std::endl;
+  // std::cout<<"Entering getDerivs_calculate_internal"<<std::endl;
   if(!ADinfo.ADtape) {
-    std::cout<<"About to record tape"<<std::endl;
+    // std::cout<<"About to record tape"<<std::endl;
     ADinfo.ADtape = calculate_recordTape(nodes);
-    std::cout<<"Done record tape"<<std::endl;
+    // std::cout<<"Done record tape"<<std::endl;
   }
 
-  std::cout<<"getDerivs_calculate_internal A"<<std::endl;
+  // std::cout<<"getDerivs_calculate_internal A"<<std::endl;
 
   /* set independent */
   int length_wrt = nodes.model_wrt_accessor.getTotalLength();
@@ -554,7 +563,7 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
 	    NimArrVars.getPtr() + length_wrt,
 	    ADinfo.independentVars.begin());
 
-  std::cout<<"getDerivs_calculate_internal B"<<std::endl;
+  // std::cout<<"getDerivs_calculate_internal B"<<std::endl;
   
   /* set dynamic */
   size_t length_extraNodes_accessor = nodes.model_extraInput_accessor.getTotalLength();
@@ -569,7 +578,7 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
     ADinfo.ADtape->new_dynamic(dynamicVars);
   }
   /* manage orders */
-  std::cout<<"getDerivs_calculate_internal C"<<std::endl;
+  // std::cout<<"getDerivs_calculate_internal C"<<std::endl;
   
   /* run tape */
   getDerivs_internal<double,
@@ -579,7 +588,7 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
 				     derivOrders,
 				     wrtVector,
 				     ansList);
-    std::cout<<"getDerivs_calculate_internal D"<<std::endl;
+    // std::cout<<"getDerivs_calculate_internal D"<<std::endl;
 
 }
 

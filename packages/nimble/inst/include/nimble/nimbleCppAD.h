@@ -207,7 +207,7 @@ public:
   nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(nimbleCppADinfoClass &ADinfo,
 						  NodeVectorClassNew_derivs &nodes,
 						  const NimArr<1, double> &derivOrders) {
-    NimArr<1, double> wrtVector;
+    NimArr<1, double> wrtVector; // with new default functionality, this could be set to simply length 1 with value -1
     int totlen = nodes.model_wrt_accessor.getTotalLength();
     wrtVector.setSize(totlen,
 		      false,

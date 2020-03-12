@@ -168,11 +168,14 @@ class NimOptimProblem_model : public NimOptimProblem {
  private:
   int length_wrt;
   bool use_gr;
-  NodeVectorClassNew_derivs &nodes;
   NimArr<1, double> lastP;
   double lastValue;
   NimArr<1, double> lastGradient;
   NimArr<1, double> derivOrders;
+  NodeVectorClassNew_derivs &nodes;
+  nimbleCppADinfoClass ADinfo;
+  CppAD::ADFun<double> ADtape;
+  nimbleFunctionCppADbase CppADbase;
   NimArr<1, double> get_wrt() {
     NimArr<1, double > wrt;
     wrt.setSize(length_wrt);
@@ -195,16 +198,20 @@ class NimOptimProblem_model : public NimOptimProblem {
       derivOrders.setSize(2);
       derivOrders[0] = 0;
       derivOrders[1] = 1;
+      ADinfo.ADtape = &ADtape;
       length_wrt = nodes.get_model_wrt_accessor().getTotalLength();
       lastP.setSize(length_wrt, false, false);
       lastGradient.setSize(length_wrt, false, false);
     }
 
   nimSmartPtr<OptimResultNimbleList> solve() {
+    std::cout<<"Entering solve"<<std::endl;
     NimArr<1, double> initP = get_wrt();
     bool hessian = NimOptimProblem::hessian_;
     NimOptimProblem::hessian_ = false;
+    std::cout<<"Calling main solve"<<std::endl;
     nimSmartPtr<OptimResultNimbleList> result = NimOptimProblem::solve(initP);
+    std::cout<<"Done main solve"<<std::endl;
     NimOptimProblem::hessian_ = hessian;
     if(hessian) {
       /* TO-DO: We should be able to re-use last-run tape calculation */
@@ -212,7 +219,7 @@ class NimOptimProblem_model : public NimOptimProblem {
       /* but for now we do re-do it.*/
       derivOrders[1] = 2;
       setValues(par_, nodes.get_model_wrt_accessor());
-      nimSmartPtr<NIMBLE_ADCLASS> ADresult = nimDerivs_calculate(nodes, derivOrders);
+      nimSmartPtr<NIMBLE_ADCLASS> ADresult = CppADbase.nimDerivs_calculate(ADinfo, nodes, derivOrders);
       NimArr<2, double> hessianMap;
       int n = initP.size();
       // offset = 0; stride1 = 1; stride2 = n; size1 = n; size2 = n;
@@ -225,8 +232,11 @@ class NimOptimProblem_model : public NimOptimProblem {
   
  private:
   void run_calculations() {
+    std::cout<<"entering main calculations"<<std::endl;
     setValues(par_, nodes.get_model_wrt_accessor());
-    nimSmartPtr<NIMBLE_ADCLASS> ADresult = nimDerivs_calculate(nodes, derivOrders);
+    std::cout<<"calling nimDerivs_calculate"<<std::endl;
+    nimSmartPtr<NIMBLE_ADCLASS> ADresult = CppADbase.nimDerivs_calculate(ADinfo, nodes, derivOrders);
+    std::cout<<"done nimDerivs_calculate"<<std::endl;
     if(par_.size() != length_wrt) {
       std::cout<<"Error in C++: wrong length par_ in nimOptim_model"<<std::endl;
     }
@@ -236,6 +246,7 @@ class NimOptimProblem_model : public NimOptimProblem {
       std::cout<<"Error in C++: jacobian number of rows != 1 in nimOptim_model"<<std::endl;
     } 
     std::memcpy(lastGradient.getPtr(), ADresult->jacobian.getPtr(), length_wrt * sizeof(double));
+    std::cout<<"done main calculations"<<std::endl;
   }
 
     
