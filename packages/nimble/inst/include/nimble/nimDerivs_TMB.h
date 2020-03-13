@@ -70,7 +70,6 @@ Type nimDerivs_qnorm(Type p, Type mean = 0., Type sd = 1.){
 
 /* dmnorm: Multivariate normal distribution */
 /* TMB uses specialized atomic classes.  nimble currently has a "naive" and likely less efficiency implementation: */
-/* TO-DO: support by prec_param = 0 and 1*/
 template<class Type>
 Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type prec_param, Type give_log, Type overwrite_inputs) { 
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
@@ -87,8 +86,12 @@ Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, Nim
   for(i = 0; i < n; i++)
     xCopy(i, 0) = x[i] - mean[i];
 
-  Eigen::Map<MatrixXt > eigenChol(chol.getPtr(), n, n);
-  xCopy = eigenChol*xCopy;
+  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
+  xCopy = CppAD::CondExpEq(prec_param, Type(1),
+                           mapChol.triangularView<Eigen::Upper>()*xCopy,
+                           mapChol.triangularView<Eigen::Upper>().transpose().solve(xCopy);
+  // Note that with solve(), transpose of U appears slightly less costly than if input 'chol' were L,
+  // presumably because of column-major order interacting well with the solve.
   xCopy = xCopy.array()*xCopy.array();
   dens += -Type(0.5)*xCopy.sum();
   dens = CppAD::CondExpEq(give_log, Type(1), dens, exp(dens));
@@ -111,10 +114,189 @@ Type nimDerivs_nimArr_dmnorm_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &
   for(i = 0; i < n; i++)
     xCopy(i, 0) = x[i] - mean[i];
 
-  Eigen::Map<MatrixXt > eigenChol(chol.getPtr(), n, n);
-  xCopy = eigenChol*xCopy;
+  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
+  xCopy = CppAD::CondExpEq(prec_param, Type(1),
+                           mapChol.triangularView<Eigen::Upper>()*xCopy,
+                           mapChol.triangularView<Eigen::Upper>().transpose().solve(xCopy);
   xCopy = xCopy.array()*xCopy.array();
   dens += -Type(0.5)*xCopy.sum();
+  if(!give_log){
+    dens = exp(dens);
+  }
+  return(dens);
+}
+
+/* dmvt: Multivariate t distribution */
+template<class Type>
+Type nimDerivs_nimArr_dmvt_chol(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<2, Type> &chol, Type df, Type prec_param, Type give_log, Type overwrite_inputs) { 
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  int n = x.dimSize(0);
+  int i;
+  Type dens = nimDerivs_lgammafn((df + n) / Type(2)) - nimDerivs_lgammafn(df / Type(2)) - n * Type(M_LN_SQRT_PI) - n * log(df) / Type(2); 
+  Type sumDens = Type(0);
+  for(i = 0; i < n*n; i += n + 1) 
+	  sumDens += log(chol[i]);
+
+  dens += CppAD::CondExpEq(prec_param, Type(1), sumDens, -sumDens);
+
+  MatrixXt xCopy(n, 1);
+  for(i = 0; i < n; i++)
+    xCopy(i, 0) = x[i] - mu[i];
+
+  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
+  xCopy = CppAD::CondExpEq(prec_param, Type(1),
+                           mapChol.triangularView<Eigen::Upper>()*xCopy,
+                           mapChol.triangularView<Eigen::Upper>().transpose().solve(xCopy);
+  xCopy = xCopy.array()*xCopy.array();
+  
+  dens += -Type(0.5)*(df + n) * log(Type(1.) + xCopy.sum() / df);
+  
+  dens = CppAD::CondExpEq(give_log, Type(1), dens, exp(dens));
+  return(dens);
+}
+
+template<class Type>
+Type nimDerivs_nimArr_dmvt_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<2, Type> &chol, Type df, Type prec_param, int give_log, Type overwrite_inputs) { 
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  int n = x.dimSize(0);
+  int i;
+  Type dens = nimDerivs_lgammafn((df + n) / Type(2)) - nimDerivs_lgammafn(df / Type(2)) - n * Type(M_LN_SQRT_PI) - n * log(df) / Type(2); 
+  Type sumDens = Type(0);
+  for(i = 0; i < n*n; i += n + 1) 
+	  sumDens += log(chol[i]);
+
+  dens += CppAD::CondExpEq(prec_param, Type(1), sumDens, -sumDens);
+
+  MatrixXt xCopy(n, 1);
+  for(i = 0; i < n; i++)
+    xCopy(i, 0) = x[i] - mu[i];
+
+  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
+  xCopy = CppAD::CondExpEq(prec_param, Type(1),
+                           mapChol.triangularView<Eigen::Upper>()*xCopy,
+                           mapChol.triangularView<Eigen::Upper>().transpose().solve(xCopy);
+  xCopy = xCopy.array()*xCopy.array();
+  
+  dens += -Type(0.5)*(df + n) * log(Type(1.) + xCopy.sum() / df);
+  
+  if(!give_log){
+    dens = exp(dens);
+  }
+  return(dens);
+}
+
+/* dwish: Wishart distribution */
+template<class Type>
+Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type df, Type p, Type scale_param, Type give_log, Type overwrite_inputs) { 
+
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  int n = x.dimSize(0);
+  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
+  Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
+  
+  Type dens = (df * mapChol.diagonal().array().log()).sum()
+  dens = CppAD::CondExpEq(scale_param, Type(1), -dens, dens);
+
+  // ok to have 'df' within Type()?
+  dens += Type(-(df*p/2 * M_LN2 + p*(p-1)*M_LN_SQRT_PI/2));
+  for(i = 0; i < p; i++)
+    dens -= nimDerivs_lgammafn((df - i) / Type(2));
+ 
+  /* Lower may be more efficient: https://eigen.tuxfamily.org/dox/classEigen_1_1LLT.html#details */
+  MatrixXt Lx = mapX.selfadjointView<Eigen::Lower>().llt().matrixL()
+  dens += (df - p - Type(1)) * Lx.diagonal().array().log().sum();
+
+  dens -= Type(0.5) * CppAD::CondExpEq(scale_param, Type(1),
+                           mapChol.triangularView<Eigen::Upper>().transpose().solve(Lx).squaredNorm(),
+                           (mapChol.triangularView<Eigen::Upper>()*Lx).squaredNorm());
+
+  dens = CppAD::CondExpEq(give_log, Type(1), dens, exp(dens));
+  return(dens);
+}
+
+
+template<class Type>
+Type nimDerivs_nimArr_dwish_chol_logFixed(NimArr<2, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type df, Type p, Type scale_param, int give_log, Type overwrite_inputs) { 
+
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  int n = x.dimSize(0);
+  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
+  Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
+  
+  Type dens = (df * mapChol.diagonal().array().log()).sum()
+  dens = CppAD::CondExpEq(scale_param, Type(1), -dens, dens);
+
+  dens += Type(-(df*p/2 * M_LN2 + p*(p-1)*M_LN_SQRT_PI/2));
+  for(i = 0; i < p; i++)
+    dens -= nimDerivs_lgammafn((df - i) / Type(2));
+ 
+  /* Lower may be more efficient: https://eigen.tuxfamily.org/dox/classEigen_1_1LLT.html#details */
+  MatrixXt Lx = mapX.selfadjointView<Eigen::Lower>().llt().matrixL()
+  dens += (df - p - Type(1)) * Lx.diagonal().array().log().sum();
+
+  dens -= Type(0.5) * CppAD::CondExpEq(scale_param, Type(1),
+                           mapChol.triangularView<Eigen::Upper>().transpose().solve(Lx).squaredNorm(),
+                           (mapChol.triangularView<Eigen::Upper>()*Lx).squaredNorm());
+
+  if(!give_log){
+    dens = exp(dens);
+  }
+  return(dens);
+}
+
+/* dinvwish: Inverse Wishart distribution */
+template<class Type>
+Type nimDerivs_nimArr_dinvwish_chol(NimArr<2, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type df, Type p, Type scale_param, Type give_log, Type overwrite_inputs) { 
+
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  int n = x.dimSize(0);
+  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
+  Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
+  
+  Type dens = (df * mapChol.diagonal().array().log()).sum()
+  dens = CppAD::CondExpEq(scale_param, Type(1), dens, -dens);
+
+  dens += Type(-(df*p/2 * M_LN2 + p*(p-1)*M_LN_SQRT_PI/2));
+  for(i = 0; i < p; i++)
+    dens -= nimDerivs_lgammafn((df - i) / Type(2));
+ 
+  /* Lower may be more efficient: https://eigen.tuxfamily.org/dox/classEigen_1_1LLT.html#details */
+  MatrixXt Lx = mapX.selfadjointView<Eigen::Lower>().llt().matrixL()
+  dens -= (df + p + Type(1)) * Lx.diagonal().array().log().sum();
+
+  /* in basic tests, use of .solve(Identity) was 2-3x faster than .inverse();
+  I don't see a way to use .inverse that recognizes the triangular input */
+  dens -= Type(0.5) * CppAD::CondExpEq(scale_param, Type(1),
+                           (Lx.triangularView<Eigen::Lower>().solve(mapChol.transpose())).squaredNorm(),
+                           (Lx.triangularView<Eigen::Lower>().solve(mapChol.triangularView<Eigen::Upper>().solve(MatrixXd::Identity(n, n)))).squaredNorm());
+
+  dens = CppAD::CondExpEq(give_log, Type(1), dens, exp(dens));
+  return(dens);
+}
+
+template<class Type>
+Type nimDerivs_nimArr_dinvwish_chol_logFixed(NimArr<2, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type df, Type p, Type scale_param, int give_log, Type overwrite_inputs) { 
+
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  int n = x.dimSize(0);
+  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
+  Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
+  
+  Type dens = (df * mapChol.diagonal().array().log()).sum()
+  dens = CppAD::CondExpEq(scale_param, Type(1), dens, -dens);
+
+  dens += Type(-(df*p/2 * M_LN2 + p*(p-1)*M_LN_SQRT_PI/2));
+  for(i = 0; i < p; i++)
+    dens -= nimDerivs_lgammafn((df - i) / Type(2));
+ 
+  /* Lower may be more efficient: https://eigen.tuxfamily.org/dox/classEigen_1_1LLT.html#details */
+  MatrixXt Lx = mapX.selfadjointView<Eigen::Lower>().llt().matrixL()
+  dens -= (df + p + Type(1)) * Lx.diagonal().array().log().sum();
+
+  dens -= Type(0.5) * CppAD::CondExpEq(scale_param, Type(1),
+                           (Lx.triangularView<Eigen::Lower>().solve(mapChol.transpose())).squaredNorm(),
+                           (Lx.triangularView<Eigen::Lower>().solve(mapChol.triangularView<Eigen::Upper>().solve(MatrixXd::Identity(n, n)))).squaredNorm());
+
   if(!give_log){
     dens = exp(dens);
   }
@@ -255,7 +437,8 @@ template<class Type>
 Type nimDerivs_dinvgamma(Type x, Type shape, Type rate, Type give_log)
 {
   Type xinv = Type(1.0)/x;
-  Type res = CppAD::CondExpEq(give_log, Type(1), nimDerivs_dgamma(xinv, shape, rate, give_log) - 2*log(x), nimDerivs_dgamma(xinv, shape, rate, give_log) * xinv * xinv);
+  Type res = nimDerivs_dgamma_logFixed(xinv, shape, rate, 1) - 2*log(x);
+  res = CondExpEq(give_log, Type(1), res, exp(res));
   return(res);
 }
 
@@ -263,15 +446,31 @@ template<class Type>
 Type nimDerivs_dinvgamma_logFixed(Type x, Type shape, Type rate, int give_log)
 {
   Type xinv = Type(1.0)/x;
-  Type res;
-  if(give_log){
-    res = nimDerivs_dgamma_logFixed(xinv, shape, rate, give_log) - 2*log(x);
-  }
-  else{
-    res = nimDerivs_dgamma_logFixed(xinv, shape, rate, give_log) * xinv * xinv;
+  Type res = nimDerivs_dgamma_logFixed(xinv, shape, rate, 1) - 2*log(x);
+  if(!give_log){
+    res = exp(res); //nimDerivs_dgamma_logFixed(xinv, shape, rate, give_log) * xinv * xinv;
   }
   return(res);
 }
+
+template<class Type>
+Type nimDerivs_dsqrtinvgamma(Type x, Type shape, Type rate, Type give_log)
+{
+  Type res = nimDerivs_dinvgamma_logFixed(x*x, shape, rate, 1) + log(2*x);
+  res = CppAD::CondExpEq(give_log, Type(1), res, exp(res));
+  return(res);
+}
+
+template<class Type>
+Type nimDerivs_dsqrtinvgamma_logFixed(Type x, Type shape, Type rate, int give_log)
+{
+  Type res = nimDerivs_dinvgamma_logFixed(x*x, shape, rate, 1) + log(2*x);
+  if(!give_log){
+    res = exp(res);
+  }
+  return(res);
+}
+
 
 /* Negative binomial */
 /* Code modified from TMB */
@@ -326,9 +525,13 @@ inline Type nimDerivs_dpois_logFixed(const Type &x, const Type &lambda, int give
 template<class Type> 
 Type nimDerivs_dexp_nimble(Type x, Type rate, Type give_log)
 {
-	Type res = CppAD::CondExpEq(give_log, Type(0),
-				    rate*exp(-rate*x),
-				    log(rate)-rate*x);
+  Type res = log(rate)-rate*x;
+  res = CppAD::CondExpEq(give_log, Type(1),
+			 res,
+			 exp(res));
+	/* Type res = CppAD::CondExpEq(give_log, Type(0), */
+	/* 			    rate*exp(-rate*x), */
+	/* 			    log(rate)-rate*x); */
 	return(res);
 }
 
@@ -351,7 +554,9 @@ Type nimDerivs_dexp_nimble_logFixed(Type x, Type rate, int give_log)
 template<class Type>
 Type nimDerivs_dexp(Type x, Type scale, Type give_log)
 {
-	Type res = CppAD::CondExpEq(give_log, Type(0), exp(-x/scale)/scale, -log(scale)-x/scale);
+  Type res = -log(scale)-x/scale;
+  res = CppAD::CondExpEq(give_log, Type(1), res, exp(res));
+    //	Type res = CppAD::CondExpEq(give_log, Type(0), exp(-x/scale)/scale, -log(scale)-x/scale);
 	return(res);
 }
 
@@ -442,7 +647,7 @@ template<class Type>
 Type nimDerivs_dchisq(Type x, Type df, Type give_log)
 {	
   Type res = (df/Type(2.0) - Type(1.0))*log(x) - (x/Type(2.0)) - (df/Type(2.0))*log(Type(2.0)) - nimDerivs_lgammafn(df/Type(2.0));
-  res = CondExpEq(give_log, Type(0), exp(res), res);
+  res = CondExpEq(give_log, Type(1), res, exp(res));
   return(res);
 }
 
@@ -461,11 +666,16 @@ Type nimDerivs_dchisq_logFixed(Type x, Type df, int give_log)
 template <class Type>
 Type nimDerivs_dbeta(Type x, Type shape1, Type shape2, Type give_log)
 {
-  Type res = CondExpEq(give_log, Type(0), 
-		       exp(nimDerivs_lgammafn(shape1+shape2) - nimDerivs_lgammafn(shape1) - 
-			   nimDerivs_lgammafn(shape2)) * pow(x,shape1-1) * pow(1-x,shape2-1),
-		       nimDerivs_lgammafn(shape1+shape2) - nimDerivs_lgammafn(shape1) - nimDerivs_lgammafn(shape2) + 
-		       (shape1-1)*log(x) + (shape2-1)*log(1-x));
+  Type res = nimDerivs_lgammafn(shape1+shape2) - nimDerivs_lgammafn(shape1) - nimDerivs_lgammafn(shape2) + 
+    (shape1-1)*log(x) + (shape2-1)*log(1-x);
+  res = CondExpEq(give_log, Type(1), res, exp(res));
+
+  /* The following code, when used with tape optimize()ation, gives a crash when the wrong bracnch of CondExpEq is triggered */
+  /* Type res = CondExpEq(give_log, Type(0),  */
+  /* 		       exp(nimDerivs_lgammafn(shape1+shape2) - nimDerivs_lgammafn(shape1) -  */
+  /* 			   nimDerivs_lgammafn(shape2)) * pow(x,shape1-1) * pow(1-x,shape2-1), */
+  /* 		       nimDerivs_lgammafn(shape1+shape2) - nimDerivs_lgammafn(shape1) - nimDerivs_lgammafn(shape2) +  */
+  /* 		       (shape1-1)*log(x) + (shape2-1)*log(1-x)); */
   return(res);
 }
 
@@ -523,6 +733,27 @@ Type nimDerivs_dlnorm_logFixed(Type x, Type mean, Type sd, int give_log)
   return(res);
 }
 
+/* ddexp: double exponential (Lapalace) distribution */
+template<class Type>
+Type nimDerivs_ddexp(Type x, Type location, Type scale, Type give_log)
+{
+  Type res = log(Type(0.5)) - log(scale) - abs(x-location)/scale;
+  //  Type res = (Type(1.0/2.0) / scale) * exp(-abs(x - location) / scale);
+  //  res = CppAD::CondExpEq(give_log, Type(1), log(res), res);
+  res = CppAD::CondExpEq(give_log, Type(1), res, exp(res));
+  return(res);
+}
+
+template<class Type>
+Type nimDerivs_ddexp_logFixed(Type x, Type location, Type scale, int give_log)
+{
+  Type res = log(Type(0.5)) - log(scale) - abs(x-location)/scale;
+  //  Type res = Type(1.0/2.0) / scale * exp(-abs(x - location) / scale);
+  if(!give_log){
+	  res = exp(res);
+  }
+  return(res);
+}
 
 /* ddirch: Dirichlet distribution */
 /* This is not in TMB */
@@ -650,5 +881,51 @@ template<class Type>
 Type nimDerivs_factorial(Type x) {
   return exp(nimDerivs_lfactorial<Type>(x));
 }
+
+/* gammafn */
+template<class Type>
+Type nimDerivs_gammafn(Type x) {
+  return exp(nimDerivs_lgammafn<Type>(x));
+}
+
+/* AD recycling rule. See nimbleEigen.h for the non-AD equivalents. */
+template<>
+struct nimble_eigen_traits<CppAD::AD<double> > {
+  enum {nimbleUseLinearAccess = int(1)};
+};
+
+template<>
+struct nimble_size_impl<CppAD::AD<double> > {
+  static unsigned int getSize(const CppAD::AD<double> &arg) {return 1;}
+};
+
+template<typename result_type, typename Index>
+struct nimble_eigen_coeff_impl<true, result_type, CppAD::AD<double>, Index> {
+  static result_type getCoeff(const CppAD::AD<double> Arg, Index i) {return Arg;}
+};
+
+template<typename result_type, typename Index>
+struct nimble_eigen_coeff_mod_impl<true, result_type, CppAD::AD<double>, Index> {
+  static result_type getCoeff(const CppAD::AD<double> Arg, Index i, unsigned int size) {return Arg;}
+};
+
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dbinom, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS2_1scalar(nimDerivs_dexp_nimble, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS2_1scalar(nimDerivs_dexp, CppAD::AD<double>) // broken
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dnbinom, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS2_1scalar(nimDerivs_dpois, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS2_1scalar(nimDerivs_dchisq, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dbeta, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dnorm, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dgamma, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dinvgamma, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dsqrtinvgamma, CppAD::AD<double>) // broken
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_ddexp, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dlnorm, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dlogis, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dunif, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dweibull, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dt_nonstandard, CppAD::AD<double>) // broken
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dt, CppAD::AD<double>) // broken
 
 #endif

@@ -14,9 +14,9 @@ ndf_createDetermSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRep
         ## error gracefully if dynamic index too small or large; we don't catch non-integers within the bounds though
         if(is.null(nodeDim)) {
             nanExpr <- NaN
-        } else nanExpr <- substitute(rep(NaN, LENGTH),
+        } else nanExpr <- substitute(nimRep(NaN, LENGTH),
                                      list(LENGTH = prod(nodeDim)))
-        code <- substitute(if(CONDITION) LHS <<- RHS
+        code <- substitute(if(isTRUE(CONDITION)) LHS <<- RHS
                            else {
                                LHS <<- NANEXPR
                                print(TEXT) },  
@@ -45,7 +45,7 @@ ndf_createStochSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRepl
             nanExpr <- NaN
         } else nanExpr <- substitute(rep(NaN, LENGTH),
                                      list(LENGTH = prod(nodeDim)))
-        code <- substitute(if(CONDITION) LHS <<- RHS
+        code <- substitute(if(isTRUE(CONDITION)) LHS <<- RHS
                            else {
                                LHS <<- NANEXPR
                                print(TEXT) },  
@@ -144,22 +144,23 @@ ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE,
         RHS <- addArg(RHS, 1, 'log')  # adds the last argument log=TRUE (log_value for user-defined) # This was changed to 1 from TRUE for easier C++ generation
         if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
             if(diff) {
-                code <- substitute(if(CONDITION) LocalNewLogProb <- STOCHCALC
+                code <- substitute(if(isTRUE(CONDITION)) LocalNewLogProb <- STOCHCALC
                                    else {LocalNewLogProb <- NaN
                                        print(TEXT)}, # LocalNewLogProb <- -Inf,
                                    list(STOCHCALC = RHS,
                                         CONDITION = dynamicIndexLimitsExpr,
-                                        TEXT = paste0("dynamic index out of bounds: ", deparse(RHSnonReplaced))))
+                                        TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))))
             ## } else if(ADFunc){  ## don't want global assignment for _AD_ functions.
-            ##     code <- substitute(if(CONDITION) LOGPROB <- STOCHCALC
-            ##                        else stop(TEXT),
+            ##     code <- substitute(if(isTRUE(CONDITION)) LOGPROB <- STOCHCALC
+            ##                        else {LOGPROB <- NaN
+            ##                            print(TEXT)},
             ##                        list(LOGPROB = logProbNodeExpr,
             ##                             STOCHCALC = RHS,
             ##                             CONDITION = dynamicIndexLimitsExpr,
-            ##                             TEXT = paste0("dynamic index out of bounds: ", deparse(RHSnonReplaced))))
+            ##                             TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))))
             } else {
 
-                code <- substitute(if(CONDITION) LOGPROB <<- STOCHCALC
+                code <- substitute(if(isTRUE(CONDITION)) LOGPROB <<- STOCHCALC
                                    else {LOGPROB <<- NaN
                                        print(TEXT)}, # LOGPROB <<- -Inf,
                                    list(LOGPROB = logProbNodeExpr,
@@ -230,7 +231,7 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
 
     RHS <- addArg(RHS, 1, logName)  # add log=1 now that pdist() created without 'log'
 
-                code <- substitute(if(CONDITION) LocalNewLogProb <- STOCHCALC
+                code <- substitute(if(isTRUE(CONDITION)) LocalNewLogProb <- STOCHCALC
                                    else { LocalNewLogProb <- NaN
                                        print(TEXT)}, # LocalNewLogProb <- -Inf,
                                    list(STOCHCALC = RHS,
@@ -241,8 +242,8 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
     if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
         if(diff) {
             if(discrete && lower != -Inf) {
-                substCode <- quote(if(CONDITION) {
-                                       if(LOWER <= VALUE & VALUE <= UPPER)
+                substCode <- quote(if(isTRUE(CONDITION)) {
+                                       if(isTRUE(LOWER <= VALUE & VALUE <= UPPER))
                                            LocalNewLogProb <- DENSITY - log(PDIST_UPPER - PDIST_LOWER + DDIST_LOWER)
                                        else LocalNewLogProb <- -Inf
                                    } else {
@@ -250,8 +251,8 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
                                        cat(TEXT) }
                                    )
             } else {
-                substCode <- quote(if(CONDITION) {
-                                       if(LOWER <= VALUE & VALUE <= UPPER)
+                substCode <- quote(if(isTRUE(CONDITION)) {
+                                       if(isTRUE(LOWER <= VALUE & VALUE <= UPPER))
                                            LocalNewLogProb <- DENSITY - log(PDIST_UPPER - PDIST_LOWER)
                                        else LocalNewLogProb <- -Inf
                                    } else {
@@ -273,8 +274,8 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
                                                )), list( e = substCode)))
         } else {
             if(discrete && lower != -Inf) {
-                substCode <- quote(if(CONDITION) {
-                                       if(LOWER <= VALUE & VALUE <= UPPER)
+                substCode <- quote(if(isTRUE(CONDITION)) {
+                                       if(isTRUE(LOWER <= VALUE & VALUE <= UPPER))
                                            LOGPROB <<- DENSITY - log(PDIST_UPPER - PDIST_LOWER + DDIST_LOWER)
                                        else LOGPROB <<- -Inf
                                    } else {
@@ -282,8 +283,8 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
                                        cat(TEXT) }
                                    )
             } else {
-                substCode <- quote(if(CONDITION) {
-                                       if(LOWER <= VALUE & VALUE <= UPPER)
+                substCode <- quote(if(isTRUE(CONDITION)) {
+                                       if(isTRUE(LOWER <= VALUE & VALUE <= UPPER))
                                          LOGPROB <<- DENSITY - log(PDIST_UPPER - PDIST_LOWER)
                                    else LOGPROB <<- -Inf
                                    } else {
@@ -308,11 +309,11 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
     } else {
         if(diff) {
             if(discrete && lower != -Inf) {
-                substCode <- quote(if(LOWER <= VALUE & VALUE <= UPPER)
+                substCode <- quote(if(isTRUE(LOWER <= VALUE & VALUE <= UPPER))
                                        LocalNewLogProb <- DENSITY - log(PDIST_UPPER - PDIST_LOWER + DDIST_LOWER)
                                    else LocalNewLogProb <- -Inf)
             } else {
-                substCode <- quote(if(LOWER <= VALUE & VALUE <= UPPER)
+                substCode <- quote(if(isTRUE(LOWER <= VALUE & VALUE <= UPPER))
                                        LocalNewLogProb <- DENSITY - log(PDIST_UPPER - PDIST_LOWER)
                                    else LocalNewLogProb <- -Inf)
             }
@@ -328,11 +329,11 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
                                                )), list( e = substCode)))
         } else {
             if(discrete && lower != -Inf) {
-                substCode <- quote(if(LOWER <= VALUE & VALUE <= UPPER)
+                substCode <- quote(if(isTRUE(LOWER <= VALUE & VALUE <= UPPER))
                                        LOGPROB <<- DENSITY - log(PDIST_UPPER - PDIST_LOWER + DDIST_LOWER)
                                    else LOGPROB <<- -Inf)
             } else {
-                substCode <- quote(if(LOWER <= VALUE & VALUE <= UPPER)
+                substCode <- quote(if(isTRUE(LOWER <= VALUE & VALUE <= UPPER))
                                        LOGPROB <<- DENSITY - log(PDIST_UPPER - PDIST_LOWER)
                                    else LOGPROB <<- -Inf)
             }

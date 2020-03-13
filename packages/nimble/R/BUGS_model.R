@@ -604,7 +604,7 @@ Details: If a provided value (or the current value in the model when only a name
                                               scalarize <- FALSE else scalarize <- TRUE  ## if non-scalar, check actual dimensionality of input
                                           if(length(nimbleInternalFunctions$dimOrLength(varValue, scalarize = scalarize)) != length(isDataVars[[varName]]))   stop(paste0('incorrect size or dim in data: ', varName))
                                           if(!(all(nimbleInternalFunctions$dimOrLength(varValue, scalarize = scalarize) == isDataVars[[varName]])))   stop(paste0('incorrect size or dim in data: ', varName))
-                                          assign(varName, varValue, inherits = TRUE)
+                                          .self[[varName]] <- varValue
                                           isDataVarValue <- !is.na(varValue)
                                           assign(varName, isDataVarValue, envir = isDataEnv)
                                       }

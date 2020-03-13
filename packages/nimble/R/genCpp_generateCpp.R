@@ -2,7 +2,8 @@
 ## Section for outputting C++ code from an exprClass object ##
 ##############################################################
 
-cppOutputCalls <- c(makeCallList(nimDerivsPrependTypeOperators, 'cppOutputNimDerivsPrependType'),
+cppOutputCalls <- c(makeCallList(recyclingRuleOperatorsAD, 'cppOutputRecyclingRuleADFunction'),
+                    makeCallList(nimDerivsPrependTypeOperators, 'cppOutputNimDerivsPrependType'),
                     makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                     makeCallList(binaryMidLogicalOperators, 'cppOutputMidOperator'),
                     makeCallList(binaryOrUnaryOperators, 'cppOutputBinaryOrUnary'),
@@ -157,6 +158,14 @@ cppOutputSkip <- function(code, symTab) nimGenerateCpp(code$args[[1]], symTab)
 
 cppOutputEigBlank <- function(code, symTab) {
     paste0('(', nimGenerateCpp(code$args[[1]], symTab), ')')
+}
+
+cppOutputRecyclingRuleADFunction <- function(code, symTab) {
+  if(identical(nimbleUserNamespace$cppADCode, 2L)) {
+    code$name <- paste0('nimDerivs_', code$name)
+    code$name <- gsub('::', '::nimDerivs_', code$name)
+  }
+  cppOutputCallAsIs(code, symTab)
 }
 
 cppOutputNimDerivsPrependType <- function(code, symTab){
@@ -363,12 +372,26 @@ cppOutputMemberFunctionGeneric <- function(code, symTab) { ##cppMemberFunction(m
 cppOutputEigExternalUnaryFunction <- function(code, symTab) {
     info <-  eigProxyTranslateExternalUnary[[code$name]]
     if(length(info) < 3) stop(paste0("Invalid information entry for outputting eigen version of ", code$name), call. = FALSE)
-    paste0( '(', nimGenerateCpp(code$args[[1]], symTab), ').unaryExpr(std::ptr_fun<',info[2],', ',info[3],'>(', info[1], '))')
+    info1 <- info[1]
+    info2 <- info[2]
+    info3 <- info[3]
+    if(identical(nimbleUserNamespace$cppADCode, 2L)) {
+      info1 <- paste0('nimDerivs_', info1)
+      info2 <- paste0('CppAD::AD<', info2, '>')
+      info3 <- paste0('CppAD::AD<', info3, '>')
+    }
+    paste0(
+      '(', nimGenerateCpp(code$args[[1]], symTab),
+      ').unaryExpr(std::ptr_fun<',info2,', ',info3,'>(', info1, '))'
+    )
 }
 
 ## like cppOutputCallAsIs but using eigProxyTranslate on the name
 cppOutputNonNativeEigen <- function(code, symTab) {
-    paste0(eigProxyTranslate[code$name], '(', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')' )
+    ans <- paste0(eigProxyTranslate[code$name], '(', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')' )
+    if(identical(nimbleUserNamespace$cppADCode, 2L))
+        ans <- paste0('nimDerivs_', ans)
+    ans
 }
 
 cppOutputEigMemberFunction <- function(code, symTab) {

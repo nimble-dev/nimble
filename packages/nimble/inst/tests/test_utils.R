@@ -366,6 +366,13 @@ wrap_if_matches <- function(pattern, string, wrapper, expr) {
     }
 }
 
+wrap_if_true <- function(test, wrapper, expr, wrap_in_try = FALSE) {
+  wrap <- if (isTRUE(wrap_in_try))
+            function(x) try(x, silent = TRUE)
+          else identity
+  if (isTRUE(test)) wrap(wrapper(expr)) else wrap(expr)
+}
+
 ## This is a parametrized test, where `param` is a list with names:
 ##   param$name - A descriptive test name.
 ##   param$expr - A quoted expression `quote(out <- some_function_of(arg1, arg2, ...))`.
@@ -1658,15 +1665,8 @@ test_dynamic_indexing_model_internal <- function(param) {
                     
                     cm[[param$invalidIndexes[[i]]$var[j]]] <- param$invalidIndexes[[i]]$value[j]
                 }
-                ## use expect_equal not expect_identical because in certain cases we get NA not NaN (having to do with other components of calc/sim output)
-                if(any(is.na(param$invalidIndexes[[i]]$value)) || (!is.null(param$invalidIndexes[[i]]$expect_R_calc_error) && param$invalidIndexes[[i]]$expect_R_calc_error)) {
-                    expect_error(calculate(m), "(missing value where|argument is of length zero)", info = paste0("problem with lack of error in R calculate with NA indexes, case: ", i))
-                    ## When NA is given, R calculate fails with missing value and dynamic index error not flagged explicitly
-                    ## When 0 is the nested index, R calculate fails with length zero argument and dynamic index error not flagged
-                } else {
-                    expect_output(out <- calculate(m), "dynamic index out of bounds", info = paste0("problem with lack of warning in R calculate with non-NA invalid indexes, case: ", i))
-                    expect_equal(out, NaN, info = paste0("problem with lack of NaN in R calculate with non-NA invalid indexes, case: ", i))
-                }
+                expect_output(out <- calculate(m), "dynamic index out of bounds", info = paste0("problem with lack of warning in R calculate with non-NA invalid indexes, case: ", i))
+                expect_equal(out, NaN, info = paste0("problem with lack of NaN in R calculate with non-NA invalid indexes, case: ", i))
                 expect_output(out <- calculate(cm), "dynamic index out of bounds", info = paste0("problem with lack of warning in C calculate with invalid indexes, case: ", i))
                 expect_equal(out, NaN, info = paste0("problem with lack of NaN in C calculate with invalid indexes, case: ", i))
                 expect_output(out <- calculateDiff(cm), "dynamic index out of bounds", info = paste0("problem with lack of warning in C calculateDiff with invalid indexes, case: ", i))
@@ -1735,4 +1735,200 @@ compareFilesUsingDiff <- function(trialFile, correctFile, main = "") {
     invisible(NULL)
 }
 
+## Create a nimbleFunction parametrization to be passed to gen_runFunCore().
+##
+## op:        An operator string.
+## argTypes:  A character vector of argTypes (e.g. "double(0)").
+##            If this is a named vector, then the names will be
+##            interpreted as the formals to the constructed op call.
+## more_args: A named list, e.g. list(log = 1), that will be added
+##            as a formal to the output expr but not part of args.
+##
+make_op_param <- function(op, argTypes, more_args = NULL) {
+  arg_names <- names(argTypes)
 
+  if (is.null(arg_names)) {
+    arg_names <- paste0('arg', 1:length(argTypes))
+    op_args <- lapply(arg_names, as.name)
+  } else {
+    op_args <- sapply(arg_names, as.name, simplify = FALSE)
+  }
+
+  args_string <- paste0(arg_names, ' = ', argTypes, collapse = ' ')
+  name <- paste(op, args_string)
+
+  expr <- substitute(
+    out <- this_call,
+    list(
+      this_call = as.call(c(
+        substitute(FOO, list(FOO = as.name(op))),
+        op_args, more_args
+      ))
+    )
+  )
+
+  argTypesList <- as.list(argTypes)
+  names(argTypesList) <- arg_names
+  argTypesList <- lapply(argTypesList, function(arg) {
+    parse(text = arg)[[1]]
+  })
+
+  list(
+    name = name,
+    expr = expr,
+    args = argTypesList,
+    outputType = parse(text = return_type_string(op, argTypes))[[1]]
+  )
+}
+
+## Takes an operator and its input types as a character vector and
+## creates a string representing the returnType for the operation.
+##
+## op:       An operator string
+## argTypes: A character vector of argTypes (e.g. "double(0)".
+##
+return_type_string <- function(op, argTypes) {
+
+  ## multivariate distributions ops.  These do not support recycling rule behavior, so the return type is always double(0)
+  mvdist_ops <- names(nimble:::sizeCalls)[nimble:::sizeCalls == 'sizeScalarRecurseAllowMaps'] 
+  if(op %in% mvdist_ops)
+    return("double(0)")
+  
+  ## see ops handled by eigenize_recyclingRuleFunction in genCpp_eigenization.R
+  recycling_rule_ops <- c(
+    nimble:::scalar_distribution_dFuns,
+    nimble:::scalar_distribution_pFuns,
+    nimble:::scalar_distribution_qFuns,
+    nimble:::scalar_distribution_rFuns,
+    paste0(c('d', 'q', 'p', 'r'), 't'),
+    paste0(c('d', 'q', 'p', 'r'), 'exp'),
+    'bessel_k'
+  )
+
+  returnTypeCode <- nimble:::returnTypeHandling[[op]]
+
+  if (is.null(returnTypeCode))
+    if (!op %in% recycling_rule_ops)
+      return(argTypes[1])
+    else returnTypeCode <- 1
+
+  scalarTypeString <- switch(
+    returnTypeCode,
+    'double', ## 1
+    'integer', ## 2
+    'logical'  ## 3
+  )
+
+  args <- lapply(
+    argTypes, function(argType)
+      nimble:::argType2symbol(parse(text = argType)[[1]])
+  )
+
+  if (is.null(scalarTypeString)) ## returnTypeCode is 4 or 5
+    scalarTypeString <-
+      if (length(argTypes) == 1)
+        if (returnTypeCode == 5 && args[[1]]$type == 'logical') 'integer'
+        else args[[1]]$type
+      else if (length(argTypes) == 2) {
+        aot <- nimble:::arithmeticOutputType(args[[1]]$type, args[[2]]$type)
+        if (returnTypeCode == 5 && aot == 'logical') 'integer'
+        else aot
+      }
+
+  reductionOperators <- c(
+    nimble:::reductionUnaryOperators,
+    nimble:::matrixSquareReductionOperators,
+    nimble:::reductionBinaryOperatorsEither,
+    'dmulti'
+  )
+
+  nDim <- if (op %in% reductionOperators) 0
+          else max(sapply(args, `[[`, 'nDim'))
+
+  if (nDim > 2)
+    stop(
+      'Testing does not currently support args with nDim > 2',
+      call. = FALSE
+    )
+
+  sizes <- if (nDim == 0) 1
+           else if (length(argTypes) == 1) args[[1]]$size
+           else if (op %in% nimble:::matrixMultOperators)  {
+             if (!length(argTypes) == 2)
+               stop(
+                 paste0(
+                   'matrixMultOperators should only have 2 args but got ',
+                   length(argTypes)
+                 ), call. = FALSE
+               )
+             c(args[[1]]$size[1], args[[2]]$size[2])
+           } else if (nDim == 2) {
+             ## one arg is a matrix but this is not matrix multiplication
+             ## so assume that the first arg with nDim > 1
+             has_right_nDim <- sapply(args, function(arg) arg$nDim == nDim)
+             args[has_right_nDim][[1]]$size
+           } else {
+             ## nDim is 1 so either recycling rule or simple vector operator
+             max((sapply(args, `[[`, 'size')))
+           }
+
+  size_string <- if (nDim > 0)
+                   paste0(', c(', paste(sizes, collapse = ', '), ')')
+                 else ''
+
+  return(paste0(scalarTypeString, '(', nDim, size_string, ')'))
+}
+
+## Takes an argSymbol and if argSymbol$size is NA adds default sizes.
+add_missing_size <- function(argSymbol, vector_size = 3, matrix_size = c(3, 4)) {
+  if (any(is.na(argSymbol$size))) {
+    if (argSymbol$nDim == 1)
+      argSymbol$size <- vector_size
+    else if (argSymbol$nDim == 2)
+      argSymbol$size <- matrix_size
+  }
+  invisible(argSymbol)
+}
+
+arg_type_2_input <- function(argType, input_gen_fun = NULL) {
+  argSymbol <- add_missing_size(
+    nimble:::argType2symbol(argType)
+  )
+  type <- argSymbol$type
+  nDim <- argSymbol$nDim
+  size <- argSymbol$size
+  if (is.null(input_gen_fun))
+    input_gen_fun <- switch(
+      type,
+      "double"  = function(arg_size) rnorm(prod(arg_size)),
+      "integer" = function(arg_size) rgeom(prod(arg_size), 0.5),
+      "logical" = function(arg_size)
+        sample(c(TRUE, FALSE), prod(arg_size), replace = TRUE)
+    )
+  arg <- switch(
+    nDim + 1,
+    input_gen_fun(1), ## nDim is 0
+    input_gen_fun(size), ## nDim is 1
+    matrix(input_gen_fun(size), nrow = size[1], ncol = size[2]), ## nDim is 2
+    array(input_gen_fun(size), dim = size) ## nDim is 3
+  )
+  if (is.null(arg))
+    stop('Something went wrong while making test input.', call.=FALSE)
+  return(arg)
+}
+
+modify_on_match <- function(x, pattern, key, value, env = parent.frame(), ...) {
+  ## Modify any elements of a named list that match pattern.
+  ##
+  ## @param x A named list of lists.
+  ## @param pattern A regex pattern to compare with `names(x)`.
+  ## @param key The key to modify in any lists whose names match `pattern`.
+  ## @param value The new value for `key`.
+  ## @param env The environment in which to modify `x`.
+  ## @param ... Additional arguments for `grepl`.
+  for (name in names(x)) {
+    if (grepl(pattern, name, ...)) {
+      eval(substitute(x[[name]][[key]] <- value), env)
+    }
+  }
+}

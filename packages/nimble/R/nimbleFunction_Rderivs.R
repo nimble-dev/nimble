@@ -94,9 +94,27 @@ nimDerivs <- function(nimFxn = NA,
   ans
 }
 
+calcDerivs_hessian <- function(func, X, n, deriv_package = "pracma") {
+    use_pracma <- deriv_package == "pracma"
+    if(missing(n)) {
+        check <- func(X)
+        n <- length(check)
+    }
+    p <- length(X)
+    outHess <- array(NA, dim = c(p, p, n))
+    for(i in 1:n) {
+        wrapped_func <- function(X) as.numeric(func(X))[i]
+        if(use_pracma)
+            outHess[, , i] <- pracma::hessian(wrapped_func, X)
+        else
+            outHess[, , i] <- numDeriv::hessian(wrapped_func, X)
+    }
+    outHess
+}
+
 calcDerivs_internal <- function(func, X, order, resultIndices ) {
-      if(!require('numDeriv'))
-      stop("The 'numDeriv' package must be installed to use derivatives in
+    if(!require('numDeriv'))
+        stop("The 'numDeriv' package must be installed to use derivatives in
          uncompiled nimbleFunctions.")
 
     hessianFlag <- 2 %in% order
@@ -105,34 +123,78 @@ calcDerivs_internal <- function(func, X, order, resultIndices ) {
     ## because value will be obtained later (if requested) after restoring
     ## model variables.
     valueFlag <- 0 %in% order
+    outVal <- NULL
+
     if(hessianFlag) {
-        ## If hessians are requested, derivatives taken using numDeriv's genD() 
-        ## function.  After that, we extract the various derivative elements and 
-        ## arrange them properly.
-        derivList <- genD(func, X)
-        if(valueFlag) outVal <- derivList$f0 
-        if(jacobianFlag) outGrad <- derivList$D[,1:derivList$p, drop = FALSE]
-        outHessVals <- derivList$D[,(derivList$p + 1):dim(derivList$D)[2],
-                                   drop = FALSE]
-        outHess <- array(NA, dim = c(derivList$p, derivList$p, length(derivList$f0)))
-        singleDimMat <- matrix(NA, nrow = derivList$p, ncol = derivList$p)
-        singleDimMatUpperTriDiag <- upper.tri(singleDimMat, diag = TRUE)
-        singleDimMatLowerTriDiag <- lower.tri(singleDimMat)
-        for(outDim in seq_along(derivList$f0)){
-            singleDimMat[singleDimMatUpperTriDiag] <- outHessVals[outDim,]
-            singleDimMat[singleDimMatLowerTriDiag] <- t(singleDimMat)[singleDimMatLowerTriDiag]
-            outHess[,,outDim] <- singleDimMat
+        ## determine output size
+        returnType_scalar <- FALSE
+        funcEnv <- environment(func)
+        if (deparse(funcEnv$fxnCall[[1]]) == 'nimDerivs_nf') {
+            fxnEnv <- funcEnv[['fxnEnv']]
+            derivFxnCall <- funcEnv[['derivFxnCall']]
+            genFunEnv <- environment(
+                environment(
+                    eval(derivFxnCall[[1]], envir = fxnEnv)
+                )[['.generatorFunction']]
+            )
+            returnType <- argType2symbol(
+                genFunEnv$methodList[[funcEnv$derivFxnName]]$returnType
+            )
+            returnType_scalar <- all(returnType$size == 1)
+        } else {
+            outVal <- func(X)
+            returnType_scalar <- length(outVal) == 1
         }
-    } else
-        if(jacobianFlag){
-            ## If jacobians are requested, derivatives taken using numDeriv's jacobian() 
-            ## function.  After that, we extract the various derivative elements and 
-            ## arrange them properly.
-            outVal <- func(X) 
-            outGrad <- jacobian(func, X)
-        } else 
-            if(valueFlag)
-                outVal <- func(X)
+
+        use_pracma <- requireNamespace("pracma")
+        if(!use_pracma) {
+            message("Install package pracma for more accurate numerical Hessians in uncompiled (R) execution (experimental).")
+        }
+        
+        if (returnType_scalar) {
+            ## numDeriv's hessian() only works for scalar-valued functions
+            if(use_pracma) {
+                hess <- pracma::hessian(func, X)
+            } else {
+                hess <- numDeriv::hessian(func, X)
+            }
+            outHess <- array(NA, dim = c(dim(hess)[1], dim(hess)[2], 1))
+            outHess[,,1]  <- hess
+            if(jacobianFlag) outGrad <- jacobian(func, X)
+            if(valueFlag && is.null(outVal)) outVal <- func(X)
+        } else {
+            ## If hessians are requested for a non-scalar valued function,
+            ## derivatives taken using numDeriv's genD() function.  After that,
+            ## we extract the various derivative elements and arrange them properly.
+            if(use_pracma) {
+                value <- func(X)
+                if(valueFlag && is.null(outVal)) outVal <- value
+                if(jacobianFlag) outGrad <- jacobian(func, X)
+                outHess <- calcDerivs_hessian(func, X, n = length(value), deriv_package = "pracma") 
+            } else {
+                derivList <- genD(func, X)
+                if(valueFlag && is.null(outVal)) outVal <- derivList$f0
+                if(jacobianFlag) outGrad <- derivList$D[,1:derivList$p, drop = FALSE]
+                outHessVals <- derivList$D[,(derivList$p + 1):dim(derivList$D)[2],
+                                           drop = FALSE]
+                outHess <- array(NA, dim = c(derivList$p, derivList$p, length(derivList$f0)))
+                singleDimMat <- matrix(NA, nrow = derivList$p, ncol = derivList$p)
+                singleDimMatUpperTriDiag <- upper.tri(singleDimMat, diag = TRUE)
+                singleDimMatLowerTriDiag <- lower.tri(singleDimMat)
+                for(outDim in seq_along(derivList$f0)){
+                    singleDimMat[singleDimMatUpperTriDiag] <- outHessVals[outDim,]
+                    singleDimMat[singleDimMatLowerTriDiag] <- t(singleDimMat)[singleDimMatLowerTriDiag]
+                    outHess[,,outDim] <- singleDimMat
+                }
+            }
+        }
+    } else if(jacobianFlag){
+        ## If jacobians are requested, derivatives taken using numDeriv's jacobian()
+        ## function.
+        if(valueFlag) outVal <- func(X)
+        outGrad <- jacobian(func, X)
+    } else if(valueFlag)
+        outVal <- func(X)
     
     outList <- ADNimbleList$new()
     if(!missing(resultIndices)) {
@@ -385,17 +447,23 @@ nimDerivs_calcNodes <- function( nimFxn, order = c(0, 1, 2), wrt = NULL, derivFx
 
 nimDerivs_nf <- function(nimFxn = NA, order = nimC(0,1,2),
                          wrt = NULL, derivFxnCall = NULL, fxnEnv = parent.frame()){
-    fxnCall <- match.call()
-    ## This may be called directly (for testing) or from nimDerivs (typically).
-    ## In the former case, we get derivFxnCall from the nimFxn argument.
-    ## In the latter case, it is already match.call()ed and is passed here via derivFxnCall
-    if(is.null(derivFxnCall))
-        derivFxnCall <- fxnCall[['nimFxn']] ## either calculate(model, nodes) or model$calculate(nodes)
-    else
-        if(is.null(fxnCall[['order']]))
-            fxnCall[['order']] <- order
+  fxnCall <- match.call()
+  ## This may be called directly (for testing) or from nimDerivs (typically).
+  ## In the former case, we get derivFxnCall from the nimFxn argument.
+  ## In the latter case, it is already match.call()ed and is passed here via derivFxnCall
+  if(is.null(derivFxnCall))
+    derivFxnCall <- fxnCall[['nimFxn']] ## either calculate(model, nodes) or model$calculate(nodes)
+  else
+    if(is.null(fxnCall[['order']]))
+      fxnCall[['order']] <- order
 
-  fA <- formalArgs(eval(derivFxnCall[[1]], envir = fxnEnv))
+  ## get the actual function
+  derivFxn <- eval(derivFxnCall[[1]], envir = fxnEnv)
+
+  ## standardize the derivFxnCall arguments
+  derivFxnCall <- match.call(derivFxn, derivFxnCall)
+
+  fA <- formalArgs(derivFxn)
   if(is.null(wrt)) {
     wrt <- fA
   }
@@ -419,13 +487,14 @@ nimDerivs_nf <- function(nimFxn = NA, order = nimC(0,1,2),
   
   wrt_names_orig_indices <- match(wrt_names, wrt_unique_names)
   wrt_unique_name_strings <- as.character(wrt_unique_names)
-  
-  ## get original argument values from fxnEnv.
+
+  ## get the user-supplied arguments to the nFunction
+  derivFxnCall_args <- as.list(derivFxnCall)[-1]
+
+  ## Get the value of the user-supplied args
   ## These will be modified in func.
   ## This is ordered by fA, the arguments of the target function
-  fxnArgs <- lapply(fA,
-                    function(x) 
-                        get(x, envir = fxnEnv))
+  fxnArgs <- lapply(derivFxnCall_args, function(x) eval(x, envir = fxnEnv))
   names(fxnArgs) <- as.character(fA)
   
   ## Get length or dimensions
