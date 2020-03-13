@@ -483,25 +483,25 @@ Invisibly returns a list of the current sampler configurations, which are sample
             thisControlList <- mcmc_generateControlListArgument(control=controlArgs, controlDefaults=controlDefaults)  ## should name arguments
             
             if(!scalarComponents) {
-                addSamplerOne(thisSamplerName, samplerFunction, target, thisControlList)
+                addSamplerOne(thisSamplerName, samplerFunction, target, thisControlList, print)
             } else {  ## assign sampler type to each scalar component of target
                 targetAsScalars <- model$expandNodeNames(target)
                 for(i in seq_along(targetAsScalars)) {
-                    addSamplerOne(thisSamplerName, samplerFunction, targetAsScalars[i], thisControlList)
+                    addSamplerOne(thisSamplerName, samplerFunction, targetAsScalars[i], thisControlList, print)
                 }
             }
             
-            if(print) printSamplers(newSamplerInd)
             return(invisible(samplerConfs))
         },
 
-        addSamplerOne = function(thisSamplerName, samplerFunction, targetOne, thisControlList) {
+        addSamplerOne = function(thisSamplerName, samplerFunction, targetOne, thisControlList, print) {
             '
 For internal use only
 '
             newSamplerInd <- length(samplerConfs) + 1
             samplerConfs[[newSamplerInd]] <<- samplerConf(name=thisSamplerName, samplerFunction=samplerFunction, target=targetOne, control=thisControlList, model=model)
             samplerExecutionOrder <<- c(samplerExecutionOrder, newSamplerInd)
+            if(print) printSamplers(newSamplerInd)
         },
         
         removeSamplers = function(..., ind, print = FALSE) {
