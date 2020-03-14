@@ -1597,8 +1597,9 @@ sampler_RW_dirichlet <- nimbleFunction(
             if(propValue != 0) {
                 thetaVecProp <- thetaVec
                 thetaVecProp[i] <- propValue
-                values(model, target) <<- thetaVecProp / sum(thetaVecProp)
-                logMHR <- alphaVec[i]*propLogScale + currentValue - propValue + calculateDiff(model, depNodes)
+                thetaVecProp <- thetaVecProp / sum(thetaVecProp)
+                values(model, target) <<- thetaVecProp 
+                logMHR <- calculateDiff(model, calcNodes) + log(thetaVecProp[i]/currentValue) + (d-1)*log((1-thetaVecProp[i])/(1-currentValue))
                 jump <- decide(logMHR)
             } else jump <- FALSE
             if(adaptive & jump)   timesAcceptedVec[i] <<- timesAcceptedVec[i] + 1
