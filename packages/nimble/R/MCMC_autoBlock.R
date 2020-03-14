@@ -216,7 +216,7 @@ autoBlockClass <- setRefClass(
                     type <- runListElement
                 } else if(is.list(runListElement)) {
                     type <- 'blocks'
-                } else if(class(runListElement) == '{') {
+                } else if(inherits(runListElement, '{')) {
                     type <- 'conf'
                 } else stop('don\'t understand element in run list')
                 switch(type,

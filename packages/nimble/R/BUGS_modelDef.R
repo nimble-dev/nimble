@@ -691,7 +691,7 @@ modelDefClass$methods(expandDistributions = function() {
 modelDefClass$methods(checkMultivarExpr = function() {
     checkForExpr <- function(expr) {
         ##output <- FALSE
-        if(length(expr) == 1 && class(expr) %in% c("name", "numeric")) return(FALSE)
+        if(length(expr) == 1 && (inherits(expr, "name") || inherits(expr, "numeric"))) return(FALSE)
         if(!deparse(expr[[1]]) == '[') return(TRUE)
         ## recurse only on the first argument of the `[`
         return(checkForExpr(expr[[2]]))
@@ -984,7 +984,7 @@ replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) 
                     # if(callChar != ':') {
                     if(!is.vectorized(code)) {
                         if(is.null(neverReplaceable[[callChar]])) {
-                            if(class(get(callChar, constEnv)) == 'function') {
+                            if(inherits(get(callChar, constEnv),'function')) {
                                 testcode <- as.numeric(eval(code, constEnv))
                                 if(length(testcode) == 1) code <- testcode
                             }

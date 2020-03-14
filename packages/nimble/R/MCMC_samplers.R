@@ -337,8 +337,8 @@ sampler_RW_block <- nimbleFunction(
 ##        my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
         my_calcAdaptationFactor <- calcAdaptationFactor(d, adaptFactorExponent)
         ## checks
-        if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
-        if(class(propCov[1,1]) != 'numeric')  stop('propCov matrix must be numeric\n')
+        if(!inherits(propCov, 'matrix'))        stop('propCov must be a matrix\n')
+        if(!inherits(propCov[1,1], 'numeric'))  stop('propCov matrix must be numeric\n')
         if(!all(dim(propCov) == d))           stop('propCov matrix must have dimension ', d, 'x', d, '\n')
         if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
     },
@@ -992,8 +992,8 @@ sampler_RW_llFunction_block <- nimbleFunction(
         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
         my_calcAdaptationFactor <- calcAdaptationFactor(d, adaptFactorExponent)
         ## checks
-        if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
-        if(class(propCov[1,1]) != 'numeric')  stop('propCov matrix must be numeric\n')
+        if(!inherits(propCov, 'matrix'))        stop('propCov must be a matrix\n')
+        if(!inherits(propCov[1,1], 'numeric'))  stop('propCov matrix must be numeric\n')
         if(!all(dim(propCov) == d))           stop('propCov matrix must have dimension ', d, 'x', d, '\n')
         if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
     },
@@ -1325,8 +1325,8 @@ sampler_RW_PF_block <- nimbleFunction(
         }
         particleMV <- my_particleFilter$mvEWSamples
         ## checks
-        if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
-        if(class(propCov[1,1]) != 'numeric')  stop('propCov matrix must be numeric\n')
+        if(!inherits(propCov, 'matrix'))        stop('propCov must be a matrix\n')
+        if(!inherits(propCov[1,1], 'numeric'))  stop('propCov matrix must be numeric\n')
         if(!all(dim(propCov) == d))           stop('propCov matrix must have dimension ', d, 'x', d, '\n')
         if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
         if(length(targetAsScalar) < 2)        stop('less than two top-level targets; cannot use RW_PF_block sampler, try RW_PF sampler')
@@ -1677,8 +1677,8 @@ sampler_RW_wishart <- nimbleFunction(
         ## checks
         dist <- model$getDistribution(target)
         if(d < 2)                             stop('RW_wishart sampler requires target node dimension to be at least 2x2')
-        if(class(propCov) != 'matrix')        stop('propCov must be a matrix')
-        if(class(propCov[1,1]) != 'numeric')  stop('propCov matrix must be numeric')
+        if(!inherits(propCov, 'matrix'))        stop('propCov must be a matrix')
+        if(!inherits(propCov[1,1], 'numeric'))  stop('propCov matrix must be numeric')
         if(!all(dim(propCov) == nTheta))      stop('propCov matrix must have dimension ', d, 'x', d)
         if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
     },
