@@ -1,41 +1,14 @@
 
-
-
-##library(nimble)
-## 
-##code <- nimbleCode({
-##    a ~ dnorm(0, 1)
-##    b ~ dgamma(1, 1)
-##    c ~ dunif(2, 10)
-##    d[1:3] ~ dmnorm(mu[1:3], cov = C[1:3,1:3])
-##    e[1:3,1:3] ~ dwish(R = C[1:3,1:3], df = 5)
-##})
-##constants <- list(mu=rep(0,3), C=diag(3))
-##data <- list()
-##U <- matrix(c(.2,2,4,0,1,1,0,0,4), nrow=3, byrow=TRUE)
-##eInit <- t(U) %*% U
-##inits <- list(a=0, b=1, c=5, d=rep(0,3), e=eInit)
-##Rmodel <- nimbleModel(code, constants, data, inits)
-##Rmodel$calculate()
-##
-##Rmodel$e
-##chol(Rmodel$e)
-##chol(Rmodel$e) - U
-##(eVec <- values(Rmodel, 'e'))
-##mVal <- eVec
-##(node <- Rmodel$expandNodeNames('e'))
-##model <- Rmodel
-
 ptNodeVirtual <- nimbleFunctionVirtual(
     methods = list(
-        getOriginalLengthOne    = function()               { returnType(double())  },
-        getTransformedLengthOne = function()               { returnType(double())  },
-        transformOne          = function(mVal = double(1)) { returnType(double(1)) },
-        inverseTransformOne   = function(tVal = double(1)) { returnType(double(1)) },
-        calcLogDetJacobianOne = function(tVal = double(1)) { returnType(double())  }
+        getOriginalLengthOne    = function()                 { returnType(double())  },
+        getTransformedLengthOne = function()                 { returnType(double())  },
+        transformOne            = function(mVal = double(1)) { returnType(double(1)) },
+        inverseTransformOne     = function(tVal = double(1)) { returnType(double(1)) },
+        calcLogDetJacobianOne   = function(tVal = double(1)) { returnType(double())  }
     )
 )
-##
+
 ptNodeScalar <- nimbleFunction(
     name = 'ptNodeScalar',
     contains = ptNodeVirtual,
@@ -61,7 +34,7 @@ ptNodeScalar <- nimbleFunction(
         }
     ), where = getLoadingNamespace()
 )
-##
+
 ptNodeScalarSemiInterval <- nimbleFunction(
     name = 'ptNodeScalarSemiInterval',
     contains = ptNodeVirtual,
@@ -96,7 +69,7 @@ ptNodeScalarSemiInterval <- nimbleFunction(
         }
     ), where = getLoadingNamespace()
 )
-##
+
 ptNodeScalarInterval <- nimbleFunction(
     name = 'ptNodeScalarInterval',
     contains = ptNodeVirtual,
@@ -140,7 +113,7 @@ ptNodeScalarInterval <- nimbleFunction(
         }
     ), where = getLoadingNamespace()
 )
-##
+
 ptNodeMultiMNorm <- nimbleFunction(
     name = 'ptNodeMultiMNorm',
     contains = ptNodeVirtual,
@@ -168,7 +141,7 @@ ptNodeMultiMNorm <- nimbleFunction(
         }
     ), where = getLoadingNamespace()
 )
-##
+
 ptNodeMultiWishart <- nimbleFunction(
     name = 'ptNodeMultiWishart',
     contains = ptNodeVirtual,
@@ -276,8 +249,7 @@ parameterTransform <- nimbleFunction(
                              tLength <- tLength + ptNodeNFL[[i]]$getTransformedLengthOne() }
         if(nLength != length(model$expandNodeNames(nodesExpanded, returnScalarComponents = TRUE))) stop('something wrong with nLength', call. = FALSE)
         ##
-        nInd <- array(0, c(nNodes, 2))
-        tInd <- array(0, c(nNodes, 2))
+        nInd <- tInd <- array(0, c(nNodes, 2))
         for(i in 1:nNodes) {
             nInd[i,1] <- if(i==1) 1 else nInd[i-1,2]+1
             nInd[i,2] <- nInd[i,1] + ptNodeNFL[[i]]$getOriginalLengthOne() - 1
@@ -355,6 +327,33 @@ parameterTransform <- nimbleFunction(
 
 
 
+##library(nimble)
+##
+##code <- nimbleCode({
+##    a ~ dnorm(0, 1)
+##    b ~ dgamma(1, 1)
+##    c ~ dunif(2, 10)
+##    d[1:3] ~ dmnorm(mu[1:3], cov = C[1:3,1:3])
+##    e[1:3,1:3] ~ dwish(R = C[1:3,1:3], df = 5)
+##})
+##constants <- list(mu=rep(0,3), C=diag(3))
+##data <- list()
+##U <- matrix(c(.2,2,4,0,1,1,0,0,4), nrow=3, byrow=TRUE)
+##eInit <- t(U) %*% U
+##inits <- list(a=0, b=1, c=5, d=rep(0,3), e=eInit)
+##Rmodel <- nimbleModel(code, constants, data, inits)
+##Rmodel$calculate()
+##
+##Rmodel$e
+##chol(Rmodel$e)
+##chol(Rmodel$e) - U
+##(eVec <- values(Rmodel, 'e'))
+##mVal <- eVec
+##(node <- Rmodel$expandNodeNames('e'))
+##model <- Rmodel
+##
+##
+##
 ##(nodes <- c('a'))
 ##(nodes <- c('a', 'b'))
 ##(nodes <- c('a', 'b', 'c'))
