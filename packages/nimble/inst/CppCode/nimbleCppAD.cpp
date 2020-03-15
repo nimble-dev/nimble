@@ -116,6 +116,24 @@ nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(
   return (ADlist);
 }
 
+void setOrdersFound(const NimArr<1, double> &derivOrders,
+		    bool *ordersFound,
+		    int &maxOrder) {
+  /* ordersFound must have length (at least) 3.*/
+  int orderSize = derivOrders.size();
+  double const* array_derivOrders = derivOrders.getConstPtr();
+  maxOrder = 0;
+  maxOrder =
+    *std::max_element(array_derivOrders, array_derivOrders + orderSize);
+  std::fill(ordersFound, ordersFound + 3, false);
+  for (int i = 0; i < orderSize; i++) {
+    if ((array_derivOrders[i] > 2) | (array_derivOrders[i] < 0)) {
+      printf("Error: Derivative orders must be between 0 and 2.\n");
+    }
+    ordersFound[static_cast<int>(array_derivOrders[i])] = true;
+  }
+}
+
 template<typename BASE, class TAPETYPE, class ADCLASS>
 void getDerivs_internal(vector<BASE> &independentVars,			
 			TAPETYPE *ADtape,
@@ -137,27 +155,15 @@ void getDerivs_internal(vector<BASE> &independentVars,
   }
   bool wrtAll = wrtVector[0] == -1; // 1st element -1 is a flag to behave as if wrtVector has all elements
   if(wrtAll) wrt_n = n;
-  
-  int orderSize = derivOrders.size();
-  double const* array_derivOrders = derivOrders.getConstPtr();
 
-  int maxOrder =
-    *std::max_element(array_derivOrders, array_derivOrders + orderSize);
-  bool ordersFound[3] = {false};
-
-  for (int i = 0; i < orderSize; i++) {
-    if ((array_derivOrders[i] > 2) | (array_derivOrders[i] < 0)) {
-      printf("Error: Derivative orders must be between 0 and 2.\n");
-    }
-    ordersFound[static_cast<int>(array_derivOrders[i])] = true;
-  }
+  int maxOrder;
+  bool ordersFound[3];
+  setOrdersFound(derivOrders, ordersFound, maxOrder);
   vector<BASE> value_ans;
   #ifdef _TIME_AD
   derivs_run_tape_timer_start();
 #endif
-  //  std::cout<<"About to run ADtape->Forward"<<std::endl;
   value_ans = ADtape->Forward(0, independentVars);
-  // std::cout<<"Done with ADtape->Forward"<<std::endl;
 #ifdef _TIME_AD
   derivs_run_tape_timer_stop();
 #endif
@@ -274,12 +280,12 @@ void nimbleFunctionCppADbase::getDerivs_meta(nimbleCppADinfoClass &ADinfo,
 					     const NimArr<1, double> &wrtVector,
 					     nimSmartPtr<NIMBLE_ADCLASS_META> &ansList) {
   // std::cout<<"Entering getDerivs_meta"<<std::endl;
-  CppAD::ADFun< CppAD::AD<double>, double > metaTape;
-  metaTape = ADinfo.ADtape->base2ad();
+  CppAD::ADFun< CppAD::AD<double>, double > innerTape;
+  innerTape = ADinfo.ADtape->base2ad();
   getDerivs_internal< CppAD::AD<double>,
 		      CppAD::ADFun< CppAD::AD<double>, double >,
 		      NIMBLE_ADCLASS_META>(ADinfo.independentVars_meta,
-					   &metaTape,
+					   &innerTape,
 					   derivOrders,
 					   wrtVector,
 					   ansList);
@@ -528,29 +534,82 @@ CppAD::ADFun<double>* calculate_recordTape(NodeVectorClassNew_derivs &NV) {
   // DO NOT USE THE CONSTRUCTOR VERSION BECAUSE IT ALWAYS DOES .Forward(0)
   // INSTEAD MAKE THE BLANK OBJECT AND USE .Dependent(...)
   // TRY USING CppAD's vector type
-  CppAD::ADFun<double>* RETURN_TAPE_;
-  RETURN_TAPE_ = new CppAD::ADFun<double>;
-  RETURN_TAPE_->Dependent(independentVars, dependentVars);
-  RETURN_TAPE_->optimize(); //("no_compare_op") makes almost no difference;
-  return RETURN_TAPE_;
+  CppAD::ADFun<double>* ansTape = new CppAD::ADFun<double>;
+  ansTape->Dependent(independentVars, dependentVars);
+  ansTape->optimize(); //("no_compare_op") makes almost no difference;
+  return ansTape;
 }
 
 void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass &ADinfo,
+							   CppAD::ADFun<double>* &tapePtr,
 							   NodeVectorClassNew_derivs &nodes,
 							   const NimArr<1, double> &derivOrders,
 							   const NimArr<1, double> &wrtVector,
 							   nimSmartPtr<NIMBLE_ADCLASS> ansList) {
+  bool use_meta_tape = true;
 
-  // std::cout<<"Entering getDerivs_calculate_internal"<<std::endl;
-  if(!ADinfo.ADtape) {
-    // std::cout<<"About to record tape"<<std::endl;
-    ADinfo.ADtape = calculate_recordTape(nodes);
-    // std::cout<<"Done record tape"<<std::endl;
+  if(!tapePtr) {
+    if(!use_meta_tape) {
+      tapePtr = calculate_recordTape(nodes);
+    } else {
+      CppAD::ADFun< double > *firstTape;
+      firstTape = calculate_recordTape(nodes);
+      CppAD::ADFun< CppAD::AD<double>, double > innerTape;
+      // Make original tape use CppAD::AD<double> instead of double
+      set_CppAD_atomic_info_for_model(nodes, CppAD::local::atomic_index_info_vec_manager<double>::manage());
+      innerTape = firstTape->base2ad();
+      int length_wrt = nodes.model_wrt_accessor.getTotalLength();
+      int length_independent = length_wrt;
+      int length_extraInput = nodes.model_extraInput_accessor.getTotalLength();
+      vector< CppAD::AD<double> > dependentVars(length_wrt); // This will be the gradient
+      vector< CppAD::AD<double> > independentVars(length_independent);
+      vector< CppAD::AD<double> > dynamicVars(length_extraInput);
+      size_t abort_op_index = 0; 
+      bool   record_compare = true;
+      NimArr<1, double > NimArrVars;
+      NimArrVars.setSize(length_wrt);
+      getValues(NimArrVars, nodes.model_wrt_accessor);
+      std::copy(NimArrVars.getPtr(),
+		NimArrVars.getPtr() + length_wrt,
+		independentVars.begin());
+      if(length_extraInput > 0) {
+	NimArr<1, double> NimArr_dynamicVars;
+	NimArr_dynamicVars.setSize(length_extraInput);
+	getValues(NimArr_dynamicVars, nodes.model_extraInput_accessor);
+	std::copy( NimArr_dynamicVars.getPtr(),
+		   NimArr_dynamicVars.getPtr() + length_extraInput,
+		   dynamicVars.begin() );
+      }
+      nimSmartPtr<NIMBLE_ADCLASS_META> ansList_meta = new NIMBLE_ADCLASS_META;
+      CppAD::Independent(independentVars, abort_op_index, record_compare, dynamicVars); // start recording new tape
+      set_CppAD_tape_info_for_model my_tape_info_RAII_(nodes,
+						       CppAD::AD<double>::get_tape_id_nimble(),
+						       CppAD::AD<double>::get_tape_handle_nimble());
+      set_CppAD_atomic_info_for_model(nodes, CppAD::local::atomic_index_info_vec_manager<double>::manage());
+      ADinfo.independentVars_meta.resize(length_wrt);
+      std::copy(independentVars.begin(),
+		independentVars.end(),
+		ADinfo.independentVars_meta.begin());
+      NimArr<1, double> derivOrders_meta;
+      derivOrders_meta.setSize(1);
+      derivOrders_meta[0] = 1;
+      getDerivs_internal< CppAD::AD<double>,
+			  CppAD::ADFun< CppAD::AD<double>, double >,
+			  NIMBLE_ADCLASS_META>(ADinfo.independentVars_meta,
+					       &innerTape,
+					       derivOrders_meta,
+					       wrtVector,
+					       ansList_meta);
+      for(size_t iii = 0; iii < length_wrt; ++iii)
+	dependentVars[iii] = ansList_meta->jacobian[iii];
+      tapePtr = new CppAD::ADFun<double>;
+      tapePtr->Dependent(dependentVars);
+      tapePtr->optimize();
+      delete firstTape;
+    }
   }
 
   // std::cout<<"getDerivs_calculate_internal A"<<std::endl;
-
-  /* set independent */
   int length_wrt = nodes.model_wrt_accessor.getTotalLength();
   int length_independent = length_wrt;
   ADinfo.independentVars.resize(length_independent);
@@ -562,8 +621,6 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
   std::copy(NimArrVars.getPtr(),
 	    NimArrVars.getPtr() + length_wrt,
 	    ADinfo.independentVars.begin());
-
-  // std::cout<<"getDerivs_calculate_internal B"<<std::endl;
   
   /* set dynamic */
   size_t length_extraNodes_accessor = nodes.model_extraInput_accessor.getTotalLength();
@@ -575,21 +632,58 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
     std::copy( NimArr_dynamicVars.getPtr(),
 	       NimArr_dynamicVars.getPtr() + length_extraNodes_accessor,
 	       dynamicVars.begin() );
-    ADinfo.ADtape->new_dynamic(dynamicVars);
+    tapePtr->new_dynamic(dynamicVars);
   }
-  /* manage orders */
-  // std::cout<<"getDerivs_calculate_internal C"<<std::endl;
-  
-  /* run tape */
-  getDerivs_internal<double,
-		     CppAD::ADFun<double>,
-		     NIMBLE_ADCLASS>(ADinfo.independentVars,
-				     ADinfo.ADtape,
-				     derivOrders,
-				     wrtVector,
-				     ansList);
-    // std::cout<<"getDerivs_calculate_internal D"<<std::endl;
 
+  if(use_meta_tape) {
+    // manage orders and use regular calculate for value
+    // and tape for jacobian or hessian
+    int maxOrder;
+    bool ordersFound[3];
+    setOrdersFound(derivOrders, ordersFound, maxOrder);
+    if(ordersFound[0]) {
+      ansList->value.setSize(1, false, false);
+      ansList->value[0] = calculate(nodes);
+    }
+    NimArr<1, double> derivOrders_nested;
+    int higherOrders = 0;
+    if(ordersFound[1]) ++higherOrders;      
+    if(ordersFound[2]) ++higherOrders;
+    if(higherOrders) {
+      derivOrders_nested.setSize(higherOrders, false, false);
+      higherOrders = 0;
+      if(ordersFound[1]) derivOrders_nested[higherOrders++] = 0; // If Jacobian was requested, get value of meta tape
+      if(ordersFound[2]) derivOrders_nested[higherOrders] = 1; // If Hessian was requested, get Jacobian of meta tape
+      nimSmartPtr<NIMBLE_ADCLASS> ansList_nested = new NIMBLE_ADCLASS;
+      getDerivs_internal<double,
+			 CppAD::ADFun<double>,
+			 NIMBLE_ADCLASS>(ADinfo.independentVars,
+					 tapePtr,
+					 derivOrders_nested,
+					 wrtVector, // NOTE: This will not behave fully correctly in non-default use without further thought.
+					 ansList_nested);
+      if(ordersFound[1]) {
+	ansList->jacobian.setSize(1, length_wrt, false, false);
+	for(size_t ii = 0; ii < length_wrt; ++ii) //We could rewrite this with better pointer magic
+	  ansList->jacobian[ ii ] = ansList_nested->value[ ii ];
+      }
+      if(ordersFound[2]) {
+	ansList->hessian.setSize(length_wrt, length_wrt, 1, false, false);
+	for(size_t ii = 0; ii < length_wrt; ++ii)
+	  for(size_t jj = 0; jj < length_wrt; ++jj)
+	    ansList->hessian[jj + ii*length_wrt ] = ansList_nested->jacobian[jj + ii*length_wrt]; //orientation shouldn't matter due to symmetry
+      }
+    }
+  } else {
+  /* run tape */
+    getDerivs_internal<double,
+		       CppAD::ADFun<double>,
+		       NIMBLE_ADCLASS>(ADinfo.independentVars,
+				       tapePtr,
+				       derivOrders,
+				       wrtVector,
+				       ansList);
+  }
 }
 
 NimArr<1, double> make_vector_if_necessary(int a){

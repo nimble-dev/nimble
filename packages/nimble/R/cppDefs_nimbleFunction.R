@@ -670,14 +670,19 @@ exprClasses_updateNimDerivsCalculate <- function(code, funIndex) {
 }
 
 updateNimDerivsCalculate_update <- function(code, funIndex) {
-    newExpr <- substitute(set_tape_ptr(ADtapeSetup, myADtapePtrs_[NUM], 1),
+    ## newExpr <- substitute(set_tape_ptr(ADtapeSetup, myADtapePtrs_[NUM], 1),
+    ##                       list(NUM = funIndex))
+    ## newExpr <- RparseTree2ExprClasses(newExpr)
+    newArg1 <- RparseTree2ExprClasses(quote(ADtapeSetup))
+    newArg2 <- substitute(myADtapePtrs_[NUM],
                           list(NUM = funIndex))
-    newExpr <- RparseTree2ExprClasses(newExpr)
+    newArg2 <- RparseTree2ExprClasses(newArg2)
     oldArgs <- code$args
     for(i in rev(seq_along(code$args))) {
-        setArg(code, i+1, oldArgs[[i]])
+        setArg(code, i+2, oldArgs[[i]])
     }
-    setArg(code, 1, newExpr)
+    setArg(code, 1, newArg1)
+    setArg(code, 2, newArg2)
     rm(oldArgs)
     funIndex + 1
 }
