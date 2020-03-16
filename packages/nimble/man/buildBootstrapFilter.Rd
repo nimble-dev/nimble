@@ -11,8 +11,12 @@ buildBootstrapFilter(model, nodes, control = list())
 space model or a hidden Markov model.}
 
 \item{nodes}{A character vector specifying the latent model nodes 
-over which the particle filter will stochastically integrate over to
-estimate the log-likelihood function.  All provided nodes must be stochastic, and must come from the same variable in the model.}
+over which the particle filter will stochastically integrate to
+estimate the log-likelihood function.  All provided nodes must be stochastic.
+Can be one of three forms: a variable name, in which case all elements in the variable
+are taken to be latent (e.g., 'x'); an indexed variable, in which case all indexed elements are taken
+to be latent (e.g., 'x[1:100]' or 'x[1:100, 1:2]'); or a vector of multiple nodes, one per time point,
+in increasing time order (e.g., c("x[1:2, 1]", "x[1:2, 2]", "x[1:2, 3]", "x[1:2, 4]")).}
 
 \item{control}{A list specifying different control options for the particle filter.  Options are described in the details section below.}
 }
@@ -23,7 +27,7 @@ Create a bootstrap particle filter algorithm for a given NIMBLE state space mode
 Each of the \code{control()} list options are described in detail here:
 \describe{
  \item{thresh}{ A number between 0 and 1 specifying when to resample: the resampling step will occur when the
-  effective sample size is less than \code{thresh} times the number of particles.  Defaults to 0.8.}
+  effective sample size is less than \code{thresh} times the number of particles. Defaults to 0.8. Note that at the last time step, resampling will always occur so that the \code{mvEWsamples} \code{modelValues} contains equally-weighted samples.}
  \item{resamplingMethod}{The type of resampling algorithm to be used within the particle filter. Can choose between \code{'default'} (which uses NIMBLE's \code{rankSample()} function),  \code{'systematic'}, \code{'stratified'}, \code{'residual'}, and \code{'multinomial'}.  Defaults to \code{'default'}.  Resampling methods other than \code{'default'} are currently experimental.}
  \item{saveAll}{Indicates whether to save state samples for all time points (TRUE), or only for the most recent time point (FALSE)}
  \item{smoothing}{Decides whether to save smoothed estimates of latent states, i.e., samples from f(x[1:t]|y[1:t]) if \code{smoothing = TRUE}, or instead to save filtered samples from f(x[t]|y[1:t]) if \code{smoothing = FALSE}.  \code{smoothing = TRUE} only works if \code{saveAll = TRUE}.}
@@ -79,6 +83,7 @@ Gordon, N.J., D.J. Salmond, and A.F.M. Smith. (1993). Novel approach to nonlinea
 \seealso{
 Other particle filtering methods: \code{\link{buildAuxiliaryFilter}},
   \code{\link{buildEnsembleKF}},
+  \code{\link{buildIteratedFilter2}},
   \code{\link{buildLiuWestFilter}}
 }
 

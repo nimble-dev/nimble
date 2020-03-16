@@ -6,13 +6,13 @@
 
 ## Requirements to run NIMBLE {#sec:requ-run-nimble}
 
-You can run NIMBLE on any of the three common operating systems: Linux, Mac OS X, or Windows. 
+You can run NIMBLE on any of the three common operating systems: Linux, MacOS, or Windows. 
 
 The following are required to run NIMBLE.
 
 
-  1. [R](http://www.cran.r-project.org), of course.
-  1. The [igraph](http://www.cran.r-project.org/web/packages/igraph/index.html) and  [coda](http://www.cran.r-project.org/web/packages/coda/index.html) R packages.
+  1. [R](https://www.cran.r-project.org), of course.
+  1. The [igraph](https://www.cran.r-project.org/web/packages/igraph/index.html),  [coda](https://www.cran.r-project.org/web/packages/coda/index.html) and [R6](https://www.cran.r-project.org/web/packages/R6/index.html) R packages.
   1. A working C++ compiler that NIMBLE can use from R on your system.  There are
   standard open-source C++ compilers that the R community has already
   made easy to install.  See Section \@ref(sec:compiler) for
@@ -23,7 +23,7 @@ The following are required to run NIMBLE.
 
 NIMBLE also uses a couple of C++ libraries that you don't need to install, as they will already be on your system or are provided by NIMBLE.
 
-  1. The [Eigen](http://eigen.tuxfamily.org) C++ library
+  1. The [Eigen](https://eigen.tuxfamily.org) C++ library
   for linear algebra.  This comes with NIMBLE, or you can use your own copy.
   1. The BLAS and LAPACK numerical libraries.  These come with
   R, but see Section \@ref(sec:blas) for how to use a faster version of the BLAS.
@@ -38,22 +38,18 @@ Most fairly recent versions of these requirements should work.
 NIMBLE needs a C++ compiler and the standard utility *make* in
 order to generate and compile C++ for models and algorithms.^[This differs from most packages, which might need a C++ compiler
   only when the package is built.  If you normally install R packages using
-  `install.packages` on Windows or OS X, the package arrives
+  `install.packages` on Windows or MacOS, the package arrives
   already built to your system.]
 
-### OS X
-On OS X, you should install *Xcode*.  The command-line tools, which are
+### MacOS
+On MacOS, you should install *Xcode*.  The command-line tools, which are
 available as a smaller installation, should be sufficient. This is freely available from the
 [Apple developer
   site](https://developer.apple.com/xcode/downloads/) and the
 [App Store](https://itunes.apple.com/us/app/xcode/id497799835?ls=1&mt=12).
 <!---  Perry asked if App Store link is stable - Chris checked and it seems fine for now (and is the top hit on a Google search ... -->
 
-For the compiler to work correctly for OS X, the installed R must be
-for the correct version of OS X.  For example, R for Snow Leopard (OS
-X version 10.8) will attempt to use an incorrect C++ compiler if the
-installed OS X is actually version 10.9 or higher.
-<!---  PdV -- rewrote this -- need to check example. -->
+
 
 In the somewhat unlikely event you want to install from the source package rather than the CRAN binary package, the easiest approach is to use the source package provided at [R-nimble.org](https://R-nimble.org). If you do want to install from the source package provided by CRAN, you'll need to install [this gfortran package](https://r.research.att.com/libs/gfortran-4.8.2-darwin13.tar.bz2).
 
@@ -92,12 +88,43 @@ method if you download the package source directly.
 NIMBLE can also be obtained from the [NIMBLE website](https://r-nimble.org). To install from our website, please see our [Download page](https://r-nimble.org/download) for the specific invocation of `install.packages`.
 
 
-### Problems with installation
+## Troubleshooting installation problems
+
 We have tested the installation on the three commonly used platforms
 -- MacOS, Linux, Windows^[We've tested NIMBLE on Windows 7, 8
   and 10.].  We don't anticipate problems with installation,
-but we want to hear about any and help resolve them. 
-Please post about installation problems to the [nimble-users Google group](https://groups.google.com/forum/#!forum/nimble-users) or 
+but we want to hear about any and help resolve them.
+
+The following are some troubleshooting tips that have helped users in some situations.
+
+For Windows:
+
+  - Be sure to check box to set `PATH` when installing Rtools.exe.  Alternatively, one can set the `PATH` manually using syntax similar to this (after changing  `C:\\Rtools\\bin;C:\\Rtools\\mingw_64\\bin` to be appropriate for your system):
+```{r, eval=FALSE}
+path <- Sys.getenv('PATH')
+newPath <- paste("C:\\Rtools\\bin;C:\\Rtools\\mingw_64\\bin;",
+                 path, sep = "")
+Sys.setenv(PATH = newPath) 
+```      
+  - Be sure the `Rtools.exe` version matches the R version.
+  - Try re-installing `Rtools` followed by re-installing NIMBLE.
+  - If there are filesystem or permissions issues, it is possible to install NIMBLE in a local directory using the `lib` argument to `install.packages`.
+  - In the past we've heard reports from Windows users of problems when their filesystem involved a space in a directory name in the path to `RHOME`.  We've also heard reports from Windows users of problems when R is installed on a network drive. We think both of these issues have been resolved. 
+
+For MacOS:
+
+  - Newly installed Xcode/command line tools may need to be started once manually to provide a one-time permission before they will work from NIMBLE.
+  - Upgrading your MacOS version may result in an error while installing or using NIMBLE. Please try running the following in the Terminal to reinstall Xcode/command line tools:
+  ```{bash, eval=FALSE}
+xcode-select --install
+```
+  - If multiple C++ compilers are present on a system, be sure the `PATH` will find the right one.
+
+All operating systems:
+
+  - If problems arise from generating and compiling C++ files from the default location in R's `tempdir()`, one can use the `dirName` argument to `compileNimble` to put such files elsewhere, such as in a local working directory. 
+
+If those suggestions don't help, please post about installation problems to the [nimble-users Google group](https://groups.google.com/forum/#!forum/nimble-users) or 
 email [nimble.stats@gmail.com](mailto:nimble.stats@gmail.com).
 
 ## Customizing your installation
@@ -133,9 +160,9 @@ NIMBLE generates specialized C++ code for user-specified models and nimbleFuncti
 This code uses some NIMBLE C++ library classes and functions.
 By default, on Linux the library code is compiled once as a linkable
 library - *libnimble.so*. This single instance of the library is then linked 
-with the code for each generated model. In contrast, the default for Windows and Mac OS X
+with the code for each generated model. In contrast, the default for Windows and MacOS
 is to compile the library code as a static library - *libnimble.a* - that is compiled into each model's and each algorithm's own dynamically loadable library (DLL). This does repeat the same code across models and so occupies more memory. There may be a marginal speed advantage. 
-If one would like to enable the linkable library in place of the static library (do this only on Mac OS X and other UNIX variants and not on Windows), one can install the source package with the configuration argument `--enable-dylib` set to true. First obtain the NIMBLE source package (which will have the extension `.tar.gz` from [our website](https://r-nimble.org/download) and then install as follows, replacing `VERSION` with the appropriate version number:
+If one would like to enable the linkable library in place of the static library (do this only on MacOS and other UNIX variants and not on Windows), one can install the source package with the configuration argument `--enable-dylib` set to true. First obtain the NIMBLE source package (which will have the extension `.tar.gz` from [our website](https://r-nimble.org/download) and then install as follows, replacing `VERSION` with the appropriate version number:
 ```{r, install3, engine='bash', eval=FALSE}
 R CMD INSTALL --configure-args='--enable-dylib=true' nimble_VERSION.tar.gz
 ```

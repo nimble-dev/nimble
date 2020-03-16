@@ -1,6 +1,6 @@
 #' The Chinese Restaurant Process Distribution
 #'
-#'   EXPERIMENTAL Density and random generation for the Chinese
+#'   Density and random generation for the Chinese
 #'   Restaurant Process distribution.
 #' 
 #' @name ChineseRestaurantProcess 
@@ -115,7 +115,7 @@ rCRP <- nimbleFunction(
 
 #' The Stick Breaking Function
 #'
-#' EXPERIMENTAL Computes probabilities based on stick breaking construction.
+#' Computes probabilities based on stick breaking construction.
 #' 
 #' @name StickBreakingFunction
 #'

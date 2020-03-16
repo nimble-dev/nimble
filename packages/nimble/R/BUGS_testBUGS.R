@@ -35,15 +35,15 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
         stop("testBUGSmodel: 'example' is not provided; if not using an example from the BUGS manual examples, set 'dir' to \"\"")
       examplesDir <- system.file("classic-bugs", package = "nimble")
 
-      if(file.exists(file.path(examplesDir, 'vol1', example))) {
+      if(file.exists(normalizePath(file.path(examplesDir, 'vol1', example), winslash = "\\", mustWork=FALSE))) {
         vol <- 1
-      } else if(file.exists(file.path(examplesDir, 'vol2', example))) {
+      } else if(file.exists(normalizePath(file.path(examplesDir, 'vol2', example), winslash = "\\", mustWork=FALSE))) {
         vol <- 2
       } else {
         stop(paste0("Example: ", example, " not found in Classic BUGS examples; to use your current working directory or if passing inputs as R objects, set 'dir' to be \"\""))
       }
       if(verbose) cat("Using example in BUGS example directory of the NIMBLE package.\n")
-      dir <- file.path(examplesDir, paste0('vol', vol), example)
+      dir <- normalizePath(file.path(examplesDir, paste0('vol', vol), example), winslash = "\\", mustWork=FALSE)
     }
 
     if(is.null(model)) model <- example
@@ -60,7 +60,7 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
         ## kludgey as this code is in readBUGSmodel() but no nice way to get it out if I want readBUGSmodel to return the R model; one possibility is to have the inits be embedded in the R model...
       initsFile <- NULL
       if(is.character(inits)) {
-        initsFile <- if(skip.file.path) inits else file.path(dir, inits)
+        initsFile <- if(skip.file.path) inits else normalizePath(file.path(dir, inits), winslash = "\\", mustWork=FALSE)
         if(!file.exists(initsFile))
           stop("testBUGSmodel: 'inits' input does not reference an existing file.")
       }
@@ -69,7 +69,7 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
         possibleNames <- paste0(modelName, c("-init.R", "-inits.R", "-init.txt", "-inits.txt", "-init", "inits"))
         if(!Sys.info()['sysname'] %in% c("Darwin", "Windows")) # UNIX-like is case-sensitive
             possibleNames <- c(possibleNames, paste0(modelName, c('-init.r','-inits.r')))
-        if(!skip.file.path) possibleNames <- file.path(dir, possibleNames)
+        if(!skip.file.path) possibleNames <- normalizePath(file.path(dir, possibleNames), winslash = "\\", mustWork=FALSE)
         fileExistence <- file.exists(possibleNames)
         if(!sum(fileExistence)) {
           stop("testBUGSmodel: 'inits' argument does not reference an existing file.")

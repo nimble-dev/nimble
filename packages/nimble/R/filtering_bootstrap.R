@@ -17,16 +17,29 @@ bootStepVirtual <- nimbleFunctionVirtual(
 # uses weights from previous time point to calculate likelihood estimate.
 
 bootFStep <- nimbleFunction(
-    name = 'bootFStep',
+  name = 'bootFStep',
   contains = bootStepVirtual,
-  setup = function(model, mvEWSamples, mvWSamples, nodes, iNode, names, saveAll,
-                   smoothing, resamplingMethod, silent = FALSE) {
+  setup = function(model,
+                   mvEWSamples,
+                   mvWSamples,
+                   nodes,
+                   iNode,
+                   names,
+                   saveAll,
+                   smoothing,
+                   resamplingMethod,
+                   silent = FALSE) {
     notFirst <- iNode != 1
+    modelSteps <- particleFilter_splitModelSteps(model, nodes, iNode, notFirst)
+    prevDeterm <- modelSteps$prevDeterm
+    calc_thisNode_self <- modelSteps$calc_thisNode_self
+    calc_thisNode_deps <- modelSteps$calc_thisNode_deps
+    
     prevNode <- nodes[if(notFirst) iNode-1 else iNode]
     thisNode <- nodes[iNode]
-    prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
-    thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
-    thisData   <- model$getDependencies(thisNode, dataOnly = TRUE)
+    ## prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
+    ## thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
+    ## thisData   <- model$getDependencies(thisNode, dataOnly = TRUE)
     ## t is the current time point.
     t <- iNode
     ## Get names of xs node for current and previous time point (used in copy)
@@ -36,7 +49,7 @@ bootFStep <- nimbleFunction(
       thisXName <- thisNode
       currInd <- t
       prevInd <- t-1
-      if(smoothing == T){
+      if(isTRUE(smoothing)){
         currInd <- 1
         prevInd <- 1
       }
@@ -64,7 +77,9 @@ bootFStep <- nimbleFunction(
     if(resamplingMethod == 'systematic')
       resamplerFunctionList[[1]] <- systematicResampleFunction()
   },
-  run = function(m = integer(), threshNum = double(), prevSamp = logical()) {
+  run = function(m = integer(),
+                 threshNum = double(),
+                 prevSamp = logical()) {
     returnType(double(1))
     wts <- numeric(m, init=FALSE)
     ids <- integer(m, 0)
@@ -78,18 +93,18 @@ bootFStep <- nimbleFunction(
                nodesTo = allPrevNodes, row = i, rowTo=i)
         }
         copy(mvEWSamples, model, nodes = prevXName, nodesTo = prevNode, row = i)
-        calculate(model, prevDeterm) 
+        model$calculate(prevDeterm) 
       }
-      simulate(model, thisNode)
+      model$simulate(calc_thisNode_self)
+      ## The logProbs of calc_thisNode_self are, correctly, not calculated.
       copy(model, mvWSamples, nodes = thisNode, nodesTo = thisXName, row = i)
-      calculate(model, thisDeterm)
-      wts[i]  <- calculate(model, thisData)
+      wts[i]  <- model$calculate(calc_thisNode_deps)
       if(is.nan(wts[i])){
         out[1] <- -Inf
         out[2] <- 0
         return(out)
       }
-      if(prevSamp == 0){
+      if(prevSamp == 0){ ## defaults to 1 for first step and then comes from the previous step
         wts[i] <- wts[i] + mvWSamples['wts',i][prevInd]
         llEst[i] <- wts[i]
       }
@@ -118,7 +133,7 @@ bootFStep <- nimbleFunction(
     
     ## Determine whether to resample by weights or not.
     if(ess < threshNum){
-      if(defaultResamplerFlag == TRUE){
+      if(defaultResamplerFlag){
         rankSample(wts, m, ids, silent)	 
       }
       else{
@@ -165,9 +180,13 @@ bootFStep <- nimbleFunction(
 #'
 #' @param model A nimble model object, typically representing a state 
 #'  space model or a hidden Markov model.
-#' @param nodes A character vector specifying the latent model nodes 
-#'  over which the particle filter will stochastically integrate over to
-#'  estimate the log-likelihood function.  All provided nodes must be stochastic, and must come from the same variable in the model. 
+#' @param nodes  A character vector specifying the latent model nodes 
+#'  over which the particle filter will stochastically integrate to
+#'  estimate the log-likelihood function.  All provided nodes must be stochastic.
+#'  Can be one of three forms: a variable name, in which case all elements in the variable
+#'  are taken to be latent (e.g., 'x'); an indexed variable, in which case all indexed elements are taken
+#'  to be latent (e.g., 'x[1:100]' or 'x[1:100, 1:2]'); or a vector of multiple nodes, one per time point,
+#'  in increasing time order (e.g., c("x[1:2, 1]", "x[1:2, 2]", "x[1:2, 3]", "x[1:2, 4]")).
 #' @param control  A list specifying different control options for the particle filter.  Options are described in the details section below.
 #' @author Daniel Turek and Nicholas Michaud
 #' @details 
@@ -175,7 +194,7 @@ bootFStep <- nimbleFunction(
 #' Each of the \code{control()} list options are described in detail here:
 #' \describe{
 #'  \item{thresh}{ A number between 0 and 1 specifying when to resample: the resampling step will occur when the
-#'   effective sample size is less than \code{thresh} times the number of particles.  Defaults to 0.8.}
+#'   effective sample size is less than \code{thresh} times the number of particles. Defaults to 0.8. Note that at the last time step, resampling will always occur so that the \code{mvEWsamples} \code{modelValues} contains equally-weighted samples.}
 #'  \item{resamplingMethod}{The type of resampling algorithm to be used within the particle filter. Can choose between \code{'default'} (which uses NIMBLE's \code{rankSample()} function),  \code{'systematic'}, \code{'stratified'}, \code{'residual'}, and \code{'multinomial'}.  Defaults to \code{'default'}.  Resampling methods other than \code{'default'} are currently experimental.}
 #'  \item{saveAll}{Indicates whether to save state samples for all time points (TRUE), or only for the most recent time point (FALSE)}
 #'  \item{smoothing}{Decides whether to save smoothed estimates of latent states, i.e., samples from f(x[1:t]|y[1:t]) if \code{smoothing = TRUE}, or instead to save filtered samples from f(x[t]|y[1:t]) if \code{smoothing = FALSE}.  \code{smoothing = TRUE} only works if \code{saveAll = TRUE}.}
@@ -244,40 +263,20 @@ buildBootstrapFilter <- nimbleFunction(
     if(is.null(resamplingMethod)) resamplingMethod <- 'default'
     if(!(resamplingMethod %in% c('default', 'multinomial', 'systematic', 'stratified',
                                  'residual')))
-       stop('resamplingMethod must be one of: "default", "multinomial", "systematic",
-            "stratified", or "residual". ')
-    #latent state info
-    varName <- sapply(nodes, function(x){return(model$getVarNames(nodes = x))})
-    if(length(unique(varName))>1){
-      stop("all latent nodes must come from same variable")
-    }
-    varName <- varName[1]
-    info <- model$getVarInfo(varName)
-    latentDims <- info$nDim
-    if(is.null(timeIndex)){
-      timeIndex <- which.max(info$maxs)
-      timeLength <- max(info$maxs)
-      ## Check if multiple dimensions share the max index size.
-      if(sum(info$maxs==timeLength)>1)
-        stop("unable to determine which dimension indexes time. 
-             Specify manually using the 'timeIndex' control list argument")
-    } else{
-      timeLength <- info$maxs[timeIndex]
-    }
-    
+      stop('buildBootstrapFilter: "resamplingMethod" must be one of: "default", "multinomial", "systematic", "stratified", or "residual". ')
+    ## latent state info
+    nodes <- findLatentNodes(model, nodes, timeIndex)  
+    dims <- lapply(nodes, function(n) nimDim(model[[n]]))
+    if(length(unique(dims)) > 1)
+      stop('buildBootstrapFilter: sizes or dimensions of latent states varies.')
+    vars <- model$getVarNames(nodes =  nodes)  
+
     my_initializeModel <- initializeModel(model, silent = silent)
     
-    nodes <- paste(info$varName,"[",rep(",", timeIndex-1), 1:timeLength,
-                   rep(",", info$nDim - timeIndex),"]", sep="")
-    dims <- lapply(nodes, function(n) nimDim(model[[n]]))
-    if(length(unique(dims)) > 1) stop('sizes or dimensions of latent states
-                                      varies')
-    vars <- model$getVarNames(nodes =  nodes)  
-    
-    if(0>thresh || 1<thresh || !is.numeric(thresh)) stop('thresh must be between
-                                                         0 and 1')
-    if(!saveAll & smoothing) stop("must have saveAll = TRUE for smoothing to
-                                  work")
+    if(0 > thresh || 1 < thresh || !is.numeric(thresh))
+      stop('buildBootstrapFilter: "thresh" must be between 0 and 1.')
+    if(!saveAll & smoothing)
+      stop("buildBootstrapFilter: must have 'saveAll = TRUE' for smoothing to work.")
     ## Create mv variables for x state and sampled x states.  If saveAll=TRUE, 
     ## the sampled x states will be recorded at each time point.
     modelSymbolObjects <- model$getSymbolTable()$getSymbolObjects()[vars]
@@ -295,7 +294,7 @@ buildBootstrapFilter <- nimbleFunction(
       type <- c(type, "double")
       size$wts <- length(dims)
       ##  Only need one weight per particle (at time T) if smoothing == TRUE.
-      if(smoothing == TRUE)
+      if(smoothing)
         size$wts <- 1 
       mvWSamples  <- modelValues(modelValuesConf(vars = names,
                                               types = type,
@@ -329,29 +328,39 @@ buildBootstrapFilter <- nimbleFunction(
                                               silent) 
     }
     essVals <- rep(0, length(nodes))
+    lastLogLik <- -Inf
   },
   run = function(m = integer(default = 10000)) {
     returnType(double())
-    if(initModel == TRUE) my_initializeModel$run()
+    if(initModel) my_initializeModel$run()
     resize(mvWSamples, m)
     resize(mvEWSamples, m)
     threshNum <- ceiling(thresh*m)
     logL <- 0   
-    ## prevSamp indicates whether resampling took place at the
-    ## previous time point.
+    ## prevSamp indicates whether resampling took place at the previous time point.
     prevSamp <- 1
-    for(iNode in seq_along(bootStepFunctions)) { 
-      out <- bootStepFunctions[[iNode]]$run(m,threshNum, prevSamp)
+    for(iNode in seq_along(bootStepFunctions)) {
+      if(iNode == length(bootStepFunctions))
+        threshNum <- m  ## always resample at last time step so mvEWsamples is equally-weighted
+      out <- bootStepFunctions[[iNode]]$run(m, threshNum, prevSamp)
       logL <- logL + out[1]
       prevSamp <- out[2]
       essVals[iNode] <<- bootStepFunctions[[iNode]]$returnESS()
-      if(logL == -Inf) return(logL)
-      if(is.nan(logL)) return(-Inf)
-      if(logL == Inf) return(-Inf) 
+      if(logL == -Inf) {lastLogLik <<- logL; return(logL)} 
+      if(is.nan(logL)) {lastLogLik <<- -Inf; return(-Inf)}
+      if(logL == Inf)  {lastLogLik <<- -Inf; return(-Inf)} 
     }
+    lastLogLik <<- logL
     return(logL)
   },
   methods = list(
+    getLastLogLik = function() {
+      return(lastLogLik)
+      returnType(double())
+    },
+    setLastLogLik = function(lll = double()) {
+      lastLogLik <<- lll
+    },
     returnESS = function(){
       returnType(double(1))
       return(essVals)

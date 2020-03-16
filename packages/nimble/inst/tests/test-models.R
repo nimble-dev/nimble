@@ -573,7 +573,167 @@ test_that("warnings for multiply-defined model nodes:", {
     expect_warning(m <- nimbleModel(code), "'j,k' on the left-hand side of 'mu[i + 2, 1, 1] ~ ", fixed = TRUE)
 })
 
+test_that("handling of missing indexes of expressions:", {
+    code = nimbleCode({
+        mn[1:2] <- (X[1:2,1:2] %*% beta[1:2,1:2])[,1]
+        y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
+    })
+    m = nimbleModel(code, data = list(y = rnorm(2)),
+                    inits = list(X = matrix(1, 2,2), beta = matrix(2,2,2), pr = diag(2)))
+    cm <- compileNimble(m)
+    expect_true(is.numeric(cm$calculate('y')), "incorrectly not dealing with missing index in ()[] expression")
 
+    code = nimbleCode({
+        mn[1:2] <- (X[1:2,] %*% beta[1:2,1:2])[,1]
+        y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
+    })
+    m = nimbleModel(code, data = list(y = rnorm(2)),
+                    inits = list(X = matrix(1, 2,2), beta = matrix(2,2,2), pr = diag(2)))
+    cm <- compileNimble(m)
+    expect_true(is.numeric(cm$calculate('y')), "incorrectly not dealing with missing index in ()[] expression")
+    
+    code = nimbleCode({
+        mn[1:2] <- (X[1:2,] %*% beta[1:2,1:2])[,1]
+        y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
+    })
+    expect_error(m <- nimbleModel(code, data = list(y = rnorm(2)),
+                                  inits = list(beta = matrix(2,2,2), pr = diag(2))),
+                 "missing indices", info = "not catching missing indices")
+
+    code = nimbleCode({
+    mn[1:2] <- (X[1:2,] %*% beta[1:2,1:2])[,1]
+    y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
+    })
+    ## Having trouble with consistency in whether output or message is produced,
+    ## so just run nimbleModel and test_that should fail if error occurs.
+    m <- nimbleModel(code, data = list(y = rnorm(2)),
+                    inits = list(beta = matrix(2,2,2), pr = diag(2)),
+                    dimensions = list(X = c(2,2)))
+                  ## "model building finished",
+                  ## info = "incorrectly handling missing indices with dims present")
+
+    code = nimbleCode({
+        mn[1:2] <- (X[1:2,1:2] %*% beta[1:2,1:2])[k[,1],1]
+        y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
+    })
+    expect_error(m <- nimbleModel(code, data = list(y = rnorm(2)),
+                                  inits = list(X = matrix(1, 2, 2), beta = matrix(2,2,2), pr = diag(2))),
+                 "missing indices", info = "not catching missing indices in model variable within indexing of ()")
+    
+    code = nimbleCode({
+        mn[1:2] <- (X[1:2,1:2] %*% beta[1:2,1:2])[k[,1],1]
+        y[1:2] ~ dmnorm( mn[1:2], pr[1:2,1:2])
+    })
+    m = nimbleModel(code, data = list(y = rnorm(2)),
+                    inits = list(X = matrix(1, 2, 2), beta = matrix(2,2,2), pr = diag(2)),
+                    dimensions = list(k = c(2,2)))
+    cm <- compileNimble(m)  # if compilation fails, test_that should catch this; having trouble using expect_message as behavior of whether a message is detected seems to differ when running tests locally versus Travis.
+})
+
+test_that("warning when RHS only nodes used as dynamic indexes", {
+    code <- nimbleCode({
+        for(i in 1:3) 
+            y[i] ~ dnorm(mu[k[i]+1], 1)
+        for(i in 1:3)
+            mu[i] ~ dnorm(0,1)
+    })
+    
+    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3))),
+                   "Detected use of non-constant indexes")
+    expect_warning(m <- nimbleModel(code, data = list(k = rep(1,3))),
+                   "Detected use of non-constant indexes")
+    ## Hack, but this allows detection of lack of warning given that
+    ## Travis and non-Travis behave differently in terms of silent vs. message.
+    warnOptions <- options()$warn
+    options(warn = 2)
+    ## if this were to warn, it would cause error
+    m <- nimbleModel(code, constants = list(k = rep(1,3)))
+    options(warn = warnOptions)
+
+    myfun <- nimbleFunction(run = function(x = double()) {
+        returnType(double())
+        return(1)
+    })
+    temporarilyAssignInGlobalEnv(myfun)
+    
+    code <- nimbleCode({
+        for(i in 1:3) 
+            y[i] ~ dnorm(mu[myfun(k[i])], 1)
+        for(i in 1:3)
+            mu[i] ~ dnorm(0,1)
+    })
+    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3))),
+                   "Detected use of non-constant indexes")
+
+    code <- nimbleCode({
+        for(i in 1:3)
+            y[i] ~ dnorm(mu[k[j[i]]+1], 1)
+        for(i in 1:3)
+            mu[i] ~ dnorm(0,1)
+    })
+    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3)), constants = list(j=1:3)), "Detected use of non-constant indexes")
+    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3), j=1:3)),
+                   "Detected use of non-constant indexes")
+
+    ## We don't detect when deterministic node intervenes.
+    code <- nimbleCode({
+        for(i in 1:3) {
+            y[i] ~ dnorm(mu[k[i]+1], 1)
+            k[i] <- kk[i] + 1
+        }
+        for(i in 1:5)
+            mu[i] ~ dnorm(0,1)
+    })
+    ## Hack, but this allows detection of lack of warning given that
+    ## Travis and non-Travis behave differently in terms of silent vs. message.
+    warnOptions <- options()$warn
+    options(warn = 2)
+    ## if this were to warn, it would cause error
+    m <- nimbleModel(code, inits = list(k = rep(1,3)), constants = list(kk = 1:3))
+    m <- nimbleModel(code, inits = list(k = rep(1,3), kk = 1:3))
+    options(warn = warnOptions)
+
+    code <- nimbleCode({
+        for(i in 1:3) 
+            y[i] ~ dnorm(mu[2, k[i]+j[i]],1)
+        for(i in 1:3)
+            for(ii in 1:4)
+                mu[i, ii] ~ dnorm(0,1)
+    })
+    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3), j = rep(1,3))),
+                   "Detected use of non-constant indexes")
+    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3)), constants = list(j = rep(1,3))),
+                   "Detected use of non-constant indexes")
+
+    code <- nimbleCode({
+        for(i in 1:3) 
+            y[i] ~ dnorm(mu[k[i]+1, k[i]+j[i]],1)
+        for(i in 1:3)
+            for(ii in 1:4)
+                mu[i, ii] ~ dnorm(0,1)
+    })
+    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3), j = rep(1,3))),
+                   "Detected use of non-constant indexes")
+    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3)), constants = list(j = rep(1,3))),
+                   "Detected use of non-constant indexes")
+
+
+    code <- nimbleCode({
+        for(i in 1:3) 
+            y[i,1:2] ~ dmnorm(mu[1:2, k[i]], prec[1:2,1:2])
+        for(i in 1:3)
+            mu[1:2, i] ~ dmnorm(z[1:2], prec[1:2,1:2])
+    })
+    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3))),
+                   "Detected use of non-constant indexes")
+    ## Hack, but this allows detection of lack of warning given that
+    ## Travis and non-Travis behave differently in terms of silent vs. message.
+    warnOptions <- options()$warn
+    options(warn = 2)
+    ## if this were to warn, it would cause error
+    m <- nimbleModel(code, constants = list(k = rep(1,3)))
+    options(warn = warnOptions)
+})
 
 sink(NULL)
 

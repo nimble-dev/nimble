@@ -41,7 +41,7 @@
 #' 
 #' \code{calculateWAIC()} accepts a single arugment:
 #'
-#' \code{nburnin}: The number of pre-thinning MCMC samples to remove from the beginning of the posterior samples for WAIC calculation (default = 0).
+#' \code{nburnin}: The number of pre-thinning MCMC samples to remove from the beginning of the posterior samples for WAIC calculation (default = 0). These samples are discarded in addition to any burn-in specified when running the MCMC.
 #' 
 #' The \code{calculateWAIC} method can only be used if the \code{enableWAIC} 
 #' argument to \code{configureMCMC} or to \code{buildMCMC} is set to \code{TRUE}, or if the NIMBLE option
@@ -151,7 +151,9 @@ buildMCMC <- nimbleFunction(
         nburnin               = integer(default =  0),
         thin                  = integer(default = -1),
         thin2                 = integer(default = -1)) {
-        if(nburnin < 0)   stop('cannot specify nburnin < 0')
+        if(niter < 0)       stop('cannot specify niter < 0')
+        if(nburnin < 0)     stop('cannot specify nburnin < 0')
+        if(nburnin > niter) stop('cannot specify nburnin > niter')
         thinToUseVec <<- thinFromConfVec
         if(thin  != -1)   thinToUseVec[1] <<- thin
         if(thin2 != -1)   thinToUseVec[2] <<- thin2
@@ -198,6 +200,8 @@ buildMCMC <- nimbleFunction(
                     samplerFunctions[[ind]]$run()
                 }
             }
+            ## adding "accumulators" to MCMC?
+            ## https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
             if(iter > nburnin) {
                 sampleNumber <- iter - nburnin
                 if(sampleNumber %% thinToUseVec[1] == 0) {

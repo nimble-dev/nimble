@@ -165,7 +165,7 @@ setAndCalculateDiff <- nimbleFunction(
 
 calcAdaptationFactor <- nimbleFunction(
     name = 'calcAdaptationFactor',
-    setup = function(paramDimension) {
+    setup = function(paramDimension, adaptFactorExponent) {
         ## optimal acceptance rates:  (dim=1) .44,    (dim=2) .35,    (dim=3) .32,    (dim=4) .25,    (dim>=5) .234
         acceptanceRates <- c(0.44, 0.35, 0.32, 0.25, 0.234)
         if(paramDimension > 5)     paramDimension <- 5
@@ -175,13 +175,17 @@ calcAdaptationFactor <- nimbleFunction(
     },
     run = function(acceptanceRate = double()) {
         timesAdapted <<- timesAdapted + 1
-        gamma1 <<- 1 / ((timesAdapted + 3) ^ 0.8)   ## need this variable separate; it's extracted for use in 'RW_block' sampler
+        gamma1 <<- 1 / ((timesAdapted + 3) ^ adaptFactorExponent)   ## need this variable separate; it's extracted for use in 'RW_block' sampler
         gamma2 <- 10 * gamma1
         adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
         returnType(double())
         return(adaptFactor)
     },
     methods = list(
+        getGamma1 = function() {
+            returnType(double())
+            return(gamma1)
+        },
         reset = function() {
             timesAdapted <<- 0
             gamma1       <<- 0
@@ -364,37 +368,40 @@ mcmc_checkWAICmonitors <- function(model, monitors, dataNodes) {
 }
 
 
-mcmc_compressIndexRanges <- function(nums) {
-    nums <- sort(unique(nums))
-    rangeStartInd <- c(1, which(diff(nums) != 1) + 1)
-    ranges <- vector('list', length(rangeStartInd))
-    for(i in seq_along(rangeStartInd)) {
-        startInd <- rangeStartInd[i]
-        if(i == length(rangeStartInd)) {
-            if(rangeStartInd[i] == length(nums)) {
-                ranges[[i]] <- nums[startInd]
-            } else {
-                ranges[[i]] <- substitute(START:END, list(START = as.numeric(nums[startInd]),
-                                                          END = as.numeric(nums[length(nums)])))
-            }
-        } else {
-            if(startInd+1 < rangeStartInd[i+1]) {
-                ranges[[i]] <- substitute(START:END, list(START = as.numeric(nums[startInd]),
-                                                          END = as.numeric(nums[rangeStartInd[i+1]-1])))
-            } else ranges[[i]] <- nums[startInd]
-        }
-    }
-    return(ranges)
-}
-
-
-mcmc_getIndexNumberFromNodeNames <- function(nodeNames, indNumber) {
-    (nodeInsideBrackets <- gsub('^[[:alpha:]]+\\[(.+)\\]$', '\\1', nodeNames))
-    splitList <- strsplit(nodeInsideBrackets, ',')
-    if(length(splitList[[1]]) < indNumber) stop('in mcmc_getIndexNumberFromNodeNames: indNumber exceeds node dimension', call. = FALSE)
-    indices <- as.numeric(sapply(splitList, function(el) el[indNumber]))
-    return(indices)
-}
+## formerly used in conf$printSamplers(byType = TRUE)
+## to compress scalar index ranges of variables.
+## deprecated Nov 2019.
+##mcmc_compressIndexRanges <- function(nums) {
+##    nums <- sort(unique(nums))
+##    rangeStartInd <- c(1, which(diff(nums) != 1) + 1)
+##    ranges <- vector('list', length(rangeStartInd))
+##    for(i in seq_along(rangeStartInd)) {
+##        startInd <- rangeStartInd[i]
+##        if(i == length(rangeStartInd)) {
+##            if(rangeStartInd[i] == length(nums)) {
+##                ranges[[i]] <- nums[startInd]
+##            } else {
+##                ranges[[i]] <- substitute(START:END, list(START = as.numeric(nums[startInd]),
+##                                                          END = as.numeric(nums[length(nums)])))
+##            }
+##        } else {
+##            if(startInd+1 < rangeStartInd[i+1]) {
+##                ranges[[i]] <- substitute(START:END, list(START = as.numeric(nums[startInd]),
+##                                                          END = as.numeric(nums[rangeStartInd[i+1]-1])))
+##            } else ranges[[i]] <- nums[startInd]
+##        }
+##    }
+##    return(ranges)
+##}
+##
+##
+##mcmc_getIndexNumberFromNodeNames <- function(nodeNames, indNumber) {
+##    (nodeInsideBrackets <- gsub('^[[:alpha:]]+\\[(.+)\\]$', '\\1', nodeNames))
+##    splitList <- strsplit(nodeInsideBrackets, ',')
+##    if(length(splitList[[1]]) < indNumber) stop('in mcmc_getIndexNumberFromNodeNames: indNumber exceeds node dimension', call. = FALSE)
+##    indices <- as.numeric(sapply(splitList, function(el) el[indNumber]))
+##    return(indices)
+##}
 
 
 

@@ -12,6 +12,13 @@ Make sure src/Makevars.win is present.
 
 # before running 'make man' (i.e., prep_pkg.R) make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions (or do in separate copy of repository: make configure; cd nimble; ./configure - note that if do this the configure step will have an error in building libnimble.a and that a bunch of files will be created in src that should not be in the repository (all but *.in and nimble.cpp do not belong)
 
+config.R should be this:
+```
+NeedMakevarsFile = TRUE
+UseLibraryMakevars = TRUE
+.NimbleUseRegistration = TRUE
+```
+
 run 'make man' (formerly ./prep_pkg.R)
 # this creates man pages and updates NAMESPACE
 
@@ -33,6 +40,8 @@ run tests on all OS ideally
 
 change version number in UserManual/src/{title.tex,_output.yml}
 rebuild manual as further test of package
+
+run examples in nimble-demos as further test
 
 check reverse dependencies:
 
@@ -118,6 +127,8 @@ add info on new release to release notes page
 
 update version numbering on license and citation page
 
+This is a good time to update info on our core developer team on the website if needed.
+
 make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag (not just a 'category'!!!) if you want it picked up by R-bloggers)
 (best to point with a hyperlink to the info on versions/news on webpage not to NEWS)
 
@@ -136,6 +147,8 @@ git merge devel
 git commit -am'merged new version onto master'
 
 probably best at this point also to merge master onto devel
+
+For version 0.10.0 before add tag as suggested here, try to add a release as per below and see if tag is auto-generated.
 
 git tag -a v$VERSION -m "NIMBLE version $VERSION release, December 31, 2014"
 git push --tags    ## this is how you push *tags* to the remote

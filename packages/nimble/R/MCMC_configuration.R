@@ -98,7 +98,7 @@ MCMCconf <- setRefClass(
             multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
             enableWAIC = getNimbleOption('MCMCenableWAIC'),
             warnNoSamplerAssigned = TRUE,
-            print = FALSE, ...) {
+            print = TRUE, ...) {
             '
 Creates a MCMC configuration for a given model.  The resulting object is suitable as an argument to buildMCMC.
 
@@ -139,7 +139,7 @@ enableWAIC: A logical argument, specifying whether to enable WAIC calculations f
 
 warnNoSamplerAssigned: A logical argument specifying whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule. Default is TRUE.
 
-print: A logical argument specifying whether to print the ordered list of default samplers.  Default is FALSE.
+print: A logical argument specifying whether to print the montiors and samplers.  Default is TRUE.
 
 ...: Additional named control list elements for default samplers, or additional arguments to be passed to the autoBlock function when autoBlock = TRUE.
 '
@@ -174,7 +174,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
                         stop('assigning samplers to non-stochastic nodes: ',
                              paste0(nodes[!model$isStoch(nodes)],
                                     collapse=', ')) }    ## ensure all target node(s) are stochastic
-            }
+                }
             }
             
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
@@ -381,7 +381,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
 
             }
             
-            if(print)   printSamplers()
+            if(print)   show()    ##printSamplers()
         },
 
         addConjugateSampler = function(conjugacyResult, dynamicallyIndexed = FALSE, dcrpNode = NULL, clusterID = NULL, print = FALSE) {
@@ -483,25 +483,25 @@ Invisibly returns a list of the current sampler configurations, which are sample
             thisControlList <- mcmc_generateControlListArgument(control=controlArgs, controlDefaults=controlDefaults)  ## should name arguments
             
             if(!scalarComponents) {
-                addSamplerOne(thisSamplerName, samplerFunction, target, thisControlList)
+                addSamplerOne(thisSamplerName, samplerFunction, target, thisControlList, print)
             } else {  ## assign sampler type to each scalar component of target
                 targetAsScalars <- model$expandNodeNames(target)
                 for(i in seq_along(targetAsScalars)) {
-                    addSamplerOne(thisSamplerName, samplerFunction, targetAsScalars[i], thisControlList)
+                    addSamplerOne(thisSamplerName, samplerFunction, targetAsScalars[i], thisControlList, print)
                 }
             }
             
-            if(print) printSamplers(newSamplerInd)
             return(invisible(samplerConfs))
         },
 
-        addSamplerOne = function(thisSamplerName, samplerFunction, targetOne, thisControlList) {
+        addSamplerOne = function(thisSamplerName, samplerFunction, targetOne, thisControlList, print) {
             '
 For internal use only
 '
             newSamplerInd <- length(samplerConfs) + 1
             samplerConfs[[newSamplerInd]] <<- samplerConf(name=thisSamplerName, samplerFunction=samplerFunction, target=targetOne, control=thisControlList, model=model)
             samplerExecutionOrder <<- c(samplerExecutionOrder, newSamplerInd)
+            if(print) printSamplers(newSamplerInd)
         },
         
         removeSamplers = function(..., ind, print = FALSE) {
@@ -642,61 +642,61 @@ byType: A logical argument, specifying whether the nodes being sampled should be
 
         printSamplersByType = function(ind) {
             if(length(ind) == 0) return(invisible(NULL))
+            indent <- '  - '
             samplerTypes <- unlist(lapply(ind, function(i) samplerConfs[[i]]$name))
+            samplerTypes <- gsub('^conjugate_.+', 'conjugate', samplerTypes)
             uniqueSamplerTypes <- sort(unique(samplerTypes), decreasing = TRUE)
-            nodesSortedBySamplerType <- lapply(uniqueSamplerTypes, function(type) sapply(samplerConfs[which(samplerTypes == type)], `[[`, 'target'))
+            nodesSortedBySamplerType <- lapply(uniqueSamplerTypes, function(type) sapply(samplerConfs[which(samplerTypes == type)], `[[`, 'target', simplify = FALSE))
             names(nodesSortedBySamplerType) <- uniqueSamplerTypes
-            cat('\n')
             for(i in seq_along(nodesSortedBySamplerType)) {
                 theseSampledNodes <- nodesSortedBySamplerType[[i]]
-                cat(paste0(names(nodesSortedBySamplerType)[i], ' sampler (', length(theseSampledNodes), '):  '))
-                ## now to print the node names:
-                ##cat(paste0(theseSampledNodes, collapse = ', '))  ## before compression
-                anyMultivariate <- any(grepl(':', theseSampledNodes))
-                anyNonScalar <- any(grepl(',', theseSampledNodes))
-                if(anyMultivariate) {
-                    cat(paste0(theseSampledNodes, collapse = ', '))
-                } else {
-                    if(anyNonScalar) {
-                        ## the hard case
-                        ## really should update this!
-                        ## punt for now, and just collapse on the *final* index location:
-                        theseVars <- model$getVarNames(nodes = theseSampledNodes)
-                        nodesListByVar <- lapply(theseVars, function(var) grep(paste0('^', var, '\\['), theseSampledNodes, value = TRUE))
-                        for(j in seq_along(nodesListByVar)) {
-                            theseNodes <- nodesListByVar[[j]]
-                            initialIndexStrings <- gsub('^[[:alpha:]]+\\[(.*), [[:digit:]]+\\]$', '\\1', theseNodes)
-                            uniqueInitialStrings <- unique(initialIndexStrings)
-                            nodeListByInitString <- lapply(uniqueInitialStrings, function(uis) grep(paste0('^[[:alpha:]]+\\[',uis,', [[:digit:]]+\\]$'), theseNodes, value = TRUE))
-                            for(k in seq_along(nodeListByInitString)) {
-                                theseNodes <- nodeListByInitString[[k]]
-                                numIndices <- length(strsplit(theseNodes[1], ',')[[1]])
-                                indices <- mcmc_getIndexNumberFromNodeNames(theseNodes, numIndices)
-                                indexRangeList <- mcmc_compressIndexRanges(indices)
-                                printNodesList <- lapply(indexRangeList, deparse)
-                                printNodesList <- lapply(printNodesList, function(n) paste0(theseVars[j], '[', uniqueInitialStrings[k], ',', n, ']'))
-                                printNodesList <- sapply(printNodesList, function(n) if(grepl(':',n)) paste0('components of ',n) else n)
-                                cat(paste0(printNodesList, collapse = ', '))
-                                if(j < length(nodesListByVar) || k < length(nodeListByInitString)) cat(', ')
-                            }
-                        }
-                    } else {
-                        ## all scalar nodes, with single numeric index:
-                        theseVars <- model$getVarNames(nodes = theseSampledNodes)
-                        nodesListByVar <- lapply(theseVars, function(var) grep(paste0('^', var, '\\['), theseSampledNodes, value = TRUE))
-                        for(j in seq_along(nodesListByVar)) {
-                            theseNodes <- nodesListByVar[[j]]
-                            indices <- mcmc_getIndexNumberFromNodeNames(theseNodes, 1)
-                            indexRangeList <- mcmc_compressIndexRanges(indices)
-                            printNodesList <- lapply(indexRangeList, deparse)
-                            printNodesList <- lapply(printNodesList, function(n) paste0(theseVars[j], '[', n, ']'))
-                            printNodesList <- sapply(printNodesList, function(n) if(grepl(':',n)) paste0('components of ',n) else n)
-                            cat(paste0(printNodesList, collapse = ', '))
-                            if(j < length(nodesListByVar)) cat(', ')
+                cat(paste0(names(nodesSortedBySamplerType)[i], ' sampler (', length(theseSampledNodes), ')\n'))
+                colonBool <- grepl(':', theseSampledNodes)
+                lengthGToneBool <- sapply(theseSampledNodes, length) > 1
+                multivariateBool <- colonBool | lengthGToneBool
+                univariateList <- theseSampledNodes[!multivariateBool]
+                multivariateList <- theseSampledNodes[multivariateBool]
+                if(length(univariateList) > 0) {   ## univariate samplers:
+                    theseUniVars <- model$getVarNames(nodes = univariateList)
+                    uniNodesListByVar <- lapply(theseUniVars, function(var)
+                        unlist(univariateList[(univariateList == var) |
+                                                  grepl(paste0('^', var, '\\['), univariateList)]))
+                    if(length(unlist(uniNodesListByVar)) != length(univariateList)) stop('something went wrong')
+                    for(j in seq_along(uniNodesListByVar)) {
+                        theseNodes <- uniNodesListByVar[[j]]
+                        isIndexed <- grepl("\\[", theseNodes[1])
+                        if(isIndexed) { numElements <- length(theseNodes)
+                                        sTag <- ifelse(numElements>1, 's', '')
+                                        cat(paste0(indent, theseUniVars[j], '[]  (', numElements, ' element', sTag, ')'))
+                                    } else cat(paste0(indent, theseNodes))
+                        cat('\n') }
+                }
+                if(length(multivariateList) > 0) {   ## multivariate samplers:
+                    multiLengthGToneBool <- sapply(multivariateList, length) > 1
+                    LGoneNodes <- multivariateList[multiLengthGToneBool]
+                    LEoneNodes <- multivariateList[!multiLengthGToneBool]
+                    if(length(LEoneNodes) > 0) {
+                        theseMultiVars <- model$getVarNames(nodes = LEoneNodes)
+                        multiNodesListByVar <- lapply(theseMultiVars, function(var)
+                            unlist(LEoneNodes[ grepl(paste0('^', var, '\\['), LEoneNodes) ]))
+                        if(length(unlist(multiNodesListByVar)) != length(LEoneNodes)) stop('something went wrong')
+                        for(j in seq_along(multiNodesListByVar)) {
+                            theseNodes <- multiNodesListByVar[[j]]
+                            numElements <- length(theseNodes)
+                            if(numElements > 4) {
+                                sTag <- ifelse(numElements>1, 's', '')
+                                cat(paste0(indent, theseMultiVars[j], '[]  (', numElements, ' multivariate element', sTag, ')'))
+                                cat('\n')
+                            } else { theseNodesIndent <- paste0(indent, theseNodes)
+                                     cat(paste0(theseNodesIndent, collapse = '\n'), '\n') }
                         }
                     }
+                    if(length(LGoneNodes) > 0) {
+                        LGoneNodesCompressed <- sapply(LGoneNodes, function(nns) if(length(nns)==1) nns else paste0(nns, collapse = ', '))
+                        LGoneNodesCompressedIndent <- paste0(indent, LGoneNodesCompressed)
+                        cat(paste0(LGoneNodesCompressedIndent, collapse = '\n'), '\n')
+                    }
                 }
-                cat('\n\n')
             }
         },
 
@@ -949,7 +949,10 @@ waic: A logical argument, indicating whether to enable WAIC calculations in the 
         },
 
         show = function() {
-            cat('MCMC configuration object\n')
+            cat('===== Monitors =====\n')
+            printMonitors()
+            cat('===== Samplers =====\n')
+            printSamplers(byType = TRUE)
         }
     )
 )
@@ -1307,7 +1310,8 @@ configureMCMC <- function(model, nodes, control = list(),
                           useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE,
                           multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
                           enableWAIC = getNimbleOption('MCMCenableWAIC'),
-                          print = FALSE, autoBlock = FALSE, oldConf,
+                          print = getNimbleOption('verbose'),
+                          autoBlock = FALSE, oldConf,
                           rules = getNimbleOption('MCMCdefaultSamplerAssignmentRules'),
                           warnNoSamplerAssigned = TRUE, ...) {
     

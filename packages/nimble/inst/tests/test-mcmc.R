@@ -764,6 +764,55 @@ test_that('conjugate Wishart setup', {
     
 })
 
+test_that('conjugate Wishart setup with scaling', {
+    set.seed(0)
+    
+    trueCor <- matrix(c(1, .3, .7, .3, 1, -0.2, .7, -0.2, 1), 3)
+    covs <- c(3, 2, .5)
+    tau <- 4
+    
+    trueCov = diag(sqrt(covs)) %*% trueCor %*% diag(sqrt(covs))
+    Omega = solve(trueCov) / tau
+    
+    n = 20
+    R = diag(rep(1,3))
+    mu = 1:3
+    Y = mu + t(chol(trueCov)) %*% matrix(rnorm(3*n), ncol = n)
+    M = 3
+    data <- list(Y = t(Y), n = n, M = M, mu = mu, R = R)
+    
+    code <- nimbleCode( {
+        for(i in 1:n) {
+            Y[i, 1:M] ~ dmnorm(mu[1:M], tmp[1:M,1:M])
+        }
+        tmp[1:M,1:M] <- tau * Omega[1:M,1:M]
+        Omega[1:M,1:M] ~ dwish(R[1:M,1:M], 4);
+    })
+    
+    newDf = 4 + n
+    newR = R + tcrossprod(Y - mu)*tau
+    OmegaTrueMean = newDf * solve(newR)
+    
+    wishRV <- array(0, c(M, M, 10000))
+    for(i in 1:10000) {
+        z <- t(chol(solve(newR))) %*% matrix(rnorm(3*newDf), ncol = newDf)
+        wishRV[ , , i] <- tcrossprod(z)
+    }
+    OmegaSimTrueSDs = apply(wishRV, c(1,2), sd)
+
+    m <- nimbleModel(code, data = data[1],constants=data[2:5],inits = list(Omega = OmegaTrueMean, tau = tau))
+    conf <- configureMCMC(m)
+    expect_equal(conf$getSamplers()[[1]]$name, "conjugate_dwish_dmnorm", info = "conjugate dmnorm-dwish with scaling not detected")
+    
+    test_mcmc(model = code, name = 'conjugate Wishart, scaled', data = data, seed = 0, numItsC = 1000, inits = list(Omega = OmegaTrueMean, tau = tau),
+              results = list(mean = list(Omega = OmegaTrueMean ),
+                             sd = list(Omega = OmegaSimTrueSDs)),
+              resultsTolerance = list(mean = list(Omega = matrix(.05, M,M)),
+                                      sd = list(Omega = matrix(0.06, M, M))), avoidNestedTest = TRUE)
+                                        # issue with Chol in R MCMC - probably same issue as in jaw-linear
+    
+})
+
 test_that('using RW_wishart sampler on non-conjugate Wishart node', {
     set.seed(0)
     trueCor <- matrix(c(1, .3, .7, .3, 1, -0.2, .7, -0.2, 1), 3)
@@ -867,6 +916,55 @@ test_that('using RW_wishart sampler on inverse-Wishart distribution', {
     expect_true(all(round(as.numeric(RWSD - conjSD), 9) == c(0.022803503, -0.010107015, 0.012342044, -0.010107015, 0.006191412, -0.000091101, 0.012342044, -0.000091101, 0.001340032)))
 })
 
+test_that('detect conjugacy when scaling Wishart, inverse Wishart cases', {
+    code <- nimbleCode({
+        mycov[1:p, 1:p]  <- lambda * Sigma[1:p,1:p] / eta
+        y[1:p] ~ dmnorm(z[1:p], cov = mycov[1:p, 1:p])
+        Sigma[1:p,1:p] ~ dinvwish(S[1:p,1:p], nu)
+    })
+    m  <- nimbleModel(code, constants = list(p = 3))
+    expect_identical(length(m$checkConjugacy('Sigma')), 1L, 'inverse-Wishart case')
+
+    code <- nimbleCode({
+        mycov[1:p, 1:p]  <- lambda * Sigma[1:p,1:p] / eta
+        y[1:p] ~ dmnorm(z[1:p], prec = mycov[1:p, 1:p])
+        Sigma[1:p,1:p] ~ dwish(S[1:p,1:p], nu)
+    })
+    m  <- nimbleModel(code, constants = list(p = 3))
+    expect_identical(length(m$checkConjugacy('Sigma')), 1L, 'Wishart case')
+
+    code <- nimbleCode({
+        mycov[1:p, 1:p]  <- lambda * Sigma[1:p,1:p] / eta
+        y[1:p] ~ dmnorm(z[1:p], cov = mycov[1:p, 1:p])
+        Sigma[1:p,1:p] ~ dwish(S[1:p,1:p], nu)
+    })
+    m  <- nimbleModel(code, constants = list(p = 3))
+    expect_identical(length(m$checkConjugacy('Sigma')), 0L, 'inverse-Wishart not-conj case')
+
+    code <- nimbleCode({
+        mycov[1:p, 1:p]  <- lambda * Sigma[1:p,1:p] / eta
+        y[1:p] ~ dmnorm(z[1:p], prec = mycov[1:p, 1:p])
+        Sigma[1:p,1:p] ~ dinvwish(S[1:p,1:p], nu)
+    })
+    m  <- nimbleModel(code, constants = list(p = 3))
+    expect_identical(length(m$checkConjugacy('Sigma')), 0L, 'Wishart not-conj case')
+
+    code <- nimbleCode({
+        mycov[1:p, 1:p]  <- lambda[1:p,1:p] * Sigma[1:p,1:p]
+        y[1:p] ~ dmnorm(z[1:p], cov = mycov[1:p, 1:p])
+        Sigma[1:p,1:p] ~ dinvwish(S[1:p,1:p], nu)
+    })
+    m  <- nimbleModel(code, constants = list(p = 3))
+    expect_identical(length(m$checkConjugacy('Sigma')), 0L, 'Wishart case')
+
+    code <- nimbleCode({
+        mycov[1:p, 1:p]  <- lambda[1:p,1:p] %*% Sigma[1:p,1:p]
+        y[1:p] ~ dmnorm(z[1:p], cov = mycov[1:p, 1:p])
+        Sigma[1:p,1:p] ~ dinvwish(S[1:p,1:p], nu)
+    })
+    m  <- nimbleModel(code, constants = list(p = 3))
+    expect_identical(length(m$checkConjugacy('Sigma')), 0L, 'Wishart case')
+})
 
 
 ## testing conjugate MVN updating with ragged dependencies;
@@ -938,9 +1036,8 @@ test_that('conjugate MVN with ragged dependencies', {
     
 
     expect_true(all(abs(pmean - obsmean) / pmean < 0.01), info = 'ragged dmnorm conjugate posterior mean')
-    expect_true(all(abs(pprec - obsprec) / pprec < 0.005), info = 'ragged dmnorm conjugate posterior precision')
-    
-    })
+    expect_true(all(abs(pprec - obsprec) / pprec < 0.005), info = 'ragged dmnorm conjugate posterior precision')    
+})
     
 ## testing binary sampler
 test_that('binary sampler setup', {
@@ -1059,8 +1156,14 @@ test_that('RW_multinomial sampler', {
     X         <- rmultinom(1, N, pVecX)[,1]
     Y         <- rmultinom(1, N, pVecY)[,1]
     Z         <- rbeta(nGroups, 1+X, 1+Y)
-    Xini      <- rmultinom(1, N, sample(pVecX))[,1]
-    Yini      <- rmultinom(1, N, sample(pVecY))[,1]
+    ## Hard code in the results of sample() since output from sample
+    ## changed as of R 3.6.0 to fix a long-standing bug in R.
+    smpX <- pVecX[c(2,1,4,3,5)]
+    smpY <- pVecY[c(1,4,2,3,5)]
+    fakeSample <- sample(pVecX)  # to keep random number stream as before
+    Xini      <- rmultinom(1, N, smpX)[,1]
+    fakeSample <- sample(pVecY)  # to keep random number stream as before
+    Yini      <- rmultinom(1, N, smpY)[,1]
     Constants <- list(nGroups=nGroups)
     Inits     <- list(X=Xini, Y=Yini, pVecX=pVecX, pVecY=pVecY, N=N)
     Data      <- list(Z=Z)
@@ -1427,8 +1530,7 @@ test_that('dnorm-dmnorm conjugacies NIMBLE fails to detect', {
 ## dnorm prior in vectorized regression mean (inprod, matrix multiplication)
 
 test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
-    ## do unit testing of cc_checkLinearity too
-    
+
     code <- nimbleCode({
         for(i in 1:n) 
             y[i] ~ dnorm(b0 + inprod(beta[1:p], X[i, 1:p]), 1)
@@ -1562,6 +1664,90 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     check <- nimble:::cc_checkLinearity(quote(b0 + inprod(structureExpr(beta[1], beta[2], beta[3]), X[1, 1:3])), 'beta[1]')
     expect_identical(check, list(offset = quote(b0 + structureExpr(beta[1], beta[2], beta[3]) * X[1, 1:3]),
                                  scale = quote(X[1, 1:3])))
+
+    ## check nested specifications
+    
+    code <- nimbleCode({
+        for(i in 1:n) 
+            y[i] ~ dnorm(b0 + inprod(zbeta[1:p], X[i, 1:p]), 1)
+        for(i in 1:p) {
+            beta[i] ~ dnorm(0, 1)
+            zbeta[i] <- z[i] * beta[i]
+        }
+        b0 ~ dnorm(0, 1)
+    })
+    constants <- list(n = 5, p = 3)
+    data <- list(y = rnorm(constants$n),
+                 X = matrix(rnorm(constants$n * constants$p), constants$n))
+    inits <- list(b0 = 1, beta = rnorm(constants$p))
+    m <- nimbleModel(code, data = data, constants = constants)
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+                                   info = "conjugacy with inprod not detected")
+   
+    code <- nimbleCode({
+        for(i in 1:n) 
+            y[i] ~ dnorm(b0 + inprod(zbeta[1:p], X[i, 1:p]), 1)
+        for(i in 1:p) {
+            beta[i] ~ dnorm(0, 1)
+            wbeta[i] <- a + w * beta[i]
+            zbeta[i] <- z[i] * wbeta[i]
+        }
+        b0 ~ dnorm(0, 1)
+    })
+    constants <- list(n = 5, p = 3)
+    data <- list(y = rnorm(constants$n),
+                 X = matrix(rnorm(constants$n * constants$p), constants$n))
+    inits <- list(b0 = 1, beta = rnorm(constants$p))
+    m <- nimbleModel(code, data = data, constants = constants)
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+                                   info = "conjugacy with inprod not detected")
+
+    code <- nimbleCode({
+        for(i in 1:n) 
+            y[i] ~ dnorm((X[i, 1:p] %*% zbeta[1:p])[1], 1)
+        for(i in 1:p) {
+            beta[i] ~ dnorm(0, 1)
+            zbeta[i] <- z[i] * beta[i]
+        }
+    })
+    constants <- list(n = 5, p = 3)
+    data <- list(y = rnorm(constants$n),
+                 X = matrix(rnorm(constants$n * constants$p), constants$n))
+    inits <- list(b0 = 1, beta = rnorm(constants$p))
+    m <- nimbleModel(code, data = data, constants = constants)
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+                     info = "conjugacy with inprod not detected")
+
+   code <- nimbleCode({
+        for(i in 1:n) 
+            y[i] ~ dnorm(b0 + inprod(zbeta[1:p], X[i, 1:p]), 1)
+        for(i in 1:p) {
+            beta[i] ~ dnorm(0, 1)
+            wbeta[i] <- exp(w * beta[i])
+            zbeta[i] <- z[i] * wbeta[i]
+        }
+        b0 ~ dnorm(0, 1)
+    })
+    constants <- list(n = 5, p = 3)
+    data <- list(y = rnorm(constants$n),
+                 X = matrix(rnorm(constants$n * constants$p), constants$n))
+    inits <- list(b0 = 1, beta = rnorm(constants$p))
+    m <- nimbleModel(code, data = data, constants = constants)
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'RW',
+                     info = "conjugacy with inprod mistakenly detected")
+
+    expect_identical(nimble:::cc_checkLinearity(
+        quote(structureExpr(z[1] * exp(w * beta[1]), z[2] * exp(w * beta[2]))),
+        'beta[2]'), NULL)
+    output <- nimble:::cc_checkLinearity(
+        quote(structureExpr(z[1] * exp(w * beta[1]), a + z[2] * (d + w * beta[2]))),
+        'beta[2]')
+    expect_identical(is.list(output), TRUE)  ## should be a list with scale/offset
+    
 })
 
 
@@ -1668,11 +1854,35 @@ test_that('checkConjugacy corner case when linear scale is identically zero', {
                           scale = 0))
 })
 
+test_that('cc_checkScalar operates correctly', {
+    expect_true(cc_checkScalar(quote(lambda)))
+    expect_true(cc_checkScalar(quote(lambda*eta)))
+    expect_true(cc_checkScalar(quote(exp(lambda))))
+    expect_true(cc_checkScalar(quote(5+exp(lambda[2]))))
+
+    expect_false(cc_checkScalar(quote(exp(lambda[2:3]))))
+    expect_false(cc_checkScalar(quote(lambda[1:2,1:2])))
+    expect_false(cc_checkScalar(quote(lambda[1:2,1:2]/eta)))
+    expect_false(cc_checkScalar(quote(eta*(theta*lambda[1:2,1:2]))))
+    expect_false(cc_checkScalar(quote(lambda[1:2,1:2,1:5])))
+
+    expect_true(cc_checkScalar(quote(lambda[xi[i]])))
+    expect_true(cc_checkScalar(quote(lambda[xi[i],xi[j]])))
+    expect_false(cc_checkScalar(quote(lambda[xi[i]:3])))
+    expect_false(cc_checkScalar(quote(lambda[xi[i]:3,2])))
+
+    ## Ideally this case would evaluate to TRUE, but we would
+    ## have to handle knowing output dims of user-defined fxns.
+    expect_false(cc_checkScalar(quote(sum(lambda[1:5]))))
+    expect_false(cc_checkScalar(quote(foo(lambda))))
+
+})
 
 sink(NULL)
 
 if(!generatingGoldFile) {
     trialResults <- readLines(tempFileName)
+    trialResults <- trialResults[grep('Error in x$.self$finalize() : attempt to apply non-function', trialResults, invert = TRUE, fixed = TRUE)]
     correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
     compareFilesByLine(trialResults, correctResults)
 }

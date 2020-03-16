@@ -1346,8 +1346,9 @@ SEXP C_dt_nonstandard(SEXP x, SEXP df, SEXP mu, SEXP sigma, SEXP return_log) {
   if(n_x == 0) {
     return x;
   }
-    
-  PROTECT(ans = Rf_allocVector(REALSXP, n_x));  
+
+  int n_max = max(n_x, max(n_mu, max(n_sigma, n_df)));
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
   double* c_x = REAL(x);
   double* c_mu = REAL(mu);
   double* c_sigma = REAL(sigma);
@@ -1359,13 +1360,15 @@ SEXP C_dt_nonstandard(SEXP x, SEXP df, SEXP mu, SEXP sigma, SEXP return_log) {
     for(int i = 0; i < n_x; i++) 
       REAL(ans)[i] = dt_nonstandard(c_x[i], *c_df, *c_mu, *c_sigma, give_log);
   } else {
+    int i_x = 0;
     int i_mu = 0;
     int i_sigma = 0;
     int i_df = 0;
-    for(int i = 0; i < n_x; i++) {
-      REAL(ans)[i] = dt_nonstandard(c_x[i], c_df[i_df++], c_mu[i_mu++], c_sigma[i_sigma++], give_log);
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = dt_nonstandard(c_x[i_x++], c_df[i_df++], c_mu[i_mu++], c_sigma[i_sigma++], give_log);
       //c_mu[i_mu++] + c_sigma[i_sigma++] * rt(c_df[i_df++]);
       // implement recycling:
+      if(i_x == n_x) i_x = 0;
       if(i_mu == n_mu) i_mu = 0;
       if(i_sigma == n_sigma) i_sigma = 0;
       if(i_df == n_df) i_df = 0;
@@ -1438,8 +1441,9 @@ SEXP C_pt_nonstandard(SEXP q, SEXP df, SEXP mu, SEXP sigma, SEXP lower_tail, SEX
   if(n_q == 0) {
     return q;
   }
-    
-  PROTECT(ans = Rf_allocVector(REALSXP, n_q));  
+
+  int n_max = max(n_q, max(n_mu, max(n_sigma, n_df)));
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
   double* c_q = REAL(q);
   double* c_mu = REAL(mu);
   double* c_sigma = REAL(sigma);
@@ -1451,13 +1455,15 @@ SEXP C_pt_nonstandard(SEXP q, SEXP df, SEXP mu, SEXP sigma, SEXP lower_tail, SEX
     for(int i = 0; i < n_q; i++) 
       REAL(ans)[i] = pt_nonstandard(c_q[i], *c_df, *c_mu, *c_sigma, c_lower_tail, c_log_p);
   } else {
+    int i_q = 0;
     int i_mu = 0;
     int i_sigma = 0;
     int i_df = 0;
-    for(int i = 0; i < n_q; i++) {
-      REAL(ans)[i] = pt_nonstandard(c_q[i], c_df[i_df++], c_mu[i_mu++], c_sigma[i_sigma++], c_lower_tail, c_log_p);
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = pt_nonstandard(c_q[i_q++], c_df[i_df++], c_mu[i_mu++], c_sigma[i_sigma++], c_lower_tail, c_log_p);
       //c_mu[i_mu++] + c_sigma[i_sigma++] * rt(c_df[i_df++]);
       // implement recycling:
+      if(i_q == n_q) i_q = 0;
       if(i_mu == n_mu) i_mu = 0;
       if(i_sigma == n_sigma) i_sigma = 0;
       if(i_df == n_df) i_df = 0;
@@ -1482,8 +1488,9 @@ SEXP C_qt_nonstandard(SEXP p, SEXP df, SEXP mu, SEXP sigma, SEXP lower_tail, SEX
   if(n_p == 0) {
     return p;
   }
-    
-  PROTECT(ans = Rf_allocVector(REALSXP, n_p));  
+
+  int n_max = max(n_p, max(n_mu, max(n_sigma, n_df)));
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
   double* c_p = REAL(p);
   double* c_mu = REAL(mu);
   double* c_sigma = REAL(sigma);
@@ -1495,13 +1502,15 @@ SEXP C_qt_nonstandard(SEXP p, SEXP df, SEXP mu, SEXP sigma, SEXP lower_tail, SEX
     for(int i = 0; i < n_p; i++) 
       REAL(ans)[i] = qt_nonstandard(c_p[i], *c_df, *c_mu, *c_sigma, c_lower_tail, c_log_p);
   } else {
+    int i_p = 0;
     int i_mu = 0;
     int i_sigma = 0;
     int i_df = 0;
-    for(int i = 0; i < n_p; i++) {
-      REAL(ans)[i] = qt_nonstandard(c_p[i], c_df[i_df++], c_mu[i_mu++], c_sigma[i_sigma++], c_lower_tail, c_log_p);
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = qt_nonstandard(c_p[i_p++], c_df[i_df++], c_mu[i_mu++], c_sigma[i_sigma++], c_lower_tail, c_log_p);
       //c_mu[i_mu++] + c_sigma[i_sigma++] * rt(c_df[i_df++]);
       // implement recycling:
+      if(i_p == n_p) i_p = 0;
       if(i_mu == n_mu) i_mu = 0;
       if(i_sigma == n_sigma) i_sigma = 0;
       if(i_df == n_df) i_df = 0;
@@ -1566,22 +1575,27 @@ SEXP C_dinterval(SEXP x, SEXP t, SEXP c, SEXP return_log) {
   if(n_x == 0) {
     return x;
   }
-    
-  PROTECT(ans = Rf_allocVector(REALSXP, n_x));  
+
+  int n_max = max(n_x, n_t);
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
   double* c_x = REAL(x);
   double* c_t = REAL(t);
   double* c_c = REAL(c);
 
   // FIXME: abstract the recycling as a function
+  // Doesn't really make sense to have recycling as only presumably would only
+  // use this when lengths of x and t are the same, but have it for consistency.
   if(n_t == 1) {
     // if no parameter vectors, more efficient not to deal with multiple indices
     for(int i = 0; i < n_x; i++) 
       REAL(ans)[i] = dinterval(c_x[i], *c_t, c_c, n_c, give_log);
   } else {
+    int i_x = 0;
     int i_t = 0;
-    for(int i = 0; i < n_x; i++) {
-      REAL(ans)[i] = dinterval(c_x[i], c_t[i_t++], c_c, n_c, give_log);
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = dinterval(c_x[i_x++], c_t[i_t++], c_c, n_c, give_log);
       // implement recycling:
+      if(i_x == n_x) i_x = 0;
       if(i_t == n_t) i_t = 0;
     }
   }
@@ -1687,8 +1701,9 @@ SEXP C_dexp_nimble(SEXP x, SEXP rate, SEXP return_log) {
   if(n_x == 0) {
     return x;
   }
-    
-  PROTECT(ans = Rf_allocVector(REALSXP, n_x));  
+
+  int n_max = max(n_x, n_rate);
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
   double* c_x = REAL(x);
   double* c_rate = REAL(rate);
 
@@ -1698,9 +1713,11 @@ SEXP C_dexp_nimble(SEXP x, SEXP rate, SEXP return_log) {
     for(int i = 0; i < n_x; i++) 
       REAL(ans)[i] = dexp_nimble(c_x[i], *c_rate, give_log);
   } else {
+    int i_x = 0;
     int i_rate = 0;
-    for(int i = 0; i < n_x; i++) {
-      REAL(ans)[i] = dexp_nimble(c_x[i], c_rate[i_rate++], give_log);
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = dexp_nimble(c_x[i_x++], c_rate[i_rate++], give_log);
+      if(i_x == n_x) i_x = 0;
       if(i_rate == n_rate) i_rate = 0;
     }
   }
@@ -1760,8 +1777,9 @@ SEXP C_pexp_nimble(SEXP q, SEXP rate, SEXP lower_tail, SEXP log_p) {
   if(n_q == 0) {
     return q;
   }
-    
-  PROTECT(ans = Rf_allocVector(REALSXP, n_q));  
+
+  int n_max = max(n_q, n_rate);
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
   double* c_q = REAL(q);
   double* c_rate = REAL(rate);
 
@@ -1771,9 +1789,11 @@ SEXP C_pexp_nimble(SEXP q, SEXP rate, SEXP lower_tail, SEXP log_p) {
     for(int i = 0; i < n_q; i++) 
       REAL(ans)[i] = pexp_nimble(c_q[i], *c_rate, c_lower_tail, c_log_p);
   } else {
+    int i_q = 0;
     int i_rate = 0;
-    for(int i = 0; i < n_q; i++) {
-      REAL(ans)[i] = pexp_nimble(c_q[i], c_rate[i_rate++], c_lower_tail, c_log_p);
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = pexp_nimble(c_q[i_q++], c_rate[i_rate++], c_lower_tail, c_log_p);
+      if(i_q == n_q) i_q = 0;
       if(i_rate == n_rate) i_rate = 0;
     }
   }
@@ -1794,8 +1814,9 @@ SEXP C_qexp_nimble(SEXP p, SEXP rate, SEXP lower_tail, SEXP log_p) {
   if(n_p == 0) {
     return p;
   }
-    
-  PROTECT(ans = Rf_allocVector(REALSXP, n_p));  
+
+  int n_max = max(n_p, n_rate);
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
   double* c_p = REAL(p);
   double* c_rate = REAL(rate);
 
@@ -1805,9 +1826,11 @@ SEXP C_qexp_nimble(SEXP p, SEXP rate, SEXP lower_tail, SEXP log_p) {
     for(int i = 0; i < n_p; i++) 
       REAL(ans)[i] = qexp_nimble(c_p[i], *c_rate, c_lower_tail, c_log_p);
   } else {
+    int i_p = 0;
     int i_rate = 0;
-    for(int i = 0; i < n_p; i++) {
-      REAL(ans)[i] = qexp_nimble(c_p[i], c_rate[i_rate++], c_lower_tail, c_log_p);
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = qexp_nimble(c_p[i_p++], c_rate[i_rate++], c_lower_tail, c_log_p);
+      if(i_p == n_p) i_p = 0;
       if(i_rate == n_rate) i_rate = 0;
     }
   }
@@ -1900,8 +1923,9 @@ SEXP C_ddexp(SEXP x, SEXP location, SEXP scale, SEXP return_log) {
   if(n_x == 0) {
     return x;
   }
-    
-  PROTECT(ans = Rf_allocVector(REALSXP, n_x));  
+
+  int n_max = max(n_x, max(n_location, n_scale));
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
   double* c_x = REAL(x);
   double* c_location = REAL(location);
   double* c_scale = REAL(scale);
@@ -1912,11 +1936,13 @@ SEXP C_ddexp(SEXP x, SEXP location, SEXP scale, SEXP return_log) {
     for(int i = 0; i < n_x; i++) 
       REAL(ans)[i] = ddexp(c_x[i], *c_location, *c_scale, give_log);
   } else {
+    int i_x = 0;
     int i_location = 0;
     int i_scale = 0;
-    for(int i = 0; i < n_x; i++) {
-      REAL(ans)[i] = ddexp(c_x[i], c_location[i_location++], c_scale[i_scale++], give_log);
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = ddexp(c_x[i_x++], c_location[i_location++], c_scale[i_scale++], give_log);
       // implement recycling:
+      if(i_x == n_x) i_x = 0;
       if(i_location == n_location) i_location = 0;
       if(i_scale == n_scale) i_scale = 0;
     }
@@ -1981,8 +2007,9 @@ SEXP C_pdexp(SEXP q, SEXP location, SEXP scale, SEXP lower_tail, SEXP log_p) {
   if(n_q == 0) {
     return q;
   }
-    
-  PROTECT(ans = Rf_allocVector(REALSXP, n_q));  
+
+  int n_max = max(n_q, max(n_location, n_scale));
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
   double* c_q = REAL(q);
   double* c_location = REAL(location);
   double* c_scale = REAL(scale);
@@ -1993,11 +2020,13 @@ SEXP C_pdexp(SEXP q, SEXP location, SEXP scale, SEXP lower_tail, SEXP log_p) {
     for(int i = 0; i < n_q; i++) 
       REAL(ans)[i] = pdexp(c_q[i], *c_location, *c_scale, c_lower_tail, c_log_p);
   } else {
+    int i_q = 0;
     int i_location = 0;
     int i_scale = 0;
-    for(int i = 0; i < n_q; i++) {
-      REAL(ans)[i] = pdexp(c_q[i], c_location[i_location++], c_scale[i_scale++], c_lower_tail, c_log_p);
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = pdexp(c_q[i_q++], c_location[i_location++], c_scale[i_scale++], c_lower_tail, c_log_p);
       // implement recycling:
+      if(i_q == n_q) i_q = 0;
       if(i_location == n_location) i_location = 0;
       if(i_scale == n_scale) i_scale = 0;
     }
@@ -2020,8 +2049,9 @@ SEXP C_qdexp(SEXP p, SEXP location, SEXP scale, SEXP lower_tail, SEXP log_p) {
   if(n_p == 0) {
     return p;
   }
-    
-  PROTECT(ans = Rf_allocVector(REALSXP, n_p));  
+
+  int n_max = max(n_p, max(n_location, n_scale));
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
   double* c_p = REAL(p);
   double* c_location = REAL(location);
   double* c_scale = REAL(scale);
@@ -2032,11 +2062,13 @@ SEXP C_qdexp(SEXP p, SEXP location, SEXP scale, SEXP lower_tail, SEXP log_p) {
     for(int i = 0; i < n_p; i++) 
       REAL(ans)[i] = qdexp(c_p[i], *c_location, *c_scale, c_lower_tail, c_log_p);
   } else {
+    int i_p = 0;
     int i_location = 0;
     int i_scale = 0;
-    for(int i = 0; i < n_p; i++) {
-      REAL(ans)[i] = qdexp(c_p[i], c_location[i_location++], c_scale[i_scale++], c_lower_tail, c_log_p);
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = qdexp(c_p[i_p++], c_location[i_location++], c_scale[i_scale++], c_lower_tail, c_log_p);
       // implement recycling:
+      if(i_p == n_p) i_p = 0;
       if(i_location == n_location) i_location = 0;
       if(i_scale == n_scale) i_scale = 0;
     }
@@ -2080,8 +2112,9 @@ SEXP C_dsqrtinvgamma(SEXP x, SEXP shape, SEXP rate, SEXP return_log) {
   if(n_x == 0) {
     return x;
   }
-    
-  PROTECT(ans = Rf_allocVector(REALSXP, n_x));  
+
+  int n_max = max(n_x, max(n_shape, n_rate));
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
   double* c_x = REAL(x);
   double* c_shape = REAL(shape);
   double* c_rate = REAL(rate);
@@ -2092,11 +2125,13 @@ SEXP C_dsqrtinvgamma(SEXP x, SEXP shape, SEXP rate, SEXP return_log) {
     for(int i = 0; i < n_x; i++) 
       REAL(ans)[i] = dsqrtinvgamma(c_x[i], *c_shape, *c_rate, give_log);
   } else {
+    int i_x = 0;
     int i_shape = 0;
     int i_rate = 0;
-    for(int i = 0; i < n_x; i++) {
-      REAL(ans)[i] = dsqrtinvgamma(c_x[i], c_shape[i_shape++], c_rate[i_rate++], give_log);
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = dsqrtinvgamma(c_x[i_x++], c_shape[i_shape++], c_rate[i_rate++], give_log);
       // implement recycling:
+      if(i_x == n_x) i_x = 0;
       if(i_shape == n_shape) i_shape = 0;
       if(i_rate == n_rate) i_rate = 0;
     }
@@ -2241,8 +2276,9 @@ SEXP C_dinvgamma(SEXP x, SEXP shape, SEXP rate, SEXP return_log) {
   if(n_x == 0) {
     return x;
   }
-    
-  PROTECT(ans = Rf_allocVector(REALSXP, n_x));  
+
+  int n_max = max(n_x, max(n_shape, n_rate));
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
   double* c_x = REAL(x);
   double* c_shape = REAL(shape);
   double* c_rate = REAL(rate);
@@ -2253,11 +2289,13 @@ SEXP C_dinvgamma(SEXP x, SEXP shape, SEXP rate, SEXP return_log) {
     for(int i = 0; i < n_x; i++) 
       REAL(ans)[i] = dinvgamma(c_x[i], *c_shape, *c_rate, give_log);
   } else {
+    int i_x = 0;
     int i_shape = 0;
     int i_rate = 0;
-    for(int i = 0; i < n_x; i++) {
-      REAL(ans)[i] = dinvgamma(c_x[i], c_shape[i_shape++], c_rate[i_rate++], give_log);
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = dinvgamma(c_x[i_x++], c_shape[i_shape++], c_rate[i_rate++], give_log);
       // implement recycling:
+      if(i_x == n_x) i_x = 0;
       if(i_shape == n_shape) i_shape = 0;
       if(i_rate == n_rate) i_rate = 0;
     }
@@ -2322,8 +2360,9 @@ SEXP C_pinvgamma(SEXP q, SEXP shape, SEXP rate, SEXP lower_tail, SEXP log_p) {
   if(n_q == 0) {
     return q;
   }
-    
-  PROTECT(ans = Rf_allocVector(REALSXP, n_q));  
+
+  int n_max = max(n_q, max(n_shape, n_rate));
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
   double* c_q = REAL(q);
   double* c_shape = REAL(shape);
   double* c_rate = REAL(rate);
@@ -2334,11 +2373,13 @@ SEXP C_pinvgamma(SEXP q, SEXP shape, SEXP rate, SEXP lower_tail, SEXP log_p) {
     for(int i = 0; i < n_q; i++) 
       REAL(ans)[i] = pinvgamma(c_q[i], *c_shape, *c_rate, c_lower_tail, c_log_p);
   } else {
+    int i_q = 0;
     int i_shape = 0;
     int i_rate = 0;
-    for(int i = 0; i < n_q; i++) {
-      REAL(ans)[i] = pinvgamma(c_q[i], c_shape[i_shape++], c_rate[i_rate++], c_lower_tail, c_log_p);
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = pinvgamma(c_q[i_q++], c_shape[i_shape++], c_rate[i_rate++], c_lower_tail, c_log_p);
       // implement recycling:
+      if(i_q == n_q) i_q = 0;
       if(i_shape == n_shape) i_shape = 0;
       if(i_rate == n_rate) i_rate = 0;
     }
@@ -2361,8 +2402,9 @@ SEXP C_qinvgamma(SEXP p, SEXP shape, SEXP rate, SEXP lower_tail, SEXP log_p) {
   if(n_p == 0) {
     return p;
   }
-    
-  PROTECT(ans = Rf_allocVector(REALSXP, n_p));  
+
+  int n_max = max(n_p, max(n_shape, n_rate));
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
   double* c_p = REAL(p);
   double* c_shape = REAL(shape);
   double* c_rate = REAL(rate);
@@ -2373,11 +2415,13 @@ SEXP C_qinvgamma(SEXP p, SEXP shape, SEXP rate, SEXP lower_tail, SEXP log_p) {
     for(int i = 0; i < n_p; i++) 
       REAL(ans)[i] = qinvgamma(c_p[i], *c_shape, *c_rate, c_lower_tail, c_log_p);
   } else {
+    int i_p = 0;
     int i_shape = 0;
     int i_rate = 0;
-    for(int i = 0; i < n_p; i++) {
-      REAL(ans)[i] = qinvgamma(c_p[i], c_shape[i_shape++], c_rate[i_rate++], c_lower_tail, c_log_p);
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = qinvgamma(c_p[i_p++], c_shape[i_shape++], c_rate[i_rate++], c_lower_tail, c_log_p);
       // implement recycling:
+      if(i_p == n_p) i_p = 0;
       if(i_shape == n_shape) i_shape = 0;
       if(i_rate == n_rate) i_rate = 0;
     }

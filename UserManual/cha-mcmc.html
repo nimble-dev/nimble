@@ -1,13 +1,12 @@
 <!DOCTYPE html>
-<html >
-
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
 <head>
 
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title></title>
-  <meta name="description" content="This is the NIMBLE User Manual.">
-  <meta name="generator" content="bookdown 0.7 and GitBook 2.6.7">
+  <meta name="description" content="This is the NIMBLE User Manual." />
+  <meta name="generator" content="bookdown 0.12 and GitBook 2.6.7" />
 
   <meta property="og:title" content="" />
   <meta property="og:type" content="book" />
@@ -25,15 +24,16 @@
 
 
 
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
 <link rel="prev" href="cha-building-models.html">
 <link rel="next" href="cha-algos-provided.html">
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.8.0</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.9.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -128,18 +128,17 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html"><i class="fa fa-check"></i><b>4</b> Installing NIMBLE</a><ul>
 <li class="chapter" data-level="4.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:requ-run-nimble"><i class="fa fa-check"></i><b>4.1</b> Requirements to run NIMBLE</a></li>
 <li class="chapter" data-level="4.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:compiler"><i class="fa fa-check"></i><b>4.2</b> Installing a C++ compiler for NIMBLE to use</a><ul>
-<li class="chapter" data-level="4.2.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#os-x"><i class="fa fa-check"></i><b>4.2.1</b> OS X</a></li>
+<li class="chapter" data-level="4.2.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#macos"><i class="fa fa-check"></i><b>4.2.1</b> MacOS</a></li>
 <li class="chapter" data-level="4.2.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#linux"><i class="fa fa-check"></i><b>4.2.2</b> Linux</a></li>
 <li class="chapter" data-level="4.2.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#windows"><i class="fa fa-check"></i><b>4.2.3</b> Windows</a></li>
 </ul></li>
-<li class="chapter" data-level="4.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#installing-the-nimble-package"><i class="fa fa-check"></i><b>4.3</b> Installing the NIMBLE package</a><ul>
-<li class="chapter" data-level="4.3.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#problems-with-installation"><i class="fa fa-check"></i><b>4.3.1</b> Problems with installation</a></li>
-</ul></li>
-<li class="chapter" data-level="4.4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#customizing-your-installation"><i class="fa fa-check"></i><b>4.4</b> Customizing your installation</a><ul>
-<li class="chapter" data-level="4.4.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#using-your-own-copy-of-eigen"><i class="fa fa-check"></i><b>4.4.1</b> Using your own copy of Eigen</a></li>
-<li class="chapter" data-level="4.4.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#using-libnimble"><i class="fa fa-check"></i><b>4.4.2</b> Using libnimble</a></li>
-<li class="chapter" data-level="4.4.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:blas"><i class="fa fa-check"></i><b>4.4.3</b> BLAS and LAPACK</a></li>
-<li class="chapter" data-level="4.4.4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#customizing-compilation-of-the-nimble-generated-c"><i class="fa fa-check"></i><b>4.4.4</b> Customizing compilation of the NIMBLE-generated C++</a></li>
+<li class="chapter" data-level="4.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#installing-the-nimble-package"><i class="fa fa-check"></i><b>4.3</b> Installing the NIMBLE package</a></li>
+<li class="chapter" data-level="4.4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#troubleshooting-installation-problems"><i class="fa fa-check"></i><b>4.4</b> Troubleshooting installation problems</a></li>
+<li class="chapter" data-level="4.5" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#customizing-your-installation"><i class="fa fa-check"></i><b>4.5</b> Customizing your installation</a><ul>
+<li class="chapter" data-level="4.5.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#using-your-own-copy-of-eigen"><i class="fa fa-check"></i><b>4.5.1</b> Using your own copy of Eigen</a></li>
+<li class="chapter" data-level="4.5.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#using-libnimble"><i class="fa fa-check"></i><b>4.5.2</b> Using libnimble</a></li>
+<li class="chapter" data-level="4.5.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:blas"><i class="fa fa-check"></i><b>4.5.3</b> BLAS and LAPACK</a></li>
+<li class="chapter" data-level="4.5.4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#customizing-compilation-of-the-nimble-generated-c"><i class="fa fa-check"></i><b>4.5.4</b> Customizing compilation of the NIMBLE-generated C++</a></li>
 </ul></li>
 </ul></li>
 <li class="part"><span><b>II Models in NIMBLE</b></span></li>
@@ -173,6 +172,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="6.2.5" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:why-use-node"><i class="fa fa-check"></i><b>6.2.5</b> Why use node names?</a></li>
 <li class="chapter" data-level="6.2.6" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:cdisdata"><i class="fa fa-check"></i><b>6.2.6</b> Checking if a node holds data</a></li>
 </ul></li>
+<li class="chapter" data-level="6.3" data-path="cha-building-models.html"><a href="cha-building-models.html#using-models-in-parallel"><i class="fa fa-check"></i><b>6.3</b> Using models in parallel</a></li>
 </ul></li>
 <li class="part"><span><b>III Algorithms in NIMBLE</b></span></li>
 <li class="chapter" data-level="7" data-path="cha-mcmc.html"><a href="cha-mcmc.html"><i class="fa fa-check"></i><b>7</b> MCMC</a><ul>
@@ -185,11 +185,12 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="7.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:runMCMC"><i class="fa fa-check"></i><b>7.4</b> User-friendly execution of MCMC algorithms: <em>runMCMC</em></a></li>
 <li class="chapter" data-level="7.5" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:executing-the-mcmc-algorithm"><i class="fa fa-check"></i><b>7.5</b> Running the MCMC</a><ul>
 <li class="chapter" data-level="7.5.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:sampler-time"><i class="fa fa-check"></i><b>7.5.1</b> Measuring sampler computation times: <em>getTimes</em></a></li>
+<li class="chapter" data-level="7.5.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#assessing-the-adaption-process-of-rw-and-rw_block-samplers"><i class="fa fa-check"></i><b>7.5.2</b> Assessing the adaption process of <em>RW</em> and <em>RW_block</em> samplers</a></li>
 </ul></li>
 <li class="chapter" data-level="7.6" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:extracting-samples"><i class="fa fa-check"></i><b>7.6</b> Extracting MCMC samples</a></li>
 <li class="chapter" data-level="7.7" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:WAIC"><i class="fa fa-check"></i><b>7.7</b> Calculating WAIC</a></li>
 <li class="chapter" data-level="7.8" data-path="cha-mcmc.html"><a href="cha-mcmc.html#k-fold-cross-validation"><i class="fa fa-check"></i><b>7.8</b> k-fold cross-validation</a></li>
-<li class="chapter" data-level="7.9" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc"><i class="fa fa-check"></i><b>7.9</b> Reversible Jump MCMC</a><ul>
+<li class="chapter" data-level="7.9" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc"><i class="fa fa-check"></i><b>7.9</b> Variable selection using Reversible Jump MCMC</a><ul>
 <li class="chapter" data-level="7.9.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc-indicator"><i class="fa fa-check"></i><b>7.9.1</b> Using indicator variables</a></li>
 <li class="chapter" data-level="7.9.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc-no-indicator"><i class="fa fa-check"></i><b>7.9.2</b> Without indicator variables</a></li>
 </ul></li>
@@ -200,9 +201,10 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 </ul></li>
 <li class="chapter" data-level="7.11" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-example-litters"><i class="fa fa-check"></i><b>7.11</b> Detailed MCMC example: <em>litters</em></a></li>
 <li class="chapter" data-level="7.12" data-path="cha-mcmc.html"><a href="cha-mcmc.html#mcmc-suite-compare-mcmcs"><i class="fa fa-check"></i><b>7.12</b> Comparing different MCMCs with <em>MCMCsuite</em> and <em>compareMCMCs</em></a></li>
+<li class="chapter" data-level="7.13" data-path="cha-mcmc.html"><a href="cha-mcmc.html#running-mcmc-chains-in-parallel"><i class="fa fa-check"></i><b>7.13</b> Running MCMC chains in parallel</a></li>
 </ul></li>
-<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Sequential Monte Carlo and MCEM</a><ul>
-<li class="chapter" data-level="8.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#particle-filters-sequential-monte-carlo"><i class="fa fa-check"></i><b>8.1</b> Particle Filters / Sequential Monte Carlo</a><ul>
+<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM</a><ul>
+<li class="chapter" data-level="8.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#particle-filters-sequential-monte-carlo-and-iterated-filtering"><i class="fa fa-check"></i><b>8.1</b> Particle filters / sequential Monte Carlo and iterated filtering</a><ul>
 <li class="chapter" data-level="8.1.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#filtering-algorithms"><i class="fa fa-check"></i><b>8.1.1</b> Filtering algorithms</a></li>
 <li class="chapter" data-level="8.1.2" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:particle-mcmc"><i class="fa fa-check"></i><b>8.1.2</b> Particle MCMC (PMCMC)</a></li>
 </ul></li>
@@ -405,16 +407,16 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li>Posterior summary statistics, and</li>
 <li>WAIC value.</li>
 </ul>
-<p>The above are calculated and returned for each MCMC chain. Additionally, posterior summary statistics are calculated for all chains combined when multiple chains are run.</p>
+<p>The above are calculated and returned for each MCMC chain, using the post-burn-in and thinned samples. Additionally, posterior summary statistics are calculated for all chains combined when multiple chains are run.</p>
 <p>Several example usages of <code>nimbleMCMC</code> are shown below:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-    mu ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
-    sigma ~<span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">1000</span>)
-    for(i in <span class="dv">1</span>:<span class="dv">10</span>)
-        x[i] ~<span class="st"> </span><span class="kw">dnorm</span>(mu, <span class="dt">sd =</span> sigma)
+    mu <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
+    sigma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">1000</span>)
+    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">10</span>)
+        x[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(mu, <span class="dt">sd =</span> sigma)
 })
 data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">x =</span> <span class="kw">c</span>(<span class="dv">2</span>, <span class="dv">5</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">5</span>, <span class="dv">3</span>))
-initsFunction &lt;-<span class="st"> </span>function() <span class="kw">list</span>(<span class="dt">mu =</span> <span class="kw">rnorm</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">1</span>), <span class="dt">sigma =</span> <span class="kw">runif</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">10</span>))
+initsFunction &lt;-<span class="st"> </span><span class="cf">function</span>() <span class="kw">list</span>(<span class="dt">mu =</span> <span class="kw">rnorm</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">1</span>), <span class="dt">sigma =</span> <span class="kw">runif</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">10</span>))
 
 <span class="co"># execute one MCMC chain, monitoring the &quot;mu&quot; and &quot;sigma&quot; variables,</span>
 <span class="co"># with thinning interval 10.  fix the random number seed for reproducible</span>
@@ -510,8 +512,8 @@ mcmc.out &lt;-<span class="st"> </span><span class="kw">nimbleMCMC</span>(<span 
 <h4><span class="header-section-number">7.2.2.3</span> Overriding the default sampler assignment rules</h4>
 <p>The default rules used for assigning samplers to model nodes can be overridden using the <code>rules</code> argument to <code>configureMCMC</code>. This argument must be an object of class <code>samplerAssignmentRules</code>, which defines an ordered set of rules for assigning samplers. Rules can be modified and reordered, to give different precedence to particular samplers, or to assign user-defined samplers (see section <a href="cha-progr-with-models.html#sec:user-samplers">15.5</a>). The following example creates a new set of rules (which initially contains the default assignment rules), reorders the rules, adds a new rule, then uses these rules to create an MCMC configuration object.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">my_rules &lt;-<span class="st"> </span><span class="kw">samplerAssignmentRules</span>()
-my_rules$<span class="kw">reorder</span>(<span class="kw">c</span>(<span class="dv">8</span>, <span class="dv">1</span>:<span class="dv">7</span>))
-my_rules$<span class="kw">addRule</span>(<span class="dt">condition =</span> <span class="kw">quote</span>(model$<span class="kw">getDistribution</span>(node) ==<span class="st"> &quot;dmnorm&quot;</span>),
+my_rules<span class="op">$</span><span class="kw">reorder</span>(<span class="kw">c</span>(<span class="dv">8</span>, <span class="dv">1</span><span class="op">:</span><span class="dv">7</span>))
+my_rules<span class="op">$</span><span class="kw">addRule</span>(<span class="dt">condition =</span> <span class="kw">quote</span>(model<span class="op">$</span><span class="kw">getDistribution</span>(node) <span class="op">==</span><span class="st"> &quot;dmnorm&quot;</span>),
                  <span class="dt">sampler =</span> new_dmnorm_sampler)
 mcmcConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(Rmodel, <span class="dt">rules =</span> my_rules)</code></pre></div>
 <p>In addition, the default behavior of <code>configureMCMC</code> can be altered by setting the system option <code>nimbleOptions(MCMCdefaultSamplerAssignmentRules = my_rules)</code>, or reset to the original default behavior using <code>nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())</code>.</p>
@@ -538,102 +540,102 @@ mcmcConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(Rmo
 <h4><span class="header-section-number">7.2.2.6</span> Printing, re-ordering, modifying and removing samplers: <em>printSamplers</em>, <em>removeSamplers</em>, <em>setSamplers</em>, and <em>getSamplerDefinition</em></h4>
 <p>The current, ordered, list of all samplers in the MCMC configuration may be printed by calling the <code>printSamplers</code> method. When you want to see only samplers acting on specific model nodes or variables, provide those names as an argument to <code>printSamplers</code>. The <code>printSamplers</code> method accepts arguments controlling the level of detail displayed as discussed in its R help information.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Print all samplers</span>
-mcmcConf$<span class="kw">printSamplers</span>()
+mcmcConf<span class="op">$</span><span class="kw">printSamplers</span>()
 
 <span class="co"># Print all samplers operating on node &quot;a[1]&quot;,</span>
 <span class="co"># or any of the &quot;beta[]&quot; variables</span>
-mcmcConf$<span class="kw">printSamplers</span>(<span class="kw">c</span>(<span class="st">&quot;a[1]&quot;</span>, <span class="st">&quot;beta&quot;</span>))
+mcmcConf<span class="op">$</span><span class="kw">printSamplers</span>(<span class="kw">c</span>(<span class="st">&quot;a[1]&quot;</span>, <span class="st">&quot;beta&quot;</span>))
 
 <span class="co"># Print all conjugate and slice samplers</span>
-mcmcConf$<span class="kw">printSamplers</span>(<span class="dt">type =</span> <span class="kw">c</span>(<span class="st">&quot;conjugate&quot;</span>, <span class="st">&quot;slice&quot;</span>))
+mcmcConf<span class="op">$</span><span class="kw">printSamplers</span>(<span class="dt">type =</span> <span class="kw">c</span>(<span class="st">&quot;conjugate&quot;</span>, <span class="st">&quot;slice&quot;</span>))
 
 <span class="co"># Print all RW samplers operating on &quot;x&quot;</span>
-mcmcConf$<span class="kw">printSamplers</span>(<span class="st">&quot;x&quot;</span>, <span class="dt">type =</span> <span class="st">&quot;RW&quot;</span>)
+mcmcConf<span class="op">$</span><span class="kw">printSamplers</span>(<span class="st">&quot;x&quot;</span>, <span class="dt">type =</span> <span class="st">&quot;RW&quot;</span>)
 
 <span class="co"># Print the first 100 samplers</span>
-mcmcConf$<span class="kw">printSamplers</span>(<span class="dv">1</span>:<span class="dv">100</span>)
+mcmcConf<span class="op">$</span><span class="kw">printSamplers</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">100</span>)
 
 <span class="co"># Print all samplers in their order of execution</span>
-mcmcConf$<span class="kw">printSamplers</span>(<span class="dt">executionOrder =</span> <span class="ot">TRUE</span>)</code></pre></div>
+mcmcConf<span class="op">$</span><span class="kw">printSamplers</span>(<span class="dt">executionOrder =</span> <span class="ot">TRUE</span>)</code></pre></div>
 <p>Samplers may be removed from the configuration object using <code>removeSamplers</code>, which accepts a character vector of node or variable names, or a numeric vector of indices.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Remove all samplers acting on &quot;x&quot; or any component of it</span>
-mcmcConf$<span class="kw">removeSamplers</span>(<span class="st">&quot;x&quot;</span>)
+mcmcConf<span class="op">$</span><span class="kw">removeSamplers</span>(<span class="st">&quot;x&quot;</span>)
 
 <span class="co"># Remove all samplers acting on &quot;alpha[1]&quot; and &quot;beta[1]&quot;</span>
-mcmcConf$<span class="kw">removeSamplers</span>(<span class="kw">c</span>(<span class="st">&quot;alpha[1]&quot;</span>, <span class="st">&quot;beta[1]&quot;</span>))
+mcmcConf<span class="op">$</span><span class="kw">removeSamplers</span>(<span class="kw">c</span>(<span class="st">&quot;alpha[1]&quot;</span>, <span class="st">&quot;beta[1]&quot;</span>))
 
 <span class="co"># Remove the first five samplers</span>
-mcmcConf$<span class="kw">removeSamplers</span>(<span class="dv">1</span>:<span class="dv">5</span>)
+mcmcConf<span class="op">$</span><span class="kw">removeSamplers</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>)
 
 <span class="co"># Providing no argument removes all samplers</span>
-mcmcConf$<span class="kw">removeSamplers</span>()</code></pre></div>
+mcmcConf<span class="op">$</span><span class="kw">removeSamplers</span>()</code></pre></div>
 <p>Samplers to retain may be specified reordered using <code>setSamplers</code>, which also accepts a character vector of node or variable names, or a numeric vector of indices.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Set the list of samplers to those acting on any components of the</span>
 <span class="co"># model variables &quot;x&quot;, &quot;y&quot;, or &quot;z&quot;.</span>
-mcmcConf$<span class="kw">setSamplers</span>(<span class="kw">c</span>(<span class="st">&quot;x&quot;</span>, <span class="st">&quot;y&quot;</span>, <span class="st">&quot;z&quot;</span>))
+mcmcConf<span class="op">$</span><span class="kw">setSamplers</span>(<span class="kw">c</span>(<span class="st">&quot;x&quot;</span>, <span class="st">&quot;y&quot;</span>, <span class="st">&quot;z&quot;</span>))
 
 <span class="co"># Set the list of samplers to only those acting on model nodes</span>
 <span class="co"># &quot;alpha[1]&quot;, &quot;alpha[2]&quot;, ..., &quot;alpha[10]&quot;</span>
-mcmcConf$<span class="kw">setSamplers</span>(<span class="st">&quot;alpha[1:10]&quot;</span>)
+mcmcConf<span class="op">$</span><span class="kw">setSamplers</span>(<span class="st">&quot;alpha[1:10]&quot;</span>)
 
 <span class="co"># Truncate the current list of samplers to the first 10 and the 100th</span>
-mcmcConf$<span class="kw">setSamplers</span>(<span class="dt">ind =</span> <span class="kw">c</span>(<span class="dv">1</span>:<span class="dv">10</span>, <span class="dv">100</span>))</code></pre></div>
+mcmcConf<span class="op">$</span><span class="kw">setSamplers</span>(<span class="dt">ind =</span> <span class="kw">c</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>, <span class="dv">100</span>))</code></pre></div>
 <p>The nimbleFunction definition underlying a particular sampler may be viewed using the <code>getSamplerDefinition</code> method, using the sampler index as an argument. A node name argument may also be supplied, in which case the definition of the first sampler acting on that node is returned. In all cases, <code>getSamplerDefinition</code> only returns the definition of the <em>first</em> sampler specified either by index or node name.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Return the definition of the third sampler in the mcmcConf object</span>
-mcmcConf$<span class="kw">getSamplerDefinition</span>(<span class="dv">3</span>)
+mcmcConf<span class="op">$</span><span class="kw">getSamplerDefinition</span>(<span class="dv">3</span>)
 
 <span class="co"># Return the definition of the first sampler acting on node &quot;x&quot;,</span>
 <span class="co"># or the first of any indexed nodes comprising the variable &quot;x&quot;</span>
-mcmcConf$<span class="kw">getSamplerDefinition</span>(<span class="st">&quot;x&quot;</span>)</code></pre></div>
+mcmcConf<span class="op">$</span><span class="kw">getSamplerDefinition</span>(<span class="st">&quot;x&quot;</span>)</code></pre></div>
 </div>
 <div id="customizing-individual-sampler-configurations-getsamplers-setsamplers-setname-setsamplerfunction-settarget-and-setcontrol" class="section level4">
 <h4><span class="header-section-number">7.2.2.7</span> Customizing individual sampler configurations: <em>getSamplers</em>, <em>setSamplers</em>, <em>setName</em>, <em>setSamplerFunction</em>, <em>setTarget</em>, and <em>setControl</em></h4>
 <p>Each sampler in an <code>MCMCconf</code> object is represented by a sampler configuration as a <code>samplerConf</code> object. Each <code>samplerConf</code> is a reference class object containing the following (required) fields: <code>name</code> (a character string), <code>samplerFunction</code> (a valid nimbleFunction sampler), <code>target</code> (the model node to be sampled), and <code>control</code> (list of control arguments). The <code>MCMCconf</code> method <code>getSamplers</code> allows access to the <code>samplerConf</code> objects. These can be modified and then passed as an argument to <code>setSamplers</code> to over-write the current list of samplers in the MCMC configuration object. However, no checking of the validity of this modified list is performed; if the list of samplerConf objects is corrupted to be invalid, incorrect behavior will result at the time of calling <code>buildMCMC</code>. The fields of a <code>samplerConf</code> object can be modified using the access functions <code>setName(name)</code>, <code>setSamplerFunction(fun)</code>, <code>setTarget(target, model)</code>, and <code>setControl(control)</code>.</p>
 <p>Here are some examples:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># retrieve samplerConf list</span>
-samplerConfList &lt;-<span class="st"> </span>mcmcConf$<span class="kw">getSamplers</span>()
+samplerConfList &lt;-<span class="st"> </span>mcmcConf<span class="op">$</span><span class="kw">getSamplers</span>()
 
 <span class="co"># change the name of the first sampler</span>
-samplerConfList[[<span class="dv">1</span>]]$<span class="kw">setName</span>(<span class="st">&quot;newNameForThisSampler&quot;</span>)
+samplerConfList[[<span class="dv">1</span>]]<span class="op">$</span><span class="kw">setName</span>(<span class="st">&quot;newNameForThisSampler&quot;</span>)
 
 <span class="co"># change the sampler function of the second sampler,</span>
 <span class="co"># assuming existance of a nimbleFunction &#39;anotherSamplerNF&#39;,</span>
 <span class="co"># which represents a valid nimbleFunction sampler.</span>
-samplerConfList[[<span class="dv">2</span>]]$<span class="kw">setSamplerFunction</span>(anotherSamplerNF)
+samplerConfList[[<span class="dv">2</span>]]<span class="op">$</span><span class="kw">setSamplerFunction</span>(anotherSamplerNF)
 
 <span class="co"># change the &#39;adaptive&#39; element of the control list of the third sampler</span>
-control &lt;-<span class="st"> </span>samplerConfList[[<span class="dv">3</span>]]$control
-control$adaptive &lt;-<span class="st"> </span><span class="ot">FALSE</span>
-samplerConfList[[<span class="dv">3</span>]]$<span class="kw">setControl</span>(control)
+control &lt;-<span class="st"> </span>samplerConfList[[<span class="dv">3</span>]]<span class="op">$</span>control
+control<span class="op">$</span>adaptive &lt;-<span class="st"> </span><span class="ot">FALSE</span>
+samplerConfList[[<span class="dv">3</span>]]<span class="op">$</span><span class="kw">setControl</span>(control)
 
 <span class="co"># change the target node of the fourth sampler</span>
-samplerConfList[[<span class="dv">4</span>]]$<span class="kw">setTarget</span>(<span class="st">&quot;y&quot;</span>, model)   <span class="co"># model argument required</span>
+samplerConfList[[<span class="dv">4</span>]]<span class="op">$</span><span class="kw">setTarget</span>(<span class="st">&quot;y&quot;</span>, model)   <span class="co"># model argument required</span>
 
 <span class="co"># use this modified list of samplerConf objects in the MCMC configuration</span>
-mcmcConf$<span class="kw">setSamplers</span>(samplerConfList)</code></pre></div>
+mcmcConf<span class="op">$</span><span class="kw">setSamplers</span>(samplerConfList)</code></pre></div>
 </div>
 <div id="customizing-the-sampler-execution-order" class="section level4">
 <h4><span class="header-section-number">7.2.2.8</span> Customizing the sampler execution order</h4>
 <p>The ordering of sampler execution can be controlled as well. This allows for sampler functions to execute multiple times within a single MCMC iteration, or the execution of different sampler functions to be interleaved with one another.</p>
 <p>The sampler execution order is set using the function <code>setSamplerExecutionOrder</code>, and the current ordering of execution is retrieved using <code>getSamplerExecutionOrder</code>. For example, assuming the MCMC configuration object <code>mcmcConf</code> contains five samplers:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># first sampler to execute twice, in succession:</span>
-mcmcConf$<span class="kw">setSamplerExecutionOrder</span>(<span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>))
+mcmcConf<span class="op">$</span><span class="kw">setSamplerExecutionOrder</span>(<span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>))
 
 <span class="co"># first sampler to execute multiple times, interleaved:</span>
-mcmcConf$<span class="kw">setSamplerExecutionOrder</span>(<span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">1</span>, <span class="dv">4</span>, <span class="dv">1</span>, <span class="dv">5</span>))
+mcmcConf<span class="op">$</span><span class="kw">setSamplerExecutionOrder</span>(<span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">1</span>, <span class="dv">4</span>, <span class="dv">1</span>, <span class="dv">5</span>))
 
 <span class="co"># fourth sampler to execute 10 times, only</span>
-mcmcConf$<span class="kw">setSamplerExecutionOrder</span>(<span class="kw">rep</span>(<span class="dv">4</span>, <span class="dv">10</span>))
+mcmcConf<span class="op">$</span><span class="kw">setSamplerExecutionOrder</span>(<span class="kw">rep</span>(<span class="dv">4</span>, <span class="dv">10</span>))
 
 <span class="co"># omitting the argument to setSamplerExecutionOrder()</span>
 <span class="co"># resets the ordering to each sampler executing once, sequentially</span>
-mcmcConf$<span class="kw">setSamplerExecutionOrder</span>()
+mcmcConf<span class="op">$</span><span class="kw">setSamplerExecutionOrder</span>()
 
 <span class="co"># retrieve the current ordering of sampler execution</span>
-ordering &lt;-<span class="st"> </span>mcmcConf$<span class="kw">getSamplerExecutionOrder</span>()
+ordering &lt;-<span class="st"> </span>mcmcConf<span class="op">$</span><span class="kw">getSamplerExecutionOrder</span>()
 
 <span class="co"># print the sampler functions in the order of execution</span>
-mcmcConf$<span class="kw">printSamplers</span>(<span class="dt">executionOrder =</span> <span class="ot">TRUE</span>)</code></pre></div>
+mcmcConf<span class="op">$</span><span class="kw">printSamplers</span>(<span class="dt">executionOrder =</span> <span class="ot">TRUE</span>)</code></pre></div>
 </div>
 <div id="monitors-and-thinning-intervals-printmonitors-getmonitors-addmonitors-setthin-and-resetmonitors" class="section level4">
 <h4><span class="header-section-number">7.2.2.9</span> Monitors and thinning intervals: <em>printMonitors</em>, <em>getMonitors</em>, <em>addMonitors</em>, <em>setThin</em>, and <em>resetMonitors</em></h4>
@@ -646,28 +648,28 @@ mcmcConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(Rmo
 
 <span class="co"># Calling a member method of the mcmcconf object</span>
 <span class="co"># This results in the same monitors as above</span>
-mcmcConf$<span class="kw">addMonitors</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>)
-mcmcConf$<span class="kw">addMonitors2</span>(<span class="st">&quot;x&quot;</span>)</code></pre></div>
+mcmcConf<span class="op">$</span><span class="kw">addMonitors</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>)
+mcmcConf<span class="op">$</span><span class="kw">addMonitors2</span>(<span class="st">&quot;x&quot;</span>)</code></pre></div>
 <p>Similarly, either thinning interval may be set at either step:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Using an argument to configureMCMC</span>
 mcmcConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(Rmodel, <span class="dt">thin =</span> <span class="dv">1</span>, <span class="dt">thin2 =</span> <span class="dv">100</span>)
 
 <span class="co"># Calling a member method of the mcmcConf object</span>
 <span class="co"># This results in the same thinning intervals as above</span>
-mcmcConf$<span class="kw">setThin</span>(<span class="dv">1</span>)
-mcmcConf$<span class="kw">setThin2</span>(<span class="dv">100</span>)</code></pre></div>
+mcmcConf<span class="op">$</span><span class="kw">setThin</span>(<span class="dv">1</span>)
+mcmcConf<span class="op">$</span><span class="kw">setThin2</span>(<span class="dv">100</span>)</code></pre></div>
 <p>The current lists of monitors and thinning intervals may be displayed using the <code>printMonitors</code> method. Both sets of monitors (<code>monitors</code> and <code>monitors2</code>) may be reset to empty character vectors by calling the <code>resetMonitors</code> method. The methods <code>getMonitors</code> and <code>getMonitors2</code> return the currently specified <code>monitors</code> and <code>monitors2</code> as character vectors.</p>
 </div>
 <div id="monitoring-model-log-probabilities" class="section level4">
 <h4><span class="header-section-number">7.2.2.10</span> Monitoring model log-probabilities</h4>
 <p>To record model log-probabilities from an MCMC, one can add monitors for <em>logProb</em> variables (which begin with the prefix <code>logProb_</code>) that correspond to variables with (any) stochastic nodes. For example, to record and extract log-probabilities for the variables <code>alpha</code>, <code>sigma_mu</code>, and <code>Y</code>:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mcmcConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(Rmodel)
-mcmcConf$<span class="kw">addMonitors</span>(<span class="st">&quot;logProb_alpha&quot;</span>, <span class="st">&quot;logProb_sigma_mu&quot;</span>, <span class="st">&quot;logProb_Y&quot;</span>)
+mcmcConf<span class="op">$</span><span class="kw">addMonitors</span>(<span class="st">&quot;logProb_alpha&quot;</span>, <span class="st">&quot;logProb_sigma_mu&quot;</span>, <span class="st">&quot;logProb_Y&quot;</span>)
 Rmcmc &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(mcmcConf)
 Cmodel &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(Rmodel)
 Cmcmc &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(Rmcmc, <span class="dt">project =</span> Rmodel)
-Cmcmc$<span class="kw">run</span>(<span class="dv">10000</span>)
-samples &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(Cmcmc$mvSamples)</code></pre></div>
+Cmcmc<span class="op">$</span><span class="kw">run</span>(<span class="dv">10000</span>)
+samples &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(Cmcmc<span class="op">$</span>mvSamples)</code></pre></div>
 <p>The <code>samples</code> matrix will contain both MCMC samples and model log-probabilities.</p>
 </div>
 </div>
@@ -688,7 +690,7 @@ Rmcmc2 &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(Rmodel)  
 <p>Alternatively, if the model has not already been compiled, they can be compiled together in one line:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">Cmcmc &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(Rmodel, Rmcmc)</code></pre></div>
 <p>Note that if you compile the MCMC with another object (the model in this case), you’ll need to explicitly refer to the MCMC component of the resulting object to be able to run the MCMC:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">Cmcmc$Rmcmc$<span class="kw">run</span>(<span class="dt">niter =</span> <span class="dv">1000</span>)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">Cmcmc<span class="op">$</span>Rmcmc<span class="op">$</span><span class="kw">run</span>(<span class="dt">niter =</span> <span class="dv">1000</span>)</code></pre></div>
 </div>
 <div id="sec:runMCMC" class="section level2">
 <h2><span class="header-section-number">7.4</span> User-friendly execution of MCMC algorithms: <em>runMCMC</em></h2>
@@ -704,7 +706,7 @@ Rmcmc2 &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(Rmodel)  
 <li>Setting the random number seed;</li>
 <li>Returning the posterior samples as a <code>coda</code> <code>mcmc</code> object;</li>
 <li>Returning summary statistics calculated from each chains; and</li>
-<li>Returning a WAIC value calculated using samples from all chains.</li>
+<li>Returning a WAIC value calculated using (post-burn-in and thinned) samples from all chains.</li>
 </ul>
 <!---  See `help(runMCMC)` for details of these arguments. -->
 <!---  Other features of the MCMC can still be customized when using `runMCMC`, which is done using the MCMC configuration object.  This includes setting monitors, or customizing samplers (see Section \@ref(sec:customizing-mcmc-conf)).  The MCMC configuration object is then used to create an MCMC algorithm, which is compiled and passed as an argument to `runMCMC`. -->
@@ -713,7 +715,7 @@ Rmcmc2 &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(Rmodel)  
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># run a single chain, and return a matrix of samples</span>
 mcmc.out &lt;-<span class="st"> </span><span class="kw">runMCMC</span>(Cmcmc)
 
-<span class="co"># run three chains of 10000 samples, discard initial burnin of 1000,</span>
+<span class="co"># run three chains of 10000 samples, discard initial burn-in of 1000,</span>
 <span class="co"># record samples thereafter using a thinning interval of 10,</span>
 <span class="co"># and return of list of sample matrices</span>
 mcmc.out &lt;-<span class="st"> </span><span class="kw">runMCMC</span>(Cmcmc, <span class="dt">niter=</span><span class="dv">10000</span>, <span class="dt">nburnin=</span><span class="dv">1000</span>, <span class="dt">thin=</span><span class="dv">10</span>, <span class="dt">nchains=</span><span class="dv">3</span>)
@@ -730,7 +732,7 @@ mcmc.out &lt;-<span class="st"> </span><span class="kw">runMCMC</span>(Cmcmc, <s
 <span class="co"># run ten chains of 100,000 iterations each, using a function to </span>
 <span class="co"># generate initial values and a fixed random number seed for each chain.</span>
 <span class="co"># only return summary statistics from each chain; not all the samples.</span>
-initsFunction &lt;-<span class="st"> </span>function()
+initsFunction &lt;-<span class="st"> </span><span class="cf">function</span>()
     <span class="kw">list</span>(<span class="dt">mu =</span> <span class="kw">rnorm</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">1</span>), <span class="dt">sigma =</span> <span class="kw">runif</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">100</span>))
 mcmc.out &lt;-<span class="st"> </span><span class="kw">runMCMC</span>(Cmcmc, <span class="dt">niter =</span> <span class="dv">100000</span>, <span class="dt">nchains =</span> <span class="dv">10</span>,
                     <span class="dt">inits =</span> initsFunction, <span class="dt">setSeed =</span> <span class="ot">TRUE</span>,
@@ -740,7 +742,7 @@ mcmc.out &lt;-<span class="st"> </span><span class="kw">runMCMC</span>(Cmcmc, <s
 <div id="sec:executing-the-mcmc-algorithm" class="section level2">
 <h2><span class="header-section-number">7.5</span> Running the MCMC</h2>
 <p>The MCMC algorithm (either the compiled or uncompiled version) can be executed using the member method <code>mcmc$run</code> (see <code>help(buildMCMC)</code> in R). The <code>run</code> method has one required argument, <code>niter</code>, the number of iterations to be run.</p>
-<p>The <code>run</code> method has optional arguments <code>nburnin</code>, <code>thin</code> and <code>thin2</code>. These can be used to specify the number of pre-thinning burnin samples to discard, and the post-burnin thinning intervals for recording samples (corresponding to <code>monitors</code> and <code>monitors2</code>). If either <code>thin</code> and <code>thin2</code> are provided, they will override the thinning intervals that were specified in the original MCMC configuration object.</p>
+<p>The <code>run</code> method has optional arguments <code>nburnin</code>, <code>thin</code> and <code>thin2</code>. These can be used to specify the number of pre-thinning burn-in samples to discard, and the post-burnin thinning intervals for recording samples (corresponding to <code>monitors</code> and <code>monitors2</code>). If either <code>thin</code> and <code>thin2</code> are provided, they will override the thinning intervals that were specified in the original MCMC configuration object.</p>
 <p>The <code>run</code> method has an optional <code>reset</code> argument. When <code>reset = TRUE</code> (the default value), the following occurs prior to running the MCMC:</p>
 <ol style="list-style-type: decimal">
 <li>All model nodes are checked and filled or updated as needed, in valid (topological) order. If a stochastic node is missing a value, it is populated using a call to <code>simulate</code> and its log probability value is calculated. The values of deterministic nodes are calculated from their parent nodes. If any right-hand-side-only nodes (e.g., explanatory variables) are missing a value, an error results.</li>
@@ -751,8 +753,8 @@ mcmc.out &lt;-<span class="st"> </span><span class="kw">runMCMC</span>(Cmcmc, <s
 <div id="sec:sampler-time" class="section level3">
 <h3><span class="header-section-number">7.5.1</span> Measuring sampler computation times: <em>getTimes</em></h3>
 <p>If you want to obtain the computation time spent in each sampler, you can set <code>time=TRUE</code> as a run-time argument and then use the method <code>getTimes()</code> obtain the times. For example,</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">Cmcmc$<span class="kw">run</span>(niter, <span class="dt">time =</span> <span class="ot">TRUE</span>)
-Cmcmc$<span class="kw">getTimes</span>()</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">Cmcmc<span class="op">$</span><span class="kw">run</span>(niter, <span class="dt">time =</span> <span class="ot">TRUE</span>)
+Cmcmc<span class="op">$</span><span class="kw">getTimes</span>()</code></pre></div>
 <p>will return a vector of the total time spent in each sampler, measured in seconds. <!---  
 %### Modifying the order of sampler execution: `samplerExecutionOrder` \label{sec:runtime-sampler-execution-order}
 %The order in which the MCMC sampler functions execute can also be specified at MCMC runtime.  This is done using the argument `samplerExecutionOrder`.  Providing this runtime argument will override any modified execution ordering that was specified in the MCMC configuration.  For example,
@@ -761,12 +763,24 @@ Cmcmc$<span class="kw">getTimes</span>()</code></pre></div>
 % Cmcmc$run(niter, samplerExecutionOrder = c(1, 2, 1, 3, 1, 4, 1, 5))
 --></p>
 </div>
+<div id="assessing-the-adaption-process-of-rw-and-rw_block-samplers" class="section level3">
+<h3><span class="header-section-number">7.5.2</span> Assessing the adaption process of <em>RW</em> and <em>RW_block</em> samplers</h3>
+<p>If you’d like to see the evolution (over the iterations) of the acceptance proportion and proposal scale information, you can use some internal methods provided by NIMBLE, after setting two options to make the history accessible. Here we assume that <code>cMCMC</code> is the compiled MCMC object and <code>idx</code> is the numeric index of the sampler function you want to access from amongst the list of sampler functions that are part of the MCMC.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## set options to make history accessible
+<span class="kw">nimbleOptions</span>(<span class="dt">buildInterfacesForCompiledNestedNimbleFunctions =</span> <span class="ot">TRUE</span>)
+<span class="kw">nimbleOptions</span>(<span class="dt">MCMCsaveHistory =</span> <span class="ot">TRUE</span>)
+## Next, set up and run your MCMC.
+## Now access the history information:
+cmcmc<span class="op">$</span>samplerFunctions[[idx]]<span class="op">$</span><span class="kw">getScaleHistory</span>()
+cmcmc<span class="op">$</span>samplerFunctions[[idx]]<span class="op">$</span><span class="kw">getAcceptanceHistory</span>()
+cmcmc<span class="op">$</span>samplerFunctions[[idx]]getPropCovHistory   ## only for RW_block</code></pre></div>
+</div>
 </div>
 <div id="sec:extracting-samples" class="section level2">
 <h2><span class="header-section-number">7.6</span> Extracting MCMC samples</h2>
 <p>After executing the MCMC, the output samples can be extracted as follows:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mvSamples &lt;-<span class="st"> </span>mcmc$mvSamples
-mvSamples2 &lt;-<span class="st"> </span>mcmc$mvSamples2</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mvSamples &lt;-<span class="st"> </span>mcmc<span class="op">$</span>mvSamples
+mvSamples2 &lt;-<span class="st"> </span>mcmc<span class="op">$</span>mvSamples2</code></pre></div>
 <p>These <em>modelValues</em> objects can be converted into matrices using <code>as.matrix</code>:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">samplesMatrix &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(mvSamples)
 samplesMatrix2 &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(mvSamples2)</code></pre></div>
@@ -777,8 +791,8 @@ samplesMatrix2 &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(m
 <div id="sec:WAIC" class="section level2">
 <h2><span class="header-section-number">7.7</span> Calculating WAIC</h2>
 <p>Once an MCMC algorithm has been run, as described in Section <a href="cha-mcmc.html#sec:executing-the-mcmc-algorithm">7.5</a>, the WAIC <span class="citation">(Watanabe <a href="#ref-Watanabe_2010">2010</a>)</span> can be calculated from the posterior samples produced by the MCMC algorithm. Note that in order to calculate the WAIC value after running an MCMC algorithm, the argument <code>enableWAIC = TRUE</code> must have been supplied to <code>configureMCMC</code> or to <code>buildMCMC</code>, or the <code>enableWAIC</code> NIMBLE option must have been set to <code>TRUE</code>.</p>
-<p>The WAIC is calculated by calling the member method <code>mcmc$calculateWAIC</code> (see <code>help(buildMCMC)</code> in R for more details). The <code>calculateWAIC</code> method has one required argument, <code>nburnin</code>, the number of initial samples to discard prior to WAIC calculation. <code>nburnin</code> defaults to 0.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">Cmcmc$<span class="kw">calculateWAIC</span>(<span class="dt">nburnin =</span> <span class="dv">100</span>)</code></pre></div>
+<p>The WAIC is calculated by calling the member method <code>mcmc$calculateWAIC</code> (see <code>help(buildMCMC)</code> in R for more details). The <code>calculateWAIC</code> method has one required argument, <code>nburnin</code>, the number of initial samples to discard prior to WAIC calculation. <code>nburnin</code> defaults to 0. This burn-in is done in addition to any burn-in specified when running the MCMC, and the burn-in is applied to the samples before any thinning specified when setting up or running the MCMC.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">Cmcmc<span class="op">$</span><span class="kw">calculateWAIC</span>(<span class="dt">nburnin =</span> <span class="dv">100</span>)</code></pre></div>
 <p>Note that there is not a unique value of WAIC for a model. WAIC is calculated from Equations 5, 12, and 13 in <span class="citation">(Gelman, Hwang, and Vehtari <a href="#ref-Gelman_etal_2014">2014</a>)</span> (i.e. using WAIC2). In NIMBLE, the set of all stochastic nodes monitored by the MCMC object will be treated as <span class="math inline">\(\theta\)</span> for the purposes of Equation 5 from <span class="citation">(Gelman, Hwang, and Vehtari <a href="#ref-Gelman_etal_2014">2014</a>)</span>.</p>
 <p>In many cases one would want <span class="math inline">\(\theta\)</span> to be the set of all stochastic nodes in the model, in which case the user <em>must</em> set the MCMC monitors to include all stochastic nodes; by default the MCMC monitors are only the top-level nodes of the model.</p>
 </div>
@@ -787,50 +801,60 @@ samplesMatrix2 &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(m
 <p>The <code>runCrossValidate</code> function in NIMBLE performs k-fold cross-validation on a <code>nimbleModel</code> fit via MCMC. More information can be found by calling <code>help(runCrossValidate)</code>.</p>
 </div>
 <div id="sec:rjmcmc" class="section level2">
-<h2><span class="header-section-number">7.9</span> Reversible Jump MCMC</h2>
-<p>Reversible Jump MCMC <span class="citation">(Green <a href="#ref-Green_1995">1995</a>)</span> (RJMCMC) is a general framework for MCMC simulation in which the dimension of the parameter space can vary between iterates of the Markov chain. The reversible jump sampler can be viewed as an extension of the Metropolis-Hastings algorithm onto more general state spaces.</p>
-<p>Given two models <span class="math inline">\(M_1\)</span> and <span class="math inline">\(M_2\)</span> of possibly different dimensions, the core idea of this technique is to remove the difference in the dimensions of models <span class="math inline">\(M_1\)</span> and <span class="math inline">\(M_2\)</span> by supplementing the corresponding parameters <span class="math inline">\(\boldsymbol{\theta_1}\)</span> and <span class="math inline">\(\boldsymbol{\theta_2}\)</span> with auxiliary variables <span class="math inline">\(\boldsymbol{u}_{1 \rightarrow 2}\)</span> and <span class="math inline">\(\boldsymbol{u}_{2 \rightarrow 1}\)</span> such that <span class="math inline">\((\boldsymbol{\theta_1}, \boldsymbol{u}_{1 \rightarrow 2})\)</span> and <span class="math inline">\((\boldsymbol{\theta_2}, \boldsymbol{u}_{2 \rightarrow 1})\)</span> are in bijection, <span class="math inline">\((\boldsymbol{\theta_2}, \boldsymbol{u}_{2 \rightarrow 1}) = \Psi(\boldsymbol{\theta_1}, \boldsymbol{u}_{1 \rightarrow 2})\)</span>. The corresponding Metropolis-Hastings acceptance probability is generalized accounting for the proposal density for the auxiliary variables.</p>
-<p>NIMBLE implements RJMCMC for variable selection using a univariate normal distribution as proposal density and supports two types of model specifications, depending on whether or not indicator variables are included. A reversible jump sampler can be added to a MCMC configuration object by calling the function <code>configureRJ</code>, which handles different model specification by assigning the corresponding specialized samplers, <code>RJ</code> and <code>RJ_indicator</code>. Information about the model specification is passed to <code>configureRJ</code> function by providing one of arguments <code>indicatorNodes</code> or <code>priorProb</code>. The <code>configureRJ</code> function modifies the MCMC configuration, and assigns a <code>RJ</code> sampler directly to the nodes specified in <code>targetNodes</code> when <code>priorProb</code> is provided. Otherwise a <code>RJ_indicator</code> sampler is assigned to nodes in <code>indicatorNodes</code>. In addition, the <code>configureRJ</code> removes the default NIMBLE sampler assigned to each node in <code>targetNodes</code>, and adds a toggled version of the default sampler that is run only when the node is the model.</p>
+<h2><span class="header-section-number">7.9</span> Variable selection using Reversible Jump MCMC</h2>
+<p>A common method for Bayesian variable selection in regression-style problems is to define a space of different models and have MCMC sample over the models as well as the parameters for each model. The models differ in which explanatory variables are included. Often this idea is implemented in the BUGS language by writing the largest possible model and including indicator variables to turn regression parameters off and on (see model code below for an example of how indicator variables can be used). Foramally, that approach doesn’t sample between different models, instead embedding the models in one large model. However, that approach can result in poor mixing and require compromises in choices of prior distributions because a given regression parameter will sample from its prior when the corresponding indicator is 0. It is also computationally wasteful, because sampling effort will be spent on a coefficient even if it has no effect because the corresponding indicator is 0.</p>
+<p>A different view of the problem is that the different combinations of coefficients represent models of different dimensions. Reversible Jump MCMC <span class="citation">(Green <a href="#ref-Green_1995">1995</a>)</span> (RJMCMC) is a general framework for MCMC simulation in which the dimension of the parameter space can vary between iterates of the Markov chain. The reversible jump sampler can be viewed as an extension of the Metropolis-Hastings algorithm onto more general state spaces. NIMBLE provides an implementation of RJMCMC for variable selection that requires the user to write the largest model of interest and supports use of indicator variables but formally uses RJMCMC sampling for better mixing and efficiency. When a coefficient is not in the model (or its indicator is 0), it will not be sampled, and it will therefore not follow its prior in that case.</p>
+<p>In technical detail, given two models <span class="math inline">\(M_1\)</span> and <span class="math inline">\(M_2\)</span> of possibly different dimensions, the core idea of RJMCMC is to remove the difference in the dimensions of models <span class="math inline">\(M_1\)</span> and <span class="math inline">\(M_2\)</span> by supplementing the corresponding parameters <span class="math inline">\(\boldsymbol{\theta_1}\)</span> and <span class="math inline">\(\boldsymbol{\theta_2}\)</span> with auxiliary variables <span class="math inline">\(\boldsymbol{u}_{1 \rightarrow 2}\)</span> and <span class="math inline">\(\boldsymbol{u}_{2 \rightarrow 1}\)</span> such that <span class="math inline">\((\boldsymbol{\theta_1}, \boldsymbol{u}_{1 \rightarrow 2})\)</span> and <span class="math inline">\((\boldsymbol{\theta_2}, \boldsymbol{u}_{2 \rightarrow 1})\)</span> are in bijection, <span class="math inline">\((\boldsymbol{\theta_2}, \boldsymbol{u}_{2 \rightarrow 1}) = \Psi(\boldsymbol{\theta_1}, \boldsymbol{u}_{1 \rightarrow 2})\)</span>. The corresponding Metropolis-Hastings acceptance probability is generalized accounting for the proposal density for the auxiliary variables.</p>
+<p>NIMBLE implements RJMCMC for variable selection using a univariate normal distribution centered on 0 (or some fixed value) as the proposal density for parameters being added to the model. Two ways to set up models for RJMCMC are supported, which differ by whether the inclusion probabilities for each parameter are assumed known or must be written in the model:</p>
+<ul>
+<li>If the inclusion probabilities are assumed known, then RJMCMC may be used with regular model code, i.e. model code written without heed to variable selection.</li>
+<li>If the inclusion probability is a parameter in the model, perhaps with its own prior, then RJMCMC requires that indicator variables be written in the model code. The indicator variables will be sampled using RJMCMC, but otherwise they are like any other nodes in the model.</li>
+</ul>
+<p>The steps to set up variable selection using RJCMCM are:</p>
+<ol style="list-style-type: decimal">
+<li>Write the model with indicator variables if needed.</li>
+<li>Configure the MCMC as usual with <code>configureMCMC</code>.</li>
+<li>Modify the resulting MCMC configuration object with <code>configureRJ</code>.</li>
+</ol>
+<p>The <code>configureRJ</code> function modifies the MCMC configuration to (1) assign samplers that turn on and off variable in the model and (2) modify the existing samplers for the regression coefficients to use ‘toggled’ versions. The toggled versions invoke the samplers only when corresponding variable is currently in the model. In the case where indicator variables are included in the model, sampling to turn on and off variables is done using <code>RJ_indicator</code> samplers. In the case where indicator variables are not included, sampling is done using <code>RJ_fixed_prior</code> samplers.</p>
 <!--  See `help(configureRJ)` for details. -->
-<p>The <code>RJ</code> and <code>RJ_indicator</code> both use a univariate normal distribution as proposal density, whose mean and scale can be provided in the <code>control</code> list argument of <code>configureRJ</code> (by default <code>mean = 0</code> and <code>scale = 1</code>). An optional argument called <code>fixedValue</code> can be provided when the <code>priorProb</code> argument is present; this indicates the value taken by nodes in <code>targetNodes</code> when out of the model (by default 0). All arguments in <code>control</code> can accept one value that will be used for all samplers assigned to nodes <code>targetNodes</code>; alternatively each sampler can be customized by passing a vector of values whose length must equal the length of <code>targetNodes</code>.</p>
 <p>In the following we provide an example for the two different model specifications.</p>
 <div id="sec:rjmcmc-indicator" class="section level3">
 <h3><span class="header-section-number">7.9.1</span> Using indicator variables</h3>
-<p>Here we consider a normal linear regression in which two covariates <code>x1</code> and <code>x2</code> are given and only <code>x1</code> has to be included in the model.</p>
+<p>Here we consider a normal linear regression in which two covariates <code>x1</code> and <code>x2</code> are candidates to be included in the model. The two corresponding coefficients are <code>beta1</code> and <code>beta2</code>. The indicator variables are <code>z1</code> and <code>z2</code>, and their inclusion probability is <code>psi</code>. As described below, one can also use vectors for a set of coefficients and corresponding indicator variables.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## Linear regression with intercept and two covariates
 code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-  beta0 ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">100</span>)
-  beta1 ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">100</span>)
-  beta2 ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">100</span>)
-  sigma ~<span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>) 
-  
-  z1 ~<span class="st"> </span><span class="kw">dbern</span>(psi)  ## indicator variable associated with beta1
-  z2 ~<span class="st"> </span><span class="kw">dbern</span>(psi)  ## indicator variable associated with beta2
-  psi ~<span class="st"> </span><span class="kw">dbeta</span>(<span class="dv">1</span>, <span class="dv">1</span>) ## hyperprior on inclusion probability
-  for(i in <span class="dv">1</span>:N) {
-    Ypred[i] &lt;-<span class="st"> </span>beta0 +<span class="st"> </span>beta1 *<span class="st"> </span>z1 *<span class="st"> </span>x1[i] +<span class="st"> </span>beta2 *<span class="st"> </span>z2 *<span class="st"> </span>x2[i]
-    Y[i] ~<span class="st"> </span><span class="kw">dnorm</span>(Ypred[i], <span class="dt">sd =</span> sigma)
+  beta0 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">100</span>)
+  beta1 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">100</span>)
+  beta2 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">100</span>)
+  sigma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>) 
+  z1 <span class="op">~</span><span class="st"> </span><span class="kw">dbern</span>(psi)  ## indicator variable associated with beta1
+  z2 <span class="op">~</span><span class="st"> </span><span class="kw">dbern</span>(psi)  ## indicator variable associated with beta2
+  psi <span class="op">~</span><span class="st"> </span><span class="kw">dbeta</span>(<span class="dv">1</span>, <span class="dv">1</span>) ## hyperprior on inclusion probability
+  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {
+    Ypred[i] &lt;-<span class="st"> </span>beta0 <span class="op">+</span><span class="st"> </span>beta1 <span class="op">*</span><span class="st"> </span>z1 <span class="op">*</span><span class="st"> </span>x1[i] <span class="op">+</span><span class="st"> </span>beta2 <span class="op">*</span><span class="st"> </span>z2 <span class="op">*</span><span class="st"> </span>x2[i]
+    Y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(Ypred[i], <span class="dt">sd =</span> sigma)
   }
 })
 
 ## simulate some data
 <span class="kw">set.seed</span>(<span class="dv">1</span>)
 N &lt;-<span class="st"> </span><span class="dv">100</span>
-x1 &lt;-<span class="st"> </span><span class="kw">runif</span>(N, -<span class="dv">1</span>, <span class="dv">1</span>)
-x2 &lt;-<span class="st"> </span><span class="kw">runif</span>(N, -<span class="dv">1</span>, <span class="dv">1</span>) ## this covariate is not included
-Y &lt;-<span class="st"> </span><span class="kw">rnorm</span>(N, <span class="fl">1.5</span> +<span class="st"> </span><span class="dv">2</span> *<span class="st"> </span>x1, <span class="dt">sd =</span> <span class="dv">1</span>)
+x1 &lt;-<span class="st"> </span><span class="kw">runif</span>(N, <span class="dv">-1</span>, <span class="dv">1</span>)
+x2 &lt;-<span class="st"> </span><span class="kw">runif</span>(N, <span class="dv">-1</span>, <span class="dv">1</span>) ## this covariate is not included
+Y &lt;-<span class="st"> </span><span class="kw">rnorm</span>(N, <span class="fl">1.5</span> <span class="op">+</span><span class="st"> </span><span class="dv">2</span> <span class="op">*</span><span class="st"> </span>x1, <span class="dt">sd =</span> <span class="dv">1</span>)
 
 
 ## build the model and configure default MCMC
 
-rIndicatorModel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">N =</span> N),
-                               <span class="dt">data =</span> <span class="kw">list</span>(<span class="dt">Y =</span> Y, <span class="dt">x1 =</span> x1, <span class="dt">x2 =</span> x2), 
-                               <span class="dt">inits=</span>  <span class="kw">list</span>(<span class="dt">beta0 =</span> <span class="dv">0</span>, <span class="dt">beta1 =</span> <span class="dv">0</span>, <span class="dt">beta2 =</span> <span class="dv">0</span>, <span class="dt">sigma =</span> <span class="kw">sd</span>(Y),
-                               <span class="dt">z2 =</span> <span class="dv">1</span>, <span class="dt">z1 =</span> <span class="dv">1</span>, <span class="dt">psi =</span> <span class="fl">0.5</span>))
+RJexampleModel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">N =</span> N),
+                              <span class="dt">data =</span> <span class="kw">list</span>(<span class="dt">Y =</span> Y, <span class="dt">x1 =</span> x1, <span class="dt">x2 =</span> x2), 
+                              <span class="dt">inits =</span> <span class="kw">list</span>(<span class="dt">beta0 =</span> <span class="dv">0</span>, <span class="dt">beta1 =</span> <span class="dv">0</span>, <span class="dt">beta2 =</span> <span class="dv">0</span>,
+                              <span class="dt">sigma =</span> <span class="kw">sd</span>(Y), <span class="dt">z2 =</span> <span class="dv">1</span>, <span class="dt">z1 =</span> <span class="dv">1</span>, <span class="dt">psi =</span> <span class="fl">0.5</span>))
 
-indicatorModelConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(rIndicatorModel)</code></pre></div>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## print NIMBLE default samplers
-indicatorModelConf$<span class="kw">printSamplers</span>()</code></pre></div>
+RJexampleConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(RJexampleModel)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## For illustration, look at the default sampler assignments
+RJexampleConf<span class="op">$</span><span class="kw">printSamplers</span>()</code></pre></div>
 <pre><code>## [1] conjugate_dnorm_dnorm sampler: beta0
 ## [2] conjugate_dnorm_dnorm sampler: beta1
 ## [3] conjugate_dnorm_dnorm sampler: beta2
@@ -838,70 +862,73 @@ indicatorModelConf$<span class="kw">printSamplers</span>()</code></pre></div>
 ## [5] conjugate_dbeta_dbern sampler: psi
 ## [6] binary sampler: z1
 ## [7] binary sampler: z2</code></pre>
-<p>At this point we may want to modify the current configuration by adding a reversible jump sampler to allow for selection on <code>beta[1]</code> and <code>beta[2]</code> variables, which can be done by calling the <code>configureRJ</code> function.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">configureRJ</span>(<span class="dt">mcmcConf =</span> indicatorModelConf,     
+<p>At this point we can modify the MCMC configuration object, <code>RJexampleConf</code>, to use reversible jump samplers for selection on <code>beta1</code> and <code>beta2</code>.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">configureRJ</span>(<span class="dt">conf =</span> RJexampleConf,     
             <span class="dt">targetNodes =</span> <span class="kw">c</span>(<span class="st">&quot;beta1&quot;</span>, <span class="st">&quot;beta2&quot;</span>),
             <span class="dt">indicatorNodes =</span> <span class="kw">c</span>(<span class="st">&#39;z1&#39;</span>, <span class="st">&#39;z2&#39;</span>),
-            <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">mean =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">0</span>), <span class="dt">scale =</span> <span class="dv">2</span>))</code></pre></div>
-<p>The <code>targetNodes</code> argument should indicate the nodes for which we want to do variable selection. <code>targetNodes</code> will be expanded as described in Section <a href="cha-using-models.html#sec:arbitr-coll-nodes">13.3.1.1</a>. I.e., either <code>targetNodes = &quot;beta&quot;</code> or <code>targetNodes = c(&quot;beta[1]&quot;, &quot;beta[2]&quot;)</code> will assign a RJ sampler to each of <code>beta[1]</code> and <code>beta[2]</code> if <code>beta</code> is a vector of two values. The same applies to <code>indicatorNodes</code>, which provides the indicator variables paired with nodes in <code>targetNodes</code>. Notice that <code>indicatorNodes</code> must be provided consistently with respect to <code>targetNodes</code>. E.g. if <code>targetNodes = &quot;beta&quot;</code> is a vector, then one should have <code>indicatorNodes = &quot;z&quot;</code> with <code>z</code> a vector as well; something like <code>indicatorNodes = c(&quot;z1&quot;, &quot;z2&quot;)</code> will throw an error.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">indicatorModelConf$<span class="kw">printSamplers</span>()</code></pre></div>
+            <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">mean =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="dv">0</span>), <span class="dt">scale =</span> <span class="dv">2</span>))</code></pre></div>
+<p>The <code>targetNodes</code> argument gives the coefficients (nodes) for which we want to do variable selection. The <code>indicatorNodes</code> gives the corresponding indicator nodes, ordered to match <code>targetNodes</code>. The <code>control</code> list gives the means and scale (standard deviation) for normal reversible jump proposals for <code>targetNodes</code>. The means will typically be 0 (by default <code>mean = 0</code> and <code>scale = 1</code>), but they could be anything. An optional <code>control</code> element called <code>fixedValue</code> can be provided in the non-indicator setting; this gives the value taken by nodes in <code>targetNodes</code> when they are out of the model (by default, <code>fixedValue</code> is 0). All <code>control</code> elements can be scalars or vectors. A scalar values will be used for all <code>targetNodes</code>. A vector value must be of equal length as <code>targetNodes</code> and will be used in order.</p>
+<p>To use RJMCMC on a vector of coefficients with a corresponding vector of indicator variables, simply provide the variable names for <code>targetNodes</code> and <code>indicatorNodes</code>. For example, <code>targetNodes = &quot;beta&quot;</code> is equivalent to <code>targetNodes = c(&quot;beta[1]&quot;, &quot;beta[2]&quot;)</code> and <code>indicatorNodes = &quot;z&quot;</code> is equivalent to <code>indicatorNodes = c(&quot;z[1]&quot;, &quot;z[2]&quot;)</code>. Expansion of variable names into a vector of node names will occur as described in Section <a href="cha-using-models.html#sec:arbitr-coll-nodes">13.3.1.1</a>. When using this method, <em>both</em> arguments must be provided as variable names to be expanded.</p>
+<p>Next we can see the result of <code>configureRJ</code> by printing the modified list of samplers:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">RJexampleConf<span class="op">$</span><span class="kw">printSamplers</span>()</code></pre></div>
 <pre><code>## [1] conjugate_dnorm_dnorm sampler: beta0
 ## [2] RW sampler: sigma
 ## [3] conjugate_dbeta_dbern sampler: psi
-## [4] RJ_indicator sampler: z1,  mean: 1,  scale: 2,  targetNode: beta1
-## [5] toggled sampler: beta1,  samplerConf: conjugate_dnorm_dnorm
+## [4] RJ_indicator sampler: z1,  mean: 0,  scale: 2,  targetNode: beta1
+## [5] RJ_toggled sampler: beta1,  samplerType: conjugate_dnorm_dnorm
 ## [6] RJ_indicator sampler: z2,  mean: 0,  scale: 2,  targetNode: beta2
-## [7] toggled sampler: beta2,  samplerConf: conjugate_dnorm_dnorm</code></pre>
-<p>An <code>RJ_indicator</code> sampler is assigned to <code>z[1]</code> and <code>z[2]</code> in place of the <code>binary</code> sampler, while the samplers for <code>beta[1]</code>and <code>beta[2]</code> have been changed to <code>toggled</code> samplers, which still use the default <code>conjugate_dnorm_dnorm</code> sampler but only when the corresponding indicator variable is equal to <span class="math inline">\(1\)</span>, thereby including the coefficient in the model. The two <code>RJ_indicator</code> samplers have different means for the proposal distribution but the same scale, as given in the <code>control</code> list of <code>configureRJ</code>.</p>
-<p>Notice that the order of the sampler has changed, since <code>configureRJ</code> calls <code>removeSampler</code> for nodes in <code>targetNodes</code> and <code>indicatorNodes</code>, and subsequently <code>addSampler</code>, which appends the sampler to the end of current sampler list. Order can be modified by using <code>setSamplers</code>.</p>
-<p>Also note that <code>configureRJ</code> modifies the existing sampler and returns <code>NULL</code>.</p>
+## [7] RJ_toggled sampler: beta2,  samplerType: conjugate_dnorm_dnorm</code></pre>
+<p>An <code>RJ_indicator</code> sampler was assigned to each of <code>z[1]</code> and <code>z[2]</code> in place of the <code>binary</code> sampler, while the samplers for <code>beta[1]</code>and <code>beta[2]</code> have been changed to <code>RJ_toggled</code> samplers. The latter samplers contain the original samplers, in this case <code>conjugate_dnorm_dnorm</code> samplers, and use them only when the corresponding indicator variable is equal to <span class="math inline">\(1\)</span> (i.e., when the coefficient is in the model).</p>
+<p>Notice that the order of the samplers has changed, since <code>configureRJ</code> calls <code>removeSampler</code> for nodes in <code>targetNodes</code> and <code>indicatorNodes</code>, and subsequently <code>addSampler</code>, which appends the sampler to the end of current sampler list. Order can be modified by using <code>setSamplers</code>.</p>
+<p>Also note that <code>configureRJ</code> modifies the MCMC configuration (first argument) and returns <code>NULL</code>.</p>
 </div>
 <div id="sec:rjmcmc-no-indicator" class="section level3">
 <h3><span class="header-section-number">7.9.2</span> Without indicator variables</h3>
-<p>We consider the same regression setting, but writing the model without the use of indicator variables.</p>
+<p>We consider the same regression setting, but without the use of indicator variables and with fixed probabilities of including each coefficient in the model.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## Linear regression with intercept and two covariates
 code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-  beta0 ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">100</span>)
-  beta1 ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">100</span>)
-  beta2 ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">100</span>)
-  sigma ~<span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)
-  for(i in <span class="dv">1</span>:N) {
-    Ypred[i] &lt;-<span class="st"> </span>beta0 +<span class="st"> </span>beta1 *<span class="st"> </span>x1[i] +<span class="st"> </span>beta2 *<span class="st"> </span>x2[i]
-    Y[i] ~<span class="st"> </span><span class="kw">dnorm</span>(Ypred[i], <span class="dt">sd =</span> sigma)
+  beta0 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">100</span>)
+  beta1 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">100</span>)
+  beta2 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">100</span>)
+  sigma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)
+  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {
+    Ypred[i] &lt;-<span class="st"> </span>beta0 <span class="op">+</span><span class="st"> </span>beta1 <span class="op">*</span><span class="st"> </span>x1[i] <span class="op">+</span><span class="st"> </span>beta2 <span class="op">*</span><span class="st"> </span>x2[i]
+    Y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(Ypred[i], <span class="dt">sd =</span> sigma)
   }
 })
 
 ## build the model
-rNoIndicatorModel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">N =</span> N),
+RJexampleModel2 &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">N =</span> N),
                                <span class="dt">data =</span> <span class="kw">list</span>(<span class="dt">Y =</span> Y, <span class="dt">x1 =</span> x1, <span class="dt">x2 =</span> x2), 
-                               <span class="dt">inits=</span>  <span class="kw">list</span>(<span class="dt">beta0 =</span> <span class="dv">0</span>, <span class="dt">beta1 =</span> <span class="dv">0</span>, <span class="dt">beta2 =</span> <span class="dv">0</span>, <span class="dt">sigma =</span> <span class="kw">sd</span>(Y)))
+                               <span class="dt">inits =</span> <span class="kw">list</span>(<span class="dt">beta0 =</span> <span class="dv">0</span>, <span class="dt">beta1 =</span> <span class="dv">0</span>, <span class="dt">beta2 =</span> <span class="dv">0</span>,
+                                            <span class="dt">sigma =</span> <span class="kw">sd</span>(Y)))
 
-noIndicatorModelConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(rNoIndicatorModel)</code></pre></div>
+RJexampleConf2 &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(RJexampleModel2)</code></pre></div>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## print NIMBLE default samplers
-noIndicatorModelConf$<span class="kw">printSamplers</span>()</code></pre></div>
+RJexampleConf2<span class="op">$</span><span class="kw">printSamplers</span>()</code></pre></div>
 <pre><code>## [1] conjugate_dnorm_dnorm sampler: beta0
 ## [2] conjugate_dnorm_dnorm sampler: beta1
 ## [3] conjugate_dnorm_dnorm sampler: beta2
 ## [4] RW sampler: sigma</code></pre>
-<p>In this case, since there are no indicator variables, we need to pass to <code>configureRJ</code> the prior inclusion probabilities for each node in <code>targetNodes</code>, by specifying either one common value or a vector of values for the argument <code>priorProb</code>. Notice that this case does not allow for a stochastic prior.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">configureRJ</span>(<span class="dt">mcmcConf =</span> noIndicatorModelConf,     
+<p>In this case, since there are no indicator variables, we need to pass to <code>configureRJ</code> the prior inclusion probabilities for each node in <code>targetNodes</code>, by specifying either one common value or a vector of values for the argument <code>priorProb</code>. This case does not allow for a stochastic prior.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">configureRJ</span>(<span class="dt">conf =</span> RJexampleConf2,     
             <span class="dt">targetNodes =</span> <span class="kw">c</span>(<span class="st">&quot;beta1&quot;</span>, <span class="st">&quot;beta2&quot;</span>),
             <span class="dt">priorProb =</span> <span class="fl">0.5</span>,
             <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">mean =</span> <span class="dv">0</span>, <span class="dt">scale =</span> <span class="dv">2</span>, <span class="dt">fixedValue =</span> <span class="kw">c</span>(<span class="fl">1.5</span>, <span class="dv">0</span>)))</code></pre></div>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## print samplers after configureRJ
-noIndicatorModelConf$<span class="kw">printSamplers</span>()</code></pre></div>
+RJexampleConf2<span class="op">$</span><span class="kw">printSamplers</span>()</code></pre></div>
 <pre><code>## [1] conjugate_dnorm_dnorm sampler: beta0
 ## [2] RW sampler: sigma
-## [3] RJ sampler: beta1,  priorProb: 0.5,  mean: 0,  scale: 2,  fixedValue: 1.5
-## [4] toggled sampler: beta1,  samplerConf: conjugate_dnorm_dnorm,  fixedValue: 1.5
-## [5] RJ sampler: beta2,  priorProb: 0.5,  mean: 0,  scale: 2,  fixedValue: 0
-## [6] toggled sampler: beta2,  samplerConf: conjugate_dnorm_dnorm,  fixedValue: 0</code></pre>
-<p>Since there are no indicator variables, the <code>RJ</code> sampler is assigned directly to <code>beta[1]</code> and <code>beta[2]</code> along with the <code>toggled</code> sampler. In addition in this case one can set the coefficient to a value different from <span class="math inline">\(0\)</span> via the <code>fixedValue</code> argument in the <code>control</code> list.</p>
-<p>If <code>fixedValue</code> is given when using <code>indicatorNodes</code> the values provided in <code>fixedValue</code> are ignored. However the same behavior can be obtained in this situation, using a different model specification. For example, the model in <a href="cha-mcmc.html#sec:rjmcmc-indicator">7.9.1</a> can be modified to have <code>beta1</code> equal to <span class="math inline">\(1.5\)</span> when in the model as follows:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">  for(i in <span class="dv">1</span>:N) {
-    Ypred[i] &lt;-<span class="st"> </span>beta0 +<span class="st"> </span>(<span class="dv">1</span> -<span class="st"> </span>z1) *<span class="st"> </span><span class="fl">1.5</span> *<span class="st"> </span>beta1 *<span class="st"> </span>x1[i] +
-<span class="st">                </span>z1 *<span class="st"> </span>beta1 *<span class="st"> </span>x1[i] +<span class="st"> </span>beta2 *<span class="st"> </span>z2 *<span class="st"> </span>x2[i]
-    Y[i] ~<span class="st"> </span><span class="kw">dnorm</span>(Ypred[i], <span class="dt">sd =</span> sigma)
+## [3] RJ_fixed_prior sampler: beta1,  priorProb: 0.5,  mean: 0,  scale: 2,  fixedValue: 1.5
+## [4] RJ_toggled sampler: beta1,  samplerType: conjugate_dnorm_dnorm,  fixedValue: 1.5
+## [5] RJ_fixed_prior sampler: beta2,  priorProb: 0.5,  mean: 0,  scale: 2,  fixedValue: 0
+## [6] RJ_toggled sampler: beta2,  samplerType: conjugate_dnorm_dnorm,  fixedValue: 0</code></pre>
+<p>Since there are no indicator variables, the <code>RJ_fixed_prior</code> sampler is assigned directly to each of <code>beta[1]</code> and <code>beta[2]</code> along with the <code>RJ_toggled</code> sampler. The former sets a coefficient to its <code>fixedValue</code> when it is out of the model. The latter invokes the regular sampler for the coefficient only if it is in the model at a given iteration.</p>
+<p>If <code>fixedValue</code> is given when using <code>indicatorNodes</code> the values provided in <code>fixedValue</code> are ignored. However the same behavior can be obtained in this situation, using a different model specification. For example, the model in <a href="cha-mcmc.html#sec:rjmcmc-indicator">7.9.1</a> can be modified to have <code>beta1</code> equal to <span class="math inline">\(1.5\)</span> when not in the model as follows:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {
+    Ypred[i] &lt;-<span class="st"> </span>beta0 <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>z1) <span class="op">*</span><span class="st"> </span><span class="fl">1.5</span> <span class="op">*</span><span class="st"> </span>beta1 <span class="op">*</span><span class="st"> </span>x1[i] <span class="op">+</span>
+<span class="st">                </span>z1 <span class="op">*</span><span class="st"> </span>beta1 <span class="op">*</span><span class="st"> </span>x1[i] <span class="op">+</span><span class="st"> </span>beta2 <span class="op">*</span><span class="st"> </span>z2 <span class="op">*</span><span class="st"> </span>x2[i]
+    Y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(Ypred[i], <span class="dt">sd =</span> sigma)
   }</code></pre></div>
 </div>
 </div>
@@ -916,150 +943,150 @@ noIndicatorModelConf$<span class="kw">printSamplers</span>()</code></pre></div>
 <caption><span id="tab:conjugacy">Table 7.1: </span> Conjugate relationships supported by NIMBLE’s MCMC engine.</caption>
 <thead>
 <tr class="header">
-<th align="left">Prior Distribution</th>
-<th align="left">Sampling (Dependent Node) Distribution</th>
+<th>Prior Distribution</th>
+<th>Sampling (Dependent Node) Distribution</th>
 <th align="left">Parameter</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td align="left">Beta</td>
-<td align="left">Bernoulli</td>
+<td>Beta</td>
+<td>Bernoulli</td>
 <td align="left"><code>prob</code></td>
 </tr>
 <tr class="even">
-<td align="left"></td>
-<td align="left">Binomial</td>
+<td></td>
+<td>Binomial</td>
 <td align="left"><code>prob</code></td>
 </tr>
 <tr class="odd">
-<td align="left"></td>
-<td align="left">Negative Binomial</td>
+<td></td>
+<td>Negative Binomial</td>
 <td align="left"><code>prob</code></td>
 </tr>
 <tr class="even">
-<td align="left">Dirichlet</td>
-<td align="left">Multinomial</td>
+<td>Dirichlet</td>
+<td>Multinomial</td>
 <td align="left"><code>prob</code></td>
 </tr>
 <tr class="odd">
-<td align="left"></td>
-<td align="left">Categorical</td>
+<td></td>
+<td>Categorical</td>
 <td align="left"><code>prob</code></td>
 </tr>
 <tr class="even">
-<td align="left">Flat</td>
-<td align="left">Normal</td>
+<td>Flat</td>
+<td>Normal</td>
 <td align="left"><code>mean</code></td>
 </tr>
 <tr class="odd">
-<td align="left"></td>
-<td align="left">Lognormal</td>
+<td></td>
+<td>Lognormal</td>
 <td align="left"><code>meanlog</code></td>
 </tr>
 <tr class="even">
-<td align="left">Gamma</td>
-<td align="left">Poisson</td>
+<td>Gamma</td>
+<td>Poisson</td>
 <td align="left"><code>lambda</code></td>
 </tr>
 <tr class="odd">
-<td align="left"></td>
-<td align="left">Normal</td>
+<td></td>
+<td>Normal</td>
 <td align="left"><code>tau</code></td>
 </tr>
 <tr class="even">
-<td align="left"></td>
-<td align="left">Lognormal</td>
+<td></td>
+<td>Lognormal</td>
 <td align="left"><code>taulog</code></td>
 </tr>
 <tr class="odd">
-<td align="left"></td>
-<td align="left">Gamma</td>
+<td></td>
+<td>Gamma</td>
 <td align="left"><code>rate</code></td>
 </tr>
 <tr class="even">
-<td align="left"></td>
-<td align="left">Inverse Gamma</td>
+<td></td>
+<td>Inverse Gamma</td>
 <td align="left"><code>scale</code></td>
 </tr>
 <tr class="odd">
-<td align="left"></td>
-<td align="left">Exponential</td>
+<td></td>
+<td>Exponential</td>
 <td align="left"><code>rate</code></td>
 </tr>
 <tr class="even">
-<td align="left"></td>
-<td align="left">Double Exponential</td>
+<td></td>
+<td>Double Exponential</td>
 <td align="left"><code>rate</code></td>
 </tr>
 <tr class="odd">
-<td align="left"></td>
-<td align="left">Weibull</td>
+<td></td>
+<td>Weibull</td>
 <td align="left"><code>lambda</code></td>
 </tr>
 <tr class="even">
-<td align="left">Halfflat</td>
-<td align="left">Normal</td>
+<td>Halfflat</td>
+<td>Normal</td>
 <td align="left"><code>sd</code></td>
 </tr>
 <tr class="odd">
-<td align="left"></td>
-<td align="left">Lognormal</td>
+<td></td>
+<td>Lognormal</td>
 <td align="left"><code>sdlog</code></td>
 </tr>
 <tr class="even">
-<td align="left">Inverse Gamma</td>
-<td align="left">Normal</td>
+<td>Inverse Gamma</td>
+<td>Normal</td>
 <td align="left"><code>var</code></td>
 </tr>
 <tr class="odd">
-<td align="left"></td>
-<td align="left">Lognormal</td>
+<td></td>
+<td>Lognormal</td>
 <td align="left"><code>varlog</code></td>
 </tr>
 <tr class="even">
-<td align="left"></td>
-<td align="left">Gamma</td>
+<td></td>
+<td>Gamma</td>
 <td align="left"><code>scale</code></td>
 </tr>
 <tr class="odd">
-<td align="left"></td>
-<td align="left">Inverse Gamma</td>
+<td></td>
+<td>Inverse Gamma</td>
 <td align="left"><code>rate</code></td>
 </tr>
 <tr class="even">
-<td align="left"></td>
-<td align="left">Exponential</td>
+<td></td>
+<td>Exponential</td>
 <td align="left"><code>scale</code></td>
 </tr>
 <tr class="odd">
-<td align="left"></td>
-<td align="left">Double Exponential</td>
+<td></td>
+<td>Double Exponential</td>
 <td align="left"><code>scale</code></td>
 </tr>
 <tr class="even">
-<td align="left">Normal</td>
-<td align="left">Normal</td>
+<td>Normal</td>
+<td>Normal</td>
 <td align="left"><code>mean</code></td>
 </tr>
 <tr class="odd">
-<td align="left"></td>
-<td align="left">Lognormal</td>
+<td></td>
+<td>Lognormal</td>
 <td align="left"><code>meanlog</code></td>
 </tr>
 <tr class="even">
-<td align="left">Multivariate Normal</td>
-<td align="left">Multivariate Normal</td>
+<td>Multivariate Normal</td>
+<td>Multivariate Normal</td>
 <td align="left"><code>mean</code></td>
 </tr>
 <tr class="odd">
-<td align="left">Wishart</td>
-<td align="left">Multivariate Normal</td>
+<td>Wishart</td>
+<td>Multivariate Normal</td>
 <td align="left"><code>prec</code></td>
 </tr>
 <tr class="even">
-<td align="left">Inverse Wishart</td>
-<td align="left">Multivariate Normal</td>
+<td>Inverse Wishart</td>
+<td>Multivariate Normal</td>
 <td align="left"><code>cov</code></td>
 </tr>
 </tbody>
@@ -1097,20 +1124,20 @@ noIndicatorModelConf$<span class="kw">printSamplers</span>()</code></pre></div>
 <p>The <code>RW_llFunction</code> sampler can be customized using the <code>control</code> list argument to set the initial proposal distribution scale and the adaptive properties for the Metropolis-Hastings sampling. In addition, the <code>control</code> list argument must contain a named <code>llFunction</code> element. This is the specialized nimbleFunction that calculates the log-likelihood; it must accept no arguments and return a scalar double number. The return value must be the total log-likelihood of all stochastic dependents of the <code>target</code> nodes – and, if <code>includesTarget = TRUE</code>, of the target node(s) themselves – or whatever surrogate is being used for the total log-likelihood. This is a required <code>control</code> list element with no default. See <code>help(samplers)</code> for details.</p>
 <p>Here is a complete example:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-    p ~<span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)
-    y ~<span class="st"> </span><span class="kw">dbin</span>(p, n)
+    p <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)
+    y <span class="op">~</span><span class="st"> </span><span class="kw">dbin</span>(p, n)
 })
 
 Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <span class="dt">data =</span> <span class="kw">list</span>(<span class="dt">y=</span><span class="dv">3</span>), <span class="dt">inits =</span> <span class="kw">list</span>(<span class="dt">p=</span><span class="fl">0.5</span>, <span class="dt">n=</span><span class="dv">10</span>))
 
 llFun &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
-    <span class="dt">setup =</span> function(model) { },
-    <span class="dt">run =</span> function() {
-        y &lt;-<span class="st"> </span>model$y
-        p &lt;-<span class="st"> </span>model$p
-        n &lt;-<span class="st"> </span>model$n
-        ll &lt;-<span class="st"> </span><span class="kw">lfactorial</span>(n) -<span class="st"> </span><span class="kw">lfactorial</span>(y) -<span class="st"> </span><span class="kw">lfactorial</span>(n-y) +
-<span class="st">              </span>y *<span class="st"> </span><span class="kw">log</span>(p) +<span class="st"> </span>(n-y) *<span class="st"> </span><span class="kw">log</span>(<span class="dv">1</span>-p)
+    <span class="dt">setup =</span> <span class="cf">function</span>(model) { },
+    <span class="dt">run =</span> <span class="cf">function</span>() {
+        y &lt;-<span class="st"> </span>model<span class="op">$</span>y
+        p &lt;-<span class="st"> </span>model<span class="op">$</span>p
+        n &lt;-<span class="st"> </span>model<span class="op">$</span>n
+        ll &lt;-<span class="st"> </span><span class="kw">lfactorial</span>(n) <span class="op">-</span><span class="st"> </span><span class="kw">lfactorial</span>(y) <span class="op">-</span><span class="st"> </span><span class="kw">lfactorial</span>(n<span class="op">-</span>y) <span class="op">+</span>
+<span class="st">              </span>y <span class="op">*</span><span class="st"> </span><span class="kw">log</span>(p) <span class="op">+</span><span class="st"> </span>(n<span class="op">-</span>y) <span class="op">*</span><span class="st"> </span><span class="kw">log</span>(<span class="dv">1</span><span class="op">-</span>p)
         <span class="kw">returnType</span>(<span class="kw">double</span>())
         <span class="kw">return</span>(ll)
     }
@@ -1120,7 +1147,7 @@ RllFun &lt;-<span class="st"> </span><span class="kw">llFun</span>(Rmodel)
 
 mcmcConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(Rmodel, <span class="dt">nodes =</span> <span class="ot">NULL</span>)
 
-mcmcConf$<span class="kw">addSampler</span>(<span class="dt">target =</span> <span class="st">&quot;p&quot;</span>, <span class="dt">type =</span> <span class="st">&quot;RW_llFunction&quot;</span>,
+mcmcConf<span class="op">$</span><span class="kw">addSampler</span>(<span class="dt">target =</span> <span class="st">&quot;p&quot;</span>, <span class="dt">type =</span> <span class="st">&quot;RW_llFunction&quot;</span>,
     <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">llFunction =</span> RllFun, <span class="dt">includesTarget =</span> <span class="ot">FALSE</span>))
 
 Rmcmc &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(mcmcConf)</code></pre></div>
@@ -1142,15 +1169,15 @@ The `posterior_predictive` sampler functions by calling the `simulate` method of
 
 <span class="co"># define our model using BUGS syntax</span>
 litters_code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-    for (i in <span class="dv">1</span>:G) {
-        a[i] ~<span class="st"> </span><span class="kw">dgamma</span>(<span class="dv">1</span>, .<span class="dv">001</span>)
-        b[i] ~<span class="st"> </span><span class="kw">dgamma</span>(<span class="dv">1</span>, .<span class="dv">001</span>)
-        for (j in <span class="dv">1</span>:N) {
-            r[i,j] ~<span class="st"> </span><span class="kw">dbin</span>(p[i,j], n[i,j])
-            p[i,j] ~<span class="st"> </span><span class="kw">dbeta</span>(a[i], b[i]) 
+    <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>G) {
+        a[i] <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="dv">1</span>, <span class="fl">.001</span>)
+        b[i] <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="dv">1</span>, <span class="fl">.001</span>)
+        <span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {
+            r[i,j] <span class="op">~</span><span class="st"> </span><span class="kw">dbin</span>(p[i,j], n[i,j])
+            p[i,j] <span class="op">~</span><span class="st"> </span><span class="kw">dbeta</span>(a[i], b[i]) 
         }
-        mu[i] &lt;-<span class="st"> </span>a[i] /<span class="st"> </span>(a[i] +<span class="st"> </span>b[i])
-        theta[i] &lt;-<span class="st"> </span><span class="dv">1</span> /<span class="st"> </span>(a[i] +<span class="st"> </span>b[i])
+        mu[i] &lt;-<span class="st"> </span>a[i] <span class="op">/</span><span class="st"> </span>(a[i] <span class="op">+</span><span class="st"> </span>b[i])
+        theta[i] &lt;-<span class="st"> </span><span class="dv">1</span> <span class="op">/</span><span class="st"> </span>(a[i] <span class="op">+</span><span class="st"> </span>b[i])
     }
 })
 
@@ -1170,8 +1197,8 @@ data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt"
 inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">a =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">1</span>),
               <span class="dt">b =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">1</span>),
               <span class="dt">p =</span> <span class="kw">matrix</span>(<span class="fl">0.5</span>, <span class="dt">nrow =</span> <span class="dv">2</span>, <span class="dt">ncol =</span> <span class="dv">16</span>),
-              <span class="dt">mu    =</span> <span class="kw">c</span>(.<span class="dv">5</span>, .<span class="dv">5</span>),
-              <span class="dt">theta =</span> <span class="kw">c</span>(.<span class="dv">5</span>, .<span class="dv">5</span>))
+              <span class="dt">mu    =</span> <span class="kw">c</span>(.<span class="dv">5</span>, <span class="fl">.5</span>),
+              <span class="dt">theta =</span> <span class="kw">c</span>(.<span class="dv">5</span>, <span class="fl">.5</span>))
 
 <span class="co"># build the R model object</span>
 Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(litters_code,
@@ -1189,10 +1216,10 @@ Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(litters
 mcmcConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(Rmodel, <span class="dt">monitors =</span> <span class="st">&quot;mu&quot;</span>)
 
 <span class="co"># check the samplers assigned by default MCMC configuration</span>
-mcmcConf$<span class="kw">printSamplers</span>()
+mcmcConf<span class="op">$</span><span class="kw">printSamplers</span>()
 
 <span class="co"># double-check our monitors, and thinning interval</span>
-mcmcConf$<span class="kw">printMonitors</span>()
+mcmcConf<span class="op">$</span><span class="kw">printMonitors</span>()
 
 <span class="co"># build the executable R MCMC function</span>
 mcmc &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(mcmcConf)
@@ -1202,15 +1229,15 @@ mcmc &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(mcmcConf)
 
 <span class="co"># generate an empty MCMC configuration</span>
 <span class="co"># we need a new copy of the model to avoid compilation errors</span>
-Rmodel2 &lt;-<span class="st"> </span>Rmodel$<span class="kw">newModel</span>()
+Rmodel2 &lt;-<span class="st"> </span>Rmodel<span class="op">$</span><span class="kw">newModel</span>()
 mcmcConf_CL &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(Rmodel2, <span class="dt">nodes =</span> <span class="ot">NULL</span>, <span class="dt">monitors =</span> <span class="st">&quot;mu&quot;</span>)
 
 <span class="co"># add two crossLevel samplers</span>
-mcmcConf_CL$<span class="kw">addSampler</span>(<span class="dt">target =</span> <span class="kw">c</span>(<span class="st">&quot;a[1]&quot;</span>, <span class="st">&quot;b[1]&quot;</span>), <span class="dt">type =</span> <span class="st">&quot;crossLevel&quot;</span>)
-mcmcConf_CL$<span class="kw">addSampler</span>(<span class="dt">target =</span> <span class="kw">c</span>(<span class="st">&quot;a[2]&quot;</span>, <span class="st">&quot;b[2]&quot;</span>), <span class="dt">type =</span> <span class="st">&quot;crossLevel&quot;</span>)
+mcmcConf_CL<span class="op">$</span><span class="kw">addSampler</span>(<span class="dt">target =</span> <span class="kw">c</span>(<span class="st">&quot;a[1]&quot;</span>, <span class="st">&quot;b[1]&quot;</span>), <span class="dt">type =</span> <span class="st">&quot;crossLevel&quot;</span>)
+mcmcConf_CL<span class="op">$</span><span class="kw">addSampler</span>(<span class="dt">target =</span> <span class="kw">c</span>(<span class="st">&quot;a[2]&quot;</span>, <span class="st">&quot;b[2]&quot;</span>), <span class="dt">type =</span> <span class="st">&quot;crossLevel&quot;</span>)
 
 <span class="co"># let&#39;s check the samplers</span>
-mcmcConf_CL$<span class="kw">printSamplers</span>()
+mcmcConf_CL<span class="op">$</span><span class="kw">printSamplers</span>()
 
 <span class="co"># build this second executable R MCMC function</span>
 mcmc_CL &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(mcmcConf_CL)
@@ -1226,21 +1253,21 @@ Cmodel2 &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(Rmod
 
 <span class="co"># compile both MCMC algorithms, in the same</span>
 <span class="co"># project as the R model object</span>
-<span class="co"># NOTE: at this time, we recommend compiling ALL</span>
+<span class="co"># </span><span class="al">NOTE</span><span class="co">: at this time, we recommend compiling ALL</span>
 <span class="co"># executable MCMC functions together</span>
 Cmcmc &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(mcmc, <span class="dt">project =</span> Rmodel)
 Cmcmc_CL &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(mcmc_CL, <span class="dt">project =</span> Rmodel2)
 
 <span class="co"># run the default MCMC function,</span>
 <span class="co"># and example the mean of mu[1]</span>
-Cmcmc$<span class="kw">run</span>(<span class="dv">1000</span>)
-cSamplesMatrix &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(Cmcmc$mvSamples)
+Cmcmc<span class="op">$</span><span class="kw">run</span>(<span class="dv">1000</span>)
+cSamplesMatrix &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(Cmcmc<span class="op">$</span>mvSamples)
 <span class="kw">mean</span>(cSamplesMatrix[, <span class="st">&quot;mu[1]&quot;</span>])
 
 <span class="co"># run the crossLevel MCMC function,</span>
 <span class="co"># and examine the mean of mu[1]</span>
-Cmcmc_CL$<span class="kw">run</span>(<span class="dv">1000</span>)
-cSamplesMatrix_CL &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(Cmcmc_CL$mvSamples)
+Cmcmc_CL<span class="op">$</span><span class="kw">run</span>(<span class="dv">1000</span>)
+cSamplesMatrix_CL &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(Cmcmc_CL<span class="op">$</span>mvSamples)
 <span class="kw">mean</span>(cSamplesMatrix_CL[, <span class="st">&quot;mu[1]&quot;</span>])
 
 
@@ -1256,20 +1283,19 @@ samplesList &lt;-<span class="st"> </span><span class="kw">runMCMC</span>(Cmcmc_
 <div id="mcmc-suite-compare-mcmcs" class="section level2">
 <h2><span class="header-section-number">7.12</span> Comparing different MCMCs with <em>MCMCsuite</em> and <em>compareMCMCs</em></h2>
 <p>Please see the <code>compareMCMCs</code> package for the features previously provided by <code>MCMCsuite</code> and <code>compareMCMCs</code> in NIMBLE (until version 0.8.0). The <code>compareMCMCs</code> package provides tools to automatically run MCMC in nimble (including multiple sampler configurations), WinBUGS, OpenBUGS, JAGS, Stan, or any other engine for which you provide a simple common interface. The package makes it easy to manage comparison metrics and generate html pages with comparison figures.</p>
+</div>
+<div id="running-mcmc-chains-in-parallel" class="section level2">
+<h2><span class="header-section-number">7.13</span> Running MCMC chains in parallel</h2>
+<p>It is possible to run multiple chains in parallel using standard R parallelization packages such as <code>parallel</code>, <code>foreach</code>, and <code>future</code>. However, you must create separate copies of all model and MCMC objects using <code>nimbleModel</code>, <code>buildMCMC</code>, <code>compileNimble</code>, etc. This is because NIMBLE uses Reference Classes and R6 classes, so copying such objects simply creates a new variable name that refers to the original object.</p>
+<p>Thus, in your parallel loop or lapply-style statement, you should run <code>nimbleModel</code> and all subsequent calls to create and compile the model and MCMC algorithm within the parallelized block of code, once for each MCMC chain being run in parallel.</p>
 
 <!--- % See http://yihui.name/knitr/demo/child/ for documentation on the parent/child document system of knitr -->
 </div>
 </div>
 <h3>References</h3>
 <div id="refs" class="references">
-<div id="ref-Roberts_Sahu_1997">
-<p>Roberts, G. O., and S. K. Sahu. 1997. “Updating Schemes, Correlation Structure, Blocking and Parameterization for the Gibbs Sampler.” <em>Journal of the Royal Statistical Society: Series B (Statistical Methodology)</em> 59 (2): 291–317. doi:<a href="https://doi.org/10.1111/1467-9868.00070">10.1111/1467-9868.00070</a>.</p>
-</div>
-<div id="ref-Neal2003">
-<p>Neal, Radford M. 2003. “Slice Sampling.” <em>The Annals of Statistics</em> 31 (3): 705–41.</p>
-</div>
-<div id="ref-Watanabe_2010">
-<p>Watanabe, Sumio. 2010. “Asymptotic Equivalence of Bayes Cross Validation and Widely Applicable Information Criterion in Singular Learning Theory.” <em>Journal of Machine Learning Research</em> 11 (Dec): 3571–94.</p>
+<div id="ref-Andrieu_Doucet_Holenstein_2010">
+<p>Andrieu, Christophe, Arnaud Doucet, and Roman Holenstein. 2010. “Particle Markov Chain Monte Carlo Methods.” <em>Journal of the Royal Statistical Society: Series B (Statistical Methodology)</em> 72 (3): 269–342. doi:<a href="https://doi.org/10.1111/j.1467-9868.2009.00736.x">10.1111/j.1467-9868.2009.00736.x</a>.</p>
 </div>
 <div id="ref-Gelman_etal_2014">
 <p>Gelman, A., J. Hwang, and A. Vehtari. 2014. “Understanding Predictive Information Criteria for Bayesian Model.” <em>Statistics and Computing</em> 24 (6): 997–1016.</p>
@@ -1277,8 +1303,14 @@ samplesList &lt;-<span class="st"> </span><span class="kw">runMCMC</span>(Cmcmc_
 <div id="ref-Green_1995">
 <p>Green, Peter J. 1995. “Reversible Jump Markov Chain Monte Carlo Computation and Bayesian Model Determination.” <em>Biometrika</em> 82 (4). Oxford University Press: 711–32.</p>
 </div>
-<div id="ref-Andrieu_Doucet_Holenstein_2010">
-<p>Andrieu, Christophe, Arnaud Doucet, and Roman Holenstein. 2010. “Particle Markov Chain Monte Carlo Methods.” <em>Journal of the Royal Statistical Society: Series B (Statistical Methodology)</em> 72 (3): 269–342. doi:<a href="https://doi.org/10.1111/j.1467-9868.2009.00736.x">10.1111/j.1467-9868.2009.00736.x</a>.</p>
+<div id="ref-Neal2003">
+<p>Neal, Radford M. 2003. “Slice Sampling.” <em>The Annals of Statistics</em> 31 (3): 705–41.</p>
+</div>
+<div id="ref-Roberts_Sahu_1997">
+<p>Roberts, G. O., and S. K. Sahu. 1997. “Updating Schemes, Correlation Structure, Blocking and Parameterization for the Gibbs Sampler.” <em>Journal of the Royal Statistical Society: Series B (Statistical Methodology)</em> 59 (2): 291–317. doi:<a href="https://doi.org/10.1111/1467-9868.00070">10.1111/1467-9868.00070</a>.</p>
+</div>
+<div id="ref-Watanabe_2010">
+<p>Watanabe, Sumio. 2010. “Asymptotic Equivalence of Bayes Cross Validation and Widely Applicable Information Criterion in Singular Learning Theory.” <em>Journal of Machine Learning Research</em> 11 (Dec): 3571–94.</p>
 </div>
 </div>
 <div class="footnotes">
@@ -1314,7 +1346,7 @@ gitbook.start({
 "google": false,
 "linkedin": false,
 "weibo": false,
-"instapper": false,
+"instapaper": false,
 "vk": false,
 "all": ["facebook", "google", "twitter", "linkedin", "weibo", "instapaper"]
 },
@@ -1324,6 +1356,10 @@ gitbook.start({
 "size": 2
 },
 "edit": {
+"link": null,
+"text": null
+},
+"history": {
 "link": null,
 "text": null
 },
@@ -1342,7 +1378,7 @@ gitbook.start({
     var script = document.createElement("script");
     script.type = "text/javascript";
     var src = "";
-    if (src === "" || src === "true") src = "https://cdn.bootcss.com/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML";
+    if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
     if (location.protocol !== "file:" && /^https?:/.test(src))
       src = src.replace(/^https?:/, '');
     script.src = src;

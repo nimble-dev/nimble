@@ -34,7 +34,7 @@ cppHfileClass <- setRefClass('cppHfileClass',
                              	initialize = function(...){ifndefName <<- character(); callSuper(...)},
                                  writeFile = function(con = filename, dir = character()) {
                                      if(is.character(con)) {
-                                         con <- file.path(dir, paste0(con, '.h'))
+                                         con <- normalizePath(file.path(dir, paste0(con, '.h')), winslash = "\\", mustWork=FALSE)
                                          zz <- file(con, open = 'w')
                                          on.exit(close(zz))
                                      } else
@@ -66,7 +66,7 @@ cppCPPfileClass <- setRefClass('cppCPPfileClass',
                                		initialize = function(...){ifndefName <<- character(); callSuper(...)},
                                    writeFile = function(con = filename, dir = character()) {
                                        if(is.character(con)) {
-                                           con <- file.path(dir, paste0(con,'.cpp'))
+                                           con <- normalizePath(file.path(dir, paste0(con,'.cpp')), winslash = "\\", mustWork=FALSE)
                                            zz <- file(con, open = 'w')
                                            on.exit(close(zz))
                                        } else
@@ -201,8 +201,10 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        writeLines(contentLines, con = dynamicRegistrationsCppName)
                                    },
                                    compileStaticCode = function(dllName, cppName, showCompilerOutput) {
-                                       ssDllName <- file.path(dirName, paste0(dllName, .Platform$dynlib.ext))
-                                       ssdSHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', cppName, '-o', basename(ssDllName))
+                                       ssDllName <- normalizePath(file.path(dirName, paste0(dllName, .Platform$dynlib.ext)), winslash = "\\", mustWork=FALSE)
+                                       ssdSHLIBcmd <- paste(normalizePath(file.path(R.home('bin'), 'R'),
+                                                                          winslash = "\\", mustWork=FALSE),
+                                                            'CMD SHLIB', cppName, '-o', basename(ssDllName))
                                        if(!showCompilerOutput) {
                                            logFile <- paste0(dllName, ".log")
                                            ssdSHLIBcmd <- paste(ssdSHLIBcmd, ">", logFile)
@@ -234,19 +236,23 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        includes <- character()
                                        timeStamp <- format(Sys.time(), "%m_%d_%H_%M_%S")
 
-                                       mainfiles <- paste(basename(file.path(dirName, paste0(names,'.cpp'))), collapse = ' ')
+                                       mainfiles <- paste(basename(
+                                           normalizePath(file.path(dirName, paste0(names,'.cpp')), winslash = "\\", mustWork=FALSE)
+                                       ),
+                                       collapse = ' ')
 
-				       if(!file.exists(file.path(dirName, sprintf("Makevars%s", if(isWindows) ".win" else ""))) && NeedMakevarsFile) # should reverse the order here in the long term.
+				       if(!file.exists(normalizePath(file.path(dirName, sprintf("Makevars%s", if(isWindows) ".win" else "")), winslash = "\\", mustWork=FALSE)) && NeedMakevarsFile) # should reverse the order here in the long term.
 				           createMakevars(.useLib = .useLib, dir = dirName)
 
                                        dllName <- paste0(names[1], "_", timeStamp)
                                                                              
-                                       outputSOfile <<- file.path(dirName, paste0(dllName, .Platform$dynlib.ext))
+                                       outputSOfile <<- normalizePath(file.path(dirName, paste0(dllName, .Platform$dynlib.ext)), winslash = "\\", mustWork=FALSE)
 
                                        if(!inherits(Oincludes, 'uninitializedField')) { ## will only be uninitialized if writeFiles was skipped due to specialHandling (developer backdoor)
                                            includes <- c(includes, Oincludes) ## normal operation will have Oincludes.
                                        }
-                                       SHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', paste(c(mainfiles, includes), collapse = ' '), '-o', basename(outputSOfile))
+                                       SHLIBcmd <- paste(normalizePath(file.path(R.home('bin'), 'R'), winslash = "\\", mustWork=FALSE),
+                                                         'CMD SHLIB', paste(c(mainfiles, includes), collapse = ' '), '-o', basename(outputSOfile))
 
                                        cur = getwd()
                                        setwd(dirName)
@@ -302,7 +308,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                                               class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))
 
                                            } else {
-                                               nimbleUserNamespace$errorFile <- file.path(dirName, errorFile)
+                                               nimbleUserNamespace$errorFile <- normalizePath(file.path(dirName, errorFile), winslash = "\\", mustWork=FALSE)
                                                stop(structure(simpleError(paste0("Failed to create the shared library. Run 'printErrors()' to see the compilation errors.\n")),
                                                               class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))
                                            }

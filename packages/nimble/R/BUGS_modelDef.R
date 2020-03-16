@@ -180,8 +180,11 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
     buildSymbolTable()                    ## 
     genIsDataVarInfo()                    ## only the maxs is ever used, in newModel
     genVarNames()                         ## sets varNames <<- c(names(varInfo), names(logProbVarInfo))
+    warnRHSonlyDynIdx()                   ## warns user if RHS-only nodes used in indexing (inefficient)
     return(NULL)        
 })
+
+
 
 codeProcessIfThenElse <- function(code, constants, envir = parent.frame()) {
     codeLength <- length(code)
@@ -559,9 +562,26 @@ addMissingIndexingRecurse <- function(code, dimensionsList) {
     }
     if(code[[1]] != '[')   stop('something went wrong: expecting a [')
     ## code must be an indexing call, e.g. x[.....]
+
+    ## handle cases like covMat[1:5,1:5] <- eigen(constMat[1:5,])$vectors[1:5,1:5]%*%t(eigen(constMat[1:5,1:5])$vectors[,])
     if(length(code[[2]]) > 1 && code[[2]][[1]] == '$'){
       code[[2]][[2]] <- addMissingIndexingRecurse(code[[2]][[2]], dimensionsList)
       return(code)
+    }
+
+    ## handle cases like (x[1:2]%*%y[1:2, i])[1,1]
+    if(length(code[[2]]) > 1 && code[[2]][[1]] == '(') {
+        ## if(any(unlist(lapply(as.list(code[3:length(code)]), is.blank))))
+            ## stop(paste0('addMissingIndexingRecurse: the model definition includes the code ', deparse(code), ', which contains missing indices. When indexing expressions (as opposed to explicit variables), all indices must be provided.'), call. = FALSE)
+        code[[2]][[2]] <- addMissingIndexingRecurse(code[[2]][[2]], dimensionsList)
+        ## handle missing indexes within the indexing of an expression, e.g.,
+        ## the 'k[ , 1]' in (x[1:2,1:2]%*%y[1:2,1:2])[k[ , 1], ]
+        len <- length(code)
+        if(len > 2) 
+            for(idx in 3:len)
+                if(is.call(code[[idx]]))
+                    code[[idx]] <- addMissingIndexingRecurse(code[[idx]], dimensionsList)
+        return(code)
     }
     if(!any(code[[2]] == names(dimensionsList))) {
       ## dimension information was NOT provided for this variable
@@ -2696,6 +2716,39 @@ modelDefClass$methods(genIsDataVarInfo = function() {
 modelDefClass$methods(genVarNames = function() {
     ## uses varInfo and logProbVarInfo to set field: varNames
     varNames <<- c(names(varInfo), names(logProbVarInfo))
+})
+
+modelDefClass$methods(warnRHSonlyDynIdx = function() {
+    ## Warn if dynamic indexing involves non-constant RHS-only nodes as this causes
+    ## additional dependencies and slower computations.
+    for(i in seq_along(declInfo)) {
+        decl <- declInfo[[i]]
+        if(exists('dynamicIndexInfo', decl) && length(decl[['dynamicIndexInfo']])) {
+            ## Determine vars used in dynamic indexing.
+            vars <- lapply(decl[['dynamicIndexInfo']], function(x) {
+                if(exists('indexCode', x))
+                    return(all.vars(x[['indexCode']]))
+            })
+            vars <- unique(unlist(vars))
+            vars <- vars[vars %in% decl$rhsVars]
+            ## Evaluate indexing to determine nodes used in dynamic indexing.
+            nr <- min(50, nrow(decl$unrolledIndicesMatrix))  # avoid doing full expansion for speed
+            nodes <- lapply(seq_along(vars), function(idx) {
+                parentNode <- decl$symbolicParentNodesReplaced[[which(vars[idx] == decl$rhsVars)]]
+
+                return(sapply(seq_len(nr), function(row) {
+                    deparse(eval(substitute(substitute(e, 
+                                                       as.list(decl$unrolledIndicesMatrix[row, ])),
+                                                       list(e = parentNode))))
+                }))
+            })
+            nodes <- unique(unlist(nodes))
+            nodes <- nodes[nodes %in% maps$nodeNamesRHSonly]
+            if(length(nodes))
+                warning("Detected use of non-constant indexes: ", paste(nodes, collapse = ', '), ifelse(nr == 50, ", ...", "."), " For computational efficiency we recommend specifying these in 'constants'.")
+        }
+    }
+    return(NULL)
 })
 
 modelDefClass$methods(buildSymbolTable = function() {

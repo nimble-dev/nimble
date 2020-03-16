@@ -742,7 +742,7 @@ test_mcmc_internal <- function(Rmodel, ##data = NULL, inits = NULL,
 }
 
 
-test_filter <- function(example, model, data = NULL, inits = NULL,
+test_filter <- function(example, model, data = list(), inits = list(),
                         verbose = nimbleOptions('verbose'), numItsR = 3, numItsC = 10000,
                         basic = TRUE, exactSample = NULL, results = NULL, resultsTolerance = NULL,
                         numItsC_results = numItsC,
@@ -808,7 +808,10 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
             if(!is.null(filterControl))  Rfilter <- buildEnsembleKF(Rmodel, nodes = latentNodes, control = filterControl)
             else Rfilter <- buildEnsembleKF(Rmodel, nodes = latentNodes, control = list(saveAll = TRUE))
         }
-
+        saveAll <- TRUE 
+        if(!is.null(filterControl) && exists('saveAll', filterControl))
+            saveAll <- filterControl$saveAll
+        
         if(doCpp) {
             Cfilter <- compileNimble(Rfilter, project = Rmodel, dirName = dirName)
         }
@@ -816,7 +819,7 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
         if(basic) {
             ## do short runs and compare R and C filter output
             if(doR) {
-                set.seed(seed);
+                set.seed(seed)
                 RfilterOut <- Rfilter$run(numItsR)
                 if(filterType == "ensembleKF"){
                     RmvSample  <- nfVar(Rfilter, 'mvSamples')
@@ -924,6 +927,10 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
                     samplesToWeightsMatch <- rep(dim(C_weights)[2], dim(C_samples)[2])
                     latentIndices <- match(latentNames, dimnames(C_samples)[[2]])
                     latentSampLength <- length(latentNames)
+                    if(!saveAll) {  ## added without careful checking; may not be robust
+                        latentIndices <- latentIndices[!is.na(latentIndices)]
+                        latentSampLength <- 1
+                    }
                     latentDim <- latentSampLength/dim(C_weights)[2]
                     samplesToWeightsMatch[latentIndices] <- rep(1:dim(C_weights)[2], each = latentDim )
                 }
@@ -941,7 +948,11 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
                             if(!grepl(varName, "[", fixed = TRUE))
                                 samplesNames <- gsub("\\[.*\\]", "", samplesNames)
                             matched <- which(varName == samplesNames)
-                            diff <- abs(postResult[matched] - results[[metric]][[varName]])
+                            if(!saveAll) {  ## added without careful checking; may not be robust
+                                diff <- abs(postResult[matched] - results[[metric]][[varName]][length(results[[metric]][[varName]])])
+                            } else {
+                                diff <- abs(postResult[matched] - results[[metric]][[varName]])
+                            }
                             for(ind in seq_along(diff)) {
                                 strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
                                 expect_lt(diff[ind], resultsTolerance[[metric]][[varName]][ind],

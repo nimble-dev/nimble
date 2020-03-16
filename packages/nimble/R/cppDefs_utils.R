@@ -35,4 +35,4 @@ function(file, path = IncludeCodeDir)
      sprintf("<nimble/%s>", file)
 }
 
-makeDefaultDirName <- function()  file.path(tempdir(), 'nimble_generatedCode')
+makeDefaultDirName <- function()  normalizePath(file.path(tempdir(), 'nimble_generatedCode'), winslash = "\\", mustWork=FALSE)

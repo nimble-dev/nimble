@@ -1806,46 +1806,42 @@ makeSingleIndexAccessCodeNames <- function(baseName) {
 }
 
 handleScaleAndRateForGamma <- function(code){
-    ## This is moderately klugey.  For invgamma and gamma, what happens below works because
-    ## the argument for which there is a default is also the non-canonical param.
-    ## For ddexp, trickier logic is needed.
-
-    ## also handles core R dexp, as well as ddexp, and dinvgamma
-    scaleArg <- code$scale
-    rateArg <- code$rate
-    if(is.null(scaleArg) && is.null(rateArg))	stop('neither scale nor rate defined in dgamma, invgamma, dexp, or ddexp')
-    codeName <- deparse(code[[1]])
-    dist <- substring(codeName, 2, nchar(codeName))
-    if(dist == 'invgamma' || dist == 'sqrtinvgamma') {  ## For [drpq]invgamma
-            if(is.null(rateArg)) {
-            rateArg <- substitute(1.0/(A), list(A = code$scale)) 
-            code$scale <- rateArg
-            names(code)[which(names(code) == 'scale')] <- 'rate'  # to preserve correct order
-        }
-        code$scale <- NULL
-    } else if(dist == 'dexp') { ## This is for [drpq]dexp
-        ## The logic here is trickier.  scale has a default value and is canonical (what is needed for C).
-        ## If rate was provided, then by the time we are here, matchFunctions has been used (matchAndFill.call),
-        ## so there will also be a scale, since it has a default
-        setScaleArg <- FALSE
-        if(is.null(scaleArg)) setScaleArg <- TRUE ## scale is not expected to be null ever (see previous comment), but this is defensive.
-        if(!is.null(scaleArg) & !is.null(rateArg)) setScaleArg <- TRUE ## Both are there, so set scale from the provided rate
-        if(setScaleArg) {
-            code$scale <- NULL
-            scaleArg <- substitute(1.0/(A), list(A = code$rate)) 
-            code$rate <- scaleArg
-            names(code)[which(names(code) == 'rate')] <- 'scale'  # to preserve correct order
-        }
-        code$rate <- NULL
-    } else {  ## dgamma: convert rate to scale
-        if(is.null(scaleArg)) {
-            scaleArg <- substitute(1.0/(A), list(A = code$rate)) 
-            code$rate <- scaleArg
-            names(code)[which(names(code) == 'rate')] <- 'scale'  # to preserve correct order
-        }
-        code$rate <- NULL
+  ## also handles core R dexp, as well as ddexp, and dinvgamma
+  scaleArg <- code$scale
+  rateArg <- code$rate
+  if(is.null(scaleArg) && is.null(rateArg))	stop('neither scale nor rate defined in dgamma, invgamma, dexp, or ddexp')
+  codeName <- deparse(code[[1]])
+  dist <- substring(codeName, 2, nchar(codeName))
+  if(dist == 'invgamma' || dist == 'sqrtinvgamma') {  ## For [drpq]invgamma
+    if(is.null(rateArg)) {
+      rateArg <- substitute(1.0/(A), list(A = code$scale)) 
+      code$scale <- rateArg
+      names(code)[which(names(code) == 'scale')] <- 'rate'  # to preserve correct order
     }
-    return(code)
+    code$scale <- NULL
+  } else if(dist == 'dexp') { ## This is for [drpq]dexp
+    ## The logic here is trickier.  scale has a default value and is canonical (what is needed for C).
+    ## If rate was provided, then by the time we are here, matchFunctions has been used (matchAndFill.call),
+    ## so there will also be a scale, since it has a default
+    setScaleArg <- FALSE
+    if(is.null(scaleArg)) setScaleArg <- TRUE ## scale is not expected to be null ever (see previous comment), but this is defensive.
+    if(!is.null(scaleArg) & !is.null(rateArg)) setScaleArg <- TRUE ## Both are there, so set scale from the provided rate
+    if(setScaleArg) {
+      code$scale <- NULL
+      scaleArg <- substitute(1.0/(A), list(A = code$rate)) 
+      code$rate <- scaleArg
+      names(code)[which(names(code) == 'rate')] <- 'scale'  # to preserve correct order
+    }
+    code$rate <- NULL
+  } else { # dgamma
+    if(is.null(scaleArg)) {
+      scaleArg <- substitute(1.0/(A), list(A = code$rate)) 
+      code$rate <- scaleArg
+      names(code)[which(names(code) == 'rate')] <- 'scale'  # to preserve correct order
+    }
+    code$rate <- NULL
+  }
+  return(code)
 }
 
 handleScaleAndRateForExpNimble <- function(code){

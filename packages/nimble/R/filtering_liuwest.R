@@ -111,11 +111,28 @@ LWStep <- nimbleFunction(
   setup = function(model, mvWSamples, mvEWSamples, nodes, paramVarDims, iNode, paramNodes, paramVars, names, saveAll, d, silent = FALSE) {
     notFirst <- iNode != 1
     prevNode <- nodes[if(notFirst) iNode-1 else iNode]
-    prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
+
+    modelSteps <- particleFilter_splitModelSteps(model, nodes, iNode, notFirst)
+    prevDeterm <- modelSteps$prevDeterm
+    calc_thisNode_self <- modelSteps$calc_thisNode_self
+    calc_thisNode_deps <- modelSteps$calc_thisNode_deps
+    
     thisNode <- nodes[iNode]
     parDeterm <- model$getDependencies(paramNodes, determOnly=TRUE)
-    thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
-    thisData   <- model$getDependencies(thisNode, dataOnly = TRUE)
+    ## Remove any element of parDeterm that is not needed by prevDeterm, calc_thisNode_self or calc_thisNode_deps
+    nodes_that_matter <- c(prevDeterm, calc_thisNode_self, calc_thisNode_deps)
+    if(length(parDeterm) > 0) {
+        thisDeterm_is_intermediate <- logical(length(parDeterm))
+        for(i in seq_along(parDeterm)) {
+            theseDeps <- model$getDependencies(parDeterm[i])
+            thisDeterm_is_intermediate[i] <- !(parDeterm[i] %in% nodes_that_matter) & any(theseDeps %in% nodes_that_matter)
+        }
+        parDeterm <- parDeterm[thisDeterm_is_intermediate]
+    }
+    parAndPrevDeterm <- c(parDeterm, prevDeterm)
+    parAndPrevDeterm <- model$expandNodeNames(parAndPrevDeterm, sort = TRUE) ## Ensure sorting, because a node in parDeterm that is also in prevDeterm will have been removed from parDeterm, but that is where it potentially comes first.
+    
+
     isLast <- (iNode == length(nodes))
             
     t <- iNode  # current time point
@@ -186,13 +203,12 @@ LWStep <- nimbleFunction(
        for(i in 1:m) {
          copy(mvWSamples, model, prevXName, prevNode, row=i)
          values(model, paramNodes) <<- meanVec[,i]
-         calculate(model, parDeterm) 
-         calculate(model, prevDeterm) 
+         calculate(model, parAndPrevDeterm) 
          for(j in 1:numLatentNodes){
            setMeanList[[j]]$run()
          }
-         calculate(model, thisDeterm)
-         auxWts[i] <- exp(calculate(model, thisData))
+         calculate(model, calc_thisNode_self)
+         auxWts[i] <- exp(calculate(model, calc_thisNode_deps))
          if(is.nan(auxWts[i])) auxWts[i] <- 0 #check for ok param values
          preWts[i] <- exp(log(auxWts[i]))*wts[i] #first resample weights
        }
@@ -228,11 +244,10 @@ LWStep <- nimbleFunction(
          simulate(model, paramNodes)
          tmpPars[,i] <- values(model,paramNodes)
        }
-      calculate(model, parDeterm) 
-      simulate(model, thisNode)
+      calculate(model, parAndPrevDeterm) 
+      simulate(model, calc_thisNode_self)
       copy(model, mvWSamples, nodes = thisNode, nodesTo = thisXName, rowTo = i)
-      calculate(model, thisDeterm)
-      l[i]  <- exp(calculate(model, thisData))
+      l[i]  <- exp(calculate(model, calc_thisNode_deps))
       if(is.nan(l[i])) l[i] <- 0
       #rescale weights by pre-sampling weight
       if(notFirst)
@@ -319,9 +334,13 @@ LWparFunc <- nimbleFunction(
 #'
 #' @param model A NIMBLE model object, typically representing a state 
 #'  space model or a hidden Markov model
-#' @param nodes A character vector specifying the latent model nodes 
-#'  over which the particle filter will stochastically integrate over to
-#'  estimate the log-likelihood function.  All provided nodes must be stochastic, and must come from the same variable in the model. 
+#' @param nodes  A character vector specifying the latent model nodes 
+#'  over which the particle filter will stochastically integrate to
+#'  estimate the log-likelihood function.  All provided nodes must be stochastic.
+#'  Can be one of three forms: a variable name, in which case all elements in the variable
+#'  are taken to be latent (e.g., 'x'); an indexed variable, in which case all indexed elements are taken
+#'  to be latent (e.g., 'x[1:100]' or 'x[1:100, 1:2]'); or a vector of multiple nodes, one per time point,
+#'  in increasing time order (e.g., c("x[1:2, 1]", "x[1:2, 2]", "x[1:2, 3]", "x[1:2, 4]")).
 #' @param params A character vector specifying the top-level parameters to estimate the posterior distribution of. 
 #'   If unspecified, parameter nodes are specified as all stochastic top level nodes which
 #'  are not in the set of latent nodes specified in \code{nodes}.
@@ -388,25 +407,8 @@ buildLiuWestFilter <- nimbleFunction(
     if(is.null(saveAll)) saveAll <- FALSE
     if(is.null(d)) d <- .99
     if(is.null(initModel)) initModel <- TRUE
-    #get latent state info
-    varName <- sapply(nodes, function(x){return(model$getVarNames(nodes = x))})
-    if(length(unique(varName))>1){
-      stop("All latent nodes must come from same variable.")
-    }
-    varName <- varName[1]
-    info <- model$getVarInfo(varName)
-    latentDims <- info$nDim
-    if(is.null(timeIndex)){
-      timeIndex <- which.max(info$maxs)
-      timeLength <- max(info$maxs)
-      if(sum(info$maxs==timeLength)>1) # check if multiple dimensions share the max index size
-        stop("Unable to determine which dimension indexes time. 
-             Specify manually using the 'timeIndex' control list argument.")
-    } else{
-      timeLength <- info$maxs[timeIndex]
-    }
-    nodes <- paste(info$varName,"[",rep(",", timeIndex-1), 1:timeLength,
-                   rep(",", info$nDim - timeIndex),"]", sep="")
+    ## get latent state info
+    nodes <- findLatentNodes(model, nodes, timeIndex)
     latentVars <- model$getVarNames(nodes = nodes)
     
     # if unspecified, parameter nodes are specified as all stochastic top level nodes which

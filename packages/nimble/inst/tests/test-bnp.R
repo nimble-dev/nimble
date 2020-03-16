@@ -1283,7 +1283,9 @@ test_that("testing multivariate normal mixture models with CRP", {
     lambda ~ dgamma(1, 1)
   })
   n <- 100
-  Consts <- list(n = n, S0 = diag(1, 2), mu0=c(0,0), R0 = diag(1, 2))
+  ## 2020-03-09: Modified prior because now with conjugate sampling, tight prior and
+  ## conjugate updates for Sigma cause slow burnin.
+  Consts <- list(n = n, S0 = diag(100, 2), mu0=c(0,0), R0 = diag(1, 2))
   Sigma <- array(0, c(2,2,n))
   for(i in 1:n)
     Sigma[, , i] <- matrix(c(1, 0, 0, 1), 2, 2)
@@ -1326,11 +1328,13 @@ test_that("testing multivariate normal mixture models with CRP", {
   
   
   ## 4-dimensional normal kernel with unknown mean and unknown variance
+
+  ## Chris changed S0 prior so not so informative and set df=6 instead of 4 (the latter implies no mean)
   code <- nimbleCode({
     xi[1:n] ~ dCRP(alpha, n)
     for(i in 1:n){
       mu[i, 1:4] ~ dmnorm(mu0[1:4], cov = S0[1:4, 1:4])
-      Sigma[1:4, 1:4, i] ~ dinvwish(S = R0[1:4, 1:4], df = 4)
+      Sigma[1:4, 1:4, i] ~ dinvwish(S = R0[1:4, 1:4], df = 6)
       SigmaAux[1:4, 1:4, i] <- Sigma[1:4, 1:4, xi[i]] / lambda  
       y[i, 1:4] ~ dmnorm(mu[xi[i], 1:4],  cov = SigmaAux[1:4, 1:4, i] )
     }
@@ -1338,7 +1342,7 @@ test_that("testing multivariate normal mixture models with CRP", {
     lambda ~ dgamma(1, 1)
   })
   n <- 100
-  Consts <- list(n = n, S0 = diag(1, 4), mu0=c(0,0,0,0), R0 = diag(1, 4))
+  Consts <- list(n = n, S0 = diag(100, 4), mu0=c(0,0,0,0), R0 = diag(1, 4))
   Sigma <- array(0, c(4,4,n))
   for(i in 1:n)
     Sigma[, , i] <- diag(1, 4)
@@ -2595,6 +2599,24 @@ test_that("Testing conjugacy detection with models using CRP", {
   mcmc=buildMCMC(conf)
   expect_equal(nimble:::checkCRPconjugacy(m, 'xi[1:4]'), "conjugate_dnorm_invgamma_dnorm")
   expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_invgamma_dnorm")
+
+  ## dnorm_invgamma; we skip conjugacy if data nodes have scaled variance
+  code = nimbleCode({
+    for(i in 1:4) {
+      s2tilde[i] ~ dinvgamma(a,b)
+      mu[i] ~ dnorm(0, var = s2tilde[i]/kappa)
+      s2[i] <- lambda * s2tilde[xi[i]]
+      y[i] ~ dnorm(mu[xi[i]], var = s2[i])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+    kappa ~ dgamma(1, 1)
+    a ~ dgamma(1, 1)
+    b ~ dgamma(1, 1)
+  })
+  m = nimbleModel(code, data = list(y = rnorm(4)),
+                  inits = list(xi = rep(1,4), mu=rnorm(4), s2=rinvgamma(4, 1,1), a=1, b=1, kappa=2))
+  expect_equal(nimble:::checkCRPconjugacy(m, 'xi[1:4]'), NULL)
+
   
   ## model with deterministic nodes
   code = nimbleCode({
@@ -3633,7 +3655,7 @@ data = list(y = matrix(rnorm(16), 4, 4))
 constants = list(mu0 = rep(0,4), Cov0 = diag(10, 4), Sigma0 = diag(1, 4))
 
 testBUGSmodel(example = 'test13', dir = "",
-              model = model, data = data, inits = inits, constants = constants,
+              model = model, data = data, inits = c(inits, constants),
               useInits = TRUE)
 
 ## testing misspecification of dimension in a model

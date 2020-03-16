@@ -5,6 +5,6 @@ language:
     chapter_name: "Chapter "
 delete_merged_file: true
       
-rmd_files: ["index.Rmd", "chapter_WelcomeToNimble.Rmd", "chapter_LightningIntroduction.Rmd", "chapter_MoreIntroduction.Rmd", "chapter_InstallingNimble.Rmd", "chapter_WritingModels.Rmd", "chapter_BuildingModels.Rmd", "chapter_MCMC.Rmd", "chapter_OtherAlgorithms.Rmd", "chapter_Spatial.Rmd", "chapter_BNP.Rmd", "chapter_ProgrammingOverview.Rmd", "chapter_RCfunctions.Rmd", "chapter_UserDefined.Rmd", "chapter_UsingModels.Rmd", "chapter_DataStructures.Rmd", "chapter_WritingNimbleFunctions.Rmd"]
+rmd_files: ["index.Rmd", "chapter_WelcomeToNimble.Rmd", "chapter_LightningIntroduction.Rmd", "chapter_MoreIntroduction.Rmd", "chapter_InstallingNimble.Rmd", "chapter_WritingModels.Rmd", "chapter_BuildingModels.Rmd", "chapter_MCMC.Rmd", "chapter_OtherAlgorithms.Rmd", "chapter_Spatial.Rmd", "chapter_BNP.Rmd", "chapter_ProgrammingOverview.Rmd", "chapter_RCfunctions.Rmd", "chapter_UserDefined.Rmd", "chapter_UsingModels.Rmd", "chapter_DataStructures.Rmd", "chapter_WritingNimbleFunctions.Rmd"] 
 
 
