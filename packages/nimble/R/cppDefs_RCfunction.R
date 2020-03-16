@@ -96,7 +96,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
 
                                      ## to be wrapped in conditional
                                      if(isTRUE(RCfunProc$RCfun$enableDerivs) & isTRUE(nimbleOptions('experimentalEnableDerivs')))
-                                         ADtemplateFun <<- makeTypeTemplateFunction(name, .self)
+                                         ADtemplateFun <<- makeTypeTemplateFunction(name, .self)$fun
                                      
                                      invisible(NULL)
                                  },
