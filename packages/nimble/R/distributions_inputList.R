@@ -224,9 +224,9 @@ distributionsInputList <- list(
                                 'scale = calc_dmnormAltParams(cholesky, prec_param, 0)'),
                    types    = c('value = double(1)', 'mu = double(1)', 'cholesky = double(2)', 'df = double(0)', 'prec = double(2)', 'scale = double(2)')),
     
-    dlkj_corr_choleskyesky  = list(BUGSdist = 'dlkj_corr_choleskyesky(eta)',
-                   Rdist    = 'dlkj_corr_choleskyesky(eta)',
-                   types    = c('value = double(2)', 'eta = double(0)')),
+    dlkj_corr_cholesky  = list(BUGSdist = 'dlkj_corr_cholesky(eta, p)',
+                   Rdist    = 'dlkj_corr_cholesky(eta, p)',
+                   types    = c('value = double(2)')),
 
     dwish   = list(BUGSdist = 'dwish(R, df, S, cholesky, scale_param)',
                    Rdist    = c('dwish_chol(cholesky = chol(R), df, scale_param = 0)',

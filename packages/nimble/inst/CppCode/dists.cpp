@@ -536,6 +536,129 @@ SEXP C_rinvwish_chol(SEXP chol, SEXP df, SEXP scale_param)
 }
 
 
+double dlkj_corr_cholesky(double* x, double eta, int p, int give_log) {
+  if (R_IsNA(x, p*p) || R_IsNA(eta) || R_IsNA(p))
+    return NA_REAL;
+#ifdef IEEE_754
+  if (R_isnancpp(x, p*p) || R_isnancpp(eta) || R_isnancpp(p))
+    return R_NaN;
+#endif
+
+  if(eta <= 0.0) ML_ERR_return_NAN;
+
+  if(!R_FINITE_VEC(x, p*p)) return R_D__0;
+
+  double dens = 0.0;
+  int counter = 0;
+  for(int k = 2; k <= p; k++) {
+    counter += p+1;
+    dens += (p-k+2*eta-2) * log(x[counter]);
+  }
+
+  return give_log ? dens : exp(dens);
+}
+
+
+SEXP C_dlkj_corr_cholesky(SEXP x, SEXP eta, SEXP p, SEXP return_log) 
+// Calculates density of LKJ density of the Cholesky factor of a correlation matrix.
+// 'x' matrix should be given as a numeric vector in column-major order
+// including all n x n elements; lower-triangular elements are ignored.
+// (in fact for density calculations, only the diagonal elements are used).
+{
+  if(!Rf_isMatrix(x) || !Rf_isReal(x))
+    RBREAK("Error (C_dlkj_corr_cholesky): 'x' must be a real matrix.\n")
+  if(!Rf_isReal(eta) || !Rf_isInteger(p) || !Rf_isLogical(return_log))
+    RBREAK("Error (C_dlkj_corr_cholesky): invalid input type for one of the arguments.\n");
+
+  int give_log = (int) LOGICAL(return_log)[0];
+  double c_eta = REAL(eta)[0];
+  int c_p = INTEGER(p)[0];
+
+  int* dims = INTEGER(Rf_getAttrib(x, R_DimSymbol));
+  if(dims[0] != dims[1] || dims[0] != c_p)
+    RBREAK("Error (C_dlkj_corr_cholesky): 'x' must be a square matrix of dimension 'p' by 'p'.\n");
+
+  double* c_x = REAL(x);
+ 
+  SEXP ans;
+  PROTECT(ans = Rf_allocVector(REALSXP, 1));  
+  REAL(ans)[0] = dlkj_corr_cholesky(c_x, c_eta, c_p, give_log); 
+  UNPROTECT(1);
+  return ans;
+}
+
+void rlkj_corr_cholesky(double *ans, double eta, int p) {
+  // Using the onion method, with incremental Cholesky factorization, following
+  // Section 3.2 of Lewandowski et al. (2009) J of Multivariate Analysis 100:1989-2001.
+  // Since we are generating Cholesky, not correlation, we do not need to compute
+  // the Cholesky (A in their notation) at each stage. Rather, the new column of
+  // the Cholesky factor is c(w, sqrt(1-y))
+  int i, j;
+  double* w = new double[p];
+  double y, tmp, sumSquares, beta;
+  
+#ifdef IEEE_754
+  if (R_isnancpp(eta) || eta <= 0.0) {
+    for(j = 0; j < p*p; j++) 
+      ans[j] = R_NaN;
+    return;
+  }
+#endif
+
+  // Since C++ is row-major, ans[i,j] is ans[j*p+i] (0-indexed)
+  ans[0] = 1.0;
+  beta = eta + (p-2)/2;
+  tmp = 2*rbeta(beta, beta) - 1.0;  // r12
+
+  ans[p] = tmp;   // p or 1?
+  ans[p+1] = sqrt(1-tmp*tmp);
+  
+  for(j = 2; j < p; j++) {
+    beta = beta - 0.5;
+    y = rbeta(j/2.0, beta);
+    
+    // Generate scaling of random vector on j-dim hypersphere.
+    sumSquares = 0.0;
+    for(i = 0; i < j; i++) {
+      w[i] = norm_rand();
+      sumSquares += w[i]*w[i];
+    }
+
+    // Fill elements of next column of upper triangular Cholesky
+    tmp = sqrt(y) / sqrt(sumSquares);
+    for(i = 0; i < j; i++) 
+      ans[j*p+i] = w[i] * tmp; // i*p+j
+    ans[j*p+j] = sqrt(1-y);  // j*p+j
+    
+  }
+  delete [] w;
+
+}
+
+
+
+SEXP C_rlkj_corr_cholesky(SEXP eta, SEXP p) 
+// generates single LKJ draw of the Cholesky factor of a correlation matrix.
+// Upper triangular factor is returned.
+{
+  if(!Rf_isReal(eta) || !Rf_isInteger(p))
+    RBREAK("Error (C_rlkj_corr_cholesky): invalid input type for one of the arguments.\n");
+
+  int c_p = INTEGER(p)[0];
+  double c_eta = REAL(eta)[0];
+
+  GetRNGstate(); 
+
+  SEXP ans;
+  PROTECT(ans = Rf_allocVector(REALSXP, c_p*c_p));  
+  rlkj_corr_cholesky(REAL(ans), c_eta, c_p);
+  
+  PutRNGstate();
+  UNPROTECT(1);
+  return ans;
+}
+
+
 double ddirch(double* x, double* alpha, int K, int give_log) 
 // scalar function that can be called directly by NIMBLE with same name as in R
 {

@@ -643,6 +643,7 @@ rmvt_chol <- function(n = 1, mu, cholesky, df, prec_param = TRUE) {
 #' 
 #' @param x upper-triangular Cholesky factor of a correlation matrix.
 #' @param eta shape parameter.
+#' @param p size of the correlation matrix (number of rows and columns); required because random generation function has no information about dimension of matrix to generate without this argument.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Christopher Paciorek
 #' @details See Stan Development Team for mathematical details. 
@@ -651,25 +652,29 @@ rmvt_chol <- function(n = 1, mu, cholesky, df, prec_param = TRUE) {
 #' @seealso \link{Distributions} for other standard distributions
 #' 
 #' @examples
-#' eta <- 5
-#' x <- rlkj_corr_cholesky(eta)
-#' dlkj_corr_cholesky(x, eta)
+#' eta <- 3
+#' x <- rlkj_corr_cholesky(eta, 5)
+#' dlkj_corr_cholesky(x, eta, 5)
 #' 
 NULL
 
 #' @rdname LKJ
 #' @export
-dlkj_corr_cholesky <- function(x, eta, log = FALSE) {
+dlkj_corr_cholesky <- function(x, eta, p, log = FALSE) {
   # x should be upper triangular
-  # FIXME: allow x to be lower tri
-    .Call(C_dlkj_corr_cholesky, as.double(x), as.double(eta), as.logical(log))
+                                        # FIXME: allow x to be lower tri
+    if (storage.mode(x) != "double") 
+        storage.mode(x) <- "double"
+    .Call(C_dlkj_corr_cholesky, x, as.double(eta), as.integer(p), as.logical(log))
 }
 
 #' @rdname LKJ
 #' @export
-rlkj_corr_cholesky <- function(n = 1, eta) {
+rlkj_corr_cholesky <- function(n = 1, eta, p) {
     if(n != 1) warning('rlkj_corr_cholesky only handles n = 1 at the moment')
-    .Call(C_rlkj_corr_cholesky, as.double(eta))
+    out <- .Call(C_rlkj_corr_cholesky, as.double(eta), as.integer(p))
+    if(!is.null(out)) out <- matrix(out, nrow = p, ncol = p)
+    return(out)
 }
 
 #' Interval calculations 
