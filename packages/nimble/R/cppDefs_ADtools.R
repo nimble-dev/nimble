@@ -115,7 +115,7 @@ makeTypeTemplateFunction <- function(newName,
     newCppFunDef$template <- cppVarFull(name = character(), baseType = 'template', templateArgs = list('class TYPE_'))
     ignore <- derivControl[['nonTemplateArgs']]
     if(is.null(ignore)) ignore <- character()
-    newCppFunDef$args <- symbolTable2templateTypeSymbolTable(.self$args, addRef = TRUE, ignore = ignore)
+    newCppFunDef$args <- symbolTable2templateTypeSymbolTable(.self$args, addRef = FALSE, ignore = ignore) ## addRef = TRUE breaks if a literal number is passed.
     if(useRecordingInfo) {
       recordingInfoArg <- cppVarFull(baseType = "nimbleCppADrecordingInfoClass", name = "recordingInfo_")
       newCppFunDef$args$addSymbol(recordingInfoArg)

@@ -719,6 +719,12 @@ exprClasses_modifyForAD <- function(code, symTab,
       eval(call(handler, code, symTab, workEnv))
     if(workEnv$RsymTab$symbolExists(code$name, TRUE)) ## Could be a nimbleFunction class method
       modifyForAD_recordable(code, symTab, workEnv)
+    else {
+      if(!is.null(code$aux)) {
+        if(isTRUE(code$aux[['enableDerivs']])) ## This is added in sizeRCfunction
+          modifyForAD_RCfunction(code, symTab, workEnv)
+      }
+    }
   }
   if(is.null(code$caller)) { ## It is the top level `{`
     if(identical(code$name, "{")) {
@@ -749,6 +755,11 @@ exprClasses_modifyForAD <- function(code, symTab,
       }
     }
   }  
+  invisible(NULL)
+}
+
+modifyForAD_RCfunction <- function(code, symTab, workEnv) {
+  code$name <- paste0(code$name, "< CppAD::AD<double> >")
   invisible(NULL)
 }
 
@@ -865,9 +876,12 @@ updateADproxyModelMethods <- function(.self) {
         thisDef$code$objectDefs$setParentST(parentST)
         thisDef$code$cppADCode <- 2L 
         ADtypeDefs <- symbolTable()
+        ADtypeDefs$addSymbol(cppVarFull(baseType = "typedef typename EigenTemplateTypes<CppAD::AD<double> >::typeEigenMapStrd", name = "EigenMapStrd") )
         ADtypeDefs$addSymbol(cppVarFull(baseType = "typedef Matrix<CppAD::AD<double>, Dynamic, Dynamic>", name = "MatrixXd") )
         thisDef$code$typeDefs <- ADtypeDefs
-##        exprClasses_modifyForAD(thisDef$code$code, thisDef$code$objectDefs)
+        workEnv <- new.env()
+        workEnv$RsymTab <- thisDef$RCfunProc$compileInfo$newLocalSymTab
+        exprClasses_modifyForAD(thisDef$code$code, thisDef$code$objectDefs, workEnv)
     }
     classST <- .self$objectDefs
     classSymNames <- classST$getSymbolNames()

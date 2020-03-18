@@ -267,8 +267,8 @@ cppOutputFor <- function(code, symTab) {
 }
 
 cppOutputIfWhile <- function(code, symTab) {
-    if(identical(nimbleUserNamespace$cppADCode, 2L))
-        stop("Cannot use 'if' or 'while' statements in derivative-enabled nimbleFunctions.")
+    ## if(identical(nimbleUserNamespace$cppADCode, 2L))
+    ##     stop("Cannot use 'if' or 'while' statements in derivative-enabled nimbleFunctions.")
     part1 <- paste0(code$name,'(', nimGenerateCpp(code$args[[1]], symTab), ')')
     part2 <- nimGenerateCpp(code$args[[2]], symTab)
     if(is.list(part2)) {
