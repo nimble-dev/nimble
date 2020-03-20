@@ -171,7 +171,6 @@ rlkjcorr_rethinking <- function ( n , K , eta = 1 ) {
         if(K > 2) for (m in 2:(K - 1)) {
             alpha <- alpha - 0.5
             y <- rbeta(1, m / 2, alpha)
-            
             # Draw uniformally on a hypersphere
             z <- rnorm(m, 0, 1)
             z <- z / sqrt(crossprod(z)[1])
@@ -192,21 +191,19 @@ rlkjcorr_rethinking <- function ( n , K , eta = 1 ) {
 }
 
 
-test_that("Test that dlkj calculate and simulate are correct in nodeFunctions", {
-    eta <- 3
-    p <- 5
+test_that("Test that dlkj calculate and simulate are correct in nodeFunctions and nimbleFunctions", {
     set.seed(1)
-    U <- rlkj_corr_cholesky(1, eta, p)
-    truth <- (eta-1)*logdet(crossprod(U))
+    U <- rlkj_corr_cholesky(1, eta, k)
+    truth <- sum(log(diag(U)) * (k-(1:k)+2*eta-2))
     lkj_code <- nimbleCode({
-        U[1:p,1:p] ~ dlkj_corr_cholesky(eta = eta, p = p)
+        U[1:k,1:k] ~ dlkj_corr_cholesky(eta = eta, p = k)
     })
-    lkj_model <- nimbleModel(lkj_code, constants = list(eta = eta, p = p))
+    lkj_model <- nimbleModel(lkj_code, constants = list(eta = eta, k = k))
     lkj_model$U <- U
     expect_equal(lkj_model$calculate(), truth,
                  info = paste0("incorrect log-likelihood value for uncompiled dlkj"))
     c_lkj_model <- compileNimble(lkj_model)
-    expect_equal(exp(c_lkj_model$calculate()), truth,
+    expect_equal(c_lkj_model$calculate(), truth,
                  info = paste0("incorrect log-likelihood value for compiled dlkj"))
 
     ## random sampling - compare to code from rethinking package
@@ -220,14 +217,36 @@ test_that("Test that dlkj calculate and simulate are correct in nodeFunctions", 
     )
 
     set.seed(1)
-    R <- rlkjcorr_rethinking(1, K = p, eta = eta)
+    R <- rlkjcorr_rethinking(1, K = k, eta = eta)
     set.seed(1)
-    testR <- rlkj_corr_cholesky(1, eta, p)
-    testnf <- nf_sampling(eta, p)
-    expect_identical(R, testR, "nimble-based and rethinking-based rlkj simulations differ")
-    expect_identical(R, testnf, "nimble-based and rethinking-based rlkj simulations differ")
+    testR <- crossprod(rlkj_corr_cholesky(1, eta, k))
+    set.seed(1)
+    testnf <- crossprod(nf_sampling(eta, k))
+    expect_equal(R, testR, "nimble-based and rethinking-based rlkj simulations differ")
+    expect_equal(R, testnf, "nimble-based and rethinking-based rlkj simulations differ")
 })
-    
+
+test_that("rlkj_corr_cholesky size processing works", {
+    nf <- nimbleFunction(
+        run = function(eta = double(0), p = double(0), A = double(2)) {
+            returnType(double(3))
+            tmp <- rlkj_corr_cholesky(n = 1, eta, p)
+            x <- nimArray(0, c(p+3,p+3,2))
+            x[2:(p+1),3:(p+2), 2] <- t(tmp) %*% tmp %*% A
+            return(x)
+        }
+    )
+    cnf <- compileNimble(nf)
+
+    set.seed(1)
+    A <- matrix(rnorm(k*k), k)
+    set.seed(1)
+    x <- crossprod(rlkj_corr_cholesky(1, eta, k)) %*% A
+    set.seed(1)
+    x2 <- cnf(eta, k, A)[2:(k+1),3:(k+2),2]
+    expect_identical(x, x2, "problem with rlkj size processing")
+})
+
 ## dmulti and dcat
 
 set.seed(0)

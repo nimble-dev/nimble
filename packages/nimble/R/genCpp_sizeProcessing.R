@@ -3263,11 +3263,11 @@ mvFirstArgCheckLists <- list(nimArr_rmnorm_chol = list(c(1, 2, 0), ## dimensiona
                                                                   ## example
                                                                   ## Rcode <- quote(nimArr_rlkj_corr_cholesky(eta = k * rho, p = k + a) )
                                                                   ## code <- nimble:::RparseTree2ExprClasses(Rcode)
-                                                                  dimCode <- parse(text = nimDeparse(code$args[['p']]), keep.source = FALSE)[[1]]
+                                                                  dimCode <- parse(text = nimDeparse(code$args[[2]]), keep.source = FALSE)[[1]]
                                                                   sizeExprs <- list(dimCode, dimCode)
                                                                   ## dimCode should be quote( k + a )
                                                                   list(nDim = 2,
-                                                                       sizeExprs)
+                                                                       sizeExprs = sizeExprs)
                                                               },
                                                               'double'),  # '1' won't work here; problem is that no matrices are input but matrix is output
                              nimArr_rwish_chol = list(c(2, 0, 0, 0), ## chol, df, prec_param, overwrite_inputs
@@ -3282,7 +3282,6 @@ mvFirstArgCheckLists <- list(nimArr_rmnorm_chol = list(c(1, 2, 0), ## dimensiona
 
 sizeRmultivarFirstArg <- function(code, symTab, typeEnv) {
     asserts <- recurseSetSizes(code, symTab, typeEnv)
-
     notOK <- FALSE
     checkList <- mvFirstArgCheckLists[[code$name]]
     if(!is.null(checkList)) {
@@ -3304,7 +3303,7 @@ sizeRmultivarFirstArg <- function(code, symTab, typeEnv) {
     if(!(is.function(returnSizeArgID)))
         if(!inherits(code$args[[returnSizeArgID]], 'exprClass'))
             stop(exprClassProcessingErrorMsg(code, paste0('Expected ', nimDeparse(code$args[[returnSizeArgID]]) ,' to be an expression or function.')), call. = FALSE) 
-    
+
     code$type <- returnType
     code$toEigenize <- 'maybe'
     if(!is.function(returnSizeArgID)) {

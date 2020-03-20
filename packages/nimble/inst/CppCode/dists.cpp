@@ -29,7 +29,6 @@
 #include "nimble/dists.h"
 #include <R_ext/Lapack.h>
 
-
 bool R_IsNA(double* P, int s) {
   for(int i = 0; i < s; ++i) if(R_IsNA(P[i])) return(true);
   return(false);
@@ -607,29 +606,29 @@ void rlkj_corr_cholesky(double *ans, double eta, int p) {
 
   // Since C++ is row-major, ans[i,j] is ans[j*p+i] (0-indexed)
   ans[0] = 1.0;
-  beta = eta + (p-2)/2;
-  tmp = 2*rbeta(beta, beta) - 1.0;  // r12
-
-  ans[p] = tmp;   // p or 1?
-  ans[p+1] = sqrt(1-tmp*tmp);
-  
-  for(j = 2; j < p; j++) {
-    beta = beta - 0.5;
-    y = rbeta(j/2.0, beta);
+  if(p > 1) {
+    beta = eta + ((double) p-2.0)/2.0;
+    tmp = 2*rbeta(beta, beta) - 1.0;  // r12
     
-    // Generate scaling of random vector on j-dim hypersphere.
-    sumSquares = 0.0;
-    for(i = 0; i < j; i++) {
-      w[i] = norm_rand();
-      sumSquares += w[i]*w[i];
+    ans[p] = tmp;  
+    ans[p+1] = sqrt(1-tmp*tmp);
+    for(j = 2; j < p; j++) {
+      beta = beta - 0.5;
+      y = rbeta(j/2.0, beta);
+      
+      // Generate scaling of random vector on j-dim hypersphere.
+      sumSquares = 0.0;
+      for(i = 0; i < j; i++) {
+	w[i] = norm_rand();
+	sumSquares += w[i]*w[i];
+      }
+      
+      // Fill elements of next column of upper triangular Cholesky
+      tmp = sqrt(y) / sqrt(sumSquares);
+      for(i = 0; i < j; i++) 
+	ans[j*p+i] = w[i] * tmp; 
+      ans[j*p+j] = sqrt(1-y);  
     }
-
-    // Fill elements of next column of upper triangular Cholesky
-    tmp = sqrt(y) / sqrt(sumSquares);
-    for(i = 0; i < j; i++) 
-      ans[j*p+i] = w[i] * tmp; // i*p+j
-    ans[j*p+j] = sqrt(1-y);  // j*p+j
-    
   }
   delete [] w;
 
