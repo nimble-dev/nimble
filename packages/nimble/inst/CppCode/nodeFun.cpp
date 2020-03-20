@@ -348,7 +348,9 @@ nodeFun::runExtraInputObject(NodeVectorClassNew_derivs &NV,
 
 void
 nodeFun::delete_extraInputObject(NodeVectorClassNew_derivs &NV) {
+  std::cout<<"About to delete NV.extraInputObject"<<std::endl;
   delete NV.extraInputObject;
+  std::cout<<"Done deleting NV.extraInputObject"<<std::endl;
 }
 
 atomic_extraOutputObject*
@@ -387,7 +389,9 @@ nodeFun::runExtraOutputObject(NodeVectorClassNew_derivs &NV,
 
 void
 nodeFun::delete_extraOutputObject(NodeVectorClassNew_derivs &NV) {
+  std::cout<<"About to delete extraOutputObject"<<std::endl;
   delete NV.extraOutputObject;
+  std::cout<<"Done deleting extraOutputObject"<<std::endl;
 }
 
 CppAD::AD<double> nodeFun::call_calculate_ADproxyModel(NodeVectorClassNew_derivs &NV) {

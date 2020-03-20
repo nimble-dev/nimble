@@ -823,14 +823,14 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
   atomic_extraInputObject *extraInputObject;
   atomic_extraOutputObject *extraOutputObject;
   bool tapeRecorded_;
- NodeVectorClassNew_derivs() : tapeRecorded_(false) {}
+ NodeVectorClassNew_derivs() : extraInputObject(0), extraOutputObject(0), tapeRecorded_(false) {}
   ~NodeVectorClassNew_derivs() {
     if(instructions.size() == 0) return;
     nodeFun* nodeFunInModelDLL = instructions[0].nodeFunPtr;
     if(extraInputObject) nodeFunInModelDLL->delete_extraInputObject(*this);
     // the extraOutputObject needs to be deleted, but I wonder if the crashes upon exiting R
     // could be due to deleting it here before the tape itself has gone through destruction?
-    //    if(extraOutputObject) nodeFunInModelDLL->delete_extraOutputObject(*this);
+    if(extraOutputObject) nodeFunInModelDLL->delete_extraOutputObject(*this);
   }
   bool tapeRecorded() {return(tapeRecorded_);}
   void recordTape() {

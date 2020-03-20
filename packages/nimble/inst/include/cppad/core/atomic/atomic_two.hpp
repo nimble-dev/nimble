@@ -524,16 +524,20 @@ public:
     /// has dropped out of scope by setting its pointer to null
     virtual ~atomic_base(void)
     {   // change object pointer to null, but leave name for error reporting
+      std::cout<<"entering destructor for atomic_base"<<std::endl;
         bool         set_null = true;
         size_t       type  = 0;          // set to avoid warning
         std::string* name  = CPPAD_NULL;
         void*        v_ptr = CPPAD_NULL; // set to avoid warning
+      std::cout<<"calling atomic_index for ~atomic_base"<<std::endl;
         local::atomic_index<Base>(set_null, index_, type, name, v_ptr);
+      std::cout<<"done calling atomic_index for ~atomic_base"<<std::endl;
         CPPAD_ASSERT_UNKNOWN( type == 2 );
         //
         // free temporary work memory
         for(size_t thread = 0; thread < CPPAD_MAX_NUM_THREADS; thread++)
             free_work(thread);
+      std::cout<<"done in destructor for atomic_base"<<std::endl;
     }
     /// allocates work_ for a specified thread
     void allocate_work(size_t thread)

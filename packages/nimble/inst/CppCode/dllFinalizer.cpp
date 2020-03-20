@@ -42,8 +42,11 @@ typedef std::map<SEXP, DllAndFinalizer>::iterator RnimblePtrsIterator;
 void finalizeOneObject(RnimblePtrsIterator RNPiter) {
     R_CFinalizer_t cfun;
     cfun = RNPiter->second.Finalizer;
-    if(cfun)
+    if(cfun) {
+      std::cout<<"finalizing "<<RNPiter->first<<std::endl;
       cfun(RNPiter->first);
+      std::cout<<"done finalizing "<<RNPiter->first<<std::endl;
+    }
     R_ClearExternalPtr(RNPiter->first);
     RnimblePtrs.erase(RNPiter);
 }
