@@ -185,6 +185,36 @@ Type nimDerivs_nimArr_dmvt_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &mu
   return(dens);
 }
 
+/* dlkj: LKJ correlation cholesky factor */
+template<class Type>
+Type nimDerivs_nimArr_dlkj_corr_cholesky(NimArr<2, Type> &x, Type eta, int p, Type give_log) {
+
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  Eigen::Map<MatrixXt > mapX(x.getPtr(), p, p);
+
+  Type pd = Type((double) p);
+  Type dens = sum(mapX.diagonal().array().log() *
+		  ((double) p - Eigen::seq(Type(1.0), (double) p) + Type(2.0)*eta - Type(2.0)));
+
+  dens = CppAD::CondExpEq(give_log, Type(1), dens, exp(dens));
+  return(dens);
+}
+
+template<class Type>
+Type nimDerivs_nimArr_dlkj_corr_cholesky_logFixed(NimArr<2, Type> &x, Type eta, int p, int give_log) {
+
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  Eigen::Map<MatrixXt > mapX(x.getPtr(), p, p);
+
+  Type dens = sum(mapX.diagonal().array().log() *
+		  ((double) p - Eigen::seq(Type(1.0), (double) p) + Type(2.0)*eta - Type(2.0)));
+
+  if(!give_log){
+    dens = exp(dens);
+  }
+  return(dens);
+}
+  
 /* dwish: Wishart distribution */
 template<class Type>
 Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type df, Type p, Type scale_param, Type give_log, Type overwrite_inputs) { 
