@@ -222,8 +222,8 @@ test_that("Test that dlkj calculate and simulate are correct in nodeFunctions an
     testR <- crossprod(rlkj_corr_cholesky(1, eta, k))
     set.seed(1)
     testnf <- crossprod(nf_sampling(eta, k))
-    expect_equal(R, testR, "nimble-based and rethinking-based rlkj simulations differ")
-    expect_equal(R, testnf, "nimble-based and rethinking-based rlkj simulations differ")
+    expect_equal(R, testR, info = "nimble-based and rethinking-based rlkj simulations differ")
+    expect_equal(R, testnf, info = "nimble-based and rethinking-based rlkj simulations differ")
 })
 
 test_that("rlkj_corr_cholesky size processing works", {
@@ -244,7 +244,7 @@ test_that("rlkj_corr_cholesky size processing works", {
     x <- crossprod(rlkj_corr_cholesky(1, eta, k)) %*% A
     set.seed(1)
     x2 <- cnf(eta, k, A)[2:(k+1),3:(k+2),2]
-    expect_identical(x, x2, "problem with rlkj size processing")
+    expect_equal(x, x2, "problem with rlkj size processing")
 })
 
 ## dmulti and dcat

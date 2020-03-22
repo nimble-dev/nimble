@@ -610,6 +610,7 @@ void rlkj_corr_cholesky(double *ans, double eta, int p) {
     beta = eta + ((double) p-2.0)/2.0;
     tmp = 2*rbeta(beta, beta) - 1.0;  // r12
     
+    ans[1] = 0.0;
     ans[p] = tmp;  
     ans[p+1] = sqrt(1-tmp*tmp);
     for(j = 2; j < p; j++) {
@@ -625,8 +626,10 @@ void rlkj_corr_cholesky(double *ans, double eta, int p) {
       
       // Fill elements of next column of upper triangular Cholesky
       tmp = sqrt(y) / sqrt(sumSquares);
-      for(i = 0; i < j; i++) 
-	ans[j*p+i] = w[i] * tmp; 
+      for(i = 0; i < j; i++) { 
+	ans[j*p+i] = w[i] * tmp;
+	ans[i*p+j] = 0.0;
+      }
       ans[j*p+j] = sqrt(1-y);  
     }
   }
