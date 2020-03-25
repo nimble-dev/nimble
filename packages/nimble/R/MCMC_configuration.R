@@ -303,13 +303,14 @@ print: A logical argument specifying whether to print the ordered list of defaul
                                 addConjugateSampler(conjugacyResult = conjugacyResult,
                                                     dynamicallyIndexed = model$modelDef$varInfo[[model$getVarNames(nodes=node)]]$anyDynamicallyIndexed);     next }
                         }
-                        if(nodeDist == 'dmulti')       { addSampler(target = node, type = 'RW_multinomial');     next }
-                        if(nodeDist == 'ddirch')       { addSampler(target = node, type = 'RW_dirichlet');       next }
-                        if(nodeDist == 'dwish')        { addSampler(target = node, type = 'RW_wishart');         next }
-                        if(nodeDist == 'dinvwish')     { addSampler(target = node, type = 'RW_wishart');         next }
-                        if(nodeDist == 'dcar_normal')  { addSampler(target = node, type = 'CAR_normal');         next }
-                        if(nodeDist == 'dcar_proper')  { addSampler(target = node, type = 'CAR_proper');         next }
-                        if(nodeDist == 'dCRP')         {
+                        if(nodeDist == 'dmulti')              { addSampler(target = node, type = 'RW_multinomial');        next }
+                        if(nodeDist == 'ddirch')              { addSampler(target = node, type = 'RW_dirichlet');          next }
+                        if(nodeDist == 'dwish')               { addSampler(target = node, type = 'RW_wishart');            next }
+                        if(nodeDist == 'dinvwish')            { addSampler(target = node, type = 'RW_wishart');            next }
+                        if(nodeDist == 'dlkj_corr_cholesky')  { addSampler(target = node, type = 'RW_lkj_corr_cholesky');  next }
+                        if(nodeDist == 'dcar_normal')         { addSampler(target = node, type = 'CAR_normal');            next }
+                        if(nodeDist == 'dcar_proper')         { addSampler(target = node, type = 'CAR_proper');            next }
+                        if(nodeDist == 'dCRP')                {
                             addSampler(target = node, type = 'CRP', control = list(useConjugacy = useConjugacy))
                             numCRPnodes <- numCRPnodes + 1
                             clusterNodeInfo[[numCRPnodes]] <- findClusterNodes(model, node)
