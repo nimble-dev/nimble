@@ -140,6 +140,20 @@ void getDerivs_internal(vector<BASE> &independentVars,
 			const NimArr<1, double> &derivOrders,
 			const NimArr<1, double> &wrtVector,
 			nimSmartPtr<ADCLASS> &ansList) {
+  // std::cout<<"entering getDerivs_internal"<<std::endl;
+  // std::cout<<"independentVars: ";
+  // for(size_t ijk = 0; ijk < independentVars.size(); ++ijk)
+  //   std::cout<<independentVars[ijk]<<" ";
+  // std::cout<<std::endl;
+  // std::cout<<"derivOrders: ";
+  // for(size_t ijk = 0; ijk < derivOrders.size(); ++ijk)
+  //   std::cout<<derivOrders[ijk]<<" ";
+  // std::cout<<std::endl;
+  // std::cout<<"wrtVector: ";
+  // for(size_t ijk = 0; ijk < wrtVector.size(); ++ijk)
+  //   std::cout<<wrtVector[ijk]<<" ";
+  // std::cout<<std::endl;
+  
 #ifdef _TIME_AD
   derivs_getDerivs_timer_start();
   derivs_tick_id();
@@ -159,11 +173,14 @@ void getDerivs_internal(vector<BASE> &independentVars,
   int maxOrder;
   bool ordersFound[3];
   setOrdersFound(derivOrders, ordersFound, maxOrder);
+  //  std::cout<<"orders: "<<ordersFound[0]<<" "<<ordersFound[1]<<" "<<ordersFound[2]<<" "<<maxOrder<<std::endl;
+  // std::cout<<"maxOrder = "<<maxOrder<<std::endl;
   vector<BASE> value_ans;
   #ifdef _TIME_AD
   derivs_run_tape_timer_start();
 #endif
   value_ans = ADtape->Forward(0, independentVars);
+  //  std::cout<<"value_ans.size() = "<<value_ans.size()<<std::endl;
 #ifdef _TIME_AD
   derivs_run_tape_timer_stop();
 #endif
@@ -173,7 +190,7 @@ void getDerivs_internal(vector<BASE> &independentVars,
   }
   if(maxOrder > 0){
     std::size_t q = value_ans.size();
-    vector<bool> infIndicators(q); // default values will be false 
+    vector<bool> infIndicators(q, false); // default values will be false 
     for(size_t inf_ind = 0; inf_ind < q; inf_ind++){
       std::cout<<"Fix the inf and nan checking for CppAD::AD<double> case"<<std::endl;
       // if(((value_ans[inf_ind] == -std::numeric_limits<double>::infinity()) |
@@ -203,6 +220,13 @@ void getDerivs_internal(vector<BASE> &independentVars,
 #endif
 	}
       } else {
+	//	std::cout<<"wrtAll = "<<wrtAll<<std::endl;
+	// if(!wrtAll) {
+	//   for(size_t ijk = 0; ijk < wrt_n; ijk++) {
+	//     std::cout<<wrtVector[ijk]<<" ";
+	//   }
+	//   std::cout<<std::endl;
+	// }
 	for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
 	  if(!infIndicators[dy_ind]){
 	    int dx1_ind = wrtAll ? vec_ind : wrtVector[vec_ind] - 1;
@@ -214,8 +238,23 @@ void getDerivs_internal(vector<BASE> &independentVars,
 #ifdef _TIME_AD
 	    derivs_run_tape_timer_start();
 #endif
+	    // std::cout<<"Forward 1 x1: ";
+	    // for(int ijk = 0; ijk < x1.size(); ++ijk)
+	    //   std::cout<<x1[ijk]<<" ";
+	    // std::cout<<std::endl;	    
+	    // vector<BASE> forwardOut;
+	    // forwardOut = ADtape->Forward(1, x1);
 	    ADtape->Forward(1, x1);
+	    //	    std::cout<<"forwardOut 1 result (dx1_ind = "<< dx1_ind << ", forwardOut.size() = "<< forwardOut.size() <<"): ";
+	    // for(int ijk = 0; ijk < forwardOut.size(); ++ijk)
+	    //   std::cout<<forwardOut[ijk]<<" ";
+	    // std::cout<<std::endl;
 	    cppad_derivOut = ADtape->Reverse(2, w);
+	    // std::cout<<"reverse 2 result: ";
+	    // for(int ijk = 0; ijk < cppad_derivOut.size(); ++ijk)
+	    //   std::cout<<cppad_derivOut[ijk]<<" ";
+	    // std::cout<<std::endl;
+
 #ifdef _TIME_AD
 	    derivs_run_tape_timer_stop();
 #endif

@@ -533,7 +533,7 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
     calcTotalLengthCode <- makeCalcTotalLengthBlock(independentVarNames,
                                                     nimbleSymTab,
                                                     "totalIndependentLength_",
-                                                    if(usesModelCalculate) 1 else 0) ## for extraInputDummy
+                                                    0) #if(usesModelCalculate) 1 else 0) ## for extraInputDummy
   ansNDim <- targetFunDef$RCfunProc$compileInfo$returnSymbol$nDim
   if(ansNDim > 0)
     calcTotalResponseLengthCode <- quote(cppLiteral("totalDepLength_ = ANS_.size();"))

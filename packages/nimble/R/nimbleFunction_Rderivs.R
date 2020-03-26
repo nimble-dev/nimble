@@ -209,7 +209,6 @@ calcDerivs_internal <- function(func, X, order, resultIndices ) {
     return(outList)
 }
 
-
 nimDerivs_model <- function( nimFxn, order = c(0, 1, 2), wrt = NULL, derivFxnCall = NULL, fxnEnv = parent.frame()) {
     fxnCall <- match.call()
     ## This may be called directly (for testing) or from nimDerivs (typically).
@@ -446,42 +445,26 @@ nimDerivs_calcNodes <- function( nimFxn, order = c(0, 1, 2), wrt = NULL, derivFx
     ans
 }
 
-
-nimDerivs_nf <- function(nimFxn = NA, order = nimC(0,1,2),
-                         wrt = NULL, derivFxnCall = NULL, fxnEnv = parent.frame()){
-  fxnCall <- match.call()
-  ## This may be called directly (for testing) or from nimDerivs (typically).
-  ## In the former case, we get derivFxnCall from the nimFxn argument.
-  ## In the latter case, it is already match.call()ed and is passed here via derivFxnCall
-  if(is.null(derivFxnCall))
-    derivFxnCall <- fxnCall[['nimFxn']] ## either calculate(model, nodes) or model$calculate(nodes)
-  else
-    if(is.null(fxnCall[['order']]))
-      fxnCall[['order']] <- order
-
-  ## get the actual function
-  derivFxn <- eval(derivFxnCall[[1]], envir = fxnEnv)
-
-  ## standardize the derivFxnCall arguments
-  derivFxnCall <- match.call(derivFxn, derivFxnCall)
-
+nimDerivs_nf_charwrt <- function(derivFxn,
+                                 derivFxnCall,
+                                 order,
+                                 wrt,
+                                 fxnEnv) {
   fA <- formalArgs(derivFxn)
-  if(is.null(wrt)) {
-    wrt <- fA
-  }
+
   ## convert 'x[2]' to quote(x[2]).
   wrt_code <- lapply(wrt,
                      function(x) parse(text = x, keep.source = FALSE)[[1]])
-
+  
   ## convert quote(x[2]) to quote(x)
   wrt_names <- lapply(wrt_code,
                       function(x) if(is.name(x)) x else x[[2]])
-
+  
   wrt_name_strings <- as.character(wrt_names)
   
   ## Get unique names and track indices from wrt to unique names
   wrt_unique_names <- unique(wrt_names)
-
+  
   if(!all(wrt_unique_names %in% fA)){
     stop('Error:  the wrt argument to nimDerivs() contains names that are not
          arguments to the nimFxn argument.')
@@ -589,6 +572,107 @@ nimDerivs_nf <- function(nimFxn = NA, order = nimC(0,1,2),
 
   ans <- calcDerivs_internal(func, currentX, order, result_x_indices_all)
 ##  jacobian(func, currentX)
+  ans 
+}
+
+
+nimDerivs_nf_numericwrt <- function(derivFxn,
+                                    derivFxnCall,
+                                    order,
+                                    wrt,
+                                    fxnEnv) {
+  fA <- formalArgs(derivFxn)
+  derivFxnCall_args <- as.list(derivFxnCall)[-1]
+
+  fxnArgs <- lapply(derivFxnCall_args, function(x) eval(x, envir = fxnEnv))
+  names(fxnArgs) <- as.character(fA)
+
+  argSizes <- unlist(lapply(fxnArgs, dimOrLength))
+
+  flatStartIndices <- cumsum(c(1, argSizes[-length(argSizes)]))
+  names(flatStartIndices) <- names(fxnArgs)
+  wrtIndexToArgName <- character()
+  for(i in seq_along(fxnArgs)) {
+    wrtIndexToArgName <- c(wrtIndexToArgName, rep(names(fxnArgs)[i], dimOrLength(fxnArgs[[i]])))
+  }
+
+  ## We need lines like
+  ## fxnArgs[[ argName ]][j] <- x[k]
+  ## j is the flat index of the variable
+  ## k is the index of the concatenated x
+  wrtUnique <- unique(wrt)
+  fxnArgs_assign_code <- list()
+  get_init_values_code <- list()
+  length_result <- length(wrt)
+  result_x_indices <- integer(length_result)
+  for(iWrt in seq_along(wrtUnique)) {
+    wrtIndex <- wrtUnique[iWrt]
+    i_wrt_orig <- which(wrtIndex == wrt) ## indices of original, allowing repeats
+    argName <- wrtIndexToArgName[wrtIndex]
+    j <- wrtIndex - flatStartIndices[argName] + 1
+    fxnArgs_assign_code[[ length(fxnArgs_assign_code) + 1]] <-
+      substitute(fxnArgs[[ ARGNAME ]][J] <- x[K],
+                 list(ARGNAME = argName,
+                      J = as.integer(j),
+                      K = iWrt))
+    get_init_values_code[[ length(fxnArgs_assign_code) + 1]] <-
+      substitute(currentX[K] <- fxnArgs[[ ARGNAME ]][J],
+                 list(ARGNAME = argName,
+                      J = as.integer(j),
+                      K = iWrt))
+    result_x_indices[i_wrt_orig] <- iWrt
+    ## still need to add result_x_indices to deal with redundant or disordered requests
+  }
+  length_x <- length(wrtUnique)
+  currentX <- numeric(length_x)
+  do.call("{", get_init_values_code)
+  
+  derivFxnName <- as.character(derivFxnCall[[1]])
+  func <- function(x) {
+    do.call("{", fxnArgs_assign_code)
+    c(do.call(derivFxnName, fxnArgs, envir = fxnEnv)) #c() unrolls any answer to a vector
+  }
+  ans <- calcDerivs_internal(func, currentX, order, result_x_indices)
+  ans 
+}
+
+nimDerivs_nf <- function(nimFxn = NA, order = nimC(0,1,2),
+                         wrt = NULL, derivFxnCall = NULL, fxnEnv = parent.frame()){
+  fxnCall <- match.call()
+  ## This may be called directly (for testing) or from nimDerivs (typically).
+  ## In the former case, we get derivFxnCall from the nimFxn argument.
+  ## In the latter case, it is already match.call()ed and is passed here via derivFxnCall
+  if(is.null(derivFxnCall))
+    derivFxnCall <- fxnCall[['nimFxn']] ## either calculate(model, nodes) or model$calculate(nodes)
+  else
+    if(is.null(fxnCall[['order']]))
+      fxnCall[['order']] <- order ## I don't think this is meaningful any more. fxnCall is not used further
+
+  ## get the actual function
+  derivFxn <- eval(derivFxnCall[[1]], envir = fxnEnv)
+
+  ## standardize the derivFxnCall arguments
+  derivFxnCall <- match.call(derivFxn, derivFxnCall)
+
+  fA <- formalArgs(derivFxn)
+  if(is.null(wrt)) {
+    wrt <- fA
+  }
+  if(is.character(wrt)) {
+    ans <- nimDerivs_nf_charwrt(derivFxn,
+                                derivFxnCall,
+                                order,
+                                wrt,
+                                fxnEnv)
+  } else if(is.numeric(wrt)) {
+    ans <- nimDerivs_nf_numericwrt(derivFxn,
+                                   derivFxnCall,
+                                   order,
+                                   wrt,
+                                   fxnEnv)
+  } else {
+    stop("Invalid wrt argument in nimDerivs_nf")
+  }
   ans
 }
 
@@ -652,9 +736,11 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
   fxnArgsDimSizes <- lapply(nimFxnArgs, function(x){
     if(length(x) == 1) return(1)
     if(x[[2]] == 0) return(1)
-    if(length(x) < 3) stop('Sizes of arguments to nimbleFunctions must be
-                           explicitly specified (e.g. x = double(1, 4)) in order
-                           to take derivatives.')
+    if(length(x) < 3) stop(paste0('Problem with derivative-enabled nimbleFunction method ', fxnName,
+                                 ': If the mode of enableDerivs is static=TRUE, sizes of arguments ',
+                                 'must be explicitly specified (e.g. x = double(1, 4)).  If the mode of ',
+                                 'enableDerivs is static=FALSE, then wrt cannot use argument ',
+                                 'names.'))
     if(x[[2]] == 1){
       if(length(x[[3]]) == 1) return(x[[3]])
       else return(x[[3]][[2]])

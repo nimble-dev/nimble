@@ -96,11 +96,11 @@ CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
   vector<NodeInstruction>::const_iterator iNode(instructions.begin());
   vector<NodeInstruction>::const_iterator iNodeEnd(instructions.end());
   std::cout<<"starting node calcs in calculate_ADproxyModel"<<std::endl;
-
+  
   for(; iNode != iNodeEnd; iNode++)
     ans += iNode->nodeFunPtr->calculateBlock_ADproxyModel(iNode->operand);
-  std::cout<<"starting extraOutputStep"<<std::endl;
   if(includeExtraOutputStep && recordingInfo__isRecording) {
+    std::cout<<"starting extraOutputStep"<<std::endl;
     if(instructions.begin() != iNodeEnd) {
       std::cout<<"will do extraOutputStep"<<std::endl;
       // It is arbitrary to call this for the first node,
@@ -110,8 +110,9 @@ CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
       instructions.begin()->nodeFunPtr->setup_extraOutput_step( nodes,
       								ans );
     }
+    std::cout<<"done with extraOutputStep"<<std::endl;
   }
-  std::cout<<"done with extraOutputStep"<<std::endl;
+
   return(ans);
 }
 

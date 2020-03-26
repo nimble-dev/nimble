@@ -853,10 +853,12 @@ nimDerivs_keywordInfo <- keywordInfoClass(
             code$wrt <- NA
             doPreprocess <- TRUE
           }
+      } else if(is.name(wrtArg)) { ## wrt = some_index_var_maybe_from_setup
+        ## do nothing
       } else if(deparse(wrtArg[[1]]) == 'nimC') { ## wrt = c('x', ...)
         if(is.character(wrtArg[[2]]))
           doPreprocess <- TRUE
-      } else if(is.character(wrtArg[[1]])) { ## wrt = 'x'
+      } else if(is.character(wrtArg)) { ## wrt = 'x'
         doPreprocess <- TRUE
       } ## In any other setting, it must be an index vector and we leave it alone here.
       ##
