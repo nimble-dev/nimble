@@ -466,6 +466,86 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   expect_identical(smp2[[2]], model$mu[1, 1:2, 2])
   
   
+  
+  ## conjugate dinvwish_dmnorm
+  code <- nimbleCode({
+    xi[1:5] ~ dCRP(conc = 1, size = 5)
+    for(i in 1:5){
+      for(j in 1:2) {
+        Sigma[1:2, 1:2, i, j] ~ dinvwish(S = R0[1:2, 1:2, j], df = v0[j])
+        y[i, 1:2, j] ~ dmnorm(mu[i, 1:2, j],  cov = Sigma[1:2, 1:2, xi[i], j] ) 
+      }
+    }
+  })
+  R0 <- array(0, c(2, 2, 2))
+  for(j in 1:2) {
+    R0[, , j] <- rinvwish_chol(1, chol(matrix(c(10, .7, .7, 10), 2)), 2)
+  }
+  Sigma <- array(0, c(2,2,5, 2))
+  for(i in 1:5){
+    for(j in 1:2) {
+      Sigma[, , i, j] <- rinvwish_chol(1, chol(matrix(c(1, .5, .5, 1), 2)), 2)
+    }
+  }
+  mu <- array(0, c(5, 2, 2))
+  for(j in 1:2) {
+    mu[ , ,j] <- matrix(rnorm(5*2, 0, sqrt(0.01)), nrow=5, ncol=2)
+  }
+  y <- array(0, c(5, 2, 2))
+  for(i in 1:5) {
+    for(j in 1:2) {
+      y[i, ,j] <- rnorm(2, 0, sqrt(0.01))
+    }
+  }
+  data = list(y = y)
+  inits = list(xi = 1:5, mu = mu, Sigma = Sigma)
+  Consts <- list(v0 = rpois(2, 5), R0 =  R0)
+  model = nimbleModel(code, data=data, inits=inits, constants = Consts)
+  cmodel<-compileNimble(model)
+  mConf = configureMCMC(model, monitors = c('xi', 'Sigma'))
+  mcmc = buildMCMC(mConf)
+  
+  # sampler assignment:
+  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dinvwish_dmnorm")
+  
+  # computation of prior predictive and posterior sampling of parameters:
+  dataMean <- list(model$getParam('y[1, 1:2, 1]', 'mean'), model$getParam('y[1, 1:2, 2]', 'mean'))
+  pYgivenT <- sum(model$getLogProb('y[1, 1:2, 1]'), model$getLogProb('y[1, 1:2, 2]'))
+  pT <- sum(model$getLogProb('Sigma[1:2, 1:2, 1, 1]'), model$getLogProb('Sigma[1:2, 1:2, 1,  2]'))
+  
+  df0 <- c(model$getParam('Sigma[1:2, 1:2, 1, 1]', 'df'), model$getParam('Sigma[1:2, 1:2, 1, 2]', 'df'))
+  priorScale <- list(model$getParam('Sigma[1:2, 1:2, 1, 1]',  'S'), model$getParam('Sigma[1:2, 1:2, 1, 2]',  'S'))
+  
+  pTgivenY <- dinvwish_chol(model$Sigma[1:2, 1:2, 1, 1],
+                             chol(priorScale[[1]] + (data$y[1, 1:2, 1]-dataMean[[1]])%*%t(data$y[1, 1:2, 1]-dataMean[[1]])),
+                             df = (df0[1]+1), scale_param=TRUE, log = TRUE) +
+    dinvwish_chol(model$Sigma[1:2, 1:2, 1, 2],
+                  chol(priorScale[[2]] + (data$y[1, 1:2, 2]-dataMean[[2]])%*%t(data$y[1, 1:2, 2]-dataMean[[2]])),
+                  df = (df0[2]+1), scale_param=TRUE, log = TRUE)
+  
+  mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
+  pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)[1]
+  
+  expect_equal(pY, pT + pYgivenT - pTgivenY)
+  
+  set.seed(1)
+  mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$sample(1, 1)
+  set.seed(1)
+  smp1 <- list()
+  smp2 <- list()
+  smp1[[1]] <- rinvwish_chol(1, chol(priorScale[[1]] + (data$y[1, 1:2, 1]-dataMean[[1]])%*%t(data$y[1, 1:2, 1]-dataMean[[1]])),
+                             df = (df0[1]+1), scale_param=TRUE )
+  smp1[[2]] <- rinvwish_chol(1, chol(priorScale[[2]] + (data$y[1, 1:2, 2]-dataMean[[2]])%*%t(data$y[1, 1:2, 2]-dataMean[[2]])),
+                             df = (df0[2]+1), scale_param=TRUE )
+  expect_identical(smp1[[1]], model$Sigma[1:2, 1:2, 1, 1])
+  expect_identical(smp1[[2]], model$Sigma[1:2, 1:2, 1, 2])
+
+  
+  
+  
+  
+  
   ## dgamma_dpois
   code = nimbleCode({
     for(i in 1:5) {
