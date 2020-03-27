@@ -657,6 +657,48 @@ CRP_conjugate_dmnorm_invwish_dmnorm <- nimbleFunction(
   )
 )
 
+CRP_conjugate_dinvgamma_dnorm <- nimbleFunction(
+  name = "CRP_conjugate_dinvgamma_dnorm",
+  contains = CRP_helper,
+  setup = function(model, marginalizedNodes, dataNodes, J, M) { 
+    priorShape <- nimNumeric(J+1)
+    priorScale <- nimNumeric(J+1)
+    c1 <- nimNumeric(J+1)
+  },
+  methods = list(
+    storeParams = function() {
+      for(j1 in 1:J) {
+        priorShape[j1] <<- model$getParam(marginalizedNodes[j1], 'shape')
+        priorScale[j1] <<- model$getParam(marginalizedNodes[j1], 'scale')
+        c1[j1] <<- - 0.5 * log(2) - 0.5 * log(pi) + priorShape[j1] * log(priorScale[j1]) - 
+          lgamma(priorShape[j1]) + lgamma(priorShape[j1] + 0.5)
+      }
+    },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
+    calculate_prior_predictive = function(i = integer()) {
+      returnType(double())
+      out <- 0
+      for(j1 in 1:J) {
+        dataMean <- model$getParam(dataNodes[(i-1)*J+j1], 'mean')
+        y <- values(model, dataNodes[(i-1)*J+j1])[1]
+        c2 <- -(priorShape[j1] + 0.5) * log(priorScale[j1] + 0.5 * (y - dataMean)^2)
+        out <- out + c1[j1] + c2 
+      }
+      return(out)
+    },
+    sample = function(i = integer(), j = integer()) {
+      for(j1 in 1:J) {
+        dataMean <- model$getParam(dataNodes[(i-1)*J+j1], 'mean')
+        y <- values(model, dataNodes[(i-1)*J+j1])[1]
+        values(model, marginalizedNodes[(j-1)*J+j1]) <<- c(rinvgamma(1, shape = priorShape[j1]  + 0.5,
+                                                                     scale = priorScale[j1] + 0.5 * (y - dataMean)^2))
+      }
+    }
+  )
+)
+
+
+
 
 
 
@@ -1174,6 +1216,7 @@ sampler_CRP <- nimbleFunction(
                         conjugate_dnorm_dnorm = 'CRP_conjugate_dnorm_dnorm',
                         conjugate_dmnorm_dmnorm = 'CRP_conjugate_dmnorm_dmnorm',
                         conjugate_dnorm_dnorm_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity',
+                        conjugate_dinvgamma_dnorm = 'CRP_conjugate_dinvgamma_dnorm',
                         conjugate_dnorm_invgamma_dnorm = 'CRP_conjugate_dnorm_invgamma_dnorm',
                         conjugate_dnorm_gamma_dnorm = 'CRP_conjugate_dnorm_gamma_dnorm',
                         conjugate_dmnorm_invwish_dmnorm = 'CRP_conjugate_dmnorm_invwish_dmnorm',
@@ -1760,11 +1803,11 @@ checkCRPconjugacy <- function(model, target) {
     }
     ## check for dnorm_dinvgamma conjugacy
     if(length(clusterVarInfo$clusterVars) == 2 &&
-       checkNormalInvGammaConjugacy(model, clusterVarInfo, n, 'dgamma')) {
+       nimble:::checkNormalInvGammaConjugacy(model, clusterVarInfo, n, 'dgamma')) {
         conjugate <- TRUE
         conjugacyType <- "conjugate_dnorm_gamma_dnorm"
     } else if(length(clusterVarInfo$clusterVars) == 2 &&
-       checkNormalInvGammaConjugacy(model, clusterVarInfo, n, 'dinvgamma')) {
+       nimble:::checkNormalInvGammaConjugacy(model, clusterVarInfo, n, 'dinvgamma')) {
         conjugate <- TRUE
         conjugacyType <- "conjugate_dnorm_invgamma_dnorm"
     } else if(length(clusterVarInfo$clusterVars) == 2 &&
