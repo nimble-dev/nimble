@@ -610,6 +610,90 @@ CRP_conjugate_dnorm_invgamma_dnorm <- nimbleFunction(
 )
 
 
+CRP_conjugate_dinvwish_dmnorm <- nimbleFunction(
+  name = "CRP_conjugate_dinvwish_dmnorm",
+  contains = CRP_helper,
+  setup = function(model, marginalizedNodes, dataNodes, J, M) {
+    d <- length(model[[dataNodes[1]]])
+    df0 <- nimNumeric(J+1)
+    priorScale <- array(0, c(d, d, J)) # matrix(0, ncol=d, nrow=d)
+    c1 <- nimNumeric(J+1)
+  },
+  methods = list(
+    storeParams = function() {
+      for(j1 in 1:J) {
+        df0[j1] <<- model$getParam(marginalizedNodes[j1], 'df') 
+        priorScale[, , j1] <<- model$getParam(marginalizedNodes[j1], 'S') 
+        c1[j1] <<- - 0.5*d*log(2*pi) + 0.5*df0[j1]*logdet(priorScale[, , j1]) + 0.5*d*log(2) +
+          sum(lgamma((df0[j1]+2-1:d)/2) - lgamma((df0[j1]+1-1:d)/2)) 
+      }
+    },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
+    calculate_prior_predictive = function(i = integer()) {
+      returnType(double())
+      out <- 0
+      for(j1 in 1:J) {
+        y <- values(model, dataNodes[(i-1)*J+j1])
+        dataMean <- model$getParam(dataNodes[(i-1)*J+j1], 'mean')
+        c2 <- -0.5*(df0[j1]+1) * logdet(priorScale[, , j1] + (y-dataMean)%*%t(y-dataMean) )
+        out <- out + c1[j1] + c2
+      }
+      return(out)
+    },
+    sample = function(i = integer(), j = integer()) {
+      for(j1 in 1:J) {
+        y <- values(model, dataNodes[(i-1)*J+j1])
+        dataMean <- model$getParam(dataNodes[(i-1)*J+j1], 'mean')
+        values(model, marginalizedNodes[(j-1)*J+j1]) <<- rinvwish_chol(1, chol(priorScale[, , j1] + (y-dataMean)%*%t(y-dataMean)),
+                                                                       df = (df0[j1]+1), scale_param=TRUE )
+      }
+    }
+  )
+)
+
+
+CRP_conjugate_dwish_dmnorm <- nimbleFunction(
+  name = "CRP_conjugate_dwish_dmnorm",
+  contains = CRP_helper,
+  setup = function(model, marginalizedNodes, dataNodes, J, M) {
+    d <- length(model[[dataNodes[1]]])
+    df0 <- nimNumeric(J+1)
+    priorRate <- array(0, c(d, d, J)) # matrix(0, ncol=d, nrow=d)
+    c1 <- nimNumeric(J+1)
+  },
+  methods = list(
+    storeParams = function() {
+      for(j1 in 1:J) {
+        df0[j1] <<- model$getParam(marginalizedNodes[j1], 'df') 
+        priorRate[, , j1] <<- model$getParam(marginalizedNodes[j1], 'R') 
+        c1[j1] <<- - 0.5*d*log(pi) + 0.5*df0[j1]*logdet(priorRate[, , j1]) +
+          sum(lgamma((df0[j1]+2-1:d)/2) - lgamma((df0[j1]+1-1:d)/2)) 
+      }
+    },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
+    calculate_prior_predictive = function(i = integer()) {
+      returnType(double())
+      out <- 0
+      for(j1 in 1:J) {
+        y <- values(model, dataNodes[(i-1)*J+j1])
+        dataMean <- model$getParam(dataNodes[(i-1)*J+j1], 'mean')
+        c2 <- -0.5*(df0[j1]+1) * logdet(priorRate[, , j1] + (y-dataMean)%*%t(y-dataMean) )
+        out <- out + c1[j1] + c2
+      }
+      return(out)
+    },
+    sample = function(i = integer(), j = integer()) {
+      for(j1 in 1:J) {
+        y <- values(model, dataNodes[(i-1)*J+j1])
+        dataMean <- model$getParam(dataNodes[(i-1)*J+j1], 'mean')
+        values(model, marginalizedNodes[(j-1)*J+j1]) <<- rwish_chol(1, chol(priorRate[, , j1] + (y-dataMean)%*%t(y-dataMean)),
+                                                                       df = (df0[j1]+1), scale_param=FALSE )
+      }
+    }
+  )
+)
+
+
 CRP_conjugate_dmnorm_invwish_dmnorm <- nimbleFunction(
   name = "CRP_conjugate_dmnorm_invwish_dmnorm",
   contains = CRP_helper,
@@ -1217,6 +1301,8 @@ sampler_CRP <- nimbleFunction(
                         conjugate_dmnorm_dmnorm = 'CRP_conjugate_dmnorm_dmnorm',
                         conjugate_dnorm_dnorm_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity',
                         conjugate_dinvgamma_dnorm = 'CRP_conjugate_dinvgamma_dnorm',
+                        conjugate_dinvwish_dmnorm = 'CRP_conjugate_dinvwish_dmnorm',
+                        conjugate_dwish_dmnorm = 'CRP_conjugate_dwish_dmnorm',
                         conjugate_dnorm_invgamma_dnorm = 'CRP_conjugate_dnorm_invgamma_dnorm',
                         conjugate_dnorm_gamma_dnorm = 'CRP_conjugate_dnorm_gamma_dnorm',
                         conjugate_dmnorm_invwish_dmnorm = 'CRP_conjugate_dmnorm_invwish_dmnorm',
