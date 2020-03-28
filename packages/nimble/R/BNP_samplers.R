@@ -741,6 +741,101 @@ CRP_conjugate_dmnorm_invwish_dmnorm <- nimbleFunction(
   )
 )
 
+
+## conjugate dnorm_gamma_dnorm
+CRP_conjugate_dnorm_gamma_dnorm <- nimbleFunction(
+  name = "CRP_conjugate_dnorm_gamma_dnorm",
+  contains = CRP_helper,
+  setup = function(model, marginalizedNodes1, marginalizedNodes2, dataNodes, J, M) {
+    priorMean <- nimNumeric(J+1)
+    kappa <- nimNumeric(J+1)
+    priorShape <- nimNumeric(J+1)
+    priorRate <- nimNumeric(J+1)
+    c1 <- nimNumeric(J+1)
+  },
+  methods = list(
+    storeParams = function() {
+      for(j1 in 1:J) {
+        priorMean[j1] <<- model$getParam(marginalizedNodes1[j1], 'mean')
+        kappa[j1] <<- model$getParam(marginalizedNodes1[j1], 'tau') / values(model, marginalizedNodes2[j1])[1] # construct kappa
+        priorShape[j1] <<- model$getParam(marginalizedNodes2[j1], 'shape')
+        priorRate[j1] <<- model$getParam(marginalizedNodes2[j1], 'rate') 
+        c1[j1] <<- priorShape[j1] * log(priorRate[j1]) + lgamma(priorShape[j1] + 1/2) + 0.5*log(kappa[j1]) -
+          lgamma(priorShape[j1]) - 0.5*log(2) - 0.5*log(pi) - 0.5*log(1 + kappa[j1])
+      }
+    },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
+    calculate_prior_predictive = function(i = integer()) {
+      returnType(double())
+      out <- 0
+      for(j1 in 1:J) {
+        y <- values(model, dataNodes[(i-1)*J+j1])[1]
+        c2 <- - (priorShape[j1]  + 1/2) * log( priorRate[j1] + kappa[j1] * (y - priorMean[j1])^2 / (2*(1+kappa[j1]))  )
+        out <- out + c1[j1] + c2
+      }
+      return(out)
+    },
+    sample = function(i = integer(), j = integer()) {
+      for(j1 in 1:J) {
+        y <- values(model, dataNodes[(i-1)*J+j1])[1]
+        values(model, marginalizedNodes2[(j-1)*J+j1]) <<- c(rgamma(1, shape = priorShape[j1] + 1/2,
+                                                                   rate = priorRate[j1] + kappa[j1] * (y - priorMean[j1])^2 / (2*(1+kappa[j1])) ))
+        values(model, marginalizedNodes1[(j-1)*J+j1]) <<- c(rnorm(1, mean = (kappa[j1] * priorMean[j1] + y)/(1 + kappa[j1]), 
+                                                                  sd = sqrt(1/(values(model, marginalizedNodes2[(j-1)*J+j1])[1] * (1+kappa[j1]))) ))
+      }
+    }
+  )
+)
+
+
+CRP_conjugate_dmnorm_wish_dmnorm <- nimbleFunction(
+  name = "CRP_conjugate_dmnorm_wish_dmnorm",
+  contains = CRP_helper,
+  setup = function(model, marginalizedNodes1, marginalizedNodes2, dataNodes, J, M) {
+    d <- length(model[[marginalizedNodes1[1]]])
+    priorMean <- matrix(0, ncol=d, nrow=J)  
+    kappa <- nimNumeric(J+1)
+    df0 <- nimNumeric(J+1)
+    priorRate <- array(0, c(d, d, J)) 
+    c1 <- nimNumeric(J+1)
+  },
+  methods = list(
+    storeParams = function() {
+      for(j1 in 1:J) {
+        priorMean[j1, ] <<- model$getParam(marginalizedNodes1[j1], 'mean') 
+        kappa[j1] <<- model$getParam(marginalizedNodes1[j1], 'prec')[1,1] / values(model, marginalizedNodes2[j1])[1]
+        df0[j1] <<- model$getParam(marginalizedNodes2[j1], 'df') 
+        priorRate[, , j1] <<- model$getParam(marginalizedNodes2[j1], 'R') 
+        c1[j1] <<- d*(log(kappa[j1]) - log(1+kappa[j1]) - log(pi))/2 + df0[j1]*logdet(priorRate[, , j1])/2 +
+          sum(lgamma((df0[j1]+2-1:d)/2) - lgamma((df0[j1]+1-1:d)/2)) 
+      }
+    },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
+    calculate_prior_predictive = function(i = integer()) {
+      returnType(double())
+      out <- 0
+      for(j1 in 1:J) {
+        y <- values(model, dataNodes[(i-1)*J+j1])
+        c2 <- -(df0[j1]+1) * logdet(priorRate[, , j1] + (kappa[j1]/(kappa[j1]+1)) * (y-priorMean[j1, ])%*%t(y-priorMean[j1, ]) ) / 2
+        out <- out + c1[j1] + c2
+      }
+      return(out)
+    },
+    sample = function(i = integer(), j = integer()) {
+      for(j1 in 1:J) {
+        y <- values(model, dataNodes[(i-1)*J+j1])
+        tmp <- rwish_chol(1, chol(priorRate[, , j1] + (kappa[j1]/(kappa[j1]+1)) * (y-priorMean[j1, ])%*%t(y-priorMean[j1, ])),
+                             df = (df0[j1]+1), scale_param=FALSE )
+        values(model, marginalizedNodes2[(j-1)*J+j1]) <<- c(tmp)
+        values(model, marginalizedNodes1[(j-1)*J+j1]) <<- c(rmnorm_chol(1, mean = (kappa[j1] * priorMean[j1, ] + y)/(1 + kappa[j1]), 
+                                                                        chol( tmp / (1+kappa[j1]) ),
+                                                                        prec_param = TRUE))
+      }
+    }
+  )
+)
+
+
 CRP_conjugate_dinvgamma_dnorm <- nimbleFunction(
   name = "CRP_conjugate_dinvgamma_dnorm",
   contains = CRP_helper,
