@@ -828,7 +828,7 @@ CRP_conjugate_dmnorm_wish_dmnorm <- nimbleFunction(
                              df = (df0[j1]+1), scale_param=FALSE )
         values(model, marginalizedNodes2[(j-1)*J+j1]) <<- c(tmp)
         values(model, marginalizedNodes1[(j-1)*J+j1]) <<- c(rmnorm_chol(1, mean = (kappa[j1] * priorMean[j1, ] + y)/(1 + kappa[j1]), 
-                                                                        chol( tmp / (1+kappa[j1]) ),
+                                                                        chol( tmp * (1+kappa[j1]) ),
                                                                         prec_param = TRUE))
       }
     }
