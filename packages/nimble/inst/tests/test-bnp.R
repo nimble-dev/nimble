@@ -370,6 +370,7 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
                    sd = sqrt(smp1[2] / (1+kappa[2]))) 
   expect_identical(smp1, c(model$s2[1, 1], model$s2[1, 2]))
   expect_identical(smp2, c(model$mu[1, 1], model$mu[1, 2]) )
+
   
   ## conjugate dmnorm_invwish_dmnorm
   code <- nimbleCode({
@@ -464,6 +465,74 @@ test_that("Test that CRP sampler works fine for conjugate models with more than 
   expect_identical(smp1[[2]], model$Sigma[1:2, 1:2, 1, 2])
   expect_identical(smp2[[1]], model$mu[1, 1:2, 1])
   expect_identical(smp2[[2]], model$mu[1, 1:2, 2])
+  
+  ## conjugate dnorm_gamma_dnorm model
+  code = nimbleCode({
+    xi[1:5] ~ dCRP(conc=1, size=5)
+    for(i in 1:5) {
+      for(j in 1:2) {
+        mu[i, j] ~ dnorm(j, tau = s2[i, j]*kappa[j])
+        s2[i, j] ~ dgamma(shape=j+1, rate=j)
+        y[i, j] ~ dnorm(mu[xi[i], j], tau=s2[xi[i], j])  
+      }
+    }
+    for(j in 1:2) {
+      kappa[j] <- 2+j
+    }
+  })
+  y <- matrix(rnorm(5*2, 10, 1), ncol=2, nrow=5)
+  y[4:5, ] <- rnorm(2*2, -10, 1)
+  data = list(y = y)
+  inits = list(xi = rep(1,5), mu=matrix(rnorm(5*2), ncol=2, nrow=5), s2=matrix(rgamma(5*2, 1, 2), ncol=2, nrow=5))
+  model = nimbleModel(code, data=data, inits=inits)
+  cmodel<-compileNimble(model)
+  mConf = configureMCMC(model, monitors = c('xi','mu', 's2'))
+  mcmc = buildMCMC(mConf)
+  
+  # sampler assignment:
+  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_gamma_dnorm")
+  
+  # computation of prior predictive and posterior sampling of parameters:
+  pYgivenT <- sum(model$getLogProb('y[1, 1]'), model$getLogProb('y[1, 2]'))
+  pT1 <- sum(model$getLogProb('mu[1,1]'),  model$getLogProb('mu[1, 2]'))
+  pT2 <- sum(model$getLogProb('s2[1, 1]'), model$getLogProb('s2[1, 2]'))
+  
+  priorMean <- c(model$getParam('mu[1, 1]', 'mean'), model$getParam('mu[1, 2]', 'mean')) 
+  kappa <- c(model$getParam('mu[1, 1]', 'tau') / values(model, 's2[1, 1]')[1], model$getParam('mu[1, 2]', 'tau') / values(model, 's2[1, 2]')[1])
+  priorShape <- c(model$getParam('s2[1, 1]', 'shape'), model$getParam('s2[1, 2]', 'shape'))
+  priorRate <- c(model$getParam('s2[1, 1]',  'rate'), model$getParam('s2[1, 2]',  'rate'))
+  pTgivenY2 <- dgamma(model$s2[1, 1], shape = priorShape[1] + 1/2,
+                      rate = priorRate[1] + kappa[1] * (data$y[1,1] - priorMean[1])^2 / (2*(1+kappa[1])),
+                      log=TRUE) + dgamma(model$s2[1, 2], shape = priorShape[2] + 1/2,
+                                         rate = priorRate[2] + kappa[2] * (data$y[1,2] - priorMean[2])^2 / (2*(1+kappa[2])),
+                                         log=TRUE)
+  pTgivenY1 <- dnorm(model$mu[1, 1], mean = (kappa[1] * priorMean[1] + data$y[1, 1])/(1 + kappa[1]), 
+                     sd = sqrt(1/(model$s2[1, 1] *(1+kappa[1]))),
+                     log=TRUE)  + dnorm(model$mu[1, 2], mean = (kappa[2] * priorMean[2] + data$y[1, 2])/(1 + kappa[2]), 
+                                        sd = sqrt(1/(model$s2[1, 2] *(1+kappa[2]))),
+                                        log=TRUE)
+  
+  mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
+  pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
+  
+  expect_equal(pY, pT1 + pT2 + pYgivenT - pTgivenY1 - pTgivenY2)
+  
+  set.seed(1)
+  mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$sample(1, 1)
+  set.seed(1)
+  smp1 <- rep(0,2) # to preserve order in sampling
+  smp2 <- rep(0,2)
+  smp1[1] <- rgamma(1, shape = priorShape[1] + 1/2,
+                    rate = priorRate[1] + kappa[1] * (data$y[1,1] - priorMean[1])^2 / (2*(1+kappa[1])))
+  smp2[1] <- rnorm(1, mean = (kappa[1] * priorMean[1] + data$y[1,1])/(1 + kappa[1]), 
+                   sd = sqrt(1 / (smp1[1]*(1+kappa[1]))))
+  smp1[2] <- rgamma(1, shape = priorShape[2] + 1/2,
+                    rate = priorRate[2] + kappa[2] * (data$y[1,2] - priorMean[2])^2 / (2*(1+kappa[2])) )
+  smp2[2] <- rnorm(1, mean = (kappa[2] * priorMean[2] + data$y[1, 2])/(1 + kappa[2]), 
+                   sd = sqrt(1 / (smp1[2]*(1+kappa[2])))) 
+  expect_identical(smp1, c(model$s2[1, 1], model$s2[1, 2]))
+  expect_identical(smp2, c(model$mu[1, 1], model$mu[1, 2]) )
   
   
   
