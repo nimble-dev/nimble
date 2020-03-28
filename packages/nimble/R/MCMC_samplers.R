@@ -1764,7 +1764,7 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
         ## node list generation
         target <- model$expandNodeNames(target)
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        calcNodes <- model$getDependencies(target, self = FALSE)  
+        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)  
 
         d <- sqrt(length(targetAsScalar))
         nTheta <- d*(d-1)/2    # this many unconstrained elements to be sampled
@@ -1772,77 +1772,78 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
         adaptive            <- if(!is.null(control$adaptive))            control$adaptive            else TRUE
         adaptInterval       <- if(!is.null(control$adaptInterval))       control$adaptInterval       else 200
         adaptFactorExponent <- if(!is.null(control$adaptFactorExponent)) control$adaptFactorExponent else 0.8
-        scale               <- if(!is.null(control$scale))               control$scale               else numeric(nTheta, 1)
-        
-        scaleOriginal <- scale
-        timesRan      <- 0
-        timesAcceptedVec <- numeric(nTheta, 0)
-        optimalAR     <- 0.44
+        scaleOriginal       <- if(!is.null(control$scale))               control$scale               else 1
 
-        z             <- array(0, c(d, d))
-        zProposed     <- array(0, c(d, d))
-        partialSums   <- array(0, c(d, d))  # 1-x_{21}^2, 1-x_{31}^2, 1-x_{31}^2-x_{32}^2, ...
-        partialSumsProp   <- array(0, c(d, d))  # 1-x_{21}^2, 1-x_{31}^2, 1-x_{31}^2-x_{32}^2, ...
-        partialSums[ , 1] <- 1
-        partialSumsProp[ , 1] <- 1
-        diag(z) <- 1
-        diag(zProposed) <- 1
-        thetaVec      <- numeric(nTheta)
-        thetaVec_prop <- numeric(nTheta)
-        currentValue      <- array(0, c(d,d))
-        propValue         <- array(0, c(d,d))
+        scaleVec            <- rep(scaleOriginal, nTheta)
+        timesRan            <- 0
+        timesAcceptedVec    <- rep(nTheta, 0)
+        timesAdapted        <- 0
+        optimalAR           <- 0.44
+
+        z                   <- array(0, c(d, d))
+        diag(z)             <- 1
+        partialSums         <- array(0, c(d, d))  # 1-x_{21}^2, 1-x_{31}^2, 1-x_{31}^2-x_{32}^2, ...
+        partialSums[ , 1]   <- 1
+
+        ## Temporary vectors for current row calculations:
+        partialSumsProp     <- numeric(d)    
+        currentValue        <- numeric(d)
+        propValue           <- numeric(d)
+        
         ## checks
         dist <- model$getDistribution(target)
-        if(d < 2)                        stop('RW_lkj_corr_cholesky sampler requires target node dimension to be at least 2x2')
-        if(adaptFactorExponent < 0)      stop('cannot use RW_lkj_corr_cholesky sampler with adaptFactorExponent control parameter less than 0')
-        if(any(scale < 0))               stop('cannot use RW_lkj_corr_cholesky sampler with scale control parameter less than 0')
+        if(dist != 'dlkj_corr_cholesky') stop('RW_lkj_corr_cholesky sampler can only be used with the dlkj_corr_cholesky distribution.')
+        if(d < 2)                        stop('RW_lkj_corr_cholesky sampler requires target node dimension to be at least 2x2.')
+        if(adaptFactorExponent < 0)      stop('Cannot use RW_lkj_corr_cholesky sampler with adaptFactorExponent control parameter less than 0.')
+        if(any(scaleVec < 0))            stop('Cannot use RW_lkj_corr_cholesky sampler with scale control parameter less than 0.')
 
     },
     run = function() {
-        currentValue <<- model[[target]]
-        propValue <<- currentValue   ## wasteful?
-        ## calculate transformed values
-        transform(currentValue)  # compute z and partialSums
-
-        ## thnk through how we are updating z and partialsums
-        
-        ## Individual univariate RW on the nTheta elements
-        cnt <- 1
+        ## FIXME: work with U not L in all cases without t()
+        ## calculate transformed values (in unconstrained space) and partial sums in each column
+        transform(model[[target]])  # compute z and partialSums
+ 
+        ## Individual univariate RW on the nTheta elements:
+        ## advantage: probably better movement through space than with block update
+        ## (plus note only column values of target matrix are recalculated for a given scalar update in a given column)
+        ## disadvantage: all downstream dependencies of entire matrix will be recalculated.
+        cnt <- 0
         for(i in 2:d) {
+            currentValue <<- model[[target]][, i]
+            partialSumsProp <<- partialSums[i, ]
             for(j in 1:(i-1)) {
-                yCurrent <- atanh(z[i, j])
-                yProp <- rnorm(1, yCurrent, scale[cnt])
                 cnt <- cnt + 1
-                zProp[i, j] <<- tanh(yProp)
-                propValue[i, j] <<- zProp[i, j] * sqrt(partialSumsProp[i, j])
-                ## should I use inverse transform here?
+                ## RW on unconstrained y
+                yCurrent <- atanh(z[i, j])
+                yProp <- rnorm(1, yCurrent, scaleVec[cnt])
+                zProp <- tanh(yProp)
+                propValue[j] <<- zProp * sqrt(partialSumsProp[j])
+                ## Update remainder of row so that length of row is 1
                 for(jprime in (j+1):i) {
-                    ## Update remainder of row so that length of row is 1
-                    partialSumsProp[i, j] <<- partialSumsProp[i, j-1] - propValue[i, j-1]^2
-                    propValue[i, jprime] <<- z[i, j]*sqrt(partialSumsProp[i, j])
+                    partialSumsProp[jprime] <<- partialSumsProp[jprime-1] - propValue[i, jprime-1]^2
+                    propValue[jprime] <<- z[i, jprime] * sqrt(partialSumsProp[jprime])
                 }
-                model[[target]] <<- propValue  ## just put in values that have changed?
+                model[[target]][j:i, i] <<- propValue[j:i] 
                 logMHR <- calculateDiff(model, calcNodesNoSelf) + calculateDiff(model, target)
                 ## Adjust MHR to account for non-symmetric proposal by adjusting prior to transformed scale.
                 logMHR <- logMHR + 2*(log(cosh(yCurrent)) - log(cosh(yProp)))
                 if(j < i-1) {
                     for(jprime in (j+1):(i-1)) 
-                        logMHR <- logMHR + 0.5*(log(partialSumsProp[i, j]) - log(partialSums[i, j]))
+                        logMHR <- logMHR + 0.5*(log(partialSumsProp[j]) - log(partialSums[i, j]))
+                    ## logMHR <- logMHR + 0.5*sum(log(partialSumsProp[(j+1):(i-1)]) - log(partialSums[i, (j+1):(i-1)]))
                 }
                 jump <- decide(logMHR)
-                if(jump) timesAcceptedVec[cnt] <<- timesAcceptedVec[cnt] + 1
-                ## Avoid copying entire target matrix as we are modifying one row at a time.
+                ## Avoid copying entire target matrix as we are modifying one column at a time.
                 if(jump) {
-                    nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelf, logProb = TRUE)
-                    model[[target]][i, ] <<- propValue[i, ]
-                    z[i, ] <<- zProposed[i, ]
-                    partialSums[i, ] <<- partialSumsProp[i, ]
+                    timesAcceptedVec[cnt] <<- timesAcceptedVec[cnt] + 1
+                    partialSums[i, (j+1):i] <<- partialSumsProp[(j+1):i]
+                    currentValue[j:i] <<- propValue[j:i]
                 }
                 else {
                     nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesNoSelf, logProb = TRUE)
-                    model[[target]][i, ] <<- currentValue[i, ]
-                    zProp[i, ] <<- z[i, ]
-                    partialSumsProp[i, ] <<- partialSums[i, ]
+                    model[[target]][j:i, i] <<- currentValue[j:i]
+                    model$calculate(target)   ## Update target logProb since not part of calcNodesNoSelf.
+                    partialSumsProp[j+1] <<- partialSums[i, j+1]
                 }
             }
         }
@@ -1851,39 +1852,29 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
             if(timesRan %% adaptInterval == 0) {
                 acceptanceRateVec <- timesAcceptedVec / timesRan
                 timesAdapted <<- timesAdapted + 1
-                gamma1 <<- 1/((timesAdapted + 3)^adaptFactorExponent)
+                gamma1 <- 1/((timesAdapted + 3)^adaptFactorExponent)
                 adaptFactorVec <- exp(10 * gamma1 * (acceptanceRateVec - optimalAR))   
                 scaleVec <<- scaleVec * adaptFactorVec
                 timesRan <<- 0
-                timesAcceptedVec <<- numeric(d, 0)
+                timesAcceptedVec <<- numeric(nTheta, 0)
             }
         }
 
     },
     methods = list(
-        transform = function() {
-            z[2:d, 1] <<- x[2:d, 1]
+        transform = function(x = double(2)) {
+            z[2:d, 1] <<- x[1, 2:d]
             for(i in 3:d) {
                 for(j in 2:(i-1)) {
-                    partialSums[i, j] <<- partialSums[i, j-1] - x[i, j-1]^2
-                    z[i, j] <<- x[i, j] / partialSums[i, j]
+                    partialSums[i, j] <<- partialSums[i, j-1] - x[j-1, i]^2
+                    z[i, j] <<- x[j, i] / sqrt(partialSums[i, j])
                 }
             }
         },
-        ## probably remove
-        inverseTransform = function(zCurrent, partialSumsCurrent, row) {
-            propValue[row, 1] <<- zCurrent[row, 1]
-            for(i in 2:row) {
-                if(i < row) {
-                    propValue[row, i] <<- zCurrent[row, i] * sqrt(partialSumsCurrent[row, i])
-                } else propValue[row, i] <<- sqrt(partialSumsCurrent[row, i])
-            }
-        }
         reset = function() {
-            scale   <<- scaleOriginal
-            timesRan      <<- 0
-            timesAdapted  <<- 0
-            gamma1 <<- 0
+            scaleVec         <<- numeric(nTheta, scaleOriginal)
+            timesRan         <<- 0
+            timesAdapted     <<- 0
             timesAcceptedVec <<- numeric(nTheta, 0)
         }
     ), where = getLoadingNamespace()

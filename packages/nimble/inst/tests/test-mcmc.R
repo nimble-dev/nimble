@@ -966,6 +966,46 @@ test_that('detect conjugacy when scaling Wishart, inverse Wishart cases', {
     expect_identical(length(m$checkConjugacy('Sigma')), 0L, 'Wishart case')
 })
 
+test_that('using RW_lkj_corr_cholesky', {
+
+## why is t(model[[target]]) not working
+    
+    code <- nimbleCode({
+        for(i in 1:n) {
+            y[i, 1:J] ~ dmnorm(mu[1:J], cov = R[1:J, 1:J])
+        }
+        R[1:J, 1:J] <- t(U[1:J, 1:J]) %*% U[1:J, 1:J]
+        U[1:J, 1:J] ~ dlkj_corr_cholesky(eta, J)
+    })
+    J <- 5
+    n <- 500
+    set.seed(1)
+    mat <- rlkj_corr_cholesky(1, 1, J)
+    y <- t(t(mat) %*% matrix(rnorm(n*J), J, n))
+    m <- nimbleModel(code, data = list(y = y), constants = list(n = n, J = J),
+                     inits = list(eta = 1, mu = rep(0, J), U = diag(J)))
+
+    set.seed(1)
+    conf <- configureMCMC(m)
+    samplers <- conf$getSamplers()
+    expect_equal(samplers[[1]]$name, 'RW_lkj_corr_cholesky')
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc, project = m)
+    samples <- runMCMC(cmcmc, niter = 5000, nburnin = 1000)
+          
+
+    ## Add code where implement sampler inefficiently but with clear matrix calculations.
+    set.seed(1)
+    mcmc$run(1)
+    smp <- as.matrix(mcmc$mvSamples)
+    x <- m$U
+    for(i in 2:J) {
+        for(j in 2:(i-1)) {
+
+        }}
+    
+})
 
 ## testing conjugate MVN updating with ragged dependencies;
 ## that is, dmnorm dependents of different lengths from the target node
