@@ -766,10 +766,10 @@ void init_dynamicVars(NodeVectorClassNew_derivs &nodes,
 		      std::vector<CppAD::AD<double> > &dynamicVars);
 void copy_dynamicVars_to_model(NodeVectorClassNew_derivs &nodes,
 			       std::vector<CppAD::AD<double> > &dynamicVars);
-void update_dynamicVars(NodeVectorClassNew_derivs &NV,
-			std::vector<double> &dynamicVars);
-void update_dynamicVars_meta(NodeVectorClassNew_derivs &NV,
-			     std::vector< CppAD::AD<double> > &dynamicVars);
+/* void update_dynamicVars(NodeVectorClassNew_derivs &NV, */
+/* 			std::vector<double> &dynamicVars); */
+/* void update_dynamicVars_meta(NodeVectorClassNew_derivs &NV, */
+/* 			     std::vector< CppAD::AD<double> > &dynamicVars); */
 
 void initialize_AD_model_before_recording(NodeVectorClassNew_derivs &nodes);
 

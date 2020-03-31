@@ -744,11 +744,11 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
                                             metaTape = FALSE) {
     if(!metaTape) {
       ADtape_independentVarsName <- as.name('independentVars')
-      ADtape_dynamicVarsName <- as.name('dynamicVars')
+      ## ADtape_dynamicVarsName <- as.name('dynamicVars')
       update_dynamicVars_funName <- as.name("update_dynamicVars")
     } else {
       ADtape_independentVarsName <- as.name('independentVars_meta')
-      ADtape_dynamicVarsName <- as.name('dynamicVars_meta')
+      ## ADtape_dynamicVarsName <- as.name('dynamicVars_meta')
       update_dynamicVars_funName <- as.name("update_dynamicVars_meta")
     }
     nodeFxnVector_name <- useModelInfo[['nodeFxnVector_name']]
@@ -933,9 +933,8 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
     }
 
   dynamicVarsLine <- if(usesModelCalculate) {
-    substitute(UDV(NV, memberData(ADtapeSetup, DVN)),
+    substitute(UDV(NV, ADtapeSetup),
                list(NV = as.name(nodeFxnVector_name[1]),
-                    DVN = ADtape_dynamicVarsName,
                     UDV = update_dynamicVars_funName))
   } else {
     quote(blank())

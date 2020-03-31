@@ -158,6 +158,15 @@ class nimbleCppADinfoClass {
  nimbleCppADinfoClass() : metaFlag(false) {}
 };
 
+void update_dynamicVars(NodeVectorClassNew_derivs &NV,
+			nimbleCppADinfoClass &ADinfo);
+//std::vector<double> &dynamicVars,
+//			CppAD::ADFun<double>* &tapePtr);
+void update_dynamicVars_meta(NodeVectorClassNew_derivs &NV,
+			     nimbleCppADinfoClass &ADinfo);
+//std::vector< CppAD::AD<double> > &dynamicVars,
+//			     CppAD::ADFun<double>* &tapePtr);
+
 /* nimbleFunctionCppADbase is a base class to be inherited by all
    CppAD-enabled nimbleFunctions. Some of these functions might
    make more sense as stand-alone functions.  Let's see. */

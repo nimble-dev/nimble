@@ -134,6 +134,40 @@ void setOrdersFound(const NimArr<1, double> &derivOrders,
   }
 }
 
+void update_dynamicVars(NodeVectorClassNew_derivs &NV,
+			nimbleCppADinfoClass &ADinfo) {
+//std::vector<double> &dynamicVars,
+//			CppAD::ADFun<double>* &tapePtr) {
+  int length_extraInput = NV.model_extraInput_accessor.getTotalLength();
+  NimArr<1, double> NimArrValues;
+  if(length_extraInput > 0) {
+    NimArrValues.setSize(length_extraInput);
+    ADinfo.dynamicVars.resize(length_extraInput);
+    getValues(NimArrValues, NV.model_extraInput_accessor);
+    std::copy( NimArrValues.getPtr(),
+	       NimArrValues.getPtr() + length_extraInput,
+	       ADinfo.dynamicVars.begin());
+    ADinfo.ADtape->new_dynamic(ADinfo.dynamicVars);
+  }
+}
+
+void update_dynamicVars_meta(NodeVectorClassNew_derivs &NV,
+			     nimbleCppADinfoClass &ADinfo) {
+  //std::vector< CppAD::AD<double> > &dynamicVars,
+  //			     CppAD::ADFun<double>* &tapePtr) {
+  int length_extraInput = NV.model_extraInput_accessor.getTotalLength();
+  NimArr<1, double> NimArrValues;
+  if(length_extraInput > 0) {
+    NimArrValues.setSize(length_extraInput);
+    ADinfo.dynamicVars.resize(length_extraInput);
+    getValues(NimArrValues, NV.model_extraInput_accessor);
+    std::copy( NimArrValues.getPtr(),
+	       NimArrValues.getPtr() + length_extraInput,
+	       ADinfo.dynamicVars.begin());
+  }
+  std::cout<<"Use of dynamicVars in meta-taping is ambiguous."<<std::endl;
+}
+
 template<typename BASE, class TAPETYPE, class ADCLASS>
 void getDerivs_internal(vector<BASE> &independentVars,			
 			TAPETYPE *ADtape,
