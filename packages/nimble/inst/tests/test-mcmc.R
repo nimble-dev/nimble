@@ -967,8 +967,6 @@ test_that('detect conjugacy when scaling Wishart, inverse Wishart cases', {
 })
 
 test_that('using RW_lkj_corr_cholesky', {
-
-## why is t(model[[target]]) not working
     
     code <- nimbleCode({
         for(i in 1:n) {
@@ -978,7 +976,7 @@ test_that('using RW_lkj_corr_cholesky', {
         U[1:J, 1:J] ~ dlkj_corr_cholesky(eta, J)
     })
     J <- 5
-    n <- 500
+    n <- 2000
     set.seed(1)
     mat <- rlkj_corr_cholesky(1, 1, J)
     y <- t(t(mat) %*% matrix(rnorm(n*J), J, n))
@@ -992,19 +990,80 @@ test_that('using RW_lkj_corr_cholesky', {
     mcmc <- buildMCMC(conf)
     cm <- compileNimble(m)
     cmcmc <- compileNimble(mcmc, project = m)
-    samples <- runMCMC(cmcmc, niter = 5000, nburnin = 1000)
-          
-
-    ## Add code where implement sampler inefficiently but with clear matrix calculations.
-    set.seed(1)
-    mcmc$run(1)
-    smp <- as.matrix(mcmc$mvSamples)
-    x <- m$U
-    for(i in 2:J) {
-        for(j in 2:(i-1)) {
-
-        }}
+    samples <- runMCMC(cmcmc, niter = 1500, nburnin = 500)
+    postMean <- colMeans(samples)
+    names(postMean) <- NULL
+    expect_equal(postMean, c(mat), tolerance = 0.05, info = "RW_lkj posterior not close to truth")
     
+    ## Implement sampler inefficiently but with clear(er) matrix calculations and compare to uncompiled MCMC.
+    ## Also note partialSums and z are transposed relative to U.
+    set.seed(1)
+    m$simulate('U')
+    m$calculate()
+    saveU <- m$U
+    
+    set.seed(1)
+    conf <- configureMCMC(m)
+    conf$removeSamplers('U')
+    ## Use small scale so proposals are accepted.
+    conf$addSampler('U[1:5, 1:5]', 'RW_lkj_corr_cholesky', control = list(scale = 0.01))
+    mcmc <- buildMCMC(conf)
+    mcmc$run(2)
+    smp <- as.matrix(mcmc$mvSamples)
+
+    set.seed(1)
+    calcNodesNoSelf <- m$getDependencies('U', self = FALSE)
+    m$U <- saveU
+    m$calculate()
+    d <- J
+    for(it in 1:2) {
+        x <- m$U
+        z <- matrix(0, d, d)
+        z[2:d, 1] <- x[1, 2:d]
+        partialSums <- matrix(0, d, d)
+        partialSums[, 1] <- 1
+        partialSums[2,2] <- 1-x[1,2]^2
+        for(i in 3:d) {
+            for(j in 2:(i-1)) {
+                partialSums[i, j] <- partialSums[i, j-1] - x[j-1, i]^2
+                z[i, j] <- x[j, i] / sqrt(partialSums[i, j])
+            }
+            partialSums[i, i] <- partialSums[i, i-1] - x[i-1, i]^2
+        }
+        diag(z) <- 1
+        cnt <- 0
+        for(i in 2:d) {
+            currentValue <- m$U[1:d, i]
+            propValue <- currentValue
+            partialSumsProp <- partialSums 
+            for(j in 1:(i-1)) {
+                cnt <- cnt + 1
+                ## RW on unconstrained y
+                yCurrent <- atanh(z[i, j])
+                yProp <- rnorm(1, yCurrent, 0.01)  
+                zProp <- tanh(yProp)
+                propValue[j] <- zProp * sqrt(partialSumsProp[i,j])
+                for(jprime in (j+1):i) {
+                    partialSumsProp[i,jprime] <- partialSumsProp[i,jprime-1] - propValue[jprime-1]^2
+                    propValue[jprime] <- z[i, jprime] * sqrt(partialSumsProp[i,jprime])
+                }
+                m$U[j:i, i] <- propValue[j:i] 
+                logMHR <- calculateDiff(m, calcNodesNoSelf) + calculateDiff(m, 'U')
+                logMHR <- logMHR + 2*(log(cosh(yCurrent)) - log(cosh(yProp)))
+                logMHR <- logMHR + 0.5*(sum(log(partialSumsProp[i, 1:(i-1)]) - log(partialSums[i, 1:(i-1) ]), na.rm = TRUE))
+                jump <- decide(logMHR)
+                if(jump) {
+                    partialSums <- partialSumsProp
+                    currentValue <- propValue
+                } else {
+                    m$U[, i] <- currentValue
+                    m$calculate()   
+                    partialSumsProp <- partialSums 
+                }
+            }    
+        }
+    }
+    expect_identical(m$U, matrix(smp[2, ], 5), "non-comparable manual MCMC and uncompiled MCMC for RW_lkj")
 })
 
 ## testing conjugate MVN updating with ragged dependencies;
