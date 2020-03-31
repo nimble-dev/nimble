@@ -1775,7 +1775,7 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
         scaleOriginal       <- if(!is.null(control$scale))               control$scale               else 1
         if(length(adaptInterval) > 1 || length(adaptFactorExponent) > 1 || length(scaleOriginal) > 1)
             stop("RW_lkj_corr_cholesky: 'adaptInterval', 'adaptFactorExponent', and 'scaleOriginal' should be single values.")
-        if(scaleOriginal < 1)
+        if(scaleOriginal < 0)
             stop('Cannot use RW_lkj_corr_cholesky sampler with scale control parameter less than 0.')
         
         scaleVec            <- rep(scaleOriginal, nTheta)
