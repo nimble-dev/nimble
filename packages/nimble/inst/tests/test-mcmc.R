@@ -998,6 +998,7 @@ test_that('using RW_lkj_corr_cholesky', {
     ## Implement sampler inefficiently but with clear(er) matrix calculations and compare to uncompiled MCMC.
     ## Also note partialSums and z are transposed relative to U.
     set.seed(1)
+    cm$eta <- 1.3
     cm$simulate('U')
     cm$calculate()
     saveU <- cm$U
@@ -1014,6 +1015,7 @@ test_that('using RW_lkj_corr_cholesky', {
     
     set.seed(1)
     calcNodesNoSelf <- m$getDependencies('U', self = FALSE)
+    m$eta <- cm$eta
     m$U <- saveU
     m$calculate()
     d <- J
