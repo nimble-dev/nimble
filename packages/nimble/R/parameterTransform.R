@@ -1,4 +1,14 @@
 
+## - identity transformations don't require their own class
+## - bases quick for (0, Inf), and (0, 1) transformations
+## - *one* instance of the specialized e.g., Dirichlet transform function, ...
+## - and the same for any transformations
+## - then outsource the ore complex (a, Inf), and (a, b) to nfList elements
+## - (leave it node-by-node for now not declartion)
+
+
+
+
 ptNodeVirtual <- nimbleFunctionVirtual(
     methods = list(
         getOriginalLengthOne    = function()                 { returnType(double())  },
