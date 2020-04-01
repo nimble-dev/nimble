@@ -1834,6 +1834,7 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
                 jump <- decide(logMHR)
                 ## Avoid copying entire target matrix as we are modifying one column at a time.
                 if(jump) {
+                    nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelf, logProb = TRUE)
                     timesAcceptedVec[cnt] <<- timesAcceptedVec[cnt] + 1
                     partialSums[(j+1):i, i] <<- partialSumsProp[(j+1):i]
                     currentValue[j:i] <<- propValue[j:i]
@@ -1845,7 +1846,6 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
                 }
             }
         }
-        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelf, logProb = TRUE)
         nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
         if(adaptive) {
             timesRan <<- timesRan + 1

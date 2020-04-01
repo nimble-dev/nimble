@@ -998,19 +998,20 @@ test_that('using RW_lkj_corr_cholesky', {
     ## Implement sampler inefficiently but with clear(er) matrix calculations and compare to uncompiled MCMC.
     ## Also note partialSums and z are transposed relative to U.
     set.seed(1)
-    m$simulate('U')
-    m$calculate()
-    saveU <- m$U
+    cm$simulate('U')
+    cm$calculate()
+    saveU <- cm$U
     
     set.seed(1)
     conf <- configureMCMC(m)
     conf$removeSamplers('U')
-    ## Use small scale so proposals are accepted.
+    ## Use scale s.t. some but not all proposals are accepted.
     conf$addSampler('U[1:5, 1:5]', 'RW_lkj_corr_cholesky', control = list(scale = 0.01))
     mcmc <- buildMCMC(conf)
-    mcmc$run(2)
-    smp <- as.matrix(mcmc$mvSamples)
-
+    cmcmc <- compileNimble(mcmc, project = m, resetFunctions = TRUE)
+    cmcmc$run(2)
+    smp <- as.matrix(cmcmc$mvSamples)
+    
     set.seed(1)
     calcNodesNoSelf <- m$getDependencies('U', self = FALSE)
     m$U <- saveU
@@ -1038,7 +1039,6 @@ test_that('using RW_lkj_corr_cholesky', {
             partialSumsProp <- partialSums 
             for(j in 1:(i-1)) {
                 cnt <- cnt + 1
-                ## RW on unconstrained y
                 yCurrent <- atanh(z[i, j])
                 yProp <- rnorm(1, yCurrent, 0.01)  
                 zProp <- tanh(yProp)
@@ -1055,6 +1055,8 @@ test_that('using RW_lkj_corr_cholesky', {
                 if(jump) {
                     partialSums <- partialSumsProp
                     currentValue <- propValue
+                    m$calculate()  # shouldn't be needed but is a fall-back
+                    z[i, j] <- zProp # shouldn't be needed
                 } else {
                     m$U[, i] <- currentValue
                     m$calculate()   
@@ -1063,7 +1065,7 @@ test_that('using RW_lkj_corr_cholesky', {
             }    
         }
     }
-    expect_identical(m$U, matrix(smp[2, ], 5), "non-comparable manual MCMC and uncompiled MCMC for RW_lkj")
+    expect_identical(m$U, matrix(smp[2, ], J), "non-comparable manual MCMC and uncompiled MCMC for RW_lkj")
 })
 
 ## testing conjugate MVN updating with ragged dependencies;
