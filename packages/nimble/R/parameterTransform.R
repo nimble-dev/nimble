@@ -9,208 +9,7 @@
 
 
 
-ptNodeVirtual <- nimbleFunctionVirtual(
-    methods = list(
-        getOriginalLengthOne    = function()                 { returnType(double())  },
-        getTransformedLengthOne = function()                 { returnType(double())  },
-        transformOne            = function(mVal = double(1)) { returnType(double(1)) },
-        inverseTransformOne     = function(tVal = double(1)) { returnType(double(1)) },
-        calcLogDetJacobianOne   = function(tVal = double(1)) { returnType(double())  }
-    )
-)
-
-ptNodeScalar <- nimbleFunction(
-    name = 'ptNodeScalar',
-    contains = ptNodeVirtual,
-    setup = function(model, node) {
-        if(!identical(node, model$expandNodeNames(node))) stop('more than one node in ptNode')
-        if(length(model$expandNodeNames(node, returnScalarComponents = TRUE)) != 1) stop('non-scalar node in ptNodeScalar')
-    },
-    run = function() { print('Warning: run method of ptNode is not defined') },
-    methods = list(
-        getOriginalLengthOne    = function() { returnType(double()); return(1) },
-        getTransformedLengthOne = function() { returnType(double()); return(1) },
-        transformOne = function(mVal = double(1)) {
-            returnType(double(1))
-            return(mVal)
-        },
-        inverseTransformOne = function(tVal = double(1)) {
-            returnType(double(1))
-            return(tVal)
-        },
-        calcLogDetJacobianOne = function(tVal = double(1)) {
-            returnType(double())
-            return(0)
-        }
-    ), where = getLoadingNamespace()
-)
-
-ptNodeScalarSemiInterval <- nimbleFunction(
-    name = 'ptNodeScalarSemiInterval',
-    contains = ptNodeVirtual,
-    setup = function(model, node) {
-        if(!identical(node, model$expandNodeNames(node))) stop('more than one node in ptNode')
-        if(length(model$expandNodeNames(node, returnScalarComponents = TRUE)) != 1) stop('non-scalar node in ptNodeScalar')
-        bounds <- c(model$getBound(node, 'lower'), model$getBound(node, 'upper'))
-        if(model$isTruncated(node)) {
-            bdName  <- if(isValid(bounds[1])) 'lower'  else 'upper'
-            bdParam <- if(isValid(bounds[1])) 'lower_' else 'upper_'
-            bdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, bdParam))
-            if(length(all.vars(bdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant ', bdName, ' bound, which cannot be used in parameterTransform.', call. = FALSE)
-        }
-        boundValue <- if(isValid(bounds[1])) bounds[1] else bounds[2]
-        isLowerBound <- if(isValid(bounds[1])) 1 else -1
-    },
-    run = function() { print('Warning: run method of ptNode is not defined') },
-    methods = list(
-        getOriginalLengthOne    = function() { returnType(double()); return(1) },
-        getTransformedLengthOne = function() { returnType(double()); return(1) },
-        transformOne = function(mVal = double(1)) {
-            returnType(double(1))
-            return(log(isLowerBound * (mVal - boundValue)))
-        },
-        inverseTransformOne = function(tVal = double(1)) {
-            returnType(double(1))
-            return(boundValue + isLowerBound * exp(tVal))
-        },
-        calcLogDetJacobianOne = function(tVal = double(1)) {
-            returnType(double())
-            return(tVal[1])
-        }
-    ), where = getLoadingNamespace()
-)
-
-ptNodeScalarInterval <- nimbleFunction(
-    name = 'ptNodeScalarInterval',
-    contains = ptNodeVirtual,
-    setup = function(model, node) {
-        if(!identical(node, model$expandNodeNames(node))) stop('more than one node in ptNode')
-        if(length(model$expandNodeNames(node, returnScalarComponents = TRUE)) != 1) stop('non-scalar node in ptNodeScalar')
-        bounds <- c(model$getBound(node, 'lower'), model$getBound(node, 'upper'))
-        dist <- model$getDistribution(node)
-        if(dist == 'dunif' || model$isTruncated(node)) {     ## uniform distribution, or a truncated node
-            if(dist == 'dunif')         { lParam <- 'min';    uParam <- 'max'    }
-            if(model$isTruncated(node)) { lParam <- 'lower_'; uParam <- 'upper_' }
-            lowerBdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, lParam))
-            upperBdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, uParam))
-            if(length(all.vars(lowerBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant lower bound, which cannot be used in parameterTransform.', call. = FALSE)
-            if(length(all.vars(upperBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant upper bound, which cannot be used in parameterTransform.', call. = FALSE)
-        } else {   ## some other distribution with finite support
-            message('parameterTransform is not familiar with the ', dist, ' distribution of node ', node, '.')
-            message('It will require the upper and lower bounds of the ', dist, ' distribution to be constant.')
-            message('If you\'re uncertain about this, please get in touch with the NIMBLE development team.')
-        }
-        lowerBound <- bounds[1]
-        range <- bounds[2] - bounds[1]
-        logRange <- log(range)
-    },
-    run = function() { print('Warning: run method of ptNode is not defined') },
-    methods = list(
-        getOriginalLengthOne    = function() { returnType(double()); return(1) },
-        getTransformedLengthOne = function() { returnType(double()); return(1) },
-        transformOne = function(mVal = double(1)) {
-            returnType(double(1))
-            return(logit((mVal - lowerBound) / range))
-        },
-        inverseTransformOne = function(tVal = double(1)) {
-            returnType(double(1))
-            return(lowerBound + range * expit(tVal))
-        },
-        calcLogDetJacobianOne = function(tVal = double(1)) {
-            x <- tVal[1]
-            returnType(double())
-            return(logRange - log(exp(x)+exp(-x)+2))   ## alternate: -2*log(1+exp(-x))-x)
-        }
-    ), where = getLoadingNamespace()
-)
-
-ptNodeMultiMNorm <- nimbleFunction(
-    name = 'ptNodeMultiMNorm',
-    contains = ptNodeVirtual,
-    setup = function(model, node) {
-        if(!identical(node, model$expandNodeNames(node))) stop('more than one node in ptNode')
-        if(!(model$getDistribution(node) %in% c('dmnorm', 'dmvt'))) stop('wrong distribution in ptNodeMultiMNorm')
-        nLengthOne <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
-        tLengthOne <- nLengthOne
-    },
-    run = function() { print('Warning: run method of ptNode is not defined') },
-    methods = list(
-        getOriginalLengthOne    = function() { returnType(double()); return(nLengthOne) },
-        getTransformedLengthOne = function() { returnType(double()); return(tLengthOne) },
-        transformOne = function(mVal = double(1)) {
-            returnType(double(1))
-            return(mVal)
-        },
-        inverseTransformOne = function(tVal = double(1)) {
-            returnType(double(1))
-            return(tVal)
-        },
-        calcLogDetJacobianOne = function(tVal = double(1)) {
-            returnType(double())
-            return(0)
-        }
-    ), where = getLoadingNamespace()
-)
-
-ptNodeMultiWishart <- nimbleFunction(
-    name = 'ptNodeMultiWishart',
-    contains = ptNodeVirtual,
-    setup = function(model, node) {
-        if(!identical(node, model$expandNodeNames(node))) stop('more than one node in ptNode')
-        if(!(model$getDistribution(node) %in% c('dwish', 'dinvwish'))) stop('wrong distribution in ptNodeMultiWishart')
-        nLengthOne <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
-        d <- sqrt(nLengthOne)
-        tLengthOne <- d*(d+1)/2
-    },
-    run = function() { print('Warning: run method of ptNode is not defined') },
-    methods = list(
-        getOriginalLengthOne    = function() { returnType(double()); return(nLengthOne) },
-        getTransformedLengthOne = function() { returnType(double()); return(tLengthOne) },
-        transformOne = function(mVal = double(1)) {
-            ## log-Cholesky transform, values are column-wise
-            valueAsMatrix <- nimArray(mVal, dim = c(d, d))
-            U <- chol(valueAsMatrix)
-            ## DT: there has to be a better way to do this procedure, below,
-            ## creating the vector of the log-Cholesky transformed values.
-            ## suggestions or ideas are welcomed.
-            transformedOne <- nimNumeric(tLengthOne)
-            tInd <- 1
-            for(j in 1:d) {
-                for(i in 1:d) {
-                    if(i==j) { transformedOne[tInd] <- log(U[i,j]); tInd <- tInd+1 }
-                    if(i< j) { transformedOne[tInd] <-     U[i,j];  tInd <- tInd+1 }
-                }
-            }
-            if(tInd != tLengthOne+1) stop('something wrong in transformOne method of ptNodeMultiWishart')
-            returnType(double(1))
-            return(transformedOne)
-        },
-        inverseTransformOne = function(tVal = double(1)) {
-            cholAsMatrix <- nimArray(0, dim = c(d, d))
-            ## DT: there has to be a better way to do this procedure, below,
-            ## now creating the vector of the Wishart node values.
-            ## once again, suggestions or ideas are welcomed.
-            tInd <- 1
-            for(j in 1:d) {
-                for(i in 1:d) {
-                    if(i==j) { cholAsMatrix[i,j] <- exp(tVal[tInd]); tInd <- tInd+1 }
-                    if(i< j) { cholAsMatrix[i,j] <-     tVal[tInd];  tInd <- tInd+1 }
-                }
-            }
-            if(tInd != tLengthOne+1) stop('something wrong in inverseTransformOne method of ptNodeMultiWishart')
-            valuesAsMatrix <- t(cholAsMatrix) %*% cholAsMatrix
-            valuesAsVector <- nimNumeric(nLengthOne, valuesAsMatrix)
-            returnType(double(1))
-            return(valuesAsVector)
-        },
-        calcLogDetJacobianOne = function(tVal = double(1)) {
-            lp <- d * log(2)
-            for(i in 1:d)   lp <- lp + (d+2-i) * tVal[i*(i+1)/2]
-            returnType(double())
-            return(lp)
-        }
-    ), where = getLoadingNamespace()
-)
+library(nimble)
 
 #' Automated transformations of model nodes to unconstrained scales
 #'
@@ -227,45 +26,90 @@ parameterTransform <- nimbleFunction(
         if(any(model$isDiscrete(nodesExpanded))) stop(paste0('parameterTransform nodes may not be discrete: ',      paste0(nodesExpanded[model$isDiscrete(nodesExpanded)], collapse = ', ')))
         nNodes <- length(nodesExpanded)
         if(nNodes < 1) stop('parameterTransform requires at least one model node')
+        ## transform types (stored in TYPE column of transformData):
+        ## 1: scalar unconstrained
+        ## 2: scalar semi-interval (0, Inf)
+        ## 3: scalar interval-constrained (0, 1)
+        ## 4: scalar semi-interval (-Inf, b) or (a, Inf)
+        ## 5: scalar interval-constrained (a, b)
+        ## 6: multivariate {normal, t}
+        ## 7: multivariate {wishart, inverse-wishart}
+        transformData <- array(NA, dim = c(nNodes, 7))
+        TYPE  <- 1
+        NIND1 <- 2
+        NIND2 <- 3
+        TIND1 <- 4
+        TIND2 <- 5
+        DATA1 <- 6
+        DATA2 <- 7
         ##
-        ptNodeNFL <- nimbleFunctionList(ptNodeVirtual)
         for(i in 1:nNodes) {
             node <- nodesExpanded[i]
+            dist <- model$getDistribution(node)
+            transformData[i,NIND1] <- if(i==1) 1 else transformData[i-1,NIND2]+1
+            transformData[i,TIND1] <- if(i==1) 1 else transformData[i-1,TIND2]+1
             if(!model$isMultivariate(node)) {   ## univariate
+                transformData[i,NIND2] <- transformData[i,NIND1]
+                transformData[i,TIND2] <- transformData[i,TIND1]
                 bounds <- c(model$getBound(node, 'lower'), model$getBound(node, 'upper'))
-                if(bounds[1] == -Inf & bounds[2] == Inf) {
-                    ## unconstrained scalar node (ptNodeScalar)
-                    ptNodeNFL[[i]] <- ptNodeScalar(model, node); next }
+                if(bounds[1] == -Inf && bounds[2] == Inf) {       ## 1: scalar unconstrained
+                    transformData[i,TYPE] <- 1; next }
+                if(bounds[1] == 0    && bounds[2] == Inf) {       ## 2: scalar semi-interval (0, Inf)
+                    transformData[i,TYPE] <- 2; next }
+                if(bounds[1] == 0    && bounds[2] == 1  ) {       ## 3: scalar interval-constrained (0, 1)
+                    transformData[i,TYPE] <- 3; next }
                 if((isValid(bounds[1]) && bounds[2] ==  Inf) ||
-                   (isValid(bounds[2]) && bounds[1] == -Inf)) {
-                    ## semi-interval scalar node (ptNodeScalarSemiInterval)
-                    ptNodeNFL[[i]] <- ptNodeScalarSemiInterval(model, node); next }
-                if(isValid(bounds[1]) && isValid(bounds[2])) {
-                    ## interval-constrained scalar node (ptNodeScalarInterval)
-                    ptNodeNFL[[i]] <- ptNodeScalarInterval(model, node); next }
-            stop(paste0('parameterTransform doesn\'t have a transformation for the bounds of node: ', node, ', which are (', bounds[1], ', ', bounds[2], ')'), call. = FALSE)
+                   (isValid(bounds[2]) && bounds[1] == -Inf)) {   ## 4: scalar semi-interval (-Inf, b) or (a, Inf)
+                    if(model$isTruncated(node)) {
+                        bdName  <- if(isValid(bounds[1])) 'lower'  else 'upper'
+                        bdParam <- if(isValid(bounds[1])) 'lower_' else 'upper_'
+                        bdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, bdParam))
+                        if(length(all.vars(bdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant ', bdName, ' bound, which cannot be used in parameterTransform.')
+                    }
+                    transformData[i,TYPE] <- 4
+                    transformData[i,DATA1] <- if(isValid(bounds[1])) bounds[1] else bounds[2]   ## formerly boundValue
+                    transformData[i,DATA2] <- if(isValid(bounds[1])) 1 else -1                  ## formerly isLowerBound
+                    next }
+                if(isValid(bounds[1]) && isValid(bounds[2])) {    ## 5: scalar interval-constrained (a, b)
+                    if(dist == 'dunif' || model$isTruncated(node)) {     ## uniform distribution, or a truncated node
+                        if(dist == 'dunif')         { lParam <- 'min';    uParam <- 'max'    }
+                        if(model$isTruncated(node)) { lParam <- 'lower_'; uParam <- 'upper_' }
+                        lowerBdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, lParam))
+                        upperBdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, uParam))
+                        if(length(all.vars(lowerBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant lower bound, which cannot be used in parameterTransform.')
+                        if(length(all.vars(upperBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant upper bound, which cannot be used in parameterTransform.')
+                    } else {   ## some other distribution with finite support
+                        message('parameterTransform is not familiar with the ', dist, ' distribution of node ', node, '.')
+                        message('It will require the upper and lower bounds of the ', dist, ' distribution to be constant.')
+                        message('If you\'re uncertain about this, please get in touch with the NIMBLE development team.')
+                    }
+                    transformData[i,TYPE] <- 5
+                    transformData[i,DATA1] <- bounds[1]               ## formerly lowerBound
+                    transformData[i,DATA2] <- bounds[2] - bounds[1]   ## formerly range
+                    next }
+                stop(paste0('parameterTransform doesn\'t have a transformation for the bounds of node: ', node, ', which are (', bounds[1], ', ', bounds[2], ')'))
             } else {   ## multivariate
-                dist <- model$getDistribution(node)
-                if(dist %in% c('dmnorm', 'dmvt')) {
-                    ptNodeNFL[[i]] <- ptNodeMultiMNorm(model, node); next }
-                if(dist %in% c('dwish', 'dinvwish')) {
-                    ptNodeNFL[[i]] <- ptNodeMultiWishart(model, node); next }
+                if(dist %in% c('dmnorm', 'dmvt')) {               ## 6: multivariate {normal, t}
+                    transformData[i,TYPE] <- 6
+                    d <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
+                    transformData[i,NIND2] <- transformData[i,NIND1] + d - 1
+                    transformData[i,TIND2] <- transformData[i,TIND1] + d - 1
+                    next }
+                if(dist %in% c('dwish', 'dinvwish')) {            ## 7: multivariate {wishart, inverse-wishart}
+                    transformData[i,TYPE] <- 7
+                    dSq <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
+                    d <- sqrt(dSq)
+                    transformData[i,NIND2] <- transformData[i,NIND1] + dSq - 1
+                    transformData[i,TIND2] <- transformData[i,TIND1] + d*(d+1)/2 - 1
+                    transformData[i,DATA1] <- d           ## formerly d
+                    transformData[i,DATA2] <- d*(d+1)/2   ## formerly tLengthOne
+                    next }
                 stop(paste0('parameterTransform doesn\'t handle \'', dist, '\' distributions.'), call. = FALSE)
             }
         }
-        ##
-        nLength <- tLength <- 0
-        for(i in 1:nNodes) { nLength <- nLength + ptNodeNFL[[i]]$getOriginalLengthOne()
-                             tLength <- tLength + ptNodeNFL[[i]]$getTransformedLengthOne() }
-        if(nLength != length(model$expandNodeNames(nodesExpanded, returnScalarComponents = TRUE))) stop('something wrong with nLength', call. = FALSE)
-        ##
-        nInd <- tInd <- array(0, c(nNodes, 2))
-        for(i in 1:nNodes) {
-            nInd[i,1] <- if(i==1) 1 else nInd[i-1,2]+1
-            nInd[i,2] <- nInd[i,1] + ptNodeNFL[[i]]$getOriginalLengthOne() - 1
-            tInd[i,1] <- if(i==1) 1 else tInd[i-1,2]+1
-            tInd[i,2] <- tInd[i,1] + ptNodeNFL[[i]]$getTransformedLengthOne() - 1
-        }
+        nLength <- transformData[nNodes,NIND2]
+        tLength <- transformData[nNodes,TIND2]
+        if(nLength != length(model$expandNodeNames(nodesExpanded, returnScalarComponents = TRUE))) stop('something wrong with nLength')
     },
     run = function() { print('Warning: run method of parameterTransform is not defined') },
     methods = list(
@@ -275,8 +119,33 @@ parameterTransform <- nimbleFunction(
             ## argument values(model, nodes), return vector on unconstrained scale
             transformed <- nimNumeric(tLength)
             for(i in 1:nNodes) {
-                theseValues <- nodeValuesFromModel[nInd[i,1]:nInd[i,2]]
-                transformed[tInd[i,1]:tInd[i,2]] <- ptNodeNFL[[i]]$transformOne(theseValues)
+                theseValues <- nodeValuesFromModel[transformData[i,NIND1]:transformData[i,NIND2]]
+                if(transformData[i,TYPE] == 1) {   ## 1: scalar unconstrained
+                    theseTransformed <- theseValues }
+                if(transformData[i,TYPE] == 2) {   ## 2: scalar semi-interval (0, Inf)
+                    theseTransformed <- log(theseValues) }
+                if(transformData[i,TYPE] == 3) {   ## 3: scalar interval-constrained (0, 1)
+                    theseTransformed <- logit(theseValues) }
+                if(transformData[i,TYPE] == 4) {   ## 4: scalar semi-interval (-Inf, b) or (a, Inf)
+                    theseTransformed <- log(transformData[i,DATA2] * (theseValues - transformData[i,DATA1])) }
+                if(transformData[i,TYPE] == 5) {   ## 5: scalar interval-constrained (a, b)
+                    theseTransformed <- logit((theseValues - transformData[i,DATA1]) / transformData[i,DATA2]) }
+                if(transformData[i,TYPE] == 6) {   ## 6: multivariate {normal, t}
+                    theseTransformed <- theseValues }
+                if(transformData[i,TYPE] == 7) {   ## 7: multivariate {wishart, inverse-wishart}
+                    ## log-Cholesky transform, values are column-wise
+                    d <- transformData[i,DATA1]
+                    valueAsMatrix <- nimArray(theseValues, dim = c(d, d))
+                    U <- chol(valueAsMatrix)
+                    ## DT: there has to be a better way to do this procedure, below,
+                    ## creating the vector of the log-Cholesky transformed values.
+                    theseTransformed <- nimNumeric(transformData[i,DATA2])
+                    tInd <- 1
+                    for(j in 1:d) {   for(i in 1:d) {
+                        if(i==j) { theseTransformed[tInd] <- log(U[i,j]); tInd <- tInd+1 }
+                        if(i< j) { theseTransformed[tInd] <-     U[i,j];  tInd <- tInd+1 } } }
+                }
+                transformed[transformData[i,TIND1]:transformData[i,TIND2]] <- theseTransformed
             }
             returnType(double(1))
             return(transformed)
@@ -285,8 +154,33 @@ parameterTransform <- nimbleFunction(
             ## argument on transformed scale, return vector suitable for values(model,)
             modelValuesVector <- nimNumeric(nLength)
             for(i in 1:nNodes) {
-                theseValues <- transformedValues[tInd[i,1]:tInd[i,2]]
-                modelValuesVector[nInd[i,1]:nInd[i,2]] <- ptNodeNFL[[i]]$inverseTransformOne(theseValues)
+                theseValues <- transformedValues[transformData[i,TIND1]:transformData[i,TIND2]]
+                if(transformData[i,TYPE] == 1) {   ## 1: scalar unconstrained
+                    theseInvTransformed <- theseValues }
+                if(transformData[i,TYPE] == 2) {   ## 2: scalar semi-interval (0, Inf)
+                    theseInvTransformed <- exp(theseValues) }
+                if(transformData[i,TYPE] == 3) {   ## 3: scalar interval-constrained (0, 1)
+                    theseInvTransformed <- ilogit(theseValues) }
+                if(transformData[i,TYPE] == 4) {   ## 4: scalar semi-interval (-Inf, b) or (a, Inf)
+                    theseInvTransformed <- transformData[i,DATA1] + transformData[i,DATA2] * exp(theseValues) }
+                if(transformData[i,TYPE] == 5) {   ## 5: scalar interval-constrained (a, b)
+                    theseInvTransformed <- transformData[i,DATA1] + transformData[i,DATA2] * expit(theseValues) }
+                if(transformData[i,TYPE] == 6) {   ## 6: multivariate {normal, t}
+                    theseInvTransformed <- theseValues }
+                if(transformData[i,TYPE] == 7) {   ## 7: multivariate {wishart, inverse-wishart}
+                    d <- transformData[i,DATA1]
+                    cholAsMatrix <- nimArray(0, dim = c(d, d))
+                    ## DT: there has to be a better way to do this procedure, below,
+                    ## now creating the vector of the Wishart node values.
+                    tInd <- 1
+                    for(j in 1:d) {
+                        for(i in 1:d) {
+                            if(i==j) { cholAsMatrix[i,j] <- exp(theseValues[tInd]); tInd <- tInd+1 }
+                            if(i< j) { cholAsMatrix[i,j] <-     theseValues[tInd];  tInd <- tInd+1 } } }
+                    valuesAsMatrix <- t(cholAsMatrix) %*% cholAsMatrix
+                    theseInvTransformed <- nimNumeric(d*d, valuesAsMatrix)
+                }
+                modelValuesVector[transformData[i,TIND1]:transformData[i,TIND2]] <- theseInvTransformed
             }
             returnType(double(1))
             return(modelValuesVector)
@@ -297,8 +191,28 @@ parameterTransform <- nimbleFunction(
             ## lp <- model$calculate(calcNodes) + pt$calcLogDetJacobian(transformedValues)
             lp <- 0
             for(i in 1:nNodes) {
-                theseValues <- transformedValues[tInd[i,1]:tInd[i,2]]
-                lp <- lp + ptNodeNFL[[i]]$calcLogDetJacobianOne(theseValues)
+                theseValues <- transformedValues[transformData[i,TIND1]:transformData[i,TIND2]]
+                if(transformData[i,TYPE] == 1) {   ## 1: scalar unconstrained
+                    lpAdd <- 0 }
+                if(transformData[i,TYPE] == 2) {   ## 2: scalar semi-interval (0, Inf)
+                    lpAdd <- theseValues[1] }
+                if(transformData[i,TYPE] == 3) {   ## 3: scalar interval-constrained (0, 1)
+                    x <- theseValues[1]
+                    lpAdd <- -log(exp(x)+exp(-x)+2) }                                ## alternate: -2*log(1+exp(-x))-x)
+                if(transformData[i,TYPE] == 4) {   ## 4: scalar semi-interval (-Inf, b) or (a, Inf)
+                    lpAdd <- theseValues[1] }
+                if(transformData[i,TYPE] == 5) {   ## 5: scalar interval-constrained (a, b)
+                    x <- theseValues[1]
+                    lpAdd <- log(transformData[i,DATA2]) - log(exp(x)+exp(-x)+2) }   ## alternate: -2*log(1+exp(-x))-x)
+                if(transformData[i,TYPE] == 6) {   ## 6: multivariate {normal, t}
+                    lpAdd <- 0 }
+                if(transformData[i,TYPE] == 7) {   ## 7: multivariate {wishart, inverse-wishart}
+                    d <- transformData[i,DATA1]
+                    lpAdd <- d * log(2)
+                    for(j in 1:d) {
+                        lpAdd <- lpAdd + (d+2-j) * theseValues[j*(j+1)/2] }
+                }
+                lp <- lp + lpAdd
             }
             returnType(double())
             return(lp)
@@ -337,61 +251,469 @@ parameterTransform <- nimbleFunction(
 
 
 
-##library(nimble)
+
+library(nimble)
+library(testthat)
+
+code <- nimbleCode({
+    a ~ dnorm(0, 1)
+    b ~ dgamma(1, 1)
+    c ~ dunif(2, 10)
+    d[1:3] ~ dmnorm(mu[1:3], cov = C[1:3,1:3])
+    e[1:3,1:3] ~ dwish(R = C[1:3,1:3], df = 5)
+})
+constants <- list(mu=rep(0,3), C=diag(3))
+data <- list()
+U <- matrix(c(.2,2,4,0,1,1,0,0,4), nrow=3, byrow=TRUE)
+eInit <- t(U) %*% U
+inits <- list(a=0, b=1, c=5, d=rep(0,3), e=eInit)
+Rmodel <- nimbleModel(code, constants, data, inits)
 ##
-##code <- nimbleCode({
-##    a ~ dnorm(0, 1)
-##    b ~ dgamma(1, 1)
-##    c ~ dunif(2, 10)
-##    d[1:3] ~ dmnorm(mu[1:3], cov = C[1:3,1:3])
-##    e[1:3,1:3] ~ dwish(R = C[1:3,1:3], df = 5)
-##})
-##constants <- list(mu=rep(0,3), C=diag(3))
-##data <- list()
-##U <- matrix(c(.2,2,4,0,1,1,0,0,4), nrow=3, byrow=TRUE)
-##eInit <- t(U) %*% U
-##inits <- list(a=0, b=1, c=5, d=rep(0,3), e=eInit)
-##Rmodel <- nimbleModel(code, constants, data, inits)
-##Rmodel$calculate()
+expect_equal(Rmodel$calculate(), -33.077938542)
 ##
-##Rmodel$e
-##chol(Rmodel$e)
-##chol(Rmodel$e) - U
-##(eVec <- values(Rmodel, 'e'))
-##mVal <- eVec
-##(node <- Rmodel$expandNodeNames('e'))
-##model <- Rmodel
+nodes <- letters[1:5]
+pt <- parameterTransform(Rmodel, nodes)
+## 
+Cmodel <- compileNimble(Rmodel)
+Cpt <- compileNimble(pt, project = Rmodel)
 ##
+vals <- values(Rmodel, nodes)
 ##
+## test uncompiled
+theNF <- pt
+tVals <- theNF$transform(vals)
+vals2 <- theNF$inverseTransform(tVals)
 ##
-##(nodes <- c('a'))
-##(nodes <- c('a', 'b'))
-##(nodes <- c('a', 'b', 'c'))
-##(nodes <- c('a', 'b', 'c', 'd'))
-##(nodes <- c('a', 'b', 'c', 'd', 'e'))
+expect_true(theNF$getOriginalLength() == 15)
+expect_true(theNF$getTransformedLength() == 12)
+expect_true(all(round(vals - c(0.00, 1.00, 5.00, 0.00, 0.00, 0.00, 0.04, 0.40, 0.80, 0.40, 5.00, 9.00, 0.80, 9.00, 33.00), 16) == 0))
+expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 0, 0, -1.6094379124341, 2, 0, 4, 1, 1.38629436111989), 14) == 0))
+expect_true(all(vals - vals2 == 0))
+expect_true(round(theNF$calcLogDetJacobian(tVals), 7) == -0.9571127)
+##
+## test compiled
+theNF <- Cpt
+tVals <- theNF$transform(vals)
+vals2 <- theNF$inverseTransform(tVals)
+##
+expect_true(theNF$getOriginalLength() == 15)
+expect_true(theNF$getTransformedLength() == 12)
+expect_true(all(round(vals - c(0.00, 1.00, 5.00, 0.00, 0.00, 0.00, 0.04, 0.40, 0.80, 0.40, 5.00, 9.00, 0.80, 9.00, 33.00), 16) == 0))
+expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 0, 0, -1.6094379124341, 2, 0, 4, 1, 1.38629436111989), 14) == 0))
+expect_true(all(vals - vals2 == 0))
+expect_true(round(theNF$calcLogDetJacobian(tVals), 7) == -0.9571127)
+
+
+code <- nimbleCode({
+    a ~ dnorm(0, 1)
+    b ~ dgamma(1, 1)
+    c ~ dunif(2, 10)
+    d[1:3] ~ dmnorm(mu[1:3], cov = C[1:3,1:3])
+    e[1:3,1:3] ~ dwish(R = C[1:3,1:3], df = 5)
+    f ~ dunif(0, 1)
+    g ~ dunif(0, 5)
+    h ~ dt(2, 2, 4)
+    ii[1:5,1:5] ~ dwish(R = Ci[1:5,1:5], df = 10)
+    j ~ dunif(-5, 5)
+})
+##
+Ci <- diag(5)
+Ci[1,2] <- Ci[2,1] <- 0.2
+Ci[1,3] <- Ci[3,1] <- 0.1
+Ci[4,5] <- Ci[5,4] <- 0.3
+##
+constants <- list(mu=rep(0,3), C=diag(3), Ci=Ci)
+data <- list()
+U <- matrix(c(.4,3,5,0,1,-1,0,0,4), nrow=3, byrow=TRUE)
+eInit <- t(U) %*% U
+inits <- list(a=0, b=1, c=5, d=rep(0,3), e=eInit, f=0.5, g=4, h=1, ii=diag(5), j=-1)
+##
+Rmodel <- nimbleModel(code, constants, data, inits)
+##
+expect_equal(Rmodel$calculate(), -80.6027522654)
+##
+nodes <- Rmodel$getNodeNames(stochOnly = TRUE)
+pt <- parameterTransform(Rmodel, nodes)
 ## 
-##pt <- parameterTransform(Rmodel, nodes)
+Cmodel <- compileNimble(Rmodel)
+Cpt <- compileNimble(pt, project = Rmodel)
+##
+vals <- values(Rmodel, nodes)
+##
+## test uncompiled
+theNF <- pt
+tVals <- theNF$transform(vals)
+vals2 <- theNF$inverseTransform(tVals)
+##
+expect_true(theNF$getOriginalLength() == 44)
+expect_true(theNF$getTransformedLength() == 31)
+expect_true(all(round(vals,15) - c(0, 1, 5, 0.5, 4, 1, -1, 0, 0, 0, 0.16, 1.2, 2, 1.2, 10, 14, 2, 14, 42, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1) == 0))
+expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 1.38629436111989, 1, -0.405465108108164, 0, 0, 0, -0.916290731874155, 3, -0.00000000000000177635683940025, 5, -1, 1.38629436111989, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 14) == 0))
+expect_true(all(vals - vals2 == 0))
+expect_true(round(theNF$calcLogDetJacobian(tVals) - 4.54724272356, 11) == 0)
+##
+## test compiled
+theNF <- Cpt
+tVals <- theNF$transform(vals)
+vals2 <- theNF$inverseTransform(tVals)
+##
+expect_true(theNF$getOriginalLength() == 44)
+expect_true(theNF$getTransformedLength() == 31)
+expect_true(all(round(vals,15) - c(0, 1, 5, 0.5, 4, 1, -1, 0, 0, 0, 0.16, 1.2, 2, 1.2, 10, 14, 2, 14, 42, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1) == 0))
+expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 1.38629436111989, 1, -0.405465108108164, 0, 0, 0, -0.916290731874155, 3, -0.00000000000000177635683940025, 5, -1, 1.38629436111989, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 14) == 0))
+expect_true(all(vals - vals2 == 0))
+expect_true(round(theNF$calcLogDetJacobian(tVals) - 4.54724272356, 11) == 0)
+
+
+
+
+
+
+
+
+
+###############################################################
+###############################################################
+###############################################################
+###############################################################
+###############################################################
+###############################################################
+###############################################################
+###############################################################
+
+
+
+##
+## first version of parameterTransformation:
+##
+
+##ptNodeVirtual <- nimbleFunctionVirtual(
+##    methods = list(
+##        getOriginalLengthOne    = function()                 { returnType(double())  },
+##        getTransformedLengthOne = function()                 { returnType(double())  },
+##        transformOne            = function(mVal = double(1)) { returnType(double(1)) },
+##        inverseTransformOne     = function(tVal = double(1)) { returnType(double(1)) },
+##        calcLogDetJacobianOne   = function(tVal = double(1)) { returnType(double())  }
+##    )
+##)
 ## 
-##Cmodel <- compileNimble(Rmodel)
-##Cpt <- compileNimble(pt, project = Rmodel)##, showCompilerOutput = TRUE)
+##ptNodeScalar <- nimbleFunction(
+##    name = 'ptNodeScalar',
+##    contains = ptNodeVirtual,
+##    setup = function(model, node) {
+##        if(!identical(node, model$expandNodeNames(node))) stop('more than one node in ptNode')
+##        if(length(model$expandNodeNames(node, returnScalarComponents = TRUE)) != 1) stop('non-scalar node in ptNodeScalar')
+##    },
+##    run = function() { print('Warning: run method of ptNode is not defined') },
+##    methods = list(
+##        getOriginalLengthOne    = function() { returnType(double()); return(1) },
+##        getTransformedLengthOne = function() { returnType(double()); return(1) },
+##        transformOne = function(mVal = double(1)) {
+##            returnType(double(1))
+##            return(mVal)
+##        },
+##        inverseTransformOne = function(tVal = double(1)) {
+##            returnType(double(1))
+##            return(tVal)
+##        },
+##        calcLogDetJacobianOne = function(tVal = double(1)) {
+##            returnType(double())
+##            return(0)
+##        }
+##    ), where = getLoadingNamespace()
+##)
 ## 
-##theNF <- pt
-##theNF <- Cpt
+##ptNodeScalarSemiInterval <- nimbleFunction(
+##    name = 'ptNodeScalarSemiInterval',
+##    contains = ptNodeVirtual,
+##    setup = function(model, node) {
+##        if(!identical(node, model$expandNodeNames(node))) stop('more than one node in ptNode')
+##        if(length(model$expandNodeNames(node, returnScalarComponents = TRUE)) != 1) stop('non-scalar node in ptNodeScalar')
+##        bounds <- c(model$getBound(node, 'lower'), model$getBound(node, 'upper'))
+##        if(model$isTruncated(node)) {
+##            bdName  <- if(isValid(bounds[1])) 'lower'  else 'upper'
+##            bdParam <- if(isValid(bounds[1])) 'lower_' else 'upper_'
+##            bdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, bdParam))
+##            if(length(all.vars(bdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant ', bdName, ' bound, which cannot be used in parameterTransform.', call. = FALSE)
+##        }
+##        boundValue <- if(isValid(bounds[1])) bounds[1] else bounds[2]
+##        isLowerBound <- if(isValid(bounds[1])) 1 else -1
+##    },
+##    run = function() { print('Warning: run method of ptNode is not defined') },
+##    methods = list(
+##        getOriginalLengthOne    = function() { returnType(double()); return(1) },
+##        getTransformedLengthOne = function() { returnType(double()); return(1) },
+##        transformOne = function(mVal = double(1)) {
+##            returnType(double(1))
+##            return(log(isLowerBound * (mVal - boundValue)))
+##        },
+##        inverseTransformOne = function(tVal = double(1)) {
+##            returnType(double(1))
+##            return(boundValue + isLowerBound * exp(tVal))
+##        },
+##        calcLogDetJacobianOne = function(tVal = double(1)) {
+##            returnType(double())
+##            return(tVal[1])
+##        }
+##    ), where = getLoadingNamespace()
+##)
 ## 
-##theNF$ptNodeNFL$contentsList
-##theNF$nLength
-##theNF$tLength
-##theNF$nInd
-##theNF$tInd
+##ptNodeScalarInterval <- nimbleFunction(
+##    name = 'ptNodeScalarInterval',
+##    contains = ptNodeVirtual,
+##    setup = function(model, node) {
+##        if(!identical(node, model$expandNodeNames(node))) stop('more than one node in ptNode')
+##        if(length(model$expandNodeNames(node, returnScalarComponents = TRUE)) != 1) stop('non-scalar node in ptNodeScalar')
+##        bounds <- c(model$getBound(node, 'lower'), model$getBound(node, 'upper'))
+##        dist <- model$getDistribution(node)
+##        if(dist == 'dunif' || model$isTruncated(node)) {     ## uniform distribution, or a truncated node
+##            if(dist == 'dunif')         { lParam <- 'min';    uParam <- 'max'    }
+##            if(model$isTruncated(node)) { lParam <- 'lower_'; uParam <- 'upper_' }
+##            lowerBdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, lParam))
+##            upperBdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, uParam))
+##            if(length(all.vars(lowerBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant lower bound, which cannot be used in parameterTransform.', call. = FALSE)
+##            if(length(all.vars(upperBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant upper bound, which cannot be used in parameterTransform.', call. = FALSE)
+##        } else {   ## some other distribution with finite support
+##            message('parameterTransform is not familiar with the ', dist, ' distribution of node ', node, '.')
+##            message('It will require the upper and lower bounds of the ', dist, ' distribution to be constant.')
+##            message('If you\'re uncertain about this, please get in touch with the NIMBLE development team.')
+##        }
+##        lowerBound <- bounds[1]
+##        range <- bounds[2] - bounds[1]
+##        logRange <- log(range)
+##    },
+##    run = function() { print('Warning: run method of ptNode is not defined') },
+##    methods = list(
+##        getOriginalLengthOne    = function() { returnType(double()); return(1) },
+##        getTransformedLengthOne = function() { returnType(double()); return(1) },
+##        transformOne = function(mVal = double(1)) {
+##            returnType(double(1))
+##            return(logit((mVal - lowerBound) / range))
+##        },
+##        inverseTransformOne = function(tVal = double(1)) {
+##            returnType(double(1))
+##            return(lowerBound + range * expit(tVal))
+##        },
+##        calcLogDetJacobianOne = function(tVal = double(1)) {
+##            x <- tVal[1]
+##            returnType(double())
+##            return(logRange - log(exp(x)+exp(-x)+2))   ## alternate: -2*log(1+exp(-x))-x)
+##        }
+##    ), where = getLoadingNamespace()
+##)
 ## 
-##theNF$run()
-##theNF$getOriginalLength()
-##theNF$getTransformedLength()
-##(vals <- values(Rmodel, nodes))
-##(tVals <- theNF$transform(vals))
-##(vals2 <- theNF$inverseTransform(tVals))
-##vals - vals2
-##theNF$calcLogDetJacobian(tVals)
+##ptNodeMultiMNorm <- nimbleFunction(
+##    name = 'ptNodeMultiMNorm',
+##    contains = ptNodeVirtual,
+##    setup = function(model, node) {
+##        if(!identical(node, model$expandNodeNames(node))) stop('more than one node in ptNode')
+##        if(!(model$getDistribution(node) %in% c('dmnorm', 'dmvt'))) stop('wrong distribution in ptNodeMultiMNorm')
+##        nLengthOne <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
+##        tLengthOne <- nLengthOne
+##    },
+##    run = function() { print('Warning: run method of ptNode is not defined') },
+##    methods = list(
+##        getOriginalLengthOne    = function() { returnType(double()); return(nLengthOne) },
+##        getTransformedLengthOne = function() { returnType(double()); return(tLengthOne) },
+##        transformOne = function(mVal = double(1)) {
+##            returnType(double(1))
+##            return(mVal)
+##        },
+##        inverseTransformOne = function(tVal = double(1)) {
+##            returnType(double(1))
+##            return(tVal)
+##        },
+##        calcLogDetJacobianOne = function(tVal = double(1)) {
+##            returnType(double())
+##            return(0)
+##        }
+##    ), where = getLoadingNamespace()
+##)
+## 
+##ptNodeMultiWishart <- nimbleFunction(
+##    name = 'ptNodeMultiWishart',
+##    contains = ptNodeVirtual,
+##    setup = function(model, node) {
+##        if(!identical(node, model$expandNodeNames(node))) stop('more than one node in ptNode')
+##        if(!(model$getDistribution(node) %in% c('dwish', 'dinvwish'))) stop('wrong distribution in ptNodeMultiWishart')
+##        nLengthOne <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
+##        d <- sqrt(nLengthOne)
+##        tLengthOne <- d*(d+1)/2
+##    },
+##    run = function() { print('Warning: run method of ptNode is not defined') },
+##    methods = list(
+##        getOriginalLengthOne    = function() { returnType(double()); return(nLengthOne) },
+##        getTransformedLengthOne = function() { returnType(double()); return(tLengthOne) },
+##        transformOne = function(mVal = double(1)) {
+##            ## log-Cholesky transform, values are column-wise
+##            valueAsMatrix <- nimArray(mVal, dim = c(d, d))
+##            U <- chol(valueAsMatrix)
+##            ## DT: there has to be a better way to do this procedure, below,
+##            ## creating the vector of the log-Cholesky transformed values.
+##            ## suggestions or ideas are welcomed.
+##            transformedOne <- nimNumeric(tLengthOne)
+##            tInd <- 1
+##            for(j in 1:d) {
+##                for(i in 1:d) {
+##                    if(i==j) { transformedOne[tInd] <- log(U[i,j]); tInd <- tInd+1 }
+##                    if(i< j) { transformedOne[tInd] <-     U[i,j];  tInd <- tInd+1 }
+##                }
+##            }
+##            if(tInd != tLengthOne+1) stop('something wrong in transformOne method of ptNodeMultiWishart')
+##            returnType(double(1))
+##            return(transformedOne)
+##        },
+##        inverseTransformOne = function(tVal = double(1)) {
+##            cholAsMatrix <- nimArray(0, dim = c(d, d))
+##            ## DT: there has to be a better way to do this procedure, below,
+##            ## now creating the vector of the Wishart node values.
+##            ## once again, suggestions or ideas are welcomed.
+##            tInd <- 1
+##            for(j in 1:d) {
+##                for(i in 1:d) {
+##                    if(i==j) { cholAsMatrix[i,j] <- exp(tVal[tInd]); tInd <- tInd+1 }
+##                    if(i< j) { cholAsMatrix[i,j] <-     tVal[tInd];  tInd <- tInd+1 }
+##                }
+##            }
+##            if(tInd != tLengthOne+1) stop('something wrong in inverseTransformOne method of ptNodeMultiWishart')
+##            valuesAsMatrix <- t(cholAsMatrix) %*% cholAsMatrix
+##            valuesAsVector <- nimNumeric(nLengthOne, valuesAsMatrix)
+##            returnType(double(1))
+##            return(valuesAsVector)
+##        },
+##        calcLogDetJacobianOne = function(tVal = double(1)) {
+##            lp <- d * log(2)
+##            for(i in 1:d)   lp <- lp + (d+2-i) * tVal[i*(i+1)/2]
+##            returnType(double())
+##            return(lp)
+##        }
+##    ), where = getLoadingNamespace()
+##)
+## 
+###' Automated transformations of model nodes to unconstrained scales
+###'
+###' ADD DETAILS
+###' 
+###' @author Daniel Turek
+###' @export
+##parameterTransform <- nimbleFunction(
+##    name = 'parameterTransform',
+##    setup = function(model, nodes) {
+##        nodesExpanded <- model$expandNodeNames(nodes)
+##        calcNodes <- model$getDependencies(nodesExpanded)   ## DT: calcNodes may be unnecessary, see notes later
+##        if(any(model$isDeterm(nodesExpanded)))   stop(paste0('parameterTransform nodes may not be deterministic: ', paste0(nodesExpanded[model$isDeterm(nodesExpanded)],   collapse = ', ')))
+##        if(any(model$isDiscrete(nodesExpanded))) stop(paste0('parameterTransform nodes may not be discrete: ',      paste0(nodesExpanded[model$isDiscrete(nodesExpanded)], collapse = ', ')))
+##        nNodes <- length(nodesExpanded)
+##        if(nNodes < 1) stop('parameterTransform requires at least one model node')
+##        ##
+##        ptNodeNFL <- nimbleFunctionList(ptNodeVirtual)
+##        for(i in 1:nNodes) {
+##            node <- nodesExpanded[i]
+##            if(!model$isMultivariate(node)) {   ## univariate
+##                bounds <- c(model$getBound(node, 'lower'), model$getBound(node, 'upper'))
+##                if(bounds[1] == -Inf & bounds[2] == Inf) {
+##                    ## unconstrained scalar node (ptNodeScalar)
+##                    ptNodeNFL[[i]] <- ptNodeScalar(model, node); next }
+##                if((isValid(bounds[1]) && bounds[2] ==  Inf) ||
+##                   (isValid(bounds[2]) && bounds[1] == -Inf)) {
+##                    ## semi-interval scalar node (ptNodeScalarSemiInterval)
+##                    ptNodeNFL[[i]] <- ptNodeScalarSemiInterval(model, node); next }
+##                if(isValid(bounds[1]) && isValid(bounds[2])) {
+##                    ## interval-constrained scalar node (ptNodeScalarInterval)
+##                    ptNodeNFL[[i]] <- ptNodeScalarInterval(model, node); next }
+##            stop(paste0('parameterTransform doesn\'t have a transformation for the bounds of node: ', node, ', which are (', bounds[1], ', ', bounds[2], ')'), call. = FALSE)
+##            } else {   ## multivariate
+##                dist <- model$getDistribution(node)
+##                if(dist %in% c('dmnorm', 'dmvt')) {
+##                    ptNodeNFL[[i]] <- ptNodeMultiMNorm(model, node); next }
+##                if(dist %in% c('dwish', 'dinvwish')) {
+##                    ptNodeNFL[[i]] <- ptNodeMultiWishart(model, node); next }
+##                stop(paste0('parameterTransform doesn\'t handle \'', dist, '\' distributions.'), call. = FALSE)
+##            }
+##        }
+##        ##
+##        nLength <- tLength <- 0
+##        for(i in 1:nNodes) { nLength <- nLength + ptNodeNFL[[i]]$getOriginalLengthOne()
+##                             tLength <- tLength + ptNodeNFL[[i]]$getTransformedLengthOne() }
+##        if(nLength != length(model$expandNodeNames(nodesExpanded, returnScalarComponents = TRUE))) stop('something wrong with nLength', call. = FALSE)
+##        ##
+##        nInd <- tInd <- array(0, c(nNodes, 2))
+##        for(i in 1:nNodes) {
+##            nInd[i,1] <- if(i==1) 1 else nInd[i-1,2]+1
+##            nInd[i,2] <- nInd[i,1] + ptNodeNFL[[i]]$getOriginalLengthOne() - 1
+##            tInd[i,1] <- if(i==1) 1 else tInd[i-1,2]+1
+##            tInd[i,2] <- tInd[i,1] + ptNodeNFL[[i]]$getTransformedLengthOne() - 1
+##        }
+##    },
+##    run = function() { print('Warning: run method of parameterTransform is not defined') },
+##    methods = list(
+##        getOriginalLength    = function() { returnType(double()); return(nLength) },
+##        getTransformedLength = function() { returnType(double()); return(tLength) },
+##        transform = function(nodeValuesFromModel = double(1)) {
+##            ## argument values(model, nodes), return vector on unconstrained scale
+##            transformed <- nimNumeric(tLength)
+##            for(i in 1:nNodes) {
+##                theseValues <- nodeValuesFromModel[nInd[i,1]:nInd[i,2]]
+##                transformed[tInd[i,1]:tInd[i,2]] <- ptNodeNFL[[i]]$transformOne(theseValues)
+##            }
+##            returnType(double(1))
+##            return(transformed)
+##        },
+##        inverseTransform = function(transformedValues = double(1)) {
+##            ## argument on transformed scale, return vector suitable for values(model,)
+##            modelValuesVector <- nimNumeric(nLength)
+##            for(i in 1:nNodes) {
+##                theseValues <- transformedValues[tInd[i,1]:tInd[i,2]]
+##                modelValuesVector[nInd[i,1]:nInd[i,2]] <- ptNodeNFL[[i]]$inverseTransformOne(theseValues)
+##            }
+##            returnType(double(1))
+##            return(modelValuesVector)
+##        },
+##        calcLogDetJacobian = function(transformedValues = double(1)) {
+##            ## DT: general intended usage of this method:
+##            ## values(model, nodes) <- pt$inverseTransform(transformedValues)
+##            ## lp <- model$calculate(calcNodes) + pt$calcLogDetJacobian(transformedValues)
+##            lp <- 0
+##            for(i in 1:nNodes) {
+##                theseValues <- transformedValues[tInd[i,1]:tInd[i,2]]
+##                lp <- lp + ptNodeNFL[[i]]$calcLogDetJacobianOne(theseValues)
+##            }
+##            returnType(double())
+##            return(lp)
+##        }
+##        ## 
+##        ## DT: I'm not certain if we want the *next two methods*, in whatever form,
+##        ## or if it would be left to users to take care of the gradient operations
+##        ## (via use of model$calculate(), and use of nimDerivs()).
+##        ## Anyway, I'm sketching out how I think it might look.
+##        ## The purpose of these *next two methods* is to return a gradient vector:
+##        ## - the gradient of model$calculate(calcNodes),
+##        ## - where calcNodes is the standard model$getDependencies(nodes), and
+##        ## - the derivatives used to form the gradient vector are taken w.r.t.
+##        ##   the *elements of the vector of transformed values*
+##        ## 
+##        ## calculateModelLP = function(transformedValues = double(1)) {   ## method name: open for discussion
+##        ##     values(model, nodesExpanded) <<- inverseTransform(transformedValues)
+##        ##     lp <- model$calculate(calcNodes)
+##        ##     returnType(double(0))
+##        ##     return(lp)
+##        ## },
+##        ## 
+##        ## gradientModelCalculate = function(transformedValues = double(1)) {   ## method name: open for discussion
+##        ##     currentModelValues <- values(model, nodesExpanded)
+##        ##     derivsOutput <- nimDerivs(calculateModelLP(transformedValues), order = 1, wrt = transformedValues)
+##        ##     grad <- derivsOutput$gradient[1, 1:tLength]
+##        ##     values(model, nodesExpanded) <<- currentModelValues
+##        ##     model$calculate(calcNodes)
+##        ##     returnType(double(1))
+##        ##     return(grad)
+##        ## }
+##        ## 
+##    ), where = getLoadingNamespace()
+##)
+
+
+
 
 
 
@@ -723,3 +1045,5 @@ parameterTransform <- nimbleFunction(
 ##        }
 ##    ), where = getLoadingNamespace()
 ##)
+
+
