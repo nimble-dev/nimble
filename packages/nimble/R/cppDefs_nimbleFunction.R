@@ -416,7 +416,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                                                     derivControl = derivControl)
                                                       funIndex + 1 ## function return value increments by one in non-meta case
                                                   } else {
-                                                      funIndex ## but does tno increment in meta case
+                                                      funIndex ## but does not increment in meta case
                                                   }
                                               },
                                               addNimDerivsCalculateContentOneFun = function(funName,
