@@ -9,7 +9,6 @@
 
 
 
-library(nimble)
 
 #' Automated transformations of model nodes to unconstrained scales
 #'
@@ -118,34 +117,35 @@ parameterTransform <- nimbleFunction(
         transform = function(nodeValuesFromModel = double(1)) {
             ## argument values(model, nodes), return vector on unconstrained scale
             transformed <- nimNumeric(tLength)
-            for(i in 1:nNodes) {
-                theseValues <- nodeValuesFromModel[transformData[i,NIND1]:transformData[i,NIND2]]
-                if(transformData[i,TYPE] == 1) {   ## 1: scalar unconstrained
+            for(iNode in 1:nNodes) {
+                theseValues <- nodeValuesFromModel[transformData[iNode,NIND1]:transformData[iNode,NIND2]]
+                if(transformData[iNode,TYPE] == 1) {   ## 1: scalar unconstrained
                     theseTransformed <- theseValues }
-                if(transformData[i,TYPE] == 2) {   ## 2: scalar semi-interval (0, Inf)
+                if(transformData[iNode,TYPE] == 2) {   ## 2: scalar semi-interval (0, Inf)
                     theseTransformed <- log(theseValues) }
-                if(transformData[i,TYPE] == 3) {   ## 3: scalar interval-constrained (0, 1)
+                if(transformData[iNode,TYPE] == 3) {   ## 3: scalar interval-constrained (0, 1)
                     theseTransformed <- logit(theseValues) }
-                if(transformData[i,TYPE] == 4) {   ## 4: scalar semi-interval (-Inf, b) or (a, Inf)
-                    theseTransformed <- log(transformData[i,DATA2] * (theseValues - transformData[i,DATA1])) }
-                if(transformData[i,TYPE] == 5) {   ## 5: scalar interval-constrained (a, b)
-                    theseTransformed <- logit((theseValues - transformData[i,DATA1]) / transformData[i,DATA2]) }
-                if(transformData[i,TYPE] == 6) {   ## 6: multivariate {normal, t}
+                if(transformData[iNode,TYPE] == 4) {   ## 4: scalar semi-interval (-Inf, b) or (a, Inf)
+                    theseTransformed <- log(transformData[iNode,DATA2] * (theseValues - transformData[iNode,DATA1])) }
+                if(transformData[iNode,TYPE] == 5) {   ## 5: scalar interval-constrained (a, b)
+                    theseTransformed <- logit((theseValues - transformData[iNode,DATA1]) / transformData[iNode,DATA2]) }
+                if(transformData[iNode,TYPE] == 6) {   ## 6: multivariate {normal, t}
                     theseTransformed <- theseValues }
-                if(transformData[i,TYPE] == 7) {   ## 7: multivariate {wishart, inverse-wishart}
+                if(transformData[iNode,TYPE] == 7) {   ## 7: multivariate {wishart, inverse-wishart}
                     ## log-Cholesky transform, values are column-wise
-                    d <- transformData[i,DATA1]
-                    valueAsMatrix <- nimArray(theseValues, dim = c(d, d))
+                    dd <- transformData[iNode,DATA1]
+                    valueAsMatrix <- nimArray(theseValues, dim = c(dd, dd))
                     U <- chol(valueAsMatrix)
                     ## DT: there has to be a better way to do this procedure, below,
                     ## creating the vector of the log-Cholesky transformed values.
-                    theseTransformed <- nimNumeric(transformData[i,DATA2])
+                    theseTransformed <- nimNumeric(transformData[iNode,DATA2])
                     tInd <- 1
-                    for(j in 1:d) {   for(i in 1:d) {
-                        if(i==j) { theseTransformed[tInd] <- log(U[i,j]); tInd <- tInd+1 }
-                        if(i< j) { theseTransformed[tInd] <-     U[i,j];  tInd <- tInd+1 } } }
+                    for(j in 1:dd) {
+                        for(i in 1:dd) {
+                            if(i==j) { theseTransformed[tInd] <- log(U[i,j]); tInd <- tInd+1 }
+                            if(i< j) { theseTransformed[tInd] <-     U[i,j];  tInd <- tInd+1 } } }
                 }
-                transformed[transformData[i,TIND1]:transformData[i,TIND2]] <- theseTransformed
+                transformed[transformData[iNode,TIND1]:transformData[iNode,TIND2]] <- theseTransformed
             }
             returnType(double(1))
             return(transformed)
@@ -153,34 +153,34 @@ parameterTransform <- nimbleFunction(
         inverseTransform = function(transformedValues = double(1)) {
             ## argument on transformed scale, return vector suitable for values(model,)
             modelValuesVector <- nimNumeric(nLength)
-            for(i in 1:nNodes) {
-                theseValues <- transformedValues[transformData[i,TIND1]:transformData[i,TIND2]]
-                if(transformData[i,TYPE] == 1) {   ## 1: scalar unconstrained
+            for(iNode in 1:nNodes) {
+                theseValues <- transformedValues[transformData[iNode,TIND1]:transformData[iNode,TIND2]]
+                if(transformData[iNode,TYPE] == 1) {   ## 1: scalar unconstrained
                     theseInvTransformed <- theseValues }
-                if(transformData[i,TYPE] == 2) {   ## 2: scalar semi-interval (0, Inf)
+                if(transformData[iNode,TYPE] == 2) {   ## 2: scalar semi-interval (0, Inf)
                     theseInvTransformed <- exp(theseValues) }
-                if(transformData[i,TYPE] == 3) {   ## 3: scalar interval-constrained (0, 1)
+                if(transformData[iNode,TYPE] == 3) {   ## 3: scalar interval-constrained (0, 1)
                     theseInvTransformed <- ilogit(theseValues) }
-                if(transformData[i,TYPE] == 4) {   ## 4: scalar semi-interval (-Inf, b) or (a, Inf)
-                    theseInvTransformed <- transformData[i,DATA1] + transformData[i,DATA2] * exp(theseValues) }
-                if(transformData[i,TYPE] == 5) {   ## 5: scalar interval-constrained (a, b)
-                    theseInvTransformed <- transformData[i,DATA1] + transformData[i,DATA2] * expit(theseValues) }
-                if(transformData[i,TYPE] == 6) {   ## 6: multivariate {normal, t}
+                if(transformData[iNode,TYPE] == 4) {   ## 4: scalar semi-interval (-Inf, b) or (a, Inf)
+                    theseInvTransformed <- transformData[iNode,DATA1] + transformData[iNode,DATA2] * exp(theseValues) }
+                if(transformData[iNode,TYPE] == 5) {   ## 5: scalar interval-constrained (a, b)
+                    theseInvTransformed <- transformData[iNode,DATA1] + transformData[iNode,DATA2] * expit(theseValues) }
+                if(transformData[iNode,TYPE] == 6) {   ## 6: multivariate {normal, t}
                     theseInvTransformed <- theseValues }
-                if(transformData[i,TYPE] == 7) {   ## 7: multivariate {wishart, inverse-wishart}
-                    d <- transformData[i,DATA1]
-                    cholAsMatrix <- nimArray(0, dim = c(d, d))
+                if(transformData[iNode,TYPE] == 7) {   ## 7: multivariate {wishart, inverse-wishart}
+                    dd <- transformData[iNode,DATA1]
+                    cholAsMatrix <- nimArray(0, dim = c(dd, dd))
                     ## DT: there has to be a better way to do this procedure, below,
                     ## now creating the vector of the Wishart node values.
                     tInd <- 1
-                    for(j in 1:d) {
-                        for(i in 1:d) {
+                    for(j in 1:dd) {
+                        for(i in 1:dd) {
                             if(i==j) { cholAsMatrix[i,j] <- exp(theseValues[tInd]); tInd <- tInd+1 }
                             if(i< j) { cholAsMatrix[i,j] <-     theseValues[tInd];  tInd <- tInd+1 } } }
                     valuesAsMatrix <- t(cholAsMatrix) %*% cholAsMatrix
-                    theseInvTransformed <- nimNumeric(d*d, valuesAsMatrix)
+                    theseInvTransformed <- nimNumeric(dd*dd, valuesAsMatrix)
                 }
-                modelValuesVector[transformData[i,TIND1]:transformData[i,TIND2]] <- theseInvTransformed
+                modelValuesVector[transformData[iNode,NIND1]:transformData[iNode,NIND2]] <- theseInvTransformed
             }
             returnType(double(1))
             return(modelValuesVector)
@@ -190,27 +190,27 @@ parameterTransform <- nimbleFunction(
             ## values(model, nodes) <- pt$inverseTransform(transformedValues)
             ## lp <- model$calculate(calcNodes) + pt$calcLogDetJacobian(transformedValues)
             lp <- 0
-            for(i in 1:nNodes) {
-                theseValues <- transformedValues[transformData[i,TIND1]:transformData[i,TIND2]]
-                if(transformData[i,TYPE] == 1) {   ## 1: scalar unconstrained
+            for(iNode in 1:nNodes) {
+                theseValues <- transformedValues[transformData[iNode,TIND1]:transformData[iNode,TIND2]]
+                if(transformData[iNode,TYPE] == 1) {   ## 1: scalar unconstrained
                     lpAdd <- 0 }
-                if(transformData[i,TYPE] == 2) {   ## 2: scalar semi-interval (0, Inf)
+                if(transformData[iNode,TYPE] == 2) {   ## 2: scalar semi-interval (0, Inf)
                     lpAdd <- theseValues[1] }
-                if(transformData[i,TYPE] == 3) {   ## 3: scalar interval-constrained (0, 1)
+                if(transformData[iNode,TYPE] == 3) {   ## 3: scalar interval-constrained (0, 1)
                     x <- theseValues[1]
                     lpAdd <- -log(exp(x)+exp(-x)+2) }                                ## alternate: -2*log(1+exp(-x))-x)
-                if(transformData[i,TYPE] == 4) {   ## 4: scalar semi-interval (-Inf, b) or (a, Inf)
+                if(transformData[iNode,TYPE] == 4) {   ## 4: scalar semi-interval (-Inf, b) or (a, Inf)
                     lpAdd <- theseValues[1] }
-                if(transformData[i,TYPE] == 5) {   ## 5: scalar interval-constrained (a, b)
+                if(transformData[iNode,TYPE] == 5) {   ## 5: scalar interval-constrained (a, b)
                     x <- theseValues[1]
-                    lpAdd <- log(transformData[i,DATA2]) - log(exp(x)+exp(-x)+2) }   ## alternate: -2*log(1+exp(-x))-x)
-                if(transformData[i,TYPE] == 6) {   ## 6: multivariate {normal, t}
+                    lpAdd <- log(transformData[iNode,DATA2]) - log(exp(x)+exp(-x)+2) }   ## alternate: -2*log(1+exp(-x))-x)
+                if(transformData[iNode,TYPE] == 6) {   ## 6: multivariate {normal, t}
                     lpAdd <- 0 }
-                if(transformData[i,TYPE] == 7) {   ## 7: multivariate {wishart, inverse-wishart}
-                    d <- transformData[i,DATA1]
-                    lpAdd <- d * log(2)
-                    for(j in 1:d) {
-                        lpAdd <- lpAdd + (d+2-j) * theseValues[j*(j+1)/2] }
+                if(transformData[iNode,TYPE] == 7) {   ## 7: multivariate {wishart, inverse-wishart}
+                    dd <- transformData[iNode,DATA1]
+                    lpAdd <- dd * log(2)
+                    for(j in 1:dd) {
+                        lpAdd <- lpAdd + (dd+2-j) * theseValues[j*(j+1)/2] }
                 }
                 lp <- lp + lpAdd
             }
@@ -251,121 +251,120 @@ parameterTransform <- nimbleFunction(
 
 
 
-
-library(nimble)
-library(testthat)
-
-code <- nimbleCode({
-    a ~ dnorm(0, 1)
-    b ~ dgamma(1, 1)
-    c ~ dunif(2, 10)
-    d[1:3] ~ dmnorm(mu[1:3], cov = C[1:3,1:3])
-    e[1:3,1:3] ~ dwish(R = C[1:3,1:3], df = 5)
-})
-constants <- list(mu=rep(0,3), C=diag(3))
-data <- list()
-U <- matrix(c(.2,2,4,0,1,1,0,0,4), nrow=3, byrow=TRUE)
-eInit <- t(U) %*% U
-inits <- list(a=0, b=1, c=5, d=rep(0,3), e=eInit)
-Rmodel <- nimbleModel(code, constants, data, inits)
-##
-expect_equal(Rmodel$calculate(), -33.077938542)
-##
-nodes <- letters[1:5]
-pt <- parameterTransform(Rmodel, nodes)
+####
+#### testing code below
+####
+##library(nimble)
+##library(testthat)
 ## 
-Cmodel <- compileNimble(Rmodel)
-Cpt <- compileNimble(pt, project = Rmodel)
-##
-vals <- values(Rmodel, nodes)
-##
-## test uncompiled
-theNF <- pt
-tVals <- theNF$transform(vals)
-vals2 <- theNF$inverseTransform(tVals)
-##
-expect_true(theNF$getOriginalLength() == 15)
-expect_true(theNF$getTransformedLength() == 12)
-expect_true(all(round(vals - c(0.00, 1.00, 5.00, 0.00, 0.00, 0.00, 0.04, 0.40, 0.80, 0.40, 5.00, 9.00, 0.80, 9.00, 33.00), 16) == 0))
-expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 0, 0, -1.6094379124341, 2, 0, 4, 1, 1.38629436111989), 14) == 0))
-expect_true(all(vals - vals2 == 0))
-expect_true(round(theNF$calcLogDetJacobian(tVals), 7) == -0.9571127)
-##
-## test compiled
-theNF <- Cpt
-tVals <- theNF$transform(vals)
-vals2 <- theNF$inverseTransform(tVals)
-##
-expect_true(theNF$getOriginalLength() == 15)
-expect_true(theNF$getTransformedLength() == 12)
-expect_true(all(round(vals - c(0.00, 1.00, 5.00, 0.00, 0.00, 0.00, 0.04, 0.40, 0.80, 0.40, 5.00, 9.00, 0.80, 9.00, 33.00), 16) == 0))
-expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 0, 0, -1.6094379124341, 2, 0, 4, 1, 1.38629436111989), 14) == 0))
-expect_true(all(vals - vals2 == 0))
-expect_true(round(theNF$calcLogDetJacobian(tVals), 7) == -0.9571127)
-
-
-code <- nimbleCode({
-    a ~ dnorm(0, 1)
-    b ~ dgamma(1, 1)
-    c ~ dunif(2, 10)
-    d[1:3] ~ dmnorm(mu[1:3], cov = C[1:3,1:3])
-    e[1:3,1:3] ~ dwish(R = C[1:3,1:3], df = 5)
-    f ~ dunif(0, 1)
-    g ~ dunif(0, 5)
-    h ~ dt(2, 2, 4)
-    ii[1:5,1:5] ~ dwish(R = Ci[1:5,1:5], df = 10)
-    j ~ dunif(-5, 5)
-})
-##
-Ci <- diag(5)
-Ci[1,2] <- Ci[2,1] <- 0.2
-Ci[1,3] <- Ci[3,1] <- 0.1
-Ci[4,5] <- Ci[5,4] <- 0.3
-##
-constants <- list(mu=rep(0,3), C=diag(3), Ci=Ci)
-data <- list()
-U <- matrix(c(.4,3,5,0,1,-1,0,0,4), nrow=3, byrow=TRUE)
-eInit <- t(U) %*% U
-inits <- list(a=0, b=1, c=5, d=rep(0,3), e=eInit, f=0.5, g=4, h=1, ii=diag(5), j=-1)
-##
-Rmodel <- nimbleModel(code, constants, data, inits)
-##
-expect_equal(Rmodel$calculate(), -80.6027522654)
-##
-nodes <- Rmodel$getNodeNames(stochOnly = TRUE)
-pt <- parameterTransform(Rmodel, nodes)
+##code <- nimbleCode({
+##    a ~ dnorm(0, 1)
+##    b ~ dgamma(1, 1)
+##    c ~ dunif(2, 10)
+##    d[1:3] ~ dmnorm(mu[1:3], cov = C[1:3,1:3])
+##    e[1:3,1:3] ~ dwish(R = C[1:3,1:3], df = 5)
+##})
+##constants <- list(mu=rep(0,3), C=diag(3))
+##data <- list()
+##U <- matrix(c(.2,2,4,0,1,1,0,0,4), nrow=3, byrow=TRUE)
+##eInit <- t(U) %*% U
+##inits <- list(a=0, b=1, c=5, d=rep(0,3), e=eInit)
+##Rmodel <- nimbleModel(code, constants, data, inits)
+####
+##expect_equal(Rmodel$calculate(), -33.077938542)
+####
+##nodes <- letters[1:5]
+##pt <- parameterTransform(Rmodel, nodes)
+#### 
+##Cmodel <- compileNimble(Rmodel)
+##Cpt <- compileNimble(pt, project = Rmodel)##, showCompilerOutput = TRUE)
+####
+##vals <- values(Rmodel, nodes)
+####
+#### test uncompiled
+##theNF <- pt
+##tVals <- theNF$transform(vals)
+##vals2 <- theNF$inverseTransform(tVals)
+####
+##expect_true(theNF$getOriginalLength() == 15)
+##expect_true(theNF$getTransformedLength() == 12)
+##expect_true(all(round(vals - c(0.00, 1.00, 5.00, 0.00, 0.00, 0.00, 0.04, 0.40, 0.80, 0.40, 5.00, 9.00, 0.80, 9.00, 33.00), 16) == 0))
+##expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 0, 0, -1.6094379124341, 2, 0, 4, 1, 1.38629436111989), 14) == 0))
+##expect_true(all(vals - vals2 == 0))
+##expect_true(round(theNF$calcLogDetJacobian(tVals), 7) == -0.9571127)
+####
+#### test compiled
+##theNF <- Cpt
+##tVals <- theNF$transform(vals)
+##vals2 <- theNF$inverseTransform(tVals)
+####
+##expect_true(theNF$getOriginalLength() == 15)
+##expect_true(theNF$getTransformedLength() == 12)
+##expect_true(all(round(vals - c(0.00, 1.00, 5.00, 0.00, 0.00, 0.00, 0.04, 0.40, 0.80, 0.40, 5.00, 9.00, 0.80, 9.00, 33.00), 16) == 0))
+##expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 0, 0, -1.6094379124341, 2, 0, 4, 1, 1.38629436111989), 14) == 0))
+##expect_true(all(vals - vals2 == 0))
+##expect_true(round(theNF$calcLogDetJacobian(tVals), 7) == -0.9571127)
 ## 
-Cmodel <- compileNimble(Rmodel)
-Cpt <- compileNimble(pt, project = Rmodel)
-##
-vals <- values(Rmodel, nodes)
-##
-## test uncompiled
-theNF <- pt
-tVals <- theNF$transform(vals)
-vals2 <- theNF$inverseTransform(tVals)
-##
-expect_true(theNF$getOriginalLength() == 44)
-expect_true(theNF$getTransformedLength() == 31)
-expect_true(all(round(vals,15) - c(0, 1, 5, 0.5, 4, 1, -1, 0, 0, 0, 0.16, 1.2, 2, 1.2, 10, 14, 2, 14, 42, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1) == 0))
-expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 1.38629436111989, 1, -0.405465108108164, 0, 0, 0, -0.916290731874155, 3, -0.00000000000000177635683940025, 5, -1, 1.38629436111989, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 14) == 0))
-expect_true(all(vals - vals2 == 0))
-expect_true(round(theNF$calcLogDetJacobian(tVals) - 4.54724272356, 11) == 0)
-##
-## test compiled
-theNF <- Cpt
-tVals <- theNF$transform(vals)
-vals2 <- theNF$inverseTransform(tVals)
-##
-expect_true(theNF$getOriginalLength() == 44)
-expect_true(theNF$getTransformedLength() == 31)
-expect_true(all(round(vals,15) - c(0, 1, 5, 0.5, 4, 1, -1, 0, 0, 0, 0.16, 1.2, 2, 1.2, 10, 14, 2, 14, 42, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1) == 0))
-expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 1.38629436111989, 1, -0.405465108108164, 0, 0, 0, -0.916290731874155, 3, -0.00000000000000177635683940025, 5, -1, 1.38629436111989, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 14) == 0))
-expect_true(all(vals - vals2 == 0))
-expect_true(round(theNF$calcLogDetJacobian(tVals) - 4.54724272356, 11) == 0)
-
-
-
+## 
+##code <- nimbleCode({
+##    a ~ dnorm(0, 1)
+##    b ~ dgamma(1, 1)
+##    c ~ dunif(2, 10)
+##    d[1:3] ~ dmnorm(mu[1:3], cov = C[1:3,1:3])
+##    e[1:3,1:3] ~ dwish(R = C[1:3,1:3], df = 5)
+##    f ~ dunif(0, 1)
+##    g ~ dunif(0, 5)
+##    h ~ dt(2, 2, 4)
+##    ii[1:5,1:5] ~ dwish(R = Ci[1:5,1:5], df = 10)
+##    j ~ dunif(-5, 5)
+##})
+####
+##Ci <- diag(5)
+##Ci[1,2] <- Ci[2,1] <- 0.2
+##Ci[1,3] <- Ci[3,1] <- 0.1
+##Ci[4,5] <- Ci[5,4] <- 0.3
+####
+##constants <- list(mu=rep(0,3), C=diag(3), Ci=Ci)
+##data <- list()
+##U <- matrix(c(.4,3,5,0,1,-1,0,0,4), nrow=3, byrow=TRUE)
+##eInit <- t(U) %*% U
+##inits <- list(a=0, b=1, c=5, d=rep(0,3), e=eInit, f=0.5, g=4, h=1, ii=diag(5), j=-1)
+####
+##Rmodel <- nimbleModel(code, constants, data, inits)
+####
+##expect_equal(Rmodel$calculate(), -80.6027522654)
+####
+##nodes <- Rmodel$getNodeNames(stochOnly = TRUE)
+##pt <- parameterTransform(Rmodel, nodes)
+#### 
+##Cmodel <- compileNimble(Rmodel)
+##Cpt <- compileNimble(pt, project = Rmodel)##, showCompilerOutput = TRUE)
+####
+##vals <- values(Rmodel, nodes)
+####
+#### test uncompiled
+##theNF <- pt
+##tVals <- theNF$transform(vals)
+##vals2 <- theNF$inverseTransform(tVals)
+####
+##expect_true(theNF$getOriginalLength() == 44)
+##expect_true(theNF$getTransformedLength() == 31)
+##expect_true(all(round(vals,15) - c(0, 1, 5, 0.5, 4, 1, -1, 0, 0, 0, 0.16, 1.2, 2, 1.2, 10, 14, 2, 14, 42, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1) == 0))
+##expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 1.38629436111989, 1, -0.405465108108164, 0, 0, 0, -0.916290731874155, 3, -0.00000000000000177635683940025, 5, -1, 1.38629436111989, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 14) == 0))
+##expect_true(all(vals - vals2 == 0))    ## XXXXXXXXXXXXXXXXXXXXXXXXXX WRONG
+##expect_true(round(theNF$calcLogDetJacobian(tVals) - 4.54724272356, 11) == 0)
+####
+#### test compiled
+##theNF <- Cpt
+##tVals <- theNF$transform(vals)
+##vals2 <- theNF$inverseTransform(tVals)
+####
+##expect_true(theNF$getOriginalLength() == 44)
+##expect_true(theNF$getTransformedLength() == 31)
+##expect_true(all(round(vals,15) - c(0, 1, 5, 0.5, 4, 1, -1, 0, 0, 0, 0.16, 1.2, 2, 1.2, 10, 14, 2, 14, 42, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1) == 0))
+##expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 1.38629436111989, 1, -0.405465108108164, 0, 0, 0, -0.916290731874155, 3, -0.00000000000000177635683940025, 5, -1, 1.38629436111989, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 14) == 0))
+##expect_true(all(vals - vals2 == 0))
+##expect_true(round(theNF$calcLogDetJacobian(tVals) - 4.54724272356, 11) == 0)
 
 
 
@@ -383,10 +382,10 @@ expect_true(round(theNF$calcLogDetJacobian(tVals) - 4.54724272356, 11) == 0)
 
 
 
-##
-## first version of parameterTransformation:
-##
-
+####
+#### first version of parameterTransformation:
+####
+## 
 ##ptNodeVirtual <- nimbleFunctionVirtual(
 ##    methods = list(
 ##        getOriginalLengthOne    = function()                 { returnType(double())  },
