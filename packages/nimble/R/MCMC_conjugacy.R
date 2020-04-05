@@ -470,15 +470,17 @@ conjugacyClass <- setRefClass(
                 if(!cc_nodeInExpr(targetNode, linearityCheckExpr))                return(NULL)
                 if(cc_vectorizedComponentCheck(targetNode, linearityCheckExpr))   return(NULL)   # if targetNode is vectorized, make sure none of its components appear in expr
                 linearityCheck <- cc_checkLinearity(linearityCheckExpr, targetNode)   # determines whether paramExpr is linear in targetNode
-                if(!cc_linkCheck(linearityCheck, currentLink))   return(NULL)
+                link <- cc_linkCheck(linearityCheck, currentLink)
+                if(is.null(link)) return(NULL)
                 ## ensure targetNode appears in only *one* depNode parameter expression
                 if(!cc_otherParamsCheck(model, depNode, targetNode, depNodeExprExpanded = linearityCheckExpr, depParamNodeName = depNodeParamName))   return(NULL)
             } else {
                 stickbreakingCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
                 stickbreakingCheckExpr <- cc_expandDetermNodesInExpr(model, stickbreakingCheckExpr, targetNode = targetNode)
                 if(is.null(cc_checkStickbreaking(stickbreakingCheckExpr, targetNode))) return(NULL)
+                link <- 'stickbreaking'
             }
-            return(paste0('dep_', depNodeDist))
+            return(paste0('dep_', depNodeDist, '_', link))
         },
 
         addDependentNodeToControl = function(control, depNodeDist, depNode) {
@@ -518,7 +520,9 @@ conjugacyClass <- setRefClass(
                 functionBody$addCode(d <- max(determineNodeIndexSizes(target)))
             }
             for(iDepCount in seq_along(dependentCounts)) {
-                distName <- names(dependentCounts)[iDepCount]
+                tmp <- strsplit(names(dependentCounts)[iDepCount], "_")
+                distName <- tmp[[1]]
+                currentLink <- tmp[[2]]
                 functionBody$addCode({
                     DEP_NODENAMES <- control$DEP_CONTROL_NAME
                     N_DEP <- length(control$DEP_CONTROL_NAME)
@@ -563,20 +567,22 @@ conjugacyClass <- setRefClass(
             
             ## more new array() setup outputs, instead of declare() statements, for offset and coeff variables
             ## July 2017
-            
-            targetNdim <- getDimension(prior)
+
             targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
             targetCoeffNdimSave <- targetCoeffNdim 
             for(iDepCount in seq_along(dependentCounts)) {
                 distName <- names(dependentCounts)[iDepCount]
-                if(!is.null(dependents[[distName]]$link)) currentLink <- dependents[[distName]]$link else currentLink <- link
-                if(currentLink %in% c('multiplicative', 'linear', 'linear_plus_inprod') || (nimbleOptions()$allowDynamicIndexing && currentLink == 'identity' && doDependentScreen)) {
+                if(currentLink %in% c('additive', 'multiplicative', 'linear', 'linear_plus_inprod') || (nimbleOptions()$allowDynamicIndexing && currentLink == 'identity' && doDependentScreen)) {
                     if(currentLink == 'multiplicative')   ## There are no cases where we allow non-scalar 'coeff'.
                         targetCoeffNdim <- 0
-                    functionBody$addCode({
+                    codeBlock <- quote({
                         DEP_OFFSET_VAR2 <- array(0, dim = DECLARE_SIZE_OFFSET)                   ## the 2's here are *only* to prevent warnings about
                         DEP_COEFF_VAR2  <- array(0, dim = DECLARE_SIZE_COEFF)                    ## assigning into member variable names using
-                    }, list(DEP_OFFSET_VAR2     = as.name(paste0('dep_', distName, '_offset')),  ## local assignment '<-', so changed the names to "...2"
+                    })
+                    if(currentLink == 'multiplicative') codeBlock[[2]] <- NULL
+                    if(currentLink == 'additive') codeBlock[[3]] <- NULL
+                    functionBody$addCode(codeBlock,
+                       list(DEP_OFFSET_VAR2     = as.name(paste0('dep_', distName, '_offset')),  ## local assignment '<-', so changed the names to "...2"
                             DEP_COEFF_VAR2      = as.name(paste0('dep_', distName, '_coeff')),   ## so it doesn't recognize the ref class field name
                             DECLARE_SIZE_OFFSET = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), as.name(paste0('dep_', distName, '_nodeSizeMax')), as.name(paste0('dep_', distName, '_nodeSizeMax')), targetNdim),
                             DECLARE_SIZE_COEFF  = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), as.name(paste0('dep_', distName, '_nodeSizeMax')), quote(d),                                          targetCoeffNdim)))
@@ -698,7 +704,8 @@ conjugacyClass <- setRefClass(
             }
 
             for(iDepCount in seq_along(dependentCounts)) {
-                distName <- names(dependentCounts)[iDepCount]
+                tmp <- split(names(dependentCounts)[iDepCount], '_')
+                distName <- tmp[[1]]
                 neededParams <- dependents[[distName]]$neededParamsForPosterior
                 depNodeValueNdim <- getDimension(distName)
 
@@ -730,12 +737,10 @@ conjugacyClass <- setRefClass(
             ## if we need to determine 'coeff' and/or 'offset'
             ## with addition of possible multiple links for stick_breaking conjugacy, for simplicity calculate offset/coeff
             ## for all dependencies, even only some need offset/coeff
-            links <- rep(link, length(dependentCounts))
-            for(iDepCount in seq_along(dependentCounts)) {
-                distName <- names(dependentCounts)[iDepCount]
-                if(!is.null(dependents[[distName]]$link)) links[iDepCount] <- dependents[[distName]]$link 
-            }
-            if(any(links %in% c('multiplicative', 'linear', 'linear_plus_inprod')) || (nimbleOptions()$allowDynamicIndexing && any(links == 'identity') && doDependentScreen)) {
+            links <- rep('', length(dependentCounts))
+            for(iDepCount in seq_along(dependentCounts)) 
+                links[iDepCount] <- split(names(dependentCounts)[iDepCount], '_')[[2]]
+            if(any(links %in% c('additive', 'multiplicative', 'linear', 'linear_plus_inprod')) || (nimbleOptions()$allowDynamicIndexing && any(links == 'identity') && doDependentScreen)) {
                 targetNdim <- getDimension(prior)
                 targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
                 if(all(links == 'multiplicative'))   ## There are no cases where we allow non-scalar 'coeff'.
@@ -743,86 +748,114 @@ conjugacyClass <- setRefClass(
 
                 switch(as.character(targetNdim),
                        `0` = {
-                           functionBody$addCode({
-                               model[[target]] <<- 0
-                               model$calculate(calcNodesDeterm)
-                           })
-
-                           for(iDepCount in seq_along(dependentCounts)) {
-                               distName <- names(dependentCounts)[iDepCount]
-                               functionBody$addCode(
-                                   for(iDep in 1:N_DEP)
-                                       DEP_OFFSET_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME),
-                                   list(N_DEP          = as.name(paste0('N_dep_', distName)),
-                                        DEP_OFFSET_VAR = as.name(paste0('dep_', distName, '_offset')),
-                                        DEP_NODENAMES  = as.name(paste0('dep_', distName,'_nodeNames')),
-                                        PARAM_NAME     = dependents[[distName]]$param))
+                           if(any(links %in% c('additive', 'linear', 'linear_plus_inprod'))) { 
+                               functionBody$addCode({
+                                   model[[target]] <<- 0
+                                   model$calculate(calcNodesDeterm)
+                               })
+                               ## FIXME : how only have looping over needed elements?
+                               for(iDepCount in seq_along(dependentCounts)) {
+                                   distName <- names(dependentCounts)[iDepCount]
+                                   functionBody$addCode(
+                                       for(iDep in 1:N_DEP)
+                                           DEP_OFFSET_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME),
+                                       list(N_DEP          = as.name(paste0('N_dep_', distName)),
+                                            DEP_OFFSET_VAR = as.name(paste0('dep_', distName, '_offset')),
+                                            DEP_NODENAMES  = as.name(paste0('dep_', distName,'_nodeNames')),
+                                            PARAM_NAME     = dependents[[distName]]$param))
+                               }
                            }
 
-                           functionBody$addCode({
-                               model[[target]] <<- 1
-                               model$calculate(calcNodesDeterm)
-                           })
-
-                           for(iDepCount in seq_along(dependentCounts)) {
-                               distName <- names(dependentCounts)[iDepCount]
-                               functionBody$addCode(
-                                   for(iDep in 1:N_DEP)
-                                       DEP_COEFF_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME) - DEP_OFFSET_VAR[iDep],
-                                   list(N_DEP             = as.name(paste0('N_dep_', distName)),
-                                        DEP_COEFF_VAR     = as.name(paste0('dep_', distName, '_coeff')),
-                                        DEP_NODENAMES     = as.name(paste0('dep_', distName, '_nodeNames')),
-                                        PARAM_NAME        = dependents[[distName]]$param,
-                                        DEP_OFFSET_VAR    = as.name(paste0('dep_', distName, '_offset'))))
+                           if(any(links %in% c('multiplicative', 'linear', 'linear_plus_inprod'))) {
+                               functionBody$addCode({
+                                   model[[target]] <<- 1
+                                   model$calculate(calcNodesDeterm)
+                               })
+                               
+                               for(iDepCount in seq_along(dependentCounts)) {
+                                   distName <- names(dependentCounts)[iDepCount]
+                                   if(all(links == 'multiplicative')) {
+                                       codeBlock <- quote(
+                                           for(iDep in 1:N_DEP)
+                                           DEP_COEFF_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME),
+                                       )
+                                   } else {
+                                       codeBlock <- quote(
+                                           for(iDep in 1:N_DEP)
+                                           DEP_COEFF_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME) - DEP_OFFSET_VAR[iDep],
+                                       )
+                                   }                                       
+                                   functionBody$addCode(
+                                       codeBlock,
+                                       list(N_DEP             = as.name(paste0('N_dep_', distName)),
+                                            DEP_COEFF_VAR     = as.name(paste0('dep_', distName, '_coeff')),
+                                            DEP_NODENAMES     = as.name(paste0('dep_', distName, '_nodeNames')),
+                                            PARAM_NAME        = dependents[[distName]]$param,
+                                            DEP_OFFSET_VAR    = as.name(paste0('dep_', distName, '_offset'))))
+                               }
                            }
                        },
                        `1` = {
-                           functionBody$addCode({
-                               model[[target]] <<- rep(0, d)
-                               model$calculate(calcNodesDeterm)
-                           })
-
-                           for(iDepCount in seq_along(dependentCounts)) {
-                               distName <- names(dependentCounts)[iDepCount]
+                           if(any(links %in% c('additive', 'linear', 'linear_plus_inprod'))) { 
                                functionBody$addCode({
-                                   for(iDep in 1:N_DEP) {
-                                       thisNodeSize <- DEP_NODESIZES[iDep]
-                                       DEP_OFFSET_VAR[iDep, 1:thisNodeSize] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME)
-                                   }
-                               },
-                                                    list(N_DEP          = as.name(paste0('N_dep_', distName)),
-                                                         DEP_NODESIZES  = as.name(paste0('dep_', distName, '_nodeSizes')),
-                                                         DEP_OFFSET_VAR = as.name(paste0('dep_', distName, '_offset')),
-                                                         DEP_NODENAMES  = as.name(paste0('dep_', distName,'_nodeNames')),
-                                                         PARAM_NAME     = dependents[[distName]]$param))
+                                   model[[target]] <<- rep(0, d)
+                                   model$calculate(calcNodesDeterm)
+                               })
+                               
+                               for(iDepCount in seq_along(dependentCounts)) {
+                                   distName <- names(dependentCounts)[iDepCount]
+                                   functionBody$addCode({
+                                       for(iDep in 1:N_DEP) {
+                                           thisNodeSize <- DEP_NODESIZES[iDep]
+                                           DEP_OFFSET_VAR[iDep, 1:thisNodeSize] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME)
+                                       }
+                                   },
+                                                        list(N_DEP          = as.name(paste0('N_dep_', distName)),
+                                                             DEP_NODESIZES  = as.name(paste0('dep_', distName, '_nodeSizes')),
+                                                             DEP_OFFSET_VAR = as.name(paste0('dep_', distName, '_offset')),
+                                                             DEP_NODENAMES  = as.name(paste0('dep_', distName,'_nodeNames')),
+                                                             PARAM_NAME     = dependents[[distName]]$param))
+                               }
                            }
 
-                           functionBody$addCode(unitVector <- rep(0, d))
-
-                           forLoopBody <- codeBlockClass()
-                           forLoopBody$addCode({
-                               unitVector[sizeIndex] <- 1
-                               model[[target]] <<- unitVector
-                               unitVector[sizeIndex] <- 0
-                               calculate(model, calcNodesDeterm)
-                           })
-
-                           for(iDepCount in seq_along(dependentCounts)) {
-                               distName <- names(dependentCounts)[iDepCount]
+                           if(any(links %in% c('multiplicative', 'linear', 'linear_plus_inprod'))) { 
+                               functionBody$addCode(unitVector <- rep(0, d))
+                               
+                               forLoopBody <- codeBlockClass()
                                forLoopBody$addCode({
-                                   for(iDep in 1:N_DEP) {
-                                       thisNodeSize <- DEP_NODESIZES[iDep]
-                                       DEP_COEFF_VAR[iDep, 1:thisNodeSize, sizeIndex] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME) - DEP_OFFSET_VAR[iDep, 1:thisNodeSize]
+                                   unitVector[sizeIndex] <- 1
+                                   model[[target]] <<- unitVector
+                                   unitVector[sizeIndex] <- 0
+                                   calculate(model, calcNodesDeterm)
+                               })
+                               
+                               for(iDepCount in seq_along(dependentCounts)) {
+                                   distName <- names(dependentCounts)[iDepCount]
+                                   if(all(links == 'multiplicative')) {
+                                       codeBlock <- quote(
+                                       for(iDep in 1:N_DEP) {
+                                           thisNodeSize <- DEP_NODESIZES[iDep]
+                                           DEP_COEFF_VAR[iDep, 1:thisNodeSize, sizeIndex] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME)
+                                       })
+                                   } else {
+                                       codeBlock <- quote(
+                                                                                  for(iDep in 1:N_DEP) {
+                                           thisNodeSize <- DEP_NODESIZES[iDep]
+                                           DEP_COEFF_VAR[iDep, 1:thisNodeSize, sizeIndex] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME) - DEP_OFFSET_VAR[iDep, 1:thisNodeSize]
+                                       })
                                    }
-                               },
-                                                   list(N_DEP          = as.name(paste0('N_dep_', distName)),
-                                                        DEP_NODESIZES  = as.name(paste0('dep_', distName, '_nodeSizes')),
-                                                        DEP_COEFF_VAR  = as.name(paste0('dep_', distName, '_coeff')),
-                                                        DEP_NODENAMES  = as.name(paste0('dep_', distName, '_nodeNames')),
-                                                        PARAM_NAME     = dependents[[distName]]$param,
-                                                        DEP_OFFSET_VAR = as.name(paste0('dep_', distName, '_offset'))))
+                                       
+                                   forLoopBody$addCode(
+                                       codeBlock,
+                                       list(N_DEP          = as.name(paste0('N_dep_', distName)),
+                                            DEP_NODESIZES  = as.name(paste0('dep_', distName, '_nodeSizes')),
+                                            DEP_COEFF_VAR  = as.name(paste0('dep_', distName, '_coeff')),
+                                            DEP_NODENAMES  = as.name(paste0('dep_', distName, '_nodeNames')),
+                                            PARAM_NAME     = dependents[[distName]]$param,
+                                            DEP_OFFSET_VAR = as.name(paste0('dep_', distName, '_offset'))))
+                               }
                            }
-
+                           
                            functionBody$addCode(for(sizeIndex in 1:d) FORLOOPBODY,
                                                 list(FORLOOPBODY = forLoopBody$getCode()))
                        },
@@ -906,8 +939,10 @@ conjugacyClass <- setRefClass(
                 names(subList) <- depParamsAvailable
                 
                 subList$value  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_values')), getDimension(distName), indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr)
-                subList$offset <- makeIndexedVariable(as.name(paste0('dep_', distName, '_offset')), targetNdim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr)
-                subList$coeff  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_coeff')),  targetCoeffNdim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = quote(d))
+                if(!all(links %in% c('identity', 'multiplicative')))
+                    subList$offset <- makeIndexedVariable(as.name(paste0('dep_', distName, '_offset')), targetNdim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr)
+                if(!all(links %in% c('identity', 'additive')))
+                    subList$coeff  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_coeff')),  targetCoeffNdim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = quote(d))
                 
                 forLoopBody <- codeBlockClass()
                 
@@ -919,7 +954,8 @@ conjugacyClass <- setRefClass(
                         forLoopBody$addCode(if(DEP_NODESIZES[iDep] != d) print('runtime error with sizes of 2D conjugate sampler'),
                                             list(DEP_NODESIZES = as.name(paste0('dep_', distName, '_nodeSizes'))))
                 }
-
+                ## HERE is where we need to strip coeff/offset in some cases based on link
+                ## run through code for example to see how it is working
                 for(contributionName in posteriorObject$neededContributionNames) {
                     if(!(contributionName %in% dependents[[distName]]$contributionNames))     next
                     contributionExpr <- eval(substitute(substitute(EXPR, subList), list(EXPR=dependents[[distName]]$contributionExprs[[contributionName]])))
@@ -1142,17 +1178,23 @@ cc_createStructureExpr <- function(model, exprText) {
 
 ## verifies that 'link' is satisfied by the results of linearityCheck
 cc_linkCheck <- function(linearityCheck, link) {
-    if(!(link %in% c('identity', 'multiplicative', 'linear', 'linear_plus_inprod', 'stick_breaking')))
+    linearityLinks <- c('identity', 'additive', 'multiplicative', 'linear', 'linear_plus_inprod') 
+    if(!(link %in% , c(linearityLinks, 'stick_breaking')))
         stop(paste0('unknown link: \'', link, '\''))
     if(is.null(linearityCheck))    return(FALSE)
     offset      <- linearityCheck$offset
     scale       <- linearityCheck$scale
-    if(link == 'identity'       && offset == 0 && scale == 1)                  return(TRUE)
+    if(link %in% linearityLinks && offset == 0 && scale == 1)
+        return('identity')
+    if(link %in% c('additive', 'linear', 'linear_plus_inprod') && scale == 1)
+        return('additive')
     ## We currently have no conjugacies where the scale can be a matrix, so check
     ## that 'scale' is a scalar.
     ## In particular we want to avoid that case when dealing with Wishart-related conjugacies.
-    if(link == 'multiplicative' && offset == 0 && cc_checkScalar(scale))       return(TRUE)
-    if(link == 'linear' || link == 'linear_plus_inprod')                       return(TRUE)
+    if(link %in% c('multiplicative', 'linear', 'linear_plus_inprod') && offset == 0 && cc_checkScalar(scale))
+        return('multiplicative')
+    if(link %in% c('linear', 'linear_plus_inprod')
+       return('linear')
     return(FALSE)
 }
 
@@ -1166,6 +1208,38 @@ cc_checkScalar <- function(expr) {
         return(all(sapply(expr[2:length(expr)], cc_checkScalar)))
     } else return(FALSE)
 }
+
+## Removes 'coeff' and/or 'offset' from expression for use in simplifying conjugacy contribution
+## expressions when realized link is 'simpler' than possible links.
+cc_stripExpr <- function(expr, offset = TRUE, coeff = TRUE) {
+    if(length(expr) == 1) return(expr)
+    if(is.call(expr)) 
+        for(i in seq_along(expr)[-1])
+            expr[[i]] <- cc_stripExpr(expr[[i]], offset, coeff)
+    if(offset && (expr[[1]] == '+' || expr[[1]] == '-')) {
+        if(expr[[2]] == 'offset')
+            return(expr[[3]])
+        if(expr[[3]] == 'offset')
+            return(expr[[2]])
+    }
+    if(coeff && expr[[1]] == '*') {
+        if(expr[[2]] == 'coeff' || expr[[2]] == 1)
+            return(expr[[3]])
+        if(expr[[3]] == 'coeff' || expr[[3]] == 1)
+            return(expr[[2]])
+    }
+    if(coeff && expr[[1]] == '/' && expr[[3]] == 'coeff') 
+        return(expr[[2]])
+    if(coeff && expr[[1]] == '/' && expr[[2]] == 'coeff') {
+        expr[[2]] <- 1
+        return(expr)
+    }
+    if(coeff && (expr[[1]] == '^' || expr[[1]] == 'sqrt') && expr[[2]] == 'coeff') {
+        return(1)
+    }
+    return(expr)
+}
+
 
 ## checks the parameter expressions in the stochastic distribution of depNode
 ## returns FALSE if we find 'targetNode' in ***more than one*** of these expressions

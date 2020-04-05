@@ -1878,6 +1878,20 @@ test_that('cc_checkScalar operates correctly', {
 
 })
 
+test_that('cc_stripExpr operates correctly', {
+    expr <- 'coeff * (log(value)-offset) * taulog'
+    expect_identical(cc_stripExpr(parse(text = 'coeff^2 * tau')[[1]], TRUE, TRUE),
+                 'tau')
+    expect_identical(cc_stripExpr(parse(text = expr)[[1]], TRUE, TRUE),
+                 '(log(value)) * taulog')
+    expect_identical(cc_stripExpr(parse(text = expr)[[1]], TRUE, FALSE),
+                 'coeff * (log(value)) * taulog')
+    expect_identical(cc_stripExpr(parse(text = expr)[[1]], FALSE, TRUE),
+                 '(log(value)-offset) * taulog')
+    expect_identical(cc_stripExpr(parse(text = expr)[[1]], FALSE, FALSE),
+                 expr)
+})
+
 sink(NULL)
 
 if(!generatingGoldFile) {
