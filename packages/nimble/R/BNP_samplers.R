@@ -198,20 +198,21 @@ sampleDPmeasure <- nimbleFunction(
       dimTildeVarsNim[i] <- model$getDimension(clusterVarInfo$clusterNodes[[i]][1])
       dimTildeVars[i] <- lengthData^(dimTildeVarsNim[i]) 
     }
+    nTildeVarsPerCluster <-  clusterVarInfo$numNodesPerCluster
     nTilde <- numeric(p+1)
-    nTilde[1:p] <- clusterVarInfo$nTilde
+    nTilde[1:p] <- clusterVarInfo$nTilde / nTildeVarsPerCluster
     if(any(nTilde[1:p] != nTilde[1])){
       stop('sampleDPmeasure: All cluster parameters must have the same number of parameters.\n')
     }
-    nTildeVarsPerCluster <-  clusterVarInfo$numNodesPerCluster
+    
     
     tildeVarsCols <- c(dimTildeVars[1:p]*nTildeVarsPerCluster, 0)
     tildeVarsColsSum <- c(0, cumsum(tildeVarsCols))
-    mvIndexes <- matrix(0, nrow=N, ncol=(sum(dimTildeVars[1:p]*nTildeVarsPerCluster))) # N o nTilde?
+    mvIndexes <- matrix(0, nrow=nTilde[1], ncol=(sum(dimTildeVars[1:p]*nTildeVarsPerCluster))) 
     for(j in 1:p) {
       tildeNodesModel <- model$expandNodeNames(clusterVarInfo$clusterVars[j], returnScalarComponents=TRUE) # tilde nodes j in model
       allIndexes <- 1:length(tildeNodesModel)
-      for(l in 1:N) {
+      for(l in 1:nTilde[1]) {
         clusterID <- l
         tildeNodesPerClusterID <- model$expandNodeNames(clusterVarInfo$clusterNodes[[j]][clusterVarInfo$clusterIDs[[j]] == clusterID], returnScalarComponents=TRUE) # tilde nodes in cluster with id 1
         aux <- match(tildeNodesModel, tildeNodesPerClusterID, nomatch = 0) 
@@ -291,7 +292,6 @@ sampleDPmeasure <- nimbleFunction(
           probs[index] <- cond
           ## slight workaround because can't compile mvSaved[tildeVars[j], iiter]  
           nimCopy(mvSaved, model, tildeVars, row = iiter)
-          #jcol <- 1
           for(j in 1:p){
             jcols <- (tildeVarsColsSum[j]+1):tildeVarsColsSum[j+1]
             uniqueValues[index, jcols] <- values(model, tildeVars[j])[mvIndexes[range[i], jcols]]
@@ -310,14 +310,12 @@ sampleDPmeasure <- nimbleFunction(
         index <- rcat(prob = probs[1:newValueIndex])
         if(index == newValueIndex){   # sample from G_0
           model$simulate(parentNodesTildeVarsDeps)
-          #sumCol <- truncG
           for(j in 1:p){
             jcols <- (sumCol + 1):(sumCol + tildeVarsCols[j]) 
             samples[iiter, jcols] <<- values(model, tildeVars[j])[mvIndexes[1,  (tildeVarsColsSum[j]+1):tildeVarsColsSum[j+1]]] # <<-
             sumCol <- sumCol + tildeVarsCols[j] 
           }
         } else {   # sample one of the existing values
-          #sumCol <- truncG
           for(j in 1:p){
             jcols <- (sumCol +1):(sumCol + tildeVarsCols[j])
             samples[iiter, jcols] <<- uniqueValues[index, (tildeVarsColsSum[j]+1):tildeVarsColsSum[j+1]] # <<-
