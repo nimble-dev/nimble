@@ -220,9 +220,9 @@ sampler_RW <- nimbleFunction(
                 acceptanceRate <- timesAccepted / timesRan
                 timesAdapted <<- timesAdapted + 1
                 if(saveMCMChistory) {
-                    setSize(scaleHistory, timesAdapted)         ## scaleHistory
-                    scaleHistory[timesAdapted] <<- scale        ## scaleHistory
-                    setSize(acceptanceHistory, timesAdapted)         ## scaleHistory
+                    setSize(scaleHistory, timesAdapted)                 ## scaleHistory
+                    scaleHistory[timesAdapted] <<- scale                ## scaleHistory
+                    setSize(acceptanceHistory, timesAdapted)            ## scaleHistory
                     acceptanceHistory[timesAdapted] <<- acceptanceRate  ## scaleHistory
                 }
                 gamma1 <<- 1/((timesAdapted + 3)^adaptFactorExponent)
@@ -242,12 +242,11 @@ sampler_RW <- nimbleFunction(
                         scale <<- 0.5*(upper-lower)
                     }
                 }
-
                 timesRan <<- 0
                 timesAccepted <<- 0
             }
         },
-        getScaleHistory = function() {  ## scaleHistory
+        getScaleHistory = function() {       ## scaleHistory
             returnType(double(1))
             if(saveMCMChistory) {
                 return(scaleHistory)
@@ -1558,7 +1557,7 @@ sampler_RW_multinomial <- nimbleFunction(
 
 
 #####################################################################################
-### RW_dirichlet sampler for multinomial distributions ##############################
+### RW_dirichlet sampler for dirichlet distributions ################################
 #####################################################################################
 
 #' @rdname samplers
@@ -1568,9 +1567,10 @@ sampler_RW_dirichlet <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        adaptive      <- if(!is.null(control$adaptive))      control$adaptive      else TRUE
-        adaptInterval <- if(!is.null(control$adaptInterval)) control$adaptInterval else 200
-        scaleOriginal <- if(!is.null(control$scale))         control$scale         else 1
+        adaptive            <- if(!is.null(control$adaptive))            control$adaptive            else TRUE
+        adaptInterval       <- if(!is.null(control$adaptInterval))       control$adaptInterval       else 200
+        adaptFactorExponent <- if(!is.null(control$adaptFactorExponent)) control$adaptFactorExponent else 0.8
+        scaleOriginal       <- if(!is.null(control$scale))               control$scale               else 1
         ## node list generation
         calcNodes <- model$getDependencies(target)
         depNodes  <- model$getDependencies(target, self = FALSE)
@@ -1582,6 +1582,7 @@ sampler_RW_dirichlet <- nimbleFunction(
         timesRan         <- 0
         timesAcceptedVec <- rep(0, d)
         timesAdapted     <- 0
+        optimalAR        <- 0.44
         gamma1           <- 0
         ## checks
         if(length(model$expandNodeNames(target)) > 1)    stop('RW_dirichlet sampler only applies to one target node')
@@ -1613,8 +1614,8 @@ sampler_RW_dirichlet <- nimbleFunction(
             if(timesRan %% adaptInterval == 0) {
                 acceptanceRateVec <- timesAcceptedVec / timesRan
                 timesAdapted <<- timesAdapted + 1
-                gamma1 <<- 1/((timesAdapted + 3)^0.8)
-                adaptFactorVec <- exp(10 * gamma1 * (acceptanceRateVec - 0.44))   ## optimalAR = 0.44
+                gamma1 <<- 1/((timesAdapted + 3)^adaptFactorExponent)
+                adaptFactorVec <- exp(10 * gamma1 * (acceptanceRateVec - optimalAR))
                 scaleVec <<- scaleVec * adaptFactorVec
                 timesRan <<- 0
                 timesAcceptedVec <<- numeric(d, 0)
@@ -1885,8 +1886,8 @@ CAR_scalar_RW <- nimbleFunction(
         timesRan      <- 0
         timesAccepted <- 0
         timesAdapted  <- 0
-        gamma1        <- 0
         optimalAR     <- 0.44
+        gamma1        <- 0
         ## nested function and function list definitions
         dcarList <- nimbleFunctionList(CAR_evaluateDensity_base)
         if(proper) { dcarList[[1]] <- CAR_proper_evaluateDensity(model, targetScalar, neighborNodes, neighborWeights, Mi)
@@ -2259,6 +2260,7 @@ sampler_CAR_proper <- nimbleFunction(
 #' \itemize{
 #' \item adaptive. A logical argument, specifying whether the sampler should independently adapt the scale (proposal standard deviation, on the log scale) for each componentwise Metropolis-Hasting update, to achieve a theoretically desirable acceptance rate for each. (default = TRUE)
 #' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the sampler will perform its adaptation procedure.  (default = 200)
+#' \item adaptFactorExponent. Exponent controling the rate of decay of the scale adaptation factor.  See Shaby and Wells, 2011, for details. (default = 0.8)
 #' \item scale. The initial value of the proposal standard deviation (on the log scale) for each component of the reparameterized Dirichlet distribution.  If adaptive = FALSE, the proposal standard deviations will never change. (default = 1)
 #' }
 #'
