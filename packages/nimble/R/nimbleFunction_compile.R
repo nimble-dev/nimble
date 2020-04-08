@@ -152,6 +152,12 @@ nfProcessing <- setRefClass('nfProcessing',
                     if(is.character(methodName)) ## not sure when it wouldn't be; this is defensive
                         newEnableDerivs[[ methodName ]] <- list(numNimDerivsCalculate = numNimDerivsCalculate)
                 }
+                ## ADinfoNames <- RCfunProcs[[i]]$compileInfo$typeEnv[['ADinfoNames']]
+                ## if(!is.null(ADinfoNames)) {
+                ##     for(ADinfoName in ADinfoNames) {
+                ##         setupSymTab$addSymbol(symbolADinfo(name = ADinfoName))
+                ##     }
+                ## }
             }
             if(length(newEnableDerivs)) {
                 environment(nfGenerator)$enableDerivs <<- c(newEnableDerivs,

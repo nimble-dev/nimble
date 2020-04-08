@@ -138,6 +138,59 @@ makeTypeTemplateFunction <- function(newName,
          nodeFxnVector_name = workEnv[['nodeFxnVector_name']])
 }
 
+make_deriv_function <- function(origFun,
+                                newFunName,
+                                argTransferFunName) {
+  ADNimbleListName <- nl.getDefinitionContent(ADNimbleList, 'name')
+  newFun <- RCfunctionDef$new()
+  newFun$name <- newFunName
+  newFun$returnType <- cppVarFull(baseType = 'nimSmartPtr',
+                                  templateArgs = ADNimbleListName,
+                                  name = 'RETURN_OBJ')
+  ## 0. Add argument copies.
+  newFun$args <- origFun$args$copy()
+  newFun$args$addSymbol(cppNimArr(name = 'ARGZ_nimDerivsOrders_',
+                                  nDim = 1, type = 'double', ref = TRUE, const = TRUE))
+  newFun$args$addSymbol(cppNimArr(name = 'ARGZ_wrtVector_',
+                                  nDim = 1, type = 'double', ref = TRUE, const = TRUE))
+  newFun$args$addSymbol(cppVar(name = 'ARGZ_ADinfo_',
+                               ref = TRUE,
+                               baseType = "nimbleCppADinfoClass"))
+
+  ## 0b. add orders, wrtVector, and ADinfo arguments
+  ## 1. add ansList to local symTab
+  localVars <- symbolTable() 
+  localVars$addSymbol(cppVarFull(baseType = 'nimSmartPtr',
+                                 templateArgs = ADNimbleListName,
+                                 name = 'returnList_') )
+  ## 2. Create getDerivs_wrapper line
+  innerRcall <- do.call('call',
+                        c(list(argTransferFunName),
+                          lapply(origFun$args$getSymbolNames(), as.name),
+                          list(as.name("ARGZ_ADinfo_"))),
+                        quote = TRUE
+                        )
+  
+  getDerivsRcall <- substitute(returnList_ <- getDerivs_wrapper( INNERCALL,
+                                                                ARGZ_nimDerivsOrders_,
+                                                                ARGZ_wrtVector_ ),
+                               list(INNERCALL = innerRcall))
+
+  ## 3. create return list
+  returnCall <- cppLiteral("return(returnList_);")
+
+  allRCode <- do.call('call',c(list('{'),
+                               list(getDerivsRcall,
+                                    returnCall)),
+                      quote = TRUE)
+
+  allCode <- RparseTree2ExprClasses(allRCode)
+  
+  newFun$code <- cppCodeBlock(code = allCode,
+                              objectDefs = localVars)
+  newFun
+}
+
 ## This makes the function to be called once for CppAD taping
 ## It sets up AD variables, copies from regular variables into them
 ## calls the templated version of the member function
@@ -779,7 +832,7 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
       TF$args <- symbolTable()
       indexNodeInfoSym <- targetFunDef$args$getSymbolObject('ARG1_INDEXEDNODEINFO__')
       # indexNodeInfoSym$name <-'ARG1_INDEXEDNODEINFO__' ## to conform with original R function indexing
-      TF$args$addSymbol(indexNodeInfoSym)   
+      TF$args$addSymbol(indexNodeInfoSym)
     }
     
     ## set up index vars (up to 6)
@@ -808,6 +861,10 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
         }
         copyToDoublesLines <- do.call("call", c(list("{"), copyToDoublesLines))
     }
+
+    if(!isNode) {
+        TF$args$addSymbol(cppVar(baseType = "nimbleCppADinfoClass", ref = TRUE, name = "ADinfo"))
+    }
     
     ## record tape if needed
     runCallForTapingCode <- do.call('call',
@@ -815,16 +872,23 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
                                       lapply(callForTapingNames, as.name)),
                                     quote = TRUE)
     recordIfNeededCode <- substitute(
-      if(!myADtapePtrs_[FUNINDEX]) {
+      if(!memberData(ADinfo, ADtape)) {
         COPYTODOUBLESLINES
-        myADtapePtrs_[FUNINDEX] <- RUNCALLFORTAPING
+        memberData(ADinfo, ADtape) <- RUNCALLFORTAPING
       },
-      list(FUNINDEX = funIndex,
-           RUNCALLFORTAPING = runCallForTapingCode,
+      list(RUNCALLFORTAPING = runCallForTapingCode,
            COPYTODOUBLESLINES = copyToDoublesLines))
+    ## recordIfNeededCode <- substitute(
+    ##   if(!myADtapePtrs_[FUNINDEX]) {
+    ##     COPYTODOUBLESLINES
+    ##     myADtapePtrs_[FUNINDEX] <- RUNCALLFORTAPING
+    ##   },
+    ##   list(FUNINDEX = funIndex,
+    ##        RUNCALLFORTAPING = runCallForTapingCode,
+    ##        COPYTODOUBLESLINES = copyToDoublesLines))
     
     ## assign tape ptr code
-    assignTapePtrCode <- substitute(memberData(ADtapeSetup, ADtape) <- myADtapePtrs_[FUNINDEX], list(FUNINDEX = funIndex)) ## This will have to become a unique index in general. -1 added during output
+    ## assignTapePtrCode <- substitute(memberData(ADtapeSetup, ADtape) <- myADtapePtrs_[FUNINDEX], list(FUNINDEX = funIndex)) ## This will have to become a unique index in general. -1 added during output
     
     ## create code to copy from arguments into the independentVars
     numIndependentVars <- length(independentVarNames)
@@ -855,7 +919,8 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
             thisConstInfo <- ADconstantsInfo[[thisName]][[thisModelElementNum]]
             copyIntoIndepVarCode[[ivn+1]] <- substitute(
             {
-              memberData(ADtapeSetup, IVN)[netIncrement_] <- ARG1_INDEXEDNODEINFO__.info[INT]
+              memberData(ADinfo, IVN)[netIncrement_] <- ARG1_INDEXEDNODEINFO__.info[INT]
+##              memberData(ADtapeSetup, IVN)[netIncrement_] <- ARG1_INDEXEDNODEINFO__.info[INT]
               netIncrement_ <- netIncrement_ + 1
             },
             list(INT = thisConstInfo$indexColumn,
@@ -891,8 +956,10 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
             names(sizeList) <- indexVarNames[1:length(sizeList)]
             if(length(sizeList) > maxSize) maxSize <- length(sizeList)
           newRcode <- makeCopyingCodeBlock(
-            substitute(memberData(ADtapeSetup, IVN),
-                      list(IVN = ADtape_independentVarsName)),
+              substitute(
+ ##                 memberData(ADtapeSetup, IVN),
+                  memberData(ADinfo, IVN),
+                  list(IVN = ADtape_independentVarsName)),
             as.name(thisName),
             sizeList,
             indicesRHS = TRUE,
@@ -912,8 +979,13 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
           else{
             RHS <- as.name(thisName)
           } 
-          copyIntoIndepVarCode[[ivn+1]] <- substitute({memberData(ADtapeSetup, IVN)[netIncrement_] <- RHS; netIncrement_ <- netIncrement_ + 1},
-                                                      list(RHS = RHS, IVN = ADtape_independentVarsName)) 
+          copyIntoIndepVarCode[[ivn+1]] <- substitute(
+          {
+              ## memberData(ADtapeSetup, IVN)[netIncrement_] <- RHS
+              memberData(ADinfo, IVN)[netIncrement_] <- RHS
+              netIncrement_ <- netIncrement_ + 1
+          },
+          list(RHS = RHS, IVN = ADtape_independentVarsName)) 
           ##          totalIndependentLength <- totalIndependentLength + 1
         }
     }
@@ -924,9 +996,14 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
                                                   nimbleSymTab,
                                                   "totalIndependentVarLength_",
                                                   0) ## from extraInput scheme: if(usesModelCalculate) 1 else 0)
-    setSizeLine <- substitute(cppMemberFunction(resize(memberData(ADtapeSetup, IVN), totalIndependentVarLength_)),
-                              list(IVN = ADtape_independentVarsName))
-  returnCall <- cppLiteral("return(ADtapeSetup);")
+    setSizeLine <- substitute(
+      cppMemberFunction(resize(
+        ## memberData(ADtapeSetup, IVN),
+        memberData(ADinfo, IVN),
+        totalIndependentVarLength_)),
+      list(IVN = ADtape_independentVarsName))
+##    returnCall <- cppLiteral("return(ADtapeSetup);")
+    returnCall <- cppLiteral("return(ADinfo);")
     if(maxSize > 0){
       for(ivn in 1:maxSize)
         localVars$addSymbol( cppVar(name = indexVarNames[ivn], baseType = 'int') )    
@@ -943,14 +1020,15 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
     if(!metaTape) {
       setMetaFlagLine <- quote(blank())
     } else {
-      setMetaFlagLine <- cppLiteral("ADtapeSetup.metaFlag = true;")
+      ## setMetaFlagLine <- cppLiteral("ADtapeSetup.metaFlag = true;")
+      setMetaFlagLine <- cppLiteral("ADinfo.metaFlag = true;")
     }
     
   allRcode <- do.call('call', c(list('{'),
                                 list(recordIfNeededCode),
                                 calcTotalLengthCode,
                                 list(setSizeLine),
-                                list(assignTapePtrCode),
+##                                list(assignTapePtrCode),
                                 copyIntoIndepVarCode,
                                 list(dynamicVarsLine, setMetaFlagLine),
                                 list(returnCall)),

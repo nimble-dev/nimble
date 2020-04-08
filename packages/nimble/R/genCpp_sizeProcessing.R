@@ -1170,32 +1170,33 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     return(asserts)
 }
 
-
 sizeNimDerivs <- function(code, symTab, typeEnv){
-  ## Convert nimDerivs( foo(x, y), order, dropArgs, wrt ) to foo_deriv_(x, y, order, wrt)
-  code$args[[1]]$name <- paste0(code$args[[1]]$name, '_deriv_')
-  setArg(code$caller, code$callerArgID, code$args[[1]])
-  setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[2]]) # Set order argument.
-  setArg(code$args[[1]], length(code$args[[1]]$args) + 1, 
-         code$args[[4]])
-  code$args[[2]] <- NULL
-  asserts <- recurseSetSizes(code$args[[1]], symTab, typeEnv)
-  code$args[[1]]$type <- 'nimbleList'
-  code$args[[1]]$toEigenize <- "yes"
-  code$args[[1]]$nDim <- 0
-  # if(is.numeric(code$args[[1]]$args[[3]])){
-  #   code$args[[1]]$args[[3]] <- expression()
-  # }
-  asserts <- c(asserts, sizeNimbleFunction(code$args[[1]], symTab, typeEnv))  ## currently only works for nf methods
-  if(!nimbleOptions('experimentalSelfLiftStage')) {
-    if(!(code$caller$name %in% assignmentOperators))
-      asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+  code$name <- "nimDerivs_dummy"
+  asserts <- sizeNimbleListReturningFunction(code, symTab, typeEnv)
+  ## lift wrt if needed.  I'm not sure why sizeNimbleListReturningFunction doesn't handle lifting
+  if(inherits(code$args[[2]], 'exprClass')) {
+      if(!code$args[[2]]$isName) {
+          asserts <- c(asserts, sizeInsertIntermediate(code, 2, symTab, typeEnv) )
+      }
   }
-  a1 <- insertExprClassLayer(code$args[[1]], length(code$args[[1]]$args) - 1, 'make_vector_if_necessary',
+  code$toEigenize <- 'no'
+  a1 <- insertExprClassLayer(code, which(names(code$args)=='order'), 'make_vector_if_necessary',
                              type = 'double',
                              nDim = 1,
                              sizeExprs = list())
-  #setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[3]]) # Sets variables argument, not yet implemented.
+  newADinfoName <- ADinfoLabel()
+##  symTab$addSymbol(symbolADinfo$new(name = newADinfoName))
+  if(!is.list(code$aux))
+    code$aux <- list()
+  code$aux[['ADinfoName']] <- newADinfoName
+
+  if(is.null(typeEnv[['ADinfoNames']])) {
+    typeEnv[['ADinfoNames']] <- newADinfoName
+  } else {
+    typeEnv[['ADinfoNames']] <- c(typeEnv[['ADinfoNames']],
+                                  newADinfoName)
+  }
+  
   if(length(asserts) == 0) NULL else asserts
 }
 

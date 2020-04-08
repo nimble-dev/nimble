@@ -377,6 +377,21 @@ symbolSEXP <- setRefClass(
     })
 )
 
+## symbolADinfo <- setRefClass(
+##     Class = "symbolADinfo",
+##     contains = "symbolBase",
+##     methods = list(
+##         initialize = function(...) {
+##             callSuper(...)
+##             type <<- 'Ronly'  
+##         },
+##         show = function() writeLines(paste("symbolADinfo", name)),
+##         genCppVar = function(...) {
+##             cppVar(name = name,
+##                    ptr = 0,
+##                    baseType = "nimbleCppADinfoClass")
+##         })
+## )
 
 symbolString <- setRefClass(
     Class = "symbolString",

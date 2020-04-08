@@ -89,7 +89,7 @@ Collate:
     nimbleFunction_core.R
     nimbleFunction_nodeFunction.R
     nimbleFunction_nodeFunctionNew.R
-	nimbleFunction_Rderivs.R
+    nimbleFunction_Rderivs.R
     nimbleFunction_Rexecution.R
     nimbleFunction_compile.R
     nimbleFunction_keywordProcessing.R

@@ -294,6 +294,24 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   }
                                                   useModelInfo
                                               },
+                                              add_deriv_function = function(funName,
+                                                                            derivControl = list()) {
+                                                  regularFun <- RCfunDefs[[funName]]
+                                                  static <- isTRUE(derivControl[['static']])
+                                                  if(static) {
+                                                      message("add_deriv_function support for static is not written.")
+                                                  } else {
+                                                      if(isTRUE(nimbleOptions("useADreconfigure"))) {
+                                                          newFunName <- paste0(funName, '_deriv_')
+                                                          argTransName <- paste0(funName, '_ADargumentTransfer2_')
+                                                          functionDefs[[newFunName]] <<- make_deriv_function(regularFun,
+                                                                                                             newFunName,
+                                                                                                             argTransName)
+                                                      } else {
+                                                          message("Don't know how to use static=FALSE without nimbleOptions('useADreconfigure')." )
+                                                      }
+                                                  }
+                                              },
                                               addADtapingFunction = function( funName,
                                                                              independentVarNames,
                                                                              dependentVarNames,
@@ -414,6 +432,8 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                                                     funIndex = funIndex,
                                                                                     useModelInfo = useModelInfo,
                                                                                     derivControl = derivControl)
+                                                      add_deriv_function(funName,
+                                                                         derivControl)
                                                       funIndex + 1 ## function return value increments by one in non-meta case
                                                   } else {
                                                       funIndex ## but does not increment in meta case
@@ -439,6 +459,15 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       stop(paste0('To enable derivatives, size must be given for the ',
                                                                   argName, ' ', argTypeText, ' of the ', funName,
                                                                   ' method,  e.g. double(1, 3) for a length 3 vector.' ))
+                                              },
+                                              addADinfoObjects = function() {
+                                                  for(i in seq_along(nimCompProc$compileInfos)) {
+                                                      ADinfoNames <- nimCompProc$compileInfos[[i]]$typeEnv[['ADinfoNames']]
+                                                      if(!is.null(ADinfoNames)) {
+                                                          for(ADinfoName in ADinfoNames)
+                                                              objectDefs$addSymbol(cppVar(name = ADinfoName, ptr = 0, baseType = "nimbleCppADinfoClass"))
+                                                      }
+                                                  }
                                               },
                                               addADclassContent = function() {
                                         # CPPincludes <<- c("<TMB/distributions_R.hpp>", CPPincludes)
@@ -550,6 +579,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                                          paste(nonStaticNames, sep=" ", collapse = " "),
                                                                          ' but nimbleOption useADreconfigure is not TRUE'))
                                                       }
+                                                      addADinfoObjects()
                                                   }
                                                   objectDefs$addSymbol(cppVarFull(name = 'ADtapeSetup',
                                                                                   baseType = 'nimbleCppADinfoClass'))

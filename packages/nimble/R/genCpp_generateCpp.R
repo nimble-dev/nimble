@@ -16,6 +16,7 @@ cppOutputCalls <- c(makeCallList(recyclingRuleOperatorsAD, 'cppOutputRecyclingRu
                     makeCallList(eigProxyCallsExternalUnary, 'cppOutputEigExternalUnaryFunction'),
                     makeCallList(c('startNimbleTimer','endNimbleTimer','push_back'), 'cppOutputMemberFunction'),
                     makeCallList(c('nimSeqBy','nimSeqLen', 'nimSeqByLen'), 'cppOutputCallAsIs'),
+                    list(nimDerivs_dummy = 'cppOutputNimDerivs'),
                     makeCallList(nimbleListReturningOperators, 'cppNimbleListReturningOperator'),
                     makeCallList(c("TFsetInput_", "TFgetOutput_", "TFrun_"), 'cppOutputMemberFunctionDeref'),
                     list(
@@ -67,8 +68,7 @@ cppOutputCalls <- c(makeCallList(recyclingRuleOperatorsAD, 'cppOutputRecyclingRu
                          callC = 'cppOutputEigBlank', ## not really eigen, but this just jumps over a layer in the parse tree
                          eigBlank = 'cppOutputEigBlank',
                          voidPtr = 'cppOutputVoidPtr',
-                         cppLiteral = 'cppOutputLiteral'
-                        )
+                        cppLiteral = 'cppOutputLiteral'                        )
                     )
 cppOutputCalls[['pow']] <-  'cppOutputPow'
 cppMidOperators <- midOperators
@@ -236,6 +236,16 @@ cppOutputChainedCall <- function(code, symTab) {
     firstCall <- nimGenerateCpp(code$args[[1]], symTab)
     ## now similar to cppOutputCallAsIs
     paste0(firstCall, '(', paste0(unlist(lapply(code$args[-1], nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')' )
+}
+
+cppOutputNimDerivs <- function(code, symTab) {
+    origName <- code$args[[1]]$name
+    derivName <- paste0(origName, '_deriv_')
+    innerArgs <- code$args[[1]]$args
+    iOmit <- which(names(code$args) == 'dropArgs')
+    outerArgs <- code$args[-c(1, iOmit)]
+    ADinfoArg <- code$aux$ADinfoName
+    paste0(derivName, '(', paste0(unlist(lapply( c(innerArgs, outerArgs), nimGenerateCpp, symTab, asArg = TRUE ) ), collapse = ', '), ',', ADinfoArg, ')')
 }
 
 cppNewNimbleList <- function(code, symTab) {

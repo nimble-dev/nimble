@@ -1,5 +1,14 @@
 derivInfo <- function(x, ...) x
 
+## dummy for recursing in sizeNimDerivs
+nimDerivs_dummy <- nimbleFunction(
+    run = function(call = void(),
+                   order = integer(1),
+                   dropArgs = void(),
+                   wrt = integer(1)) {
+    }
+)
+
 #' Nimble Derivatives
 #' 
 #' EXPERIMENTAL Computes the value, Jacobian, and Hessian of a given  

@@ -102,23 +102,23 @@ nimbleFunction <- function(setup         = NULL,
                 names = enableDerivs)
         }
 
-        staticDerivNames <- names(enableDerivs)[unlist(lapply(enableDerivs, function(x) isTRUE(x[['static']])))]
-        if(length(staticDerivNames) > 0) {
-            derivMethodInfo <- buildDerivMethods(methodList, staticDerivNames)
-            methodList <- c(methodList,
-                            derivMethodInfo$derivMethodsList)
-            safeMethodNames <- c(safeMethodNames, derivMethodInfo$argTransferNames)
-        }
-        nonstaticDerivNames <- names(enableDerivs)[unlist(lapply(enableDerivs, function(x) !isTRUE(x[['static']])))]
-        if(length(nonstaticDerivNames) > 0) {
-            if(isTRUE(nimbleOptions("useADreconfigure"))) {
-                derivMethod2Info <- buildDerivMethods2(methodList, nonstaticDerivNames)
-                methodList <- c(methodList,
-                                derivMethod2Info$derivMethodsList)
-                safeMethodNames <- c(safeMethodNames, derivMethod2Info$argTransferNames)
-                enableDerivs <- c(enableDerivs, derivMethod2Info$newEnableDerivs)
-            }
-        } 
+        ## staticDerivNames <- names(enableDerivs)[unlist(lapply(enableDerivs, function(x) isTRUE(x[['static']])))]
+        ## if(length(staticDerivNames) > 0) {
+        ##     derivMethodInfo <- buildDerivMethods(methodList, staticDerivNames)
+        ##     methodList <- c(methodList,
+        ##                     derivMethodInfo$derivMethodsList)
+        ##     safeMethodNames <- c(safeMethodNames, derivMethodInfo$argTransferNames)
+        ## }
+        ## nonstaticDerivNames <- names(enableDerivs)[unlist(lapply(enableDerivs, function(x) !isTRUE(x[['static']])))]
+        ## if(length(nonstaticDerivNames) > 0) {
+        ##     if(isTRUE(nimbleOptions("useADreconfigure"))) {
+        ##         derivMethod2Info <- buildDerivMethods2(methodList, nonstaticDerivNames)
+        ##         methodList <- c(methodList,
+        ##                         derivMethod2Info$derivMethodsList)
+        ##         safeMethodNames <- c(safeMethodNames, derivMethod2Info$argTransferNames)
+        ##         enableDerivs <- c(enableDerivs, derivMethod2Info$newEnableDerivs)
+        ##     }
+        ## } 
     } else if(!nimbleOptions('experimentalEnableDerivs')
               && length(enableDerivs)>0)
         stop('To enable nimbleFunction derivatives, you must first set "nimbleOptions(experimentalEnableDerivs = TRUE)".')

@@ -155,7 +155,13 @@ class nimbleCppADinfoClass {
   std::vector< CppAD::AD<double> > dynamicVars_meta;
   bool metaFlag;
   CppAD::ADFun<double> *ADtape;
- nimbleCppADinfoClass() : metaFlag(false) {}
+ nimbleCppADinfoClass() : metaFlag(false), ADtape(0) {}
+  ~nimbleCppADinfoClass() {
+    if(ADtape) {
+      delete ADtape;
+      ADtape = 0;
+    }
+  }
 };
 
 void update_dynamicVars(NodeVectorClassNew_derivs &NV,

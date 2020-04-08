@@ -441,6 +441,7 @@ nimbleListReturningFunctionList <- list(nimEigen = list(nlGen = eigenNimbleList,
                                        ## nimDerivs = list(nlGen = ADNimbleList, cppName = "NIM_DERIVS"),
                                         nimDerivs_calculate = list(nlGen = ADNimbleList, cppName = "nimDerivs_calculate"),
                                         getDerivs_wrapper = list(nlGen = ADNimbleList, cppName = 'getDerivs_wrapper'),
+                                        nimDerivs_dummy = list(nlGen = ADNimbleList, cppName = 'nimDerivs_dummy'),
                                         nimOptim = list(nlGen = optimResultNimbleList, cppName = "OptimResultNimbleList"),
                                         nimOptim_model = list(nlGen = optimResultNimbleList, cppName = "OptimResultNimbleList"),
                                         nimOptimDefaultControl = list(nlGen = optimControlNimbleList, cppName = "OptimControlNimbleList"))
