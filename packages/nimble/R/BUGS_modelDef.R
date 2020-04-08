@@ -2734,13 +2734,17 @@ modelDefClass$methods(warnRHSonlyDynIdx = function() {
             ## Evaluate indexing to determine nodes used in dynamic indexing.
             nr <- min(50, nrow(decl$unrolledIndicesMatrix))  # avoid doing full expansion for speed
             nodes <- lapply(seq_along(vars), function(idx) {
-                parentNode <- decl$symbolicParentNodesReplaced[[which(vars[idx] == decl$rhsVars)]]
-
-                return(sapply(seq_len(nr), function(row) {
-                    deparse(eval(substitute(substitute(e, 
-                                                       as.list(decl$unrolledIndicesMatrix[row, ])),
-                                                       list(e = parentNode))))
-                }))
+                ## In most cases, there will be only one parentNode, but if a var is used multiple times on RHS
+                ## one can get multiple parentNodes. Modified as of issue #996.
+                parentNodes <- decl$symbolicParentNodesReplaced[which(vars[idx] == decl$rhsVars)]
+                return(
+                    unlist(lapply(seq_along(parentNodes), function(node) {
+                        sapply(seq_len(nr), function(row) {
+                            deparse(eval(substitute(substitute(e, 
+                                                               as.list(decl$unrolledIndicesMatrix[row, ])),
+                                                    list(e = parentNodes[[node]]))))
+                        })
+                    })))
             })
             nodes <- unique(unlist(nodes))
             nodes <- nodes[nodes %in% maps$nodeNamesRHSonly]
