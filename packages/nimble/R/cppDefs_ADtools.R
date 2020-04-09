@@ -651,14 +651,46 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
     CFT
 }
 
+addADinfoObjects <- function(cppDef) {
+  firstStatic <- TRUE
+  globals <- NULL
+  for(i in seq_along(cppDef$nimCompProc$compileInfos)) {
+    ADinfoNames <- cppDef$nimCompProc$compileInfos[[i]]$typeEnv[['ADinfoNames']]
+    if(!is.null(ADinfoNames)) {
+      for(ADinfoName in ADinfoNames)
+        cppDef$objectDefs$addSymbol(cppVar(name = ADinfoName, ptr = 0, baseType = "nimbleCppADinfoClass"))
+    }
+    ADstaticInfoNames <- cppDef$nimCompProc$compileInfos[[i]]$typeEnv[['ADstaticInfoNames']]
+    if(!is.null(ADstaticInfoNames)) {
+      for(ADstaticInfoName in ADstaticInfoNames) {
+        cppDef$objectDefs$addSymbol(cppVarFull(name = ADstaticInfoName, ptr = 0, baseType = "nimbleCppADinfoClass", static = TRUE))
+        if(firstStatic) {
+          globals <- cppGlobalObjects(name = paste0('staticGlobals_', name),
+                                      staticMembers = TRUE)
+          firstStatic <- FALSE
+        }
+        globals$objectDefs[[ADstaticInfoName]] <-
+          cppVarFull(baseType = 'nimbleCppADinfoClass',
+                     name = paste0(cppDef$name,'::', ADstaticInfoName))
+      }
+    }
+    
+  }
+  if(!is.null(globals))
+    cppDef$neededTypeDefs[['staticTapeInfos']] <<- globals
+}
+
 makeStaticInitClass <- function(cppDef, derivMethods) {
+    if(length(derivMethods) == 0) return(NULL)
     cppClass <- cppClassDef(name = paste0('initTape_', cppDef$name), useGenerator = FALSE)
     globalsDef <- cppGlobalObjects(name = paste0('initTapeGlobals_', cppDef$name))
     globalsDef$objectDefs[['staticInitClassObject']] <- cppVarFull(baseType = paste0('initTape_', cppDef$name),
                                                                    name = paste0('initTape_', cppDef$name, '_Object_'))
     initializerCodeList <- list()
+    initializerDef <- cppFunctionDef(name = paste0('initTape_', cppDef$name), returnType = emptyTypeInfo())
     for(derivFun in derivMethods){
-        initializerDef <- cppFunctionDef(name = paste0('initTape_', cppDef$name), returnType = emptyTypeInfo())
+        ADinfoNames <- cppDef$nimCompProc$compileInfos[[derivFun]]$typeEnv[['ADinfoNames']]
+        
         ## use of parse instead of substitute is so R CMD check doesn't flag CLASSNAME:: as an unmentioned dependency on package named CLASSNAME
         initializerCodeList <- c(initializerCodeList,
                                  parse(text = paste0("push_back(", cppDef$name, "::allADtapePtrs_, ",

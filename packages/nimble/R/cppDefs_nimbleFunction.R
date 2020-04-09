@@ -460,15 +460,6 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                                   argName, ' ', argTypeText, ' of the ', funName,
                                                                   ' method,  e.g. double(1, 3) for a length 3 vector.' ))
                                               },
-                                              addADinfoObjects = function() {
-                                                  for(i in seq_along(nimCompProc$compileInfos)) {
-                                                      ADinfoNames <- nimCompProc$compileInfos[[i]]$typeEnv[['ADinfoNames']]
-                                                      if(!is.null(ADinfoNames)) {
-                                                          for(ADinfoName in ADinfoNames)
-                                                              objectDefs$addSymbol(cppVar(name = ADinfoName, ptr = 0, baseType = "nimbleCppADinfoClass"))
-                                                      }
-                                                  }
-                                              },
                                               addADclassContent = function() {
                                         # CPPincludes <<- c("<TMB/distributions_R.hpp>", CPPincludes)
                                                   constructorCode <- NULL ## default return object
@@ -541,45 +532,45 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                                                                          funIndex = currentFunIndex)
                                                           }
 
-                                                          lengthTapePtrs <- currentFunIndex - 1
+                                                          ## lengthTapePtrs <- currentFunIndex - 1
                                                           
                                                           ## 1. Add myADtapePtrs_.  allADtapePtrs_ is static. myADtapePtrs_ is not static.
-                                                          objectDefs$addSymbol(cppVarFull(baseType = 'std::array',
-                                                                                          templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun',
-                                                                                                                         templateArgs = list('double'),
-                                                                                                                         ptr = 1),
-                                                                                                              lengthTapePtrs),
-                                                                                          static = FALSE,
-                                                                                          name = 'myADtapePtrs_'))
-                                                          ## 2. Add a destructor
-                                                          ## Note that i becomes (i)-1 in cppOutput processing
-                                                          ## but for the cppLiteral we need to code it directly.
-                                                          destForCode <- substitute(for(i in 1:N) {
-                                                                                        if(myADtapePtrs_[i])
-                                                                                            cppLiteral("delete myADtapePtrs_[(i)-1];")
-                                                                                    },
-                                                                                    list(N = lengthTapePtrs))
-                                                          destSymTab <- symbolTable$new()
-                                                          destSymTab$addSymbol( nimble:::cppInt(name = "i") )
-                                                          destCode <- putCodeLinesInBrackets(destForCode) ## placeholder
-                                                          nimDestCode <- RparseTree2ExprClasses(destCode)
-                                                          destName <- paste0("~", name)
-                                                          destFunDef <- cppFunctionDef(name = destName,
-                                                                                       returnType = emptyTypeInfo(),
-                                                                                       code = cppCodeBlock(code = nimDestCode,
-                                                                                                           objectDefs = destSymTab,
-                                                                                                           skipBrackets = TRUE))
-                                                          functionDefs[["destructor"]] <<- destFunDef
+                                                          ## objectDefs$addSymbol(cppVarFull(baseType = 'std::array',
+                                                          ##                                 templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun',
+                                                          ##                                                                templateArgs = list('double'),
+                                                          ##                                                                ptr = 1),
+                                                          ##                                                     lengthTapePtrs),
+                                                          ##                                 static = FALSE,
+                                                          ##                                 name = 'myADtapePtrs_'))
+                                                          ## ## 2. Add a destructor
+                                                          ## ## Note that i becomes (i)-1 in cppOutput processing
+                                                          ## ## but for the cppLiteral we need to code it directly.
+                                                          ## destForCode <- substitute(for(i in 1:N) {
+                                                          ##                               if(myADtapePtrs_[i])
+                                                          ##                                   cppLiteral("delete myADtapePtrs_[(i)-1];")
+                                                          ##                           },
+                                                          ##                           list(N = lengthTapePtrs))
+                                                          ## destSymTab <- symbolTable$new()
+                                                          ## destSymTab$addSymbol( nimble:::cppInt(name = "i") )
+                                                          ## destCode <- putCodeLinesInBrackets(destForCode) ## placeholder
+                                                          ## nimDestCode <- RparseTree2ExprClasses(destCode)
+                                                          ## destName <- paste0("~", name)
+                                                          ## destFunDef <- cppFunctionDef(name = destName,
+                                                          ##                              returnType = emptyTypeInfo(),
+                                                          ##                              code = cppCodeBlock(code = nimDestCode,
+                                                          ##                                                  objectDefs = destSymTab,
+                                                          ##                                                  skipBrackets = TRUE))
+                                                          ## functionDefs[["destructor"]] <<- destFunDef
 
-                                                          constructorCode <- quote( ## constructor still uses old style
-                                                              cppLiteral("std::fill(myADtapePtrs_.begin(), myADtapePtrs_.end(), static_cast<CppAD::ADFun<double> *>(0));") ## would be better to use nullptr
-                                                          )
+                                                          ## constructorCode <- quote( ## constructor still uses old style
+                                                          ##     cppLiteral("std::fill(myADtapePtrs_.begin(), myADtapePtrs_.end(), static_cast<CppAD::ADFun<double> *>(0));") ## would be better to use nullptr
+                                                          ## )
                                                       } else {
                                                           warning(paste0('non-static AD case requested for ',
                                                                          paste(nonStaticNames, sep=" ", collapse = " "),
                                                                          ' but nimbleOption useADreconfigure is not TRUE'))
                                                       }
-                                                      addADinfoObjects()
+                                                      addADinfoObjects(.self)
                                                   }
                                                   objectDefs$addSymbol(cppVarFull(name = 'ADtapeSetup',
                                                                                   baseType = 'nimbleCppADinfoClass'))
@@ -667,7 +658,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   if('nodeFun' %in% .self$inheritance) {
                                                       updateADproxyModelMethods(.self)
                                                   }
-                                                     
+
                                                   addCopyFromRobject()
                                                   
                                                   callSuper(where)

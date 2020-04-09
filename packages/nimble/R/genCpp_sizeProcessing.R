@@ -1172,6 +1172,8 @@ sizeNFvar <- function(code, symTab, typeEnv) {
 
 sizeNimDerivs <- function(code, symTab, typeEnv){
   code$name <- "nimDerivs_dummy"
+  static <- code$args[['static']]
+  code$args[['static']] <- NULL ## Ok since it is last argument.  Otherwise we need to shift args.
   asserts <- sizeNimbleListReturningFunction(code, symTab, typeEnv)
   ## lift wrt if needed.  I'm not sure why sizeNimbleListReturningFunction doesn't handle lifting
   if(inherits(code$args[[2]], 'exprClass')) {
