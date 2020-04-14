@@ -390,7 +390,6 @@ print: A logical argument specifying whether to print the montiors and samplers.
             ##    addSampler(target = conjugacyResult$target, type = conjugacyResult$type, control = conjugacyResult$control)
             ##    return(NULL)
             ##}
-            browser() # FIXME
             prior <- conjugacyResult$prior
             dependentCounts <- sapply(conjugacyResult$control, length)
             names(dependentCounts) <- gsub('^dep_', '', names(dependentCounts))
