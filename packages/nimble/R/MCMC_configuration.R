@@ -92,7 +92,7 @@ MCMCconf <- setRefClass(
         initialize = function(model, nodes, control = list(), rules,
             monitors,                thin  = 1,
             monitors2 = character(), thin2 = 1,
-            useConjugacy = TRUE,
+            useConjugacy = getNimbleOption('MCMCuseConjugacy'),
             onlyRW = FALSE,
             onlySlice = FALSE,
             multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
@@ -1307,7 +1307,8 @@ nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
 #'@seealso \code{\link{samplerAssignmentRules}} \code{\link{buildMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}
 configureMCMC <- function(model, nodes, control = list(), 
                           monitors, thin = 1, monitors2 = character(), thin2 = 1,
-                          useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE,
+                          useConjugacy = getNimbleOption('MCMCuseConjugacy'),
+                          onlyRW = FALSE, onlySlice = FALSE,
                           multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
                           enableWAIC = getNimbleOption('MCMCenableWAIC'),
                           print = getNimbleOption('verbose'),
