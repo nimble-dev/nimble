@@ -1338,7 +1338,7 @@ configureMCMC <- function(model, nodes, control = list(),
                          enableWAIC = enableWAIC,
                          warnNoSamplerAssigned = warnNoSamplerAssigned,
                          print = print, ...)
-    return(thisConf)	
+    return(invisible(thisConf))
 }
 
 
