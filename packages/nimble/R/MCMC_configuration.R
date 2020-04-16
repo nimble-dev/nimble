@@ -1346,7 +1346,7 @@ configureMCMC <- function(model, nodes, control = list(),
 # This is function which builds a new MCMCconf from an old MCMCconf
 # This is required to be able to a new C-based MCMC without recompiling
 makeNewConfFromOldConf <- function(oldMCMCconf){
-    newMCMCconf <- configureMCMC(oldMCMCconf$model, nodes = NULL)
+    newMCMCconf <- configureMCMC(oldMCMCconf$model, nodes = NULL, print = FALSE)
     newMCMCconf$monitors <- oldMCMCconf$monitors
     newMCMCconf$monitors2 <- oldMCMCconf$monitors2
     newMCMCconf$thin <- oldMCMCconf$thin
