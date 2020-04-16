@@ -1173,7 +1173,8 @@ sizeNFvar <- function(code, symTab, typeEnv) {
 sizeNimDerivs <- function(code, symTab, typeEnv){
   code$name <- "nimDerivs_dummy"
   static <- code$args[['static']]
-  code$args[['static']] <- NULL ## Ok since it is last argument.  Otherwise we need to shift args.
+  code$args[['calcNodes']] <- NULL 
+  code$args[['static']] <- NULL ## Ok since these two are last arguments.  Otherwise we need to shift args.
   asserts <- sizeNimbleListReturningFunction(code, symTab, typeEnv)
   ## lift wrt if needed.  I'm not sure why sizeNimbleListReturningFunction doesn't handle lifting
   if(inherits(code$args[[2]], 'exprClass')) {
@@ -1190,13 +1191,15 @@ sizeNimDerivs <- function(code, symTab, typeEnv){
 ##  symTab$addSymbol(symbolADinfo$new(name = newADinfoName))
   if(!is.list(code$aux))
     code$aux <- list()
+
   code$aux[['ADinfoName']] <- newADinfoName
 
-  if(is.null(typeEnv[['ADinfoNames']])) {
-    typeEnv[['ADinfoNames']] <- newADinfoName
+  ADinfoNames <- if(isTRUE(static)) 'ADstaticInfoNames' else 'ADinfoNames'
+  if(is.null(typeEnv[[ADinfoNames]])) {
+    typeEnv[[ADinfoNames]] <- newADinfoName
   } else {
-    typeEnv[['ADinfoNames']] <- c(typeEnv[['ADinfoNames']],
-                                  newADinfoName)
+    typeEnv[[ADinfoNames]] <- c(typeEnv[[ADinfoNames]],
+                                newADinfoName)
   }
   
   if(length(asserts) == 0) NULL else asserts
@@ -1207,8 +1210,7 @@ sizeNimDerivsCalculate <- function(code, symTab, typeEnv){
   ## and some from sizeScalarModelOp.  For now, simplest to make a new size processor.
   nlGen <- nimbleListReturningFunctionList[[code$name]]$nlGen
   nlDef <- nl.getListDef(nlGen)
-  className <- nlDef$className
-  #symTab$parentST$symbols$order$nDim <- 1
+  className <- nlDef$className$parentST$symbols$order$nDim <- 1
   symbolObject <- symTab$getSymbolObject(className, inherits = TRUE)
   if(is.null(symbolObject)) {
     nlp <- typeEnv$.nimbleProject$compileNimbleList(nlGen, initialTypeInference = TRUE)

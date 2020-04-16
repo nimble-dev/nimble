@@ -665,7 +665,7 @@ addADinfoObjects <- function(cppDef) {
       for(ADstaticInfoName in ADstaticInfoNames) {
         cppDef$objectDefs$addSymbol(cppVarFull(name = ADstaticInfoName, ptr = 0, baseType = "nimbleCppADinfoClass", static = TRUE))
         if(firstStatic) {
-          globals <- cppGlobalObjects(name = paste0('staticGlobals_', name),
+          globals <- cppGlobalObjects(name = paste0('staticGlobals_', cppDef$name),
                                       staticMembers = TRUE)
           firstStatic <- FALSE
         }
@@ -677,33 +677,33 @@ addADinfoObjects <- function(cppDef) {
     
   }
   if(!is.null(globals))
-    cppDef$neededTypeDefs[['staticTapeInfos']] <<- globals
+    cppDef$neededTypeDefs[['staticTapeInfos']] <- globals
 }
 
-makeStaticInitClass <- function(cppDef, derivMethods) {
-    if(length(derivMethods) == 0) return(NULL)
-    cppClass <- cppClassDef(name = paste0('initTape_', cppDef$name), useGenerator = FALSE)
-    globalsDef <- cppGlobalObjects(name = paste0('initTapeGlobals_', cppDef$name))
-    globalsDef$objectDefs[['staticInitClassObject']] <- cppVarFull(baseType = paste0('initTape_', cppDef$name),
-                                                                   name = paste0('initTape_', cppDef$name, '_Object_'))
-    initializerCodeList <- list()
-    initializerDef <- cppFunctionDef(name = paste0('initTape_', cppDef$name), returnType = emptyTypeInfo())
-    for(derivFun in derivMethods){
-        ADinfoNames <- cppDef$nimCompProc$compileInfos[[derivFun]]$typeEnv[['ADinfoNames']]
+## makeStaticInitClass <- function(cppDef, derivMethods) {
+##     if(length(derivMethods) == 0) return(NULL)
+##     cppClass <- cppClassDef(name = paste0('initTape_', cppDef$name), useGenerator = FALSE)
+##     globalsDef <- cppGlobalObjects(name = paste0('initTapeGlobals_', cppDef$name))
+##     globalsDef$objectDefs[['staticInitClassObject']] <- cppVarFull(baseType = paste0('initTape_', cppDef$name),
+##                                                                    name = paste0('initTape_', cppDef$name, '_Object_'))
+##     initializerCodeList <- list()
+##     initializerDef <- cppFunctionDef(name = paste0('initTape_', cppDef$name), returnType = emptyTypeInfo())
+##     for(derivFun in derivMethods){
+##         ADinfoNames <- cppDef$nimCompProc$compileInfos[[derivFun]]$typeEnv[['ADinfoNames']]
         
-        ## use of parse instead of substitute is so R CMD check doesn't flag CLASSNAME:: as an unmentioned dependency on package named CLASSNAME
-        initializerCodeList <- c(initializerCodeList,
-                                 parse(text = paste0("push_back(", cppDef$name, "::allADtapePtrs_, ",
-                                                     cppDef$name, "::", paste0(derivFun, "_callForADtaping_"), "() )"))[[1]])
-        ## initializerCodeList <- c(initializerCodeList, substitute(push_back(CLASSNAME::allADtapePtrs_, CLASSNAME::ADTAPINGNAME() ), list(CLASSNAME = as.name(cppDef$name),ADTAPINGNAME = as.name(paste0(derivFun, "_callForADtaping_")))))
-    }
-    initializerCode <- do.call('call', c('{', initializerCodeList), quote = TRUE)
-    initializerECcode <- RparseTree2ExprClasses(initializerCode)
-    initializerDef$code <- cppCodeBlock(code = initializerECcode, objectDefs = symbolTable())
-    cppClass$functionDefs[['initializer']] <- initializerDef
-    cppClass$globalObjectsDefs[['globals']] <- globalsDef
-    cppClass
-}
+##         ## use of parse instead of substitute is so R CMD check doesn't flag CLASSNAME:: as an unmentioned dependency on package named CLASSNAME
+##         initializerCodeList <- c(initializerCodeList,
+##                                  parse(text = paste0("push_back(", cppDef$name, "::allADtapePtrs_, ",
+##                                                      cppDef$name, "::", paste0(derivFun, "_callForADtaping_"), "() )"))[[1]])
+##         ## initializerCodeList <- c(initializerCodeList, substitute(push_back(CLASSNAME::allADtapePtrs_, CLASSNAME::ADTAPINGNAME() ), list(CLASSNAME = as.name(cppDef$name),ADTAPINGNAME = as.name(paste0(derivFun, "_callForADtaping_")))))
+##     }
+##     initializerCode <- do.call('call', c('{', initializerCodeList), quote = TRUE)
+##     initializerECcode <- RparseTree2ExprClasses(initializerCode)
+##     initializerDef$code <- cppCodeBlock(code = initializerECcode, objectDefs = symbolTable())
+##     cppClass$functionDefs[['initializer']] <- initializerDef
+##     cppClass$globalObjectsDefs[['globals']] <- globalsDef
+##     cppClass
+## }
 
 makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targetFunDef, independentVarNames, funIndex = 1, parentsSizeAndDims,
                                            ADconstantsInfo) {
