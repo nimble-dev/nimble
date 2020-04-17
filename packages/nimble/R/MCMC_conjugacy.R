@@ -146,7 +146,7 @@ conjugacyRelationshipsInputList <- list(
          ## changing to only use link='identity' case, since the link='linear' case was not correct.
          ## -DT March 2017
          ## link = 'linear',
-         link = 'multiplicative',
+         link = 'multiplicativeScalar',  # we only handle scalar 'coeff'; this naming is slightly awkward since for univar dists, link is of course scalar
          dependents = list(
              ## parentheses added to the contribution_R calculation:
              ## colVec * (rowVec * matrix)
@@ -162,7 +162,7 @@ conjugacyRelationshipsInputList <- list(
 
     ## inverse wishart
     list(prior = 'dinvwish',
-         link = 'multiplicative',
+         link = 'multiplicativeScalar',  # we only handle scalar 'coeff'; this naming is slightly awkward since for univar dists, link is of course scalar
          dependents = list(
              dmnorm = list(param = 'cov', contribution_S = 'asCol(value-mean) %*% asRow(value-mean) / coeff', contribution_df = '1')),
          posterior = 'dinvwish_chol(cholesky    = chol(prior_S + contribution_S),
@@ -576,8 +576,8 @@ conjugacyClass <- setRefClass(
                 tmp <- strsplit(names(dependentCounts)[iDepCount], "_")[[1]]
                 distName <- tmp[[1]]
                 currentLink <- tmp[[2]]
-                if(currentLink %in% c('additive', 'multiplicative', 'linear', 'linear_plus_inprod') || (nimbleOptions()$allowDynamicIndexing && currentLink == 'identity' && doDependentScreen)) {
-                    if(targetCoeffNdim == 2 && currentLink == 'multiplicative')   ## There are no cases where we allow non-scalar 'coeff'.
+                if(currentLink %in% c('additive', 'multiplicative', 'multiplicativeScalar', 'linear', 'linear_plus_inprod') || (nimbleOptions()$allowDynamicIndexing && currentLink == 'identity' && doDependentScreen)) {
+                    if(currentLink == 'multiplicativeScalar')  
                         targetCoeffNdim <- 0
                      ## the 2's here are *only* to prevent warnings about assigning into member variable names using
                     inputList <-  list(DEP_OFFSET_VAR2     = as.name(paste0('dep_', distLinkName, '_offset')),  ## local assignment '<-', so changed the names to "...2"
@@ -588,7 +588,7 @@ conjugacyClass <- setRefClass(
                         functionBody$addCode(
                             DEP_OFFSET_VAR2  <- array(0, dim = DECLARE_SIZE_COEFF),
                             inputList) 
-                    if(currentLink == 'multiplicative') 
+                    if(currentLink %in% c('multiplicative', 'multiplicativeScalar')) 
                         functionBody$addCode(
                             DEP_COEFF_VAR2  <- array(0, dim = DECLARE_SIZE_COEFF),
                             inputList) 
@@ -772,7 +772,9 @@ conjugacyClass <- setRefClass(
                                             PARAM_NAME     = dependents[[distName]]$param))
                            }
                        }
-                       
+
+                       if(any(allCurrentLinks == 'multiplicativeScalar'))
+                           stop("Found 'multiplicativeScalar' link for 0-dimensional case.")
                        if(any(allCurrentLinks %in% c('multiplicative', 'linear', 'linear_plus_inprod'))) {
                            functionBody$addCode({
                                model[[target]] <<- 1
@@ -806,6 +808,8 @@ conjugacyClass <- setRefClass(
                        }
                    },
                    `1` = {
+                       if(any(allCurrentLinks == 'multiplicativeScalar'))
+                           stop("Found 'multiplicativeScalar' link for 1-dimensional case.")
                        if(any(allCurrentLinks %in% c('additive', 'linear', 'linear_plus_inprod'))) {
                            functionBody$addCode({
                                model[[target]] <<- rep(0, d)
@@ -876,10 +880,10 @@ conjugacyClass <- setRefClass(
                                                 list(FORLOOPBODY = forLoopBody$getCode()))
                    },
                    `2` = {
-                       if(!all(allCurrentLinks %in% c('identity', 'multiplicative')))
+                       if(!all(allCurrentLinks %in% c('identity', 'multiplicativeScalar')))
                            stop("Found non-multiplicative link for 2-d variable.")
 
-                       if(any(allCurrentLinks == 'multiplicative')) {
+                       if(any(allCurrentLinks == 'multiplicativeScalar')) {
                            functionBody$addCode({
                                model[[target]] <<- diag(d)
                                calculate(model, calcNodesDeterm)
@@ -893,7 +897,7 @@ conjugacyClass <- setRefClass(
                                tmp <- strsplit(names(dependentCounts)[iDepCount], '_')[[1]]
                                distName <- tmp[[1]]
                                currentLink <- tmp[[2]]
-                               if(currentLink == 'multiplicative') 
+                               if(currentLink == 'multiplicativeScalar') 
                                    functionBody$addCode({
                                        for(iDep in 1:N_DEP) {
                                            DEP_COEFF_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME)[1, 1]   ## DEP_COEFF_VAR = (A+2B)-(A+B) = B
@@ -917,7 +921,7 @@ conjugacyClass <- setRefClass(
                                tmp <- strsplit(names(dependentCounts)[iDepCount], '_')[[1]]
                                distName <- tmp[[1]]
                                currentLink <- tmp[[2]]
-                               if(currentLink == 'multiplicative') 
+                               if(currentLink == 'multiplicativeScalar') 
                                    functionBody$addCode({
                                        for(iDep in 1:N_DEP) {
                                            DEP_COEFF_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME)[1, 1] - DEP_COEFF_VAR[iDep]
@@ -951,7 +955,7 @@ conjugacyClass <- setRefClass(
                 currentLink <- tmp[[2]]
 
                 targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
-                if(targetCoeffNdim == 2 && currentLink == 'multiplicative')   ## There are no cases where we allow non-scalar 'coeff'.
+                if(targetCoeffNdim == 2 && currentLink == 'multiplicativeScalar')   ## There are no cases where we allow non-scalar 'coeff'.
                     targetCoeffNdim <- 0
 
                 if(!any(posteriorObject$neededContributionNames %in% dependents[[distName]]$contributionNames))     next
@@ -969,7 +973,7 @@ conjugacyClass <- setRefClass(
                 subList$value  <- makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_values')), getDimension(distName), indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr)
                 if(currentLink %in% c('additive', 'linear', 'linear_plus_inprod'))
                     subList$offset <- makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_offset')), targetNdim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr)
-                if(currentLink %in% c('multiplicative', 'linear', 'linear_plus_inprod'))
+                if(currentLink %in% c('multiplicative', 'multiplicativeScalar', 'linear', 'linear_plus_inprod'))
                     subList$coeff  <- makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_coeff')),  targetCoeffNdim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = quote(d))
                 
                 forLoopBody <- codeBlockClass()
@@ -985,7 +989,7 @@ conjugacyClass <- setRefClass(
                 for(contributionName in posteriorObject$neededContributionNames) {
                     if(!(contributionName %in% dependents[[distName]]$contributionNames))     next
                     contributionExpr <- dependents[[distName]]$contributionExprs[[contributionName]]
-                    contributionExpr <- cc_stripExpr(contributionExpr, offset = currentLink %in% c('identity','multiplicative'),
+                    contributionExpr <- cc_stripExpr(contributionExpr, offset = currentLink %in% c('identity','multiplicative','multiplicativeScalar'),
                                                      coeff = currentLink %in% c('identity','additive'))
                     contributionExpr <- eval(substitute(substitute(EXPR, subList), list(EXPR=contributionExpr)))
                     if(nimbleOptions()$allowDynamicIndexing && doDependentScreen) { ## FIXME: would be nice to only have one if() here when we loop through multiple parameters
@@ -1207,7 +1211,7 @@ cc_createStructureExpr <- function(model, exprText) {
 
 ## verifies that 'link' is satisfied by the results of linearityCheck
 cc_linkCheck <- function(linearityCheck, link) {
-    linearityLinks <- c('identity', 'additive', 'multiplicative', 'linear', 'linear_plus_inprod') 
+    linearityLinks <- c('identity', 'additive', 'multiplicative', 'multiplicativeScalar', 'linear', 'linear_plus_inprod') 
     if(!(link %in%  c(linearityLinks, 'stick_breaking')))
         stop(paste0('unknown link: \'', link, '\''))
     if(is.null(linearityCheck))    return(NULL)
@@ -1217,10 +1221,10 @@ cc_linkCheck <- function(linearityCheck, link) {
         return('identity')
     if(link %in% c('additive', 'linear', 'linear_plus_inprod') && scale == 1)
         return('additive')
-    ## We currently have no conjugacies where the scale can be a matrix, so check
-    ## that 'scale' is a scalar.
-    ## In particular we want to avoid that case when dealing with Wishart-related conjugacies.
-    if(link %in% c('multiplicative', 'linear', 'linear_plus_inprod') && offset == 0 && cc_checkScalar(scale))
+    ## For Wishart/inverse-Wishart, only handle scalar 'scale'.
+    if(link == 'multiplicativeScalar' && offset == 0 && cc_checkScalar(scale))
+        return('multiplicativeScalar')
+    if(link %in% c('multiplicative', 'linear', 'linear_plus_inprod') && offset == 0)
         return('multiplicative')
     if(link %in% c('linear', 'linear_plus_inprod'))
        return('linear')
