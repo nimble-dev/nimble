@@ -245,6 +245,10 @@ cppOutputNimDerivs <- function(code, symTab) {
     iOmit <- which(names(code$args) == 'dropArgs')
     outerArgs <- code$args[-c(1, iOmit)]
     ADinfoArg <- code$aux$ADinfoName
+    updateNodesName <- code$aux[['updateNodesName']]
+    if(!is.null(updateNodesName)) {
+      ADinfoArg <- paste0( ADinfoArg, ".setUpdaterNV(", updateNodesName, ")" )
+    }
     paste0(derivName, '(', paste0(unlist(lapply( c(innerArgs, outerArgs), nimGenerateCpp, symTab, asArg = TRUE ) ), collapse = ', '), ',', ADinfoArg, ')')
 }
 

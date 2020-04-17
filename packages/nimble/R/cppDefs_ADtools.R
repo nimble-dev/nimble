@@ -378,6 +378,7 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
   CFT$returnType <- cppVarFull(baseType = "CppAD::ADFun", templateArgs = list('double'), ptr = 1, name = 'RETURN_TAPE_') ##cppVoid()
   CFT$name <- newFunName
   CFT$args <- targetFunDef$args$copy()
+
     ## create vector< CppAD::AD<double> > ADindependentVars
   ADindependentVarsSym <- cppVarFull(name = 'ADindependentVars', baseType = 'vector', templateArgs = list( cppVarFull(baseType = 'CppAD::AD', templateArgs = 'double', name = character()) ), ref = FALSE) 
   ## create vector< CppAD::AD<double> > ADdynamicVars (needed only when a model will be used)
@@ -405,6 +406,7 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
     }
       
   }
+
     if(isNode){
       localVars$removeSymbol('ARG1_INDEXEDNODEINFO__')
       indexNodeInfoSymbol <- symbolInternalType(name = 'ARG1_INDEXEDNODEINFO__', argList = list('indexedNodeInfoClass'))
@@ -424,8 +426,9 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
     ## Arguably this should go in the TypeTemplateFunction, using CppAD::Value() to copy values without recording in the tape.
     modelInitCode <- quote(blank())
     if(usesModelCalculate) {
-        modelInitCode <- substitute(initialize_AD_model_before_recording(NV),
-                                    list(NV = as.name(nodeFxnVector_name[1])))
+        modelInitCode <- cppLiteral("initialize_AD_model_before_recording(*ADinfo.updaterNV());")
+##            substitute(initialize_AD_model_before_recording(NV),
+##                                    list(NV = as.name(nodeFxnVector_name[1])))
     }
 
     ## Make a separate resize line for ADresponseVars.  ANS_ does not need a resize line.
@@ -610,17 +613,19 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
 
     returnCall <- cppLiteral("return(RETURN_TAPE_);")
 
-    initADdynamicVarsCode <- if(usesModelCalculate)
-                                 substitute(init_dynamicVars(NV, ADdynamicVars),
-                                             list(NV = as.name(nodeFxnVector_name[1])))
-                              else
-                                 quote(blank())
+  initADdynamicVarsCode <- if(usesModelCalculate) {
+                               cppLiteral("init_dynamicVars(*ADinfo.updaterNV(), ADdynamicVars);")
+##                                 substitute(init_dynamicVars(NV, ADdynamicVars),
+                               ##                                             list(NV = as.name(nodeFxnVector_name[1])))
+                               } else
+                                   quote(blank())
     
-    copyDynamicVarsToModelCode <- if(usesModelCalculate)
-                                  substitute(copy_dynamicVars_to_model(NV, ADdynamicVars),
-                                             list(NV = as.name(nodeFxnVector_name[1])))
-                              else
-                                  quote(blank())
+    copyDynamicVarsToModelCode <- if(usesModelCalculate) {
+                                      cppLiteral("copy_dynamicVars_to_model(*ADinfo.updaterNV(), ADdynamicVars);")
+##                                      substitute(copy_dynamicVars_to_model(NV, ADdynamicVars),
+##                                             list(NV = as.name(nodeFxnVector_name[1])))
+                                  } else
+                                      quote(blank())
     
     ## Finally put together all the code, parse it into the nimble exprClass system,
     ## and add it to the result (CFT)
@@ -647,7 +652,8 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
                                   list(returnCall)),
                         quote=TRUE)
     allCode <- RparseTree2ExprClasses(allRcode)
-    CFT$code <- cppCodeBlock(code = allCode, objectDefs = localVars)
+  CFT$code <- cppCodeBlock(code = allCode, objectDefs = localVars)
+  CFT$args$addSymbol(cppVar(baseType = "nimbleCppADinfoClass", ref = TRUE, name = "ADinfo"))
     CFT
 }
 
@@ -705,115 +711,115 @@ addADinfoObjects <- function(cppDef) {
 ##     cppClass
 ## }
 
-makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targetFunDef, independentVarNames, funIndex = 1, parentsSizeAndDims,
-                                           ADconstantsInfo) {
-    ## modeled closely parts of /*  */
-    ## needs to set the ADtapePtr to one element of the ADtape
-    TF <- RCfunctionDef$new() ## should it be static?
-    TF$returnType <- cppVarFull(baseType = 'nimbleCppADinfoClass', ref = TRUE, name = 'RETURN_OBJ')
-    TF$name <- newFunName
-    localVars <- symbolTable() 
-    isNode <- !inherits(parentsSizeAndDims, 'uninitializedField')
-    if(!isNode)
-      TF$args <- targetFunDef$args
-    else{
-      TF$args <- symbolTable()
-      indexNodeInfoSym <- targetFunDef$args$getSymbolObject('ARG1_INDEXEDNODEINFO__')
-      # indexNodeInfoSym$name <-'ARG1_INDEXEDNODEINFO__' ## to conform with original R function indexing
-      TF$args$addSymbol(indexNodeInfoSym)   
-    }
+## makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targetFunDef, independentVarNames, funIndex = 1, parentsSizeAndDims,
+##                                            ADconstantsInfo) {
+##     ## modeled closely parts of /*  */
+##     ## needs to set the ADtapePtr to one element of the ADtape
+##     TF <- RCfunctionDef$new() ## should it be static?
+##     TF$returnType <- cppVarFull(baseType = 'nimbleCppADinfoClass', ref = TRUE, name = 'RETURN_OBJ')
+##     TF$name <- newFunName
+##     localVars <- symbolTable() 
+##     isNode <- !inherits(parentsSizeAndDims, 'uninitializedField')
+##     if(!isNode)
+##       TF$args <- targetFunDef$args
+##     else{
+##       TF$args <- symbolTable()
+##       indexNodeInfoSym <- targetFunDef$args$getSymbolObject('ARG1_INDEXEDNODEINFO__')
+##       # indexNodeInfoSym$name <-'ARG1_INDEXEDNODEINFO__' ## to conform with original R function indexing
+##       TF$args$addSymbol(indexNodeInfoSym)   
+##     }
     
-    ## set up index vars (up to 6)
-    indexVarNames <- paste0(letters[9:14],'_')
-    nimbleSymTab <- targetFunDef$RCfunProc$compileInfo$newLocalSymTab
+##     ## set up index vars (up to 6)
+##     indexVarNames <- paste0(letters[9:14],'_')
+##     nimbleSymTab <- targetFunDef$RCfunProc$compileInfo$newLocalSymTab
 
-    ## assign tape ptr code
-    assignTapePtrCode <- substitute(memberData(ADtapeSetup, ADtape) <- allADtapePtrs_[FUNINDEX], list(FUNINDEX = funIndex)) ## This will have to become a unique index in general. -1 added during output
+##     ## assign tape ptr code
+##     assignTapePtrCode <- substitute(memberData(ADtapeSetup, ADtape) <- allADtapePtrs_[FUNINDEX], list(FUNINDEX = funIndex)) ## This will have to become a unique index in general. -1 added during output
     
-    ## create code to copy from arguments into the independentVars
-    numIndependentVars <- length(independentVarNames)
-    copyIntoIndepVarCode <- vector('list', numIndependentVars+1)
-    ## create the netIncrement_ variable and code to initialize it to 1
-    localVars$addSymbol( cppVar(name = 'netIncrement_', baseType = 'int') )
-    copyIntoIndepVarCode[[1]] <- quote(netIncrement_ <- 1) 
-    totalIndependentLength <- 0
-    subArgIndexedInfo <- function(x){
-      if(deparse(x[[1]])== 'getNodeFunctionIndexedInfo'){
-        x[[2]] <- parse(text = "ARG1_INDEXEDNODEINFO__")[[1]]
-      }
-      return(deparse(x))
-    }
-    maxSize <- 0
-    for(ivn in seq_along(independentVarNames)) {
-        thisName <- independentVarNames[ivn]
-        thisSym <- nimbleSymTab$getSymbolObject(thisName)
-        if(isNode){
-          nameSubList <- targetFunDef$RCfunProc$nameSubList
-          thisName <- names(nameSubList)[sapply(nameSubList, function(x) return(as.character(x) == thisName))]
-          thisModelElementNum <- as.numeric(gsub(".*([0-9]+)$", "\\1", thisName)) ## Extract 1, 2, etc. from end of arg name.
-          thisName <- sub("_[0-9]+$", "", thisName)
-          thisModelName <- paste0('model_', Rname2CppName(thisName)) ## Add model_ at beginning and remove _1, _2, etc. at end of arg name.
-          thisSizeAndDims <- parentsSizeAndDims[[thisName]][[thisModelElementNum]]
-          if(is.null(thisSizeAndDims)){
-            thisConstInfo <- ADconstantsInfo[[thisName]][[thisModelElementNum]]
-            copyIntoIndepVarCode[[ivn+1]] <- substitute({memberData(ADtapeSetup, independentVars)[netIncrement_] <- ARG1_INDEXEDNODEINFO__.info[INT]; netIncrement_ <- netIncrement_ + 1}, list(INT = thisConstInfo$indexColumn)) 
-            totalIndependentLength <- totalIndependentLength + 1
-            next
-          }
-        }
-        if(thisSym$nDim > 0) {
-            thisSizes <- thisSym$size
-            if(isNode){
-              sizeList <- list()
-              for(i in 1:length(thisSizeAndDims$lengths)){
-                if(thisSizeAndDims$lengths[i] == 1){
-                  if(deparse(thisSizeAndDims$indexExpr[[i]][[1]]) == 'getNodeFunctionIndexedInfo'){
-                    thisSizeAndDims$indexExpr[[i]][[1]] <- parse(text = paste0(
-                      'ARG1_INDEXEDNODEINFO__.info[', thisSizeAndDims$indexExpr[[i]][[3]], ']'))[[1]]
-                  }
-                  sizeList[[i]] <-  list(thisSizeAndDims$indexExpr[[i]][[1]], thisSizeAndDims$indexExpr[[i]][[1]])
-                }
-                else{
-                  sizeList[[i]] <-  list(thisSizeAndDims$indexExpr[[i]][[1]], thisSizeAndDims$indexExpr[[i]][[2]])
-                }
-              }
-            }
-            else{
-              sizeList <- lapply(thisSizes, function(x) list(1, x))
-            }
-            names(sizeList) <- indexVarNames[1:length(sizeList)]
-            if(length(sizeList) > maxSize) maxSize <- length(sizeList)
-            newRcode <- makeCopyingCodeBlock(quote(memberData(ADtapeSetup, independentVars)), as.name(thisName), sizeList, indicesRHS = TRUE, incrementIndex = quote(netIncrement_), isNode)
-            copyIntoIndepVarCode[[ivn+1]] <- newRcode 
-            totalIndependentLength <- totalIndependentLength + prod(thisSizes)
-        } 
-        else {
-          if(isNode){
-            indexBracketInfo <- paste0('[', paste0(sapply(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$indexExpr,
-                                                          subArgIndexedInfo), collapse = ', '),']')
-            indexName <- paste0("cppLiteral('(**", thisModelName, ")')", indexBracketInfo)
-            RHS <- parse(text = substitute(INDEXNAME, list(INDEXNAME = as.name(indexName))))[[1]]
-          }
-          else{
-            RHS <- as.name(thisName)
-          } 
-          copyIntoIndepVarCode[[ivn+1]] <- substitute({memberData(ADtapeSetup, independentVars)[netIncrement_] <- RHS; netIncrement_ <- netIncrement_ + 1}, list(RHS = RHS)) 
-          totalIndependentLength <- totalIndependentLength + 1
-        }
-    }
-    setSizeLine <- substitute(cppMemberFunction(resize(memberData(ADtapeSetup, independentVars), TIL)), list(TIL = totalIndependentLength))
-    returnCall <- cppLiteral("return(ADtapeSetup);")
+##     ## create code to copy from arguments into the independentVars
+##     numIndependentVars <- length(independentVarNames)
+##     copyIntoIndepVarCode <- vector('list', numIndependentVars+1)
+##     ## create the netIncrement_ variable and code to initialize it to 1
+##     localVars$addSymbol( cppVar(name = 'netIncrement_', baseType = 'int') )
+##     copyIntoIndepVarCode[[1]] <- quote(netIncrement_ <- 1) 
+##     totalIndependentLength <- 0
+##     subArgIndexedInfo <- function(x){
+##       if(deparse(x[[1]])== 'getNodeFunctionIndexedInfo'){
+##         x[[2]] <- parse(text = "ARG1_INDEXEDNODEINFO__")[[1]]
+##       }
+##       return(deparse(x))
+##     }
+##     maxSize <- 0
+##     for(ivn in seq_along(independentVarNames)) {
+##         thisName <- independentVarNames[ivn]
+##         thisSym <- nimbleSymTab$getSymbolObject(thisName)
+##         if(isNode){
+##           nameSubList <- targetFunDef$RCfunProc$nameSubList
+##           thisName <- names(nameSubList)[sapply(nameSubList, function(x) return(as.character(x) == thisName))]
+##           thisModelElementNum <- as.numeric(gsub(".*([0-9]+)$", "\\1", thisName)) ## Extract 1, 2, etc. from end of arg name.
+##           thisName <- sub("_[0-9]+$", "", thisName)
+##           thisModelName <- paste0('model_', Rname2CppName(thisName)) ## Add model_ at beginning and remove _1, _2, etc. at end of arg name.
+##           thisSizeAndDims <- parentsSizeAndDims[[thisName]][[thisModelElementNum]]
+##           if(is.null(thisSizeAndDims)){
+##             thisConstInfo <- ADconstantsInfo[[thisName]][[thisModelElementNum]]
+##             copyIntoIndepVarCode[[ivn+1]] <- substitute({memberData(ADtapeSetup, independentVars)[netIncrement_] <- ARG1_INDEXEDNODEINFO__.info[INT]; netIncrement_ <- netIncrement_ + 1}, list(INT = thisConstInfo$indexColumn)) 
+##             totalIndependentLength <- totalIndependentLength + 1
+##             next
+##           }
+##         }
+##         if(thisSym$nDim > 0) {
+##             thisSizes <- thisSym$size
+##             if(isNode){
+##               sizeList <- list()
+##               for(i in 1:length(thisSizeAndDims$lengths)){
+##                 if(thisSizeAndDims$lengths[i] == 1){
+##                   if(deparse(thisSizeAndDims$indexExpr[[i]][[1]]) == 'getNodeFunctionIndexedInfo'){
+##                     thisSizeAndDims$indexExpr[[i]][[1]] <- parse(text = paste0(
+##                       'ARG1_INDEXEDNODEINFO__.info[', thisSizeAndDims$indexExpr[[i]][[3]], ']'))[[1]]
+##                   }
+##                   sizeList[[i]] <-  list(thisSizeAndDims$indexExpr[[i]][[1]], thisSizeAndDims$indexExpr[[i]][[1]])
+##                 }
+##                 else{
+##                   sizeList[[i]] <-  list(thisSizeAndDims$indexExpr[[i]][[1]], thisSizeAndDims$indexExpr[[i]][[2]])
+##                 }
+##               }
+##             }
+##             else{
+##               sizeList <- lapply(thisSizes, function(x) list(1, x))
+##             }
+##             names(sizeList) <- indexVarNames[1:length(sizeList)]
+##             if(length(sizeList) > maxSize) maxSize <- length(sizeList)
+##             newRcode <- makeCopyingCodeBlock(quote(memberData(ADtapeSetup, independentVars)), as.name(thisName), sizeList, indicesRHS = TRUE, incrementIndex = quote(netIncrement_), isNode)
+##             copyIntoIndepVarCode[[ivn+1]] <- newRcode 
+##             totalIndependentLength <- totalIndependentLength + prod(thisSizes)
+##         } 
+##         else {
+##           if(isNode){
+##             indexBracketInfo <- paste0('[', paste0(sapply(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$indexExpr,
+##                                                           subArgIndexedInfo), collapse = ', '),']')
+##             indexName <- paste0("cppLiteral('(**", thisModelName, ")')", indexBracketInfo)
+##             RHS <- parse(text = substitute(INDEXNAME, list(INDEXNAME = as.name(indexName))))[[1]]
+##           }
+##           else{
+##             RHS <- as.name(thisName)
+##           } 
+##           copyIntoIndepVarCode[[ivn+1]] <- substitute({memberData(ADtapeSetup, independentVars)[netIncrement_] <- RHS; netIncrement_ <- netIncrement_ + 1}, list(RHS = RHS)) 
+##           totalIndependentLength <- totalIndependentLength + 1
+##         }
+##     }
+##     setSizeLine <- substitute(cppMemberFunction(resize(memberData(ADtapeSetup, independentVars), TIL)), list(TIL = totalIndependentLength))
+##     returnCall <- cppLiteral("return(ADtapeSetup);")
     
-    if(maxSize > 0){
-      for(ivn in 1:maxSize)
-        localVars$addSymbol( cppVar(name = indexVarNames[ivn], baseType = 'int') )    
-    }
+##     if(maxSize > 0){
+##       for(ivn in 1:maxSize)
+##         localVars$addSymbol( cppVar(name = indexVarNames[ivn], baseType = 'int') )    
+##     }
     
-    allRcode <- do.call('call', c(list('{'), list(setSizeLine), list(assignTapePtrCode), copyIntoIndepVarCode, list(returnCall)), quote=TRUE)
-    allCode <- RparseTree2ExprClasses(allRcode)
-    TF$code <- cppCodeBlock(code = allCode, objectDefs = localVars)
-    TF
-}
+##     allRcode <- do.call('call', c(list('{'), list(setSizeLine), list(assignTapePtrCode), copyIntoIndepVarCode, list(returnCall)), quote=TRUE)
+##     allCode <- RparseTree2ExprClasses(allRcode)
+##     TF$code <- cppCodeBlock(code = allCode, objectDefs = localVars)
+##     TF
+## }
 
 ## 1. Use myADtapePtrs_
 ## 2. Don't assume declared known lengths.
@@ -901,7 +907,8 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
     ## record tape if needed
     runCallForTapingCode <- do.call('call',
                                     c(list(callForTapingName),
-                                      lapply(callForTapingNames, as.name)),
+                                      lapply(callForTapingNames, as.name),
+                                      quote(ADinfo)),
                                     quote = TRUE)
     recordIfNeededCode <- substitute(
       if(!memberData(ADinfo, ADtape)) {
@@ -1042,9 +1049,8 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
     }
 
   dynamicVarsLine <- if(usesModelCalculate) {
-    substitute(UDV(NV, ADtapeSetup),
-               list(NV = as.name(nodeFxnVector_name[1]),
-                    UDV = update_dynamicVars_funName))
+    substitute(UDV(ADinfo),
+               list(UDV = update_dynamicVars_funName))
   } else {
     quote(blank())
   }

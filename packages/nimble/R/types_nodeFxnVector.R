@@ -4,6 +4,38 @@
 ## simulate(model_nodes)
 ## model_nodes$getNodeFunctions() returns a list of the nfRefClassObjets underlying the nodeFunctions
 
+nodeFunctionVector_WithDerivsOutputNodes <- function(model,
+                                                 calcNodes,
+                                                 excludeData,
+                                                 sortUnique) {
+  nimDerivsInfo <- nimDerivsInfoClass(calcNodes = calcNodes,
+                                      thisModel = model,
+                                      case = "outputOnly")
+  
+  ## Make one dummy node that can be used for set_CppAD_tape_info_for_model
+  ## It will never be called from this object
+  NFV <- nodeFunctionVector(model = model,
+                            nodeNames = calcNodes,
+                            excludeData = excludeData,
+                            sortUnique = sortUnique)
+  class(NFV) <- "nodeFunctionVector_nimDerivs"
+  NFV$nimDerivsInfo <- nimDerivsInfo
+  NFV
+}
+
+nodeFunctionVector_DerivsModelUpdateNodes <- function(model,
+                                                      updateNodes) {
+  nimDerivsInfo <- nimDerivsInfoClass(updateNodes = updateNodes,
+                                      thisModel = model,
+                                      case = "updateOnly")
+  classLabel <- "nodeFunctionVector_nimDerivs"
+  structure(list(gids = numeric(0),
+                 indexingInfo = list(declIDs = integer(), rowIndices = integer()),
+                 model = model,
+                 nimDerivsInfo = nimDerivsInfo),
+            class = classLabel)
+}
+
 nodeFunctionVector <-
     function(model,
              nodeNames,
@@ -13,8 +45,7 @@ nodeFunctionVector <-
              errorContext = "")
 {
     if(!is.null(wrtNodes)){
-        nimDerivsInfo <- nimDerivsInfoClass(wrtNodes = wrtNodes, calcNodes = nodeNames, thisModel = model,
-                                            cInfo = TRUE)
+        nimDerivsInfo <- nimDerivsInfoClass(wrtNodes = wrtNodes, calcNodes = nodeNames, thisModel = model)
     }
     else{
         nimDerivsInfo <- NULL

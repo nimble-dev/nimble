@@ -52,7 +52,7 @@ nimDerivs_dummy <- nimbleFunction(
 nimDerivs <- function(nimFxn = NA,
                       order = nimC(0,1,2),
                       dropArgs = NA,
-                      wrt = NULL, calcNodes = NULL, static = FALSE){
+                      wrt = NULL, calcNodes = NULL, ...){ ## ... absorbs compile-only params
   fxnEnv <- parent.frame()
   fxnCall <- match.call()
   if(is.null(fxnCall[['order']])) fxnCall[['order']] <- order

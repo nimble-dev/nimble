@@ -475,7 +475,7 @@ RCfunProcessing <- setRefClass(
         },
         processKeywords = function(nfProc = NULL) {
             compileInfo$newRcode <<-
-                processKeywords_recurse(compileInfo$origRcode, nfProc)
+                processKeywords_recurse(compileInfo$origRcode, nfProc, .self)
         },
         matchKeywords = function(nfProc = NULL) {
             compileInfo$origRcode <<-

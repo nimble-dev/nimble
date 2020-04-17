@@ -1009,7 +1009,6 @@ sizeGetParam <- function(code, symTab, typeEnv) {
         asserts <- list()
     }
  
-    
     paramInfoSym <- symTab$getSymbolObject(code$args[[3]]$name, inherits = TRUE)
     code$type <- paramInfoSym$paramInfo$type
     code$nDim <- paramInfoSym$paramInfo$nDim
@@ -1175,6 +1174,8 @@ sizeNimDerivs <- function(code, symTab, typeEnv){
   static <- code$args[['static']]
   code$args[['calcNodes']] <- NULL 
   code$args[['static']] <- NULL ## Ok since these two are last arguments.  Otherwise we need to shift args.
+  updateNodesName <- code$args[['updateNodesName']]
+  code$args[['updateNodesName']] <- NULL
   asserts <- sizeNimbleListReturningFunction(code, symTab, typeEnv)
   ## lift wrt if needed.  I'm not sure why sizeNimbleListReturningFunction doesn't handle lifting
   if(inherits(code$args[[2]], 'exprClass')) {
@@ -1193,7 +1194,9 @@ sizeNimDerivs <- function(code, symTab, typeEnv){
     code$aux <- list()
 
   code$aux[['ADinfoName']] <- newADinfoName
-
+  if(!is.null(updateNodesName))
+    code$aux[['updateNodesName']] <- updateNodesName
+  
   ADinfoNames <- if(isTRUE(static)) 'ADstaticInfoNames' else 'ADinfoNames'
   if(is.null(typeEnv[[ADinfoNames]])) {
     typeEnv[[ADinfoNames]] <- newADinfoName
@@ -1210,7 +1213,7 @@ sizeNimDerivsCalculate <- function(code, symTab, typeEnv){
   ## and some from sizeScalarModelOp.  For now, simplest to make a new size processor.
   nlGen <- nimbleListReturningFunctionList[[code$name]]$nlGen
   nlDef <- nl.getListDef(nlGen)
-  className <- nlDef$className$parentST$symbols$order$nDim <- 1
+  className <- nlDef$className
   symbolObject <- symTab$getSymbolObject(className, inherits = TRUE)
   if(is.null(symbolObject)) {
     nlp <- typeEnv$.nimbleProject$compileNimbleList(nlGen, initialTypeInference = TRUE)
