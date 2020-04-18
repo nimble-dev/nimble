@@ -1478,7 +1478,7 @@ cc_combineExprsDivision <- function(expr1, expr2) {
 }
 
 cc_checkStickbreaking <- function(expr, targetNode) {
-    if(!is.call(expr) || expr[[1]] != 'stickbreaking' || !cc_nodeInExpr(targetNode, expr))
+    if(!is.call(expr) || expr[[1]] != 'stick_breaking' || !cc_nodeInExpr(targetNode, expr))
         return(NULL)
     expr <- expr[[2]]
     if(!is.call(expr) || expr[[1]] != 'structureExpr')
