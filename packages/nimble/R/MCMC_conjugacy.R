@@ -8,6 +8,8 @@ conjugacyRelationshipsInputList <- list(
              dbern   = list(param = 'prob', contribution_shape1 = 'value', contribution_shape2 = '1 - value'   ),
              dbin    = list(param = 'prob', contribution_shape1 = 'value', contribution_shape2 = 'size - value'),
              dnegbin = list(param = 'prob', contribution_shape1 = 'size',  contribution_shape2 = 'value'       ),
+             ## using 'stickbreaking' not 'stick_breaking' as link is now appended to dist with a '_' in realized conjugacy system
+             ## Note that 'stick_breaking' is still the user-facing **function** name.
              dcat    = list(param = 'prob', link = 'stickbreaking', contribution_shape1 = 'value == offset',
                                                                      contribution_shape2 = 'value > offset')),  ## offset is set to be where in the broken stick the target is
          posterior = 'dbeta(shape1 = prior_shape1 + contribution_shape1,
@@ -540,7 +542,7 @@ conjugacyClass <- setRefClass(
                             DEP_NODESIZES <- sapply(DEP_NODENAMES, function(node) max(nimDim(model$getParam(node, MULTIVARIATE_PARAM_NAME))), USE.NAMES = FALSE)
                         }, list(DEP_NODESIZES           = as.name(paste0('dep_', distLinkName, '_nodeSizes')),
                                 DEP_NODENAMES           = as.name(paste0('dep_', distLinkName, '_nodeNames')),
-                                MULTIVARIATE_PARAM_NAME = names(which.max(getDimension(distLinkName, includeParams = TRUE)))))
+                                MULTIVARIATE_PARAM_NAME = names(which.max(getDimension(distName, includeParams = TRUE)))))
                     }
                     functionBody$addCode({
                         if(length(DEP_NODESIZES) == 1) DEP_NODESIZES <- c(DEP_NODESIZES, -1)    ## guarantee to be a vector, for indexing and size processing
