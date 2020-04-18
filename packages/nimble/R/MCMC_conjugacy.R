@@ -8,7 +8,7 @@ conjugacyRelationshipsInputList <- list(
              dbern   = list(param = 'prob', contribution_shape1 = 'value', contribution_shape2 = '1 - value'   ),
              dbin    = list(param = 'prob', contribution_shape1 = 'value', contribution_shape2 = 'size - value'),
              dnegbin = list(param = 'prob', contribution_shape1 = 'size',  contribution_shape2 = 'value'       ),
-             dcat    = list(param = 'prob', link = 'stick_breaking', contribution_shape1 = 'value == offset',
+             dcat    = list(param = 'prob', link = 'stickbreaking', contribution_shape1 = 'value == offset',
                                                                      contribution_shape2 = 'value > offset')),  ## offset is set to be where in the broken stick the target is
          posterior = 'dbeta(shape1 = prior_shape1 + contribution_shape1,
                             shape2 = prior_shape2 + contribution_shape2)'),
@@ -440,7 +440,7 @@ conjugacyClass <- setRefClass(
             initialize_addDependents(cr$dependents)
             ## removed because link info in specific conjugacy can now override default link
             ## needsLinearityCheck <<- link %in% c('multiplicative', 'linear')
-            ## needsStickbreakingCheck <<- link %in% c('stick_breaking')
+            ## needsStickbreakingCheck <<- link %in% c('stickbreaking')
             posteriorObject <<- posteriorClass(cr$posterior, prior)
             },
 
@@ -463,7 +463,7 @@ conjugacyClass <- setRefClass(
             if(is.null(restrictLink)) {
                 if(!is.null(dependentObj$link)) currentLink <- dependentObj$link else currentLink <- link # handle multiple link case introduced for beta stickbreaking
             } else currentLink = restrictLink
-            if(currentLink != 'stick_breaking') {
+            if(currentLink != 'stickbreaking') {
                 depNodeParamName <- dependentObj$param
                 linearityCheckExprRaw <- model$getParamExpr(depNode, depNodeParamName)   # extracts the expression for 'param' from 'depNode'
                 linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExprRaw, targetNode = targetNode)
