@@ -1228,7 +1228,7 @@ cc_linkCheck <- function(linearityCheck, link) {
         return('multiplicativeScalar')
     if(link %in% c('multiplicative', 'linear') && offset == 0)
         return('multiplicative')
-    if(link == 'linear'))
+    if(link == 'linear')
        return('linear')
     return(NULL)
 }
