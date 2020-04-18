@@ -23,7 +23,7 @@ conjugacyRelationshipsInputList <- list(
 
     ## flat
     list(prior = 'dflat',
-         link = 'linear_plus_inprod',
+         link = 'linear',
          dependents = list(
              dnorm  = list(param = 'mean',    contribution_mean = 'coeff * (value-offset) * tau',         contribution_tau = 'coeff^2 * tau'),
              dlnorm = list(param = 'meanlog', contribution_mean = 'coeff * (log(value)-offset) * taulog', contribution_tau = 'coeff^2 * taulog')),
@@ -105,7 +105,7 @@ conjugacyRelationshipsInputList <- list(
     
     ## normal
     list(prior = 'dnorm',
-         link = 'linear_plus_inprod',
+         link = 'linear',
          dependents = list(
              dnorm  = list(param = 'mean',    contribution_mean = 'coeff * (value-offset) * tau',         contribution_tau = 'coeff^2 * tau'   ),
              dlnorm = list(param = 'meanlog', contribution_mean = 'coeff * (log(value)-offset) * taulog', contribution_tau = 'coeff^2 * taulog')),
@@ -418,7 +418,7 @@ conjugacyClass <- setRefClass(
     fields = list(
         samplerType =         'ANY',   ## name of the sampler for this conjugacy class, e.g. 'conjugate_dnorm'
         prior =               'ANY',   ## name of the prior distribution, e.g. 'dnorm'
-        link =                'ANY',   ## the link ('linear_plus_inprod', 'linear', 'multiplicative', or 'identity')
+        link =                'ANY',   ## the link ('linear', 'additive', 'multiplicative', 'multiplicativeScalar', or 'identity')
         dependents =          'ANY',   ## (named) list of dependentClass objects, each contains conjugacy information specific to a particular sampling distribution (name is sampling distribution name)
         dependentDistNames =  'ANY',   ## character vector of the names of all allowable dependent sampling distributions.  same as: names(dependents)
         posteriorObject =     'ANY',   ## an object of posteriorClass
@@ -576,7 +576,7 @@ conjugacyClass <- setRefClass(
                 tmp <- strsplit(names(dependentCounts)[iDepCount], "_")[[1]]
                 distName <- tmp[[1]]
                 currentLink <- tmp[[2]]
-                if(currentLink %in% c('additive', 'multiplicative', 'multiplicativeScalar', 'linear', 'linear_plus_inprod') || (nimbleOptions()$allowDynamicIndexing && currentLink == 'identity' && doDependentScreen)) {
+                if(currentLink %in% c('additive', 'multiplicative', 'multiplicativeScalar', 'linear') || (nimbleOptions()$allowDynamicIndexing && currentLink == 'identity' && doDependentScreen)) {
                     if(currentLink == 'multiplicativeScalar')  
                         targetCoeffNdim <- 0
                      ## the 2's here are *only* to prevent warnings about assigning into member variable names using
@@ -592,7 +592,7 @@ conjugacyClass <- setRefClass(
                         functionBody$addCode(
                             DEP_COEFF_VAR2  <- array(0, dim = DECLARE_SIZE_COEFF),
                             inputList) 
-                    if(currentLink %in% c('linear', 'linear_plus_inprod')) 
+                    if(currentLink == 'linear') 
                         functionBody$addCode({
                             DEP_OFFSET_VAR2  <- array(0, dim = DECLARE_SIZE_COEFF)
                             DEP_COEFF_VAR2  <- array(0, dim = DECLARE_SIZE_COEFF)
@@ -602,10 +602,12 @@ conjugacyClass <- setRefClass(
             }
 
             for(iDepCount in seq_along(dependentCounts)) {
-                distName <- names(dependentCounts)[iDepCount]
-                ## FIXME: remove next line since stickbreaking would be embedded arlready?
-                ## if(!is.null(dependents[[distName]]$link)) currentLink <- dependents[[distName]]$link else currentLink <- link
-                if(currentLink == 'stick_breaking') {       
+                distLinkName <- names(dependentCounts)[iDepCount]
+                tmp <- strsplit(names(dependentCounts)[iDepCount], "_")[[1]]
+                distName <- tmp[[1]]
+                currentLink <- tmp[[2]]
+                if(!is.null(dependents[[distName]]$link)) currentLink <- dependents[[distName]]$link
+                if(currentLink == 'stickbreaking') {       
                     functionBody$addCode({
                         DEP_OFFSET_VAR2 <- array(0, dim = DECLARE_SIZE_OFFSET)                   ## the 2's here are *only* to prevent warnings about
                     }, list(DEP_OFFSET_VAR2     = as.name(paste0('dep_', distLinkName, '_offset')),  ## local assignment '<-', so changed the names to "...2"
@@ -751,7 +753,7 @@ conjugacyClass <- setRefClass(
             allCurrentLinks <- sapply(names(dependentCounts), function(x) strsplit(x, '_')[[1]][[2]])
             switch(as.character(targetNdim),
                    `0` = {
-                       if(any(allCurrentLinks %in% c('additive', 'linear', 'linear_plus_inprod'))) {
+                       if(any(allCurrentLinks %in% c('additive', 'linear'))) {
                            functionBody$addCode({
                                model[[target]] <<- 0
                                model$calculate(calcNodesDeterm)
@@ -762,7 +764,7 @@ conjugacyClass <- setRefClass(
                                distName <- tmp[[1]]
                                currentLink <- tmp[[2]]
                                
-                               if(currentLink  %in% c('additive', 'linear', 'linear_plus_inprod')) 
+                               if(currentLink  %in% c('additive', 'linear')) 
                                    functionBody$addCode(
                                        for(iDep in 1:N_DEP)
                                            DEP_OFFSET_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME),
@@ -775,7 +777,7 @@ conjugacyClass <- setRefClass(
 
                        if(any(allCurrentLinks == 'multiplicativeScalar'))
                            stop("Found 'multiplicativeScalar' link for 0-dimensional case.")
-                       if(any(allCurrentLinks %in% c('multiplicative', 'linear', 'linear_plus_inprod'))) {
+                       if(any(allCurrentLinks %in% c('multiplicative', 'linear'))) {
                            functionBody$addCode({
                                model[[target]] <<- 1
                                model$calculate(calcNodesDeterm)
@@ -786,7 +788,7 @@ conjugacyClass <- setRefClass(
                                tmp <- strsplit(names(dependentCounts)[iDepCount], '_')[[1]]
                                distName <- tmp[[1]]
                                currentLink <- tmp[[2]]
-                               if(currentLink %in% c('multiplicative', 'linear', 'linear_plus_inprod')) {
+                               if(currentLink %in% c('multiplicative', 'linear')) {
                                    inputList <- list(N_DEP             = as.name(paste0('N_dep_', distLinkName)),
                                                      DEP_COEFF_VAR     = as.name(paste0('dep_', distLinkName, '_coeff')),
                                                      DEP_NODENAMES     = as.name(paste0('dep_', distLinkName, '_nodeNames')),
@@ -810,7 +812,7 @@ conjugacyClass <- setRefClass(
                    `1` = {
                        if(any(allCurrentLinks == 'multiplicativeScalar'))
                            stop("Found 'multiplicativeScalar' link for 1-dimensional case.")
-                       if(any(allCurrentLinks %in% c('additive', 'linear', 'linear_plus_inprod'))) {
+                       if(any(allCurrentLinks %in% c('additive', 'linear'))) {
                            functionBody$addCode({
                                model[[target]] <<- rep(0, d)
                                model$calculate(calcNodesDeterm)
@@ -822,7 +824,7 @@ conjugacyClass <- setRefClass(
                                distName <- tmp[[1]]
                                currentLink <- tmp[[2]]
 
-                               if(currentLink  %in% c('additive', 'linear', 'linear_plus_inprod')) 
+                               if(currentLink  %in% c('additive', 'linear')) 
                                    functionBody$addCode({
                                        for(iDep in 1:N_DEP) {
                                            thisNodeSize <- DEP_NODESIZES[iDep]
@@ -836,7 +838,7 @@ conjugacyClass <- setRefClass(
                                                              PARAM_NAME     = dependents[[distName]]$param))
                            }
                        }
-                       if(any(allCurrentLinks %in% c('multiplicative', 'linear', 'linear_plus_inprod'))) { 
+                       if(any(allCurrentLinks %in% c('multiplicative', 'linear'))) { 
                            functionBody$addCode(unitVector <- rep(0, d))
                            
                            forLoopBody <- codeBlockClass()
@@ -852,7 +854,7 @@ conjugacyClass <- setRefClass(
                                tmp <- strsplit(names(dependentCounts)[iDepCount], '_')[[1]]
                                distName <- tmp[[1]]
                                currentLink <- tmp[[2]]
-                               if(currentLink %in% c('multiplicative', 'linear', 'linear_plus_inprod')) {
+                               if(currentLink %in% c('multiplicative', 'linear')) {
                                    inputList <- list(N_DEP          = as.name(paste0('N_dep_', distLinkName)),
                                                      DEP_NODESIZES  = as.name(paste0('dep_', distLinkName, '_nodeSizes')),
                                                      DEP_COEFF_VAR  = as.name(paste0('dep_', distLinkName, '_coeff')),
@@ -875,7 +877,7 @@ conjugacyClass <- setRefClass(
                                }
                            }
                        }
-                       if(any(allCurrentLinks %in% c('additive', 'multiplicative', 'linear', 'linear_plus_inprod'))) 
+                       if(any(allCurrentLinks %in% c('additive', 'multiplicative', 'linear'))) 
                            functionBody$addCode(for(sizeIndex in 1:d) FORLOOPBODY,
                                                 list(FORLOOPBODY = forLoopBody$getCode()))
                    },
@@ -971,9 +973,9 @@ conjugacyClass <- setRefClass(
                 names(subList) <- depParamsAvailable
                 
                 subList$value  <- makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_values')), getDimension(distName), indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr)
-                if(currentLink %in% c('additive', 'linear', 'linear_plus_inprod'))
+                if(currentLink %in% c('additive', 'linear'))
                     subList$offset <- makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_offset')), targetNdim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr)
-                if(currentLink %in% c('multiplicative', 'multiplicativeScalar', 'linear', 'linear_plus_inprod'))
+                if(currentLink %in% c('multiplicative', 'multiplicativeScalar', 'linear'))
                     subList$coeff  <- makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_coeff')),  targetCoeffNdim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = quote(d))
                 
                 forLoopBody <- codeBlockClass()
@@ -1019,7 +1021,7 @@ dependentClass <- setRefClass(
         contributionExprs =        'ANY',   ## a (named) list of expressions, giving the (additive) contribution to any parameters of the posterior. names correspond to variables in the posterior expressions
         contributionNames =        'ANY',   ## names of the contributions to the parameters of the posterior distribution.  same as names(posteriorExprs)
         neededParamsForPosterior = 'ANY',    ## names of all parameters appearing in the posteriorExprs
-        link =                     'ANY'    ## optional specific link for a given conjugacy; currently only used for stick_breaking case
+        link =                     'ANY'    ## optional specific link for a given conjugacy; currently only used for stickbreaking case
     ),
     methods = list(
         initialize = function(depInfoList, depDistName) {
@@ -1211,22 +1213,22 @@ cc_createStructureExpr <- function(model, exprText) {
 
 ## verifies that 'link' is satisfied by the results of linearityCheck
 cc_linkCheck <- function(linearityCheck, link) {
-    linearityLinks <- c('identity', 'additive', 'multiplicative', 'multiplicativeScalar', 'linear', 'linear_plus_inprod') 
-    if(!(link %in%  c(linearityLinks, 'stick_breaking')))
+    linearityLinks <- c('identity', 'additive', 'multiplicative', 'multiplicativeScalar', 'linear') 
+    if(!(link %in%  c(linearityLinks, 'stickbreaking')))
         stop(paste0('unknown link: \'', link, '\''))
     if(is.null(linearityCheck))    return(NULL)
     offset      <- linearityCheck$offset
     scale       <- linearityCheck$scale
     if(link %in% linearityLinks && offset == 0 && scale == 1)
         return('identity')
-    if(link %in% c('additive', 'linear', 'linear_plus_inprod') && scale == 1)
+    if(link %in% c('additive', 'linear') && scale == 1)
         return('additive')
     ## For Wishart/inverse-Wishart, only handle scalar 'scale'.
     if(link == 'multiplicativeScalar' && offset == 0 && cc_checkScalar(scale))
         return('multiplicativeScalar')
-    if(link %in% c('multiplicative', 'linear', 'linear_plus_inprod') && offset == 0)
+    if(link %in% c('multiplicative', 'linear') && offset == 0)
         return('multiplicative')
-    if(link %in% c('linear', 'linear_plus_inprod'))
+    if(link == 'linear'))
        return('linear')
     return(NULL)
 }
@@ -1476,7 +1478,7 @@ cc_combineExprsDivision <- function(expr1, expr2) {
 }
 
 cc_checkStickbreaking <- function(expr, targetNode) {
-    if(!is.call(expr) || expr[[1]] != 'stick_breaking' || !cc_nodeInExpr(targetNode, expr))
+    if(!is.call(expr) || expr[[1]] != 'stickbreaking' || !cc_nodeInExpr(targetNode, expr))
         return(NULL)
     expr <- expr[[2]]
     if(!is.call(expr) || expr[[1]] != 'structureExpr')
