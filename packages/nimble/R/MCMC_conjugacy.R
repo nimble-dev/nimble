@@ -1249,7 +1249,11 @@ cc_checkScalar <- function(expr) {
 ## Removes 'coeff' and/or 'offset' from expression for use in simplifying conjugacy contribution
 ## expressions when realized link is 'simpler' than possible links.
 cc_stripExpr <- function(expr, offset = TRUE, coeff = TRUE) {
-    if(length(expr) == 1) return(expr)
+    if(length(expr) == 1) {
+        if(coeff && expr == 'coeff') return(1)
+        if(offset && expr == 'offset') return(0)
+        return(expr)
+    }
     if(is.call(expr)) 
         for(i in seq_along(expr)[-1])
             expr[[i]] <- cc_stripExpr(expr[[i]], offset, coeff)
