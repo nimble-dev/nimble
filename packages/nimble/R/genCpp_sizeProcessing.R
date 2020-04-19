@@ -1179,9 +1179,9 @@ sizeNimDerivs <- function(code, symTab, typeEnv){
   asserts <- sizeNimbleListReturningFunction(code, symTab, typeEnv)
   ## lift wrt if needed.  I'm not sure why sizeNimbleListReturningFunction doesn't handle lifting
   if(inherits(code$args[[2]], 'exprClass')) {
-      if(!code$args[[2]]$isName) {
-          asserts <- c(asserts, sizeInsertIntermediate(code, 2, symTab, typeEnv) )
-      }
+    if(!code$args[[2]]$isName) {
+      asserts <- c(asserts, sizeInsertIntermediate(code, 2, symTab, typeEnv) )
+    }
   }
   code$toEigenize <- 'no'
   a1 <- insertExprClassLayer(code, which(names(code$args)=='order'), 'make_vector_if_necessary',
@@ -1220,11 +1220,25 @@ sizeNimDerivsCalculate <- function(code, symTab, typeEnv){
     symbolObject <- symbolNimbleListGenerator(name = className, nlProc = nlp)
     symTab$addSymbol(symbolObject)
   }
-  if(is.null(typeEnv[['numNimDerivsCalculate']])) { ## running count of nimDerivs_calculate calls in the nimbleFunction
-    typeEnv[['numNimDerivsCalculate']] <- 1
+  newADinfoName <- ADinfoLabel()
+  if(!is.list(code$aux))
+    code$aux <- list()
+
+  code$aux[['ADinfoName']] <- newADinfoName
+  
+  ADinfoNames <- 'ADinfoNames_calculate'
+  if(is.null(typeEnv[[ADinfoNames]])) {
+    typeEnv[[ADinfoNames]] <- newADinfoName
   } else {
-    typeEnv[['numNimDerivsCalculate']] <- typeEnv[['numNimDerivsCalculate']] + 1
+    typeEnv[[ADinfoNames]] <- c(typeEnv[[ADinfoNames]],
+                                newADinfoName)
   }
+
+  ## if(is.null(typeEnv[['numNimDerivsCalculate']])) { ## running count of nimDerivs_calculate calls in the nimbleFunction
+  ##   typeEnv[['numNimDerivsCalculate']] <- 1
+  ## } else {
+  ##   typeEnv[['numNimDerivsCalculate']] <- typeEnv[['numNimDerivsCalculate']] + 1
+  ## }
   code$sizeExprs <- symbolObject
   code$type <- 'nimbleList'
   code$nDim <- 0

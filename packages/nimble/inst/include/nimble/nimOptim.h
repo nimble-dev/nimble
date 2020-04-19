@@ -213,14 +213,15 @@ class NimOptimProblem_model : public NimOptimProblem {
     nimSmartPtr<OptimResultNimbleList> result = NimOptimProblem::solve(initP);
     std::cout<<"Done main solve"<<std::endl;
     NimOptimProblem::hessian_ = hessian;
-    CppAD::ADFun<double>* ADtapePtr = &ADtape;
+    //CppAD::ADFun<double>* ADtapePtr = &ADtape;
     if(hessian) {
       /* TO-DO: We should be able to re-use last-run tape calculation */
       /* and thereby not need to re-do 0-order forward (value) calculation, */
       /* but for now we do re-do it.*/
       derivOrders[1] = 2;
       setValues(par_, nodes.get_model_wrt_accessor());
-      nimSmartPtr<NIMBLE_ADCLASS> ADresult = CppADbase.nimDerivs_calculate(ADinfo, ADtapePtr, nodes, derivOrders);
+      nimSmartPtr<NIMBLE_ADCLASS> ADresult = CppADbase.nimDerivs_calculate(ADinfo, //ADtapePtr,
+									   nodes, derivOrders);
       NimArr<2, double> hessianMap;
       int n = initP.size();
       // offset = 0; stride1 = 1; stride2 = n; size1 = n; size2 = n;
@@ -236,8 +237,9 @@ class NimOptimProblem_model : public NimOptimProblem {
     std::cout<<"entering main calculations"<<std::endl;
     setValues(par_, nodes.get_model_wrt_accessor());
     std::cout<<"calling nimDerivs_calculate"<<std::endl;
-    CppAD::ADFun<double>* ADtapePtr = &ADtape;
-    nimSmartPtr<NIMBLE_ADCLASS> ADresult = CppADbase.nimDerivs_calculate(ADinfo, ADtapePtr, nodes, derivOrders);
+    //CppAD::ADFun<double>* ADtapePtr = &ADtape;
+    nimSmartPtr<NIMBLE_ADCLASS> ADresult = CppADbase.nimDerivs_calculate(ADinfo, //ADtapePtr,
+									 nodes, derivOrders);
     std::cout<<"done nimDerivs_calculate"<<std::endl;
     if(par_.size() != length_wrt) {
       std::cout<<"Error in C++: wrong length par_ in nimOptim_model"<<std::endl;

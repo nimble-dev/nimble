@@ -621,6 +621,13 @@ CppAD::ADFun<double>* calculate_recordTape(NodeVectorClassNew_derivs &NV) {
   // 8. [deleted]
 
   // 9. Copy all wrtNodes AD objects from independentVars -> model_AD.
+  if(length_extraInput > 0) {
+    NimArrValues_AD.setSize(length_extraInput);    
+    std::copy(dynamicVars.begin(),
+	      dynamicVars.begin() + length_extraInput,
+	      NimArrValues_AD.getPtr());
+    setValues_AD_AD(NimArrValues_AD, NV.model_AD_extraInput_accessor);
+  }
   if(length_wrt > 0) {
     NimArrValues_AD.setSize(length_wrt);
     std::copy(independentVars.begin(),
@@ -628,6 +635,7 @@ CppAD::ADFun<double>* calculate_recordTape(NodeVectorClassNew_derivs &NV) {
 	      NimArrValues_AD.getPtr());
     setValues_AD_AD(NimArrValues_AD, NV.model_AD_wrt_accessor);
   }
+  
   // 10. call calculate.  This also sets up the extraOutput step
   CppAD::AD<double> logProb = calculate_ADproxyModel(NV,
 						     true,
@@ -646,17 +654,19 @@ CppAD::ADFun<double>* calculate_recordTape(NodeVectorClassNew_derivs &NV) {
 }
 
 void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass &ADinfo,
-							   CppAD::ADFun<double>* &tapePtr,
+							   // CppAD::ADFun<double>* &tapePtr,
 							   NodeVectorClassNew_derivs &nodes,
 							   const NimArr<1, double> &derivOrders,
 							   const NimArr<1, double> &wrtVector,
 							   nimSmartPtr<NIMBLE_ADCLASS> ansList) {
   bool use_meta_tape = true;
 
-  if(!tapePtr) {
+  if(!ADinfo.ADtape) {
     if(!use_meta_tape) {
-      tapePtr = calculate_recordTape(nodes);
+      std::cout<<"recording"<<std::endl;
+      ADinfo.ADtape = calculate_recordTape(nodes);
     } else {
+      std::cout<<"meta recording"<<std::endl;
       CppAD::ADFun< double > *firstTape;
       firstTape = calculate_recordTape(nodes);
       CppAD::ADFun< CppAD::AD<double>, double > innerTape;
@@ -692,12 +702,20 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
 						       CppAD::AD<double>::get_tape_handle_nimble());
       set_CppAD_atomic_info_for_model(nodes, CppAD::local::atomic_index_info_vec_manager<double>::manage());
       ADinfo.independentVars_meta.resize(length_wrt);
+      if(length_extraInput > 0) {
+	ADinfo.dynamicVars_meta.resize(length_extraInput);
+	std::copy(dynamicVars.begin(),
+		  dynamicVars.end(),
+		  ADinfo.dynamicVars_meta.begin());
+      }
       std::copy(independentVars.begin(),
 		independentVars.end(),
-		ADinfo.independentVars_meta.begin());
+		ADinfo.independentVars_meta.begin());      
+      
       NimArr<1, double> derivOrders_meta;
       derivOrders_meta.setSize(1);
       derivOrders_meta[0] = 1;
+      innerTape.new_dynamic(ADinfo.dynamicVars_meta);
       getDerivs_internal< CppAD::AD<double>,
 			  CppAD::ADFun< CppAD::AD<double>, double >,
 			  NIMBLE_ADCLASS_META>(ADinfo.independentVars_meta,
@@ -707,9 +725,9 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
 					       ansList_meta);
       for(size_t iii = 0; iii < length_wrt; ++iii)
 	dependentVars[iii] = ansList_meta->jacobian[iii];
-      tapePtr = new CppAD::ADFun<double>;
-      tapePtr->Dependent(dependentVars);
-      tapePtr->optimize();
+      ADinfo.ADtape = new CppAD::ADFun<double>;
+      ADinfo.ADtape->Dependent(dependentVars);
+      ADinfo.ADtape->optimize();
       delete firstTape;
     }
   }
@@ -737,7 +755,11 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
     std::copy( NimArr_dynamicVars.getPtr(),
 	       NimArr_dynamicVars.getPtr() + length_extraNodes_accessor,
 	       dynamicVars.begin() );
-    tapePtr->new_dynamic(dynamicVars);
+    std::cout<<"Setting new_dynamic to"<<std::endl;
+    for(int ijk = 0; ijk < length_extraNodes_accessor; ijk++)
+      std::cout<<dynamicVars[ijk]<<" ";
+    std::cout<<std::endl;
+    ADinfo.ADtape->new_dynamic(dynamicVars);
   }
 
   if(use_meta_tape) {
@@ -760,10 +782,11 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
       if(ordersFound[1]) derivOrders_nested[higherOrders++] = 0; // If Jacobian was requested, get value of meta tape
       if(ordersFound[2]) derivOrders_nested[higherOrders] = 1; // If Hessian was requested, get Jacobian of meta tape
       nimSmartPtr<NIMBLE_ADCLASS> ansList_nested = new NIMBLE_ADCLASS;
+      std::cout<<"about to call getDerivs_internal"<<std::endl;
       getDerivs_internal<double,
 			 CppAD::ADFun<double>,
 			 NIMBLE_ADCLASS>(ADinfo.independentVars,
-					 tapePtr,
+					 ADinfo.ADtape,
 					 derivOrders_nested,
 					 wrtVector, // NOTE: This will not behave fully correctly in non-default use without further thought.
 					 ansList_nested);
@@ -781,10 +804,11 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
     }
   } else {
   /* run tape */
+    std::cout<<"running tape"<<std::endl;
     getDerivs_internal<double,
 		       CppAD::ADFun<double>,
 		       NIMBLE_ADCLASS>(ADinfo.independentVars,
-				       tapePtr,
+				       ADinfo.ADtape,
 				       derivOrders,
 				       wrtVector,
 				       ansList);

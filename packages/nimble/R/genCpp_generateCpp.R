@@ -38,7 +38,7 @@ cppOutputCalls <- c(makeCallList(recyclingRuleOperatorsAD, 'cppOutputRecyclingRu
                          nimSwitch = 'cppOutputNimSwitch',
                          getParam = 'cppOutputGetParam',
                          getBound = 'cppOutputGetBound',
-                         nimDerivs_calculate = 'cppNimbleListReturningOperator',
+                         nimDerivs_calculate = 'cppOutputNimDerivs_calculate',
                          '(' = 'cppOutputParen',
                          resize = 'cppOutputMemberFunctionDeref',
                          nfMethod = 'cppOutputNFmethod',
@@ -250,6 +250,12 @@ cppOutputNimDerivs <- function(code, symTab) {
       ADinfoArg <- paste0( ADinfoArg, ".setUpdaterNV(", updateNodesName, ")" )
     }
     paste0(derivName, '(', paste0(unlist(lapply( c(innerArgs, outerArgs), nimGenerateCpp, symTab, asArg = TRUE ) ), collapse = ', '), ',', ADinfoArg, ')')
+}
+
+cppOutputNimDerivs_calculate <- function(code, symTab) {
+  ## Is there  a dropArgs option for this?
+  ADinfoArg <- code$aux$ADinfoName
+  paste0('nimDerivs_calculate', '(', ADinfoArg, ',', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE ) ), collapse = ', '), ')')
 }
 
 cppNewNimbleList <- function(code, symTab) {

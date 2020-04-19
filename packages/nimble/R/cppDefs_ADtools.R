@@ -662,6 +662,8 @@ addADinfoObjects <- function(cppDef) {
   globals <- NULL
   for(i in seq_along(cppDef$nimCompProc$compileInfos)) {
     ADinfoNames <- cppDef$nimCompProc$compileInfos[[i]]$typeEnv[['ADinfoNames']]
+    ADinfoNames_calculate <- cppDef$nimCompProc$compileInfos[[i]]$typeEnv[['ADinfoNames_calculate']]
+    ADinfoNames <- c(ADinfoNames, ADinfoNames_calculate)
     if(!is.null(ADinfoNames)) {
       for(ADinfoName in ADinfoNames)
         cppDef$objectDefs$addSymbol(cppVar(name = ADinfoName, ptr = 0, baseType = "nimbleCppADinfoClass"))

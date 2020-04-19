@@ -146,11 +146,11 @@ nfProcessing <- setRefClass('nfProcessing',
         collect_nimDerivsCalculate_info = function() {
             newEnableDerivs <- list()
             for(i in seq_along(RCfunProcs)) {
-                numNimDerivsCalculate <- RCfunProcs[[i]]$compileInfo$typeEnv[['numNimDerivsCalculate']]
-                if(!is.null(numNimDerivsCalculate)) {
+                ADinfoNames <- RCfunProcs[[i]]$compileInfo$typeEnv[['ADinfoNames_calculate']]
+                if(!is.null(ADinfoNames)) {
                     methodName <- RCfunProcs[[i]]$name
                     if(is.character(methodName)) ## not sure when it wouldn't be; this is defensive
-                        newEnableDerivs[[ methodName ]] <- list(numNimDerivsCalculate = numNimDerivsCalculate)
+                        newEnableDerivs[[ methodName ]] <- list(calculate = TRUE)
                 }
                 ## ADinfoNames <- RCfunProcs[[i]]$compileInfo$typeEnv[['ADinfoNames']]
                 ## if(!is.null(ADinfoNames)) {
