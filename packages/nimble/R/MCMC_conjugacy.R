@@ -900,7 +900,7 @@ conjugacyClass <- setRefClass(
                                tmp <- strsplit(names(dependentCounts)[iDepCount], '_')[[1]]
                                distName <- tmp[[1]]
                                currentLink <- tmp[[2]]
-                               if(currentLink == 'multiplicativeScalar' || (nimbleOptions()$allowDynamicIndexing && doDependentScreen) 
+                               if(currentLink == 'multiplicativeScalar' || (nimbleOptions()$allowDynamicIndexing && doDependentScreen)) 
                                    functionBody$addCode({
                                        for(iDep in 1:N_DEP) {
                                            DEP_COEFF_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME)[1, 1]   ## DEP_COEFF_VAR = (A+2B)-(A+B) = B
