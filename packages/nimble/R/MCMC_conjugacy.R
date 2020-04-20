@@ -578,7 +578,7 @@ conjugacyClass <- setRefClass(
                 tmp <- strsplit(names(dependentCounts)[iDepCount], "_")[[1]]
                 distName <- tmp[[1]]
                 currentLink <- tmp[[2]]
-                if(currentLink %in% c('additive', 'multiplicative', 'multiplicativeScalar', 'linear') || (nimbleOptions()$allowDynamicIndexing && currentLink == 'identity' && doDependentScreen)) {
+                if(currentLink %in% c('additive', 'multiplicative', 'multiplicativeScalar', 'linear') || (nimbleOptions()$allowDynamicIndexing && doDependentScreen)) {
                     if(currentLink == 'multiplicativeScalar')  
                         targetCoeffNdim <- 0
                      ## the 2's here are *only* to prevent warnings about assigning into member variable names using
@@ -594,7 +594,7 @@ conjugacyClass <- setRefClass(
                         functionBody$addCode(
                             DEP_COEFF_VAR2  <- array(0, dim = DECLARE_SIZE_COEFF),
                             inputList) 
-                    if(currentLink == 'linear') 
+                    if(currentLink == 'linear' || (nimbleOptions()$allowDynamicIndexing && doDependentScreen))
                         functionBody$addCode({
                             DEP_OFFSET_VAR2  <- array(0, dim = DECLARE_SIZE_COEFF)
                             DEP_COEFF_VAR2  <- array(0, dim = DECLARE_SIZE_COEFF)
@@ -755,7 +755,7 @@ conjugacyClass <- setRefClass(
             allCurrentLinks <- sapply(names(dependentCounts), function(x) strsplit(x, '_')[[1]][[2]])
             switch(as.character(targetNdim),
                    `0` = {
-                       if(any(allCurrentLinks %in% c('additive', 'linear'))) {
+                       if(any(allCurrentLinks %in% c('additive', 'linear')) || (nimbleOptions()$allowDynamicIndexing && doDependentScreen)) {
                            functionBody$addCode({
                                model[[target]] <<- 0
                                model$calculate(calcNodesDeterm)
@@ -766,7 +766,7 @@ conjugacyClass <- setRefClass(
                                distName <- tmp[[1]]
                                currentLink <- tmp[[2]]
                                
-                               if(currentLink  %in% c('additive', 'linear')) 
+                               if(currentLink  %in% c('additive', 'linear') || (nimbleOptions()$allowDynamicIndexing && doDependentScreen)) 
                                    functionBody$addCode(
                                        for(iDep in 1:N_DEP)
                                            DEP_OFFSET_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME),
@@ -779,7 +779,7 @@ conjugacyClass <- setRefClass(
 
                        if(any(allCurrentLinks == 'multiplicativeScalar'))
                            stop("Found 'multiplicativeScalar' link for 0-dimensional case.")
-                       if(any(allCurrentLinks %in% c('multiplicative', 'linear'))) {
+                       if(any(allCurrentLinks %in% c('multiplicative', 'linear')) || (nimbleOptions()$allowDynamicIndexing && doDependentScreen)) {
                            functionBody$addCode({
                                model[[target]] <<- 1
                                model$calculate(calcNodesDeterm)
@@ -790,21 +790,21 @@ conjugacyClass <- setRefClass(
                                tmp <- strsplit(names(dependentCounts)[iDepCount], '_')[[1]]
                                distName <- tmp[[1]]
                                currentLink <- tmp[[2]]
-                               if(currentLink %in% c('multiplicative', 'linear')) {
+                               if(currentLink %in% c('multiplicative', 'linear') || (nimbleOptions()$allowDynamicIndexing && doDependentScreen)) {
                                    inputList <- list(N_DEP             = as.name(paste0('N_dep_', distLinkName)),
                                                      DEP_COEFF_VAR     = as.name(paste0('dep_', distLinkName, '_coeff')),
                                                      DEP_NODENAMES     = as.name(paste0('dep_', distLinkName, '_nodeNames')),
                                                      PARAM_NAME        = dependents[[distName]]$param,
                                                      DEP_OFFSET_VAR    = as.name(paste0('dep_', distLinkName, '_offset')))
-                                   if(currentLink == 'multiplicative') {
+                                   if(currentLink == 'linear'  || (nimbleOptions()$allowDynamicIndexing && doDependentScreen)) {
                                        functionBody$addCode(
                                            for(iDep in 1:N_DEP)
-                                                     DEP_COEFF_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME),
+                                                     DEP_COEFF_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME) - DEP_OFFSET_VAR[iDep],
                                            inputList)
                                    } else {
                                        functionBody$addCode(
                                            for(iDep in 1:N_DEP)
-                                                     DEP_COEFF_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME) - DEP_OFFSET_VAR[iDep],
+                                                     DEP_COEFF_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME),
                                            inputList)
                                    }
                                }
@@ -814,7 +814,7 @@ conjugacyClass <- setRefClass(
                    `1` = {
                        if(any(allCurrentLinks == 'multiplicativeScalar'))
                            stop("Found 'multiplicativeScalar' link for 1-dimensional case.")
-                       if(any(allCurrentLinks %in% c('additive', 'linear'))) {
+                       if(any(allCurrentLinks %in% c('additive', 'linear')) || (nimbleOptions()$allowDynamicIndexing && doDependentScreen)) {
                            functionBody$addCode({
                                model[[target]] <<- rep(0, d)
                                model$calculate(calcNodesDeterm)
@@ -826,7 +826,7 @@ conjugacyClass <- setRefClass(
                                distName <- tmp[[1]]
                                currentLink <- tmp[[2]]
 
-                               if(currentLink  %in% c('additive', 'linear')) 
+                               if(currentLink  %in% c('additive', 'linear') || (nimbleOptions()$allowDynamicIndexing && doDependentScreen)) 
                                    functionBody$addCode({
                                        for(iDep in 1:N_DEP) {
                                            thisNodeSize <- DEP_NODESIZES[iDep]
@@ -840,7 +840,7 @@ conjugacyClass <- setRefClass(
                                                              PARAM_NAME     = dependents[[distName]]$param))
                            }
                        }
-                       if(any(allCurrentLinks %in% c('multiplicative', 'linear'))) { 
+                       if(any(allCurrentLinks %in% c('multiplicative', 'linear')) || (nimbleOptions()$allowDynamicIndexing && doDependentScreen)) { 
                            functionBody$addCode(unitVector <- rep(0, d))
                            
                            forLoopBody <- codeBlockClass()
@@ -856,38 +856,37 @@ conjugacyClass <- setRefClass(
                                tmp <- strsplit(names(dependentCounts)[iDepCount], '_')[[1]]
                                distName <- tmp[[1]]
                                currentLink <- tmp[[2]]
-                               if(currentLink %in% c('multiplicative', 'linear')) {
+                               if(currentLink %in% c('multiplicative', 'linear') || (nimbleOptions()$allowDynamicIndexing && doDependentScreen)) {
                                    inputList <- list(N_DEP          = as.name(paste0('N_dep_', distLinkName)),
                                                      DEP_NODESIZES  = as.name(paste0('dep_', distLinkName, '_nodeSizes')),
                                                      DEP_COEFF_VAR  = as.name(paste0('dep_', distLinkName, '_coeff')),
                                                      DEP_NODENAMES  = as.name(paste0('dep_', distLinkName, '_nodeNames')),
                                                      PARAM_NAME     = dependents[[distName]]$param,
                                                      DEP_OFFSET_VAR = as.name(paste0('dep_', distLinkName, '_offset')))
-                                   if(currentLink == 'multiplicative') {
-                                       forLoopBody$addCode(
-                                              for(iDep in 1:N_DEP) {
-                                                  thisNodeSize <- DEP_NODESIZES[iDep]
-                                                  DEP_COEFF_VAR[iDep, 1:thisNodeSize, sizeIndex] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME)
-                                              }, inputList)
-                                   } else {
+                                   if(currentLink == 'linear' || (nimbleOptions()$allowDynamicIndexing && doDependentScreen)) {
                                        forLoopBody$addCode(
                                            for(iDep in 1:N_DEP) {
                                                thisNodeSize <- DEP_NODESIZES[iDep]
                                                DEP_COEFF_VAR[iDep, 1:thisNodeSize, sizeIndex] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME) - DEP_OFFSET_VAR[iDep, 1:thisNodeSize]
                                            }, inputList)
+                                   } else {
+                                       forLoopBody$addCode(
+                                              for(iDep in 1:N_DEP) {
+                                                  thisNodeSize <- DEP_NODESIZES[iDep]
+                                                  DEP_COEFF_VAR[iDep, 1:thisNodeSize, sizeIndex] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME)
+                                              }, inputList)
                                    }
                                }
                            }
-                       }
-                       if(any(allCurrentLinks %in% c('additive', 'multiplicative', 'linear'))) 
                            functionBody$addCode(for(sizeIndex in 1:d) FORLOOPBODY,
                                                 list(FORLOOPBODY = forLoopBody$getCode()))
+                       }
                    },
                    `2` = {
                        if(!all(allCurrentLinks %in% c('identity', 'multiplicativeScalar')))
                            stop("Found non-multiplicative link for 2-d variable.")
 
-                       if(any(allCurrentLinks == 'multiplicativeScalar')) {
+                       if(any(allCurrentLinks == 'multiplicativeScalar') || (nimbleOptions()$allowDynamicIndexing && doDependentScreen)) {
                            functionBody$addCode({
                                model[[target]] <<- diag(d)
                                calculate(model, calcNodesDeterm)
@@ -901,7 +900,7 @@ conjugacyClass <- setRefClass(
                                tmp <- strsplit(names(dependentCounts)[iDepCount], '_')[[1]]
                                distName <- tmp[[1]]
                                currentLink <- tmp[[2]]
-                               if(currentLink == 'multiplicativeScalar') 
+                               if(currentLink == 'multiplicativeScalar' || (nimbleOptions()$allowDynamicIndexing && doDependentScreen) 
                                    functionBody$addCode({
                                        for(iDep in 1:N_DEP) {
                                            DEP_COEFF_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME)[1, 1]   ## DEP_COEFF_VAR = (A+2B)-(A+B) = B
@@ -925,7 +924,7 @@ conjugacyClass <- setRefClass(
                                tmp <- strsplit(names(dependentCounts)[iDepCount], '_')[[1]]
                                distName <- tmp[[1]]
                                currentLink <- tmp[[2]]
-                               if(currentLink == 'multiplicativeScalar') 
+                               if(currentLink == 'multiplicativeScalar'|| (nimbleOptions()$allowDynamicIndexing && doDependentScreen))
                                    functionBody$addCode({
                                        for(iDep in 1:N_DEP) {
                                            DEP_COEFF_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME)[1, 1] - DEP_COEFF_VAR[iDep]
@@ -977,7 +976,7 @@ conjugacyClass <- setRefClass(
                 subList$value  <- makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_values')), getDimension(distName), indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr)
                 if(currentLink %in% c('additive', 'linear'))
                     subList$offset <- makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_offset')), targetNdim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr)
-                if(currentLink %in% c('multiplicative', 'multiplicativeScalar', 'linear'))
+                if(currentLink %in% c('multiplicative', 'multiplicativeScalar', 'linear') || (nimbleOptions()$allowDynamicIndexing && doDependentScreen))
                     subList$coeff  <- makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_coeff')),  targetCoeffNdim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = quote(d))
                 
                 forLoopBody <- codeBlockClass()
