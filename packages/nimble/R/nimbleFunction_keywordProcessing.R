@@ -865,12 +865,10 @@ nimDerivs_keywordInfo <- keywordInfoClass(
       ## Only make the wrt substitution if the names are baked in as character
       wrtArg <- code$wrt
       doPreprocess <- FALSE
-      if(is.list(wrtArg)) { ## wrt = NULL (default), set to NA, which will become -1 by convertWrtArgToIndices and then c(-1, -1) in the setup code
-        if(length(wrtArg) > 0)
-          if(is.null(wrtArg[[1]])) {
-            code$wrt <- NA
-            doPreprocess <- TRUE
-          }
+      if(is.numeric(wrtArg) | is.logical(wrtArg)) {
+        if(any(is.na(wrtArg[1]))) { ## wrt = NULL (default), set to NA, which will become -1 by convertWrtArgToIndices and then c(-1, -1) in the setup code
+          doPreprocess <- TRUE
+        }
       } else if(is.name(wrtArg)) { ## wrt = some_index_var_maybe_from_setup
         ## do nothing
       } else if(deparse(wrtArg[[1]]) == 'nimC') { ## wrt = c('x', ...)

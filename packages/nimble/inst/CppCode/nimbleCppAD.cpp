@@ -817,18 +817,27 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
 
 NimArr<1, double> make_vector_if_necessary(int a){
       NimArr<1, double> intArray;
-      intArray.setSize(1);
+      intArray.setSize(1, false, false);
       intArray[0] = a;
       return(intArray);
 }
 
 NimArr<1, double> make_vector_if_necessary(double a){
       NimArr<1, double> intArray;
-      intArray.setSize(1);
+      intArray.setSize(1, false, false);
       intArray[0] = a;
       return(intArray);
 }
 
 NimArr<1, double> make_vector_if_necessary(NimArr<1, double> a){
       return(a);
+}
+
+NimArr<1, double> make_vector_if_necessary(NimArr<1, int> a){
+      NimArr<1, double> intArray;
+      intArray.setSize(a.size(), false, false);
+      std::copy(a.getPtr(),
+		a.getPtr() + a.size(),
+		intArray.getPtr());
+      return(intArray);
 }

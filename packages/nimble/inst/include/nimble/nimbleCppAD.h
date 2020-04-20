@@ -271,5 +271,6 @@ nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(
 NimArr<1, double> make_vector_if_necessary(int);
 NimArr<1, double> make_vector_if_necessary(double);
 NimArr<1, double> make_vector_if_necessary(NimArr<1, double>);
+NimArr<1, double> make_vector_if_necessary(NimArr<1, int>);
 
 #endif

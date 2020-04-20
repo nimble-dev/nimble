@@ -1172,18 +1172,50 @@ sizeNFvar <- function(code, symTab, typeEnv) {
 sizeNimDerivs <- function(code, symTab, typeEnv){
   code$name <- "nimDerivs_dummy"
   static <- code$args[['static']]
-  code$args[['calcNodes']] <- NULL 
+  code$args[['calcNodes']] <- NULL
   code$args[['static']] <- NULL ## Ok since these two are last arguments.  Otherwise we need to shift args.
   updateNodesName <- code$args[['updateNodesName']]
   code$args[['updateNodesName']] <- NULL
-  asserts <- sizeNimbleListReturningFunction(code, symTab, typeEnv)
+
+  ## next section is adapted from sizeNimbleListReturningFunction
+  ## skip first argument, which is the call for which derivatives are requested.
+  asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, rep(TRUE, length(code$args)-1)))
+  code$type <- 'nimbleList'
+  nlGen <- nimbleListReturningFunctionList[[code$name]]$nlGen
+  nlDef <- nl.getListDef(nlGen)
+  className <- nlDef$className
+  symbolObject <- symTab$getSymbolObject(className, inherits = TRUE)
+  if(is.null(symbolObject)) {
+    nlp <- typeEnv$.nimbleProject$compileNimbleList(nlGen, initialTypeInference = TRUE)
+    symbolObject <- symbolNimbleListGenerator(name = className, nlProc = nlp)
+    symTab$addSymbol(symbolObject)
+  }
+  code$sizeExprs <- symbolObject
+  code$toEigenize <- "no"  # This is specialized for nimSvd and nimEigen.
+  code$nDim <- 0
+  
+  ## asserts <- sizeNimbleListReturningFunction(code, symTab, typeEnv)
   ## lift wrt if needed.  I'm not sure why sizeNimbleListReturningFunction doesn't handle lifting
-  if(inherits(code$args[[2]], 'exprClass')) {
-    if(!code$args[[2]]$isName) {
-      asserts <- c(asserts, sizeInsertIntermediate(code, 2, symTab, typeEnv) )
+  if(inherits(code$args[['wrt']], 'exprClass')) {
+    if(!code$args[['wrt']]$isName) {
+      iWrt <- which(names(code$args) == 'wrt')
+      if(length(iWrt) != 1) stop("problem working on wrt argument to nimDerivs")
+      asserts <- c(asserts, sizeInsertIntermediate(code, iWrt, symTab, typeEnv) )
     }
   }
-  code$toEigenize <- 'no'
+  if(inherits(code$args[['order']], 'exprClass')) {
+    if(!code$args[['order']]$isName) {
+      iOrder <- which(names(code$args) == 'order')
+      if(length(iOrder) != 1) stop("problem working on order argument to nimDerivs")
+      asserts <- c(asserts, sizeInsertIntermediate(code, iOrder, symTab, typeEnv) )
+    }
+  }
+  
+  insertExprClassLayer(code, which(names(code$args)=='wrt'), 'make_vector_if_necessary',
+                       type = 'double',
+                       nDim = 1,
+                       sizeExprs = list())
+  
   a1 <- insertExprClassLayer(code, which(names(code$args)=='order'), 'make_vector_if_necessary',
                              type = 'double',
                              nDim = 1,

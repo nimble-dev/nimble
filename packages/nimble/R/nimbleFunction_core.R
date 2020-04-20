@@ -95,10 +95,9 @@ nimbleFunction <- function(setup         = NULL,
     if(nimbleOptions('experimentalEnableDerivs')
        && length(enableDerivs)>0) {
         ## convert enableDerivs to a format of name = list(controls...)
-        ## where the first control is static = TRUE or FALSE (default TRUE but we might change that)
         if(is.character(enableDerivs)) {
             enableDerivs <- structure(
-                lapply(enableDerivs, function(x) list(static = TRUE)),
+                lapply(enableDerivs, function(x) list()),
                 names = enableDerivs)
         }
 
