@@ -569,7 +569,6 @@ conjugacyClass <- setRefClass(
             
             ## more new array() setup outputs, instead of declare() statements, for offset and coeff variables
             ## July 2017
-                    browser() # FIXME
             targetNdim <- getDimension(prior)
             targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
             targetCoeffNdimSave <- targetCoeffNdim 
@@ -989,6 +988,7 @@ conjugacyClass <- setRefClass(
                         forLoopBody$addCode(if(DEP_NODESIZES[iDep] != d) print('runtime error with sizes of 2D conjugate sampler'),
                                             list(DEP_NODESIZES = as.name(paste0('dep_', distLinkName, '_nodeSizes'))))
                 }
+
                 for(contributionName in posteriorObject$neededContributionNames) {
                     if(!(contributionName %in% dependents[[distName]]$contributionNames))     next
                     contributionExpr <- dependents[[distName]]$contributionExprs[[contributionName]]
@@ -1253,30 +1253,31 @@ cc_stripExpr <- function(expr, offset = TRUE, coeff = TRUE) {
         if(offset && expr == 'offset') return(0)
         return(expr)
     }
-    if(is.call(expr)) 
-        for(i in seq_along(expr)[-1])
-            expr[[i]] <- cc_stripExpr(expr[[i]], offset, coeff)
     if(offset && (expr[[1]] == '+' || expr[[1]] == '-')) {
-        if(expr[[2]] == 'offset')
-            return(expr[[3]])
-        if(expr[[3]] == 'offset')
-            return(expr[[2]])
+        if(expr[[2]] == 'offset' || expr[[2]] == 0)
+            return(cc_stripExpr(expr[[3]]))
+        if(expr[[3]] == 'offset' || expr[[3]] == 0)
+            return(cc_stripExpr(expr[[2]]))
     }
     if(coeff && expr[[1]] == '*') {
         if(expr[[2]] == 'coeff' || expr[[2]] == 1)
-            return(expr[[3]])
+            return(cc_stripExpr(expr[[3]]))
         if(expr[[3]] == 'coeff' || expr[[3]] == 1)
-            return(expr[[2]])
+            return(cc_stripExpr(expr[[2]]))
     }
-    if(coeff && expr[[1]] == '/' && expr[[3]] == 'coeff') 
-        return(expr[[2]])
+    if(coeff && expr[[1]] == '/' && (expr[[3]] == 'coeff' || expr[[3]] == 1) 
+        return(cc_stripExpr(expr[[2]]))
     if(coeff && expr[[1]] == '/' && expr[[2]] == 'coeff') {
         expr[[2]] <- 1
+        expr[[3]] <- cc_stripExpr(expr[[3]])
         return(expr)
     }
     if(coeff && (expr[[1]] == '^' || expr[[1]] == 'sqrt') && expr[[2]] == 'coeff') {
         return(1)
     }
+    if(is.call(expr)) 
+        for(i in seq_along(expr)[-1])
+            expr[[i]] <- cc_stripExpr(expr[[i]], offset, coeff)
     return(expr)
 }
 
