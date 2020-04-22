@@ -243,8 +243,7 @@ sampleDPmeasure <- nimbleFunction(
     
     # defining the truncation level of the random measure's representation:
     if( fixedConc ) {
-      dcrpAux <- model$getParam(dcrpNode, 'conc') + N
-      concSamples <- nimNumeric(length = niter, value = dcrpAux)
+      concSamples <- nimNumeric(length = niter, value = model$getParam(dcrpNode, 'conc'))
     } else {
       concSamples <- numeric(niter)
       for( iiter in 1:niter ) {
@@ -252,8 +251,8 @@ sampleDPmeasure <- nimbleFunction(
         model$calculate(parentNodesXiDeps)
         concSamples[iiter] <- model$getParam(dcrpNode, 'conc')
       }
-      dcrpAux <- mean(concSamples) + N
     }
+    dcrpAux <- mean(concSamples) + N
     
     truncG <<- log(epsilon) / log(dcrpAux / (dcrpAux+1)) + 1
     truncG <<- round(truncG)
@@ -273,7 +272,7 @@ sampleDPmeasure <- nimbleFunction(
       samples[iiter, 1] <<- vaux  
       for(l1 in 2:truncG) {
         v1prod <- v1prod * (1-vaux)
-        vaux <- rbeta(1, 1, concSamples[iiter]+N)
+        vaux <- rbeta(1, 1, concSamples[iiter] + N)
         samples[iiter, l1] <<- vaux * v1prod 
       }
       samples[iiter, 1:truncG] <<- samples[iiter, 1:truncG] / (1 - v1prod * (1-vaux)) # normalizing
