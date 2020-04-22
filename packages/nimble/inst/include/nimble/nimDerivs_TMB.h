@@ -76,7 +76,7 @@ Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, Nim
   int n = x.dimSize(0);
   int i;
   Type dens = Type(-n * M_LN_SQRT_2PI);
-  Type sumDens = Type(0);
+  Type sumDens = Type(0.);
   for(i = 0; i < n*n; i += n + 1) 
 	  sumDens += log(chol[i]);
 
@@ -104,7 +104,7 @@ Type nimDerivs_nimArr_dmnorm_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &
   int n = x.dimSize(0);
   int i;
   Type dens = Type(-n * M_LN_SQRT_2PI);
-  Type sumDens = Type(0);
+  Type sumDens = Type(0.);
   for(i = 0; i < n*n; i += n + 1) 
 	  sumDens += log(chol[i]);
 
@@ -132,8 +132,8 @@ Type nimDerivs_nimArr_dmvt_chol(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
   int n = x.dimSize(0);
   int i;
-  Type dens = nimDerivs_lgammafn((df + n) / Type(2)) - nimDerivs_lgammafn(df / Type(2)) - n * Type(M_LN_SQRT_PI) - n * log(df) / Type(2); 
-  Type sumDens = Type(0);
+  Type dens = nimDerivs_lgammafn((df + Type(n)) / Type(2)) - nimDerivs_lgammafn(df / Type(2)) - Type(n) * Type(M_LN_SQRT_PI) - Type(n) * log(df) / Type(2); 
+  Type sumDens = Type(0.);
   for(i = 0; i < n*n; i += n + 1) 
 	  sumDens += log(chol[i]);
 
@@ -149,7 +149,7 @@ Type nimDerivs_nimArr_dmvt_chol(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<
                            mapChol.triangularView<Eigen::Upper>().transpose().solve(xCopy);
   xCopy = xCopy.array()*xCopy.array();
   
-  dens += -Type(0.5)*(df + n) * log(Type(1.) + xCopy.sum() / df);
+  dens += -Type(0.5)*(df + Type(n)) * log(Type(1.) + xCopy.sum() / df);
   
   dens = CppAD::CondExpEq(give_log, Type(1), dens, exp(dens));
   return(dens);
@@ -160,8 +160,8 @@ Type nimDerivs_nimArr_dmvt_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &mu
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
   int n = x.dimSize(0);
   int i;
-  Type dens = nimDerivs_lgammafn((df + n) / Type(2)) - nimDerivs_lgammafn(df / Type(2)) - n * Type(M_LN_SQRT_PI) - n * log(df) / Type(2); 
-  Type sumDens = Type(0);
+  Type dens = nimDerivs_lgammafn((df + Type(n)) / Type(2.)) - nimDerivs_lgammafn(df / Type(2.)) - Type(n) * Type(M_LN_SQRT_PI) - Type(n) * log(df) / Type(2.); 
+  Type sumDens = Type(0.);
   for(i = 0; i < n*n; i += n + 1) 
 	  sumDens += log(chol[i]);
 
@@ -177,7 +177,7 @@ Type nimDerivs_nimArr_dmvt_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &mu
                            mapChol.triangularView<Eigen::Upper>().transpose().solve(xCopy);
   xCopy = xCopy.array()*xCopy.array();
   
-  dens += -Type(0.5)*(df + n) * log(Type(1.) + xCopy.sum() / df);
+  dens += -Type(0.5)*(df + Type(n)) * log(Type(1.) + xCopy.sum() / df);
   
   if(!give_log){
     dens = exp(dens);
@@ -192,9 +192,8 @@ Type nimDerivs_nimArr_dlkj_corr_cholesky(NimArr<2, Type> &x, Type eta, int p, Ty
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
   Eigen::Map<MatrixXt > mapX(x.getPtr(), p, p);
 
-  Type pd = Type((double) p);
   Type dens = sum(mapX.diagonal().array().log() *
-		  ((double) p - Eigen::seq(Type(1.0), (double) p) + Type(2.0)*eta - Type(2.0)));
+		  (Type(p) - Eigen::seq(Type(1.0), Type(p)) + Type(2.0)*eta - Type(2.0)));
 
   dens = CppAD::CondExpEq(give_log, Type(1), dens, exp(dens));
   return(dens);
@@ -206,8 +205,9 @@ Type nimDerivs_nimArr_dlkj_corr_cholesky_logFixed(NimArr<2, Type> &x, Type eta, 
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
   Eigen::Map<MatrixXt > mapX(x.getPtr(), p, p);
 
+  // Ok use of Type(p) in seq()?
   Type dens = sum(mapX.diagonal().array().log() *
-		  ((double) p - Eigen::seq(Type(1.0), (double) p) + Type(2.0)*eta - Type(2.0)));
+		  (Type(p) - Eigen::seq(Type(1.0), Type(p)) + Type(2.0)*eta - Type(2.0)));
 
   if(!give_log){
     dens = exp(dens);
@@ -227,14 +227,13 @@ Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &x, NimArr<1, Type> &mean, NimA
   Type dens = (df * mapChol.diagonal().array().log()).sum()
   dens = CppAD::CondExpEq(scale_param, Type(1), -dens, dens);
 
-  // ok to have 'df' within Type()?
-  dens += Type(-(df*p/2 * M_LN2 + p*(p-1)*M_LN_SQRT_PI/2));
-  for(i = 0; i < p; i++)
-    dens -= nimDerivs_lgammafn((df - i) / Type(2));
+  dens += -(df*p/Type(2.) * Type(M_LN2) + p*(p-Type(1.))*Type(M_LN_SQRT_PI/2.));
+  for(int i = 0; i < p; i++)
+    dens -= nimDerivs_lgammafn((df - Type(i)) / Type(2.));
  
   /* Lower may be more efficient: https://eigen.tuxfamily.org/dox/classEigen_1_1LLT.html#details */
   MatrixXt Lx = mapX.selfadjointView<Eigen::Lower>().llt().matrixL()
-  dens += (df - p - Type(1)) * Lx.diagonal().array().log().sum();
+  dens += (df - p - Type(1.)) * Lx.diagonal().array().log().sum();
 
   dens -= Type(0.5) * CppAD::CondExpEq(scale_param, Type(1),
                            mapChol.triangularView<Eigen::Upper>().transpose().solve(Lx).squaredNorm(),
@@ -256,13 +255,13 @@ Type nimDerivs_nimArr_dwish_chol_logFixed(NimArr<2, Type> &x, NimArr<1, Type> &m
   Type dens = (df * mapChol.diagonal().array().log()).sum()
   dens = CppAD::CondExpEq(scale_param, Type(1), -dens, dens);
 
-  dens += Type(-(df*p/2 * M_LN2 + p*(p-1)*M_LN_SQRT_PI/2));
+  dens += -(df*p/Type(2.) * Type(M_LN2) + p*(p-Type(1.))*Type(M_LN_SQRT_PI/2.));
   for(i = 0; i < p; i++)
-    dens -= nimDerivs_lgammafn((df - i) / Type(2));
+    dens -= nimDerivs_lgammafn((df - Type(i)) / Type(2.));
  
   /* Lower may be more efficient: https://eigen.tuxfamily.org/dox/classEigen_1_1LLT.html#details */
   MatrixXt Lx = mapX.selfadjointView<Eigen::Lower>().llt().matrixL()
-  dens += (df - p - Type(1)) * Lx.diagonal().array().log().sum();
+  dens += (df - p - Type(1.)) * Lx.diagonal().array().log().sum();
 
   dens -= Type(0.5) * CppAD::CondExpEq(scale_param, Type(1),
                            mapChol.triangularView<Eigen::Upper>().transpose().solve(Lx).squaredNorm(),
@@ -286,13 +285,13 @@ Type nimDerivs_nimArr_dinvwish_chol(NimArr<2, Type> &x, NimArr<1, Type> &mean, N
   Type dens = (df * mapChol.diagonal().array().log()).sum()
   dens = CppAD::CondExpEq(scale_param, Type(1), dens, -dens);
 
-  dens += Type(-(df*p/2 * M_LN2 + p*(p-1)*M_LN_SQRT_PI/2));
+  dens += -(df*p/Type(2.) * Type(M_LN2) + p*(p-Type(1.))*Type(M_LN_SQRT_PI/2.));
   for(i = 0; i < p; i++)
-    dens -= nimDerivs_lgammafn((df - i) / Type(2));
+    dens -= nimDerivs_lgammafn((df - Type(i)) / Type(2.));
  
   /* Lower may be more efficient: https://eigen.tuxfamily.org/dox/classEigen_1_1LLT.html#details */
   MatrixXt Lx = mapX.selfadjointView<Eigen::Lower>().llt().matrixL()
-  dens -= (df + p + Type(1)) * Lx.diagonal().array().log().sum();
+  dens -= (df + p + Type(1.)) * Lx.diagonal().array().log().sum();
 
   /* in basic tests, use of .solve(Identity) was 2-3x faster than .inverse();
   I don't see a way to use .inverse that recognizes the triangular input */
@@ -315,9 +314,9 @@ Type nimDerivs_nimArr_dinvwish_chol_logFixed(NimArr<2, Type> &x, NimArr<1, Type>
   Type dens = (df * mapChol.diagonal().array().log()).sum()
   dens = CppAD::CondExpEq(scale_param, Type(1), dens, -dens);
 
-  dens += Type(-(df*p/2 * M_LN2 + p*(p-1)*M_LN_SQRT_PI/2));
+  dens += -(df*p/Type(2.) * Type(M_LN2) + p*(p-Type(1.))*Type(M_LN_SQRT_PI/2.));
   for(i = 0; i < p; i++)
-    dens -= nimDerivs_lgammafn((df - i) / Type(2));
+    dens -= nimDerivs_lgammafn((df - Type(i)) / Type(2.));
  
   /* Lower may be more efficient: https://eigen.tuxfamily.org/dox/classEigen_1_1LLT.html#details */
   MatrixXt Lx = mapX.selfadjointView<Eigen::Lower>().llt().matrixL()
@@ -400,6 +399,8 @@ Type nimDerivs_nimArr_dmulti_logFixed(const NimArr<1, Type> &x,
   }
 }
 
+  // Some of the following functions seem to be missing Type() casting of constants. --CP 2020-04-22
+  
 /* dt: Student's t distribution */
 /* This case is modified from TMB code so that give_log can be different
    when the tape is used from when it is recorded. */
