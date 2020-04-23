@@ -1451,14 +1451,14 @@ test_that("Test that weights of getSamplesDPmeasure function are correctly compu
   set.seed(0)
   code <- nimbleCode({
     for(i in 1:20) {
-      y[i] ~ dnorm( thetaTilde[xi[i]] , var = var0) 
+      y[i] ~ dnorm( thetaTilde[xi[i]] , var = 1) 
       thetaTilde[i] ~ dnorm(0, var = 100)
     }
     xi[1:20] ~ dCRP(1, size=20)
   })
   Inits <- list(xi = rep(1, 20), thetaTilde = rep(0,20))
   Data <- list(y = c(rnorm(10, -2.5, 1), rnorm(10, 2.5, 1) ))
-  model <- nimbleModel(code, data=Data, inits=Inits, constants = consts,  calculate=TRUE)
+  model <- nimbleModel(code, data=Data, inits=Inits, calculate=TRUE)
   cmodel<-compileNimble(model)
   mConf <- configureMCMC(model, monitors = c('xi','thetaTilde'))
   mMCMC <- buildMCMC(mConf)
@@ -1478,7 +1478,7 @@ test_that("Test that weights of getSamplesDPmeasure function are correctly compu
   set.seed(0)
   code <- nimbleCode({
     for(i in 1:20) {
-      y[i] ~ dnorm( thetaTilde[xi[i]] , var = var0) 
+      y[i] ~ dnorm( thetaTilde[xi[i]] , var = 1) 
       thetaTilde[i] ~ dnorm(0, var = 100)
     }
     xi[1:20] ~ dCRP(alpha, size=20)
@@ -1486,7 +1486,7 @@ test_that("Test that weights of getSamplesDPmeasure function are correctly compu
   })
   Inits <- list(xi = rep(1, 20), thetaTilde = rep(0,20), alpha = 1)
   Data <- list(y = c(rnorm(10, -2.5, 1), rnorm(10, 2.5, 1) ))
-  model <- nimbleModel(code, data=Data, inits=Inits, constants = consts,  calculate=TRUE)
+  model <- nimbleModel(code, data=Data, inits=Inits, calculate=TRUE)
   cmodel<-compileNimble(model)
   mConf <- configureMCMC(model, monitors = c('xi','thetaTilde', 'alpha'))
   mMCMC <- buildMCMC(mConf)
