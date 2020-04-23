@@ -1445,6 +1445,66 @@ test_that("Test that CRP sampler works fine for non conjugate models with more t
   
 })
 
+test_that("Test that weights of getSamplesDPmeasure function are correctly computed", {
+  
+  # model with fixed concentration parameter
+  set.seed(0)
+  code <- nimbleCode({
+    for(i in 1:20) {
+      y[i] ~ dnorm( thetaTilde[xi[i]] , var = var0) 
+      thetaTilde[i] ~ dnorm(0, var = 100)
+    }
+    xi[1:20] ~ dCRP(1, size=20)
+  })
+  Inits <- list(xi = rep(1, 20), thetaTilde = rep(0,20))
+  Data <- list(y = c(rnorm(10, -2.5, 1), rnorm(10, 2.5, 1) ))
+  model <- nimbleModel(code, data=Data, inits=Inits, constants = consts,  calculate=TRUE)
+  cmodel<-compileNimble(model)
+  mConf <- configureMCMC(model, monitors = c('xi','thetaTilde'))
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = model)
+  out <- runMCMC(cMCMC, niter = 1, nburnin = 0)
+  
+  set.seed(0)
+  aux <- getSamplesDPmeasure(cMCMC)
+  trunc <- aux$trunc
+  sampleG <- aux$samples
+  set.seed(0)
+  w <- stick_breaking(rbeta(trunc-1, 1, 1 + 20))       
+  expect_equal(mean(abs(w - sampleG[1, 1:trunc])), 0, tol=10^(-4), scale=1,
+               info = paste0("incorrect computation of weights in getSamplesDPmeasure"))
+  
+  # model with random concentration parameter
+  set.seed(0)
+  code <- nimbleCode({
+    for(i in 1:20) {
+      y[i] ~ dnorm( thetaTilde[xi[i]] , var = var0) 
+      thetaTilde[i] ~ dnorm(0, var = 100)
+    }
+    xi[1:20] ~ dCRP(alpha, size=20)
+    alpha ~ dgamma(1, 1)
+  })
+  Inits <- list(xi = rep(1, 20), thetaTilde = rep(0,20), alpha = 1)
+  Data <- list(y = c(rnorm(10, -2.5, 1), rnorm(10, 2.5, 1) ))
+  model <- nimbleModel(code, data=Data, inits=Inits, constants = consts,  calculate=TRUE)
+  cmodel<-compileNimble(model)
+  mConf <- configureMCMC(model, monitors = c('xi','thetaTilde', 'alpha'))
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = model)
+  out <- runMCMC(cMCMC, niter = 1, nburnin = 0)
+  
+  set.seed(0)
+  aux <- getSamplesDPmeasure(cMCMC)
+  trunc <- aux$trunc
+  sampleG <- aux$samples
+  set.seed(0)
+  w <- stick_breaking(rbeta(trunc-1, 1, out[1, 1] + 20))       
+  expect_equal(mean(abs(w - sampleG[1, 1:trunc])), 0, tol=10^(-4), scale=1,
+               info = paste0("incorrect computation of weights in getSamplesDPmeasure"))
+  
+  
+})
+
 
 test_that("Test that sampleDPmeasure can be used for more complicated models", {
   set.seed(1)
