@@ -1377,24 +1377,7 @@ test_that("check iid assumption in sampleDPmeasure", {
   if(.Platform$OS.type != "windows") {
       nimble:::clearCompiled(m)
   }
-  
-  
-  ## bivariate cluster parameters are not iid
-  code <- nimbleCode({
-    for(i in 1:10){
-      mutilde[i] ~ dnorm(i, s2tilde[i]/lambda)
-      s2tilde[i] ~ dinvgamma(2, 1)
-      y[i] ~ dnorm(mutilde[xi[i]], var=s2tilde[xi[i]])
-    }
-    lambda ~ dgamma(1, 1)
-    xi[1:10] ~ dCRP(conc = 1, size=10)
-  })
-  Inits <- list( xi = sample(1:2, size=10, replace=TRUE), 
-                 mutilde = rep(1, 10), s2tilde=rep(1, 10), lambda=1)
-  Data <- list(y = c(rnorm(10, 0,1)))
-  m <- nimbleModel(code, data=Data, inits=Inits)
-  mConf <- configureMCMC(m, monitors = c('mutilde','s2tilde', 'lambda', 'xi'))
-  mMCMC <- buildMCMC(mConf)
+
   
   code=nimbleCode(
     {
