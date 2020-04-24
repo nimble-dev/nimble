@@ -126,10 +126,14 @@ sampleDPmeasure <- nimbleFunction(
         isIID <- FALSE
     }
     
-    if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvGammaConjugacy(model, clusterVarInfo, length(dcrpElements)))
+    if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvGammaConjugacy(model, clusterVarInfo, length(dcrpElements), 'dinvgamma'))
         isIID <- TRUE
-    if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvWishartConjugacy(model, clusterVarInfo, length(dcrpElements)))
+    if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvGammaConjugacy(model, clusterVarInfo, length(dcrpElements), 'dgamma'))
+      isIID <- TRUE
+    if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvWishartConjugacy(model, clusterVarInfo, length(dcrpElements), 'dinvwish'))
         isIID <- TRUE
+    if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvWishartConjugacy(model, clusterVarInfo, length(dcrpElements), 'dwish'))
+      isIID <- TRUE
       ## Tricky as MCMC might not be using conjugacy, but presumably ok to proceed regardless of how
       ## MCMC was done, since conjugacy existing would guarantee IID.
     if(!isIID) stop('sampleDPmeasure: cluster parameters have to be independent and identically distributed. \n')
@@ -254,8 +258,8 @@ sampleDPmeasure <- nimbleFunction(
     }
     dcrpAux <- mean(concSamples) + N
     
-    truncG <<- log(epsilon) / log(dcrpAux / (dcrpAux+1)) + 1
-    truncG <<- round(truncG)
+    truncG <<- log(epsilon) / log(dcrpAux / (dcrpAux+1))
+    truncG <<- ceiling(truncG)
     
     ## Storage object: matrix with nrow = number of MCMC iterations, and ncol = (1 + p)*truncG, where
     ## truncG the truncation level of the random measure G (an integer given by the values of conc parameter)
