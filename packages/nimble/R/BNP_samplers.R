@@ -111,7 +111,7 @@ sampleDPmeasure <- nimbleFunction(
     if( is.null(tildeVars) )  ## probably unnecessary as checked in CRP sampler, but best to be safe
       stop('sampleDPmeasure: The model should have at least one cluster variable.\n')
 
-    ## Check that cluster parameters are IID, as required for random measure G
+    ## Check that cluster parameters are IID (across clusters, non-IID within clusters is ok), as required for random measure G
     isIID <- TRUE
     for(i in seq_along(clusterVarInfo$clusterNodes)) {
       clusterNodes <- clusterVarInfo$clusterNodes[[i]]  # e.g., 'thetatilde[1]',...,
