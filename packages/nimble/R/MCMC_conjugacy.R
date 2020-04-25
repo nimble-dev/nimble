@@ -957,7 +957,8 @@ conjugacyClass <- setRefClass(
                 currentLink <- tmp[[2]]
 
                 targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
-                if(targetCoeffNdim == 2 && currentLink == 'multiplicativeScalar')   ## There are no cases where we allow non-scalar 'coeff'.
+                browser()
+                if(targetCoeffNdim == 2 && link == 'multiplicativeScalar')   ## There are no cases where we allow non-scalar 'coeff'.
                     targetCoeffNdim <- 0
 
                 if(!any(posteriorObject$neededContributionNames %in% dependents[[distName]]$contributionNames))     next
@@ -988,7 +989,7 @@ conjugacyClass <- setRefClass(
                         forLoopBody$addCode(if(DEP_NODESIZES[iDep] != d) print('runtime error with sizes of 2D conjugate sampler'),
                                             list(DEP_NODESIZES = as.name(paste0('dep_', distLinkName, '_nodeSizes'))))
                 }
-
+                browser()
                 for(contributionName in posteriorObject$neededContributionNames) {
                     if(!(contributionName %in% dependents[[distName]]$contributionNames))     next
                     contributionExpr <- dependents[[distName]]$contributionExprs[[contributionName]]
