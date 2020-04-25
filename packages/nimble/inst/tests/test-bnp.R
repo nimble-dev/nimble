@@ -5158,7 +5158,6 @@ test_that("offset and coeff set up in conjugacy for BNP so that non-dependencies
     expect_identical(c('dep_dnorm_identity_offset', 'dep_dnorm_identity_coeff') %in%
                 ls(mcmc$samplerFunctions[[2]]$regular_sampler[[1]]), rep(TRUE, 2))
 
-    # check this
     ## dmnorm cases
     code <- nimbleCode({
         for(i in 1:2) {
@@ -5177,37 +5176,24 @@ test_that("offset and coeff set up in conjugacy for BNP so that non-dependencies
     expect_identical(c('dep_dmnorm_identity_offset', 'dep_dmnorm_identity_coeff') %in%
                 ls(mcmc$samplerFunctions[[2]]$regular_sampler[[1]]), rep(TRUE, 2))
 
-    ##  write this
     ## dwish case
     code <- nimbleCode({
         for(i in 1:2) {
-            y[i, 1:3] ~ dmnorm(mu[1:3], pr[1:3,1:3])
+            y[i, 1:3] ~ dmnorm(mu[1:3], pr[xi[i], 1:3,1:3])
+            pr[i, 1:3,1:3] ~ dwish(R[1:3,1:3], 8)
         }
-        pr2[1:3,1:3] <- d*pr[1:3,1:3]
-        for(i in 1:2) {
-            y2[i, 1:3] ~ dmnorm(mu[1:3], pr2[1:3,1:3])
-        }    
-        pr[1:3,1:3] ~ dwish(R[1:3,1:3], 8)
+        xi[1:2] ~ dCRP(1, 2)
     })
-    m <- nimbleModel(code, data = list (y1 = matrix(rnorm(6),2),
-                               y2 = matrix(rnorm(6),2)),
-                     inits = list(pr = diag(3), R = diag(3)))
+    pr <- array(0, c(2, 3, 3)); pr[1,,] <- pr[2,,] <- diag(3)
+    m <- nimbleModel(code, data = list(y = matrix(rnorm(6),2)), 
+                     inits = list(xi = rep(1,2), pr = pr, R = diag(3)))
     conf <- configureMCMC(m)
     mcmc <- buildMCMC(conf)
 
-    expect_identical(conf$getSamplers()[[1]]$name, "conjugate_dwish_dmnorm_identity_dmnorm_multiplicativeScalar")
-    expect_identical(mcmc$samplerFunctions[[1]]$N_dep_dmnorm_identity, 2L)
-    expect_identical(mcmc$samplerFunctions[[1]]$N_dep_dmnorm_multiplicativeScalar, 2L)
+    expect_identical(mcmc$samplerFunctions[[2]]$regular_sampler[[1]]$N_dep_dmnorm_identity, 2L)
 
-    expect_identical('dep_dmnorm_identity_coeff' %in%
-                ls(mcmc$samplerFunctions[[1]]), FALSE)
-    expect_identical('dep_dmnorm_multiplicativeScalar_coeff' %in%
-                ls(mcmc$samplerFunctions[[1]]), TRUE)
-    expect_identical(c('dep_dmnorm_identity_offset', 'dep_dmnorm_multiplicativeScalar_offset') %in%
-                ls(mcmc$samplerFunctions[[1]]), rep(FALSE, 2))
-
-    expect_identical(mcmc$samplerFunctions[[1]]$dep_dmnorm_identity_nodeNames, c('y1[1, 1:3]', 'y1[2, 1:3]'))
-    expect_identical(mcmc$samplerFunctions[[1]]$dep_dmnorm_multiplicativeScalar_nodeNames, c('y2[1, 1:3]', 'y2[2, 1:3]'))
+    expect_identical(c('dep_dmnorm_identity_offset', 'dep_dmnorm_identity_coeff') %in%
+                ls(mcmc$samplerFunctions[[2]]$regular_sampler[[1]]), c(FALSE, TRUE))
 
 
 })

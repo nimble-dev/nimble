@@ -1265,7 +1265,7 @@ cc_stripExpr <- function(expr, offset = TRUE, coeff = TRUE) {
         if(expr[[3]] == 'coeff' || expr[[3]] == 1)
             return(cc_stripExpr(expr[[2]]))
     }
-    if(coeff && expr[[1]] == '/' && (expr[[3]] == 'coeff' || expr[[3]] == 1) 
+    if(coeff && expr[[1]] == '/' && (expr[[3]] == 'coeff' || expr[[3]] == 1)) 
         return(cc_stripExpr(expr[[2]]))
     if(coeff && expr[[1]] == '/' && expr[[2]] == 'coeff') {
         expr[[2]] <- 1
