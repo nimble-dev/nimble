@@ -127,7 +127,8 @@ conjugacyRelationshipsInputList <- list(
     ##                        c     = max(prior_c, contribution_c)'),
     #####
 
-    ## multivariate-normal
+    ## multivariate-normal; note that to avoid unnecessary computations, there is special processing of the contribution_mean and contribution_prec
+    ## in the generation of the conjugate sampler run method, so the specification here should not be changed without looking at that processing.
     list(prior = 'dmnorm',
          link = 'linear',
          dependents = list(
