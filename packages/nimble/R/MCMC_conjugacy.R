@@ -132,7 +132,8 @@ conjugacyRelationshipsInputList <- list(
          link = 'linear',
          dependents = list(
            ##dmnorm = list(param = 'mean', contribution_mean = '(t(coeff) %*% prec %*% asCol(value-offset))[,1]', contribution_prec = 't(coeff) %*% prec %*% coeff')),
-             dmnorm = list(param = 'mean', contribution_mean = '(calc_dmnormConjugacyContributions(coeff, prec, value-offset, 1))[,1]', contribution_prec = 'calc_dmnormConjugacyContributions(coeff, prec, value-offset, 2)')),
+             dmnorm = list(param = 'mean', contribution_mean = '(calc_dmnormConjugacyContributions(coeff, prec, value-offset, 1, 0))[,1]', contribution_prec = 'calc_dmnormConjugacyContributions(coeff, prec, value-offset, 2, 0)')),
+         ## LINK will be replaced with appropriate link via code processing
          ## original less efficient posterior definition:
          ## posterior = 'dmnorm_chol(mean       = (inverse(prior_prec + contribution_prec) %*% (prior_prec %*% asCol(prior_mean) + asCol(contribution_mean)))[,1],
          ##                          cholesky   = chol(prior_prec + contribution_prec),
@@ -991,7 +992,16 @@ conjugacyClass <- setRefClass(
                 for(contributionName in posteriorObject$neededContributionNames) {
                     if(!(contributionName %in% dependents[[distName]]$contributionNames))     next
                     contributionExpr <- dependents[[distName]]$contributionExprs[[contributionName]]
-                    contributionExpr <- cc_stripExpr(contributionExpr, offset = currentLink %in% c('identity','multiplicative','multiplicativeScalar'),
+                    if(distName == 'dmnorm') {
+                        ## need to deal with [,1] in contribution_mean
+                        if(contributionName == 'contribution_mean') tmpExpr <- contributionExpr[[2]][[2]] else tmpExpr <- contributionExpr
+                        if(currentLink %in%  c('identity', 'additive')) {
+                            tmpExpr[[2]] <- quote(prec)  ## hack, since 'coeff' won't exist
+                            tmpExpr[[6]] <- quote(0)
+                        } else tmpExpr[[6]] <- quote(1)
+                        tmpExpr[[4]] <- cc_stripExpr(tmpExpr[[4]], offset = currentLink %in% c('identity','multiplicative'), coeff = FALSE)  # strip 'offset'
+                        if(contributionName == 'contribution_mean') contributionExpr[[2]][[2]] <- tmpExpr else contributionExpr <- tmpExpr
+                    } else contributionExpr <- cc_stripExpr(contributionExpr, offset = currentLink %in% c('identity','multiplicative','multiplicativeScalar'),
                                                      coeff = currentLink %in% c('identity','additive'))
                     contributionExpr <- eval(substitute(substitute(EXPR, subList), list(EXPR=contributionExpr)))
                     if(nimbleOptions()$allowDynamicIndexing && doDependentScreen) { ## FIXME: would be nice to only have one if() here when we loop through multiple parameters
