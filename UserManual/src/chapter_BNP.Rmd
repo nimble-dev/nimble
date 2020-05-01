@@ -196,7 +196,7 @@ NIMBLE's MCMC engine provides specialized samplers for the `dCRP` distribution, 
   1. A non-conjugate sampler in the case of the baseline distribution  not being conjugate for the mixture kernel.
 
 
-Note that both samplers are specialized versions that operate on a vector having a CRP distribution. Details of these assignments are strictly internal to the CRP samplers. The current release of NIMBLE supports conjugate sampling for the `dCRP` distribution for the relationships listed in Table \@ref(tab:BNPconjugacy). Additional relationships are provided in Table \@ref(tab:BNPconjugacy2) for univariate and multivariate normal mixture kernels when the baseline distribution is specified as the product of conditionally independent distributions.
+Note that both samplers are specialized versions that operate on a vector having a CRP distribution. Details of these assignments are strictly internal to the CRP samplers. The current release of NIMBLE supports conjugate sampling for the `dCRP` distribution for the relationships listed in Table \@ref(tab:BNPconjugacy). Additional relationships are provided in Table \@ref(tab:BNPconjugacy2) for normal mixture kernels when both,  mean and  variance, are unknown.
 
 
 ```{r, child = 'tables/BNPconjugacyTable.md'}
