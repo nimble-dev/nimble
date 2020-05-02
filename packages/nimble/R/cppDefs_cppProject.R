@@ -202,23 +202,31 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                    },
                                    compileStaticCode = function(dllName, cppName, showCompilerOutput) {
                                        ssDllName <- normalizePath(file.path(dirName, paste0(dllName, .Platform$dynlib.ext)), winslash = "\\", mustWork=FALSE)
-                                       ssdSHLIBcmd <- paste(normalizePath(file.path(R.home('bin'), 'R'),
-                                                                          winslash = "\\", mustWork=FALSE),
-                                                            'CMD SHLIB', cppName, '-o', basename(ssDllName))
-                                       if(!showCompilerOutput) {
-                                           logFile <- paste0(dllName, ".log")
-                                           ssdSHLIBcmd <- paste(ssdSHLIBcmd, ">", logFile)
-                                           ## Rstudio will fail to run a system() command with show.output.on.console=FALSE if any output is actually directed to the console.
-                                           ## Redirecting it to a file seems to cure this.
+                                       ssdSHLIBcmd <- normalizePath(file.path(R.home('bin'), 'R'),
+                                                                          winslash = "\\", mustWork=FALSE)
+                                       ssdSHLIBargs <- paste('CMD SHLIB', cppName, '-o', basename(ssDllName))
+
+                                       logFile <- paste0(dllName, ".log")
+                                       errorFile <- paste0(dllName, ".err")
+                                       
+                                       status = system2(ssdSHLIBcmd, ssdSHLIBargs, stdout = logFile, stderr = errorFile)
+
+                                       if(status == 0 && showCompilerOutput) {
+                                           output <- c(readLines(logFile), readLines(errorFile))
+                                           cat(output, sep = '\n')
                                        }
-                                       isWindows = (.Platform$OS.type == "windows")
-                                       if(isWindows)
-                                           status = system(ssdSHLIBcmd, ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput, show.output.on.console = showCompilerOutput)
-                                       else
-                                           status = system(ssdSHLIBcmd, ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput)
-                                       if(status != 0) 
-                                           stop(structure(simpleError("Failed to create the shared library."),
-                                                          class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))
+                                       if(status != 0) {
+                                           if(showCompilerOutput) {
+                                               output <- c(readLines(logFile), readLines(errorFile))
+                                               stop(structure(simpleError(paste0("Failed to create the shared library.\n", paste0(output, collapse = "\n"))),
+                                                              class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))
+
+                                           } else {
+                                               nimbleUserNamespace$errorFile <- normalizePath(file.path(dirName, errorFile), winslash = "\\", mustWork=FALSE)
+                                               stop(structure(simpleError(paste0("Failed to create the shared library. Run 'printErrors()' to see the compilation errors.\n")),
+                                                              class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))
+                                           }
+                                       }
                                        return(dyn.load(ssDllName, local = TRUE))
                                    },
                                    compileDynamicRegistrations = function(showCompilerOutput = nimbleOptions('showCompilerOutput')) {
@@ -251,8 +259,8 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        if(!inherits(Oincludes, 'uninitializedField')) { ## will only be uninitialized if writeFiles was skipped due to specialHandling (developer backdoor)
                                            includes <- c(includes, Oincludes) ## normal operation will have Oincludes.
                                        }
-                                       SHLIBcmd <- paste(normalizePath(file.path(R.home('bin'), 'R'), winslash = "\\", mustWork=FALSE),
-                                                         'CMD SHLIB', paste(c(mainfiles, includes), collapse = ' '), '-o', basename(outputSOfile))
+                                       SHLIBcmd <- normalizePath(file.path(R.home('bin'), 'R'), winslash = "\\", mustWork=FALSE)
+                                       SHLIBargs <- paste('CMD SHLIB', paste(c(mainfiles, includes), collapse = ' '), '-o', basename(outputSOfile))
 
                                        cur = getwd()
                                        setwd(dirName)
@@ -266,6 +274,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        if(isTRUE(nimbleOptions('stopCompilationBeforeLinking'))) {## used only for testing, when we want to go quickly and skip linking and bail out
                                            ## get the dry run commands, run only those that contain -c for compile-only (don't link)
                                            ## this has only been tested with single .cpp files, not multiple .cpp files
+                                           stop("Option 'stopCompilationBeforeLinking' has been disabled.")
                                            dryRunCmd <- paste0(SHLIBcmd, " -n")
                                            dryRunResult <- system(dryRunCmd, intern = TRUE)
                                            compileOnlyLines <- dryRunResult[ grepl("-c", dryRunResult) ]
@@ -274,6 +283,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
 
                                        if(isTRUE(nimbleOptions('forceO1'))) { ## replace -On flags with -O1 to reduce compiler time due to higher optimization levels 
                                            ## If force01 is TRUE and we did not already strip out -c flags, do so now
+                                           stop("Option 'force01' has been disabled.")
                                            if(!isTRUE(nimbleOptions('stopCompilationBeforeLinking'))) {
                                                dryRunCmd <- paste0(SHLIBcmd, " -n")
                                                dryRunResult <- system(dryRunCmd, intern = TRUE)
@@ -283,20 +293,16 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                            SHLIBcmd <- gsub("-O[1-9]", "-O1", SHLIBcmd)
                                            SHLIBcmd <- paste0(SHLIBcmd, "; ", origSHLIBcmd)
                                        }
+ 
                                        
                                        logFile <- paste0(names[1], "_", format(Sys.time(), "%m_%d_%H_%M_%S"), ".log")
                                        errorFile <- paste0(names[1], "_", format(Sys.time(), "%m_%d_%H_%M_%S"), ".err")
-                                       SHLIBcmd <- paste(SHLIBcmd, ">", logFile, "2>", errorFile)
-                                       ## See Rstudio comment above
 
                                        if(nimbleOptions('pauseAfterWritingFiles')) browser()
                                        ## We formerly used ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput
                                        ## but when ignore.stdout and ignore.stderr are TRUE nothing gets printed to stdout and stderr so
                                        ## .log and .err files are empty.
-                                       if(isWindows)
-                                           status = system(SHLIBcmd, show.output.on.console = showCompilerOutput) # , ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput, show.output.on.console = showCompilerOutput)
-                                       else
-                                           status = system(SHLIBcmd) #, ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput)
+                                       status = system2(SHLIBcmd, SHLIBargs, stdout = logFile, stderr = errorFile)
                                        if(status == 0 && showCompilerOutput) {
                                            output <- c(readLines(logFile), readLines(errorFile))
                                            cat(output, sep = '\n')
