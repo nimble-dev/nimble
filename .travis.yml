@@ -37,6 +37,7 @@ notifications:
 
 branches:
   only:
+    - master
     - devel
 
 latex: false  # Work around tlmgr issues.
