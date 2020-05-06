@@ -925,3 +925,4 @@ scalar_distribution_pFuns <- gsub("^d", "p", scalar_pqAvail_dFuns)
 scalar_distribution_qFuns <- gsub("^d", "q", scalar_pqAvail_dFuns)
 
 rm(nms, scalar_distribution_bool, scalar_pqAvail_bool, scalar_pqAvail_dFuns)
+
