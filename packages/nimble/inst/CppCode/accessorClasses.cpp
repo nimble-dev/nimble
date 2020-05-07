@@ -133,34 +133,37 @@ CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
 //   nodeFunInModelDLL->setup_extraInput_step(nodes);
 // }
 
-void initialize_AD_model_before_recording(NodeVectorClassNew_derivs &nodes) {
-  const vector<NodeInstruction> &instructions = nodes.getInstructions();
+void initialize_AD_model_before_recording(NodeVectorClassNew_derivs *nodes) {
+  if(!nodes) return;
+  const vector<NodeInstruction> &instructions = nodes->getInstructions();
   if(instructions.size() == 0) {
       printf("No nodes for initialize_AD_model_before_recording\n");
       return;
   }
   nodeFun* nodeFunInModelDLL = instructions[0].nodeFunPtr;
-  nodeFunInModelDLL->initialize_AD_model_before_recording(nodes);
+  nodeFunInModelDLL->initialize_AD_model_before_recording(*nodes);
 }
 
-void init_dynamicVars(NodeVectorClassNew_derivs &NV,
+void init_dynamicVars(NodeVectorClassNew_derivs *NV,
 		      std::vector<CppAD::AD<double> > &dynamicVars) {
-  int length_extraInput = NV.model_extraInput_accessor.getTotalLength();
+  if(!NV) return;
+  int length_extraInput = NV->model_extraInput_accessor.getTotalLength();
   NimArr<1, double> NimArrValues;
 
   if(length_extraInput > 0) {
     NimArrValues.setSize(length_extraInput);
     dynamicVars.resize(length_extraInput);
-    getValues(NimArrValues, NV.model_extraInput_accessor);
+    getValues(NimArrValues, NV->model_extraInput_accessor);
     std::copy( NimArrValues.getPtr(),
 	       NimArrValues.getPtr() + length_extraInput,
 	       dynamicVars.begin());
   }
 }
 
-void copy_dynamicVars_to_model(NodeVectorClassNew_derivs &NV,
+void copy_dynamicVars_to_model(NodeVectorClassNew_derivs *NV,
 			       std::vector<CppAD::AD<double> > &dynamicVars) {
-  int length_extraInput = NV.model_extraInput_accessor.getTotalLength();
+  if(!NV) return;
+  int length_extraInput = NV->model_extraInput_accessor.getTotalLength();
   NimArr<1, CppAD::AD<double> > NimArrValues_AD;
 
   if(length_extraInput > 0) {
@@ -168,7 +171,7 @@ void copy_dynamicVars_to_model(NodeVectorClassNew_derivs &NV,
     std::copy( dynamicVars.begin(),
 	       dynamicVars.end(),
 	       NimArrValues_AD.getPtr());
-    setValues_AD_AD(NimArrValues_AD, NV.model_AD_extraInput_accessor);
+    setValues_AD_AD(NimArrValues_AD, NV->model_AD_extraInput_accessor);
   }
 }
 

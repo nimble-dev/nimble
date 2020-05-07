@@ -762,16 +762,16 @@ CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
 /* void setup_extraInput_step(NodeVectorClassNew_derivs &nodes); */
 /* void assign_extraInputDummy(NodeVectorClassNew_derivs &nodes, */
 /* 			    CppAD::AD<double> &extraInputDummy); */
-void init_dynamicVars(NodeVectorClassNew_derivs &nodes,
+void init_dynamicVars(NodeVectorClassNew_derivs *nodes,
 		      std::vector<CppAD::AD<double> > &dynamicVars);
-void copy_dynamicVars_to_model(NodeVectorClassNew_derivs &nodes,
+void copy_dynamicVars_to_model(NodeVectorClassNew_derivs *nodes,
 			       std::vector<CppAD::AD<double> > &dynamicVars);
 /* void update_dynamicVars(NodeVectorClassNew_derivs &NV, */
 /* 			std::vector<double> &dynamicVars); */
 /* void update_dynamicVars_meta(NodeVectorClassNew_derivs &NV, */
 /* 			     std::vector< CppAD::AD<double> > &dynamicVars); */
 
-void initialize_AD_model_before_recording(NodeVectorClassNew_derivs &nodes);
+void initialize_AD_model_before_recording(NodeVectorClassNew_derivs *nodes);
 
 class NodeVectorClassNew_derivs : public NodeVectorClassNew {
  public:

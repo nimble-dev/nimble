@@ -72,6 +72,26 @@ private:
     }
     return true;
   }
+  virtual bool forward(
+		       const CppAD::vector< CppAD::AD<double> >&               parameter_x  ,
+		       const CppAD::vector<CppAD::ad_type_enum>&  type_x       ,
+		       size_t                              need_y       ,
+		       size_t                              order_low    ,
+		       size_t                              order_up     ,
+		       const CppAD::vector< CppAD::AD<double> >&               taylor_x     ,
+		       CppAD::vector< CppAD::AD<double> >&                     taylor_y     );
+  virtual bool reverse(
+      const CppAD::vector< CppAD::AD<double> >&               parameter_x ,
+      const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
+      size_t                              order_up    ,
+      const CppAD::vector< CppAD::AD<double> >&               taylor_x    ,
+      const CppAD::vector< CppAD::AD<double> >&               taylor_y    ,
+      CppAD::vector< CppAD::AD<double> >&                     partial_x   ,
+      const CppAD::vector< CppAD::AD<double> >&               partial_y   )
+  {
+    printf("In lgamma meta-reverse for order %lu\n", order_up);
+    return false;
+  }
   virtual bool reverse(
       const CppAD::vector<double>&               parameter_x ,
       const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
@@ -266,3 +286,18 @@ T nimDerivs_qnorm1(T x) {
   return out[0];
 }
 
+bool atomic_lgamma_class::forward(
+				  const CppAD::vector< CppAD::AD<double> >&               parameter_x  ,
+				  const CppAD::vector<CppAD::ad_type_enum>&  type_x       ,
+				  size_t                              need_y       ,
+				  size_t                              order_low    ,
+				  size_t                              order_up     ,
+				  const CppAD::vector< CppAD::AD<double> >&               taylor_x     ,
+				  CppAD::vector< CppAD::AD<double> >&                     taylor_y     )
+{
+  printf("In lgamma meta-forward for orders %lu %lu\n", order_low, order_up);
+  if(order_low <= 0 & order_up >= 0) {
+    taylor_y[0] = nimDerivs_lgammafn(taylor_x[0]);
+  }
+  return true;
+}

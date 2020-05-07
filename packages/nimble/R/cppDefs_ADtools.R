@@ -389,7 +389,9 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
                                   className = "className",
                                   useModelInfo = list()) {
   nodeFxnVector_name <- useModelInfo[['nodeFxnVector_name']]
-  usesModelCalculate <- length(nodeFxnVector_name) > 0
+  #usesModelCalculate <- length(nodeFxnVector_name) > 0
+  usesModelCalculate <- TRUE ## If this becomes stable, it can be renamed or better yet removed.  This is to *always* use dynamicVars
+
   ## Make new function definition to call for taping (CFT)
   if(isNode) warning("makeADtapingFunction2 has not been updated for isNode==TRUE")
   CFT <- RCfunctionDef$new(static = FALSE)
@@ -444,7 +446,7 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
     ## Arguably this should go in the TypeTemplateFunction, using CppAD::Value() to copy values without recording in the tape.
     modelInitCode <- quote(blank())
     if(usesModelCalculate) {
-        modelInitCode <- cppLiteral("initialize_AD_model_before_recording(*ADinfo.updaterNV());")
+        modelInitCode <- cppLiteral("initialize_AD_model_before_recording(ADinfo.updaterNV());")
 ##            substitute(initialize_AD_model_before_recording(NV),
 ##                                    list(NV = as.name(nodeFxnVector_name[1])))
     }
@@ -632,14 +634,14 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
     returnCall <- cppLiteral("return(RETURN_TAPE_);")
 
   initADdynamicVarsCode <- if(usesModelCalculate) {
-                               cppLiteral("init_dynamicVars(*ADinfo.updaterNV(), ADdynamicVars);")
+                               cppLiteral("init_dynamicVars(ADinfo.updaterNV(), ADdynamicVars);")
 ##                                 substitute(init_dynamicVars(NV, ADdynamicVars),
                                ##                                             list(NV = as.name(nodeFxnVector_name[1])))
                                } else
                                    quote(blank())
     
     copyDynamicVarsToModelCode <- if(usesModelCalculate) {
-                                      cppLiteral("copy_dynamicVars_to_model(*ADinfo.updaterNV(), ADdynamicVars);")
+                                      cppLiteral("copy_dynamicVars_to_model(ADinfo.updaterNV(), ADdynamicVars);")
 ##                                      substitute(copy_dynamicVars_to_model(NV, ADdynamicVars),
 ##                                             list(NV = as.name(nodeFxnVector_name[1])))
                                   } else
@@ -654,13 +656,15 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
                                   dummyIndexNodeInfoCode,
                                   initADdynamicVarsCode,
                                   initADindependentVarsCode,
+                                  copyIntoIndepVarCode, ## once for non-taping call (for nested taping)
                                   list(initADptrCode,
                                        setRecordingFalseLine,
+                                       copyDynamicVarsToModelCode, ## once for non-taping call
                                        tapingCallRCode,
                                        CppADindependentCode,
                                        setRecordingTrueLine,
-                                       copyDynamicVarsToModelCode),
-                                  copyIntoIndepVarCode,
+                                       copyDynamicVarsToModelCode), ## again for taping call to be sure
+                                  copyIntoIndepVarCode, ## again for taping call to be sure.
                                   list(tapingCallRCode,
                                        calcTotalResponseLengthCode,
                                        setADresponseVarsSizeLine),
@@ -863,7 +867,9 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
       update_dynamicVars_funName <- as.name("update_dynamicVars_meta")
     }
     nodeFxnVector_name <- useModelInfo[['nodeFxnVector_name']]
-    usesModelCalculate <- length(nodeFxnVector_name) > 0    ## modeled closely parts of /*  */
+    ## usesModelCalculate <- length(nodeFxnVector_name) > 0    ## modeled closely parts of /*  */
+    usesModelCalculate <- TRUE ## If this becomes stable, it can be renamed or better yet removed.  This is to *always* use dynamicVars
+
     ## needs to set the ADtapePtr to one element of the ADtape
     TF <- RCfunctionDef$new() ## should it be static?
     TF$returnType <- cppVarFull(baseType = 'nimbleCppADinfoClass', ref = TRUE, name = 'RETURN_OBJ')

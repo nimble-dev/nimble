@@ -152,6 +152,7 @@ void update_dynamicVars(NodeVectorClassNew_derivs &NV,
 }
 
 void update_dynamicVars(nimbleCppADinfoClass &ADinfo) {
+  if(!ADinfo.updaterNV()) return;
   // copy from model --> dynamicVars and call new_dynamic
   NodeVectorClassNew_derivs &NV = *(ADinfo.updaterNV());
   int length_extraInput = NV.model_extraInput_accessor.getTotalLength();
@@ -168,6 +169,7 @@ void update_dynamicVars(nimbleCppADinfoClass &ADinfo) {
 }
 
 void update_dynamicVars_meta(nimbleCppADinfoClass &ADinfo) {
+  if(!ADinfo.updaterNV()) return;
   // copy from model --> dynamicVars and call new_dynamic
   NodeVectorClassNew_derivs &NV = *(ADinfo.updaterNV());
   int length_extraInput = NV.model_AD_extraInput_accessor.getTotalLength();
@@ -180,7 +182,7 @@ void update_dynamicVars_meta(nimbleCppADinfoClass &ADinfo) {
 	       NimArrValuesAD.getPtr() + length_extraInput,
 	       ADinfo.dynamicVars_meta.begin());
   }
-  std::cout<<"Use of dynamicVars in meta-taping is ambiguous."<<std::endl;
+  // call to new_dynamic is inside getDerivs_meta after base2ad.
 }
 
 
@@ -254,11 +256,15 @@ void getDerivs_internal(vector<BASE> &independentVars,
     ansList->value.setSize(value_ans.size(), false, false);
     std::copy(value_ans.begin(), value_ans.end(), ansList->value.getPtr());
   }
+  static bool first = true;
   if(maxOrder > 0){
     std::size_t q = value_ans.size();
     vector<bool> infIndicators(q, false); // default values will be false 
     for(size_t inf_ind = 0; inf_ind < q; inf_ind++){
-      std::cout<<"Fix the inf and nan checking for CppAD::AD<double> case"<<std::endl;
+      if(first) {
+	std::cout<<"Fix the inf and nan checking for CppAD::AD<double> case"<<std::endl;
+	first = false;
+      }
       // if(((value_ans[inf_ind] == -std::numeric_limits<double>::infinity()) |
       //     (value_ans[inf_ind] == std::numeric_limits<double>::infinity())) | 
       // 	 (std::isnan(value_ans[inf_ind]))){
@@ -387,6 +393,7 @@ void nimbleFunctionCppADbase::getDerivs_meta(nimbleCppADinfoClass &ADinfo,
   // std::cout<<"Entering getDerivs_meta"<<std::endl;
   CppAD::ADFun< CppAD::AD<double>, double > innerTape;
   innerTape = ADinfo.ADtape->base2ad();
+  innerTape.new_dynamic(ADinfo.dynamicVars_meta);
   getDerivs_internal< CppAD::AD<double>,
 		      CppAD::ADFun< CppAD::AD<double>, double >,
 		      NIMBLE_ADCLASS_META>(ADinfo.independentVars_meta,
