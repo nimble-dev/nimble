@@ -30,12 +30,15 @@ distributionsClass <- setRefClass(
               nms <- names(dil)
               dupl <- which(nms %in% getAllDistributionsInfo('namesVector', userOnly = TRUE))
               if(length(dupl)) {
-                  for(i in seq_along(dupl)) remove(nms[dupl])
+                  for(i in seq_along(dupl)) {
+                      remove(nms[dupl[i]])
+                  }
                   ## distObjects[dupl] <<- NULL
                   ## namesVector <<- namesVector[-dupl]
                   ## namesExprList[dupl] <<- NULL
                   ## translations[dupl] <<- NULL
-                  cat("Overwriting the following user-supplied distributions:", nms[dupl], ".\n", sep = " ")
+                  nmsDuplicated <- paste0(nms[dupl], collapse = ', ')
+                  cat(paste0("Overwriting the following user-supplied distributions: ", nmsDuplicated, "\n"))
               }
               for(i in seq_along(dil))     distObjectsNew[[i]] <- distClass(dil[[i]], nms[i])
               names(distObjectsNew) <- nms
@@ -512,7 +515,7 @@ prepareDistributionInput <- function(dist) {
 #'     ))
 registerDistributions <- function(distributionsInput, userEnv = parent.frame(), verbose = nimbleOptions('verbose')) {
     if(missing(distributionsInput)) {
-        cat("No distribution information supplied.\n")
+        cat("No distribution information supplied\n")
     } else {
         if(!(is.character(distributionsInput) || (is.list(distributionsInput) &&
                                                   (length(distributionsInput) == 1 || is.list(distributionsInput[[1]])))))
@@ -522,12 +525,15 @@ registerDistributions <- function(distributionsInput, userEnv = parent.frame(), 
          } else {
             nms <- names(distributionsInput)
           }
-        if(verbose)
-            cat("Registering the following user-provided distributions:", nms, ".\n")
+        if(verbose) {
+            nmsTogether <- paste0(nms, collapse = ', ')
+            cat(paste0("Registering the following user-provided distributions: ", nmsTogether, "\n"))
+        }
         dupl <- nms[nms %in% getAllDistributionsInfo('namesVector', nimbleOnly = TRUE)]
         if(length(dupl)) {
             distributionsInput[dupl] <- NULL
-            cat("Ignoring the following user-supplied distributions as they have the same names as default NIMBLE distributions:", dupl, ". Please rename to avoid the conflict.\n")
+            duplTogether <- paste0(dupl, collapse = ', ')
+            cat(paste0("Ignoring the following user-supplied distributions as they have the same names as default NIMBLE distributions: ", duplTogether, ". Please rename to avoid the conflict.\n"))
           }
 
         if(is.list(distributionsInput)) 
@@ -562,13 +568,16 @@ registerDistributions <- function(distributionsInput, userEnv = parent.frame(), 
 #' @export
 deregisterDistributions <- function(distributionsNames) {
     if(!exists('distributions', nimbleUserNamespace, inherits = FALSE)) 
-        cat("No user-supplied distributions are registered.\n")
+        cat("No user-supplied distributions are registered\n")
     matched <- distributionsNames %in% getAllDistributionsInfo('namesVector', userOnly = TRUE)
-    if(sum(matched)) 
-        cat(paste("Deregistering", distributionsNames[matched], "from user-registered distributions.\n"))
+    if(sum(matched)) {
+        distsMatched <- paste0(distributionsNames[matched], collapse = ', ')
+        cat(paste0("Deregistering ", distsMatched, " from user-registered distributions\n"))
+    }
     if(sum(!matched))
-        for(nm in distributionsNames[!matched])
-            cat(paste0("Cannot deregister ", nm, " as it is not registered as a user-defined distribution.\n"))
+        for(nm in distributionsNames[!matched]) {
+            cat(paste0("Cannot deregister ", nm, " as it is not registered as a user-defined distribution\n"))
+        }
     
     distributionsNames <- distributionsNames[matched]
     if(length(distributionsNames)) {
@@ -916,3 +925,4 @@ scalar_distribution_pFuns <- gsub("^d", "p", scalar_pqAvail_dFuns)
 scalar_distribution_qFuns <- gsub("^d", "q", scalar_pqAvail_dFuns)
 
 rm(nms, scalar_distribution_bool, scalar_pqAvail_bool, scalar_pqAvail_dFuns)
+
