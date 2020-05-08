@@ -686,10 +686,10 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
 
   if(!ADinfo.ADtape) {
     if(!use_meta_tape) {
-      std::cout<<"recording"<<std::endl;
+      //std::cout<<"recording"<<std::endl;
       ADinfo.ADtape = calculate_recordTape(nodes);
     } else {
-      std::cout<<"meta recording"<<std::endl;
+      //std::cout<<"meta recording"<<std::endl;
       CppAD::ADFun< double > *firstTape;
       firstTape = calculate_recordTape(nodes);
       CppAD::ADFun< CppAD::AD<double>, double > innerTape;
@@ -778,10 +778,10 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
     std::copy( NimArr_dynamicVars.getPtr(),
 	       NimArr_dynamicVars.getPtr() + length_extraNodes_accessor,
 	       dynamicVars.begin() );
-    std::cout<<"Setting new_dynamic to"<<std::endl;
-    for(int ijk = 0; ijk < length_extraNodes_accessor; ijk++)
-      std::cout<<dynamicVars[ijk]<<" ";
-    std::cout<<std::endl;
+    //std::cout<<"Setting new_dynamic to"<<std::endl;
+    //for(int ijk = 0; ijk < length_extraNodes_accessor; ijk++)
+    //  std::cout<<dynamicVars[ijk]<<" ";
+    //std::cout<<std::endl;
     ADinfo.ADtape->new_dynamic(dynamicVars);
   }
 
@@ -805,7 +805,7 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
       if(ordersFound[1]) derivOrders_nested[higherOrders++] = 0; // If Jacobian was requested, get value of meta tape
       if(ordersFound[2]) derivOrders_nested[higherOrders] = 1; // If Hessian was requested, get Jacobian of meta tape
       nimSmartPtr<NIMBLE_ADCLASS> ansList_nested = new NIMBLE_ADCLASS;
-      std::cout<<"about to call getDerivs_internal"<<std::endl;
+      //std::cout<<"about to call getDerivs_internal"<<std::endl;
       getDerivs_internal<double,
 			 CppAD::ADFun<double>,
 			 NIMBLE_ADCLASS>(ADinfo.independentVars,
@@ -827,7 +827,7 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
     }
   } else {
   /* run tape */
-    std::cout<<"running tape"<<std::endl;
+    //std::cout<<"running tape"<<std::endl;
     getDerivs_internal<double,
 		       CppAD::ADFun<double>,
 		       NIMBLE_ADCLASS>(ADinfo.independentVars,
