@@ -202,6 +202,19 @@ void update_dynamicVars_meta(NodeVectorClassNew_derivs &NV,
   std::cout<<"Use of dynamicVars in meta-taping is ambiguous."<<std::endl;
 }
 
+bool check_inf_nan_gdi(double v) {
+  if(((v == -std::numeric_limits<double>::infinity()) |
+      (v == std::numeric_limits<double>::infinity())) | 
+     (std::isnan(v))) {
+    return true;
+  }
+  return false;
+}
+
+bool check_inf_nan_gdi(CppAD::AD<double> v) {
+  return false;
+}
+
 template<typename BASE, class TAPETYPE, class ADCLASS>
 void getDerivs_internal(vector<BASE> &independentVars,			
 			TAPETYPE *ADtape,
@@ -261,12 +274,15 @@ void getDerivs_internal(vector<BASE> &independentVars,
     std::size_t q = value_ans.size();
     vector<bool> infIndicators(q, false); // default values will be false 
     for(size_t inf_ind = 0; inf_ind < q; inf_ind++){
-      if(first) {
-	std::cout<<"Fix the inf and nan checking for CppAD::AD<double> case"<<std::endl;
-	first = false;
+      // if(first) {
+      // 	std::cout<<"Fix the inf and nan checking for CppAD::AD<double> case"<<std::endl;
+      // 	first = false;
+      // }
+      if(check_inf_nan_gdi(value_ans[inf_ind])) {
+	infIndicators[inf_ind] = true;
       }
       // if(((value_ans[inf_ind] == -std::numeric_limits<double>::infinity()) |
-      //     (value_ans[inf_ind] == std::numeric_limits<double>::infinity())) | 
+      // 	  (value_ans[inf_ind] == std::numeric_limits<double>::infinity())) | 
       // 	 (std::isnan(value_ans[inf_ind]))){
       // 	infIndicators[inf_ind] = true;
       // }

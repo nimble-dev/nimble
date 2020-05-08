@@ -37,11 +37,13 @@ class unary_atomic_class : public CppAD::atomic_three<T> {
 class atomic_lgamma_class : public unary_atomic_class<double> {
   public:
   // From atomic_three_get_started
-  atomic_lgamma_class(const std::string& name) : 
-    unary_atomic_class<double>(name)
+ atomic_lgamma_class(const std::string& name, int baseOrder_) : 
+  unary_atomic_class<double>(name),
+    baseOrder(baseOrder_)
     { }
 
 private:
+    int baseOrder;
   virtual bool forward(
       const CppAD::vector<double>&               parameter_x  ,
       const CppAD::vector<CppAD::ad_type_enum>&  type_x       ,
@@ -53,19 +55,22 @@ private:
   {
     //    std::cout<<"forward "<<order_low<<" "<<order_up<<" "<<taylor_x[0]<<std::endl;
     if(order_low <= 0 & order_up >= 0) {
-      taylor_y[0] = Rf_lgammafn(taylor_x[0]);
+      if(baseOrder == 0)
+	taylor_y[0] = Rf_lgammafn(taylor_x[0]);
+      else
+	taylor_y[0] = Rf_psigamma(taylor_x[0], baseOrder-1);
       //      std::cout<<"taylor_y[0] "<<taylor_y[0]<<std::endl;
     }
     double fprime;
     if(order_low <= 2 & order_up >= 1)
-      fprime = Rf_psigamma(taylor_x[0], 0);
+      fprime = Rf_psigamma(taylor_x[0], baseOrder);
     if(order_low <= 1 & order_up >= 1) {
       taylor_y[1] = fprime * taylor_x[1];
       // std::cout<<"taylor_y[1] "<<taylor_y[1]<<std::endl;
       // f'(x) (x')
     }
     if(order_low <= 2 & order_up >= 2) {
-      taylor_y[2] = 0.5 * (Rf_psigamma(taylor_x[0], 1) * taylor_x[1] * taylor_x[1] + 
+      taylor_y[2] = 0.5 * (Rf_psigamma(taylor_x[0], baseOrder+1) * taylor_x[1] * taylor_x[1] + 
         fprime * 2 * taylor_x[2]);
       // 0.5 * ((f''(x)) (x')^2 + 2*f'(x) (x''))
       // Note x'' is a taylor coeff so it is 0.5*2nd deriv
@@ -87,11 +92,7 @@ private:
       const CppAD::vector< CppAD::AD<double> >&               taylor_x    ,
       const CppAD::vector< CppAD::AD<double> >&               taylor_y    ,
       CppAD::vector< CppAD::AD<double> >&                     partial_x   ,
-      const CppAD::vector< CppAD::AD<double> >&               partial_y   )
-  {
-    printf("In lgamma meta-reverse for order %lu\n", order_up);
-    return false;
-  }
+      const CppAD::vector< CppAD::AD<double> >&               partial_y   );
   virtual bool reverse(
       const CppAD::vector<double>&               parameter_x ,
       const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
@@ -104,10 +105,10 @@ private:
     //    std::cout<<"reverse "<<order_up<<" "<<taylor_x[0]<<" "<<partial_y[0]<<std::endl;
     partial_x[0] = 0;
     if(order_up >= 1) partial_x[1] = 0;
-    double fprime = Rf_psigamma(taylor_x[0], 0);
+    double fprime = Rf_psigamma(taylor_x[0], baseOrder);
     if(order_up >= 1) {
       partial_x[1] += partial_y[1] * fprime;
-      partial_x[0] += partial_y[1] * Rf_psigamma(taylor_x[0], 1) * taylor_x[1];
+      partial_x[0] += partial_y[1] * Rf_psigamma(taylor_x[0], baseOrder+1) * taylor_x[1];
       // std::cout<<partial_x[1]<<" ";
     }
     partial_x[0] += partial_y[0] * fprime;
@@ -254,15 +255,35 @@ private:
   }
 };
 
-#endif
-
 template<class T>
-T nimDerivs_lgammafn(T x) {
-  static atomic_lgamma_class static_atomic_lgamma("nimDerivs_lgamma");
+T nimDerivs_lgammafn(T x, int baseOrder = 0) {
+  static atomic_lgamma_class static_atomic_lgamma0("nimDerivs_lgamma", 0);
+  static atomic_lgamma_class static_atomic_lgamma1("nimDerivs_lgamma", 1);
+  static atomic_lgamma_class static_atomic_lgamma2("nimDerivs_lgamma", 2);
+  static atomic_lgamma_class static_atomic_lgamma3("nimDerivs_lgamma", 3);
+  static atomic_lgamma_class static_atomic_lgamma4("nimDerivs_lgamma", 4);
   CppAD::vector<T> in(1);
   CppAD::vector<T> out(1);
   in[0] = x;
-  static_atomic_lgamma(in, out);
+  switch(baseOrder) {
+  case 0:
+    static_atomic_lgamma0(in, out);
+    break;
+  case 1:
+    static_atomic_lgamma1(in, out);
+    break;
+  case 2:
+    static_atomic_lgamma2(in, out);
+    break;
+  case 3:
+    static_atomic_lgamma3(in, out);
+    break;
+  case 4:
+    static_atomic_lgamma4(in, out);
+    break;
+  default:
+    std::cout<<"Error: attempting lgamma derivative beyond order 4."<<std::endl;
+  }
   return out[0];
 }
 
@@ -295,9 +316,43 @@ bool atomic_lgamma_class::forward(
 				  const CppAD::vector< CppAD::AD<double> >&               taylor_x     ,
 				  CppAD::vector< CppAD::AD<double> >&                     taylor_y     )
 {
-  printf("In lgamma meta-forward for orders %lu %lu\n", order_low, order_up);
+  //  printf("In lgamma meta-forward for orders %lu %lu\n", order_low, order_up);
+
   if(order_low <= 0 & order_up >= 0) {
-    taylor_y[0] = nimDerivs_lgammafn(taylor_x[0]);
+    taylor_y[0] = nimDerivs_lgammafn(taylor_x[0], baseOrder); // This puts it in the new tape being recorded
+  }
+  CppAD::AD<double> fprime;
+  if(order_low <= 2 & order_up >= 1)
+    fprime = nimDerivs_lgammafn(taylor_x[0], baseOrder+1);
+  if(order_low <= 1 & order_up >= 1) {
+    taylor_y[1] = fprime * taylor_x[1];
+  }
+  if(order_low <= 2 & order_up >= 2) {
+    taylor_y[2] = 0.5 * (nimDerivs_lgammafn(taylor_x[0], baseOrder+2) * taylor_x[1] * taylor_x[1] + 
+			 fprime * 2 * taylor_x[2]);
   }
   return true;
 }
+
+bool atomic_lgamma_class::reverse(
+				  const CppAD::vector< CppAD::AD<double> >&               parameter_x ,
+				  const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
+				  size_t                              order_up    ,
+				  const CppAD::vector< CppAD::AD<double> >&               taylor_x    ,
+				  const CppAD::vector< CppAD::AD<double> >&               taylor_y    ,
+				  CppAD::vector< CppAD::AD<double> >&                     partial_x   ,
+				  const CppAD::vector< CppAD::AD<double> >&               partial_y   ) 
+{
+  //  printf("In lgamma meta-reverse for order_up %lu\n", order_up);
+  partial_x[0] = 0;
+  if(order_up >= 1) partial_x[1] = 0;
+  CppAD::AD<double> fprime = nimDerivs_lgammafn(taylor_x[0], baseOrder+1);
+  if(order_up >= 1) {
+    partial_x[1] += partial_y[1] * fprime;
+    partial_x[0] += partial_y[1] * nimDerivs_lgammafn(taylor_x[0], baseOrder+2) * taylor_x[1];
+  }
+  partial_x[0] += partial_y[0] * fprime;
+  return true;
+}
+
+#endif

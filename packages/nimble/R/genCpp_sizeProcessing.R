@@ -1252,6 +1252,12 @@ sizeNimDerivsCalculate <- function(code, symTab, typeEnv){
     symbolObject <- symbolNimbleListGenerator(name = className, nlProc = nlp)
     symTab$addSymbol(symbolObject)
   }
+  
+  a1 <- insertExprClassLayer(code, which(names(code$args)=='orderVector'), 'make_vector_if_necessary',
+                             type = 'double',
+                             nDim = 1,
+                             sizeExprs = list())
+
   newADinfoName <- ADinfoLabel()
   if(!is.list(code$aux))
     code$aux <- list()
