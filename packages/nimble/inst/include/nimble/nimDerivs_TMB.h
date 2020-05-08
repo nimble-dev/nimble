@@ -70,7 +70,6 @@ Type nimDerivs_qnorm(Type p, Type mean = 0., Type sd = 1.){
 
 /* dmnorm: Multivariate normal distribution */
 /* TMB uses specialized atomic classes.  nimble currently has a "naive" and likely less efficiency implementation: */
-/* TO-DO: support by prec_param = 0 and 1*/
 template<class Type>
 Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type prec_param, Type give_log, Type overwrite_inputs) { 
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
@@ -87,8 +86,12 @@ Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, Nim
   for(i = 0; i < n; i++)
     xCopy(i, 0) = x[i] - mean[i];
 
-  Eigen::Map<MatrixXt > eigenChol(chol.getPtr(), n, n);
-  xCopy = eigenChol*xCopy;
+  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
+  xCopy = CppAD::CondExpEq(prec_param, Type(1),
+                           mapChol.triangularView<Eigen::Upper>()*xCopy,
+                           mapChol.triangularView<Eigen::Upper>().transpose().solve(xCopy);
+  // Note that with solve(), transpose of U appears slightly less costly than if input 'chol' were L,
+  // presumably because of column-major order interacting well with the solve.
   xCopy = xCopy.array()*xCopy.array();
   dens += -Type(0.5)*xCopy.sum();
   dens = CppAD::CondExpEq(give_log, Type(1), dens, exp(dens));
@@ -111,10 +114,189 @@ Type nimDerivs_nimArr_dmnorm_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &
   for(i = 0; i < n; i++)
     xCopy(i, 0) = x[i] - mean[i];
 
-  Eigen::Map<MatrixXt > eigenChol(chol.getPtr(), n, n);
-  xCopy = eigenChol*xCopy;
+  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
+  xCopy = CppAD::CondExpEq(prec_param, Type(1),
+                           mapChol.triangularView<Eigen::Upper>()*xCopy,
+                           mapChol.triangularView<Eigen::Upper>().transpose().solve(xCopy);
   xCopy = xCopy.array()*xCopy.array();
   dens += -Type(0.5)*xCopy.sum();
+  if(!give_log){
+    dens = exp(dens);
+  }
+  return(dens);
+}
+
+/* dmvt: Multivariate t distribution */
+template<class Type>
+Type nimDerivs_nimArr_dmvt_chol(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<2, Type> &chol, Type df, Type prec_param, Type give_log, Type overwrite_inputs) { 
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  int n = x.dimSize(0);
+  int i;
+  Type dens = nimDerivs_lgammafn((df + n) / Type(2)) - nimDerivs_lgammafn(df / Type(2)) - n * Type(M_LN_SQRT_PI) - n * log(df) / Type(2); 
+  Type sumDens = Type(0);
+  for(i = 0; i < n*n; i += n + 1) 
+	  sumDens += log(chol[i]);
+
+  dens += CppAD::CondExpEq(prec_param, Type(1), sumDens, -sumDens);
+
+  MatrixXt xCopy(n, 1);
+  for(i = 0; i < n; i++)
+    xCopy(i, 0) = x[i] - mu[i];
+
+  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
+  xCopy = CppAD::CondExpEq(prec_param, Type(1),
+                           mapChol.triangularView<Eigen::Upper>()*xCopy,
+                           mapChol.triangularView<Eigen::Upper>().transpose().solve(xCopy);
+  xCopy = xCopy.array()*xCopy.array();
+  
+  dens += -Type(0.5)*(df + n) * log(Type(1.) + xCopy.sum() / df);
+  
+  dens = CppAD::CondExpEq(give_log, Type(1), dens, exp(dens));
+  return(dens);
+}
+
+template<class Type>
+Type nimDerivs_nimArr_dmvt_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<2, Type> &chol, Type df, Type prec_param, int give_log, Type overwrite_inputs) { 
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  int n = x.dimSize(0);
+  int i;
+  Type dens = nimDerivs_lgammafn((df + n) / Type(2)) - nimDerivs_lgammafn(df / Type(2)) - n * Type(M_LN_SQRT_PI) - n * log(df) / Type(2); 
+  Type sumDens = Type(0);
+  for(i = 0; i < n*n; i += n + 1) 
+	  sumDens += log(chol[i]);
+
+  dens += CppAD::CondExpEq(prec_param, Type(1), sumDens, -sumDens);
+
+  MatrixXt xCopy(n, 1);
+  for(i = 0; i < n; i++)
+    xCopy(i, 0) = x[i] - mu[i];
+
+  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
+  xCopy = CppAD::CondExpEq(prec_param, Type(1),
+                           mapChol.triangularView<Eigen::Upper>()*xCopy,
+                           mapChol.triangularView<Eigen::Upper>().transpose().solve(xCopy);
+  xCopy = xCopy.array()*xCopy.array();
+  
+  dens += -Type(0.5)*(df + n) * log(Type(1.) + xCopy.sum() / df);
+  
+  if(!give_log){
+    dens = exp(dens);
+  }
+  return(dens);
+}
+
+/* dwish: Wishart distribution */
+template<class Type>
+Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type df, Type p, Type scale_param, Type give_log, Type overwrite_inputs) { 
+
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  int n = x.dimSize(0);
+  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
+  Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
+  
+  Type dens = (df * mapChol.diagonal().array().log()).sum()
+  dens = CppAD::CondExpEq(scale_param, Type(1), -dens, dens);
+
+  // ok to have 'df' within Type()?
+  dens += Type(-(df*p/2 * M_LN2 + p*(p-1)*M_LN_SQRT_PI/2));
+  for(i = 0; i < p; i++)
+    dens -= nimDerivs_lgammafn((df - i) / Type(2));
+ 
+  /* Lower may be more efficient: https://eigen.tuxfamily.org/dox/classEigen_1_1LLT.html#details */
+  MatrixXt Lx = mapX.selfadjointView<Eigen::Lower>().llt().matrixL()
+  dens += (df - p - Type(1)) * Lx.diagonal().array().log().sum();
+
+  dens -= Type(0.5) * CppAD::CondExpEq(scale_param, Type(1),
+                           mapChol.triangularView<Eigen::Upper>().transpose().solve(Lx).squaredNorm(),
+                           (mapChol.triangularView<Eigen::Upper>()*Lx).squaredNorm());
+
+  dens = CppAD::CondExpEq(give_log, Type(1), dens, exp(dens));
+  return(dens);
+}
+
+
+template<class Type>
+Type nimDerivs_nimArr_dwish_chol_logFixed(NimArr<2, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type df, Type p, Type scale_param, int give_log, Type overwrite_inputs) { 
+
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  int n = x.dimSize(0);
+  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
+  Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
+  
+  Type dens = (df * mapChol.diagonal().array().log()).sum()
+  dens = CppAD::CondExpEq(scale_param, Type(1), -dens, dens);
+
+  dens += Type(-(df*p/2 * M_LN2 + p*(p-1)*M_LN_SQRT_PI/2));
+  for(i = 0; i < p; i++)
+    dens -= nimDerivs_lgammafn((df - i) / Type(2));
+ 
+  /* Lower may be more efficient: https://eigen.tuxfamily.org/dox/classEigen_1_1LLT.html#details */
+  MatrixXt Lx = mapX.selfadjointView<Eigen::Lower>().llt().matrixL()
+  dens += (df - p - Type(1)) * Lx.diagonal().array().log().sum();
+
+  dens -= Type(0.5) * CppAD::CondExpEq(scale_param, Type(1),
+                           mapChol.triangularView<Eigen::Upper>().transpose().solve(Lx).squaredNorm(),
+                           (mapChol.triangularView<Eigen::Upper>()*Lx).squaredNorm());
+
+  if(!give_log){
+    dens = exp(dens);
+  }
+  return(dens);
+}
+
+/* dinvwish: Inverse Wishart distribution */
+template<class Type>
+Type nimDerivs_nimArr_dinvwish_chol(NimArr<2, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type df, Type p, Type scale_param, Type give_log, Type overwrite_inputs) { 
+
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  int n = x.dimSize(0);
+  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
+  Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
+  
+  Type dens = (df * mapChol.diagonal().array().log()).sum()
+  dens = CppAD::CondExpEq(scale_param, Type(1), dens, -dens);
+
+  dens += Type(-(df*p/2 * M_LN2 + p*(p-1)*M_LN_SQRT_PI/2));
+  for(i = 0; i < p; i++)
+    dens -= nimDerivs_lgammafn((df - i) / Type(2));
+ 
+  /* Lower may be more efficient: https://eigen.tuxfamily.org/dox/classEigen_1_1LLT.html#details */
+  MatrixXt Lx = mapX.selfadjointView<Eigen::Lower>().llt().matrixL()
+  dens -= (df + p + Type(1)) * Lx.diagonal().array().log().sum();
+
+  /* in basic tests, use of .solve(Identity) was 2-3x faster than .inverse();
+  I don't see a way to use .inverse that recognizes the triangular input */
+  dens -= Type(0.5) * CppAD::CondExpEq(scale_param, Type(1),
+                           (Lx.triangularView<Eigen::Lower>().solve(mapChol.transpose())).squaredNorm(),
+                           (Lx.triangularView<Eigen::Lower>().solve(mapChol.triangularView<Eigen::Upper>().solve(MatrixXd::Identity(n, n)))).squaredNorm());
+
+  dens = CppAD::CondExpEq(give_log, Type(1), dens, exp(dens));
+  return(dens);
+}
+
+template<class Type>
+Type nimDerivs_nimArr_dinvwish_chol_logFixed(NimArr<2, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type df, Type p, Type scale_param, int give_log, Type overwrite_inputs) { 
+
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  int n = x.dimSize(0);
+  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
+  Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
+  
+  Type dens = (df * mapChol.diagonal().array().log()).sum()
+  dens = CppAD::CondExpEq(scale_param, Type(1), dens, -dens);
+
+  dens += Type(-(df*p/2 * M_LN2 + p*(p-1)*M_LN_SQRT_PI/2));
+  for(i = 0; i < p; i++)
+    dens -= nimDerivs_lgammafn((df - i) / Type(2));
+ 
+  /* Lower may be more efficient: https://eigen.tuxfamily.org/dox/classEigen_1_1LLT.html#details */
+  MatrixXt Lx = mapX.selfadjointView<Eigen::Lower>().llt().matrixL()
+  dens -= (df + p + Type(1)) * Lx.diagonal().array().log().sum();
+
+  dens -= Type(0.5) * CppAD::CondExpEq(scale_param, Type(1),
+                           (Lx.triangularView<Eigen::Lower>().solve(mapChol.transpose())).squaredNorm(),
+                           (Lx.triangularView<Eigen::Lower>().solve(mapChol.triangularView<Eigen::Upper>().solve(MatrixXd::Identity(n, n)))).squaredNorm());
+
   if(!give_log){
     dens = exp(dens);
   }

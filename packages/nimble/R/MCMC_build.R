@@ -113,8 +113,13 @@ buildMCMC <- nimbleFunction(
         my_initializeModel <- initializeModel(model)
         mvSaved <- modelValues(model)
         samplerFunctions <- nimbleFunctionList(sampler_BASE)
-        for(i in seq_along(conf$samplerConfs))
-            samplerFunctions[[i]] <- conf$samplerConfs[[i]]$buildSampler(model=model, mvSaved=mvSaved)
+        samplerFunctionsHMC <- nimbleFunctionList(sampler_HMC_BASE)
+        for(i in seq_along(conf$samplerConfs)) {
+            newSF <- conf$samplerConfs[[i]]$buildSampler(model=model, mvSaved=mvSaved)
+            samplerFunctions[[i]] <- newSF
+            if(conf$samplerConfs[[i]]$name %in% c('HMC', 'HMC2'))
+                samplerFunctionsHMC[[length(samplerFunctionsHMC)+1]] <- newSF
+        }
         samplerExecutionOrderFromConfPlusTwoZeros <- c(conf$samplerExecutionOrder, 0, 0)  ## establish as a vector
         monitors  <- mcmc_processMonitorNames(model, conf$monitors)
         monitors2 <- mcmc_processMonitorNames(model, conf$monitors2)
@@ -150,7 +155,8 @@ buildMCMC <- nimbleFunction(
         ##samplerExecutionOrder = integer(1, default = -1)
         nburnin               = integer(default =  0),
         thin                  = integer(default = -1),
-        thin2                 = integer(default = -1)) {
+        thin2                 = integer(default = -1),
+        chain                 = integer(default =  1)) {
         if(niter < 0)       stop('cannot specify niter < 0')
         if(nburnin < 0)     stop('cannot specify nburnin < 0')
         if(nburnin > niter) stop('cannot specify nburnin > niter')
@@ -160,8 +166,17 @@ buildMCMC <- nimbleFunction(
         my_initializeModel$run()
         nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)
         if(reset) {
-            for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$reset()
             samplerTimes <<- numeric(length(samplerFunctions) + 1)       ## default inititialization to zero
+            for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$reset()
+            if(length(samplerFunctionsHMC) > 0) {
+                for(i in seq_along(samplerFunctionsHMC)) {
+                    nwarmup <- samplerFunctionsHMC[[i]]$getNwarmup()
+                    if(nwarmup == -1) { nwarmup <- round(min(niter/2, 1000))
+                                        samplerFunctionsHMC[[i]]$setNwarmup(nwarmup) }
+                    if(chain <= 1) { print('HMC sampler is using ', nwarmup, ' warmup iterations')
+                                     if(nwarmup < 50) print('A minimum of 50 warmup iterations is recommended') }
+                }
+            }
             mvSamples_copyRow  <- 0
             mvSamples2_copyRow <- 0
         } else {
@@ -220,6 +235,19 @@ buildMCMC <- nimbleFunction(
             }
         }
         if(progressBar) print('|')
+        if(length(samplerFunctionsHMC) > 0) {
+            for(i in seq_along(samplerFunctionsHMC)) {
+                maxTreeDepth <- samplerFunctionsHMC[[i]]$getMaxTreeDepth()
+                numDivergences <- samplerFunctionsHMC[[i]]$getNumDivergences()
+                numTimesMaxTreeDepth <- samplerFunctionsHMC[[i]]$getNumTimesMaxTreeDepth()
+                if(numDivergences == 1) print('HMC sampler encountered ', numDivergences, ' divergent path')
+                if(numDivergences  > 1) print('HMC sampler encountered ', numDivergences, ' divergent paths')
+                ##if(numTimesMaxTreeDepth == 1) print('HMC sampler reached the maximum search tree depth (', maxTreeDepth, ') ', numTimesMaxTreeDepth, ' time')
+                ##if(numTimesMaxTreeDepth  > 1) print('HMC sampler reached the maximum search tree depth (', maxTreeDepth, ') ', numTimesMaxTreeDepth, ' times')
+                if(numTimesMaxTreeDepth == 1) print('HMC sampler reached the maximum search tree depth ', numTimesMaxTreeDepth, ' time')
+                if(numTimesMaxTreeDepth  > 1) print('HMC sampler reached the maximum search tree depth ', numTimesMaxTreeDepth, ' times')
+            }
+        }
         returnType(void())
     },
     methods = list(

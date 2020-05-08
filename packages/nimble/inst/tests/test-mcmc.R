@@ -1499,6 +1499,7 @@ test_that('dcar_proper sampling', {
 })
 
 
+
 ## testing dmnorm-dnorm conjugacies we don't detect
 
 test_that('dnorm-dmnorm conjugacies NIMBLE fails to detect', {
@@ -1775,6 +1776,78 @@ test_that('MCMC with logProb variable being monitored builds and compiles.', {
   Cmcmc$run(10)
 })
 
+
+test_that('HMC sampler seems to work', {
+    nimbleOptions(experimentalEnableDerivs = TRUE)
+    code <- nimbleCode({
+        a[1] ~ dnorm(0, 1)
+        a[2] ~ dnorm(a[1]+1, 1)
+        a[3] ~ dnorm(a[2]+1, 1)
+        d ~ dnorm(a[3], sd=2)
+    })
+    constants <- list()
+    data <- list(d = 5)
+    inits <- list(a = rep(0, 3))
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    Rmodel$calculate()
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('a', 'HMC', control = list(nwarmup = 1000))
+    Rmcmc <- buildMCMC(conf)
+    Cmodel <- compileNimble(Rmodel)
+    Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+    set.seed(0)
+    samples <- runMCMC(Cmcmc, 10000)
+    expect_true(all(round(as.numeric(samples[1000:1005,]), 5) == c(1.04219, 0.78785, 0.61456, -0.54460, 0.92886, -0.14861, 2.46754, 1.39936, 2.38672, 2.36192, 3.23133, 1.26193, 2.67295, 3.29269, 3.61172, 3.99500, 3.72867, 3.80442)))
+    expect_true(all(round(as.numeric(apply(samples, 2, mean)), 7) == c(0.4503489, 1.8820432, 3.3086721)))
+    expect_true(all(round(as.numeric(apply(samples, 2, sd)), 7) == c(0.9148666, 1.2039168, 1.2923344 )))
+})
+
+
+## testing correctness of HMC sampler (with various transformations)
+test_that('HMC sampler asymptotic correctness', {
+    nimbleOptions(experimentalEnableDerivs = TRUE)
+    code <- nimbleCode({
+        mu ~ dnorm(0, sd = 10)
+        tau ~ dgamma(0.01, 0.01)
+        sigma ~ dunif(0, 10)
+        p ~ dunif(0, 1)
+        mu4 <- mu * p
+        y1 ~ dnorm(mu, tau)
+        y2 ~ dnorm(mu, tau)
+        y3 ~ dnorm(mu, sd = sigma)
+        y4 ~ dnorm(mu4, tau)
+    })
+    constants <- list()
+    data <- list(y1 = 10, y2 = 9, y3 = 9, y4 = 7)
+    inits <- list(mu = 0, tau = 1, sigma = 1, p = 0.5)
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    Rmodel$calculate()
+    conf <- configureMCMC(Rmodel)
+    Rmcmc <- buildMCMC(conf)
+    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
+    Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
+    set.seed(0)
+    samples <- runMCMC(Cmcmc, 100000, nburnin = 10000)
+    means <- apply(samples, 2, mean)
+    sds <- apply(samples, 2, sd)
+    ##
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    Rmodel$calculate()
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler(c('mu','tau','sigma','p'), 'HMC', control = list(nwarmup = 1000))
+    Rmcmc <- buildMCMC(conf)
+    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
+    Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
+    set.seed(0)
+    samplesHMC <- runMCMC(Cmcmc, 50000, nburnin=10000)
+    meansHMC <- apply(samplesHMC, 2, mean)
+    sdsHMC <- apply(samplesHMC, 2, sd)
+    ##
+    expect_true(all(abs(means - meansHMC) < 0.05))
+    expect_true(all(abs(sds   - sdsHMC)   < 0.05))
+})
+
+
 test_that('slice sampler bails out of loop', {
     code <- nimbleCode({
         y ~ dnorm(0, sd = sigma)
@@ -1877,6 +1950,135 @@ test_that('cc_checkScalar operates correctly', {
     expect_false(cc_checkScalar(quote(foo(lambda))))
 
 })
+
+
+test_that('HMC sampler exact samples for different maxTreeDepths', {
+    nimbleOptions(experimentalEnableDerivs = TRUE)
+    ##
+    code <- nimbleCode({
+        sigma ~ dunif(0, 100)
+        a ~ dnorm(0, 0.01)
+        y1 ~ dnorm(a, sd = sigma)
+        y2 ~ dnorm(a, sd = 2*sigma)
+    })
+    constants <- list()
+    data <- list(y1 = 1, y2 = 10)
+    inits <- list(sigma = 1, a = 0)
+    ##
+    Rmodel1 <- nimbleModel(code, constants, data, inits)
+    conf1 <- configureMCMC(Rmodel1)
+    conf1$removeSamplers(c('sigma', 'a'))
+    conf1$addSampler(c('sigma', 'a'), type = 'HMC', control = list(nwarmup = 1000))
+    Rmcmc1 <- buildMCMC(conf1)
+    ##
+    Rmodel2 <- nimbleModel(code, constants, data, inits)
+    conf2 <- configureMCMC(Rmodel2)
+    conf2$removeSamplers(c('sigma', 'a'))
+    conf2$addSampler(c('sigma', 'a'), type = 'HMC',
+                     control = list(nwarmup = 1000, maxTreeDepth = 4))
+    Rmcmc2 <- buildMCMC(conf2)
+    ##
+    Rmodel3 <- nimbleModel(code, constants, data, inits)
+    conf3 <- configureMCMC(Rmodel3)
+    conf3$removeSamplers('sigma')
+    conf3$addSampler('sigma', type = 'HMC', control = list(nwarmup = 1000))
+    Rmcmc3 <- buildMCMC(conf3)
+    ##
+    compiledList <- compileNimble(list(model1=Rmodel1, mcmc1=Rmcmc1, model2=Rmodel2, mcmc2=Rmcmc2, model3=Rmodel3, mcmc3=Rmcmc3))
+    Cmodel1 <- compiledList$model1; Cmcmc1 <- compiledList$mcmc1
+    Cmodel2 <- compiledList$model2; Cmcmc2 <- compiledList$mcmc2
+    Cmodel3 <- compiledList$model3; Cmcmc3 <- compiledList$mcmc3
+    ##
+    set.seed(0);   samples1 <- runMCMC(Cmcmc1, 10000)
+    expect_true(all(round(as.numeric(samples1[10000,]),6) == c(1.057482, 11.073346)))
+    set.seed(0);   samples2 <- runMCMC(Cmcmc2, 10000)
+    expect_true(all(round(as.numeric(samples2[10000,]),6) == c(-1.698464, 8.469846)))
+    set.seed(0);   samples3 <- runMCMC(Cmcmc3, 10000)
+    expect_true(all(round(as.numeric(samples3[10000,]),6) == c(2.785040, 8.364911)))
+})
+
+
+test_that('HMC sampler error messages for transformations with non-constant bounds', {
+    nimbleOptions(experimentalEnableDerivs = TRUE)
+    ##
+    code <- nimbleCode({ x ~ dexp(1); y ~ dunif(1, x) })
+    Rmodel <- nimbleModel(code, inits = list(x = 10))
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('y', 'HMC')
+    expect_error(Rmcmc <- buildMCMC(conf))
+    ##
+    code <- nimbleCode({ x ~ dexp(1); y ~ dunif(x, 10) })
+    Rmodel <- nimbleModel(code, inits = list(x = 1))
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('y', 'HMC')
+    expect_error(Rmcmc <- buildMCMC(conf))
+    ##
+    code <- nimbleCode({ x ~ dexp(1); y ~ T(dnorm(0, 1), 0, x) })
+    Rmodel <- nimbleModel(code, inits = list(x = 1))
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('y', 'HMC')
+    expect_error(Rmcmc <- buildMCMC(conf))
+    ##
+    code <- nimbleCode({ x <- 2+c; y ~ T(dnorm(0, 1), 0, x) })
+    Rmodel <- nimbleModel(code, constants = list(c = 1), inits = list(y = 1))
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('y', 'HMC')
+    expect_error(Rmcmc <- buildMCMC(conf), NA)   ## means: expect_no_error
+    ##
+    code <- nimbleCode({ x <- 3; y ~ T(dnorm(0, 1), 1, x) })
+    Rmodel <- nimbleModel(code, inits = list(y = 2))
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('y', 'HMC')
+    expect_error(Rmcmc <- buildMCMC(conf), NA)   ## means: expect_no_error
+    ##
+    code <- nimbleCode({ x ~ dexp(1); y ~ T(dnorm(0, 1), 1, x) })
+    Rmodel <- nimbleModel(code, inits = list(x = 3, y = 2))
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('y', 'HMC')
+    expect_error(Rmcmc <- buildMCMC(conf))
+    ##
+    code <- nimbleCode({ x ~ dexp(1); y ~ T(dnorm(0, 1), x, 10) })
+    Rmodel <- nimbleModel(code, inits = list(x = 1, y = 2))
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('y', 'HMC')
+    expect_error(Rmcmc <- buildMCMC(conf))
+})
+
+
+test_that('HMC sampler reports correct number of divergences and max tree depths', {
+    nimbleOptions(experimentalEnableDerivs = TRUE)
+    ##
+    code <- nimbleCode({
+        mu ~ dnorm(0, sd = 10)
+        tau ~ dgamma(0.01, 0.01)
+        sigma ~ dunif(0, 10)
+        p ~ dunif(0, 1)
+        mu4 <- mu * p
+        y1 ~ dnorm(mu, tau)
+        y2 ~ dnorm(mu, tau)
+        y3 ~ dnorm(mu, sd = sigma)
+        y4 ~ dnorm(mu4, tau)
+    })
+    constants <- list()
+    data <- list(y1 = 10, y2 = 9, y3 = 9, y4 = 7)
+    inits <- list(mu = 0, tau = 1, sigma = 1, p = 0.5)
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    ##
+    conf <- configureMCMC(Rmodel)
+    conf$addSampler(target = c('mu','tau','sigma','p'), type = 'HMC',
+                    control = list(nwarmup = 1000, maxTreeDepth = 5))
+    Rmcmc <- buildMCMC(conf)
+    ##
+    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
+    Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
+    ##
+    set.seed(0)
+    samples <- runMCMC(Cmcmc, 10000)
+    ##
+    expect_equal(valueInCompiledNimbleFunction(Cmcmc$samplerFunctions[[5]], 'numDivergences'), 457)
+    expect_equal(valueInCompiledNimbleFunction(Cmcmc$samplerFunctions[[5]], 'numTimesMaxTreeDepth'), 16)
+})
+
 
 sink(NULL)
 

@@ -890,16 +890,16 @@ sampler_langevin <- nimbleFunction(
         timesRan <- 0
         timesAdapted <- 0
         ## checks
-        if(!nimbleOptions('experimentalEnableDerivs')) stop('must enable NIMBLE derivates, set options(experimentalEnableDerivs = TRUE)')
+        if(!nimbleOptions('experimentalEnableDerivs')) stop('must enable NIMBLE derivates, set nimbleOptions(experimentalEnableDerivs = TRUE)')
         if(any(model$isDiscrete(targetAsScalar)))      stop(paste0('langevin sampler can only operate on continuous-valued nodes:', paste0(targetAsScalar[model$isDiscrete(targetAsScalar)], collapse=', ')))
     },
     run = function() {
         q[1:d, 1] <<- values(model, target)         ## current position variables
         for(i in 1:d)   p[i, 1] <<- rnorm(1, 0, 1)  ## randomly draw momentum variables
         currentH <- model$getLogProb(calcNodes) - sum(p^2)/2
-        p <<- p + epsilonVec * gradient(q) / 2      ## initial half step for p
+        p <<- p + epsilonVec * jacobian(q) / 2      ## initial half step for p
         q <<- q + epsilonVec * p                    ## full step for q
-        p <<- p + epsilonVec * gradient(q) / 2      ## final half step for p
+        p <<- p + epsilonVec * jacobian(q) / 2      ## final half step for p
         propH <- model$calculate(calcNodes) - sum(p^2)/2
         jump <- decide(propH - currentH)
         if(jump) nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
@@ -907,10 +907,10 @@ sampler_langevin <- nimbleFunction(
         if(adaptive)     adaptiveProcedure()
     },
     methods = list(
-        gradient = function(q = double(2)) {
+        jacobian = function(q = double(2)) {
             values(model, target) <<- q[1:d, 1]
             derivsOutput <- nimDerivs(model$calculate(calcNodes), order = 1, wrt = target)
-            grad[1:d, 1] <<- derivsOutput$gradient[1, 1:d]
+            grad[1:d, 1] <<- derivsOutput$jacobian[1, 1:d]
             returnType(double(2))
             return(grad)
         },
@@ -942,150 +942,343 @@ sampler_langevin <- nimbleFunction(
 ### Hamiltonian Monte Carlo (HMC) sampler using NUTS ###############
 ####################################################################
 
+sampler_HMC_BASE <- nimbleFunctionVirtual(
+    contains = sampler_BASE,
+    methods = list(
+        reset = function() { },
+        getNwarmup              = function() { returnType(double()) },
+        getMaxTreeDepth         = function() { returnType(double()) },
+        getNumDivergences       = function() { returnType(double()) },
+        getNumTimesMaxTreeDepth = function() { returnType(double()) },
+        setNwarmup              = function(x = double()) { }
+    )
+)
+
 #' @rdname samplers
 #' @export
 sampler_HMC <- nimbleFunction(
     name = 'sampler_HMC',
-    contains = sampler_BASE,
+    contains = sampler_HMC_BASE,     ## note: different contains for HMC sampler
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        maxAdaptIter <- if(!is.null(control$maxAdaptIter)) control$maxAdaptIter else 1000
+        printTimesRan  <- if(!is.null(control$printTimesRan))  control$printTimesRan  else FALSE
+        printGradient  <- if(!is.null(control$printGradient))  control$printGradient  else FALSE
+        printEpsilon   <- if(!is.null(control$printEpsilon))   control$printEpsilon   else FALSE
+        printJ         <- if(!is.null(control$printJ))         control$printJ         else FALSE
+        messages       <- if(!is.null(control$messages))       control$messages       else TRUE
+        warnings       <- if(!is.null(control$warnings))       control$warnings       else 5
+        initialEpsilon <- if(!is.null(control$initialEpsilon)) control$initialEpsilon else 0
+        gamma          <- if(!is.null(control$gamma))          control$gamma          else 0.05
+        t0             <- if(!is.null(control$t0))             control$t0             else 10
+        kappa          <- if(!is.null(control$kappa))          control$kappa          else 0.75
+        delta          <- if(!is.null(control$delta))          control$delta          else 0.65
+        deltaMax       <- if(!is.null(control$deltaMax))       control$deltaMax       else 1000
+        nwarmup        <- if(!is.null(control$nwarmup))        control$nwarmup        else -1
+        maxTreeDepth   <- if(!is.null(control$maxTreeDepth))   control$maxTreeDepth   else 10
         ## node list generation
-        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        calcNodes <- model$getDependencies(target)
+        targetNodes <- model$expandNodeNames(target)
+        if(length(targetNodes) <= 0) stop('HMC sampler must operate on at least one node', call. = FALSE)
+        calcNodes <- model$getDependencies(targetNodes)
+        originalTargetAsScalars <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        targetNodesAsScalars <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)
+        ## processing of bounds and transformations
+        IND_ID   <- 1   ## transformation ID: 1=identity, 2=log, 3=logit
+        IND_LB   <- 2   ## one-sided-bound: offset; interval-bounded parameters: lower-bound
+        IND_RNG  <- 3   ## one-sided-bound: -1/1;   interval-bounded parameters: range
+        IND_LRNG <- 4   ## one-sided-bound: N/A;    interval-bounded parameters: log(range)
+        maxInd <- max(sapply(grep('^IND_', ls(), value = TRUE), function(x) eval(as.name(x))))
+        d <- length(targetNodesAsScalars)
+        d2 <- max(d, 2) ## for pre-allocating vectors
+        transformNodeNums <- c(0, 0)               ## always a vector
+        transformInfo <- array(0, c(2, maxInd))    ## always an array
+        logTransformNodes   <- character()
+        logitTransformNodes <- character()
+        for(i in 1:d) {
+            node <- targetNodesAsScalars[i]
+            if(model$isDeterm(node))      stop(paste0('HMC sampler doesn\'t operate on deterministic nodes: ', node), call. = FALSE)
+            if(model$isDiscrete(node))    stop(paste0('HMC sampler doesn\'t operate on discrete nodes: ', node), call. = FALSE)
+            dist <- model$getDistribution(node)
+            bounds <- c(model$getBound(node, 'lower'), model$getBound(node, 'upper'))
+            if(!model$isMultivariate(node)) {   ## univariate node
+                if(bounds[1] == -Inf & bounds[2] == Inf) {               ## 1 = identity: support = (-Inf, Inf)
+                    1
+                } else if((isValid(bounds[1]) && bounds[2] ==  Inf) ||   ## 2 = log: support = (a, Inf)
+                          (isValid(bounds[2]) && bounds[1] == -Inf)) {   ##      or: support = (-Inf, b)
+                    if(model$isTruncated(node)) {
+                        bdName  <- if(isValid(bounds[1])) 'lower'  else 'upper'
+                        bdParam <- if(isValid(bounds[1])) 'lower_' else 'upper_'
+                        bdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, bdParam))
+                        if(length(all.vars(bdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant ', bdName, ' bound.  HMC sampler does not yet handle that, please contant the NIMBLE development team.', call. = FALSE)
+                    }
+                    logTransformNodes <- c(logTransformNodes, node)
+                    transformNodeNums <- c(transformNodeNums, i)
+                    newRow <- numeric(maxInd)
+                    newRow[IND_ID]  <- 2
+                    newRow[IND_LB]  <- if(isValid(bounds[1])) bounds[1] else bounds[2]
+                    newRow[IND_RNG] <- if(isValid(bounds[1])) 1 else -1
+                    transformInfo <- rbind(transformInfo, newRow)
+                } else if(isValid(bounds[1]) && isValid(bounds[2])) {    ## 3 = logit: support = (a, b)
+                    if(dist == 'dunif' || model$isTruncated(node)) {     ## uniform distribution, or a truncated node
+                        if(dist == 'dunif')         { lParam <- 'min';    uParam <- 'max'    }
+                        if(model$isTruncated(node)) { lParam <- 'lower_'; uParam <- 'upper_' }
+                        lowerBdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, lParam))
+                        upperBdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, uParam))
+                        if(length(all.vars(lowerBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant lower bound.  HMC sampler does not yet handle that, please contant the NIMBLE development team.', call. = FALSE)
+                        if(length(all.vars(upperBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant upper bound.  HMC sampler does not yet handle that, please contant the NIMBLE development team.', call. = FALSE)
+                    } else {   ## some other distribution with finite support
+                        message('HMC sampler is not familiar with the ', dist, ' distribution of node ', node, '.')
+                        message('We\'re going to use a logit-transformation for sampling this node, but')
+                        message('this requires the upper and lower bounds of the ', dist, ' distribution are *constant*.')
+                        message('If you\'re uncertain about this, please get in touch with the NIMBLE development team.')
+                    }
+                    logitTransformNodes <- c(logitTransformNodes, node)
+                    range <- bounds[2] - bounds[1]
+                    if(range <= 0) stop(paste0('HMC sampler doesn\'t have a transformation for the bounds of node: ', node), call. = FALSE)
+                    transformNodeNums <- c(transformNodeNums, i)
+                    newRow <- numeric(maxInd)
+                    newRow[IND_ID]   <- 3
+                    newRow[IND_LB]   <- bounds[1]
+                    newRow[IND_RNG]  <- range
+                    newRow[IND_LRNG] <- log(range)
+                    transformInfo <- rbind(transformInfo, newRow)
+                } else stop(paste0('HMC sampler doesn\'t have a transformation for the bounds of node: ', node, ', which are (', bounds[1], ', ', bounds[2], ')'), call. = FALSE)
+            } else {                            ## multivariate node
+                if(!(node %in% originalTargetAsScalars)) stop(paste0('HMC sampler only operates on complete multivariate nodes. Must specify full node: ', model$expandNodeNames(node), ', or none of it'), call. = FALSE)
+                if(dist %in% c('dmnorm', 'dmvt')) {                      ## dmnorm: identity
+                    message('HMC sampler is waiting for derivatives of dmnorm() to be implemented.')  ## waiting for dmnorm() derivatives
+                    message('otherwise, HMC sampler already works on dmnorm nodes.')                  ## waiting for dmnorm() derivatives
+                    stop()                                                                            ## waiting for dmnorm() derivatives
+                    ## NOTE: no transformation should be necessary for dmnorm and dmvt nodes (??)
+                } else if(dist %in% c('dwish', 'dinvwish')) {            ## wishart: log-cholesky
+                    message('HMC sampler is waiting for derivatives of dwish() to be implemented.')   ## waiting for dwish() derivatives
+                    stop()                                                                            ## waiting for dwish() derivatives
+                    ##transformInfo[xxx, IND_ID] <- 5
+                    ## NOTE: not sure what transformation ID for this (??)  5?
+                    ## NOTE: implementing for dwish() and dinvwish() will require a slightly deeper re-design
+                    ## d <- d + sqrt(len) * (sqrt(len)+1) / 2
+                    ## dmodel <- dmodel + len
+                } else stop(paste0('HMC sampler yet doesn\'t handle \'', dist, '\' distributions.'), call. = FALSE)   ## Dirichlet ?
+            }
+        }
+        if(messages && length(logTransformNodes)   > 0) message('HMC sampler is using a log-transformation for: ',   paste0(logTransformNodes,   collapse = ', '))
+        if(messages && length(logitTransformNodes) > 0) message('HMC sampler is using a logit-transformation for: ', paste0(logitTransformNodes, collapse = ', '))
         ## numeric value generation
-        d <- length(targetAsScalar)
-        timesRan <- 0
-        epsilon <- 0
-        mu <- 0
-        logEpsilonBar <- 0
-        Hbar <- 0
+        timesRan <- 0;   epsilon <- 0;   mu <- 0;   logEpsilonBar <- 0;   Hbar <- 0
+        q <- numeric(d2);   qL <- numeric(d2);   qR <- numeric(d2);   qDiff <- numeric(d2);   qNew <- numeric(d2)
+        p <- numeric(d2);   pL <- numeric(d2);   pR <- numeric(d2);   p2 <- numeric(d2);      p3 <- numeric(d2)
+        grad <- numeric(d2);   gradFirst <- numeric(d2);   gradSaveL <- numeric(d2);   gradSaveR <- numeric(d2)
+        log2 <- log(2)
+        warningsOrig <- warnings
+        nwarmupOrig <- nwarmup
+        numDivergences <- 0
+        numTimesMaxTreeDepth <- 0
         ## nested function and function list definitions
-        qpNLDef <- nimbleList(q = double(1), p = double(1))
+        qpNLDef <- nimbleList(q  = double(1), p  = double(1))
         btNLDef <- nimbleList(q1 = double(1), p1 = double(1), q2 = double(1), p2 = double(1), q3 = double(1), n = double(), s = double(), a = double(), na = double())
         ## checks
-        if(!nimbleOptions('experimentalEnableDerivs')) stop('must enable NIMBLE derivates, set nimbleOptions(experimentalEnableDerivs = TRUE)')
-        if(any(model$isDiscrete(targetAsScalar)))      stop(paste0('HMC sampler can only operate on continuous-valued nodes:', paste0(targetAsScalar[model$isDiscrete(targetAsScalar)], collapse=', ')))
+        if(!nimbleOptions('experimentalEnableDerivs')) stop('must enable NIMBLE derivates, use: nimbleOptions(experimentalEnableDerivs = TRUE)', call. = FALSE)
+        if(initialEpsilon < 0) stop('HMC sampler initialEpsilon must be positive', call. = FALSE)
     },
     run = function() {
-        ## implements No-U-Turm Sampler with Dual Averaging, as in Hoffman and Gelman (2014), Algorithm 6
-        if(timesRan == 0)    initializeEpsilon()
+        ## No-U-Turm Sampler with Dual Averaging, Algorithm 6 from Hoffman and Gelman (2014)
+        if(timesRan == 0) {
+            if(nwarmup == -1) stop('nwarmup was not set correctly')
+            if(initialEpsilon == 0) { initializeEpsilon()                 ## no initialEpsilon value was provided
+                                  } else { epsilon <<- initialEpsilon }   ## user provided initialEpsilon
+            mu <<- log(10*epsilon)
+        }
         timesRan <<- timesRan + 1
-        q <- values(model, target)
-        p <- numeric(d)
-        for(i in 1:d)     p[i] <- rnorm(1, 0, 1)
-        logu <- logH(q, p) - rexp(1, 1)    ## logu <- lp - rexp(1, 1), generate (log)-auxiliary variable: exp(logu) ~ uniform(0, exp(lp))
-        qL <- q;   qR <- q;   pL <- p;   pR <- p
-        j <- 0;     n <- 1;     s <- 1
-        qNew <- q
+        if(printTimesRan) print('============ times ran = ', timesRan)
+        if(printEpsilon)  print('epsilon = ', epsilon)
+        transformValues()              ## sets value of member data 'q'
+        for(i in 1:d)     p[i] <<- rnorm(1, 0, 1)
+        qpLogH <- logH(q, p)
+        logu <- qpLogH - rexp(1, 1)    ## logu <- lp - rexp(1, 1) => exp(logu) ~ uniform(0, exp(lp))
+        qL <<- q;   qR <<- q;   pL <<- p;   pR <<- p;   j  <- 0;   n <- 1;   s <- 1;   qNew <<- q
         while(s == 1) {
             v <- 2*rbinom(1, 1, 0.5) - 1    ## -1 or 1
-            if(v == -1) {
-                btNL <- buildtree(qL, pL, logu, v, j, epsilon, q, p)
-                qL <- btNL$q1
-                pL <- btNL$p1
-            } else {
-                btNL <- buildtree(qR, pR, logu, v, j, epsilon, q, p)
-                qR <- btNL$q2
-                pR <- btNL$p2
-            }
-            if(btNL$s == 1)
-                if(runif(1) < btNL$n / n)
-                    qNew <- btNL$q3
+            if(v == -1) { btNL <- buildtree(qL, pL, logu, v, j, epsilon, qpLogH, 1)        ## first call: first = 1
+                          qL <<- btNL$q1;   pL <<- btNL$p1
+                      } else { btNL <- buildtree(qR, pR, logu, v, j, epsilon, qpLogH, 1)   ## first call: first = 1
+                               qR <<- btNL$q2;   pR <<- btNL$p2 }
+            if(btNL$s == 1)   if(runif(1) < btNL$n / n)   qNew <<- btNL$q3
             n <- n + btNL$n
-            qDiff <- qR - qL
-            s <- btNL$s * step(inprod(qDiff, pL)) * step(inprod(qDiff, pR))
+            qDiff <<- qR - qL
+            ##s <- btNL$s * nimStep(inprod(qDiff, pL)) * nimStep(inprod(qDiff, pR))                      ## this line replaced with the next,
+            if(btNL$s == 0) s <- 0 else s <- nimStep(inprod(qDiff, pL)) * nimStep(inprod(qDiff, pR))     ## which acccounts for NaN's in btNL elements
+            if(j >= maxTreeDepth) s <- 0
+            if(printJ) {   if(j == 0) cat('j = ', j) else cat(', ', j)
+                           cat('(');   if(v==1) cat('R') else cat('L');   cat(')')
+                           if(s != 1) print(' ')   }
+            if(j >= maxTreeDepth) { numTimesMaxTreeDepth <<- numTimesMaxTreeDepth + 1 }
+            ##                      if(warnings > 0) { print('HMC sampler encountered maximum search tree depth of ', maxTreeDepth);
+            ##                                         warnings <<- warnings - 1 } }
             j <- j + 1
+            checkInterrupt()
         }
-        values(model, target) <<- qNew
+        values(model, targetNodes) <<- inverseTransformValues(qNew)
         model$calculate(calcNodes)
         nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-        if(timesRan <= maxAdaptIter) {
-            Hbar <<- (1 - 1/(timesRan+10)) * Hbar + 1/(timesRan+10) * (0.65 - btNL$a/btNL$na)
-            logEpsilon <- mu - sqrt(timesRan)/0.05 * Hbar
+        if(timesRan <= nwarmup) {
+            Hbar <<- (1 - 1/(timesRan+t0)) * Hbar + 1/(timesRan+t0) * (delta - btNL$a/btNL$na)
+            logEpsilon <- mu - sqrt(timesRan)/gamma * Hbar
             epsilon <<- exp(logEpsilon)
-            logEpsilonBar <<- timesRan^(-0.75) * logEpsilon + (1 - timesRan^(-0.75)) * logEpsilonBar
-            if(timesRan == maxAdaptIter)   epsilon <<- exp(logEpsilonBar)
+            timesRanToNegativeKappa <- timesRan^(-kappa)
+            logEpsilonBar <<- timesRanToNegativeKappa * logEpsilon + (1 - timesRanToNegativeKappa) * logEpsilonBar
+            if(timesRan == nwarmup)   epsilon <<- exp(logEpsilonBar)
         }
+        if(warnings > 0) if(is.nan(epsilon)) { print('HMC sampler value of epsilon is NaN, with timesRan = ', timesRan); warnings <<- warnings - 1 }
     },
     methods = list(
-        logH = function(q = double(1), p = double(1)) {
-            values(model, target) <<- q
-            lp <- model$calculate(calcNodes) - sum(p^2)/2
-            returnType(double())
-            return(lp)
+        transformValues = function() {
+            q <<- values(model, targetNodes)
+            if(length(transformNodeNums) > 2) {
+                for(i in 3:length(transformNodeNums)) {
+                    nn <- transformNodeNums[i]
+                    id <- transformInfo[i, IND_ID]                ## 1 = identity, 2 = log, 3 = logit
+                    if(id == 2) q[nn] <<- log(   (q[nn] - transformInfo[i, IND_LB]) / transformInfo[i, IND_RNG] )
+                    if(id == 3) q[nn] <<- logit( (q[nn] - transformInfo[i, IND_LB]) / transformInfo[i, IND_RNG] )
+                }
+            }
         },
-        gradient = function(q = double(1)) {
-            values(model, target) <<- q
-            derivsOutput <- derivs(model$calculate(calcNodes), order = 1, wrt = target)
-            grad <- numeric(d)
-            grad[1:d] <- derivsOutput$gradient[1, 1:d]   ## preserve 1D vector object
-            returnType(double(1))
-            return(grad)
+        inverseTransformValues = function(qArg = double(1)) {
+            transformed <- qArg
+            if(length(transformNodeNums) > 2) {
+                for(i in 3:length(transformNodeNums)) {
+                    nn <- transformNodeNums[i]
+                    id <- transformInfo[i, IND_ID]                ## 1 = identity, 2 = log, 3 = logit
+                    x <- qArg[nn]
+                    if(id == 2) transformed[nn] <- transformInfo[i, IND_LB] + transformInfo[i, IND_RNG]*  exp(x)
+                    if(id == 3) transformed[nn] <- transformInfo[i, IND_LB] + transformInfo[i, IND_RNG]*expit(x)
+                }
+            }
+            returnType(double(1));   return(transformed)
         },
-        leapfrog = function(q = double(1), p = double(1), eps = double()) {
-            p <- p + eps/2 * gradient(q)
-            q <- q + eps   * p
-            p <- p + eps/2 * gradient(q)
-            returnType(qpNLDef())
-            return(qpNLDef$new(q = q, p = p))
+        logH = function(qArg = double(1), pArg = double(1)) {
+            values(model, targetNodes) <<- inverseTransformValues(qArg)
+            lp <- model$calculate(calcNodes) - sum(pArg^2)/2
+            if(length(transformNodeNums) > 2) {
+                for(i in 3:length(transformNodeNums)) {
+                    nn <- transformNodeNums[i]
+                    id <- transformInfo[i, IND_ID]                ## 1 = identity, 2 = log, 3 = logit
+                    x <- qArg[nn]
+                    if(id == 2) lp <- lp + x
+                    if(id == 3) lp <- lp + transformInfo[i, IND_LRNG] - log(exp(x)+exp(-x)+2)   ## alternate: -2*log(1+exp(-x))-x
+                }
+            }
+            returnType(double());   return(lp)
+        },
+        gradient = function(qArg = double(1)) {
+            values(model, targetNodes) <<- inverseTransformValues(qArg)
+            if(printGradient) { gradQ <- array(0, c(1,d)); gradQ[1,1:d] <- values(model, targetNodes); print(gradQ) }
+            derivsOutput <- derivs(model$calculate(calcNodes), order = 1, wrt = targetNodes)
+            grad <<- derivsOutput$jacobian[1, 1:d]
+            if(length(transformNodeNums) > 2) {
+                for(i in 3:length(transformNodeNums)) {
+                    nn <- transformNodeNums[i]
+                    id <- transformInfo[i, IND_ID]                ## 1 = identity, 2 = log, 3 = logit
+                    x <- qArg[nn]
+                    if(id == 2) grad[nn] <<- grad[nn]*exp(x) + 1
+                    if(id == 3) grad[nn] <<- grad[nn]*transformInfo[i, IND_RNG]*expit(x)^2*exp(-x) + 2/(1+exp(x)) - 1
+                }
+            }
+        },
+        leapfrog = function(qArg = double(1), pArg = double(1), eps = double(), first = double(), v = double()) {
+            ## Algorithm 1 from Hoffman and Gelman (2014)
+            if(first == 1) { gradient(qArg)     ## member data 'grad' is set in gradient() method
+                         } else { if(v ==  1) grad <<- gradSaveR
+                                  if(v == -1) grad <<- gradSaveL
+                                  if(v ==  2) grad <<- gradSaveL }
+            p2 <<- pArg + eps/2 * grad
+            q2 <-  qArg + eps   * p2
+            gradFirst <<- grad
+            gradient(q2)                        ## member data 'grad' is set in gradient() method
+            p3 <<- p2   + eps/2 * grad
+            if(first == 1) { if(v ==  1) { gradSaveL <<- gradFirst;   gradSaveR <<- grad }
+                             if(v == -1) { gradSaveR <<- gradFirst;   gradSaveL <<- grad }
+                             if(v ==  2) { gradSaveL <<- gradFirst                       }
+                         } else { if(v ==  1) gradSaveR <<- grad
+                                  if(v == -1) gradSaveL <<- grad }
+            if(warnings > 0) if(is.nan.vec(c(q2, p3))) { print('HMC sampler encountered a NaN value in leapfrog routine, with timesRan = ', timesRan); warnings <<- warnings - 1 }
+            returnType(qpNLDef());   return(qpNLDef$new(q = q2, p = p3))
         },
         initializeEpsilon = function() {
             ## Algorithm 4 from Hoffman and Gelman (2014)
-            q <- values(model, target)
-            p <- numeric(d)
-            for(i in 1:d)     p[i] <- rnorm(1, 0, 1)
+            savedCalcNodeValues <- values(model, calcNodes)
+            transformValues()                   ## sets value of member data 'q'
+            p <<- numeric(d)                    ## keep, sets 'p' to size d on first iteration
+            for(i in 1:d)     p[i] <<- rnorm(1, 0, 1)
             epsilon <<- 1
-            qpNL <- leapfrog(q, p, epsilon)
-            a <- 2*step(exp(logH(qpNL$q, qpNL$p) - logH(q, p)) - 0.5) - 1
-            while((exp(logH(qpNL$q, qpNL$p) - logH(q, p)))^a > 2^(-a)) {
+            qpNL <- leapfrog(q, p, epsilon, 1, 2)            ## v = 2 is a special case for initializeEpsilon routine
+            while(is.nan.vec(qpNL$q) | is.nan.vec(qpNL$p)) {              ## my addition
+                if(warnings > 0) { print('HMC sampler encountered NaN while initializing step-size; recommend better initial values')
+                                   print('reducing initial step-size'); warnings <<- warnings - 1 }
+                epsilon <<- epsilon / 1000                                ## my addition
+                qpNL <- leapfrog(q, p, epsilon, 0, 2)                     ## my addition
+            }                                                             ## my addition
+            qpLogH <- logH(q, p)
+            a <- 2*nimStep(exp(logH(qpNL$q, qpNL$p) - qpLogH) - 0.5) - 1
+            if(is.nan(a)) if(warnings > 0) { print('HMC sampler caught acceptance prob = NaN in initializeEpsilon routine'); warnings <<- warnings - 1 }
+            ## while(a * (logH(qpNL$q, qpNL$p) - qpLogH) > -a * log2) {   ## replaced by simplified expression:
+            while(a * (logH(qpNL$q, qpNL$p) - qpLogH + log2) > 0) {
                 epsilon <<- epsilon * 2^a
-                qpNL <- leapfrog(q, p, epsilon)
+                qpNL <- leapfrog(q, p, epsilon, 0, 2)        ## v = 2 is a special case for initializeEpsilon routine
             }
-            mu <<- log(10*epsilon)     ## mu gets set with epsilon
+            values(model, calcNodes) <<- savedCalcNodeValues
         },
-        buildtree = function(q = double(1), p = double(1), logu = double(), v = double(), j = double(), eps = double(), q0 = double(1), p0 = double(1)) {
+        buildtree = function(qArg = double(1), pArg = double(1), logu = double(), v = double(), j = double(), eps = double(), logH0 = double(), first = double()) {
+            ## Algorithm 6 (second half) from Hoffman and Gelman (2014)
             returnType(btNLDef())
             if(j == 0) {    ## one leapfrog step in the direction of v
-                qpNL <- leapfrog(q, p, v*eps)
-                q <- qpNL$q
-                p <- qpNL$p
-                n <- step(logH(q, p) - logu)          ## step(x) = 1 iff x >= 0, and zero otherwise
-                s <- step(logH(q, p) - logu + 1000)   ## use delta_max = 1000
-                a <- min(1, exp(logH(q, p) - logH(q0, p0)))
+                qpNL <- leapfrog(qArg, pArg, v*eps, first, v)
+                q <<- qpNL$q;   p <<- qpNL$p;   qpLogH <- logH(q, p)
+                n <- nimStep(qpLogH - logu)          ## step(x) = 1 iff x >= 0, and zero otherwise
+                s <- nimStep(qpLogH - logu + deltaMax)
+                ## lowering the initial step size, and increasing the target acceptance rate may keep the step size small to avoid divergent paths.
+                if(s == 0) { numDivergences <<- numDivergences + 1 }
+                ##           if(warnings > 0) { print('HMC sampler encountered a divergent path on iteration ', timesRan, ', with divergence = ', logu - qpLogH)
+                ##                              warnings <<- warnings - 1 } }
+                a <- min(1, exp(qpLogH - logH0))
+                if(is.nan.vec(q) | is.nan.vec(p)) { n <- 0; s <- 0; a <- 0 }     ## my addition
                 return(btNLDef$new(q1 = q, p1 = p, q2 = q, p2 = p, q3 = q, n = n, s = s, a = a, na = 1))
             } else {        ## recursively build left and right subtrees
-                btNL1 <- buildtree(q, p, logu, v, j-1, eps, q0, p0)
+                btNL1 <- buildtree(qArg, pArg, logu, v, j-1, eps, logH0, 0)
                 if(btNL1$s == 1) {
-                    if(v == -1) {
-                        btNL2 <- buildtree(btNL1$q1, btNL1$p1, logu, v, j-1, eps, q0, p0)
-                        btNL1$q1 <- btNL2$q1
-                        btNL1$p1 <- btNL2$p1
-                    } else {
-                        btNL2 <- buildtree(btNL1$q2, btNL1$p2, logu, v, j-1, eps, q0, p0)
-                        btNL1$q2 <- btNL2$q2
-                        btNL1$p2 <- btNL2$p2
-                    }
-                    if(btNL1$n + btNL2$n == 0) print('******* divide by 0 case came up! need to look into that ******')   ## XXXXXXXXXXXXXXXXXXXXXXXXXXX
-                    if(runif(1) < btNL2$n / (btNL1$n + btNL2$n))   btNL1$q3 <- btNL2$q3
-                    btNL1$n <- btNL1$n + btNL2$n
-                    qDiff <- btNL1$q2-btNL1$q1
-                    btNL1$s <- btNL2$s * step(inprod(qDiff, btNL1$p1)) * step(inprod(qDiff, btNL1$p2))
-                    btNL1$a <- btNL1$a + btNL2$a
+                    if(v == -1) { btNL2 <- buildtree(btNL1$q1, btNL1$p1, logu, v, j-1, eps, logH0, 0)   ## recursive calls: first = 0
+                                  btNL1$q1 <- btNL2$q1;   btNL1$p1 <- btNL2$p1
+                              } else {
+                                  btNL2 <- buildtree(btNL1$q2, btNL1$p2, logu, v, j-1, eps, logH0, 0)   ## recursive calls: first = 0
+                                  btNL1$q2 <- btNL2$q2;   btNL1$p2 <- btNL2$p2 }
+                    nSum <- btNL1$n + btNL2$n
+                    if(nSum > 0)   if(runif(1) < btNL2$n / nSum)   btNL1$q3 <- btNL2$q3
+                    qDiff <<- btNL1$q2-btNL1$q1
+                    btNL1$a  <- btNL1$a  + btNL2$a
                     btNL1$na <- btNL1$na + btNL2$na
+                    btNL1$s  <- btNL2$s * nimStep(inprod(qDiff, btNL1$p1)) * nimStep(inprod(qDiff, btNL1$p2))
+                    btNL1$n  <- nSum
                 }
                 return(btNL1)
             }
         },
+        getNwarmup              = function() { returnType(double());   return(nwarmup)              },
+        getMaxTreeDepth         = function() { returnType(double());   return(maxTreeDepth)         },
+        getNumDivergences       = function() { returnType(double());   return(numDivergences)       },
+        getNumTimesMaxTreeDepth = function() { returnType(double());   return(numTimesMaxTreeDepth) },
+        setNwarmup              = function(x = double()) { nwarmup <<- x },
         reset = function() {
-            timesRan      <<- 0
-            epsilon       <<- 0
-            mu            <<- 0
-            logEpsilonBar <<- 0
-            Hbar          <<- 0
+            timesRan       <<- 0
+            epsilon        <<- 0
+            mu             <<- 0
+            logEpsilonBar  <<- 0
+            Hbar           <<- 0
+            numDivergences <<- 0
+            numTimesMaxTreeDepth <<- 0
+            warnings       <<- warningsOrig
+            nwarmup        <<- nwarmupOrig
         }
     ), where = getLoadingNamespace()
 )
+
 
 
 
@@ -2395,22 +2588,31 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' @section langevin sampler:
 #'
-#' The langevin sampler implements a special case of Hamiltonian Monte Carlo (HMC) sampling where only a single leapfrog step is taken on each sampling iteration, and the leapfrog stepsize is adapted to match the scale of the posterior distribution (independently for each dimension being sampled).  The single leapfrog step is done by introducing auxiliary momentum variables, and using first-order derivatives to simulate Hamiltonian dynamics on this augmented paramter space (Neal, 2011).  Langevin sampling can operate on one or more continuous-valued posterior dimensions.  This sampling technique is also known as Langevin Monte Carlo (LMC), and the Metropolis-Adjusted Langevin Algorithm (MALA).
+#' The langevin sampler implements a special case of Hamiltonian Monte Carlo (HMC) sampling where only a single leapfrog step is taken on each sampling iteration, and the leapfrog step-size is adapted to match the scale of the posterior distribution (independently for each dimension being sampled).  The single leapfrog step is done by introducing auxiliary momentum variables, and using first-order derivatives to simulate Hamiltonian dynamics on this augmented paramter space (Neal, 2011).  Langevin sampling can operate on one or more continuous-valued posterior dimensions.  This sampling technique is also known as Langevin Monte Carlo (LMC), and the Metropolis-Adjusted Langevin Algorithm (MALA).
 #
 #' The langevin sampler accepts the following control list elements:
 #' \itemize{
-#' \item scale. An optional multiplier, to scale the stepsize of the leapfrog steps. If adaptation is turned off, this uniquely determines the leapfrog stepsize (default = 1)
-#' \item adaptive. A logical argument, specifying whether the sampler will adapt the leapfrog stepsize (scale) throughout the course of MCMC execution. The scale is adapted independently for each dimension being sampled. (default = TRUE)
+#' \item scale. An optional multiplier, to scale the step-size of the leapfrog steps. If adaptation is turned off, this uniquely determines the leapfrog step-size (default = 1)
+#' \item adaptive. A logical argument, specifying whether the sampler will adapt the leapfrog step-size (scale) throughout the course of MCMC execution. The scale is adapted independently for each dimension being sampled. (default = TRUE)
 #' \item adaptInterval. The interval on which to perform adaptation. (default = 200)
 #' }
 #'
 #' @section HMC sampler:
 #'
-#' The Hamiltonian Monte Carlo sampler implements the No-U-Turn algorithm (NUTS; Hoffman and Gelman, 2014) for performing joint updates of multiple continuous-valued posterior dimensions.  This is done by introducing auxiliary momentum variables, and using first-order derivatives to simulate Hamiltonian dynamics on this augmented paramter space.  In contrast to standard HMC (Neal, 2011), the NUTS algorithm removes the tuning parameters of the leapfrog step size and the number of leapfrog steps, thus providing a sampling algorithm that can be used without hand tuning or trial runs.
+#' The Hamiltonian Monte Carlo sampler implements the No-U-Turn algorithm (NUTS; Hoffman and Gelman, 2014) for performing joint updates of multiple continuous-valued posterior dimensions.  This is done by introducing auxiliary momentum variables, and using first-order derivatives to simulate Hamiltonian dynamics on this augmented paramter space.  Internally, any posterior dimensions with bounded support are transformed, so sampling takes place on an unconstrained space.  In contrast to standard HMC (Neal, 2011), the NUTS algorithm removes the tuning parameters of the leapfrog step size and the number of leapfrog steps, thus providing a sampling algorithm that can be used without hand tuning or trial runs.
 #
 #' The HMC sampler accepts the following control list elements:
 #' \itemize{
-#' \item maxAdaptIter.  The number of sampling iterations to adapt the leapfrog stepsize. (default = 1000)
+#' \item messages.  A logical argument, specifying whether to print informative messages (default = TRUE)
+#' \item warnings.  A numeric argument, specifying how many warnings messages to emit (for example, when NaN values are encountered). (default = 5)
+#' \item gamma.  A positive numeric argument, specifying the degree of shrinkage used during the initial period of step-size adaptation. (default = 0.05)
+#' \item initialEpsilon.  A positive numeric argument, specifying the initial step-size value. If not provided, an appropriate initial value is selected.
+#' \item t0.  A non-negative numeric argument, where larger values stabilize (attenuate) the initial period of step-size adaptation. (default = 10)
+#' \item kappa.  A numeric argument between zero and one, where smaller values give a higher weighting to more recent iterations during the initial period of step-size adaptation. (default = 0.75)
+#' \item delta.  A numeric argument, specifying the target acceptance probability used during the initial period of step-size adaptation. (default = 0.65)
+#' \item deltaMax.  A positive numeric argument, specifying the maximum allowable divergence from the Hamiltonian value. Paths which exceed this value are considered divergent, and will not proceed further. (default = 1000)
+#' \item nwarmup.  The number of sampling iterations to adapt the leapfrog step-size.  This defaults to half the number of MCMC iterations, up to a maximum of 1000.
+#' \item maxTreeDepth.  The maximum allowable depth of the binary leapfrog search tree for generating candidate transitions. (default = 10)
 #' }
 #'
 #' @section crossLevel sampler:

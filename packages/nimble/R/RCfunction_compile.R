@@ -143,7 +143,6 @@ RCvirtualFunProcessing <- setRefClass(
     )
 )
 
-
 RCfunction <- function(f, name = NA, returnCallable = TRUE, check, enableDerivs = FALSE, where = NULL) {
     if(is.na(name))
         name <- rcFunLabelMaker(envName = environmentName(where))
