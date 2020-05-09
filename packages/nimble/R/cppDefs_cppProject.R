@@ -282,8 +282,8 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        }
 
                                        if(isTRUE(nimbleOptions('forceO1'))) { ## replace -On flags with -O1 to reduce compiler time due to higher optimization levels 
-                                           ## If force01 is TRUE and we did not already strip out -c flags, do so now
-                                           stop("Option 'force01' has been disabled.")
+                                           ## If forceO1 is TRUE and we did not already strip out -c flags, do so now
+                                           stop("Option 'forceO1' has been disabled.")
                                            if(!isTRUE(nimbleOptions('stopCompilationBeforeLinking'))) {
                                                dryRunCmd <- paste0(SHLIBcmd, " -n")
                                                dryRunResult <- system(dryRunCmd, intern = TRUE)
