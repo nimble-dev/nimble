@@ -334,7 +334,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
       # note that split lines that are parseable are dealt with by parse()
   }
 
-  if(! class(model) == "{")
+  if(!inherits(model, "{"))
     stop("readBUGSmodel: cannot process 'model' input.")
 
   # process initial values

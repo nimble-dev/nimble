@@ -188,7 +188,7 @@ runMCMC <- function(mcmc,
 #'
 #' The entry point for this function is providing the \code{code}, \code{constants}, \code{data} and \code{inits} arguments, to create a new NIMBLE model object, or alternatively providing an exisiting NIMBLE model object as the \code{model} argument.
 #'
-#' @param code The quoted code expression representing the model, such as the return value from a call to \code{nimbleCode}).  No default value, this is a required argument.
+#' @param code The quoted code expression representing the model, such as the return value from a call to \code{nimbleCode}). Not required if \code{model} is provided.  
 #' 
 #' @param constants Named list of constants in the model.  Constants cannot be subsequently modified. For compatibility with JAGS and BUGS, one can include data values with constants and \code{nimbleModel} will automatically distinguish them based on what appears on the left-hand side of expressions in \code{code}.
 #' 

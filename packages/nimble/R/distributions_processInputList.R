@@ -737,7 +737,7 @@ BUGSdistToRdist <- function(BUGSdists, dIncluded = FALSE) {
 #' @export
 isDiscrete <- function(dist) {
     if(is.na(dist)) return(NA)
-    if(length(dist) > 1 || class(dist) != 'character')
+    if(length(dist) > 1 || !inherits(dist, 'character'))
         stop("isDiscrete: 'dist' should be a character vector of length 1")
     return(getDistributionInfo(dist)$discrete)
 }
@@ -746,7 +746,7 @@ isDiscrete <- function(dist) {
 #' @export 
 isUserDefined <- function(dist) {
     if(is.na(dist)) return(dist)
-    if(length(dist) > 1 || class(dist) != 'character')
+    if(length(dist) > 1 || !inherits(dist, 'character'))
         stop("isUserDistribution: 'dist' should be a character vector of length 1")
     if(exists('distributions', nimbleUserNamespace, inherits = FALSE) &&
        dist %in% getAllDistributionsInfo('namesVector', userOnly = TRUE))
@@ -757,7 +757,7 @@ isUserDefined <- function(dist) {
 #' @export
 pqDefined <- function(dist) {
     if(is.na(dist)) return(NA)
-    if(length(dist) > 1 || class(dist) != 'character')
+    if(length(dist) > 1 || !inherits(dist, 'character'))
         stop("pqDefined: 'dist' should be a character vector of length 1")
    return(getDistributionInfo(dist)$pqAvail)
 } 
@@ -766,7 +766,7 @@ pqDefined <- function(dist) {
 ## to avoid "same size check" for distribution parameters
 isMixedSizes <- function(dist) {
     if(is.na(dist)) return(NA)
-    if(length(dist) > 1 || class(dist) != 'character')
+    if(length(dist) > 1 || !inherits(dist, 'character'))
         stop("isMixedSizes: 'dist' should be a character vector of length 1")
    return(getDistributionInfo(dist)$mixedSizes)
 }
@@ -775,7 +775,7 @@ isMixedSizes <- function(dist) {
 getDimension <- function(dist, params = NULL, valueOnly = is.null(params) &&
                          !includeParams, includeParams = !is.null(params)) {
     if(length(dist) == 1 && is.na(dist)) return(NA)  # in case of passing a determ node
-    if(length(dist) > 1 || class(dist) != 'character')
+    if(length(dist) > 1 || !inherits(dist, 'character'))
       stop("getDimension: 'dist' should be a character vector of length 1")
   distInfo <- getDistributionInfo(dist)
   
@@ -803,7 +803,7 @@ getDimension <- function(dist, params = NULL, valueOnly = is.null(params) &&
 getParamID <- function(dist, params = NULL, valueOnly = is.null(params) &&
                        !includeParams, includeParams = !is.null(params)) {
     if(length(dist) == 1 && is.na(dist)) return(NA)
-    if(length(dist) > 1 || class(dist) != 'character')
+    if(length(dist) > 1 || !inherits(dist, 'character'))
     stop("getType: 'dist' should be a character vector of length 1")
   distInfo <- getDistributionInfo(dist)
   
@@ -833,7 +833,7 @@ getParamID <- function(dist, params = NULL, valueOnly = is.null(params) &&
 getType <- function(dist, params = NULL, valueOnly = is.null(params) &&
                        !includeParams, includeParams = !is.null(params)) {
     if(length(dist) == 1 && is.na(dist)) return(NA)
-    if(length(dist) > 1 || class(dist) != 'character')
+    if(length(dist) > 1 || !inherits(dist, 'character'))
         stop("getType: 'dist' should be a character vector of length 1")
     distInfo <- getDistributionInfo(dist)
     
@@ -864,7 +864,7 @@ getType <- function(dist, params = NULL, valueOnly = is.null(params) &&
 #' @export
 getParamNames <- function(dist, includeValue = TRUE) {
     if(length(dist) == 1 && is.na(dist)) return(NA)
-    if(length(dist) > 1 || class(dist) != 'character')
+    if(length(dist) > 1 || !inherits(dist, 'character'))
         stop("getParamNames: 'dist' should be a character vector of length 1")
     distInfo <- getDistributionInfo(dist)
     names <- names(distInfo$paramIDs)

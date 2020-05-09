@@ -1440,7 +1440,7 @@ matchKeywordCode <- function(code, nfProc){
         modCallName <- callName
         if(nfProc$setupSymTab$symbolExists(modCallName)) {
             symObj <- nfProc$setupSymTab$getSymbolObject(modCallName)
-            if(class(symObj) == "symbolMemberFunction") {
+            if(inherits(symObj, "symbolMemberFunction")) {
                 thisRCfunProc <- nfProc$RCfunProcs[[modCallName]]
                 if(is.null(thisRCfunProc)) stop(paste0("Cannot handle this expression (looks like a member function but something is wrong): ", deparse(code)), call. = FALSE)
                 thisFunctionMatch <- thisRCfunProc$RCfun$template
