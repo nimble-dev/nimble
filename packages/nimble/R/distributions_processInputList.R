@@ -373,7 +373,7 @@ prepareDistributionInput <- function(dist) {
     if(length(typeInfo))
         rtypes <- c(rtypes, paste0(names(typeInfo), ' = ', sapply(typeInfo, deparse)))
     if(!identical(out$types[-1], rtypes))
-        stop(paste0("prepareDistributionInfo: types/dimensions of parameters are not the same in the density and simulation functions for ", dist, "."))
+        stop(paste0("prepareDistributionInfo: types/dimensions of parameters are not the same in density and simulation functions: '", dist, "' and '", simulateName, "'."))
 
     # check for p and q functions
     cdfName <- sub('^d', 'p', dist)
@@ -388,7 +388,7 @@ prepareDistributionInput <- function(dist) {
         if(length(typeInfo))
             ptypes <- c(ptypes, paste0(names(typeInfo), ' = ', sapply(typeInfo, deparse)))
         if(!identical(out$types[-1], ptypes))
-            stop(paste0("prepareDistributionInfo: types/dimensions of parameters are not the same in the density and distribution functions for ", dist, "."))
+            stop(paste0("prepareDistributionInfo: types/dimensions of parameters are not the same in the density and distribution functions: '", dist, "' and '", cdfName, "'."))
   
         typeInfo <- get('nfMethodRCobject', environment(eval(as.name(quantileName))))$argInfo
         typeInfo <- typeInfo[!names(typeInfo) %in% c('p', 'log.p', 'lower.tail')]
@@ -396,7 +396,7 @@ prepareDistributionInput <- function(dist) {
         if(length(typeInfo))
             qtypes <- c(qtypes, paste0(names(typeInfo), ' = ', sapply(typeInfo, deparse)))
         if(!identical(out$types[-1], qtypes))
-            stop(paste0("prepareDistributionInfo: types/dimensions of parameters are not the same in the density and quantile functions for ", dist, "."))
+            stop(paste0("prepareDistributionInfo: types/dimensions of parameters are not the same in the density and quantile functions: '", dist, "' and '", quantileName, "'."))
     }
     return(out)
 }
