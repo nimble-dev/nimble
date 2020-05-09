@@ -733,6 +733,21 @@ test_that("warning when RHS only nodes used as dynamic indexes", {
     ## if this were to warn, it would cause error
     m <- nimbleModel(code, constants = list(k = rep(1,3)))
     options(warn = warnOptions)
+
+    ## To test for problem raised in issue #996
+    code <- nimbleCode({
+        for(i in 1:5)
+            y[i] ~ dnorm(X[idx[i, 1],idx[i, 2]]*X[idx[i, 1], idx[i, 4]], 1)
+        for(i in 1:6)
+            for(j in 1:6)
+                X[i,j] ~ dnorm(0,1)
+    })
+    
+    expect_warning(m <- nimbleModel(code, data = list(y=rnorm(5), idx = matrix(rep(1:6), 6, 6))),
+                   "Detected use of non-constant indexes")
+    expect_warning(m <- nimbleModel(code, data = list(y=rnorm(5)), inits = list(idx = matrix(rep(1:6), 6, 6))),
+                   "Detected use of non-constant indexes")
+
 })
 
 sink(NULL)
