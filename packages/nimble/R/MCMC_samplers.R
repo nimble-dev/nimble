@@ -1765,7 +1765,7 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
         target <- model$expandNodeNames(target)
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodesNoSelf <- model$getDependencies(target, self = FALSE)  
-
+        ##
         d <- sqrt(length(targetAsScalar))
         nTheta <- d*(d-1)/2    # this many unconstrained elements to be sampled
         ## control list extraction
@@ -1777,23 +1777,21 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
             stop("RW_lkj_corr_cholesky: 'adaptInterval', 'adaptFactorExponent', and 'scaleOriginal' should be single values.")
         if(scaleOriginal < 0)
             stop('Cannot use RW_lkj_corr_cholesky sampler with scale control parameter less than 0.')
-        
+        ## adaptation objects
         scaleVec            <- rep(scaleOriginal, nTheta)
         timesRan            <- 0
         timesAcceptedVec    <- rep(nTheta, 0)
         timesAdapted        <- 0
         optimalAR           <- 0.44
-
+        ##
         z                   <- array(0, c(d, d))
         diag(z)             <- 1
         partialSums         <- array(0, c(d, d))  # 1-x_{21}^2, 1-x_{31}^2, 1-x_{31}^2-x_{32}^2, ...
         partialSums[1, ]   <- 1
-
         ## Temporary vectors for current row calculations:
         partialSumsProp     <- numeric(d)    
         currentValue        <- numeric(d)
         propValue           <- numeric(d)
-        
         ## checks
         dist <- model$getDistribution(target)
         if(dist != 'dlkj_corr_cholesky') stop('RW_lkj_corr_cholesky sampler can only be used with the dlkj_corr_cholesky distribution.')
@@ -1803,7 +1801,7 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
     run = function() {
         ## calculate transformed values (in unconstrained space) and partial sums in each column
         transform(model[[target]])  # compute z and partialSums
- 
+        ##
         ## Individual univariate RW on the nTheta elements:
         ## advantage: probably better movement through space than with block update
         ## (plus note only column values of target matrix are recalculated for a given scalar update in a given column)
@@ -1859,7 +1857,6 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
                 timesAcceptedVec <<- numeric(nTheta, 0)
             }
         }
-
     },
     methods = list(
         transform = function(x = double(2)) {
