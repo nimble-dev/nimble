@@ -277,7 +277,7 @@ checkDistributionFunctions <- function(distributionInput, userEnv) {
                     " is not available.  It must be a nimbleFunction (with no setup code)."))
     if(!exists(simulateName, where = userEnv) || !is.rcf(get(simulateName, pos = userEnv))) {
         cat(paste0("Warning: random generation function for ", densityName,
-                    " is not available. NIMBLE is generating a placeholder function that will invoke an error if an algorithm needs to simulate from this distribution. Some algorithms (such as random-walk Metropolis MCMC sampling) will work without the ability to simulate from the distribution.  If simulation is needed, provide a nimbleFunction (with no setup code) to do it.\n"))
+                    " is not available. NIMBLE is generating a placeholder function, ", simulateName, ", that will invoke an error if an algorithm needs to simulate from this distribution. Some algorithms (such as random-walk Metropolis MCMC sampling) will work without the ability to simulate from the distribution.  If simulation is needed, provide a nimbleFunction (with no setup code) to do it.\n"))
         rargInfo <- environment(get(densityName, pos = userEnv))$nfMethodRCobject$argInfo
         returnType <- deparse(unlist(rargInfo[[1]]))
         returnDim <- rargInfo[[1]][[2]]
