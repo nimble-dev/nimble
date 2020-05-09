@@ -2844,7 +2844,7 @@ modelDefClass$methods(graphIDs2indexedNodeInfo = function(graphIDs) {
     list(declIDs = as.integer(declIDs), unrolledIndicesMatrixRows = as.integer(rowIndices))
 })
 
-modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TRUE, unique = TRUE, ignoreNotFound = FALSE){
+modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TRUE, unique = TRUE, ignoreNotFound = TRUE){
     if(length(nodeName) == 0)
         return(NULL)
     ## If unique is FALSE, we still use unique for each element of nodeName
