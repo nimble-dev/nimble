@@ -63,11 +63,15 @@ At present in compiled use of a model, you cannot provide a scalar argument wher
 ## User-defined distributions {#sec:user-distributions}
 
 To provide a user-defined distribution, you need to define density
-('d') and simulation ('r') `nimbleFunctions`, without setup
-code, for your distribution. In some cases you can then
+('d') and (optionally^[You need to provide the simulation ('r') function if any algorithm used with a model
+that uses the distribution needs to simulate from the distribution; this is not the case for NIMBLE's built-in
+MCMC sampler functions and therefore the simulation function is not required for standard MCMC in NIMBLE.])
+simulation ('r') `nimbleFunctions`, without setup
+code, for your distribution. In many cases you can then
 simply use your distribution in BUGS code as you would any
-distribution already provided by NIMBLE, while in others
-you need to explicitly register your distribution as described in Section \@ref(sec:registerDistributions).  
+distribution already provided by NIMBLE, while in a few special cases^[These include providing alternative parameterizations, specifying
+the range of the distribution, or specifying that the distribution is a discrete distribution.]
+you need to explicitly register your distribution as described in Section \@ref(sec:registerDistributions).
 
 You can optionally provide distribution ('p') and quantile ('q')
 functions, which will allow truncation to be applied to a user-defined

@@ -62,10 +62,12 @@ dCRP=nimbleFunction(
         if(n > 1) {
             for(i in 2:n) {
                 counts <- sum(x[i] == x[1:(i-1)])
-                if( counts > 0 ) {
+                if(isTRUE( counts > 0 )) {
                     ldens <- ldens + log(counts / (i-1+conc))
                 } else {
-                  ldens <- ldens + log(conc / (i-1+conc))
+		  if(is.na(counts)) {
+	 	    ldens <- NA
+		  } else ldens <- ldens + log(conc / (i-1+conc))
                 }
             }
         }

@@ -691,7 +691,7 @@ modelDefClass$methods(expandDistributions = function() {
 modelDefClass$methods(checkMultivarExpr = function() {
     checkForExpr <- function(expr) {
         ##output <- FALSE
-        if(length(expr) == 1 && class(expr) %in% c("name", "numeric")) return(FALSE)
+        if(length(expr) == 1 && (inherits(expr, "name") || inherits(expr, "numeric"))) return(FALSE)
         if(!deparse(expr[[1]]) == '[') return(TRUE)
         ## recurse only on the first argument of the `[`
         return(checkForExpr(expr[[2]]))
@@ -984,7 +984,7 @@ replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) 
                     # if(callChar != ':') {
                     if(!is.vectorized(code)) {
                         if(is.null(neverReplaceable[[callChar]])) {
-                            if(class(get(callChar, constEnv)) == 'function') {
+                            if(inherits(get(callChar, constEnv),'function')) {
                                 testcode <- as.numeric(eval(code, constEnv))
                                 if(length(testcode) == 1) code <- testcode
                             }
@@ -2737,13 +2737,17 @@ modelDefClass$methods(warnRHSonlyDynIdx = function() {
             ## Evaluate indexing to determine nodes used in dynamic indexing.
             nr <- min(50, nrow(decl$unrolledIndicesMatrix))  # avoid doing full expansion for speed
             nodes <- lapply(seq_along(vars), function(idx) {
-                parentNode <- decl$symbolicParentNodesReplaced[[which(vars[idx] == decl$rhsVars)]]
-
-                return(sapply(seq_len(nr), function(row) {
-                    deparse(eval(substitute(substitute(e, 
-                                                       as.list(decl$unrolledIndicesMatrix[row, ])),
-                                                       list(e = parentNode))))
-                }))
+                ## In most cases, there will be only one parentNode, but if a var is used multiple times on RHS
+                ## one can get multiple parentNodes. Modified as of issue #996.
+                parentNodes <- decl$symbolicParentNodesReplaced[which(vars[idx] == decl$rhsVars)]
+                return(
+                    unlist(lapply(seq_along(parentNodes), function(node) {
+                        sapply(seq_len(nr), function(row) {
+                            deparse(eval(substitute(substitute(e, 
+                                                               as.list(decl$unrolledIndicesMatrix[row, ])),
+                                                    list(e = parentNodes[[node]]))))
+                        })
+                    })))
             })
             nodes <- unique(unlist(nodes))
             nodes <- nodes[nodes %in% maps$nodeNamesRHSonly]

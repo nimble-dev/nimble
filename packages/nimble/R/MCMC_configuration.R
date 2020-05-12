@@ -92,7 +92,7 @@ MCMCconf <- setRefClass(
         initialize = function(model, nodes, control = list(), rules,
             monitors,                thin  = 1,
             monitors2 = character(), thin2 = 1,
-            useConjugacy = TRUE,
+            useConjugacy = getNimbleOption('MCMCuseConjugacy'),
             onlyRW = FALSE,
             onlySlice = FALSE,
             multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
@@ -797,7 +797,7 @@ Details: See the initialize() function
                 if(getNimbleOption('MCMCmonitorAllSampledNodes')) {
                     vars <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
                 } else {
-                    vars <- model$getNodeNames(stochOnly = TRUE, topOnly = TRUE)
+                    vars <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE, topOnly = TRUE)
                 }
             } else {
                 vars <- unlist(vars)
@@ -1307,7 +1307,8 @@ nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
 #'@seealso \code{\link{samplerAssignmentRules}} \code{\link{buildMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}
 configureMCMC <- function(model, nodes, control = list(), 
                           monitors, thin = 1, monitors2 = character(), thin2 = 1,
-                          useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE,
+                          useConjugacy = getNimbleOption('MCMCuseConjugacy'),
+                          onlyRW = FALSE, onlySlice = FALSE,
                           multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
                           enableWAIC = getNimbleOption('MCMCenableWAIC'),
                           print = getNimbleOption('verbose'),
@@ -1315,7 +1316,7 @@ configureMCMC <- function(model, nodes, control = list(),
                           rules = getNimbleOption('MCMCdefaultSamplerAssignmentRules'),
                           warnNoSamplerAssigned = TRUE, ...) {
     
-    if(class(rules) != 'samplerAssignmentRules') stop('rules argument must be a samplerAssignmentRules object')
+    if(!inherits(rules, 'samplerAssignmentRules')) stop('rules argument must be a samplerAssignmentRules object')
 
     if(!missing(oldConf)){
         if(!is(oldConf, 'MCMCconf'))
@@ -1337,7 +1338,7 @@ configureMCMC <- function(model, nodes, control = list(),
                          enableWAIC = enableWAIC,
                          warnNoSamplerAssigned = warnNoSamplerAssigned,
                          print = print, ...)
-    return(thisConf)	
+    return(invisible(thisConf))
 }
 
 
@@ -1345,7 +1346,7 @@ configureMCMC <- function(model, nodes, control = list(),
 # This is function which builds a new MCMCconf from an old MCMCconf
 # This is required to be able to a new C-based MCMC without recompiling
 makeNewConfFromOldConf <- function(oldMCMCconf){
-    newMCMCconf <- configureMCMC(oldMCMCconf$model, nodes = NULL)
+    newMCMCconf <- configureMCMC(oldMCMCconf$model, nodes = NULL, print = FALSE)
     newMCMCconf$monitors <- oldMCMCconf$monitors
     newMCMCconf$monitors2 <- oldMCMCconf$monitors2
     newMCMCconf$thin <- oldMCMCconf$thin
