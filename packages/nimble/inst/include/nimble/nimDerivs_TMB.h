@@ -87,9 +87,16 @@ Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, Nim
     xCopy(i, 0) = x[i] - mean[i];
 
   Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
-  xCopy = CppAD::CondExpEq(prec_param, Type(1),
-                           mapChol.template triangularView<Eigen::Upper>()*xCopy,
-                           mapChol.template triangularView<Eigen::Upper>().transpose().solve(xCopy) );
+  std::cout<<"Baking in prec_param = "<<prec_param<<" in dmnorm."<<std::endl;
+  if(CppAD::Value(prec_param) == 1) {
+    xCopy = mapChol.template triangularView<Eigen::Upper>()*xCopy;
+  } else {
+    xCopy = mapChol.template triangularView<Eigen::Upper>().transpose().solve(xCopy);
+  }
+
+  /* xCopy = CppAD::CondExpEq(prec_param, Type(1), */
+  /*                          mapChol.template triangularView<Eigen::Upper>()*xCopy, */
+  /*                          mapChol.template triangularView<Eigen::Upper>().transpose().solve(xCopy) ); */
   // Note that with solve(), transpose of U appears slightly less costly than if input 'chol' were L,
   // presumably because of column-major order interacting well with the solve.
   xCopy = xCopy.array()*xCopy.array();
@@ -115,9 +122,16 @@ Type nimDerivs_nimArr_dmnorm_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &
     xCopy(i, 0) = x[i] - mean[i];
 
   Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
-  xCopy = CppAD::CondExpEq(prec_param, Type(1),
-                           mapChol.template triangularView<Eigen::Upper>()*xCopy,
-                           mapChol.template triangularView<Eigen::Upper>().transpose().solve(xCopy));
+  std::cout<<"Baking in prec_param = "<<prec_param<<" in dmnorm."<<std::endl;
+  if(CppAD::Value(prec_param) == 1) {
+    xCopy = mapChol.template triangularView<Eigen::Upper>()*xCopy;
+  } else {
+    xCopy = mapChol.template triangularView<Eigen::Upper>().transpose().solve(xCopy);
+  }
+  /*  */
+  /* xCopy = CppAD::CondExpEq(prec_param, Type(1), */
+  /*                          mapChol.template triangularView<Eigen::Upper>()*xCopy, */
+  /*                          mapChol.template triangularView<Eigen::Upper>().transpose().solve(xCopy)); */
   xCopy = xCopy.array()*xCopy.array();
   dens += -Type(0.5)*xCopy.sum();
   if(!give_log){
@@ -144,9 +158,15 @@ Type nimDerivs_nimArr_dmvt_chol(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<
     xCopy(i, 0) = x[i] - mu[i];
 
   Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
-  xCopy = CppAD::CondExpEq(prec_param, Type(1),
-                           mapChol.template triangularView<Eigen::Upper>()*xCopy,
-                           mapChol.template triangularView<Eigen::Upper>().transpose().solve(xCopy));
+  std::cout<<"Baking in prec_param = "<<prec_param<<" in dmvt."<<std::endl;
+  if(CppAD::Value(prec_param) == 1) {
+    xCopy = mapChol.template triangularView<Eigen::Upper>()*xCopy;
+  } else {
+    xCopy = mapChol.template triangularView<Eigen::Upper>().transpose().solve(xCopy);
+  }
+  /* xCopy = CppAD::CondExpEq(prec_param, Type(1), */
+  /*                          mapChol.template triangularView<Eigen::Upper>()*xCopy, */
+  /*                          mapChol.template triangularView<Eigen::Upper>().transpose().solve(xCopy)); */
   xCopy = xCopy.array()*xCopy.array();
   
   dens += -Type(0.5)*(df + Type(n)) * log(Type(1.) + xCopy.sum() / df);
@@ -172,9 +192,16 @@ Type nimDerivs_nimArr_dmvt_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &mu
     xCopy(i, 0) = x[i] - mu[i];
 
   Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
-  xCopy = CppAD::CondExpEq(prec_param, Type(1),
-                           mapChol.template triangularView<Eigen::Upper>()*xCopy,
-                           mapChol.template triangularView<Eigen::Upper>().transpose().solve(xCopy));
+  std::cout<<"Baking in prec_param = "<<prec_param<<" in dmvt."<<std::endl;
+  if(CppAD::Value(prec_param) == 1) {
+    xCopy = mapChol.template triangularView<Eigen::Upper>()*xCopy;
+  } else {
+    xCopy = mapChol.template triangularView<Eigen::Upper>().transpose().solve(xCopy);
+  }
+
+  /* xCopy = CppAD::CondExpEq(prec_param, Type(1), */
+  /*                          mapChol.template triangularView<Eigen::Upper>()*xCopy, */
+  /*                          mapChol.template triangularView<Eigen::Upper>().transpose().solve(xCopy)); */
   xCopy = xCopy.array()*xCopy.array();
   
   dens += -Type(0.5)*(df + Type(n)) * log(Type(1.) + xCopy.sum() / df);
@@ -234,10 +261,17 @@ Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &x, NimArr<1, Type> &mean, NimA
   /* Lower may be more efficient: https://eigen.tuxfamily.org/dox/classEigen_1_1LLT.html#details */
   MatrixXt Lx = mapX.template selfAdjointView<Eigen::Lower>().llt().matrixL();
   dens += (df - p - Type(1.)) * Lx.diagonal().array().log().sum();
+  
+  std::cout<<"Baking in scale_param = "<<scale_param<<" in dwish."<<std::endl;
+  if(CppAD::Value(scale_param) == 1) {
+    dens -= Type(0.5) * mapChol.template triangularView<Eigen::Upper>().transpose().solve(Lx).squaredNorm();
+  } else {
+    dens -= Type(0.5) * (mapChol.template triangularView<Eigen::Upper>()*Lx).squaredNorm();
+  }
 
-  dens -= Type(0.5) * CppAD::CondExpEq(scale_param, Type(1),
-                           mapChol.template triangularView<Eigen::Upper>().transpose().solve(Lx).squaredNorm(),
-                           (mapChol.template triangularView<Eigen::Upper>()*Lx).squaredNorm());
+  /* dens -= Type(0.5) * CppAD::CondExpEq(scale_param, Type(1), */
+  /*                          mapChol.template triangularView<Eigen::Upper>().transpose().solve(Lx).squaredNorm(), */
+  /*                          (mapChol.template triangularView<Eigen::Upper>()*Lx).squaredNorm()); */
 
   dens = CppAD::CondExpEq(give_log, Type(1), dens, exp(dens));
   return(dens);
@@ -263,9 +297,16 @@ Type nimDerivs_nimArr_dwish_chol_logFixed(NimArr<2, Type> &x, NimArr<1, Type> &m
   MatrixXt Lx = mapX.template selfAdjointView<Eigen::Lower>().llt().matrixL();
   dens += (df - p - Type(1.)) * Lx.diagonal().array().log().sum();
 
-  dens -= Type(0.5) * CppAD::CondExpEq(scale_param, Type(1),
-                           mapChol.template triangularView<Eigen::Upper>().transpose().solve(Lx).squaredNorm(),
-                           (mapChol.template triangularView<Eigen::Upper>()*Lx).squaredNorm());
+  std::cout<<"Baking in scale_param = "<<scale_param<<" in dwish."<<std::endl;
+  if(CppAD::Value(scale_param) == 1) {
+    dens -= Type(0.5) * mapChol.template triangularView<Eigen::Upper>().transpose().solve(Lx).squaredNorm();
+  } else {
+    dens -= Type(0.5) * (mapChol.template triangularView<Eigen::Upper>()*Lx).squaredNorm();
+  }
+
+  /* dens -= Type(0.5) * CppAD::CondExpEq(scale_param, Type(1), */
+  /*                          mapChol.template triangularView<Eigen::Upper>().transpose().solve(Lx).squaredNorm(), */
+  /*                          (mapChol.template triangularView<Eigen::Upper>()*Lx).squaredNorm()); */
 
   if(!give_log){
     dens = exp(dens);
@@ -295,9 +336,16 @@ Type nimDerivs_nimArr_dinvwish_chol(NimArr<2, Type> &x, NimArr<1, Type> &mean, N
 
   /* in basic tests, use of .solve(Identity) was 2-3x faster than .inverse();
   I don't see a way to use .inverse that recognizes the triangular input */
-  dens -= Type(0.5) * CppAD::CondExpEq(scale_param, Type(1),
-                           (Lx.template triangularView<Eigen::Lower>().solve(mapChol.transpose())).squaredNorm(),
-                           (Lx.template triangularView<Eigen::Lower>().solve(mapChol.template triangularView<Eigen::Upper>().solve(MatrixXd::Identity(n, n)))).squaredNorm());
+  std::cout<<"Baking in scale_param = "<<scale_param<<" in dinvwish."<<std::endl;
+  if(CppAD::Value(scale_param) == 1) {
+    dens -= Type(0.5) * (Lx.template triangularView<Eigen::Lower>().solve(mapChol.transpose())).squaredNorm();
+  } else {
+    dens -= Type(0.5) * (Lx.template triangularView<Eigen::Lower>().solve(mapChol.template triangularView<Eigen::Upper>().solve(MatrixXd::Identity(n, n)))).squaredNorm();
+  }
+
+  /* dens -= Type(0.5) * CppAD::CondExpEq(scale_param, Type(1), */
+  /*                          (Lx.template triangularView<Eigen::Lower>().solve(mapChol.transpose())).squaredNorm(), */
+  /*                          (Lx.template triangularView<Eigen::Lower>().solve(mapChol.template triangularView<Eigen::Upper>().solve(MatrixXd::Identity(n, n)))).squaredNorm()); */
 
   dens = CppAD::CondExpEq(give_log, Type(1), dens, exp(dens));
   return(dens);
@@ -322,9 +370,16 @@ Type nimDerivs_nimArr_dinvwish_chol_logFixed(NimArr<2, Type> &x, NimArr<1, Type>
   MatrixXt Lx = mapX.template selfAdjointView<Eigen::Lower>().llt().matrixL();
   dens -= (df + p + Type(1)) * Lx.diagonal().array().log().sum();
 
-  dens -= Type(0.5) * CppAD::CondExpEq(scale_param, Type(1),
-                           (Lx.template triangularView<Eigen::Lower>().solve(mapChol.transpose())).squaredNorm(),
-                           (Lx.template triangularView<Eigen::Lower>().solve(mapChol.template triangularView<Eigen::Upper>().solve(MatrixXd::Identity(n, n)))).squaredNorm());
+  std::cout<<"Baking in scale_param = "<<scale_param<<" in dinvwish."<<std::endl;
+  if(CppAD::Value(scale_param) == 1) {
+    dens -= Type(0.5) * (Lx.template triangularView<Eigen::Lower>().solve(mapChol.transpose())).squaredNorm();
+  } else {
+    dens -= Type(0.5) * (Lx.template triangularView<Eigen::Lower>().solve(mapChol.template triangularView<Eigen::Upper>().solve(MatrixXd::Identity(n, n)))).squaredNorm();
+  }
+  
+  /* dens -= Type(0.5) * CppAD::CondExpEq(scale_param, Type(1), */
+  /*                          (Lx.template triangularView<Eigen::Lower>().solve(mapChol.transpose())).squaredNorm(), */
+  /*                          (Lx.template triangularView<Eigen::Lower>().solve(mapChol.template triangularView<Eigen::Upper>().solve(MatrixXd::Identity(n, n)))).squaredNorm()); */
 
   if(!give_log){
     dens = exp(dens);

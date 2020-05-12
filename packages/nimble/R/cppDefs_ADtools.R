@@ -917,7 +917,8 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
           oldSym$ref <- FALSE
           callForTapingNames <- c(callForTapingNames, newName)
           localVars$addSymbol(oldSym)
-          newRline <- "NEWV__.setSize(ORIGV__.getSizeVec(), false, false); copy_CppADdouble_to_double(ORIGV__.getPtr(), ORIGV__.getPtr() + ORIGV__.size(), NEWV__.getPtr());"
+          ## newRline <- "NEWV__.setSize(ORIGV__.getSizeVec(), false, false); copy_CppADdouble_to_double(ORIGV__.getPtr(), ORIGV__.getPtr() + ORIGV__.size(), NEWV__.getPtr());"
+          newRline <- "copy_CppADdouble_to_double(ORIGV__, NEWV__);" ## This also sets size
           newRline <- gsub("NEWV__", newName, newRline)
           newRline <- gsub("ORIGV__", thisName, newRline)
           newRline <- substitute(cppLiteral(LINE), list(LINE = newRline))

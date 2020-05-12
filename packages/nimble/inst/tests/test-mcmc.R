@@ -1843,7 +1843,7 @@ test_that('HMC sampler asymptotic correctness', {
     meansHMC <- apply(samplesHMC, 2, mean)
     sdsHMC <- apply(samplesHMC, 2, sd)
     ##
-    expect_true(all(abs(means - meansHMC) < 0.05))
+    expect_true(all(abs(means - meansHMC) < 0.05)) ## These do not pass on hmcAD or ADoak (but with different numbers)
     expect_true(all(abs(sds   - sdsHMC)   < 0.05))
 })
 
@@ -1990,7 +1990,7 @@ test_that('HMC sampler exact samples for different maxTreeDepths', {
     Cmodel3 <- compiledList$model3; Cmcmc3 <- compiledList$mcmc3
     ##
     set.seed(0);   samples1 <- runMCMC(Cmcmc1, 10000)
-    expect_true(all(round(as.numeric(samples1[10000,]),6) == c(1.057482, 11.073346)))
+    expect_true(all(round(as.numeric(samples1[10000,]),6) == c(1.057482, 11.073346))) ## ADoak: The 3 samples seem to match in posterior, but these specific numbers have changed.
     set.seed(0);   samples2 <- runMCMC(Cmcmc2, 10000)
     expect_true(all(round(as.numeric(samples2[10000,]),6) == c(-1.698464, 8.469846)))
     set.seed(0);   samples3 <- runMCMC(Cmcmc3, 10000)
@@ -1998,7 +1998,7 @@ test_that('HMC sampler exact samples for different maxTreeDepths', {
 })
 
 
-test_that('HMC sampler error messages for transformations with non-constant bounds', {
+test_that('HMC sampler error messages for transformations with non-constant bounds', { ## ADoak: These have not been checked.
     nimbleOptions(experimentalEnableDerivs = TRUE)
     ##
     code <- nimbleCode({ x ~ dexp(1); y ~ dunif(1, x) })
@@ -2075,7 +2075,7 @@ test_that('HMC sampler reports correct number of divergences and max tree depths
     set.seed(0)
     samples <- runMCMC(Cmcmc, 10000)
     ##
-    expect_equal(valueInCompiledNimbleFunction(Cmcmc$samplerFunctions[[5]], 'numDivergences'), 457)
+    expect_equal(valueInCompiledNimbleFunction(Cmcmc$samplerFunctions[[5]], 'numDivergences'), 457) ## ADoak: numbers have changed
     expect_equal(valueInCompiledNimbleFunction(Cmcmc$samplerFunctions[[5]], 'numTimesMaxTreeDepth'), 16)
 })
 

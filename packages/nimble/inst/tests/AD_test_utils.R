@@ -616,7 +616,7 @@ make_AD_test <- function(op, argTypes, wrt_args = NULL,
     opParam = opParam,
     run = run,
     methods = methods,
-    enableDerivs = list('run'),
+    enableDerivs = 'run',
     wrts = wrts,
     input_gen_funs = input_gen_funs
   )

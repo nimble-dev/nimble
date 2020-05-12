@@ -256,7 +256,7 @@ private:
 };
 
 template<class T>
-T nimDerivs_lgammafn(T x, int baseOrder = 0) {
+T nimDerivs_lgammafn(T x, int baseOrder) {
   static atomic_lgamma_class static_atomic_lgamma0("nimDerivs_lgamma", 0);
   static atomic_lgamma_class static_atomic_lgamma1("nimDerivs_lgamma", 1);
   static atomic_lgamma_class static_atomic_lgamma2("nimDerivs_lgamma", 2);
@@ -285,6 +285,11 @@ T nimDerivs_lgammafn(T x, int baseOrder = 0) {
     std::cout<<"Error: attempting lgamma derivative beyond order 4."<<std::endl;
   }
   return out[0];
+}
+
+template<class T>
+T nimDerivs_lgammafn(T x) {
+  return nimDerivs_lgammafn<T>(x, 0); // simply putting a default value of 0 above leads to failure in std::ptr_fun<CppAD::AD<double>, CppAD::AD<double>>(nimDerivs_lgammafn) in Eigen-style vectorization
 }
 
 template<class T>

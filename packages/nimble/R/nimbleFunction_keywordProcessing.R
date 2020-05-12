@@ -1966,11 +1966,13 @@ nimDerivsInfoClass_init_impl <- function(.self
     .self$model <- model
 
     ## wrt nodes
+    wrtNodes <- model$expandNodeNames(wrtNodes)
     wrtNodesAccessor <- modelVariableAccessorVector(model,
                                                wrtNodes,
                                                logProb = FALSE)
     .self$wrtMapInfo <- makeMapInfoFromAccessorVectorFaster(wrtNodesAccessor)
 
+    constantNodes <- model$expandNodeNames(wrtNodes)
     constantNodesAccessor <- modelVariableAccessorVector(model,
                                                          constantNodes,
                                                          logProb = FALSE)
@@ -1984,6 +1986,7 @@ nimDerivsInfoClass_init_impl <- function(.self
     ## extraInputNodes <- model$expandNodeNames(c(neededParentNodes,
     ##                                            nonWrtStochCalcNodeNames),
     ##                                          sort = TRUE)
+    calcNodes <- model$expandNodeNames(calcNodes)
     extraInputNodes <- makeUpdateNodes(wrtNodes,
                                        calcNodes,
                                        model)

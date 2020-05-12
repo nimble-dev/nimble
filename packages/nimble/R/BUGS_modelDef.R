@@ -2719,11 +2719,14 @@ modelDefClass$methods(genVarNames = function() {
 })
 
 modelDefClass$methods(warnRHSonlyDynIdx = function() {
+    if(!isTRUE(nimbleOptions('allowDynamicIndexing'))) return(NULL);
     ## Warn if dynamic indexing involves non-constant RHS-only nodes as this causes
     ## additional dependencies and slower computations.
     for(i in seq_along(declInfo)) {
         decl <- declInfo[[i]]
-        if(exists('dynamicIndexInfo', decl) && length(decl[['dynamicIndexInfo']])) {
+        if(exists('dynamicIndexInfo', decl) &&
+           !inherits(decl[['dynamicIndexInfo']], 'uninitializedField') &&
+           length(decl[['dynamicIndexInfo']])) {
             ## Determine vars used in dynamic indexing.
             vars <- lapply(decl[['dynamicIndexInfo']], function(x) {
                 if(exists('indexCode', x))

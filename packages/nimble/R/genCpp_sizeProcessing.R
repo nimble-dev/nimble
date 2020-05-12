@@ -1236,7 +1236,10 @@ sizeNimDerivs <- function(code, symTab, typeEnv){
     typeEnv[[ADinfoNames]] <- c(typeEnv[[ADinfoNames]],
                                 newADinfoName)
   }
-  
+  if(!nimbleOptions('experimentalSelfLiftStage')) {
+    if(!(code$caller$name %in% assignmentOperators))
+      asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+  }
   if(length(asserts) == 0) NULL else asserts
 }
 
@@ -1252,11 +1255,19 @@ sizeNimDerivsCalculate <- function(code, symTab, typeEnv){
     symbolObject <- symbolNimbleListGenerator(name = className, nlProc = nlp)
     symTab$addSymbol(symbolObject)
   }
-  
-  a1 <- insertExprClassLayer(code, which(names(code$args)=='orderVector'), 'make_vector_if_necessary',
-                             type = 'double',
-                             nDim = 1,
-                             sizeExprs = list())
+
+  ## wrap_orderVector <- FALSE
+  ## browser()
+  ## if(inherits(code$args[['orderVector']], 'exprClass')) {
+  ##   if(code$args[["orderVector"]]$nDim == 0)
+  ##     wrap_orderVector <- TRUE
+  ## } else
+  ##   wrap_orderVector <- TRUE
+  ## if(wrap_orderVector)
+  ##   a1 <- insertExprClassLayer(code, which(names(code$args)=='orderVector'), 'make_vector_if_necessary',
+  ##                              type = 'double',
+  ##                              nDim = 1,
+  ##                              sizeExprs = list())
 
   newADinfoName <- ADinfoLabel()
   if(!is.list(code$aux))
@@ -1293,6 +1304,10 @@ sizeNimDerivsCalculate <- function(code, symTab, typeEnv){
       code$args[[ length(code$args)+1 ]] <- as.integer(code$args[[2]]$type == 'logical')
     }
   }
+  insertExprClassLayer(code, which(names(code$args)=='orderVector'), 'make_vector_if_necessary',
+                       type = 'double',
+                       nDim = 1,
+                       sizeExprs = list())  
   if(code$args[[1]]$toEigenize == 'yes') { ## not sure when this would be TRUE
     asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
   }

@@ -513,7 +513,7 @@ AD_knownFailures <- list( ## not complete:
     'x = double(1, 5) df = double(1, 3) mu = double(1, 3) sigma = double(1, 7) log = double(0)' = list(
       compilation = TRUE
     )
-  ),
+  )
   ## dunif = list(
   ##   'x = double(1, 5) min = double(1, 3) max = double(1, 7)' = list(
   ##     value = 'method1'

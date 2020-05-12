@@ -22,7 +22,7 @@ test_that('Derivatives of dnorm function correctly.',
           returnType(double())
           return(out)
         }
-      ), enableDerivs = list('testMethod')
+      ), enableDerivs = c('testMethod')
     )
     ADfunInst <- ADfun1()
     x <- matrix(c(2, -2))
@@ -60,7 +60,7 @@ test_that('Derivatives of x^2 function correctly.',
                   return(2^x[1])
                 }
                 
-              ), enableDerivs = list('testMethod', 'testMethod2')
+              ), enableDerivs = c('testMethod', 'testMethod2')
             )
             ADfunInst <- ADfun2()
             x <- c(1, 1)
@@ -91,7 +91,7 @@ test_that('Derivatives of sum(log(x)) function correctly.',
                   returnType(double(0))
                   return(sum(log(x[])))
                 }
-              ), enableDerivs = list('testMethod')
+              ), enableDerivs = c('testMethod')
             )
             ADfunInst <- ADfun3()
             x <- c(1, 1)
@@ -104,15 +104,15 @@ test_that('Derivatives of sum(log(x)) function correctly.',
 )
 
 
-test_that('Derivatives of model$calculate() work in expressions.',
+test_that('Derivatives of model$calculate() work in expressions.', 
           {
             testModelCode <- nimbleCode({
               x[1:2] ~ dmnorm(zeroVec[1:2], diagMat[1:2, 1:2])
             })
             testModel <- nimbleModel(code = testModelCode,
-                                     inits = list(x = rep(0, 2)),
-                                     constants = list(zeroVec = rep(0, 2),
-                                                      diagMat = diag(2)))
+                                     inits = list(x = c(0.5, 0.6)),
+                                     constants = list(zeroVec = c(.3, .4),
+                                                      diagMat = matrix(c(1.2, .2, .2, 1.6), nrow = 2)))
             ADfun4 <- nimbleFunction(
               setup = function(model){},
               run = function() {
@@ -150,7 +150,7 @@ test_that('Derivatives of matrix multiplication function correctly.',
                   returnType(double(2, c(2, 4)))
                   return(x%*%y)
                 }
-              ), enableDerivs = list('testMethod')
+              ), enableDerivs = c('testMethod')
             )
             ADfunInst <- ADfun5()
             x <- diag(2)
@@ -180,7 +180,7 @@ test_that('Derivatives of matrix exponentiation function correctly.',
                   returnType(double(2, c(2, 2)))
                   return(exp(x))
                 }
-              ), enableDerivs = list('testMethod')
+              ), enableDerivs = c('testMethod')
             )
             ADfunInst <- ADfun6()
             x <- diag(2)

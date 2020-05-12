@@ -44,6 +44,8 @@
 #include <algorithm>
 
 void copy_CppADdouble_to_double(CppAD::AD<double> *first, CppAD::AD<double> *last, double *output);
+void copy_CppADdouble_to_double(NimArrBase< CppAD::AD<double> > &from, NimArrBase< double > &to);
+void copy_CppADdouble_to_double(CppAD::AD<double> &from, double &to);
 
 #ifdef _TIME_AD
 extern "C" {

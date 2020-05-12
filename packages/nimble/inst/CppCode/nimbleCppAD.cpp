@@ -7,6 +7,21 @@ void copy_CppADdouble_to_double(CppAD::AD<double> *first, CppAD::AD<double> *las
     *result++ = CppAD::Value(*orig++);
 }
 
+
+void copy_CppADdouble_to_double(CppAD::AD<double> &from, double &to) {
+  to = CppAD::Value(from);
+}
+
+void copy_CppADdouble_to_double(NimArrBase< CppAD::AD<double> > &from, NimArrBase< double > &to) {
+  to.setSize(from.getSizeVec(), false, false);
+  copy_CppADdouble_to_double(from.getPtr(), from.getPtr() + from.size(), to.getPtr());
+}
+
+void setSizeGeneric( ) {
+
+}
+
+
 #ifdef _TIME_AD
 ad_timer derivs_main_timer("derivs_main");
 ad_timer derivs_calc_timer("derivs_calc");
@@ -199,7 +214,6 @@ void update_dynamicVars_meta(NodeVectorClassNew_derivs &NV,
 	       NimArrValues.getPtr() + length_extraInput,
 	       ADinfo.dynamicVars.begin());
   }
-  std::cout<<"Use of dynamicVars in meta-taping is ambiguous."<<std::endl;
 }
 
 bool check_inf_nan_gdi(double v) {
@@ -594,6 +608,8 @@ CppAD::ADFun<double>* calculate_recordTape(NodeVectorClassNew_derivs &NV) {
   // 4. [Deleted]
   int length_wrt = NV.model_wrt_accessor.getTotalLength();
   int length_independent = length_wrt;
+  // std::cout<<"recording with length "<<length_independent<<std::endl;
+  // std::cout<<" length_wrt = "<<length_wrt<<std::endl;
   vector< CppAD::AD<double> > independentVars(length_independent);
   if(length_wrt > 0) {
     NimArrValues.setSize(length_wrt);
@@ -633,6 +649,7 @@ CppAD::ADFun<double>* calculate_recordTape(NodeVectorClassNew_derivs &NV) {
   // 6. Start taping
   size_t abort_op_index = 0;    // per CppAD examples, these match CppAD default values
   bool   record_compare = true; // but must be provided explicitly to get to the dynamic parameter (4th) argument
+  // std::cout<<"recording with "<<dynamicVars.size()<<std::endl;
   CppAD::Independent(independentVars, abort_op_index, record_compare, dynamicVars);
 
   set_CppAD_tape_info_for_model my_tape_info_RAII_(NV,
@@ -686,16 +703,17 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
 
   if(!ADinfo.ADtape) {
     if(!use_meta_tape) {
-      //std::cout<<"recording"<<std::endl;
+      // std::cout<<"recording"<<std::endl;
       ADinfo.ADtape = calculate_recordTape(nodes);
     } else {
-      //std::cout<<"meta recording"<<std::endl;
+      // std::cout<<"meta recording"<<std::endl;
       CppAD::ADFun< double > *firstTape;
       firstTape = calculate_recordTape(nodes);
       CppAD::ADFun< CppAD::AD<double>, double > innerTape;
       // Make original tape use CppAD::AD<double> instead of double
       set_CppAD_atomic_info_for_model(nodes, CppAD::local::atomic_index_info_vec_manager<double>::manage());
       innerTape = firstTape->base2ad();
+      // std::cout<<"A"<<std::endl;
       int length_wrt = nodes.model_wrt_accessor.getTotalLength();
       int length_independent = length_wrt;
       int length_extraInput = nodes.model_extraInput_accessor.getTotalLength();
@@ -707,17 +725,22 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
       NimArr<1, double > NimArrVars;
       NimArrVars.setSize(length_wrt);
       getValues(NimArrVars, nodes.model_wrt_accessor);
-      std::copy(NimArrVars.getPtr(),
-		NimArrVars.getPtr() + length_wrt,
-		independentVars.begin());
+      for(int iii = 0; iii < length_wrt; ++iii)
+	independentVars[iii] = NimArrVars[iii];
+      // std::copy(NimArrVars.getPtr(),
+      // 		NimArrVars.getPtr() + length_wrt,
+      // 		independentVars.begin());
       if(length_extraInput > 0) {
 	NimArr<1, double> NimArr_dynamicVars;
 	NimArr_dynamicVars.setSize(length_extraInput);
 	getValues(NimArr_dynamicVars, nodes.model_extraInput_accessor);
-	std::copy( NimArr_dynamicVars.getPtr(),
-		   NimArr_dynamicVars.getPtr() + length_extraInput,
-		   dynamicVars.begin() );
+	for(int iii = 0; iii < length_extraInput; ++iii)
+	  dynamicVars[iii] = NimArr_dynamicVars[iii];
+	// std::copy( NimArr_dynamicVars.getPtr(),
+	// 	   NimArr_dynamicVars.getPtr() + length_extraInput,
+	// 	   dynamicVars.begin() );
       }
+      // std::cout<<"B"<<std::endl;
       nimSmartPtr<NIMBLE_ADCLASS_META> ansList_meta = new NIMBLE_ADCLASS_META;
       CppAD::Independent(independentVars, abort_op_index, record_compare, dynamicVars); // start recording new tape
       set_CppAD_tape_info_for_model my_tape_info_RAII_(nodes,
@@ -725,20 +748,28 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
 						       CppAD::AD<double>::get_tape_handle_nimble());
       set_CppAD_atomic_info_for_model(nodes, CppAD::local::atomic_index_info_vec_manager<double>::manage());
       ADinfo.independentVars_meta.resize(length_wrt);
+      ADinfo.dynamicVars_meta.resize(length_extraInput);
       if(length_extraInput > 0) {
-	ADinfo.dynamicVars_meta.resize(length_extraInput);
-	std::copy(dynamicVars.begin(),
-		  dynamicVars.end(),
-		  ADinfo.dynamicVars_meta.begin());
+	for(int iii = 0; iii < length_extraInput; ++iii)
+	  ADinfo.dynamicVars_meta[iii] = dynamicVars[iii]; // std::copy does not seem to work for CppAD recording
+	// std::copy(dynamicVars.begin(),
+	// 	  dynamicVars.end(),
+	// 	  ADinfo.dynamicVars_meta.begin());
       }
-      std::copy(independentVars.begin(),
-		independentVars.end(),
-		ADinfo.independentVars_meta.begin());      
+      for(int iii = 0; iii < length_wrt; ++iii)
+	ADinfo.independentVars_meta[iii] = independentVars[iii];
+      // std::copy(independentVars.begin(),
+      // 		independentVars.end(),
+      // 		ADinfo.independentVars_meta.begin());      
+      // std::cout<<"C"<<std::endl;
       
       NimArr<1, double> derivOrders_meta;
       derivOrders_meta.setSize(1);
       derivOrders_meta[0] = 1;
+      // std::cout<<ADinfo.dynamicVars_meta.size()<<std::endl;
       innerTape.new_dynamic(ADinfo.dynamicVars_meta);
+      // std::cout<<"D"<<std::endl;
+
       getDerivs_internal< CppAD::AD<double>,
 			  CppAD::ADFun< CppAD::AD<double>, double >,
 			  NIMBLE_ADCLASS_META>(ADinfo.independentVars_meta,
@@ -746,14 +777,18 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
 					       derivOrders_meta,
 					       wrtVector,
 					       ansList_meta);
+      // std::cout<<"E"<<std::endl;
       for(size_t iii = 0; iii < length_wrt; ++iii)
 	dependentVars[iii] = ansList_meta->jacobian[iii];
       ADinfo.ADtape = new CppAD::ADFun<double>;
+      // std::cout<<"F"<<std::endl;
+
       ADinfo.ADtape->Dependent(dependentVars);
       ADinfo.ADtape->optimize();
       delete firstTape;
     }
   }
+  // std::cout<<"G"<<std::endl;
 
   // std::cout<<"getDerivs_calculate_internal A"<<std::endl;
   int length_wrt = nodes.model_wrt_accessor.getTotalLength();
@@ -767,6 +802,7 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
   std::copy(NimArrVars.getPtr(),
 	    NimArrVars.getPtr() + length_wrt,
 	    ADinfo.independentVars.begin());
+  // std::cout<<"H"<<std::endl;
   
   /* set dynamic */
   size_t length_extraNodes_accessor = nodes.model_extraInput_accessor.getTotalLength();
@@ -784,6 +820,7 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
     //std::cout<<std::endl;
     ADinfo.ADtape->new_dynamic(dynamicVars);
   }
+  // std::cout<<"I"<<std::endl;
 
   if(use_meta_tape) {
     // manage orders and use regular calculate for value
@@ -799,6 +836,8 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
     int higherOrders = 0;
     if(ordersFound[1]) ++higherOrders;      
     if(ordersFound[2]) ++higherOrders;
+      // std::cout<<"J"<<std::endl;
+
     if(higherOrders) {
       derivOrders_nested.setSize(higherOrders, false, false);
       higherOrders = 0;
@@ -806,6 +845,8 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
       if(ordersFound[2]) derivOrders_nested[higherOrders] = 1; // If Hessian was requested, get Jacobian of meta tape
       nimSmartPtr<NIMBLE_ADCLASS> ansList_nested = new NIMBLE_ADCLASS;
       //std::cout<<"about to call getDerivs_internal"<<std::endl;
+        // std::cout<<"K"<<std::endl;
+
       getDerivs_internal<double,
 			 CppAD::ADFun<double>,
 			 NIMBLE_ADCLASS>(ADinfo.independentVars,
@@ -813,6 +854,7 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
 					 derivOrders_nested,
 					 wrtVector, // NOTE: This will not behave fully correctly in non-default use without further thought.
 					 ansList_nested);
+        // std::cout<<"L"<<std::endl;
       if(ordersFound[1]) {
 	ansList->jacobian.setSize(1, length_wrt, false, false);
 	for(size_t ii = 0; ii < length_wrt; ++ii) //We could rewrite this with better pointer magic
@@ -824,6 +866,8 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
 	  for(size_t jj = 0; jj < length_wrt; ++jj)
 	    ansList->hessian[jj + ii*length_wrt ] = ansList_nested->jacobian[jj + ii*length_wrt]; //orientation shouldn't matter due to symmetry
       }
+      // std::cout<<"M"<<std::endl;
+
     }
   } else {
   /* run tape */

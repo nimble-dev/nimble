@@ -104,7 +104,7 @@ test_that('Derivs of calculate function work for model ADmod5 (tricky indexing)'
 })
 
 
-test_that('Derivs of calculate function work for model equiv', {
+test_that('Derivs of calculate function work for model equiv', { ## This test gives a crash on i = 3, j = 1.  It is due to pow(x, y) with y = 0.
   dir = nimble:::getBUGSexampleDir('equiv')
   Rmodel <- readBUGSmodel('equiv', data = NULL, inits = list(tau = c(.2, .2), pi = 1, phi = 1, mu = 1), dir = dir, useInits = TRUE,
                           check = FALSE)
@@ -195,7 +195,7 @@ data <- list(y = rnorm(3))
 model <- nimbleModel(code, data = data)
 model$simulate()
 model$calculate()
-test_ADModelCalculate(name = 'basic state space', model)
+test_ADModelCalculate(name = 'basic state space', model) ## Not working. length 1 vs. 0
 ## case 10 produces very large relative diffs 
 
 ## basic tricky indexing
@@ -206,7 +206,7 @@ code <- nimbleCode({
     x[1] ~ dnorm(.1, 10)
     x[2] ~ dnorm(1, 3)
 })
-model <- nimbleModel(code, dimensions = list(x = 2, y = 2, z = 3), constants = list(diagMat = diag(2)),
+model <- nimbleModel(code, dimensions = list(x = 2, y = 2, z = 3), constants = list(diagMat = diag(2)), ## Let's use a non-diagonal matrix
                      inits = list(x = c(1, 1.2), y  = c(-.1,-.2)))
 test_ADModelCalculate(name = 'basic tricky indexing', model)
 ## case 18 produces very large relative diffs 

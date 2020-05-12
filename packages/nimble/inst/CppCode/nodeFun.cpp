@@ -348,9 +348,9 @@ nodeFun::runExtraInputObject(NodeVectorClassNew_derivs &NV,
 
 void
 nodeFun::delete_extraInputObject(NodeVectorClassNew_derivs &NV) {
-  std::cout<<"About to delete NV.extraInputObject"<<std::endl;
+  // std::cout<<"About to delete NV.extraInputObject"<<std::endl;
   delete NV.extraInputObject;
-  std::cout<<"Done deleting NV.extraInputObject"<<std::endl;
+  // std::cout<<"Done deleting NV.extraInputObject"<<std::endl;
 }
 
 atomic_extraOutputObject*
@@ -389,9 +389,9 @@ nodeFun::runExtraOutputObject(NodeVectorClassNew_derivs &NV,
 
 void
 nodeFun::delete_extraOutputObject(NodeVectorClassNew_derivs &NV) {
-  std::cout<<"About to delete extraOutputObject"<<std::endl;
+  // std::cout<<"About to delete extraOutputObject"<<std::endl;
   delete NV.extraOutputObject;
-  std::cout<<"Done deleting extraOutputObject"<<std::endl;
+  // std::cout<<"Done deleting extraOutputObject"<<std::endl;
 }
 
 CppAD::AD<double> nodeFun::call_calculate_ADproxyModel(NodeVectorClassNew_derivs &NV) {
@@ -432,9 +432,9 @@ bool atomic_extraInputObject::forward(
     return ok;
     
   if(vx.size() > 0) {// only true for Forward(0)
-    for(size_t i = 0; i < vx.size(); ++i)
-      std::cout<<vx[i]<<" ";
-    std::cout<<std::endl;
+    // for(size_t i = 0; i < vx.size(); ++i)
+    //  std::cout<<vx[i]<<" ";
+    // std::cout<<std::endl;
     for(size_t i = 0; i < vy.size(); ++i)
       vy[i] = true;
   }
@@ -557,8 +557,8 @@ atomic_extraOutputObject::atomic_extraOutputObject(const std::string& name,
   MVMA_(MVMA),
   objName(name)
 {
-  std::cout<< "Constructing atomic_extraOutputObject named "<< name <<std::endl;
-  std::cout<<"handle address: "<<CppAD::AD<double>::get_handle_address_nimble()<<std::endl;
+  // std::cout<< "Constructing atomic_extraOutputObject named "<< name <<std::endl;
+  // std::cout<<"handle address: "<<CppAD::AD<double>::get_handle_address_nimble()<<std::endl;
 }
 
 
