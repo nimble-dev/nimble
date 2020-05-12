@@ -121,6 +121,7 @@ Collate:
     cppInterfaces_otherTypes.R
     nimbleProject.R
     initializeModel.R
+    parameterTransform.R
     CAR.R
     MCMC_utils.R
     MCMC_configuration.R
