@@ -115,63 +115,63 @@ AD_knownFailures <- list( ## not complete:
     )
   ),
   ## ddexp: Recycling-rule is not implemented in R.  Although it works in C++, it is considered unsupported.
-  ddexp = list(
-    ## 'x = double(0) location = double(0) scale = double(0)' = list(
-    ##   compilation = TRUE
-    ## ),
-    ## 'x = double(0) location = double(0) scale = double(0) log = double(0)' = list(
-    ##   compilation = TRUE
-    ## ),
-      ## The following known failures occur from lack of recycling-rule in uncompiled.
-    'x = double(0) location = double(1, 3) scale = double(0)' = list(
-      ## compiled and uncompiled output lengths differ (index 41)
-      value = 'method1'
-    ),
-    'x = double(0) location = double(0) scale = double(1, 7)' = list(
-      ## compiled and uncompiled output lengths differ
-      value = 'method1'
-    ),
-    'x = double(1, 5) location = double(0) scale = double(1, 7)' = list(
-      ## compiled and uncompiled output lengths differ
-      value = 'method1'
-    ),
-    'x = double(0) location = double(1, 3) scale = double(1, 7)' = list(
-      ## compiled and uncompiled output lengths differ
-      value = 'method1'
-    ),
-    'x = double(1, 5) location = double(1, 3) scale = double(1, 7)' = list(
-      ## compiled and uncompiled output lengths differ
-      value = 'method1'
-    ),
-    ## 'x = double(0) location = double(0) rate = double(0)' = list(
-    ##   compilation = TRUE
-    ## ),
-    ## 'x = double(0) location = double(0) rate = double(0) log = double(0)' = list(
-    ##   compilation = TRUE
-    ## ),
-    'x = double(0) location = double(1, 3) rate = double(0)' = list(
-      ## compiled and uncompiled output lengths differ
-      value = 'method1'
-    ),
-    'x = double(0) location = double(0) rate = double(1, 7)' = list(
-      value = 'method1'
-    ),
-    'x = double(0) location = double(0) rate = double(1, 7) log = double(0)' = list(
-      value = 'method1'
-    ),
-    'x = double(1, 5) location = double(0) rate = double(1, 7)' = list(
-      ## compiled and uncompiled output lengths differ
-      value = 'method1'
-    ),
-    'x = double(0) location = double(1, 3) rate = double(1, 7)' = list(
-      ## compiled and uncompiled output lengths differ
-      value = 'method1'
-    ),
-    'x = double(1, 5) location = double(1, 3) rate = double(1, 7)' = list(
-      ## compiled and uncompiled output lengths differ
-      value = 'method1'
-    )
-  ),
+  ## ddexp = list(
+  ##   ## 'x = double(0) location = double(0) scale = double(0)' = list(
+  ##   ##   compilation = TRUE
+  ##   ## ),
+  ##   ## 'x = double(0) location = double(0) scale = double(0) log = double(0)' = list(
+  ##   ##   compilation = TRUE
+  ##   ## ),
+  ##     ## The following known failures occur from lack of recycling-rule in uncompiled.
+  ##   'x = double(0) location = double(1, 3) scale = double(0)' = list(
+  ##     ## compiled and uncompiled output lengths differ (index 41)
+  ##     value = 'method1'
+  ##   ),
+  ##   'x = double(0) location = double(0) scale = double(1, 7)' = list(
+  ##     ## compiled and uncompiled output lengths differ
+  ##     value = 'method1'
+  ##   ),
+  ##   'x = double(1, 5) location = double(0) scale = double(1, 7)' = list(
+  ##     ## compiled and uncompiled output lengths differ
+  ##     value = 'method1'
+  ##   ),
+  ##   'x = double(0) location = double(1, 3) scale = double(1, 7)' = list(
+  ##     ## compiled and uncompiled output lengths differ
+  ##     value = 'method1'
+  ##   ),
+  ##   'x = double(1, 5) location = double(1, 3) scale = double(1, 7)' = list(
+  ##     ## compiled and uncompiled output lengths differ
+  ##     value = 'method1'
+  ##   ),
+  ##   ## 'x = double(0) location = double(0) rate = double(0)' = list(
+  ##   ##   compilation = TRUE
+  ##   ## ),
+  ##   ## 'x = double(0) location = double(0) rate = double(0) log = double(0)' = list(
+  ##   ##   compilation = TRUE
+  ##   ## ),
+  ##   'x = double(0) location = double(1, 3) rate = double(0)' = list(
+  ##     ## compiled and uncompiled output lengths differ
+  ##     value = 'method1'
+  ##   ),
+  ##   'x = double(0) location = double(0) rate = double(1, 7)' = list(
+  ##     value = 'method1'
+  ##   ),
+  ##   'x = double(0) location = double(0) rate = double(1, 7) log = double(0)' = list(
+  ##     value = 'method1'
+  ##   ),
+  ##   'x = double(1, 5) location = double(0) rate = double(1, 7)' = list(
+  ##     ## compiled and uncompiled output lengths differ
+  ##     value = 'method1'
+  ##   ),
+  ##   'x = double(0) location = double(1, 3) rate = double(1, 7)' = list(
+  ##     ## compiled and uncompiled output lengths differ
+  ##     value = 'method1'
+  ##   ),
+  ##   'x = double(1, 5) location = double(1, 3) rate = double(1, 7)' = list(
+  ##     ## compiled and uncompiled output lengths differ
+  ##     value = 'method1'
+  ##   )
+  ## ),
   ddirch = list(
     'x = double(1, 5) alpha = double(1, 5)' = list(
       ## Error : Number of dimensions 0 of the return() argument does not match number 1 given in the returnType() statement.
@@ -352,11 +352,11 @@ AD_knownFailures <- list( ## not complete:
       compilation = TRUE
     )
   ),
-  dmulti = list(
-    '*' = list(
-      compilation = TRUE
-    )
-  ),
+  ## dmulti = list(
+  ##   '*' = list(
+  ##     compilation = TRUE
+  ##   )
+  ## ),
   dmvt_chol = list(
     ## Error : Number of dimensions 0 of the return() argument does not match number 1 given in the returnType() statement.
     ## This occurred for: return(out)

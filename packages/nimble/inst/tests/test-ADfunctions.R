@@ -206,61 +206,21 @@ test_AD_batch(unaryReductionOpTests, knownFailures = AD_knownFailures)
 test_AD_batch(binaryOpTests, knownFailures = AD_knownFailures)
 test_AD_batch(powOpTests, knownFailures = AD_knownFailures)
 test_AD_batch(binaryReductionOpTests, knownFailures = AD_knownFailures)
-test_AD_batch(squareMatrixOpTests, knownFailures = AD_knownFailures) ## These don't work and aren't in AD_knownFailures:chol, inverse (3 works, 4 fails), det (5 works, 6 fails), log det not sure (8 gets a NaN), trace (which is in knownFailures for compilation failure).
+test_AD_batch(squareMatrixOpTests, knownFailures = AD_knownFailures) ## trace has a knownFailures entry for compilation failure.  Do we even support it?
 test_AD_batch(binaryMatrixOpTests, knownFailures = AD_knownFailures)
 
 ## from AD_distribution_test_lists.R
-test_AD_batch(distn_tests,  knownFailures = AD_knownFailures) ## 56 is known failure that didn't fail. 91 failed, huge numbers.
-nimbleOptions(pauseAfterWritingFiles = TRUE)
-test_AD_batch(distn_with_log_tests[27], knownFailures = AD_knownFailures)
-tempdir()
-test_AD_batch(distn_tests[141])
+test_AD_batch(distn_tests,  knownFailures = AD_knownFailures) ## dcat are knownFailures.  
+## test_AD_batch(distn_tests[13:14],  knownFailures = AD_knownFailures) ## dmulti fails, perhaps in regular compilation too?
+## test_AD_batch(distn_tests[15:148],  knownFailures = AD_knownFailures) ## dmulti fails, perhaps in regular compilation too?
+## test_AD_batch(distn_tests[39:64]) ## ddexp was in knownFailures.  Now it's ok.
+## test_AD_batch(distn_tests[65:148]) ## There is a problem in sqrtinvgamma with scale, vectorized
+## test_AD_batch(distn_tests[85:148]) ## There is a problem in dt with vector x
+## test_AD_batch(distn_tests[113:148])  ## There is a problem in dt_nonstandard with vector x
+## test_AD_batch(distn_tests[129:148]) ## ddirch fails
+## test_AD_batch(distn_tests[146]) 
+## test_AD_batch(distn_tests[147]) 
+## test_AD_batch(distn_tests[148]) ## dwish fails
 
-test_AD_batch(distn_tests[141], knownFailures = AD_knownFailures)
-test_AD_batch(distn_with_log_tests[141], knownFailures = AD_knownFailures)
-debug(test_AD)
-test_AD_batch(distn_with_log_tests[141])
 
-idexp <- which(grepl("exp_R", names(distn_tests)))
-test_AD_batch(distn_tests[idexp])
-test_AD_batch(distn_with_log_tests[idexp])
-
-idexp <- which(grepl("exp_nimble", names(distn_tests)))
-test_AD_batch(distn_tests[idexp], knownFailures = AD_knownFailures)
-test_AD_batch(distn_with_log_tests[idexp], knownFailures = AD_knownFailures)
-
-idig <- which(grepl("invgamma", names(distn_tests)))
-test_AD_batch(distn_tests[idig], knownFailures = AD_knownFailures)
-test_AD_batch(distn_tests[idig[2]], knownFailures = AD_knownFailures)
-test_AD_batch(distn_with_log_tests[idig], knownFailures = AD_knownFailures)
-
-id <- which(grepl("sqrtinvgamma", names(distn_tests))) ## Something weird happening
-test_AD_batch(distn_tests[id[1]])
-test_AD_batch(distn_with_log_tests[id], knownFailures = AD_knownFailures)
-test_AD_batch(distn_tests[id], knownFailures = AD_knownFailures)
-test_AD_batch(distn_with_log_tests[id], knownFailures = AD_knownFailures)
-
-id <- which(grepl("^gamma", names(distn_tests)))
-test_AD_batch(distn_tests[id], knownFailures = AD_knownFailures)
-test_AD_batch(distn_with_log_tests[id], knownFailures = AD_knownFailures)
-
-id <- which(grepl("^t_R", names(distn_tests))) ## Review what happens here.
-test_AD_batch(distn_tests[id])
-
-id <- which(grepl("dlnorm", names(distn_tests))) ## Review what happens here.
-test_AD_batch(distn_tests[id])
-test_AD_batch(distn_tests[88])
-test_AD_batch(distn_tests[89:92])
-test_AD_batch(distn_with_log_tests[id])
-
-id <- which(grepl("dlogis", names(distn_tests))) ## Review what happens here.
-test_AD_batch(distn_tests[id])
-test_AD_batch(distn_with_log_tests[id])
-
-id <- which(grepl("dunif", names(distn_tests))) ## Review what happens here.
-test_AD_batch(distn_tests[id])
-test_AD_batch(distn_with_log_tests[id])
-
-id <- which(grepl("dweibull", names(distn_tests))) ## Review what happens here.
-test_AD_batch(distn_tests[id])
-test_AD_batch(distn_with_log_tests[id])
+test_AD_batch(distn_with_log_tests,  knownFailures = AD_knownFailures)

@@ -602,7 +602,7 @@ nimDerivs_nf_numericwrt <- function(derivFxn,
   names(flatStartIndices) <- names(fxnArgs)
   wrtIndexToArgName <- character()
   for(i in seq_along(fxnArgs)) {
-    wrtIndexToArgName <- c(wrtIndexToArgName, rep(names(fxnArgs)[i], dimOrLength(fxnArgs[[i]])))
+    wrtIndexToArgName <- c(wrtIndexToArgName, rep(names(fxnArgs)[i], prod(dimOrLength(fxnArgs[[i]]))))
   }
 
   ## We need lines like
