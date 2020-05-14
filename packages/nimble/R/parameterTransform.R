@@ -1,14 +1,4 @@
 
-## - identity transformations don't require their own class
-## - bases quick for (0, Inf), and (0, 1) transformations
-## - *one* instance of the specialized e.g., Dirichlet transform function, ...
-## - and the same for any transformations
-## - then outsource the ore complex (a, Inf), and (a, b) to nfList elements
-## - (leave it node-by-node for now not declartion)
-
-
-
-
 
 #' Automated transformations of model nodes to unconstrained scales
 #'
@@ -222,149 +212,29 @@ parameterTransform <- nimbleFunction(
         ## or if it would be left to users to take care of the gradient operations
         ## (via use of model$calculate(), and use of nimDerivs()).
         ## Anyway, I'm sketching out how I think it might look.
-        ## The purpose of these *next two methods* is to return a gradient vector:
-        ## - the gradient of model$calculate(calcNodes),
-        ## - where calcNodes is the standard model$getDependencies(nodes), and
-        ## - the derivatives used to form the gradient vector are taken w.r.t.
-        ##   the *elements of the vector of transformed values*
+        ## The purpose of these *next two methods* is to return a gradient vector, specifically:
+        ## - return the gradient of model$calculate(calcNodes),
+        ## - where calcNodes is the usual model$getDependencies(targetNodes),
+        ## - the gradient is taken w.r.t. the elements of targetNodes,
+        ## - the gradient is calculated after storing inverse-transformed values into the model.
         ## 
-        ## calculateModelLP = function(transformedValues = double(1)) {   ## method name: open for discussion
-        ##     values(model, nodesExpanded) <<- inverseTransform(transformedValues)
-        ##     lp <- model$calculate(calcNodes)
-        ##     returnType(double(0))
-        ##     return(lp)
-        ## },
-        ## 
-        ## gradientModelCalculate = function(transformedValues = double(1)) {   ## method name: open for discussion
-        ##     currentModelValues <- values(model, nodesExpanded)
-        ##     derivsOutput <- nimDerivs(calculateModelLP(transformedValues), order = 1, wrt = transformedValues)
-        ##     grad <- derivsOutput$gradient[1, 1:tLength]
-        ##     values(model, nodesExpanded) <<- currentModelValues
-        ##     model$calculate(calcNodes)
-        ##     returnType(double(1))
-        ##     return(grad)
-        ## }
-        ## 
+        calculateModelLP = function(transformedValues = double(1)) {   ## method name: open for discussion
+            values(model, nodesExpanded) <<- inverseTransform(transformedValues)
+            lp <- model$calculate(calcNodes)
+            returnType(double(0))
+            return(lp)
+        },
+        gradientCalculateCalcNodes = function(transformedValues = double(1)) {   ## method name: open for discussion
+            ##currentModelValues <<- values(model, nodesExpanded)    ## not necessary ?
+            derivsOutput <- nimDerivs(calculateModelLP(transformedValues), order = 1, wrt = transformedValues)
+            grad <- derivsOutput$gradient[1, 1:tLength]
+            ##values(model, nodesExpanded) <<- currentModelValues    ## not necessary ?
+            ##model$calculate(calcNodes)                             ## not necessary ?
+            returnType(double(1))
+            return(grad)
+        }
     ), where = getLoadingNamespace()
 )
-
-
-
-
-####
-#### testing code below
-####
-##library(nimble)
-##library(testthat)
-## 
-##code <- nimbleCode({
-##    a ~ dnorm(0, 1)
-##    b ~ dgamma(1, 1)
-##    c ~ dunif(2, 10)
-##    d[1:3] ~ dmnorm(mu[1:3], cov = C[1:3,1:3])
-##    e[1:3,1:3] ~ dwish(R = C[1:3,1:3], df = 5)
-##})
-##constants <- list(mu=rep(0,3), C=diag(3))
-##data <- list()
-##U <- matrix(c(.2,2,4,0,1,1,0,0,4), nrow=3, byrow=TRUE)
-##eInit <- t(U) %*% U
-##inits <- list(a=0, b=1, c=5, d=rep(0,3), e=eInit)
-##Rmodel <- nimbleModel(code, constants, data, inits)
-####
-##expect_equal(Rmodel$calculate(), -33.077938542)
-####
-##nodes <- letters[1:5]
-##pt <- parameterTransform(Rmodel, nodes)
-#### 
-##Cmodel <- compileNimble(Rmodel)
-##Cpt <- compileNimble(pt, project = Rmodel)##, showCompilerOutput = TRUE)
-####
-##vals <- values(Rmodel, nodes)
-####
-#### test uncompiled
-##theNF <- pt
-##tVals <- theNF$transform(vals)
-##vals2 <- theNF$inverseTransform(tVals)
-####
-##expect_true(theNF$getOriginalLength() == 15)
-##expect_true(theNF$getTransformedLength() == 12)
-##expect_true(all(round(vals - c(0.00, 1.00, 5.00, 0.00, 0.00, 0.00, 0.04, 0.40, 0.80, 0.40, 5.00, 9.00, 0.80, 9.00, 33.00), 16) == 0))
-##expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 0, 0, -1.6094379124341, 2, 0, 4, 1, 1.38629436111989), 14) == 0))
-##expect_true(all(vals - vals2 == 0))
-##expect_true(round(theNF$calcLogDetJacobian(tVals), 7) == -0.9571127)
-####
-#### test compiled
-##theNF <- Cpt
-##tVals <- theNF$transform(vals)
-##vals2 <- theNF$inverseTransform(tVals)
-####
-##expect_true(theNF$getOriginalLength() == 15)
-##expect_true(theNF$getTransformedLength() == 12)
-##expect_true(all(round(vals - c(0.00, 1.00, 5.00, 0.00, 0.00, 0.00, 0.04, 0.40, 0.80, 0.40, 5.00, 9.00, 0.80, 9.00, 33.00), 16) == 0))
-##expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 0, 0, -1.6094379124341, 2, 0, 4, 1, 1.38629436111989), 14) == 0))
-##expect_true(all(vals - vals2 == 0))
-##expect_true(round(theNF$calcLogDetJacobian(tVals), 7) == -0.9571127)
-## 
-## 
-##code <- nimbleCode({
-##    a ~ dnorm(0, 1)
-##    b ~ dgamma(1, 1)
-##    c ~ dunif(2, 10)
-##    d[1:3] ~ dmnorm(mu[1:3], cov = C[1:3,1:3])
-##    e[1:3,1:3] ~ dwish(R = C[1:3,1:3], df = 5)
-##    f ~ dunif(0, 1)
-##    g ~ dunif(0, 5)
-##    h ~ dt(2, 2, 4)
-##    ii[1:5,1:5] ~ dwish(R = Ci[1:5,1:5], df = 10)
-##    j ~ dunif(-5, 5)
-##})
-####
-##Ci <- diag(5)
-##Ci[1,2] <- Ci[2,1] <- 0.2
-##Ci[1,3] <- Ci[3,1] <- 0.1
-##Ci[4,5] <- Ci[5,4] <- 0.3
-####
-##constants <- list(mu=rep(0,3), C=diag(3), Ci=Ci)
-##data <- list()
-##U <- matrix(c(.4,3,5,0,1,-1,0,0,4), nrow=3, byrow=TRUE)
-##eInit <- t(U) %*% U
-##inits <- list(a=0, b=1, c=5, d=rep(0,3), e=eInit, f=0.5, g=4, h=1, ii=diag(5), j=-1)
-####
-##Rmodel <- nimbleModel(code, constants, data, inits)
-####
-##expect_equal(Rmodel$calculate(), -80.6027522654)
-####
-##nodes <- Rmodel$getNodeNames(stochOnly = TRUE)
-##pt <- parameterTransform(Rmodel, nodes)
-#### 
-##Cmodel <- compileNimble(Rmodel)
-##Cpt <- compileNimble(pt, project = Rmodel)##, showCompilerOutput = TRUE)
-####
-##vals <- values(Rmodel, nodes)
-####
-#### test uncompiled
-##theNF <- pt
-##tVals <- theNF$transform(vals)
-##vals2 <- theNF$inverseTransform(tVals)
-####
-##expect_true(theNF$getOriginalLength() == 44)
-##expect_true(theNF$getTransformedLength() == 31)
-##expect_true(all(round(vals,15) - c(0, 1, 5, 0.5, 4, 1, -1, 0, 0, 0, 0.16, 1.2, 2, 1.2, 10, 14, 2, 14, 42, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1) == 0))
-##expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 1.38629436111989, 1, -0.405465108108164, 0, 0, 0, -0.916290731874155, 3, -0.00000000000000177635683940025, 5, -1, 1.38629436111989, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 14) == 0))
-##expect_true(all(vals - vals2 == 0))    ## XXXXXXXXXXXXXXXXXXXXXXXXXX WRONG
-##expect_true(round(theNF$calcLogDetJacobian(tVals) - 4.54724272356, 11) == 0)
-####
-#### test compiled
-##theNF <- Cpt
-##tVals <- theNF$transform(vals)
-##vals2 <- theNF$inverseTransform(tVals)
-####
-##expect_true(theNF$getOriginalLength() == 44)
-##expect_true(theNF$getTransformedLength() == 31)
-##expect_true(all(round(vals,15) - c(0, 1, 5, 0.5, 4, 1, -1, 0, 0, 0, 0.16, 1.2, 2, 1.2, 10, 14, 2, 14, 42, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1) == 0))
-##expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 1.38629436111989, 1, -0.405465108108164, 0, 0, 0, -0.916290731874155, 3, -0.00000000000000177635683940025, 5, -1, 1.38629436111989, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 14) == 0))
-##expect_true(all(vals - vals2 == 0))
-##expect_true(round(theNF$calcLogDetJacobian(tVals) - 4.54724272356, 11) == 0)
 
 
 
