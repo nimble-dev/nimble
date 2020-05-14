@@ -1,0 +1,132 @@
+source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
+context('Testing of parameterTransform nimbleFunction')
+
+
+##
+## parameterTransform testing code below
+##
+
+test_that('exact values from uncompiled and compiled parameterTransform', {
+    code <- nimbleCode({
+        a ~ dnorm(0, 1)
+        b ~ dgamma(1, 1)
+        c ~ dunif(2, 10)
+        d[1:3] ~ dmnorm(mu[1:3], cov = C[1:3,1:3])
+        e[1:3,1:3] ~ dwish(R = C[1:3,1:3], df = 5)
+    })
+    constants <- list(mu=rep(0,3), C=diag(3))
+    data <- list()
+    U <- matrix(c(.2,2,4,0,1,1,0,0,4), nrow=3, byrow=TRUE)
+    eInit <- t(U) %*% U
+    inits <- list(a=0, b=1, c=5, d=rep(0,3), e=eInit)
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    ##
+    expect_equal(Rmodel$calculate(), -33.077938542)
+    ##
+    nodes <- letters[1:5]
+    pt <- parameterTransform(Rmodel, nodes)
+    ## 
+    Cmodel <- compileNimble(Rmodel)
+    Cpt <- compileNimble(pt, project = Rmodel)
+    ##
+    vals <- values(Rmodel, nodes)
+    ##
+    ## test uncompiled
+    theNF <- pt
+    tVals <- theNF$transform(vals)
+    vals2 <- theNF$inverseTransform(tVals)
+    ##
+    expect_true(theNF$getOriginalLength() == 15)
+    expect_true(theNF$getTransformedLength() == 12)
+    expect_true(all(round(vals - c(0.00, 1.00, 5.00, 0.00, 0.00, 0.00, 0.04, 0.40, 0.80, 0.40, 5.00, 9.00, 0.80, 9.00, 33.00), 16) == 0))
+    expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 0, 0, -1.6094379124341, 2, 0, 4, 1, 1.38629436111989), 14) == 0))
+    expect_true(all(vals - vals2 == 0))
+    expect_true(round(theNF$calcLogDetJacobian(tVals), 7) == -0.9571127)
+    ##
+    ## test compiled
+    theNF <- Cpt
+    tVals <- theNF$transform(vals)
+    vals2 <- theNF$inverseTransform(tVals)
+    ##
+    expect_true(theNF$getOriginalLength() == 15)
+    expect_true(theNF$getTransformedLength() == 12)
+    expect_true(all(round(vals - c(0.00, 1.00, 5.00, 0.00, 0.00, 0.00, 0.04, 0.40, 0.80, 0.40, 5.00, 9.00, 0.80, 9.00, 33.00), 16) == 0))
+    expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 0, 0, -1.6094379124341, 2, 0, 4, 1, 1.38629436111989), 14) == 0))
+    expect_true(all(vals - vals2 == 0))
+    expect_true(round(theNF$calcLogDetJacobian(tVals), 7) == -0.9571127)
+})
+
+
+test_that('exact values parameterTransform of multivariate dmnorm and dwish nodes', {
+    code <- nimbleCode({
+        a ~ dnorm(0, 1)
+        b ~ dgamma(1, 1)
+        c ~ dunif(2, 10)
+        d[1:3] ~ dmnorm(mu[1:3], cov = C[1:3,1:3])
+        e[1:3,1:3] ~ dwish(R = C[1:3,1:3], df = 5)
+        f ~ dunif(0, 1)
+        g ~ dunif(0, 5)
+        h ~ dt(2, 2, 4)
+        ii[1:5,1:5] ~ dwish(R = Ci[1:5,1:5], df = 10)
+        j ~ dunif(-5, 5)
+    })
+    ##
+    Ci <- diag(5)
+    Ci[1,2] <- Ci[2,1] <- 0.2
+    Ci[1,3] <- Ci[3,1] <- 0.1
+    Ci[4,5] <- Ci[5,4] <- 0.3
+    ##
+    constants <- list(mu=rep(0,3), C=diag(3), Ci=Ci)
+    data <- list()
+    U <- matrix(c(.4,3,5,0,1,-1,0,0,4), nrow=3, byrow=TRUE)
+    eInit <- t(U) %*% U
+    inits <- list(a=0, b=1, c=5, d=rep(0,3), e=eInit, f=0.5, g=4, h=1, ii=diag(5), j=-1)
+    ##
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    ##
+    expect_equal(Rmodel$calculate(), -80.6027522654)
+    ##
+    nodes <- Rmodel$getNodeNames(stochOnly = TRUE)
+    pt <- parameterTransform(Rmodel, nodes)
+    ## 
+    Cmodel <- compileNimble(Rmodel)
+    Cpt <- compileNimble(pt, project = Rmodel)
+    ##
+    vals <- values(Rmodel, nodes)
+    ##
+    ## test uncompiled
+    theNF <- pt
+    tVals <- theNF$transform(vals)
+    vals2 <- theNF$inverseTransform(tVals)
+    ##
+    expect_true(theNF$getOriginalLength() == 44)
+    expect_true(theNF$getTransformedLength() == 31)
+    expect_true(all(round(vals,15) - c(0, 1, 5, 0.5, 4, 1, -1, 0, 0, 0, 0.16, 1.2, 2, 1.2, 10, 14, 2, 14, 42, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1) == 0))
+    expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 1.38629436111989, 1, -0.405465108108164, 0, 0, 0, -0.916290731874155, 3, -0.00000000000000177635683940025, 5, -1, 1.38629436111989, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 14) == 0))
+    expect_true(all(vals - vals2 == 0))
+    expect_true(round(theNF$calcLogDetJacobian(tVals) - 4.54724272356, 11) == 0)
+    ##
+    ## test compiled
+    theNF <- Cpt
+    tVals <- theNF$transform(vals)
+    vals2 <- theNF$inverseTransform(tVals)
+    ##
+    expect_true(theNF$getOriginalLength() == 44)
+    expect_true(theNF$getTransformedLength() == 31)
+    expect_true(all(round(vals,15) - c(0, 1, 5, 0.5, 4, 1, -1, 0, 0, 0, 0.16, 1.2, 2, 1.2, 10, 14, 2, 14, 42, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1) == 0))
+    expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 1.38629436111989, 1, -0.405465108108164, 0, 0, 0, -0.916290731874155, 3, -0.00000000000000177635683940025, 5, -1, 1.38629436111989, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 14) == 0))
+    expect_true(all(vals - vals2 == 0))
+    expect_true(round(theNF$calcLogDetJacobian(tVals) - 4.54724272356, 11) == 0)
+})
+
+
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)
+
+
