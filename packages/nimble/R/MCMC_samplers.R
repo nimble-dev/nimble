@@ -1007,7 +1007,7 @@ sampler_HMC <- nimbleFunction(
                         bdName  <- if(isValid(bounds[1])) 'lower'  else 'upper'
                         bdParam <- if(isValid(bounds[1])) 'lower_' else 'upper_'
                         bdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, bdParam))
-                        if(length(all.vars(bdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant ', bdName, ' bound.  HMC sampler does not yet handle that, please contant the NIMBLE development team.', call. = FALSE)
+                        if(length(all.vars(bdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant ', bdName, ' bound.  HMC sampler does not yet handle that, please contact the NIMBLE development team.', call. = FALSE)
                     }
                     logTransformNodes <- c(logTransformNodes, node)
                     transformNodeNums <- c(transformNodeNums, i)
@@ -1022,8 +1022,8 @@ sampler_HMC <- nimbleFunction(
                         if(model$isTruncated(node)) { lParam <- 'lower_'; uParam <- 'upper_' }
                         lowerBdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, lParam))
                         upperBdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, uParam))
-                        if(length(all.vars(lowerBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant lower bound.  HMC sampler does not yet handle that, please contant the NIMBLE development team.', call. = FALSE)
-                        if(length(all.vars(upperBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant upper bound.  HMC sampler does not yet handle that, please contant the NIMBLE development team.', call. = FALSE)
+                        if(length(all.vars(lowerBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant lower bound.  HMC sampler does not yet handle that, please contact the NIMBLE development team.', call. = FALSE)
+                        if(length(all.vars(upperBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant upper bound.  HMC sampler does not yet handle that, please contact the NIMBLE development team.', call. = FALSE)
                     } else {   ## some other distribution with finite support
                         message('HMC sampler is not familiar with the ', dist, ' distribution of node ', node, '.')
                         message('We\'re going to use a logit-transformation for sampling this node, but')
