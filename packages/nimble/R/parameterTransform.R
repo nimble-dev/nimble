@@ -206,7 +206,7 @@ parameterTransform <- nimbleFunction(
             }
             returnType(double())
             return(lp)
-        }
+        },
         ## 
         ## DT: I'm not certain if we want the *next two methods*, in whatever form,
         ## or if it would be left to users to take care of the gradient operations
