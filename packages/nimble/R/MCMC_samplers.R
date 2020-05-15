@@ -1294,7 +1294,9 @@ sampler_HMC <- nimbleFunction(
             warnings       <<- warningsOrig
             nwarmup        <<- nwarmupOrig
         }
-    ), enableDerivs = 'tapedModelCalculateCalcNodes', where = getLoadingNamespace()
+    ),
+    enableDerivs = 'tapedModelCalculateCalcNodes',
+    where = getLoadingNamespace()
 )
 
 

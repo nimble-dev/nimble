@@ -211,7 +211,9 @@ parameterTransform <- nimbleFunction(
             returnType(double())
             return(lp)
         }
-    ), enableDerivs = 'inverseTransform', where = getLoadingNamespace()
+    ),
+    enableDerivs = 'inverseTransform',
+    where = getLoadingNamespace()
 )
 
 
