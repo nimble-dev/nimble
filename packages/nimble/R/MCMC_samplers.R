@@ -961,7 +961,6 @@ sampler_HMC <- nimbleFunction(
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
         printTimesRan  <- if(!is.null(control$printTimesRan))  control$printTimesRan  else FALSE
-        printGradient  <- if(!is.null(control$printGradient))  control$printGradient  else FALSE
         printEpsilon   <- if(!is.null(control$printEpsilon))   control$printEpsilon   else FALSE
         printJ         <- if(!is.null(control$printJ))         control$printJ         else FALSE
         messages       <- if(!is.null(control$messages))       control$messages       else TRUE
@@ -988,7 +987,10 @@ sampler_HMC <- nimbleFunction(
         ###x###IND_LRNG <- 4   ## one-sided-bound: N/A;    interval-bounded parameters: log(range)
         ###x###maxInd <- max(sapply(grep('^IND_', ls(), value = TRUE), function(x) eval(as.name(x))))
         ###x###d <- length(targetNodesAsScalars)
+        browser()   ## XXXXXXXXXXXXXXXXXXXXXX
         d <- my_parameterTransform$getTransformedLength()
+        nimDerivs_wrt <- 1:d
+        nimDerivs_updateNodes <- makeUpdateNodes(targetNodes, calcNodes, model)
         d2 <- max(d, 2) ## for pre-allocating vectors
         ###x###transformNodeNums <- c(0, 0)               ## always a vector
         ###x###transformInfo <- array(0, c(2, maxInd))    ## always an array
@@ -1174,8 +1176,16 @@ sampler_HMC <- nimbleFunction(
             ###x###}
             returnType(double());   return(lp)
         },
+        tapedModelCalculateCalcNodes = function(qArg = double(1)) {
+            print('tapedModelCalculateCalcNodes is executing')    ## XXXXXXXXXXXXXXXXXXXXXX
+            values(model, targetNodes) <<- inverseTransform(qArg)
+            lp <- model$calculate(calcNodes)
+            returnType(double(0))
+            return(lp)
+        },
         gradient = function(qArg = double(1)) {
             ###x###values(model, targetNodes) <<- inverseTransformValues(qArg)
+            ###x###if(printGradient) { gradQ <- array(0, c(1,d)); gradQ[1,1:d] <- values(model, targetNodes); print(gradQ) }
             ###x###derivsOutput <- derivs(model$calculate(calcNodes), order = 1, wrt = targetNodes)
             ###x###grad <<- derivsOutput$jacobian[1, 1:d]
             ###x###if(length(transformNodeNums) > 2) {
@@ -1187,8 +1197,8 @@ sampler_HMC <- nimbleFunction(
             ###x###        if(id == 3) grad[nn] <<- grad[nn]*transformInfo[i, IND_RNG]*expit(x)^2*exp(-x) + 2/(1+exp(x)) - 1
             ###x###    }
             ###x###}
-            grad <<- my_parameterTransform$gradientCalculateCalcNodes(qArg)     ## NOTE: attention to this line
-            if(printGradient) { gradQ <- array(0, c(1,d)); gradQ[1,1:d] <- values(model, targetNodes); print(gradQ) }
+            derivsOutput <- nimDerivs(tapedModelCalculateCalcNodes(qArg), order = 1, wrt = nimDerivs_wrt, model = model, updateNodes = nimDerivs_updateNodes)
+            grad <<- derivsOutput$jacobian[1, 1:d]
         },
         leapfrog = function(qArg = double(1), pArg = double(1), eps = double(), first = double(), v = double()) {
             ## Algorithm 1 from Hoffman and Gelman (2014)
@@ -1284,7 +1294,7 @@ sampler_HMC <- nimbleFunction(
             warnings       <<- warningsOrig
             nwarmup        <<- nwarmupOrig
         }
-    ), where = getLoadingNamespace()
+    ), enableDerivs = 'tapedModelCalculateCalcNodes', where = getLoadingNamespace()
 )
 
 

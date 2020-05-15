@@ -1,5 +1,10 @@
 
 
+## Is it ok to have this next line in here??
+## It seems to be needed for package to build.
+## -DT May 2020
+nimbleOptions(experimentalEnableDerivs = TRUE)
+
 #' Automated transformations of model nodes to unconstrained scales
 #'
 #' ADD DETAILS
@@ -10,7 +15,6 @@ parameterTransform <- nimbleFunction(
     name = 'parameterTransform',
     setup = function(model, nodes) {
         nodesExpanded <- model$expandNodeNames(nodes)
-        calcNodes <- model$getDependencies(nodesExpanded)   ## DT: calcNodes may be unnecessary, see notes later
         if(any(model$isDeterm(nodesExpanded)))   stop(paste0('parameterTransform nodes may not be deterministic: ', paste0(nodesExpanded[model$isDeterm(nodesExpanded)],   collapse = ', ')))
         if(any(model$isDiscrete(nodesExpanded))) stop(paste0('parameterTransform nodes may not be discrete: ',      paste0(nodesExpanded[model$isDiscrete(nodesExpanded)], collapse = ', ')))
         nNodes <- length(nodesExpanded)
@@ -206,34 +210,8 @@ parameterTransform <- nimbleFunction(
             }
             returnType(double())
             return(lp)
-        },
-        ## 
-        ## DT: I'm not certain if we want the *next two methods*, in whatever form,
-        ## or if it would be left to users to take care of the gradient operations
-        ## (via use of model$calculate(), and use of nimDerivs()).
-        ## Anyway, I'm sketching out how I think it might look.
-        ## The purpose of these *next two methods* is to return a gradient vector, specifically:
-        ## - return the gradient of model$calculate(calcNodes),
-        ## - where calcNodes is the usual model$getDependencies(targetNodes),
-        ## - the gradient is taken w.r.t. the elements of targetNodes,
-        ## - the gradient is calculated after storing inverse-transformed values into the model.
-        ## 
-        calculateModelLP = function(transformedValues = double(1)) {   ## method name: open for discussion
-            values(model, nodesExpanded) <<- inverseTransform(transformedValues)
-            lp <- model$calculate(calcNodes)
-            returnType(double(0))
-            return(lp)
-        },
-        gradientCalculateCalcNodes = function(transformedValues = double(1)) {   ## method name: open for discussion
-            ##currentModelValues <<- values(model, nodesExpanded)    ## not necessary ?
-            derivsOutput <- nimDerivs(calculateModelLP(transformedValues), order = 1, wrt = transformedValues)
-            grad <- derivsOutput$gradient[1, 1:tLength]
-            ##values(model, nodesExpanded) <<- currentModelValues    ## not necessary ?
-            ##model$calculate(calcNodes)                             ## not necessary ?
-            returnType(double(1))
-            return(grad)
         }
-    ), where = getLoadingNamespace()
+    ), enableDerivs = 'inverseTransform', where = getLoadingNamespace()
 )
 
 
