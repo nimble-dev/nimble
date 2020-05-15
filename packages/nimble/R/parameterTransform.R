@@ -147,8 +147,15 @@ parameterTransform <- nimbleFunction(
         inverseTransform = function(transformedValues = double(1)) {
             ## argument on transformed scale, return vector suitable for values(model,)
             modelValuesVector <- nimNumeric(nLength)
+            iNode <- 1L ## guarantee int types in compilation for compatibility with AD
+            j <- 1L
+            i <- 1L
+            tD1 <- 1L
+            tD2 <- 1L
             for(iNode in 1:nNodes) {
-                theseValues <- transformedValues[transformData[iNode,TIND1]:transformData[iNode,TIND2]]
+                tD1 <- transformData[iNode,TIND1]
+                tD2 <- transformData[iNode,TIND2]
+                theseValues <- transformedValues[tD1:tD2]
                 if(transformData[iNode,TYPE] == 1) {   ## 1: scalar unconstrained
                     theseInvTransformed <- theseValues }
                 if(transformData[iNode,TYPE] == 2) {   ## 2: scalar semi-interval (0, Inf)
