@@ -108,6 +108,7 @@ Sys.setenv(PATH = newPath)
 ```      
   - Be sure the `Rtools.exe` version matches the R version.
   - Try re-installing `Rtools` followed by re-installing NIMBLE.
+  - If you're using Rtools40, make sure you are using a newer version or RStudio (at least 1.2.5042).
   - If there are filesystem or permissions issues, it is possible to install NIMBLE in a local directory using the `lib` argument to `install.packages`.
   - In the past we've heard reports from Windows users of problems when their filesystem involved a space in a directory name in the path to `RHOME`.  We've also heard reports from Windows users of problems when R is installed on a network drive. We think both of these issues have been resolved. 
 
