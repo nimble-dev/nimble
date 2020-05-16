@@ -39,6 +39,7 @@ branches:
   only:
     - master
     - devel
+    - master
 
 latex: false  # Work around tlmgr issues.
 
