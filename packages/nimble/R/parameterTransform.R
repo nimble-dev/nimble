@@ -111,6 +111,7 @@ parameterTransform <- nimbleFunction(
         transform = function(nodeValuesFromModel = double(1)) {
             ## argument values(model, nodes), return vector on unconstrained scale
             transformed <- nimNumeric(tLength)
+            print('TODO: change all these to nimSwitch')    ## XXXXXXXXXXXXXXXXXXXXXXXXX
             for(iNode in 1:nNodes) {
                 theseValues <- nodeValuesFromModel[transformData[iNode,NIND1]:transformData[iNode,NIND2]]
                 if(transformData[iNode,TYPE] == 1) {   ## 1: scalar unconstrained
@@ -153,6 +154,7 @@ parameterTransform <- nimbleFunction(
             tD1 <- 1L
             tD2 <- 1L
             dd <- 1L
+            print('TODO: change all these to nimSwitch')    ## XXXXXXXXXXXXXXXXXXXXXXXXX
             for(iNode in 1:nNodes) {
                 tD1 <- transformData[iNode,TIND1]
                 tD2 <- transformData[iNode,TIND2]
@@ -194,6 +196,7 @@ parameterTransform <- nimbleFunction(
             ## values(model, nodes) <- pt$inverseTransform(transformedValues)
             ## lp <- model$calculate(calcNodes) + pt$calcLogDetJacobian(transformedValues)
             lp <- 0
+            print('TODO: change all these to nimSwitch')    ## XXXXXXXXXXXXXXXXXXXXXXXXX
             for(iNode in 1:nNodes) {
                 theseValues <- transformedValues[transformData[iNode,TIND1]:transformData[iNode,TIND2]]
                 if(transformData[iNode,TYPE] == 1) {   ## 1: scalar unconstrained
