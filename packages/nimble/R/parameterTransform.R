@@ -152,6 +152,7 @@ parameterTransform <- nimbleFunction(
             i <- 1L
             tD1 <- 1L
             tD2 <- 1L
+            dd <- 1L
             for(iNode in 1:nNodes) {
                 tD1 <- transformData[iNode,TIND1]
                 tD2 <- transformData[iNode,TIND2]
@@ -173,7 +174,7 @@ parameterTransform <- nimbleFunction(
                     cholAsMatrix <- nimArray(0, dim = c(dd, dd))
                     ## DT: there has to be a better way to do this procedure, below,
                     ## now creating the vector of the Wishart node values.
-                    tInd <- 1
+                    tInd <- 1L
                     for(j in 1:dd) {
                         for(i in 1:dd) {
                             if(i==j) { cholAsMatrix[i,j] <- exp(theseValues[tInd]); tInd <- tInd+1 }
@@ -181,7 +182,9 @@ parameterTransform <- nimbleFunction(
                     valuesAsMatrix <- t(cholAsMatrix) %*% cholAsMatrix
                     theseInvTransformed <- nimNumeric(dd*dd, valuesAsMatrix)
                 }
-                modelValuesVector[transformData[iNode,NIND1]:transformData[iNode,NIND2]] <- theseInvTransformed
+                tD1 <- transformData[iNode,NIND1]
+                tD2 <- transformData[iNode,NIND2]
+                modelValuesVector[tD1:tD2] <- theseInvTransformed
             }
             returnType(double(1))
             return(modelValuesVector)
