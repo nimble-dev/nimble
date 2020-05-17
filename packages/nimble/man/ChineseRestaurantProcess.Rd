@@ -25,7 +25,7 @@ rCRP(n, conc = 1, size)
 \code{dCRP} gives the density, and \code{rCRP} gives random generation.
 }
 \description{
-EXPERIMENTAL Density and random generation for the Chinese
+Density and random generation for the Chinese
   Restaurant Process distribution.
 }
 \details{

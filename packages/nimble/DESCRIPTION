@@ -49,6 +49,7 @@ Note: For convenience, the package includes the necessary header files for the
     provide. The license for the Eigen code is very permissive and allows us to
     distribute it with this package. See <http://eigen.tuxfamily.org/index.php?
     title=Main_Page> and also the License section on that page.
+Encoding: UTF-8
 LazyData: false
 Collate:
     config.R

@@ -180,7 +180,6 @@ IF2Step <- nimbleFunction(
 #' @author Nicholas Michaud, Dao Nguyen, and Christopher Paciorek
 #' @family particle filtering methods
 #' @details 
-#' 
 #' Each of the \code{control()} list options are described in detail below:
 #' \describe{
 #'  \item{sigma}{A vector specifying a non-negative perturbation magnitude for each element of the \code{params} argument.  Defaults to a vector of 1's.}

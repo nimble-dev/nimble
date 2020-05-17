@@ -14,7 +14,7 @@ stick_breaking(z, log = 0)
 \item{log}{logical; if \code{TRUE}, weights are returned on the log scale.}
 }
 \description{
-EXPERIMENTAL Computes probabilities based on stick breaking construction.
+Computes probabilities based on stick breaking construction.
 }
 \details{
 The stick breaking function produces a vector of probabilities that add up to one,
