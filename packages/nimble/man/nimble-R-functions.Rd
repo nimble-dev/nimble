@@ -36,8 +36,9 @@ nimSeq(from, to, by, length.out)
 \item{by}{increment of the sequence.}
 
 \item{length.out}{desired length of the sequence.}
-
-\item{along.with}{take the length from the length of this argument.}
+}
+\description{
+The functions \code{c}, \code{rep}, \code{seq}, \code{which}, \code{diag}, \code{length}, \code{seq_along}, \code{is.na}, \code{is.nan}, \code{any}, and \code{all} can be used in nimbleFunctions and compiled using \code{compileNimble}.
 }
 \details{
 For \code{c}, \code{rep}, \code{seq}, these functions are NIMBLE's version of similar R functions, e.g., \code{nimRep} for \code{rep}.   In a \code{nimbleFunction}, either the R name (e.g., \code{rep}) or the NIMBLE name (e.g., \code{nimRep}) can be used.  If the R name is used, it will be converted to the NIMBLE name. For \code{which}, \code{length}, \code{diag}, \code{seq_along}, \code{is.na}, \code{is.nan}, \code{any}, \code{all} simply use the standard name without \code{"nim"}. These functions largely mimic (see exceptions below) the behavior of their R counterparts, but they can be compiled in a \code{nimbleFunction} using \code{compileNimble}.
@@ -56,7 +57,7 @@ For \code{c}, \code{rep}, \code{seq}, these functions are NIMBLE's version of si
 
 \code{seq_along} behaves like the R version.
 
-\code{is.na} behaves like the R version but does not correctly handle \code{NA} values from R that are type 'logical', so convert these using as.numeric() before passing from R to NIMBLE.
+\code{is.na} behaves like the R version but does not correctly handle \code{NA} values from R that are type 'logical', so convert these using \code{as.numeric} before passing from R to NIMBLE.
 
 \code{is.nan} behaves like the R version, but treats \code{NA} of type 'double' as being \code{NaN} and \code{NA} of type 'logical' as not being \code{NaN}. 
 

@@ -30,6 +30,27 @@ are not in the set of latent nodes specified in \code{nodes}.}
 \description{
 Create an IF2 algorithm for a given NIMBLE state space model.
 }
+\details{
+Each of the \code{control} list options are described in detail below:
+\describe{
+ \item{sigma}{A vector specifying a non-negative perturbation magnitude for each element of the \code{params} argument.  Defaults to a vector of ones.}
+ \item{initParamSigma}{An optional vector specifying a vector of standard deviations to use when simulating an initial particle swarm centered on the initial value of the parameters. Defaults to \code{sigma}.}
+ \item{inits}{A vector specifying an initial value for each element of the \code{params} argument.  Defaults to the parameter values in the model at the time the model is built.}
+ \item{timeIndex}{An integer used to manually specify which dimension of the latent state variable indexes time. Only needs to be set if the number of time points is less than or equal to the size of the latent state at each time point.}
+ \item{initModel}{A logical value indicating whether to initialize the model before running the filtering algorithm.  Defaults to \code{TRUE}.}
+}
+
+ The IF2 agorithm uses iterated filtering to estimate maximum likelihood values for top-level parameters for a state space model.  
+       
+ The resulting specialized IF2 algorithm will accept the following arguments:
+ 
+ \describe{
+   \item{m}{A single integer specifying the number of particles to use for each run of the filter. }
+   \item{n}{A single integer specifying the number of overall filter iterations to run. }
+   \item{alpha}{A double specifying the cooling factor to use for the IF2 algorithm. }
+ }
+ The \code{run} fuction will return a vector with the estimated MLE.  Additionally, once the specialized algorithm has been run, it can be continued for additional iterations by calling the \code{continueRun} method.
+}
 \section{Reparameterization}{
 
 
