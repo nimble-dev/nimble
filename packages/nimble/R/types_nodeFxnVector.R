@@ -24,16 +24,23 @@ nodeFunctionVector_WithDerivsOutputNodes <- function(model,
 }
 
 nodeFunctionVector_DerivsModelUpdateNodes <- function(model,
-                                                      updateNodes) {
+                                                      updateNodes = NULL,
+                                                      constantNodes = NULL) {
   nimDerivsInfo <- nimDerivsInfoClass(updateNodes = updateNodes,
+                                      constantNodes = constantNodes,
                                       thisModel = model,
                                       case = "updateOnly")
-  classLabel <- "nodeFunctionVector_nimDerivs"
-  structure(list(gids = numeric(0),
-                 indexingInfo = list(declIDs = integer(), rowIndices = integer()),
-                 model = model,
-                 nimDerivsInfo = nimDerivsInfo),
-            class = classLabel)
+  ## Make one dummy node that can be used for set_CppAD_tape_info_for_model
+  ## It will never be called from this object
+  dummyNodeNames <- c(updateNodes, constantNodes)[1]
+  if(is.null(dummyNodeNames)) dummyNodeNames <- character()
+  NFV <- nodeFunctionVector(model = model,
+                            nodeNames = dummyNodeNames,
+                            excludeData = FALSE,
+                            sortUnique = FALSE)
+  class(NFV) <- "nodeFunctionVector_nimDerivs"
+  NFV$nimDerivsInfo <- nimDerivsInfo
+  NFV
 }
 
 nodeFunctionVector <-

@@ -79,12 +79,16 @@ symbolTable2templateTypeSymbolTable <- function(symTab,
                                                 clearRef = FALSE,
                                                 replacementBaseType = 'TYPE_',
                                                 replacementTemplateArgs = list(),
-                                                ignore = character()) {
+                                                ignore = character(),
+                                                skip = character()) {
   newSymTab <- symbolTable()
   symNames <- symTab$getSymbolNames()
   for(sn in symNames) {
     oldSym <- symTab$getSymbolObject(sn)
     inIgnore <- any(unlist(lapply(ignore, function(x) grepl(x, sn))))
+    inSkip <- any(unlist(lapply(skip, function(x) grepl(x, sn))))
+    if(inSkip)
+        next
     if(inIgnore)
         newSym <- oldSym$copy()
     else
@@ -165,6 +169,7 @@ make_deriv_function <- function(origFun,
                                   nDim = 1, type = 'double', ref = TRUE, const = TRUE))
   newFun$args$addSymbol(cppNimArr(name = 'ARGZ_wrtVector_',
                                   nDim = 1, type = 'double', ref = TRUE, const = TRUE))
+  newFun$args$addSymbol(cppVar(baseType = 'bool', name = "RESET_"))
   newFun$args$addSymbol(cppVar(name = 'ARGZ_ADinfo_',
                                ref = TRUE,
                                baseType = "nimbleCppADinfoClass"))
@@ -179,12 +184,20 @@ make_deriv_function <- function(origFun,
     returnSym <- cppVarSym2templateTypeCppVarSym(returnSym)
   localVars$addSymbol(returnSym)
   ## 2. Create getDerivs_wrapper line
-  innerRcall <- do.call('call',
-                        c(list(argTransferFunName),
-                          lapply(origFun$args$getSymbolNames(), as.name),
-                          list(as.name("ARGZ_ADinfo_"))),
-                        quote = TRUE
-                        )
+  if(meta)
+    innerRcall <- do.call('call',
+                          c(list(argTransferFunName),
+                            lapply(origFun$args$getSymbolNames(), as.name),
+                            list(as.name("recordingInfo_"), as.name("RESET_"), as.name("ARGZ_ADinfo_"))),
+                          quote = TRUE
+                          )
+  else
+    innerRcall <- do.call('call',
+                          c(list(argTransferFunName),
+                            lapply(origFun$args$getSymbolNames(), as.name),
+                            list(as.name("RESET_"), as.name("ARGZ_ADinfo_"))),
+                          quote = TRUE
+                          )
 
   getDerivs_wrapper <- if(!meta) 'getDerivs_wrapper' else 'getDerivs_wrapper_meta'
   getDerivsRcall <- substitute(returnList_ <- GETDERIVS_WRAPPER( INNERCALL,
@@ -398,6 +411,7 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
   CFT$returnType <- cppVarFull(baseType = "CppAD::ADFun", templateArgs = list('double'), ptr = 1, name = 'RETURN_TAPE_') ##cppVoid()
   CFT$name <- newFunName
   CFT$args <- targetFunDef$args$copy()
+  symNames <- CFT$args$getSymbolNames()
 
     ## create vector< CppAD::AD<double> > ADindependentVars
   ADindependentVarsSym <- cppVarFull(name = 'ADindependentVars', baseType = 'vector', templateArgs = list( cppVarFull(baseType = 'CppAD::AD', templateArgs = 'double', name = character()) ), ref = FALSE) 
@@ -414,7 +428,8 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
   localVars <- symbolTable2templateTypeSymbolTable(targetFunDef$args,
                                                    clearRef = TRUE,
                                                    replacementBaseType = 'CppAD::AD',
-                                                   replacementTemplateArgs = list('double'))
+                                                   replacementTemplateArgs = list('double'),
+                                                   skip = symNames[!(symNames %in% independentVarNames)])
   makeADname <- function(x) paste0(x, "AD_")
   for(varName in CFT$args$getSymbolNames()) {
     ## Move this to a symbolTable$changeSymbolName method
@@ -452,7 +467,6 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
     }
 
     ## Make a separate resize line for ADresponseVars.  ANS_ does not need a resize line.
-    symNames <- CFT$args$getSymbolNames()
     ## set up a set of index variables for copying code, up to six to be arbitrary (allowing up to 6-dimensional nimble objects to be handled)
     indexVarNames <- paste0(letters[9:14],'_')
     ## set any sizes, which must be known
@@ -562,7 +576,7 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
     ## call the taping function
   TCFcall <- do.call('call', c(list(ADfunName),
                                lapply(targetFunDef$args$getSymbolNames(),
-                                      function(x) as.name(makeADname(x))),
+                                      function(x) if(x %in% independentVarNames) as.name(makeADname(x)) else as.name(x)),
                                list(as.name(recordingInfoSym$name))),
                      quote = TRUE)
     tapingCallRCode <- substitute(ANS_ <- TCF, list(TCF = TCFcall))
@@ -909,26 +923,34 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
     } else {
       copyToDoublesLines <- list()
       callForTapingNames <- character()
-        for(ivn in seq_along(independentVarNames)) {
-          thisName <- independentVarNames[ivn]
-          oldSym <- newTempSymbols[[ thisName ]]
-          newName <- paste0(thisName, "_double_temp_")
-          oldSym$name <- newName
-          oldSym$ref <- FALSE
-          callForTapingNames <- c(callForTapingNames, newName)
-          localVars$addSymbol(oldSym)
-          ## newRline <- "NEWV__.setSize(ORIGV__.getSizeVec(), false, false); copy_CppADdouble_to_double(ORIGV__.getPtr(), ORIGV__.getPtr() + ORIGV__.size(), NEWV__.getPtr());"
-          newRline <- "copy_CppADdouble_to_double(ORIGV__, NEWV__);" ## This also sets size
-          newRline <- gsub("NEWV__", newName, newRline)
-          newRline <- gsub("ORIGV__", thisName, newRline)
-          newRline <- substitute(cppLiteral(LINE), list(LINE = newRline))
-          copyToDoublesLines[[ length(copyToDoublesLines)+1 ]] <- newRline
+      argSymNames <- TF$args$getSymbolNames()
+        for(ivn in seq_along(argSymNames)) {
+          thisName <- argSymNames[ivn]
+          if(thisName %in% independentVarNames) {
+            oldSym <- newTempSymbols[[ thisName ]]
+            newName <- paste0(thisName, "_double_temp_")
+            oldSym$name <- newName
+            oldSym$ref <- FALSE
+            callForTapingNames <- c(callForTapingNames, newName)
+            localVars$addSymbol(oldSym)
+            ## newRline <- "NEWV__.setSize(ORIGV__.getSizeVec(), false, false); copy_CppADdouble_to_double(ORIGV__.getPtr(), ORIGV__.getPtr() + ORIGV__.size(), NEWV__.getPtr());"
+            newRline <- "copy_CppADdouble_to_double(ORIGV__, NEWV__);" ## This also sets size
+            newRline <- gsub("NEWV__", newName, newRline)
+            newRline <- gsub("ORIGV__", thisName, newRline)
+            newRline <- substitute(cppLiteral(LINE), list(LINE = newRline))
+            copyToDoublesLines[[ length(copyToDoublesLines)+1 ]] <- newRline
+          } else {
+            callForTapingNames <- c(callForTapingNames, thisName)
+          }
         }
         copyToDoublesLines <- do.call("call", c(list("{"), copyToDoublesLines))
     }
 
     if(!isNode) {
-        TF$args$addSymbol(cppVar(baseType = "nimbleCppADinfoClass", ref = TRUE, name = "ADinfo"))
+      if(metaTape)
+        TF$args$addSymbol(cppVarFull(baseType = "nimbleCppADrecordingInfoClass", name = "recordingInfo_"))
+      TF$args$addSymbol(cppVar(baseType = "bool", name = "RESET_"))
+      TF$args$addSymbol(cppVar(baseType = "nimbleCppADinfoClass", ref = TRUE, name = "ADinfo"))
     }
     
     ## record tape if needed
@@ -937,12 +959,19 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
                                       lapply(callForTapingNames, as.name),
                                       quote(ADinfo)),
                                     quote = TRUE)
+    if_record_condition <- if(metaTape) {
+      quote((!cppMemberFunction(recording(recordingInfo_))) & (!memberData(ADinfo, ADtape) | RESET_)) ##HERE
+    } else {
+      quote(!memberData(ADinfo, ADtape) | RESET_)
+    }
     recordIfNeededCode <- substitute(
-      if(!memberData(ADinfo, ADtape)) {
+      if(IFRECORDCONDITION) {
+        cppLiteral("if(ADinfo.ADtape) delete ADinfo.ADtape;")
         COPYTODOUBLESLINES
         memberData(ADinfo, ADtape) <- RUNCALLFORTAPING
       },
-      list(RUNCALLFORTAPING = runCallForTapingCode,
+      list(IFRECORDCONDITION = if_record_condition,
+           RUNCALLFORTAPING = runCallForTapingCode,
            COPYTODOUBLESLINES = copyToDoublesLines))
     ## recordIfNeededCode <- substitute(
     ##   if(!myADtapePtrs_[FUNINDEX]) {

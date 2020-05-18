@@ -435,7 +435,12 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   ## }
                                                   useModelInfo <- addTypeTemplateFunction(funName,
                                                                                           derivControl = derivControl) ## returns either NULL (if there is no model$calculate) or a nodeFxnVector name (if there is)
-                                                  independentVarNames <- names(functionDefs[[funName]]$args$symbols)
+                                                ## independentVarNames <- names(functionDefs[[funName]]$args$symbols)
+                                                ivBaseTypes <- unlist(lapply(functionDefs[[funName]]$args$symbols, `[[`, "baseType"))
+                                                independentVarNames <- names(ivBaseTypes)
+                                                includeIV <- ivBaseTypes != "bool" ## Could do argBaseType == "double", but at this writing handling "bool" is the narrow goal
+                                                independentVarNames <- as.character(independentVarNames[includeIV])
+
                                                   if(nfProc$isNode) independentVarNames <- independentVarNames[-1]  ## remove ARG1_INDEXEDNODEINFO__ from independentVars
                                                   if(!isTRUE(derivControl[['meta']])) {
                                                       addADtapingFunction(funName,
@@ -823,7 +828,7 @@ recurse_modifyForAD <- function(code, symTab, workEnv) {
 
 modifyForAD_getSetValues <- function(code, symTab, workEnv) {
   if(code$name == 'setValues') {
-    code$name <- 'setValues_AD_AD'
+    code$name <- 'setValues_AD_AD_taping'
   }
   accessorName <- code$args[[2]]$name
   already_AD_name <- grepl("_AD_$", accessorName) ## _AD_ is at the end. I'm not sure it would ever already be there, so this is defensive.
@@ -834,6 +839,10 @@ modifyForAD_getSetValues <- function(code, symTab, workEnv) {
     classSymTab$addSymbol(newSymbol)
     code$args[[2]]$name <- newSymbol$name
   }
+  thirdArg <- RparseTree2ExprClasses(as.name(accessorName))
+  setArg(code, 3, thirdArg)
+  fourthArg <- RparseTree2ExprClasses(quote(cppMemberFunction(recording(recordingInfo_))))
+  setArg(code, 4, fourthArg)
   invisible(NULL)
 }
 

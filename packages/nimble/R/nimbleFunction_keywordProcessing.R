@@ -855,6 +855,7 @@ nimDerivs_keywordInfo <- keywordInfoClass(
         newCode <- calculate_keywordInfo$processor(innerCode, nfProc, RCfunProc)
         newCode[[1]] <- as.name('nimDerivs_calculate')
         newCode$orderVector <- code$order
+        newCode$reset <- if(is.null(code[['reset']])) FALSE else code[['reset']]
         return(newCode)
     }
     ## Not a calculate case:
@@ -891,15 +892,17 @@ nimDerivs_keywordInfo <- keywordInfoClass(
       ## Check if model and updateNodes are provided.
       ## If so, create a nodeFxnVector for them.
       modelProvided <- !is.null(code[['model']])
-      updateNodesProvided <- !is.null(code[['updateNodes']])
-      if(xor(modelProvided, updateNodesProvided))
-        stop('nimDerivs arguments model and updateNodes must be provided together or not at all.')
+      updateNodesProvided <- !is.null(code[['updateNodes']]) ## This can be a list of both updateNodes and constantNodes or a vector of node names
+      constantNodesProvided <- !is.null(code[['constantNodes']]) ## This can be a vector of node names or provided in updateNodes
+      if(xor(modelProvided, updateNodesProvided || constantNodesProvided))
+        stop('nimDerivs arguments model and at least one of updateNodes or constantNodes must be provided together or not at all.')
       if(modelProvided) { ## At this point that means both were provided
-        DMUNargList <- list(model = code$model, updateNodes = code$updateNodes)
+        DMUNargList <- list(model = code$model, updateNodes = code[["updateNodes"]], constantNodes = code[["constantNodes"]])
         accessName <- nodeFunctionVector_DerivsModelUpdateNodes_SetupTemplate$makeName(DMUNargList)
         addNecessarySetupCode(accessName, DMUNargList, nodeFunctionVector_DerivsModelUpdateNodes_SetupTemplate, nfProc)
         code[['model']] <- NULL
-        code[['updateNodes']] <- NULL
+        if(updateNodesProvided) code[['updateNodes']] <- NULL
+        if(constantNodesProvided) code[['constantNodes']] <- NULL
         code[['updateNodesName']] <- accessName
       }
     }
@@ -1018,7 +1021,7 @@ matchFunctions[['nimEigen']] <- function(squareMat, symmetric = FALSE, only.valu
 matchFunctions[['nimSvd']] <- function(mat, vectors = 'full'){}
 matchFunctions[['nimOptim_model']] <- function(model, wrt, nodes, use.gr = TRUE, method = "BFGS", lower = -Inf, upper = Inf, control = nimOptimDefaultControl(), hessian = FALSE) {} ## Any changes here need to be reflected in the keyword processor, which has to re-insert arguments to a modified call.
 matchFunctions[['nimDerivs']] <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NA, wrt = NA, calcNodes = NA, static = FALSE,
-                                          model, updateNodes) {} ## Avoid NULLs in R default args.
+                                          model, updateNodes, constantNodes, reset = FALSE) {} ## Avoid NULLs in R default args.
 matchFunctions[['derivInfo']] <- derivInfo
 matchFunctions[['besselK']] <- function(x, nu, expon.scaled = FALSE){}
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
@@ -1274,7 +1277,8 @@ nodeFunctionVector_WithDerivsOutput_SetupTemplate <- setupCodeTemplateClass(
 nodeFunctionVector_DerivsModelUpdateNodes_SetupTemplate <- setupCodeTemplateClass(
   makeName = function(argList){
     Rname2CppName(paste(deparse(argList$model),
-                        deparse(argList$updateNodes),
+                        deparse(argList[['updateNodes']]),
+                        deparse(argList[['constantNodes']]),
                         'nodeFxnVector_DerivsModelUpdateNodes_derivs_', ## The "_derivs_" tag is used later to determine the right class - klugey
                         sep = '_')
                   )
@@ -1282,12 +1286,14 @@ nodeFunctionVector_DerivsModelUpdateNodes_SetupTemplate <- setupCodeTemplateClas
   codeTemplate = quote(
     NODEFXNVECNAME <- nimble:::nodeFunctionVector_DerivsModelUpdateNodes(
       model = MODEL,
-      updateNodes = UPDATENODES)
+      updateNodes = UPDATENODES,
+      constantNodes = CONSTANTNODES)
   ), 
   makeCodeSubList = function(resultName, argList){
     list(NODEFXNVECNAME = as.name(resultName),
          MODEL = argList$model,
-         UPDATENODES = argList$updateNodes
+         UPDATENODES = argList[["updateNodes"]],
+         CONSTANTNODES = argList[["constantNodes"]]
          )
   })
 
@@ -1961,7 +1967,6 @@ handleScaleAndRateForExpNimble <- function(code){
 nimDerivsInfoClass_init_impl <- function(.self
                                        , wrtNodes
                                        , calcNodes
-                                       , constantNodes = character()
                                        , model) {
     .self$model <- model
 
@@ -1972,38 +1977,29 @@ nimDerivsInfoClass_init_impl <- function(.self
                                                logProb = FALSE)
     .self$wrtMapInfo <- makeMapInfoFromAccessorVectorFaster(wrtNodesAccessor)
 
-    constantNodes <- model$expandNodeNames(wrtNodes)
+    calcNodes <- model$expandNodeNames(calcNodes)
+    updateNodes <- makeUpdateNodes(wrtNodes,
+                                   calcNodes,
+                                   model,
+                                   dataAsConstantNodes = TRUE)
+    constantNodes <- updateNodes$constantNodes
+    updateNodes <- updateNodes$updateNodes
+    
+    extraInputNodesAccessor <- modelVariableAccessorVector(model,
+                                                           updateNodes,
+                                                           logProb = FALSE)
+    .self$extraInputMapInfo <-
+        makeMapInfoFromAccessorVectorFaster(extraInputNodesAccessor)
+
     constantNodesAccessor <- modelVariableAccessorVector(model,
                                                          constantNodes,
                                                          logProb = FALSE)
     .self$constantMapInfo <- makeMapInfoFromAccessorVectorFaster(constantNodesAccessor)
 
-    ## nonWrtCalcNodes <- setdiff(calcNodes, wrtNodes)
-    ## nonWrtCalcNodeNames <- model$expandNodeNames(nonWrtCalcNodes)
-    ## nonWrtStochCalcNodeNames <- nonWrtCalcNodeNames[ model$isStoch(nonWrtCalcNodeNames) ]
-    ## parentNodes <- getParentNodes(calcNodes, model)
-    ## neededParentNodes <- setdiff(parentNodes, c(wrtNodes, nonWrtCalcNodeNames))
-    ## extraInputNodes <- model$expandNodeNames(c(neededParentNodes,
-    ##                                            nonWrtStochCalcNodeNames),
-    ##                                          sort = TRUE)
-    calcNodes <- model$expandNodeNames(calcNodes)
-    extraInputNodes <- makeUpdateNodes(wrtNodes,
-                                       calcNodes,
-                                       model)
     
-    extraInputNodesAccessor <- modelVariableAccessorVector(model,
-                                                           extraInputNodes,
-                                                           logProb = FALSE)
-    .self$extraInputMapInfo <-
-        makeMapInfoFromAccessorVectorFaster(extraInputNodesAccessor)
-
     ## output nodes: deterministic nodes in calcNodes plus logProb nodes
     ##   but not the actual data nodes.
-    ## calcNodeNames <- model$expandNodeNames(calcNodes)
-    ## logProbCalcNodeNames <- model$modelDef$nodeName2LogProbName(calcNodeNames)
-    ## isDetermCalcNodes <- model$isDeterm(calcNodeNames)
-    ## modelOutputNodes <- c(calcNodeNames[isDetermCalcNodes],
-    ##                       logProbCalcNodeNames)
+
     modelOutputNodes <- makeOutputNodes(calcNodes, model)
     
     modelOutputNodesAccessor <- modelVariableAccessorVector(model,
@@ -2054,10 +2050,10 @@ nimDerivsInfoClass_output_init_impl <- function(.self,
   NULL
 }
 
-#' @export
 makeUpdateNodes <- function(wrtNodes,
                             calcNodes,
-                            model) {
+                            model,
+                            dataAsConstantNodes = TRUE) {
   nonWrtCalcNodes <- setdiff(calcNodes, wrtNodes)
   nonWrtCalcNodeNames <- model$expandNodeNames(nonWrtCalcNodes)
   nonWrtStochCalcNodeNames <- nonWrtCalcNodeNames[ model$isStoch(nonWrtCalcNodeNames) ]  
@@ -2067,12 +2063,23 @@ makeUpdateNodes <- function(wrtNodes,
   extraInputNodes <- model$expandNodeNames(c(neededParentNodes,
                                              nonWrtStochCalcNodeNames),
                                            sort = TRUE)
-  extraInputNodes
+  constantNodes <- character()
+  if(dataAsConstantNodes) {
+    boolData <- model$isData(extraInputNodes)
+    constantNodes <- extraInputNodes[boolData]
+    extraInputNodes <- extraInputNodes[!boolData]
+  }
+  list(updateNodes = extraInputNodes,
+       constantNodes = constantNodes)
 }
 
 nimDerivsInfoClass_update_init_impl <- function(.self,
-                                                updateNodes,
-                                                model) {
+                                                updateNodes = NULL,
+                                                constantNodes = NULL,
+                                                model) {  
+  if(is.null(updateNodes)) updateNodes <- character()
+  if(is.null(constantNodes)) constantNodes <- character()
+
   .self$model <- model
   wrtNodesAccessor <- modelVariableAccessorVector(model,
                                                   character(),
@@ -2080,7 +2087,7 @@ nimDerivsInfoClass_update_init_impl <- function(.self,
   .self$wrtMapInfo <- makeMapInfoFromAccessorVectorFaster(wrtNodesAccessor)
   
   constantNodesAccessor <- modelVariableAccessorVector(model,
-                                                       character(),
+                                                       constantNodes,
                                                        logProb = FALSE)
   .self$constantMapInfo <- makeMapInfoFromAccessorVectorFaster(constantNodesAccessor)
 
@@ -2109,10 +2116,11 @@ nimDerivsInfoClass <- setRefClass(
       , model = 'ANY'
     ),
     methods = list(
-        initialize = function(wrtNodes = NA,
-                              calcNodes = NA,
-                              updateNodes = NA,
-                              thisModel = NA,
+        initialize = function(wrtNodes = NULL,
+                              calcNodes = NULL,
+                              updateNodes = NULL,
+                              constantNodes = NULL,
+                              thisModel = NULL,
                               case = "nimDerivsCalculate",
                               ...) {
           switch(case,
@@ -2123,6 +2131,7 @@ nimDerivsInfoClass <- setRefClass(
                  
                  updateOnly = nimDerivsInfoClass_update_init_impl(.self = .self,
                                                                   updateNodes = updateNodes,
+                                                                  constantNodes = constantNodes,
                                                                   model = thisModel),
                  
                  outputOnly = nimDerivsInfoClass_output_init_impl(.self = .self,

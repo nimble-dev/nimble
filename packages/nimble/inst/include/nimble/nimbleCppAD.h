@@ -222,23 +222,26 @@ public:
 				    NodeVectorClassNew_derivs &nodes,
 				    const NimArr<1, double> &derivOrders,
 				    const NimArr<1, double> &wrtVector,
+				    bool reset,
 				    nimSmartPtr<NIMBLE_ADCLASS> ansList);
   /* This form is not actually generated in code at the time of this writing:*/
   nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(nimbleCppADinfoClass &ADinfo,
 						  //		  CppAD::ADFun<double>* &tapePtr,
 						  NodeVectorClassNew_derivs &nodes,
 						  const NimArr<1, double> &derivOrders,
-						  const NimArr<1, double> &wrtVector){
+						  const NimArr<1, double> &wrtVector,
+						  bool reset){
     nimSmartPtr<NIMBLE_ADCLASS> ansList = new NIMBLE_ADCLASS;
     getDerivs_calculate_internal(ADinfo,// tapePtr,
-				 nodes, derivOrders, wrtVector, ansList);
+				 nodes, derivOrders, wrtVector, reset, ansList);
     return(ansList);
   }
   /* This is the form that would be generated in code, with no wrtVector*/
   nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(nimbleCppADinfoClass &ADinfo,
 						  //	  CppAD::ADFun<double>* &tapePtr,
 						  NodeVectorClassNew_derivs &nodes,
-						  const NimArr<1, double> &derivOrders) {
+						  const NimArr<1, double> &derivOrders,
+						  bool reset) {
     NimArr<1, double> wrtVector; // with new default functionality, this could be set to simply length 1 with value -1
     int totlen = nodes.model_wrt_accessor.getTotalLength();
     wrtVector.setSize(totlen,
@@ -249,7 +252,7 @@ public:
     }
     nimSmartPtr<NIMBLE_ADCLASS> ansList = new NIMBLE_ADCLASS;
     getDerivs_calculate_internal(ADinfo, //tapePtr,
-				 nodes, derivOrders, wrtVector, ansList);
+				 nodes, derivOrders, wrtVector, reset, ansList);
     return(ansList);
   }
 };

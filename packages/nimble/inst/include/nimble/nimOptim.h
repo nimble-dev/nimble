@@ -221,7 +221,7 @@ class NimOptimProblem_model : public NimOptimProblem {
       derivOrders[1] = 2;
       setValues(par_, nodes.get_model_wrt_accessor());
       nimSmartPtr<NIMBLE_ADCLASS> ADresult = CppADbase.nimDerivs_calculate(ADinfo, //ADtapePtr,
-									   nodes, derivOrders);
+									   nodes, derivOrders, false);
       NimArr<2, double> hessianMap;
       int n = initP.size();
       // offset = 0; stride1 = 1; stride2 = n; size1 = n; size2 = n;
@@ -239,7 +239,7 @@ class NimOptimProblem_model : public NimOptimProblem {
     std::cout<<"calling nimDerivs_calculate"<<std::endl;
     //CppAD::ADFun<double>* ADtapePtr = &ADtape;
     nimSmartPtr<NIMBLE_ADCLASS> ADresult = CppADbase.nimDerivs_calculate(ADinfo, //ADtapePtr,
-									 nodes, derivOrders);
+									 nodes, derivOrders, false);
     std::cout<<"done nimDerivs_calculate"<<std::endl;
     if(par_.size() != length_wrt) {
       std::cout<<"Error in C++: wrong length par_ in nimOptim_model"<<std::endl;

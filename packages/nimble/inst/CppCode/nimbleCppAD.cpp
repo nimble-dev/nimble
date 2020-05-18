@@ -698,10 +698,13 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
 							   NodeVectorClassNew_derivs &nodes,
 							   const NimArr<1, double> &derivOrders,
 							   const NimArr<1, double> &wrtVector,
+							   bool reset,
 							   nimSmartPtr<NIMBLE_ADCLASS> ansList) {
   bool use_meta_tape = true;
 
-  if(!ADinfo.ADtape) {
+  if(!ADinfo.ADtape || reset) {
+    if(ADinfo.ADtape)
+      delete ADinfo.ADtape;
     if(!use_meta_tape) {
       // std::cout<<"recording"<<std::endl;
       ADinfo.ADtape = calculate_recordTape(nodes);
