@@ -1971,13 +1971,13 @@ nimDerivsInfoClass_init_impl <- function(.self
     .self$model <- model
 
     ## wrt nodes
-    wrtNodes <- model$expandNodeNames(wrtNodes)
+    wrtNodes <- model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE)
     wrtNodesAccessor <- modelVariableAccessorVector(model,
                                                wrtNodes,
                                                logProb = FALSE)
     .self$wrtMapInfo <- makeMapInfoFromAccessorVectorFaster(wrtNodesAccessor)
 
-    calcNodes <- model$expandNodeNames(calcNodes)
+    calcNodes <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE)
     updateNodes <- makeUpdateNodes(wrtNodes,
                                    calcNodes,
                                    model,
@@ -2012,7 +2012,7 @@ nimDerivsInfoClass_init_impl <- function(.self
 
 makeOutputNodes <- function(calcNodes,
                             model) {
-  calcNodeNames <- model$expandNodeNames(calcNodes)
+  calcNodeNames <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE)
   logProbCalcNodeNames <- model$modelDef$nodeName2LogProbName(calcNodeNames)
   isDetermCalcNodes <- model$isDeterm(calcNodeNames)
   modelOutputNodes <- c(calcNodeNames[isDetermCalcNodes],
@@ -2055,13 +2055,14 @@ makeUpdateNodes <- function(wrtNodes,
                             model,
                             dataAsConstantNodes = TRUE) {
   nonWrtCalcNodes <- setdiff(calcNodes, wrtNodes)
-  nonWrtCalcNodeNames <- model$expandNodeNames(nonWrtCalcNodes)
+  nonWrtCalcNodeNames <- model$expandNodeNames(nonWrtCalcNodes, returnScalarComponents = TRUE)
   nonWrtStochCalcNodeNames <- nonWrtCalcNodeNames[ model$isStoch(nonWrtCalcNodeNames) ]  
   ## Some duplication of work in expandNodeNames
   parentNodes <- getParentNodes(calcNodes, model)
   neededParentNodes <- setdiff(parentNodes, c(wrtNodes, nonWrtCalcNodeNames))
   extraInputNodes <- model$expandNodeNames(c(neededParentNodes,
                                              nonWrtStochCalcNodeNames),
+                                           returnScalarComponents = TRUE,
                                            sort = TRUE)
   constantNodes <- character()
   if(dataAsConstantNodes) {
