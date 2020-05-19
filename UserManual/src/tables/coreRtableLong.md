@@ -14,7 +14,7 @@ Table: (#tab:coreR) Basic R manipulation functions in NIMBLE. For some of these 
   `length()`
   `is.na()`       Does not correctly handle NAs from R that are type `'logical'`, 
                   so convert these using `as.numeric()` before passing from R to NIMBLE.
-  `is.nan()`      Treats \code{NA} of type 'double' as being \code{NaN} and \code{NA} of type 'logical' as not being \code{NaN}.
+  `is.nan()`      Treats `NA` of type 'double' as being `NaN` and `NA` of type 'logical' as not being `NaN`.
   `any()`         One argument only; NAs treated as FALSE.
   `all()`         One argument only; NAs treated as FALSE.
   `numeric()`     Allows additional arguments to control initialization.
