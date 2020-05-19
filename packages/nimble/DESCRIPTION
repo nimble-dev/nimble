@@ -3,7 +3,7 @@ Title: MCMC, Particle Filtering, and Programmable Hierarchical Modeling
 Description: A system for writing hierarchical statistical models largely
     compatible with 'BUGS' and 'JAGS', writing nimbleFunctions to operate models and
     do basic R-style math, and compiling both models and nimbleFunctions via custom-
-    generated C++. 'NIMBLE' includes default methods for MCMC, particle filtering,
+    generated C++. 'NIMBLE' includes default methods for MCMC,
     Monte Carlo Expectation Maximization, and some other tools. The nimbleFunction
     system makes it easy to do things like implement new MCMC samplers from R,
     customize the assignment of samplers to different parts of a model from R, and
@@ -131,13 +131,6 @@ Collate:
     MCMC_RJ.R
     MCEM_build.R
     crossValidation.R
-    filtering_resamplers.R
-    filtering_auxiliary.R
-    filtering_liuwest.R
-    filtering_IF2.R
-    filtering_enkf.R
-    filtering_bootstrap.R
-    filtering_utils.R
     BNP_distributions.R
     BNP_samplers.R
     NF_utils.R
@@ -147,4 +140,4 @@ Collate:
     registration.R
     nimble-package.r
     zzz.R
-RoxygenNote: 5.0.1
+RoxygenNote: 7.1.0
