@@ -314,7 +314,7 @@ cppOutputNimSwitch <- function(code, symTab) {
     numChoices <- length(code$args)-2
     if(numChoices <= 0) return('')
     choicesCode <- vector('list', numChoices)
-    choiceValues <- code$args[[2]]
+    choiceValues <- eval(nimbleGeneralParseDeparse(code$args[[2]]))
     if(length(choiceValues) != numChoices) stop(paste0('number of switch choices does not match number of indices for ',nimDeparse(code)))
     for(i in 1:numChoices) {
         if(code$args[[i+2]]$name != '{')
