@@ -41,6 +41,14 @@ typedef Map<MatrixXd, Unaligned, EigStrDyn > EigenMapStrd;
 typedef Map<MatrixXi, Unaligned, EigStrDyn > EigenMapStri;
 typedef Map<MatrixXb, Unaligned, EigStrDyn > EigenMapStrb;
 
+template <typename Type>
+struct EigenTemplateTypes {
+  typedef Matrix<Type, Dynamic, Dynamic> typeMatrixXd;
+  typedef Map<typeMatrixXd, Unaligned, EigStrDyn > typeEigenMapStrd;
+};
+
+typedef typename EigenTemplateTypes<CppAD::AD<double> >::typeMatrixXd MatrixXd_CppAD;
+
 //#define EIGEN_FS(x,y)       (x).triangularView<Eigen::Lower>().solve(y)
 //#define EIGEN_BS(x,y)       (x).triangularView<Eigen::Upper>().solve(y)
 //#define EIGEN_SOLVE(x,y)    (x).lu().solve(y)
@@ -216,9 +224,23 @@ MatrixXd EIGEN_FS(const MatrixBase<derived1> &x, const MatrixBase<derived2> &y) 
 }
 
 template<class derived1, class derived2>
+MatrixXd_CppAD nimDerivs_EIGEN_FS(const MatrixBase<derived1> &x, const MatrixBase<derived2> &y) {
+  MatrixXd_CppAD ycopy = y; // in case y was a map, which it will always be from nimble
+  MatrixXd_CppAD ans = x.template triangularView<Eigen::Lower>().solve(ycopy);
+  return(ans);
+}
+
+template<class derived1, class derived2>
 MatrixXd EIGEN_BS(const MatrixBase<derived1> &x, const MatrixBase<derived2> &y) {
   MatrixXd ycopy = y; // in case y was a map, which it will always be from nimble
   MatrixXd ans = x.template triangularView<Eigen::Upper>().solve(ycopy);
+  return(ans);
+}
+
+template<class derived1, class derived2>
+MatrixXd_CppAD nimDerivs_EIGEN_BS(const MatrixBase<derived1> &x, const MatrixBase<derived2> &y) {
+  MatrixXd_CppAD ycopy = y; // in case y was a map, which it will always be from nimble
+  MatrixXd_CppAD ans = x.template triangularView<Eigen::Upper>().solve(ycopy);
   return(ans);
 }
 
@@ -229,16 +251,22 @@ MatrixXd EIGEN_SOLVE(const MatrixBase<derived1> &x, const MatrixBase<derived2> &
   return(ans);
 }
 
-
-template <typename Type>
-struct EigenTemplateTypes {
-  typedef Matrix<Type, Dynamic, Dynamic> typeMatrixXd;
-  typedef Map<typeMatrixXd, Unaligned, EigStrDyn > typeEigenMapStrd;
-};
+template<class derived1, class derived2>
+MatrixXd_CppAD nimDerivs_EIGEN_SOLVE(const MatrixBase<derived1> &x, const MatrixBase<derived2> &y) {
+  MatrixXd_CppAD ycopy = y; // in case y was a map, which it will always be from nimble
+  MatrixXd_CppAD ans = x.lu().solve(ycopy);
+  return(ans);
+}
 
 template <typename Derived1, typename Derived2>
 double eigenInprod(const ArrayBase<Derived1>& v1, const ArrayBase<Derived2>& v2) { 
   double ans = (v1 * v2).sum();
+  return(ans);
+}
+
+template <typename Derived1, typename Derived2>
+typename Derived2::Scalar nimDerivs_eigenInprod(const ArrayBase<Derived1>& v1, const ArrayBase<Derived2>& v2) { 
+  typename Derived2::Scalar ans = (v1 * v2).sum();
   return(ans);
 }
 
@@ -249,14 +277,32 @@ double eigenInprod(const MatrixBase<Derived1>& v1, const MatrixBase<Derived2>& v
 }
 
 template <typename Derived1, typename Derived2>
+typename Derived2::Scalar nimDerivs_eigenInprod(const MatrixBase<Derived1>& v1, const MatrixBase<Derived2>& v2) {
+  typename Derived2::Scalar ans = (v1.cwiseProduct(v2)).sum();
+  return(ans);
+}
+
+template <typename Derived1, typename Derived2>
 double eigenInprod(const MatrixBase<Derived1>& v1, const ArrayBase<Derived2>& v2) {
   double ans = (v1.cwiseProduct(v2.matrix())).sum();
   return(ans);
 }
 
 template <typename Derived1, typename Derived2>
+typename Derived2::Scalar nimDerivs_eigenInprod(const MatrixBase<Derived1>& v1, const ArrayBase<Derived2>& v2) {
+  typename Derived2::Scalar ans = (v1.cwiseProduct(v2.matrix())).sum();
+  return(ans);
+}
+
+template <typename Derived1, typename Derived2>
 double eigenInprod(const ArrayBase<Derived1>& v1, const MatrixBase<Derived2>& v2) {
   double ans = (v2.cwiseProduct(v1.matrix())).sum();
+  return(ans);
+}
+
+template <typename Derived1, typename Derived2>
+  typename Derived2::Scalar nimDerivs_eigenInprod(const ArrayBase<Derived1>& v1, const MatrixBase<Derived2>& v2) {
+  typename Derived2::Scalar ans = (v2.cwiseProduct(v1.matrix())).sum();
   return(ans);
 }
 

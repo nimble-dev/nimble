@@ -697,13 +697,15 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
 
 ## The next block of code has the initial setup for an AST processing stage
 ## to make modifications for AD based on context etc.
-modifyForAD_handlers <- list(eigenBlock = 'modifyForAD_eigenBlock',
-                             calculate = 'modifyForAD_calculate',
-                             getValues = 'modifyForAD_getSetValues',
-                             setValues = 'modifyForAD_getSetValues',
-                             nfMethod = 'modifyForAD_nfMethod',
-                             chainedCall = 'modifyForAD_chainedCall',
-                             getDerivs_wrapper = 'modifyForAD_getDerivs_wrapper')
+modifyForAD_handlers <- c(list(eigenBlock = 'modifyForAD_eigenBlock',
+                               calculate = 'modifyForAD_calculate',
+                               getValues = 'modifyForAD_getSetValues',
+                               setValues = 'modifyForAD_getSetValues',
+                               nfMethod = 'modifyForAD_nfMethod',
+                               chainedCall = 'modifyForAD_chainedCall',
+                               getDerivs_wrapper = 'modifyForAD_getDerivs_wrapper'),
+                          makeCallList(c('EIGEN_FS', 'EIGEN_BS', 'EIGEN_SOLVE'),
+                                       'modifyForAD_prependNimDerivs'))
 
 exprClasses_modifyForAD <- function(code, symTab,
                                     workEnv = list2env(list(wrap_in_value = FALSE))) {
@@ -763,6 +765,11 @@ exprClasses_modifyForAD <- function(code, symTab,
       }
     }
   }  
+  invisible(NULL)
+}
+
+modifyForAD_prependNimDerivs <- function(code, symTab, workEnv) {
+  code$name <- paste0("nimDerivs_", code$name)
   invisible(NULL)
 }
 
