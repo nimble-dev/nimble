@@ -990,7 +990,7 @@ sampler_HMC <- nimbleFunction(
         browser()   ## XXXXXXXXXXXXXXXXXXXXXX
         d <- my_parameterTransform$getTransformedLength()
         nimDerivs_wrt <- 1:d
-        nimDerivs_updateNodes <- makeUpdateNodes(targetNodes, calcNodes, model)
+        nimDerivs_updateNodes <- makeUpdateNodes(targetNodes, calcNodes, model)   ## XXXXXXXXXX  NEW SYMTAX NOW (list return)???
         d2 <- max(d, 2) ## for pre-allocating vectors
         ###x###transformNodeNums <- c(0, 0)               ## always a vector
         ###x###transformInfo <- array(0, c(2, maxInd))    ## always an array
