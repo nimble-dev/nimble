@@ -506,7 +506,7 @@ model$simulate()
 model$calculate()
 model$setData('y')
 test_ADModelCalculate(model, name = 'user-defined distribution')
-## model fails to compile; Eigen error; NCT issue #220
+## model now compiles but numerical differences; see later comments in NCT issue #220
 
 ## come back to this when have wish/invwish
 if(FALSE) {  
@@ -623,8 +623,6 @@ examples <- c('pump', 'beetles', 'blocker', 'equiv', 'line', 'epil', 'rats', 'ox
 bugsFile <- examples
 initsFile <- dataFile <- rep(NA, length(examples))
 names(bugsFile) <- names(initsFile) <- names(dataFile) <- examples
-
-## need to look further at oxford, dyes, dugongs; possibly just tolerances are too small
 
 ## biops has stoch indexing so left out for now
 ## bones has dcat so left out for now

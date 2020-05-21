@@ -316,13 +316,14 @@ Type nimDerivs_nimArr_dwish_chol_logFixed(NimArr<2, Type> &x, NimArr<2, Type> &c
 
 /* dinvwish: Inverse Wishart distribution */
 template<class Type>
-Type nimDerivs_nimArr_dinvwish_chol(NimArr<2, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type df, Type p, Type scale_param, Type give_log, Type overwrite_inputs) { 
+Type nimDerivs_nimArr_dinvwish_chol(NimArr<2, Type> &x, NimArr<2, Type> &chol, Type df, Type scale_param, Type give_log, Type overwrite_inputs) { 
 
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
   int n = x.dimSize(0);
   Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
   Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
-  
+  int p = x.dim()[0];
+
   Type dens = (df * mapChol.diagonal().array().log()).sum();
   dens = CppAD::CondExpEq(scale_param, Type(1), dens, -dens);
 
@@ -352,12 +353,13 @@ Type nimDerivs_nimArr_dinvwish_chol(NimArr<2, Type> &x, NimArr<1, Type> &mean, N
 }
 
 template<class Type>
-Type nimDerivs_nimArr_dinvwish_chol_logFixed(NimArr<2, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type df, Type p, Type scale_param, int give_log, Type overwrite_inputs) { 
+Type nimDerivs_nimArr_dinvwish_chol_logFixed(NimArr<2, Type> &x, NimArr<2, Type> &chol, Type df, Type scale_param, int give_log, Type overwrite_inputs) { 
 
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
   int n = x.dimSize(0);
   Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
   Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
+  int p = x.dim()[0];
   
   Type dens = (df * mapChol.diagonal().array().log()).sum();
   dens = CppAD::CondExpEq(scale_param, Type(1), dens, -dens);
