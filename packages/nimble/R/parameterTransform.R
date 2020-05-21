@@ -27,6 +27,7 @@ parameterTransform <- nimbleFunction(
         ## 5: scalar interval-constrained (a, b)
         ## 6: multivariate {normal, t}
         ## 7: multivariate {wishart, inverse-wishart}
+        ## 8: multivariate dirichlet
         transformType <- as.integer(rep(NA, (nNodes+1)))  ## must be integer for nimSwitch, and also ensure as a vector
         ## transformData
         transformData <- array(NA, dim = c(nNodes, 6))
@@ -98,6 +99,13 @@ parameterTransform <- nimbleFunction(
                     transformData[i,DATA1] <- d           ## formerly d
                     transformData[i,DATA2] <- d*(d+1)/2   ## formerly tLengthOne
                     next }
+                if(dist == 'ddirch') {                            ## 8: multivariate dirichlet
+                    transformType[i] <- 8L
+                    d <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
+                    transformData[i,NIND2] <- transformData[i,NIND1] + d - 1
+                    transformData[i,TIND2] <- transformData[i,NIND1] + d - 2
+                    transformData[i,DATA1] <- d
+                    next }
                 stop(paste0('parameterTransform doesn\'t handle \'', dist, '\' distributions.'), call. = FALSE)
             }
         }
@@ -115,7 +123,7 @@ parameterTransform <- nimbleFunction(
             for(iNode in 1:nNodes) {
                 theseValues <- nodeValuesFromModel[transformData[iNode,NIND1]:transformData[iNode,NIND2]]
                 thisType <- transformType[iNode]
-                nimSwitch(thisType, 1:7,
+                nimSwitch(thisType, 1:8,
                           theseTransformed <- theseValues,         ## 1: scalar unconstrained
                           theseTransformed <- log(theseValues),    ## 2: scalar semi-interval (0, Inf)
                           theseTransformed <- logit(theseValues),  ## 3: scalar interval-constrained (0, 1)
@@ -135,6 +143,18 @@ parameterTransform <- nimbleFunction(
                                   for(i in 1:dd) {
                                       if(i==j) { theseTransformed[tInd] <- log(U[i,j]); tInd <- tInd+1 }
                                       if(i< j) { theseTransformed[tInd] <-     U[i,j];  tInd <- tInd+1 } } }
+                          },
+                          {                                        ## 8: multivariate dirichlet
+                              dd <- transformData[iNode,DATA1] - 1
+                              theseTransformed <- nimNumeric(dd)
+                              theseTransformed[1] <- logit( theseValues[1] )
+                              if(dd > 1) {
+                                  runningSum <- 0
+                                  for(j in 2:dd) {
+                                      runningSum <- runningSum + theseValues[j-1]
+                                      theseTransformed[j] <- logit( theseValues[j] / (1-runningSum) )
+                                  }
+                              }
                           })
                 transformed[transformData[iNode,TIND1]:transformData[iNode,TIND2]] <- theseTransformed
             }
@@ -144,18 +164,13 @@ parameterTransform <- nimbleFunction(
         inverseTransform = function(transformedValues = double(1)) {
             ## argument on transformed scale, return vector suitable for values(model,)
             modelValuesVector <- nimNumeric(nLength)
-            iNode <- 1L ## guarantee int types in compilation for compatibility with AD
-            j <- 1L
-            i <- 1L
-            tD1 <- 1L
-            tD2 <- 1L
-            dd <- 1L
+            iNode <- 1L; i <- 1L; j <- 1L; ind1 <- 1L; ind2 <- 1L; dd <- 1L   ## integer types
             for(iNode in 1:nNodes) {
-                tD1 <- transformData[iNode,TIND1]
-                tD2 <- transformData[iNode,TIND2]
-                theseValues <- transformedValues[tD1:tD2]
+                ind1 <- transformData[iNode,TIND1]
+                ind2 <- transformData[iNode,TIND2]
+                theseValues <- transformedValues[ind1:ind2]
                 thisType <- transformType[iNode]
-                nimSwitch(thisType, 1:7,
+                nimSwitch(thisType, 1:8,
                           theseInvTransformed <- theseValues,          ## 1: scalar unconstrained
                           theseInvTransformed <- exp(theseValues),     ## 2: scalar semi-interval (0, Inf)
                           theseInvTransformed <- ilogit(theseValues),  ## 3: scalar interval-constrained (0, 1)
@@ -174,10 +189,23 @@ parameterTransform <- nimbleFunction(
                                       if(i< j) { cholAsMatrix[i,j] <-     theseValues[tInd];  tInd <- tInd+1 } } }
                               valuesAsMatrix <- t(cholAsMatrix) %*% cholAsMatrix
                               theseInvTransformed <- nimNumeric(dd*dd, valuesAsMatrix)
+                          },
+                          {                                            ## 8: multivariate dirichlet
+                              dd <- transformData[iNode,DATA1]
+                              theseInvTransformed <- nimNumeric(dd)
+                              theseInvTransformed[1] <- ilogit( theseValues[1] )
+                              if(dd > 2) {
+                                  runningSum <- 0
+                                  for(i in 2:(dd-1)) {
+                                      runningSum <- runningSum + theseInvTransformed[i-1]
+                                      theseInvTransformed[i] <- (1-runningSum) * ilogit( theseValues[i] )
+                                  }
+                              }
+                              theseInvTransformed[dd] <- 1 - sum(theseInvTransformed[1:(dd-1)])
                           })
-                tD1 <- transformData[iNode,NIND1]
-                tD2 <- transformData[iNode,NIND2]
-                modelValuesVector[tD1:tD2] <- theseInvTransformed
+                ind1 <- transformData[iNode,NIND1]
+                ind2 <- transformData[iNode,NIND2]
+                modelValuesVector[ind1:ind2] <- theseInvTransformed
             }
             returnType(double(1))
             return(modelValuesVector)
@@ -190,7 +218,7 @@ parameterTransform <- nimbleFunction(
             for(iNode in 1:nNodes) {
                 theseValues <- transformedValues[transformData[iNode,TIND1]:transformData[iNode,TIND2]]
                 thisType <- transformType[iNode]
-                nimSwitch(thisType, 1:7,
+                nimSwitch(thisType, 1:8,
                           lpAdd <- 0,               ## 1: scalar unconstrained
                           lpAdd <- theseValues[1],  ## 2: scalar semi-interval (0, Inf)
                           {                         ## 3: scalar interval-constrained (0, 1)
@@ -206,8 +234,31 @@ parameterTransform <- nimbleFunction(
                           {                         ## 7: multivariate {wishart, inverse-wishart}
                               dd <- transformData[iNode,DATA1]
                               lpAdd <- dd * log(2)
-                              for(j in 1:dd) {
-                                  lpAdd <- lpAdd + (dd+2-j) * theseValues[j*(j+1)/2] }
+                              for(j in 1:dd)   lpAdd <- lpAdd + (dd+2-j) * theseValues[j*(j+1)/2]
+                          },
+                          {                         ## 8: multivariate dirichlet
+                              ## copied from inverseTransform method:
+                              dd <- transformData[iNode,DATA1]
+                              theseInvTransformed <- nimNumeric(dd)
+                              theseInvTransformed[1] <- ilogit( theseValues[1] )
+                              if(dd > 2) {
+                                  runningSum <- 0
+                                  for(i in 2:(dd-1)) {
+                                      runningSum <- runningSum + theseInvTransformed[i-1]
+                                      theseInvTransformed[i] <- (1-runningSum) * ilogit( theseValues[i] )
+                                  }
+                              }
+                              ## copying inverseTransform method ends here
+                              x <- theseValues[1]
+                              lpAdd <- -log(exp(x)+exp(-x)+2)   ## alternate: -2*log(1+exp(-x))-x)
+                              if(dd > 2) {
+                                  runningSum <- 0
+                                  for(i in 2:(dd-1)) {
+                                      runningSum <- runningSum + theseInvTransformed[i-1]
+                                      x <- theseValues[i]
+                                      lpAdd <- lpAdd + log(1-runningSum) - log(exp(x)+exp(-x)+2)   ## alternate: -2*log(1+exp(-x))-x)
+                                  }
+                              }
                           })
                 lp <- lp + lpAdd
             }
