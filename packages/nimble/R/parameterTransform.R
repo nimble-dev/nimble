@@ -19,7 +19,7 @@ parameterTransform <- nimbleFunction(
         if(any(model$isDiscrete(nodesExpanded))) stop(paste0('parameterTransform nodes may not be discrete: ',      paste0(nodesExpanded[model$isDiscrete(nodesExpanded)], collapse = ', ')))
         nNodes <- length(nodesExpanded)
         if(nNodes < 1) stop('parameterTransform requires at least one model node')
-        ## transform types (stored in TYPE column of transformData):
+        ## transformType:
         ## 1: scalar unconstrained
         ## 2: scalar semi-interval (0, Inf)
         ## 3: scalar interval-constrained (0, 1)
@@ -27,14 +27,15 @@ parameterTransform <- nimbleFunction(
         ## 5: scalar interval-constrained (a, b)
         ## 6: multivariate {normal, t}
         ## 7: multivariate {wishart, inverse-wishart}
-        transformData <- array(NA, dim = c(nNodes, 7))
-        TYPE  <- 1
-        NIND1 <- 2
-        NIND2 <- 3
-        TIND1 <- 4
-        TIND2 <- 5
-        DATA1 <- 6
-        DATA2 <- 7
+        transformType <- as.integer(rep(NA, (nNodes+1)))  ## must be integer for nimSwitch, and also ensure as a vector
+        ## transformData
+        transformData <- array(NA, dim = c(nNodes, 6))
+        NIND1 <- 1
+        NIND2 <- 2
+        TIND1 <- 3
+        TIND2 <- 4
+        DATA1 <- 5
+        DATA2 <- 6
         ##
         for(i in 1:nNodes) {
             node <- nodesExpanded[i]
@@ -46,11 +47,11 @@ parameterTransform <- nimbleFunction(
                 transformData[i,TIND2] <- transformData[i,TIND1]
                 bounds <- c(model$getBound(node, 'lower'), model$getBound(node, 'upper'))
                 if(bounds[1] == -Inf && bounds[2] == Inf) {       ## 1: scalar unconstrained
-                    transformData[i,TYPE] <- 1; next }
+                    transformType[i] <- 1L; next }
                 if(bounds[1] == 0    && bounds[2] == Inf) {       ## 2: scalar semi-interval (0, Inf)
-                    transformData[i,TYPE] <- 2; next }
+                    transformType[i] <- 2L; next }
                 if(bounds[1] == 0    && bounds[2] == 1  ) {       ## 3: scalar interval-constrained (0, 1)
-                    transformData[i,TYPE] <- 3; next }
+                    transformType[i] <- 3L; next }
                 if((isValid(bounds[1]) && bounds[2] ==  Inf) ||
                    (isValid(bounds[2]) && bounds[1] == -Inf)) {   ## 4: scalar semi-interval (-Inf, b) or (a, Inf)
                     if(model$isTruncated(node)) {
@@ -59,7 +60,7 @@ parameterTransform <- nimbleFunction(
                         bdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, bdParam))
                         if(length(all.vars(bdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant ', bdName, ' bound, which cannot be used in parameterTransform.')
                     }
-                    transformData[i,TYPE] <- 4
+                    transformType[i] <- 4L
                     transformData[i,DATA1] <- if(isValid(bounds[1])) bounds[1] else bounds[2]   ## formerly boundValue
                     transformData[i,DATA2] <- if(isValid(bounds[1])) 1 else -1                  ## formerly isLowerBound
                     next }
@@ -76,20 +77,20 @@ parameterTransform <- nimbleFunction(
                         message('It will require the upper and lower bounds of the ', dist, ' distribution to be constant.')
                         message('If you\'re uncertain about this, please get in touch with the NIMBLE development team.')
                     }
-                    transformData[i,TYPE] <- 5
+                    transformType[i] <- 5L
                     transformData[i,DATA1] <- bounds[1]               ## formerly lowerBound
                     transformData[i,DATA2] <- bounds[2] - bounds[1]   ## formerly range
                     next }
                 stop(paste0('parameterTransform doesn\'t have a transformation for the bounds of node: ', node, ', which are (', bounds[1], ', ', bounds[2], ')'))
             } else {   ## multivariate
                 if(dist %in% c('dmnorm', 'dmvt')) {               ## 6: multivariate {normal, t}
-                    transformData[i,TYPE] <- 6
+                    transformType[i] <- 6L
                     d <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
                     transformData[i,NIND2] <- transformData[i,NIND1] + d - 1
                     transformData[i,TIND2] <- transformData[i,TIND1] + d - 1
                     next }
                 if(dist %in% c('dwish', 'dinvwish')) {            ## 7: multivariate {wishart, inverse-wishart}
-                    transformData[i,TYPE] <- 7
+                    transformType[i] <- 7L
                     dSq <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
                     d <- sqrt(dSq)
                     transformData[i,NIND2] <- transformData[i,NIND1] + dSq - 1
@@ -111,35 +112,30 @@ parameterTransform <- nimbleFunction(
         transform = function(nodeValuesFromModel = double(1)) {
             ## argument values(model, nodes), return vector on unconstrained scale
             transformed <- nimNumeric(tLength)
-            print('TODO: change all these to nimSwitch')    ## XXXXXXXXXXXXXXXXXXXXXXXXX
             for(iNode in 1:nNodes) {
                 theseValues <- nodeValuesFromModel[transformData[iNode,NIND1]:transformData[iNode,NIND2]]
-                if(transformData[iNode,TYPE] == 1) {   ## 1: scalar unconstrained
-                    theseTransformed <- theseValues }
-                if(transformData[iNode,TYPE] == 2) {   ## 2: scalar semi-interval (0, Inf)
-                    theseTransformed <- log(theseValues) }
-                if(transformData[iNode,TYPE] == 3) {   ## 3: scalar interval-constrained (0, 1)
-                    theseTransformed <- logit(theseValues) }
-                if(transformData[iNode,TYPE] == 4) {   ## 4: scalar semi-interval (-Inf, b) or (a, Inf)
-                    theseTransformed <- log(transformData[iNode,DATA2] * (theseValues - transformData[iNode,DATA1])) }
-                if(transformData[iNode,TYPE] == 5) {   ## 5: scalar interval-constrained (a, b)
-                    theseTransformed <- logit((theseValues - transformData[iNode,DATA1]) / transformData[iNode,DATA2]) }
-                if(transformData[iNode,TYPE] == 6) {   ## 6: multivariate {normal, t}
-                    theseTransformed <- theseValues }
-                if(transformData[iNode,TYPE] == 7) {   ## 7: multivariate {wishart, inverse-wishart}
-                    ## log-Cholesky transform, values are column-wise
-                    dd <- transformData[iNode,DATA1]
-                    valueAsMatrix <- nimArray(theseValues, dim = c(dd, dd))
-                    U <- chol(valueAsMatrix)
-                    ## DT: there has to be a better way to do this procedure, below,
-                    ## creating the vector of the log-Cholesky transformed values.
-                    theseTransformed <- nimNumeric(transformData[iNode,DATA2])
-                    tInd <- 1
-                    for(j in 1:dd) {
-                        for(i in 1:dd) {
-                            if(i==j) { theseTransformed[tInd] <- log(U[i,j]); tInd <- tInd+1 }
-                            if(i< j) { theseTransformed[tInd] <-     U[i,j];  tInd <- tInd+1 } } }
-                }
+                thisType <- transformType[iNode]
+                nimSwitch(thisType, 1:7,
+                          theseTransformed <- theseValues,         ## 1: scalar unconstrained
+                          theseTransformed <- log(theseValues),    ## 2: scalar semi-interval (0, Inf)
+                          theseTransformed <- logit(theseValues),  ## 3: scalar interval-constrained (0, 1)
+                          theseTransformed <- log(transformData[iNode,DATA2] * (theseValues - transformData[iNode,DATA1])),    ## 4: scalar semi-interval (-Inf, b) or (a, Inf)
+                          theseTransformed <- logit((theseValues - transformData[iNode,DATA1]) / transformData[iNode,DATA2]),  ## 5: scalar interval-constrained (a, b)
+                          theseTransformed <- theseValues,         ## 6: multivariate {normal, t}
+                          {                                        ## 7: multivariate {wishart, inverse-wishart}
+                              ## log-Cholesky transform, values are column-wise
+                              dd <- transformData[iNode,DATA1]
+                              valueAsMatrix <- nimArray(theseValues, dim = c(dd, dd))
+                              U <- chol(valueAsMatrix)
+                              ## DT: there has to be a better way to do this procedure, below,
+                              ## creating the vector of the log-Cholesky transformed values.
+                              theseTransformed <- nimNumeric(transformData[iNode,DATA2])
+                              tInd <- 1
+                              for(j in 1:dd) {
+                                  for(i in 1:dd) {
+                                      if(i==j) { theseTransformed[tInd] <- log(U[i,j]); tInd <- tInd+1 }
+                                      if(i< j) { theseTransformed[tInd] <-     U[i,j];  tInd <- tInd+1 } } }
+                          })
                 transformed[transformData[iNode,TIND1]:transformData[iNode,TIND2]] <- theseTransformed
             }
             returnType(double(1))
@@ -154,36 +150,31 @@ parameterTransform <- nimbleFunction(
             tD1 <- 1L
             tD2 <- 1L
             dd <- 1L
-            print('TODO: change all these to nimSwitch')    ## XXXXXXXXXXXXXXXXXXXXXXXXX
             for(iNode in 1:nNodes) {
                 tD1 <- transformData[iNode,TIND1]
                 tD2 <- transformData[iNode,TIND2]
                 theseValues <- transformedValues[tD1:tD2]
-                if(transformData[iNode,TYPE] == 1) {   ## 1: scalar unconstrained
-                    theseInvTransformed <- theseValues }
-                if(transformData[iNode,TYPE] == 2) {   ## 2: scalar semi-interval (0, Inf)
-                    theseInvTransformed <- exp(theseValues) }
-                if(transformData[iNode,TYPE] == 3) {   ## 3: scalar interval-constrained (0, 1)
-                    theseInvTransformed <- ilogit(theseValues) }
-                if(transformData[iNode,TYPE] == 4) {   ## 4: scalar semi-interval (-Inf, b) or (a, Inf)
-                    theseInvTransformed <- transformData[iNode,DATA1] + transformData[iNode,DATA2] * exp(theseValues) }
-                if(transformData[iNode,TYPE] == 5) {   ## 5: scalar interval-constrained (a, b)
-                    theseInvTransformed <- transformData[iNode,DATA1] + transformData[iNode,DATA2] * expit(theseValues) }
-                if(transformData[iNode,TYPE] == 6) {   ## 6: multivariate {normal, t}
-                    theseInvTransformed <- theseValues }
-                if(transformData[iNode,TYPE] == 7) {   ## 7: multivariate {wishart, inverse-wishart}
-                    dd <- transformData[iNode,DATA1]
-                    cholAsMatrix <- nimArray(0, dim = c(dd, dd))
-                    ## DT: there has to be a better way to do this procedure, below,
-                    ## now creating the vector of the Wishart node values.
-                    tInd <- 1L
-                    for(j in 1:dd) {
-                        for(i in 1:dd) {
-                            if(i==j) { cholAsMatrix[i,j] <- exp(theseValues[tInd]); tInd <- tInd+1 }
-                            if(i< j) { cholAsMatrix[i,j] <-     theseValues[tInd];  tInd <- tInd+1 } } }
-                    valuesAsMatrix <- t(cholAsMatrix) %*% cholAsMatrix
-                    theseInvTransformed <- nimNumeric(dd*dd, valuesAsMatrix)
-                }
+                thisType <- transformType[iNode]
+                nimSwitch(thisType, 1:7,
+                          theseInvTransformed <- theseValues,          ## 1: scalar unconstrained
+                          theseInvTransformed <- exp(theseValues),     ## 2: scalar semi-interval (0, Inf)
+                          theseInvTransformed <- ilogit(theseValues),  ## 3: scalar interval-constrained (0, 1)
+                          theseInvTransformed <- transformData[iNode,DATA1] + transformData[iNode,DATA2] * exp(theseValues),    ## 4: scalar semi-interval (-Inf, b) or (a, Inf)
+                          theseInvTransformed <- transformData[iNode,DATA1] + transformData[iNode,DATA2] * expit(theseValues),  ## 5: scalar interval-constrained (a, b)
+                          theseInvTransformed <- theseValues,          ## 6: multivariate {normal, t}
+                          {                                            ## 7: multivariate {wishart, inverse-wishart}
+                              dd <- transformData[iNode,DATA1]
+                              cholAsMatrix <- nimArray(0, dim = c(dd, dd))
+                              ## DT: there has to be a better way to do this procedure, below,
+                              ## now creating the vector of the Wishart node values.
+                              tInd <- 1L
+                              for(j in 1:dd) {
+                                  for(i in 1:dd) {
+                                      if(i==j) { cholAsMatrix[i,j] <- exp(theseValues[tInd]); tInd <- tInd+1 }
+                                      if(i< j) { cholAsMatrix[i,j] <-     theseValues[tInd];  tInd <- tInd+1 } } }
+                              valuesAsMatrix <- t(cholAsMatrix) %*% cholAsMatrix
+                              theseInvTransformed <- nimNumeric(dd*dd, valuesAsMatrix)
+                          })
                 tD1 <- transformData[iNode,NIND1]
                 tD2 <- transformData[iNode,NIND2]
                 modelValuesVector[tD1:tD2] <- theseInvTransformed
@@ -196,29 +187,28 @@ parameterTransform <- nimbleFunction(
             ## values(model, nodes) <- pt$inverseTransform(transformedValues)
             ## lp <- model$calculate(calcNodes) + pt$calcLogDetJacobian(transformedValues)
             lp <- 0
-            print('TODO: change all these to nimSwitch')    ## XXXXXXXXXXXXXXXXXXXXXXXXX
             for(iNode in 1:nNodes) {
                 theseValues <- transformedValues[transformData[iNode,TIND1]:transformData[iNode,TIND2]]
-                if(transformData[iNode,TYPE] == 1) {   ## 1: scalar unconstrained
-                    lpAdd <- 0 }
-                if(transformData[iNode,TYPE] == 2) {   ## 2: scalar semi-interval (0, Inf)
-                    lpAdd <- theseValues[1] }
-                if(transformData[iNode,TYPE] == 3) {   ## 3: scalar interval-constrained (0, 1)
-                    x <- theseValues[1]
-                    lpAdd <- -log(exp(x)+exp(-x)+2) }                                ## alternate: -2*log(1+exp(-x))-x)
-                if(transformData[iNode,TYPE] == 4) {   ## 4: scalar semi-interval (-Inf, b) or (a, Inf)
-                    lpAdd <- theseValues[1] }
-                if(transformData[iNode,TYPE] == 5) {   ## 5: scalar interval-constrained (a, b)
-                    x <- theseValues[1]
-                    lpAdd <- log(transformData[iNode,DATA2]) - log(exp(x)+exp(-x)+2) }   ## alternate: -2*log(1+exp(-x))-x)
-                if(transformData[iNode,TYPE] == 6) {   ## 6: multivariate {normal, t}
-                    lpAdd <- 0 }
-                if(transformData[iNode,TYPE] == 7) {   ## 7: multivariate {wishart, inverse-wishart}
-                    dd <- transformData[iNode,DATA1]
-                    lpAdd <- dd * log(2)
-                    for(j in 1:dd) {
-                        lpAdd <- lpAdd + (dd+2-j) * theseValues[j*(j+1)/2] }
-                }
+                thisType <- transformType[iNode]
+                nimSwitch(thisType, 1:7,
+                          lpAdd <- 0,               ## 1: scalar unconstrained
+                          lpAdd <- theseValues[1],  ## 2: scalar semi-interval (0, Inf)
+                          {                         ## 3: scalar interval-constrained (0, 1)
+                              x <- theseValues[1]
+                              lpAdd <- -log(exp(x)+exp(-x)+2)   ## alternate: -2*log(1+exp(-x))-x)
+                          },
+                          lpAdd <- theseValues[1],  ## 4: scalar semi-interval (-Inf, b) or (a, Inf)
+                          {                         ## 5: scalar interval-constrained (a, b)
+                              x <- theseValues[1]
+                              lpAdd <- log(transformData[iNode,DATA2]) - log(exp(x)+exp(-x)+2)  ## alternate: -2*log(1+exp(-x))-x)
+                          },
+                          lpAdd <- 0,               ## 6: multivariate {normal, t}
+                          {                         ## 7: multivariate {wishart, inverse-wishart}
+                              dd <- transformData[iNode,DATA1]
+                              lpAdd <- dd * log(2)
+                              for(j in 1:dd) {
+                                  lpAdd <- lpAdd + (dd+2-j) * theseValues[j*(j+1)/2] }
+                          })
                 lp <- lp + lpAdd
             }
             returnType(double())
