@@ -244,13 +244,13 @@ Type nimDerivs_nimArr_dlkj_corr_cholesky_logFixed(NimArr<2, Type> &x, Type eta, 
   
 /* dwish: Wishart distribution */
 template<class Type>
-Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type df, Type p, Type scale_param, Type give_log, Type overwrite_inputs) { 
+Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &x, NimArr<2, Type> &chol, Type df, Type scale_param, Type give_log, Type overwrite_inputs) { 
 
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
   int n = x.dimSize(0);
   Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
   Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
-  
+  int p = x.dim()[0];
   Type dens = (df * mapChol.diagonal().array().log()).sum();
   dens = CppAD::CondExpEq(scale_param, Type(1), -dens, dens);
 
@@ -259,7 +259,7 @@ Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &x, NimArr<1, Type> &mean, NimA
     dens -= nimDerivs_lgammafn((df - Type(i)) / Type(2.));
  
   /* Lower may be more efficient: https://eigen.tuxfamily.org/dox/classEigen_1_1LLT.html#details */
-  MatrixXt Lx = mapX.template selfAdjointView<Eigen::Lower>().llt().matrixL();
+  MatrixXt Lx = mapX.template selfadjointView<Eigen::Lower>().llt().matrixL();
   dens += (df - p - Type(1.)) * Lx.diagonal().array().log().sum();
   
   std::cout<<"Baking in scale_param = "<<scale_param<<" in dwish."<<std::endl;
@@ -279,13 +279,13 @@ Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &x, NimArr<1, Type> &mean, NimA
 
 
 template<class Type>
-Type nimDerivs_nimArr_dwish_chol_logFixed(NimArr<2, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type df, Type p, Type scale_param, int give_log, Type overwrite_inputs) { 
+Type nimDerivs_nimArr_dwish_chol_logFixed(NimArr<2, Type> &x, NimArr<2, Type> &chol, Type df, Type scale_param, int give_log, Type overwrite_inputs) { 
 
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
   int n = x.dimSize(0);
   Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
   Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
-  
+  int p = x.dim()[0];
   Type dens = (df * mapChol.diagonal().array().log()).sum();
   dens = CppAD::CondExpEq(scale_param, Type(1), -dens, dens);
 
@@ -294,7 +294,7 @@ Type nimDerivs_nimArr_dwish_chol_logFixed(NimArr<2, Type> &x, NimArr<1, Type> &m
     dens -= nimDerivs_lgammafn((df - Type(i)) / Type(2.));
  
   /* Lower may be more efficient: https://eigen.tuxfamily.org/dox/classEigen_1_1LLT.html#details */
-  MatrixXt Lx = mapX.template selfAdjointView<Eigen::Lower>().llt().matrixL();
+  MatrixXt Lx = mapX.template selfadjointView<Eigen::Lower>().llt().matrixL();
   dens += (df - p - Type(1.)) * Lx.diagonal().array().log().sum();
 
   std::cout<<"Baking in scale_param = "<<scale_param<<" in dwish."<<std::endl;
@@ -331,7 +331,7 @@ Type nimDerivs_nimArr_dinvwish_chol(NimArr<2, Type> &x, NimArr<1, Type> &mean, N
     dens -= nimDerivs_lgammafn((df - Type(i)) / Type(2.));
  
   /* Lower may be more efficient: https://eigen.tuxfamily.org/dox/classEigen_1_1LLT.html#details */
-  MatrixXt Lx = mapX.template selfAdjointView<Eigen::Lower>().llt().matrixL();
+  MatrixXt Lx = mapX.template selfadjointView<Eigen::Lower>().llt().matrixL();
   dens -= (df + p + Type(1.)) * Lx.diagonal().array().log().sum();
 
   /* in basic tests, use of .solve(Identity) was 2-3x faster than .inverse();
@@ -367,7 +367,7 @@ Type nimDerivs_nimArr_dinvwish_chol_logFixed(NimArr<2, Type> &x, NimArr<1, Type>
     dens -= nimDerivs_lgammafn((df - Type(i)) / Type(2.));
  
   /* Lower may be more efficient: https://eigen.tuxfamily.org/dox/classEigen_1_1LLT.html#details */
-  MatrixXt Lx = mapX.template selfAdjointView<Eigen::Lower>().llt().matrixL();
+  MatrixXt Lx = mapX.template selfadjointView<Eigen::Lower>().llt().matrixL();
   dens -= (df + p + Type(1)) * Lx.diagonal().array().log().sum();
 
   std::cout<<"Baking in scale_param = "<<scale_param<<" in dinvwish."<<std::endl;
