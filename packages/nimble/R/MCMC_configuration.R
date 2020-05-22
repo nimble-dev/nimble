@@ -459,7 +459,7 @@ Invisibly returns a list of the current sampler configurations, which are sample
                         stop("`nimbleSMC` must be loaded to use particle filtering samplers.")
                     }
                 }
-                if(exists(type) && is.nfGenerator(eval(as.name(type)))) {   ## try to find sampler function 'type'
+                if(exists(type, inherits = TRUE) && is.nfGenerator(eval(as.name(type)))) {   ## try to find sampler function 'type'
                     samplerFunction <- eval(as.name(type))
                 } else {
                     sampler_type <- paste0('sampler_', type)   ## next, try to find sampler function 'sampler_type'
