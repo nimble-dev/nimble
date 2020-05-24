@@ -108,16 +108,22 @@ nimbleFunction <- function(setup         = NULL,
     .namesToCopyFromSetup <- setdiff(.namesToCopy, .namesToCopyFromGlobalSetup)
     ## create a list to hold all specializations (instances) of this nimble function.  The following objects are accessed in environment(generatorFunction) in the future
     ## create the generator function, which is returned from nimbleFunction()
-    generatorFunction <- eval(nf_createGeneratorFunctionDef(setup))
+    generatorFunction <- eval(nf_createGeneratorFunctionDef(setup), envir = where)
     force(contains) ## eval the contains so it is in this environment
     formals(generatorFunction) <- nf_createGeneratorFunctionArgs(setup, parent.frame())
-
+    environment(generatorFunction) <- GFenv <- new.env()
+    
     .globalSetupEnv <- new.env()
     if(!is.null(globalSetup)) {
         if(!is.function(globalSetup)) stop('If globalSetup is not NULL, it must be a function', call. = FALSE)
         if(!length(formals(globalSetup))==0) stop('globalSetup cannot take input arguments', call. = FALSE)
         eval(body(globalSetup), envir = .globalSetupEnv)
     }
+
+    for(var in c('generatorFunction','nfRefClassDef','nfRefClass','setup','run','methods','methodList','name', 'className', 'contains', 'enableDerivs', 'virtual', '.globalSetupEnv', '.namesToCopy', '.namesToCopyFromGlobalSetup', '.namesToCopyFromSetup','declaredSetupOutputNames','.globalSetupEnv')) {
+        GFenv[[var]] <- get(var)
+    }
+
     return(generatorFunction)
 }
 
