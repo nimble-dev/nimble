@@ -103,7 +103,7 @@ parameterTransform <- nimbleFunction(
                     transformType[i] <- 8L
                     d <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
                     transformData[i,NIND2] <- transformData[i,NIND1] + d - 1
-                    transformData[i,TIND2] <- transformData[i,NIND1] + d - 2
+                    transformData[i,TIND2] <- transformData[i,TIND1] + d - 2
                     transformData[i,DATA1] <- d
                     next }
                 stop(paste0('parameterTransform doesn\'t handle \'', dist, '\' distributions.'), call. = FALSE)
