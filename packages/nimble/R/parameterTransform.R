@@ -164,7 +164,7 @@ parameterTransform <- nimbleFunction(
         inverseTransform = function(transformedValues = double(1)) {
             ## argument on transformed scale, return vector suitable for values(model,)
             modelValuesVector <- nimNumeric(nLength)
-            iNode <- 1L; i <- 1L; j <- 1L; ind1 <- 1L; ind2 <- 1L; dd <- 1L   ## integer types
+            iNode <- 1L; i <- 1L; j <- 1L; ind1 <- 1L; ind2 <- 1L; dd <- 1L;   ## integer types
             for(iNode in 1:nNodes) {
                 ind1 <- transformData[iNode,TIND1]
                 ind2 <- transformData[iNode,TIND2]
@@ -194,14 +194,15 @@ parameterTransform <- nimbleFunction(
                               dd <- transformData[iNode,DATA1]
                               theseInvTransformed <- nimNumeric(dd)
                               theseInvTransformed[1] <- ilogit( theseValues[1] )
+                              ddm1 <- dd - 1L
                               if(dd > 2) {
                                   runningSum <- 0
-                                  for(i in 2:(dd-1)) {
+                                  for(i in 2:ddm1) {
                                       runningSum <- runningSum + theseInvTransformed[i-1]
                                       theseInvTransformed[i] <- (1-runningSum) * ilogit( theseValues[i] )
                                   }
                               }
-                              theseInvTransformed[dd] <- 1 - sum(theseInvTransformed[1:(dd-1)])
+                              theseInvTransformed[dd] <- 1 - sum(theseInvTransformed[1:ddm1])
                           })
                 ind1 <- transformData[iNode,NIND1]
                 ind2 <- transformData[iNode,NIND2]
