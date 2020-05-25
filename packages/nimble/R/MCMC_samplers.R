@@ -8,6 +8,7 @@
 #' @rdname samplers
 #' @export
 sampler_BASE <- nimbleFunctionVirtual(
+    name = 'nimble_sampler_BASE',
     methods = list(
         reset = function() { }
     )
