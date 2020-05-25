@@ -164,7 +164,7 @@ parameterTransform <- nimbleFunction(
         inverseTransform = function(transformedValues = double(1)) {
             ## argument on transformed scale, return vector suitable for values(model,)
             modelValuesVector <- nimNumeric(nLength)
-            iNode <- 1L; i <- 1L; j <- 1L; ind1 <- 1L; ind2 <- 1L; dd <- 1L;   ## integer types
+            iNode <- 1L; i <- 1L; j <- 1L; ind1 <- 1L; ind2 <- 1L; dd <- 1L   ## integer types
             for(iNode in 1:nNodes) {
                 ind1 <- transformData[iNode,TIND1]
                 ind2 <- transformData[iNode,TIND2]
@@ -192,9 +192,9 @@ parameterTransform <- nimbleFunction(
                           },
                           {                                            ## 8: multivariate dirichlet
                               dd <- transformData[iNode,DATA1]
+                              ddm1 <- dd - 1L
                               theseInvTransformed <- nimNumeric(dd)
                               theseInvTransformed[1] <- ilogit( theseValues[1] )
-                              ddm1 <- dd - 1L
                               if(dd > 2) {
                                   runningSum <- 0
                                   for(i in 2:ddm1) {
@@ -240,11 +240,12 @@ parameterTransform <- nimbleFunction(
                           {                         ## 8: multivariate dirichlet
                               ## copied from inverseTransform method:
                               dd <- transformData[iNode,DATA1]
+                              ddm1 <- dd - 1L
                               theseInvTransformed <- nimNumeric(dd)
                               theseInvTransformed[1] <- ilogit( theseValues[1] )
                               if(dd > 2) {
                                   runningSum <- 0
-                                  for(i in 2:(dd-1)) {
+                                  for(i in 2:ddm1) {
                                       runningSum <- runningSum + theseInvTransformed[i-1]
                                       theseInvTransformed[i] <- (1-runningSum) * ilogit( theseValues[i] )
                                   }
@@ -254,7 +255,7 @@ parameterTransform <- nimbleFunction(
                               lpAdd <- -log(exp(x)+exp(-x)+2)   ## alternate: -2*log(1+exp(-x))-x)
                               if(dd > 2) {
                                   runningSum <- 0
-                                  for(i in 2:(dd-1)) {
+                                  for(i in 2:ddm1) {
                                       runningSum <- runningSum + theseInvTransformed[i-1]
                                       x <- theseValues[i]
                                       lpAdd <- lpAdd + log(1-runningSum) - log(exp(x)+exp(-x)+2)   ## alternate: -2*log(1+exp(-x))-x)
