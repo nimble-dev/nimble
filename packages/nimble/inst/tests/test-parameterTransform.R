@@ -126,6 +126,62 @@ test_that('exact values parameterTransform of multivariate dmnorm and dwish node
 })
 
 
+
+test_that('parameterTransform for dirichlet distribution', {
+    code <- nimbleCode({
+        x2[1:2] ~ ddirich(a2[1:2])
+        x3[1:3] ~ ddirich(a3[1:3])
+        x5[1:5] ~ ddirich(a5[1:5])
+    })
+    constants <- list(a2 = rep(1, 2),
+                      a3 = rep(1, 3),
+                      a5 = rep(1, 5))
+    data <- list()
+    inits <- list(x2 = c(.5, .5),
+                  x3 = c(.2, .3, .5),
+                  x5 = c(.1, .2, .3, .05, .35))
+    ##
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    ##
+    expect_equal(Rmodel$calculate(), 3.871201)
+    ##
+    nodes <- Rmodel$getNodeNames(stochOnly = TRUE)
+    pt <- parameterTransform(Rmodel, nodes)
+    ##
+    Cmodel <- compileNimble(Rmodel)
+    Cpt <- compileNimble(pt, project = Rmodel)
+    ##
+    vals <- values(Rmodel, nodes)
+    ##
+    ## test uncompiled
+    theNF <- pt
+    tVals <- theNF$transform(vals)
+    vals2 <- theNF$inverseTransform(tVals)
+    ##
+    expect_true(theNF$getOriginalLength() == 10)
+    expect_true(theNF$getTransformedLength() == 7)
+    expect_true(all(round(vals,15) - c(.5, .5, .2, .3, .5, .1, .2, .3, .05, .35) == 0))
+    expect_true(all(round(tVals - c(0.0000000, -1.3862944, -0.5108256, -2.1972246, -1.2527630, -0.2876821, -1.9459101)) == 0))
+    expect_true(all(round(vals - vals2, 16) == 0))
+    expect_true(theNF$calcLogDetJacobian(tVals) + 14.0544024662466205 == 0)
+    ##
+    ## test compiled
+    theNF <- Cpt
+    tVals <- theNF$transform(vals)
+    vals2 <- theNF$inverseTransform(tVals)
+    ##
+    expect_true(theNF$getOriginalLength() == 10)
+    expect_true(theNF$getTransformedLength() == 7)
+    expect_true(all(round(vals,15) - c(.5, .5, .2, .3, .5, .1, .2, .3, .05, .35) == 0))
+    expect_true(all(round(tVals - c(0.0000000, -1.3862944, -0.5108256, -2.1972246, -1.2527630, -0.2876821, -1.9459101)) == 0))
+    expect_true(all(round(vals - vals2, 16) == 0))
+    expect_true(theNF$calcLogDetJacobian(tVals) + 14.0544024662466205 == 0)
+})
+
+
+
+
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
 
