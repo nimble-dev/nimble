@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.9.0</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.9.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -377,8 +377,8 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 </div>
 <div id="windows" class="section level3">
 <h3><span class="header-section-number">4.2.3</span> Windows</h3>
-<p>On Windows, you should download and install <code>Rtools.exe</code> available from <a href="https://cran.r-project.org/bin/windows/Rtools/" class="uri">https://cran.r-project.org/bin/windows/Rtools/</a>. Select the appropriate executable corresponding to your version of R (and follow the urge to update your version of R if you notice it is not the most recent). This installer leads you through several ‘pages’. We think you can accept the defaults with one exception: check the PATH checkbox (page 5) so that the installer will add the location of the C++ compiler and related tools to your system’s PATH, ensuring that R can find them. After you click ‘Next’, you will get a page with a window for customizing the new PATH variable. You shouldn’t need to do anything there, so you can simply click ‘Next’ again.</p>
-<p>The checkbox for the ‘R 2.15+ toolchain’ (page 4) must be checked (in order to have <em>gcc</em>/<em>g++</em>, <em>make</em>, etc. installed). This should be checked by default.</p>
+<p>On Windows, you should download and install <code>Rtools.exe</code> available from <a href="https://cran.r-project.org/bin/windows/Rtools/" class="uri">https://cran.r-project.org/bin/windows/Rtools/</a>. Select the appropriate executable corresponding to your version of R (and follow the urge to update your version of R if you notice it is not the most recent).</p>
+<p>Important: You must set the path so that the installer will add the location of the C++ compiler and related tools to your system’s PATH variable, ensuring that R can find them. For R version 4.0 or greater (Rtools40) be sure to follow the instructions in the section <a href="https://cran.r-project.org/bin/windows/Rtools#putting-rtools-on-the-path">Putting Rtools on the PATH</a>. For R version 3.6.3 or lesser (i.e., using Rtools35.exe) make sure to check the box labelled “Add rtools to system PATH” (page 5 of the installation pages) (it should be checked by default). After you click ‘Next’, you will get a page with a window for customizing the new PATH variable. You shouldn’t need to do anything there, so you can simply click ‘Next’ again.</p>
 </div>
 </div>
 <div id="installing-the-nimble-package" class="section level2">
@@ -392,7 +392,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <p>The following are some troubleshooting tips that have helped users in some situations.</p>
 <p>For Windows:</p>
 <ul>
-<li>Be sure to check box to set <code>PATH</code> when installing Rtools.exe. Alternatively, one can set the <code>PATH</code> manually using syntax similar to this (after changing <code>C:\\Rtools\\bin;C:\\Rtools\\mingw_64\\bin</code> to be appropriate for your system):</li>
+<li>Be sure you have set <code>PATH</code> when installing Rtools (see instructions above in the Windows installation section). Alternatively, one can set the <code>PATH</code> manually using syntax similar to this (after changing <code>C:\\Rtools\\bin;C:\\Rtools\\mingw_64\\bin</code> to be appropriate for your system):</li>
 </ul>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">path &lt;-<span class="st"> </span><span class="kw">Sys.getenv</span>(<span class="st">&#39;PATH&#39;</span>)
 newPath &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;C:</span><span class="ch">\\</span><span class="st">Rtools</span><span class="ch">\\</span><span class="st">bin;C:</span><span class="ch">\\</span><span class="st">Rtools</span><span class="ch">\\</span><span class="st">mingw_64</span><span class="ch">\\</span><span class="st">bin;&quot;</span>,
@@ -401,14 +401,16 @@ newPath &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class=
 <ul>
 <li>Be sure the <code>Rtools.exe</code> version matches the R version.</li>
 <li>Try re-installing <code>Rtools</code> followed by re-installing NIMBLE.</li>
+<li>If you’re using Rtools40, make sure you are using a newer version or RStudio (at least 1.2.5042).</li>
 <li>If there are filesystem or permissions issues, it is possible to install NIMBLE in a local directory using the <code>lib</code> argument to <code>install.packages</code>.</li>
 <li>In the past we’ve heard reports from Windows users of problems when their filesystem involved a space in a directory name in the path to <code>RHOME</code>. We’ve also heard reports from Windows users of problems when R is installed on a network drive. We think both of these issues have been resolved.</li>
 </ul>
 <p>For MacOS:</p>
 <ul>
 <li>Newly installed Xcode/command line tools may need to be started once manually to provide a one-time permission before they will work from NIMBLE.</li>
-<li>If multiple C++ compilers are present on a system, be sure the <code>PATH</code> will find the right one.</li>
+<li>Upgrading your MacOS version may result in an error while installing or using NIMBLE. Please try running the following in the Terminal to reinstall Xcode/command line tools:</li>
 </ul>
+<p><code>bash   xcode-select --install</code> - If multiple C++ compilers are present on a system, be sure the <code>PATH</code> will find the right one.</p>
 <p>All operating systems:</p>
 <ul>
 <li>If problems arise from generating and compiling C++ files from the default location in R’s <code>tempdir()</code>, one can use the <code>dirName</code> argument to <code>compileNimble</code> to put such files elsewhere, such as in a local working directory.</li>

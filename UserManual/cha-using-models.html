@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.9.0</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.9.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -536,7 +536,7 @@ exampleModel<span class="op">$</span><span class="kw">calculate</span>(exampleMo
 <li><strong>getLogProb</strong> <code>getLogProb</code> simply returns the most recently calculated log probability value, or 0 for a deterministic node.</li>
 <li><strong>calculateDiff</strong> <code>calculateDiff</code> is identical to <code>calculate</code>, but it returns the new log probability value minus the one that was previously stored. This is useful when one wants to change the value or values of node(s) in the model (e.g., by setting a value or <code>simulate</code>) and then determine the change in the log probability, such as needed for a Metropolis-Hastings acceptance probability.</li>
 </ul>
-<p>Each of these functions is accessed as a member function of a model object, taking a vector of node names as an argument<a href="#fn23" class="footnoteRef" id="fnref23"><sup>23</sup></a>. If there is more than one node name, <code>calculate</code> and <code>getLogProb</code> return the sum of the log probabilities from each node, while <code>calculateDiff</code> returns the sum of the new values minus the old values. Next we show an example using <code>simulate</code>.</p>
+<p>Each of these functions is accessed as a member function of a model object, taking a vector of node names as an argument<a href="#fn25" class="footnoteRef" id="fnref25"><sup>25</sup></a>. If there is more than one node name, <code>calculate</code> and <code>getLogProb</code> return the sum of the log probabilities from each node, while <code>calculateDiff</code> returns the sum of the new values minus the old values. Next we show an example using <code>simulate</code>.</p>
 <div id="sec:arbitr-coll-nodes" class="section level4">
 <h4><span class="header-section-number">13.3.1.1</span> Example: simulating arbitrary collections of nodes</h4>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mc &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
@@ -675,8 +675,8 @@ cGetLogProbXDep<span class="op">$</span><span class="kw">run</span>()</code></pr
 </div>
 <div class="footnotes">
 <hr />
-<ol start="23">
-<li id="fn23"><p>Standard usage is <code>model$calculate(nodes)</code> but <code>calculate(model, nodes)</code> is synonymous.<a href="cha-using-models.html#fnref23">↩</a></p></li>
+<ol start="25">
+<li id="fn25"><p>Standard usage is <code>model$calculate(nodes)</code> but <code>calculate(model, nodes)</code> is synonymous.<a href="cha-using-models.html#fnref25">↩</a></p></li>
 </ol>
 </div>
             </section>

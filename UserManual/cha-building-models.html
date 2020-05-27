@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.9.0</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.9.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -405,8 +405,18 @@ pumpDataNew &lt;-<span class="st"> </span>pumpData
 pumpDataNew<span class="op">$</span>x[<span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">3</span>)] &lt;-<span class="st"> </span><span class="ot">NA</span>
 pumpMiss<span class="op">$</span><span class="kw">setData</span>(pumpDataNew)
 
-pumpMissConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(pumpMiss)
-pumpMissConf<span class="op">$</span><span class="kw">addMonitors</span>(<span class="st">&#39;x&#39;</span>, <span class="st">&#39;alpha&#39;</span>, <span class="st">&#39;beta&#39;</span>, <span class="st">&#39;theta&#39;</span>)</code></pre></div>
+pumpMissConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(pumpMiss)</code></pre></div>
+<pre><code>## ===== Monitors =====
+## thin = 1: alpha, beta
+## ===== Samplers =====
+## RW sampler (1)
+##   - alpha
+## posterior_predictive sampler (2)
+##   - x[]  (2 elements)
+## conjugate sampler (11)
+##   - beta
+##   - theta[]  (10 elements)</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpMissConf<span class="op">$</span><span class="kw">addMonitors</span>(<span class="st">&#39;x&#39;</span>, <span class="st">&#39;alpha&#39;</span>, <span class="st">&#39;beta&#39;</span>, <span class="st">&#39;theta&#39;</span>)</code></pre></div>
 <pre><code>## thin = 1: alpha, beta, x, theta</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpMissMCMC &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(pumpMissConf)
 Cobj &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(pumpMiss, pumpMissMCMC)

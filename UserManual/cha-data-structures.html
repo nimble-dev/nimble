@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.9.0</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.9.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -352,7 +352,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <div id="sec:modelValues-struct" class="section level2">
 <h2><span class="header-section-number">14.1</span> The modelValues data structure</h2>
 <p>modelValues are containers designed for storing values for models. They may be used for model outputs or model inputs. A modelValues object will contain <em>rows</em> of variables. Each row contains one object of each variable, which may be multivariate. The simplest way to build a modelValues object is from a model object. This will create a modelValues object with the same variables as the model. Although they were motivated by models, one is free to set up a modelValues with any variables one wants.</p>
-<p>As with the material in the rest of this chapter, modelValues objects will generally be used in nimbleFunctions that interact with models (see Chapter <a href="cha-progr-with-models.html#cha:progr-with-models">15</a>)<a href="#fn24" class="footnoteRef" id="fnref24"><sup>24</sup></a>. modelValues objects can be defined either in setup code or separately in R (and then passed as an argument to setup code). The modelValues object can then used in run code of nimbleFunctions.</p>
+<p>As with the material in the rest of this chapter, modelValues objects will generally be used in nimbleFunctions that interact with models (see Chapter <a href="cha-progr-with-models.html#cha:progr-with-models">15</a>)<a href="#fn26" class="footnoteRef" id="fnref26"><sup>26</sup></a>. modelValues objects can be defined either in setup code or separately in R (and then passed as an argument to setup code). The modelValues object can then used in run code of nimbleFunctions.</p>
 <div id="creating-modelvalues-objects" class="section level3">
 <h3><span class="header-section-number">14.1.1</span> Creating modelValues objects</h3>
 <p>Here is a simple example of creating a modelValues object:</p>
@@ -523,7 +523,7 @@ cSimManyXY<span class="op">$</span><span class="kw">run</span>(<span class="dt">
 </div>
 <div id="sec:nimbleLists" class="section level2">
 <h2><span class="header-section-number">14.2</span> The nimbleList data structure</h2>
-<p>nimbleLists provide a container for storing different types of objects in NIMBLE, similar to the list data structure in R. Before a nimbleList can be created and used, a <em>definition</em><a href="#fn25" class="footnoteRef" id="fnref25"><sup>25</sup></a> for that nimbleList must be created that provides the names, types, and dimensions of the elements in the nimbleList. nimbleList definitions must be created in R (either in R’s global environment or in setup code), but the nimbleList instances can be created in run code.</p>
+<p>nimbleLists provide a container for storing different types of objects in NIMBLE, similar to the list data structure in R. Before a nimbleList can be created and used, a <em>definition</em><a href="#fn27" class="footnoteRef" id="fnref27"><sup>27</sup></a> for that nimbleList must be created that provides the names, types, and dimensions of the elements in the nimbleList. nimbleList definitions must be created in R (either in R’s global environment or in setup code), but the nimbleList instances can be created in run code.</p>
 <p>Unlike lists in R, nimbleLists must have the names and types of all list elements provided by a definition before the list can be used. A nimbleList definition can be made by using the <code>nimbleList</code> function in one of two manners. The first manner is to provide the <code>nimbleList</code> function with a series of expressions of the form <code>name = type(nDim)</code>, similar to the specification of run-time arguments to nimbleFunctions. The types allowed for a nimbleList are the same as those allowed as run-time arguments to a nimbleFunction, described in Section <a href="cha-RCfunctions.html#sec:decl-argum-return">11.4</a>. For example, the following line of code creates a nimbleList definition with two elements: <code>x</code>, which is a scalar integer, and <code>Y</code>, which is a matrix of doubles.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"> exampleNimListDef &lt;-<span class="st"> </span><span class="kw">nimbleList</span>(<span class="dt">x =</span> <span class="kw">integer</span>(<span class="dv">0</span>), <span class="dt">Y =</span> <span class="kw">double</span>(<span class="dv">2</span>))</code></pre></div>
 <p>The second method of creating a nimbleList definition is by providing an R list of <em>nimbleType</em> objects to the <code>nimbleList()</code> function. A nimbleType object can be created using the <code>nimbleType</code> function, which must be provided with three arguments: the <code>name</code> of the element being created, the <code>type</code> of the element being created, and the <code>dim</code> of the element being created. For example, the following code creates a list with two nimbleType objects and uses these objects to create a nimbleList definition.</p>
@@ -609,9 +609,9 @@ outputList<span class="op">$</span>demoEigenList<span class="op">$</span>values<
 </div>
 <div class="footnotes">
 <hr />
-<ol start="24">
-<li id="fn24"><p>One may want to read this section after an initial reading of Chapter <a href="cha-progr-with-models.html#cha:progr-with-models">15</a>.<a href="cha-data-structures.html#fnref24">↩</a></p></li>
-<li id="fn25"><p>The <em>configuration</em> for a modelValues object is the same concept as a <em>definition</em> here; in a future release of NIMBLE we may make the usage more consistent between modelValues and nimbleLists.<a href="cha-data-structures.html#fnref25">↩</a></p></li>
+<ol start="26">
+<li id="fn26"><p>One may want to read this section after an initial reading of Chapter <a href="cha-progr-with-models.html#cha:progr-with-models">15</a>.<a href="cha-data-structures.html#fnref26">↩</a></p></li>
+<li id="fn27"><p>The <em>configuration</em> for a modelValues object is the same concept as a <em>definition</em> here; in a future release of NIMBLE we may make the usage more consistent between modelValues and nimbleLists.<a href="cha-data-structures.html#fnref27">↩</a></p></li>
 </ol>
 </div>
             </section>

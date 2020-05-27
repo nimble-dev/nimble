@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.9.0</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.9.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -348,13 +348,13 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <h1><span class="header-section-number">Chapter 15</span> Writing nimbleFunctions to interact with models</h1>
 <div id="sec:writ-nimble-funct" class="section level2">
 <h2><span class="header-section-number">15.1</span> Overview</h2>
-<p>When you write an R function, you say what the input arguments are, you provide the code for execution, and in that code you give the value to be returned<a href="#fn26" class="footnoteRef" id="fnref26"><sup>26</sup></a>. Using the <code>function</code> keyword in R triggers the operation of creating an object that is the function.</p>
+<p>When you write an R function, you say what the input arguments are, you provide the code for execution, and in that code you give the value to be returned<a href="#fn28" class="footnoteRef" id="fnref28"><sup>28</sup></a>. Using the <code>function</code> keyword in R triggers the operation of creating an object that is the function.</p>
 <p>Creating nimbleFunctions is similar, but there are two kinds of code and two steps of execution:</p>
 <ol style="list-style-type: decimal">
 <li><em>Setup</em> code is provided as a regular R function, but the programmer does not control what it returns. Typically the inputs to <em>setup</em> code are objects like a model, a vector of nodes, a modelValues object or a modelValues configuration, or another nimbleFunction. The setup code, as its name implies, sets up information for run-time code. It is executed in R, so it can use any aspect of R.</li>
 <li><p><em>Run</em> code is provided in the NIMBLE language, which was introduced in Chapter <a href="cha-RCfunctions.html#cha:RCfunctions">11</a>. This is similar to a narrow subset of R, but it is important to remember that it is different – defined by what can be compiled – and much more limited. <em>Run</em> code can use the objects created by the <em>setup</em> code. In addition, some information on variable types must be provided for input arguments, the return value, and in some circumstances for local variables. There are two kinds of <em>run</em> code:</p>
 <ol style="list-style-type: lower-alpha">
-<li>There is always a primary function, given as the argument <code>run</code><a href="#fn27" class="footnoteRef" id="fnref27"><sup>27</sup></a>.</li>
+<li>There is always a primary function, given as the argument <code>run</code><a href="#fn29" class="footnoteRef" id="fnref29"><sup>29</sup></a>.</li>
 <li>There can optionally be other functions, or ‘methods’ in the language of object-oriented programming, that share the same objects created by the <em>setup</em> function.</li>
 </ol></li>
 </ol>
@@ -384,7 +384,7 @@ logProbCalcPlusA<span class="op">$</span><span class="kw">run</span>(<span class
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">testModel<span class="op">$</span>a  <span class="co"># &quot;a&quot; was set to 0.5 + valueToAdd</span></code></pre></div>
 <pre><code>## [1] 1.25</code></pre>
 <p>The call to the R function called <code>nimbleFunction</code> returns a function, similarly to defining a function in R. That function, <code>logProbCalcPlus</code>, takes arguments for its <code>setup</code> function, executes it, and returns an object, <code>logProbCalcPlusA</code>, that has a <em>run</em> member function (method) accessed by <code>$run</code>. In this case, the <code>setup</code> function obtains the stochastic dependencies of the <code>node</code> using the <code>getDependencies</code> member function of the model (see Section <a href="cha-using-models.html#sec:cdgetdependencies">13.1.3</a>) and stores them in <code>dependentNodes</code>. In this way, <code>logProbCalcPlus</code> can adapt to any model. It also creates a variable, <code>valueToAdd</code>, that can be used by the nimbleFunction.</p>
-<p>The object <code>logProbCalcPlusA</code>, returned by <code>logProbCalcPlus</code>, is permanently bound to the results of the processed <code>setup</code> function. In this case, <code>logProbCalcPlusA$run</code> takes a scalar input value, <code>P</code>, assigns <code>P + valueToAdd</code> to the given node in the model, and returns the sum of the log probabilities of that node and its stochastic dependencies<a href="#fn28" class="footnoteRef" id="fnref28"><sup>28</sup></a>. We say <code>logProbCalcPlusA</code> is an ‘instance’ of <code>logProbCalcPlus</code> that is ‘specialized’ or ‘bound’ to <code>a</code> and <code>testModel</code>. Usually, the <code>setup</code> code will be where information about the model structure is determined, and then the <code>run</code> code can use that information without repeatedly, redundantly recomputing it. A nimbleFunction can be called repeatedly (one can think of it as a generator), each time returning a specialized nimbleFunction.</p>
+<p>The object <code>logProbCalcPlusA</code>, returned by <code>logProbCalcPlus</code>, is permanently bound to the results of the processed <code>setup</code> function. In this case, <code>logProbCalcPlusA$run</code> takes a scalar input value, <code>P</code>, assigns <code>P + valueToAdd</code> to the given node in the model, and returns the sum of the log probabilities of that node and its stochastic dependencies<a href="#fn30" class="footnoteRef" id="fnref30"><sup>30</sup></a>. We say <code>logProbCalcPlusA</code> is an ‘instance’ of <code>logProbCalcPlus</code> that is ‘specialized’ or ‘bound’ to <code>a</code> and <code>testModel</code>. Usually, the <code>setup</code> code will be where information about the model structure is determined, and then the <code>run</code> code can use that information without repeatedly, redundantly recomputing it. A nimbleFunction can be called repeatedly (one can think of it as a generator), each time returning a specialized nimbleFunction.</p>
 <p>Readers familiar with object-oriented programming may find it useful to think in terms of class definitions and objects. <code>nimbleFunction</code> creates a class definition. Each specialized nimbleFunction is one object in the class. The setup arguments are used to define member data in the object.</p>
 </div>
 <div id="sec:using-comp-nimbl" class="section level2">
@@ -430,7 +430,7 @@ lpA</code></pre></div>
 </div>
 <div id="sec:access-modify-numer" class="section level3">
 <h3><span class="header-section-number">15.3.2</span> Accessing and modifying numeric values from setup</h3>
-<p>While models and nodes created during setup cannot be modified<a href="#fn29" class="footnoteRef" id="fnref29"><sup>29</sup></a>, numeric values and modelValues can be, as illustrated by extending the example from above.</p>
+<p>While models and nodes created during setup cannot be modified<a href="#fn31" class="footnoteRef" id="fnref31"><sup>31</sup></a>, numeric values and modelValues can be, as illustrated by extending the example from above.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">logProbCalcPlusA<span class="op">$</span>valueToAdd  <span class="co"># in the uncompiled version</span></code></pre></div>
 <pre><code>## [1] 1</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">logProbCalcPlusA<span class="op">$</span>valueToAdd &lt;-<span class="st"> </span><span class="dv">2</span>
@@ -701,7 +701,7 @@ savedWeights &lt;-<span class="st"> </span>CImpWeights<span class="op">$</span>s
 <p>if Z is a vector or matrix, and</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">C[<span class="dv">6</span><span class="op">:</span><span class="dv">10</span>] &lt;-<span class="st"> </span>mv[v, i][<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>, k] <span class="op">+</span><span class="st"> </span>B</code></pre></div>
 <p>if B is a vector or matrix.</p>
-<p>The NIMBLE language allows scalars, but models defined from BUGS code are never created as purely scalar nodes. Instead, a single node such as defined by <code>z ~ dnorm(0, 1)</code> is implemented as a vector of length 1, similar to R. When using <code>z</code> via <code>model$z</code> or <code>model[[&quot;z&quot;]]</code>, NIMBLE will try to do the right thing by treating this as a scalar. In the event of problems<a href="#fn30" class="footnoteRef" id="fnref30"><sup>30</sup></a>, a more explicit way to access <code>z</code> is <code>model$z[1]</code> or <code>model[[&quot;z&quot;]][1]</code>.</p>
+<p>The NIMBLE language allows scalars, but models defined from BUGS code are never created as purely scalar nodes. Instead, a single node such as defined by <code>z ~ dnorm(0, 1)</code> is implemented as a vector of length 1, similar to R. When using <code>z</code> via <code>model$z</code> or <code>model[[&quot;z&quot;]]</code>, NIMBLE will try to do the right thing by treating this as a scalar. In the event of problems<a href="#fn32" class="footnoteRef" id="fnref32"><sup>32</sup></a>, a more explicit way to access <code>z</code> is <code>model$z[1]</code> or <code>model[[&quot;z&quot;]][1]</code>.</p>
 </div>
 <div id="sec:incl-other-meth" class="section level3">
 <h3><span class="header-section-number">15.4.6</span> Including other methods in a nimbleFunction</h3>
@@ -783,7 +783,7 @@ CusePreviousDemo1<span class="op">$</span><span class="kw">run</span>(<span clas
 <div id="sec:virt-nimbl-nimbl" class="section level3">
 <h3><span class="header-section-number">15.4.8</span> Virtual nimbleFunctions and nimbleFunctionLists</h3>
 <p>Often it is useful for one nimbleFunction to have a list of other nimbleFunctions, all of whose methods have the same arguments and return types. For example, NIMBLE’s MCMC engine contains a list of samplers that are each nimbleFunctions.</p>
-<p>To make such a list, NIMBLE provides a way to declare the arguments and return types of methods: virtual nimbleFunctions created by <code>nimbleFunctionVirtual</code>. Other nimbleFunctions can inherit from virtual nimbleFunctions, which in R is called ‘containing’ them. Readers familiar with object oriented programming will recognize this as a simple class inheritance system. In Version 0.9.0 it is limited to simple, single-level inheritance.</p>
+<p>To make such a list, NIMBLE provides a way to declare the arguments and return types of methods: virtual nimbleFunctions created by <code>nimbleFunctionVirtual</code>. Other nimbleFunctions can inherit from virtual nimbleFunctions, which in R is called ‘containing’ them. Readers familiar with object oriented programming will recognize this as a simple class inheritance system. In Version 0.9.1 it is limited to simple, single-level inheritance.</p>
 <p>Here is how it works:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">baseClass &lt;-<span class="st"> </span><span class="kw">nimbleFunctionVirtual</span>(
     <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">x =</span> <span class="kw">double</span>(<span class="dv">1</span>)) {<span class="kw">returnType</span>(<span class="kw">double</span>())},
@@ -1122,14 +1122,16 @@ MCMC algorithm, is <code>my_RW</code>. Thus, this sampler can be added to an exi
 
 
 
+
+
 <div class="footnotes">
 <hr />
-<ol start="26">
-<li id="fn26"><p>Normally this is the value of the last evaluated code, or the argument to <code>return</code>.<a href="cha-progr-with-models.html#fnref26">↩</a></p></li>
-<li id="fn27"><p>This can be omitted if you don’t need it.<a href="cha-progr-with-models.html#fnref27">↩</a></p></li>
-<li id="fn28"><p>Note the use of the global assignment operator to assign into the model. This is necessary for assigning into variables from the <code>setup</code> function, at least if you want to avoid warnings from R. These warnings come from R’s reference class system.<a href="cha-progr-with-models.html#fnref28">↩</a></p></li>
-<li id="fn29"><p>Actually, they can be, but only for uncompiled nimbleFunctions.<a href="cha-progr-with-models.html#fnref29">↩</a></p></li>
-<li id="fn30"><p>Please tell us!<a href="cha-progr-with-models.html#fnref30">↩</a></p></li>
+<ol start="28">
+<li id="fn28"><p>Normally this is the value of the last evaluated code, or the argument to <code>return</code>.<a href="cha-progr-with-models.html#fnref28">↩</a></p></li>
+<li id="fn29"><p>This can be omitted if you don’t need it.<a href="cha-progr-with-models.html#fnref29">↩</a></p></li>
+<li id="fn30"><p>Note the use of the global assignment operator to assign into the model. This is necessary for assigning into variables from the <code>setup</code> function, at least if you want to avoid warnings from R. These warnings come from R’s reference class system.<a href="cha-progr-with-models.html#fnref30">↩</a></p></li>
+<li id="fn31"><p>Actually, they can be, but only for uncompiled nimbleFunctions.<a href="cha-progr-with-models.html#fnref31">↩</a></p></li>
+<li id="fn32"><p>Please tell us!<a href="cha-progr-with-models.html#fnref32">↩</a></p></li>
 </ol>
 </div>
             </section>
