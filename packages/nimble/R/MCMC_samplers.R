@@ -871,6 +871,7 @@ sampler_langevin <- nimbleFunction(
     name = 'sampler_langevin',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
+        stop('langevin sampler not updated yet')  ## XXXXXXXXXXXXXXXXXXXXXX
         ## control list extraction
         scale         <- if(!is.null(control$scale))         control$scale         else 1      ## step-size multiplier
         adaptive      <- if(!is.null(control$adaptive))      control$adaptive      else TRUE
@@ -987,10 +988,11 @@ sampler_HMC <- nimbleFunction(
         ###x###IND_LRNG <- 4   ## one-sided-bound: N/A;    interval-bounded parameters: log(range)
         ###x###maxInd <- max(sapply(grep('^IND_', ls(), value = TRUE), function(x) eval(as.name(x))))
         ###x###d <- length(targetNodesAsScalars)
-        browser()   ## XXXXXXXXXXXXXXXXXXXXXX
         d <- my_parameterTransform$getTransformedLength()
         nimDerivs_wrt <- 1:d
-        nimDerivs_updateNodes <- makeUpdateNodes(targetNodes, calcNodes, model)   ## XXXXXXXXXX  NEW SYMTAX NOW (list return)???
+        makeUpdateNodes_return <- makeUpdateNodes(targetNodes, calcNodes, model)
+        nimDerivs_updateNodes   <- makeUpdateNodes_return$updateNodes
+        nimDerivs_constantNodes <- makeUpdateNodes_return$constantNodes
         d2 <- max(d, 2) ## for pre-allocating vectors
         ###x###transformNodeNums <- c(0, 0)               ## always a vector
         ###x###transformInfo <- array(0, c(2, maxInd))    ## always an array
@@ -1177,11 +1179,9 @@ sampler_HMC <- nimbleFunction(
             returnType(double());   return(lp)
         },
         tapedModelCalculateCalcNodes = function(qArg = double(1)) {
-            print('tapedModelCalculateCalcNodes is executing')    ## XXXXXXXXXXXXXXXXXXXXXX
-            values(model, targetNodes) <<- inverseTransform(qArg)
+            values(model, targetNodes) <<- my_parameterTransform$inverseTransform(qArg)
             lp <- model$calculate(calcNodes)
-            returnType(double(0))
-            return(lp)
+            returnType(double());   return(lp)
         },
         gradient = function(qArg = double(1)) {
             ###x###values(model, targetNodes) <<- inverseTransformValues(qArg)
@@ -1197,7 +1197,7 @@ sampler_HMC <- nimbleFunction(
             ###x###        if(id == 3) grad[nn] <<- grad[nn]*transformInfo[i, IND_RNG]*expit(x)^2*exp(-x) + 2/(1+exp(x)) - 1
             ###x###    }
             ###x###}
-            derivsOutput <- nimDerivs(tapedModelCalculateCalcNodes(qArg), order = 1, wrt = nimDerivs_wrt, model = model, updateNodes = nimDerivs_updateNodes)
+            derivsOutput <- nimDerivs(tapedModelCalculateCalcNodes(qArg), order = 1, wrt = nimDerivs_wrt, model = model, updateNodes = nimDerivs_updateNodes, constantNodes = nimDerivs_constantNodes)
             grad <<- derivsOutput$jacobian[1, 1:d]
         },
         leapfrog = function(qArg = double(1), pArg = double(1), eps = double(), first = double(), v = double()) {
