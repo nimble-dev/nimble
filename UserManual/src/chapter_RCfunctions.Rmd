@@ -81,6 +81,8 @@ Basic R operations supported for NIMBLE compilation are listed in
 Table \@ref(tab:coreR).
 
 ```{r, child = 'tables/coreRtableLong.md'}
+plan(multiprocess, workers=8)  # or some other plan
+plan(multiprocess, workers=8)  # or some other plan
 ```
 
 In addition to the above functions, we provide functions `any_na()` and `any_nan()` for finding if there are any `NA` or `NaN` values in a vector. These are equivalent to using `any(is.na())` and `any(is.nan())` in R.
@@ -139,7 +141,7 @@ compatibility.  In a future version of NIMBLE, `declare` may be removed.
 
 ### Math and linear algebra {#sec:basic-math-linear}
 
-Numeric scalar and matrix mathematical operations are listed in Tables \@ref{tab:functions}-\@ref{tab:functionsMatrix}.
+Numeric scalar and matrix mathematical operations are listed in Tables \@ref(tab:functions)-\@ref(tab:functionsMatrix).
 
 <!---
 would need to do some sed manipulation to be able to automate this cross-ref
