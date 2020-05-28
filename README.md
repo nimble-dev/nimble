@@ -78,9 +78,11 @@ D. Temple Lang, and R. Bodik. 2017. Programming with models: writing
 statistical algorithms for general model structures with
 NIMBLE. Journal of Computational and Graphical Statistics 26:403-413. [https://doi.org/10.1080/10618600.2016.1172487.](https://doi.org/10.1080/10618600.2016.1172487)
 
-To cite a version of the package, please cite:
+In published work that uses NIMBLE, please also cite the package version:
 
-NIMBLE Development Team. 2019. NIMBLE: MCMC, Particle Filtering, and Programmable Hierarchical Modeling.  doi: 10.5281/zenodo.1211190.. R package version 0.9.0, https://cran.r-project.org/package=nimble.
+{de Valpine}, P., C. Paciorek, D. Turek, N. Michaud, C. Anderson-Bergman, F. Obermeyer, C. Wehrhahn Cortes, A. Rodr\u00ecguez, D. Temple Lang, and S. Paganin. 2020. NIMBLE: MCMC, Particle Filtering, and Programmable Hierarchical Modeling.  doi: 10.5281/zenodo.1211190. R package version 0.9.1, https://cran.r-project.org/package=nimble.
+
+To help us track usage to justify funding support for NIMBLE, please include the DOI in the citation.
 
 ## Licenses
 
