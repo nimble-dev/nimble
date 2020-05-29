@@ -352,7 +352,7 @@ void nimArr_2_ManyModelAccess_AD_AD(ManyVariablesMapAccessor &MMVAPtr, NimArrBas
     nimCurrentOffset += nextNumVals * nimArrStride;
   }
   if(nimCurrent != nimEnd)
-    PRINTF("Warning: after completing nimArr_2_ManyModelAccess, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
+    PRINTF("Warning: after completing nimArr_2_ManyModelAccess_AD_AD, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
 }
 
 template<class T>
@@ -441,7 +441,7 @@ void ManyModelAccess_2_nimArr_AD_AD(ManyVariablesMapAccessor &MMVAPtr, NimArrBas
     nimCurrentOffset += nextNumVals * nimArrStride;
   }
   if(nimCurrent != nimEnd)
-    PRINTF("Warning: after completing ManyModelAccess_2_nimArr, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
+    PRINTF("Warning: after completing ManyModelAccess_2_nimArr_AD_AD, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
 }
 
 template<class T>
@@ -502,7 +502,7 @@ void setValues_AD_AD_taping(NimArr<1, CppAD::AD<double> > &v,
 			    ManyVariablesMapAccessor &MVA_AD,
 			    ManyVariablesMapAccessor &MVA_orig,
 			    bool recording){
-  size_t totalLength = MVA_orig.getTotalLength();  
+  size_t totalLength = MVA_orig.getTotalLength();
   if(!recording) {
     NimArr<1, double> dv;
     dv.setSize(totalLength);
@@ -526,9 +526,9 @@ void setValues_AD_AD_taping(NimArr<1, CppAD::AD<double> > &v,
     // It is unclear whether we then need to use the output in a way that forces CppAD to keep it as part of the calculation graph.
     //   The concern is that otherwise CppAD might optimize it away by determining that nothing really depends on it.
     //   The following line is essentially a no-operation for this purpose (extraOutputDummyResult[0] will always be 0 in value).
-    v[0] += extraOutputDummyResult[0];
-  }
-  setValues_AD_AD(v, MVA_AD); // record copying on the tape
+						    v[0] += extraOutputDummyResult[0];
+    }
+    setValues_AD_AD(v, MVA_AD); // record copying on the tape
 }
 
 
