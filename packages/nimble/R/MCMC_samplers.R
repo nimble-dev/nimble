@@ -1181,6 +1181,7 @@ sampler_HMC <- nimbleFunction(
         tapedModelCalculateCalcNodes = function(qArg = double(1)) {
             values(model, targetNodes) <<- my_parameterTransform$inverseTransform(qArg)
             lp <- model$calculate(calcNodes)
+            ##lp <- model$calculate(calcNodes) + my_parameterTransform$calcLogDetJacobian(qArg)   ## XXXXXXXXXXXXXX ??????????????
             returnType(double());   return(lp)
         },
         gradient = function(qArg = double(1)) {
@@ -1199,6 +1200,13 @@ sampler_HMC <- nimbleFunction(
             ###x###}
             derivsOutput <- nimDerivs(tapedModelCalculateCalcNodes(qArg), order = 1, wrt = nimDerivs_wrt, model = model, updateNodes = nimDerivs_updateNodes, constantNodes = nimDerivs_constantNodes)
             grad <<- derivsOutput$jacobian[1, 1:d]
+            print('=========================================')   ## XXXXXXXXXXX
+            print('=========================================')   ## XXXXXXXXXXX
+            print('qArg:')                                       ## XXXXXXXXXXX
+            print(qArg)                                          ## XXXXXXXXXXX
+            print('grad:')                                       ## XXXXXXXXXXX
+            print(grad)                                          ## XXXXXXXXXXX
+            print('=========================================')   ## XXXXXXXXXXX
         },
         leapfrog = function(qArg = double(1), pArg = double(1), eps = double(), first = double(), v = double()) {
             ## Algorithm 1 from Hoffman and Gelman (2014)
