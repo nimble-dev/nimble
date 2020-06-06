@@ -667,19 +667,23 @@ Type nimDerivs_dexp_logFixed(Type x, Type scale, int give_log)
 template<class Type> 
 Type nimDerivs_dunif(Type x, Type a, Type b, Type give_log)
 {   
-	Type res = 1/(b-a);
-	res = CppAD::CondExpEq(give_log, Type(1), log(res), res);
-	return(res);
+  Type res = Type(1.0)/(b-a);
+  res = CppAD::CondExpEq(give_log, Type(1), log(res), res);
+  Type ans = CppAD::CondExpLe(x, b, res, -CppAD::numeric_limits<Type>::max());
+  ans = CppAD::CondExpGe(x, a, ans, -CppAD::numeric_limits<Type>::max());
+  return(ans);
 }
 
 template<class Type> 
 Type nimDerivs_dunif_logFixed(Type x, Type a, Type b, int give_log)
 {   
-	Type res = 1/(b-a);
-	if(give_log){
-		res = log(res);
-	}
-	return(res);
+  Type res = Type(1.)/(b-a);
+  if(give_log){
+    res = log(res);
+  }
+  Type ans = CppAD::CondExpLe(x, b, res, -CppAD::numeric_limits<Type>::max());
+  ans = CppAD::CondExpGe(x, a, ans, -CppAD::numeric_limits<Type>::max());
+  return(ans);
 }
 
 /* dweibull: Weibull distribution */
