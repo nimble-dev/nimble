@@ -1779,6 +1779,7 @@ test_that('MCMC with logProb variable being monitored builds and compiles.', {
 
 test_that('HMC sampler seems to work', {
     nimbleOptions(experimentalEnableDerivs = TRUE)
+    nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions = TRUE)
     code <- nimbleCode({
         a[1] ~ dnorm(0, 1)
         a[2] ~ dnorm(a[1]+1, 1)
@@ -1799,15 +1800,16 @@ test_that('HMC sampler seems to work', {
     samples <- runMCMC(Cmcmc, 10000)
     ## "exact" HMC sample values have changed since changes in AD system
     ## DT May 2020
-    expect_true(all(round(as.numeric(samples[1000:1005,]), 5) == c(0.77841, 1.32731, 1.69460, 1.34141, 0.46137, 0.71918, 3.04126, 3.21601, 2.63767, 4.05953, 2.67908, 2.56086, 6.28285, 3.75954, 3.30842, 2.94731, 6.53094, 6.35026)))  ## new AD system
-    expect_true(all(round(as.numeric(apply(samples, 2, mean)), 7) == c(0.4514514, 1.8790055, 3.3149654)))  ## new AD system
-    expect_true(all(round(as.numeric(apply(samples, 2, sd)), 7) == c(0.9251086, 1.1891887, 1.2944988)))    ## new AD system
+    expect_true(all(round(as.numeric(samples[1000,]), 5) == c(1.04219, 2.46754, 2.67295)))  ## new AD system
+    expect_true(all(round(as.numeric(apply(samples, 2, mean)), 7) == c(0.4503489, 1.8820432, 3.3086721)))  ## new AD system
+    expect_true(all(round(as.numeric(apply(samples, 2, sd)), 7) == c(0.9148666, 1.2039168, 1.2923344)))    ## new AD system
 })
 
 
 test_that('HMC sampler asymptotic correctness', {
     ## testing correctness of HMC sampler (with various transformations)
     nimbleOptions(experimentalEnableDerivs = TRUE)
+    nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions = TRUE)
     code <- nimbleCode({
         mu ~ dnorm(0, sd = 10)
         tau ~ dgamma(0.01, 0.01)
