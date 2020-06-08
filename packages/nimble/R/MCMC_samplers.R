@@ -982,91 +982,12 @@ sampler_HMC <- nimbleFunction(
         targetNodesAsScalars <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)
         ## processing of bounds and transformations
         my_parameterTransform <- parameterTransform(model, targetNodesAsScalars)
-        ###x###IND_ID   <- 1   ## transformation ID: 1=identity, 2=log, 3=logit
-        ###x###IND_LB   <- 2   ## one-sided-bound: offset; interval-bounded parameters: lower-bound
-        ###x###IND_RNG  <- 3   ## one-sided-bound: -1/1;   interval-bounded parameters: range
-        ###x###IND_LRNG <- 4   ## one-sided-bound: N/A;    interval-bounded parameters: log(range)
-        ###x###maxInd <- max(sapply(grep('^IND_', ls(), value = TRUE), function(x) eval(as.name(x))))
-        ###x###d <- length(targetNodesAsScalars)
         d <- my_parameterTransform$getTransformedLength()
         nimDerivs_wrt <- 1:d
         makeUpdateNodes_return <- makeUpdateNodes(targetNodes, calcNodes, model)
         nimDerivs_updateNodes   <- makeUpdateNodes_return$updateNodes
         nimDerivs_constantNodes <- makeUpdateNodes_return$constantNodes
         d2 <- max(d, 2) ## for pre-allocating vectors
-        ###x###transformNodeNums <- c(0, 0)               ## always a vector
-        ###x###transformInfo <- array(0, c(2, maxInd))    ## always an array
-        ###x###logTransformNodes   <- character()
-        ###x###logitTransformNodes <- character()
-        ###x###for(i in 1:d) {
-        ###x###    node <- targetNodesAsScalars[i]
-        ###x###    if(model$isDeterm(node))      stop(paste0('HMC sampler doesn\'t operate on deterministic nodes: ', node), call. = FALSE)
-        ###x###    if(model$isDiscrete(node))    stop(paste0('HMC sampler doesn\'t operate on discrete nodes: ', node), call. = FALSE)
-        ###x###    dist <- model$getDistribution(node)
-        ###x###    bounds <- c(model$getBound(node, 'lower'), model$getBound(node, 'upper'))
-        ###x###    if(!model$isMultivariate(node)) {   ## univariate node
-        ###x###        if(bounds[1] == -Inf & bounds[2] == Inf) {               ## 1 = identity: support = (-Inf, Inf)
-        ###x###            1
-        ###x###        } else if((isValid(bounds[1]) && bounds[2] ==  Inf) ||   ## 2 = log: support = (a, Inf)
-        ###x###                  (isValid(bounds[2]) && bounds[1] == -Inf)) {   ##      or: support = (-Inf, b)
-        ###x###            if(model$isTruncated(node)) {
-        ###x###                bdName  <- if(isValid(bounds[1])) 'lower'  else 'upper'
-        ###x###                bdParam <- if(isValid(bounds[1])) 'lower_' else 'upper_'
-        ###x###                bdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, bdParam))
-        ###x###                if(length(all.vars(bdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant ', bdName, ' bound.  HMC sampler does not yet handle that, please contact the NIMBLE development team.', call. = FALSE)
-        ###x###            }
-        ###x###            logTransformNodes <- c(logTransformNodes, node)
-        ###x###            transformNodeNums <- c(transformNodeNums, i)
-        ###x###            newRow <- numeric(maxInd)
-        ###x###            newRow[IND_ID]  <- 2
-        ###x###            newRow[IND_LB]  <- if(isValid(bounds[1])) bounds[1] else bounds[2]
-        ###x###            newRow[IND_RNG] <- if(isValid(bounds[1])) 1 else -1
-        ###x###            transformInfo <- rbind(transformInfo, newRow)
-        ###x###        } else if(isValid(bounds[1]) && isValid(bounds[2])) {    ## 3 = logit: support = (a, b)
-        ###x###            if(dist == 'dunif' || model$isTruncated(node)) {     ## uniform distribution, or a truncated node
-        ###x###                if(dist == 'dunif')         { lParam <- 'min';    uParam <- 'max'    }
-        ###x###                if(model$isTruncated(node)) { lParam <- 'lower_'; uParam <- 'upper_' }
-        ###x###                lowerBdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, lParam))
-        ###x###                upperBdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, uParam))
-        ###x###                if(length(all.vars(lowerBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant lower bound.  HMC sampler does not yet handle that, please contact the NIMBLE development team.', call. = FALSE)
-        ###x###                if(length(all.vars(upperBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant upper bound.  HMC sampler does not yet handle that, please contact the NIMBLE development team.', call. = FALSE)
-        ###x###            } else {   ## some other distribution with finite support
-        ###x###                message('HMC sampler is not familiar with the ', dist, ' distribution of node ', node, '.')
-        ###x###                message('We\'re going to use a logit-transformation for sampling this node, but')
-        ###x###                message('this requires the upper and lower bounds of the ', dist, ' distribution are *constant*.')
-        ###x###                message('If you\'re uncertain about this, please get in touch with the NIMBLE development team.')
-        ###x###            }
-        ###x###            logitTransformNodes <- c(logitTransformNodes, node)
-        ###x###            range <- bounds[2] - bounds[1]
-        ###x###            if(range <= 0) stop(paste0('HMC sampler doesn\'t have a transformation for the bounds of node: ', node), call. = FALSE)
-        ###x###            transformNodeNums <- c(transformNodeNums, i)
-        ###x###            newRow <- numeric(maxInd)
-        ###x###            newRow[IND_ID]   <- 3
-        ###x###            newRow[IND_LB]   <- bounds[1]
-        ###x###            newRow[IND_RNG]  <- range
-        ###x###            newRow[IND_LRNG] <- log(range)
-        ###x###            transformInfo <- rbind(transformInfo, newRow)
-        ###x###        } else stop(paste0('HMC sampler doesn\'t have a transformation for the bounds of node: ', node, ', which are (', bounds[1], ', ', bounds[2], ')'), call. = FALSE)
-        ###x###    } else {                            ## multivariate node
-        ###x###        if(!(node %in% originalTargetAsScalars)) stop(paste0('HMC sampler only operates on complete multivariate nodes. Must specify full node: ', model$expandNodeNames(node), ', or none of it'), call. = FALSE)
-        ###x###        if(dist %in% c('dmnorm', 'dmvt')) {                      ## dmnorm: identity
-        ###x###            message('HMC sampler is waiting for derivatives of dmnorm() to be implemented.')  ## waiting for dmnorm() derivatives
-        ###x###            message('otherwise, HMC sampler already works on dmnorm nodes.')                  ## waiting for dmnorm() derivatives
-        ###x###            stop()                                                                            ## waiting for dmnorm() derivatives
-        ###x###            ## NOTE: no transformation should be necessary for dmnorm and dmvt nodes (??)
-        ###x###        } else if(dist %in% c('dwish', 'dinvwish')) {            ## wishart: log-cholesky
-        ###x###            message('HMC sampler is waiting for derivatives of dwish() to be implemented.')   ## waiting for dwish() derivatives
-        ###x###            stop()                                                                            ## waiting for dwish() derivatives
-        ###x###            ##transformInfo[xxx, IND_ID] <- 5
-        ###x###            ## NOTE: not sure what transformation ID for this (??)  5?
-        ###x###            ## NOTE: implementing for dwish() and dinvwish() will require a slightly deeper re-design
-        ###x###            ## d <- d + sqrt(len) * (sqrt(len)+1) / 2
-        ###x###            ## dmodel <- dmodel + len
-        ###x###        } else stop(paste0('HMC sampler yet doesn\'t handle \'', dist, '\' distributions.'), call. = FALSE)   ## Dirichlet ?
-        ###x###    }
-        ###x###}
-        ###x###if(messages && length(logTransformNodes)   > 0) message('HMC sampler is using a log-transformation for: ',   paste0(logTransformNodes,   collapse = ', '))
-        ###x###if(messages && length(logitTransformNodes) > 0) message('HMC sampler is using a logit-transformation for: ', paste0(logitTransformNodes, collapse = ', '))
         ## numeric value generation
         timesRan <- 0;   epsilon <- 0;   mu <- 0;   logEpsilonBar <- 0;   Hbar <- 0
         q <- numeric(d2);   qL <- numeric(d2);   qR <- numeric(d2);   qDiff <- numeric(d2);   qNew <- numeric(d2)
@@ -1099,7 +1020,6 @@ sampler_HMC <- nimbleFunction(
         timesRan <<- timesRan + 1
         if(printTimesRan) print('============ times ran = ', timesRan)
         if(printEpsilon)  print('epsilon = ', epsilon)
-        ###x###transformValues()              ## sets value of member data 'q'
         q <<- my_parameterTransform$transform(values(model, targetNodes))
         for(i in 1:d)     p[i] <<- rnorm(1, 0, 1)
         qpLogH <- logH(q, p)
@@ -1124,7 +1044,6 @@ sampler_HMC <- nimbleFunction(
             j <- j + 1
             checkInterrupt()
         }
-        ###x###values(model, targetNodes) <<- inverseTransformValues(qNew)
         values(model, targetNodes) <<- my_parameterTransform$inverseTransform(qNew)
         model$calculate(calcNodes)
         nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
@@ -1139,74 +1058,25 @@ sampler_HMC <- nimbleFunction(
         if(warnings > 0) if(is.nan(epsilon)) { print('HMC sampler value of epsilon is NaN, with timesRan = ', timesRan); warnings <<- warnings - 1 }
     },
     methods = list(
-        ###x###transformValues = function() {
-        ###x###    q <<- values(model, targetNodes)
-        ###x###    if(length(transformNodeNums) > 2) {
-        ###x###        for(i in 3:length(transformNodeNums)) {
-        ###x###            nn <- transformNodeNums[i]
-        ###x###            id <- transformInfo[i, IND_ID]                ## 1 = identity, 2 = log, 3 = logit
-        ###x###            if(id == 2) q[nn] <<- log(   (q[nn] - transformInfo[i, IND_LB]) / transformInfo[i, IND_RNG] )
-        ###x###            if(id == 3) q[nn] <<- logit( (q[nn] - transformInfo[i, IND_LB]) / transformInfo[i, IND_RNG] )
-        ###x###        }
-        ###x###    }
-        ###x###},
-        ###x###inverseTransformValues = function(qArg = double(1)) {
-        ###x###    transformed <- qArg
-        ###x###    if(length(transformNodeNums) > 2) {
-        ###x###        for(i in 3:length(transformNodeNums)) {
-        ###x###            nn <- transformNodeNums[i]
-        ###x###            id <- transformInfo[i, IND_ID]                ## 1 = identity, 2 = log, 3 = logit
-        ###x###            x <- qArg[nn]
-        ###x###            if(id == 2) transformed[nn] <- transformInfo[i, IND_LB] + transformInfo[i, IND_RNG]*  exp(x)
-        ###x###            if(id == 3) transformed[nn] <- transformInfo[i, IND_LB] + transformInfo[i, IND_RNG]*expit(x)
-        ###x###        }
-        ###x###    }
-        ###x###    returnType(double(1));   return(transformed)
-        ###x###},
         logH = function(qArg = double(1), pArg = double(1)) {
-            ###x###values(model, targetNodes) <<- inverseTransformValues(qArg)
             values(model, targetNodes) <<- my_parameterTransform$inverseTransform(qArg)
             lp <- model$calculate(calcNodes) - sum(pArg^2)/2 + my_parameterTransform$calcLogDetJacobian(qArg)
-            ###x###if(length(transformNodeNums) > 2) {
-            ###x###    for(i in 3:length(transformNodeNums)) {
-            ###x###        nn <- transformNodeNums[i]
-            ###x###        id <- transformInfo[i, IND_ID]                ## 1 = identity, 2 = log, 3 = logit
-            ###x###        x <- qArg[nn]
-            ###x###        if(id == 2) lp <- lp + x
-            ###x###        if(id == 3) lp <- lp + transformInfo[i, IND_LRNG] - log(exp(x)+exp(-x)+2)   ## alternate: -2*log(1+exp(-x))-x
-            ###x###    }
-            ###x###}
-            returnType(double());   return(lp)
+            returnType(double())
+            return(lp)
         },
         tapedModelCalculateCalcNodes = function(qArg = double(1)) {
             values(model, targetNodes) <<- my_parameterTransform$inverseTransform(qArg)
             lp <- model$calculate(calcNodes)
-            ##lp <- model$calculate(calcNodes) + my_parameterTransform$calcLogDetJacobian(qArg)   ## XXXXXXXXXXXXXX ??????????????
-            returnType(double());   return(lp)
+            returnType(double())
+            return(lp)
         },
         gradient = function(qArg = double(1)) {
-            ###x###values(model, targetNodes) <<- inverseTransformValues(qArg)
-            ###x###if(printGradient) { gradQ <- array(0, c(1,d)); gradQ[1,1:d] <- values(model, targetNodes); print(gradQ) }
-            ###x###derivsOutput <- derivs(model$calculate(calcNodes), order = 1, wrt = targetNodes)
-            ###x###grad <<- derivsOutput$jacobian[1, 1:d]
-            ###x###if(length(transformNodeNums) > 2) {
-            ###x###    for(i in 3:length(transformNodeNums)) {
-            ###x###        nn <- transformNodeNums[i]
-            ###x###        id <- transformInfo[i, IND_ID]                ## 1 = identity, 2 = log, 3 = logit
-            ###x###        x <- qArg[nn]
-            ###x###        if(id == 2) grad[nn] <<- grad[nn]*exp(x) + 1
-            ###x###        if(id == 3) grad[nn] <<- grad[nn]*transformInfo[i, IND_RNG]*expit(x)^2*exp(-x) + 2/(1+exp(x)) - 1
-            ###x###    }
-            ###x###}
             derivsOutput <- nimDerivs(tapedModelCalculateCalcNodes(qArg), order = 1, wrt = nimDerivs_wrt, model = model, updateNodes = nimDerivs_updateNodes, constantNodes = nimDerivs_constantNodes)
             grad <<- derivsOutput$jacobian[1, 1:d]
-            print('=========================================')   ## XXXXXXXXXXX
-            print('=========================================')   ## XXXXXXXXXXX
-            print('qArg:')                                       ## XXXXXXXXXXX
-            print(qArg)                                          ## XXXXXXXXXXX
-            print('grad:')                                       ## XXXXXXXXXXX
-            print(grad)                                          ## XXXXXXXXXXX
-            print('=========================================')   ## XXXXXXXXXXX
+            ###print('=========================================')
+            ###print('qArg:');   print(qArg)
+            ###print('grad:');   print(grad)
+            ###print('=========================================')
         },
         leapfrog = function(qArg = double(1), pArg = double(1), eps = double(), first = double(), v = double()) {
             ## Algorithm 1 from Hoffman and Gelman (2014)
@@ -1230,7 +1100,6 @@ sampler_HMC <- nimbleFunction(
         initializeEpsilon = function() {
             ## Algorithm 4 from Hoffman and Gelman (2014)
             savedCalcNodeValues <- values(model, calcNodes)
-            ###x###transformValues()                   ## sets value of member data 'q'
             q <<- my_parameterTransform$transform(values(model, targetNodes))
             p <<- numeric(d)                    ## keep, sets 'p' to size d on first iteration
             for(i in 1:d)     p[i] <<- rnorm(1, 0, 1)
