@@ -1352,66 +1352,67 @@ test_ADModelCalculate_nick <- function(model, name = NULL, calcNodeNames = NULL,
 ## Chris' version of test_ADModelCalculate
 ## By default test a standardized set of {wrt, calcNodes} pairs representing common use cases (MAP, max lik, EB),
 ## unless user provides 'wrt' and 'calcNodes'.
-test_ADModelCalculate <- function(model, name = 'unknown', x = NULL, calcNodes = NULL, wrt = NULL, 
-                                      relTol = c(1e-15, 1e-8, 1e-3), useFasterRderivs = FALSE, seed = 1, verbose = FALSE, debug = FALSE){
+test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNodes = NULL, wrt = NULL, 
+                                  relTol = c(1e-15, 1e-8, 1e-3), useFasterRderivs = FALSE, seed = 1, verbose = FALSE, debug = FALSE){
     if(!is.null(seed))
         set.seed(seed)
-    xOrig <- x
+    initsHandling <- x
     if(is.null(wrt) && is.null(calcNodes)) {
         nodes <- model$getNodeNames(includeData = FALSE)
         vals <- values(model, nodes)
+        
         ## HMC/MAP use case
         if(verbose) cat("testing HMC/MAP\n")
         calcNodes <- model$getNodeNames()
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         tmp <- values(model, wrt)
-        if(is.null(xOrig)) x <- runif(length(tmp)) else x <- xOrig
+        if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
         test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
                                         useFasterRderivs =  useFasterRderivs, verbose = verbose, debug = debug)
         ## max. lik. use case
         if(verbose) cat("testing ML\n")
+        values(model, nodes) <- vals
         calcNodes <- model$getNodeNames()
         topNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
         latentNodes <- model$getNodeNames(latentOnly = TRUE, stochOnly = TRUE, includeData = FALSE)
         calcNodes <- calcNodes[!calcNodes %in% c(topNodes, latentNodes)]  # should be data + deterministic
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE) # will include hyps if present, but derivs wrt those should be zero
         tmp <- values(model, wrt)
-        if(is.null(xOrig)) x <- runif(length(tmp)) else x <- xOrig
-        values(model, nodes) <- vals
+        if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
         test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, verbose = verbose, debug = debug)
 
         ## modular HMC/MAP use case
         if(verbose) cat("testing HMC/MAP partial\n")
+        values(model, nodes) <- vals
         calcNodes <- model$getNodeNames()
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         wrt <- sample(wrt, round(length(wrt)/2), replace = FALSE)
         tmp <- values(model, wrt)
-        if(is.null(xOrig)) x <- runif(length(tmp)) else x <- xOrig
-        values(model, nodes) <- vals
+        if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
         test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, verbose = verbose, debug = debug)
 
         ## conditional max. lik. use case
         if(verbose) cat("testing ML partial\n")
+        values(model, nodes) <- vals
         calcNodes <- model$getNodeNames()
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         wrt <- sample(wrt, round(length(wrt)/2), replace = FALSE)
         tmp <- values(model, wrt)
-        if(is.null(xOrig)) x <- runif(length(tmp)) else x <- xOrig
-        values(model, nodes) <- vals
+        if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
         test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, verbose = verbose, debug = debug)
 
         ## empirical Bayes use case
         if(verbose) cat('testing EB\n')
+        values(model, nodes) <- vals
         calcNodes <- model$getNodeNames()
         topNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
         calcNodes <- calcNodes[!calcNodes %in% topNodes]  # EB doesn't use hyperpriors
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         tmp <- values(model, wrt)
-        if(is.null(xOrig)) x <- runif(length(tmp)) else x <- xOrig
-        values(model, nodes) <- vals
+        if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
         test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, verbose = verbose, debug = debug)
     } else {
@@ -1419,7 +1420,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = NULL, calcNodes =
         if(is.null(wrt)) wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         ## Apply test to user-provided sets of nodes
         tmp <- values(model, wrt)
-        if(is.null(xOrig)) x <- runif(length(tmp)) else x <- xOrig
+        if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
         test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, verbose = verbose, debug = debug)
     }

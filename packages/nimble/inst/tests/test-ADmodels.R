@@ -257,6 +257,24 @@ model <- nimbleModel(code, constants = list(n = n), data = list(y = rpois(n, 1))
                      inits = list(mu0 = rnorm(1), sigma = runif(1), mu = rnorm(1), a = runif(1), b = runif(1)))
 test_ADModelCalculate(model, name = 'stochastic link model')
 
+## dexp and dt, which are provided by NIMBLE to allow expanded parameterizations
+
+code <- nimbleCode({
+    for(i in 1:n) {
+        y[i] ~ dnorm(mu[i], sd = sigma)
+        mu[i] ~ dt(mu0, sigma = sd0, df = nu)
+    }
+    mu0 ~ dnorm(0,1)
+    sd0 ~ dgamma(1.5, .7)
+    nu ~ dunif(0, 50)
+    sigma ~ dexp(scale = tau)
+    tau ~ dexp(rate = 3.5)
+})
+n <- 10
+model <- nimbleModel(code, constants = list(n = n), data = list(y = rnorm(n)),
+                     inits = list(mu = rnorm(n), sigma = runif(1), nu = 2.5, mu0 = rnorm(1), sd0 = runif(1),
+                         tau = runif(1)))
+test_ADModelCalculate(model, name = 'dt and dexp model')
 
 ## vectorized deterministic nodes
 
@@ -441,7 +459,7 @@ model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, rho 
 model$simulate()
 model$calculate()
 model$setData('y')
-test_ADModelCalculate(model, name = 'dnorm with user-defined vectorized fxn', relTol = c(1e-14, 1e-8, 1e-3))
+test_ADModelCalculate(model, name = 'dmnorm with user-defined vectorized fxn', relTol = c(1e-14, 1e-8, 1e-3))
 
 ## other dmnorm parameterizations
 code <- nimbleCode({
@@ -468,7 +486,75 @@ model$calculate()
 model$setData('y')
 test_ADModelCalculate(model, name = 'various dmnorm parameterizations')
 
+## various dmvt parameterizations
 
+code <- nimbleCode({
+    y[1, 1:n] ~ dmvt(mu = mu1[1:n], prec = Q[1:n,1:n], df = nu)
+
+    Uprec[1:n, 1:n] <- chol(Q[1:n,1:n])
+    Ucov[1:n, 1:n] <- chol(Sigma[1:n,1:n])
+    y[2, 1:n] ~ dmvt(mu2[1:n], cholesky = Uprec[1:n,1:n], df = nu, prec_param = 1)
+    y[3, 1:n] ~ dmvt(mu3[1:n], cholesky = Ucov[1:n,1:n], df = nu, prec_param = 0)
+    y[4, 1:n] ~ dmvt(mu4[1:n], scale = Sigma[1:n, 1:n], df = nu)
+    mu1[1:n] ~ dmvt(z[1:n], prec = pr[1:n,1:n], df = nu)
+    mu2[1:n] ~ dmvt(z[1:n], prec = pr[1:n,1:n], df = nu)
+    mu3[1:n] ~ dmvt(z[1:n], prec = pr[1:n,1:n], df = nu)
+    mu4[1:n] ~ dmvt(z[1:n], prec = pr[1:n,1:n], df = nu)
+    nu ~ dunif(0, 50)
+})
+
+n <- 5
+locs <- runif(n)
+dd <- fields::rdist(locs)
+Sigma <- exp(-dd/0.1)
+model <- nimbleModel(code, constants = list(n = n), inits = list(z = rep(0, n), pr = diag(n),
+                                                                 Sigma = Sigma, Q = solve(Sigma)))
+model$simulate()
+model$calculate()
+model$setData('y')
+test_ADModelCalculate(model, name = 'various dmvt parameterizations')
+
+## ddirch so long as not differentiating w.r.t. the random variable (since it has constraints)
+
+code <- nimbleCode({
+    p[1:k] ~ ddirch(alpha[1:k])
+    for(i in 1:k)
+        alpha[i] ~ dgamma(1.5, 0.7)
+})
+k <- 5
+model <- nimbleModel(code, constants = list(k = k), data = list(p = rdirch(1, rep(1, k))),
+                     inits = list(alpha = rgamma(5, 1, 1)))
+test_ADModelCalculate(model, name = 'ddirch')
+
+## dwish and dinvwish so long as not differentiating w.r.t. the random variable (since it has constraints)
+## Note that nu must exceed n and can't be set to runif(0,1) via test_ADModelCalculate.
+
+code <- nimbleCode({
+    R[1:n,1:n] <- sigma2 * exp(-dist[1:n, 1:n] / rho)
+    US[1:n,1:n] <- chol(inverse(R[1:n,1:n]))
+    UR[1:n,1:n] <- chol(R[1:n,1:n])
+    W1[1:n, 1:n] ~ dwish(R[1:n, 1:n], nu)
+    W2[1:n, 1:n] ~ dwish(S = R[1:n, 1:n], df = nu)
+    W3[1:n, 1:n] ~ dwish(cholesky = UR[1:n,1:n], df = nu, scale_param = 0)
+    W4[1:n, 1:n] ~ dwish(cholesky = US[1:n,1:n], df = nu, scale_param = 1)
+    IW1[1:n, 1:n] ~ dinvwish(R[1:n, 1:n], nu)
+    IW2[1:n, 1:n] ~ dinvwish(R = R[1:n, 1:n], df = nu)
+    IW3[1:n, 1:n] ~ dinvwish(cholesky = UR[1:n,1:n], df = nu, scale_param = 0)
+    IW4[1:n, 1:n] ~ dinvwish(cholesky = US[1:n,1:n], df = nu, scale_param = 1)
+    rho ~ dgamma(2, 3)
+    sigma2 ~ dgamma(2, 3)
+    nu ~ dunif(n, 50)
+})
+n <- 5
+locs <- runif(n)
+dd <- fields::rdist(locs)
+model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, nu = 15))
+model$simulate()
+model$calculate()
+model$setData(c('W1','W2','W3','W4','IW1','IW2','IW3','IW4'))
+test_ADModelCalculate(model, name = 'dwish, dinvwish')
+## FIXME:
+## bad deriv values for S and chol(S) versions of wishart
 
 ## user-defined distribution
 dGPdist <- nimbleFunction(
