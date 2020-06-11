@@ -529,6 +529,11 @@ test_ADModelCalculate(model, name = 'ddirch')
 ## dwish and dinvwish so long as not differentiating w.r.t. the random variable (since it has constraints)
 ## Note that nu must exceed n and can't be set to runif(0,1) via test_ADModelCalculate.
 
+source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+nimbleOptions(experimentalEnableDerivs = TRUE)
+nimbleOptions(useADreconfigure = TRUE)
+
+set.seed(0)
 code <- nimbleCode({
     R[1:n,1:n] <- sigma2 * exp(-dist[1:n, 1:n] / rho)
     US[1:n,1:n] <- chol(inverse(R[1:n,1:n]))
@@ -553,8 +558,6 @@ model$simulate()
 model$calculate()
 model$setData(c('W1','W2','W3','W4','IW1','IW2','IW3','IW4'))
 test_ADModelCalculate(model, name = 'dwish, dinvwish')
-## FIXME:
-## bad deriv values for S and chol(S) versions of wishart
 
 ## user-defined distribution
 dGPdist <- nimbleFunction(
@@ -568,6 +571,7 @@ dGPdist <- nimbleFunction(
         out <- out - 0.5*sum(qf^2)
         if(log) return(out) else return(exp(out))
     }, enableDerivs = TRUE)
+
 rGPdist <- nimbleFunction(
     run = function(n = integer(0), dist = double(2), rho = double(0)) {
         returnType(double(1))
@@ -594,7 +598,40 @@ model$setData('y')
 test_ADModelCalculate(model, name = 'user-defined distribution')
 ## model now compiles but numerical differences; see later comments in NCT issue #220
 
-## come back to this when have wish/invwish
+## Use additional matrix functions
+## logdet() not yet allowed
+
+set.seed(1)
+code <- nimbleCode({
+    y1 ~ dnorm(inprod(beta[1,1:n], x[1:n]), 1)
+    # det <- logdet(Sigma[1:n,1:n])
+    # y2 ~ dnorm(det, sd = 100)
+    Sigma[1:n,1:n] <- sigma2 * exp(-dist[1:n,1:n] / rho)
+    w[1,1:n] <- solve(Sigma[1:n,1:n], beta[2,1:n])
+    w[2,1:n] <- Sigma[1:n,1:n] %*% beta[3,1:n]
+    U[1:n,1:n] <- chol(Sigma[1:n,1:n])
+    w[3,1:n] <- backsolve(U[1:n,1:n], beta[4,1:n])
+    for(i in 1:4)
+        beta[i,1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
+    for(i in 1:3)
+        yy[i,1:n] ~ dmnorm(w[i,1:n], pr[1:n,1:n])
+    rho ~ dgamma(2, 3)
+    sigma2 ~ dgamma(2, 3)
+})
+n <- 5
+locs <- runif(n)
+dd <- fields::rdist(locs)
+model <- nimbleModel(code, constants = list(n = n, x = rnorm(n), z = rep(0, n), pr = diag(n)),
+                     inits = list(dist = dd, rho = rgamma(1, 1, 1), sigma2 = rgamma(1, 1, 1)),
+                     data = list(y1 = rnorm(1), #  y2 = rnorm(1),
+                                 yy = matrix(rnorm(n*3), 3, n)))
+model$simulate()
+model$calculate()
+model$setData(c('y1','yy')) # 'y2'
+test_ADModelCalculate(model, name = 'various matrix functions')
+  
+
+## come back to this when have wish/invwish (and will need to use parameter transforms)
 if(FALSE) {  
     ## won't work because of dinvwish, dwish
     code <- nimbleCode({
