@@ -341,7 +341,7 @@ Type nimDerivs_nimArr_dinvwish_chol(NimArr<2, Type> &x, NimArr<2, Type> &chol, T
   if(CppAD::Value(scale_param) == 1) {
     dens -= Type(0.5) * (Lx.template triangularView<Eigen::Lower>().solve(mapChol.transpose())).squaredNorm();
   } else {
-    dens -= Type(0.5) * (Lx.template triangularView<Eigen::Lower>().solve(mapChol.template triangularView<Eigen::Upper>().solve(MatrixXd::Identity(n, n)))).squaredNorm();
+    dens -= Type(0.5) * (Lx.template triangularView<Eigen::Lower>().solve(mapChol.template triangularView<Eigen::Upper>().solve(MatrixXt::Identity(n,n)))).squaredNorm();
   }
 
   /* dens -= Type(0.5) * CppAD::CondExpEq(scale_param, Type(1), */
@@ -360,33 +360,34 @@ Type nimDerivs_nimArr_dinvwish_chol_logFixed(NimArr<2, Type> &x, NimArr<2, Type>
   Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
   Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
   int p = x.dim()[0];
-  
+
   Type dens = (df * mapChol.diagonal().array().log()).sum();
   dens = CppAD::CondExpEq(scale_param, Type(1), dens, -dens);
 
   dens += -(df*p/Type(2.) * Type(M_LN2) + p*(p-Type(1.))*Type(M_LN_SQRT_PI/2.));
   for(int i = 0; i < p; i++)
     dens -= nimDerivs_lgammafn((df - Type(i)) / Type(2.));
- 
+
   /* Lower may be more efficient: https://eigen.tuxfamily.org/dox/classEigen_1_1LLT.html#details */
   MatrixXt Lx = mapX.template selfadjointView<Eigen::Lower>().llt().matrixL();
-  dens -= (df + p + Type(1)) * Lx.diagonal().array().log().sum();
+  dens -= (df + p + Type(1.)) * Lx.diagonal().array().log().sum();
 
+  /* in basic tests, use of .solve(Identity) was 2-3x faster than .inverse();
+  I don't see a way to use .inverse that recognizes the triangular input */
   std::cout<<"Baking in scale_param = "<<scale_param<<" in dinvwish."<<std::endl;
+
   if(CppAD::Value(scale_param) == 1) {
     dens -= Type(0.5) * (Lx.template triangularView<Eigen::Lower>().solve(mapChol.transpose())).squaredNorm();
   } else {
-    dens -= Type(0.5) * (Lx.template triangularView<Eigen::Lower>().solve(mapChol.template triangularView<Eigen::Upper>().solve(MatrixXd::Identity(n, n)))).squaredNorm();
+    dens -= Type(0.5) * (Lx.template triangularView<Eigen::Lower>().solve(mapChol.template triangularView<Eigen::Upper>().solve(MatrixXt::Identity(n,n)))).squaredNorm();
   }
-  
-  /* dens -= Type(0.5) * CppAD::CondExpEq(scale_param, Type(1), */
-  /*                          (Lx.template triangularView<Eigen::Lower>().solve(mapChol.transpose())).squaredNorm(), */
-  /*                          (Lx.template triangularView<Eigen::Lower>().solve(mapChol.template triangularView<Eigen::Upper>().solve(MatrixXd::Identity(n, n)))).squaredNorm()); */
+
 
   if(!give_log){
     dens = exp(dens);
   }
   return(dens);
+
 }
 
 /* Multinomial */
