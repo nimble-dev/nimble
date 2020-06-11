@@ -192,13 +192,25 @@ makeParamInfo <- function(model, nodes, param) {
   }
   if(length(unique(types)) != 1 || length(unique(nDims)) != 1)
     stop('cannot have an indexed vector of nodes used in getParam if they have different types or dimensions for the same parameter.')
-
+    
   ## on C++ side, we always work with double
   if(types[1] %in% c('integer', 'logical')) types[1] <- 'double'
-  paramIDvec <- rep(1L, length(nodeIDs))
-  sourceIDs <- split(seq_along(nodeIDs), nodeDeclIDs)
-  for(i in seq_along(declID2nodeIDs)) { #unsplit() would be another approach to this step.
-    paramIDvec[sourceIDs[[i]] ] <- paramIDs[i]
+
+  if(length(paramIDs) == 1) { ## We could shortcut on this case earlier
+    paramIDvec <- paramIDs
+  } else {
+    if(length(unique(paramIDs)) == 1) {
+      # They are all the same.
+      # We encode this in a sparse way
+      paramIDvec <- c(-1L, paramIDs[1])
+    } else {
+      ## Otherwise, create a full vector of paramIDs
+      paramIDvec <- rep(1L, length(nodeIDs))
+      sourceIDs <- split(seq_along(nodeIDs), nodeDeclIDs)
+      for(i in seq_along(declID2nodeIDs)) { #unsplit() would be another approach to this step.
+        paramIDvec[sourceIDs[[i]] ] <- paramIDs[i]
+      }
+    }
   }
     
   ans <- c(list(paramID = paramIDvec), type = types[1], nDim = nDims[1])
