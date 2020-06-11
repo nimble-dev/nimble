@@ -264,7 +264,7 @@ Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &x, NimArr<2, Type> &chol, Type
   
   std::cout<<"Baking in scale_param = "<<scale_param<<" in dwish."<<std::endl;
   if(CppAD::Value(scale_param) == 1) {
-    dens -= Type(0.5) * mapChol.template triangularView<Eigen::Upper>().transpose().solve(Lx).squaredNorm();
+    dens -= Type(0.5) * (mapChol.template triangularView<Eigen::Upper>().transpose().solve(Lx)).squaredNorm();
   } else {
     dens -= Type(0.5) * (mapChol.template triangularView<Eigen::Upper>()*Lx).squaredNorm();
   }
@@ -299,7 +299,7 @@ Type nimDerivs_nimArr_dwish_chol_logFixed(NimArr<2, Type> &x, NimArr<2, Type> &c
 
   std::cout<<"Baking in scale_param = "<<scale_param<<" in dwish."<<std::endl;
   if(CppAD::Value(scale_param) == 1) {
-    dens -= Type(0.5) * mapChol.template triangularView<Eigen::Upper>().transpose().solve(Lx).squaredNorm();
+    dens -= Type(0.5) * (mapChol.template triangularView<Eigen::Upper>().transpose().solve(Lx)).squaredNorm();
   } else {
     dens -= Type(0.5) * (mapChol.template triangularView<Eigen::Upper>()*Lx).squaredNorm();
   }
