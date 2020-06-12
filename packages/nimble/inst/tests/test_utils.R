@@ -1296,11 +1296,11 @@ derivsNimbleFunction <- nimbleFunction(
 
 derivsNimbleFunctionParamTransform <- nimbleFunction(
     setup = function(model, calcNodes, wrt) {
-        targetNodesAsScalars <- model$expandNodeNames(wrt, returnScalarComponents = TRUE)
-        my_parameterTransform <- parameterTransform(model, targetNodesAsScalars)
+        wrtNodesAsScalars <- model$expandNodeNames(wrt, returnScalarComponents = TRUE)
+        my_parameterTransform <- parameterTransform(model, wrtNodesAsScalars)
         d <- my_parameterTransform$getTransformedLength()
         nimDerivs_wrt <- 1:d
-        makeUpdateNodes_return <- makeUpdateNodes(targetNodes, calcNodes, model)
+        makeUpdateNodes_return <- makeUpdateNodes(wrt, calcNodes, model)
         nimDerivs_updateNodes   <- makeUpdateNodes_return$updateNodes
         nimDerivs_constantNodes <- makeUpdateNodes_return$constantNodes
     },
