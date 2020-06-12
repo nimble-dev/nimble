@@ -528,12 +528,7 @@ test_ADModelCalculate(model, name = 'ddirch')
 
 ## dwish and dinvwish so long as not differentiating w.r.t. the random variable (since it has constraints)
 ## Note that nu must exceed n and can't be set to runif(0,1) via test_ADModelCalculate.
-
-source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
-nimbleOptions(experimentalEnableDerivs = TRUE)
-nimbleOptions(useADreconfigure = TRUE)
-
-set.seed(0)
+set.seed(1)
 code <- nimbleCode({
     R[1:n,1:n] <- sigma2 * exp(-dist[1:n, 1:n] / rho)
     US[1:n,1:n] <- chol(inverse(R[1:n,1:n]))
@@ -558,6 +553,19 @@ model$simulate()
 model$calculate()
 model$setData(c('W1','W2','W3','W4','IW1','IW2','IW3','IW4'))
 test_ADModelCalculate(model, name = 'dwish, dinvwish')
+
+## Parameter transform system and full use of ddirch, dwish, dinvwish
+## Try also with dgamma, dinvgamma
+source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+nimbleOptions(experimentalEnableDerivs = TRUE)
+nimbleOptions(useADreconfigure = TRUE)
+
+code <- nimbleCode({
+    y ~ dnorm(mu, sd = sigma)
+    sigma ~ dinvgamma(1.3, 0.7)
+})
+model <- nimbleModel(code, data = list(y = rnorm(1)))
+test_ADModelCalculate(model, x = 'random', useParamTransform = TRUE, name = 'basic param transform')
 
 ## user-defined distribution
 dGPdist <- nimbleFunction(

@@ -1294,6 +1294,36 @@ derivsNimbleFunction <- nimbleFunction(
   }  ## don't need enableDerivs if call nimDerivs directly, but would if just have model$calc in nf
 )
 
+derivsNimbleFunctionParamTransform <- nimbleFunction(
+    setup = function(model, calcNodes, wrt) {
+        targetNodesAsScalars <- model$expandNodeNames(wrt, returnScalarComponents = TRUE)
+        my_parameterTransform <- parameterTransform(model, targetNodesAsScalars)
+        d <- my_parameterTransform$getTransformedLength()
+        nimDerivs_wrt <- 1:d
+        makeUpdateNodes_return <- makeUpdateNodes(targetNodes, calcNodes, model)
+        nimDerivs_updateNodes   <- makeUpdateNodes_return$updateNodes
+        nimDerivs_constantNodes <- makeUpdateNodes_return$constantNodes
+    },
+    run = function(transformed_x = double(1),
+        order = double(1)) {
+        ans <- nimDerivs(tapedModelCalculateCalcNodes(transformed_x), order = order, wrt = nimDerivs_wrt,
+                         model = model, updateNodes = nimDerivs_updateNodes,
+                         constantNodes = nimDerivs_constantNodes)
+
+        return(ans)
+        returnType(ADNimbleList())
+    },
+    methods = list(
+        tapedModelCalculateCalcNodes = function(x_transformed = double(1)) {
+            values(model, wrt) <<- my_parameterTransform$inverseTransform(transformed_x)
+            lp <- model$calculate(calcNodes)
+            returnType(double())
+            return(lp)
+        }
+    ), enableDerivs = 'tapedModelCalculateCalcNodes'   
+)
+
+
 ## For use with R-based derivative of compiled model calculate when useFasterRderivs is TRUE.
 calcNodesForDerivs <- nimbleFunction(
         setup = function(model, calcNodes, wrt){
@@ -1353,7 +1383,8 @@ test_ADModelCalculate_nick <- function(model, name = NULL, calcNodeNames = NULL,
 ## By default test a standardized set of {wrt, calcNodes} pairs representing common use cases (MAP, max lik, EB),
 ## unless user provides 'wrt' and 'calcNodes'.
 test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNodes = NULL, wrt = NULL, 
-                                  relTol = c(1e-15, 1e-8, 1e-3), useFasterRderivs = FALSE, seed = 1, verbose = FALSE, debug = FALSE){
+                                  relTol = c(1e-15, 1e-8, 1e-3), useFasterRderivs = FALSE, useParamTransform = FALSE,
+                                  seed = 1, verbose = FALSE, debug = FALSE){
     if(!is.null(seed))
         set.seed(seed)
     initsHandling <- x
@@ -1368,7 +1399,8 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         tmp <- values(model, wrt)
         if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
         test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
-                                        useFasterRderivs =  useFasterRderivs, verbose = verbose, debug = debug)
+                                       useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
+                                       verbose = verbose, debug = debug)
         ## max. lik. use case
         if(verbose) cat("testing ML\n")
         values(model, nodes) <- vals
@@ -1380,7 +1412,8 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         tmp <- values(model, wrt)
         if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
         test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
-                                       useFasterRderivs =  useFasterRderivs, verbose = verbose, debug = debug)
+                                       useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
+                                       verbose = verbose, debug = debug)
 
         ## modular HMC/MAP use case
         if(verbose) cat("testing HMC/MAP partial\n")
@@ -1391,7 +1424,8 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         tmp <- values(model, wrt)
         if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
         test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
-                                       useFasterRderivs =  useFasterRderivs, verbose = verbose, debug = debug)
+                                       useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
+                                       verbose = verbose, debug = debug)
 
         ## conditional max. lik. use case
         if(verbose) cat("testing ML partial\n")
@@ -1402,7 +1436,8 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         tmp <- values(model, wrt)
         if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
         test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
-                                       useFasterRderivs =  useFasterRderivs, verbose = verbose, debug = debug)
+                                       useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
+                                       verbose = verbose, debug = debug)
 
         ## empirical Bayes use case
         if(verbose) cat('testing EB\n')
@@ -1414,7 +1449,8 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         tmp <- values(model, wrt)
         if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
         test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
-                                       useFasterRderivs =  useFasterRderivs, verbose = verbose, debug = debug)
+                                       useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
+                                       verbose = verbose, debug = debug)
     } else {
         if(is.null(calcNodes)) calcNodes <- model$getNodeNames()
         if(is.null(wrt)) wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
@@ -1422,7 +1458,8 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         tmp <- values(model, wrt)
         if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
         test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
-                                       useFasterRderivs =  useFasterRderivs, verbose = verbose, debug = debug)
+                                       useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
+                                       verbose = verbose, debug = debug)
     }
 }
 
@@ -1430,7 +1467,8 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
 ## This does the core assessment, by default running with various sets of order values to be able to assess
 ## forward and backward mode and to assess whether values in the model are updated.
 test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, calcNodes = NULL, wrt = NULL,
-                                  relTol = c(1e-15, 1e-8, 1e-3), verbose = TRUE, useFasterRderivs = useFasterRderivs, debug = FALSE){
+                                           relTol = c(1e-15, 1e-8, 1e-3), verbose = TRUE, useFasterRderivs = useFasterRderivs,
+                                           useParamTransform = FALSE, debug = FALSE){
     test_that(paste0("Derivatives of calculate for model ", name), {
         if(exists('paciorek')) browser()
         if(is.null(calcNodes))
@@ -1459,11 +1497,16 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
         otherNodes <- otherNodes[!otherNodes %in% wrt]
         rVals_orig <- values(model, otherNodes)
         cVals_orig <- values(cModel, otherNodes)
+
+        if(useParamTransform) {
+            rDerivs <- derivsNimbleFunctionParamTranform(model, calcNodes = calcNodes, wrt = wrt)
+        } else rDerivs <- derivsNimbleFunction(model, calcNodes = calcNodes, wrt = wrt)
         
-        rDerivs <- derivsNimbleFunction(model, calcNodes = calcNodes, wrt = wrt)
         cDerivs <- compileNimble(rDerivs, project = model)
 
         if(useFasterRderivs) {
+            if(useParamTransform)
+                stop("'useFasterRderivs' not yet set up with parameter transform system.")
             ## Set up a nf so R derivs use a model calculate that is done fully in compiled code (cModel$calculate loops over nodes in R)
             rCalcNodes <- calcNodesForDerivs(model, calcNodes = calcNodes, wrt = wrt)  
             cCalcNodes <- compileNimble(rCalcNodes, project = model)
