@@ -1499,7 +1499,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
         cVals_orig <- values(cModel, otherNodes)
 
         if(useParamTransform) {
-            rDerivs <- derivsNimbleFunctionParamTranform(model, calcNodes = calcNodes, wrt = wrt)
+            rDerivs <- derivsNimbleFunctionParamTransform(model, calcNodes = calcNodes, wrt = wrt)
         } else rDerivs <- derivsNimbleFunction(model, calcNodes = calcNodes, wrt = wrt)
         
         cDerivs <- compileNimble(rDerivs, project = model)
