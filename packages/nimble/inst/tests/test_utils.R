@@ -1314,7 +1314,7 @@ derivsNimbleFunctionParamTransform <- nimbleFunction(
         returnType(ADNimbleList())
     },
     methods = list(
-        tapedModelCalculateCalcNodes = function(x_transformed = double(1)) {
+        tapedModelCalculateCalcNodes = function(transformed_x = double(1)) {
             values(model, wrt) <<- my_parameterTransform$inverseTransform(transformed_x)
             lp <- model$calculate(calcNodes)
             returnType(double())
