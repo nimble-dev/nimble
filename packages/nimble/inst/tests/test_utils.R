@@ -1522,15 +1522,19 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
             rOutput12 <- nimDerivs(wrapper(x), order = 1:2)
             rVals12 <- values(cModel, otherNodes)
             rLogProb12 <- cModel$getLogProb(calcNodes)
+            rWrt12 <- values(cModel, wrt)
 
             rOutput01 <- nimDerivs(wrapper(x), order = 0:1)
             rLogProb01 <- cModel$getLogProb(calcNodes)
             rVals01 <- values(cModel, otherNodes)
+            rWrt01 <- values(cModel, wrt)
             rLogProb_new <- wrapper(x)
             cModel$calculate(otherNodes)
             rVals_new <- values(cModel, otherNodes)
 
             rOutput012 <- nimDerivs(wrapper(x), order = 0:2)
+            rWrt012 <- values(cModel, wrt)
+
             ## now reset cModel for use in compiled derivs
             values(cModel, nodes) <- vals
             cModel$calculate()
@@ -1538,33 +1542,41 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
             rOutput12 <- rDerivs$run(x, 1:2)
             rVals12 <- values(model, otherNodes)
             rLogProb12 <- model$getLogProb(calcNodes)
-            
+            rWrt12 <- values(model, wrt)
+
             rOutput01 <- rDerivs$run(x, 0:1)
             rLogProb01 <- model$getLogProb(calcNodes)
             rVals01 <- values(model, otherNodes)
+            rWrt01 <- values(model, wrt)
             rLogProb_new <- model$calculate(calcNodes)
             model$calculate(otherNodes)
             rVals_new <- values(model, otherNodes)
 
             rOutput012 <- rDerivs$run(x, 0:2)
+            rWrt012 <- values(model, wrt)
         }
         
         cOutput12 <- cDerivs$run(x, 1:2)
         cVals12 <- values(cModel, otherNodes)
         cLogProb12 <- cModel$getLogProb(calcNodes)
+        cWrt12 <- values(cModel, wrt)
 
         cOutput01 <- cDerivs$run(x, 0:1)
         cVals01 <- values(cModel, otherNodes)
         cLogProb01 <- cModel$getLogProb(calcNodes)
+        cWrt01 <- values(cModel, wrt)
         cLogProb_new <- cModel$calculate(calcNodes)
         cModel$calculate(otherNodes)
         cVals_new <- values(cModel, otherNodes)
 
         cOutput012 <- cDerivs$run(x, 0:2)
+        cWrt012 <- values(cModel, wrt)
 
         ## Note that when using paramTransform, the last element of wrt is modified by uncompiled numerical deriv
         ## which also affects the logProb stored in the model. 
-        
+        if(useParamTransform)
+            print("not checking uncompiled logProb retention as not yet fixed")
+
         ## 0th order 'derivative'
         expect_equal(rOutput01$value, cOutput01$value, tolerance = relTol[1])
         if(!useParamTransform) 
@@ -1605,6 +1617,14 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
         expect_equal(sum(is.na(cOutput012$hessian)), 0, info = "NAs found in compiled 2nd derivative")
 
         expect_identical(cOutput12$hessian, cOutput012$hessian)
+
+        ## Model state: wrt values should be equal to `x`.
+        expect_identical(rWrt01, x)
+        expect_identical(rWrt12, x)
+        expect_identical(rWrt012, x)
+        expect_identical(cWrt01, x)
+        expect_identical(cWrt12, x)
+        expect_identical(cWrt012, x)
 
         ## model state - when order 0 is included, logProb and determistic nodes should be updated; otherwise not
         if(!useFasterRderivs) {  ## some weird numerical issue causing these to be equal up to tolerance but not identical
