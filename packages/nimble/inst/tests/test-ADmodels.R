@@ -555,16 +555,18 @@ model$setData(c('W1','W2','W3','W4','IW1','IW2','IW3','IW4'))
 test_ADModelCalculate(model, name = 'dwish, dinvwish')
 
 ## Parameter transform system and full use of ddirch, dwish, dinvwish
-## Try also with dgamma, dinvgamma
+## Try also with dgamma, dinvgamma (do with var in dnorm so include lifted)
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 nimbleOptions(experimentalEnableDerivs = TRUE)
 nimbleOptions(useADreconfigure = TRUE)
 
+set.seed(1)
 code <- nimbleCode({
     y ~ dnorm(mu, sd = sigma)
     sigma ~ dinvgamma(1.3, 0.7)
+    mu ~ dnorm(0, 1)
 })
-model <- nimbleModel(code, data = list(y = rnorm(1)))
+model <- nimbleModel(code, data = list(y = rnorm(1)), inits = list(sigma = rgamma(1, 1, 1), mu = rnorm(1)))
 test_ADModelCalculate(model, x = 'random', useParamTransform = TRUE, name = 'basic param transform')
 
 ## user-defined distribution

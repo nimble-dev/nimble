@@ -1562,11 +1562,16 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
 
         cOutput012 <- cDerivs$run(x, 0:2)
 
+        ## Note that when using paramTransform, the last element of wrt is modified by uncompiled numerical deriv
+        ## which also affects the logProb stored in the model. 
+        
         ## 0th order 'derivative'
         expect_equal(rOutput01$value, cOutput01$value, tolerance = relTol[1])
-        expect_identical(rOutput01$value, rLogProb_new)
+        if(!useParamTransform) 
+            expect_identical(rOutput01$value, rLogProb_new)
         expect_equal(rOutput012$value, cOutput012$value, tolerance = relTol[1])
-        expect_identical(rOutput012$value, rLogProb_new)
+        if(!useParamTransform) 
+            expect_identical(rOutput012$value, rLogProb_new)
         expect_equal(sum(is.na(rOutput01$value)), 0, info = "NAs found in uncompiled 0th derivative")
         expect_equal(sum(is.na(cOutput01$value)), 0, info = "NAs found in compiled 0th derivative")
         expect_equal(sum(is.na(rOutput012$value)), 0, info = "NAs found in uncompiled 0th derivative")
@@ -1607,7 +1612,8 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
             expect_identical(rVals01, rVals_new)
         }
         if(!useFasterRderivs) {  ## Doesn't use nimDerivs(model$calculate), so can't assess model update/lack of update in R version
-            expect_identical(rLogProb12, rLogProb_orig)
+            if(!useParamTransform)  ## does deriv of method not of model$calculate, so no restoration of values
+                expect_identical(rLogProb12, rLogProb_orig)
             expect_identical(rVals12, rVals_orig)
         }
         expect_identical(cLogProb01, cLogProb_new) 
