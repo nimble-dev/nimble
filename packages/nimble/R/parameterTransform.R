@@ -52,7 +52,16 @@ parameterTransform <- nimbleFunction(
                 if(bounds[1] == 0    && bounds[2] == Inf) {       ## 2: scalar semi-interval (0, Inf)
                     transformType[i] <- 2L; next }
                 if(bounds[1] == 0    && bounds[2] == 1  ) {       ## 3: scalar interval-constrained (0, 1)
-                    transformType[i] <- 3L; next }
+                    transformType[i] <- 3L
+                    if(model$isTruncated(node)) {
+                        lParam <- 'lower_'
+                        uParam <- 'upper_'
+                        lowerBdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, lParam))
+                        upperBdExpr <- cc_expandDetermNodesInExpr(model, model$getParamExpr(node, uParam))
+                        if(length(all.vars(lowerBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant lower bound, which cannot be used in parameterTransform.')
+                        if(length(all.vars(upperBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant upper bound, which cannot be used in parameterTransform.')
+                    }
+                    next }
                 if((isValid(bounds[1]) && bounds[2] ==  Inf) ||
                    (isValid(bounds[2]) && bounds[1] == -Inf)) {   ## 4: scalar semi-interval (-Inf, b) or (a, Inf)
                     if(model$isTruncated(node)) {
