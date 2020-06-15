@@ -1,6 +1,0 @@
-# lib=TRUE
-# from=Makevars_lib.in
-
-PKG_CPPFLAGS= -DR_NO_REMAP -DEIGEN_MPL2_ONLY=1 -I"/Library/Frameworks/R.framework/Versions/3.2/Resources/library/nimble/include"
-NIMBLE_LIB_DIR="/Library/Frameworks/R.framework/Versions/3.2/Resources/library/nimble/CppCode"
-PKG_LIBS=-L$(NIMBLE_LIB_DIR)  -lnimble
