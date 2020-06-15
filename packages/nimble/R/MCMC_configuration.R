@@ -310,9 +310,10 @@ print: A logical argument specifying whether to print the ordered list of defaul
                         if(nodeDist == 'dcar_normal')  { addSampler(target = node, type = 'CAR_normal');         next }
                         if(nodeDist == 'dcar_proper')  { addSampler(target = node, type = 'CAR_proper');         next }
                         if(nodeDist == 'dCRP')         {
-                            addSampler(target = node, type = 'CRP', control = list(checkConjugacy = useConjugacy))
                             numCRPnodes <- numCRPnodes + 1
                             clusterNodeInfo[[numCRPnodes]] <- findClusterNodes(model, node)
+                            addSampler(target = node, type = 'CRP', control = list(checkConjugacy = useConjugacy,
+                                                                                   clusterVarInfo = clusterNodeInfo[[numCRPnodes]]))
                             dcrpNode[numCRPnodes] <- node
                             next
                         }
