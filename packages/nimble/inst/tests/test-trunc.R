@@ -8,6 +8,8 @@ nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 oldWidth <- getOption("width")
 options(width = 1000)
+oldMaxPrint <- getOption("max.print")
+options(max.print = 1000)
 
 goldFileName <- 'truncTestLog_Correct.Rout'
 tempFileName <- 'truncTestLog.Rout'
@@ -536,3 +538,4 @@ options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
 options(width = oldWidth)
+options(max.print = oldMaxPrint)
