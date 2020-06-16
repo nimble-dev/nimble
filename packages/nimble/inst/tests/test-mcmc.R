@@ -1798,57 +1798,10 @@ test_that('HMC sampler seems to work', {
     Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
     set.seed(0)
     samples <- runMCMC(Cmcmc, 10000)
-    ## "exact" HMC sample values have changed since changes in AD system
-    ## DT May 2020
-    expect_true(all(round(as.numeric(samples[1000,]), 5) == c(1.04219, 2.46754, 2.67295)))  ## new AD system
-    expect_true(all(round(as.numeric(apply(samples, 2, mean)), 7) == c(0.4503489, 1.8820432, 3.3086721)))  ## new AD system
-    expect_true(all(round(as.numeric(apply(samples, 2, sd)), 7) == c(0.9148666, 1.2039168, 1.2923344)))    ## new AD system
-})
-
-
-test_that('HMC sampler asymptotic correctness', {
-    ## testing correctness of HMC sampler (with various transformations)
-    nimbleOptions(experimentalEnableDerivs = TRUE)
-    nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions = TRUE)
-    code <- nimbleCode({
-        mu ~ dnorm(0, sd = 10)
-        tau ~ dgamma(0.01, 0.01)
-        sigma ~ dunif(0, 10)
-        p ~ dunif(0, 1)
-        mu4 <- mu * p
-        y1 ~ dnorm(mu, tau)
-        y2 ~ dnorm(mu, tau)
-        y3 ~ dnorm(mu, sd = sigma)
-        y4 ~ dnorm(mu4, tau)
-    })
-    constants <- list()
-    data <- list(y1 = 10, y2 = 9, y3 = 9, y4 = 7)
-    inits <- list(mu = 0, tau = 1, sigma = 1, p = 0.5)
-    Rmodel <- nimbleModel(code, constants, data, inits)
-    Rmodel$calculate()
-    conf <- configureMCMC(Rmodel)
-    Rmcmc <- buildMCMC(conf)
-    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
-    Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
-    set.seed(0)
-    samples <- runMCMC(Cmcmc, 100000, nburnin = 10000)
-    means <- apply(samples, 2, mean)
-    sds <- apply(samples, 2, sd)
     ##
-    Rmodel <- nimbleModel(code, constants, data, inits)
-    Rmodel$calculate()
-    conf <- configureMCMC(Rmodel, nodes = NULL)
-    conf$addSampler(c('mu','tau','sigma','p'), 'HMC', control = list(nwarmup = 1000))
-    Rmcmc <- buildMCMC(conf)
-    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
-    Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
-    set.seed(0)
-    samplesHMC <- runMCMC(Cmcmc, 100000, nburnin=20000)
-    meansHMC <- apply(samplesHMC, 2, mean)
-    sdsHMC <- apply(samplesHMC, 2, sd)
-    ##
-    expect_true(all(abs(means - meansHMC) < 0.03))   ## new AD system
-    expect_true(all(abs(sds   - sdsHMC)   < 0.09))   ## new AD system
+    expect_true(all(round(as.numeric(samples[1000,]), 5) == c(1.04219, 2.46754, 2.67295)))
+    expect_true(all(round(as.numeric(apply(samples, 2, mean)), 7) == c(0.4503489, 1.8820432, 3.3086721)))
+    expect_true(all(round(as.numeric(apply(samples, 2, sd)), 7) == c(0.9148666, 1.2039168, 1.2923344)))
 })
 
 
@@ -1958,6 +1911,7 @@ test_that('cc_checkScalar operates correctly', {
 
 test_that('HMC sampler exact samples for different maxTreeDepths', {
     nimbleOptions(experimentalEnableDerivs = TRUE)
+    nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions = TRUE)
     ##
     code <- nimbleCode({
         sigma ~ dunif(0, 100)
@@ -1993,19 +1947,18 @@ test_that('HMC sampler exact samples for different maxTreeDepths', {
     Cmodel2 <- compiledList$model2; Cmcmc2 <- compiledList$mcmc2
     Cmodel3 <- compiledList$model3; Cmcmc3 <- compiledList$mcmc3
     ##
-    ## "exact" HMC sample values have changed since changes in AD system
-    ## DT May 2020
     set.seed(0);   samples1 <- runMCMC(Cmcmc1, 10000)
-    expect_true(all(round(as.numeric(samples1[10000,]),6) == c(-4.250395, 22.543647)))   ## new AD system
+    expect_true(all(round(as.numeric(samples1[10000,]),6) == c( 8.743822, 16.491777)))
     set.seed(0);   samples2 <- runMCMC(Cmcmc2, 10000)
-    expect_true(all(round(as.numeric(samples2[10000,]),6) == c( 8.903255, 61.253051)))   ## new AD system
+    expect_true(all(round(as.numeric(samples2[10000,]),6) == c(-9.193057, 25.264432)))
     set.seed(0);   samples3 <- runMCMC(Cmcmc3, 10000)
-    expect_true(all(round(as.numeric(samples3[10000,]),6) == c( 9.777301,  7.805047)))   ## new AD system
+    expect_true(all(round(as.numeric(samples3[10000,]),6) == c( 5.651490,  5.898725)))
 })
 
 
 test_that('HMC sampler error messages for transformations with non-constant bounds', {
     nimbleOptions(experimentalEnableDerivs = TRUE)
+    nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions = TRUE)
     ##
     code <- nimbleCode({ x ~ dexp(1); y ~ dunif(1, x) })
     Rmodel <- nimbleModel(code, inits = list(x = 10))
@@ -2053,25 +2006,24 @@ test_that('HMC sampler error messages for transformations with non-constant boun
 
 test_that('HMC sampler reports correct number of divergences and max tree depths', {
     nimbleOptions(experimentalEnableDerivs = TRUE)
+    nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions = TRUE)
     ##
     code <- nimbleCode({
         mu ~ dnorm(0, sd = 10)
-        tau ~ dgamma(0.01, 0.01)
         sigma ~ dunif(0, 10)
         p ~ dunif(0, 1)
-        mu4 <- mu * p
-        y1 ~ dnorm(mu, tau)
-        y2 ~ dnorm(mu, tau)
-        y3 ~ dnorm(mu, sd = sigma)
-        y4 ~ dnorm(mu4, tau)
+        for(i in 1:3) {
+            y[i] ~ dnorm(mu, sd = sigma)
+        }
+        yb ~ dbinom(size = 10, prob = p)
     })
     constants <- list()
-    data <- list(y1 = 10, y2 = 9, y3 = 9, y4 = 7)
-    inits <- list(mu = 0, tau = 1, sigma = 1, p = 0.5)
+    data <- list(y = c(10, 11, 19), yb = 7)
+    inits <- list(mu = 0, sigma = 1, p = 0.5)
     Rmodel <- nimbleModel(code, constants, data, inits)
     ##
     conf <- configureMCMC(Rmodel)
-    conf$addSampler(target = c('mu','tau','sigma','p'), type = 'HMC',
+    conf$addSampler(target = c('mu','sigma','p'), type = 'HMC',
                     control = list(nwarmup = 1000, maxTreeDepth = 5))
     Rmcmc <- buildMCMC(conf)
     ##
@@ -2081,8 +2033,8 @@ test_that('HMC sampler reports correct number of divergences and max tree depths
     set.seed(0)
     samples <- runMCMC(Cmcmc, 10000)
     ##
-    expect_equal(valueInCompiledNimbleFunction(Cmcmc$samplerFunctions[[5]], 'numDivergences'), 545)        ## new AD system
-    expect_equal(valueInCompiledNimbleFunction(Cmcmc$samplerFunctions[[5]], 'numTimesMaxTreeDepth'), 14)   ## new AD system
+    expect_equal(Cmcmc$samplerFunctions$contentsList[[5]]$numDivergences,          3)
+    expect_equal(Cmcmc$samplerFunctions$contentsList[[5]]$numTimesMaxTreeDepth, 1630)
 })
 
 

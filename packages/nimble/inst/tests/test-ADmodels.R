@@ -555,17 +555,25 @@ model$setData(c('W1','W2','W3','W4','IW1','IW2','IW3','IW4'))
 test_ADModelCalculate(model, name = 'dwish, dinvwish')
 
 ## Parameter transform system and full use of ddirch, dwish, dinvwish
-## Try also with dgamma, dinvgamma
-source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
-nimbleOptions(experimentalEnableDerivs = TRUE)
-nimbleOptions(useADreconfigure = TRUE)
+## Try also with dgamma, dinvgamma (do with var in dnorm so include lifted)
 
+set.seed(1)
 code <- nimbleCode({
     y ~ dnorm(mu, sd = sigma)
     sigma ~ dinvgamma(1.3, 0.7)
+    mu ~ dnorm(0, 1)
 })
-model <- nimbleModel(code, data = list(y = rnorm(1)))
+model <- nimbleModel(code, data = list(y = rnorm(1)), inits = list(sigma = rgamma(1, 1, 1), mu = rnorm(1)))
 test_ADModelCalculate(model, x = 'random', useParamTransform = TRUE, name = 'basic param transform')
+## this has subtle error in $value and in what is stored in the compiled model after running derivs
+## when doing deriv of loglik wrt mu,sigma
+# [1] "not checking compiled logProb/non-wrt nodes retention for order=1:2 as not yet fixed"
+# [1] "not checking compiled logProb/non-wrt nodes retention for order=1:2 as not yet fixed"
+# Error: Test failed: 'Derivatives of calculate for model basic param transform'
+# * `cLogProb01` not identical to `cLogProb_new`.
+# Objects equal but not identical
+
+## error does not occur if don't use transformation system and provide equivalent x for mu and sigma ( the latter after exponentiating)
 
 ## user-defined distribution
 dGPdist <- nimbleFunction(
