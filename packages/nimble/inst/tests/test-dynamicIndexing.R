@@ -6,6 +6,8 @@ RwarnLevel <- options('warn')$warn
 options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
+oldWidth = options("width")
+options(width = 1000)
 
 source(system.file(file.path('tests', 'dynamicIndexingTestLists.R'), package = 'nimble'))
 
@@ -553,3 +555,4 @@ options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
 nimbleOptions(allowDynamicIndexing = nimbleAllowDynamicIndexingSetting)
+options(width = oldWidth)
