@@ -80,8 +80,15 @@ symbolTable2templateTypeSymbolTable <- function(symTab,
                                                 replacementBaseType = 'TYPE_',
                                                 replacementTemplateArgs = list(),
                                                 ignore = character(),
-                                                skip = character()) {
-  newSymTab <- symbolTable()
+                                                skip = character(),
+                                                replacementSymTab = NULL) {
+  if(is.null(replacementSymTab)) {
+    newSymTab <- symbolTable()
+    allowReplace = FALSE
+  } else {
+    newSymTab <- replacementSymTab
+    allowReplace = TRUE
+  }
   symNames <- symTab$getSymbolNames()
   for(sn in symNames) {
     oldSym <- symTab$getSymbolObject(sn)
@@ -97,7 +104,7 @@ symbolTable2templateTypeSymbolTable <- function(symTab,
                                                   clearRef = clearRef,
                                                   replacementBaseType = replacementBaseType,
                                                   replacementTemplateArgs = replacementTemplateArgs)
-    newSymTab$addSymbol(newSym)
+    newSymTab$addSymbol(newSym, allowReplace = allowReplace)
   }
   newSymTab
 }
@@ -112,19 +119,20 @@ makeTypeTemplateFunction <- function(newName,
     newCppFunDef <- RCfunctionDef$new()
     ## use typedefs to change nimble's general typedefs for Eigen locally
     typeDefs <- symbolTable()
-    typeDefs$addSymbol(cppVarFull(baseType = "typedef typename EigenTemplateTypes<TYPE_>::typeEigenMapStrd", name = "EigenMapStrd") ) ## these coerces the cppVar system to generate a line of typedef code for us
-    typeDefs$addSymbol(cppVarFull(baseType = "typedef typename EigenTemplateTypes<TYPE_>::typeMatrixXd", name = "MatrixXd") )
+    typeDefs$addSymbol(cppVarFull(baseType = "typedef typename EigenTemplateTypes<TYPE_>::typeEigenMapStrd", name = "EigenMapStrd_TYPE_") ) ## these coerces the cppVar system to generate a line of typedef code for us
+    typeDefs$addSymbol(cppVarFull(baseType = "typedef typename EigenTemplateTypes<TYPE_>::typeMatrixXd", name = "MatrixXd_TYPE_") )
     newCppFunDef$name <- newName
     newCppFunDef$template <- cppVarFull(name = character(), baseType = 'template', templateArgs = list('class TYPE_'))
-    ignore <- derivControl[['nonTemplateArgs']]
+    ignore <- derivControl[['noDeriv_vars']]
     if(is.null(ignore)) ignore <- character()
     newCppFunDef$args <- symbolTable2templateTypeSymbolTable(.self$args, addRef = FALSE, ignore = ignore) ## addRef = TRUE breaks if a literal number is passed.
+    newCppFunDef$args$setParentST( .self$args$getParentST() )
     if(useRecordingInfo) {
       recordingInfoArg <- cppVarFull(baseType = "nimbleCppADrecordingInfoClass", name = "recordingInfo_")
       newCppFunDef$args$addSymbol(recordingInfoArg)
     }
-    localArgs <- symbolTable2templateTypeSymbolTable(.self$code$objectDefs)
-    localArgs$setParentST( .self$code$objectDefs$getParentST() ) ## this is the argument symTab, but it should be ok b/c it's only used for names
+    localVars <- symbolTable2templateTypeSymbolTable(.self$code$objectDefs)
+    localVars$setParentST( newCppFunDef$args )
     newCppFunDef$returnType <- cppVarSym2templateTypeCppVarSym(.self$returnType)
     newCode <- copyExprClass(.self$code$code)
     workEnv <- new.env()
@@ -133,16 +141,18 @@ makeTypeTemplateFunction <- function(newName,
     ## or workEnv$RCfunProc$compileInfo$newLocalSymTab$symbolExists("run", TRUE)
     ## Access to info about a method by workEnv$RCfunProc$compileInfo$newLocalSymTab$getSymbolObject("run", TRUE)$nfMethodRCobj$enableDerivs
     ## 
-    exprClasses_modifyForAD(newCode, localArgs, workEnv = workEnv)
+    exprClasses_modifyForAD(newCode, localVars, workEnv = workEnv)
     workEnv$RCfunDef <- NULL
-    newCppFunDef$code <- cppCodeBlock(code = newCode, objectDefs = localArgs, typeDefs = typeDefs, 
-                                      generatorSymTab = .self$code$objectDefs, cppADCode = 2L)
+    newCppFunDef$code <- cppCodeBlock(code = newCode, objectDefs = localVars, typeDefs = typeDefs, 
+                                      ## generatorSymTab = .self$code$objectDefs,
+                                      cppADCode = 2L)
     list(fun = newCppFunDef,
          nodeFxnVector_name = workEnv[['nodeFxnVector_name']])
 }
 
 make_deriv_function <- function(origFun,
                                 newFunName,
+                                independentVarNames,
                                 argTransferFunName,
                                 meta = FALSE) {
   ADNimbleListName <- nl.getDefinitionContent(ADNimbleList, 'name')
@@ -150,8 +160,8 @@ make_deriv_function <- function(origFun,
   newFun$name <- newFunName
   typeDefs <- symbolTable()
   if(meta) {
-    typeDefs$addSymbol(cppVarFull(baseType = "typedef typename EigenTemplateTypes<TYPE_>::typeEigenMapStrd", name = "EigenMapStrd") ) ## these coerces the cppVar system to generate a line of typedef code for us
-    typeDefs$addSymbol(cppVarFull(baseType = "typedef typename EigenTemplateTypes<TYPE_>::typeMatrixXd", name = "MatrixXd") )
+    typeDefs$addSymbol(cppVarFull(baseType = "typedef typename EigenTemplateTypes<TYPE_>::typeEigenMapStrd", name = "EigenMapStrd_TYPE_") ) ## these coerces the cppVar system to generate a line of typedef code for us
+    typeDefs$addSymbol(cppVarFull(baseType = "typedef typename EigenTemplateTypes<TYPE_>::typeMatrixXd", name = "MatrixXd_TYPE_") )
     newFun$template <- cppVarFull(name = character(), baseType = 'template', templateArgs = list('class TYPE_'))
   }
   newFun$returnType <- cppVarFull(baseType = 'nimSmartPtr',
@@ -161,8 +171,14 @@ make_deriv_function <- function(origFun,
     newFun$returnType <- cppVarSym2templateTypeCppVarSym(newFun$returnType)
   ## 0. Add argument copies.
   newFun$args <- origFun$args$copy()
-  if(meta)
-    newFun$args <- symbolTable2templateTypeSymbolTable(newFun$args)
+  if(meta) {
+    ##newFun$args <-
+    symNames <- newFun$args$getSymbolNames()
+    ignoreNames <- symNames[!(symNames %in% independentVarNames)]
+    symbolTable2templateTypeSymbolTable(newFun$args,
+                                        ignore = ignoreNames,
+                                        replacementSymTab = newFun$args)
+  }
   if(meta)
     newFun$args$addSymbol(cppVarFull(baseType = "nimbleCppADrecordingInfoClass", name = "recordingInfo_"))
   newFun$args$addSymbol(cppNimArr(name = 'ARGZ_nimDerivsOrders_',
@@ -424,7 +440,7 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
 ##    CFT$args$addSymbol( ADresponseVarsSym )
     ## Make local AD variables for all function inputs and outputs
     ## e.g. if the original targetFun takes NimArr<1, double>, it's templated CppAD version will take NimArr<1, TYPE_>
-    ## Next line creates local variables for passing to that templated CppAD version
+  ## Next line creates local variables for passing to that templated CppAD version
   localVars <- symbolTable2templateTypeSymbolTable(targetFunDef$args,
                                                    clearRef = TRUE,
                                                    replacementBaseType = 'CppAD::AD',
@@ -474,11 +490,13 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
 
     ## This creates lines like setSize(z, 2 3)
     ## which the C++ output generator turns into something like z.resize(2, 3)
-    setSizeLines <- vector('list', length(symNames) + 1) ## extra 1 is for the ADindependentVars. ADresponseVars is one at a later step
+    setSizeLines <- list() ## extra 1 is for the ADindependentVars. ADresponseVars is one at a later step
     iNextLine <- 1
     
     for(iSym in seq_along(symNames)) {
       thisSymName <- symNames[iSym]
+      if(!(thisSymName %in% independentVarNames))
+        next
       thisADname <- makeADname(thisSymName)
         ## if(thisSymName == 'ANS_') {
         ##     thisSym <- targetFunDef$RCfunProc$compileInfo$returnSymbol
@@ -495,8 +513,6 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
             setSizeCall <- do.call('call',c(list('setSize', as.name(thisADname)), dimExprs), quote = TRUE) 
             setSizeLines[[iNextLine]] <- setSizeCall 
             iNextLine <- iNextLine + 1
-        } else {
-            setSizeLines[[iNextLine]] <- NULL
         }
     }
 
@@ -633,7 +649,8 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
     ##                                                         localVars,
     ##                                                         "totalDepLength_")
     setSizeLines[[iNextLine]] <- substitute(cppMemberFunction(resize(ADindependentVars, totalIndependentLength_)))
-    
+    iNextLine <- iNextLine + 1
+  
     setADresponseVarsSizeLine <- substitute(cppMemberFunction(resize(ADresponseVars, totalDepLength_)))
 
     ## line to finish taping
@@ -724,141 +741,6 @@ addADinfoObjects <- function(cppDef) {
     cppDef$neededTypeDefs[['staticTapeInfos']] <- globals
 }
 
-## makeStaticInitClass <- function(cppDef, derivMethods) {
-##     if(length(derivMethods) == 0) return(NULL)
-##     cppClass <- cppClassDef(name = paste0('initTape_', cppDef$name), useGenerator = FALSE)
-##     globalsDef <- cppGlobalObjects(name = paste0('initTapeGlobals_', cppDef$name))
-##     globalsDef$objectDefs[['staticInitClassObject']] <- cppVarFull(baseType = paste0('initTape_', cppDef$name),
-##                                                                    name = paste0('initTape_', cppDef$name, '_Object_'))
-##     initializerCodeList <- list()
-##     initializerDef <- cppFunctionDef(name = paste0('initTape_', cppDef$name), returnType = emptyTypeInfo())
-##     for(derivFun in derivMethods){
-##         ADinfoNames <- cppDef$nimCompProc$compileInfos[[derivFun]]$typeEnv[['ADinfoNames']]
-        
-##         ## use of parse instead of substitute is so R CMD check doesn't flag CLASSNAME:: as an unmentioned dependency on package named CLASSNAME
-##         initializerCodeList <- c(initializerCodeList,
-##                                  parse(text = paste0("push_back(", cppDef$name, "::allADtapePtrs_, ",
-##                                                      cppDef$name, "::", paste0(derivFun, "_callForADtaping_"), "() )"))[[1]])
-##         ## initializerCodeList <- c(initializerCodeList, substitute(push_back(CLASSNAME::allADtapePtrs_, CLASSNAME::ADTAPINGNAME() ), list(CLASSNAME = as.name(cppDef$name),ADTAPINGNAME = as.name(paste0(derivFun, "_callForADtaping_")))))
-##     }
-##     initializerCode <- do.call('call', c('{', initializerCodeList), quote = TRUE)
-##     initializerECcode <- RparseTree2ExprClasses(initializerCode)
-##     initializerDef$code <- cppCodeBlock(code = initializerECcode, objectDefs = symbolTable())
-##     cppClass$functionDefs[['initializer']] <- initializerDef
-##     cppClass$globalObjectsDefs[['globals']] <- globalsDef
-##     cppClass
-## }
-
-## makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targetFunDef, independentVarNames, funIndex = 1, parentsSizeAndDims,
-##                                            ADconstantsInfo) {
-##     ## modeled closely parts of /*  */
-##     ## needs to set the ADtapePtr to one element of the ADtape
-##     TF <- RCfunctionDef$new() ## should it be static?
-##     TF$returnType <- cppVarFull(baseType = 'nimbleCppADinfoClass', ref = TRUE, name = 'RETURN_OBJ')
-##     TF$name <- newFunName
-##     localVars <- symbolTable() 
-##     isNode <- !inherits(parentsSizeAndDims, 'uninitializedField')
-##     if(!isNode)
-##       TF$args <- targetFunDef$args
-##     else{
-##       TF$args <- symbolTable()
-##       indexNodeInfoSym <- targetFunDef$args$getSymbolObject('ARG1_INDEXEDNODEINFO__')
-##       # indexNodeInfoSym$name <-'ARG1_INDEXEDNODEINFO__' ## to conform with original R function indexing
-##       TF$args$addSymbol(indexNodeInfoSym)   
-##     }
-    
-##     ## set up index vars (up to 6)
-##     indexVarNames <- paste0(letters[9:14],'_')
-##     nimbleSymTab <- targetFunDef$RCfunProc$compileInfo$newLocalSymTab
-
-##     ## assign tape ptr code
-##     assignTapePtrCode <- substitute(memberData(ADtapeSetup, ADtape) <- allADtapePtrs_[FUNINDEX], list(FUNINDEX = funIndex)) ## This will have to become a unique index in general. -1 added during output
-    
-##     ## create code to copy from arguments into the independentVars
-##     numIndependentVars <- length(independentVarNames)
-##     copyIntoIndepVarCode <- vector('list', numIndependentVars+1)
-##     ## create the netIncrement_ variable and code to initialize it to 1
-##     localVars$addSymbol( cppVar(name = 'netIncrement_', baseType = 'int') )
-##     copyIntoIndepVarCode[[1]] <- quote(netIncrement_ <- 1) 
-##     totalIndependentLength <- 0
-##     subArgIndexedInfo <- function(x){
-##       if(deparse(x[[1]])== 'getNodeFunctionIndexedInfo'){
-##         x[[2]] <- parse(text = "ARG1_INDEXEDNODEINFO__")[[1]]
-##       }
-##       return(deparse(x))
-##     }
-##     maxSize <- 0
-##     for(ivn in seq_along(independentVarNames)) {
-##         thisName <- independentVarNames[ivn]
-##         thisSym <- nimbleSymTab$getSymbolObject(thisName)
-##         if(isNode){
-##           nameSubList <- targetFunDef$RCfunProc$nameSubList
-##           thisName <- names(nameSubList)[sapply(nameSubList, function(x) return(as.character(x) == thisName))]
-##           thisModelElementNum <- as.numeric(gsub(".*([0-9]+)$", "\\1", thisName)) ## Extract 1, 2, etc. from end of arg name.
-##           thisName <- sub("_[0-9]+$", "", thisName)
-##           thisModelName <- paste0('model_', Rname2CppName(thisName)) ## Add model_ at beginning and remove _1, _2, etc. at end of arg name.
-##           thisSizeAndDims <- parentsSizeAndDims[[thisName]][[thisModelElementNum]]
-##           if(is.null(thisSizeAndDims)){
-##             thisConstInfo <- ADconstantsInfo[[thisName]][[thisModelElementNum]]
-##             copyIntoIndepVarCode[[ivn+1]] <- substitute({memberData(ADtapeSetup, independentVars)[netIncrement_] <- ARG1_INDEXEDNODEINFO__.info[INT]; netIncrement_ <- netIncrement_ + 1}, list(INT = thisConstInfo$indexColumn)) 
-##             totalIndependentLength <- totalIndependentLength + 1
-##             next
-##           }
-##         }
-##         if(thisSym$nDim > 0) {
-##             thisSizes <- thisSym$size
-##             if(isNode){
-##               sizeList <- list()
-##               for(i in 1:length(thisSizeAndDims$lengths)){
-##                 if(thisSizeAndDims$lengths[i] == 1){
-##                   if(deparse(thisSizeAndDims$indexExpr[[i]][[1]]) == 'getNodeFunctionIndexedInfo'){
-##                     thisSizeAndDims$indexExpr[[i]][[1]] <- parse(text = paste0(
-##                       'ARG1_INDEXEDNODEINFO__.info[', thisSizeAndDims$indexExpr[[i]][[3]], ']'))[[1]]
-##                   }
-##                   sizeList[[i]] <-  list(thisSizeAndDims$indexExpr[[i]][[1]], thisSizeAndDims$indexExpr[[i]][[1]])
-##                 }
-##                 else{
-##                   sizeList[[i]] <-  list(thisSizeAndDims$indexExpr[[i]][[1]], thisSizeAndDims$indexExpr[[i]][[2]])
-##                 }
-##               }
-##             }
-##             else{
-##               sizeList <- lapply(thisSizes, function(x) list(1, x))
-##             }
-##             names(sizeList) <- indexVarNames[1:length(sizeList)]
-##             if(length(sizeList) > maxSize) maxSize <- length(sizeList)
-##             newRcode <- makeCopyingCodeBlock(quote(memberData(ADtapeSetup, independentVars)), as.name(thisName), sizeList, indicesRHS = TRUE, incrementIndex = quote(netIncrement_), isNode)
-##             copyIntoIndepVarCode[[ivn+1]] <- newRcode 
-##             totalIndependentLength <- totalIndependentLength + prod(thisSizes)
-##         } 
-##         else {
-##           if(isNode){
-##             indexBracketInfo <- paste0('[', paste0(sapply(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$indexExpr,
-##                                                           subArgIndexedInfo), collapse = ', '),']')
-##             indexName <- paste0("cppLiteral('(**", thisModelName, ")')", indexBracketInfo)
-##             RHS <- parse(text = substitute(INDEXNAME, list(INDEXNAME = as.name(indexName))))[[1]]
-##           }
-##           else{
-##             RHS <- as.name(thisName)
-##           } 
-##           copyIntoIndepVarCode[[ivn+1]] <- substitute({memberData(ADtapeSetup, independentVars)[netIncrement_] <- RHS; netIncrement_ <- netIncrement_ + 1}, list(RHS = RHS)) 
-##           totalIndependentLength <- totalIndependentLength + 1
-##         }
-##     }
-##     setSizeLine <- substitute(cppMemberFunction(resize(memberData(ADtapeSetup, independentVars), TIL)), list(TIL = totalIndependentLength))
-##     returnCall <- cppLiteral("return(ADtapeSetup);")
-    
-##     if(maxSize > 0){
-##       for(ivn in 1:maxSize)
-##         localVars$addSymbol( cppVar(name = indexVarNames[ivn], baseType = 'int') )    
-##     }
-    
-##     allRcode <- do.call('call', c(list('{'), list(setSizeLine), list(assignTapePtrCode), copyIntoIndepVarCode, list(returnCall)), quote=TRUE)
-##     allCode <- RparseTree2ExprClasses(allRcode)
-##     TF$code <- cppCodeBlock(code = allCode, objectDefs = localVars)
-##     TF
-## }
-
 ## 1. Use myADtapePtrs_
 ## 2. Don't assume declared known lengths.
 makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
@@ -898,13 +780,21 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
       TF$args <- targetFunDef$args$copy()
       if(metaTape) {
         symNames <- TF$args$getSymbolNames()
+        ignoreNames <- symNames[!(symNames %in% independentVarNames)]
         newTempSymbols <- list()
-        for(sn in symNames) {
-          oldSym <- TF$args$getSymbolObject(sn)
-          newSym <- cppVarSym2templateTypeCppVarSym(oldSym)
-          newTempSymbols[[ sn ]] <- oldSym$copy()
-          TF$args$addSymbol(newSym, allowReplace = TRUE)
-        }
+        for(sn in symNames[(symNames %in% independentVarNames)])
+          newTempSymbols[[ sn ]] <- TF$args$getSymbolObject(sn)$copy()
+        symbolTable2templateTypeSymbolTable(TF$args,
+                                            ignore = ignoreNames,
+                                            replacementSymTab = TF$args)
+        ## symNames <- TF$args$getSymbolNames()
+        ## newTempSymbols <- list()
+        ## for(sn in symNames) {
+        ##   oldSym <- TF$args$getSymbolObject(sn)
+        ##   newSym <- cppVarSym2templateTypeCppVarSym(oldSym)
+        ##   newTempSymbols[[ sn ]] <- oldSym$copy()
+        ##   TF$args$addSymbol(newSym, allowReplace = TRUE)
+        ## }
       }
     } else {
       TF$args <- symbolTable()

@@ -299,6 +299,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   useModelInfo
                                               },
                                               add_deriv_function = function(funName,
+                                                                            independentVarNames,
                                                                             derivControl = list()) {
                                                   regularFun <- RCfunDefs[[funName]]
                                                   ## static <- isTRUE(derivControl[['static']])
@@ -310,6 +311,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       argTransName <- paste0(funName, '_ADargumentTransfer2_')
                                                       functionDefs[[newFunName]] <<- make_deriv_function(regularFun,
                                                                                                          newFunName,
+                                                                                                         independentVarNames,
                                                                                                          argTransName)
 
                                                       ## Add meta-taping type template function of the new function
@@ -318,6 +320,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       
                                                       functionDefs[[newMetaFunName]] <<- make_deriv_function(regularFun,
                                                                                                              newMetaFunName,
+                                                                                                             independentVarNames,
                                                                                                              argTransName,
                                                                                                              meta = TRUE)
                                                   } else {
@@ -416,12 +419,15 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               addADclassContentOneFun = function(funName,
                                                                                  derivControl,
                                                                                  funIndex) {
-                                                outSym <- nfProc$RCfunProcs[[funName]]$compileInfo$returnSymbol
+                                                ##outSym <- nfProc$RCfunProcs[[funName]]$compileInfo$returnSymbol
                                                 ## TO-DO: revisit checking arguments for deriv compability
                                                   ## isStatic <- isTRUE(derivControl[['static']])
                                                   ## if(!isTRUE(derivControl[['meta']]) & isStatic)
                                                   ##   checkADargument(funName, outSym, returnType = TRUE)
-                                                  if(length(nfProc$RCfunProcs[[funName]]$nameSubList) == 0)
+                                                  RCfunProc <- nfProc$RCfunProcs[[funName]]
+                                                  nameSubList <- RCfunProc$nameSubList
+                                                  compileInfo <- nfProc$compileInfos[[funName]]
+                                                  if(length(nameSubList) == 0)
                                                     stop(paste0('Derivatives cannot be enabled for method ',
                                                                 funName,
                                                                 ', since this method has no arguments.'))
@@ -435,10 +441,17 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   ## }
                                                   useModelInfo <- addTypeTemplateFunction(funName,
                                                                                           derivControl = derivControl) ## returns either NULL (if there is no model$calculate) or a nodeFxnVector name (if there is)
-                                                ## independentVarNames <- names(functionDefs[[funName]]$args$symbols)
-                                                ivBaseTypes <- unlist(lapply(functionDefs[[funName]]$args$symbols, `[[`, "baseType"))
-                                                independentVarNames <- names(ivBaseTypes)
-                                                includeIV <- ivBaseTypes != "bool" ## Could do argBaseType == "double", but at this writing handling "bool" is the narrow goal
+                                                  ## independentVarNames <- names(functionDefs[[funName]]$args$symbols)
+                                                  independentVarNames <- as.character(nameSubList)
+                                               ## ivBaseTypes <- unlist(lapply(functionDefs[[funName]]$args$symbols, `[[`, "baseType"))
+                                                  ivBaseTypes <- lapply(compileInfo$newLocalSymTab$symbols[independentVarNames], `[[`, "type")
+                                                  ## independentVarNames <- names(ivBaseTypes)
+                                                includeIV <- ivBaseTypes == "double" ## previously ivBaseTypes != "bool"
+                                                noDeriv_vars <- derivControl[["noDeriv_vars"]]
+                                                if(!is.null(noDeriv_vars)) {
+                                                    noDeriv_mangledArgNames <- as.character(unlist(nameSubList[noDeriv_vars]))
+                                                    includeIV <- includeIV & !(independentVarNames %in% noDeriv_mangledArgNames)
+                                                }
                                                 independentVarNames <- as.character(independentVarNames[includeIV])
 
                                                   if(nfProc$isNode) independentVarNames <- independentVarNames[-1]  ## remove ARG1_INDEXEDNODEINFO__ from independentVars
@@ -454,6 +467,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                                                     useModelInfo = useModelInfo,
                                                                                     derivControl = derivControl)
                                                       add_deriv_function(funName,
+                                                                         independentVarNames,
                                                                          derivControl)
                                                       
                                                       funIndex + 1 ## function return value increments by one in non-meta case
@@ -488,103 +502,25 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                 enableDerivs <- environment(nfProc$nfGenerator)$enableDerivs
 
                                                 enableNames <- names(enableDerivs)
-
+                                                ADinUse <- FALSE
                                                 for(iED in seq_along(enableDerivs)) {
-                                                  if(!isTRUE(enableDerivs[[iED]][['calculate']]))
-                                                    addADclassContentOneFun(enableNames[iED],
-                                                                            enableDerivs[[iED]],
-                                                                            funIndex = iED) ## funIndex might be deprecated
+                                                  if(!isTRUE(enableDerivs[[iED]][['isNode']])) {
+                                                    ADinUse <- TRUE
+                                                    if(!isTRUE(enableDerivs[[iED]][['calculate']])) {
+                                                      addADclassContentOneFun(enableNames[iED],
+                                                                              enableDerivs[[iED]],
+                                                                              funIndex = iED) ## funIndex might be deprecated
+                                                    }
+                                                  }
                                                 }
 
-                                                if(length(enableNames)) {
-                                                
-                                                  ## numEnabledFuns <- length(enableDerivs) 
-                                                  ## boolStaticAD <- unlist(lapply(enableDerivs,
-                                                  ##                               function(x) isTRUE(x[['static']])))
-                                                  ## boolNonStaticAD <- unlist(lapply(enableDerivs,
-                                                  ##                                  function(x) isFALSE(x[['static']])))
-                                                  ## boolNimDerivsCalculate <- unlist(lapply(enableDerivs,
-                                                  ##                                         function(x) isTRUE(x[['calculate']])))
-                                                  ## ## would maybe have been easier to split on boolStaticAD
-                                                  ## includeStatic <- any(boolStaticAD)
-                                                  ## includeNonStatic <- any(boolNonStaticAD)
-                                                  ## includeNimDerivsCalculate <- sum(boolNimDerivsCalculate)
-                                                  ## totalNonStatic <- sum(boolNonStaticAD)
-                                                  
-                                                  ## enableNames <- names(enableDerivs)
-                                                  ## ## Be careful with using names for picking elements of enableDerivs, because
-                                                  ## ## there may be duplicate names (if a method has a nimDerivs_calculate and is itself deriv-enabled).
-                                                  ## staticNames <- enableNames[boolStaticAD]
-                                                  ## nonStaticNames <- enableNames[boolNonStaticAD]
-
-                                                  ## if(!(includeStatic || includeNonStatic || includeNimDerivsCalculate))
-                                                  ##     return;
-                                                  
-                                                  ## if(includeNonStatic || includeNimDerivsCalculate)
-                                                  ##    Hincludes <<- c("<array>", Hincludes)
-                                                  ## These are moved to CPPincludes so they are #included before Rmath.h
+                                                if(ADinUse) {
                                                   CPPincludes <<- c(nimbleIncludeFile("nimbleCppAD.h"),
                                                                   nimbleIncludeFile("nimDerivs_TMB.h"), CPPincludes)
                                                   addInheritance("nimbleFunctionCppADbase")
-                                                  ## if(includeStatic) {
-                                                  ##     ## objectDefs$addSymbol(cppVarFull(baseType = 'vector',
-                                                  ##     ##                                 templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun',
-                                                  ##     ##                                                                templateArgs = list('double'),
-                                                  ##     ##                                                                ptr = 1)),
-                                                  ##     ##                                 static = TRUE,
-                                                  ##     ##                                 name = 'allADtapePtrs_'))
-                                                  ##     whichBoolStaticAD <- which(boolStaticAD)
-                                                  ##     for(iiAD in seq_along(whichBoolStaticAD)) {
-                                                  ##         iAD <- whichBoolStaticAD[iiAD]
-                                                  ##         addADclassContentOneFun(enableNames[iAD],
-                                                  ##                                 enableDerivs[[iAD]],
-                                                  ##                                 funIndex = iiAD)
-                                                  ##     }
-                                                  ## }
-                                                  ## if(includeNonStatic || includeNimDerivsCalculate ) {
-                                                  ##     if(isTRUE(nimbleOptions('useADreconfigure'))) {
-
-                                                  ##         currentFunIndex <- 1
-                                                  ##         ## whichNimDerivsCalculate <- which(numNimDerivsCalculate > 0)
-                                                  ##         ## for(iiAD in seq_along(whichNimDerivsCalculate)) {
-                                                  ##         ##     iAD <- whichNimDerivsCalculate[iiAD]
-                                                  ##         ##     currentFunIndex <- addNimDerivsCalculateContentOneFun(enableNames[iAD],
-                                                  ##         ##                                                           enableDerivs[[iAD]],
-                                                  ##         ##                                                           funIndex = currentFunIndex)
-                                                  ##         ## }
-                                                          
-                                                  ##         whichBoolNonStaticAD <- which(boolNonStaticAD)
-                                                  ##         for(iiAD in seq_along(whichBoolNonStaticAD)) {
-                                                  ##             iAD <- whichBoolNonStaticAD[iiAD]
-                                                  ##             currentFunIndex <- addADclassContentOneFun(enableNames[iAD],
-                                                  ##                                                        enableDerivs[[iAD]],
-                                                  ##                                                        funIndex = currentFunIndex)
-                                                  ##         }
-                                                  ##     } else {
-                                                  ##         warning(paste0('non-static AD case requested for ',
-                                                  ##                        paste(nonStaticNames, sep=" ", collapse = " "),
-                                                  ##                        ' but nimbleOption useADreconfigure is not TRUE'))
-                                                  ##     }
-                                                  ## }
                                                   addADinfoObjects(.self)
                                                 }
-##                                                  objectDefs$addSymbol(cppVarFull(name = 'ADtapeSetup',
-##                                                                                  baseType = 'nimbleCppADinfoClass'))
-                                                  ## if(includeStatic) {
-                                                  ##     globals <- cppGlobalObjects(name = paste0('staticGlobals_', name),
-                                                  ##                                 staticMembers = TRUE)
-                                                      
-                                                  ##     globals$objectDefs[['staticGlobalTape']] <-
-                                                  ##         cppVarFull(baseType = 'vector',
-                                                  ##                    templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun',
-                                                  ##                                                   templateArgs = list('double'),
-                                                  ##                                                   ptr = 1)),
-                                                  ##                    name = paste0(name,'::allADtapePtrs_'))
-                                                  ##     neededTypeDefs[['allADtapePtrs_']] <<- globals
-                                                      
-                                                  ##     ## addStaticInitClass(staticNames)
-                                                  ## }
-                                                  constructorCode                                                      
+                                                constructorCode                                                      
                                               },
                                               buildCmultiInterface = function(dll = NULL) {
                                                   sym <- if(!is.null(dll))
@@ -641,11 +577,11 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       length(environment(nfProc$nfGenerator)$enableDerivs) > 0
                                                   if(handleDerivs) {
                                                       constructorCode <- addADclassContent() ## Might generate code to insert into constructor, which is built later
+                                                      if('nodeFun' %in% .self$inheritance) {
+                                                        updateADproxyModelMethods(.self)
+                                                      }
                                                   }
-                                                  if('nodeFun' %in% .self$inheritance) {
-                                                      updateADproxyModelMethods(.self)
-                                                  }
-
+                                                  
                                                   addCopyFromRobject()
                                                   
                                                   callSuper(where)
@@ -703,7 +639,9 @@ modifyForAD_handlers <- c(list(eigenBlock = 'modifyForAD_eigenBlock',
                                setValues = 'modifyForAD_getSetValues',
                                nfMethod = 'modifyForAD_nfMethod',
                                chainedCall = 'modifyForAD_chainedCall',
-                               getDerivs_wrapper = 'modifyForAD_getDerivs_wrapper'),
+                               getDerivs_wrapper = 'modifyForAD_getDerivs_wrapper',
+                               AssignEigenMap = 'modifyForAD_AssignEigenMap'),
+                          makeCallList(recyclingRuleOperatorsAD, 'modifyForAD_RecyclingRule'),
                           makeCallList(c('EIGEN_FS', 'EIGEN_BS', 'EIGEN_SOLVE'),
                                        'modifyForAD_prependNimDerivs'))
 
@@ -718,7 +656,6 @@ exprClasses_modifyForAD <- function(code, symTab,
         if(identical(symObj$baseType, "CppAD::AD")) {
           insertExprClassLayer(code$caller, code$callerArgID, 'Value') ## It is ok to leave some fields (type, sizeExpr) unpopulated at this late processing stage
         }
-        ##code$name <- paste0("Value(", code$name, ")") ## For any more generality, Value should be in the AST, but for now paste it.
       }
     }
   }
@@ -765,6 +702,60 @@ exprClasses_modifyForAD <- function(code, symTab,
       }
     }
   }  
+  invisible(NULL)
+}
+
+modifyForAD_RecyclingRule <- function(code, symTab, workEnv) {
+  ## The conversion to nimDerivs_really has to do with the C++ return type
+  ## and that should always convert to CppAD::AD<double>, which is achieved
+  ## by the following changes.  In other words, there is no need to parse
+  ## through the arguments and see which are AD types and which not.
+  code$name <- paste0('nimDerivs_', code$name)
+  code$name <- gsub('::', '::nimDerivs_', code$name)
+  code$name <- gsub("<MatrixXd>", "<MatrixXd_TYPE_>", code$name)
+  invisible(NULL)
+}
+
+modifyForAD_AssignEigenMap <- function(code, symTab, workEnv) {
+  EigMapName <- code$args[[1]]$name
+  ## We extract the variable name by undoing the construction of the Eigen Map variable name.
+  ## This would be nicer to do with generic functions that undo the label creation.
+  ## At this time of this writing, hacking the solution here was more practical.
+  ## 
+  ## This method of extracting the name of the variable we are making a map into
+  ## attempted to invert the name-generation and name-mangling steps that led to it.
+  ## However, it is not fully general.  In addition, it is not clear if this would
+  ## ever really make sense.  Although noDerivs_vars can make a variable enter
+  ## a deriv-enabled function with its raw types, we should never really be doing
+  ## any vectorized operation with it.  The reason is that the result will be CppAD::AD<double> (or TYPE_),
+  ## since we do not attempt to somehow track AD and non-AD types through the AST processing.
+  ## And Eigen requires same-type operations, I believe, because we manually cast when necessary among
+  ## basic types, but we do not cast between AD and non-AD types.
+
+  ## varName <- EigMapName
+  ## varName <- sub("^Eig_", "", varName) ## Remove leading "Eig_"
+  ## varName <- sub("Strided_[[:digit:]]+$", "", varName) ## Remove trailing "_Interm_[count]"
+  ## varSym <- symTab$getSymbolObject(varName, inherits = TRUE)
+  ## if(is.null(varSym))
+  ##   stop(paste0("Unable to find variable ", varName, " while attempting to modify the following line for AD: ", nimDeparse(code)))
+  ## baseType <- varSym$baseType
+  ## if(baseType != "NimArr")
+  ##   stop(paste0("Problem with ", varName, " while attempting to modify the following line for AD: ", nimDeparse(code)))
+  ## scalarType <- varSym$templateArgs[[2]]
+
+##  if(scalarType == "TYPE_") {
+  EigMapSym <- symTab$getSymbolObject(EigMapName)
+  EigMapSym_baseType <- EigMapSym$baseType
+  if(EigMapSym_baseType == "EigenMapStrd") {
+    EigMapSym$baseType <- "EigenMapStrd_TYPE_"
+    #MatrixXd_label <- code$args[[3]]
+    code$args[[3]]$name <- "MatrixXd_TYPE_"
+  }
+  if(EigMapSym_baseType == "Map") {
+    EigMapSym$templateArgs[[1]] <- "MatrixXd_TYPE_"
+    code$args[[3]]$name <- "MatrixXd_TYPE_"
+  }
+##  }
   invisible(NULL)
 }
 
@@ -889,14 +880,15 @@ updateADproxyModelMethods <- function(.self) {
                                                               replacementTemplateArgs = "double" )
         parentST <- thisDef$code$objectDefs$getParentST()
         thisDef$code$objectDefs <-
-            symbolTable2templateTypeSymbolTable(thisDef$code$objectDefs,
-                                                replacementBaseType = "CppAD::AD",
-                                                replacementTemplateArgs = "double" )
+            symbolTable2templateTypeSymbolTable(thisDef$code$objectDefs) #,
+##                                                replacementBaseType = "CppAD::AD",
+##                                                replacementTemplateArgs = "double" )
         thisDef$code$objectDefs$setParentST(parentST)
         thisDef$code$cppADCode <- 2L 
         ADtypeDefs <- symbolTable()
-        ADtypeDefs$addSymbol(cppVarFull(baseType = "typedef typename EigenTemplateTypes<CppAD::AD<double> >::typeEigenMapStrd", name = "EigenMapStrd") )
-        ADtypeDefs$addSymbol(cppVarFull(baseType = "typedef Matrix<CppAD::AD<double>, Dynamic, Dynamic>", name = "MatrixXd") )
+        ADtypeDefs$addSymbol(cppVarFull(baseType = "typedef typename EigenTemplateTypes<CppAD::AD<double> >::typeEigenMapStrd", name = "EigenMapStrd_TYPE_") )
+        ADtypeDefs$addSymbol(cppVarFull(baseType = "typedef Matrix<CppAD::AD<double>, Dynamic, Dynamic>", name = "MatrixXd_TYPE_") )
+        ADtypeDefs$addSymbol(cppVarFull(baseType = "typedef CppAD::AD<double>", name = "TYPE_") )
         thisDef$code$typeDefs <- ADtypeDefs
         workEnv <- new.env()
         workEnv$RsymTab <- thisDef$RCfunProc$compileInfo$newLocalSymTab
@@ -909,7 +901,7 @@ updateADproxyModelMethods <- function(.self) {
         newSym <-
             cppVarSym2templateTypeCppVarSym(classST$getSymbolObject(sn),
                                             replacementBaseType = "CppAD::AD",
-                                            replacementTemplateArgs = "double")
+                                            replacementTemplateArgs = "double") ## These end up the header file so they should not use TYPE_ as that is not typedef'd there
         classST$addSymbol(newSym, allowReplace = TRUE)
     }
   

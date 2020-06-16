@@ -1588,7 +1588,7 @@ sizeRCfunction <- function(code, symTab, typeEnv, nfmObj, RCfunProc) {
     returnType <- nfmObj$returnType
     ## argInfo <- nfmObj$argInfo
     ## Insert enableDerivs label into code$aux
-    if(isTRUE(nfmObj$enableDerivs)) {
+    if(is.list(nfmObj$enableDerivs)) {
         if(is.null(code$aux))
             code$aux <- list(enableDerivs = TRUE)
         else

@@ -15,7 +15,8 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                                      nimbleIncludeFile("accessorClasses.h"),
                                                      nimbleIncludeFile("nimDists.h"),
                                                      nimbleIncludeFile("nimOptim.h"),
-                                                     nimbleIncludeFile("nimbleCppAD.h"))
+                                                     nimbleIncludeFile("nimbleCppAD.h"),
+                                                     nimbleIncludeFile("nimDerivs_TMB.h"))
                                      CPPincludes <<- c(CPPincludes,
                                                        '<Rmath.h>',
                                                        '<math.h>',
@@ -95,8 +96,13 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      Hincludes <<- c(Hincludes, RCfunProc$RCfun$externalHincludes)
 
                                      ## to be wrapped in conditional
-                                     if(isTRUE(RCfunProc$RCfun$enableDerivs) & isTRUE(nimbleOptions('experimentalEnableDerivs')))
-                                         ADtemplateFun <<- makeTypeTemplateFunction(name, .self)$fun
+                                     buildADtemplateFun <- FALSE
+                                     if(isTRUE(nimbleOptions('experimentalEnableDerivs')))
+                                         if(is.list(RCfunProc$RCfun$enableDerivs))
+                                             if(is.list(RCfunProc$RCfun$enableDerivs[['run']]))
+                                                 buildADtemplateFun <- TRUE
+                                     if(buildADtemplateFun)
+                                         ADtemplateFun <<- makeTypeTemplateFunction(name, .self, derivControl = RCfunProc$RCfun$enableDerivs[['run']])$fun
                                      
                                      invisible(NULL)
                                  },

@@ -2,7 +2,7 @@
 ## Section for outputting C++ code from an exprClass object ##
 ##############################################################
 
-cppOutputCalls <- c(makeCallList(recyclingRuleOperatorsAD, 'cppOutputRecyclingRuleADFunction'),
+cppOutputCalls <- c(## makeCallList(recyclingRuleOperatorsAD, 'cppOutputRecyclingRuleADFunction'),
                     makeCallList(nimDerivsPrependTypeOperators, 'cppOutputNimDerivsPrependType'),
                     makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                     makeCallList(binaryMidLogicalOperators, 'cppOutputMidOperator'),
@@ -160,13 +160,13 @@ cppOutputEigBlank <- function(code, symTab) {
     paste0('(', nimGenerateCpp(code$args[[1]], symTab), ')')
 }
 
-cppOutputRecyclingRuleADFunction <- function(code, symTab) {
-  if(identical(nimbleUserNamespace$cppADCode, 2L)) {
-    code$name <- paste0('nimDerivs_', code$name)
-    code$name <- gsub('::', '::nimDerivs_', code$name)
-  }
-  cppOutputCallAsIs(code, symTab)
-}
+## cppOutputRecyclingRuleADFunction <- function(code, symTab) {
+##   if(identical(nimbleUserNamespace$cppADCode, 2L)) {
+##     code$name <- paste0('nimDerivs_', code$name)
+##     code$name <- gsub('::', '::nimDerivs_', code$name)
+##   }
+##   cppOutputCallAsIs(code, symTab)
+## }
 
 cppOutputNimDerivsPrependType <- function(code, symTab){
   ## if(isTRUE(nimbleUserNamespace$cppADCode)){

@@ -263,7 +263,7 @@ eigenizeNameStrided <- function(code, symTab, typeEnv, workEnv) {
     ## this is a map on a passed argument.  It may be itself be a map, so the offset from it will be needed
     needStartOffset <- !is.null(typeEnv$passedArgumentNames[[varName]])
 
-    EigenName <- paste0(Rname2CppName(makeEigenName(varName)), IntermLabelMaker())
+    EigenName <- paste0(Rname2CppName(makeEigenName(varName)), StridedLabelMaker())
     targetSym <- symTab$getSymbolObject(varName, TRUE)
     if(targetSym$nDim == 0) {
         writeLines("Strange, in eigenizeNameStrided, there is a case of nDim == 0")

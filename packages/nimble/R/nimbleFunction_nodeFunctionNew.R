@@ -51,7 +51,7 @@ nodeFunctionNew <- function(LHS,
                            methods       = METHODS,
                            name          = name,
                            check         = FALSE,
-##                           enableDerivs  = CALCAD_LIST,
+                           enableDerivs  = CALCAD_LIST,
                            where = where)
           ,
             list(##CONTAINS      = nndf_createContains(RHS, type), ## this was used for intermediate classes for get_scale style parameter access, prior to getParam
@@ -66,7 +66,7 @@ nodeFunctionNew <- function(LHS,
                                                       dynamicIndexLimitsExpr,
                                                       RHS,
                                                       nodeDim),
-                CALCAD_LIST   = if(nimbleOptions('experimentalEnableDerivs')) list(getCalcADFunName()) else list(),
+                CALCAD_LIST   = if(nimbleOptions('experimentalEnableDerivs')) list(calculate_ADproxyModel = list(isNode = TRUE)) else list(),
                 where         = where)
         )
     if(evaluate){
@@ -373,11 +373,12 @@ nndf_makeParentSizeExpr <- function(sizeInfoList){
 
 nndf_addModelDollarSignsToMethods <- function(methodList, exceptionNames = character(), ADexceptionNames = character()) {
     for(i in seq_along(methodList)) {
-      if(names(methodList)[i] == getCalcADFunName()){
-        body(methodList[[i]]) <- removeIndices(body(methodList[[i]]))
-        body(methodList[[i]]) <- addModelDollarSign(body(methodList[[i]]), exceptionNames = c(exceptionNames, ADexceptionNames))
-      }
-      else  body(methodList[[i]]) <- addModelDollarSign(body(methodList[[i]]), exceptionNames = c(exceptionNames))
+      ## if(names(methodList)[i] == getCalcADFunName()){
+      ##   body(methodList[[i]]) <- removeIndices(body(methodList[[i]]))
+      ##   body(methodList[[i]]) <- addModelDollarSign(body(methodList[[i]]), exceptionNames = c(exceptionNames, ADexceptionNames))
+      ## }
+      ##  else
+        body(methodList[[i]]) <- addModelDollarSign(body(methodList[[i]]), exceptionNames = c(exceptionNames))
     }
     return(methodList)
 }

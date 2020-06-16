@@ -81,8 +81,9 @@ nimbleFunction <- function(setup         = NULL,
     if(is.null(setup)) {
         if(length(methods) > 0) stop('Cannot provide multiple methods if there is no setup function.  Use "setup = function(){}" or "setup = TRUE" if you need a setup function that does not do anything', call. = FALSE)
         if(!is.null(contains)) stop('Cannot provide a contains argument if there is no setup function.  Use "setup = function(){}" or "setup = TRUE" if you need a setup function that does not do anything', call. = FALSE)
-        if(identical(enableDerivs, 'run')) enableDerivs <- TRUE
-        return(RCfunction(run, name = name, check = check, enableDerivs = isTRUE(enableDerivs), where = where))
+        if(isTRUE(enableDerivs)) enableDerivs <- list(run = list()) ## empty list means TRUE with no configuration information
+        if(identical(enableDerivs, 'run')) enableDerivs <- list(run = list())
+        return(RCfunction(run, name = name, check = check, enableDerivs = enableDerivs, where = where))
     }
 
     virtual <- FALSE
@@ -162,122 +163,122 @@ nimbleFunction <- function(setup         = NULL,
     return(generatorFunction)
 }
 
-buildDerivMethods <- function(methodsList, enableDerivs) {
-    derivMethodsList <- list()
-    argTransferNames <- character()
-    for(i in seq_along(enableDerivs)) {
-        derivMethodIndex <- which(names(methodsList) == enableDerivs[[i]])
-        if(length(derivMethodIndex) == 0)
-            stop(paste0('derivatives cannot be enabled for method ',
-                        enableDerivs[[i]], ', this is not a valid method of the nimbleFunction.'))
-        derivMethodsList[[i]] <- methodsList[[derivMethodIndex]]
-        argTransferName <-  paste0(enableDerivs[[i]], '_ADargumentTransfer_')
-        argTransferNames[i] <- argTransferName
-        isNode <- enableDerivs[i] == getCalcADFunName()
-        if(!isNode){
-            newFormalsList <- eval(substitute(alist(FORMALLIST, nimDerivsOrders = constDouble(1), wrtVector = constDouble(1)),
-                                              list(FORMALLIST = formals(derivMethodsList[[i]]))))
-            newFormalsList <- c(unlist(newFormalsList[[1]]), newFormalsList)
-            newFormalsList[[length(newFormalsList) - 2]] <- NULL
-        }
-        else{
-            newFormalsList <- eval(substitute(alist(FORMALLIST, nimDerivsOrders = constDouble(1), wrtVector = constDouble(1),  ansList = ADNimbleList()),
-                                              list(FORMALLIST = formals(derivMethodsList[[i]])[1])))
-            newFormalsList <- c(unlist(newFormalsList[[1]]), newFormalsList)
-            newFormalsList[[length(newFormalsList) - 3]] <- NULL ## third element is still old newFormalsList[[1]], which needs to be removed
-        }
-        formals(derivMethodsList[[i]]) <- newFormalsList
-        if(!isNode){ 
-            newCall <- as.call(c(list(as.name(argTransferName)),
-                                 lapply(names(formals(methodsList[[derivMethodIndex]])),
-                                        as.name)))
-            body(derivMethodsList[[i]]) <- substitute(
-            {
-                ansList <- getDerivs_wrapper(NEWCALL, DERIVSINDEX, WRTVECTOR);
-                returnType(ADNimbleList());
-                return(ansList)
-            }, 
-            list(NEWCALL = newCall, DERIVSINDEX = as.name('nimDerivsOrders'),
-                 WRTVECTOR = as.name('wrtVector'), ANSLIST = as.name('ansList'))
-            )
-        }
-        else { 
-            newCall <- as.call(c(list(as.name(argTransferName)),
-                                 lapply(names(formals(methodsList[[derivMethodIndex]]))[1],
-                                        as.name)))
-            body(derivMethodsList[[i]]) <- substitute(
-            {
-                getDerivs(NEWCALL, DERIVSINDEX, WRTVECTOR, ANSLIST)}, 
-            list(NEWCALL = newCall, DERIVSINDEX = as.name('nimDerivsOrders'),
-                 WRTVECTOR = as.name('wrtVector'), ANSLIST = as.name('ansList'))
-            )
-        }
-        names(derivMethodsList)[i] <-paste0(names(methodsList)[derivMethodIndex], '_deriv_')
-    }
-    list(derivMethodsList = derivMethodsList,
-         argTransferNames = argTransferNames)
-}
+## buildDerivMethods <- function(methodsList, enableDerivs) {
+##     derivMethodsList <- list()
+##     argTransferNames <- character()
+##     for(i in seq_along(enableDerivs)) {
+##         derivMethodIndex <- which(names(methodsList) == enableDerivs[[i]])
+##         if(length(derivMethodIndex) == 0)
+##             stop(paste0('derivatives cannot be enabled for method ',
+##                         enableDerivs[[i]], ', this is not a valid method of the nimbleFunction.'))
+##         derivMethodsList[[i]] <- methodsList[[derivMethodIndex]]
+##         argTransferName <-  paste0(enableDerivs[[i]], '_ADargumentTransfer_')
+##         argTransferNames[i] <- argTransferName
+##         isNode <- enableDerivs[i] == getCalcADFunName()
+##         if(!isNode){
+##             newFormalsList <- eval(substitute(alist(FORMALLIST, nimDerivsOrders = constDouble(1), wrtVector = constDouble(1)),
+##                                               list(FORMALLIST = formals(derivMethodsList[[i]]))))
+##             newFormalsList <- c(unlist(newFormalsList[[1]]), newFormalsList)
+##             newFormalsList[[length(newFormalsList) - 2]] <- NULL
+##         }
+##         else{
+##             newFormalsList <- eval(substitute(alist(FORMALLIST, nimDerivsOrders = constDouble(1), wrtVector = constDouble(1),  ansList = ADNimbleList()),
+##                                               list(FORMALLIST = formals(derivMethodsList[[i]])[1])))
+##             newFormalsList <- c(unlist(newFormalsList[[1]]), newFormalsList)
+##             newFormalsList[[length(newFormalsList) - 3]] <- NULL ## third element is still old newFormalsList[[1]], which needs to be removed
+##         }
+##         formals(derivMethodsList[[i]]) <- newFormalsList
+##         if(!isNode){ 
+##             newCall <- as.call(c(list(as.name(argTransferName)),
+##                                  lapply(names(formals(methodsList[[derivMethodIndex]])),
+##                                         as.name)))
+##             body(derivMethodsList[[i]]) <- substitute(
+##             {
+##                 ansList <- getDerivs_wrapper(NEWCALL, DERIVSINDEX, WRTVECTOR);
+##                 returnType(ADNimbleList());
+##                 return(ansList)
+##             }, 
+##             list(NEWCALL = newCall, DERIVSINDEX = as.name('nimDerivsOrders'),
+##                  WRTVECTOR = as.name('wrtVector'), ANSLIST = as.name('ansList'))
+##             )
+##         }
+##         else { 
+##             newCall <- as.call(c(list(as.name(argTransferName)),
+##                                  lapply(names(formals(methodsList[[derivMethodIndex]]))[1],
+##                                         as.name)))
+##             body(derivMethodsList[[i]]) <- substitute(
+##             {
+##                 getDerivs(NEWCALL, DERIVSINDEX, WRTVECTOR, ANSLIST)}, 
+##             list(NEWCALL = newCall, DERIVSINDEX = as.name('nimDerivsOrders'),
+##                  WRTVECTOR = as.name('wrtVector'), ANSLIST = as.name('ansList'))
+##             )
+##         }
+##         names(derivMethodsList)[i] <-paste0(names(methodsList)[derivMethodIndex], '_deriv_')
+##     }
+##     list(derivMethodsList = derivMethodsList,
+##          argTransferNames = argTransferNames)
+## }
 
-buildDerivMethods2 <- function(methodsList, enableDerivs) {
-    derivMethodsList <- list()
-    argTransferNames <- character()
-    newEnableDerivs <- list()
-    for(i in seq_along(enableDerivs)) {
-        derivMethodIndex <- which(names(methodsList) == enableDerivs[[i]])
-        if(length(derivMethodIndex) == 0)
-            stop(paste0('derivatives cannot be enabled for method ',
-                        enableDerivs[[i]], ', this is not a valid method of the nimbleFunction.'))
-        derivMethodsList[[i]] <- methodsList[[derivMethodIndex]]
-        argTransferName <-  paste0(enableDerivs[[i]], '_ADargumentTransfer2_')
-        argTransferNames[i] <- argTransferName
-        isNode <- enableDerivs[i] == getCalcADFunName()
-        if(!isNode){
-            newFormalsList <- eval(substitute(alist(FORMALLIST, nimDerivsOrders = constDouble(1), wrtVector = constDouble(1)),
-                                              list(FORMALLIST = formals(derivMethodsList[[i]]))))
-            newFormalsList <- c(unlist(newFormalsList[[1]]), newFormalsList)
-            newFormalsList[[length(newFormalsList) - 2]] <- NULL
-        }
-        else{
-            newFormalsList <- eval(substitute(alist(FORMALLIST, nimDerivsOrders = constDouble(1), wrtVector = constDouble(1),  ansList = ADNimbleList()),
-                                              list(FORMALLIST = formals(derivMethodsList[[i]])[1])))
-            newFormalsList <- c(unlist(newFormalsList[[1]]), newFormalsList)
-            newFormalsList[[length(newFormalsList) - 3]] <- NULL ## third element is still old newFormalsList[[1]], which needs to be removed
-        }
-        formals(derivMethodsList[[i]]) <- newFormalsList
-        if(!isNode){ 
-            newCall <- as.call(c(list(as.name(argTransferName)),
-                                 lapply(names(formals(methodsList[[derivMethodIndex]])),
-                                        as.name)))
-            body(derivMethodsList[[i]]) <- substitute(
-            {
-                ansList <- getDerivs_wrapper(NEWCALL, DERIVSINDEX, WRTVECTOR);
-                returnType(ADNimbleList());
-                return(ansList)
-            }, 
-            list(NEWCALL = newCall, DERIVSINDEX = as.name('nimDerivsOrders'),
-                 WRTVECTOR = as.name('wrtVector'), ANSLIST = as.name('ansList'))
-            )
-        }
-        else { 
-            newCall <- as.call(c(list(as.name(argTransferName)),
-                                 lapply(names(formals(methodsList[[derivMethodIndex]]))[1],
-                                        as.name)))
-            body(derivMethodsList[[i]]) <- substitute(
-            {
-                getDerivs(NEWCALL, DERIVSINDEX, WRTVECTOR, ANSLIST)}, 
-            list(NEWCALL = newCall, DERIVSINDEX = as.name('nimDerivsOrders'),
-                 WRTVECTOR = as.name('wrtVector'), ANSLIST = as.name('ansList'))
-            )
-        }
-        names(derivMethodsList)[i] <-paste0(names(methodsList)[derivMethodIndex], '_deriv_') ## _deriv2_
-        newEnableDerivs[[ names(derivMethodsList)[i] ]] <- list(static = FALSE,
-                                                                meta = TRUE,
-                                                                nonTemplateArgs = names(newFormalsList)[length(newFormalsList)-c(1, 0)]) ## The [method]_deriv2_ functions themselves need to become templated.  This flags them for that.
-    }
-    list(derivMethodsList = derivMethodsList,
-         argTransferNames = argTransferNames,
-         newEnableDerivs = newEnableDerivs)
-}
+## buildDerivMethods2 <- function(methodsList, enableDerivs) {
+##     derivMethodsList <- list()
+##     argTransferNames <- character()
+##     newEnableDerivs <- list()
+##     for(i in seq_along(enableDerivs)) {
+##         derivMethodIndex <- which(names(methodsList) == enableDerivs[[i]])
+##         if(length(derivMethodIndex) == 0)
+##             stop(paste0('derivatives cannot be enabled for method ',
+##                         enableDerivs[[i]], ', this is not a valid method of the nimbleFunction.'))
+##         derivMethodsList[[i]] <- methodsList[[derivMethodIndex]]
+##         argTransferName <-  paste0(enableDerivs[[i]], '_ADargumentTransfer2_')
+##         argTransferNames[i] <- argTransferName
+##         isNode <- enableDerivs[i] == getCalcADFunName()
+##         if(!isNode){
+##             newFormalsList <- eval(substitute(alist(FORMALLIST, nimDerivsOrders = constDouble(1), wrtVector = constDouble(1)),
+##                                               list(FORMALLIST = formals(derivMethodsList[[i]]))))
+##             newFormalsList <- c(unlist(newFormalsList[[1]]), newFormalsList)
+##             newFormalsList[[length(newFormalsList) - 2]] <- NULL
+##         }
+##         else{
+##             newFormalsList <- eval(substitute(alist(FORMALLIST, nimDerivsOrders = constDouble(1), wrtVector = constDouble(1),  ansList = ADNimbleList()),
+##                                               list(FORMALLIST = formals(derivMethodsList[[i]])[1])))
+##             newFormalsList <- c(unlist(newFormalsList[[1]]), newFormalsList)
+##             newFormalsList[[length(newFormalsList) - 3]] <- NULL ## third element is still old newFormalsList[[1]], which needs to be removed
+##         }
+##         formals(derivMethodsList[[i]]) <- newFormalsList
+##         if(!isNode){ 
+##             newCall <- as.call(c(list(as.name(argTransferName)),
+##                                  lapply(names(formals(methodsList[[derivMethodIndex]])),
+##                                         as.name)))
+##             body(derivMethodsList[[i]]) <- substitute(
+##             {
+##                 ansList <- getDerivs_wrapper(NEWCALL, DERIVSINDEX, WRTVECTOR);
+##                 returnType(ADNimbleList());
+##                 return(ansList)
+##             }, 
+##             list(NEWCALL = newCall, DERIVSINDEX = as.name('nimDerivsOrders'),
+##                  WRTVECTOR = as.name('wrtVector'), ANSLIST = as.name('ansList'))
+##             )
+##         }
+##         else { 
+##             newCall <- as.call(c(list(as.name(argTransferName)),
+##                                  lapply(names(formals(methodsList[[derivMethodIndex]]))[1],
+##                                         as.name)))
+##             body(derivMethodsList[[i]]) <- substitute(
+##             {
+##                 getDerivs(NEWCALL, DERIVSINDEX, WRTVECTOR, ANSLIST)}, 
+##             list(NEWCALL = newCall, DERIVSINDEX = as.name('nimDerivsOrders'),
+##                  WRTVECTOR = as.name('wrtVector'), ANSLIST = as.name('ansList'))
+##             )
+##         }
+##         names(derivMethodsList)[i] <-paste0(names(methodsList)[derivMethodIndex], '_deriv_') ## _deriv2_
+##         newEnableDerivs[[ names(derivMethodsList)[i] ]] <- list(static = FALSE,
+##                                                                 meta = TRUE,
+##                                                                 noDeriv_vars = names(newFormalsList)[length(newFormalsList)-c(1, 0)]) ## The [method]_deriv2_ functions themselves need to become templated.  This flags them for that.
+##     }
+##     list(derivMethodsList = derivMethodsList,
+##          argTransferNames = argTransferNames,
+##          newEnableDerivs = newEnableDerivs)
+## }
 
 
 ## See https://github.com/nimble-dev/nimble/wiki/Developer-backdoor-to-manually-replace-generated-C

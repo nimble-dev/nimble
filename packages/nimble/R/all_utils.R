@@ -49,6 +49,7 @@ resetLabelFunctionCreators <- function() {
 nimbleUniqueID <- labelFunctionCreator("UID")
 nimbleModelID  <- labelFunctionCreator("MID")
 ADinfoLabel <- labelFunctionCreator("nimbleCppADinfo_")
+StridedLabelMaker <- labelFunctionCreator("Strided")
 
 dimOrLength <- function(obj, scalarize = FALSE) {
     if(scalarize) if(length(obj) == 1) return(numeric(0))

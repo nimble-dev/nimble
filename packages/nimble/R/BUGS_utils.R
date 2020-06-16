@@ -21,9 +21,10 @@ is.vectorized <- function(node) {
     else return(':' %in% all.names(node))
 }
 
-getCalcADFunName <- function(){
-  return('calculateWithArgs')
-}
+## getCalcADFunName <- function(){
+##   return('calculateWithArgs')
+## }
+
 is.blank <- function(arg) {
     if(is.null(arg)) return(FALSE)
     return(identical(arg, quote(x[])[[3]]))
