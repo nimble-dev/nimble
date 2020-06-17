@@ -140,7 +140,8 @@ sizeCalls <- c(
                    'nfMethod',
                    'getPtr',
                    'startNimbleTimer'), 'sizeUndefined'), ##'nimFunListAccess'
-    passByMap = 'sizePassByMap')
+    passByMap = 'sizePassByMap',
+    ADbreak = 'sizeADbreak')
 
 scalarOutputTypes <- list(decide = 'logical',
                           size = 'integer',
@@ -297,6 +298,19 @@ sizeProxyForDebugging <- function(code, symTab, typeEnv) {
     removeExprClassLayer(code$caller, 1)
     setNimbleOption('debugSizeProcessing', origValue)
     return(ans)
+}
+
+sizeADbreak <- function(code, symTab, typeEnv) {
+    asserts <- recurseSetSizes(code, symTab, typeEnv)
+    if(length(code$args) != 1)
+        stop(exprClassProcessingErrorMsg(code, paste0('ADbreak must have exactly one argument.')), call. = FALSE)
+    if(code$args[[1]]$nDim != 0)
+        stop(exprClassProcessingErrorMsg(code, paste0('The argument to ADbreak must be scalar.')), call. = FALSE)
+    code$nDim <- 0
+    code$type <- code$args[[1]]$type
+    code$toEigenize <- 'no'
+    code$sizeExprs <- list()
+    return(if(is.null(asserts)) list() else asserts)
 }
 
 ## This is used by nimbleExternalCall.

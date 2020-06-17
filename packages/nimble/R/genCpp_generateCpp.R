@@ -68,7 +68,8 @@ cppOutputCalls <- c(## makeCallList(recyclingRuleOperatorsAD, 'cppOutputRecyclin
                          callC = 'cppOutputEigBlank', ## not really eigen, but this just jumps over a layer in the parse tree
                          eigBlank = 'cppOutputEigBlank',
                          voidPtr = 'cppOutputVoidPtr',
-                        cppLiteral = 'cppOutputLiteral'                        )
+                        cppLiteral = 'cppOutputLiteral',
+                        ADbreak = 'cppOutputSkip')
                     )
 cppOutputCalls[['pow']] <-  'cppOutputPow'
 cppMidOperators <- midOperators

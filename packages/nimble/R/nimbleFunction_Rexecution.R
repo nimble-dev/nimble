@@ -1,6 +1,18 @@
 ###		These functions are used for calculate/sim/getLP for the nodeFunctionVectors
 ###		Can either enter model, nodes or model_nodes
 
+#' NIMBLE language function to break tracking of derivatives
+#'
+#' This function is used in a method of a nimbleFunction that has derivatives enabled.  It returns its value but breaks tracking of derivatives.
+#'
+#' @param x scalar value
+#'
+#' @details
+#' This funcion only works with scalars.
+#'
+#' @export
+ADbreak <- function(x) x
+
 #' NIMBLE language functions for R-like vector construction
 #'
 #' The functions \code{c}, \code{rep}, \code{seq}, \code{\code{which}, \code{diag}, \code{length}, \code{seq_along}, \code{is.na}, \code{is.nan}, \code{any}, and \code{all} can be used in nimbleFunctions and compiled using \code{compileNimble}.

@@ -92,8 +92,8 @@ symbolTable2templateTypeSymbolTable <- function(symTab,
   symNames <- symTab$getSymbolNames()
   for(sn in symNames) {
     oldSym <- symTab$getSymbolObject(sn)
-    inIgnore <- any(unlist(lapply(ignore, function(x) grepl(x, sn))))
-    inSkip <- any(unlist(lapply(skip, function(x) grepl(x, sn))))
+    inIgnore <- any(sn == ignore)
+    inSkip <- any(sn == skip)
     if(inSkip)
         next
     if(inIgnore)
@@ -131,7 +131,8 @@ makeTypeTemplateFunction <- function(newName,
       recordingInfoArg <- cppVarFull(baseType = "nimbleCppADrecordingInfoClass", name = "recordingInfo_")
       newCppFunDef$args$addSymbol(recordingInfoArg)
     }
-    localVars <- symbolTable2templateTypeSymbolTable(.self$code$objectDefs)
+    localVars <- symbolTable2templateTypeSymbolTable(.self$code$objectDefs,
+                                                     ignore = ignore)
     localVars$setParentST( newCppFunDef$args )
     newCppFunDef$returnType <- cppVarSym2templateTypeCppVarSym(.self$returnType)
     newCode <- copyExprClass(.self$code$code)

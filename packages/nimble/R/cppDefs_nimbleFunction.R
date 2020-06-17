@@ -640,7 +640,8 @@ modifyForAD_handlers <- c(list(eigenBlock = 'modifyForAD_eigenBlock',
                                nfMethod = 'modifyForAD_nfMethod',
                                chainedCall = 'modifyForAD_chainedCall',
                                getDerivs_wrapper = 'modifyForAD_getDerivs_wrapper',
-                               AssignEigenMap = 'modifyForAD_AssignEigenMap'),
+                               AssignEigenMap = 'modifyForAD_AssignEigenMap',
+                               ADbreak = 'modifyForAD_ADbreak'),
                           makeCallList(recyclingRuleOperatorsAD, 'modifyForAD_RecyclingRule'),
                           makeCallList(c('EIGEN_FS', 'EIGEN_BS', 'EIGEN_SOLVE'),
                                        'modifyForAD_prependNimDerivs'))
@@ -705,6 +706,10 @@ exprClasses_modifyForAD <- function(code, symTab,
   invisible(NULL)
 }
 
+modifyForAD_ADbreak <- function(code, symTab, workEnv) {
+  code$name <- 'CppAD::Value'
+  invisible(NULL)
+}
 modifyForAD_RecyclingRule <- function(code, symTab, workEnv) {
   ## The conversion to nimDerivs_really has to do with the C++ return type
   ## and that should always convert to CppAD::AD<double>, which is achieved
