@@ -54,7 +54,7 @@ setSize <- function(numObj, ..., copy = TRUE, fillZeros = TRUE){ ## fillValues i
                 else newObj <- as(rep(0, newDims[1]), oldClass)
             }
         } else {
-            newObj <- array(as(0, oldClass), newDims)
+            newObj <- array(0, newDims)
             if(copy) {
                 if(length(numObj) < length(newObj))
                     newObj[seq_len(length(numObj))] <- numObj
