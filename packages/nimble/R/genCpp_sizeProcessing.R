@@ -1825,7 +1825,8 @@ sizeFor <- function(code, symTab, typeEnv) {
     return(if(length(asserts) == 0) invisible(NULL) else asserts)
 }
 
-sizeInsertIntermediate <- function(code, argID, symTab, typeEnv, forceAssign = FALSE) {
+sizeInsertIntermediate <- function(code, argID, symTab, typeEnv, forceAssign = FALSE,
+                                   forceType = NULL) { ## only used by sizeColonOperator to force lifted range ends to be integer
     newName <- IntermLabelMaker()
     ## I think it is valid and general to catch maps here.
     ## For most variables, creating an intermediate involves interN <- expression being lifted
@@ -1852,6 +1853,8 @@ sizeInsertIntermediate <- function(code, argID, symTab, typeEnv, forceAssign = F
         newExpr <- newAssignmentExpression()
         setArg(newExpr, 1, RparseTree2ExprClasses(as.name(newName))) 
         setArg(newExpr, 2, code$args[[argID]]) ## The setArg function should set code$caller (to newExpr) and code$callerArgID (to 3)
+        if(!is.null(forceType))
+            newExpr$args[[2]]$type <- forceType
         ans <- c(sizeAssignAfterRecursing(newExpr, symTab, typeEnv, NoEigenizeMap = TRUE), list(newExpr))
 
         newArgExpr <- RparseTree2ExprClasses(as.name(newName))
@@ -2774,7 +2777,7 @@ sizeColonOperator <- function(code, symTab, typeEnv, recurse = TRUE) {
         if(inherits(code$args[[i]], 'exprClass')) {
             if(!code$args[[i]]$isName) {
               if(! (code$args[[i]]$name == '[' && (code$args[[i]]$args[[1]]$name == 'dim' && code$args[[i]]$args[[1]]$args[[1]]$name == 'nfVar'))){
-                asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv) )
+                asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv, forceType = "integer") )
               }
             }
         }

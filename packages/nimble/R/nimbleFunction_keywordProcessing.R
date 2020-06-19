@@ -1336,6 +1336,7 @@ paramInfo_SetupTemplate <- setupCodeTemplateClass(
     codeTemplate = quote({
         PARAMINFONAME <- makeParamInfo(MODEL, NODE, PARAM)
         PARAMIDNAME <- PARAMINFONAME$paramID
+        PARAMINFONAME$paramID <- NULL
        }),
     makeCodeSubList = function(resultName, argList){
         list(PARAMINFONAME = as.name(resultName),
@@ -1352,6 +1353,7 @@ boundInfo_SetupTemplate <- setupCodeTemplateClass(
     codeTemplate = quote({
         BOUNDINFONAME <- makeBoundInfo(MODEL, NODE, BOUND)
         BOUNDIDNAME <- BOUNDINFONAME$boundID
+        BOUNDINFONAME$boundID <- NULL
        }),
     makeCodeSubList = function(resultName, argList){
         list(BOUNDINFONAME = as.name(resultName),

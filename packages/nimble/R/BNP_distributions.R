@@ -57,17 +57,16 @@ dCRP=nimbleFunction(
         #    nimCat("dCRP: value of concentration parameter has to be larger than zero.\n")
             return(NaN)
         }
+        if(any_na(x)) return(NaN)
         
         ldens <- 0 # log scale
         if(n > 1) {
             for(i in 2:n) {
                 counts <- sum(x[i] == x[1:(i-1)])
-                if(isTRUE( counts > 0 )) {
+                if( counts > 0) {
                     ldens <- ldens + log(counts / (i-1+conc))
                 } else {
-		  if(is.na(counts)) {
-	 	    ldens <- NA
-		  } else ldens <- ldens + log(conc / (i-1+conc))
+                    ldens <- ldens + log(conc / (i-1+conc))
                 }
             }
         }

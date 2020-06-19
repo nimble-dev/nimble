@@ -219,6 +219,7 @@ inline double getParam_0D_double(int paramID, const NodeInstruction &useInfo, in
 }
 template<typename paramIDtype>
 inline double getParam_0D_double(const paramIDtype &paramID, const NodeInstruction &useInfo, int iNodeFunction) {
+  iNodeFunction = paramID[0] == -1 ? 1 : iNodeFunction;
 return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID[iNodeFunction], useInfo.operand));
 }
 
@@ -227,6 +228,7 @@ NimArr<1, double> getParam_1D_double(int paramID, const NodeInstruction &useInfo
 
 template<class paramIDtype>
 NimArr<1, double> getParam_1D_double(const paramIDtype &paramID, const NodeInstruction &useInfo, int iNodeFunction) {
+  iNodeFunction = paramID[0] == -1 ? 1 : iNodeFunction;
   return(useInfo.nodeFunPtr->getParam_1D_double_block(paramID[iNodeFunction], useInfo.operand));
 }
 
@@ -234,6 +236,7 @@ NimArr<1, double> getParam_1D_double(const paramIDtype &paramID, const NodeInstr
 NimArr<2, double> getParam_2D_double(int paramID, const NodeInstruction &useInfo, int iNodeFunction = 0);
 template<class paramIDtype>
 NimArr<2, double> getParam_2D_double(const paramIDtype &paramID, const NodeInstruction &useInfo, int iNodeFunction) {
+  iNodeFunction = paramID[0] == -1 ? 1 : iNodeFunction;
   return(useInfo.nodeFunPtr->getParam_2D_double_block(paramID[iNodeFunction], useInfo.operand));
 }
 

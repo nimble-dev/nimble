@@ -1,3 +1,41 @@
+                            CHANGES IN VERSION 0.9.1 (May 2020)
+  
+USER LEVEL CHANGES
+
+-- Switched from use of `system` to `system2` to avoid problems with installation under R 4.0 on Windows (PR #1003).
+
+-- Modify various adaptive MCMC samplers so the exponent controlling the scale decay of the adaptation is adjustable by user (rather than hard-coded at 0.8 (PR #981).
+
+-- Allow `pmin` and `pmax` to be used in models (PR #982).
+
+-- Add documentation for `is.na`,`is.nan`,`any`,`all` (PR #988)
+
+-- Add system option `MCMCuseConugacy` to control whether conjugate samplers are used (PR #998).
+
+-- Adds checks for `niter`, `nburnin` in the `mcmc$run` method (PR #980).
+
+-- Modify print handling in `addSampler` and `configureMCMC` (PRs #986, 989).
+
+-- Improve handling of NA values in `dCRP` to avoid error messages when building models (PR #994).
+
+-- Avoid monitoring top-level data nodes in models (PR #1006).
+
+BUG FIXES
+
+-- Modify MCMC `autoBlock` routine to only group Wishart, Inverse-Wishart, and Dirichlet nodes with themselves, to avoid violating the constraints of those nodes (PR #999).
+
+-- Fix incorrect error message from `warnRHSonlyDynIdx` when variable appears multiple times on right-hand side of a model expression (PR #997).
+
+-- Fix `checkDistributionFunctions` to respect default `nDim=0` when extracting first argument, to avoid error when dimension not specified in user-defined distributions (PR #992).
+
+-- Fix `print` option of `addSampler` (PR #986).
+
+-- Improve handling of cases where indexing goes beyond extent of variable in `expandNodeNames` and related queries of model structure (PR #977).
+
+DEVELOPER LEVEL CHANGES
+
+-- Use `inherits` rather than testing for equality of `class(object)` (PR #988).
+
                             CHANGES IN VERSION 0.9.0 (December 2019)
 
 USER LEVEL CHANGES
@@ -74,6 +112,7 @@ DEVELOPER LEVEL CHANGES
 
 
                             CHANGES IN VERSION 0.8.0 (June 2019)
+
 USER LEVEL CHANGES
 
 -- Added reversible jump MCMC for variable selection via configureRJ().
