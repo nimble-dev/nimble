@@ -69,7 +69,7 @@ makeSizeAndDimList <- function(code, nodesToExtract, unrolledIndicesMatrix = NUL
               codeEndInds <- unrolledIndicesMatrix[, deparse(code[[i+2]][[3]])]
             }
             thisCodeLength <- codeEndInds - codeStartInds + 1
-            if(checkRagged && !all(thisCodeLength == thisCodeLength[1])){
+            if(checkRagged && !all(thisCodeLength == thisCodeLength[1])){ ## checkRagged may not be used anywhere anymore. In early versions of AD, we had to exclude ragged arrays.  Now they should work.  Dynamic ragged arrays will not work.
               stop("Error: AD not currently supported for ragged arrays in model code", call. = FALSE)
             }
             codeLength <- c(codeLength, thisCodeLength[1])

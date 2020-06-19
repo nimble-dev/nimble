@@ -1197,9 +1197,9 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                              parents <- BUGSdecl$allParentVarNames()
                                              selfWithNoInds <-  strsplit(deparse(LHS), '[', fixed = TRUE)[[1]][1]
                                              parents <- c(selfWithNoInds, parents)
-                                             parentsSizeAndDims <- nimble:::makeSizeAndDimList(LHS, parents, BUGSdecl$unrolledIndicesMatrix, checkRagged = TRUE)
+                                             parentsSizeAndDims <- nimble:::makeSizeAndDimList(LHS, parents, BUGSdecl$unrolledIndicesMatrix, checkRagged = FALSE)
                                              parentsSizeAndDims <- nimble:::makeSizeAndDimList(RHS, parents, BUGSdecl$unrolledIndicesMatrix,
-                                                                                               allSizeAndDimList = parentsSizeAndDims, checkRagged = TRUE)
+                                                                                               allSizeAndDimList = parentsSizeAndDims, checkRagged = FALSE)
                                            } else parentsSizeAndDims <- list()
 
                                            if(nimble::nimbleOptions()$allowDynamicIndexing && length(BUGSdecl$dynamicIndexInfo)) {  ## need dim for node for generating NaN with invalid dynamic indexes
