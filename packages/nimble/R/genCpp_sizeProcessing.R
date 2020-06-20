@@ -3445,7 +3445,10 @@ generalFunSizeHandlerFromSymbols <- function(code, symTab, typeEnv, returnSymbol
         if(useArgs[i]) {
             if(inherits(code$args[[i]], 'exprClass')) {
                 if(!code$args[[i]]$isName) {
-                    asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv) )
+                    forceType <- NULL
+                    if(argSymTab$symbols[[i]]$nDim == 0) ## We're only here if useArgs[i] is TRUE, which means nDim and type should be set
+                        forceType <- argSymTab$symbols[[i]]$type
+                    asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv, forceType = forceType) )
                 }
             }
         }
