@@ -1021,6 +1021,8 @@ sampler_HMC <- nimbleFunction(
         if(printTimesRan) print('============ times ran = ', timesRan)
         if(printEpsilon)  print('epsilon = ', epsilon)
         q <<- my_parameterTransform$transform(values(model, targetNodes))
+        ## using mass matrix (or metric) M, here always diagonal,
+        ## M is the covariance matrix used for drawing p, we let M approximate the precision matrix of q.
         for(i in 1:d)     p[i] <<- rnorm(1, 0, 1)
         qpLogH <- logH(q, p)
         logu <- qpLogH - rexp(1, 1)    ## logu <- lp - rexp(1, 1) => exp(logu) ~ uniform(0, exp(lp))
@@ -1102,6 +1104,8 @@ sampler_HMC <- nimbleFunction(
             savedCalcNodeValues <- values(model, calcNodes)
             q <<- my_parameterTransform$transform(values(model, targetNodes))
             p <<- numeric(d)                    ## keep, sets 'p' to size d on first iteration
+            ## using mass matrix (or metric) M, here always diagonal,
+            ## M is the covariance matrix used for drawing p, we let M approximate the precision matrix of q.
             for(i in 1:d)     p[i] <<- rnorm(1, 0, 1)
             epsilon <<- 1
             qpNL <- leapfrog(q, p, epsilon, 1, 2)            ## v = 2 is a special case for initializeEpsilon routine
