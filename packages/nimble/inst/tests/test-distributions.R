@@ -284,7 +284,7 @@ test_that("Test that rinvwish_chol, dinvwish_chol, dwish_chol, and rwish_chol gi
     set.seed(1)
     df <- 20.3
     d <- 5
-    C <- crossprod(matrix(rnorm(d^2, 3), d))
+    C <- crossprod(matrix(rnorm(d^2, 0), d))
     pm <- C / (df - d - 1)
     
     n <- 100
@@ -303,11 +303,11 @@ test_that("Test that rinvwish_chol, dinvwish_chol, dwish_chol, and rwish_chol gi
     for(i in 1:n)
         draws3[,,i] <- rinvwish_chol(1, chol(solve(C)), df, scale_param = FALSE)
     pmean3 <- apply(draws3, c(1,2), mean)
-    expect_equal(max(abs(pmean1 - pm)), 0, tol = 0.06,
+    expect_equal(max(abs(pmean1 - pm)), 0, tol = 0.03,
                  info = "mean of inverse of rwish draws differs from truth")
-    expect_equal(max(abs(pmean2 - pm)), 0, tol = 0.06,
+    expect_equal(max(abs(pmean2 - pm)), 0, tol = 0.03,
                  info = "mean of rinvwish with scale draws differs from truth")
-    expect_equal(max(abs(pmean3 - pm)), 0, tol = 0.06,
+    expect_equal(max(abs(pmean3 - pm)), 0, tol = 0.03,
                  info = "mean of rinvwish with rate differs from truth")
 
     # draws1 is from rwish not rinvwish, but for comparing density values it doesn't matter their origin.
