@@ -750,6 +750,17 @@ test_that("warning when RHS only nodes used as dynamic indexes", {
 
 })
 
+test_that("dmvt usage", {
+    code <- nimbleCode({
+    	 y1[1:n] ~ dmvt(z[1:n], pr[1:n, 1:n], 4)
+	 y2[1:n] ~ dmvt(z[1:n], scale = pr[1:n, 1:n], df = 4)
+    })
+    n <- 3
+    m <- nimbleModel(code, inits = list(pr = diag(rep(2,n))), constants = list(n = n))	 
+    expect_identical(m$getParam('y1[1:3]', 'prec'), diag(rep(2, n)))
+    expect_equal(m$getParam('y2[1:3]', 'prec'), diag(rep(0.5, n)))
+})
+
 sink(NULL)
 
 if(FALSE){  ## no warnings being generated in goldFile anymore (perhaps a change in testthat versions?)
