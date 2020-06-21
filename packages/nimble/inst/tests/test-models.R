@@ -750,6 +750,60 @@ test_that("warning when RHS only nodes used as dynamic indexes", {
 
 })
 
+test_that("handling of contiguous blocks", {
+    ## Before issue 1015 fixed, this would error out.
+    code <- nimbleCode({
+        R[1:n,1:n] <- exp(-dist[1:n, 1:n])
+        for(i in 1:n) 
+            y[i] ~ dnorm(0, sd = R[i,i])
+    })
+    n <- 4
+    dd <- matrix(1, n, n); dd[1,4] <- dd[4,1] <- dd[2,3] <- dd[3,2] <- sqrt(2)
+    diag(dd) <- 0
+    model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd))
+
+    indArr <- matrix(1, 3, 3)
+    diag(indArr) <- c(2, 3, 1)
+    out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
+    expect_identical(out$names, c('y[1%.s%3, 1%.s%3]', 'y[1, 1]', 'y[2, 2]'))
+
+    indArr <- matrix(1, 3, 3)
+    diag(indArr) <- c(2, 3, 4)
+    out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
+    expect_identical(out$names, c('y[1%.s%3, 1%.s%3]', 'y[1, 1]', 'y[2, 2]', 'y[3, 3]'))
+
+    indArr <- matrix(1, 4, 4)
+    indArr[2:3, 1:3] <- 2
+    out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
+    expect_identical(out$names, c('y[1%.s%4, 1%.s%4]', 'y[2:3, 1:3]'))
+
+    indArr <- matrix(1, 4, 4)
+    indArr[2:3, c(1,3)] <- indArr[2:3, c(1,3)] <- 2
+    out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
+    expect_identical(out$names, c('y[1%.s%4, 1%.s%4]', 'y[2:3, 1%.s%3]'))
+
+    indArr <- array(1, c(3, 3, 3))
+    indArr[1:2, 1:2, 2] <- 2
+    out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
+    expect_identical(out$names, c('y[1%.s%3, 1%.s%3, 1%.s%3]', 'y[1:2, 1:2, 2]'))
+
+    indArr <- array(1, c(3, 3, 3))
+    indArr[1:2, 1:2, 1:2] <- 2
+    out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
+    expect_identical(out$names, c('y[1%.s%3, 1%.s%3, 1%.s%3]', 'y[1:2, 1:2, 2]'))
+
+    indArr <- array(1, c(3, 3, 3))
+    indArr[1, 1, 1] <- indArr[2, 2, 1] <- 2
+    out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
+    expect_identical(out$names, c('y[1%.s%3, 1%.s%3, 1%.s%3]', 'y[1%.s%2, 1%.s%2, 1]'))
+
+    indArr <- array(1, c(3, 3, 3))
+    indArr[1, 1, 1] <- indArr[2, 2, 2] <- 2
+    out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
+    expect_identical(out$names, c('y[1%.s%3, 1%.s%3, 1%.s%3]', 'y[1%.s%2, 1%.s%2, 1%.s%2]'))
+}
+
+
 sink(NULL)
 
 if(FALSE){  ## no warnings being generated in goldFile anymore (perhaps a change in testthat versions?)

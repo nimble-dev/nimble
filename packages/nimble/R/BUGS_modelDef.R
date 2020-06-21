@@ -1507,6 +1507,18 @@ makeVertexNamesFromIndexArray2 <- function(indArr, minInd = 1, varName) {
     ## each entry is (min, max, 0/1 for vector, 0/1 for contiguous)
     info <- lapply(splits, lapply, makeSplitInfo)
 
+    ## Detect and fix cases of non-contiguous indices such as splits being `1`: [1 2] and `2`: [1 2] or `1`: [1, 2] and `2`: [2 1]
+    for(i in seq_along(info[[1]])) {
+        ## Check if a vector and all indexes seen to be contiguous
+        tmp <- sapply(info, `[[`, i) 
+        if(sum(tmp[3,] == 1) > 1 && all(tmp[4,] == 1)) {  # matrix or array seen as contiguous
+            if(length(splits[[1]][[i]]) != prod(tmp[2, ] - tmp[1, ] + 1))  # insufficient elements to fill out the block
+                for(j in seq_along(info))
+                    if(info[[j]][[i]][3] == 1)
+                        info[[j]][[i]][4] <- 0   # set all non-scalar indexes to be non-contiguous
+        }
+    }
+
     ## From here on is the construction of string labels from the info
     dimStrings <- lapply(info, function(x) {
         all <- do.call('rbind', x)   ## This makes a table with a row for each unique element of indArr
