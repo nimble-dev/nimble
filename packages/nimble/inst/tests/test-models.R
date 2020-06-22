@@ -801,7 +801,7 @@ test_that("handling of contiguous blocks", {
     indArr[1, 1, 1] <- indArr[2, 2, 2] <- 2
     out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
     expect_identical(out$names, c('y[1%.s%3, 1%.s%3, 1%.s%3]', 'y[1%.s%2, 1%.s%2, 1%.s%2]'))
-}
+})
 
 
 sink(NULL)
