@@ -362,7 +362,6 @@ test_that('basic mixture model with conjugacy', {
     p_tol <- c(.1, .02, .02, .05)
     sds <- c(.2, .4, .2, .1)
     k <- sample(1:d, n, replace = TRUE, prob = p)
-    kOrder <- unique(k)
     y <- rnorm(n, mns[k], sds[k])
     code <- nimbleCode({
         for(i in 1:n) {
