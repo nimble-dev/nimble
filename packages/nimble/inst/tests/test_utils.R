@@ -620,16 +620,18 @@ test_mcmc_internal <- function(Rmodel, ##data = NULL, inits = NULL,
         postBurnin <- (round(numItsC_results/2)+1):numItsC_results
         C_samples <- as.matrix(CmvSample)[postBurnin, , drop = FALSE]
         for(metric in names(results)) {
-            if(!metric %in% c('mean', 'median', 'sd', 'var', 'cov'))
+            if(!(metric %in% c('mean', 'median', 'sd', 'var', 'cov')))
                 stop("Results input should be named list with the names indicating the summary metrics to be assessed, from amongst 'mean', 'median', 'sd', 'var', and 'cov'.")
             if(metric != 'cov') {
                 postResult <- apply(C_samples, 2, metric)
+                cat("postResult:", postResult)
                 for(varName in names(results[[metric]])) {
                     samplesNames <- dimnames(C_samples)[[2]]
                     if(!grepl("[", varName, fixed = TRUE))
                         samplesNames <- gsub("\\[.*\\]", "", samplesNames)
                     matched <- which(varName == samplesNames)
                     diff <- abs(postResult[matched] - results[[metric]][[varName]])
+                    cat(metric, varName, postResult[matched], results[[metric]][[varName]])
                     for(ind in seq_along(diff)) {
                         strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
                         wrap_if_matches(paste('MCMC match to known posterior:', varName, metric, ind), names(knownFailures), expect_failure, {
@@ -644,6 +646,7 @@ test_mcmc_internal <- function(Rmodel, ##data = NULL, inits = NULL,
                     postResult <- cov(C_samples[ , matched])
                                         # next bit is on vectorized form of matrix so a bit awkward
                     diff <- c(abs(postResult - results[[metric]][[varName]]))
+                    cat(metric, varName, postResult, results[[metric]][[varName]])
                     for(ind in seq_along(diff)) {
                         strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
                         wrap_if_matches(paste('MCMC match to known posterior:', varName, 'cov', ind), names(knownFailures), expect_failure, {
