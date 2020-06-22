@@ -1717,157 +1717,7 @@ test_that("Test reset frunction in CRP sampler ", {
   if(.Platform$OS.type != "windows") {
       nimble:::clearCompiled(m)
   }
-})
-
-
-test_that("Test that cluster parameters and membership variable are independent in CRP sampler ", {
-
-  ## membership variable depends on cluster params
-  code=nimbleCode({
-    for(i in 1:10) {
-      muTilde[i] ~ dnorm(0, 1)  
-      mu[i] <- muTilde[xi[i]]
-      y[i] ~ dnorm(mu[i], 1)
-    }
-    xi[1:10] ~ dCRP(exp(muTilde[1]) , size=10)
-  })
-  Inits=list(xi=rep(1, 10), muTilde=rep(0,10))
-  Data=list(y=rnorm(10,0, 1))
-  m <- nimbleModel(code, data=Data, inits=Inits)
-  mConf <- configureMCMC(m)
-  expect_error(mcmc <- buildMCMC(mConf),
-               'sampler_CRP: Only the variables being clustered can depend on the cluster parameters')
-  
-  
-  ## cluster params depend on membership variable
-  code=nimbleCode({
-    for(i in 1:10) {
-      muTilde[i] ~ dnorm(log(xi[1]), 1)  
-      mu[i] <- muTilde[xi[i]]
-      y[i] ~ dnorm(mu[i], 1)
-    }
-    xi[1:10] ~ dCRP(1 , size=10)
-  })
-  Inits=list(xi=rep(1, 10), muTilde=rep(0,10))
-  Data=list(y=rnorm(10,0, 1))
-  m <- nimbleModel(code, data=Data, inits=Inits)
-  mConf <- configureMCMC(m)
-  expect_error(mcmc <- buildMCMC(mConf),
-               'sampler_CRP: Detected that the CRP variable is used in some way not as an index')
-  
-  
-  ## one more node depends on membership variable
-  code=nimbleCode({
-    mu0 ~ dnorm(xi[1], 1) 
-    for(i in 1:10) {
-      muTilde[i] ~ dnorm(0, 1)  
-      mu[i] <- muTilde[xi[i]]
-      y[i] ~ dnorm(mu[i], 1)
-    }
-    xi[1:10] ~ dCRP(1 , size=10)
-  })
-  Inits=list(xi=rep(1, 10), muTilde=rep(0,10), mu0=0)
-  Data=list(y=rnorm(10,0, 1))
-  m <- nimbleModel(code, data=Data, inits=Inits)
-  mConf <- configureMCMC(m)
-  expect_error(mcmc <- buildMCMC(mConf),
-               'sampler_CRP: Detected that the CRP variable is used in some way not as an index')
-    
-  ## non related variable depends on cluster variable and membership variable
-  code=nimbleCode({
-    for(i in 1:10) {
-      muTilde[i] ~ dnorm(0, 1)  
-      mu[i] <- muTilde[xi[i]]
-      y[i] ~ dnorm(mu[i], 1)
-    }
-    xi[1:10] ~ dCRP(1 , size=10)
-    tau ~ dnorm(muTilde[xi[1]], 1)
-  })
-  Inits=list(xi=rep(1, 10), muTilde=rep(0,10), tau=1)
-  Data=list(y=rnorm(10,0, 1))
-  m <- nimbleModel(code, data=Data, inits=Inits)
-  mConf <- configureMCMC(m)
-  expect_error(mcmc <- buildMCMC(mConf),
-               'sampler_CRP: Detected unusual indexing')
-    
-  ## another variable depends on variable to be clustered and membership variable
-  code=nimbleCode({
-    for(i in 1:10) {
-      muTilde[i] ~ dnorm(0, 1)  
-      mu[i] <- muTilde[xi[i]]
-      y[i] ~ dnorm(mu[i], 1)
-      x[i] ~ dnorm(y[i] + muTilde[xi[i]], 1)
-    }
-    xi[1:10] ~ dCRP(1 , size=10)
-  })
-  Inits=list(xi=rep(1, 10), muTilde=rep(0,10), x = rep(0,10))
-  Data=list(y=rnorm(10,0, 1))
-  m <- nimbleModel(code, data=Data, inits=Inits)
-  mConf <- configureMCMC(m)
-  expect_error(mcmc <- buildMCMC(mConf),
-               'sampler_CRP: Cluster membership variable used in multiple declarations')
-  
-})
-
-
-test_that("Test only data depends on cluster variable in CRP sampler", {
-
-  ## not only data depends on xi and mu: case is safe because length of data and xi is different
-  code <- nimbleCode({
-    xi[1:n] ~ dCRP(alpha, n)
-    for(i in 1:n){
-      mu[i] ~ dnorm(0, var = s2[i]/lambda)
-      s2[i] ~ dinvgamma(2, 1)
-      y[i] ~ dnorm(mu[xi[i]],  var = s2[xi[i]])
-      x[i] ~ dnorm(mu[xi[i]], 1)
-    }
-    lambda ~ dgamma(1, 1)
-    alpha ~ dgamma(1, 1)
-    
-  })
-  n <- 30
-  Consts <- list(n = n, x=rep(1, n))
-  Inits <- list(xi = rep(1, n), 
-                mu = rep(-20, n), 
-                s2 = rep(0.1, n),
-                alpha = 200,
-                lambda = 1)
-  thetas <- c(rep(-5, 10), rep(5, 10), rep(0, 10))
-  Data <- list(y = rnorm(n, thetas, 1))
-  m <- nimbleModel(code, data=Data, inits=Inits, constants = Consts)
-  mConf <- configureMCMC(m, monitors = c('xi','mu', 's2', 'alpha', 'lambda'))  
-  expect_error(mMCMC <- buildMCMC(mConf),
-               'sampler_CRP: Cluster membership variable used in multiple declarations')
-  
-  ## additional node depends on cluster parameters
-  code <- nimbleCode({
-    xi[1:n] ~ dCRP(alpha, n)
-    for(i in 1:n){
-      mu[i] ~ dnorm(0, var = s2[i]/lambda)
-      s2[i] ~ dinvgamma(2, 1)
-      y[i] ~ dnorm(mu[xi[i]],  var = s2[xi[i]])
-    }
-    x ~ dnorm(mu[1], 1)
-    lambda ~ dgamma(1, 1)
-    alpha ~ dgamma(1, 1)
-    
-  })
-  n <- 30
-  Consts <- list(n = n)
-  Inits <- list(xi = rep(1, n), 
-                mu = rep(-20, n), 
-                s2 = rep(0.1, n),
-                alpha = 200,
-                lambda = 1, x=1)
-  thetas <- c(rep(-5, 10), rep(5, 10), rep(0, 10))
-  Data <- list(y = rnorm(n, thetas, 1))
-  m <- nimbleModel(code, data=Data, inits=Inits, constants = Consts)
-  mConf <- configureMCMC(m, monitors = c('xi','mu', 's2', 'alpha', 'lambda'))  
-  expect_error(mMCMC <- buildMCMC(mConf),
-               'sampler_CRP: Only the variables being clustered can depend on the cluster parameters')
-  
-})
-
+})    
 
 test_that("Test that not nonparametric MCMC message in CRP sampler is printed", {
   set.seed(1)
@@ -2521,7 +2371,7 @@ test_that("Testing conjugacy detection with models using CRP", {
   expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
   
   
-}) # 
+})  
 
 
 test_that("Testing handling (including error detection) with non-standard CRP model specification",{
@@ -2856,6 +2706,69 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
   conf <- configureMCMC(m)
   expect_error(mcmc <- buildMCMC(conf), "Only the variables being clustered")
+
+  
+  ## cluster params depend on membership variable
+  code=nimbleCode({
+    for(i in 1:10) {
+      muTilde[i] ~ dnorm(log(xi[1]), 1)  
+      mu[i] <- muTilde[xi[i]]
+      y[i] ~ dnorm(mu[i], 1)
+    }
+    xi[1:10] ~ dCRP(1 , size=10)
+  })
+  Inits=list(xi=rep(1, 10), muTilde=rep(0,10))
+  Data=list(y=rnorm(10,0, 1))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  mConf <- configureMCMC(m)
+  expect_error(mcmc <- buildMCMC(mConf),
+               'sampler_CRP: Detected that the CRP variable is used in some way not as an index')
+
+       
+  ## non related variable depends on cluster variable and membership variable
+  code=nimbleCode({
+    for(i in 1:10) {
+      muTilde[i] ~ dnorm(0, 1)  
+      mu[i] <- muTilde[xi[i]]
+      y[i] ~ dnorm(mu[i], 1)
+    }
+    xi[1:10] ~ dCRP(1 , size=10)
+    tau ~ dnorm(muTilde[xi[1]], 1)
+  })
+  Inits=list(xi=rep(1, 10), muTilde=rep(0,10), tau=1)
+  Data=list(y=rnorm(10,0, 1))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  mConf <- configureMCMC(m)
+  expect_error(mcmc <- buildMCMC(mConf),
+               'sampler_CRP: Detected unusual indexing')
+
+  ## more than just data depend on variable being clustered and membership variable
+  ## Not sure what this means: case is safe because length of data and xi is different
+  code <- nimbleCode({
+    xi[1:n] ~ dCRP(alpha, n)
+    for(i in 1:n){
+      mu[i] ~ dnorm(0, var = s2[i]/lambda)
+      s2[i] ~ dinvgamma(2, 1)
+      y[i] ~ dnorm(mu[xi[i]],  var = s2[xi[i]])
+      x[i] ~ dnorm(mu[xi[i]], 1)
+    }
+    lambda ~ dgamma(1, 1)
+    alpha ~ dgamma(1, 1)
+    
+  })
+  n <- 30
+  Consts <- list(n = n, x=rep(1, n))
+  Inits <- list(xi = rep(1, n), 
+                mu = rep(-20, n), 
+                s2 = rep(0.1, n),
+                alpha = 200,
+                lambda = 1)
+  thetas <- c(rep(-5, 10), rep(5, 10), rep(0, 10))
+  Data <- list(y = rnorm(n, thetas, 1))
+  m <- nimbleModel(code, data=Data, inits=Inits, constants = Consts)
+  mConf <- configureMCMC(m, monitors = c('xi','mu', 's2', 'alpha', 'lambda'))  
+  expect_error(mMCMC <- buildMCMC(mConf),
+               'sampler_CRP: Cluster membership variable used in multiple declarations')
   
   ## multiple observations per cluster membership; not yet handled
   code <- nimbleCode({
