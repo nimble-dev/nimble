@@ -140,8 +140,7 @@ initializeModel <- nimbleFunction(
                 }
             }
         }
-    ),
-    where = getLoadingNamespace()
+    )
 )
 
 nodeInit_virtual <- nimbleFunctionVirtual()
@@ -153,7 +152,7 @@ checkRHSonlyInit <- nimbleFunction(
     run = function() {
         vals <- values(model, nodes)
         if(any_na(vals) | any_nan(vals)) print('warning: value in right-hand-side-only variable is NA or NaN, in variable: ', variable)
-    },    where = getLoadingNamespace()
+    }
 )
 
 ## determNodeInit <- nimbleFunction(
@@ -165,7 +164,7 @@ checkRHSonlyInit <- nimbleFunction(
 ##         if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) calculate(model, node)
 ##         nodeValue <- values(model, node)
 ##         if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) print('warning: value of deterministic node ',node,': value is NA or NaN even after trying to calculate.')
-##     },    where = getLoadingNamespace()
+##     }
 ## )
 
 ## stochDataNodeInit <- nimbleFunction(
@@ -184,7 +183,7 @@ checkRHSonlyInit <- nimbleFunction(
 ##                 if(!silent) print('warning: logProb of data node ', node, ': logProb less than -1e12.')
 ##             }
 ##         }
-##     },    where = getLoadingNamespace()
+##     }
 ## )
 
 ## stochNonDataNodeInit <- nimbleFunction(
@@ -205,6 +204,6 @@ checkRHSonlyInit <- nimbleFunction(
 ##                 if(!silent) print('warning: problem initializing stochastic node ', node, ': logProb less than -1e12.')
 ##             }
 ##         }
-##     },    where = getLoadingNamespace()
+##     }
 ## )
 

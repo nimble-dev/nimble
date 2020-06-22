@@ -28,8 +28,7 @@ simNodes <- nimbleFunction(
     },
     run = function(){
         simulate(model, nodes)
-    },
-    where = getLoadingNamespace())
+    })
 
 #' @rdname simNodes
 #' @export
@@ -45,8 +44,7 @@ calcNodes <- nimbleFunction(
             ans <- calculate(model, depNodes)
             return(ans)
             returnType(double())
-	},	
-    where = getLoadingNamespace())
+	})	
 
 #' @rdname simNodes
 #' @export
@@ -62,10 +60,7 @@ getLogProbNodes <- nimbleFunction(
             ans <- getLogProb(model, depNodes)
             return(ans)
             returnType(double())
-	},
-	where = getLoadingNamespace()	
-)
-
+	})
 
 #' Basic nimbleFunctions for using a NIMBLE model with sets of stored values
 #'
@@ -140,9 +135,7 @@ simNodesMV <- nimbleFunction(
             simulate(model, nodes)
             nimCopy(from = model, to = mv, nodes = nodes, row = i)
         } 
-    },
-    where = getLoadingNamespace())
-
+    })
 
 #' @rdname simNodesMV
 #' @export
@@ -166,9 +159,7 @@ calcNodesMV <- nimbleFunction(
 		}
 	returnType(double(1))
 	return(logPvec)
-	},	
-where = getLoadingNamespace())
-
+	})
 
 #' @rdname simNodesMV
 #' @export
@@ -190,11 +181,7 @@ getLogProbNodesMV <- nimbleFunction(
 		}
 	returnType(double(1))
 	return(logPvec)
-	},
-	where = getLoadingNamespace()	
-)
-
-
+	})
 
 #' Create an Identity matrix (Deprecated)
 #'
@@ -220,8 +207,7 @@ identityMatrix <- nimbleFunction(
         for(i in 1:d)                   arr[i, i] <- 1
         returnType(double(2))
         return(arr)
-    },  where = getLoadingNamespace()
-)
+    }
 
 
 

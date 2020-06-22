@@ -81,22 +81,6 @@ nimDim <- function(obj) {
     return(dim(obj))
 }
 
-#' return the namespace in which a nimbleFunction is being loaded
-#'
-#' \code{nimbleFunction} constructs and evals a reference class definition.  When \code{nimbleFunction} is used in package source code, this can lead to problems finding things due to namespace issues.  Using \code{where = getLoadingNamespace()} in a \code{nimbleFunction} in package source code should solve this problem.
-#'
-#' @details \code{nimbleFunction}s defined in the NIMBLE source code use \code{where = getLoadingNamespace()}.  Please let the NIMBLE developers know if you encounter problems with this.
-#' 
-#' @export
-getLoadingNamespace <- function() {
-    if(!is.null(nimbleOptions()$notUsingPackage)) if(nimbleOptions()$notUsingPackage) return(globalenv())
-    if(system.file(package = "nimble") == "")
-         return(globalenv())
-    
-    nimbleenv <- getNamespace('nimble')
-    if(environmentIsLocked(nimbleenv)) globalenv() else nimbleenv
-}
-
 getNimbleFunctionEnvironment <- function() {
     ## This is how we determine which environment will contain the reference class definition underlying a NIMBLE function.
     ## This implementation allows for:
