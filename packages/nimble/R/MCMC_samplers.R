@@ -972,6 +972,7 @@ sampler_HMC <- nimbleFunction(
         kappa          <- if(!is.null(control$kappa))          control$kappa          else 0.75
         delta          <- if(!is.null(control$delta))          control$delta          else 0.65
         deltaMax       <- if(!is.null(control$deltaMax))       control$deltaMax       else 1000
+        M              <- if(!is.null(control$M))              control$M              else -1
         nwarmup        <- if(!is.null(control$nwarmup))        control$nwarmup        else -1
         maxTreeDepth   <- if(!is.null(control$maxTreeDepth))   control$maxTreeDepth   else 10
         ## node list generation
@@ -983,11 +984,11 @@ sampler_HMC <- nimbleFunction(
         ## processing of bounds and transformations
         my_parameterTransform <- parameterTransform(model, targetNodesAsScalars)
         d <- my_parameterTransform$getTransformedLength()
+        d2 <- max(d, 2) ## for pre-allocating vectors
         nimDerivs_wrt <- 1:d
         makeUpdateNodes_return <- makeUpdateNodes(targetNodes, calcNodes, model)
         nimDerivs_updateNodes   <- makeUpdateNodes_return$updateNodes
         nimDerivs_constantNodes <- makeUpdateNodes_return$constantNodes
-        d2 <- max(d, 2) ## for pre-allocating vectors
         ## numeric value generation
         timesRan <- 0;   epsilon <- 0;   mu <- 0;   logEpsilonBar <- 0;   Hbar <- 0
         q <- numeric(d2);   qL <- numeric(d2);   qR <- numeric(d2);   qDiff <- numeric(d2);   qNew <- numeric(d2)
@@ -996,6 +997,8 @@ sampler_HMC <- nimbleFunction(
         log2 <- log(2)
         warningsOrig <- warnings
         nwarmupOrig <- nwarmup
+        if(length(M) == 1) { if(M == -1) M <- rep(1, d2) else M <- c(M, 1) }
+        sqrtM <- sqrt(M)
         numDivergences <- 0
         numTimesMaxTreeDepth <- 0
         ## nested function and function list definitions
@@ -1004,6 +1007,9 @@ sampler_HMC <- nimbleFunction(
         ## checks
         if(!nimbleOptions('experimentalEnableDerivs')) stop('must enable NIMBLE derivates, use: nimbleOptions(experimentalEnableDerivs = TRUE)', call. = FALSE)
         if(initialEpsilon < 0) stop('HMC sampler initialEpsilon must be positive', call. = FALSE)
+        if(!all(M > 0)) stop('HMC sampler M must contain all positive elements')
+        if(d == 1) if(length(M) != 2) stop('length of HMC sampler M must match length of HMC target nodes')
+        if(d  > 1) if(length(M) != d) stop('length of HMC sampler M must match length of HMC target nodes')
     },
     run = function() {
         ## No-U-Turm Sampler with Dual Averaging, Algorithm 6 from Hoffman and Gelman (2014)
@@ -1021,9 +1027,7 @@ sampler_HMC <- nimbleFunction(
         if(printTimesRan) print('============ times ran = ', timesRan)
         if(printEpsilon)  print('epsilon = ', epsilon)
         q <<- my_parameterTransform$transform(values(model, targetNodes))
-        ## using mass matrix (or metric) M, here always diagonal,
-        ## M is the covariance matrix used for drawing p, we let M approximate the precision matrix of q.
-        for(i in 1:d)     p[i] <<- rnorm(1, 0, 1)
+        drawMomentumValues()    ## draws values for p
         qpLogH <- logH(q, p)
         logu <- qpLogH - rexp(1, 1)    ## logu <- lp - rexp(1, 1) => exp(logu) ~ uniform(0, exp(lp))
         qL <<- q;   qR <<- q;   pL <<- p;   pR <<- p;   j  <- 0;   n <- 1;   s <- 1;   qNew <<- q
@@ -1060,6 +1064,11 @@ sampler_HMC <- nimbleFunction(
         if(warnings > 0) if(is.nan(epsilon)) { print('HMC sampler value of epsilon is NaN, with timesRan = ', timesRan); warnings <<- warnings - 1 }
     },
     methods = list(
+        drawMomentumValues = function() {
+            ## M holds the diagonal elements of the diagonal mass matrix (aka the metric), which is
+            ## the covariance matrix used for drawing p, we let M approximate the precision matrix of q.
+            for(i in 1:d)   p[i] <<- rnorm(1, 0, sqrtM[i])
+        },
         logH = function(qArg = double(1), pArg = double(1)) {
             values(model, targetNodes) <<- my_parameterTransform$inverseTransform(qArg)
             lp <- model$calculate(calcNodes) - sum(pArg^2)/2 + my_parameterTransform$calcLogDetJacobian(qArg)
@@ -1103,10 +1112,8 @@ sampler_HMC <- nimbleFunction(
             ## Algorithm 4 from Hoffman and Gelman (2014)
             savedCalcNodeValues <- values(model, calcNodes)
             q <<- my_parameterTransform$transform(values(model, targetNodes))
-            p <<- numeric(d)                    ## keep, sets 'p' to size d on first iteration
-            ## using mass matrix (or metric) M, here always diagonal,
-            ## M is the covariance matrix used for drawing p, we let M approximate the precision matrix of q.
-            for(i in 1:d)     p[i] <<- rnorm(1, 0, 1)
+            p <<- numeric(d)        ## keep, sets 'p' to size d on first iteration
+            drawMomentumValues()    ## draws values for p
             epsilon <<- 1
             qpNL <- leapfrog(q, p, epsilon, 1, 2)            ## v = 2 is a special case for initializeEpsilon routine
             while(is.nan.vec(qpNL$q) | is.nan.vec(qpNL$p)) {              ## my addition
@@ -2514,6 +2521,7 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item kappa.  A numeric argument between zero and one, where smaller values give a higher weighting to more recent iterations during the initial period of step-size adaptation. (default = 0.75)
 #' \item delta.  A numeric argument, specifying the target acceptance probability used during the initial period of step-size adaptation. (default = 0.65)
 #' \item deltaMax.  A positive numeric argument, specifying the maximum allowable divergence from the Hamiltonian value. Paths which exceed this value are considered divergent, and will not proceed further. (default = 1000)
+#' \item M.  A vector of positive real numbers, with length equal the number of dimensions being sampled by HMC sampler.  Elements of M specify the diagonal elements of the diagonal mass matrix (or the metric) used for the auxilliary momentum variables in HMC sampling.  Sampling may be improved if the elements of M approximate the marginal inverse-variance (precision) the posterior dimensions.  (default: a vector of ones).
 #' \item nwarmup.  The number of sampling iterations to adapt the leapfrog step-size.  This defaults to half the number of MCMC iterations, up to a maximum of 1000.
 #' \item maxTreeDepth.  The maximum allowable depth of the binary leapfrog search tree for generating candidate transitions. (default = 10)
 #' }

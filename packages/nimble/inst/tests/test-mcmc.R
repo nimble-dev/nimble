@@ -1789,6 +1789,41 @@ test_that('HMC sampler error messages for transformations with non-constant boun
 })
 
 
+test_that('HMC sampler error messages for invalid M mass matrix arguments', {
+    nimbleOptions(experimentalEnableDerivs = TRUE)
+    nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions = TRUE)
+    ##
+    code <- nimbleCode({
+        for(i in 1:5)    x[i] ~ dnorm(0, 1)
+    })
+    Rmodel <- nimbleModel(code, inits = list(x = rep(0, 5)))
+    ##
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('x[1]', 'HMC', M = 4)
+    expect_error(Rmcmc <- buildMCMC(conf), NA)   ## means: expect_no_error
+    ##
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('x[1]', 'HMC', M = 0)
+    expect_error(Rmcmc <- buildMCMC(conf))
+    ##
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('x[1:3]', 'HMC', M = 4)
+    expect_error(Rmcmc <- buildMCMC(conf))
+    ##
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('x[1:3]', 'HMC', M = c(1,2))
+    expect_error(Rmcmc <- buildMCMC(conf))
+    ##
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('x[1:3]', 'HMC', M = c(1,0,2))
+    expect_error(Rmcmc <- buildMCMC(conf))
+    ##
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('x[1:3]', 'HMC', M = c(1,2,3))
+    expect_error(Rmcmc <- buildMCMC(conf), NA)   ## means: expect_no_error
+})
+
+
 test_that('HMC sampler reports correct number of divergences and max tree depths', {
     nimbleOptions(experimentalEnableDerivs = TRUE)
     nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions = TRUE)
@@ -1818,8 +1853,8 @@ test_that('HMC sampler reports correct number of divergences and max tree depths
     set.seed(0)
     samples <- runMCMC(Cmcmc, 10000)
     ##
-    expect_equal(Cmcmc$samplerFunctions$contentsList[[5]]$numDivergences,          3)
-    expect_equal(Cmcmc$samplerFunctions$contentsList[[5]]$numTimesMaxTreeDepth, 1630)
+    expect_equal(Cmcmc$samplerFunctions$contentsList[[4]]$numDivergences,          3)
+    expect_equal(Cmcmc$samplerFunctions$contentsList[[4]]$numTimesMaxTreeDepth, 1630)
 })
 
 
