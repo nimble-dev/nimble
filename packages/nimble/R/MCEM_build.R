@@ -126,7 +126,7 @@ getMCEMRanges <- nimbleFunction(name = 'getMCEMRanges',
 #' @author Clifford Anderson-Bergman and Nicholas Michaud
 #' @export
 #' @details \code{buildMCEM} calls the NIMBLE compiler to create the MCMC and objective function as nimbleFunctions.  If the given model has already been used in compiling other nimbleFunctions, it is possible you will need to create a new copy of the model for buildMCEM to use.
-#' Uses an ascent-based MCEM algorithm, which includes rules for automatically increasing the number of MC samples as iterations increase, and for determining when convergence has been reached.  Constraints for parameter values can be provided.  If contstraints are not provided, they will be automatically determined by NIMBLE.
+#' Uses an ascent-based MCEM algorithm, which includes rules for automatically increasing the number of MC samples as iterations increase, and for determining when convergence has been reached.  Constraints for parameter values can be provided.  If constraints are not provided, they will be automatically determined by NIMBLE. Initial values for the parameters are taken to be the values in the model at the time \code{buildMCEM} is called, unless the values in the compiled model are changed before running the MCEM.
 #' @return
 #' an R list with two elements:
 #' \itemize{
@@ -250,12 +250,12 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
     stop('no nodes to be maximized over')
   resetFunctions <- FALSE
   if(is(model, "RmodelBaseClass") ){
-    Rmodel = model
+    Rmodel <- model
     if(is(model$CobjectInterface, "uninitializedField")){
       cModel <- compileNimble(model)
     }
     else{
-      cModel = model$CobjectInterface
+      cModel <- model$CobjectInterface
       resetFunctions <- TRUE
     }
   }
@@ -269,13 +269,13 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
   zBeta <- qnorm(beta, 0, 1, lower.tail=FALSE)
   zGamma <- qnorm(gamma, 0, 1, lower.tail=FALSE)
   
-  mcmc_Latent_Conf <- configureMCMC(Rmodel, nodes = latentNodes, monitors = model$getVarNames(), control = mcmcControl, print = FALSE)
+  mcmc_Latent_Conf <- configureMCMC(Rmodel, nodes = latentNodes, monitors = Rmodel$getVarNames(), control = mcmcControl, print = FALSE)
   Rmcmc_Latent <- buildMCMC(mcmc_Latent_Conf)
   sampledMV <- Rmcmc_Latent$mvSamples
   mvBlock <- modelValues(Rmodel)
-  Rcalc_E_llk <- calc_E_llk_gen(model, fixedNodes = maxNodes, sampledNodes = latentNodes, burnIn = burnIn, mvSample = sampledMV)
-  RvarCalc <- calc_asympVar(model, fixedNodes = maxNodes, sampledNodes = latentNodes, burnIn = burnIn, mvBlock, mvSample = sampledMV, numReps = numReps)
-  RgetCov <- bootstrapGetCov(model, fixedNodes = maxNodes, sampledNodes = latentNodes, burnIn = burnIn, mvSample = sampledMV)
+  Rcalc_E_llk <- calc_E_llk_gen(Rmodel, fixedNodes = maxNodes, sampledNodes = latentNodes, burnIn = burnIn, mvSample = sampledMV)
+  RvarCalc <- calc_asympVar(Rmodel, fixedNodes = maxNodes, sampledNodes = latentNodes, burnIn = burnIn, mvBlock, mvSample = sampledMV, numReps = numReps)
+  RgetCov <- bootstrapGetCov(Rmodel, fixedNodes = maxNodes, sampledNodes = latentNodes, burnIn = burnIn, mvSample = sampledMV)
   
   cmcmc_Latent = compileNimble(Rmcmc_Latent, project = Rmodel, resetFunctions = resetFunctions)
   cGetCov = compileNimble(RgetCov, project = Rmodel)  

@@ -1,5 +1,11 @@
+                            CHANGES IN VERSION 0.10.0 (July 2020)
+
+USER LEVEL CHANGES
+
+-- Allow use `logdet` in model code (Issue #1018).
+
                             CHANGES IN VERSION 0.9.1 (May 2020)
-  
+
 USER LEVEL CHANGES
 
 -- Switched from use of `system` to `system2` to avoid problems with installation under R 4.0 on Windows (PR #1003).
