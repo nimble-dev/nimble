@@ -408,6 +408,7 @@ CRP_nonconjugate <- nimbleFunction(
   name = "CRP_nonconjugate",
   contains = CRP_helper,
   setup = function(model, marginalizedNodes, dataNodes, J, M) {
+    saved <- nimNumeric(2) # treated as scalar if length 1      
   },
   methods = list(
     storeParams = function() {},  ## nothing needed for non-conjugate
@@ -421,8 +422,11 @@ CRP_nonconjugate <- nimbleFunction(
       return(out)
     },
     sample = function(i = integer(), j = integer() ) {
-      ## sample from prior
-      model$simulate(marginalizedNodes[ ((j-1)*M+1):(j*M) ])
+      if(j == 0) {   ## reset to stored values (for case of new cluster not opened)
+        values(model, marginalizedNodes[ ((j-1)*M+1):(j*M) ]) <<- saved
+      } else {  ## sample from prior
+        saved <<- values(model, marginalizedNodes[ ((j-1)*M+1):(j*M) ])
+        model$simulate(marginalizedNodes[ ((j-1)*M+1):(j*M) ])
     }
   )
 )
@@ -1653,7 +1657,7 @@ sampler_CRP <- nimbleFunction(
       }
       
       ## Update metadata about clustering.
-      model[[target]][i] <<- newLab #<<-
+      model[[target]][i] <<- newLab 
       
       if( newLabCond ) { # a component is created. It can really create a new component or keep the current label if xi_i is a singleton
         if(sampler != 'CRP_nonconjugate') { # updating the cluster parameters of the new cluster
@@ -1677,11 +1681,13 @@ sampler_CRP <- nimbleFunction(
               }
             }
             kNew <- 0
-            printMessage <<- FALSE #<<-
+            printMessage <<- FALSE 
           }
         }
         xiCounts[model[[target]][i]] <- 1
       } else { # an existing label is sampled
+        if(sampler == 'CRP_nonconjugate')   # reset to previous marginalized node value
+          helperFunctions[[1]]$sample(i, 0)
         if( xiCounts[xi[i]] == 0 ) { # xi_i is a singleton, a component was deleted
           k <- k - 1
           xiUniques <- reorderXiUniques
