@@ -408,7 +408,9 @@ CRP_nonconjugate <- nimbleFunction(
   name = "CRP_nonconjugate",
   contains = CRP_helper,
   setup = function(model, marginalizedNodes, dataNodes, J, M) {
-    saved <- nimNumeric(2) # treated as scalar if length 1      
+    len <- length(model$expandNodeNames(marginalizedNodes[1:M], returnScalarComponents = TRUE))
+    saved <- nimNumeric(len+1) # to avoid scalar if M=1
+    savedIdx <- 1  
   },
   methods = list(
     storeParams = function() {},  ## nothing needed for non-conjugate
@@ -423,10 +425,12 @@ CRP_nonconjugate <- nimbleFunction(
     },
     sample = function(i = integer(), j = integer() ) {
       if(j == 0) {   ## reset to stored values (for case of new cluster not opened)
-        values(model, marginalizedNodes[ ((j-1)*M+1):(j*M) ]) <<- saved
+        values(model, marginalizedNodes[ ((savedIdx-1)*M+1):(savedIdx*M) ]) <<- saved[1:len]
       } else {  ## sample from prior
-        saved <<- values(model, marginalizedNodes[ ((j-1)*M+1):(j*M) ])
+        savedIdx <<- j  
+        saved[1:len] <<- values(model, marginalizedNodes[ ((j-1)*M+1):(j*M) ])
         model$simulate(marginalizedNodes[ ((j-1)*M+1):(j*M) ])
+      }
     }
   )
 )
@@ -1686,7 +1690,9 @@ sampler_CRP <- nimbleFunction(
         }
         xiCounts[model[[target]][i]] <- 1
       } else { # an existing label is sampled
-        if(sampler == 'CRP_nonconjugate')   # reset to previous marginalized node value
+        ## Reset to previous marginalized node value; we choose to store information on what elements to be restored in sample()
+        ## but an alternative would be to have i=0 determine reset and pass j=kNew here.
+        if(sampler == 'CRP_nonconjugate')   
           helperFunctions[[1]]$sample(i, 0)
         if( xiCounts[xi[i]] == 0 ) { # xi_i is a singleton, a component was deleted
           k <- k - 1

@@ -2027,7 +2027,7 @@ test_that("Testing conjugacy detection with models using CRP", {
                   inits = list(xi = rep(1,4), mu=rnorm(4)))
   conf <- configureMCMC(m)
   crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
-  expect_warning(mcmc <- buildMCMC(conf), "sampler_CRP: The number of cluster parameters is less")
+  expect_warning(mcmc <- buildMCMC(conf), "sampler_CRP: The number of clusters based on the cluster parameters is less")
   expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   
   ## dnorm_dnorm one more level of hierarchy
@@ -2125,6 +2125,24 @@ test_that("Testing conjugacy detection with models using CRP", {
   mcmc=buildMCMC(conf)
   expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
   
+  ## dnorm_invgamma; we skip conjugacy if data nodes have scaled variance
+  code = nimbleCode({
+    for(i in 1:4) {
+      s2tilde[i] ~ dinvgamma(a,b)
+      s2[i] <- lambda * s2tilde[xi[i]]
+      y[i] ~ dnorm(0, var = s2[i])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+    lambda ~ dgamma(1, 1)
+    a ~ dgamma(1, 1)
+    b ~ dgamma(1, 1)
+  })
+  m = nimbleModel(code, data = list(y = rnorm(4)),
+                  inits = list(xi = rep(1,4), s2=rinvgamma(4, 1,1), a=1, b=1, lambda=2))
+  conf <- configureMCMC(m)
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
   
   ## conjugate normal-normal model mu(i,j) are not iid: non conjugate sampler is assigned
   code <- nimbleCode({
@@ -2595,10 +2613,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     {muTilde[i] ~ dnorm(0,1)}
   })
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
-  conf <- configureMCMC(m)
-  expect_error(mcmc <- buildMCMC(conf), "not designed for this case")
-  clusterNodeInfo <- nimble:::findClusterNodes(m, target)
-  expect_equal(TRUE, clusterNodeInfo$targetIndexedByFunction)
+  expect_error(conf <- configureMCMC(m), "findClusterNodes: Detected that a cluster parameter is indexed by a function")
   
   ## clusterNodes indexing doesn't begin at 1
   code <- nimbleCode({
@@ -2656,7 +2671,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
       mu[i] <- muTilde[xi[i]]
     }
     for(i in 2:(n-2))
-    {muTilde[i] ~ dnorm(0,1)}
+      muTilde[i] ~ dnorm(0,1)
   })
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
   expect_warning(conf <- configureMCMC(m), "missing cluster parameter")
@@ -3150,7 +3165,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     xi[1:n] ~ dCRP(conc, n)
     for(i in 1:n) {
       for(j in 1:n)
-        {y[i,j] ~ dnorm(muTilde[xi[i]], var = s2Tilde[xi[j]])}
+        y[i,j] ~ dnorm(muTilde[xi[i]], var = s2Tilde[xi[j]])
     }
     for(i in 1:n) {
       muTilde[i] ~ dnorm(0,1)
@@ -3158,8 +3173,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     }
   })
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
-  conf <- configureMCMC(m)
-  expect_error(mcmc <- buildMCMC(conf), "NIMBLE can only sample when there is one variable being clustered")
+  expect_error(conf <- configureMCMC(m), "findClusterNodes: found cluster membership parameters that use different indexing variables")
   
   inits$muTilde <- matrix(rnorm(n^2), n)
   code <- nimbleCode({
@@ -3367,6 +3381,20 @@ testBUGSmodel(example = 'test12', dir = "",
               model = model, data = data, inits = inits,
               useInits = TRUE)
 
+model <- function() {
+  for(i in 1:4){
+    mu[i,1:4] ~ dmnorm(mu0[1:4], cov=Cov0[1:4, 1:4])
+    y[i,1:4] ~ dmnorm(mu[xi[i],1:4], cov=Sigma0[1:4, 1:4])
+  }
+  xi[1:4] ~ dCRP(conc=1, size=4)
+}
+inits = list(xi = 1:4, mu=matrix(rnorm(16), 4, 4))
+data = list(y = matrix(rnorm(16), 4, 4))
+constants = list(mu0 = rep(0,4), Cov0 = diag(10, 4), Sigma0 = diag(1, 4))
+
+testBUGSmodel(example = 'test13', dir = "",
+              model = model, data = data, inits = c(inits, constants),
+              useInits = TRUE)
 
 ## testing misspecification of dimension in a model
 
@@ -3383,7 +3411,7 @@ test_that("Testing of misspecification of dimension when using CRP", {
   m = nimbleModel(code, data = list(y = rnorm(4)),
                   inits = list(xi = rep(1,10), mu=rnorm(4)))
   conf <- configureMCMC(m)
-  expect_error(buildMCMC(conf), "NIMBLE can only sample when there is one variable")
+  expect_error(buildMCMC(conf), "sampler_CRP: At least one variable has to be clustered")
   
   
   ## more observations than labels 
@@ -3439,9 +3467,7 @@ test_that("Testing of misspecification of dimension when using CRP", {
                    inits = list(xi = rep(1,100), mu=rnorm(50)))
   conf <- configureMCMC(m)
   expect_warning(buildMCMC(conf),
-                 "The number of cluster parameters is less than the number of potential clusters")
-  
-  
+                 "sampler_CRP: The number of clusters based on the cluster parameters is less than the number of potential clusters")
   
   ## multiple tilde parameters
   code = nimbleCode({
@@ -3458,8 +3484,7 @@ test_that("Testing of misspecification of dimension when using CRP", {
                    inits = list(xi = rep(1,100), mu=rnorm(50), s2=rinvgamma(50,1,1)))
   conf <- configureMCMC(m)
   expect_warning(buildMCMC(conf),
-                 "The number of cluster parameters is less than the number of potential clusters")
-  
+                 "sampler_CRP: The number of clusters based on the cluster parameters is less than the number of potential clusters")
   
   ## multiple tilde parameters, one is common for every observation
   code = nimbleCode({
@@ -4194,7 +4219,7 @@ test_that("Testing sampler assignment and misspecification of priors for conc pa
   ## we do not warn of negative concentration values because there could be many such
   ## warnings in certain MCMC samplers for the concentration parameter
   expect_failure(expect_output(m$simulate(), "value of concentration parameter"))
-  expect_error(m$calculate())
+  expect_output(out <- m$calculate(), "Warning: dynamic index out of bounds")
   ## think about better way to tell the user that the prior for alpha is wrong
   
   
@@ -4210,8 +4235,7 @@ test_that("Testing sampler assignment and misspecification of priors for conc pa
   ## we do not warn of negative concentration values because there could be many such
   ## warnings in certain MCMC samplers for the concentration parameter
   expect_failure(expect_output(m$simulate(), "value of concentration parameter has to be larger than zero"))
-  expect_error(m$calculate())
-  
+  expect_output(out <- m$calculate(), "Warning: dynamic index out of bounds")
 })
 
 
