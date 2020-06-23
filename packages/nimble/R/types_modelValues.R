@@ -97,7 +97,7 @@ modelValuesBaseClass <- setRefClass('modelValuesBaseClass',
                                                     }
                                                 assign(vN, rep(list(array( data = as.numeric(NA), dim = sizes[[vN]])), nrow), inherits = TRUE)
                                             }
-                                            GID_map <<- nimble:::makeMV_GID_Map(.self)
+                                           ## GID_map <<- nimble:::makeMV_GID_Map(.self)
                                         },
                                         getSymbolTable = function() {
                                             return(symTab)
@@ -108,7 +108,8 @@ modelValuesBaseClass <- setRefClass('modelValuesBaseClass',
                                             return(varNames[!grepl('logProb_', varNames)])
                                         },
                                         expandNodeNames = function(nodeNames, returnType = "names", flatIndices = TRUE) 
-                                            {
+                                        {
+                                            stop('Call to modelValuesBaseClass$expandNodeNames')
                                                 return(GID_map$expandNodeNames(nodeNames = nodeNames, returnType = returnType, flatIndices = flatIndices))
                                             }                          
                                     )

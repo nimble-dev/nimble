@@ -57,6 +57,7 @@ CmodelValues <- setRefClass(
             return(varNames[!grepl('logProb_', varNames)])
         },
         expandNodeNames = function (nodeNames, returnType = "names", flatIndices = TRUE)  {
+            stop("Call to CmodelValues$expandNodeNames")
             return(GID_map$expandNodeNames(nodeNames = nodeNames, returnType = returnType, 
                                            flatIndices = flatIndices))
         },
