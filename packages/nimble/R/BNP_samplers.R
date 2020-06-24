@@ -1365,8 +1365,8 @@ sampler_CRP <- nimbleFunction(
     ## Determine if concentration parameter is fixed or random (code similar to the one in sampleDPmeasure function).
     ## This is used in truncated case to tell user if model is proper or not.
     fixedConc <- TRUE
-    cands <- getParentNodes(target, m)
-    parentNodesTarget <- cands[cands %in% m$getNodeNames(includeData=FALSE)]
+    cands <- getParentNodes(target, model)
+    parentNodesTarget <- cands[cands %in% model$getNodeNames(includeData=FALSE)]
     if(length(parentNodesTarget)) {
       fixedConc <- FALSE
     }
