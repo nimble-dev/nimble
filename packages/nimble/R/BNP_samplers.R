@@ -1,5 +1,20 @@
 ## Used when syntax xi[1:N] ~ dCRP(conc) is used in BUGS.
 
+## FIXME: this is temporary function until we bring this into the full model API
+getParentNodes <- function(nodes, model, returnType = 'names') {
+    ## adapted from BUGS_modelDef creation of edgesFrom2To
+    maps <- model$modelDef$maps
+    maxNodeID <- length(maps$vertexID_2_nodeID) ## should be same as length(maps$nodeNames)
+   
+    edgesLevels <- if(maxNodeID > 0) 1:maxNodeID else numeric(0)
+    fedgesTo <- factor(maps$edgesTo, levels = edgesLevels) ## setting levels ensures blanks inserted into the splits correctly
+    edgesTo2From <<- split(maps$edgesFrom, fedgesTo)
+    nodeIDs <- model$expandNodeNames(nodes, returnType = "ids")
+    fromIDs <- sort(unique(unlist(edgesTo2From[nodeIDs])))
+    fromNodes <- maps$graphID_2_nodeName[fromIDs]
+    fromNodes
+}
+
 ##-----------------------------------------
 ##  Wrapper function for sampleDPmeasure
 ##-----------------------------------------
@@ -1246,8 +1261,6 @@ CRP_conjugate_ddirch_dmulti <- nimbleFunction(
 )
 
 
-
-
 #' @rdname samplers
 #' @export
 sampler_CRP <- nimbleFunction(
@@ -1263,7 +1276,9 @@ sampler_CRP <- nimbleFunction(
     n <- length(targetElements)
     
     ## Find nodes indexed by the CRP node.
-    clusterVarInfo <- nimble:::findClusterNodes(model, target)
+    if(is.null(control$clusterVarInfo)) {
+        clusterVarInfo <- nimble:::findClusterNodes(model, target)
+    } else clusterVarInfo <- control$clusterVarInfo
     tildeVars <- clusterVarInfo$clusterVars
 
     ##  Various checks that model structure is consistent with our CRP sampler. 
@@ -1322,8 +1337,9 @@ sampler_CRP <- nimbleFunction(
     ## Check that observations are independent of each other.
     ## In non-conjugate case, this could potentially be relaxed within each cluster, provided we figure
     ## out correct ordering of dataNodes plus intermNodes in calculate().
+    dataNodesIDs <- model$getDependencies(target, stochOnly = TRUE, self = FALSE, returnType = 'ids')
     sapply(dataNodes, function(x) {
-      if(any(dataNodes %in% model$getDependencies(x, self = FALSE, stochOnly = TRUE)))
+      if(any(dataNodesIDs %in% model$getDependencies(x, self = FALSE, stochOnly = TRUE, returnType = 'ids')))
         stop("sampler_CRP: Variables being clustered must be conditionally independent. To model dependent variables being clustered jointly, you may use a multivariate distribution.")
     })
 
@@ -1359,18 +1375,12 @@ sampler_CRP <- nimbleFunction(
     ## Determine if concentration parameter is fixed or random (code similar to the one in sampleDPmeasure function).
     ## This is used in truncated case to tell user if model is proper or not.
     fixedConc <- TRUE
-    parentNodesTarget <- NULL
-    candidateParentNodes <- model$getNodeNames(includeData = FALSE)
-    candidateParentNodes <- candidateParentNodes[!candidateParentNodes == target]
-    for(i in seq_along(candidateParentNodes)){
-      tmp <- model$getDependencies(candidateParentNodes[i], self = FALSE) 
-      if(sum(tmp == target)) 
-        parentNodesTarget <- c(parentNodesTarget, candidateParentNodes[i])
-    }
+    cands <- getParentNodes(target, model)
+    parentNodesTarget <- cands[cands %in% model$getNodeNames(includeData=FALSE)]
     if(length(parentNodesTarget)) {
       fixedConc <- FALSE
     }
-    
+
     ## Here we try to set up some data structures that allow us to do observation-specific
     ## computation, to save us from computing for all observations when a single cluster membership is being proposed.
     ## At the moment, this is the only way we can easily handle dependencies for multiple node elements in a
@@ -1517,7 +1527,7 @@ sampler_CRP <- nimbleFunction(
           helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, nObsPerClusID, nClusNodesPerClusID)
       }
     }
-    
+
     curLogProb <- numeric(n)
   },
   
@@ -1728,13 +1738,14 @@ findClusterNodes <- function(model, target) {
   ## each cluster parameter is associated with.
   targetVar <- model$getVarNames(nodes = target)
   targetElements <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-  deps <- model$getDependencies(target, self = FALSE)
-  declIDs <- sapply(deps, function(x) model$getDeclID(x))
+  deps <- model$getDependencies(target, self = FALSE, returnType = 'ids')
+  declIDs <- model$modelDef$maps$graphID_2_declID[deps] ## declaration IDs of the nodeIDs
   uniqueIDs <- unique(declIDs)
   depsByDecl <- lapply(uniqueIDs, function(x) deps[which(x == declIDs)])
+
   ## Find one example dependency per BUGS declaration for more efficient processing
-  exampleDeps <- sapply(depsByDecl, `[`, 1)
-  
+  exampleDeps <- model$modelDef$maps$graphID_2_nodeName[sapply(depsByDecl, `[`, 1)]
+    
   ## Once we find the cluster parameter variables below, we want to evaluate the cluster membership
   ## values (e.g., xi[1],...,xi[n]) for all possible values they could take, this will
   ## allow us to determine all possible cluster nodes in the model (though some may
@@ -1758,7 +1769,6 @@ findClusterNodes <- function(model, target) {
 
       }
   }
-  
   clusterNodes <- indexExpr <- clusterIDs <- list()
   clusterVars <- indexPosition <- numIndexes <- targetIsIndex <- targetIndexedByFunction <-
       loopIndex <- NULL
@@ -1874,14 +1884,12 @@ findClusterNodes <- function(model, target) {
           targetNonIndex <- deparse(model$getDeclInfo(exampleDeps[idx])[[1]]$codeReplaced)
     }
   }
-  
   ## Find the potential cluster nodes that are actually model nodes,
   ## making sure that what we decide are real cluster nodes are the full potential set
   ## or a truncated set that starts with the first cluster node, e.g., muTilde[1], ..., muTilde[3] is ok;
   ## muTilde[2], ..., muTilde[4] is not (unless the model nodes are muTilde[2], ...., muTilde[4]).
   nTilde <- sapply(clusterNodes, length)
   modelNodes <- model$getNodeNames()
-
   for(varIdx in seq_along(clusterVars)) {
     if(nTilde[varIdx]) {
         if(any(is.na(clusterNodes[[varIdx]])))  
@@ -1890,16 +1898,9 @@ findClusterNodes <- function(model, target) {
         ## Handle cases where indexing of variables in dynamic indexing does not correspond to actual
         ## stochastic model nodes.
         if(any(!clusterNodes[[varIdx]] %in% modelNodes)) {
-            tmp <- mapply(function(node, id) {
-                if(!node %in% modelNodes) {
-                    node <- model$expandNodeNames(node)
-                    id <- rep(id, length(node))
-                }
-                return(list(nodes = node, ids = id))
-            }, clusterNodes[[varIdx]], clusterIDs[[varIdx]])
-            dimnames(tmp) <- NULL
-            clusterNodes[[varIdx]] <- unlist(tmp[1, ])
-            clusterIDs[[varIdx]] <- unlist(tmp[2, ])
+            clusterNodes[[varIdx]] <- lapply(clusterNodes[[varIdx]], function(x) model$expandNodeNames(x))
+            clusterIDs[[varIdx]] <- rep(clusterIDs[[varIdx]], times = sapply(clusterNodes[[varIdx]], length))
+            clusterNodes[[varIdx]] <- unlist(clusterNodes[[varIdx]])
         }
         ## Now remove duplicates when indexed variables correspond to same model node,
         ## but only for duplicates within a cluster.
@@ -1920,7 +1921,6 @@ findClusterNodes <- function(model, target) {
         }
     }
   }
-
 
   nTilde <- sapply(clusterNodes, length)
   numNodesPerCluster <- sapply(clusterIDs, function(x) {
