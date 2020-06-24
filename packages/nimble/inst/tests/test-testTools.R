@@ -48,6 +48,8 @@ test_that('testing withTempProject: expected failure',
           } )
           )
 
+## As of 2020-05-05, ability to stop compilation before linking and to use -O1 is disabled,
+## as we need to switch to system2 and handling these options would have been a pain.
 ## new way to check only if compilation up to (not including) linking works
 ## this also by default replaces any -O# flags to -O1
 test_that('testing expect_compiles', {    
@@ -59,9 +61,9 @@ test_that('testing expect_compiles', {
         run = function(x = double(1)) {return(foo(x) + 1); returnType(double(1))}
     )
     ## temporarilyAssignInGlobalEnv(foo) ## why is this being done again?
-    cat("\nBegin expected error message:\n")
-    expect_compiles(bar, dirName = '.' ) ## arguments as for compileNimble
-    cat("End expected error message.\n")
+    ## cat("\nBegin expected error message:\n")
+    expect_compiles(bar, dirName = '.', link = TRUE, forceO1 = FALSE) ## arguments as for compileNimble
+    ## cat("End expected error message.\n")
     ## will bail out with "Error : safely stopping before linking"
     ## alternative format in test_util would use
     ##    expect_compiles(compileNimble(bar))

@@ -36,7 +36,7 @@ enkfMultFunc = nimbleFunction(
       returnType(double(2))
       return(model$getParam(thisData, 'cov'))
     }
-  ), where = getLoadingNamespace()
+  )
 )
 
 #  returns mean (as vector) and var (as matrix) for normal data node  
@@ -60,7 +60,7 @@ enkfScalFunc = nimbleFunction(
       outMat[1,1] <- model$getParam(thisData, 'var')
       return(outMat)
     }
-  ), where = getLoadingNamespace()
+  )
 )
 
 # Ensemble Kalman filter step
@@ -196,7 +196,7 @@ ENKFStep <- nimbleFunction(
         copy(model, mvSamples, thisNode, thisXSName, rowTo = i)      
       }
     }
-  }, where = getLoadingNamespace()
+  }
 )
 
 #' Create an Ensemble Kalman filter algorithm to sample from latent states.
@@ -318,5 +318,5 @@ buildEnsembleKF <- nimbleFunction(
     for(iNode in seq_along(ENKFStepFunctions)) { 
       ENKFStepFunctions[[iNode]]$run(m)
     }
-  },  where = getLoadingNamespace()
+  }
 )

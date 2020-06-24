@@ -216,7 +216,7 @@ distributionsInputList <- list(
                    discrete = TRUE,
                    alias    = 'dmultinom'),
     
-    dmvt  = list(BUGSdist = 'dmvt(mu, prec, scale, cholesky, df, prec_param)',
+    dmvt  = list(BUGSdist = 'dmvt(mu, prec, df, scale, cholesky, prec_param)',
                    Rdist    = c('dmvt_chol(mu, cholesky = chol(prec), df = df, prec_param = 1)',
                                 'dmvt_chol(mu, cholesky = chol(scale), df = df, prec_param = 0)',
                                 'dmvt_chol(mu, cholesky, df = df, prec_param)'),
