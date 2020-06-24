@@ -68,7 +68,7 @@ getSamplesDPmeasure <- function(MCMC, epsilon = 1e-4) {
     }
 
     ## Create and run the DPmeasure sampler.
-    rsampler <- nimble:::sampleDPmeasure(model, mvSamples, epsilon)
+    rsampler <- sampleDPmeasure(model, mvSamples, epsilon)
     if(compiled) {
       csampler <- compileNimble(rsampler, project = model)
       csampler$run()
@@ -79,13 +79,13 @@ getSamplesDPmeasure <- function(MCMC, epsilon = 1e-4) {
     }
     
     dcrpVar <- rsampler$dcrpVar
-    clusterVarInfo <- nimble:::findClusterNodes(model, dcrpVar) 
+    clusterVarInfo <- findClusterNodes(model, dcrpVar) 
     namesVars <- rsampler$tildeVars
     p <- length(namesVars)
 
     truncG <- ncol(samplesMeasure) / (rsampler$tildeVarsColsSum[p+1]+1) 
     namesW <- sapply(seq_len(truncG), function(i) paste0("weight[", i, "]"))
-    namesAtoms <- nimble:::getSamplesDPmeasureNames(clusterVarInfo, model, truncG, p)
+    namesAtoms <- getSamplesDPmeasureNames(clusterVarInfo, model, truncG, p)
     
     colnames(samplesMeasure) <- c(namesW, namesAtoms)
     
@@ -121,7 +121,7 @@ sampleDPmeasure <- nimbleFunction(
     
     ## Find the cluster variables, named tildeVars
     dcrpElements <- model$expandNodeNames(dcrpNode, returnScalarComponents = TRUE)
-    clusterVarInfo <- nimble:::findClusterNodes(model, dcrpVar) 
+    clusterVarInfo <- findClusterNodes(model, dcrpVar) 
     tildeVars <- clusterVarInfo$clusterVars
     if( is.null(tildeVars) )  ## probably unnecessary as checked in CRP sampler, but best to be safe
       stop('sampleDPmeasure: The model should have at least one cluster variable.\n')
@@ -141,13 +141,13 @@ sampleDPmeasure <- nimbleFunction(
         isIID <- FALSE
     }
     
-    if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvGammaConjugacy(model, clusterVarInfo, length(dcrpElements), 'dinvgamma'))
+    if(!isIID && length(tildeVars) == 2 && checkNormalInvGammaConjugacy(model, clusterVarInfo, length(dcrpElements), 'dinvgamma'))
         isIID <- TRUE
-    if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvGammaConjugacy(model, clusterVarInfo, length(dcrpElements), 'dgamma'))
+    if(!isIID && length(tildeVars) == 2 && checkNormalInvGammaConjugacy(model, clusterVarInfo, length(dcrpElements), 'dgamma'))
       isIID <- TRUE
-    if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvWishartConjugacy(model, clusterVarInfo, length(dcrpElements), 'dinvwish'))
+    if(!isIID && length(tildeVars) == 2 && checkNormalInvWishartConjugacy(model, clusterVarInfo, length(dcrpElements), 'dinvwish'))
         isIID <- TRUE
-    if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvWishartConjugacy(model, clusterVarInfo, length(dcrpElements), 'dwish'))
+    if(!isIID && length(tildeVars) == 2 && checkNormalInvWishartConjugacy(model, clusterVarInfo, length(dcrpElements), 'dwish'))
       isIID <- TRUE
       ## Tricky as MCMC might not be using conjugacy, but presumably ok to proceed regardless of how
       ## MCMC was done, since conjugacy existing would guarantee IID.
@@ -1277,7 +1277,7 @@ sampler_CRP <- nimbleFunction(
     
     ## Find nodes indexed by the CRP node.
     if(is.null(control$clusterVarInfo)) {
-        clusterVarInfo <- nimble:::findClusterNodes(model, target)
+        clusterVarInfo <- findClusterNodes(model, target)
     } else clusterVarInfo <- control$clusterVarInfo
     tildeVars <- clusterVarInfo$clusterVars
 
@@ -1402,11 +1402,11 @@ sampler_CRP <- nimbleFunction(
       }
     }
     
-    helperFunctions <- nimble:::nimbleFunctionList(CRP_helper)
+    helperFunctions <- nimbleFunctionList(CRP_helper)
         
     ## use conjugacy to determine which helper functions to use
     if(control$checkConjugacy) {
-        conjugacyResult <- nimble:::checkCRPconjugacy(model, target) 
+        conjugacyResult <- checkCRPconjugacy(model, target) 
     } else conjugacyResult <- NULL
     
     if(is.null(conjugacyResult)) {
@@ -1950,7 +1950,7 @@ checkCRPconjugacy <- function(model, target) {
     targetElementExample <- targetAsScalars[1]
     n <- length(targetAsScalars)
 
-    clusterVarInfo <- nimble:::findClusterNodes(model, target)
+    clusterVarInfo <- findClusterNodes(model, target)
  
     ## Check conjugacy for one cluster node (for efficiency reasons) and then make sure all cluster nodes are IID.
     ## Since we only allow one clusterVar, shouldn't need to worry that depNodes for difference clusters are
@@ -1999,19 +1999,19 @@ checkCRPconjugacy <- function(model, target) {
     }
     ## check for dnorm_dinvgamma conjugacy
     if(length(clusterVarInfo$clusterVars) == 2 &&
-       nimble:::checkNormalInvGammaConjugacy(model, clusterVarInfo, n, 'dgamma')) {
+      checkNormalInvGammaConjugacy(model, clusterVarInfo, n, 'dgamma')) {
         conjugate <- TRUE
         conjugacyType <- "conjugate_dnorm_gamma_dnorm"
     } else if(length(clusterVarInfo$clusterVars) == 2 &&
-       nimble:::checkNormalInvGammaConjugacy(model, clusterVarInfo, n, 'dinvgamma')) {
+      checkNormalInvGammaConjugacy(model, clusterVarInfo, n, 'dinvgamma')) {
         conjugate <- TRUE
         conjugacyType <- "conjugate_dnorm_invgamma_dnorm"
     } else if(length(clusterVarInfo$clusterVars) == 2 &&
-       checkNormalInvWishartConjugacy(model, clusterVarInfo, n, 'dwish')) {
+      checkNormalInvWishartConjugacy(model, clusterVarInfo, n, 'dwish')) {
         conjugate <- TRUE
         conjugacyType <- "conjugate_dmnorm_wish_dmnorm"
     } else if(length(clusterVarInfo$clusterVars) == 2 &&
-       checkNormalInvWishartConjugacy(model, clusterVarInfo, n, 'dinvwish')) {
+      checkNormalInvWishartConjugacy(model, clusterVarInfo, n, 'dinvwish')) {
         conjugate <- TRUE
         conjugacyType <- "conjugate_dmnorm_invwish_dmnorm"
     }
