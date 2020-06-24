@@ -1331,7 +1331,7 @@ sampler_CRP <- nimbleFunction(
     reset = function () {
       printMessage <<- TRUE
     }
-  ), where = getLoadingNamespace()
+  )
 )
 
 

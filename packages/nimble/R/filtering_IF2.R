@@ -72,7 +72,7 @@ IF2Step0 <- nimbleFunction(
             nimCopy(model, mvEWSamples, nodes = paramNodes, rowTo = i)
         }
         return(0)
-    },  where = getLoadingNamespace()
+    }
 )
 
 IF2StepVirtual <- nimbleFunctionVirtual(
@@ -155,7 +155,7 @@ IF2Step <- nimbleFunction(
             copy(mvWSamples, mvEWSamples, nodes = paramNodes, row = ids[i], rowTo = i)
         }
         return(lik)
-    },  where = getLoadingNamespace()
+    }
 )
 
 #' Create an IF2 algorithm.  
@@ -470,6 +470,5 @@ buildIteratedFilter2 <- nimbleFunction(
             returnType(double(1))
             return(estimate)
         }
-    ),
-    where = getLoadingNamespace()
+    )
 )

@@ -171,7 +171,7 @@ bootFStep <- nimbleFunction(
       returnType(double(0))
       return(ess)
     }
-  ), where = getLoadingNamespace()
+  )
 )
 
 #' Create a bootstrap particle filter algorithm to estimate log-likelihood.
@@ -365,7 +365,7 @@ buildBootstrapFilter <- nimbleFunction(
       returnType(double(1))
       return(essVals)
     }
-  ), where = getLoadingNamespace()
+  )
 )
 
 
