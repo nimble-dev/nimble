@@ -207,7 +207,7 @@ identityMatrix <- nimbleFunction(
         for(i in 1:d)                   arr[i, i] <- 1
         returnType(double(2))
         return(arr)
-    }
+    })
 
 
 
