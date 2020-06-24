@@ -1,6 +1,6 @@
 #' The Chinese Restaurant Process Distribution
 #'
-#'   EXPERIMENTAL Density and random generation for the Chinese
+#'   Density and random generation for the Chinese
 #'   Restaurant Process distribution.
 #' 
 #' @name ChineseRestaurantProcess 
@@ -57,15 +57,16 @@ dCRP=nimbleFunction(
         #    nimCat("dCRP: value of concentration parameter has to be larger than zero.\n")
             return(NaN)
         }
+        if(any_na(x)) return(NaN)
         
         ldens <- 0 # log scale
         if(n > 1) {
             for(i in 2:n) {
                 counts <- sum(x[i] == x[1:(i-1)])
-                if( counts > 0 ) {
+                if( counts > 0) {
                     ldens <- ldens + log(counts / (i-1+conc))
                 } else {
-                  ldens <- ldens + log(conc / (i-1+conc))
+                    ldens <- ldens + log(conc / (i-1+conc))
                 }
             }
         }
@@ -115,7 +116,7 @@ rCRP <- nimbleFunction(
 
 #' The Stick Breaking Function
 #'
-#' EXPERIMENTAL Computes probabilities based on stick breaking construction.
+#' Computes probabilities based on stick breaking construction.
 #' 
 #' @name StickBreakingFunction
 #'

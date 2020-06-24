@@ -190,7 +190,7 @@ getCallText <- function(code)      deparse(code[[1]])
 
 parseTreeSubstitute <- function(pt, pattern, replacement) {
     if(identical(pt, pattern))    return(replacement)
-    if(class(pt) == 'name')       return(pt)
+    if(inherits(pt, 'name'))       return(pt)
     if(is.numeric(pt))            return(pt)
     if(is.logical(pt))            return(as.numeric(pt)) # for now turn logicals into numerics until we propagate logicals to C++
     for(i in seq_along(pt))    { pt[[i]] <- parseTreeSubstitute(pt[[i]], pattern, replacement) }

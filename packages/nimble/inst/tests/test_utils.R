@@ -65,15 +65,15 @@ withTempProject <- function(code) {
     eval(code)
 }
 
-expect_compiles <- function(..., info = NULL, link = FALSE, force01 = TRUE) {
+expect_compiles <- function(..., info = NULL, link = FALSE, forceO1 = TRUE) {
     oldSCBL <- nimbleOptions('stopCompilationBeforeLinking')
     nimbleOptions(stopCompilationBeforeLinking = !link)
-    oldForce01 <- nimbleOptions('force01')
-    nimbleOptions(forceO1 = force01)
+    oldForceO1 <- nimbleOptions('forceO1')
+    nimbleOptions(forceO1 = forceO1)
     on.exit({
         assign('.check', 1, globalenv())
         nimbleOptions(stopCompilationBeforeLinking = oldSCBL)
-        nimbleOptions(forceO1 = oldForce01)
+        nimbleOptions(forceO1 = oldForceO1)
     }, add = TRUE)
     if(!link) {
         ans <- try(compileNimble(...)) ## expecting a thrown error

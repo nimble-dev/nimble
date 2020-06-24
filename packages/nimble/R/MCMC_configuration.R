@@ -92,13 +92,13 @@ MCMCconf <- setRefClass(
         initialize = function(model, nodes, control = list(), rules,
             monitors,                thin  = 1,
             monitors2 = character(), thin2 = 1,
-            useConjugacy = TRUE,
+            useConjugacy = getNimbleOption('MCMCuseConjugacy'),
             onlyRW = FALSE,
             onlySlice = FALSE,
             multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
             enableWAIC = getNimbleOption('MCMCenableWAIC'),
             warnNoSamplerAssigned = TRUE,
-            print = FALSE, ...) {
+            print = TRUE, ...) {
             '
 Creates a MCMC configuration for a given model.  The resulting object is suitable as an argument to buildMCMC.
 
@@ -139,7 +139,7 @@ enableWAIC: A logical argument, specifying whether to enable WAIC calculations f
 
 warnNoSamplerAssigned: A logical argument specifying whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule. Default is TRUE.
 
-print: A logical argument specifying whether to print the ordered list of default samplers.  Default is FALSE.
+print: A logical argument specifying whether to print the montiors and samplers.  Default is TRUE.
 
 ...: Additional named control list elements for default samplers, or additional arguments to be passed to the autoBlock function when autoBlock = TRUE.
 '
@@ -492,25 +492,25 @@ Invisibly returns a list of the current sampler configurations, which are sample
             thisControlList <- mcmc_generateControlListArgument(control=controlArgs, controlDefaults=controlDefaults)  ## should name arguments
             
             if(!scalarComponents) {
-                addSamplerOne(thisSamplerName, samplerFunction, target, thisControlList)
+                addSamplerOne(thisSamplerName, samplerFunction, target, thisControlList, print)
             } else {  ## assign sampler type to each scalar component of target
                 targetAsScalars <- model$expandNodeNames(target)
                 for(i in seq_along(targetAsScalars)) {
-                    addSamplerOne(thisSamplerName, samplerFunction, targetAsScalars[i], thisControlList)
+                    addSamplerOne(thisSamplerName, samplerFunction, targetAsScalars[i], thisControlList, print)
                 }
             }
             
-            if(print) printSamplers(newSamplerInd)
             return(invisible(samplerConfs))
         },
 
-        addSamplerOne = function(thisSamplerName, samplerFunction, targetOne, thisControlList) {
+        addSamplerOne = function(thisSamplerName, samplerFunction, targetOne, thisControlList, print) {
             '
 For internal use only
 '
             newSamplerInd <- length(samplerConfs) + 1
             samplerConfs[[newSamplerInd]] <<- samplerConf(name=thisSamplerName, samplerFunction=samplerFunction, target=targetOne, control=thisControlList, model=model)
             samplerExecutionOrder <<- c(samplerExecutionOrder, newSamplerInd)
+            if(print) printSamplers(newSamplerInd)
         },
         
         removeSamplers = function(..., ind, print = FALSE) {
@@ -806,7 +806,7 @@ Details: See the initialize() function
                 if(getNimbleOption('MCMCmonitorAllSampledNodes')) {
                     vars <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
                 } else {
-                    vars <- model$getNodeNames(stochOnly = TRUE, topOnly = TRUE)
+                    vars <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE, topOnly = TRUE)
                 }
             } else {
                 vars <- unlist(vars)
@@ -1263,15 +1263,16 @@ nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
 #'@seealso \code{\link{samplerAssignmentRules}} \code{\link{buildMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}
 configureMCMC <- function(model, nodes, control = list(), 
                           monitors, thin = 1, monitors2 = character(), thin2 = 1,
-                          useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE,
+                          useConjugacy = getNimbleOption('MCMCuseConjugacy'),
+                          onlyRW = FALSE, onlySlice = FALSE,
                           multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
                           enableWAIC = getNimbleOption('MCMCenableWAIC'),
-                          print = FALSE, ##getNimbleOption('verbose'),
+                          print = getNimbleOption('verbose'),
                           autoBlock = FALSE, oldConf,
                           rules = getNimbleOption('MCMCdefaultSamplerAssignmentRules'),
                           warnNoSamplerAssigned = TRUE, ...) {
     
-    if(class(rules) != 'samplerAssignmentRules') stop('rules argument must be a samplerAssignmentRules object')
+    if(!inherits(rules, 'samplerAssignmentRules')) stop('rules argument must be a samplerAssignmentRules object')
 
     if(!missing(oldConf)){
         if(!is(oldConf, 'MCMCconf'))
@@ -1293,7 +1294,7 @@ configureMCMC <- function(model, nodes, control = list(),
                          enableWAIC = enableWAIC,
                          warnNoSamplerAssigned = warnNoSamplerAssigned,
                          print = print, ...)
-    return(thisConf)	
+    return(invisible(thisConf))
 }
 
 
@@ -1301,7 +1302,7 @@ configureMCMC <- function(model, nodes, control = list(),
 # This is function which builds a new MCMCconf from an old MCMCconf
 # This is required to be able to a new C-based MCMC without recompiling
 makeNewConfFromOldConf <- function(oldMCMCconf){
-    newMCMCconf <- configureMCMC(oldMCMCconf$model, nodes = NULL)
+    newMCMCconf <- configureMCMC(oldMCMCconf$model, nodes = NULL, print = FALSE)
     newMCMCconf$monitors <- oldMCMCconf$monitors
     newMCMCconf$monitors2 <- oldMCMCconf$monitors2
     newMCMCconf$thin <- oldMCMCconf$thin

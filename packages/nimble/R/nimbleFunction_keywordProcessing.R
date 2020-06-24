@@ -1069,6 +1069,7 @@ paramInfo_SetupTemplate <- setupCodeTemplateClass(
     codeTemplate = quote({
         PARAMINFONAME <- makeParamInfo(MODEL, NODE, PARAM)
         PARAMIDNAME <- PARAMINFONAME$paramID
+        PARAMINFONAME$paramID <- NULL
        }),
     makeCodeSubList = function(resultName, argList){
         list(PARAMINFONAME = as.name(resultName),
@@ -1085,6 +1086,7 @@ boundInfo_SetupTemplate <- setupCodeTemplateClass(
     codeTemplate = quote({
         BOUNDINFONAME <- makeBoundInfo(MODEL, NODE, BOUND)
         BOUNDIDNAME <- BOUNDINFONAME$boundID
+        BOUNDINFONAME$boundID <- NULL
        }),
     makeCodeSubList = function(resultName, argList){
         list(BOUNDINFONAME = as.name(resultName),
@@ -1440,7 +1442,7 @@ matchKeywordCode <- function(code, nfProc){
         modCallName <- callName
         if(nfProc$setupSymTab$symbolExists(modCallName)) {
             symObj <- nfProc$setupSymTab$getSymbolObject(modCallName)
-            if(class(symObj) == "symbolMemberFunction") {
+            if(inherits(symObj, "symbolMemberFunction")) {
                 thisRCfunProc <- nfProc$RCfunProcs[[modCallName]]
                 if(is.null(thisRCfunProc)) stop(paste0("Cannot handle this expression (looks like a member function but something is wrong): ", deparse(code)), call. = FALSE)
                 thisFunctionMatch <- thisRCfunProc$RCfun$template

@@ -66,18 +66,18 @@ On Windows, you should download and install `Rtools.exe`
 available from [https://cran.r-project.org/bin/windows/Rtools/](https://cran.r-project.org/bin/windows/Rtools/).
 Select the appropriate executable corresponding to your version of R
 (and follow the urge to update your version of R if you notice it
-is not the most recent).  This installer leads you through several
-'pages'.  We think you can accept the defaults with one exception:
-check the PATH checkbox (page 5) so that the installer will add the
-location of the C++ compiler and related tools to your system's PATH,
-ensuring that R can find them.  After you click 'Next', you will get
+is not the most recent). 
+
+Important: You must set the path so that the installer will add the
+location of the C++ compiler and related tools to your system's PATH variable,
+ensuring that R can find them. For R version 4.0 or greater (Rtools40)
+be sure to follow the instructions in the section [Putting Rtools on the PATH](https://cran.r-project.org/bin/windows/Rtools#putting-rtools-on-the-path).
+For R version 3.6.3 or lesser (i.e., using Rtools35.exe) make sure to check the box labelled
+"Add rtools to system PATH" (page 5 of the installation pages) (it should be checked by default).
+After you click 'Next', you will get
 a page with a window for customizing the new PATH variable.  You
 shouldn't need to do anything there, so you can simply click 'Next'
 again.
-
-The checkbox for the 'R 2.15+ toolchain' (page 4) must be checked
-(in order to have *gcc*/*g++*, *make*, etc. installed).  This
-should be checked by default.
 
 ## Installing the NIMBLE package
 
@@ -99,7 +99,7 @@ The following are some troubleshooting tips that have helped users in some situa
 
 For Windows:
 
-  - Be sure to check box to set `PATH` when installing Rtools.exe.  Alternatively, one can set the `PATH` manually using syntax similar to this (after changing  `C:\\Rtools\\bin;C:\\Rtools\\mingw_64\\bin` to be appropriate for your system):
+  - Be sure you have set `PATH` when installing Rtools (see instructions above in the Windows installation section).  Alternatively, one can set the `PATH` manually using syntax similar to this (after changing  `C:\\Rtools\\bin;C:\\Rtools\\mingw_64\\bin` to be appropriate for your system):
 ```{r, eval=FALSE}
 path <- Sys.getenv('PATH')
 newPath <- paste("C:\\Rtools\\bin;C:\\Rtools\\mingw_64\\bin;",
@@ -108,14 +108,16 @@ Sys.setenv(PATH = newPath)
 ```      
   - Be sure the `Rtools.exe` version matches the R version.
   - Try re-installing `Rtools` followed by re-installing NIMBLE.
+  - If you're using Rtools40, make sure you are using a newer version or RStudio (at least 1.2.5042).
   - If there are filesystem or permissions issues, it is possible to install NIMBLE in a local directory using the `lib` argument to `install.packages`.
-  - In the past we've heard reports from Windows users of problems when their filesystem involved a space in a directory name in the path to `RHOME`.  We've also heard reports from Windows users of problems when R is installed on a network drive. We think both of these issues have been resolved. 
+  - In the past we've heard reports from Windows users of problems when their filesystem involved a space in a directory name in the path to `RHOME`. We think this problem has been resolved.
+  - We've also heard reports from Windows users of problems when R is installed on a network drive. A work-around is to install locally in a directory on a drive physically on the machine.
 
 For MacOS:
 
   - Newly installed Xcode/command line tools may need to be started once manually to provide a one-time permission before they will work from NIMBLE.
   - Upgrading your MacOS version may result in an error while installing or using NIMBLE. Please try running the following in the Terminal to reinstall Xcode/command line tools:
-  ```{bash, eval=FALSE}
+```{bash, eval=FALSE}
 xcode-select --install
 ```
   - If multiple C++ compilers are present on a system, be sure the `PATH` will find the right one.
