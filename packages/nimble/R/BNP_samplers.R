@@ -1329,7 +1329,7 @@ sampler_CRP <- nimbleFunction(
     ## Check that observations are independent of each other.
     ## In non-conjugate case, this could potentially be relaxed within each cluster, provided we figure
     ## out correct ordering of dataNodes plus intermNodes in calculate().
-    dataNodesIDs <- m$getDependencies(target, stochOnly = TRUE, self = FALSE, returnType = 'ids')
+    dataNodesIDs <- model$getDependencies(target, stochOnly = TRUE, self = FALSE, returnType = 'ids')
     sapply(dataNodes, function(x) {
       if(any(dataNodesIDs %in% model$getDependencies(x, self = FALSE, stochOnly = TRUE, returnType = 'ids')))
         stop("sampler_CRP: Variables being clustered must be conditionally independent. To model dependent variables being clustered jointly, you may use a multivariate distribution.")
