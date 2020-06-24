@@ -1336,7 +1336,9 @@ sampler_CRP <- nimbleFunction(
             for(idx2 in 1:(length(tildeVars)-1))
                 if(!identical(clusterVarInfo$clusterNodes[[idx1]], clusterVarInfo$clusterNodes[[idx2]]) &&
                    any(clusterVarInfo$clusterNodes[[idx1]] %in% clusterVarInfo$clusterNodes[[idx2]]))
-                    stop("sampler_CRP: Inconsistent indexing in ", clusterVarInfo$indexExpr[[idx1]], " and ", clusterVarInfo$indexExpr[[idx2]], ".")
+                    stop("sampler_CRP: Inconsistent indexing in or inconsistent dependencies of ",
+                         deparse(clusterVarInfo$indexExpr[[idx1]]), " and ",
+                         deparse(clusterVarInfo$indexExpr[[idx2]]), ".")
     
     nData <- length(dataNodes)
 

@@ -2479,9 +2479,9 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
       mu[i] <- muTilde[b[i]]
     }
     for(j in 1:n)
-    {b[j] <- xi[j]}
+      b[j] <- xi[j]
     for(i in 1:n)
-    {muTilde[i] ~ dnorm(0,1)}
+      muTilde[i] ~ dnorm(0,1)
   })
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
   conf <- configureMCMC(m)
@@ -2663,7 +2663,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   expect_equal(FALSE, clusterNodeInfo$targetIndexedByFunction)
   expect_equal(n, clusterNodeInfo$nTilde)
   
-  ## missing first cluster node
+  ## missing first cluster node: we no longer detect this situation because difficult to do with clusterNodes with more than one index.
   code <- nimbleCode({
     xi[1:n] ~ dCRP(conc, n)
     for(i in 1:n) {
@@ -2674,15 +2674,15 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
       muTilde[i] ~ dnorm(0,1)
   })
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
-  expect_warning(conf <- configureMCMC(m), "missing cluster parameter")
-  expect_warning(mcmc <- buildMCMC(conf), "missing cluster parameter")
-  expect_warning(clusterNodeInfo <- nimble:::findClusterNodes(m, target), "missing cluster parameter")
+  conf <- configureMCMC(m)
+  expect_warning(mcmc <- buildMCMC(conf), "sampler_CRP: The number of clusters based on the cluster parameters is less")
+  clusterNodeInfo <- nimble:::findClusterNodes(m, target)
   expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 2:(n-2), "]"))
   expect_equal(1, clusterNodeInfo$numIndexes)
   expect_equal(1, clusterNodeInfo$indexPosition)
   expect_equal(TRUE, clusterNodeInfo$targetIsIndex)
   expect_equal(FALSE, clusterNodeInfo$targetIndexedByFunction)
-  expect_equal(n, clusterNodeInfo$nTilde)
+  expect_equal(n-3, clusterNodeInfo$nTilde)
   
   ## cluster node indexing shifted
   code <- nimbleCode({
@@ -2697,7 +2697,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
   conf <- configureMCMC(m)
   crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
-  expect_warning(mcmc <- buildMCMC(conf), "less than the number of potential clusters")
+  expect_warning(mcmc <- buildMCMC(conf), "sampler_CRP: The number of clusters based on the cluster parameters is less")
   expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   clusterNodeInfo <- nimble:::findClusterNodes(m, target)
   expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 2:(n-2), "]"))
@@ -2757,8 +2757,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   expect_error(mcmc <- buildMCMC(mConf),
                'sampler_CRP: Detected unusual indexing')
 
-  ## more than just data depend on variable being clustered and membership variable
-  ## Not sure what this means: case is safe because length of data and xi is different
+  ## This is ok because y and x are same length.
   code <- nimbleCode({
     xi[1:n] ~ dCRP(alpha, n)
     for(i in 1:n){
@@ -2769,38 +2768,29 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     }
     lambda ~ dgamma(1, 1)
     alpha ~ dgamma(1, 1)
-    
   })
-  n <- 30
-  Consts <- list(n = n, x=rep(1, n))
-  Inits <- list(xi = rep(1, n), 
-                mu = rep(-20, n), 
-                s2 = rep(0.1, n),
-                alpha = 200,
-                lambda = 1)
-  thetas <- c(rep(-5, 10), rep(5, 10), rep(0, 10))
-  Data <- list(y = rnorm(n, thetas, 1))
-  m <- nimbleModel(code, data=Data, inits=Inits, constants = Consts)
-  mConf <- configureMCMC(m, monitors = c('xi','mu', 's2', 'alpha', 'lambda'))  
-  expect_error(mMCMC <- buildMCMC(mConf),
-               'sampler_CRP: Cluster membership variable used in multiple declarations')
-  
-  ## multiple observations per cluster membership; not yet handled
+  m <- nimbleModel(code, data=c(data, list(x = rnorm(n))), inits=inits, constants = const)
+  mConf <- configureMCMC(m)
+  mMCMC <- buildMCMC(mConf)
+
+  ## Not ok because y and x are not the same length.
   code <- nimbleCode({
-    xi[1:n] ~ dCRP(conc, n)
-    for(j in 1:2) {
-      for(i in 1:n) {
-        y[i,j] ~ dnorm(mu[i], var = 1)
-      }}
-    for(i in 1:n)
-    {mu[i] <- muTilde[xi[i]]}
-    for(i in 1:n)
-    {muTilde[i] ~ dnorm(0,1)}
+    xi[1:n] ~ dCRP(alpha, n)
+    for(i in 1:n){
+      mu[i] ~ dnorm(0, var = s2[i]/lambda)
+      s2[i] ~ dinvgamma(2, 1)
+      y[i] ~ dnorm(mu[xi[i]],  var = s2[xi[i]])
+    }
+    for(i in 1:5) 
+      x[i] ~ dnorm(mu[xi[i]], 1)
+    lambda ~ dgamma(1, 1)
+    alpha ~ dgamma(1, 1)
   })
-  m <- nimbleModel(code, data = list(y = matrix(rnorm(2*n),n)), constants = const, inits = inits)
-  conf <- configureMCMC(m)
-  expect_error(mcmc <- buildMCMC(conf), "when there is one variable being clustered")
   
+  m <- nimbleModel(code, data=c(data, list(x = rnorm(5))), inits=inits, constants = const)
+  mConf <- configureMCMC(m)
+  expect_error(mMCMC <- buildMCMC(mConf), "sampler_CRP: Inconsistent indexing")
+    
   ## Extraneous node that is ok.
   code <- nimbleCode({
     xi[1:n] ~ dCRP(conc, n)
@@ -2809,7 +2799,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
       mu[i] <- muTilde[xi[i]]
     }
     for(i in 1:n)
-    {muTilde[i] ~ dnorm(0,1)}
+      muTilde[i] ~ dnorm(0,1)
     z ~ dnorm(muTilde[n+1], 1)
   })
   inits2$muTilde <- rnorm(n+1)
@@ -2833,10 +2823,10 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     for(i in 1:n) 
       y[i] ~ dnorm(mu[i], var = 1)
     for(i in 1:(n-1))
-    {mu[i] <- muTilde[xi[i]]}
+      mu[i] <- muTilde[xi[i]]
     mu[n] <- exp(muTilde[xi[n]])
     for(i in 1:n)
-    {muTilde[i] ~ dnorm(0, 1)}
+      muTilde[i] ~ dnorm(0, 1)
   })
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
   conf <- configureMCMC(m)
@@ -2923,7 +2913,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   })
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
   conf <- configureMCMC(m)
-  expect_error(mcmc <- buildMCMC(conf), "Cluster parameters must be conditionally independent.")
+  expect_error(mcmc <- buildMCMC(conf), "sampler_CRP: cluster parameters must be independent across clusters")
   
   ## cluster nodes not exchangeable so non-conjugate
   code <- nimbleCode({
@@ -2974,8 +2964,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
       tmp[i] ~ dnorm(0,1)
     }
     for(i in 1:n)
-    {muTilde[i] ~ dnorm(tmp[xi[i]],1)}
-    
+      muTilde[i] ~ dnorm(tmp[xi[i]],1)
   })
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
   conf <- configureMCMC(m)
@@ -3018,13 +3007,13 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     }
     kappa ~ dgamma(1,1)
     for(i in 1:n) 
-      {muTilde[i] ~ dnorm(0, var = s2Tilde[i]/kappa)}
+      muTilde[i] ~ dnorm(0, var = s2Tilde[i]/kappa)
     for(i in 1:(n-1))
-      {s2Tilde[i] ~ dinvgamma(1,1)}
+      s2Tilde[i] ~ dinvgamma(1,1)
   })
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
   conf <- configureMCMC(m)
-  expect_error(mcmc <- buildMCMC(conf), "Cluster parameters must be conditionally independent")
+  expect_error(mcmc <- buildMCMC(conf), "sampler_CRP: In a model with multiple cluster parameters, the number")
   
   ## nTilde < n 
   code <- nimbleCode({
@@ -3098,7 +3087,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   expect_equal(rep(n,2), clusterNodeInfo$nTilde)
   
   ## s2Tildes in different order than muTildes so not conjugate.
-  ## CRP_sampler is INCORRECT for this because can't sample from distr of an s2Tilde given the muTilde that depends on it.
+  ## CRP_sampler would INCORRECT for this because can't sample from distr of an s2Tilde given the muTilde that depends on it.
   code <- nimbleCode({
     xi[1:n] ~ dCRP(conc, n)
     for(i in 1:n) {
@@ -3112,26 +3101,8 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   })
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
   conf <- configureMCMC(m)
-  expect_error(mcmc <- buildMCMC(conf), "Cluster parameters must be conditionally independent")
-  
-  ## Model is valid, but in trying to catch weird uses of CRP variable we don't allow this. should be ok
-  inits2 <- inits
-  inits2$muTilde <- cbind(rnorm(n), rgamma(n, 1, 1))
-  inits2$s2Tilde <- NULL
-  code <- nimbleCode({
-    xi[1:n] ~ dCRP(conc, n)
-    for(i in 1:n) {
-      y[i] ~ dnorm(muTilde[xi[i],1], var = muTilde[xi[i],2])
-    }
-    for(i in 1:n) {
-      muTilde[i,1] ~ dnorm(0,var=s2Tilde[i]/3)
-      muTilde[i,2] ~ dinvgamma(1,1)
-    }
-  })
-  m <- nimbleModel(code, data = data, constants = const, inits = inits2)
-  conf <- configureMCMC(m)
-  expect_error(mcmc <- buildMCMC(conf), "Cluster membership variable used in multiple declarations")
-  
+  expect_error(mcmc <- buildMCMC(conf), "sampler_CRP: cluster parameters must be independent across clusters")
+    
   ## Non-conjugate, bivariate
   code <- nimbleCode({
     xi[1:n] ~ dCRP(conc, n)
@@ -3499,8 +3470,7 @@ test_that("Testing of misspecification of dimension when using CRP", {
   })
   m <- nimbleModel(code, data = list(y = rnorm(100)),
                    inits = list(xi = rep(1,100), mu=rnorm(50), s2=rinvgamma(1,1,1)))
-  conf <- configureMCMC(m)
-  expect_error(buildMCMC(conf), "Detected unusual indexing in")
+  expect_error(conf <- configureMCMC(m), "findClusterNodes: found cluster membership parameters that use different indexing")
   
   ## more than one label used for each observation
   code = nimbleCode({
@@ -3515,8 +3485,7 @@ test_that("Testing of misspecification of dimension when using CRP", {
   })
   m <- nimbleModel(code, data = list(y = rnorm(100)),
                    inits = list(xi = rep(1,100), mu=rnorm(50)))
-  conf <- configureMCMC(m)
-  expect_error(buildMCMC(conf), "Detected unusual indexing in")
+  expect_error(conf <- configureMCMC(m), "findClusterNodes: Detected that a cluster parameter is indexed by a function")
   
   ## test that a message is sent when truncation is hit
   code = nimbleCode({
