@@ -8,6 +8,7 @@
 #' @rdname samplers
 #' @export
 sampler_BASE <- nimbleFunctionVirtual(
+    name = 'sampler_BASE',
     methods = list(
         reset = function() { }
     )
@@ -35,7 +36,7 @@ sampler_posterior_predictive <- nimbleFunction(
     },
     methods = list(
         reset = function() { }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -75,7 +76,7 @@ sampler_binary <- nimbleFunction(
     },
     methods = list(
         reset = function() { }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -132,7 +133,7 @@ sampler_categorical <- nimbleFunction(
     },
     methods = list(
         reset = function() { }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -281,7 +282,7 @@ sampler_RW <- nimbleFunction(
             }
             gamma1 <<- 0
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -453,7 +454,7 @@ sampler_RW_block <- nimbleFunction(
             }
             my_calcAdaptationFactor$reset()
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -499,7 +500,7 @@ sampler_RW_llFunction <- nimbleFunction(
         reset = function() {
             targetRWSamplerFunction$reset()
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -607,7 +608,7 @@ sampler_slice <- nimbleFunction(
             timesAdapted <<- 0
             sumJumps     <<- 0
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -672,7 +673,7 @@ sampler_ess <- nimbleFunction(
     },
     methods = list(
         reset = function() { }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -858,7 +859,7 @@ sampler_AF_slice <- nimbleFunction(
             adaptWidthInterval <<- 1
             widthIndicatorVec  <<- rep(1, d)
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -880,7 +881,7 @@ getPosteriorDensityFromConjSampler <- nimbleFunction(
         posteriorLogDensity <- conjugateSamplerFunction$getPosteriorLogDensity()
         returnType(double())
         return(posteriorLogDensity)
-    }, where = getLoadingNamespace()
+    }
 )
 
 #' @rdname samplers
@@ -948,7 +949,7 @@ sampler_crossLevel <- nimbleFunction(
                 lowConjugateSamplerFunctions[[iSF]]$reset()
             }
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1043,7 +1044,7 @@ sampler_RW_llFunction_block <- nimbleFunction(
             timesAdapted  <<- 0
             my_calcAdaptationFactor$reset()
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1218,7 +1219,7 @@ sampler_RW_PF <- nimbleFunction(
             storeParticleLP <<- -Inf
             gamma1 <<- 0
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1420,7 +1421,7 @@ sampler_RW_PF_block <- nimbleFunction(
             timesAdapted  <<- 0
             my_calcAdaptationFactor$reset()
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1551,7 +1552,7 @@ sampler_RW_multinomial <- nimbleFunction(
             ENSwapDeltaMatrix <<- Ones
             RescaleThreshold  <<- 0.2 * Ones
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1631,7 +1632,7 @@ sampler_RW_dirichlet <- nimbleFunction(
             timesAdapted     <<- 0
             gamma1           <<- 0
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1749,7 +1750,7 @@ sampler_RW_wishart <- nimbleFunction(
             timesAdapted  <<- 0
             my_calcAdaptationFactor$reset()
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1791,7 +1792,7 @@ CAR_scalar_postPred <- nimbleFunction(
     },
     methods = list(
         reset = function() { }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1865,7 +1866,7 @@ CAR_scalar_conjugate <- nimbleFunction(
     },
     methods = list(
         reset = function() { }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1938,7 +1939,7 @@ CAR_scalar_RW <- nimbleFunction(
             timesAdapted  <<- 0
             gamma1 <<- 0
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -2003,7 +2004,7 @@ sampler_CAR_normal <- nimbleFunction(
             for(iSF in seq_along(componentSamplerFunctions))
                 componentSamplerFunctions[[iSF]]$reset()
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -2063,7 +2064,7 @@ sampler_CAR_proper <- nimbleFunction(
             for(iSF in seq_along(componentSamplerFunctions))
                 componentSamplerFunctions[[iSF]]$reset()
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 

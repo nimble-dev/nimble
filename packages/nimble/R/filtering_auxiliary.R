@@ -30,8 +30,7 @@ auxLookFunc = nimbleFunction(
   methods = list(
     lookahead = function(){
     model[[node]] <<- model$getParam(node, 'mean')
-    }),
-  where = getLoadingNamespace()
+    })
 )
 
 
@@ -42,7 +41,7 @@ auxSimFunc = nimbleFunction(
   methods = list(
     lookahead = function(){
       model$simulate(node)
-    }), where = getLoadingNamespace()
+    })
 )
 
 auxFStep <- nimbleFunction(
@@ -225,8 +224,7 @@ auxFStep <- nimbleFunction(
       returnType(double(0))
       return(ess)
     }
-  ),
-  where = getLoadingNamespace()
+  )
 )
 
 
@@ -428,5 +426,5 @@ buildAuxiliaryFilter <- nimbleFunction(
       returnType(double(1))
       return(essVals)
     }
-  ),where = getLoadingNamespace()
+  )
 )

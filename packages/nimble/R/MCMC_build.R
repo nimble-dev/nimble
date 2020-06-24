@@ -268,7 +268,6 @@ buildMCMC <- nimbleFunction(
             if(is.nan(WAIC)) print('WAIC was calculated as NaN.  You may need to add monitors to model latent states, in order for a valid WAIC calculation.')
             returnType(double())
             return(WAIC)
-        }),
-    where = getLoadingNamespace()
+        })
 )
 
