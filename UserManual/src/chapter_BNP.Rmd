@@ -67,7 +67,7 @@ The joint probability function of $z=(z_1, \ldots, z_N)$,  with concentration pa
 
 $$p(\boldsymbol{z} \mid \alpha) \propto \frac{\Gamma{(\alpha)}}{\Gamma{(\alpha + n)}} \alpha^{N^{\star}(\boldsymbol{z})}\prod_{k=1}^{N^{\star}(\boldsymbol{z})}\Gamma(m_{k}(\boldsymbol{z})),$$
 
-\noindent where $m_k(\boldsymbol{z})$ denotes the number of elements in  $\boldsymbol{z}$ that are equal to $k$.  The full conditional distribution for $z_i$ given $z_{-i}$ is 
+\noindent where $m_k(\boldsymbol{z})$ denotes the number of elements in  $\boldsymbol{z}$ that are equal to $k$, $N^{\star}(\boldsymbol{z})$ denotes the number of unique elements in $\boldsymbol{z}$, and $\Gamma(\cdot)$ denotes the gamma function.  The full conditional distribution for $z_i$ given $z_{-i}$ is 
 
 $$p(z_i  = m \mid z_{-i}, \alpha) = \frac{1}{n-1+\alpha} \sum_{j \neq i}1_{\{z_j\}} (m)+ \frac{\alpha}{n-1+\alpha}1_{\{z^{new}\}}(m),$$
 
@@ -196,7 +196,17 @@ NIMBLE's MCMC engine provides specialized samplers for the `dCRP` distribution, 
   1. A non-conjugate sampler in the case of the baseline distribution  not being conjugate for the mixture kernel.
 
 
-Note that both samplers are specialized versions that operate on a vector having a CRP distribution. Details of these assignments are strictly internal to the CRP samplers.  Additionally, a specialized sampler is assigned to the `conc` hyper parameter when a gamma hyper prior is assigned, see section 6 in @escobar_west_95 for more details. Otherwise, a random walk Metropolis-Hastings sampler is assigned.
+Note that both samplers are specialized versions that operate on a vector having a CRP distribution. Details of these assignments are strictly internal to the CRP samplers. The current release of NIMBLE supports conjugate sampling for the `dCRP` distribution for the relationships listed in Table \@ref(tab:BNPconjugacy). Additional relationships are provided in Table \@ref(tab:BNPconjugacy2) for normal mixture kernels when both,  mean and  variance, are unknown.
+
+
+```{r, child = 'tables/BNPconjugacyTable.md'}
+```
+
+
+```{r, child = 'tables/BNPconjugacyTable2.md'}
+```
+
+Additionally, a specialized sampler is assigned to the `conc` hyper parameter when a gamma hyper prior is assigned, see section 6 in @escobar_west_95 for more details. Otherwise, a random walk Metropolis-Hastings sampler is assigned.
 
 #### Initial values
 
@@ -204,11 +214,24 @@ Valid initial values should be provided for all elements of the process specifie
 
 #### Sampling the random measure
 
-In  BNP models, it is oftenly of interest to make inference about the unknown measure $G$.  NIMBLE provides a sampler, `getSamplesDPmeasure`, for this random measure when a CRP structure is involved in the model. 
+In  BNP models, it is oftenly of interest to make inference about the unknown measure $G$. NIMBLE provides the `getSamplesDPmeasure` sampler to generate posterior samples of the random measure $G$ when a CRP structure is involved in the model. 
 
-The argument of the `getSamplesDPmeasure` function is a compiled or uncompiled MCMC object. The MCMC object should monitor the membership (clustering) variable, the cluster parameters, all stochastic nodes of the cluster parameters, and the concentration parameter, if it is random. Use the `monitors` argument when configuring the MCMC to ensure these variables are monitored in the MCMC. 
+The `getSamplesDPmeasure` function has two arguments: `MCMC` and `epsilon`.
+
+The `MCMC` argument is a compiled or uncompiled MCMC object. The MCMC object should monitor the membership (or clustering) variable, the cluster parameters, all stochastic nodes of the cluster parameters, and the concentration parameter, if it is random. Use the `monitors` argument when configuring the MCMC to ensure these variables are monitored.
+
+The `epsilon` argument is used to determine the truncation level of the representation of the random measure. Its default value is $1e-04$.
 
 The sampler is used only after the MCMC for the model has been run; more details are available from `help(getsamplesDPmeasure)`.
+
+Posterior samples of the random measure $G$ are (almost surely) of the form $\sum_{l=1}^{\infty}w_l\delta_{\theta_l}$, where $\delta_{\theta}$ is the Dirac measure at $\theta$, $w_l$ are stick-breaking weights, and $\theta_l$ are atoms (or point masses). The `getsamplesDPmeasure` function provides samples of a truncated version of the infinite mixture to a level $L$. For the truncated version of $G$, the variables that define the stick-breaking weights are iid $Beta(1, \alpha + N)$ distributed, where $\alpha$ is the concentration parameter of the CRP distribution and $N$ is the sample size. Independently, the atoms are iid and follow a distribution of the form
+
+$$(\alpha+n)^{-1}\sum_{k=1}^{N^{\star}(\boldsymbol{z})}m_k(\boldsymbol{z})\delta_{\{\tilde{\theta}_k\}} + \alpha(\alpha+n)^{-1}G_0,$$
+
+where $G_0$ is the prior baseline distribution, and $\boldsymbol{z}$ and $\tilde{\theta}_k$ are posterior samples of the labeling vector and cluster parameters, respectively. Their values, together with the values of $\alpha$ (if random) are obtained from the MCMC’s output. Expressions $m_k(\boldsymbol{z})$ and $N^{\star}(\boldsymbol{z})$ are defined as in section \@ref(sec:crp). 
+
+The truncation level $L$ is such that the tail probability left from the approximation is at most `epsilon`, denoted $\epsilon$. The following relationship determines the truncation: $L = log(\epsilon) / log[(\alpha+n) / (\alpha + n +1)]$, see @gelfand_2002.
+
 
 The following code exemplifies how to generate samples from $G$ after defining the model as in Section \@ref(sec:excrp).
 
