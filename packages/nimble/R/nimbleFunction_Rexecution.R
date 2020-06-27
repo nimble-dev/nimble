@@ -730,14 +730,14 @@ values <- function(model, nodes, accessorIndex){
 #' 
 #' cCopy$run() ## execute the copy with the compiled function
 #' }
-nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA, logProb = FALSE){
+nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA, logProb = FALSE, logProbOnly = FALSE){
     if(is.null(nodes) )
         nodes = from$getVarNames(includeLogProb = logProb) ## allNodeNames(from)
     if( inherits(from, "modelBaseClass") ){
-        accessFrom = modelVariableAccessorVector(from, nodes, logProb = logProb)
+        accessFrom = modelVariableAccessorVector(from, nodes, logProb = logProb, logProbOnly = logProbOnly)
     } else
         if(inherits(from, "modelValuesBaseClass") || inherits(from, "CmodelValues")) {
-            accessFrom = modelValuesAccessorVector(from, nodes, logProb = logProb)
+            accessFrom = modelValuesAccessorVector(from, nodes, logProb = logProb, logProbOnly = logProbOnly)
             if(is.na(row))
                 stop("Error: need to supply 'row' for a modelValues copy")
             ##accessFrom$setRow(row) ## NEW ACCESSORS
@@ -746,15 +746,15 @@ nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA
 
     if( inherits(to, "modelBaseClass") ){
         if(is.null(nodesTo) ) 
-            accessTo = modelVariableAccessorVector(to, nodes, logProb = logProb)
+            accessTo = modelVariableAccessorVector(to, nodes, logProb = logProb, logProbOnly = logProbOnly)
         else
-            accessTo = modelVariableAccessorVector(to, nodesTo, logProb = logProb)
+            accessTo = modelVariableAccessorVector(to, nodesTo, logProb = logProb, logProbOnly = logProbOnly)
     } else
         if(inherits(to, "modelValuesBaseClass") || inherits(to, "CmodelValues")) {
             if(is.null(nodesTo) ) 
-                accessTo = modelValuesAccessorVector(to, nodes, logProb = logProb)
+                accessTo = modelValuesAccessorVector(to, nodes, logProb = logProb, logProbOnly = logProbOnly)
             else
-                accessTo = modelValuesAccessorVector(to, nodesTo, logProb = logProb)
+                accessTo = modelValuesAccessorVector(to, nodesTo, logProb = logProb, logProbOnly = logProbOnly)
             if(is.na(rowTo))
                 rowTo = row
             ##accessTo$setRow(rowTo) ## NEW ACCESSORS

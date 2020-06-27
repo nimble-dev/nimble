@@ -159,6 +159,9 @@ sampler_RW <- nimbleFunction(
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
         calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
+        boolStoch <- model$isStoch(calcNodesNoSelf) ## This should be made faster
+        calcNodesDeterm <- calcNodes[!boolStoch]
+        calcNodesStoch <- calcNodes[boolStoch]
         ## numeric value generation
         scaleOriginal <- scale
         timesRan      <- 0
@@ -208,8 +211,13 @@ sampler_RW <- nimbleFunction(
         } else {
             logMHR <- logMHR + calculateDiff(model, calcNodesNoSelf) + propLogScale
             jump <- decide(logMHR)
-            if(jump) nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-            else     nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+            if(jump) {
+                nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesDeterm, logProb = FALSE)
+                nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesStoch, logProbOnly = TRUE)
+            } else  {
+                nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesDeterm, logProb = FALSE)
+                nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesStoch, logProbOnly = TRUE)
+            }
         }
         if(adaptive)     adaptiveProcedure(jump)
     },

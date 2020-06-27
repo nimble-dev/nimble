@@ -6,8 +6,8 @@
 ## model1_nodes_accessors$getAccessors() returns a list of the modelVariableAccessor objects
 
 
-modelVariableAccessorVector <- function(mv, nodeNames, logProb = FALSE) {
-    ans <- list(mv, substitute(nodeNames), logProb, parent.frame())
+modelVariableAccessorVector <- function(mv, nodeNames, logProb = FALSE, logProbOnly = FALSE) {
+    ans <- list(mv, substitute(nodeNames), logProb, parent.frame(), logProbOnly)
     class(ans) <- c('modelVariableAccessorVector', 'valuesAccessorVector')
     ans
 }

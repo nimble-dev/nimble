@@ -132,7 +132,7 @@ values_keywordInfo <- keywordInfoClass(
       if(isCodeArgBlank(code, 'model'))
       	stop('model argument missing from values call, with no accessor argument supplied')
       
-      accessArgList <- list(model = code$model, nodes = code$nodes, logProb = FALSE)
+      accessArgList <- list(model = code$model, nodes = code$nodes, logProb = FALSE, logProbOnly = FALSE)
 
       useAccessorVectorByIndex <- FALSE
       if(hasBracket(accessArgList$nodes)) { 
@@ -467,13 +467,13 @@ nimCopy_keywordInfo <- keywordInfoClass(
 				
 		if(from_ArgList$class == 'symbolModel'){
                     isMVfrom <- 0 
-                    accessFrom_ArgList <- list(model = code$from, nodes = from_ArgList$nodes, logProb = code$logProb)
+                    accessFrom_ArgList <- list(model = code$from, nodes = from_ArgList$nodes, logProb = code$logProb, logProbOnly = code$logProbOnly)
                     accessFrom_name <- modelVariableAccessorVector_setupCodeTemplate$makeName(accessFrom_ArgList)
                     addNecessarySetupCode(accessFrom_name, accessFrom_ArgList, modelVariableAccessorVector_setupCodeTemplate, nfProc)
 		}
 		else if(from_ArgList$class == 'symbolModelValues'){
                     isMVfrom <- 1
-                    accessFrom_ArgList <- list(modelValues = code$from, nodes = from_ArgList$nodes, logProb = code$logProb, row = from_ArgList$row)
+                    accessFrom_ArgList <- list(modelValues = code$from, nodes = from_ArgList$nodes, logProb = code$logProb, logProbOnly = code$logProbOnly, row = from_ArgList$row)
                     accessFrom_name <- modelValuesAccessorVector_setupCodeTemplate$makeName(accessFrom_ArgList)
                     addNecessarySetupCode(accessFrom_name, accessFrom_ArgList, modelValuesAccessorVector_setupCodeTemplate, nfProc)
 		}
@@ -484,13 +484,13 @@ nimCopy_keywordInfo <- keywordInfoClass(
         
 		if(to_ArgList$class == 'symbolModel'){
                     isMVto <- 0
-                    accessTo_ArgList <- list(model = code$to, nodes = to_ArgList$nodes, logProb = code$logProb)
+                    accessTo_ArgList <- list(model = code$to, nodes = to_ArgList$nodes, logProb = code$logProb, logProbOnly = code$logProbOnly)
                     accessTo_name <- modelVariableAccessorVector_setupCodeTemplate$makeName(accessTo_ArgList)
                     addNecessarySetupCode(accessTo_name, accessTo_ArgList, modelVariableAccessorVector_setupCodeTemplate, nfProc)
 		}
 		else if(to_ArgList$class == 'symbolModelValues'){
                     isMVto <- 1
-                    accessTo_ArgList <- list(modelValues = code$to, nodes = to_ArgList$nodes, logProb = code$logProb, row = to_ArgList$row)
+                    accessTo_ArgList <- list(modelValues = code$to, nodes = to_ArgList$nodes, logProb = code$logProb, logProbOnly = code$logProbOnly, row = to_ArgList$row)
                     accessTo_name <- modelValuesAccessorVector_setupCodeTemplate$makeName(accessTo_ArgList)
                     addNecessarySetupCode(accessTo_name, accessTo_ArgList, modelValuesAccessorVector_setupCodeTemplate, nfProc)
 		}
@@ -840,7 +840,7 @@ matchFunctions[['calculate']] <- calculate
 matchFunctions[['calculateDiff']] <- calculateDiff
 matchFunctions[['simulate']] <- simulate
 matchFunctions[['getLogProb']] <- getLogProb
-matchFunctions[['nimCopy']] <- function(from, to, nodes, nodesTo, row, rowTo, logProb = FALSE){}
+matchFunctions[['nimCopy']] <- function(from, to, nodes, nodesTo, row, rowTo, logProb = FALSE, logProbOnly = FALSE){}
 matchFunctions[['double']] <- function(nDim, dim, default, ...){}
 matchFunctions[['int']] <- function(nDim, dim, default, ...){}
 matchFunctions[['nimOptim']] <- nimOptim
@@ -1014,13 +1014,14 @@ length_char_SetupTemplate <- setupCodeTemplateClass(
 
 modelVariableAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are model, nodes and logProb
-    makeName = function(argList) {Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'access_logProb', deparse(argList$logProb), sep = '_'))},
-    codeTemplate = quote( ACCESSNAME <- nimble:::modelVariableAccessorVector(MODEL, NODES, logProb = LOGPROB) ),
+    makeName = function(argList) {Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'access_logProb', deparse(argList$logProb),'LPO', deparse(argList$logProbOnly), sep = '_'))},
+    codeTemplate = quote( ACCESSNAME <- nimble:::modelVariableAccessorVector(MODEL, NODES, logProb = LOGPROB, logProbOnly = LOGPROBONLY) ),
     makeCodeSubList = function(resultName, argList) {
         list(ACCESSNAME = as.name(resultName),
              MODEL = argList$model,
              NODES = argList$nodes,
-             LOGPROB = argList$logProb)
+             LOGPROB = argList$logProb,
+             LOGPROBONLY = argList$logProbOnly)
     })
 
 copierVector_setupCodeTemplate <- setupCodeTemplateClass(
@@ -1038,13 +1039,14 @@ copierVector_setupCodeTemplate <- setupCodeTemplateClass(
 modelValuesAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are model, nodes and logProb
 
-    makeName = function(argList) {Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'access_logProb', deparse(argList$logProb), deparse(argList$row), sep = '_'))},
-    codeTemplate = quote( ACCESSNAME <- nimble:::modelValuesAccessorVector(MODEL, NODES, logProb = LOGPROB) ),
+    makeName = function(argList) {Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'access_logProb', deparse(argList$logProb), 'LPO', deparse(argList$logProbOnly), deparse(argList$row), sep = '_'))},
+    codeTemplate = quote( ACCESSNAME <- nimble:::modelValuesAccessorVector(MODEL, NODES, logProb = LOGPROB, logProbOnly = LOGPROBONLY) ),
 	makeCodeSubList = function(resultName, argList) {
         list(ACCESSNAME = as.name(resultName),
              MODEL = argList$model,
              NODES = argList$nodes,
-             LOGPROB = argList$logProb)
+             LOGPROB = argList$logProb,
+             LOGPROBONLY = argList$logProbOnly)
     })
 
 nodeFunctionVector_SetupTemplate <- setupCodeTemplateClass(
