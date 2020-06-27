@@ -2895,7 +2895,10 @@ modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TR
         else
             output2 <- unlist(lapply(parseEvalNumericManyList(nodeName, env = maps$vars2GraphID_functions_and_RHSonly, ignoreNotFound = ignoreNotFound), unique))
     } else {
-        output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2ID_elements, ignoreNotFound = ignoreNotFound))
+        if(unique)
+            output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2ID_elements))
+        else
+            output2 <- parseEvalNumericMany(nodeName, env = maps$vars2ID_elements)
     }
     output <- output2
     return(output[!is.na(output)])
