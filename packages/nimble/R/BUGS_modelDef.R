@@ -1503,34 +1503,49 @@ makeVertexNamesFromIndexArray2 <- function(indArr, minInd = 1, varName) {
     ## etc.
     splits <- lapply(arrayWithIndices, split, indArr)
 
-    ## info is a list of summaries from the splits
-    ## each entry is (min, max, 0/1 for vector, 0/1 for contiguous)
-    info <- lapply(splits, lapply, makeSplitInfo)
+    ## info is a list of matrices with summaries from the splits, 
+    ## the four rows are (min, max, 0/1 for vector, 0/1 for contiguous)
+    info <- lapply(splits, sapply, makeSplitInfo)  
 
-    ## Detect and fix cases of non-contiguous indices such as splits being `1`: [1 2] and `2`: [1 2] or `1`: [1, 2] and `2`: [2 1]
-    for(i in seq_along(info[[1]])) {
-        ## Check if a vector and all indexes seen to be contiguous
-        tmp <- sapply(info, `[[`, i) 
-        if(sum(tmp[3,] == 1) > 1 && all(tmp[4,] == 1)) {  # matrix or array seen as contiguous
-            if(length(splits[[1]][[i]]) != prod(tmp[2, ] - tmp[1, ] + 1))  # insufficient elements to fill out the block
-                for(j in seq_along(info))
-                    if(info[[j]][[i]][3] == 1)
-                        info[[j]][[i]][4] <- 0   # set all non-scalar indexes to be non-contiguous
+    ## Detect and fix cases of non-contiguous indices such as splits being `1`: [1 2] and `2`: [1 2] or `1`: [1, 2] and `2`: [2 1] 
+    if(nDim > 1) {   ## Initial determination of contiguity is fine for vectors
+        vec <- info[[1]][3, ]
+        contig <- info[[1]][4, ]
+        for(j in 2:nDim) {
+            vec <- vec + info[[j]][3, ]
+            contig <- contig + info[[j]][4, ]
         }
+        wh <- which(vec > 1 & contig == nDim)  # 2 or more dimensional block and all determined to be contiguous
+        
+        ## Multiply extent in each index to get size of block if all entries included.
+        implied_len <- ( info[[1]][2, wh] - info[[1]][1, wh] + 1 ) *  ( info[[2]][2, wh] - info[[2]][1, wh] + 1 )
+        if(nDim > 2)
+            for(j in 3:nDim)
+                implied_len <- implied_len * ( info[[j]][2,wh] - info[[j]][1,wh] + 1 )
+        actual_len <- sapply(splits[[1]][wh], length)
+        
+        ## When entries do not fill out the block, set contiguity to 0 for non-scalar indexes.
+        wh <- wh[actual_len != implied_len]
+        if(length(wh)) 
+            for(j in 1:nDim) 
+                info[[j]][4, wh[info[[j]][3, wh] == 1]] <- 0
     }
-
+    
     ## From here on is the construction of string labels from the info
-    dimStrings <- lapply(info, function(x) {
-        all <- do.call('rbind', x)   ## This makes a table with a row for each unique element of indArr
-        ## and columns following the order of info
-        seps <- rep(':', nrow(all))  ## initialize seps and modify later if needed 
-        scal <- all[,3]==0           ## which rows are for scalar elements
+    dimStrings <- lapply(info, function(all) {
+        ## `all` is a table with a column for each unique element of indArr
+        ## and rows following the order of info
+        seps <- rep(':', ncol(all))  ## initialize seps and modify later if needed 
+        scal <- all[3,]==0           ## which rows are for scalar elements
         seps[scal] <- ''             ## set the sep for scalars to ''
-        seps[all[,4]==0] <- '%.s%'    ## for rows that are not contiguous, use i %.s% j. Any actual call to %.s% results in an error.
-        maxStrs <- as.character(all[,2]) ## maximums
+        seps[all[4,]==0] <- '%.s%'    ## for rows that are not contiguous, use i %.s% j. Any actual call to %.s% results in an error.
+        maxStrs <- as.character(all[2,]) ## maximums
         maxStrs[scal] <- ''              ## clear maximums for scalars 
-        paste0(all[,1], seps, maxStrs)   ## paste minimum-separator-maximum
+        paste0(all[1,], seps, maxStrs)   ## paste minimum-separator-maximum
     })
+
+
+    }
     dimStrings[['sep']] <- ', '
     newNames <- paste0(varName, '[',  do.call('paste', dimStrings), ']') ## paste together pieces from different dimensions
     list(indices = as.integer(names(splits[[1]])), names = newNames)
