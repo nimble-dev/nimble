@@ -14,7 +14,7 @@ copierVector <- function(accessFrom_name, accessTo_name, isFromMV, isToMV) {
 }
 
 modelValuesAccessorVector <- function(mv, nodeNames, logProb = FALSE, logProbOnly = FALSE) {
-    ans <- list(mv, substitute(nodeNames), logProb, parent.frame(), logProbOnly)
+    ans <- list(mv, substitute(nodeNames), logProb | logProbOnly, parent.frame(), logProbOnly)
     class(ans) <- c('modelValuesAccessorVector', 'valuesAccessorVector')
     ans
 }

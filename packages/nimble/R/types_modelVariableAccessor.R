@@ -7,7 +7,7 @@
 
 
 modelVariableAccessorVector <- function(mv, nodeNames, logProb = FALSE, logProbOnly = FALSE) {
-    ans <- list(mv, substitute(nodeNames), logProb, parent.frame(), logProbOnly)
+    ans <- list(mv, substitute(nodeNames), logProb | logProbOnly, parent.frame(), logProbOnly)
     class(ans) <- c('modelVariableAccessorVector', 'valuesAccessorVector')
     ans
 }

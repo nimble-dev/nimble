@@ -159,9 +159,9 @@ sampler_RW <- nimbleFunction(
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
         calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
-        boolStoch <- model$isStoch(calcNodesNoSelf) ## This should be made faster
-        calcNodesDeterm <- calcNodes[!boolStoch]
-        calcNodesStoch <- calcNodes[boolStoch]
+        boolStochNoSelf <- model$isStoch(calcNodesNoSelf) ## This should be made faster
+        calcNodesDetermNoSelf <- calcNodesNoSelf[!boolStochNoSelf]
+        calcNodesStochNoSelf <- calcNodesNoSelf[boolStochNoSelf]
         ## numeric value generation
         scaleOriginal <- scale
         timesRan      <- 0
@@ -212,11 +212,13 @@ sampler_RW <- nimbleFunction(
             logMHR <- logMHR + calculateDiff(model, calcNodesNoSelf) + propLogScale
             jump <- decide(logMHR)
             if(jump) {
-                nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesDeterm, logProb = FALSE)
-                nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesStoch, logProbOnly = TRUE)
+                nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
+                nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesDetermNoSelf, logProb = FALSE)
+                nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesStochNoSelf, logProbOnly = TRUE)
             } else  {
-                nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesDeterm, logProb = FALSE)
-                nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesStoch, logProbOnly = TRUE)
+                nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = FALSE)
+                nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesDetermNoSelf, logProb = FALSE)
+                nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesStochNoSelf, logProbOnly = TRUE)
             }
         }
         if(adaptive)     adaptiveProcedure(jump)
