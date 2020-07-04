@@ -216,7 +216,7 @@ sampler_RW <- nimbleFunction(
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesDetermNoSelf, logProb = FALSE)
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesStochNoSelf, logProbOnly = TRUE)
             } else  {
-                nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = FALSE)
+                nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
                 nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesDetermNoSelf, logProb = FALSE)
                 nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesStochNoSelf, logProbOnly = TRUE)
             }
