@@ -1544,8 +1544,6 @@ makeVertexNamesFromIndexArray2 <- function(indArr, minInd = 1, varName) {
         paste0(all[1,], seps, maxStrs)   ## paste minimum-separator-maximum
     })
 
-
-    }
     dimStrings[['sep']] <- ', '
     newNames <- paste0(varName, '[',  do.call('paste', dimStrings), ']') ## paste together pieces from different dimensions
     list(indices = as.integer(names(splits[[1]])), names = newNames)
