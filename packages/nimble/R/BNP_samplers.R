@@ -1,19 +1,31 @@
 ## Used when syntax xi[1:N] ~ dCRP(conc) is used in BUGS.
 
 ## FIXME: this is temporary function until we bring this into the full model API
-getParentNodes <- function(nodes, model, returnType = 'names') {
+getParentNodes <- function(nodes, model, returnType = 'names', stochOnly = FALSE) {
     ## adapted from BUGS_modelDef creation of edgesFrom2To
+    getParentNodesCore <- function(nodes, model, returnType = 'names', stochOnly = FALSE) {
+        nodeIDs <- model$expandNodeNames(nodes, returnType = "ids")
+        fromIDs <- sort(unique(unlist(edgesTo2From[nodeIDs])))
+        fromNodes <- maps$graphID_2_nodeName[fromIDs]
+        if(!length(fromNodes))
+            return(character(0))
+        fromNodesDet <- fromNodes[model$modelDef$maps$types[fromIDs] == 'determ']
+        ## Recurse through parents of deterministic nodes.
+        fromNodes <- c(if(stochOnly) fromNodes[model$modelDef$maps$types[fromIDs] == 'stoch'] else fromNodes, 
+                       if(length(fromNodesDet)) getParentNodesCore(fromNodesDet, model, returnType, stochOnly) else character(0))
+        fromNodes
+    }
+    
     maps <- model$modelDef$maps
     maxNodeID <- length(maps$vertexID_2_nodeID) ## should be same as length(maps$nodeNames)
-   
+    ## Only determine edgesTo2From once and then obtain in getParentNodesCore via scoping.
     edgesLevels <- if(maxNodeID > 0) 1:maxNodeID else numeric(0)
     fedgesTo <- factor(maps$edgesTo, levels = edgesLevels) ## setting levels ensures blanks inserted into the splits correctly
-    edgesTo2From <<- split(maps$edgesFrom, fedgesTo)
-    nodeIDs <- model$expandNodeNames(nodes, returnType = "ids")
-    fromIDs <- sort(unique(unlist(edgesTo2From[nodeIDs])))
-    fromNodes <- maps$graphID_2_nodeName[fromIDs]
-    fromNodes
+    edgesTo2From <- split(maps$edgesFrom, fedgesTo)
+
+    getParentNodesCore(nodes, model, returnType, stochOnly)
 }
+
 
 ##-----------------------------------------
 ##  Wrapper function for sampleDPmeasure
@@ -1375,8 +1387,7 @@ sampler_CRP <- nimbleFunction(
     ## Determine if concentration parameter is fixed or random (code similar to the one in sampleDPmeasure function).
     ## This is used in truncated case to tell user if model is proper or not.
     fixedConc <- TRUE
-    cands <- getParentNodes(target, model)
-    parentNodesTarget <- cands[cands %in% model$getNodeNames(includeData=FALSE)]
+    parentNodesTarget <- getParentNodes(target, model, stochOnly = TRUE)
     if(length(parentNodesTarget)) {
       fixedConc <- FALSE
     }
