@@ -2,6 +2,11 @@
 #define _NIMDERIVS_ATOMIC_CLASSES
 
 // See end of this file for global object definitions and functions to call
+#include <cppad/cppad.hpp>
+#include <cppad/utility/nan.hpp>
+#include <R.h>
+#include <Rinternals.h>
+#include <Rmath.h>
 
 template<class T>
 class unary_atomic_class : public CppAD::atomic_three<T> {
@@ -37,10 +42,7 @@ class unary_atomic_class : public CppAD::atomic_three<T> {
 class atomic_lgamma_class : public unary_atomic_class<double> {
   public:
   // From atomic_three_get_started
- atomic_lgamma_class(const std::string& name, int baseOrder_) : 
-  unary_atomic_class<double>(name),
-    baseOrder(baseOrder_)
-    { }
+  atomic_lgamma_class(const std::string& name, int baseOrder_);
 
 private:
     int baseOrder;
@@ -51,32 +53,7 @@ private:
       size_t                              order_low    ,
       size_t                              order_up     ,
       const CppAD::vector<double>&               taylor_x     ,
-      CppAD::vector<double>&                     taylor_y     )
-  {
-    //    std::cout<<"forward "<<order_low<<" "<<order_up<<" "<<taylor_x[0]<<std::endl;
-    if(order_low <= 0 & order_up >= 0) {
-      if(baseOrder == 0)
-	taylor_y[0] = Rf_lgammafn(taylor_x[0]);
-      else
-	taylor_y[0] = Rf_psigamma(taylor_x[0], baseOrder-1);
-      //      std::cout<<"taylor_y[0] "<<taylor_y[0]<<std::endl;
-    }
-    double fprime;
-    if(order_low <= 2 & order_up >= 1)
-      fprime = Rf_psigamma(taylor_x[0], baseOrder);
-    if(order_low <= 1 & order_up >= 1) {
-      taylor_y[1] = fprime * taylor_x[1];
-      // std::cout<<"taylor_y[1] "<<taylor_y[1]<<std::endl;
-      // f'(x) (x')
-    }
-    if(order_low <= 2 & order_up >= 2) {
-      taylor_y[2] = 0.5 * (Rf_psigamma(taylor_x[0], baseOrder+1) * taylor_x[1] * taylor_x[1] + 
-        fprime * 2 * taylor_x[2]);
-      // 0.5 * ((f''(x)) (x')^2 + 2*f'(x) (x''))
-      // Note x'' is a taylor coeff so it is 0.5*2nd deriv
-    }
-    return true;
-  }
+      CppAD::vector<double>&                     taylor_y     );
   virtual bool forward(
 		       const CppAD::vector< CppAD::AD<double> >&               parameter_x  ,
 		       const CppAD::vector<CppAD::ad_type_enum>&  type_x       ,
@@ -100,24 +77,8 @@ private:
       const CppAD::vector<double>&               taylor_x    ,
       const CppAD::vector<double>&               taylor_y    ,
       CppAD::vector<double>&                     partial_x   ,
-      const CppAD::vector<double>&               partial_y   )
-  {
-    //    std::cout<<"reverse "<<order_up<<" "<<taylor_x[0]<<" "<<partial_y[0]<<std::endl;
-    partial_x[0] = 0;
-    if(order_up >= 1) partial_x[1] = 0;
-    double fprime = Rf_psigamma(taylor_x[0], baseOrder);
-    if(order_up >= 1) {
-      partial_x[1] += partial_y[1] * fprime;
-      partial_x[0] += partial_y[1] * Rf_psigamma(taylor_x[0], baseOrder+1) * taylor_x[1];
-      // std::cout<<partial_x[1]<<" ";
-    }
-    partial_x[0] += partial_y[0] * fprime;
-    // std::cout<<partial_x[0]<<std::endl;
-    // dG/dx = dG/dy  dy/dx 
-    return true;
-  }
+      const CppAD::vector<double>&               partial_y   );
 };
-
 
 /******************************/
 
@@ -310,54 +271,6 @@ T nimDerivs_qnorm1(T x) {
   in[0] = x;
   static_atomic_qnorm1(in, out);
   return out[0];
-}
-
-bool atomic_lgamma_class::forward(
-				  const CppAD::vector< CppAD::AD<double> >&               parameter_x  ,
-				  const CppAD::vector<CppAD::ad_type_enum>&  type_x       ,
-				  size_t                              need_y       ,
-				  size_t                              order_low    ,
-				  size_t                              order_up     ,
-				  const CppAD::vector< CppAD::AD<double> >&               taylor_x     ,
-				  CppAD::vector< CppAD::AD<double> >&                     taylor_y     )
-{
-  //  printf("In lgamma meta-forward for orders %lu %lu\n", order_low, order_up);
-
-  if(order_low <= 0 & order_up >= 0) {
-    taylor_y[0] = nimDerivs_lgammafn(taylor_x[0], baseOrder); // This puts it in the new tape being recorded
-  }
-  CppAD::AD<double> fprime;
-  if(order_low <= 2 & order_up >= 1)
-    fprime = nimDerivs_lgammafn(taylor_x[0], baseOrder+1);
-  if(order_low <= 1 & order_up >= 1) {
-    taylor_y[1] = fprime * taylor_x[1];
-  }
-  if(order_low <= 2 & order_up >= 2) {
-    taylor_y[2] = 0.5 * (nimDerivs_lgammafn(taylor_x[0], baseOrder+2) * taylor_x[1] * taylor_x[1] + 
-			 fprime * 2 * taylor_x[2]);
-  }
-  return true;
-}
-
-bool atomic_lgamma_class::reverse(
-				  const CppAD::vector< CppAD::AD<double> >&               parameter_x ,
-				  const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
-				  size_t                              order_up    ,
-				  const CppAD::vector< CppAD::AD<double> >&               taylor_x    ,
-				  const CppAD::vector< CppAD::AD<double> >&               taylor_y    ,
-				  CppAD::vector< CppAD::AD<double> >&                     partial_x   ,
-				  const CppAD::vector< CppAD::AD<double> >&               partial_y   ) 
-{
-  //  printf("In lgamma meta-reverse for order_up %lu\n", order_up);
-  partial_x[0] = 0;
-  if(order_up >= 1) partial_x[1] = 0;
-  CppAD::AD<double> fprime = nimDerivs_lgammafn(taylor_x[0], baseOrder+1);
-  if(order_up >= 1) {
-    partial_x[1] += partial_y[1] * fprime;
-    partial_x[0] += partial_y[1] * nimDerivs_lgammafn(taylor_x[0], baseOrder+2) * taylor_x[1];
-  }
-  partial_x[0] += partial_y[0] * fprime;
-  return true;
 }
 
 #endif

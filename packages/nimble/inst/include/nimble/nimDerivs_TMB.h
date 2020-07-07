@@ -912,7 +912,7 @@ Type nimDerivs_nimArr_ddirch_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &alpha
 /* Functions */
 
 /* discrete-round is four lines of code from TMB. */
-double discrete_round(const double &x)
+inline double discrete_round(const double &x)
 {     
   double out_x = round(x);
   return(out_x);

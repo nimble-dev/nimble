@@ -86,7 +86,7 @@ void setNimbleFxnPtr_copyFromRobject(void *nf_to, SEXP S_NF_from) {
 	    );
     unprotectCount += 3;
   } else {
-    printf("in non-list\n");
+    // printf("in non-list\n");
     // full interface
     // Cnf$.basePtr
     PROTECT(SsinglePtr =  Rf_findVarInFrame(PROTECT(GET_SLOT(
