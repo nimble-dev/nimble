@@ -145,10 +145,10 @@ inits <- list(thetatilde = rnorm(constants$M, 0, 10),
               z = sample(1:5, size = constants$N, replace = TRUE),
               alpha  = 1,
               sigma2 = 1)
-Rmodel <- nimbleModel(code, constants, data, inits)
+modelRandEff <- nimbleModel(code, constants, data, inits)
 ```
 
-The resulting model may be fitted through  MCMC sampling. NIMBLE will assign a specialized sampler to update `z` and `alpha`. See Chapter  \@ref(cha:mcmc) for information about NIMBLE's MCMC engine, and Section \@ref(sec:mcmcdcrp) for details on  MCMC sampling of the CRP.
+As before, the resulting model may be fitted through  MCMC sampling. NIMBLE will assign a specialized sampler to update `z` and `alpha`. See Chapter  \@ref(cha:mcmc) for information about NIMBLE's MCMC engine, and Section \@ref(sec:mcmcdcrp) for details on  MCMC sampling of the CRP.
 
 ## Stick-breaking model {#sec:sb}
 
