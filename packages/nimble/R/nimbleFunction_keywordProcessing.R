@@ -1980,10 +1980,10 @@ nimDerivsInfoClass_init_impl <- function(.self
     .self$wrtMapInfo <- makeMapInfoFromAccessorVectorFaster(wrtNodesAccessor)
 
     calcNodes <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE)
-    updateNodes <- makeUpdateNodes(wrtNodes,
-                                   calcNodes,
-                                   model,
-                                   dataAsConstantNodes = TRUE)
+    updateNodes <- makeUpdateNodes_impl(wrtNodes,
+                                        calcNodes,
+                                        model,
+                                        dataAsConstantNodes = TRUE)
     constantNodes <- updateNodes$constantNodes
     updateNodes <- updateNodes$updateNodes
     
@@ -2056,6 +2056,18 @@ makeUpdateNodes <- function(wrtNodes,
                             calcNodes,
                             model,
                             dataAsConstantNodes = TRUE) {
+  wrtNodes <- model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE)
+  calcNodes <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE)
+  makeUpdateNodes_impl(wrtNodes,
+                       calcNodes,
+                       model,
+                       dataAsConstantNodes)
+}
+
+makeUpdateNodes_impl <- function(wrtNodes,
+                                 calcNodes,
+                                 model,
+                                 dataAsConstantNodes = TRUE) {
   nonWrtCalcNodes <- setdiff(calcNodes, wrtNodes)
   nonWrtCalcNodeNames <- model$expandNodeNames(nonWrtCalcNodes, returnScalarComponents = TRUE)
   nonWrtStochCalcNodeNames <- nonWrtCalcNodeNames[ model$isStoch(nonWrtCalcNodeNames) ]  

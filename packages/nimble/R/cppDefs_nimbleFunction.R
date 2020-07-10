@@ -633,18 +633,20 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
 
 ## The next block of code has the initial setup for an AST processing stage
 ## to make modifications for AD based on context etc.
-modifyForAD_handlers <- c(list(eigenBlock = 'modifyForAD_eigenBlock',
-                               calculate = 'modifyForAD_calculate',
-                               getValues = 'modifyForAD_getSetValues',
-                               setValues = 'modifyForAD_getSetValues',
-                               nfMethod = 'modifyForAD_nfMethod',
-                               chainedCall = 'modifyForAD_chainedCall',
-                               getDerivs_wrapper = 'modifyForAD_getDerivs_wrapper',
-                               AssignEigenMap = 'modifyForAD_AssignEigenMap',
-                               ADbreak = 'modifyForAD_ADbreak'),
-                          makeCallList(recyclingRuleOperatorsAD, 'modifyForAD_RecyclingRule'),
-                          makeCallList(c('EIGEN_FS', 'EIGEN_BS', 'EIGEN_SOLVE'),
-                                       'modifyForAD_prependNimDerivs'))
+modifyForAD_handlers <- c(list(
+    pow = 'modifyForAD_issueWarning',
+    eigenBlock = 'modifyForAD_eigenBlock',
+    calculate = 'modifyForAD_calculate',
+    getValues = 'modifyForAD_getSetValues',
+    setValues = 'modifyForAD_getSetValues',
+    nfMethod = 'modifyForAD_nfMethod',
+    chainedCall = 'modifyForAD_chainedCall',
+    getDerivs_wrapper = 'modifyForAD_getDerivs_wrapper',
+    AssignEigenMap = 'modifyForAD_AssignEigenMap',
+    ADbreak = 'modifyForAD_ADbreak'),
+    makeCallList(recyclingRuleOperatorsAD, 'modifyForAD_RecyclingRule'),
+    makeCallList(c('EIGEN_FS', 'EIGEN_BS', 'EIGEN_SOLVE'),
+                 'modifyForAD_prependNimDerivs'))
 
 exprClasses_modifyForAD <- function(code, symTab,
                                     workEnv = list2env(list(wrap_in_value = FALSE))) {
@@ -706,10 +708,16 @@ exprClasses_modifyForAD <- function(code, symTab,
   invisible(NULL)
 }
 
+modifyForAD_issueWarning <- function(code, symTab, workEnv) {
+  warning(paste0("Operator ", code$name, " can cause problems (potentially crashes) from AD."), call.=FALSE)
+  invisible(NULL)
+}
+
 modifyForAD_ADbreak <- function(code, symTab, workEnv) {
   code$name <- 'CppAD::Value'
   invisible(NULL)
 }
+
 modifyForAD_RecyclingRule <- function(code, symTab, workEnv) {
   ## The conversion to nimDerivs_really has to do with the C++ return type
   ## and that should always convert to CppAD::AD<double>, which is achieved
