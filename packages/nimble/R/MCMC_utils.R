@@ -57,7 +57,7 @@ decideAndJump <- nimbleFunction(
         } else   { nimCopy(from = mvSaved, to = model,   row = 1, nodes = calcNodes, logProb = TRUE) }
         returnType(logical())
         return(jump)
-    }, where = getLoadingNamespace()
+    }
 )
 
 
@@ -100,7 +100,7 @@ setAndCalculateOne <- nimbleFunction(
         lp <- calculate(model, calcNodes)
         returnType(double())
         return(lp)
-    },  where = getLoadingNamespace()
+    }
 )
 
 
@@ -143,7 +143,7 @@ setAndCalculate <- nimbleFunction(
         lp <- calculate(model, calcNodes)
         returnType(double())
         return(lp)
-    }, where = getLoadingNamespace()
+    }
 )
 
 #' @rdname setAndCalculate
@@ -159,7 +159,7 @@ setAndCalculateDiff <- nimbleFunction(
         lpD <- calculateDiff(model, calcNodes)
         returnType(double())
         return(lpD)
-    }, where = getLoadingNamespace()
+    }
 )
 
 
@@ -190,7 +190,7 @@ calcAdaptationFactor <- nimbleFunction(
             timesAdapted <<- 0
             gamma1       <<- 0
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -247,6 +247,7 @@ mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonS
         if(grepl('^CRP_cluster_wrapper', names(ls)[1]) && 'wrapped_type' %in% names(ls) &&
            grepl('conjugate_d', ls$wrapped_type)[1]) ls <- ls[!names(ls) %in% c('wrapped_conf')]
     }
+    if((names(ls)[1] == 'CRP sampler') && ('clusterVarInfo' %in% names(ls)))   ls[which(names(ls) == 'clusterVarInfo')] <- NULL   ## remove 'clusterVarInfo' from CRP sampler printing
     ls <- lapply(ls, function(el) if(is.nf(el) || is.function(el)) 'function' else el)   ## functions -> 'function'
     ls2 <- list()
     ## to make displayControlDefaults argument work again, would need to code process

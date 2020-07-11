@@ -8,6 +8,7 @@
 #' @rdname samplers
 #' @export
 sampler_BASE <- nimbleFunctionVirtual(
+    name = 'sampler_BASE',
     methods = list(
         reset = function() { }
     )
@@ -35,7 +36,7 @@ sampler_posterior_predictive <- nimbleFunction(
     },
     methods = list(
         reset = function() { }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -75,7 +76,7 @@ sampler_binary <- nimbleFunction(
     },
     methods = list(
         reset = function() { }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -132,7 +133,7 @@ sampler_categorical <- nimbleFunction(
     },
     methods = list(
         reset = function() { }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -281,7 +282,7 @@ sampler_RW <- nimbleFunction(
             }
             gamma1 <<- 0
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -453,7 +454,7 @@ sampler_RW_block <- nimbleFunction(
             }
             my_calcAdaptationFactor$reset()
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -499,7 +500,7 @@ sampler_RW_llFunction <- nimbleFunction(
         reset = function() {
             targetRWSamplerFunction$reset()
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -607,7 +608,7 @@ sampler_slice <- nimbleFunction(
             timesAdapted <<- 0
             sumJumps     <<- 0
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -672,7 +673,7 @@ sampler_ess <- nimbleFunction(
     },
     methods = list(
         reset = function() { }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -858,7 +859,7 @@ sampler_AF_slice <- nimbleFunction(
             adaptWidthInterval <<- 1
             widthIndicatorVec  <<- rep(1, d)
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -880,7 +881,7 @@ getPosteriorDensityFromConjSampler <- nimbleFunction(
         posteriorLogDensity <- conjugateSamplerFunction$getPosteriorLogDensity()
         returnType(double())
         return(posteriorLogDensity)
-    }, where = getLoadingNamespace()
+    }
 )
 
 #' @rdname samplers
@@ -948,7 +949,7 @@ sampler_crossLevel <- nimbleFunction(
                 lowConjugateSamplerFunctions[[iSF]]$reset()
             }
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1043,7 +1044,7 @@ sampler_RW_llFunction_block <- nimbleFunction(
             timesAdapted  <<- 0
             my_calcAdaptationFactor$reset()
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1218,7 +1219,7 @@ sampler_RW_PF <- nimbleFunction(
             storeParticleLP <<- -Inf
             gamma1 <<- 0
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1420,7 +1421,7 @@ sampler_RW_PF_block <- nimbleFunction(
             timesAdapted  <<- 0
             my_calcAdaptationFactor$reset()
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1551,7 +1552,7 @@ sampler_RW_multinomial <- nimbleFunction(
             ENSwapDeltaMatrix <<- Ones
             RescaleThreshold  <<- 0.2 * Ones
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1631,7 +1632,7 @@ sampler_RW_dirichlet <- nimbleFunction(
             timesAdapted     <<- 0
             gamma1           <<- 0
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1749,7 +1750,7 @@ sampler_RW_wishart <- nimbleFunction(
             timesAdapted  <<- 0
             my_calcAdaptationFactor$reset()
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1791,7 +1792,7 @@ CAR_scalar_postPred <- nimbleFunction(
     },
     methods = list(
         reset = function() { }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1865,7 +1866,7 @@ CAR_scalar_conjugate <- nimbleFunction(
     },
     methods = list(
         reset = function() { }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1938,7 +1939,7 @@ CAR_scalar_RW <- nimbleFunction(
             timesAdapted  <<- 0
             gamma1 <<- 0
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -2003,7 +2004,7 @@ sampler_CAR_normal <- nimbleFunction(
             for(iSF in seq_along(componentSamplerFunctions))
                 componentSamplerFunctions[[iSF]]$reset()
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -2063,7 +2064,7 @@ sampler_CAR_proper <- nimbleFunction(
             for(iSF in seq_along(componentSamplerFunctions))
                 componentSamplerFunctions[[iSF]]$reset()
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -2116,6 +2117,8 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item scale. The initial value of the scalar multiplier for propCov.  If adaptive = FALSE, scale will never change. (default = 1)
 #' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the character string 'identity', in which case the identity matrix of the appropriate dimension will be used for the initial proposal covariance matrix. (default = 'identity')
 #' }
+#'
+#' Note that modifying elements of the control list may greatly affect the performance of this sampler. In particular, the sampler can take a long time to find a good proposal covariance when the elements being sampled are not on the same scale. We recommend providing an informed value for \code{propCov} in this case (possibly simply a diagonal matrix that approximates the relative scales), as well as possibly providing a value of \code{scale} that errs on the side of being too small. You may also consider decreasing \code{adaptFactorExponent} and/or \code{adaptInterval}, as doing so has greatly improved performance in some cases. 
 #'
 #' @section RW_llFunction sampler:
 #'
@@ -2303,10 +2306,16 @@ sampler_CAR_proper <- nimbleFunction(
 #' @section CRP sampler:
 #' 
 #' The CRP sampler is designed for fitting models involving Dirichlet process mixtures. It is exclusively assigned by NIMBLE's default MCMC configuration to nodes having the Chinese Restaurant Process distribution, \code{dCRP}. It executes sequential sampling of each component of the node (i.e., the cluster membership of each element being clustered). Internally, either of two samplers can be assigned, depending on conjugate or non-conjugate structures within the model. For conjugate and non-conjugate model structures, updates are based on Algorithm 2 and Algorithm 8 in Neal (2000), respectively.
-#'  
+#'
+#  The CRP sampler accepts the following control list elements:
+#' \itemize{
+#' \item \code{checkConjugacy}. A logical argument, specifying whether to assign conjugate samplers if valid. (default = \code{TRUE})
+#' \item \code{printTruncation}. A logical argument, specifying whether to print a warning when the MCMC attempts to use more clusters than the maximum number specified in the model. Only relevant where the user has specified the maximum number of clusters to be less than the number of observations. (default = \code{TRUE})
+#' }
+#' 
 #' @section CRP_concentration sampler:
 #' 
-#' The CRP_concentration sampler is designed for Bayesian nonparametric mixture modeling. It is exclusively assigned to the concentration parameter of the Dirichlet process when the model is specified using theChinese Restaurant Process distribution, \code{dCRP}. This sampler is assigned by default by NIMBLE's default MCMC configuration and is and can only be used when the prior for the concentration is a gamma distribution. The assigned sampler is an augmented beta-gamma sampler as discussed in Section 6 in Escobar and West (1995).
+#' The CRP_concentration sampler is designed for Bayesian nonparametric mixture modeling. It is exclusively assigned to the concentration parameter of the Dirichlet process when the model is specified using the Chinese Restaurant Process distribution, \code{dCRP}. This sampler is assigned by default by NIMBLE's default MCMC configuration and can only be used when the prior for the concentration parameter is a gamma distribution. The assigned sampler is an augmented beta-gamma sampler as discussed in Section 6 in Escobar and West (1995).
 #' 
 #' @section posterior_predictive sampler:
 #'

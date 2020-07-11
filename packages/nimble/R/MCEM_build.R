@@ -28,7 +28,7 @@ calc_asympVar = nimbleFunction(
     svalsVar <- svalsSD^2
     returnType(double())
     return(svalsVar)
-  },where = getLoadingNamespace()
+  }
 )
 
 
@@ -84,7 +84,7 @@ calc_E_llk_gen = nimbleFunction(
     }
     returnType(double())
     return(mean_LL)
-  },where = getLoadingNamespace())
+  })
 
 
 ## helper function to extract ranges of nodes to be maximized
@@ -98,7 +98,7 @@ getMCEMRanges <- nimbleFunction(name = 'getMCEMRanges',
       hi_limits[i]  = getBound(model, nodes[i], 'upper')  - abs(buffer)
     }
     return(list(low_limits, hi_limits))
-  }, where = getLoadingNamespace()
+  }
 )
 
 #' Builds an MCEM algorithm from a given NIMBLE model
@@ -508,4 +508,4 @@ bootstrapGetCov <- nimbleFunction(
     returnType(double(2))
     returnMat <- -meanDerivxy - meanGradGrad +(meanGrad%*%t(meanGrad))
     return(returnMat)
-  },where = getLoadingNamespace())
+  })
