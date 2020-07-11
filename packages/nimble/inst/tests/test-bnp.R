@@ -2817,21 +2817,24 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   expect_equal(n, clusterNodeInfo$nTilde)
   
   ## Awkward trapping of observations with different distributions.
-  ## We should trap this when checking conjugacy instead and simply assign non-conjugate sampler.
+  ## This fails because we want the indexing of cluster parameters to be one contiguous block.
   code <- nimbleCode({
     xi[1:n] ~ dCRP(conc, n)
     for(i in 1:n) 
       y[i] ~ dnorm(mu[i], var = 1)
-    for(i in 1:(n-1))
-      mu[i] <- muTilde[xi[i]]
-    mu[n] <- exp(muTilde[xi[n]])
+    for(i in 1:(n-2))
+        mu[i] <- muTilde[xi[i]]
+    for(j in (n-1):n)
+        mu[j] <- exp(muTilde[xi[j]])
     for(i in 1:n)
       muTilde[i] ~ dnorm(0, 1)
   })
+  constSave <- const
+  const$n <- 4
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
   conf <- configureMCMC(m)
-  expect_error(mcmc <- buildMCMC(conf), "Detected unusual indexing in")
-  
+  expect_error(mcmc <- buildMCMC(conf), "differing number of clusters indicated by")
+  const <- constSave
   
   ## conjugate but observations not IID  
   code <- nimbleCode({
@@ -3161,6 +3164,10 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   })
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
   expect_error(conf <- configureMCMC(m), "CRP variable used multiple times in")
+
+  ## Various additional cases based on more general BNP functionality
+
+  
 })
 
 

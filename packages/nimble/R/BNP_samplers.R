@@ -1858,11 +1858,11 @@ findClusterNodes <- function(model, target) {
         if(length(loopIndexes) != 1)
             stop("findClusterNodes: found cluster membership parameters that use different indexing variables; NIMBLE's CRP sampling not designed for this case.")
         ## Note not clear when NULL would be the result...
-        loopIndex[[varIdx]] <- loopIndexes
+        loopIndex[varIdx] <- loopIndexes
 
         ## Determine potential cluster nodes by substituting all possible clusterID values into the indexing expression. 
         n <- nrow(unrolledIndices)
-        if(n > 0 && loopIndex %in% dimnames(unrolledIndices)[[2]]) {  # catch cases like use of xi[2] rather than xi[i]
+        if(n > 0 && loopIndex[varIdx] %in% dimnames(unrolledIndices)[[2]]) {  # catch cases like use of xi[2] rather than xi[i]
             ## Order so that loop over index of cluster ID in order of cluster ID so that
             ## clusterNodes will be grouped in chunks of unique cluster IDs for correct
             ## sampling of new clusters when have multiple obs per cluster.
