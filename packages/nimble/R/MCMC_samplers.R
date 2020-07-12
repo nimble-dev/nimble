@@ -72,7 +72,7 @@ sampler_binary <- nimbleFunction(
             otherLogProb <- otherLogProbPrior + calculate(model, calcNodesNoSelf)
         }
         acceptanceProb <- 1/(exp(currentLogProb - otherLogProb) + 1)
-        jump <- (!is.nan(acceptanceProb)) && (runif(1,0,1) < acceptanceProb)
+        jump <- (!is.nan(acceptanceProb)) & (runif(1,0,1) < acceptanceProb)
         if(jump) {
             nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelfDeterm, logProb = FALSE)
@@ -345,8 +345,8 @@ sampler_RW_block <- nimbleFunction(
         calcNodesDepStage <- calcNodes[-(1:finalTargetIndex)]
         ##calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         isStochCalcNodesDepStage <- model$isStoch(calcNodesDepStage)   ## should be made faster
-        calcNodesDepStageDeterm <- calcNodesNoSelf[!isStochCalcNodesDepStage]
-        calcNodesDepStageStoch <- calcNodesNoSelf[isStochCalcNodesDepStage]
+        calcNodesDepStageDeterm <- calcNodesDepStage[!isStochCalcNodesDepStage]
+        calcNodesDepStageStoch <- calcNodesDepStage[isStochCalcNodesDepStage]
         ## numeric value generation
         scaleOriginal <- scale
         timesRan      <- 0
@@ -751,8 +751,8 @@ sampler_AF_slice <- nimbleFunction(
         calcNodesDepStage <- calcNodes[-(1:finalTargetIndex)]
         ##calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         isStochCalcNodesDepStage <- model$isStoch(calcNodesDepStage)   ## should be made faster
-        calcNodesDepStageDeterm <- calcNodesNoSelf[!isStochCalcNodesDepStage]
-        calcNodesDepStageStoch <- calcNodesNoSelf[isStochCalcNodesDepStage]
+        calcNodesDepStageDeterm <- calcNodesDepStage[!isStochCalcNodesDepStage]
+        calcNodesDepStageStoch <- calcNodesDepStage[isStochCalcNodesDepStage]
         ## numeric value generation
         d                  <- length(targetAsScalar)
         discrete           <- sapply(targetAsScalar, function(x) model$isDiscrete(x))
