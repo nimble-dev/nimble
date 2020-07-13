@@ -1866,9 +1866,9 @@ findClusterNodes <- function(model, target) {
             ## Order so that loop over index of cluster ID in order of cluster ID so that
             ## clusterNodes will be grouped in chunks of unique cluster IDs for correct
             ## sampling of new clusters when have multiple obs per cluster.
-            ord <- order(unrolledIndices[ , loopIndex[varIdx]])
+            ord <- order(unrolledIndices[ , loopIndex[[varIdx]]])
             unrolledIndices <- unrolledIndices[ord, , drop = FALSE]
-            clusterIDs[[varIdx]] <- unrolledIndices[ , loopIndex[varIdx]]
+            clusterIDs[[varIdx]] <- unrolledIndices[ , loopIndex[[varIdx]]]
 
             clusterNodes[[varIdx]] <- rep(NA, n)
             
