@@ -102,7 +102,7 @@ sampler_categorical <- nimbleFunction(
     setup = function(model, mvSaved, target, control) {
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        calcNodes  <- model$getDependencies(target)
+        calcNodes <- model$getDependencies(target)
         calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         isStochCalcNodesNoSelf <- model$isStoch(calcNodesNoSelf)   ## should be made faster
         calcNodesNoSelfDeterm <- calcNodesNoSelf[!isStochCalcNodesNoSelf]
@@ -741,7 +741,7 @@ sampler_AF_slice <- nimbleFunction(
         eps <- 1e-15
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        calcNodes      <- model$getDependencies(target)
+        calcNodes <- model$getDependencies(target)
         finalTargetIndex <- max(match(model$expandNodeNames(target), calcNodes))
         if(!is.integer(finalTargetIndex) |
            length(finalTargetIndex) != 1 |
@@ -1633,7 +1633,7 @@ sampler_RW_dirichlet <- nimbleFunction(
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
-        depNodes  <- model$getDependencies(target, self = FALSE)
+        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         isStochCalcNodesNoSelf <- model$isStoch(calcNodesNoSelf)   ## should be made faster
         calcNodesNoSelfDeterm <- calcNodesNoSelf[!isStochCalcNodesNoSelf]
         calcNodesNoSelfStoch <- calcNodesNoSelf[isStochCalcNodesNoSelf]
@@ -1661,7 +1661,7 @@ sampler_RW_dirichlet <- nimbleFunction(
                 thetaVecProp <- thetaVec
                 thetaVecProp[i] <- propValue
                 values(model, target) <<- thetaVecProp / sum(thetaVecProp)
-                logMHR <- alphaVec[i]*propLogScale + currentValue - propValue + calculateDiff(model, depNodes)
+                logMHR <- alphaVec[i]*propLogScale + currentValue - propValue + calculateDiff(model, calcNodesNoSelf)
                 jump <- decide(logMHR)
             } else jump <- FALSE
             if(adaptive & jump)   timesAcceptedVec[i] <<- timesAcceptedVec[i] + 1
