@@ -1,3 +1,10 @@
+sizeProc_storage_mode <- function(x) {
+    if(is.na(x))
+        if(storage.mode(x) == 'logical')
+            return('integer') ## promote logical NA to integer for compiled code.
+    storage.mode(x)
+}
+    
 assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol',
                               'nimArr_rmvt_chol',
                               'nimArr_rwish_chol',
@@ -562,7 +569,7 @@ sizeConcatenate <- function(code, symTab, typeEnv) { ## This is two argument ver
                         asserts <- c(asserts, sizeInsertIntermediate(code, thisArgIndex, symTab, typeEnv))
                     thisType <- arithmeticOutputType(thisType, code$args[[thisArgIndex]]$type)
                 } else {
-                    thisType <- storage.mode(code$args[[thisArgIndex]]) ##'double'
+                    thisType <- sizeProc_storage_mode(code$args[[thisArgIndex]]) ##'double'
                 }
                 ## Putting a map, or a values access, through parse(nimDeparse) won't work
                 ## So we lift any expression element above.
@@ -1753,7 +1760,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
         if(is.numeric(RHS) | is.logical(RHS)) {
             RHSname = ''
             RHSnDim <- 0
-            RHStype <- storage.mode(RHS)
+            RHStype <- sizeProc_storage_mode(RHS)
             RHSsizeExprs <- list() 
         }
         else if(is.character(RHS)){
@@ -2652,7 +2659,7 @@ getArgumentType <- function(expr) {
     if(inherits(expr, 'exprClass')) {
         expr$type
     } else
-        storage.mode(expr)
+        sizeProc_storage_mode(expr)
 }
 
 setReturnType <- function(keyword, argType) {
@@ -3089,7 +3096,7 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
         a1DropNdim <- 0
         a1nDim <- 0
         a1sizeExprs <- list()
-        a1type <- storage.mode(a1)
+        a1type <- sizeProc_storage_mode(a1)
         if(!nimbleOptions('experimentalNewSizeProcessing') ) a1toEigenize <- 'maybe'
     }
     if(inherits(a2, 'exprClass')) {
@@ -3109,7 +3116,7 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
         a2DropNdim <- 0
         a2nDim <- 0
         a2sizeExprs <- list()
-        a2type <- storage.mode(a2)
+        a2type <- sizeProc_storage_mode(a2)
         if(!nimbleOptions('experimentalNewSizeProcessing') )  a2toEigenize <- 'maybe'
     }
     
