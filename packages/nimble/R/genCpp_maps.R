@@ -189,20 +189,22 @@ makeEigenBlockExprFromBrackets <- function(code, drop = TRUE) {
 makeMapExprFromBrackets <- function(code, drop = TRUE) {
     ## code nDim, type and sizeExprs have already been set, and toEigenize will be set to 'maybe'
     if(code$args[[1]]$name == 'map') {
-        sourceVarName <- code$args[[1]]$args[[1]]
-        sourceVarExpr <- as.name(sourceVarName)
+        sourceRexpr <- code$args[[1]]$args[[1]]
+        ##sourceVarName <- code$args[[1]]$args[[1]]
+        ##sourceVarExpr <- as.name(sourceVarName)
         sourceOffsetRexpr <- code$args[[1]]$args[[3]]
         sourceSizeExprs <- code$args[[1]]$args[[4]]
         sourceNdim <- length(sourceSizeExprs)
         sourceStrideRexprs <- code$args[[1]]$args[[5]]
     } else {
-        sourceVarName <- code$args[[1]]$name
-        if(!code$args[[1]]$isName) writeLines(paste0('Watch out, in makeMapExprFromBrackets for ', nimDeparse(code), ', there is an expression instead of a name.'))
-        sourceVarExpr <- as.name(sourceVarName)
+        sourceRexpr <- parse(text = nimDeparse(code$args[[1]]), keep.source = FALSE)[[1]]
+        ##sourceVarName <- code$args[[1]]$name
+        ##if(!code$args[[1]]$isName) writeLines(paste0('Watch out, in makeMapExprFromBrackets for ', nimDeparse(code), ', there is an expression instead of a name.'))
+        ##sourceVarExpr <- as.name(sourceVarName)
         sourceOffsetRexpr <- quote(0)
         sourceSizeExprs <- code$args[[1]]$sizeExprs
         sourceNdim <- length(sourceSizeExprs)
-        sourceStrideRexprs <- makeStrideRexprs(sourceVarExpr, sourceNdim)
+        sourceStrideRexprs <- makeStrideRexprs(sourceRexpr, sourceNdim)
     }
 
     thisBlockIndexInfo <- blockIndexInfo(code)
@@ -218,7 +220,7 @@ makeMapExprFromBrackets <- function(code, drop = TRUE) {
     targetNdim <- length(targetSizeExprs)
 
     ## this is an unusual exprClass object because args is just a regular list.  Its elements are not exprClass objects
-    newExpr <- exprClass$new(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = 'map', args = list(sourceVarName, targetNdim, targetOffsetRexpr, targetSizeExprs, targetStrideRexprs))
+    newExpr <- exprClass$new(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = 'map', args = list(sourceRexpr, targetNdim, targetOffsetRexpr, targetSizeExprs, targetStrideRexprs))
 
     newExpr
 
@@ -227,17 +229,22 @@ makeMapExprFromBrackets <- function(code, drop = TRUE) {
 ## This is used to build the setMap expression for a NimArr
 nimArrMapExpr <- function(code, symTab, typeEnv, newName) {
     mapName <- newName
-    varName <- code$args[[1]]
-    needStartOffset <- !is.null(typeEnv$passedArgumentNames[[varName]])
-    targetSym <- symTab$getSymbolObject(varName, TRUE)
-    if(targetSym$nDim == 0) {
-        writeLines("Strange, in nimArrMap, there is a case of nDim == 0")
-        browser()
-    }
+    varRexpr <- code$args[[1]] ## This should already be an R parse tree, not a nimExpr
+    possibleVarName <- deparse(varRexpr)
+    needStartOffset <- !is.null(typeEnv$passedArgumentNames[[possibleVarName]])
+    targetSym <- symTab$getSymbolObject(possibleVarName, TRUE)
+    if(!is.null(targetSym)) {
+        if(targetSym$nDim == 0) {
+            writeLines("Strange, in nimArrMap, there is a case of nDim == 0")
+            browser()
+        }
+        targetType <- targetSym$type
+    } else
+        targetType <- code$type
     if(!symTab$symbolExists(mapName, TRUE)) {
         newSym <- symbolBasic(name = mapName,
                               nDim = code$nDim,
-                              type = targetSym$type)
+                              type = targetType)
         symTab$addSymbol(newSym)
     }
     if(length(code$sizeExprs) != length(code$args[[5]])) {
@@ -246,11 +253,11 @@ nimArrMapExpr <- function(code, symTab, typeEnv, newName) {
     sizeExprs <- code$args[[4]]
     strides <- code$args[[5]]
 
-    if(needStartOffset) offsetRexpr <- substitute(getOffset(A) + chainedCall(template(static_cast, int), B), list(A =  as.name(varName), B = code$args[[3]]))
+    if(needStartOffset) offsetRexpr <- substitute(getOffset(A) + chainedCall(template(static_cast, int), B), list(A =  varRexpr, B = code$args[[3]]))
     else offsetRexpr <- substitute( chainedCall(template(static_cast, int), OE), list(OE = code$args[[3]]) )
     
     ## Need to build up this expression
-    ans <- list(as.name('setMap'), as.name(newName), as.name(varName), offsetRexpr) ## varName used to be targetSym$name. Should be identical
+    ans <- list(as.name('setMap'), as.name(newName), varRexpr, offsetRexpr) ## varName used to be targetSym$name. Should be identical
     ans <- c(ans, strides, sizeExprs)
     ans <- as.call(ans)
     return(ans)
@@ -258,18 +265,26 @@ nimArrMapExpr <- function(code, symTab, typeEnv, newName) {
 
 ## This is used to build the AssignEigenMap expression
 eigenizeNameStrided <- function(code, symTab, typeEnv, workEnv) {
-    varName <- code$args[[1]]
+    # varName <- code$args[[1]]
+    varRexpr <- code$args[[1]]
+    possibleVarName <- deparse(varRexpr)
     
     ## this is a map on a passed argument.  It may be itself be a map, so the offset from it will be needed
-    needStartOffset <- !is.null(typeEnv$passedArgumentNames[[varName]])
+    needStartOffset <- !is.null(typeEnv$passedArgumentNames[[possibleVarName]])
 
-    EigenName <- paste0(Rname2CppName(makeEigenName(varName)), IntermLabelMaker())
-    targetSym <- symTab$getSymbolObject(varName, TRUE)
-    if(targetSym$nDim == 0) {
-        writeLines("Strange, in eigenizeNameStrided, there is a case of nDim == 0")
-        browser()
+    EigenName <- paste0(Rname2CppName(makeEigenName(possibleVarName)), IntermLabelMaker())
+    targetSym <- symTab$getSymbolObject(possibleVarName, TRUE)
+    if(!is.null(targetSym)) {
+        if(targetSym$nDim == 0) {
+            writeLines("Strange, in eigenizeNameStrided, there is a case of nDim == 0")
+            browser()
+        }
+        targetType <- targetSym$type ## If this is for an argument to a function call, type needs to come from the symbol table.
+    } else {
+        targetType <- code$type
     }
-    
+    if(is.null(targetType))
+        message("In eigenizeNameStrided, the type could not be determined.")
     mapSizeExprs <- code$args[[4]]
     mapStrideExprs <- code$args[[5]]
     if(length(code$args[[4]]) != length(code$args[[5]])) {
@@ -302,8 +317,8 @@ eigenizeNameStrided <- function(code, symTab, typeEnv, workEnv) {
 
     thisMapAlreadySet <- FALSE
     if(!is.null(workEnv[['OnLHSnow']])) { ## this is the var on the LHS
-        if(!is.null(workEnv[['LHSeigenName']])) stop(paste0('Error for map of ', varName, '. LHSeigenName already exists'), call. = FALSE)
-        workEnv$LHSeigenName <- list(EigenName = EigenName, targetVar = varName)
+        if(!is.null(workEnv[['LHSeigenName']])) stop(paste0('Error for map of ', possibleVarName, '. LHSeigenName already exists'), call. = FALSE)
+        workEnv$LHSeigenName <- list(EigenName = EigenName, targetVar = possibleVarName)
         workEnv[[EigenName]] <- TRUE
     } else { ## This is on the RHS
         if(EigenName %in% ls(workEnv) ) {
@@ -315,7 +330,7 @@ eigenizeNameStrided <- function(code, symTab, typeEnv, workEnv) {
             alreadyAliased <- !is.null(workEnv[['mustAddEigenEval']])
             if(!alreadyAliased) {
                 aliasRisk <- !is.null(workEnv[['aliasRisk']])
-                if(varName == workEnv[['LHSeigenName']]$targetVar) { ## this uses the same targetVar as the LHS
+                if(possibleVarName == workEnv[['LHSeigenName']]$targetVar) { ## this uses the same targetVar as the LHS
                     if(aliasRisk || EigenName != workEnv[['LHSeigenName']]$EigenName) {
                         workEnv[['mustAddEigenEval']] <- TRUE
                     }
@@ -326,10 +341,10 @@ eigenizeNameStrided <- function(code, symTab, typeEnv, workEnv) {
 
     
     if(!symTab$symbolExists(EigenName, TRUE)) {
-        if(thisMapAlreadySet) warning(paste0('Weird, it looks like a strided Eigen map for ', varName, 'was already set but the symbol did not exist.'), call. = FALSE)
+        if(thisMapAlreadySet) warning(paste0('Weird, it looks like a strided Eigen map for ', possibleVarName, 'was already set but the symbol did not exist.'), call. = FALSE)
         newSym <- symbolEigenMap(name = EigenName,
                                  eigMatrix = TRUE, ## default to matrix
-                                 type = targetSym$type,
+                                 type = targetType,
                                  strides = as.numeric(c(NA, NA))) ## Not sure strides are really used from this object
         symTab$addSymbol(newSym)
     }
@@ -342,10 +357,10 @@ eigenizeNameStrided <- function(code, symTab, typeEnv, workEnv) {
     setArg(code$caller, code$callerArgID, newExprClass)
 
     if(!thisMapAlreadySet) {
-        if(needStartOffset) offsetRexpr <- substitute(getOffset(A) + chainedCall(template(static_cast, int), B), list(A =  as.name(varName), B = code$args[[3]]))
+        if(needStartOffset) offsetRexpr <- substitute(getOffset(A) + chainedCall(template(static_cast, int), B), list(A =  varRexpr, B = code$args[[3]]))
         else offsetRexpr <- substitute(chainedCall(template(static_cast, int), B), list(B = code$args[[3]]))
         return(RparseTree2ExprClasses(
-            EigenNewExpr(EigenName, varName, offsetRexpr, makeEigenTypeLabel(TRUE, targetSym$type),
+            EigenNewExpr(EigenName, varRexpr, offsetRexpr, makeEigenTypeLabel(TRUE, targetType),
                          nrowExpr, ncolExpr, strides = rev(strides))) ## Eigen takes strides as (outer, inner). 
                ) ## varName was targetSym$name.  They should be identical
     } else {
