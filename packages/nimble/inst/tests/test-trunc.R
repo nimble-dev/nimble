@@ -6,6 +6,10 @@ RwarnLevel <- options('warn')$warn
 options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
+oldWidth <- getOption("width")
+options(width = 1000)
+oldMaxPrint <- getOption("max.print")
+options(max.print = 1000)
 
 goldFileName <- 'truncTestLog_Correct.Rout'
 tempFileName <- 'truncTestLog.Rout'
@@ -533,3 +537,5 @@ if(!generatingGoldFile) {
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
+options(width = oldWidth)
+options(max.print = oldMaxPrint)

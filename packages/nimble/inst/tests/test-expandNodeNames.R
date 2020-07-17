@@ -54,5 +54,8 @@ test_that("expandNodeNames works for various cases, including going beyond exten
    expect_equal(m$expandNodeNames(c("p[1:5]", "p"), unique = FALSE), c("p[1:4]", "p[1:4]"))              
 })
 
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)
+
    
 

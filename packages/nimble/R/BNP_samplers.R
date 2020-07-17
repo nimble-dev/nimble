@@ -236,7 +236,6 @@ sampleDPmeasure <- nimbleFunction(
       stop('sampleDPmeasure: All cluster parameters must have the same number of parameters.\n')
     }
     
-    
     tildeVarsCols <- c(dimTildeVars[1:p]*nTildeVarsPerCluster, 0)
     tildeVarsColsSum <- c(0, cumsum(tildeVarsCols))
     mvIndexes <- matrix(0, nrow=nTilde[1], ncol=(sum(dimTildeVars[1:p]*nTildeVarsPerCluster))) 
@@ -250,8 +249,7 @@ sampleDPmeasure <- nimbleFunction(
         mvIndexes[l,(tildeVarsColsSum[j]+1):tildeVarsColsSum[j+1] ] <- which(aux != 0)
       }
     }
-    
-    
+
     ## Storage object to be sized in run code based on MCMC output.
     samples <- matrix(0, nrow = 1, ncol = 1)   
     ## Truncation level of the random measure 
