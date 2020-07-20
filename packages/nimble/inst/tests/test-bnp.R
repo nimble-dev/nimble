@@ -1485,13 +1485,13 @@ test_that("check use of epsilon parameters in getSamplesDPmeasure", {
   
   output <- runMCMC(cmcmc, niter=1, nburnin=0, thin=1 , inits=inits, setSeed=FALSE)
   outputG <- getSamplesDPmeasure(cmcmc)
-  tr1 <- outputG$trunc
+  tr1 <- nrow(outputG[[1]])
   
   outputG <- getSamplesDPmeasure(cmcmc, epsilon = 0.1)
-  tr2 <- outputG$trunc
+  tr2 <- nrow(outputG[[1]])
   
   outputG <- getSamplesDPmeasure(cmcmc, epsilon = 0.00001)
-  tr3 <- outputG$trunc
+  tr3 <- nrow(outputG[[1]])
   
   expect_true(tr1 > tr2,
               info='getSamplesDPmeasure: truncation level for larger epsilon incorrectly computed')
