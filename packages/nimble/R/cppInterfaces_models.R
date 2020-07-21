@@ -23,10 +23,10 @@
 ###					Default initialization is assumed that elements are pointing to row 1 of
 ###					the modelValues, but this is not necessary (as long as it is a double pointer to something
 
-getMVptr <- function(rPtr)
-  .Call("getModelValuesPtrFromModel", rPtr)
-getMVName <- function(modelValuePtr)
-  .Call("getMVBuildName", modelValuePtr)
+getMVptr <- function(rPtr, dll)
+  eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getModelValuesPtrFromModel, rPtr))
+getMVName <- function(modelValuePtr, dll)
+  eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getMVBuildName, modelValuePtr))
 
 # for now export this as R<3.1.2 give warnings if don't
 
@@ -38,6 +38,10 @@ getMVName <- function(modelValuePtr)
 CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                contains = 'modelBaseClass',
                                fields = list(
+                                   .basePtr = 'ANY', ## pointer to derived model C++ class (backwards terminology due to history, unfortunately)
+                                   .namedObjectsPtr = 'ANY', ## pointer to base NamedObjects C++ base blass
+                                   .ModelBasePtr = 'ANY',
+                                   dll = 'ANY',
                                    Rmodel = 'ANY',
                                    cppNames = 'ANY',
                                    cppCopyTypes = 'ANY', ## At the given moment these will all be 'numeric', but the system allows more flexibility
@@ -52,6 +56,32 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                methods = list(
                                    show = function() {
                                        cat('CmodelBaseClass object\n')
+                                   },
+                                   finalizeInternal = function() {
+                                       for(vn in cppNames) {
+                                           vPtrName <- paste(".", vn, "_Ptr", sep = "")
+                                           assign(vPtrName, NULL, inherits = TRUE)
+                                       }
+                                       finalize()
+                                       .basePtr <<- NULL
+                                       .namedObjectsPtr <<- NULL
+                                       .ModelBasePtr <<- NULL
+                                       .nodeFxnPointers_byDeclID <<- NULL
+                                       nimbleProject <<- NULL
+                                   },
+                                   finalize = function() {
+                                       for(i in ls(Rmodel$nodes)) {
+                                           if(is.null(nodes[[i]])) next
+                                           if(is.list(nodes[[i]]))
+                                               nodes[[i]][[1]]$finalizeInstance(nodes[[i]][[2]])
+                                           else
+                                               nodes[[i]]$finalize()
+                                           nodes[[i]] <<- NULL
+                                       }
+                                       if(!is.null(.nodeFxnPointers_byDeclID))
+                                           .nodeFxnPointers_byDeclID$finalize()
+                                       if(!is.null(.namedObjectsPtr)) ## .basePtr
+                                           nimbleInternalFunctions$nimbleFinalize(.namedObjectsPtr) ##.basePtr
                                    },
                                    setModel = function(model) {
                                        ## This is creating a circular reference, so be careful with show(), and with Rstudio
@@ -84,17 +114,9 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        nodes <<- nodesEnv
                                        names(nodeFunctions) <<- names(Rmodel$nodeFunctions)
                                        
-                                       ##.nodeFxnPointers_byGID <<- new('numberedObjects')
-                                       .nodeFxnPointers_byDeclID <<- new('numberedObjects') 
-                                       ##maxID = length(modelDef$maps$graphIDs)
+                                       .nodeFxnPointers_byDeclID <<- new('numberedObjects', dll = dll) 
                                        maxID = length(modelDef$declInfo)
-                                       ##.nodeFxnPointers_byGID$resize(maxID)
                                        .nodeFxnPointers_byDeclID$resize(maxID)
-                                       ## for(nodeName in ls(nodes)) {
-                                       ##     gID <- modelDef$nodeName2GraphIDs(nodeName)
-                                       ##     basePtr <- if(is.list(nodes[[nodeName]])) nodes[[nodeName]][[1]]$basePtrList[[ nodes[[nodeName]][[2]] ]] else nodes[[nodeName]]$.basePtr
-                                       ##     .self$.nodeFxnPointers_byGID[gID] <- basePtr ## nodes[[nodeName]]$.basePtr
-                                       ## }
 
                                        for(declID in seq_along(nodes)) {
                                            thisNodeFunctionName <- names(Rmodel$nodeFunctions)[declID]
@@ -102,34 +124,8 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                                           nodes[[thisNodeFunctionName]][[1]]$basePtrList[[ nodes[[thisNodeFunctionName]][[2]] ]]
                                                       else ## it's a direct interface
                                                           nodes[[thisNodeFunctionName]]$.basePtr
-                                           .self$.nodeFxnPointers_byDeclID[declID] <- basePtr ## nodes[[nodeName]]$.basePtr
+                                           .self$.nodeFxnPointers_byDeclID[declID] <- basePtr 
                                        }
-
-                                       ## maxGraphID <- length(modelDef$maps$graphIDs)
-                                       ## .nodeValPointers_byGID <<- new('numberedModelVariableAccessors')
-                                       ## .nodeValPointers_byGID$resize(maxGraphID)
-                                       ## .nodeLogProbPointers_byGID <<- new('numberedModelVariableAccessors')
-                                       ## .nodeLogProbPointers_byGID$resize(maxGraphID)
-                                
-                                       ## for(vName in Rmodel$getVarNames()){
-                                       ## 		flatIndices = 1
-                                       ## 		if(length(vars[vName]) > 0)
-	                               ##         		flatIndices = 1:prod(unlist(vars[vName]))
-                                       		
-                                       ## 		gIDs_withNAs = unlist(sapply(vName, parseEvalNumeric, env = Rmodel$modelDef$maps$vars2GraphID_values, USE.NAMES = FALSE))
-                                       ## 		validIndices = which(!is.na(gIDs_withNAs))
-                                       ## 		gIDs = gIDs_withNAs[validIndices] 
-											
-                                       ## 		.Call('populateNumberedObject_withSingleModelVariablesAccessors', .basePtr , vName, as.integer(gIDs), as.integer(validIndices), .nodeValPointers_byGID$.ptr)
-                                       ## 		logVNames <- modelDef$nodeName2LogProbName(vName)
-                                   ##    		if(length(logVNames) > 0){
-                                  ##     			logVName <- nl_getVarNameFromNodeName(logVNames[1])
-                                  ##     			LP_gIDs_withNAs =  unlist(sapply(vName, parseEvalNumeric, env = Rmodel$modelDef$maps$vars2LogProbID, USE.NAMES = FALSE))
-	                          ##             		validIndices = which(!is.na(LP_gIDs_withNAs) ) 
-	                          ##             		l_gIDs = Rmodel$modelDef$nodeName2LogProbID(vName)
-	                           ##            		.Call('populateNumberedObject_withSingleModelVariablesAccessors', .basePtr, logVName, as.integer(l_gIDs), as.integer(validIndices), .nodeLogProbPointers_byGID$.ptr)
-                                                    ##	                                       		}
-                                   ##}
                                    }
                                    )
                                )
@@ -145,16 +141,16 @@ makeModelCppCopyTypes <- function(symTab) {
 
 
 makeModelBindingFields <- function(symTab) {
-  fieldList = list(.basePtr = "ANY", .modelValues_Ptr = "ANY", .DUMMY = "ANY")  
+  fieldList = list(.modelValues_Ptr = "ANY", .DUMMY = "ANY")  
   vNames = names(symTab$symbols)
   for(vn in vNames){
     ptrName = paste(".", vn, "_Ptr", sep = "")
     fieldList[[ptrName]] <- "ANY"
     eval(substitute( fieldList$VARNAME <- function(x){
       if(missing(x) ) 
-        nimble:::getNimValues(VPTR, 2)
-      else
-        nimble:::setNimValues(VPTR, x, 2, allowResize = FALSE)
+        nimbleInternalFunctions$getNimValues(VPTR, 2, dll = dll)
+      else 
+        nimbleInternalFunctions$setNimValues(VPTR, x, 2, allowResize = FALSE, dll = dll)
     }, list(VPTR = as.name(ptrName), VARNAME = vn) ) )
   }
   return(fieldList)
@@ -172,6 +168,7 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
     }
     defaults$cppCT <- makeModelCppCopyTypes(symTab)
     defaults$project <- project
+    defaults$extPtrTypeIndex <- compiledModel$getExtPtrTypeIndex()
     
     # resolve basePtrCall rather than looking it up later.
   if(!is.null(dll) && is.character(basePtrCall))
@@ -188,13 +185,22 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                 isDataEnv <<- new.env()
                                                 classEnvironment <<- new.env()
                                                 
-                                                callSuper()
+                                                callSuper(dll = dll, ...)
 
-                                                # avoid R CMD check problem with registration
-                                                .basePtr <<- eval(parse(text = ".Call(basePtrCall)"))
-                                                # .basePtr <<- .Call(BPTRCALL)
-                                                .modelValues_Ptr <<- nimble:::getMVptr(.basePtr)
-                                                defaultModelValues <<- nimble:::CmodelValues$new(existingPtr = .modelValues_Ptr, buildCall = nimble:::getMVName(.modelValues_Ptr), initialized = TRUE )
+                                        # avoid R CMD check problem with registration
+                                                ## notice that the following line appears a few lines up:basePtrCall = getNativeSymbolInfo(basePtrCall, dll)
+                                                newPtrPair <- eval(parse(text = ".Call(basePtrCall)"))
+                                                .basePtr <<- newPtrPair[[1]]
+                                                .ModelBasePtr <<- newPtrPair[[ defaults$extPtrTypeIndex['ModelBase'] ]]
+                                                .namedObjectsPtr <<- newPtrPair[[ defaults$extPtrTypeIndex['NamedObjects'] ]]
+                                                eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer,
+                                                          .namedObjectsPtr, ##.basePtr,
+                                                          dll[['handle']], model$name))
+
+                                                .modelValues_Ptr <<- nimbleInternalFunctions$getMVptr(.ModelBasePtr, dll = dll) ## this is a Values*
+                                                defaultModelValues <<- nimbleInternalFunctions$CmodelValues$new(existingPtr = .modelValues_Ptr,
+                                                                                                                buildCall = nimbleInternalFunctions$getMVName(.modelValues_Ptr, dll),
+                                                                                                                initialized = TRUE, dll = dll )
                                                 modelDef <<- model$modelDef
                                                 graph <<- model$graph
                                                 vars <<- model$vars
@@ -202,13 +208,13 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                 nimbleProject <<- defaults$project
                                                 for(v in ls(model$isDataEnv)) isDataEnv[[v]] <<- model$isDataEnv[[v]]
                                                 setData(modelDef$constantsList, warnAboutMissingNames = FALSE)
-                                                cppNames <<- .Call("getAvailableNames", .basePtr) ## or could get this from R objects
+                                                cppNames <<- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getAvailableNames, .namedObjectsPtr)) ## or could get this from R objects
                                                 cppCopyTypes <<- defaults$cppCT
                                                 compiledModel <<- defaults$cm
                                                 for(vn in cppNames)
                                                     {
                                                         vPtrName <- paste(".", vn, "_Ptr", sep = "")
-                                                     	.self[[vPtrName]] <<- nimble:::newObjElementPtr(.basePtr, vn)
+                                                     	.self[[vPtrName]] <<- nimbleInternalFunctions$newObjElementPtr(.namedObjectsPtr, vn, dll = dll)
                                                     }      
                                                 if(!missing(model)) {
                                                     setModel(model)

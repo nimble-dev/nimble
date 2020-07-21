@@ -1,44 +1,97 @@
 make sure NEWS is updated with info on changes in latest release
+also may want to have NEWS lines be no longer than 80 characters
 
 update DESCRIPTION and INSTALL with current version number
 
-for version on nimble website, remove FLIBS from Makevars.in
-for CRAN, we need it in there, but it prevents easy source installation on Macs without getting the right version of libgfortran
+update LICENSE with current year
+
+check CRAN results page to see what issues CRAN testing has noted:
+https://cran.r-project.org/web/checks/check_results_nimble.html
 
 Make sure src/Makevars.win is present.
 
-R CMD build nimble
-R CMD INSTALL nimble_${VERSION}.tar.gz
-# before running prep_pkg make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions (or do in separate copy of repository: make configure; cd nimble; ./configure - note that if do this the configure step will have an error in building libnimble.a and that a bunch of files will be created in src that should not be in the repository (all but *.in and nimble.cpp do not belong)
-./prep_pkg # this creates man pages and updates NAMESPACE; note various warnings of things that can go wrong in prep_pkg and make sure these don't happen
+# before running 'make man' (i.e., prep_pkg.R) make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions (or do in separate copy of repository: make configure; cd nimble; ./configure - note that if do this the configure step will have an error in building libnimble.a and that a bunch of files will be created in src that should not be in the repository (all but *.in and nimble.cpp do not belong)
 
-(this may be obviated by new prep_pkg... as of v0.6)
-warning about extra space in Rd files occurs (perhaps because of new Roxygen?) in argument lists where \item{} is separated from teh following {} by a newline and some spaces due to indentation appear. A 'fix' is to manually remove the spaces from the Rd files.
-This also should work:
-for file in `ls nimble/man`; do
-    if [ -e /tmp/tmp.Rd ]; then
-       rm -rf /tmp/tmp.Rd
-    fi
-     /bin/cp -i nimble/man/$file /tmp/tmp.Rd 
-     sed ':begin;$!N;s/\(\item{.*}\)\n\s*/\1/;tbegin;P;D' /tmp/tmp.Rd > nimble/man/$file
-done
+config.R should be this:
+```
+NeedMakevarsFile = TRUE
+UseLibraryMakevars = TRUE
+.NimbleUseRegistration = TRUE
+```
 
+run 'make man' (formerly ./prep_pkg.R)
+# this creates man pages and updates NAMESPACE
+
+git add any new .Rd files
+
+## note that an error: "section title spans multiple lines" will occur in roxygenization if any "@section" line does not have a ":" at the end of the line
 
 R CMD build nimble
 R CMD check --as-cran nimble_${VERSION}.tar.gz
-# officially this should be done on a development build of R, such as in a BCE or docker instance; for Chris, easiest to do via installing R-devel on SCF
+# officially this should be done on a development build of R, but now can be done formally using rhub (see below), so doing on your own machine in a release version of R just serves as a first pass
 
-run tests:
-in particular check exact results vs previous versions (ignore differences in compilation log info)
-doing this test by test because of DLL unloading issue
-types="compareMCMCs copy declare distributions dsl_dists filtering getParam getDependencies math mcem mcmc models setData size trunc user"
-for type in $types; do
-Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" >> /tmp/test-results-v${VERSION}
-done
+R CMD INSTALL nimble_${VERSION}.tar.gz
 
+Run tests via ./run_tests.R
+
+Note that test-size results are simply showing warnings from model building that are labeled based on the test message - what is marked as a KNOWN PROBLEM is not _all_ of the tests that are KNOWN PROBLEMS, just those that happen to generate warnings. 
+
+run tests on all OS ideally
+
+change version number in UserManual/src/{title.tex,_output.yml}
+rebuild manual as further test of package
+
+run examples in nimble-demos as further test
+
+check reverse dependencies:
+
+from nimble/packages, with the current nimble .tar.gz in that directory, do:
+out <- tools::check_packages_in_dir('.', reverse = list())
+summary(out)
+Can also do this to see if anything has changed:
+tools::check_packages_in_dir_changes('.', reverse = list()) # for this you need an the most recent version of nimble as the 'old'
+
+If have problems with check_packages_in_dir, can
+download .tar.gz for reverse dependencies and run R CMD check on it.
+
+At one point bcgam testing was failing, but seems fine as of 2019-10-04.
+
+we could put new version of manual in inst/doc, but not doing that because we don't want to add to the size of the tarball/package install)
+
+make sure no calls to compileNimble are in any examples that are not wrapped in a \dontrun; these calls will cause installation failure on Solaris and big headaches with CRAN
+
+Now in a separate branch: vX.Y-Z-cran, do this:
+
+before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in (it will pass R CMD check with "# $(FLIBS)" presumably because they are doing some sort of grep, but that is not kosher of course)
+
+(note that given R CMD check now errors if this is not addressed, we've changed this so this change is now already in devel)
+before release to CRAN make sure we disable Eigen pragmas that suppress warnings that CRAN dislikes:
+line 102 of packages/nimble/inst/include/Eigen/src/Core/arch/SSE/Complex.h
+lines 44,51 of  packages/nimble/inst/include/Eigen/src/Core/util/DisableStupidWarnings.h
+see also commit fedb31ee21fd892f782b97a4b2d71482b954a9fd
+
+test cross-machine on Macs and on Windows
+
+can test using rhub (from within packages/nimble):
+
+Rscript -e "library(rhub);check(platform = c('ubuntu-gcc-devel','windows-x86_64-devel','linux-x86_64-rocker-gcc-san','linux-x86_64-centos6-epel','fedora-clang-devel'))" >> /tmp/rhub.out
+
+can test on Windows using win-builder
+
+submit to CRAN - potentially making use of notes in CJP's cranSubmit.txt file
+
+Once CRAN package accepted:
+
+(make sure both html and pdf versions of manual are updated and in repo before doing zenodo upload)
+
+create new version with package tarball and manual in Zenodo. Note that inst/CITATION uses the version-independent DOI so don't need to update DOI in CITATION or on badge on r-nimble.org.
+However we might revisit this as that means that users will cite the version independent DOI at the same time they refer to a specific NIMBLE version. Probably ok and means we don't have to mint the DOI just as we are about to submit to CRAN and then shunt aside the new Zenodo version if there is a CRAN problem.
 
 login to nature.berkeley.edu: ssh to your_calnet_id@nature.berkeley.edu and use CalNet password
 cd /web/R-nimble/wordpress/src/contrib
+
+for version on nimble website, avoid the FLIBS/stan/Eigen changes above
+(actually see above as it's simplest just to leave the Eigen changes in)
 
 cp new .tar.gz there
 
@@ -46,48 +99,82 @@ chmod go+w nimble_${VERSION}.tar.gz
 
 ./writePackages
 
+put new user manual PDF in /web/R-nimble/wordpress/manuals
+and change symlink to point to newest pdf
+and change to g+w for NimbleUserManual_$VERSION.pdf
+
+put new user manual HTML in /web/R-nimble/wordpress/html_manual
+from nimble/UserManual:
+tar -cvzf tmp.tgz *html libs search_index.json nimble-icon.png NimbleUserManual_files
+copy to /web/R-nimble/wordpress/html_manual
+on nature.b.e:
+tar -xvzf tmp.tgz; rm -rf tmp.tgz
+
 go to website: R-nimble.org/login and login 
 
-change Downloads page on R-nimble.org to reflect new version; creating link for newly-deprecated version at bottom
+note that to make a new blog post or modify pages, need to 
+deactivate Google analyticator on Plugins -> Installed Plugins page
 
-put new user manual in /web/R-nimble/wordpress/manuals
-and change symlink to point to newest pdf
+change Downloads page on R-nimble.org to reflect new version (including 'download source pkg' link);
+creating link for newly-deprecated version on Archived versions page.
 
-make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag if you want it picked up by R-bloggers)
+update previous releases page
 
-(make sure post is set up as a blog entry) (CJP not sure what this means...)
+update archived versions of NIMBLE and User Manual
 
 add info on new release to release notes page
 
-update NEWS info on webpage as high-level summary of NEWS in package
+update version numbering on license and citation page
 
-update version numbering on license and citation page and 'What is Nimble' page
+This is a good time to update info on our core developer team on the website if needed.
 
-rebuild and post manual and put new version of manual in inst/doc
-git tag the manual repository
+make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag (not just a 'category'!!!) if you want it picked up by R-bloggers)
+(best to point with a hyperlink to the info on versions/news on webpage not to NEWS)
 
 send notice to nimble-announce, nimble-users as christopher.paciorek@gmail.com (i.e., from the email of your admin status)
 
-make sure to merge devel into master branch and create a branch for the new version
+*****************
+** IMPORTANT ****
+*****************
+reactivate Google Analyticator by clicking on 'activate' on Plugins -> Installed Plugins 
+*****************
+
+post examples as run on new version
+
+make sure to merge devel into master branch
+
 git checkout master
 git merge devel
 git commit -am'merged new version onto master'
 
 probably best at this point also to merge master onto devel
 
+For version 0.10.0 before add tag as suggested here, try to add a release as per below and see if tag is auto-generated.
+
 git tag -a v$VERSION -m "NIMBLE version $VERSION release, December 31, 2014"
 git push --tags    ## this is how you push *tags* to the remote
 
-# make tag for nimble-docs too
-git tag -a v$VERSION -m "NIMBLE version $VERSION release, April 6, 2016"
-git push --tags    ## this is how you push *tags* to the remote
+update version number in DESC in devel
 
-before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in
-and comment out rstan usage as in cran_0.5 branch on CJP machine
+### updating Github README
 
-[[This doesn't work because it modifies what Makevars is created and CRAN looks directly at Makevars.in: 
-for version on website, go to nimble/packages; change default for enable-flibs to false in configure.ac; run 'make configure'. This creates version that doesn't use FLIBS when building nimble.so so that Mac users can build from source without needing gfortran.]] 
+Update version number in README.md, including in the citation section.
 
+Might as well add a release to Github under Releases tab based on new version tag. This used to autogenerate a zenodo page and DOI but per below comment I don't think this linking is still in effect. Make sure new release is tagged in GH as 'latest release' (figure out how to do this). Also add a blurb about the release.  
+
+Unfortunately in v0.6-10 zenodo integration was somehow turned off and in the process of trying to add it manually, Chris got an entirely different zenodo instnace.
+
+Here's the new one:
+NIMBLE Development Team. (2018, March 26). nimble-dev/nimble (Version v0.6-10). Zenodo. http://doi.org/10.5281/zenodo.1211191
+10.5281/zenodo.1211190 is for all versions
+
+And here is the old one:
+Christopher Paciorek, perrydv, Daniel Turek, Nicholas Michaud, Fritz Obermeyer, Duncan Temple Lang, … David LeBauer. (2018, February 17). nimble-dev/nimble: v0.6-9 (Version v0.6-9). Zenodo. http://doi.org/10.5281/zenodo.1174525
+10.5281/zenodo.820704 is for all versions
+
+### running rchk to find memory protection errors
+
+Could try to run the ubuntu-rchk Docker container. While made for rhub, it is also available pre-made here at Docker Cloud which allows one to run the rchk.sh script in a local instance.
 
 ### building binaries
 
@@ -101,6 +188,8 @@ For Windows (should one use the -l flag here too to avoid mucking up source repo
 R CMD build nimble  # to build tar.gz
 R CMD INSTALL --build --merge-multiarch nimble_0.6.tar.gz # to build zip file
 (--merge-multiarch only applies to a single tarball, so need this as two steps)
+
+#### Older/auxiliary material below here
 
 ### Building of Windows version (instructions from DT (old; use DTL instructions above))
 
@@ -118,3 +207,34 @@ if you're in the directory with the batch file (build.bat), then just type "buil
 
 Not clear (should check with DTL) if the resulting installed package can then simply be zipped and if that is equivalent to what CRAN does when it builds the Windows binary.
 
+NOTE: as of v0.6, mcmc testing seemed to run fine on Savio (SciLinux) and run but give compiler warnings related to Eigen on NERSC Edison (SUSE).
+
+
+==========
+Solaris testing
+
+Can use VirtualBox Solaris VM on Paciorek smeagol Linux box. See solaris.sh for notes
+
+==========
+sanitizer testing
+
+CRAN seems only to use UBSAN (undefined behavior sanitizer) though Kurt Hornik indicated that he built R with ASAN (address sanitizer) and UBSAN
+
+to set up R-devel with SAN:
+
+# configuration for ASAN, UBSAN, SAN (UBSAN+ASAN)
+./configure --prefix=/usr/local/R-devel_2016-09-12-clang39-asan 'CC=/tmp/clang/bin/clang -fsanitize=address -fno-omit-frame-pointer' 'CFLAGS=-pipe -std=gnu99 -Wall -pedantic -g' 'F77=gfortran' 'FFLAGS=-pipe -Wall -pedantic -g' 'CXX=/tmp/clang/bin/clang++ -fsanitize=address  -fno-omit-frame-pointer' 'CXXFLAGS=-pipe -Wall -pedantic -g' 'CXX1X=/tmp/clang/bin/clang++ -fsanitize=address  -fno-omit-frame-pointer' 'FC=gfortran' 'FCFLAGS=-pipe -Wall -pedantic -g' --with-cairo --with-jpeglib --with-readline --with-tcltk --with-lapack
+
+ ./configure --prefix=/usr/local/R-devel_2016-09-12-clang39-san 'CC=/tmp/clang/bin/clang -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero,vptr  -fno-omit-frame-pointer' 'CFLAGS=-pipe -std=gnu99 -Wall -pedantic -g' 'F77=gfortran' 'FFLAGS=-pipe -Wall -pedantic -g' 'CXX=/tmp/clang/bin/clang++ -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero,vptr -fno-omit-frame-pointer' 'CXXFLAGS=-pipe -Wall -pedantic -g' 'CXX1X=/tmp/clang/bin/clang++ -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero,vptr -fno-omit-frame-pointer' 'FC=gfortran' 'FCFLAGS=-pipe -Wall -pedantic -g' --with-cairo --with-jpeglib --with-readline --with-tcltk --with-lapack
+
+./configure --prefix=/usr/local/R-devel_2016-09-12-clang39-ubsan 'CC=/tmp/clang/bin/clang -fsanitize=undefined -fno-sanitize=float-divide-by-zero,vptr' 'CFLAGS=-pipe -std=gnu99 -Wall -pedantic -g' 'F77=gfortran' 'FFLAGS=-pipe -Wall -pedantic -g' 'CXX=/tmp/clang/bin/clang++ -fsanitize=undefined -fno-sanitize=float-divide-by-zero,vptr' 'CXXFLAGS=-pipe -Wall -pedantic -g' 'CXX1X=/tmp/clang/bin/clang++ -fsanitize=undefined -fno-sanitize=float-divide-by-zero,vptr' 'FC=gfortran' 'FCFLAGS=-pipe -Wall -pedantic -g' --with-cairo --with-jpeglib --with-readline --with-tcltk --with-lapack 
+
+on paciorek smeagol box:
+need to turn vm.overcommit_memory to 2 on my Linux box or building R will fail because conftest will not run as ASAN tries to allocate a ridiculous amount of memory.
+
+export LD_LIBRARY_PATH=/tmp/clang/lib:$LD_LIBRARY_PATH
+
+CRAN might use valgrind (Cliff suggested this). If so, may want to check package examples with:
+R -d valgrind --vanilla < nimble.Rcheck/mypkg-Ex.R
+R -d "valgrind --tool=memcheck --leak-check=full" --vanilla <
+   nimble.Rcheck/mypkg-Ex.R

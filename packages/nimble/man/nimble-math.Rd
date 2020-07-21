@@ -1,5 +1,6 @@
 \name{nimble-math}
 \title{Mathematical functions for BUGS and nimbleFunction programming}
+\alias{besselK}
 \alias{cloglog}
 \alias{cube}
 \alias{expit}
@@ -13,6 +14,7 @@
 \alias{loggam}
 \alias{logit}
 \alias{nimEquals}
+\alias{nimRound}
 \alias{nimStep}
 \alias{nimSwitch}
 \alias{phi}

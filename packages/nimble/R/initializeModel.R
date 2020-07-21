@@ -27,61 +27,183 @@
 #'       ....
 #'    }
 #' )
-#' @export
+##' @export
 initializeModel <- nimbleFunction(
+    name = 'initializeModel',
     setup = function(model, silent = FALSE) {
         initFunctionList <- nimbleFunctionList(nodeInit_virtual)
-        iter <- 1
+        startInd <- 1
 
-        RHSonlyNodes <- model$getMaps('nodeNamesRHSonly')
-        if(length(RHSonlyNodes) > 0) {
-            initFunctionList[[iter]] <- checkRHSonlyInit(model = model, nodes = RHSonlyNodes)
-            iter <- iter + 1
-        }
+        allNodes <- model$modelDef$maps$graphID_2_nodeName
+        graphIDs <- seq_along(allNodes)
+        allTypes <- model$modelDef$maps$types
+        bool <- allTypes == 'RHSonly' | allTypes == 'stoch' | allTypes == 'determ'
+        allNodes <- allNodes[bool]
+        allTypes <- allTypes[bool]
+        graphIDs <- graphIDs[bool]
+        bool <- allTypes == 'RHSonly'
+        RHSonlyNodes <- allNodes[bool]
         
-        stochNonDataNodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
-        for(i in seq_along(stochNonDataNodes))
-            initFunctionList[[iter + i - 1]] <- stochNodeInit(model, stochNonDataNodes[i], silent)
+#        RHSonlyNodes <- model$getMaps('nodeNamesRHSonly')
+        RHSonlyVarNames <- removeIndexing(RHSonlyNodes)
+        RHSonlyVarNamesUnique <- unique(RHSonlyVarNames)
+        RHSonlyNodesListByVariable <- lapply(RHSonlyVarNamesUnique, function(var) RHSonlyNodes[RHSonlyVarNames==var])
+        if(length(RHSonlyNodesListByVariable) > 0) {
+            lengths <- sapply(RHSonlyNodesListByVariable, length)
+            if(any(lengths == 0)) stop('something went wrong in RHS node model initialization')
+            if(sum(lengths) != length(RHSonlyNodes)) stop('something went wrong in RHS node model initialization')
+            for(i in seq_along(RHSonlyNodesListByVariable)) {
+                initFunctionList[[startInd]] <- checkRHSonlyInit(model = model, nodes = RHSonlyNodesListByVariable[[i]], variable = RHSonlyVarNamesUnique[i])
+                startInd <- startInd + 1
+            }
+        }
 
-        allDetermNodes <- model$getNodeNames(determOnly = TRUE)
-        determNodesNodeFxnVector <- nodeFunctionVector(model = model, nodeNames = allDetermNodes)
+        LHSnodes <- allNodes[!bool]
+        LHSnodes <- c(LHSnodes, LHSnodes[1]) ## unused extra ensures LHSnodes is a vector (but it must be a valid node!) 
+        nodeTypes <- allTypes[!bool]
+        graphIDs <- graphIDs[!bool]
+        rm(allNodes)
+        rm(allTypes)
+#        LHSnodes <- model$getNodeNames()
+#        nodeTypes <- model$getNodeType(LHSnodes)
+        bool <- nodeTypes == "stoch"
+        typeCode <- c(ifelse(nodeTypes == "determ", 1,
+                      ifelse(bool, 2,
+                             3)), ## Neither "stoch" nor "determ"
+                      1) ## The extra 1 ensures that typeCode is a vector, but it will not be used
+        if(any(typeCode == 3)) message(paste0("found typeCode == 3 for "), paste(LHSnodes[typeCode==3], sep=", "))
+        isData <- c(model$isDataFromGraphID(graphIDs),
+                    FALSE) ## extra unused element ensures isData will be a vector
+        ## equivalent to:        isData <- model$isData(LHSnodes)
     },
     
     run = function() {
-        for(i in seq_along(initFunctionList))  {   
-            calculate(nodeFxnVector = determNodesNodeFxnVector)
+        for(i in seq_along(initFunctionList)) {
             initFunctionList[[i]]$run()
         }
-        calculate(model)
-    },  where = getLoadingNamespace()
+        numNodes <- length(typeCode)-1
+        for(i in 1:numNodes) {
+            if(typeCode[i] == 1) { ## determ
+                initialize_deterministic(i)
+            } else {
+                if(typeCode[i] == 2) {
+                    if(isData[i]) {
+                        initialize_stoch_data_node(i)
+                    } else {
+                        initialize_stoch_non_data_node(i)
+                    }                    
+                }
+            }
+        }
+        ## removed trailing full model$calculate() -DT Feb. 2019
+        ##model$calculate(LHSnodes)
+    },
+    methods = list(
+        initialize_deterministic = function(i = integer()) {
+            model$calculate(LHSnodes[i])
+            nodeValue <- values(model, LHSnodes[i])
+            if(any_na(nodeValue) | any_nan(nodeValue)) {
+                print('warning: value of deterministic node ',LHSnodes[i],': value is NA or NaN even after trying to calculate.')
+            }
+        },
+        initialize_stoch_data_node = function(i = integer()) {
+            nodeValue <- values(model, LHSnodes[i])
+            if(any_na(nodeValue) | any_nan(nodeValue))
+                print('warning: value of data node ', LHSnodes[i],': value is NA or NaN.')
+            lp <- model$calculate(LHSnodes[i])
+            if(is.na(lp) | is.nan(lp)) {
+                print('warning: logProb of data node ', LHSnodes[i], ': logProb is NA or NaN.')
+            } else {
+                if(lp == -Inf) {
+                    if(!silent) print('warning: logProb of data node ', LHSnodes[i], ': logProb is -Inf.')
+                } else if(lp < -1e12) {
+                    if(!silent) print('warning: logProb of data node ', LHSnodes[i], ': logProb less than -1e12.')
+                }
+            }
+        },
+        initialize_stoch_non_data_node = function(i = integer()) {
+            nodeValue <- values(model, LHSnodes[i])
+            if(any_na(nodeValue) | any_nan(nodeValue)) {
+                model$simulate(LHSnodes[i], includeData = TRUE) ## includeData = TRUE suppresses a warning
+                nodeValue <- values(model, LHSnodes[i])
+                if(any_na(nodeValue) | any_nan(nodeValue))
+                    print('warning: value of stochastic node ', LHSnodes[i],': value is NA or NaN even after trying to simulate.')
+            }
+            lp <- model$calculate(LHSnodes[i])
+            if(is.na(lp) | is.nan(lp)) {
+                print('warning: problem initializing stochastic node ', LHSnodes[i], ': logProb is NA or NaN.')
+            } else {
+                if(lp == -Inf) {
+                    if(!silent) print('warning: problem initializing stochastic node ', LHSnodes[i], ': logProb is -Inf.')
+                } else if(lp < -1e12) {
+                    if(!silent) print('warning: problem initializing stochastic node ', LHSnodes[i], ': logProb less than -1e12.')
+                }
+            }
+        }
+    )
 )
-
 
 nodeInit_virtual <- nimbleFunctionVirtual()
 
 checkRHSonlyInit <- nimbleFunction(
+    name = 'checkRHSonlyInit',
     contains = nodeInit_virtual,
-    setup = function(model, nodes) {},
+    setup = function(model, nodes, variable) {},
     run = function() {
         vals <- values(model, nodes)
-        if(is.na.vec(vals)) print('warning: value of right hand side only node not initialized')
-    },    where = getLoadingNamespace()
+        if(any_na(vals) | any_nan(vals)) print('warning: value in right-hand-side-only variable is NA or NaN, in variable: ', variable)
+    }
 )
 
-stochNodeInit <- nimbleFunction(
-    contains = nodeInit_virtual,
-    setup = function(model, node, silent) {},
-    run = function() {
-        theseVals <- values(model, node)
-        if(is.na.vec(theseVals)) simulate(model, node)
-        theseVals <- values(model, node)
-        if(is.na.vec(theseVals)) print('warning: value of stochastic node is NA')
-        lp <- calculate(model, node)
-        if(is.na(lp)) print('warning: problem initializing stochastic node ', node, ', logProb is NA')
-        if(!is.na(lp)) {
-            if(lp < -1e12) {
-                if(!silent) print('warning: problem initializing stochastic node, logProb less than -1e12')
-            }
-        }
-    },    where = getLoadingNamespace()
-)
+## determNodeInit <- nimbleFunction(
+##     name = 'determNodeInit',
+##     contains = nodeInit_virtual,
+##     setup = function(model, node, silent) {},
+##     run = function() {
+##         nodeValue <- values(model, node)
+##         if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) calculate(model, node)
+##         nodeValue <- values(model, node)
+##         if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) print('warning: value of deterministic node ',node,': value is NA or NaN even after trying to calculate.')
+##     }
+## )
+
+## stochDataNodeInit <- nimbleFunction(
+##     name = 'stochDataNodeInit',
+##     contains = nodeInit_virtual,
+##     setup = function(model, node, silent) {},
+##     run = function() {
+##         nodeValue <- values(model, node)
+##         if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) print('warning: value of data node ',node,': value is NA or NaN.')
+##         lp <- calculate(model, node)
+##         if(is.na(lp) | is.nan(lp)) print('warning: logProb of data node ', node, ': logProb is NA or NaN.')
+##         if(!(is.na(lp) | is.nan(lp))) {
+##             if(lp == -Inf) {
+##                 if(!silent) print('warning: logProb of data node ', node, ': logProb is -Inf.')
+##             } else if(lp < -1e12) {
+##                 if(!silent) print('warning: logProb of data node ', node, ': logProb less than -1e12.')
+##             }
+##         }
+##     }
+## )
+
+## stochNonDataNodeInit <- nimbleFunction(
+##     name = 'stochNonDataNodeInit',
+##     contains = nodeInit_virtual,
+##     setup = function(model, node, silent) {},
+##     run = function() {
+##         nodeValue <- values(model, node)
+##         if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) simulate(model, node)
+##         nodeValue <- values(model, node)
+##         if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) print('warning: value of stochastic node ',node,': value is NA or NaN even after trying to simulate.')
+##         lp <- calculate(model, node)
+##         if(is.na(lp) | is.nan(lp)) print('warning: problem initializing stochastic node ', node, ': logProb is NA or NaN.')
+##         if(!(is.na(lp) | is.nan(lp))) {
+##             if(lp == -Inf) {
+##                 if(!silent) print('warning: problem initializing stochastic node ', node, ': logProb is -Inf.')
+##             } else if(lp < -1e12) {
+##                 if(!silent) print('warning: problem initializing stochastic node ', node, ': logProb less than -1e12.')
+##             }
+##         }
+##     }
+## )
+

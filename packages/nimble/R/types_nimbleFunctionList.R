@@ -16,15 +16,39 @@ nimPointerList <- setRefClass('nimPointerList', ## A base class for a list of ob
                                   )
                                )
                               
-
+#' Create a list of nimbleFunctions
+#' 
+#' Create an empty list of nimbleFunctions that all will inherit from a base class.
+#' 
+#' @author NIMBLE development team
+#' @export
+#' @details
+#' See the User Manual for information about creating and populating a \code{nimbleFunctionList}.
 nimbleFunctionList <- setRefClass('nimbleFunctionList',
                                   contains = 'nimPointerList',
                                   methods = list(
                                       isBaseClassValid = function(x) {
                                           if(!is.nf(x)) return(FALSE)
-                                          if(is.null(nfGetDefVar(x, 'contains'))) return(FALSE)
-                                          if(!identical(nfGetDefVar(x, 'contains'), baseClass)) return(FALSE)
-                                          TRUE
+                                          this_contains <- nfGetDefVar(x, 'contains')
+                                          done <- FALSE
+                                          ok <- FALSE
+                                          baseClassName <- environment(baseClass)[['name']]
+                                          while(!done) {
+                                              if(is.null(this_contains)) {
+                                                  done <- TRUE
+                                              }
+                                              else {
+                                                  this_name <- environment(this_contains)[['name']]
+                                                  if(identical(this_name, baseClassName)) {
+                                                      ok <- TRUE
+                                                      done <- TRUE
+                                                  }
+                                              }
+                                              ## recurse up inheritance path
+                                              if(!done)
+                                                  this_contains <- nfGetDefVar(this_contains, 'contains')
+                                          }
+                                          ok
                                       },
                                       checkAllContents = function(x) {
                                           all( unlist( lapply( contentsList, isBaseClassValid ) ) ) 
@@ -50,6 +74,11 @@ setMethod('[[<-', 'nimbleFunctionList',
           })
 
 checkNimbleFunctionListCpp <- function(nfl) {
+    return(TRUE)
+    ## We have disabled this test because it does not look up an multiple inheritance tree.
+    ## At this point, that would take some effort.
+    ## However, inheritance validity is checked by the `[[<-` method for a nimbleFunctionList,
+    ## so there "shouldn't" be a downstream problem here if everything checked ok when the nimbleFunctionList was populated. 
     otherProblem <- try(
         {
             baseClassName <- environment(nfl$baseClass)$name

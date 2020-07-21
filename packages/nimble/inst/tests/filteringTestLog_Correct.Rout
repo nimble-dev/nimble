@@ -1,0 +1,108 @@
+===== Starting Filter test for basic bootstrap, always resamp using bootstrap. =====
+             x[1]       x[2]       x[3]
+mean   0.02625837  0.4806096  1.2213238
+sd     0.81422064  0.9458056  0.9960634
+2.5%  -1.57686702 -1.3849864 -0.7204657
+97.5%  1.61527486  2.3575143  3.1798802
+===== Finished bootstrap filter test for basic bootstrap, always resamp. =====
+===== Starting Filter test for basic auxiliary using auxiliary. =====
+             x[1]       x[2]       x[3]
+mean   0.02625837  0.4665380  1.2392648
+sd     0.81422064  0.9738338  0.9880561
+2.5%  -1.57686702 -1.4380076 -0.7181285
+97.5%  1.61527486  2.3983282  3.1301995
+===== Finished auxiliary filter test for basic auxiliary. =====
+===== Starting Filter test for basic auxiliary, saveAll = FALSE using auxiliary. =====
+            x[1]
+mean   1.2392648
+sd     0.9880561
+2.5%  -0.7181285
+97.5%  3.1301995
+===== Finished auxiliary filter test for basic auxiliary, saveAll = FALSE. =====
+===== Starting Filter test for basic auxiliary w/ mean lookahead using auxiliary. =====
+             x[1]       x[2]       x[3]
+mean   0.02625837  0.4422192  1.1805595
+sd     0.81422064  0.9590931  1.0027343
+2.5%  -1.57686702 -1.4068535 -0.7431711
+97.5%  1.61527486  2.3541441  3.1721206
+===== Finished auxiliary filter test for basic auxiliary w/ mean lookahead. =====
+===== Starting Filter test for basic ensembleKF using ensembleKF. =====
+              x[1]       x[2]       x[3]
+mean   0.004817278  0.4654197  1.2173899
+sd     0.816197687  0.9642304  0.9944248
+2.5%  -1.602260203 -1.4589036 -0.7504125
+97.5%  1.602954827  2.3213503  3.1464371
+===== Finished ensembleKF filter test for basic ensembleKF. =====
+===== Starting Filter test for multivariate bootstrap, always resamp using bootstrap. =====
+         x[1, 1]    x[2, 1]   x[3, 1]    x[1, 2]    x[2, 2]   x[3, 2]
+mean   0.3219980  0.8205222 1.6794925  0.6825467  0.9286509  1.182995
+sd     0.5847179  0.5957252 0.6050164  1.0300398  1.4063670  1.684584
+2.5%  -0.7948388 -0.3247013 0.4942534 -1.3024659 -1.7663347 -1.966161
+97.5%  1.4724973  2.0009412 2.8666526  2.6290376  3.7325072  4.489152
+         x[1, 3]    x[2, 3]   x[3, 3]
+mean   0.4937738  0.9512868  1.683561
+sd     1.1253605  1.4873218  1.750032
+2.5%  -1.6594215 -1.9775964 -1.839599
+97.5%  2.7585060  3.8372356  5.035827
+===== Finished bootstrap filter test for multivariate bootstrap, always resamp. =====
+===== Starting Filter test for multivariate auxiliary using auxiliary. =====
+         x[1, 1]    x[2, 1]   x[3, 1]    x[1, 2]   x[2, 2]   x[3, 2]    x[1, 3]
+mean   0.3219980  0.8901487 1.7312170  0.6825467  1.120018  1.796722  0.4937738
+sd     0.5847179  0.6299706 0.6032666  1.0300398  1.430706  1.706976  1.1253605
+2.5%  -0.7948388 -0.3687001 0.4792759 -1.3024659 -1.561987 -1.736663 -1.6594215
+97.5%  1.4724973  2.0250402 2.8072585  2.6290376  3.823310  4.822284  2.7585060
+         x[2, 3]    x[3, 3]
+mean   0.8038698  0.9809071
+sd     1.5411159  1.8019986
+2.5%  -2.2030694 -2.6059457
+97.5%  3.6847844  4.7553646
+===== Finished auxiliary filter test for multivariate auxiliary. =====
+===== Starting Filter test for multivariate auxiliary mean lookahead using auxiliary. =====
+         x[1, 1]    x[2, 1]   x[3, 1]    x[1, 2]    x[2, 2]   x[3, 2]
+mean   0.3219980  0.8085162 1.7111350  0.6825467  0.9653112  1.322196
+sd     0.5847179  0.6132877 0.6023717  1.0300398  1.3729067  1.746070
+2.5%  -0.7948388 -0.4034297 0.4935381 -1.3024659 -1.6467423 -2.198048
+97.5%  1.4724973  2.0107031 2.8860580  2.6290376  3.7320766  4.997562
+         x[1, 3]    x[2, 3]   x[3, 3]
+mean   0.4937738  0.9425154  1.523173
+sd     1.1253605  1.4539676  1.786932
+2.5%  -1.6594215 -1.9381822 -2.059722
+97.5%  2.7585060  3.7792415  5.212447
+===== Finished auxiliary filter test for multivariate auxiliary mean lookahead. =====
+===== Starting Filter test for multivariate ensembleKF using ensembleKF. =====
+           x[1]      x[2]      x[3]
+mean  1.6772304  1.306020  1.519570
+sd    0.6088283  1.659464  1.722874
+2.5%  0.4634925 -1.969895 -1.832840
+97.5% 2.8788677  4.588400  4.951206
+===== Finished ensembleKF filter test for multivariate ensembleKF. =====
+===== Starting Filter test for scalar lwf using LiuWest. =====
+      sigma_x[1] sigma_y[1]      x[1]      x[2]      x[3]     x[4]      x[5]
+mean   0.9773112  0.5178525 1.5671443 2.6323816 2.4073446 2.218518 2.2822645
+sd     0.3494247  0.2161070 0.6228014 0.4325777 0.4156712 0.357436 0.4760495
+2.5%   0.4869661  0.2689896 0.2248718 1.6278845 1.4913641 1.520610 1.2839160
+97.5%  1.6708747  1.0643471 2.7074076 3.3565962 3.2048605 2.965964 3.2446241
+===== Finished LiuWest filter test for scalar lwf. =====
+===== Starting MCMC test for scalar pmcmc. =====
+Setting samplers to:
+[[1]]
+RW_PF sampler: sigma_x,  latents: x,  m: 1000
+[[2]]
+RW_PF sampler: sigma_y,  latents: x,  m: 1000
+        sigma_x    sigma_y      x[1]      x[2]      x[3]      x[4]      x[5]
+mean  1.0460542 0.35518992 1.2270500 2.5642355 2.7357103 2.1419625 2.3143455
+sd    0.3064415 0.28390762 0.3178199 0.3923246 0.4162471 0.4069647 0.4090852
+2.5%  0.5624623 0.01501472 0.5990000 1.6117420 1.7053921 1.3012873 1.4301177
+97.5% 1.8088469 1.00347903 1.9550760 3.2709094 3.4445123 3.1419404 3.1197503
+===== Finished MCMC test for scalar pmcmc. =====
+===== Starting MCMC test for block pmcmc. =====
+Setting samplers to:
+[[1]]
+RW_PF_block sampler: sigma_x, sigma_y,  latents: x,  m: 1000,  resample: FALSE
+        sigma_x    sigma_y      x[1]      x[2]      x[3]      x[4]      x[5]
+mean  1.0856382 0.37041525 1.2266300 2.5095283 2.7201873 2.1545156 2.3324189
+sd    0.3120575 0.27887452 0.3284893 0.4387997 0.3567947 0.3784501 0.3820631
+2.5%  0.5875454 0.02598856 0.4813617 1.3902215 1.8558995 1.2882195 1.4721046
+97.5% 1.8694974 1.01702797 2.0257602 3.1300473 3.3805712 3.0391135 3.1245222
+===== Finished MCMC test for block pmcmc. =====
+buildIteratedFilter2: IF2 algorithm built to maximize parameters: logSigmaInnovations, logSigmaMeasurements, meanShift1899.

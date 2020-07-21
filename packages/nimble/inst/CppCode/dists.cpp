@@ -1,3 +1,24 @@
+/*
+ * NIMBLE: an R package for programming with BUGS models.
+ * Copyright (C) 2014-2017 Perry de Valpine, Christopher Paciorek,
+ * Daniel Turek, Clifford Anderson-Bergman, Nick Michaud, Fritz Obermeyer,
+ * Duncan Temple Lang.
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, a copy is available at
+ * https://www.R-project.org/Licenses/
+ */
+
 // various additional distributions functions needed by NIMBLE
 // Author: Chris Paciorek 
 // Date: Initial development in February 2014
@@ -7,6 +28,7 @@
 //#include "Utils.h" // moved to dists.h
 #include "nimble/dists.h"
 #include <R_ext/Lapack.h>
+
 
 bool R_IsNA(double* P, int s) {
   for(int i = 0; i < s; ++i) if(R_IsNA(P[i])) return(true);
@@ -23,16 +45,17 @@ bool R_FINITE_VEC(double* P, int s) {
   return(true);
 }
 
-double dwish_chol(double* x, double* chol, double df, int p, double scale_param, int give_log) {
+double dwish_chol(double* x, double* chol, double df, int p, double scale_param, int give_log, int overwrite_inputs) {
   char uplo('U');
-  char side('L');
+  char sideL('L');
+  char sideR('R');
   char diag('N');
-  char transT('T');
   char transN('N');
   int info(0);
   double alpha(1.0);
+  double* xChol;
 
-  int i;
+  int i, j;
 
   if (R_IsNA(x, p*p) || R_IsNA(chol, p*p) || R_IsNA(df) || R_IsNA(scale_param))
     return NA_REAL;
@@ -59,40 +82,79 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
   }
 
   // determinant of x using Cholesky:
-  // dpotrf overwrites x so need to copy first since the trace calc below also overwrites
-  double* tmp = new double[p*p];
-  for(i = 0; i < p*p; i++) 
-    tmp[i] = x[i];
-  F77_CALL(dpotrf)(&uplo, &p, tmp, &p, &info);
+  if(overwrite_inputs & (int) scale_param)  // if !scale_param we need x below
+    xChol = x;
+  else {
+    xChol = new double[p*p];
+    // only need upper triangle for dpotrf chol calculation
+    for(j = 0; j < p; j++)
+      for(i = 0; i <= j; i++) 
+        xChol[j*p+i] = x[j*p+i];
+  }
+  F77_CALL(dpotrf)(&uplo, &p, xChol, &p, &info);
   for(i = 0; i < p*p; i += p + 1) 
-    dens += (df - p - 1) * log(tmp[i]);
-  delete [] tmp;
+    dens += (df - p - 1) * log(xChol[i]);
+  
+  // R %*% x = t(chol) %*% chol %*% x (could also do with chol(x) but no more efficient
+  // solve(S, x) = crossproduct( chol(x) %*% inverse(chol) )
 
-  // do upper-triangular solves for scale parameterization
-  // or upper-triangular multiplies for rate parameterization
   // dtr{m,s}m is a BLAS level-3 function
   double tmp_dens = 0.0;
   if(scale_param) {
-    F77_CALL(dtrsm)(&side, &uplo, &transT, &diag, &p, &p, &alpha, 
-           chol, &p, x, &p);
-    F77_CALL(dtrsm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
-           chol, &p, x, &p);
-    for(i = 0; i < p*p; i += p + 1) 
-      tmp_dens += x[i];
-    dens += -0.5 * tmp_dens;
+    // chol(x) %*% inverse(chol)
+    // need lower triangle of xChol to have zeros as dtrsm assumes it is full matrix
+    for(j = 0; j < p-1; j++)
+      for(i = j+1; i < p; i++)
+        xChol[j*p+i] = 0.0;
+    F77_CALL(dtrsm)(&sideR, &uplo, &transN, &diag, &p, &p, &alpha, 
+                    chol, &p, xChol, &p);
+    // trace of crossproduct of result is sum of squares of elements
+    for(j = 0; j < p; j++) 
+      for(i = 0; i <= j; i++) 
+        tmp_dens += xChol[j*p+i]*xChol[j*p+i];
   } else {
-    // this could be improved by doing efficient U^T U multiply followed by direct product multiply
-    F77_CALL(dtrmm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
-           chol, &p, x, &p);
-    // at this point don't need to do all the multiplications so don't call dtrmm again
-    // direct product of upper triangles
-    for(int j = 0; j < p; j++) {
+    double* xCopy;
+    if(overwrite_inputs) 
+      xCopy = x;
+    else {
+      xCopy = new double[p*p]; 
+      for(i = 0; i < p*p; i++) 
+        xCopy[i] = x[i];
+    }
+    // chol %*% x
+    F77_CALL(dtrmm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, 
+           chol, &p, xCopy, &p);
+    // trace crossproduct of t(chol) with result is sum of product of upper-triangular elements
+    for(j = 0; j < p; j++) {
       for(i = 0; i <= j; i++) {
-        tmp_dens += x[j*p+i] * chol[j*p+i];
+        tmp_dens += xCopy[j*p+i] * chol[j*p+i];
       }
     }
-    dens += -0.5 * tmp_dens;
+    if(!overwrite_inputs)  
+      delete [] xCopy;
   }
+
+  if(!(overwrite_inputs & (int) scale_param))
+    delete [] xChol;
+
+    // attempt to improve above calcs by doing efficient U^T U multiply followed by direct product multiply, however this would not make use of threading provided by BLAS and even with one thread seems to be no faster
+    // U^T*U directly followed by direct product with x
+    /* 
+    double tmp_summand;
+    int minij;
+    for(j = 0; j < p; j++) 
+      for(i = 0; i < p; i++) {
+        tmp_summand = 0.0;
+        minij = i <= j ? i : j;
+        for(int k = 0; k < minij; k++)
+          tmp_summand += chol[j*p+k]*chol[i*p+k]; // U^T U 
+        // double if not on diagonal to account for direct product of lower triangle too
+        if(i != j) tmp_summand *= 2;
+        tmp_dens += xCopy[j*p+i] * tmp_summand;
+      }
+    */
+    
+  dens += -0.5 * tmp_dens;
 
   return give_log ? dens : exp(dens);
 }
@@ -103,9 +165,18 @@ SEXP C_dwish_chol(SEXP x, SEXP chol, SEXP df, SEXP scale_param, SEXP return_log)
 // Cholesky matrix should be given as a numeric vector in column-major order
 //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(x) || !isReal(chol) || !isReal(df) || !isReal(scale_param) || !isLogical(return_log))
+  if(!Rf_isMatrix(x) || !Rf_isMatrix(chol) || !Rf_isReal(x) || !Rf_isReal(chol))
+    RBREAK("Error (C_dwish_chol): 'x' and 'chol' must be real matrices.\n")
+  if(!Rf_isReal(df) || !Rf_isReal(scale_param) || !Rf_isLogical(return_log))
     RBREAK("Error (C_dwish_chol): invalid input type for one of the arguments.\n");
-  int p = pow(LENGTH(chol), 0.5);
+  int* dims = INTEGER(Rf_getAttrib(x, R_DimSymbol));
+  if(dims[0] != dims[1])
+    RBREAK("Error (C_dwish_chol): 'x' must be a square matrix.\n");
+  int p = dims[0];
+  dims = INTEGER(Rf_getAttrib(chol, R_DimSymbol));
+  if(dims[0] != dims[1] || dims[0] != p)
+   RBREAK("Error (C_dwish_chol): 'chol' must be a square matrix with the same dimensions as 'x'.\n");
+
   int give_log = (int) LOGICAL(return_log)[0];
   double scale = REAL(scale_param)[0];
 
@@ -117,25 +188,23 @@ SEXP C_dwish_chol(SEXP x, SEXP chol, SEXP df, SEXP scale_param, SEXP return_log)
     RBREAK("Error (C_dwish_chol): inconsistent degrees of freedom and dimension.\n");
   
   SEXP ans;
-  PROTECT(ans = allocVector(REALSXP, 1));  
-  REAL(ans)[0] = dwish_chol(c_x, c_chol, c_df, p, scale, give_log);
+  PROTECT(ans = Rf_allocVector(REALSXP, 1));  
+  REAL(ans)[0] = dwish_chol(c_x, c_chol, c_df, p, scale, give_log, 0); 
   UNPROTECT(1);
   return ans;
 }
 
 
-void rwish_chol(double *Z, double* chol, double df, int p, double scale_param) {
-  // Ok that this returns the array as return value? NIMBLE C code will need to free the memory
+void rwish_chol(double *Z, double* chol, double df, int p, double scale_param, int overwrite_inputs) {
   char uplo('U');
   char sideL('L');
-  //  char sideR('R');
   char diag('N');
   char transT('T');
   char transN('N');
-  //  int info(0);
   double alpha(1.0);
   double beta(0.0);
 
+  double* cholCopy;
   int i, j, uind, lind;
   
 #ifdef IEEE_754
@@ -153,7 +222,7 @@ void rwish_chol(double *Z, double* chol, double df, int p, double scale_param) {
     return;
   }
   
-  // fill diags with sqrts of chi-squares and upper triangle (for scale_param) with std normals
+  // fill diags with sqrts of chi-squares and upper triangle (for scale_param) with std normals - crossproduct of result is standardized Wishart; based on rWishart in stats package
   for(j = 0; j < p; j++) {
     // double *Z_j = &Z[j*p];
     //Z_j[j] = sqrt(rchisq(df - (double) j)); 
@@ -173,23 +242,33 @@ void rwish_chol(double *Z, double* chol, double df, int p, double scale_param) {
   }
  
   // multiply Z*chol, both upper triangular or solve(chol, Z^T)
-  // would be more efficient if make use of fact that right-most matrix is triangular
-  if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, Z, &p, chol, &p);
+  // would be more efficient if make use of fact that right-most matrix is triangular, but no available BLAS routine and hand-coding would eliminate use of threading and might well not be faster
+  if(overwrite_inputs)
+    cholCopy = chol;
+  else {
+    cholCopy = new double[p*p];
+    if(scale_param)
+      for(i = 0; i < p*p; i++) 
+        cholCopy[i] = chol[i];
+  }
+  if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, Z, &p, cholCopy, &p);
   else F77_CALL(dtrsm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, chol, &p, Z, &p);
 
   // cp result to Z or chol so can be used as matrix to multiply against and overwrite
   if(scale_param) {
     for(j = 0; j < p*p; j++) 
-      Z[j] = chol[j];
+      Z[j] = cholCopy[j];
   } else {
     for(j = 0; j < p*p; j++) 
-      chol[j] = Z[j]; // FIXME: check this case.  We don't want to overwite an input argument.
+      cholCopy[j] = Z[j]; 
   }
 
-  // do crossprod of result; again this would be more efficient use fact that t(input) is lower-tri
-  if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transT, &diag, &p, &p, &alpha, chol, &p, Z, &p);
-  else F77_CALL(dgemm)(&transN, &transT, &p, &p, &p, &alpha, chol, &p, chol, &p, &beta, Z, &p); 
-
+  // do crossprod of result
+  // for dtrmm call, again this would be more efficient if use fact that RHS upper triangular, but no available BLAS routine and hand-coding would eliminate use of threading and might well not be faster
+  if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transT, &diag, &p, &p, &alpha, cholCopy, &p, Z, &p);
+  else F77_CALL(dgemm)(&transN, &transT, &p, &p, &p, &alpha, cholCopy, &p, cholCopy, &p, &beta, Z, &p); 
+  if(!overwrite_inputs)
+    delete [] cholCopy;
 }
 
 SEXP C_rwish_chol(SEXP chol, SEXP df, SEXP scale_param) 
@@ -197,10 +276,16 @@ SEXP C_rwish_chol(SEXP chol, SEXP df, SEXP scale_param)
 // Cholesky matrix should be given as a numeric vector in column-major order
 //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(chol) || !isReal(df) || !isReal(scale_param))
+  if(!Rf_isMatrix(chol) || !Rf_isReal(chol))
+    RBREAK("Error (Crwish_chol): 'chol' must be a real matrix.\n")
+  if(!Rf_isReal(df) || !Rf_isReal(scale_param))
     RBREAK("Error (C_rwish_chol): invalid input type for one of the arguments.\n");
+  int* dims = INTEGER(Rf_getAttrib(chol, R_DimSymbol));
+  if(dims[0] != dims[1])
+    RBREAK("Error (C_rwish_chol): 'chol' must be a square matrix.\n");
+  int p = dims[0];
+
   int n_chol = LENGTH(chol);
-  int p = pow(n_chol, 0.5);
   double scale = REAL(scale_param)[0];
 
   double* c_chol = REAL(chol);
@@ -212,14 +297,249 @@ SEXP C_rwish_chol(SEXP chol, SEXP df, SEXP scale_param)
   GetRNGstate(); 
 
   SEXP ans;
-  PROTECT(ans = allocVector(REALSXP, n_chol));  
-  rwish_chol(REAL(ans), c_chol, c_df, p, scale);
+  PROTECT(ans = Rf_allocVector(REALSXP, n_chol));  
+  rwish_chol(REAL(ans), c_chol, c_df, p, scale, 0);
   
   PutRNGstate();
   UNPROTECT(1);
   return ans;
 }
 
+
+double dinvwish_chol(double* x, double* chol, double df, int p, double scale_param, int give_log, int overwrite_inputs) {
+  char uplo('U');
+  char sideL('L');
+  char sideR('R');
+  char diag('N');
+  char transT('T');
+  char transN('N');
+  int info(0);
+  double alpha(1.0);
+  double* xChol;
+
+  int i, j;
+
+  if (R_IsNA(x, p*p) || R_IsNA(chol, p*p) || R_IsNA(df) || R_IsNA(scale_param))
+    return NA_REAL;
+#ifdef IEEE_754
+  if (R_isnancpp(x, p*p) || R_isnancpp(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param))
+    return R_NaN;
+#endif
+
+  // also covers df < 0
+  if(df < (double) p) ML_ERR_return_NAN;
+
+  if(!R_FINITE_VEC(x, p*p) || !R_FINITE_VEC(chol, p*p)) return R_D__0;
+
+  double dens = -(df*p/2 * M_LN2 + p*(p-1)*M_LN_SQRT_PI/2);
+  for(i = 0; i < p; i++)
+    dens -= lgammafn((df - i) / 2);
+
+  // determinant of S or R
+  if(scale_param) {
+    for(i = 0; i < p*p; i += p + 1) 
+      dens += df * log(chol[i]);
+  } else {
+    for(i = 0; i < p*p; i += p + 1) 
+      dens -= df * log(chol[i]);
+  }
+
+  // determinant of x using Cholesky:
+  if(overwrite_inputs) 
+    xChol = x;
+  else {
+    xChol = new double[p*p];
+    for(i = 0; i < p*p; i++) 
+      xChol[i] = x[i];
+  }
+  F77_CALL(dpotrf)(&uplo, &p, xChol, &p, &info);
+  for(i = 0; i < p*p; i += p + 1) 
+    dens -= (df + p + 1) * log(xChol[i]);
+  
+  double tmp_dens = 0.0;
+
+  // do upper-triangular solve for scale parameterization
+  // or upper-triangular multiplies for rate parameterization
+
+  // S %*% inverse(x) = crossprod(chol %*% inverse(chol(x)) 
+  // inverse(R) %*% inverse(x) = crossproduct(solve(t(chol(x)), inverse(chol)))
+  // dtr{m,s}m is a BLAS level-3 function
+  if(scale_param) {
+    double* cholCopy;
+    if(overwrite_inputs)
+      cholCopy = chol;
+    else {
+      cholCopy = new double[p*p];
+      for(i = 0; i < p*p; i++) 
+        cholCopy[i] = chol[i];
+    }
+    // chol %*% inverse(chol(x))
+    F77_CALL(dtrsm)(&sideR, &uplo, &transN, &diag, &p, &p, &alpha, 
+           xChol, &p, cholCopy, &p);
+    // trace of crossproduct is sum of elements squared
+    for(j = 0; j < p; j++) {
+      for(i = 0; i <= j; i++) {
+        tmp_dens += cholCopy[j*p+i] * cholCopy[j*p+i];
+      }
+    }
+    if(!overwrite_inputs)
+      delete [] cholCopy;
+  } else {
+    double* iden = new double[p*p];
+    for(j = 0; j < p; j++)
+      for(i = 0; i < p; i++)
+        if(i == j) iden[j*p+i] = 1.0; else iden[j*p+i] = 0.0;
+    // inverse of chol
+    F77_CALL(dtrsm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, 
+                    chol, &p, iden, &p);
+    // solve(t(chol(x)), result)
+    F77_CALL(dtrsm)(&sideL, &uplo, &transT, &diag, &p, &p, &alpha, 
+                    xChol, &p, iden, &p);
+    // trace of crossproduct is sum of elements squared
+    for(j = 0; j < p; j++) {
+      for(i = 0; i < p; i++) {
+        tmp_dens += iden[j*p+i] * iden[j*p+i];
+      }
+    }
+    delete [] iden;
+  }
+  dens += -0.5 * tmp_dens;
+  return give_log ? dens : exp(dens);
+}
+
+
+SEXP C_dinvwish_chol(SEXP x, SEXP chol, SEXP df, SEXP scale_param, SEXP return_log) 
+// calculates Inverse Wishart density given Cholesky of scale or rate matrix
+// Cholesky matrix should be given as a numeric vector in column-major order
+//   including all n x n elements; lower-triangular elements are ignored
+{
+  if(!Rf_isReal(x) || !Rf_isReal(chol) || !Rf_isReal(df) || !Rf_isReal(scale_param) || !Rf_isLogical(return_log))
+    RBREAK("Error (C_dinvwish_chol): invalid input type for one of the arguments.\n");
+  int p = pow(LENGTH(chol), 0.5);
+  int give_log = (int) LOGICAL(return_log)[0];
+  double scale = REAL(scale_param)[0];
+
+  double* c_x = REAL(x);
+  double* c_chol = REAL(chol);
+  double c_df = REAL(df)[0];
+ 
+  if(c_df < p)
+    RBREAK("Error (C_dinvwish_chol): inconsistent degrees of freedom and dimension.\n");
+  
+  SEXP ans;
+  PROTECT(ans = Rf_allocVector(REALSXP, 1));  
+  REAL(ans)[0] = dinvwish_chol(c_x, c_chol, c_df, p, scale, give_log, 0); 
+  UNPROTECT(1);
+  return ans;
+}
+
+
+void rinvwish_chol(double *Z, double* chol, double df, int p, double scale_param, int overwrite_inputs) {
+  char uploU('U');
+  char uploL('L');
+  char sideL('L');
+  char diag('N');
+  char transT('T');
+  char transN('N');
+  double alpha(1.0);
+  double beta(0.0);
+
+  // calculations here generate W ~ Wi(S) for scale_param = 1 and W ~ Wi(S^-1) for scale_param = 0,
+  // and then invert the result, giving InvWi(S^-1) for scale_param = 1 and InvWi(S) for scale_param = 0,
+  // because scale for Wishart is inverse of scale for inverse-Wishart
+  // therefore generate under opposite parameterization
+  scale_param = 1 - scale_param;  
+
+
+  double* cholCopy;
+  int i, j, uind, lind;
+  
+#ifdef IEEE_754
+  if (R_isnancpp(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param)) {
+    for(j = 0; j < p*p; j++) 
+      Z[j] = R_NaN;
+    return;
+  }
+#endif
+    
+  // also covers df < 0
+  if(df < (double) p) {
+    for(j = 0; j < p*p; j++) 
+      Z[j] = R_NaN;
+    return;
+  }
+  
+  // fill diags with sqrts of chi-squares and upper triangle (for scale_param) with std normals - crossproduct of result is standardized Wishart; based on rWishart in stats package
+  for(j = 0; j < p; j++) {
+    Z[j*p + j] = sqrt(rchisq(df - (double) j)); 
+    for(i = 0; i < j; i++) {
+      uind = i + j * p, /* upper triangle index */
+      lind = j + i * p; /* lower triangle index */
+      Z[(scale_param ? uind : lind)] = norm_rand();
+      Z[(scale_param ? lind : uind)] = 0;
+    }
+  }
+ 
+  if(overwrite_inputs)
+    cholCopy = chol;
+  else {
+    cholCopy = new double[p*p];
+    for(i = 0; i < p*p; i++) 
+      cholCopy[i] = chol[i];
+  }
+
+  // with S parameterization: t(chol)%*%t(Z)%*%Z%*%chol is Wishart-distributed, so take inverse based on pieces
+  // with R parameterization: inverse(chol)%*%Z%*%t(Z)%*%inverse(t(chol)) is Wishart-distributed, again inverse of pieces
+  if(scale_param) {
+    // Z %*% chol
+    F77_CALL(dtrmm)(&sideL, &uploU, &transN, &diag, &p, &p, &alpha, Z, &p, cholCopy, &p);
+    double* iden = new double[p*p];
+    for(j = 0; j < p; j++)
+      for(i = 0; i < p; i++)
+        if(i == j) iden[j*p+i] = 1.0; else iden[j*p+i] = 0.0;
+    // inverse(Z %*% chol)
+    F77_CALL(dtrsm)(&sideL, &uploU, &transN, &diag, &p, &p, &alpha, cholCopy, &p, iden, &p);
+    // crossproduct of result
+    F77_CALL(dgemm)(&transN, &transT, &p, &p, &p, &alpha, iden, &p, iden, &p, &beta, Z, &p);    
+    delete [] iden;
+  } else {    
+    // solve(Z, chol)
+    F77_CALL(dtrsm)(&sideL, &uploL, &transN, &diag, &p, &p, &alpha, Z, &p, cholCopy, &p);
+    // crossproduct of result
+    F77_CALL(dgemm)(&transT, &transN, &p, &p, &p, &alpha, cholCopy, &p, cholCopy, &p, &beta, Z, &p);
+  }
+
+  if(!overwrite_inputs)
+    delete [] cholCopy;
+}
+
+SEXP C_rinvwish_chol(SEXP chol, SEXP df, SEXP scale_param) 
+// generates single Inverse Wishart draw given Cholesky of scale or rate matrix
+// Cholesky matrix should be given as a numeric vector in column-major order
+//   including all n x n elements; lower-triangular elements are ignored
+{
+  if(!Rf_isReal(chol) || !Rf_isReal(df) || !Rf_isReal(scale_param))
+    RBREAK("Error (C_rinvwish_chol): invalid input type for one of the arguments.\n");
+  int n_chol = LENGTH(chol);
+  int p = pow(n_chol, 0.5);
+  double scale = REAL(scale_param)[0];
+
+  double* c_chol = REAL(chol);
+  double c_df = REAL(df)[0];
+
+  if(c_df < p)
+    RBREAK("Error (C_rinvwish_chol): inconsistent degrees of freedom and dimension.\n");
+
+  GetRNGstate(); 
+
+  SEXP ans;
+  PROTECT(ans = Rf_allocVector(REALSXP, n_chol));  
+  rinvwish_chol(REAL(ans), c_chol, c_df, p, scale, 0); 
+  
+  PutRNGstate();
+  UNPROTECT(1);
+  return ans;
+}
 
 
 double ddirch(double* x, double* alpha, int K, int give_log) 
@@ -251,7 +571,7 @@ double ddirch(double* x, double* alpha, int K, int give_log)
   return give_log ? dens : exp(dens);
 }
 
-void rdirch(double *ans, double* alpha, int K) 
+void rdirch(double* ans, double* alpha, int K) 
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
   int i, j;
@@ -281,7 +601,7 @@ void rdirch(double *ans, double* alpha, int K)
 
 SEXP C_ddirch(SEXP x, SEXP alpha, SEXP return_log) 
 {
-  if(!isReal(x) || !isReal(alpha) || !isLogical(return_log)) 
+  if(!Rf_isReal(x) || !Rf_isReal(alpha) || !Rf_isLogical(return_log)) 
     RBREAK("Error (C_ddirch): invalid input type for one of the arguments.\n");
   int K = LENGTH(alpha);
   if(LENGTH(x) != K)
@@ -296,7 +616,7 @@ SEXP C_ddirch(SEXP x, SEXP alpha, SEXP return_log)
   double* c_x = REAL(x);
   double* c_alpha = REAL(alpha);
 
-  PROTECT(ans = allocVector(REALSXP, 1));  
+  PROTECT(ans = Rf_allocVector(REALSXP, 1));  
   REAL(ans)[0] = ddirch(c_x, c_alpha, K, give_log);
 
   UNPROTECT(1);
@@ -305,14 +625,14 @@ SEXP C_ddirch(SEXP x, SEXP alpha, SEXP return_log)
  
 
 SEXP C_rdirch(SEXP alpha) {
-  if(!isReal(alpha))
+  if(!Rf_isReal(alpha))
     RBREAK("Error (C_rdirch): invalid input type for the argument.\n");
   int K = LENGTH(alpha);
 
   SEXP ans;
 
   if(K == 0) {
-    PROTECT(ans = allocVector(INTSXP, 0));
+    PROTECT(ans = Rf_allocVector(INTSXP, 0));
     UNPROTECT(1);
     return ans;
   }
@@ -321,7 +641,7 @@ SEXP C_rdirch(SEXP alpha) {
 
   GetRNGstate(); 
 
-  PROTECT(ans = allocVector(REALSXP, K));  
+  PROTECT(ans = Rf_allocVector(REALSXP, K));  
   rdirch(REAL(ans), c_alpha, K);
   PutRNGstate();
   UNPROTECT(1);
@@ -335,6 +655,7 @@ double dmulti(double* x, double size, double* prob, int K, int give_log) // Call
 {
   double sumProb(0.0);
   double sumX(0.0);
+  double logSumProb;
 
   if (R_IsNA(x, K) || R_IsNA(prob, K) || R_IsNA(size))
     return NA_REAL;
@@ -349,23 +670,23 @@ double dmulti(double* x, double size, double* prob, int K, int give_log) // Call
 
   double dens = lgammafn(size + 1);
   for(int i = 0; i < K; i++) {
-    if (prob[i] < 0 || prob[i] > 1) ML_ERR_return_NAN;
+    if (prob[i] < 0) ML_ERR_return_NAN;
     R_D_nonint_check(x[i]);
     if (x[i] < 0 || !R_FINITE(x[i])) return R_D__0;
 
     x[i] = R_D_forceint(x[i]);
     sumProb += prob[i];
     sumX += x[i];
+  }
+  logSumProb = log(sumProb);
 
+  for(int i = 0; i < K; i++) {  
     if(!(x[i] == 0.0 && prob[i] == 0.0))
-      dens += x[i]*log(prob[i]) - lgammafn(x[i] + 1);
+      dens += x[i]*(log(prob[i]) - logSumProb) - lgammafn(x[i] + 1);
   }
 
   if(sumX > size + 10*DBL_EPSILON || sumX < size - 10*DBL_EPSILON) {
     return R_D__0;
-  }
-  if(sumProb > 1.0 + 10*DBL_EPSILON || sumProb < 1.0 - 10*DBL_EPSILON) {
-    ML_ERR_return_NAN;
   }
 
   return give_log ? dens : exp(dens);
@@ -374,18 +695,32 @@ double dmulti(double* x, double size, double* prob, int K, int give_log) // Call
 
 
 
-void rmulti(int *ans, double size, double* prob, int K) // Calling functions need to copy first arg back and forth to double if needed
+void rmulti(int* ans, double size, double* prob, int K) // Calling functions need to copy first arg back and forth to double if needed
 // scalar function that can be called directly by NIMBLE with same name as in R
 // just call Rmath's rmultinom, which passes result by pointer
 // IMPORTANT: have ans and size as int when sent to rmultinom as Rmath rmultinom has these types
 // Nimble does a copy in nimArr_rmulti
 {
+  /* rmultinom requires normalized probs (in R this is done in Rmultinom interface
+     function via FixupProb before passing to rmultinom) */
+  double sumProb = 0.0;
+  int i;
+
+  for(i = 0; i < K; i++) 
+    sumProb += prob[i];
+  if (sumProb <= 0.0) {
+    for(i = 0; i < K; i++) 
+      ans[i] = R_NaN;
+    return;
+  }
+  for(i = 0; i < K; i++) 
+    prob[i] /= sumProb;
   rmultinom((int) size, prob, K, ans);
 }
 
 SEXP C_dmulti(SEXP x, SEXP size, SEXP prob, SEXP return_log) 
 {
-  if(!isReal(x) || !isReal(size) || !isReal(prob) || !isLogical(return_log)) 
+  if(!Rf_isReal(x) || !Rf_isReal(size) || !Rf_isReal(prob) || !Rf_isLogical(return_log)) 
     RBREAK("Error (C_dmulti): invalid input type for one of the arguments.\n");
   int K = LENGTH(prob);
   if(LENGTH(x) != K)
@@ -404,10 +739,6 @@ SEXP C_dmulti(SEXP x, SEXP size, SEXP prob, SEXP return_log)
   double c_size = REAL(size)[0];
 
   double sum = 0.0;
-  for(i = 0; i < K; i++) 
-    sum += c_prob[i];
-  if(sum > 1.0 + 10*DBL_EPSILON || sum < 1.0 - 10*DBL_EPSILON)
-    RBREAK("Error (C_dmulti): sum of probabilities is not equal to 1.\n");
 
   sum = 0.0;
   for(i = 0; i < K; i++) 
@@ -415,7 +746,7 @@ SEXP C_dmulti(SEXP x, SEXP size, SEXP prob, SEXP return_log)
   if(c_size > sum + 10*DBL_EPSILON || c_size < sum - 10*DBL_EPSILON)
     RBREAK("Error (C_dmulti): sum of values is not equal to size.\n");
 
-  PROTECT(ans = allocVector(REALSXP, 1));  
+  PROTECT(ans = Rf_allocVector(REALSXP, 1));  
   REAL(ans)[0] = dmulti(c_x, c_size, c_prob, K, give_log);
 
   UNPROTECT(1);
@@ -424,15 +755,14 @@ SEXP C_dmulti(SEXP x, SEXP size, SEXP prob, SEXP return_log)
  
 
 SEXP C_rmulti(SEXP size, SEXP prob) {
-  if(!isReal(size) || !isReal(prob))
+  if(!Rf_isReal(size) || !Rf_isReal(prob))
     RBREAK("Error (C_rmulti): invalid input type for one of the arguments.\n");
   int K = LENGTH(prob);
 
   SEXP ans;
-  int i;
 
   if(K == 0) {
-    PROTECT(ans = allocVector(INTSXP, 0));
+    PROTECT(ans = Rf_allocVector(INTSXP, 0));
     UNPROTECT(1);
     return ans;
   }
@@ -440,15 +770,10 @@ SEXP C_rmulti(SEXP size, SEXP prob) {
   double* c_prob = REAL(prob);
   double c_size = REAL(size)[0];
 
-  double sum = 0.0;
-  for(i = 0; i < K; i++) 
-    sum += c_prob[i];
-  if(sum > 1.0 + 10*DBL_EPSILON || sum < 1.0 - 10*DBL_EPSILON)
-    RBREAK("Error (C_rmulti): sum of probabilities is not equal to 1.\n");
-
   GetRNGstate(); 
 
-  PROTECT(ans = allocVector(INTSXP, K));  
+  PROTECT(ans = Rf_allocVector(INTSXP, K));  
+  // note that if NaN set in rmulti, the INTEGER() casts it to NA
   rmulti(INTEGER(ans), c_size, c_prob, K);
   PutRNGstate();
   UNPROTECT(1);
@@ -469,15 +794,12 @@ double dcat(double x, double* prob, int K, int give_log)
   double sumProb(0.0);
   for(int i = 0; i < K; i++) 
     sumProb += prob[i];
-  if(sumProb > 1.0 + 10*DBL_EPSILON || sumProb < 1.0 - 10*DBL_EPSILON) {
-    ML_ERR_return_NAN;
-  }
 
   R_D_nonint_check(x);
   x = R_D_forceint(x);
 
   if(x > K || x < 1) return R_D__0;
-  return give_log ? log(prob[(int) x - 1]) : prob[(int) x - 1];
+  return give_log ? log(prob[(int) x - 1]) - log(sumProb) : prob[(int) x - 1]/sumProb;
 }
 
 double rcat(double* prob, int K)
@@ -486,17 +808,14 @@ double rcat(double* prob, int K)
 // relying on sum to 1 risks accessing beyond storage
 // we'll need to figure out how to inject the number of categories w/in NIMBLE
 {
-  double u = unif_rand();
   double prob_cum = prob[0];
   int value = 1;
 
   double sumProb(0.0);
   for(int i = 0; i < K; i++) 
     sumProb += prob[i];
-  if(sumProb > 1.0 + 10*DBL_EPSILON || sumProb < 1.0 - 10*DBL_EPSILON) {
-    ML_ERR_return_NAN;
-  }
 
+  double u = unif_rand() * sumProb;
   while(u > prob_cum && value < K) {
     prob_cum += prob[value];
     value++;
@@ -510,7 +829,7 @@ SEXP C_dcat(SEXP x, SEXP prob, SEXP return_log)
   // this will call NIMBLE's dcat() for computation on scalars
   // prob must be a single vector of probs adding to one, but x can be a vector
 
-  if(!isReal(x) || !isReal(prob) || !isLogical(return_log)) 
+  if(!Rf_isReal(x) || !Rf_isReal(prob) || !Rf_isLogical(return_log)) 
     RBREAK("Error (C_dcat): invalid input type for one of the arguments.\n");
   int n_x = LENGTH(x);
   int K = LENGTH(prob);
@@ -526,13 +845,7 @@ SEXP C_dcat(SEXP x, SEXP prob, SEXP return_log)
   double* c_x = REAL(x);
   double* c_prob = REAL(prob);
 
-  double sum = 0.0;
-  for(i = 0; i < K; i++) 
-    sum += c_prob[i];
-  if(sum > 1.0 + 10*DBL_EPSILON || sum < 1.0 - 10*DBL_EPSILON)
-    RBREAK("Error (C_dcat): sum of probabilities is not equal to 1.\n");
-
-  PROTECT(ans = allocVector(REALSXP, n_x));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_x));  
   for(i = 0; i < n_x; i++) {
     REAL(ans)[i] = dcat(c_x[i], c_prob, K, give_log);
   }
@@ -542,7 +855,7 @@ SEXP C_dcat(SEXP x, SEXP prob, SEXP return_log)
 }
   
 SEXP C_rcat(SEXP n, SEXP prob) {
-  if(!isInteger(n) || !isReal(prob))
+  if(!Rf_isInteger(n) || !Rf_isReal(prob))
     RBREAK("Error (C_rcat): invalid input type for one of the arguments.\n");
   int n_values = INTEGER(n)[0];
   int K = LENGTH(prob);
@@ -551,7 +864,7 @@ SEXP C_rcat(SEXP n, SEXP prob) {
   int i;
 
   if(n_values == 0) {
-    PROTECT(ans = allocVector(INTSXP, 0));
+    PROTECT(ans = Rf_allocVector(INTSXP, 0));
     UNPROTECT(1);
     return ans;
   }
@@ -560,14 +873,8 @@ SEXP C_rcat(SEXP n, SEXP prob) {
 
   double* c_prob = REAL(prob);
 
-  double sum = 0.0;
-  for(i = 0; i < K; i++) 
-    sum += c_prob[i];
-  if(sum > 1.0 + 10*DBL_EPSILON || sum < 1.0 - 10*DBL_EPSILON)
-    RBREAK("Error (C_rcat): sum of probabilities is not equal to 1.\n");
-
   GetRNGstate(); 
-  PROTECT(ans = allocVector(INTSXP, n_values));  
+  PROTECT(ans = Rf_allocVector(INTSXP, n_values));  
 
   for(i = 0; i < n_values; i++) 
     INTEGER(ans)[i] = (int) rcat(c_prob, K);
@@ -578,13 +885,16 @@ SEXP C_rcat(SEXP n, SEXP prob) {
 
 }
   
-double dmnorm_chol(double* x, double* mean, double* chol, int n, double prec_param, int give_log) {
+
+
+double dmnorm_chol(double* x, double* mean, double* chol, int n, double prec_param, int give_log, int overwrite_inputs) {
   char uplo('U');
   char transPrec('N');
   char transCov('T');
   char diag('N');
   int lda(n);
   int incx(1);
+  double* xCopy;
 
   double dens = -n * M_LN_SQRT_2PI;
   int i;
@@ -599,6 +909,7 @@ double dmnorm_chol(double* x, double* mean, double* chol, int n, double prec_par
 
   if(!R_FINITE_VEC(x, n) || !R_FINITE_VEC(mean, n) || !R_FINITE_VEC(chol, n*n)) return R_D__0;
 
+    
 
   if(prec_param) {
     for(i = 0; i < n*n; i += n + 1) 
@@ -607,21 +918,32 @@ double dmnorm_chol(double* x, double* mean, double* chol, int n, double prec_par
     for(i = 0; i < n*n; i += n + 1) 
       dens -= log(chol[i]);
   }
-  for(i = 0; i < n; i++) 
-    x[i] -= mean[i];
+
+  if(overwrite_inputs) {
+    xCopy = x;
+    for(i = 0; i < n; i++) 
+      xCopy[i] -= mean[i];
+  } else {
+    xCopy = new double[n];
+    for(i = 0; i < n; i++)
+      xCopy[i] = x[i] - mean[i];
+  }
 
   // do matrix-vector multiply with upper-triangular matrix stored column-wise as full n x n matrix (prec parameterization)
   // or upper-triangular (transpose) solve (cov parameterization)
   // dtr{m,s}v is a BLAS level-2 function
-  if(prec_param) F77_CALL(dtrmv)(&uplo, &transPrec, &diag, &n, chol, &lda, x, &incx);
-  else F77_CALL(dtrsv)(&uplo, &transCov, &diag, &n, chol, &lda, x, &incx);
+  if(prec_param) F77_CALL(dtrmv)(&uplo, &transPrec, &diag, &n, chol, &lda, xCopy, &incx);
+  else F77_CALL(dtrsv)(&uplo, &transCov, &diag, &n, chol, &lda, xCopy, &incx);
 
   // sum of squares to calculate quadratic form
   double tmp = 0.0;
   for(i = 0; i < n; i++)
-    tmp += x[i] * x[i];
+    tmp += xCopy[i] * xCopy[i];
 
   dens += -0.5 * tmp;
+
+  if(!overwrite_inputs)
+    delete [] xCopy;
 
   return give_log ? dens : exp(dens);
 }
@@ -631,9 +953,21 @@ SEXP C_dmnorm_chol(SEXP x, SEXP mean, SEXP chol, SEXP prec_param, SEXP return_lo
 // Cholesky matrix should be given as a numeric vector in column-major order
 //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(x) || !isReal(mean) || !isReal(chol) || !isReal(prec_param) || !isLogical(return_log))
+  if(!Rf_isMatrix(chol) || !Rf_isReal(chol))
+    RBREAK("Error (C_dmnorm_chol): 'chol' must be a real matrix.\n");
+  if(!Rf_isReal(x) || !Rf_isReal(mean))
+    RBREAK("Error (C_dmnorm_chol): 'x' and 'mean' should be real valued.\n");
+  if(!Rf_isReal(prec_param) || !Rf_isLogical(return_log))
     RBREAK("Error (C_dmnorm_chol): invalid input type for one of the arguments.\n");
+
+  int* dims = INTEGER(Rf_getAttrib(chol, R_DimSymbol));
+  if(dims[0] != dims[1])
+    RBREAK("Error (C_dmnorm_chol): 'chol' must be a square matrix.\n");
+  int p = dims[0];
+
   int n_x = LENGTH(x);
+  if(n_x != p)
+    RBREAK("Error (C_dmnorm_chol): 'x' and 'chol' are not of compatible sizes.\n");
   int n_mean = LENGTH(mean);
   int give_log = (int) LOGICAL(return_log)[0];
   double prec = REAL(prec_param)[0];
@@ -641,10 +975,6 @@ SEXP C_dmnorm_chol(SEXP x, SEXP mean, SEXP chol, SEXP prec_param, SEXP return_lo
   double* c_x = REAL(x);
   double* c_mean = REAL(mean);
   double* c_chol = REAL(chol);
-
-  double* xcopy = new double[n_x];
-  for(int i = 0; i < n_x; ++i) 
-    xcopy[i] = c_x[i];
 
   double* full_mean;
   if(n_mean < n_x) {
@@ -657,17 +987,15 @@ SEXP C_dmnorm_chol(SEXP x, SEXP mean, SEXP chol, SEXP prec_param, SEXP return_lo
   } else full_mean = c_mean;
   
   SEXP ans;
-  PROTECT(ans = allocVector(REALSXP, 1));  
-  REAL(ans)[0] = dmnorm_chol(xcopy, full_mean, c_chol, n_x, prec, give_log);
+  PROTECT(ans = Rf_allocVector(REALSXP, 1));  
+  REAL(ans)[0] = dmnorm_chol(c_x, full_mean, c_chol, n_x, prec, give_log, 0);
   if(n_mean < n_x)
     delete [] full_mean;
-  delete [] xcopy;
   UNPROTECT(1);
   return ans;
 }
 
 void rmnorm_chol(double *ans, double* mean, double* chol, int n, double prec_param) {
-  // Ok that this returns the array as return value? NIMBLE C code will need to free the memory
   char uplo('U');
   char transPrec('N');
   char transCov('T');
@@ -691,22 +1019,16 @@ void rmnorm_chol(double *ans, double* mean, double* chol, int n, double prec_par
     return;
   }
 
-  double* devs = new double[n];
-  //  double* ans = new double[n];
-
   for(i = 0; i < n; i++) 
-    devs[i] = norm_rand();
-
+    ans[i] = norm_rand();
 
   // do upper-triangular solve or (transpose) multiply
   // dtr{s,m}v is a BLAS level-2 function
-  if(prec_param) F77_CALL(dtrsv)(&uplo, &transPrec, &diag, &n, chol, &lda, devs, &incx);
-  else F77_CALL(dtrmv)(&uplo, &transCov, &diag, &n, chol, &lda, devs, &incx);
+  if(prec_param) F77_CALL(dtrsv)(&uplo, &transPrec, &diag, &n, chol, &lda, ans, &incx);
+  else F77_CALL(dtrmv)(&uplo, &transCov, &diag, &n, chol, &lda, ans, &incx);
 
   for(i = 0; i < n; i++) 
-    ans[i] = mean[i] + devs[i];
-
-  delete [] devs;
+    ans[i] += mean[i];
 }
 
 SEXP C_rmnorm_chol(SEXP mean, SEXP chol, SEXP prec_param) 
@@ -714,11 +1036,19 @@ SEXP C_rmnorm_chol(SEXP mean, SEXP chol, SEXP prec_param)
 // Cholesky matrix should be given as a numeric vector in column-major order
 //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(mean) || !isReal(chol) || !isReal(prec_param))
+  if(!Rf_isMatrix(chol) || !Rf_isReal(chol))
+    RBREAK("Error (C_rmnorm_chol): 'chol' should be a real matrix.\n");
+  if(!Rf_isReal(mean))
+    RBREAK("Error (C_rmnorm_chol): 'mean' should be real-valued\n");
+  if(!Rf_isReal(prec_param))
     RBREAK("Error (C_rmnorm_chol): invalid input type for one of the arguments.\n");
+
+  int* dims = INTEGER(Rf_getAttrib(chol, R_DimSymbol));
+  if(dims[0] != dims[1])
+    RBREAK("Error (C_dmnorm_chol): 'chol' must be a square matrix.\n");
+  int n_values = dims[0];
+
   int n_mean = LENGTH(mean);
-  int n_chol = LENGTH(chol);
-  int n_values = pow(n_chol, 0.5);
   double prec = REAL(prec_param)[0];
 
   int i;
@@ -739,7 +1069,7 @@ SEXP C_rmnorm_chol(SEXP mean, SEXP chol, SEXP prec_param)
   GetRNGstate(); 
 
   SEXP ans;
-  PROTECT(ans = allocVector(REALSXP, n_values));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_values));  
   rmnorm_chol(REAL(ans), full_mean, c_chol, n_values, prec);
 
   PutRNGstate();
@@ -751,17 +1081,17 @@ SEXP C_rmnorm_chol(SEXP mean, SEXP chol, SEXP prec_param)
 
 // Begin multivariate t
 
-double dmvt_chol(double* x, double* mu, double* chol, double df, int n, double prec_param, int give_log) {
+double dmvt_chol(double* x, double* mu, double* chol, double df, int n, double prec_param, int give_log, int overwrite_inputs) {
   char uplo('U');
   char transPrec('N');
   char transCov('T');
   char diag('N');
   int lda(n);
   int incx(1);
+  double* xCopy;
   
   double dens = lgammafn((df + n) / 2) - lgammafn(df / 2) - n * M_LN_SQRT_PI - n * log(df) / 2;
   int i;
-  // add diagonals of Cholesky
   
   if (R_IsNA(x, n) || R_IsNA(mu, n) || R_IsNA(chol, n*n) || R_IsNA(df) || R_IsNA(prec_param))
     return NA_REAL;
@@ -772,7 +1102,7 @@ double dmvt_chol(double* x, double* mu, double* chol, double df, int n, double p
   
   if(!R_FINITE_VEC(x, n) || !R_FINITE_VEC(mu, n) || !R_FINITE_VEC(chol, n*n)) return R_D__0;
   
-  
+  // add diagonals of Cholesky
   if(prec_param) {
     for(i = 0; i < n*n; i += n + 1) 
       dens += log(chol[i]);
@@ -780,22 +1110,33 @@ double dmvt_chol(double* x, double* mu, double* chol, double df, int n, double p
     for(i = 0; i < n*n; i += n + 1) 
       dens -= log(chol[i]);
   }
-  for(i = 0; i < n; i++) 
-    x[i] -= mu[i];
+
+  if(overwrite_inputs) {
+    xCopy = x;
+    for(i = 0; i < n; i++) 
+      xCopy[i] -= mu[i];
+  } else {
+    xCopy = new double[n];
+    for(i = 0; i < n; i++)
+      xCopy[i] = x[i] - mu[i];
+  }
   
   // do matrix-vector multiply with upper-triangular matrix stored column-wise as full n x n matrix (prec parameterization)
   // or upper-triangular (transpose) solve (cov parameterization)
   // dtr{m,s}v is a BLAS level-2 function
-  if(prec_param) F77_CALL(dtrmv)(&uplo, &transPrec, &diag, &n, chol, &lda, x, &incx);
-  else F77_CALL(dtrsv)(&uplo, &transCov, &diag, &n, chol, &lda, x, &incx);
+  if(prec_param) F77_CALL(dtrmv)(&uplo, &transPrec, &diag, &n, chol, &lda, xCopy, &incx);
+  else F77_CALL(dtrsv)(&uplo, &transCov, &diag, &n, chol, &lda, xCopy, &incx);
   
   // sum of squares to calculate quadratic form
   double tmp = 0.0;
   for(i = 0; i < n; i++)
-    tmp += x[i] * x[i];
+    tmp += xCopy[i] * xCopy[i];
   
   dens += -0.5 * (df + n) * log(1 + tmp / df);
   
+  if(!overwrite_inputs)
+    delete [] xCopy;
+
   return give_log ? dens : exp(dens);
 }
 
@@ -804,9 +1145,21 @@ SEXP C_dmvt_chol(SEXP x, SEXP mu, SEXP chol, SEXP df, SEXP prec_param, SEXP retu
   // Cholesky matrix should be given as a numeric vector in column-major order
   //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(x) || !isReal(mu) || !isReal(chol) || !isReal(df) || !isReal(prec_param) || !isLogical(return_log))
+  if(!Rf_isMatrix(chol) || !Rf_isReal(chol))
+    RBREAK("Error (C_dmvt_chol): 'chol' must be a real matrix.\n");
+  if(!Rf_isReal(x) || !Rf_isReal(mu))
+    RBREAK("Error (C_dmvt_chol): 'x' and 'mu' should be real valued.\n");
+  if(!Rf_isReal(df) || !Rf_isReal(prec_param) || !Rf_isLogical(return_log))
     RBREAK("Error (C_dmvt_chol): invalid input type for one of the arguments.\n");
+
+  int* dims = INTEGER(Rf_getAttrib(chol, R_DimSymbol));
+  if(dims[0] != dims[1])
+    RBREAK("Error (C_dmvt_chol): 'chol' must be a square matrix.\n");
+  int p = dims[0];
+
   int n_x = LENGTH(x);
+  if(n_x != p)
+    RBREAK("Error (C_dmvt_chol): 'x' and 'chol' are not of compatible sizes.\n");
   int n_mu = LENGTH(mu);
   int give_log = (int) LOGICAL(return_log)[0];
   double c_df = REAL(df)[0];
@@ -815,10 +1168,6 @@ SEXP C_dmvt_chol(SEXP x, SEXP mu, SEXP chol, SEXP df, SEXP prec_param, SEXP retu
   double* c_x = REAL(x);
   double* c_mu = REAL(mu);
   double* c_chol = REAL(chol);
-  
-  double* xcopy = new double[n_x];
-  for(int i = 0; i < n_x; ++i) 
-    xcopy[i] = c_x[i];
   
   double* full_mu;
   if(n_mu < n_x) {
@@ -831,17 +1180,15 @@ SEXP C_dmvt_chol(SEXP x, SEXP mu, SEXP chol, SEXP df, SEXP prec_param, SEXP retu
   } else full_mu = c_mu;
   
   SEXP ans;
-  PROTECT(ans = allocVector(REALSXP, 1));  
-  REAL(ans)[0] = dmvt_chol(xcopy, full_mu, c_chol, c_df, n_x, prec, give_log);
+  PROTECT(ans = Rf_allocVector(REALSXP, 1));  
+  REAL(ans)[0] = dmvt_chol(c_x, full_mu, c_chol, c_df, n_x, prec, give_log, 0); 
   if(n_mu < n_x)
     delete [] full_mu;
-  delete [] xcopy;
   UNPROTECT(1);
   return ans;
 }
 
 void rmvt_chol(double *ans, double* mu, double* chol, double df, int n, double prec_param) {
-  // Ok that this returns the array as return value? NIMBLE C code will need to free the memory
   char uplo('U');
   char transPrec('N');
   char transCov('T');
@@ -864,25 +1211,20 @@ void rmvt_chol(double *ans, double* mu, double* chol, double df, int n, double p
       ans[j] = R_NaN;
     return;
   }
-  
-  double* devs = new double[n];
-  //  double* ans = new double[n];
-  
+    
   for(i = 0; i < n; i++) 
-    devs[i] = norm_rand();
+    ans[i] = norm_rand();
   
   // sample from chi-squared and calculate scaling factor
   double scaling = sqrt(df / rchisq(df));
   
   // do upper-triangular solve or (transpose) multiply
   // dtr{s,m}v is a BLAS level-2 function
-  if(prec_param) F77_CALL(dtrsv)(&uplo, &transPrec, &diag, &n, chol, &lda, devs, &incx);
-  else F77_CALL(dtrmv)(&uplo, &transCov, &diag, &n, chol, &lda, devs, &incx);
+  if(prec_param) F77_CALL(dtrsv)(&uplo, &transPrec, &diag, &n, chol, &lda, ans, &incx);
+  else F77_CALL(dtrmv)(&uplo, &transCov, &diag, &n, chol, &lda, ans, &incx);
   
   for(i = 0; i < n; i++) 
-    ans[i] = mu[i] + devs[i] * scaling;
-  
-  delete [] devs;
+    ans[i] = mu[i] + ans[i] * scaling;
 }
 
 SEXP C_rmvt_chol(SEXP mu, SEXP chol, SEXP df, SEXP prec_param) 
@@ -890,11 +1232,19 @@ SEXP C_rmvt_chol(SEXP mu, SEXP chol, SEXP df, SEXP prec_param)
   // Cholesky matrix should be given as a numeric vector in column-major order
   //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(mu) || !isReal(chol) || !isReal(df) || !isReal(prec_param))
+  if(!Rf_isMatrix(chol) || !Rf_isReal(chol))
+    RBREAK("Error (C_rmvt_chol): 'chol' should be a real matrix.\n");
+  if(!Rf_isReal(mu))
+    RBREAK("Error (C_rmvt_chol): 'mu' should be real-valued\n");
+  if(!Rf_isReal(prec_param))
     RBREAK("Error (C_rmvt_chol): invalid input type for one of the arguments.\n");
+
+  int* dims = INTEGER(Rf_getAttrib(chol, R_DimSymbol));
+  if(dims[0] != dims[1])
+    RBREAK("Error (C_rmvt_chol): 'chol' must be a square matrix.\n");
+  int n_values = dims[0];
+
   int n_mu = LENGTH(mu);
-  int n_chol = LENGTH(chol);
-  int n_values = pow(n_chol, 0.5);
   double c_df = REAL(df)[0];
   double prec = REAL(prec_param)[0];
   
@@ -916,7 +1266,7 @@ SEXP C_rmvt_chol(SEXP mu, SEXP chol, SEXP df, SEXP prec_param)
   GetRNGstate(); 
   
   SEXP ans;
-  PROTECT(ans = allocVector(REALSXP, n_values));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_values));  
   rmvt_chol(REAL(ans), full_mu, c_chol, c_df, n_values, prec);
   
   PutRNGstate();
@@ -990,7 +1340,7 @@ double qt_nonstandard(double p, double df, double mu, double sigma, int lower_ta
 
 
 SEXP C_dt_nonstandard(SEXP x, SEXP df, SEXP mu, SEXP sigma, SEXP return_log) {
-  if(!isReal(x) || !isReal(df) || !isReal(mu) || !isReal(sigma) || !isLogical(return_log)) 
+  if(!Rf_isReal(x) || !Rf_isReal(df) || !Rf_isReal(mu) || !Rf_isReal(sigma) || !Rf_isLogical(return_log)) 
     RBREAK("Error (C_dt_nonstandard): invalid input type for one of the arguments.");
   int n_x = LENGTH(x);
   int n_mu = LENGTH(mu);
@@ -1002,8 +1352,9 @@ SEXP C_dt_nonstandard(SEXP x, SEXP df, SEXP mu, SEXP sigma, SEXP return_log) {
   if(n_x == 0) {
     return x;
   }
-    
-  PROTECT(ans = allocVector(REALSXP, n_x));  
+
+  int n_max = max(n_x, max(n_mu, max(n_sigma, n_df)));
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
   double* c_x = REAL(x);
   double* c_mu = REAL(mu);
   double* c_sigma = REAL(sigma);
@@ -1015,13 +1366,15 @@ SEXP C_dt_nonstandard(SEXP x, SEXP df, SEXP mu, SEXP sigma, SEXP return_log) {
     for(int i = 0; i < n_x; i++) 
       REAL(ans)[i] = dt_nonstandard(c_x[i], *c_df, *c_mu, *c_sigma, give_log);
   } else {
+    int i_x = 0;
     int i_mu = 0;
     int i_sigma = 0;
     int i_df = 0;
-    for(int i = 0; i < n_x; i++) {
-      REAL(ans)[i] = dt_nonstandard(c_x[i], c_df[i_df++], c_mu[i_mu++], c_sigma[i_sigma++], give_log);
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = dt_nonstandard(c_x[i_x++], c_df[i_df++], c_mu[i_mu++], c_sigma[i_sigma++], give_log);
       //c_mu[i_mu++] + c_sigma[i_sigma++] * rt(c_df[i_df++]);
       // implement recycling:
+      if(i_x == n_x) i_x = 0;
       if(i_mu == n_mu) i_mu = 0;
       if(i_sigma == n_sigma) i_sigma = 0;
       if(i_df == n_df) i_df = 0;
@@ -1034,7 +1387,7 @@ SEXP C_dt_nonstandard(SEXP x, SEXP df, SEXP mu, SEXP sigma, SEXP return_log) {
   
 SEXP C_rt_nonstandard(SEXP n, SEXP df, SEXP mu, SEXP sigma) {
   // this will call R's rt() for computation on scalars
-  if(!isInteger(n) || !isReal(df) || !isReal(mu) || !isReal(sigma))
+  if(!Rf_isInteger(n) || !Rf_isReal(df) || !Rf_isReal(mu) || !Rf_isReal(sigma))
     RBREAK("Error (C_rt_nonstandard): invalid input type for one of the arguments.");
   int n_mu = LENGTH(mu);
   int n_sigma = LENGTH(sigma);
@@ -1043,7 +1396,7 @@ SEXP C_rt_nonstandard(SEXP n, SEXP df, SEXP mu, SEXP sigma) {
   SEXP ans;
     
   if(n_values == 0) {
-    PROTECT(ans = allocVector(REALSXP, 0));
+    PROTECT(ans = Rf_allocVector(REALSXP, 0));
     UNPROTECT(1);
     return ans;
   }
@@ -1053,7 +1406,7 @@ SEXP C_rt_nonstandard(SEXP n, SEXP df, SEXP mu, SEXP sigma) {
     
   GetRNGstate(); 
     
-  PROTECT(ans = allocVector(REALSXP, n_values));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_values));  
   double* c_mu = REAL(mu);
   double* c_sigma = REAL(sigma);
   double* c_df = REAL(df);
@@ -1081,7 +1434,7 @@ SEXP C_rt_nonstandard(SEXP n, SEXP df, SEXP mu, SEXP sigma) {
 }
   
 SEXP C_pt_nonstandard(SEXP q, SEXP df, SEXP mu, SEXP sigma, SEXP lower_tail, SEXP log_p) {
-  if(!isReal(q) || !isReal(df) || !isReal(mu) || !isReal(sigma) || !isLogical(lower_tail) || !isLogical(log_p))
+  if(!Rf_isReal(q) || !Rf_isReal(df) || !Rf_isReal(mu) || !Rf_isReal(sigma) || !Rf_isLogical(lower_tail) || !Rf_isLogical(log_p))
     RBREAK("Error (C_pt_nonstandard): invalid input type for one of the arguments.");
   int n_q = LENGTH(q);
   int n_mu = LENGTH(mu);
@@ -1094,8 +1447,9 @@ SEXP C_pt_nonstandard(SEXP q, SEXP df, SEXP mu, SEXP sigma, SEXP lower_tail, SEX
   if(n_q == 0) {
     return q;
   }
-    
-  PROTECT(ans = allocVector(REALSXP, n_q));  
+
+  int n_max = max(n_q, max(n_mu, max(n_sigma, n_df)));
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
   double* c_q = REAL(q);
   double* c_mu = REAL(mu);
   double* c_sigma = REAL(sigma);
@@ -1107,13 +1461,15 @@ SEXP C_pt_nonstandard(SEXP q, SEXP df, SEXP mu, SEXP sigma, SEXP lower_tail, SEX
     for(int i = 0; i < n_q; i++) 
       REAL(ans)[i] = pt_nonstandard(c_q[i], *c_df, *c_mu, *c_sigma, c_lower_tail, c_log_p);
   } else {
+    int i_q = 0;
     int i_mu = 0;
     int i_sigma = 0;
     int i_df = 0;
-    for(int i = 0; i < n_q; i++) {
-      REAL(ans)[i] = pt_nonstandard(c_q[i], c_df[i_df++], c_mu[i_mu++], c_sigma[i_sigma++], c_lower_tail, c_log_p);
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = pt_nonstandard(c_q[i_q++], c_df[i_df++], c_mu[i_mu++], c_sigma[i_sigma++], c_lower_tail, c_log_p);
       //c_mu[i_mu++] + c_sigma[i_sigma++] * rt(c_df[i_df++]);
       // implement recycling:
+      if(i_q == n_q) i_q = 0;
       if(i_mu == n_mu) i_mu = 0;
       if(i_sigma == n_sigma) i_sigma = 0;
       if(i_df == n_df) i_df = 0;
@@ -1125,7 +1481,7 @@ SEXP C_pt_nonstandard(SEXP q, SEXP df, SEXP mu, SEXP sigma, SEXP lower_tail, SEX
 }
  
 SEXP C_qt_nonstandard(SEXP p, SEXP df, SEXP mu, SEXP sigma, SEXP lower_tail, SEXP log_p) {
-  if(!isReal(p) || !isReal(df) || !isReal(mu) || !isReal(sigma) || !isLogical(lower_tail) || !isLogical(log_p))
+  if(!Rf_isReal(p) || !Rf_isReal(df) || !Rf_isReal(mu) || !Rf_isReal(sigma) || !Rf_isLogical(lower_tail) || !Rf_isLogical(log_p))
     RBREAK("Error (C_qt_nonstandard): invalid input type for one of the arguments.");
   int n_p = LENGTH(p);
   int n_mu = LENGTH(mu);
@@ -1138,8 +1494,9 @@ SEXP C_qt_nonstandard(SEXP p, SEXP df, SEXP mu, SEXP sigma, SEXP lower_tail, SEX
   if(n_p == 0) {
     return p;
   }
-    
-  PROTECT(ans = allocVector(REALSXP, n_p));  
+
+  int n_max = max(n_p, max(n_mu, max(n_sigma, n_df)));
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
   double* c_p = REAL(p);
   double* c_mu = REAL(mu);
   double* c_sigma = REAL(sigma);
@@ -1151,13 +1508,15 @@ SEXP C_qt_nonstandard(SEXP p, SEXP df, SEXP mu, SEXP sigma, SEXP lower_tail, SEX
     for(int i = 0; i < n_p; i++) 
       REAL(ans)[i] = qt_nonstandard(c_p[i], *c_df, *c_mu, *c_sigma, c_lower_tail, c_log_p);
   } else {
+    int i_p = 0;
     int i_mu = 0;
     int i_sigma = 0;
     int i_df = 0;
-    for(int i = 0; i < n_p; i++) {
-      REAL(ans)[i] = qt_nonstandard(c_p[i], c_df[i_df++], c_mu[i_mu++], c_sigma[i_sigma++], c_lower_tail, c_log_p);
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = qt_nonstandard(c_p[i_p++], c_df[i_df++], c_mu[i_mu++], c_sigma[i_sigma++], c_lower_tail, c_log_p);
       //c_mu[i_mu++] + c_sigma[i_sigma++] * rt(c_df[i_df++]);
       // implement recycling:
+      if(i_p == n_p) i_p = 0;
       if(i_mu == n_mu) i_mu = 0;
       if(i_sigma == n_sigma) i_sigma = 0;
       if(i_df == n_df) i_df = 0;
@@ -1211,7 +1570,7 @@ double rinterval(double t, double* c, int K)
 SEXP C_dinterval(SEXP x, SEXP t, SEXP c, SEXP return_log) {
   // this will call NIMBLE's dinterval() for computation on scalars
   // c must be a single vector of cutpoints; x and t can be vectors
-  if(!isReal(x) || !isReal(t) || !isReal(c) || !isLogical(return_log)) 
+  if(!Rf_isReal(x) || !Rf_isReal(t) || !Rf_isReal(c) || !Rf_isLogical(return_log)) 
     RBREAK("Error (C_dinterval): invalid input type for one of the arguments.");
   int n_x = LENGTH(x);
   int n_t = LENGTH(t);
@@ -1222,22 +1581,27 @@ SEXP C_dinterval(SEXP x, SEXP t, SEXP c, SEXP return_log) {
   if(n_x == 0) {
     return x;
   }
-    
-  PROTECT(ans = allocVector(REALSXP, n_x));  
+
+  int n_max = max(n_x, n_t);
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
   double* c_x = REAL(x);
   double* c_t = REAL(t);
   double* c_c = REAL(c);
 
   // FIXME: abstract the recycling as a function
+  // Doesn't really make sense to have recycling as only presumably would only
+  // use this when lengths of x and t are the same, but have it for consistency.
   if(n_t == 1) {
     // if no parameter vectors, more efficient not to deal with multiple indices
     for(int i = 0; i < n_x; i++) 
       REAL(ans)[i] = dinterval(c_x[i], *c_t, c_c, n_c, give_log);
   } else {
+    int i_x = 0;
     int i_t = 0;
-    for(int i = 0; i < n_x; i++) {
-      REAL(ans)[i] = dinterval(c_x[i], c_t[i_t++], c_c, n_c, give_log);
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = dinterval(c_x[i_x++], c_t[i_t++], c_c, n_c, give_log);
       // implement recycling:
+      if(i_x == n_x) i_x = 0;
       if(i_t == n_t) i_t = 0;
     }
   }
@@ -1247,7 +1611,7 @@ SEXP C_dinterval(SEXP x, SEXP t, SEXP c, SEXP return_log) {
 }
   
 SEXP C_rinterval(SEXP n, SEXP t, SEXP c) {
-  if(!isInteger(n) || !isReal(t) || !isReal(c))
+  if(!Rf_isInteger(n) || !Rf_isReal(t) || !Rf_isReal(c))
     RBREAK("Error (C_rinterval): invalid input type for one of the arguments.");
   int n_t = LENGTH(t);
   int K = LENGTH(c);
@@ -1255,7 +1619,7 @@ SEXP C_rinterval(SEXP n, SEXP t, SEXP c) {
   SEXP ans;
     
   if(n_values == 0) {
-    PROTECT(ans = allocVector(INTSXP, 0));
+    PROTECT(ans = Rf_allocVector(INTSXP, 0));
     UNPROTECT(1);
     return ans;
   }
@@ -1265,7 +1629,7 @@ SEXP C_rinterval(SEXP n, SEXP t, SEXP c) {
     
   GetRNGstate(); 
     
-  PROTECT(ans = allocVector(INTSXP, n_values));  
+  PROTECT(ans = Rf_allocVector(INTSXP, n_values));  
   double* c_t = REAL(t);
   double* c_c = REAL(c);
   if(n_t == 1) {
@@ -1333,7 +1697,7 @@ double qexp_nimble(double p, double rate, int lower_tail, int log_p)
 }
 
 SEXP C_dexp_nimble(SEXP x, SEXP rate, SEXP return_log) {
-  if(!isReal(x) || !isReal(rate) || !isLogical(return_log))
+  if(!Rf_isReal(x) || !Rf_isReal(rate) || !Rf_isLogical(return_log))
     RBREAK("Error (C_dexp_nimble): invalid input type for one of the arguments.");
   int n_x = LENGTH(x);
   int n_rate = LENGTH(rate);
@@ -1343,8 +1707,9 @@ SEXP C_dexp_nimble(SEXP x, SEXP rate, SEXP return_log) {
   if(n_x == 0) {
     return x;
   }
-    
-  PROTECT(ans = allocVector(REALSXP, n_x));  
+
+  int n_max = max(n_x, n_rate);
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
   double* c_x = REAL(x);
   double* c_rate = REAL(rate);
 
@@ -1354,9 +1719,11 @@ SEXP C_dexp_nimble(SEXP x, SEXP rate, SEXP return_log) {
     for(int i = 0; i < n_x; i++) 
       REAL(ans)[i] = dexp_nimble(c_x[i], *c_rate, give_log);
   } else {
+    int i_x = 0;
     int i_rate = 0;
-    for(int i = 0; i < n_x; i++) {
-      REAL(ans)[i] = dexp_nimble(c_x[i], c_rate[i_rate++], give_log);
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = dexp_nimble(c_x[i_x++], c_rate[i_rate++], give_log);
+      if(i_x == n_x) i_x = 0;
       if(i_rate == n_rate) i_rate = 0;
     }
   }
@@ -1367,14 +1734,14 @@ SEXP C_dexp_nimble(SEXP x, SEXP rate, SEXP return_log) {
   
 SEXP C_rexp_nimble(SEXP n, SEXP rate) {
   // this will call rexp_nimble for computation on scalars
-  if(!isInteger(n) || !isReal(rate) )
+  if(!Rf_isInteger(n) || !Rf_isReal(rate) )
     RBREAK("Error (C_rexp_nimble): invalid input type for one of the arguments.");
   int n_rate = LENGTH(rate);
   int n_values = INTEGER(n)[0];
   SEXP ans;
     
   if(n_values == 0) {
-    PROTECT(ans = allocVector(REALSXP, 0));
+    PROTECT(ans = Rf_allocVector(REALSXP, 0));
     UNPROTECT(1);
     return ans;
   }
@@ -1384,7 +1751,7 @@ SEXP C_rexp_nimble(SEXP n, SEXP rate) {
     
   GetRNGstate(); 
     
-  PROTECT(ans = allocVector(REALSXP, n_values));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_values));  
   double* c_rate = REAL(rate);
   if(n_rate == 1) {
     // if no parameter vectors, more efficient not to deal with multiple indices
@@ -1405,7 +1772,7 @@ SEXP C_rexp_nimble(SEXP n, SEXP rate) {
 }
   
 SEXP C_pexp_nimble(SEXP q, SEXP rate, SEXP lower_tail, SEXP log_p) {
-  if(!isReal(q) || !isReal(rate) || !isLogical(lower_tail) || !isLogical(log_p)) 
+  if(!Rf_isReal(q) || !Rf_isReal(rate) || !Rf_isLogical(lower_tail) || !Rf_isLogical(log_p)) 
     RBREAK("Error (C_pexp_nimble): invalid input type for one of the arguments.");
   int n_q = LENGTH(q);
   int n_rate = LENGTH(rate);
@@ -1416,8 +1783,9 @@ SEXP C_pexp_nimble(SEXP q, SEXP rate, SEXP lower_tail, SEXP log_p) {
   if(n_q == 0) {
     return q;
   }
-    
-  PROTECT(ans = allocVector(REALSXP, n_q));  
+
+  int n_max = max(n_q, n_rate);
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
   double* c_q = REAL(q);
   double* c_rate = REAL(rate);
 
@@ -1427,9 +1795,11 @@ SEXP C_pexp_nimble(SEXP q, SEXP rate, SEXP lower_tail, SEXP log_p) {
     for(int i = 0; i < n_q; i++) 
       REAL(ans)[i] = pexp_nimble(c_q[i], *c_rate, c_lower_tail, c_log_p);
   } else {
+    int i_q = 0;
     int i_rate = 0;
-    for(int i = 0; i < n_q; i++) {
-      REAL(ans)[i] = pexp_nimble(c_q[i], c_rate[i_rate++], c_lower_tail, c_log_p);
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = pexp_nimble(c_q[i_q++], c_rate[i_rate++], c_lower_tail, c_log_p);
+      if(i_q == n_q) i_q = 0;
       if(i_rate == n_rate) i_rate = 0;
     }
   }
@@ -1439,7 +1809,7 @@ SEXP C_pexp_nimble(SEXP q, SEXP rate, SEXP lower_tail, SEXP log_p) {
 }
   
 SEXP C_qexp_nimble(SEXP p, SEXP rate, SEXP lower_tail, SEXP log_p) {
-  if(!isReal(p) || !isReal(rate) || !isLogical(lower_tail) || !isLogical(log_p)) 
+  if(!Rf_isReal(p) || !Rf_isReal(rate) || !Rf_isLogical(lower_tail) || !Rf_isLogical(log_p)) 
     RBREAK("Error (C_qexp_nimble): invalid input type for one of the arguments.");
   int n_p = LENGTH(p);
   int n_rate = LENGTH(rate);
@@ -1450,8 +1820,9 @@ SEXP C_qexp_nimble(SEXP p, SEXP rate, SEXP lower_tail, SEXP log_p) {
   if(n_p == 0) {
     return p;
   }
-    
-  PROTECT(ans = allocVector(REALSXP, n_p));  
+
+  int n_max = max(n_p, n_rate);
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
   double* c_p = REAL(p);
   double* c_rate = REAL(rate);
 
@@ -1461,9 +1832,11 @@ SEXP C_qexp_nimble(SEXP p, SEXP rate, SEXP lower_tail, SEXP log_p) {
     for(int i = 0; i < n_p; i++) 
       REAL(ans)[i] = qexp_nimble(c_p[i], *c_rate, c_lower_tail, c_log_p);
   } else {
+    int i_p = 0;
     int i_rate = 0;
-    for(int i = 0; i < n_p; i++) {
-      REAL(ans)[i] = qexp_nimble(c_p[i], c_rate[i_rate++], c_lower_tail, c_log_p);
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = qexp_nimble(c_p[i_p++], c_rate[i_rate++], c_lower_tail, c_log_p);
+      if(i_p == n_p) i_p = 0;
       if(i_rate == n_rate) i_rate = 0;
     }
   }
@@ -1471,3 +1844,807 @@ SEXP C_qexp_nimble(SEXP p, SEXP rate, SEXP lower_tail, SEXP log_p) {
   UNPROTECT(1);
   return ans;
 }
+
+double ddexp(double x, double location, double scale, int give_log)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+#ifdef IEEE_754
+  if (ISNAN(x) || ISNAN(location) || ISNAN(scale))
+    return x + location + scale;
+#endif
+  if(!R_FINITE(scale)) return R_D__0;
+  if(scale <= 0.0) {
+    if(scale < 0.0) ML_ERR_return_NAN;
+    return (x == location) ? ML_POSINF : R_D__0;
+  }         
+  if(give_log) return dexp( std::abs(x - location), scale, give_log) - M_LN2;
+  else return 0.5 * dexp( std::abs(x - location), scale, give_log);
+}
+
+double rdexp(double location, double scale)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+#ifdef IEEE_754
+  if (ISNAN(location) || ISNAN(scale))
+    ML_ERR_return_NAN;
+#endif
+  if (!R_FINITE(scale) || scale < 0.0) ML_ERR_return_NAN;
+  if(runif(0, 1) > 0.5) return location + rexp(scale);
+  else return location - rexp(scale);
+}
+
+double pdexp(double q, double location, double scale, int lower_tail, int log_p)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+#ifdef IEEE_754
+    if(ISNAN(q) || ISNAN(location) || ISNAN(scale))
+        return q + location + scale;
+#endif
+
+  if(!R_FINITE(q) && location == q) return ML_NAN; /* q-location is NaN */
+  if(scale <= 0.0) {
+    if(scale < 0.0) ML_ERR_return_NAN;
+    return (q < location) ? R_DT_0 : R_DT_1;
+  }
+  double add_term = 0.0;
+  if(q < location) {
+    if(!lower_tail) add_term = 0.5;
+    lower_tail = 1 - lower_tail;
+    q = 2*location - q;
+  } else 
+    if(lower_tail) add_term = 0.5;
+  double result = add_term + pexp( q-location, scale, lower_tail, 0) / 2.0;
+  return log_p ? log(result) : result;
+
+}
+
+double qdexp(double p, double location, double scale, int lower_tail, int log_p)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+#ifdef IEEE_754
+  if (ISNAN(p) || ISNAN(location) || ISNAN(scale))
+    return p + location + scale;
+#endif
+
+  if(scale < 0.0) ML_ERR_return_NAN;
+  if(scale == 0.0) return location;
+  double left_half = 1.0;
+  if(log_p) p = exp(p);  // no clear way to stay on log scale for all cases and still use qexp()
+  if((p < 0.5 && lower_tail) || (p > 0.5 && !lower_tail))
+    left_half = -1;  // quantile is below location
+  if(p >= 0.5) p = 1-p; 
+  return(location + left_half * qexp(2*p, scale, 0, 0));
+}
+
+
+SEXP C_ddexp(SEXP x, SEXP location, SEXP scale, SEXP return_log) {
+  if(!Rf_isReal(x) || !Rf_isReal(location) || !Rf_isReal(scale) || !Rf_isLogical(return_log)) 
+    RBREAK("Error (C_ddexp): invalid input type for one of the arguments.");
+  int n_x = LENGTH(x);
+  int n_location = LENGTH(location);
+  int n_scale = LENGTH(scale);
+  int give_log = (int) LOGICAL(return_log)[0];
+  SEXP ans;
+    
+  if(n_x == 0) {
+    return x;
+  }
+
+  int n_max = max(n_x, max(n_location, n_scale));
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
+  double* c_x = REAL(x);
+  double* c_location = REAL(location);
+  double* c_scale = REAL(scale);
+
+  // FIXME: abstract the recycling as a function
+  if(n_location == 1 && n_scale == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_x; i++) 
+      REAL(ans)[i] = ddexp(c_x[i], *c_location, *c_scale, give_log);
+  } else {
+    int i_x = 0;
+    int i_location = 0;
+    int i_scale = 0;
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = ddexp(c_x[i_x++], c_location[i_location++], c_scale[i_scale++], give_log);
+      // implement recycling:
+      if(i_x == n_x) i_x = 0;
+      if(i_location == n_location) i_location = 0;
+      if(i_scale == n_scale) i_scale = 0;
+    }
+  }
+    
+  UNPROTECT(1);
+  return ans;
+}
+  
+SEXP C_rdexp(SEXP n, SEXP location, SEXP scale) {
+  if(!Rf_isInteger(n) || !Rf_isReal(location) || !Rf_isReal(scale))
+    RBREAK("Error (C_rdexp): invalid input type for one of the arguments.");
+  int n_location = LENGTH(location);
+  int n_scale = LENGTH(scale);
+  int n_values = INTEGER(n)[0];
+  SEXP ans;
+    
+  if(n_values == 0) {
+    PROTECT(ans = Rf_allocVector(REALSXP, 0));
+    UNPROTECT(1);
+    return ans;
+  }
+  if(n_values < 0)
+    // should formalize using R's C error-handling API
+    RBREAK("Error (C_rdexp): n must be non-negative.\n");
+    
+  GetRNGstate(); 
+    
+  PROTECT(ans = Rf_allocVector(REALSXP, n_values));  
+  double* c_location = REAL(location);
+  double* c_scale = REAL(scale);
+  if(n_location == 1 && n_scale == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_values; i++) 
+      REAL(ans)[i] = rdexp(*c_location, *c_scale);
+  } else {
+    int i_location = 0;
+    int i_scale = 0;
+    for(int i = 0; i < n_values; i++) {
+      REAL(ans)[i] = rdexp(c_location[i_location++], c_scale[i_scale++]);
+      // implement recycling:
+      if(i_location == n_location) i_location = 0;
+      if(i_scale == n_scale) i_scale = 0;
+    }
+  }
+    
+  PutRNGstate();
+  UNPROTECT(1);
+  return ans;
+}
+  
+SEXP C_pdexp(SEXP q, SEXP location, SEXP scale, SEXP lower_tail, SEXP log_p) {
+  if(!Rf_isReal(q) || !Rf_isReal(location) || !Rf_isReal(scale) || !Rf_isLogical(lower_tail) || !Rf_isLogical(log_p))
+    RBREAK("Error (C_pdexp): invalid input type for one of the arguments.");
+  int n_q = LENGTH(q);
+  int n_location = LENGTH(location);
+  int n_scale = LENGTH(scale);
+  int c_lower_tail = (int) LOGICAL(lower_tail)[0];
+  int c_log_p = (int) LOGICAL(log_p)[0];
+  SEXP ans;
+    
+  if(n_q == 0) {
+    return q;
+  }
+
+  int n_max = max(n_q, max(n_location, n_scale));
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
+  double* c_q = REAL(q);
+  double* c_location = REAL(location);
+  double* c_scale = REAL(scale);
+
+  // FIXME: abstract the recycling as a function
+  if(n_location == 1 && n_scale == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_q; i++) 
+      REAL(ans)[i] = pdexp(c_q[i], *c_location, *c_scale, c_lower_tail, c_log_p);
+  } else {
+    int i_q = 0;
+    int i_location = 0;
+    int i_scale = 0;
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = pdexp(c_q[i_q++], c_location[i_location++], c_scale[i_scale++], c_lower_tail, c_log_p);
+      // implement recycling:
+      if(i_q == n_q) i_q = 0;
+      if(i_location == n_location) i_location = 0;
+      if(i_scale == n_scale) i_scale = 0;
+    }
+  }
+    
+  UNPROTECT(1);
+  return ans;
+}
+ 
+SEXP C_qdexp(SEXP p, SEXP location, SEXP scale, SEXP lower_tail, SEXP log_p) {
+  if(!Rf_isReal(p) || !Rf_isReal(location) || !Rf_isReal(scale) || !Rf_isLogical(lower_tail) || !Rf_isLogical(log_p))
+    RBREAK("Error (C_qdexp): invalid input type for one of the arguments.");
+  int n_p = LENGTH(p);
+  int n_location = LENGTH(location);
+  int n_scale = LENGTH(scale);
+  int c_lower_tail = (int) LOGICAL(lower_tail)[0];
+  int c_log_p = (int) LOGICAL(log_p)[0];
+  SEXP ans;
+    
+  if(n_p == 0) {
+    return p;
+  }
+
+  int n_max = max(n_p, max(n_location, n_scale));
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
+  double* c_p = REAL(p);
+  double* c_location = REAL(location);
+  double* c_scale = REAL(scale);
+
+  // FIXME: abstract the recycling as a function
+  if(n_location == 1 && n_scale == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_p; i++) 
+      REAL(ans)[i] = qdexp(c_p[i], *c_location, *c_scale, c_lower_tail, c_log_p);
+  } else {
+    int i_p = 0;
+    int i_location = 0;
+    int i_scale = 0;
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = qdexp(c_p[i_p++], c_location[i_location++], c_scale[i_scale++], c_lower_tail, c_log_p);
+      // implement recycling:
+      if(i_p == n_p) i_p = 0;
+      if(i_location == n_location) i_location = 0;
+      if(i_scale == n_scale) i_scale = 0;
+    }
+  }
+    
+  UNPROTECT(1);
+  return ans;
+}
+
+
+// used solely in conjugacy for dhalfflat (so dsqrtinvgamma really just a placeholder)
+double dsqrtinvgamma(double x, double shape, double rate, int give_log)
+{
+#ifdef IEEE_754
+  if (ISNAN(x) || ISNAN(shape) || ISNAN(rate))
+    return x + shape + rate;
+#endif
+  double out = dinvgamma(x*x, shape, rate, 1) + log(2*x);
+  if(give_log) return(out);
+  else return(exp(out));
+}
+
+double rsqrtinvgamma(double shape, double rate)
+{
+#ifdef IEEE_754
+  if (ISNAN(shape) || ISNAN(rate))
+    ML_ERR_return_NAN;
+#endif
+  return(pow(rinvgamma(shape, rate), 0.5));
+}
+
+SEXP C_dsqrtinvgamma(SEXP x, SEXP shape, SEXP rate, SEXP return_log) {
+  if(!Rf_isReal(x) || !Rf_isReal(shape) || !Rf_isReal(rate) || !Rf_isLogical(return_log)) 
+    RBREAK("Error (C_dsqrtinvgamma): invalid input type for one of the arguments.");
+  int n_x = LENGTH(x);
+  int n_shape = LENGTH(shape);
+  int n_rate = LENGTH(rate);
+  int give_log = (int) LOGICAL(return_log)[0];
+  SEXP ans;
+    
+  if(n_x == 0) {
+    return x;
+  }
+
+  int n_max = max(n_x, max(n_shape, n_rate));
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
+  double* c_x = REAL(x);
+  double* c_shape = REAL(shape);
+  double* c_rate = REAL(rate);
+
+  // FIXME: abstract the recycling as a function
+  if(n_rate == 1 && n_shape == 1 && n_rate == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_x; i++) 
+      REAL(ans)[i] = dsqrtinvgamma(c_x[i], *c_shape, *c_rate, give_log);
+  } else {
+    int i_x = 0;
+    int i_shape = 0;
+    int i_rate = 0;
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = dsqrtinvgamma(c_x[i_x++], c_shape[i_shape++], c_rate[i_rate++], give_log);
+      // implement recycling:
+      if(i_x == n_x) i_x = 0;
+      if(i_shape == n_shape) i_shape = 0;
+      if(i_rate == n_rate) i_rate = 0;
+    }
+  }
+    
+  UNPROTECT(1);
+  return ans;
+}
+  
+SEXP C_rsqrtinvgamma(SEXP n, SEXP shape, SEXP rate) {
+  if(!Rf_isInteger(n) || !Rf_isReal(shape) || !Rf_isReal(rate))
+    RBREAK("Error (C_rsqrtinvgamma): invalid input type for one of the arguments.");
+  int n_shape = LENGTH(shape);
+  int n_rate = LENGTH(rate);
+  int n_values = INTEGER(n)[0];
+  SEXP ans;
+    
+  if(n_values == 0) {
+    PROTECT(ans = Rf_allocVector(REALSXP, 0));
+    UNPROTECT(1);
+    return ans;
+  }
+  if(n_values < 0)
+    // should formalize using R's C error-handling API
+    RBREAK("Error (C_rsqrtinvgamma): n must be non-negative.\n");
+    
+  GetRNGstate(); 
+    
+  PROTECT(ans = Rf_allocVector(REALSXP, n_values));  
+  double* c_shape = REAL(shape);
+  double* c_rate = REAL(rate);
+  if(n_rate == 1 && n_shape == 1 && n_rate == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_values; i++) 
+      REAL(ans)[i] = rsqrtinvgamma(*c_shape, *c_rate);
+  } else {
+    int i_shape = 0;
+    int i_rate = 0;
+    for(int i = 0; i < n_values; i++) {
+      REAL(ans)[i] = rsqrtinvgamma(c_shape[i_shape++], c_rate[i_rate++]);
+      // implement recycling:
+      if(i_shape == n_shape) i_shape = 0;
+      if(i_rate == n_rate) i_rate = 0;
+    }
+  }
+    
+  PutRNGstate();
+  UNPROTECT(1);
+  return ans;
+}
+
+double dflat(double x, int give_log)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+#ifdef IEEE_754
+  if (ISNAN(x))
+    return x;
+#endif
+  if(give_log) return 0;
+  else return 1;
+}
+
+double rflat()
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+  return R_NaN ;
+}
+
+double dhalfflat(double x, int give_log)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+#ifdef IEEE_754
+  if (ISNAN(x))
+    return x;
+#endif
+  if(x >= 0) x = 0; else x = ML_NEGINF;
+  if(!give_log) x = exp(x);
+  return x;
+}
+
+double rhalfflat()
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+  return R_NaN;
+}
+
+// NIMBLE's C parameterization of invgamma is (shape,rate) because
+// when passing to R's C gamma, which uses (shape,scale), 
+// the gamma scale parameter is the invgamma rate parameter
+double dinvgamma(double x, double shape, double rate, int give_log)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+#ifdef IEEE_754
+  if (ISNAN(x) || ISNAN(shape) || ISNAN(rate))
+    return x + shape + rate;
+#endif
+  double xinv = 1/x;
+  if(give_log) return(dgamma(xinv, shape, rate, give_log) - 2*log(x));
+  else return(dgamma(xinv, shape, rate, give_log) * xinv * xinv);
+}
+
+double rinvgamma(double shape, double rate)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+#ifdef IEEE_754
+  if (ISNAN(shape) || ISNAN(rate))
+    ML_ERR_return_NAN;
+#endif
+  return(1 / rgamma(shape, rate));
+}
+
+double pinvgamma(double q, double shape, double rate, int lower_tail, int log_p)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+#ifdef IEEE_754
+  if(ISNAN(q) || ISNAN(shape) || ISNAN(rate))
+    return q + shape + rate;
+#endif
+  return(pgamma(1/q, shape, rate, !lower_tail, log_p));
+}
+
+double qinvgamma(double p, double shape, double rate, int lower_tail, int log_p)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+#ifdef IEEE_754
+  if (ISNAN(p) || ISNAN(shape) || ISNAN(rate))
+    return p + shape + rate;
+#endif
+  return(1 / qgamma(p, shape, rate, !lower_tail, log_p));
+}
+
+
+SEXP C_dinvgamma(SEXP x, SEXP shape, SEXP rate, SEXP return_log) {
+  if(!Rf_isReal(x) || !Rf_isReal(shape) || !Rf_isReal(rate) || !Rf_isLogical(return_log)) 
+    RBREAK("Error (C_dinvgamma): invalid input type for one of the arguments.");
+  int n_x = LENGTH(x);
+  int n_shape = LENGTH(shape);
+  int n_rate = LENGTH(rate);
+  int give_log = (int) LOGICAL(return_log)[0];
+  SEXP ans;
+    
+  if(n_x == 0) {
+    return x;
+  }
+
+  int n_max = max(n_x, max(n_shape, n_rate));
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
+  double* c_x = REAL(x);
+  double* c_shape = REAL(shape);
+  double* c_rate = REAL(rate);
+
+  // FIXME: abstract the recycling as a function
+  if(n_rate == 1 && n_shape == 1 && n_rate == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_x; i++) 
+      REAL(ans)[i] = dinvgamma(c_x[i], *c_shape, *c_rate, give_log);
+  } else {
+    int i_x = 0;
+    int i_shape = 0;
+    int i_rate = 0;
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = dinvgamma(c_x[i_x++], c_shape[i_shape++], c_rate[i_rate++], give_log);
+      // implement recycling:
+      if(i_x == n_x) i_x = 0;
+      if(i_shape == n_shape) i_shape = 0;
+      if(i_rate == n_rate) i_rate = 0;
+    }
+  }
+    
+  UNPROTECT(1);
+  return ans;
+}
+  
+SEXP C_rinvgamma(SEXP n, SEXP shape, SEXP rate) {
+  if(!Rf_isInteger(n) || !Rf_isReal(shape) || !Rf_isReal(rate))
+    RBREAK("Error (C_rinvgamma): invalid input type for one of the arguments.");
+  int n_shape = LENGTH(shape);
+  int n_rate = LENGTH(rate);
+  int n_values = INTEGER(n)[0];
+  SEXP ans;
+    
+  if(n_values == 0) {
+    PROTECT(ans = Rf_allocVector(REALSXP, 0));
+    UNPROTECT(1);
+    return ans;
+  }
+  if(n_values < 0)
+    // should formalize using R's C error-handling API
+    RBREAK("Error (C_rinvgamma): n must be non-negative.\n");
+    
+  GetRNGstate(); 
+    
+  PROTECT(ans = Rf_allocVector(REALSXP, n_values));  
+  double* c_shape = REAL(shape);
+  double* c_rate = REAL(rate);
+  if(n_rate == 1 && n_shape == 1 && n_rate == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_values; i++) 
+      REAL(ans)[i] = rinvgamma(*c_shape, *c_rate);
+  } else {
+    int i_shape = 0;
+    int i_rate = 0;
+    for(int i = 0; i < n_values; i++) {
+      REAL(ans)[i] = rinvgamma(c_shape[i_shape++], c_rate[i_rate++]);
+      // implement recycling:
+      if(i_shape == n_shape) i_shape = 0;
+      if(i_rate == n_rate) i_rate = 0;
+    }
+  }
+    
+  PutRNGstate();
+  UNPROTECT(1);
+  return ans;
+}
+  
+SEXP C_pinvgamma(SEXP q, SEXP shape, SEXP rate, SEXP lower_tail, SEXP log_p) {
+  if(!Rf_isReal(q) || !Rf_isReal(shape) || !Rf_isReal(rate) || !Rf_isLogical(lower_tail) || !Rf_isLogical(log_p))
+    RBREAK("Error (C_pinvgamma): invalid input type for one of the arguments.");
+  int n_q = LENGTH(q);
+  int n_shape = LENGTH(shape);
+  int n_rate = LENGTH(rate);
+  int c_lower_tail = (int) LOGICAL(lower_tail)[0];
+  int c_log_p = (int) LOGICAL(log_p)[0];
+  SEXP ans;
+    
+  if(n_q == 0) {
+    return q;
+  }
+
+  int n_max = max(n_q, max(n_shape, n_rate));
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
+  double* c_q = REAL(q);
+  double* c_shape = REAL(shape);
+  double* c_rate = REAL(rate);
+
+  // FIXME: abstract the recycling as a function
+  if(n_rate == 1 && n_shape == 1 && n_rate == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_q; i++) 
+      REAL(ans)[i] = pinvgamma(c_q[i], *c_shape, *c_rate, c_lower_tail, c_log_p);
+  } else {
+    int i_q = 0;
+    int i_shape = 0;
+    int i_rate = 0;
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = pinvgamma(c_q[i_q++], c_shape[i_shape++], c_rate[i_rate++], c_lower_tail, c_log_p);
+      // implement recycling:
+      if(i_q == n_q) i_q = 0;
+      if(i_shape == n_shape) i_shape = 0;
+      if(i_rate == n_rate) i_rate = 0;
+    }
+  }
+    
+  UNPROTECT(1);
+  return ans;
+}
+ 
+SEXP C_qinvgamma(SEXP p, SEXP shape, SEXP rate, SEXP lower_tail, SEXP log_p) {
+  if(!Rf_isReal(p) || !Rf_isReal(shape) || !Rf_isReal(rate) || !Rf_isLogical(lower_tail) || !Rf_isLogical(log_p))
+    RBREAK("Error (C_qinvgamma): invalid input type for one of the arguments.");
+  int n_p = LENGTH(p);
+  int n_shape = LENGTH(shape);
+  int n_rate = LENGTH(rate);
+  int c_lower_tail = (int) LOGICAL(lower_tail)[0];
+  int c_log_p = (int) LOGICAL(log_p)[0];
+  SEXP ans;
+    
+  if(n_p == 0) {
+    return p;
+  }
+
+  int n_max = max(n_p, max(n_shape, n_rate));
+  PROTECT(ans = Rf_allocVector(REALSXP, n_max));  
+  double* c_p = REAL(p);
+  double* c_shape = REAL(shape);
+  double* c_rate = REAL(rate);
+
+  // FIXME: abstract the recycling as a function
+  if(n_rate == 1 && n_shape == 1 && n_rate == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_p; i++) 
+      REAL(ans)[i] = qinvgamma(c_p[i], *c_shape, *c_rate, c_lower_tail, c_log_p);
+  } else {
+    int i_p = 0;
+    int i_shape = 0;
+    int i_rate = 0;
+    for(int i = 0; i < n_max; i++) {
+      REAL(ans)[i] = qinvgamma(c_p[i_p++], c_shape[i_shape++], c_rate[i_rate++], c_lower_tail, c_log_p);
+      // implement recycling:
+      if(i_p == n_p) i_p = 0;
+      if(i_shape == n_shape) i_shape = 0;
+      if(i_rate == n_rate) i_rate = 0;
+    }
+  }
+    
+  UNPROTECT(1);
+  return ans;
+}
+
+
+
+SEXP C_dcar_normal(SEXP x, SEXP adj, SEXP weights, SEXP num, SEXP tau, SEXP c, SEXP zero_mean, SEXP return_log) {
+  if(!Rf_isReal(x) || !Rf_isReal(adj) || !Rf_isReal(weights) || !Rf_isReal(num) || !Rf_isReal(tau) || !Rf_isReal(c) || !Rf_isReal(zero_mean) || !Rf_isLogical(return_log))
+    RBREAK("Error (C_dcar_normal): invalid input type for one of the arguments.");
+  
+  int N = LENGTH(x);
+  int L = LENGTH(adj);
+  
+  double* c_x = REAL(x);
+  double* c_adj = REAL(adj);
+  double* c_weights = REAL(weights);
+  double* c_num = REAL(num);
+  double c_tau = REAL(tau)[0];
+  int c_c = (int) REAL(c)[0];
+  int c_zero_mean = (int) REAL(zero_mean)[0];
+  int give_log = (int) LOGICAL(return_log)[0];
+  SEXP ans;
+  
+  PROTECT(ans = Rf_allocVector(REALSXP, 1));
+  REAL(ans)[0] = dcar_normal(c_x, c_adj, c_weights, c_num, c_tau, c_c, c_zero_mean, N, L, give_log);
+  
+  UNPROTECT(1);
+  return ans;
+}
+
+
+double dcar_normal(double* x, double* adj, double* weights, double* num, double tau, int c, int zero_mean, int N, int L, int give_log) {
+  // This method implements the following density calculation:
+  // p(x1, ..., xn, tau) = (tau/2/pi)^((N-c)/2) * exp(-tau/2 * sum_{i != j) w_ij (xi-xj)^2 ),
+  // where tau is precision, c = (number of islands), and N is the length of x.
+  // This is the density on an N-c dimensional space, and improper on the remaining c dimensions.
+  if(tau < 0) {
+    return R_NaN;
+  }
+  //PRINTF("c is equal to %d\n", c);
+  double lp = 0;
+  int count = 0;
+  double xi, xj;
+  for(int i = 0; i < N; i++) {
+    xi = x[i];
+    for(int j = 0; j < num[i]; j++) {
+      xj = x[ (int) adj[count] - 1 ];
+      lp += weights[count] * pow(xi-xj,2);
+      count++;
+    }
+  }
+  if(count != L) {
+    ML_ERR_return_NAN;
+  }
+  lp *= 1/2.0;     // accounts for double-summing over all (xi,xj) pairs
+  lp *= (-1/2.0) * tau;
+  lp += (N-c)/2.0 * (log(tau) - M_LN_2PI);
+  if(give_log) {
+    return(lp);
+  }
+  return(exp(lp));
+}
+
+SEXP C_dcar_proper(SEXP x, SEXP mu, SEXP C, SEXP adj, SEXP num, SEXP M, SEXP tau, SEXP gamma, SEXP evs, SEXP return_log) {
+  if(!Rf_isReal(x) || !Rf_isReal(mu) || !Rf_isReal(C) || !Rf_isReal(adj) || !Rf_isReal(num) || !Rf_isReal(M) || !Rf_isReal(tau) || !Rf_isReal(gamma) || !Rf_isReal(evs) || !Rf_isLogical(return_log))
+    RBREAK("Error (C_dcar_proper): invalid input type for one of the arguments.");
+  
+  int N = LENGTH(x);
+  int L = LENGTH(adj);
+  
+  double* c_x = REAL(x);
+  double* c_mu = REAL(mu);
+  double* c_C = REAL(C);
+  double* c_adj = REAL(adj);
+  double* c_num = REAL(num);
+  double* c_M = REAL(M);
+  double c_tau = REAL(tau)[0];
+  double c_gamma = REAL(gamma)[0];
+  double* c_evs = REAL(evs);
+  int give_log = (int) LOGICAL(return_log)[0];
+  SEXP ans;
+  
+  PROTECT(ans = Rf_allocVector(REALSXP, 1));
+  REAL(ans)[0] = dcar_proper(c_x, c_mu, c_C, c_adj, c_num, c_M, c_tau, c_gamma, c_evs, N, L, give_log);
+  
+  UNPROTECT(1);
+  return ans;
+}
+
+double dcar_proper(double* x, double* mu, double* C, double* adj, double* num, double* M, double tau, double gamma, double* evs, int N, int L, int give_log) {
+  // This method implements the following density calculation:
+  // x ~ MVN( mean = mu,   cov  = (I-gamma*Cmatrix)^-1* %*% Mmatrix / tau )
+  // note that the scalar 'tau' is a precision term.
+  if(tau < 0) {
+    return R_NaN;
+  }
+  double lp = 0;
+  double xi, xj;
+  int i, j, index;
+  int count = 0;
+  for(i = 0; i < N; i++) {
+    xi = x[i] - mu[i];
+    lp += pow(xi, 2) / M[i];      // (x-mu)' M^-1 (x-mu)
+    //PRINTF("lp is equal to %f\n", lp);
+    for(j = 0; j < num[i]; j++) {
+      index = (int) adj[count] - 1;
+      xj = x[index] - mu[index];
+      lp -= gamma * xi * xj * C[count] / M[i];  // -gamma (x-mu)' M^-1 C (x-mu)
+      count++;
+    }
+  }
+  if(count != L) {
+    ML_ERR_return_NAN;
+  }
+  lp *= (-1/2.0) * tau;
+  // now add -1/2*log(|2*pi*Sigma|) to lp:
+  // det(Sigma) = det((I-gamma*Cmatrix)^-1 %*% M / tau) = prod(M) / prod(1 - gamma*evs) / tau^N
+  // where evs = eigen(Cmatrix)$values, and tau is precision
+  for(i = 0; i < N; i++) {
+    lp += (log(1 - gamma*evs[i]) - log(M[i])) / 2.0;
+  }
+  lp += N / 2.0 * (log(tau) - M_LN_2PI);
+  if(give_log) {
+    return(lp);
+  }
+  return(exp(lp));
+}
+
+
+SEXP C_rcar_proper(SEXP n, SEXP mu, SEXP C, SEXP adj, SEXP num, SEXP M, SEXP tau, SEXP gamma, SEXP evs) {
+  if(!Rf_isInteger(n) || !Rf_isReal(mu) || !Rf_isReal(C) || !Rf_isReal(adj) || !Rf_isReal(num) || !Rf_isReal(M) || !Rf_isReal(tau) || !Rf_isReal(gamma) || !Rf_isReal(evs))
+    RBREAK("Error (C_rcar_proper): invalid input type for one of the arguments.");
+  
+  int N = LENGTH(mu);
+  int L = LENGTH(adj);
+  
+  double* c_mu = REAL(mu);
+  double* c_C = REAL(C);
+  double* c_adj = REAL(adj);
+  double* c_num = REAL(num);
+  double* c_M = REAL(M);
+  double c_tau = REAL(tau)[0];
+  double c_gamma = REAL(gamma)[0];
+  double* c_evs = REAL(evs);
+  
+  SEXP ans;
+  
+  GetRNGstate();
+  
+  PROTECT(ans = Rf_allocVector(REALSXP, N));
+  
+  rcar_proper(REAL(ans), c_mu, c_C, c_adj, c_num, c_M, c_tau, c_gamma, c_evs, N, L);
+  
+  PutRNGstate();
+  UNPROTECT(1);
+  return ans;
+}
+
+
+void rcar_proper(double* ans, double* mu, double* C, double* adj, double* num, double* M, double tau, double gamma, double* evs, int N, int L) {
+  
+#ifdef IEEE_754
+  if (R_isnancpp(mu, N) || R_isnancpp(C, L) || R_isnancpp(adj, L) || R_isnancpp(num, N) || R_isnancpp(M, N) || R_isnancpp(tau) || R_isnancpp(gamma) || R_isnancpp(evs, N)) {
+    for(int i = 0; i < N; i++) {
+      ans[i] = R_NaN;
+    }
+    return;
+  }
+#endif
+  
+  int i, j;
+  
+  double* Qchol = new double[N*N];    // precison Q = tau * M^-1 %*% (I - gamma*C)
+  for(i = 0; i < N*N; i++) {
+    Qchol[i] = 0;
+  }
+  int count = 0;
+  for(i = 0; i < N; i++) {
+    Qchol[ i*(N+1) ] = tau / M[i];    // main diagonal
+    for(j = 0; j < num[i]; j++) {
+      Qchol[  i  +  N*((int) adj[count] - 1)  ] = -tau * gamma * C[count] / M[i];
+      count++;
+    }
+  }
+  
+  // now take chol(precision), and write that into Qchol
+  // F77_CALL(dpotrf)( UPLO, N, A, LDA, INFO ) does Choleskey factorization of a symmetric pos. def. matrix
+  // http://www.netlib.org/lapack/double/dpotrf.f
+  char uplo('U');
+  int info(0);
+  F77_CALL(dpotrf)(&uplo, &N, Qchol, &N, &info);
+  
+  if(!R_FINITE_VEC(Qchol, N*N)) {
+    for(i = 0; i < N; i++) {
+      ans[i] = R_NaN;
+    }
+    delete [] Qchol;
+    return;
+  }
+  
+  for(i = 0; i < N; i++) {
+    ans[i] = norm_rand();
+  }
+  // upper-triangular solve or (transpose) multiply
+  char transPrec('N');
+  char diag('N');
+  int lda(N);
+  int incx(1);
+  F77_CALL(dtrsv)(&uplo, &transPrec, &diag, &N, Qchol, &lda, ans, &incx);
+  for(i = 0; i < N; i++) {
+    ans[i] += mu[i];
+  }
+  delete [] Qchol;
+}
+

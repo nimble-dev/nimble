@@ -24,6 +24,7 @@ ENKFFuncVirtual <- nimbleFunctionVirtual(
 
 #  returns mean and cov matrix for MVN data node
 enkfMultFunc = nimbleFunction(
+    name = 'enkfMultFunc',
   contains = ENKFFuncVirtual,
   setup = function(model, thisData){},
   methods = list(
@@ -35,11 +36,12 @@ enkfMultFunc = nimbleFunction(
       returnType(double(2))
       return(model$getParam(thisData, 'cov'))
     }
-  ), where = getLoadingNamespace()
+  )
 )
 
 #  returns mean (as vector) and var (as matrix) for normal data node  
 enkfScalFunc = nimbleFunction(
+    name = 'enkfScalFunc',
   contains = ENKFFuncVirtual,
   setup = function(model, thisData){},
   methods = list(
@@ -58,7 +60,7 @@ enkfScalFunc = nimbleFunction(
       outMat[1,1] <- model$getParam(thisData, 'var')
       return(outMat)
     }
-  ), where = getLoadingNamespace()
+  )
 )
 
 # Ensemble Kalman filter step
@@ -66,6 +68,7 @@ enkfScalFunc = nimbleFunction(
 # Does not check to verify this.
 
 ENKFStep <- nimbleFunction(
+    name = 'ENKFStep',
   contains = ENKFStepVirtual,
   setup = function(model, mvSamples, nodes, iNode, xDim, yDim, saveAll, names, silent = FALSE) {
     notFirst <- iNode != 1
@@ -193,7 +196,7 @@ ENKFStep <- nimbleFunction(
         copy(model, mvSamples, thisNode, thisXSName, rowTo = i)      
       }
     }
-  }, where = getLoadingNamespace()
+  }
 )
 
 #' Create an Ensemble Kalman filter algorithm to sample from latent states.
@@ -201,7 +204,12 @@ ENKFStep <- nimbleFunction(
 #' @description Create an Ensemble Kalman filter algorithm for a given NIMBLE state space model.  
 #'
 #' @param model A NIMBLE model object, typically representing a state space model or a hidden Markov model
-#' @param nodes A character vector specifying the latent model nodes which the Ensemble Kalman filter will estimate.
+#' @param nodes A character vector specifying the latent model nodes 
+#'  the Ensemble Kalman Filter will estimate. All provided nodes must be stochastic.
+#'  Can be one of three forms: a variable name, in which case all elements in the variable
+#'  are taken to be latent (e.g., 'x'); an indexed variable, in which case all indexed elements are taken
+#'  to be latent (e.g., 'x[1:100]' or 'x[1:100, 1:2]'); or a vector of multiple nodes, one per time point,
+#'  in increasing time order (e.g., c("x[1:2, 1]", "x[1:2, 2]", "x[1:2, 3]", "x[1:2, 4]")).
 #' @param control  A list specifying different control options for the particle filter.  Options are described in the details section below.
 #' @author Nicholas Michaud
 #' @family particle filtering methods
@@ -210,8 +218,9 @@ ENKFStep <- nimbleFunction(
 #' The \code{control()} list option is described in detail below:
 #' \describe{
 #'  \item{saveAll}{Indicates whether to save state samples for all time points (TRUE), or only for the most recent time point (FALSE)}
-#' \item{timeIndex}{An integer used to manually specify which dimension of the latent state variable indexes time.  
+#'  \item{timeIndex}{An integer used to manually specify which dimension of the latent state variable indexes time.  
 #'  Only needs to be set if the number of time points is less than or equal to the size of the latent state at each time point.}
+#'  \item{initModel}{A logical value indicating whether to initialize the model before running the filtering algorithm.  Defaults to TRUE.}
 #' }
 #' 
 #' Runs an Ensemble Kalman filter to estimate a latent state given observations at each time point.  The ensemble Kalman filter
@@ -237,34 +246,19 @@ ENKFStep <- nimbleFunction(
 #' }
 #' @export
 buildEnsembleKF <- nimbleFunction(
+    name = 'buildEnsembleKF',
   setup = function(model, nodes, control = list()) {
 
     #control list extraction
     saveAll <- control[['saveAll']]
     silent <- control[['silent']]
     timeIndex <- control[['timeIndex']]
+    initModel <- control[['initModel']]
     if(is.null(silent)) silent <- FALSE
     if(is.null(saveAll)) saveAll <- FALSE
-     
-    #get latent state info
-    varName <- sapply(nodes, function(x){return(model$getVarNames(nodes = x))})
-    if(length(unique(varName))>1){
-      stop("all latent nodes must come from same variable")
-    }
-    varName <- varName[1]
-    info <- model$getVarInfo(varName)
-    latentDims <- info$nDim
-    if(is.null(timeIndex)){
-      timeIndex <- which.max(info$maxs)
-      timeLength <- max(info$maxs)
-      if(sum(info$maxs==timeLength)>1) # check if multiple dimensions share the max index size
-        stop("unable to determine which dimension indexes time. 
-             Specify manually using the 'timeIndex' control list argument")
-    } else{
-      timeLength <- info$maxs[timeIndex]
-    }
-    nodes <- paste(info$varName,"[",rep(",", timeIndex-1), 1:timeLength,
-                   rep(",", info$nDim - timeIndex),"]", sep="")
+    if(is.null(initModel)) initModel <- TRUE 
+    ## get latent state info
+    nodes <- findLatentNodes(model, nodes, timeIndex)
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
     if(length(unique(dims)) > 1) stop('sizes or dimension of latent states varies')
     xDim <- dims[[1]]
@@ -319,10 +313,10 @@ buildEnsembleKF <- nimbleFunction(
     }
   },
   run = function(m = integer(default = 100)) {
-    my_initializeModel$run()
+    if(initModel == TRUE) my_initializeModel$run()
     resize(mvSamples, m) 
     for(iNode in seq_along(ENKFStepFunctions)) { 
       ENKFStepFunctions[[iNode]]$run(m)
     }
-  },  where = getLoadingNamespace()
+  }
 )

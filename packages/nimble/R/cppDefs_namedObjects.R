@@ -20,5 +20,5 @@ cppNamedObjectsClass <- setRefClass('cppNamedObjectsClass',
                                                                                            CNAME = as.name(Rnames2CppNames[[i]])))
                                        cppCodeBlock(code = putCodeLinesInBrackets(codeLines), skipBrackets = TRUE)
                                    }
-                                   )
+                               )
                                )

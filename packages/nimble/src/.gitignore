@@ -3,12 +3,11 @@ accessorClasses.cpp
 NamedObjects.cpp
 nimDists.cpp
 RcppUtils.cpp
-Values.cpp
 dists.cpp
 ModelClassUtils.cpp
-NFxnUtils.cpp
-Node.cpp
 Utils.cpp
 nimbleGraph.cpp
 Makevars
-
+NFxnUtils.cpp
+Values.cpp
+eigenUsingClasses.cpp

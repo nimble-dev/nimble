@@ -1,9 +1,9 @@
-As of version 0.6 you can install from CRAN in the usual way.
+You can install NIMBLE as an R package from CRAN in the usual way.
 
 You can install from the source file using
-   R CMD INSTALL nimble_0.6.tar.gz
+   R CMD INSTALL nimble_0.9.0.tar.gz
 or
-  install.packages("nimble_0.6.tar.gz", repos = NULL)
+  install.packages("nimble_0.9.0.tar.gz", repos = NULL)
 
 You can also install the package directly from the NIMBLE repository 
   install.packages("nimble", repos = "http://r-nimble.org")
@@ -12,20 +12,20 @@ There are two configuration options:  --enable-dylib and --with-eigen.
 --enable-dylib is supported on UNIX/Linux/OS X platforms,
 i.e. not Windows.
 
- --enable-lib=false/true  controls whether we compile the shared C++ code that is used
+ --enable-dylib=false/true  controls whether we compile the shared C++ code that is used
    across different NIMBLE models as a dynamic library, libnimble.so, and then use this one copy of the code
-   by linking against it. Otherwise, we create a static library, libnimble.a, and include this in the DLL for each compiled model and algorithm, essentially copying the code. By default, --enable-lib=true for Linux but --enable-lib=false for OS X. If building from source for OS X, we recommend setting --enable-lib=true to reduce the size of the shared libraries built when compiling models and algorithms. 
+   by linking against it. Otherwise, we create a static library, libnimble.a, and include this in the DLL for each compiled model and algorithm, essentially copying the code. By default, --enable-dylib=true for Linux but --enable-dylib=false for OS X. If building from source for OS X, we recommend setting --enable-dylib=true to reduce the size of the shared libraries built when compiling models and algorithms. 
 
  --with-eigen=/path/to/dir   - this specifies the full path to a directory containing the 
     header files for the Eigen library. This directory must contain the Eigen/ sub-directory 
     By default, we will use the Eigen distribution included with the package.
 
 We can specify any or all of these with
-  R CMD INSTALL nimble_0.6.tar.gz  --configure-args="--enable-dylib=true --with-eigen=/Users/duncan/local"
+  R CMD INSTALL nimble_0.9.0.tar.gz  --configure-args="--enable-dylib=true --with-eigen=/Users/duncan/local"
 or
   install.packages("nimble", configure.args = "--enable-dylib=true --with-eigen=/Users/duncan/local")
 
-Note that if you install on OS X from the source file provided by CRAN, you will need this gfortran package installed: 
+Note that if you install on MacOS from the source file provided by CRAN, you will need this gfortran package installed: 
      http://r.research.att.com/libs/gfortran-4.8.2-darwin13.tar.bz2
 This version:
       https://cran.r-project.org/bin/macosx/tools/gfortran-4.2.3.pkg

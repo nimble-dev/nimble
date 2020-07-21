@@ -1,0 +1,67 @@
+citHeader("In published work that uses or mentions NIMBLE, please cite the Journal of Computational and Graphical Statistics article. In work that uses NIMBLE, please also cite the R package for the specific version used. To help us track usage to justify funding support for NIMBLE, please include the DOI in the citation.")
+
+year <- sub("-.*", "", meta$Date)
+note <- sprintf("{R} package version %s", meta$Version)
+noteManual <- sprintf("{R} package manual version %s", meta$Version)
+
+
+bibentry(
+ bibtype = "article",
+ title = "Programming with models: writing statistical algorithms for general model structures with {NIMBLE}", 
+ journal = "Journal of Computational and Graphical Statistics",
+ volume = "26",
+ issue = "2",
+ pages = "403-413",
+ year = "2017",
+ author = c(person("Perry", "de Valpine"),
+            person("Daniel", "Turek"),
+            person("Christopher", "Paciorek"),
+            person("Cliff", "Anderson-Bergman"),
+            person("Duncan", "Temple Lang"),
+            person("Ras", "Bodik")),
+ doi = "10.1080/10618600.2016.1172487",
+ textVersion = "de Valpine, P., D. Turek, C.J. Paciorek, C. Anderson-Bergman, D. Temple Lang, and R. Bodik. 2017. Programming with models: writing statistical algorithms for general model structures with NIMBLE. Journal of Computational and Graphical Statistics 26: 403-413. <DOI:10.1080/10618600.2016.1172487>."
+)
+
+bibentry(
+ bibtype = "manual",
+ title = "{NIMBLE}: {MCMC}, Particle Filtering, and Programmable Hierarchical Modeling",
+ author = c(person("Perry", "de Valpine"),
+            person("Christopher", "Paciorek"),
+            person("Daniel", "Turek"),
+            person("Nick", "Michaud"),
+            person("Cliff", "Anderson-Bergman"),
+            person("Fritz", "Obermeyer"),
+            person("Claudia", "Wehrhahn Cortes"),
+            person("Abel", "Rodr\u00ecguez"),
+            person("Duncan", "Temple Lang"),
+            person("Sally", "Paganin")),
+ url = "https://cran.r-project.org/package=nimble",
+ year = year,
+ version = meta$Version,
+ note = note,
+ doi = "10.5281/zenodo.1211190"
+)
+
+bibentry(
+ bibtype = "manual",
+ title = "{NIMBLE} User Manual",
+ author = c(person("Perry", "de Valpine"),
+            person("Christopher", "Paciorek"),
+            person("Daniel", "Turek"),
+            person("Nick", "Michaud"),
+            person("Cliff", "Anderson-Bergman"),
+            person("Fritz", "Obermeyer"),
+            person("Claudia", "Wehrhahn Cortes"),
+            person("Abel", "Rodr\u00ecguez"),
+            person("Duncan", "Temple Lang"),
+            person("Sally", "Paganin")),
+ url = "https://r-nimble.org",
+ year = year,
+ version = meta$Version,
+ note = noteManual,
+ doi = "10.5281/zenodo.1211190",
+ textVersion = NULL
+)
+
+

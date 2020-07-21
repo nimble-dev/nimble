@@ -1,119 +1,4 @@
 
-
-nodeFunction <- function(LHS, RHS, name = NA, altParams, logProbNodeExpr, type, setupOutputExprs, evaluate = TRUE, where = globalenv()) {
-    if(!(type %in% c('stoch', 'determ')))       stop(paste0('invalid argument to nodeFunction(): type = ', type))
-    nodeFunctionTemplate <-
-        substitute(
-            nimbleFunction(contains      = CONTAINS,
-                           setup         = SETUPFUNCTION,
-                           methods       = METHODS,
-                           name          = name,
-                           where = where),
-            list(CONTAINS      = ndf_createContains(RHS, type),
-                 SETUPFUNCTION = ndf_createSetupFunction(setupOutputExprs),
-                 METHODS       = ndf_createMethodList(LHS, RHS, altParams, logProbNodeExpr, type, setupOutputExprs),
-                 where         = where)
-        )
-    if(evaluate)    return(eval(nodeFunctionTemplate))     else       return(nodeFunctionTemplate)
-}
-
-
-## creates the name of the node class inheritance (nimbleFunction(contains = ....)
-ndf_createContains <- function(RHS, type) {
-    if(nimbleOptions()$compileAltParamFunctions) {
-        if(type == 'determ')   tag <- 'determ'
-        if(type == 'stoch')    tag <- paste0('stoch_', RHS[[1]])
-        containsText <- paste0('node_', tag)
-        return(as.name(containsText))
-    }
-    return(NULL)
-}
-
-## creates a function object for use as setup argument to nimbleFunction()
-ndf_createSetupFunction <- function(setupOutputExprs) {
-    setup <- function() {}
-    allSetupOutputExprs <- c(quote(model), setupOutputExprs)
-    formals(setup) <- nf_createAList(allSetupOutputExprs)
-    return(setup)
-}
-
-
-## creates a list of the methods calculate, simulate, and getLogProb, corresponding to LHS, RHS, and type arguments
-ndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type, setupOutputExprs) {
-    if(type == 'determ') {
-        methodList <- eval(substitute(
-            list(
-                simulate   = function() { LHS <<- RHS                                                 },
-                calculate  = function() { simulate();    returnType(double());   return(invisible(0)) },
-                calculateDiff = function() {simulate();  returnType(double());   return(invisible(0)) },
-                getLogProb = function() {                returnType(double());   return(0)            }
-            ),
-            list(LHS=LHS, 
-                 RHS=RHS)))
-    }
-    if(type == 'stoch') {
-        methodList <- eval(substitute(
-            list(
-                simulate   = function() { LHS <<- STOCHSIM                                                         },
-                calculate  = function() { STOCHCALC_FULLEXPR;   returnType(double());   return(invisible(LOGPROB)) },
-                calculateDiff = function() {STOCHCALC_FULLEXPR_DIFF; LocalAns <- LocalNewLogProb - LOGPROB;  LOGPROB <<- LocalNewLogProb;
-                                            returnType(double());   return(invisible(LocalAns))},
-                getLogProb = function() {                       returnType(double());   return(LOGPROB)            }
-            ),
-            list(LHS       = LHS,
-                 LOGPROB   = logProbNodeExpr,
-                 STOCHSIM  = ndf_createStochSimulate(RHS),
-                 STOCHCALC_FULLEXPR = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS),
-                 STOCHCALC_FULLEXPR_DIFF = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, diff = TRUE))))
-        if(nimbleOptions()$compileAltParamFunctions) {
-            distName <- as.character(RHS[[1]])
-            ## add accessor function for node value; used in multivariate conjugate sampler functions
-            typeList <- getDistribution(distName)$types[['value']]
-            methodList[['get_value']] <- ndf_generateGetParamFunction(LHS, typeList$type, typeList$nDim)
-            ## add accessor functions for stochastic node distribution parameters
-            for(param in names(RHS[-1])) {
-                if(!param %in% c("lower", "upper")) {
-                    typeList <- getDistribution(distName)$types[[param]]
-                    methodList[[paste0('get_',param)]] <- ndf_generateGetParamFunction(RHS[[param]], typeList$type, typeList$nDim)
-                }
-            }
-            for(i in seq_along(altParams)) {
-                altParamName <- names(altParams)[i]
-                typeList <- getDistribution(distName)$types[[altParamName]]
-                methodList[[paste0('get_',altParamName)]] <- ndf_generateGetParamFunction(altParams[[altParamName]], typeList$type, typeList$nDim)
-            }
-            ## new for getParam, eventually to replace get_XXX where XXX is each param name
-            ## TO-DO: unfold types and nDims more thoroughly (but all types are implemented as doubles anyway)
-            ## understand use of altParams vs. all entries in typesListAllParams
-            ## need a value Entry
-            allParams <- c(list(value = LHS), as.list(RHS[-1]), altParams)
-            typesListAllParams <- getDistribution(distName)$types
-            typesNDims <- unlist(lapply(typesListAllParams, `[[`, 'nDim'))
-            typesTypes <- unlist(lapply(typesListAllParams, `[[`, 'type'))
-            paramIDs <- getDistribution(distName)$paramIDs
-            ## rely on only double for now
-            for(nDimSupported in c(0, 1, 2)) {
-                boolThisCase <- typesNDims == nDimSupported & typesTypes == 'double'
-                paramNamesToUse <- names(typesListAllParams)[boolThisCase]
-                caseName <- paste0("getParam_",nDimSupported,"D_double")
-                if(length(paramNamesToUse) > 0) 
-                    methodList[[caseName]] <- ndf_generateGetParamSwitchFunction(allParams[paramNamesToUse], paramIDs[paramNamesToUse], type = 'double', nDim = nDimSupported) 
-            }
-        }
-    }
-    ## add model$ in front of all names, except the setupOutputs
-    methodList <- ndf_addModelDollarSignsToMethods(methodList, setupOutputExprs, exceptionNames = c("LocalAns", "LocalNewLogProb","PARAMID_","PARAMANSWER_"))
-    return(methodList)
-}
-
-replaceDistributionAliasesNameOnly <- function(dist) {
-    if (as.character(dist) %in% names(distributionAliases)) {
-        dist <- as.name(distributionAliases[dist])
-    }
-    return(dist)
-}
-
-
 ## helper function that adds an argument to a call
 ## used to add needed arguments for C versions of {d,p,q}${dist} functions
 addArg <- function(code, value, name) {
@@ -124,33 +9,73 @@ addArg <- function(code, value, name) {
 }
 
 
+ndf_createDetermSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonReplaced, nodeDim) {
+    if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
+        ## error gracefully if dynamic index too small or large; we don't catch non-integers within the bounds though
+        if(is.null(nodeDim)) {
+            nanExpr <- NaN
+        } else nanExpr <- substitute(nimRep(NaN, LENGTH),
+                                     list(LENGTH = prod(nodeDim)))
+        code <- substitute(if(isTRUE(CONDITION)) LHS <<- RHS
+                           else {
+                               LHS <<- NANEXPR
+                               print(TEXT) },  
+                           list(LHS = LHS,
+                                RHS = RHS,
+                                NANEXPR = nanExpr,
+                                CONDITION = dynamicIndexLimitsExpr,
+                                TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))))
+    } else code <- substitute(LHS <<- RHS,
+                              list(LHS = LHS,
+                                   RHS = RHS))
+    return(code)
+}
 
 ## changes 'dnorm(mean=1, sd=2)' into 'rnorm(1, mean=1, sd=2)'
-ndf_createStochSimulate <- function(RHS) {
+ndf_createStochSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonReplaced, nodeDim) {
     BUGSdistName <- as.character(RHS[[1]])
-    RHS[[1]] <- as.name(getDistribution(BUGSdistName)$simulateName)   # does the appropriate substituion of the distribution name
+    RHS[[1]] <- as.name(getDistributionInfo(BUGSdistName)$simulateName)   # does the appropriate substituion of the distribution name
     if(length(RHS) > 1) {    for(i in (length(RHS)+1):3)   { RHS[i] <- RHS[i-1];     names(RHS)[i] <- names(RHS)[i-1] } }    # scoots all named arguments right 1 position
-    RHS[[2]] <- 1;     names(RHS)[2] <- ''    # adds the first (unnamed) argument '1'
-    if("lower" %in% names(RHS) || "upper" %in% names(RHS))
-        RHS <- ndf_createStochSimulateTrunc(RHS, discrete = getDistributionsInfo('discrete')[BUGSdistName])
-    return(RHS)
+    RHS[[2]] <- 1;     names(RHS)[2] <- ''    # adds the first (unnamed) argument '1'    
+    if("lower_" %in% names(RHS) || "upper_" %in% names(RHS)) {
+        RHS <- ndf_createStochSimulateTrunc(RHS, discrete = getAllDistributionsInfo('discrete')[BUGSdistName])
+    } 
+    if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
+        if(is.null(nodeDim)) {
+            nanExpr <- NaN
+        } else nanExpr <- substitute(rep(NaN, LENGTH),
+                                     list(LENGTH = prod(nodeDim)))
+        code <- substitute(if(isTRUE(CONDITION)) LHS <<- RHS
+                           else {
+                               LHS <<- NANEXPR
+                               print(TEXT) },  
+                           list(LHS = LHS,
+                                RHS = RHS,
+                                NANEXPR = nanExpr,
+                                CONDITION = dynamicIndexLimitsExpr,
+                                TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))))
+    } else {
+        code <- substitute(LHS <<- RHS,
+                           list(LHS = LHS,
+                                RHS = RHS))
+    }
+    return(code)
 }
 
 
-## changes 'rnorm(mean=1, sd=2, lower=0, upper=3)' into correct truncated simulation
+## changes 'rnorm(mean=1, sd=2, lower_=0, upper_=3)' into correct truncated simulation
 ##   using inverse CDF
 ndf_createStochSimulateTrunc <- function(RHS, discrete = FALSE) {
-    lowerPosn <- which("lower" == names(RHS))
-    upperPosn <- which("upper" == names(RHS))
+    lowerPosn <- which("lower_" == names(RHS))
+    upperPosn <- which("upper_" == names(RHS))
     lower <- RHS[[lowerPosn]]
     upper <- RHS[[upperPosn]]
     RHS <- RHS[-c(lowerPosn, upperPosn)]
     dist <- substring(as.character(RHS[[1]]), 2, 1000)
-    # userDist <- sum(BUGSdist %in% getDistributionsInfo('namesVector', userOnly = TRUE))
-    # back to using periods in name because we now mangle the nf arg names
-    lowerTailName <- 'lower.tail' # ifelse(userDist, 'lower_tail', 'lower.tail')
-    logpName <- 'log.p'  # ifelse(userDist, 'log_p', 'log.p')
-    logName <- 'log' # ifelse(userDist, 'log_value', 'log')
+    
+    lowerTailName <- 'lower.tail' 
+    logpName <- 'log.p' 
+    logName <- 'log' 
     # setup for runif(1, pdist(lower,...), pdist(upper,...))
     # pdist() expression template for inputs to runif()
     pdistTemplate <- RHS
@@ -205,42 +130,72 @@ ndf_createStochSimulateTrunc <- function(RHS, discrete = FALSE) {
 }
 
 ## changes 'dnorm(mean=1, sd=2)' into 'dnorm(LHS, mean=1, sd=2, log=TRUE)'
-ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE) {
+ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE, ADFunc = FALSE, dynamicIndexLimitsExpr, RHSnonReplaced) {
     BUGSdistName <- as.character(RHS[[1]])
-    RHS[[1]] <- as.name(getDistribution(BUGSdistName)$densityName)   # does the appropriate substituion of the distribution name
+    RHS[[1]] <- as.name(getDistributionInfo(BUGSdistName)$densityName)   # does the appropriate substituion of the distribution name
     if(length(RHS) > 1) {    for(i in (length(RHS)+1):3)   { RHS[i] <- RHS[i-1];     names(RHS)[i] <- names(RHS)[i-1] } }    # scoots all named arguments right 1 position
     RHS[[2]] <- LHS;     names(RHS)[2] <- ''    # adds the first (unnamed) argument LHS
-    if("lower" %in% names(RHS) || "upper" %in% names(RHS)) {
-        return(ndf_createStochCalculateTrunc(logProbNodeExpr, LHS, RHS, diff = diff, discrete = getDistributionsInfo('discrete')[BUGSdistName]))
+    if("lower_" %in% names(RHS) || "upper_" %in% names(RHS)) {
+        return(ndf_createStochCalculateTrunc(logProbNodeExpr, LHS, RHS, diff = diff, discrete = getAllDistributionsInfo('discrete')[BUGSdistName], dynamicIndexLimitsExpr = dynamicIndexLimitsExpr, RHSnonReplaced = RHSnonReplaced))
     } else {
-          userDist <- BUGSdistName %in% getDistributionsInfo('namesVector', userOnly = TRUE)
-          RHS <- addArg(RHS, 1, 'log')  # adds the last argument log=TRUE (log_value for user-defined) # This was changed to 1 from TRUE for easier C++ generation
-          if(diff) {
-              code <- substitute(LocalNewLogProb <- STOCHCALC,
-                                 list(##LOGPROB = logProbNodeExpr,
-                                      STOCHCALC = RHS))
-          } else {
-              code <- substitute(LOGPROB <<- STOCHCALC,
-                                 list(LOGPROB = logProbNodeExpr,
-                                      STOCHCALC = RHS))
-          }
-          return(code)
+        userDist <- BUGSdistName %in% getAllDistributionsInfo('namesVector', userOnly = TRUE)
+        RHS <- addArg(RHS, 1, 'log')  # adds the last argument log=TRUE (log_value for user-defined) # This was changed to 1 from TRUE for easier C++ generation
+        if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
+            if(diff) {
+                code <- substitute(if(isTRUE(CONDITION)) LocalNewLogProb <- STOCHCALC
+                                   else {LocalNewLogProb <- NaN
+                                       print(TEXT)}, # LocalNewLogProb <- -Inf,
+                                   list(STOCHCALC = RHS,
+                                        CONDITION = dynamicIndexLimitsExpr,
+                                        TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))))
+            } else if(ADFunc){  ## don't want global assignment for _AD_ functions.
+                code <- substitute(if(isTRUE(CONDITION)) LOGPROB <- STOCHCALC
+                                   else {LOGPROB <- NaN
+                                       print(TEXT)},
+                                   list(LOGPROB = logProbNodeExpr,
+                                        STOCHCALC = RHS,
+                                        CONDITION = dynamicIndexLimitsExpr,
+                                        TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))))
+            } else {
+
+                code <- substitute(if(isTRUE(CONDITION)) LOGPROB <<- STOCHCALC
+                                   else {LOGPROB <<- NaN
+                                       print(TEXT)}, # LOGPROB <<- -Inf,
+                                   list(LOGPROB = logProbNodeExpr,
+                                        STOCHCALC = RHS,
+                                        CONDITION = dynamicIndexLimitsExpr,
+                                        TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))))
+            }
+        } else {
+            if(diff) {
+                code <- substitute(LocalNewLogProb <- STOCHCALC,
+                                   list(
+                                       STOCHCALC = RHS))
+            } else if(ADFunc){  ## don't want global assignment for _AD_ functions.
+                code <- substitute(LOGPROB <- STOCHCALC,
+                                   list(LOGPROB = logProbNodeExpr,
+                                        STOCHCALC = RHS))
+            } else{
+                code <- substitute(LOGPROB <<- STOCHCALC,
+                                   list(LOGPROB = logProbNodeExpr,
+                                        STOCHCALC = RHS))
+            }
+        }
+        return(code)
     }
 }
 
 ## changes 'dnorm(mean=1, sd=2, lower=0, upper=3)' into correct truncated calculation
-ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALSE, discrete = FALSE) {
-    lowerPosn <- which("lower" == names(RHS))
-    upperPosn <- which("upper" == names(RHS))
+ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALSE, discrete = FALSE, dynamicIndexLimitsExpr, RHSnonReplaced) {
+    lowerPosn <- which("lower_" == names(RHS))
+    upperPosn <- which("upper_" == names(RHS))
     lower <- RHS[[lowerPosn]]
     upper <- RHS[[upperPosn]]
     RHS <- RHS[-c(lowerPosn, upperPosn)]
     dist <- substring(as.character(RHS[[1]]), 2, 1000)
-    # userDist <- sum(as.character(RHS[[1]]) %in% getDistributionsInfo('namesVector', userOnly = TRUE))
-    # back to using periods in name because we now mangle the nf arg names
-    lowerTailName <- 'lower.tail' # ifelse(userDist, 'lower_tail', 'lower.tail')
-    logpName <- 'log.p' # ifelse(userDist, 'log_p', 'log.p')
-    logName <- 'log' # ifelse(userDist, 'log_value', 'log')
+    lowerTailName <- 'lower.tail' 
+    logpName <- 'log.p' 
+    logName <- 'log' 
 
     pdistTemplate <- RHS
     pdistTemplate[[1]] <- as.name(paste0("p", dist))
@@ -274,81 +229,126 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
 
     RHS <- addArg(RHS, 1, logName)  # add log=1 now that pdist() created without 'log'
 
-    if(diff) {
-        if(discrete && lower != -Inf) {
-            substCode <- quote(if(LOWER <= VALUE & VALUE <= UPPER)
-                                   LocalNewLogProb <- DENSITY - log(PDIST_UPPER - PDIST_LOWER + DDIST_LOWER)
-                               else LocalNewLogProb <- -Inf)
+                code <- substitute(if(isTRUE(CONDITION)) LocalNewLogProb <- STOCHCALC
+                                   else { LocalNewLogProb <- NaN
+                                       print(TEXT)}, # LocalNewLogProb <- -Inf,
+                                   list(STOCHCALC = RHS,
+                                        CONDITION = dynamicIndexLimitsExpr,
+                                        TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))))
+
+    
+    if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
+        if(diff) {
+            if(discrete && lower != -Inf) {
+                substCode <- quote(if(isTRUE(CONDITION)) {
+                                       if(isTRUE(LOWER <= VALUE & VALUE <= UPPER))
+                                           LocalNewLogProb <- DENSITY - log(PDIST_UPPER - PDIST_LOWER + DDIST_LOWER)
+                                       else LocalNewLogProb <- -Inf
+                                   } else {
+                                       LocalNewLogProb <- NaN
+                                       cat(TEXT) }
+                                   )
+            } else {
+                substCode <- quote(if(isTRUE(CONDITION)) {
+                                       if(isTRUE(LOWER <= VALUE & VALUE <= UPPER))
+                                           LocalNewLogProb <- DENSITY - log(PDIST_UPPER - PDIST_LOWER)
+                                       else LocalNewLogProb <- -Inf
+                                   } else {
+                                       LocalNewLogProb <- NaN
+                                       print(TEXT) }
+                                           )
+            }
+            code <- eval(substitute(substitute(e, 
+                                               list(
+                                                   LOWER = lower,
+                                                   UPPER = upper,
+                                                   VALUE = LHS,
+                                                   DENSITY = RHS,
+                                                   PDIST_LOWER = PDIST_LOWER,
+                                                   PDIST_UPPER = PDIST_UPPER,
+                                                   DDIST_LOWER = DDIST_LOWER,
+                                                   CONDITION = dynamicIndexLimitsExpr,
+                                                   TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))
+                                               )), list( e = substCode)))
         } else {
-              substCode <- quote(if(LOWER <= VALUE & VALUE <= UPPER)
-                                     LocalNewLogProb <- DENSITY - log(PDIST_UPPER - PDIST_LOWER)
-                                 else LocalNewLogProb <- -Inf)
-          }
-        code <- eval(substitute(substitute(e, 
-                           list(
-                               LOWER = lower,
-                               UPPER = upper,
-                               VALUE = LHS,
-                               DENSITY = RHS,
-                               PDIST_LOWER = PDIST_LOWER,
-                               PDIST_UPPER = PDIST_UPPER,
-                               DDIST_LOWER = DDIST_LOWER
-                               )), list( e = substCode)))
+            if(discrete && lower != -Inf) {
+                substCode <- quote(if(isTRUE(CONDITION)) {
+                                       if(isTRUE(LOWER <= VALUE & VALUE <= UPPER))
+                                           LOGPROB <<- DENSITY - log(PDIST_UPPER - PDIST_LOWER + DDIST_LOWER)
+                                       else LOGPROB <<- -Inf
+                                   } else {
+                                       LOGPROB <<- NaN
+                                       cat(TEXT) }
+                                   )
+            } else {
+                substCode <- quote(if(isTRUE(CONDITION)) {
+                                       if(isTRUE(LOWER <= VALUE & VALUE <= UPPER))
+                                         LOGPROB <<- DENSITY - log(PDIST_UPPER - PDIST_LOWER)
+                                   else LOGPROB <<- -Inf
+                                   } else {
+                                       LOGPROB <<- NaN
+                                       print(TEXT) }
+                                   )
+            }
+            code <- eval(substitute(substitute(e, 
+                                               list(
+                                                   LOWER = lower,
+                                                   UPPER = upper,
+                                                   VALUE = LHS,
+                                                   LOGPROB = logProbNodeExpr,
+                                                   DENSITY = RHS,
+                                                   PDIST_LOWER = PDIST_LOWER,
+                                                   PDIST_UPPER = PDIST_UPPER,
+                                                   DDIST_LOWER = DDIST_LOWER,
+                                                   CONDITION = dynamicIndexLimitsExpr,
+                                                   TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))
+                                               )), list(e = substCode)))
+        }
     } else {
-          if(discrete && lower != -Inf) {
-              substCode <- quote(if(LOWER <= VALUE & VALUE <= UPPER)
-                                     LOGPROB <<- DENSITY - log(PDIST_UPPER - PDIST_LOWER + DDIST_LOWER)
-                                 else LOGPROB <<- -Inf)
-          } else {
-                substCode <- quote(if(LOWER <= VALUE & VALUE <= UPPER)
+        if(diff) {
+            if(discrete && lower != -Inf) {
+                substCode <- quote(if(isTRUE(LOWER <= VALUE & VALUE <= UPPER))
+                                       LocalNewLogProb <- DENSITY - log(PDIST_UPPER - PDIST_LOWER + DDIST_LOWER)
+                                   else LocalNewLogProb <- -Inf)
+            } else {
+                substCode <- quote(if(isTRUE(LOWER <= VALUE & VALUE <= UPPER))
+                                       LocalNewLogProb <- DENSITY - log(PDIST_UPPER - PDIST_LOWER)
+                                   else LocalNewLogProb <- -Inf)
+            }
+            code <- eval(substitute(substitute(e, 
+                                               list(
+                                                   LOWER = lower,
+                                                   UPPER = upper,
+                                                   VALUE = LHS,
+                                                   DENSITY = RHS,
+                                                   PDIST_LOWER = PDIST_LOWER,
+                                                   PDIST_UPPER = PDIST_UPPER,
+                                                   DDIST_LOWER = DDIST_LOWER
+                                               )), list( e = substCode)))
+        } else {
+            if(discrete && lower != -Inf) {
+                substCode <- quote(if(isTRUE(LOWER <= VALUE & VALUE <= UPPER))
+                                       LOGPROB <<- DENSITY - log(PDIST_UPPER - PDIST_LOWER + DDIST_LOWER)
+                                   else LOGPROB <<- -Inf)
+            } else {
+                substCode <- quote(if(isTRUE(LOWER <= VALUE & VALUE <= UPPER))
                                        LOGPROB <<- DENSITY - log(PDIST_UPPER - PDIST_LOWER)
                                    else LOGPROB <<- -Inf)
             }
-        code <- eval(substitute(substitute(e, 
-                           list(
-                               LOWER = lower,
-                               UPPER = upper,
-                               VALUE = LHS,
-                               LOGPROB = logProbNodeExpr,
-                               DENSITY = RHS,
-                               PDIST_LOWER = PDIST_LOWER,
-                               PDIST_UPPER = PDIST_UPPER,
-                               DDIST_LOWER = DDIST_LOWER
-                           )), list(e = substCode)))
+            code <- eval(substitute(substitute(e, 
+                                               list(
+                                                   LOWER = lower,
+                                                   UPPER = upper,
+                                                   VALUE = LHS,
+                                                   LOGPROB = logProbNodeExpr,
+                                                   DENSITY = RHS,
+                                                   PDIST_LOWER = PDIST_LOWER,
+                                                   PDIST_UPPER = PDIST_UPPER,
+                                                   DDIST_LOWER = DDIST_LOWER
+                                               )), list(e = substCode)))
+        }
     }
     return(code)
-}
-
-
-ndf_generateGetParamSwitchFunction <- function(typesListAll, paramIDs, type, nDim) {
-    if(any(unlist(lapply(typesListAll, is.null)))) stop(paste('problem creating switch function for getParam from ', paste(paste(names(typesListAll), as.character(typesListAll), sep='='), collapse=',')))
-    paramIDs <- as.integer(paramIDs)
-    answerAssignmentExpressions <- lapply(typesListAll, function(x) substitute(PARAMANSWER_ <- ANSEXPR, list(ANSEXPR = x)))
-    switchCode <- as.call(c(list(quote(nimSwitch), quote(PARAMID_), paramIDs), answerAssignmentExpressions))
-    if(nDim == 0) {
-        answerInitCode <- quote(PARAMANSWER_ <- 0)  ## this avoids a Windows compiler warning about a possibly unassigned return variable
-        ans <- try(eval(substitute(
-            function(PARAMID_ = integer()) {
-                returnType(TYPE(NDIM))
-                ANSWERINITCODE
-                SWITCHCODE
-                return(PARAMANSWER_)
-            },
-            list(TYPE = as.name(type), NDIM=nDim, ANSWERINITCODE = answerInitCode, SWITCHCODE = switchCode)
-        )))
-    } else {
-        ans <- try(eval(substitute(
-            function(PARAMID_ = integer()) {
-                returnType(TYPE(NDIM))
-                SWITCHCODE
-                return(PARAMANSWER_)
-            },
-            list(TYPE = as.name(type), NDIM=nDim, SWITCHCODE = switchCode)
-        )))
-    }
-    if(inherits(ans, 'try-error')) browser()
-    attr(ans, 'srcref') <- NULL
-    ans
 }
 
 ## creates the accessor method to return value 'expr'
@@ -361,18 +361,9 @@ ndf_generateGetParamFunction <- function(expr, type, nDim) {
         },
         list(TYPE=as.name(type), NDIM=nDim, PARAMEXPR=expr)
     )))
-    if(inherits(ans, 'try-error')) browser()
+    if(inherits(ans, 'try-error')) stop('In ndf_generateGetParamFunction.', .call = FALSE)
     ans
 }
-
-## adds model$ on front of all node names, in the bodys of methods in methodList
-ndf_addModelDollarSignsToMethods <- function(methodList, setupOutputExprs, exceptionNames = character()) {
-    for(i in seq_along(methodList)) {
-        body(methodList[[i]]) <-addModelDollarSign(body(methodList[[i]]), exceptionNames = c(exceptionNames, as.character(setupOutputExprs)))
-    }
-    return(methodList)
-}
-
 
 ndf_createSingleMethod <- function(type, nDim) {
     type <- 'double'  ## (NOTE) node values and paramters are always implemented as doubles
@@ -384,34 +375,32 @@ ndf_createSingleMethod <- function(type, nDim) {
 ndf_createVirtualNodeFunctionDefinition <- function(types = list()) {
     methodsList <- lapply(types, function(singleType) ndf_createSingleMethod(type=singleType$type, nDim=singleType$nDim))
     if(length(methodsList) > 0)     names(methodsList) <- paste0('get_', names(methodsList))
-    virtualFuncionDef <- substitute(
+    virtualFunctionDef <- substitute(
         nimbleFunctionVirtual(
             contains = 'nodeFun',
             methods = METHODS
         ),
         list(METHODS = methodsList)
     )
-    return(virtualFuncionDef)
+    return(virtualFunctionDef)
 }
 
 ndf_createVirtualNodeFunctionDefinitionsList <- function(userAdded = FALSE) {
     defsList <- list()
     if(!userAdded) {
         defsList$node_determ <- ndf_createVirtualNodeFunctionDefinition()
-        for(distName in getDistributionsInfo('namesVector', nimbleOnly = TRUE)) {
-            defsList[[paste0('node_stoch_', distName)]] <- ndf_createVirtualNodeFunctionDefinition(getDistribution(distName)$types)
+        for(distName in getAllDistributionsInfo('namesVector', nimbleOnly = TRUE)) {
+            defsList[[paste0('node_stoch_', distName)]] <- ndf_createVirtualNodeFunctionDefinition(getDistributionInfo(distName)$types)
         }
     } else {
         # this deals with user-provided distributions
-        if(exists('distributions', nimbleUserNamespace)) {
-            for(distName in getDistributionsInfo('namesVector', userOnly = TRUE))
-                defsList[[paste0('node_stoch_', distName)]] <- ndf_createVirtualNodeFunctionDefinition(getDistribution(distName)$types)
+        if(exists('distributions', nimbleUserNamespace, inherits = FALSE)) {
+            for(distName in getAllDistributionsInfo('namesVector', userOnly = TRUE))
+                defsList[[paste0('node_stoch_', distName)]] <- ndf_createVirtualNodeFunctionDefinition(getDistributionInfo(distName)$types)
         } else stop("ndf_createVirtualNodeFunctionDefinitionsList: no 'distributions' list in nimbleUserNamespace.")
     }
     return(defsList)
 }
-
-
 
 virtualNodeFunctionDefinitions <- ndf_createVirtualNodeFunctionDefinitionsList()
 createNamedObjectsFromList(virtualNodeFunctionDefinitions)

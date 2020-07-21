@@ -21,7 +21,9 @@ is.vectorized <- function(node) {
     else return(':' %in% all.names(node))
 }
 
-
+getCalcADFunName <- function(){
+  return('calculateWithArgs')
+}
 is.blank <- function(arg) {
     if(is.null(arg)) return(FALSE)
     return(identical(arg, quote(x[])[[3]]))
@@ -43,19 +45,70 @@ determineNodeIndexSizes <- function(node) {
     return(sizes)
 }
 
+makeSizeAndDimList <- function(code, nodesToExtract, unrolledIndicesMatrix = NULL, allSizeAndDimList = list(), checkRagged = FALSE){
+  if(is.call(code)){
+    if(deparse(code[[1]]) == '[') {
+      if(deparse(code[[2]]) %in% nodesToExtract){
+        thisCodeExprList <- list()
+        numInds <- length(code) - 2
+        codeLength <- c()
+        for(i in 1:numInds){
+          if(is.call(code[[i+2]]) && deparse(code[[i+2]][[1]]) == ':'){
+            if(is.numeric(code[[i+2]][[2]])){
+              codeStartInds <- code[[i+2]][[2]]
+            }
+            else{
+              codeStartInds <- unrolledIndicesMatrix[, deparse(code[[i+2]][[2]])]
+            }
+            if(is.numeric(code[[i+2]][[3]])){
+              codeEndInds <- code[[i+2]][[3]]
+            }
+            else{
+              codeEndInds <- unrolledIndicesMatrix[, deparse(code[[i+2]][[3]])]
+            }
+            thisCodeLength <- codeEndInds - codeStartInds + 1
+            if(checkRagged && !all(thisCodeLength == thisCodeLength[1])){
+              stop("Error: AD not currently supported for ragged arrays in model code", call. = FALSE)
+            }
+            codeLength <- c(codeLength, thisCodeLength[1])
+          }
+          else{
+            codeLength <- c(codeLength, 1)
+          }
+        }
+        thisCodeExprList$lengths <- codeLength
+        thisCodeExprList$nDim <- sum(codeLength > 1)
+        if(is.null(allSizeAndDimList[[deparse(code[[2]])]])) allSizeAndDimList[[deparse(code[[2]])]][[1]] <- thisCodeExprList
+        else allSizeAndDimList[[deparse(code[[2]])]][[length(allSizeAndDimList[[deparse(code[[2]])]]) + 1]] <- thisCodeExprList
+        return(allSizeAndDimList)
+      }
+    }
+    if(length(code) > 1){
+      for(i in 2:length(code)){
+        allSizeAndDimList <- makeSizeAndDimList(code[[i]], nodesToExtract, indexedNodeInfo, allSizeAndDimList)
+      }
+    }
+  }
+  return(allSizeAndDimList)
+}
+
+
+
 ## This should add model$ in front of any names that are not already part of a '$' expression
 addModelDollarSign <- function(expr, exceptionNames = character(0)) {
     if(is.numeric(expr)) return(expr)
     if(is(expr, 'srcref')) return(expr)
     if(is.name(expr)) {
-        if(as.character(expr) %in% exceptionNames)    return(expr)
+        if((as.character(expr) %in% exceptionNames) || (as.character(expr) == ''))    return(expr)
         proto <- quote(model$a)
         proto[[3]] <- expr
         return(proto)
     }
     if(is.call(expr)) {
-        if(expr[[1]] == '$')
+        if(expr[[1]] == '$'){
+            expr[2] <- lapply(expr[2], function(listElement) addModelDollarSign(listElement, exceptionNames))
             return(expr)
+        } 
         if(expr[[1]] == 'returnType')
             return(expr)
         if(length(expr) > 1) {
@@ -65,6 +118,20 @@ addModelDollarSign <- function(expr, exceptionNames = character(0)) {
     }
     return(expr)
 }
+
+removeIndices <- function(expr) {
+  if(is.call(expr)) {
+    if(expr[[1]] == '['){
+      return(expr[[2]])
+    } 
+    if(length(expr) > 1) {
+      expr[2:length(expr)] <- lapply(expr[-1], function(listElement) removeIndices(listElement))
+      return(expr)
+    }
+  }
+  return(expr)
+}
+
 
 # Determine if a piece of code contains a '['
 hasBracket <- function(code) {
@@ -119,11 +186,11 @@ exprAsListDrop2 <- function(expr) {
     if(is.null(ans)) as.list(expr[-c(1,2)]) else ans
 }
 
-getCallText <- function(code)      as.character(code[[1]])
+getCallText <- function(code)      deparse(code[[1]])
 
 parseTreeSubstitute <- function(pt, pattern, replacement) {
     if(identical(pt, pattern))    return(replacement)
-    if(class(pt) == 'name')       return(pt)
+    if(inherits(pt, 'name'))       return(pt)
     if(is.numeric(pt))            return(pt)
     if(is.logical(pt))            return(as.numeric(pt)) # for now turn logicals into numerics until we propagate logicals to C++
     for(i in seq_along(pt))    { pt[[i]] <- parseTreeSubstitute(pt[[i]], pattern, replacement) }
@@ -148,20 +215,26 @@ Rname2CppName <- function(rName, colonsOK = TRUE) {
     ## which were largely redundant
     if (!is.character(rName))
         rName <- deparse(rName)
-    if( colonsOK)
+
+    if( colonsOK) {
+        # Substitute single colons but preserve double colons.
+        rName <- gsub('::', '_DOUBLE_COLON_', rName)
         rName <- gsub(':', 'to', rName)  # replace colons with 'to'
-    else
-        if(grepl(':', rName))
-            stop(paste0('trying to do name mashup on expression with colon (\':\') from ', rName))
+        rName <- gsub('_DOUBLE_COLON_', '::', rName)
+    } else if(grepl(':', rName)) {
+        stop(paste0('trying to do name mashup on expression with colon (\':\') from ', rName))
+    }
     rName <- gsub(' ', '', rName)
-    rName <- gsub('\\.', 'p', rName) 
-    rName <- gsub("\"", "", rName)
-    rName <- gsub(',', '_', rName)   
-    rName <- gsub("`", "" , rName)
+    rName <- gsub('\\.', '_dot_', rName) 
+    rName <- gsub("\"", "_quote_", rName)
+    rName <- gsub(',', '_comma_', rName)   
+    rName <- gsub("`", "_backtick_" , rName)
     rName <- gsub('\\[', '_oB', rName)
     rName <- gsub('\\]', '_cB', rName)
     rName <- gsub('\\(', '_oP', rName)
     rName <- gsub('\\)', '_cP', rName)
+    rName <- gsub('\\{', '_oC', rName)
+    rName <- gsub('\\}', '_cC', rName)
     rName <- gsub("\\$", "_" , rName)
     rName <- gsub(">=", "_gte_", rName)
     rName <- gsub("<=", "_lte_", rName)
@@ -176,7 +249,7 @@ Rname2CppName <- function(rName, colonsOK = TRUE) {
     rName <- gsub("&", "_and_", rName)
     rName <- gsub("%%", "_mod_", rName)
     rName <- gsub("%\\*%", "_matmult_", rName)
-    rName <- gsub("=", "_" , rName)
+    rName <- gsub("=", "_eq_" , rName)
     rName <- gsub("\\(", "_" , rName)
     rName <- gsub("\\+", "_plus_" , rName)
     rName <- gsub("-", "_minus_" , rName)
@@ -229,6 +302,24 @@ character2index <- function(thisChar){
 	}
 	else
 		stop("Error: too many :'s in index")
+}
+
+#' @export
+is.model <- function(obj, inputIsName = FALSE) {
+    if(inputIsName) obj <- get(obj)
+    return(inherits(obj, 'modelBaseClass'))
+}
+
+#' @export
+is.Rmodel <- function(obj, inputIsName = FALSE) {
+    if(inputIsName) obj <- get(obj)
+    return(inherits(obj, 'RmodelBaseClass'))
+}
+
+#' @export
+is.Cmodel <- function(obj, inputIsName = FALSE) {
+    if(inputIsName) obj <- get(obj)
+    return(inherits(obj, 'CmodelBaseClass'))
 }
 
 # extracts dimension from character vec of form such as c("double(0)", "integer(1)")

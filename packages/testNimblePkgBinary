@@ -13,19 +13,138 @@
 #
 #
 
-(cd ../nimble ; ./cleanup)
+# This script will result in uninstalling nimble from standard installation location so that that one will not inadvertently mask a failure
 
-echo "** Building nimble binary package"
+(cd ../nimble ; ./cleanup)
+Rscript -e 'try(remove.packages("nimble"))'
+
+# test default build from tarball for use on build machine:
+echo "****************************** testing default build from tarball for use on build machine"
+R CMD BUILD ../nimble
+R CMD INSTALL nimble_0.6.tar.gz
+Rscript -e 'library(methods); library("nimble"); print(system.file(package = "nimble")); testBUGSmodel("pump")'
+
+# test default build from directory for use on build machine:
+echo "****************************** testing default build from directory for use on build machine"
+(cd ../nimble ; ./cleanup)
+Rscript -e 'try(remove.packages("nimble"))'
+if test -e nimble_0.6.tar.gz ; then
+    rm nimble_0.6.tar.gz
+fi
+R CMD INSTALL ../nimble
+Rscript -e 'library(methods); library("nimble"); print(system.file(package = "nimble")); testBUGSmodel("pump")'
+
+echo "****************************** moving a copy of Eigen to this Temp directory to test user-provided eigen"
+if ! test -d MyTempEigen ; then
+  mkdir MyTempEigen
+fi
+
+cp -r ../nimble/inst/include/Eigen/ MyTempEigen/Eigen
+cd MyTempEigen
+EIGEN_DIR=`pwd`
+cd ..
+CONFIG_ARGS="'--with-eigen=$EIGEN_DIR'"
+
+echo "****************************** testing default build from tarball with user-provided eigen"
+(cd ../nimble ; ./cleanup)
+Rscript -e 'try(remove.packages("nimble"))'
+if test -e nimble_0.6.tar.gz ; then
+    rm nimble_0.6.tar.gz
+fi
+R CMD BUILD ../nimble
+R CMD INSTALL  --configure-args="$CONFIG_ARGS" nimble_0.6.tar.gz
+Rscript -e 'library(methods); library("nimble"); print(system.file(package = "nimble")); testBUGSmodel("pump")'
+
+echo "****************************** testing default build from directory with (futile) user-provided eigen"
+echo "********************************** The configure output should include a message like 'Providing your own Eigen only works if installing from a tarball.'"
+(cd ../nimble ; ./cleanup)
+Rscript -e 'try(remove.packages("nimble"))'
+if test -e nimble_0.6.tar.gz ; then
+    rm nimble_0.6.tar.gz
+fi
+R CMD INSTALL  --configure-args="$CONFIG_ARGS" ../nimble
+Rscript -e 'library(methods); library("nimble"); print(system.file(package = "nimble")); testBUGSmodel("pump")'
+
+echo "****************************** testing build with --enable-dylib=true from tarball"
+(cd ../nimble ; ./cleanup)
+Rscript -e 'try(remove.packages("nimble"))'
+if test -e nimble_0.6.tar.gz ; then
+    rm nimble_0.6.tar.gz
+fi
+CONFIG_ARGS="'--enable-dylib=true'"
+R CMD BUILD ../nimble
+R CMD INSTALL  --configure-args="$CONFIG_ARGS" nimble_0.6.tar.gz
+Rscript -e 'library(methods); library("nimble"); print(system.file(package = "nimble")); testBUGSmodel("pump")'
+
+echo "****************************** testing build with --enable-dylib=true built in directory"
+(cd ../nimble ; ./cleanup)
+Rscript -e 'try(remove.packages("nimble"))'
+if test -e nimble_0.6.tar.gz ; then
+    rm nimble_0.6.tar.gz
+fi
+R CMD INSTALL  --configure-args="$CONFIG_ARGS" ../nimble
+Rscript -e 'library(methods); library("nimble"); print(system.file(package = "nimble")); testBUGSmodel("pump")'
+
+echo "****************************** testing build with --enable-dylib=true from tarball with user-provided eigen"
+CONFIG_ARGS="'--enable-dylib=true' --with-eigen=$EIGEN_DIR"
+(cd ../nimble ; ./cleanup)
+Rscript -e 'try(remove.packages("nimble"))'
+if test -e nimble_0.6.tar.gz ; then
+    rm nimble_0.6.tar.gz
+fi
+R CMD BUILD ../nimble
+R CMD INSTALL  --configure-args="$CONFIG_ARGS" nimble_0.6.tar.gz
+Rscript -e 'library(methods); library("nimble"); print(system.file(package = "nimble")); testBUGSmodel("pump")'
+
+echo "****************************** testing build with --enable-dylib=true built in directory with user-provided eigen (shouldn't work)"
+(cd ../nimble ; ./cleanup)
+Rscript -e 'try(remove.packages("nimble"))'
+if test -e nimble_0.6.tar.gz ; then
+    rm nimble_0.6.tar.gz
+fi
+R CMD INSTALL  --configure-args="$CONFIG_ARGS" ../nimble
+Rscript -e 'library(methods); library("nimble"); print(system.file(package = "nimble")); testBUGSmodel("pump")'
+
 if ! test -d RTempLib ; then
   mkdir RTempLib
 fi
 
-CONFIG_ARGS="'--enable-lib=false'"
-R CMD INSTALL  --configure-args="$CONFIG_ARGS" --build ../nimble
+
+echo "****************************** testing default binary build from directory with different locations (needed to work across machines)"
+(cd ../nimble ; ./cleanup)
+Rscript -e 'try(remove.packages("nimble"))'
+if test -e nimble_0.6.tar.gz ; then
+    rm nimble_0.6.tar.gz
+fi
+if test -e nimble_0.6.tgz ; then
+    rm nimble_0.6.tgz
+fi
+
+R CMD INSTALL --build ../nimble
+Rscript -e 'try(remove.packages("nimble"))'
 
 GZ=`ls nimble_*gz`
-echo "** Installing nimble binary package $GZ"
 R CMD INSTALL -l RTempLib $GZ
 
-echo "Running testBUGSmodel()"
+Rscript -e 'library(methods); library("nimble", lib.loc = "RTempLib"); print(system.file(package = "nimble")); testBUGSmodel("pump")'
+
+echo "****************************** testing default binary build from tarball with different locations (needed to work across machines)"
+(cd ../nimble ; ./cleanup)
+rm -r RTempLib
+mkdir RTempLib
+Rscript -e 'try(remove.packages("nimble"))'
+if test -e nimble_0.6.tar.gz ; then
+    rm nimble_0.6.tar.gz
+fi
+if test -e nimble_0.6.tgz ; then
+    rm nimble_0.6.tgz
+fi
+
+R CMD BUILD ../nimble
+R CMD INSTALL --build nimble_0.6.tar.gz
+Rscript -e 'try(remove.packages("nimble"))'
+
+GZ=`ls nimble_*gz`
+R CMD INSTALL -l RTempLib $GZ
+
 Rscript -e 'library(methods); library("nimble", lib.loc = "RTempLib"); print(system.file(package = "nimble")); testBUGSmodel("pump")'

@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title></title>
+  <meta name="description" content="This is the NIMBLE User Manual." />
+  <meta name="generator" content="bookdown 0.12 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="" />
+  <meta property="og:type" content="book" />
+  
+  <meta property="og:image" content="nimble-icon.png" />
+  <meta property="og:description" content="This is the NIMBLE User Manual." />
+  <meta name="github-repo" content="nimble-dev/nimble" />
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="" />
+  
+  <meta name="twitter:description" content="This is the NIMBLE User Manual." />
+  <meta name="twitter:image" content="nimble-icon.png" />
+
+
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="overview.html">
+<link rel="next" href="cha-user-defined.html">
+<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+
+<style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+</style>
+
+<link rel="stylesheet" href="style.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<img src="./nimble-icon.png"
+     width=100>
+<li><a href="./">NIMBLE User Manual, Version 0.9.0</a></li>
+<li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
+<li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
+
+<li class="divider"></li>
+<li class="part"><span><b>I Introduction</b></span></li>
+<li class="chapter" data-level="1" data-path="cha-welcome-nimble.html"><a href="cha-welcome-nimble.html"><i class="fa fa-check"></i><b>1</b> Welcome to NIMBLE</a><ul>
+<li class="chapter" data-level="1.1" data-path="cha-welcome-nimble.html"><a href="cha-welcome-nimble.html#sec:what-is-nimble"><i class="fa fa-check"></i><b>1.1</b> What does NIMBLE do?</a></li>
+<li class="chapter" data-level="1.2" data-path="cha-welcome-nimble.html"><a href="cha-welcome-nimble.html#how-to-use-this-manual"><i class="fa fa-check"></i><b>1.2</b> How to use this manual</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html"><i class="fa fa-check"></i><b>2</b> Lightning introduction</a><ul>
+<li class="chapter" data-level="2.1" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:brief-example"><i class="fa fa-check"></i><b>2.1</b> A brief example</a></li>
+<li class="chapter" data-level="2.2" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:creating-model"><i class="fa fa-check"></i><b>2.2</b> Creating a model</a></li>
+<li class="chapter" data-level="2.3" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:compiling-model"><i class="fa fa-check"></i><b>2.3</b> Compiling the model</a></li>
+<li class="chapter" data-level="2.4" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:intro-runMCMC"><i class="fa fa-check"></i><b>2.4</b> One-line invocation of MCMC</a></li>
+<li class="chapter" data-level="2.5" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:creating-mcmc"><i class="fa fa-check"></i><b>2.5</b> Creating, compiling and running a basic MCMC configuration</a></li>
+<li class="chapter" data-level="2.6" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:customizing-mcmc"><i class="fa fa-check"></i><b>2.6</b> Customizing the MCMC</a></li>
+<li class="chapter" data-level="2.7" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:running-mcem"><i class="fa fa-check"></i><b>2.7</b> Running MCEM</a></li>
+<li class="chapter" data-level="2.8" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:creating-your-own"><i class="fa fa-check"></i><b>2.8</b> Creating your own functions</a></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html"><i class="fa fa-check"></i><b>3</b> More introduction</a><ul>
+<li class="chapter" data-level="3.1" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html#nimble-adopts-and-extends-the-bugs-language-for-specifying-models"><i class="fa fa-check"></i><b>3.1</b> NIMBLE adopts and extends the BUGS language for specifying models</a></li>
+<li class="chapter" data-level="3.2" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html#sec:nimble-lang-writ"><i class="fa fa-check"></i><b>3.2</b> nimbleFunctions for writing algorithms</a></li>
+<li class="chapter" data-level="3.3" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html#sec:nimble-algor-libr"><i class="fa fa-check"></i><b>3.3</b> The NIMBLE algorithm library</a></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html"><i class="fa fa-check"></i><b>4</b> Installing NIMBLE</a><ul>
+<li class="chapter" data-level="4.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:requ-run-nimble"><i class="fa fa-check"></i><b>4.1</b> Requirements to run NIMBLE</a></li>
+<li class="chapter" data-level="4.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:compiler"><i class="fa fa-check"></i><b>4.2</b> Installing a C++ compiler for NIMBLE to use</a><ul>
+<li class="chapter" data-level="4.2.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#macos"><i class="fa fa-check"></i><b>4.2.1</b> MacOS</a></li>
+<li class="chapter" data-level="4.2.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#linux"><i class="fa fa-check"></i><b>4.2.2</b> Linux</a></li>
+<li class="chapter" data-level="4.2.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#windows"><i class="fa fa-check"></i><b>4.2.3</b> Windows</a></li>
+</ul></li>
+<li class="chapter" data-level="4.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#installing-the-nimble-package"><i class="fa fa-check"></i><b>4.3</b> Installing the NIMBLE package</a></li>
+<li class="chapter" data-level="4.4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#troubleshooting-installation-problems"><i class="fa fa-check"></i><b>4.4</b> Troubleshooting installation problems</a></li>
+<li class="chapter" data-level="4.5" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#customizing-your-installation"><i class="fa fa-check"></i><b>4.5</b> Customizing your installation</a><ul>
+<li class="chapter" data-level="4.5.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#using-your-own-copy-of-eigen"><i class="fa fa-check"></i><b>4.5.1</b> Using your own copy of Eigen</a></li>
+<li class="chapter" data-level="4.5.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#using-libnimble"><i class="fa fa-check"></i><b>4.5.2</b> Using libnimble</a></li>
+<li class="chapter" data-level="4.5.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:blas"><i class="fa fa-check"></i><b>4.5.3</b> BLAS and LAPACK</a></li>
+<li class="chapter" data-level="4.5.4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#customizing-compilation-of-the-nimble-generated-c"><i class="fa fa-check"></i><b>4.5.4</b> Customizing compilation of the NIMBLE-generated C++</a></li>
+</ul></li>
+</ul></li>
+<li class="part"><span><b>II Models in NIMBLE</b></span></li>
+<li class="chapter" data-level="5" data-path="cha-writing-models.html"><a href="cha-writing-models.html"><i class="fa fa-check"></i><b>5</b> Writing models in NIMBLE’s dialect of BUGS</a><ul>
+<li class="chapter" data-level="5.1" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:supp-feat-bugs"><i class="fa fa-check"></i><b>5.1</b> Comparison to BUGS dialects supported by WinBUGS, OpenBUGS and JAGS</a><ul>
+<li class="chapter" data-level="5.1.1" data-path="cha-writing-models.html"><a href="cha-writing-models.html#supported-features-of-bugs-and-jags"><i class="fa fa-check"></i><b>5.1.1</b> Supported features of BUGS and JAGS</a></li>
+<li class="chapter" data-level="5.1.2" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:extensions-bugs"><i class="fa fa-check"></i><b>5.1.2</b> NIMBLE’s Extensions to BUGS and JAGS</a></li>
+<li class="chapter" data-level="5.1.3" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:not-yet-supported"><i class="fa fa-check"></i><b>5.1.3</b> Not-yet-supported features of BUGS and JAGS</a></li>
+</ul></li>
+<li class="chapter" data-level="5.2" data-path="cha-writing-models.html"><a href="cha-writing-models.html#writing-models"><i class="fa fa-check"></i><b>5.2</b> Writing models</a><ul>
+<li class="chapter" data-level="5.2.1" data-path="cha-writing-models.html"><a href="cha-writing-models.html#declaring-stochastic-and-deterministic-nodes"><i class="fa fa-check"></i><b>5.2.1</b> Declaring stochastic and deterministic nodes</a></li>
+<li class="chapter" data-level="5.2.2" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:more-kinds-bugs"><i class="fa fa-check"></i><b>5.2.2</b> More kinds of BUGS declarations</a></li>
+<li class="chapter" data-level="5.2.3" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:vectorized-versus-scalar-declarations"><i class="fa fa-check"></i><b>5.2.3</b> Vectorized versus scalar declarations</a></li>
+<li class="chapter" data-level="5.2.4" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:dists-and-functions"><i class="fa fa-check"></i><b>5.2.4</b> Available distributions</a></li>
+<li class="chapter" data-level="5.2.5" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:BUGS-lang-fxns"><i class="fa fa-check"></i><b>5.2.5</b> Available BUGS language functions</a></li>
+<li class="chapter" data-level="5.2.6" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:BUGS-link"><i class="fa fa-check"></i><b>5.2.6</b> Available link functions</a></li>
+<li class="chapter" data-level="5.2.7" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:trunc"><i class="fa fa-check"></i><b>5.2.7</b> Truncation, censoring, and constraints</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="6" data-path="cha-building-models.html"><a href="cha-building-models.html"><i class="fa fa-check"></i><b>6</b> Building and using models</a><ul>
+<li class="chapter" data-level="6.1" data-path="cha-building-models.html"><a href="cha-building-models.html#creating-model-objects"><i class="fa fa-check"></i><b>6.1</b> Creating model objects</a><ul>
+<li class="chapter" data-level="6.1.1" data-path="cha-building-models.html"><a href="cha-building-models.html#using-nimblemodel-to-create-a-model"><i class="fa fa-check"></i><b>6.1.1</b> Using <em>nimbleModel</em> to create a model</a></li>
+<li class="chapter" data-level="6.1.2" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:readBUGSmodel"><i class="fa fa-check"></i><b>6.1.2</b> Creating a model from standard BUGS and JAGS input files</a></li>
+<li class="chapter" data-level="6.1.3" data-path="cha-building-models.html"><a href="cha-building-models.html#sub:multiple-instances"><i class="fa fa-check"></i><b>6.1.3</b> Making multiple instances from the same model definition</a></li>
+</ul></li>
+<li class="chapter" data-level="6.2" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:nodes-and-variables"><i class="fa fa-check"></i><b>6.2</b> NIMBLE models are objects you can query and manipulate</a><ul>
+<li class="chapter" data-level="6.2.1" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:what-are-nodes-and-variables"><i class="fa fa-check"></i><b>6.2.1</b> What are variables and nodes?</a></li>
+<li class="chapter" data-level="6.2.2" data-path="cha-building-models.html"><a href="cha-building-models.html#determining-the-nodes-and-variables-in-a-model"><i class="fa fa-check"></i><b>6.2.2</b> Determining the nodes and variables in a model</a></li>
+<li class="chapter" data-level="6.2.3" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:accessing-nodes"><i class="fa fa-check"></i><b>6.2.3</b> Accessing nodes</a></li>
+<li class="chapter" data-level="6.2.4" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:how-nodes-are"><i class="fa fa-check"></i><b>6.2.4</b> How nodes are named</a></li>
+<li class="chapter" data-level="6.2.5" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:why-use-node"><i class="fa fa-check"></i><b>6.2.5</b> Why use node names?</a></li>
+<li class="chapter" data-level="6.2.6" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:cdisdata"><i class="fa fa-check"></i><b>6.2.6</b> Checking if a node holds data</a></li>
+</ul></li>
+<li class="chapter" data-level="6.3" data-path="cha-building-models.html"><a href="cha-building-models.html#using-models-in-parallel"><i class="fa fa-check"></i><b>6.3</b> Using models in parallel</a></li>
+</ul></li>
+<li class="part"><span><b>III Algorithms in NIMBLE</b></span></li>
+<li class="chapter" data-level="7" data-path="cha-mcmc.html"><a href="cha-mcmc.html"><i class="fa fa-check"></i><b>7</b> MCMC</a><ul>
+<li class="chapter" data-level="7.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:nimbleMCMC"><i class="fa fa-check"></i><b>7.1</b> One-line invocation of MCMC: <em>nimbleMCMC</em></a></li>
+<li class="chapter" data-level="7.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-configuration"><i class="fa fa-check"></i><b>7.2</b> The MCMC configuration</a><ul>
+<li class="chapter" data-level="7.2.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:default-mcmc-conf"><i class="fa fa-check"></i><b>7.2.1</b> Default MCMC configuration</a></li>
+<li class="chapter" data-level="7.2.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:customizing-mcmc-conf"><i class="fa fa-check"></i><b>7.2.2</b> Customizing the MCMC configuration</a></li>
+</ul></li>
+<li class="chapter" data-level="7.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:build-compile-mcmc"><i class="fa fa-check"></i><b>7.3</b> Building and compiling the MCMC</a></li>
+<li class="chapter" data-level="7.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:runMCMC"><i class="fa fa-check"></i><b>7.4</b> User-friendly execution of MCMC algorithms: <em>runMCMC</em></a></li>
+<li class="chapter" data-level="7.5" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:executing-the-mcmc-algorithm"><i class="fa fa-check"></i><b>7.5</b> Running the MCMC</a><ul>
+<li class="chapter" data-level="7.5.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:sampler-time"><i class="fa fa-check"></i><b>7.5.1</b> Measuring sampler computation times: <em>getTimes</em></a></li>
+<li class="chapter" data-level="7.5.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#assessing-the-adaption-process-of-rw-and-rw_block-samplers"><i class="fa fa-check"></i><b>7.5.2</b> Assessing the adaption process of <em>RW</em> and <em>RW_block</em> samplers</a></li>
+</ul></li>
+<li class="chapter" data-level="7.6" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:extracting-samples"><i class="fa fa-check"></i><b>7.6</b> Extracting MCMC samples</a></li>
+<li class="chapter" data-level="7.7" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:WAIC"><i class="fa fa-check"></i><b>7.7</b> Calculating WAIC</a></li>
+<li class="chapter" data-level="7.8" data-path="cha-mcmc.html"><a href="cha-mcmc.html#k-fold-cross-validation"><i class="fa fa-check"></i><b>7.8</b> k-fold cross-validation</a></li>
+<li class="chapter" data-level="7.9" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc"><i class="fa fa-check"></i><b>7.9</b> Variable selection using Reversible Jump MCMC</a><ul>
+<li class="chapter" data-level="7.9.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc-indicator"><i class="fa fa-check"></i><b>7.9.1</b> Using indicator variables</a></li>
+<li class="chapter" data-level="7.9.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc-no-indicator"><i class="fa fa-check"></i><b>7.9.2</b> Without indicator variables</a></li>
+</ul></li>
+<li class="chapter" data-level="7.10" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:samplers-provided"><i class="fa fa-check"></i><b>7.10</b> Samplers provided with NIMBLE</a><ul>
+<li class="chapter" data-level="7.10.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#conjugate-gibbs-samplers"><i class="fa fa-check"></i><b>7.10.1</b> Conjugate (‘Gibbs’) samplers</a></li>
+<li class="chapter" data-level="7.10.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#customized-log-likelihood-evaluations-rw_llfunction-sampler"><i class="fa fa-check"></i><b>7.10.2</b> Customized log-likelihood evaluations: <em>RW_llFunction sampler</em></a></li>
+<li class="chapter" data-level="7.10.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#particle-mcmc-sampler"><i class="fa fa-check"></i><b>7.10.3</b> Particle MCMC sampler</a></li>
+</ul></li>
+<li class="chapter" data-level="7.11" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-example-litters"><i class="fa fa-check"></i><b>7.11</b> Detailed MCMC example: <em>litters</em></a></li>
+<li class="chapter" data-level="7.12" data-path="cha-mcmc.html"><a href="cha-mcmc.html#mcmc-suite-compare-mcmcs"><i class="fa fa-check"></i><b>7.12</b> Comparing different MCMCs with <em>MCMCsuite</em> and <em>compareMCMCs</em></a></li>
+<li class="chapter" data-level="7.13" data-path="cha-mcmc.html"><a href="cha-mcmc.html#running-mcmc-chains-in-parallel"><i class="fa fa-check"></i><b>7.13</b> Running MCMC chains in parallel</a></li>
+</ul></li>
+<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM</a><ul>
+<li class="chapter" data-level="8.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#particle-filters-sequential-monte-carlo-and-iterated-filtering"><i class="fa fa-check"></i><b>8.1</b> Particle filters / sequential Monte Carlo and iterated filtering</a><ul>
+<li class="chapter" data-level="8.1.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#filtering-algorithms"><i class="fa fa-check"></i><b>8.1.1</b> Filtering algorithms</a></li>
+<li class="chapter" data-level="8.1.2" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:particle-mcmc"><i class="fa fa-check"></i><b>8.1.2</b> Particle MCMC (PMCMC)</a></li>
+</ul></li>
+<li class="chapter" data-level="8.2" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#monte-carlo-expectation-maximization-mcem"><i class="fa fa-check"></i><b>8.2</b> Monte Carlo Expectation Maximization (MCEM)</a><ul>
+<li class="chapter" data-level="8.2.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:estimate-mcem-cov"><i class="fa fa-check"></i><b>8.2.1</b> Estimating the asymptotic covariance From MCEM</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="9" data-path="cha-spatial.html"><a href="cha-spatial.html"><i class="fa fa-check"></i><b>9</b> Spatial models</a><ul>
+<li class="chapter" data-level="9.1" data-path="cha-spatial.html"><a href="cha-spatial.html#intrinsic-gaussian-car-model-dcar_normal"><i class="fa fa-check"></i><b>9.1</b> Intrinsic Gaussian CAR model: <em>dcar_normal</em></a><ul>
+<li class="chapter" data-level="9.1.1" data-path="cha-spatial.html"><a href="cha-spatial.html#specification-and-density"><i class="fa fa-check"></i><b>9.1.1</b> Specification and density</a></li>
+<li class="chapter" data-level="9.1.2" data-path="cha-spatial.html"><a href="cha-spatial.html#example"><i class="fa fa-check"></i><b>9.1.2</b> Example</a></li>
+</ul></li>
+<li class="chapter" data-level="9.2" data-path="cha-spatial.html"><a href="cha-spatial.html#proper-gaussian-car-model-dcar_proper"><i class="fa fa-check"></i><b>9.2</b> Proper Gaussian CAR model: <em>dcar_proper</em></a><ul>
+<li class="chapter" data-level="9.2.1" data-path="cha-spatial.html"><a href="cha-spatial.html#specification-and-density-1"><i class="fa fa-check"></i><b>9.2.1</b> Specification and density</a></li>
+<li class="chapter" data-level="9.2.2" data-path="cha-spatial.html"><a href="cha-spatial.html#example-1"><i class="fa fa-check"></i><b>9.2.2</b> Example</a></li>
+</ul></li>
+<li class="chapter" data-level="9.3" data-path="cha-spatial.html"><a href="cha-spatial.html#sec:spatial-mcmc-sampling-car"><i class="fa fa-check"></i><b>9.3</b> MCMC Sampling of CAR models</a><ul>
+<li class="chapter" data-level="9.3.1" data-path="cha-spatial.html"><a href="cha-spatial.html#initial-values"><i class="fa fa-check"></i><b>9.3.1</b> Initial values</a></li>
+<li class="chapter" data-level="9.3.2" data-path="cha-spatial.html"><a href="cha-spatial.html#zero-neighbor-regions"><i class="fa fa-check"></i><b>9.3.2</b> Zero-neighbor regions</a></li>
+<li class="chapter" data-level="9.3.3" data-path="cha-spatial.html"><a href="cha-spatial.html#zero-mean-constraint"><i class="fa fa-check"></i><b>9.3.3</b> Zero-mean constraint</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="10" data-path="cha-bnp.html"><a href="cha-bnp.html"><i class="fa fa-check"></i><b>10</b> Bayesian nonparametric models</a><ul>
+<li class="chapter" data-level="10.1" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:bnpmixtures"><i class="fa fa-check"></i><b>10.1</b> Bayesian nonparametric mixture models</a></li>
+<li class="chapter" data-level="10.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:crp"><i class="fa fa-check"></i><b>10.2</b> Chinese Restaurant Process model</a><ul>
+<li class="chapter" data-level="10.2.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-density-2"><i class="fa fa-check"></i><b>10.2.1</b> Specification and density</a></li>
+<li class="chapter" data-level="10.2.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:excrp"><i class="fa fa-check"></i><b>10.2.2</b> Example</a></li>
+</ul></li>
+<li class="chapter" data-level="10.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:sb"><i class="fa fa-check"></i><b>10.3</b> Stick-breaking model</a><ul>
+<li class="chapter" data-level="10.3.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-function"><i class="fa fa-check"></i><b>10.3.1</b> Specification and function</a></li>
+<li class="chapter" data-level="10.3.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:exsb"><i class="fa fa-check"></i><b>10.3.2</b> Example</a></li>
+</ul></li>
+<li class="chapter" data-level="10.4" data-path="cha-bnp.html"><a href="cha-bnp.html#mcmc-sampling-of-bnp-models"><i class="fa fa-check"></i><b>10.4</b> MCMC sampling of BNP models</a><ul>
+<li class="chapter" data-level="10.4.1" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:mcmcdcrp"><i class="fa fa-check"></i><b>10.4.1</b> Sampling CRP models</a></li>
+<li class="chapter" data-level="10.4.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:mcmcsb"><i class="fa fa-check"></i><b>10.4.2</b> Sampling stick-breaking models</a></li>
+</ul></li>
+</ul></li>
+<li class="part"><span><b>IV Programming with NIMBLE</b></span></li>
+<li class="chapter" data-level="" data-path="overview.html"><a href="overview.html"><i class="fa fa-check"></i>Overview</a></li>
+<li class="chapter" data-level="11" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html"><i class="fa fa-check"></i><b>11</b> Writing simple nimbleFunctions</a><ul>
+<li class="chapter" data-level="11.1" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:RC-intro"><i class="fa fa-check"></i><b>11.1</b> Introduction to simple nimbleFunctions</a></li>
+<li class="chapter" data-level="11.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:r-fiunctions-implemented"><i class="fa fa-check"></i><b>11.2</b> R functions (or variants) implemented in NIMBLE</a><ul>
+<li class="chapter" data-level="11.2.1" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#finding-help-for-nimbles-versions-of-r-functions"><i class="fa fa-check"></i><b>11.2.1</b> Finding help for NIMBLE’s versions of R functions</a></li>
+<li class="chapter" data-level="11.2.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#basic-operations"><i class="fa fa-check"></i><b>11.2.2</b> Basic operations</a></li>
+<li class="chapter" data-level="11.2.3" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:basic-math-linear"><i class="fa fa-check"></i><b>11.2.3</b> Math and linear algebra</a></li>
+<li class="chapter" data-level="11.2.4" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:nimble-dist-funs"><i class="fa fa-check"></i><b>11.2.4</b> Distribution functions</a></li>
+<li class="chapter" data-level="11.2.5" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:basic-flow-control"><i class="fa fa-check"></i><b>11.2.5</b> Flow control: <em>if-then-else</em>, <em>for</em>, <em>while</em>, and <em>stop</em></a></li>
+<li class="chapter" data-level="11.2.6" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:print"><i class="fa fa-check"></i><b>11.2.6</b> <em>print</em> and <em>cat</em></a></li>
+<li class="chapter" data-level="11.2.7" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:check-user-interr"><i class="fa fa-check"></i><b>11.2.7</b> Checking for user interrupts: <em>checkInterrupt</em></a></li>
+<li class="chapter" data-level="11.2.8" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#optimization-optim-and-nimoptim"><i class="fa fa-check"></i><b>11.2.8</b> Optimization: <em>optim</em> and <em>nimOptim</em></a></li>
+<li class="chapter" data-level="11.2.9" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:altern-keyw-some"><i class="fa fa-check"></i><b>11.2.9</b> ‘nim’ synonyms for some functions</a></li>
+</ul></li>
+<li class="chapter" data-level="11.3" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:how-nimble-handles"><i class="fa fa-check"></i><b>11.3</b> How NIMBLE handles types of variables</a><ul>
+<li class="chapter" data-level="11.3.1" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:nimbleList-RCFuns"><i class="fa fa-check"></i><b>11.3.1</b> nimbleList data structures</a></li>
+<li class="chapter" data-level="11.3.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:how-types-work"><i class="fa fa-check"></i><b>11.3.2</b> How numeric types work</a></li>
+</ul></li>
+<li class="chapter" data-level="11.4" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:decl-argum-return"><i class="fa fa-check"></i><b>11.4</b> Declaring argument and return types</a></li>
+<li class="chapter" data-level="11.5" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:comp-nimbl-pass"><i class="fa fa-check"></i><b>11.5</b> Compiled nimbleFunctions pass arguments by reference</a></li>
+<li class="chapter" data-level="11.6" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:calling-external-code"><i class="fa fa-check"></i><b>11.6</b> Calling external compiled code</a></li>
+<li class="chapter" data-level="11.7" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:calling-R-code"><i class="fa fa-check"></i><b>11.7</b> Calling uncompiled R functions from compiled nimbleFunctions</a></li>
+</ul></li>
+<li class="chapter" data-level="12" data-path="cha-user-defined.html"><a href="cha-user-defined.html"><i class="fa fa-check"></i><b>12</b> Creating user-defined BUGS distributions and functions</a><ul>
+<li class="chapter" data-level="12.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-functions"><i class="fa fa-check"></i><b>12.1</b> User-defined functions</a></li>
+<li class="chapter" data-level="12.2" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-distributions"><i class="fa fa-check"></i><b>12.2</b> User-defined distributions</a><ul>
+<li class="chapter" data-level="12.2.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:registerDistributions"><i class="fa fa-check"></i><b>12.2.1</b> Using <em>registerDistributions</em> for alternative parameterizations and providing other information</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="13" data-path="cha-using-models.html"><a href="cha-using-models.html"><i class="fa fa-check"></i><b>13</b> Working with NIMBLE models</a><ul>
+<li class="chapter" data-level="13.1" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:accessing-variables"><i class="fa fa-check"></i><b>13.1</b> The variables and nodes in a NIMBLE model</a><ul>
+<li class="chapter" data-level="13.1.1" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:get-nodes"><i class="fa fa-check"></i><b>13.1.1</b> Determining the nodes in a model</a></li>
+<li class="chapter" data-level="13.1.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:introduced-nodes"><i class="fa fa-check"></i><b>13.1.2</b> Understanding lifted nodes</a></li>
+<li class="chapter" data-level="13.1.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdgetdependencies"><i class="fa fa-check"></i><b>13.1.3</b> Determining dependencies in a model</a></li>
+</ul></li>
+<li class="chapter" data-level="13.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:nodeInfo"><i class="fa fa-check"></i><b>13.2</b> Accessing information about nodes and variables</a><ul>
+<li class="chapter" data-level="13.2.1" data-path="cha-using-models.html"><a href="cha-using-models.html#getting-distributional-information-about-a-node"><i class="fa fa-check"></i><b>13.2.1</b> Getting distributional information about a node</a></li>
+<li class="chapter" data-level="13.2.2" data-path="cha-using-models.html"><a href="cha-using-models.html#getting-information-about-a-distribution"><i class="fa fa-check"></i><b>13.2.2</b> Getting information about a distribution</a></li>
+<li class="chapter" data-level="13.2.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:getParam"><i class="fa fa-check"></i><b>13.2.3</b> Getting distribution parameter values for a node</a></li>
+<li class="chapter" data-level="13.2.4" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:getBound"><i class="fa fa-check"></i><b>13.2.4</b> Getting distribution bounds for a node</a></li>
+</ul></li>
+<li class="chapter" data-level="13.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdcalc-cdsim-cdgetl"><i class="fa fa-check"></i><b>13.3</b> Carrying out model calculations</a><ul>
+<li class="chapter" data-level="13.3.1" data-path="cha-using-models.html"><a href="cha-using-models.html#core-model-operations-calculation-and-simulation"><i class="fa fa-check"></i><b>13.3.1</b> Core model operations: calculation and simulation</a></li>
+<li class="chapter" data-level="13.3.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdsimn-cdcalcn-cdget"><i class="fa fa-check"></i><b>13.3.2</b> Pre-defined nimbleFunctions for operating on model nodes: <em>simNodes</em>, <em>calcNodes</em>, and <em>getLogProbNodes</em></a></li>
+<li class="chapter" data-level="13.3.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:access-log-prob"><i class="fa fa-check"></i><b>13.3.3</b> Accessing log probabilities via <em>logProb</em> variables</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="14" data-path="cha-data-structures.html"><a href="cha-data-structures.html"><i class="fa fa-check"></i><b>14</b> Data structures in NIMBLE</a><ul>
+<li class="chapter" data-level="14.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:modelValues-struct"><i class="fa fa-check"></i><b>14.1</b> The modelValues data structure</a><ul>
+<li class="chapter" data-level="14.1.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#creating-modelvalues-objects"><i class="fa fa-check"></i><b>14.1.1</b> Creating modelValues objects</a></li>
+<li class="chapter" data-level="14.1.2" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:access-cont-modelv"><i class="fa fa-check"></i><b>14.1.2</b> Accessing contents of modelValues</a></li>
+</ul></li>
+<li class="chapter" data-level="14.2" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:nimbleLists"><i class="fa fa-check"></i><b>14.2</b> The nimbleList data structure</a><ul>
+<li class="chapter" data-level="14.2.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:eigen-nimFunctions"><i class="fa fa-check"></i><b>14.2.1</b> Using <em>eigen</em> and <em>svd</em> in nimbleFunctions</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="15" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html"><i class="fa fa-check"></i><b>15</b> Writing nimbleFunctions to interact with models</a><ul>
+<li class="chapter" data-level="15.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:writ-nimble-funct"><i class="fa fa-check"></i><b>15.1</b> Overview</a></li>
+<li class="chapter" data-level="15.2" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:using-comp-nimbl"><i class="fa fa-check"></i><b>15.2</b> Using and compiling nimbleFunctions</a></li>
+<li class="chapter" data-level="15.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#writing-setup-code"><i class="fa fa-check"></i><b>15.3</b> Writing setup code</a><ul>
+<li class="chapter" data-level="15.3.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#useful-tools-for-setup-functions"><i class="fa fa-check"></i><b>15.3.1</b> Useful tools for setup functions</a></li>
+<li class="chapter" data-level="15.3.2" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:access-modify-numer"><i class="fa fa-check"></i><b>15.3.2</b> Accessing and modifying numeric values from setup</a></li>
+<li class="chapter" data-level="15.3.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#determining-numeric-types-in-nimblefunctions"><i class="fa fa-check"></i><b>15.3.3</b> Determining numeric types in nimbleFunctions</a></li>
+<li class="chapter" data-level="15.3.4" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:determ-pers-texttts"><i class="fa fa-check"></i><b>15.3.4</b> Control of setup outputs</a></li>
+</ul></li>
+<li class="chapter" data-level="15.4" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:nimble-lang-comp"><i class="fa fa-check"></i><b>15.4</b> Writing run code</a><ul>
+<li class="chapter" data-level="15.4.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:driv-models:-calc"><i class="fa fa-check"></i><b>15.4.1</b> Driving models: <em>calculate</em>, <em>calculateDiff</em>, <em>simulate</em>, <em>getLogProb</em></a></li>
+<li class="chapter" data-level="15.4.2" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#getting-and-setting-variable-and-node-values"><i class="fa fa-check"></i><b>15.4.2</b> Getting and setting variable and node values</a></li>
+<li class="chapter" data-level="15.4.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#getting-parameter-values-and-node-bounds"><i class="fa fa-check"></i><b>15.4.3</b> Getting parameter values and node bounds</a></li>
+<li class="chapter" data-level="15.4.4" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:access-model-modelv"><i class="fa fa-check"></i><b>15.4.4</b> Using modelValues objects</a></li>
+<li class="chapter" data-level="15.4.5" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:using-model-variable"><i class="fa fa-check"></i><b>15.4.5</b> Using model variables and modelValues in expressions</a></li>
+<li class="chapter" data-level="15.4.6" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:incl-other-meth"><i class="fa fa-check"></i><b>15.4.6</b> Including other methods in a nimbleFunction</a></li>
+<li class="chapter" data-level="15.4.7" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:using-other-nimbl"><i class="fa fa-check"></i><b>15.4.7</b> Using other nimbleFunctions</a></li>
+<li class="chapter" data-level="15.4.8" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:virt-nimbl-nimbl"><i class="fa fa-check"></i><b>15.4.8</b> Virtual nimbleFunctions and nimbleFunctionLists</a></li>
+<li class="chapter" data-level="15.4.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#character-objects"><i class="fa fa-check"></i><b>15.4.9</b> Character objects</a></li>
+<li class="chapter" data-level="15.4.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:user-defined-data"><i class="fa fa-check"></i><b>15.4.10</b> User-defined data structures</a></li>
+</ul></li>
+<li class="chapter" data-level="15.5" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:user-samplers"><i class="fa fa-check"></i><b>15.5</b> Example: writing user-defined samplers to extend NIMBLE’s MCMC engine</a></li>
+<li class="chapter" data-level="15.6" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#copying-nimblefunctions-and-nimble-models"><i class="fa fa-check"></i><b>15.6</b> Copying nimbleFunctions (and NIMBLE models)</a></li>
+<li class="chapter" data-level="15.7" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:debugging"><i class="fa fa-check"></i><b>15.7</b> Debugging nimbleFunctions</a></li>
+<li class="chapter" data-level="15.8" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#timing-nimblefunctions-with-run.time"><i class="fa fa-check"></i><b>15.8</b> Timing nimbleFunctions with <em>run.time</em></a></li>
+<li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
+<li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
+</ul></li>
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./"></a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="cha:RCfunctions" class="section level1">
+<h1><span class="header-section-number">Chapter 11</span> Writing simple nimbleFunctions</h1>
+<div id="sec:RC-intro" class="section level2">
+<h2><span class="header-section-number">11.1</span> Introduction to simple nimbleFunctions</h2>
+<p><em>nimbleFunctions</em> are the heart of programming in NIMBLE. In this chapter, we introduce simple nimbleFunctions that contain only one function to be executed, in either compiled or uncompiled form, but no setup function or additional methods.</p>
+<p>Defining a simple nimbleFunction is like defining an R function: <code>nimbleFunction</code> returns a function that can be executed, and it can also be compiled. Simple nimbleFunctions are useful for doing math or the other kinds of processing available in NIMBLE when no model or modelValues is needed. These can be used for any purpose in R programming. They can also be used as new functions and distributions in NIMBLE’s extension of BUGS (Chapter <a href="cha-user-defined.html#cha:user-defined">12</a>).</p>
+<p>Here’s a basic example implementing the textbook calculation of least squares estimation of linear regression parameters<a href="#fn19" class="footnoteRef" id="fnref19"><sup>19</sup></a>:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">solveLeastSquares &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
+    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">X =</span> <span class="kw">double</span>(<span class="dv">2</span>), <span class="dt">y =</span> <span class="kw">double</span>(<span class="dv">1</span>)) { <span class="co"># type declarations</span>
+        ans &lt;-<span class="st"> </span><span class="kw">inverse</span>(<span class="kw">t</span>(X) <span class="op">%*%</span><span class="st"> </span>X) <span class="op">%*%</span><span class="st"> </span>(<span class="kw">t</span>(X) <span class="op">%*%</span><span class="st"> </span>y)
+        <span class="kw">return</span>(ans)
+        <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">2</span>))  <span class="co"># return type declaration</span>
+    } )
+
+X &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">rnorm</span>(<span class="dv">400</span>), <span class="dt">nrow =</span> <span class="dv">100</span>)
+y &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">100</span>)
+<span class="kw">solveLeastSquares</span>(X, y)</code></pre></div>
+<pre><code>##              [,1]
+## [1,]  0.088547575
+## [2,]  0.002025635
+## [3,] -0.090387283
+## [4,] -0.072660391</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">CsolveLeastSquares &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(solveLeastSquares)
+<span class="kw">CsolveLeastSquares</span>(X, y)</code></pre></div>
+<pre><code>##              [,1]
+## [1,]  0.088547575
+## [2,]  0.002025635
+## [3,] -0.090387283
+## [4,] -0.072660391</code></pre>
+<p>In this example, we fit a linear model for 100 random response values (<code>y</code>) to four columns of randomly generated explanatory variables (<code>X</code>). We ran the nimbleFunction <code>solveLeastSquares</code> uncompiled, natively in R, allowing testing and debugging (Section <a href="cha-progr-with-models.html#sec:debugging">15.7</a>). Then we compiled it and showed that the compiled version does the same thing, but faster<a href="#fn20" class="footnoteRef" id="fnref20"><sup>20</sup></a>. NIMBLE’s compiler creates C++ that uses the Eigen (<a href="http://eigen.tuxfamily.org" class="uri">http://eigen.tuxfamily.org</a>) library for linear algebra.</p>
+<p>Notice that the actual NIMBLE code is written as an R function definition that is passed to <code>nimbleFunction</code> as the <code>run</code> argument. Hence we call it the <em>run</em> code. run code is written in the NIMBLE language. This is similar to a narrow subset of R with some additional features. Formally, we view it as a distinct language that encompasses what can be compiled from a nimbleFunction.</p>
+<p>To write nimbleFunctions, you will need to learn:</p>
+<ul>
+<li>what R functions are supported for NIMBLE compilation and any ways they differ from their regular R counterparts;</li>
+<li>how NIMBLE handles types of variables;</li>
+<li>how to declare types of <code>nimbleFunction</code> arguments and return values;</li>
+<li>that compiled nimbleFunctions always pass arguments to each other by reference. <!---   1. how to use nimbleList data structures. --></li>
+</ul>
+<p>The next sections cover each of these topics in turn.</p>
+</div>
+<div id="sec:r-fiunctions-implemented" class="section level2">
+<h2><span class="header-section-number">11.2</span> R functions (or variants) implemented in NIMBLE</h2>
+<div id="finding-help-for-nimbles-versions-of-r-functions" class="section level3">
+<h3><span class="header-section-number">11.2.1</span> Finding help for NIMBLE’s versions of R functions</h3>
+<p>Often, R help pages are available for NIMBLE’s versions of R functions using the prefix ‘nim’ and capitalizing the next letter. For example, help on NIMBLE’s version of <code>numeric</code> can be found by <code>help(nimNumeric)</code>. In some cases help is found directly using the name of the function as it appears in R.</p>
+</div>
+<div id="basic-operations" class="section level3">
+<h3><span class="header-section-number">11.2.2</span> Basic operations</h3>
+<p>Basic R operations supported for NIMBLE compilation are listed in Table <a href="cha-RCfunctions.html#tab:coreR">11.1</a>.</p>
+<table>
+<caption><span id="tab:coreR">Table 11.1: </span> Basic R manipulation functions in NIMBLE. To find help in R for NIMBLE’s version of a function, use the “nim” prefix and capitalize the next letter. E.g. <code>help(nimC)</code> for help with <code>c()</code>.</caption>
+<thead>
+<tr class="header">
+<th align="left">Function</th>
+<th align="left">Comments (differences from R)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><code>c()</code></td>
+<td align="left">No <code>recursive</code> argument.</td>
+</tr>
+<tr class="even">
+<td align="left"><code>rep()</code></td>
+<td align="left">No <code>rep.int</code> or <code>rep_len</code> arguments.</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>seq()</code> and ‘:’</td>
+<td align="left">Negative integer sequences from ‘:’, e.g. , <code>2:1</code> do not work.</td>
+</tr>
+<tr class="even">
+<td align="left"><code>which()</code></td>
+<td align="left">No <code>arr.ind</code> or <code>useNames</code> arguments.</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>diag()</code></td>
+<td align="left">Works like R in three ways: <code>diag(vector)</code> returns a matrix with <code>vector</code> on the diagonal;</td>
+</tr>
+<tr class="even">
+<td align="left"></td>
+<td align="left"><code>diag(matrix)</code> returns the diagonal vector of <code>matrix</code>;</td>
+</tr>
+<tr class="odd">
+<td align="left"></td>
+<td align="left"><code>diag(n)</code> returns an <span class="math inline">\(n \times n\)</span> identity matrix. No <code>nrow</code> or <code>ncol</code> arguments.</td>
+</tr>
+<tr class="even">
+<td align="left"><code>diag()&lt;-</code></td>
+<td align="left">Works for assigning the diagonal vector of a matrix.</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>dim()</code></td>
+<td align="left">Works on a vector as well as higher-dimensional arguments.</td>
+</tr>
+<tr class="even">
+<td align="left"><code>length()</code></td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left"><code>is.na()</code></td>
+<td align="left">Does not correctly handle NAs from R that are type <code>'logical'</code>,</td>
+</tr>
+<tr class="even">
+<td align="left"></td>
+<td align="left">so convert these using <code>as.numeric()</code> before passing from R to NIMBLE.</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>is.nan()</code></td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left"><code>numeric()</code></td>
+<td align="left">Allows additional arguments to control initialization.</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>logical()</code></td>
+<td align="left">Allows additional arguments to control initialization.</td>
+</tr>
+<tr class="even">
+<td align="left"><code>integer()</code></td>
+<td align="left">Allows additional arguments to control initialization.</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>matrix()</code></td>
+<td align="left">Allows additional arguments to control initialization.</td>
+</tr>
+<tr class="even">
+<td align="left"><code>array()</code></td>
+<td align="left">Allows additional arguments to control initialization.</td>
+</tr>
+<tr class="odd">
+<td align="left">indexing</td>
+<td align="left">Arbitrary integer and logical indexing is supported for objects of one or two dimensions.</td>
+</tr>
+<tr class="even">
+<td align="left"></td>
+<td align="left">For higher-dimensional objects, only <code>:</code> indexing works and then only to create an object</td>
+</tr>
+<tr class="odd">
+<td align="left"></td>
+<td align="left">of at most two dimensions.</td>
+</tr>
+</tbody>
+</table>
+<p>In addition to the above functions, we provide functions <code>any_na()</code> and <code>any_nan()</code> for finding if there are any <code>NA</code> or <code>NaN</code> values in a vector. These are equivalent to using <code>any(is.na())</code> and <code>any(is.nan())</code> in R.</p>
+<p>Other R functions with numeric arguments and return value can be called during compiled execution by wrapping them as a <code>nimbleRcall</code> (see Section <a href="cha-RCfunctions.html#sec:calling-R-code">11.7</a>).</p>
+<p>Next we cover some of these functions in more detail.</p>
+<div id="numeric-integer-logical-matrix-and-array" class="section level4">
+<h4><span class="header-section-number">11.2.2.1</span> <em>numeric</em>, <em>integer</em>, <em>logical</em>, <em>matrix</em> and <em>array</em></h4>
+<p><code>numeric</code>, <code>integer</code>, or <code>logical</code> will create a 1-dimensional vector of floating-point (or ‘double’ [precision]), integer, or logical values, respectively. The <code>length</code> argument specifies the vector length (default 0), and the <code>value</code> argument specifies the initial value either as a scalar (used for all vector elements, with default 0) or a vector. If a vector and its length is not equal to <code>length</code>, the remaining values will be zero, but we plan to implement R-style recycling in the next version of NIMBLE. The <code>init</code> argument specifies whether or not to initialize the elements in compiled code (default <code>TRUE</code>). If first use of the variable does not rely on initial values, using <code>init = FALSE</code> will yield slightly more efficient performance.</p>
+<p><code>matrix</code> creates a 2-dimensional matrix object of either floating-point (if <code>type = &quot;double&quot;</code>, the default), integer (if <code>type = &quot;integer&quot;</code>), or logical (if <code>type = &quot;logical&quot;</code>) values. As in R, <code>nrow</code> and <code>ncol</code> arguments specify the number of rows and columns, respectively. The <code>value</code> and <code>init</code> arguments are used in the same way as for <code>numeric</code>, <code>integer</code>, and <code>logical</code>.</p>
+<p><code>array</code> creates a vector or higher-dimensional object, depending on the <code>dim</code> argument, which takes a vector of sizes for each dimension. The <code>type</code>, <code>value</code> and <code>init</code> argument behave the same as for <code>matrix</code>.</p>
+<p>The best way to create an identity matrix is with <code>diag(n)</code>, which returns an <span class="math inline">\(n \times n\)</span> identity matrix. NIMBLE also provides a deprecated nimbleFunction <code>identityMatrix</code> that does the same thing.</p>
+<p>Examples of these functions, and the related function <span class="math inline">\(`setSize`\)</span> for changing the size of a numeric object, are given in Section <a href="cha-RCfunctions.html#sec:chang-sizes-exist">11.3.2.3</a>.</p>
+</div>
+<div id="sec:query-chang-sizes" class="section level4">
+<h4><span class="header-section-number">11.2.2.2</span> <em>length</em> and <em>dim</em></h4>
+<p><code>length</code> behaves like R’s <code>length</code> function. It returns the <em>entire</em> length of X. That means if <code>X</code> is multivariate, <code>length(X)</code> returns the product of the sizes of the dimensions. NIMBLE’s version of <code>dim</code>, which has synonym <code>nimDim</code>, behaves like R’s <code>dim</code> function for matrices or arrays and like R’s <code>length</code> function for vectors. In other words, regardless of whether the number of dimensions is 1 or more, it returns a vector of the sizes.</p>
+</div>
+<div id="deprecated-creation-of-non-scalar-objects-using-declare" class="section level4">
+<h4><span class="header-section-number">11.2.2.3</span> Deprecated creation of non-scalar objects using <em>declare</em></h4>
+<p>Previous versions of NIMBLE provided a function <code>declare</code> for declaring variables. The more R-like functions <code>numeric</code>, <code>integer</code>, <code>logical</code>, <code>matrix</code> and <code>array</code> are intended to replace <code>declare</code>, but <code>declare</code> is still supported for backward compatibility. In a future version of NIMBLE, <code>declare</code> may be removed.</p>
+</div>
+</div>
+<div id="sec:basic-math-linear" class="section level3">
+<h3><span class="header-section-number">11.2.3</span> Math and linear algebra</h3>
+<p>Numeric scalar and matrix mathematical operations are listed in Tables @ref{tab:functions}-@ref{tab:functionsMatrix}.</p>
+<!---
+would need to do some sed manipulation to be able to automate this cross-ref
+\@ref(tab:functions) and \@ref(tab:functionsMatrix).
+-->
+<p>As in R, many scalar operations in NIMBLE will work component-wise on vectors or higher dimensional objects. For example if B and C are vectors, <code>A   = B + C</code> will add them and create vector C by component-wise addition of B and C. In the current version of NIMBLE, component-wise operations generally only work for vectors and matrices, not arrays with more than two dimensions. The only exception is assignment: <code>A = B</code> will work up to NIMBLE’s current limit of four dimensions.</p>
+<table>
+<caption><span id="tab:functions">Table 5.4: </span> Functions operating on scalars, many of which can operate on each element (component-wise) of vectors and matrices. Status column indicates if the function is currently provided in NIMBLE. Vector input column indicates if the function can take a vector as an argument (i.e., if the function is vectorized).</caption>
+<thead>
+<tr class="header">
+<th align="left">Usage</th>
+<th align="left">Description</th>
+<th align="left">Comments</th>
+<th>Status</th>
+<th>Vector input</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><code>x | y</code>, <code>x &amp; y</code></td>
+<td align="left">logical OR (<span class="math inline">\(|\)</span>) and AND(&amp;)</td>
+<td align="left"></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>!x</code></td>
+<td align="left">logical not</td>
+<td align="left"></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>x &gt; y, x &gt;= y</code></td>
+<td align="left">greater than (and or equal to)</td>
+<td align="left"></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>x &lt; y, x &lt;= y</code></td>
+<td align="left">less than (and or equal to)</td>
+<td align="left"></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>x != y, x == y</code></td>
+<td align="left">(not) equals</td>
+<td align="left"></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>x + y, x - y, x * y</code></td>
+<td align="left">component-wise operators</td>
+<td align="left">mix of scalar and vector</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>x / y</code></td>
+<td align="left">component-wise division</td>
+<td align="left">vector <span class="math inline">\(x\)</span> and scalar <span class="math inline">\(y\)</span></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>x^y, pow(x, y)</code></td>
+<td align="left">power</td>
+<td align="left"><span class="math inline">\(x^y\)</span>; vector <span class="math inline">\(x\)</span>,scalar <span class="math inline">\(y\)</span></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>x %% y</code></td>
+<td align="left">modulo (remainder)</td>
+<td align="left"></td>
+<td>yes</td>
+<td>no</td>
+</tr>
+<tr class="even">
+<td align="left"><code>min(x1, x2),</code></td>
+<td align="left">min. (max.) of two scalars</td>
+<td align="left"></td>
+<td>yes</td>
+<td>See <code>pmin</code>,</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>max(x1, x2)</code></td>
+<td align="left"></td>
+<td align="left"></td>
+<td></td>
+<td><code>pmax</code></td>
+</tr>
+<tr class="even">
+<td align="left"><code>exp(x)</code></td>
+<td align="left">exponential</td>
+<td align="left"></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>log(x)</code></td>
+<td align="left">natural logarithm</td>
+<td align="left"></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>sqrt(x)</code></td>
+<td align="left">square root</td>
+<td align="left"></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>abs(x)</code></td>
+<td align="left">absolute value</td>
+<td align="left"></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>step(x)</code></td>
+<td align="left">step function at 0</td>
+<td align="left">0 if <span class="math inline">\(x&lt;0\)</span>, 1 if <span class="math inline">\(x&gt;=0\)</span></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>equals(x)</code></td>
+<td align="left">equality of two scalars</td>
+<td align="left">1 if <span class="math inline">\(x==y\)</span>, 0 if <span class="math inline">\(x != y\)</span></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>cube(x)</code></td>
+<td align="left">third power</td>
+<td align="left"><span class="math inline">\(x^3\)</span></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>sin(x), cos(x),</code></td>
+<td align="left">trigonometric functions</td>
+<td align="left"></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>tan(x)</code></td>
+<td align="left"></td>
+<td align="left"></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td align="left"><code>asin(x), acos(x),</code></td>
+<td align="left">inverse trigonometric functions</td>
+<td align="left"></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>atan(x)</code></td>
+<td align="left"></td>
+<td align="left"></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td align="left"><code>asinh(x), acosh(x),</code></td>
+<td align="left">inv. hyperbolic trig. functions</td>
+<td align="left"></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>atanh(x)</code></td>
+<td align="left"></td>
+<td align="left"></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td align="left"><code>logit(x)</code></td>
+<td align="left">logit</td>
+<td align="left"><span class="math inline">\(\log(x/(1-x))\)</span></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>ilogit(x), expit(x)</code></td>
+<td align="left">inverse logit</td>
+<td align="left"><span class="math inline">\(\exp(x)/(1 + \exp(x))\)</span></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>probit(x)</code></td>
+<td align="left">probit (Gaussian quantile)</td>
+<td align="left"><span class="math inline">\(\Phi^{-1}(x)\)</span></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>iprobit(x), phi(x)</code></td>
+<td align="left">inverse probit (Gaussian CDF)</td>
+<td align="left"><span class="math inline">\(\Phi(x)\)</span></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>cloglog(x)</code></td>
+<td align="left">complementary log log</td>
+<td align="left"><span class="math inline">\(\log(-\log(1-x))\)</span></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>icloglog(x)</code></td>
+<td align="left">inverse complementary log log</td>
+<td align="left"><span class="math inline">\(1 - \exp(-\exp(x))\)</span></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>ceiling(x)</code></td>
+<td align="left">ceiling function</td>
+<td align="left"><span class="math inline">\(\lceil(x)\rceil\)</span></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>floor(x)</code></td>
+<td align="left">floor function</td>
+<td align="left"><span class="math inline">\(\lfloor(x)\rfloor\)</span></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>round(x)</code></td>
+<td align="left">round to integer</td>
+<td align="left"></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>trunc(x)</code></td>
+<td align="left">truncation to integer</td>
+<td align="left"></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>lgamma(x), loggam(x)</code></td>
+<td align="left">log gamma function</td>
+<td align="left"><span class="math inline">\(\log \Gamma(x)\)</span></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>besselK(k, nu,</code></td>
+<td align="left">modified bessel function</td>
+<td align="left">returns vector even if</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>...expon.scaled)</code></td>
+<td align="left">of the second kind</td>
+<td align="left"><span class="math inline">\(k\)</span> a matrix/array</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td align="left"><code>log1p(x)</code></td>
+<td align="left">log of 1 + x</td>
+<td align="left"><span class="math inline">\(\log(1+x)\)</span></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>lfactorial(x),</code></td>
+<td align="left">log factorial</td>
+<td align="left"><span class="math inline">\(\log x!\)</span></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>logfact(x)</code></td>
+<td align="left"></td>
+<td align="left"></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td align="left"><code>qDIST(x, PARAMS)</code></td>
+<td align="left">“q” distribution functions</td>
+<td align="left">canonical parameterization</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>pDIST(x, PARAMS)</code></td>
+<td align="left">“p” distribution functions</td>
+<td align="left">canonical parameterization</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>rDIST(x, PARAMS)</code></td>
+<td align="left">“r” distribution functions</td>
+<td align="left">canonical parameterization</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>dDIST(x, PARAMS)</code></td>
+<td align="left">“d” distribution functions</td>
+<td align="left">canonical parameterization</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>sort(x)</code></td>
+<td align="left"></td>
+<td align="left"></td>
+<td>no</td>
+<td></td>
+</tr>
+<tr class="even">
+<td align="left"><code>rank(x, s)</code></td>
+<td align="left"></td>
+<td align="left"></td>
+<td>no</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td align="left"><code>ranked(x, s)</code></td>
+<td align="left"></td>
+<td align="left"></td>
+<td>no</td>
+<td></td>
+</tr>
+<tr class="even">
+<td align="left"><code>order(x)</code></td>
+<td align="left"></td>
+<td align="left"></td>
+<td>no</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<table>
+<caption><span id="tab:functionsMatrix">Table 5.5: </span> Functions operating on vectors and matrices. Status column indicates if the function is currently provided in NIMBLE.</caption>
+<thead>
+<tr class="header">
+<th align="left">Usage</th>
+<th align="left">Description</th>
+<th align="left">Comments</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><code>inverse(x)</code></td>
+<td align="left">matrix inverse</td>
+<td align="left"><span class="math inline">\(x\)</span> symmetric, positive def.</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>chol(x)</code></td>
+<td align="left">matrix Cholesky factorization</td>
+<td align="left"><span class="math inline">\(x\)</span> symmetric, positive def.</td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">returns upper triang. matrix</td>
+<td></td>
+</tr>
+<tr class="even">
+<td align="left"><code>t(x)</code></td>
+<td align="left">matrix transpose</td>
+<td align="left"><span class="math inline">\(x^\top\)</span></td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>x%*%y</code></td>
+<td align="left">matrix multiply</td>
+<td align="left"><span class="math inline">\(xy\)</span>; <span class="math inline">\(x\)</span>, <span class="math inline">\(y\)</span> conformant</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>inprod(x, y)</code></td>
+<td align="left">dot product</td>
+<td align="left"><span class="math inline">\(x^\top y\)</span>; <span class="math inline">\(x\)</span> and <span class="math inline">\(y\)</span> vectors</td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>solve(x,y)</code></td>
+<td align="left">solve system of equations</td>
+<td align="left"><span class="math inline">\(x^{-1} y\)</span>; <span class="math inline">\(y\)</span> matrix or vector</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>forwardsolve(x, y)</code></td>
+<td align="left">solve lower-triangular system of equations</td>
+<td align="left"><span class="math inline">\(x^{-1} y\)</span>; <span class="math inline">\(x\)</span> lower-triangular</td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>backsolve(x, y)</code></td>
+<td align="left">solve upper-triangular system of equations</td>
+<td align="left"><span class="math inline">\(x^{-1} y\)</span>; <span class="math inline">\(x\)</span> upper-triangular</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>logdet(x)</code></td>
+<td align="left">log matrix determinant</td>
+<td align="left"><span class="math inline">\(\log|x|\)</span></td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>asRow(x)</code></td>
+<td align="left">convert vector to 1-row matrix</td>
+<td align="left">sometimes automatic</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>asCol(x)</code></td>
+<td align="left">convert vector to 1-column matrix</td>
+<td align="left">sometimes automatic</td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>sum(x)</code></td>
+<td align="left">sum of elements of <code>x</code></td>
+<td align="left"></td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>mean(x)</code></td>
+<td align="left">mean of elements of <code>x</code></td>
+<td align="left"></td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>sd(x)</code></td>
+<td align="left">standard deviation of elements of <code>x</code></td>
+<td align="left"></td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>prod(x)</code></td>
+<td align="left">product of elements of <code>x</code></td>
+<td align="left"></td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>min(x), max(x)</code></td>
+<td align="left">min. (max.) of elements of <code>x</code></td>
+<td align="left"></td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>pmin(x, y), pmax(x,y)</code></td>
+<td align="left">vector of mins (maxs) of elements of</td>
+<td align="left"></td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td align="left"></td>
+<td align="left"><code>x</code> and <code>y</code></td>
+<td align="left"></td>
+<td></td>
+</tr>
+<tr class="even">
+<td align="left"><code>interp.lin(x, v1, v2)</code></td>
+<td align="left">linear interpolation</td>
+<td align="left"></td>
+<td>no</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>eigen(x)</code></td>
+<td align="left">matrix eigendecomposition; returns a</td>
+<td align="left"><span class="math inline">\(x\)</span> symmetric</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"></td>
+<td align="left">nimbleList of type <code>eigenNimbleList</code></td>
+<td align="left"></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td align="left"><code>svd(x)</code></td>
+<td align="left">matrix singular value decomposition;</td>
+<td align="left"></td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"></td>
+<td align="left">returns a nimbleList of type</td>
+<td align="left"></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td align="left"></td>
+<td align="left"><code>svdNimbleList</code></td>
+<td align="left"></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>More information on the nimbleLists returned by the <code>eigen</code> and <code>svd</code> functions in NIMBLE can be found in Section <a href="cha-data-structures.html#sec:eigen-nimFunctions">14.2.1</a>.</p>
+</div>
+<div id="sec:nimble-dist-funs" class="section level3">
+<h3><span class="header-section-number">11.2.4</span> Distribution functions</h3>
+<p>Distribution ‘d’, ‘r’, ‘p’, and ‘q’ functions can all be used from nimbleFunctions (and in BUGS model code), but care is needed in the syntax, as follows.</p>
+<ul>
+<li>Names of the distributions generally (but not always) match those of R, which sometimes differ from BUGS. See the list below.</li>
+<li>Supported parameterizations are also indicated in the list below.</li>
+<li>For multivariate distributions (multivariate normal, Dirichlet, and Wishart), ‘r’ functions only return one random draw at a time, and the first argument must always be 1.</li>
+<li>R’s recycling rule (re-use of an argument as needed to accommodate longer values of other arguments) is generally followed, but the returned object is always a scalar or a vector, not a matrix or array.</li>
+</ul>
+<p>As in R (and nimbleFunctions), arguments are matched by order or by name (if given). Standard arguments to distribution functions in R (<code>log</code>, <code>log.p</code>, <code>lower.tail</code>) can be used and have the same defaults. User-defined distributions for BUGS (Chapter <a href="cha-user-defined.html#cha:user-defined">12</a>) can also be used from nimbleFunctions.</p>
+<p>For standard distributions, we rely on R’s regular help pages (e.g., <code>help(dgamma)</code>. For distributions unique to NIMBLE (e.g., <code>dexp_nimble</code>, <code>ddirch</code>), we provide help pages.</p>
+<p>Supported distributions, listed by their ‘d’ function, include:</p>
+<ul>
+<li><code>dbinom(x, size, prob, log)</code></li>
+<li><code>dcat(x, prob, log)</code></li>
+<li><code>dmulti(x, size, prob, log)</code></li>
+<li><code>dnbinom(x, size, prob, log)</code></li>
+<li><code>dpois(x, lambda, log)</code></li>
+<li><code>dbeta(x, shape1, shape2, log)</code></li>
+<li><code>dchisq(x, df, log)</code></li>
+<li><code>ddexp(x, location, rate, log)</code></li>
+<li><code>ddexp(x, location, scale, log)</code><br />
+</li>
+<li><code>dexp(x, rate, log)</code></li>
+<li><code>dexp_nimble(x, rate, log)</code></li>
+<li><code>dexp_nimble(x, scale, log)</code></li>
+<li><code>dgamma(x, shape, rate, log)</code></li>
+<li><code>dgamma(x, shape, scale, log)</code></li>
+<li><code>dinvgamma(x, shape, rate, log)</code></li>
+<li><code>dinvgamma(x, shape, scale, log)</code></li>
+<li><code>dlnorm(x, meanlog, sdlog, log)</code></li>
+<li><code>dlogis(x, location, scale, log)</code></li>
+<li><code>dnorm(x, mean, sd, log)</code></li>
+<li><code>dt_nonstandard(x, df, mu, sigma, log)</code></li>
+<li><code>dt(x, df, log)</code></li>
+<li><code>dunif(x, min, max, log)</code></li>
+<li><code>dweibull(x, shape, scale, log)</code></li>
+<li><code>ddirch(x, alpha, log)</code></li>
+<li><code>dmnorm_chol(x, mean, cholesky, prec_param, log)</code></li>
+<li><code>dmvt_chol(x, mu, cholesky, df, prec_param, log)</code></li>
+<li><code>dwish_chol(x, cholesky, df, scale_param, log)</code></li>
+</ul>
+<p>In the last three, <code>cholesky</code> stands for Cholesky decomposition of the relevant matrix; <code>prec_param</code> is a logical indicating whether the Cholesky is of a precision matrix (TRUE) or covariance matrix (FALSE)<a href="#fn21" class="footnoteRef" id="fnref21"><sup>21</sup></a>; and <code>scale_param</code> is a logical indicating whether the Cholesky is of a scale matrix (TRUE) or an inverse scale matrix (FALSE).</p>
+</div>
+<div id="sec:basic-flow-control" class="section level3">
+<h3><span class="header-section-number">11.2.5</span> Flow control: <em>if-then-else</em>, <em>for</em>, <em>while</em>, and <em>stop</em></h3>
+<p>These basic flow-control structures use the same syntax as in R. However, <code>for</code>-loops are limited to sequential integer indexing. For example, <code>for(i in 2:5) {...}</code> works as it does in R. Decreasing index sequences are not allowed. Unlike in R, <code>if</code> is not itself a function that returns a value.</p>
+<p>We plan to include more flexible <code>for</code>-loops in the future, but for now we’ve included just one additional useful feature: <code>for(i in seq_along(NFL))</code> will work as in R, where <code>NFL</code> is a <code>nimbleFunctionList</code>. This is described in Section <a href="cha-progr-with-models.html#sec:virt-nimbl-nimbl">15.4.8</a>.</p>
+<p><code>stop</code>, or equivalently <code>nimStop</code>, throws control to R’s error-handling system and can take a character argument that will be displayed in an error message.</p>
+</div>
+<div id="sec:print" class="section level3">
+<h3><span class="header-section-number">11.2.6</span> <em>print</em> and <em>cat</em></h3>
+<p><code>print</code>, or equivalently <code>nimPrint</code>, prints an arbitrary set of outputs in order and adds a newline character at the end. <code>cat</code> or <code>nimCat</code> is identical, except without a newline at the end.</p>
+</div>
+<div id="sec:check-user-interr" class="section level3">
+<h3><span class="header-section-number">11.2.7</span> Checking for user interrupts: <em>checkInterrupt</em></h3>
+<p>When you write algorithms that will run for a long time in C++, you may want to explicitly check whether a user has tried to interrupt the execution (i.e., by pressing Control-C). Simply include <code>checkInterrupt</code> in run code at places where a check should be done. If there has been an interrupt waiting to be handled, the process will stop and return control to R.</p>
+</div>
+<div id="optimization-optim-and-nimoptim" class="section level3">
+<h3><span class="header-section-number">11.2.8</span> Optimization: <em>optim</em> and <em>nimOptim</em></h3>
+<p>NIMBLE provides a <code>nimOptim</code> function that partially implement’s R’s <code>optim</code> function with some minor differences. <code>nimOptim</code> supports optimization methods ‘Nelder-Mead’, ‘BFGS’, ‘CG’, ‘L-BFGS-B’, but does not support methods ‘SANN’ and ‘Brent’. NIMBLE’s <code>nimOptim</code> supports gradients using user-provided functions if available or finite differences otherwise, but it does not currently support Hessian computations. Currently <code>nimOptim</code> does not support extra parameters to the function being optimized (via <code>\dots</code>), but a work-around is to create a new <code>nimbleFunction</code> that binds those fixed parameters. Finally, <code>nimOptim</code> requires a <code>nimbleList</code> datatype for the <code>control</code> parameter, whereas R’s <code>optim</code> uses a simple R <code>list</code>. To define the <code>control</code> parameter, create a default value with the <code>nimOptimDefaultControl</code> function, and set any desired fields. For example usage, see the unit tests in <a href="https://github.com/nimble-dev/nimble/blob/master/packages/nimble/inst/tests/test-optim.R">tests/test-optim.R</a>.</p>
+</div>
+<div id="sec:altern-keyw-some" class="section level3">
+<h3><span class="header-section-number">11.2.9</span> ‘nim’ synonyms for some functions</h3>
+<p>NIMBLE uses some keywords, such as <code>dim</code> and <code>print</code>, in ways similar but not identical to R. In addition, there are some keywords in NIMBLE that have the same names as R functions with quite different functionality. For example, <code>step</code> is part of the BUGS language, but it is also an R function for stepwise model selection. And <code>equals</code> is part of the BUGS language but is also used in the <code>testthat</code> package, which we use in testing NIMBLE.</p>
+<p>NIMBLE tries to avoid conflicts by replacing some keywords immediately upon creating a nimbleFunction. These replacements include</p>
+<ul>
+<li><code>c</code> <span class="math inline">\(\rightarrow\)</span> <code>nimC</code></li>
+<li><code>copy</code> <span class="math inline">\(\rightarrow\)</span> <code>nimCopy</code></li>
+<li><code>dim</code> <span class="math inline">\(\rightarrow\)</span> <code>nimDim</code></li>
+<li><code>print</code> <span class="math inline">\(\rightarrow\)</span> <code>nimPrint</code></li>
+<li><code>cat</code> <span class="math inline">\(\rightarrow\)</span> <code>nimCat</code></li>
+<li><code>step</code> <span class="math inline">\(\rightarrow\)</span> <code>nimStep</code></li>
+<li><code>equals</code> <span class="math inline">\(\rightarrow\)</span> <code>nimEquals</code></li>
+<li><code>rep</code> <span class="math inline">\(\rightarrow\)</span> <code>nimRep</code></li>
+<li><code>round</code> <span class="math inline">\(\rightarrow\)</span> <code>nimRound</code></li>
+<li><code>seq</code> <span class="math inline">\(\rightarrow\)</span> <code>nimSeq</code></li>
+<li><code>stop</code> <span class="math inline">\(\rightarrow\)</span> <code>nimStop</code></li>
+<li><code>switch</code> <span class="math inline">\(\rightarrow\)</span> <code>nimSwitch</code></li>
+<li><code>numeric, integer, logical</code> <span class="math inline">\(\rightarrow\)</span> <code>nimNumeric, nimInteger, nimLogical</code></li>
+<li><code>matrix, array</code> <span class="math inline">\(\rightarrow\)</span> <code>nimMatrix, nimArray</code></li>
+</ul>
+<p>This system gives programmers the choice between using the keywords like <code>nimPrint</code> directly, to avoid confusion in their own code about which ‘print’ is being used, or to use the more intuitive keywords like <code>print</code> but remember that they are not the same as R’s functions.</p>
+</div>
+</div>
+<div id="sec:how-nimble-handles" class="section level2">
+<h2><span class="header-section-number">11.3</span> How NIMBLE handles types of variables</h2>
+<p>Variables in the NIMBLE language are statically typed. Once a variable is used for one type, it can’t subsequently be used for a different type. This rule facilitates NIMBLE’s compilation to C++. The NIMBLE compiler often determines types automatically, but sometimes the programmer needs to explicitly provide them.</p>
+<p>The elemental types supported by NIMBLE include <em>double</em> (floating-point), <em>integer</em>, <em>logical</em>, and <em>character</em>. The <em>type</em> of a numeric or logical object refers to the number of dimensions and the elemental type of the elements. Hence if <code>x</code> is created as a double matrix, it can only be used subsequently for a double matrix. The size of each dimension is not part of its type and thus can be changed. Up to four dimensions are supported for double, integer, and logical. Only vectors (one dimension) are supported for character. Unlike R, NIMBLE supports true scalars, which have 0 dimensions.</p>
+<div id="sec:nimbleList-RCFuns" class="section level3">
+<h3><span class="header-section-number">11.3.1</span> nimbleList data structures</h3>
+<p>A <code>nimbleList</code> is a data structure that can contain arbitrary other NIMBLE objects, including other <code>nimbleList</code>s. Like other NIMBLE types, nimbleLists are strongly typed: each <code>nimbleList</code> is created from a configuration that declares what types of objects it will hold. <code>nimbleList</code>s are covered in Chapter <a href="cha-data-structures.html#sec:nimbleLists">14.2</a>.</p>
+</div>
+<div id="sec:how-types-work" class="section level3">
+<h3><span class="header-section-number">11.3.2</span> How numeric types work</h3>
+<p>R’s dynamic types support easy programming because one type can sometimes be transformed to another type automatically when an expression is evaluated. NIMBLE’s static types makes it stricter than R.</p>
+<div id="sec:when-nimble-can" class="section level4">
+<h4><span class="header-section-number">11.3.2.1</span> When NIMBLE can automatically set a numeric type</h4>
+<p>When a variable is first created by assignment, its type is determined automatically by that assignment. For example, if <code>x</code> has not appeared before, then</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">x &lt;-<span class="st"> </span>A <span class="op">%*%</span><span class="st"> </span>B <span class="co"># assume A and B are double matrices or vectors</span></code></pre></div>
+<p>will create <code>x</code> to be a double matrix of the correct size (determined during execution).</p>
+<div id="avoid-changing-types-of-a-variable-within-a-nimblefunction" class="section level5">
+<h5><span class="header-section-number">11.3.2.1.1</span> Avoid changing types of a variable within a nimbleFunction</h5>
+<p>Because NIMBLE is statically typed, you cannot use the same variable name for two objects of different types (including objects of different dimensions).</p>
+<p>Suppose we have (implicitly) created <code>x</code> as a double matrix. If <code>x</code> is used subsequently, it can only be used as a double matrix. This is true even if it is assigned a new value, which will again set its size automatically but cannot change its type.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">x &lt;-<span class="st"> </span>A <span class="op">%*%</span><span class="st"> </span>B <span class="co"># assume A and B are double matrices or vectors</span>
+x &lt;-<span class="st"> </span><span class="kw">nimMatrix</span>(<span class="dv">0</span>, <span class="dt">nrow =</span> <span class="dv">5</span>, <span class="dt">ncol =</span> <span class="dv">2</span>)  <span class="co"># OK: &#39;x&#39; is still a double matrix</span>
+x &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">10</span>)  <span class="co"># NOT OK: &#39;x&#39; is a double vector</span></code></pre></div>
+</div>
+</div>
+<div id="sec:when-numeric-object" class="section level4">
+<h4><span class="header-section-number">11.3.2.2</span> When a numeric object needs to be created before being used</h4>
+<p>If the contents of a variable are to be populated by assignment into some indices in steps, the variable must be created first. Further, it must be large enough for its eventual contents; it will not be automatically resized if assignments are made beyond its current size. For example, in the following code, <code>x</code> must be created before being filled with contents for specific indices.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">x &lt;-<span class="st"> </span><span class="kw">numeric</span>(<span class="dv">10</span>)
+
+<span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">10</span>) 
+   x[i] &lt;-<span class="st"> </span><span class="kw">foo</span>(y[i]) </code></pre></div>
+</div>
+<div id="sec:chang-sizes-exist" class="section level4">
+<h4><span class="header-section-number">11.3.2.3</span> Changing the sizes of existing objects: <em>setSize</em></h4>
+<p><code>setSize</code> changes the size of an object, preserving its contents in column-major order.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Example of creating and resizing a floating-point vector</span>
+<span class="co"># myNumericVector will be of length 10, with all elements initialized to 2 </span>
+myNumericVector &lt;-<span class="st"> </span><span class="kw">numeric</span>(<span class="dv">10</span>, <span class="dt">value =</span> <span class="dv">2</span>) 
+<span class="co"># resize this numeric vector to be length 20; last 10 elements will be 0</span>
+<span class="kw">setSize</span>(myNumericVector, <span class="dv">20</span>)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Example of creating a 1-by-10 matrix with values 1:10 and resizing it</span>
+myMatrix &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>, <span class="dt">nrow =</span> <span class="dv">1</span>, <span class="dt">ncol =</span> <span class="dv">10</span>) 
+<span class="co"># resize this matrix to be a 10-by-10 matrix</span>
+<span class="kw">setSize</span>(myMatrix, <span class="kw">c</span>(<span class="dv">10</span>, <span class="dv">10</span>))
+<span class="co"># The first column will have the 1:10</span></code></pre></div>
+</div>
+<div id="sec:conf-betw-scal" class="section level4">
+<h4><span class="header-section-number">11.3.2.4</span> Confusions between scalars and length-one vectors</h4>
+<p>In R, there is no such thing is a true scalar; scalars can always be treated as vectors of length one. NIMBLE allows true scalars, which can create confusions. For example, consider the following code:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">myfun &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
+    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">i =</span> <span class="kw">integer</span>()) { <span class="co"># i is an integer scalar</span>
+        randomValues &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">10</span>)   <span class="co"># double vector</span>
+        a &lt;-<span class="st"> </span>randomValues[i]        <span class="co"># double scalar</span>
+        b &lt;-<span class="st"> </span>randomValues[i<span class="op">:</span>i]      <span class="co"># double vector</span>
+        d &lt;-<span class="st"> </span>a <span class="op">+</span><span class="st"> </span>b                  <span class="co"># double vector</span>
+        f &lt;-<span class="st"> </span><span class="kw">c</span>(i)                   <span class="co"># integer vector</span>
+    })</code></pre></div>
+<p>In the line that creates <code>b</code>, the index range <code>i:i</code> is not evaluated until run time. Even though <code>i:i</code> will always evaluate to simpy <code>i</code>, the compiler does not determine that. Since there is a vector index range provided, the result of <code>randomValues[i:i]</code> is determined to be a vector. The following line then creates <code>d</code> as a vector, because a vector plus a scalar returns a vector. Another way to create a vector from a scalar is to use <code>c</code>, as illustrated in the last line.</p>
+</div>
+<div id="sec:conf-betw-scal2" class="section level4">
+<h4><span class="header-section-number">11.3.2.5</span> Confusions between vectors and one-column or one-row matrices</h4>
+<p>Consider the following code:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">myfun &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
+    <span class="dt">run =</span> <span class="cf">function</span>() { 
+        A &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dt">value =</span> <span class="kw">rnorm</span>(<span class="dv">9</span>), <span class="dt">nrow =</span> <span class="dv">3</span>)
+        B &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">3</span>)
+        Cmatrix &lt;-<span class="st"> </span>A <span class="op">%*%</span><span class="st"> </span>B                <span class="co"># double matrix, one column</span>
+        Cvector &lt;-<span class="st"> </span>(A <span class="op">%*%</span><span class="st"> </span>B)[,<span class="dv">1</span>]          <span class="co"># double vector</span>
+        Cmatrix &lt;-<span class="st"> </span>(A <span class="op">%*%</span><span class="st"> </span>B)[,<span class="dv">1</span>]          <span class="co"># error, vector assigned to matrix</span>
+        Cmatrix[,<span class="dv">1</span>] &lt;-<span class="st"> </span>(A <span class="op">%*%</span><span class="st"> </span>B)[,<span class="dv">1</span>]      <span class="co"># ok, if Cmatrix is large enough</span>
+    })</code></pre></div>
+<p>This creates a matrix <code>A</code>, a vector <code>B</code>, and matrix-multiplies them. The vector <code>B</code> is automatically treated as a one-column matrix in matrix algebra computations. The result of matrix multiplication is always a matrix, but a programmer may expect a vector, since they know the result will have one column. To make it a vector, simply extract the first column. More information about such handling is provided in the next section.</p>
+</div>
+<div id="sec:manag-dimens-sizes" class="section level4">
+<h4><span class="header-section-number">11.3.2.6</span> Understanding dimensions and sizes from linear algebra</h4>
+<p>As much as possible, NIMBLE behaves like R when determining types and sizes returned from linear algebra expressions, but in some cases this is not possible because R uses run-time information while NIMBLE must determine dimensions at compile time. For example, when matrix multiplying a matrix by a vector, R treats the vector as a one-column matrix unless treating it as a one-row matrix is the only way to make the expression valid, as determined at run time. NIMBLE usually must assume during compilation that it should be a one-column matrix, unless it can determine not just the number of dimensions but the actual sizes during compilation. When needed <code>asRow</code> and <code>asCol</code> can control how a vector will be treated as a matrix.</p>
+<p>Here is a guide to such issues. Suppose <code>v1</code> and <code>v2</code> are vectors, and <code>M1</code> is a matrix. Then</p>
+<ul>
+<li><code>v1 + M1</code> generates a compilation error unless one dimension of <code>M1</code> is known at compile-time to be 1. If so, then <code>v1</code> is promoted to a 1-row or 1-column matrix to conform with <code>M1</code>, and the result is a matrix of the same sizes. This behavior occurs for all component-wise binary functions.</li>
+<li><code>v1 %*% M1</code> defaults to promoting <code>v1</code> to a 1-row matrix, unless it is known at compile-time that <code>M1</code> has 1 row, in which case <code>v1</code> is promoted to a 1-column matrix.</li>
+<li><code>M1 %*% v1</code> defaults to promoting <code>v1</code> to a 1-column matrix, unless it is known at compile time that <code>M1</code> has 1 column, in which case <code>v1</code> is promoted to a 1-row matrix.</li>
+<li><code>v1 %*% v2</code> promotes <code>v1</code> to a 1-row matrix and <code>v2</code> to a 1-column matrix, so the returned values is a 1x1 matrix with the inner product of <code>v1</code> and <code>v2</code>. If you want the inner product as a scalar, use <code>inprod(v1, v2)</code>.</li>
+<li><code>asRow(v1)</code> explicitly promotes <code>v1</code> to a 1-row matrix. Therefore <code>v1 %*% asRow(v2)</code> gives the outer product of <code>v1</code> and <code>v2</code>.</li>
+<li><code>asCol(v1)</code> explicitly promotes <code>v1</code> to a 1-column matrix.<br />
+</li>
+<li>The default promotion for a vector is to a 1-column matrix. Therefore, <code>v1 %*% t(v2)</code> is equivalent to <code>v1 %*% asRow(v2)</code> .</li>
+<li>When indexing, dimensions with scalar indices will be dropped. For example, <code>M1[1,]</code> and <code>M1[,1]</code> are both vectors. If you do not want this behavior, use <code>drop=FALSE</code> just as in R. For example, <code>M1[1,,drop=FALSE]</code> is a matrix.</li>
+<li>The left-hand side of an assignment can use indexing, but if so it must already be correctly sized for the result. For example, <code>Y[5:10, 20:30] &lt;- x</code> will not work – and could crash your R session with a segmentation fault – if Y is not already at least 10x30 in size. This can be done by <code>setSize(Y, c(10, 30))</code>. See Section <a href="cha-RCfunctions.html#sec:chang-sizes-exist">11.3.2.3</a> for more details. Note that non-indexed assignment to <code>Y</code>, such as <code>Y &lt;- x</code>, will automatically set <code>Y</code> to the necessary size.</li>
+</ul>
+<p>Here are some examples to illustrate the above points, assuming <code>M2</code> is a square matrix.</p>
+<ul>
+<li><code>Y &lt;- v1 + M2 %*% v2</code> will return a 1-column matrix. If Y is created by this statement, it will be a 2-dimensional variable. If Y already exists, it must already be 2-dimesional, and it will be automatically re-sized for the result.</li>
+<li><code>Y &lt;- v1 + (M2 %*% v2)[,1]</code> will return a vector. Y will either be created as a vector or must already exist as a vector and will be re-sized for the result.</li>
+</ul>
+</div>
+<div id="sec:size-warn-potent" class="section level4">
+<h4><span class="header-section-number">11.3.2.7</span> Size warnings and the potential for crashes</h4>
+<p>For matrix algebra, NIMBLE cannot ensure perfect behavior because sizes are not known until run time. Therefore, it is possible for you to write code that will crash your R session. In Version 0.9.0, NIMBLE attempts to issue a warning if sizes are not compatible, but it does not halt execution. Therefore, if you execute <code>A &lt;- M1 %*% M2</code>, and <code>M1</code> and <code>M2</code> are not compatible for matrix multiplication, NIMBLE will output a warning that the number of rows of <code>M1</code> does not match the number of columns of <code>M2</code>. After that warning the statement will be executed and may result in a crash. Another easy way to write code that will crash is to do things like <code>Y[5:10, 20:30] &lt;- x</code> without ensuring Y is at least 10x30. In the future we hope to prevent crashes, but in Version 0.9.0 we limit ourselves to trying to provide useful information.</p>
+</div>
+</div>
+</div>
+<div id="sec:decl-argum-return" class="section level2">
+<h2><span class="header-section-number">11.4</span> Declaring argument and return types</h2>
+<p>NIMBLE requires that types of arguments and the type of the return value be explicitly declared.</p>
+<p>As illustrated in the example in Section <a href="cha-RCfunctions.html#sec:RC-intro">11.1</a>, the syntax for a type declaration is:</p>
+<p><code>type(nDim, sizes)</code></p>
+<p>where <code>type</code> is <code>double</code>, <code>integer</code>, <code>logical</code> or <code>character</code>. (In more general nimbleFunction programming, a type can also be a nimbleList type, discussed in Section <a href="cha-data-structures.html#sec:nimbleLists">14.2</a>.)</p>
+<p>For example <code>run = function(x = double(1)) { ...</code>} sets the single argument of the run function to be a vector of numeric values of unknown size.</p>
+<p>For <code>type(nDim, sizes)</code>, <code>nDim</code> is the number of dimensions, with 0 indicating scalar and omission of <code>nDim</code> defaulting to a scalar. <code>sizes</code> is an optional vector of fixed, known sizes.<br />
+For example, <code>double(2, c(4, 5))</code> declares a <span class="math inline">\(4 \times 5\)</span> matrix. If sizes are omitted, they will be set either by assignment or by <code>setSize</code>.</p>
+<p>In the case of scalar arguments only, a default value can be provided. For example, to provide 1.2 as a default:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">myfun &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
+    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">x =</span> <span class="kw">double</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="fl">1.2</span>)) {
+})</code></pre></div>
+<p>Functions with return values must have their return type explicitly declared using <code>returnType</code>, which can occur anywhere in the run code. For example <code>returnType(integer(2))</code> declares the return type to be a matrix of integers. A return type of <code>void()</code> means there is no return value, which is the default if no <code>returnType</code> statement is included.</p>
+</div>
+<div id="sec:comp-nimbl-pass" class="section level2">
+<h2><span class="header-section-number">11.5</span> Compiled nimbleFunctions pass arguments by reference</h2>
+<p>Uncompiled nimbleFunctions pass arguments like R does, by copy. If <code>x</code> is passed as an argument to function <code>foo</code>, and <code>foo</code> modifies <code>x</code> internally, it is modifying its copy of <code>x</code>, not the original <code>x</code> that was passed to it.</p>
+<p>Compiled nimbleFunctions pass arguments to other compiled nimbleFunctions by reference (or pointer). This is very different. Now if <code>foo</code> modifies <code>x</code> internally, it is modifying the same <code>x</code> that was passed to it. This allows much faster execution but is obviously a fundamentally different behavior.</p>
+<p>Uncompiled execution of nimbleFunctions is primarily intended for debugging. However, debugging of how nimbleFunctions interact via arguments requires testing the compiled versions.</p>
+</div>
+<div id="sec:calling-external-code" class="section level2">
+<h2><span class="header-section-number">11.6</span> Calling external compiled code</h2>
+<p>If you have a function in your own compiled C or C++ code and an appropriate header file, you can generate a nimbleFunction that wraps access to that function, which can then be used in other nimbleFunctions. See <code>help(nimbleExternalCall)</code> for an example. This also contains an example of using an externally compiled function in the BUGS code of a model.</p>
+</div>
+<div id="sec:calling-R-code" class="section level2">
+<h2><span class="header-section-number">11.7</span> Calling uncompiled R functions from compiled nimbleFunctions</h2>
+<p>Sometimes one may want to combine R functions with compiled nimbleFunctions. Obviously a compiled nimbleFunction can be called from R. An R function with numeric inputs and output can be called from compiled nimbleFunctions. The call to the R function is wrapped in a nimbleFunction returned by <code>nimbleRcall</code>. See <code>help(nimbleRcall)</code> for an example, including an example of using the resulting function in the BUGS code of a model.</p>
+
+</div>
+</div>
+<div class="footnotes">
+<hr />
+<ol start="19">
+<li id="fn19"><p>Of course, in general, explicitly calculating the inverse is not the recommended numerical recipe for least squares.<a href="cha-RCfunctions.html#fnref19">↩</a></p></li>
+<li id="fn20"><p>On the machine this is being written on, the compiled version runs a few times faster than the uncompiled version. However we refrain from formal speed tests.<a href="cha-RCfunctions.html#fnref20">↩</a></p></li>
+<li id="fn21"><p>For the multivariate t, these are more properly termed the ‘inverse scale’ and ‘scale’ matrices<a href="cha-RCfunctions.html#fnref21">↩</a></p></li>
+</ol>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="overview.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="cha-user-defined.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+    </div>
+  </div>
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+"sharing": {
+"github": false,
+"facebook": true,
+"twitter": true,
+"google": false,
+"linkedin": false,
+"weibo": false,
+"instapaper": false,
+"vk": false,
+"all": ["facebook", "google", "twitter", "linkedin", "weibo", "instapaper"]
+},
+"fontsettings": {
+"theme": "white",
+"family": "sans",
+"size": 2
+},
+"edit": {
+"link": null,
+"text": null
+},
+"history": {
+"link": null,
+"text": null
+},
+"download": ["NimbleUserManual.pdf", "NimbleUserManual.epub"],
+"toc": {
+"collapse": "subsection"
+},
+"toc_depth": 3
+});
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    var src = "";
+    if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
+    if (location.protocol !== "file:" && /^https?:/.test(src))
+      src = src.replace(/^https?:/, '');
+    script.src = src;
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+</body>
+
+</html>

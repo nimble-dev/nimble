@@ -1,0 +1,14 @@
+Error (C_dmnorm_chol): 'x' and 'chol' are not of compatible sizes.
+Error (C_dmnorm_chol): 'x' and 'chol' are not of compatible sizes.
+Error in forwardsolve(t(cholesky), I) : invalid 'k' argument
+Error in forwardsolve(t(cholesky), I) : invalid 'k' argument
+Error (C_dmnorm_chol): 'x' and 'chol' are not of compatible sizes.
+Error (C_dmnorm_chol): 'x' and 'chol' are not of compatible sizes.
+Error (C_dwish_chol): 'chol' must be a square matrix with the same dimensions as 'x'.
+Error (C_dwish_chol): 'chol' must be a square matrix with the same dimensions as 'x'.
+Error in backsolve(cholesky, forwardsolve(t(cholesky), I)) : 
+  invalid 'k' argument
+Error in backsolve(cholesky, forwardsolve(t(cholesky), I)) : 
+  invalid 'k' argument
+Error (C_dwish_chol): 'x' and 'chol' must be real matrices.
+Error (C_dwish_chol): 'x' and 'chol' must be real matrices.

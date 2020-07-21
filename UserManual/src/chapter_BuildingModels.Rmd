@@ -1,0 +1,420 @@
+<!--- % See http://yihui.name/knitr/demo/child/ for documentation on the parent/child document system of knitr -->
+
+
+
+```{r, echo=FALSE}
+require(nimble)
+``` 
+
+```{r, echo=FALSE}
+read_chunk(file.path('chunks', 'usingBugsModels_chunks.R'))  # one can put code chunks here if one wants
+``` 
+
+# Building and using models {#cha:building-models}
+
+This chapter explains how to build and manipulate model objects
+starting from BUGS code.
+
+
+## Creating model objects
+
+NIMBLE provides two functions for creating model objects:
+`nimbleModel` and `readBUGSmodel`. The first, `nimbleModel`,
+is more general and was illustrated in Chapter \@ref(cha:lightning-intro). The
+second, `readBUGSmodel` provides compatibility with BUGS file
+formats for models, variables, data, and initial values for MCMC.  
+
+In addition one can create new model objects from existing model objects.
+
+### Using *nimbleModel* to create a model
+
+`nimbleModel` processes BUGS code to determine all the nodes,
+variables, and their relationships in a model.  Any constants must be
+provided at this step.  Data and initial values can optionally be
+provided.  BUGS code passed to `nimbleModel` must go through
+`nimbleCode`.
+
+We look again at the pump example from the introduction:
+
+```{r, reinitPumpModel, message=FALSE}
+``` 
+
+#### Data and constants {#sec:data-constants}
+
+NIMBLE makes a distinction between data and constants:
+
+
+  - *Constants* can never be changed and must be provided when a
+  model is defined.  For example, a vector of known index values, such
+  as for block indices, helps define the model graph itself and must
+  be provided as constants.  Variables used in the index ranges of
+  for-loops must also be provided as constants.
+  - *Data* is a label for the role a node plays in the model.
+  Nodes marked as data will by default be protected from any functions
+  that would simulate over their values (see `simulate` in Chapter
+  \@ref(cha:using-models)), but it is possible to over-ride
+  that default or to change their values by direct assignment.  This
+  allows an algorithm to be applied to many data sets in the same
+  model without re-creating the model each time.  It also allows
+  simulation of data in a model.  
+<!---  TODO: I don't think this statement is true (i.e., setData()): 
+  % Data must be provided when an -->
+<!--- instance of a model is created from the model definition, although 
+  % they can also be provided earlier when a model is defined. -->
+
+
+WinBUGS, OpenBUGS and JAGS do not allow data values to be changed or
+different nodes to be labeled as data without starting from the
+beginning again.  Hence they do not distinguish between constants and
+data.  
+
+For compatibility with BUGS and JAGS, NIMBLE allows both to be
+provided in the `constants` argument to `nimbleModel`, in
+which case NIMBLE handles values for stochastic nodes as data and
+everything else as constants.
+
+Values for nodes that appear only on the right-hand side of BUGS
+declarations (e.g., covariates/predictors) can be provided as constants or as data or initial values. There is no real difference between providing as data or initial values and the values can be added after building a model via `setInits` or `setData`. 
+
+#### Providing data and initial values to an existing model
+
+Whereas constants must be provided during the call to
+`nimbleModel`, data and initial values can be provided later via
+the model member functions `setData` and `setInits`. For
+example, if `pumpData` is a named list of data values (as above),
+then `pump$setData(pumpData)` sets the named variables to the
+values in the list.
+
+`setData` does two things: it sets the values of the data nodes,
+and it flags those nodes as containing data.  nimbleFunction
+programmers can then use that information to control whether an
+algorithm should over-write data or not.  For example, NIMBLE's
+`simulate` functions by default do not overwrite data values but
+can be told to do so.  Values of data variables can be replaced, and
+the indication of which nodes should be treated as data can be reset
+by using the `resetData` method, e.g. `pump$resetData()`.
+
+#### Missing data values
+
+Sometimes one needs a model variable to have a mix of data and
+non-data, often due to missing data values.  In NIMBLE, when data
+values are provided, any nodes with `NA` values will *not* be
+labeled as data.  A node following a multivariate distribution must be either entirely observed or entirely missing.
+
+Here's an example of running an MCMC on the *pump* model, with two
+of the observations taken to be missing.  Some of the steps in this
+example are documented more below.  NIMBLE's default MCMC
+configuration will treat the missing values as unknowns to be sampled,
+as can be seen in the MCMC output here.
+
+```{r, pump-missing, message=FALSE}
+pumpMiss <- pump$newModel()
+pumpMiss$resetData()
+pumpDataNew <- pumpData
+pumpDataNew$x[c(1, 3)] <- NA
+pumpMiss$setData(pumpDataNew)
+
+pumpMissConf <- configureMCMC(pumpMiss)
+pumpMissConf$addMonitors('x', 'alpha', 'beta', 'theta')
+
+pumpMissMCMC <- buildMCMC(pumpMissConf)
+Cobj <- compileNimble(pumpMiss, pumpMissMCMC)
+
+niter <- 10
+set.seed(0)
+Cobj$pumpMissMCMC$run(niter)
+samples <- as.matrix(Cobj$pumpMissMCMC$mvSamples)
+
+samples[1:5, 13:17]
+
+``` 
+
+Missing values may also occur in explanatory/predictor variables.  Values for
+such variables should be passed in via the `data` argument to
+`nimbleModel`, with `NA` for the missing values.  In some
+contexts, one would want to specify distributions for such explanatory
+variables, for example so that an MCMC would impute the missing values.
+
+#### Defining alternative models with the same code {#sec:defin-altern-models}
+
+Avoiding code duplication is a basic principle of good programming. In
+NIMBLE, one can use definition-time if-then-else statements to create
+different models from the same code.  As a simple example, say we have
+a linear regression model and want to consider including or omitting
+`x[2]` as an explanatory variable:
+
+```{r, message=FALSE}
+regressionCode <- nimbleCode({
+    intercept ~ dnorm(0, sd = 1000)
+    slope1 ~ dnorm(0, sd = 1000)
+    if(includeX2) {
+        slope2 ~ dnorm(0, sd = 1000)
+        for(i in 1:N) 
+            predictedY[i] <- intercept + slope1 * x1[i] + slope2 * x2[i]
+    } else {
+        for(i in 1:N) predictedY[i] <- intercept + slope1 * x1[i]
+    }
+    sigmaY ~ dunif(0, 100)
+    for(i in 1:N) Y[i] ~ dnorm(predictedY[i], sigmaY)
+})
+
+includeX2 <- FALSE
+modelWithoutX2 <- nimbleModel(regressionCode, constants = list(N = 30), 
+                              check=FALSE)
+modelWithoutX2$getVarNames()
+includeX2 <- TRUE
+modelWithX2 <- nimbleModel(regressionCode, constants = list(N = 30), 
+                           check = FALSE)
+modelWithX2$getVarNames()
+``` 
+
+Whereas the *constants* are a property of the *model definition*
+-- since they may help determine the model structure itself --
+*data* nodes can be different in different copies of the model
+generated from the same *model definition*.   The `setData` and
+`setInits` described above can be used for each copy of the model.
+
+#### Providing dimensions via *nimbleModel* {#sec:provide-dimensions}
+
+`nimbleModel` can usually determine the dimensions of every
+variable from the declarations in the BUGS code.  However, it is
+possible to use a multivariate object only with empty indices
+(e.g. `x[,]`), in which case the dimensions must be provided as an
+argument to `nimbleModel`.
+
+Here's an example with multivariate nodes.  The first provides indices, so
+no `dimensions` argument is needed, while the second omits the
+indices and provides a `dimensions` argument instead.
+
+```{r, multivar-index, message=FALSE}
+code <- nimbleCode({
+  y[1:K] ~ dmulti(p[1:K], n)
+  p[1:K] ~ ddirch(alpha[1:K])
+  log(alpha[1:K]) ~ dmnorm(alpha0[1:K], R[1:K, 1:K])
+})
+
+K <- 5
+model <- nimbleModel(code, constants = list(n = 3, K = K,
+                          alpha0 = rep(0, K), R = diag(K)),
+                     check = FALSE)
+
+codeAlt <- nimbleCode({
+  y[] ~ dmulti(p[], n)
+  p[] ~ ddirch(alpha[])
+  log(alpha[]) ~ dmnorm(alpha0[], R[ , ])
+})
+
+model <- nimbleModel(codeAlt, constants = list(n = 3, K = K, alpha0 = rep(0, K),
+                                               R = diag(K)),
+                              dimensions = list(y = K, p = K, alpha = K),
+                              check = FALSE)
+```
+
+In that example, since `alpha0` and `R` are provided as constants, we don't need to specify their dimensions.
+
+### Creating a model from standard BUGS and JAGS input files {#sec:readBUGSmodel}
+
+Users with BUGS and JAGS experience may have files set up in standard
+formats for use in BUGS and JAGS.  `readBUGSmodel` can
+read in the model, data/constant values and initial values in those
+formats. It can also take information directly from R objects
+somewhat more flexibly than `nimbleModel`, specifically allowing
+inputs set up similarly to those for BUGS and JAGS.
+In either case, after processing the inputs, it calls `nimbleModel`.
+Note that unlike BUGS and JAGS, only a single set of initial values can be
+specified in creating a model. Please see `help(readBUGSmodel)` for argument details.  
+
+As an example of using `readBUGSmodel`, let's create a model for the *pump* example from BUGS.
+```{r, readBUGSmodel, message=FALSE}
+pumpDir <- system.file('classic-bugs', 'vol1', 'pump', package = 'nimble')
+pumpModel <- readBUGSmodel('pump.bug', data = 'pump-data.R', 
+                           inits = 'pump-init.R', dir = pumpDir)
+                           
+``` 
+
+Note that `readBUGSmodel` allows one to include `var` and `data` blocks in the model file as in some of the BUGS examples (such as `inhaler`). The `data` block pre-computes constant and data values. Also note that if  `data` and `inits` are provided
+as files, the files should contain R code that creates objects
+analogous to what would populate the list if a list were provided
+instead.  Please see the JAGS manual examples or the
+`classic_bugs` directory in the NIMBLE package for example
+syntax. 
+<!---  PdV - at some point I think there was discussion of code that would appear in a 'data' block being put in the model code directly, but I think this could lead to variable on the LHS twice with <- and ~, so I think I'm not understanding what we want to allow in code defining a model 
+% I have no recollection of that idea.  Doesn't sound safe. -Perry -->
+NIMBLE by and large does not need the information given in a `var`
+block but occasionally this is used to determine dimensionality, such
+as in the case of syntax like `xbar <- mean(x[])` where `x` is a variable that appears only on the right-hand side of BUGS expressions.   
+
+Note that NIMBLE does not handle formatting such as in some of the
+original BUGS examples in which data was indicated with syntax such as
+`data x in 'x.txt'`.
+
+### Making multiple instances from the same model definition {#sub:multiple-instances}
+  
+Sometimes it is useful to have more than one copy of the same model.
+For example, an algorithm (i.e., nimbleFunction) such as an MCMC will be
+bound to a particular model before it is run.  A user could build multiple algorithms
+to use the same model instance, or they may want each algorithm to
+have its own instance of the model.
+
+There are two ways to create new instances of a model, shown in this example:
+
+```{r, message=FALSE}
+simpleCode <- nimbleCode({
+    for(i in 1:N) x[i] ~ dnorm(0, 1)
+})
+
+# Return the model definition only, not a built model
+simpleModelDefinition <- nimbleModel(simpleCode, constants = list(N = 10),
+                                     returnDef = TRUE, check = FALSE)
+# Make one instance of the model
+simpleModelCopy1 <- simpleModelDefinition$newModel(check = FALSE)
+# Make another instance from the same definition
+simpleModelCopy2 <- simpleModelDefinition$newModel(check = FALSE)
+# Ask simpleModelCopy2 for another copy of itself
+simpleModelCopy3 <- simpleModelCopy2$newModel(check = FALSE)
+``` 
+
+Each copy of the model can have different nodes flagged as data and
+different values in any nodes.  They cannot have different values of
+`N` because that is a constant; it must be a constant because
+it helps define the model.
+
+## NIMBLE models are objects you can query and manipulate {#sec:nodes-and-variables}
+
+NIMBLE models are objects that can be modified and manipulated from R.
+In this section we introduce some basic ways to use a model object.
+Chapter \@ref(cha:using-models) covers more topics for writing
+algorithms that use models.
+
+
+### What are variables and nodes? {#sec:what-are-nodes-and-variables}
+
+This section discusses some basic concepts and terminology to
+be able to speak about NIMBLE models clearly.
+
+Suppose we have created a model from the following BUGS code.
+<!---  This chunk can be modified to jut remove the nimbleModel call. -->
+
+```{r, echo=FALSE,message=FALSE}
+read_chunk(file.path('chunks', 'usingBugsModels_chunks.R'))
+``` 
+
+```{r, usingModelsExample, message=FALSE}
+``` 
+
+In NIMBLE terminology:
+
+  - The *variables* of this model are `a`, `y`, `z`,
+  and `y.squared`.
+  - The *nodes* of this model are `a`, `y[1]` $,\ldots,$
+  `y[5]`, `z[1,1]` $,\ldots,$ `z[5, 3]`, and
+  `y.squared[1:5]`.  In graph terminology, nodes are vertices in
+  the model graph.
+  - The *node functions* of this model are
+  `a ~ dnorm(0, 0.001)`, `y[i] ~ dnorm(a, 0.1)`,
+  `z[i,j] ~ dnorm(y[i], sd = 0.1)`, and
+  `y.squared[1:5] <- y[1:5]^2`.  Each node's calculations are
+  handled by a node function.  Sometimes the distinction between
+  nodes and node functions is important, but when it is not important
+  we may refer to both simply as *nodes*.  
+  - The *scalar elements* of this model include all the scalar
+  nodes as well as the scalar elements `y.squared[1]` $,\ldots,$
+  `y.squared[5]` of the multivariate node `y.squared[1:5]`.
+
+
+
+
+### Determining the nodes and variables in a model
+
+  
+One can determine the variables in a model using `getVarNames` and the  nodes in a model using `getNodeNames`. Optional arguments to `getNodeNames` allow you to select only certain types of nodes, as discussed in Section \@ref(sec:get-nodes) and in the R help for `getNodeNames`. 
+
+```{r, getVarAndNodeNames}
+``` 
+
+Note that some of the nodes may be 'lifted' nodes introduced by
+NIMBLE (Section \@ref(sec:introduced-nodes)). In this case `lifted_d1_over_sqrt_oPtau_cP` (this is a node for the standard deviation of the `z` nodes using NIMBLE's canonical parameterization of the normal distribution) is the only lifted node in the model.
+
+To determine the dependencies of one or more nodes in the model, you can use `getDependencies` as discussed in Section \@ref(sec:cdgetdependencies).
+
+
+### Accessing nodes {#sec:accessing-nodes}
+
+Model variables can be accessed and set just as in R using `$` and
+`[[ ]]`.  For example
+
+```{r, usingModelVars}
+``` 
+
+
+While nodes that are part of a variable can be accessed as above, each
+node also has its own name that can be used to access it directly.  For
+example, `y[2]` has the name 'y[2]' and can be accessed by that
+name as follows:
+
+
+```{r, usingNodeNames}
+``` 
+
+Notice that node names can include index blocks, such as
+`model[["z[2:4, 1:2]"]]`, and these are not strictly required to
+correspond to actual nodes.  Such blocks can be subsequently
+sub-indexed in the regular R manner, such as `model[["z[2:4, 1:2]"]][1, 2]`.
+
+### How nodes are named {#sec:how-nodes-are}
+
+Every node has a name that is a character string including its
+indices, with a space after every comma.  For example, `X[1, 2, 3]`
+has the name 'X[1, 2, 3]'.  Nodes following multivariate
+distributions have names that include their index blocks.  For
+example, a multivariate node for `X[6:10, 3]` has the name 'X[6:10, 3]'.
+
+
+The definitive source for node names in a model is
+`getNodeNames`, described previously.  
+
+In the event you need to ensure that a name is formatted correctly,
+you can use the `expandNodeNames` method. For
+example, to get the spaces correctly inserted into 'X[1,1:5]':
+
+```{r, multivariateExpandNodeNames}
+``` 
+
+Alternatively, for those inclined to R's less commonly used features, a nice trick is
+to use its `parse` and `deparse` functions.  
+```{r, }
+deparse(parse(text = "X[1,1:5]", keep.source = FALSE)[[1]])
+``` 
+
+
+The `keep.source = FALSE` makes `parse` more efficient.
+
+### Why use node names? {#sec:why-use-node}
+
+Syntax like `model[["z[2, 3]"]]` may seem strange at first, because
+the natural habit of an R user would be `model[["z"]][2,3]`.  To see
+its utility, consider the example of writing the nimbleFunction given in
+Section \@ref(sec:creating-your-own).  By giving every scalar node a name, even
+if it is part of a multivariate variable, one can write functions in R
+or NIMBLE that access any single node by a name, regardless of the
+dimensionality of the variable in which it is embedded.  This is particularly
+useful for NIMBLE, which resolves how to access a particular node
+during the compilation process.
+
+
+### Checking if a node holds data {#sec:cdisdata}
+
+Finally, you can query whether a node is flagged as data using the
+`isData` method applied to one or more nodes or nodes within variables:
+```{r, isData}
+model$isData('z[1]')
+model$isData(c('z[1]', 'z[2]', 'a'))
+model$isData('z')
+model$isData('z[1:3, 1]')
+``` 
+
+## Using models in parallel
+
+NIMBLE uses Reference Classes and R6 classes for models and algorithms. Objects of these classes are passed by reference and copies of such objects are simply new variable names that reference the same underlying object.
+
+Thus to run an algorithm in parallel on a given model, one must create multiple copies of the model and algorithm, and compiled versions of these, by calling `nimbleModel`, `buildMCMC`, `compileNimble`, etc. once for each copy. In other words all such calls should be within the parallelized block of code. 

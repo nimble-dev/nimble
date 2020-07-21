@@ -8,7 +8,7 @@
 #'
 #' @seealso configureMCMC buildMCMC
 #'
-#' @param Rmodel A NIMBLE model object, created from \link{nimbleModel}.
+#' @param Rmodel A NIMBLE model object, created from \code{\link{nimbleModel}}.
 #'
 #' @param autoIt The number of MCMC iterations to run intermediate MCMC algorithms, through the course of the procedure.  Default 20,000.
 #'
@@ -31,7 +31,7 @@
 #' 
 #' @references
 #'
-#' Turek, D., de Valpine, P., Paciorek, C., and Anderson-Bergman, C. (2015). Automated Parameter Blocking for Efficient Markov-Chain Monte Carlo Sampling. arXiv: 1503.05621. 
+#' Turek, D., de Valpine, P., Paciorek, C., and Anderson-Bergman, C. (2015). Automated Parameter Blocking for Efficient Markov-Chain Monte Carlo Sampling. <arXiv:1503.05621>. 
 #'
 #' @export
 autoBlock <- function(Rmodel,
@@ -65,8 +65,8 @@ autoBlock <- function(Rmodel,
         }
     } else cat('\nAuto-Blocking converged on all scalar (univariate) sampling\n')
     cat('\n')
-## create a new MCMC conf with the autoBlock groupings:
-    conf <- configureMCMC(Rmodel, nodes = NULL)
+    ## create a new MCMC conf with the autoBlock groupings:
+    conf <- configureMCMC(Rmodel, nodes = NULL, print = FALSE)
     for(nodeGroup in lastAutoGrouping) addSamplerToConf(Rmodel, conf, nodeGroup)
     retList <- list(summary=dfmin, autoGroups=nonTrivialGroups, conf=conf)
     return(invisible(retList))
@@ -97,9 +97,11 @@ autoBlockModel <- setRefClass(
             ##nimCopy(from = Rmodel_orig, to = Rmodel, logProb = TRUE)
             ##for(var in ls(Rmodel_orig$isDataEnv)) Rmodel$isDataEnv[[var]] <<- Rmodel_orig$isDataEnv[[var]]  ## copies data flags to the new model
             scalarNodeVector <<- Rmodel$getNodeNames(stochOnly=TRUE, includeData=FALSE, returnScalarComponents=TRUE)
-            discreteInd <- sapply(scalarNodeVector, function(n) Rmodel$isDiscrete(n), USE.NAMES=FALSE)
-            scalarNodeVectorCont <<- scalarNodeVector[!discreteInd]   ## making work with discrete nodes
-            scalarNodeVectorDisc <<- scalarNodeVector[ discreteInd]   ## making work with discrete nodes
+            discreteInd <- as.logical(sapply(scalarNodeVector, function(n) Rmodel$isDiscrete(n), USE.NAMES=FALSE))
+            constrainedInd <- sapply(scalarNodeVector, function(n) Rmodel$getDistribution(n) %in% c('dwish', 'dinvwish', 'ddirch'), USE.NAMES=FALSE)
+            wholeNodeInd <- discreteInd | constrainedInd
+            scalarNodeVectorCont <<- scalarNodeVector[!wholeNodeInd]   ## making work with discrete nodes
+            scalarNodeVectorDisc <<- scalarNodeVector[ wholeNodeInd]   ## making work with discrete nodes, wishart inverse-wishart, and dirichlet
             if(length(scalarNodeVectorCont) == 0) stop('autoBlocking only works with one or more continuous-valued model nodes')   ## making work with discrete nodes
             nodeGroupScalars <<- c(unique(lapply(scalarNodeVectorDisc, Rmodel$expandNodeNames)), scalarNodeVectorCont)   ## making work with discrete nodes, and also with dmulti distributions
             ##nodeGroupAllBlocked <<- list(scalarNodeVector)   ## making work with discrete nodes
@@ -109,11 +111,11 @@ autoBlockModel <- setRefClass(
         },
         ## here is where the initial MCMC conf is created, for re-use -- for new version
         createInitialMCMCconf = function(runList) {
-            initialMCMCconf <<- configureMCMC(Rmodel)
+            initialMCMCconf <<- configureMCMC(Rmodel, print = FALSE)
             nInitialSamplers <- length(initialMCMCconf$samplerConfs)
             initialMCMCconf$addSampler(target = scalarNodeVectorCont[1], type = 'slice',    print=FALSE)  ## add one slice sampler
             initialMCMCconf$addSampler(target = scalarNodeVectorCont[1], type = 'RW',       print=FALSE)  ## add one RW sampler
-            initialMCMCconf$addSampler(target = scalarNodeVectorCont[1], type = 'RW_block', print=FALSE)  ## add one RW_block sampler
+            initialMCMCconf$addSampler(target = scalarNodeVectorCont[1], type = 'RW_block', print=FALSE, silent = TRUE)  ## add one RW_block sampler
             addCustomizedSamplersToInitialMCMCconf(runList)
             initialMCMCconf$addMonitors(monitorsVector, print=FALSE)
             RinitialMCMC <- buildMCMC(initialMCMCconf)
@@ -216,7 +218,7 @@ autoBlockClass <- setRefClass(
                     type <- runListElement
                 } else if(is.list(runListElement)) {
                     type <- 'blocks'
-                } else if(class(runListElement) == '{') {
+                } else if(inherits(runListElement, '{')) {
                     type <- 'conf'
                 } else stop('don\'t understand element in run list')
                 switch(type,
@@ -293,7 +295,7 @@ autoBlockClass <- setRefClass(
             for(i in seq_along(CmcmcList)) {
                 if(setSeed) set.seed(0)
                 abModel$resetCmodelInitialValues()
-                timingList[[i]] <- as.numeric(system.time(CmcmcList[[i]]$run(niter))[3])
+                timingList[[i]] <- as.numeric(system.time(CmcmcList[[i]]$run(niter, progressBar = FALSE))[3])
                 burnedSamples <- extractAndBurnSamples(CmcmcList[[i]])
                 essList[[i]] <- apply(burnedSamples, 2, effectiveSize)
                 essList[[i]] <- essList[[i]][essList[[i]] > 0]  ## exclude nodes with ESS=0 -- for discrete nodes which are fixed to a certain value; making work with discrete nodes
@@ -390,7 +392,7 @@ autoBlockClass <- setRefClass(
         createConfFromGroups = function(groups) {
             groups <- sortGroups(groups)
             ##conf <- configureMCMC(Rmodel, nodes=NULL, monitors=character(0)) ## original version
-            conf <- configureMCMC(oldConf = abModel$initialMCMCconf)  ## new version
+            conf <- configureMCMC(oldConf = abModel$initialMCMCconf, print = FALSE)  ## new version
             conf$setSamplers()  ## new version -- removes all the samplers from initalMCMCconf
             for(nodeGroup in groups) addSamplerToConf(abModel$Rmodel, conf, nodeGroup)
             return(conf)
@@ -466,7 +468,7 @@ autoBlockClass <- setRefClass(
 
 addSamplerToConf <- function(Rmodel, conf, nodeGroup) {
     if(length(nodeGroup) > 1) {
-        conf$addSampler(target = nodeGroup, type = 'RW_block', print = FALSE); return()
+        conf$addSampler(target = nodeGroup, type = 'RW_block', print = FALSE, silent = TRUE); return()
     }
     if(!(nodeGroup %in% Rmodel$getNodeNames()) && !Rmodel$isDiscrete(nodeGroup)) {
         conf$addSampler(target = nodeGroup, type = 'RW', print = FALSE); return()
@@ -483,13 +485,13 @@ addSamplerToConf <- function(Rmodel, conf, nodeGroup) {
         conf$addSampler(target = nodeGroup, type = 'binary', print = FALSE); return()
     }
     if(Rmodel$isDiscrete(nodeGroup)) {
-        if(Rmodel$getNodeDistribution(nodeGroup) == 'dmulti') {
+        if(Rmodel$getDistribution(nodeGroup) == 'dmulti') {
             conf$addSampler(target = nodeGroup, type = 'RW_multinomial', print = FALSE); return()
         }
         conf$addSampler(target = nodeGroup, type = 'slice', print = FALSE); return()
     }
     if(length(Rmodel$expandNodeNames(nodeGroup, returnScalarComponents = TRUE)) > 1) {
-        conf$addSampler(target = nodeGroup, type = 'RW_block', print = FALSE); return()
+        conf$addSampler(target = nodeGroup, type = 'RW_block', print = FALSE, silent = TRUE); return()
     }
     conf$addSampler(target = nodeGroup, type = 'RW', print = FALSE); return()
 }

@@ -92,6 +92,29 @@ test_mcmc(model = code, name = "slice sampler example", resampleData = FALSE, re
 
 
 
+
+### AF_slice sampler example, default control options.
+
+
+code <- nimbleCode({
+  mu[1] <- 10
+  mu[2] <- 20
+  mu[3] <- 30
+  x[1:3] ~ dmnorm(mu[1:3], prec = Q[1:3,1:3])
+})
+
+Q = matrix(c(1.0,0.2,-1.0,0.2,4.04,1.6,-1.0,1.6,10.81), nrow=3)
+data = list(Q = Q)
+inits = list(x = c(10, 20, 30))
+
+test_mcmc(model = code, name = 'block sampler on multivariate node', data = data, seed = 0, numItsC = 10000,
+          results = list(mean = list(x = c(10,20,30)),
+                         var = list(x = diag(solve(Q)))),
+          resultsTolerance = list(mean = list(x = rep(1,3)),
+                                  var = list(x = c(.1, .03, .01))),
+          samplers = list(list(type = 'AF_slice', target = c('x[1:3]'))))
+
+
 ### elliptical slice sampler 'ess'
 
 set.seed(0)
@@ -153,8 +176,8 @@ code <- BUGScode({
     }
 })
 
-sampleVals = list(x = c(3.950556165467749, 1.556947815895538, 1.598959152023738, 2.223758981790340, 2.386291653164086, 3.266282048060261, 3.064019155073057, 3.229661999356182, 1.985990552839427, 2.057249437940977),
-  c = c( 0.010341199485849559, 0.010341199485849559, 0.003846483017887228, 0.003846483017887228, 0.007257679932131476, 0.009680314740728335, 0.012594777095902964, 0.012594777095902964, 0.018179641351556003, 0.018179641351556003))
+    sampleVals = list(x = c(3.950556165467749, 1.556947815895538, 1.371834934033851, 2.036442813764752, 2.247416118159410, 2.537131924778210, 2.382184991769738, 2.653737836857812, 2.934255734970981, 3.007873553270551),
+                      c = c(0.010341199485849559, 0.010341199485849559, 0.003846483017887228, 0.003846483017887228, 0.003846483017887228, 0.006269117826484087, 0.009183580181658716, 0.009183580181658716, 0.006361841408434201, 0.006361841408434201))
 
 test_mcmc(model = code, name = 'check various conjugacies', exactSample = sampleVals, seed = 0, mcmcControl = list(scale=0.01))
 

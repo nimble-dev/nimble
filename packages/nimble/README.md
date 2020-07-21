@@ -25,11 +25,11 @@ install.packages("nimble", type = "source", INSTALL_opts = "--merge-multiarch")
 ```
 or from a local copy of the source package,
 ```
-install.packages("nimble_0.6.tar.gz", repos = NULL, INSTALL_opts = "--merge-multiarch")
+install.packages("nimble_0.6-2.tar.gz", repos = NULL, INSTALL_opts = "--merge-multiarch")
 ```
 Alternatively, use the shell command (in the DOS Command prompt)
 ```
-R CMD INSTALL --merge-multiarch nimble_0.6.tar.gz
+R CMD INSTALL --merge-multiarch nimble_0.6-9.tar.gz
 ```
 Of course, you can also compile directly from a clone of the git repository:
 ```
@@ -42,6 +42,6 @@ This option to installation will ensure that  create both 32 and 64 bit installa
 ## Creating a Windows Binary
 ```
 R CMD build nimble
-R CMD INSTALL --build --merge-multiarch nimble_0.6.tar.gz
+R CMD INSTALL --build --merge-multiarch nimble_0.6-9.tar.gz
 ```
 We need to create the .tar.gz file first, hence the first command.

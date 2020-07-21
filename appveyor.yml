@@ -1,0 +1,77 @@
+# DO NOT CHANGE the "init" and "install" sections below
+
+# Download script file from GitHub
+init:
+  ps: |
+        $ErrorActionPreference = "Stop"
+        Invoke-WebRequest http://raw.github.com/krlmlr/r-appveyor/master/scripts/appveyor-tool.ps1 -OutFile "..\appveyor-tool.ps1"
+        Import-Module '..\appveyor-tool.ps1'
+
+install:
+  ps: Bootstrap
+
+# Adapt as necessary starting from here
+
+branches:
+  only:
+    - devel
+
+platform:
+  - x64  # Required by tensorflow binary installation.
+
+environment:
+  global:
+    USE_RTOOLS: true
+    SKIP_EXPENSIVE_TESTS: TRUE
+
+before_build:
+  - dir
+  - dir ..
+  - cp ../travis-tool.sh packages/travis-tool.sh
+  - cp travis-tool.sh.cmd packages\nimble\travis-tool.sh.cmd
+  - cd packages\nimble
+
+build_script:
+  - travis-tool.sh install_deps
+
+after_build:
+  - echo %cd%
+  - cd ..
+  - cd ..
+  - echo %cd%
+
+test_script:
+  - echo %cd%
+  - dir
+  - python --version
+  - pip freeze --all
+  - python -m pip install --upgrade --ignore-installed pip
+  - pip install --upgrade --ignore-installed setuptools
+  - pip freeze --all
+  # This script currently fails due to tensorflow installation problems.
+  # - Rscript install_requirements.R
+  # The tests currently fail due to a problem sourcing test_utils.R.
+  # - Rscript run_tests.R
+
+on_failure:
+  - 7z a failure.zip *.Rcheck\*
+  - appveyor PushArtifact failure.zip
+
+artifacts:
+  - path: '*.Rcheck\**\*.log'
+    name: Logs
+
+  - path: '*.Rcheck\**\*.out'
+    name: Logs
+
+  - path: '*.Rcheck\**\*.fail'
+    name: Logs
+
+  - path: '*.Rcheck\**\*.Rout'
+    name: Logs
+
+  - path: '\*_*.tar.gz'
+    name: Bits
+
+  - path: '\*_*.zip'
+    name: Bits

@@ -1,22 +1,53 @@
+
+
 double <- function(ndim, dims) {}
 
-labelFunctionCreator <- function(lead, start = 1) {
-  nextIndex <- start
-  force(lead)
-  labelGenerator <- function(reset = FALSE, count = 1, envName = "") {
-    if(reset) {
-      nextIndex <<- 1
-      return(invisible(NULL))
+## Sequential label generation system:
+## labelFunctionMetaCreator returns a function that returns a function.
+## labelFunctionMetaCreator is only called once, immediately below, to create labelFunctionCreator
+## The outer layer allows allLabelFunctionCreators to be in the closure of every function returned
+## by labelFunctionCreator.  Each of those functions is registered as an element of allLableFunctionCreators.
+## 
+## This scheme allows the function resetLabelFunctionCreators below to work simply,
+## resetting the count to 1 for all of the label generators.
+##
+## The motivation for resetLabelFunctionCreators is for testing: If we want to check
+## that two pathways to code generation (one existing, one experimental) create identical
+## code, it is helpful to have identical generated labels.  Resetting all label generators
+## supports this goal.
+labelFunctionMetaCreator <- function() {
+    allLabelFunctionCreators <- list()
+
+    creatorFun <- function(lead, start = 1) {
+        nextIndex <- start
+        force(lead)
+        labelGenerator <- function(reset = FALSE, count = 1, envName = "") {
+            if(reset) {
+                nextIndex <<- 1
+                return(invisible(NULL))
+            }
+            lead <- paste(lead, envName , sep = '_')
+            ans <- paste0(lead, nextIndex - 1 + (1:count))
+            nextIndex <<- nextIndex + count
+            ans
+        }
+        allLabelFunctionCreators[[ length(allLabelFunctionCreators) + 1 ]] <<- labelGenerator
+        labelGenerator
     }
-    lead <- paste(lead, envName , sep = '_')
-    ans <- paste0(lead, nextIndex - 1 + (1:count))
-    nextIndex <<- nextIndex + count
-    ans
-  }
-  labelGenerator
+    creatorFun
+}
+
+labelFunctionCreator <- labelFunctionMetaCreator()
+
+resetLabelFunctionCreators <- function() {
+    allLabelFunctionCreators <- environment(labelFunctionCreator)$allLabelFunctionCreators
+    for(i in allLabelFunctionCreators) {
+        i(reset = TRUE)
+    }
 }
 
 nimbleUniqueID <- labelFunctionCreator("UID")
+nimbleModelID  <- labelFunctionCreator("MID")
 
 dimOrLength <- function(obj, scalarize = FALSE) {
     if(scalarize) if(length(obj) == 1) return(numeric(0))
@@ -34,6 +65,8 @@ dimOrLength <- function(obj, scalarize = FALSE) {
 #'
 #' @author NIMBLE development team
 #'
+#' @aliases dim
+#'
 #' @examples
 #' x <- rnorm(4)
 #' dim(x)
@@ -46,22 +79,6 @@ dimOrLength <- function(obj, scalarize = FALSE) {
 nimDim <- function(obj) {
     if(is.null(dim(obj))) return(length(obj))
     return(dim(obj))
-}
-
-#' return the namespace in which a nimbleFunction is being loaded
-#'
-#' \code{nimbleFunction} constructs and evals a reference class definition.  When \code{nimbleFunction} is used in package source code, this can lead to problems finding things due to namespace issues.  Using \code{where = getLoadingNamespace()} in a \code{nimbleFunction} in package source code should solve this problem.
-#'
-#' @details \code{nimbleFunction}s defined in the NIMBLE source code use \code{where = getLoadingNamespace()}.  Please let the NIMBLE developers know if you encounter problems with this.
-#' 
-#' @export
-getLoadingNamespace <- function() {
-    if(!is.null(nimbleOptions()$notUsingPackage)) if(nimbleOptions()$notUsingPackage) return(globalenv())
-    if(system.file(package = "nimble") == "")
-         return(globalenv())
-    
-    nimbleenv <- getNamespace('nimble')
-    if(environmentIsLocked(nimbleenv)) globalenv() else nimbleenv
 }
 
 getNimbleFunctionEnvironment <- function() {
@@ -148,3 +165,20 @@ createNamedObjectsFromList <- function(lst, writeToFile = NULL, envir = parent.f
     }
 }
 
+#' Print error messages after failed compilation
+#' 
+#' Retrieves the error file from R's tempdir and prints to the screen.
+#'
+#' @param excludeWarnings logical indicating whether compiler warnings should be printed; generally such warnings can be ignored.
+#'
+#' @author Christopher Paciorek
+#' 
+#' @export
+printErrors <- function(excludeWarnings = TRUE) {
+    if(exists('errorFile', nimbleUserNamespace)) {
+        errors <- readLines(nimbleUserNamespace$errorFile)
+        if(excludeWarnings)
+            errors <- grep("^[Ww]arning", errors, value = TRUE, invert = TRUE)
+        cat(errors, sep = "\n")
+    } else cat("No error file found.")
+}

@@ -6,5 +6,7 @@
 \\.gitignore$
 src/Makevars$
 inst/Makevars$
-
-
+NOT_IN_TARBALL$
+^.*\.Rproj$
+^\.Rproj\.user$
+^appveyor\.yml$

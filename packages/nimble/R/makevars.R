@@ -28,13 +28,28 @@ function(pkgFlags, pkgLibs, ..., dir = getwd(),
   if(file.exists(target) && !.force)
      stop(paste(target, "already exists"))
 
-  haveContents = !missing(pkgFlags) || !missing(pkgLibs) || length(list(...))
+  ## This old condition evaluates to TRUE even when we should be generating a new makevars
+  ## For now I am simplifying by conditioning only on .useLib
+  ##  haveContents = !missing(pkgFlags) || !missing(pkgLibs) || length(list(...))
 
-  if(!haveContents) {
+  ##  if(!haveContents) {
+  if(.useLib) {
      if(!file.exists(.copyFrom))
          stop("No default Makevars file")
 
-     file.copy(.copyFrom, target)  # file.link won't work across file systems.
+     ## file.copy(.copyFrom, target)  # file.link won't work across file systems.
+     contents <- readLines(.copyFrom)
+     NIMBLE_INC_DIR <- normalizePath(system.file("include", package = "nimble"), winslash = "\\", mustWork=FALSE)
+     NIMBLE_LIB_DIR <- normalizePath(system.file("CppCode", package = "nimble"), winslash = "\\", mustWork=FALSE)
+     NIMBLE_DIR <- normalizePath(system.file(package = "nimble"), winslash = "\\", mustWork=FALSE)
+     RPATH <- sprintf("-Wl,-rpath %s", normalizePath(system.file("CppCode", package = "nimble"), winslash = "\\", mustWork=FALSE))
+     contents <- gsub("__NIMBLE_INC_DIR__", NIMBLE_INC_DIR, contents)
+     ## NIMBLE_LIB_DIR is being set relative to NIMBLE_DIR so this is not really necessary,
+     ## but keeping in case of unexpected corner case.
+     contents <- gsub("__NIMBLE_LIB_DIR__", NIMBLE_LIB_DIR, contents)
+     contents <- gsub("__NIMBLE_DIR__", NIMBLE_DIR, contents)
+     contents <- gsub("__RPATH__", RPATH, contents)
+     cat(contents, file = target, sep = "\n")
      return(target)
   }
 
@@ -53,7 +68,7 @@ function(pkgFlags, pkgLibs, ..., dir = getwd(),
 genLocalMakevars =
 function(target, vars = character(), .useLib = UseLibraryMakevars)
 {
-    cat("creating local makeVars in", target, "\n")
+##    cat("creating local makeVars in", target, "\n")
     inc.make = system.file("make", if(.useLib) 
                                      "Makevars_lib" 
                                    else if(.Platform$OS.type == "windows")
@@ -61,11 +76,13 @@ function(target, vars = character(), .useLib = UseLibraryMakevars)
                                    else
                                      "Makevars", package = "nimble")
 
-    vars = c(EIGEN_INC = AutoconfInfo$eigenInc,
-             NIMBLE_INC_DIR =  system.file("include", package = "nimble"),
-             NIMBLE_LIB_DIR =  system.file("CppCode", package = "nimble"),        
-             NIMBLE_DIR =  system.file(package = "nimble"),
-             RPATH = sprintf("-rpath %s", system.file("CppCode", package = "nimble")),
+    cppad_inc <- paste0("'-I\"", nimbleOptions('CppADdir'), "\"'")
+    vars = c(EIGEN_INC = "", ## AutoconfInfo$eigenInc, ## we used to generate an AutoconfInfo list. We'll need a new mechanism if a local Makevars needs to be generated and the user has non-nimble-provided Eigen
+             CPPAD_INC = "", ##cppad_inc,  ## Currently, require cppad folder to be placed within include folder.  Todo: get CppAD_directory functional.
+             NIMBLE_INC_DIR =  normalizePath(system.file("include", package = "nimble"), winslash = "\\", mustWork=FALSE),
+             NIMBLE_LIB_DIR =  normalizePath(system.file("CppCode", package = "nimble"), winslash = "\\", mustWork=FALSE),
+             NIMBLE_DIR =  normalizePath(system.file(package = "nimble"), winslash = "\\", mustWork=FALSE),
+             RPATH = sprintf("-rpath %s", normalizePath(system.file("CppCode", package = "nimble"), winslash = "\\", mustWork=FALSE)),
              vars)
     varDefs = mapply(function(id, val) paste(id, val, sep = "="), names(vars), vars)
 

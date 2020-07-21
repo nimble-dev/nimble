@@ -5,23 +5,32 @@
 # lib=TRUE
 # from=Makevars_lib.in
 
+ifndef CPPAD_INC
+CPPAD_INC=@CPPAD_INC@
+endif
+
 ifndef EIGEN_INC
 EIGEN_INC=@EIGEN_INC@
 endif
+
+# Note that as of staged installation (2019-03-01) that when using
+# --enable-dylib=true, these are
+# being temporarily replaced by configure with their __FOO__
+# counterparts, which are then replaced via createMakevars() at run-time.
 
 ifndef NIMBLE_INC_DIR
 NIMBLE_INC_DIR=@NIMBLE_INC_DIR@
 endif
 
 ifndef NIMBLE_DIR
-NIMBLE_DIR="@NIMBLE_DIR@"
+NIMBLE_DIR=@NIMBLE_DIR@
 endif
 
 ifndef RPATH
 RPATH=@RPATH@
 endif
 
-PKG_CPPFLAGS=$(EIGEN_INC) -DEIGEN_MPL2_ONLY=1 -I"$(NIMBLE_INC_DIR)"
+PKG_CPPFLAGS= -DR_NO_REMAP $(EIGEN_INC) $(CPPAD_INC) -DEIGEN_MPL2_ONLY=1 -I"$(NIMBLE_INC_DIR)" -Wno-misleading-indentation -Wno-ignored-attributes -Wno-deprecated-declarations
 NIMBLE_LIB_DIR="$(NIMBLE_DIR)/CppCode"
 PKG_LIBS=-L"$(NIMBLE_LIB_DIR)"  -lnimble $(RPATH) $(LAPACK_LIBS) $(BLAS_LIBS) 
-
+CXX_STD = CXX11

@@ -1,14 +1,97 @@
 # code for creating BUGS model from a variety of input formats
 # pieces written by Daniel Turek and Christopher Paciorek
 
-BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list(), inits=list(), returnModel=FALSE, where=globalenv(), debug=FALSE, check=getNimbleOption('checkModel'), calculate = TRUE) {
-    if(missing(name)) name <- deparse(substitute(code))
+BUGSmodel <- function(code,
+                      name = NULL,
+                      constants = list(),
+                      dimensions = list(),
+                      data = list(),
+                      inits = list(),
+                      returnModel = FALSE,
+                      where = globalenv(),
+                      debug = FALSE,
+                      check = getNimbleOption('checkModel'),
+                      calculate = TRUE,
+                      userEnv = parent.frame()) {
+    nimbleModel(code = code,
+                constants = constants,
+                inits = inits,
+                dimensions = dimensions,
+                returnDef = !returnModel,
+                where = where,
+                debug = debug,
+                check = check,
+                calculate = calculate,
+                name = name,
+                userEnv = userEnv)
+}
+
+
+
+#' Create a NIMBLE model from BUGS code
+#'
+#' processes BUGS model code and optional constants, data, and initial values. Returns a NIMBLE model (see \code{\link{modelBaseClass}}) or model definition.
+#'
+#' @param code code for the model in the form returned by \code{\link{nimbleCode}} or (equivalently) \code{\link{quote}}
+#' @param constants named list of constants in the model.  Constants cannot be subsequently modified. For compatibility with JAGS and BUGS, one can include data values with constants and \code{\link{nimbleModel}} will automatically distinguish them based on what appears on the left-hand side of expressions in \code{code}.
+#' @param data named list of values for the data nodes.  Data values can be subsequently modified.  Providing this argument also flags nodes as having data for purposes of algorithms that inspect model structure. Values that are NA will not be flagged as data.
+#' @param inits named list of starting values for model variables. Unlike JAGS, should only be a single list, not a list of lists.
+#' @param dimensions named list of dimensions for variables.  Only needed for variables used with empty indices in model code that are not provided in constants or data.
+#' @param returnDef logical indicating whether the model should be returned (FALSE) or just the model definition (TRUE).
+#' @param where argument passed to \code{\link{setRefClass}}, indicating the environment in which the reference class definitions generated for the model and its modelValues should be created.  This is needed for managing package namespace issues during package loading and does not normally need to be provided by a user.
+#' @param debug logical indicating whether to put the user in a browser for debugging.  Intended for developer use.
+#' @param check logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel'.  See \code{\link{nimbleOptions}} for details.
+#' @param calculate logical indicating whether to run \code{\link{calculate}} on the model after building it; this will calculate all deterministic nodes and logProbability values given the current state of all nodes. Default is TRUE. For large models, one might want to disable this, but note that deterministic nodes, including nodes introduced into the model by NIMBLE, may be \code{NA}. 
+#' @param name optional character vector giving a name of the model for internal use.  If omitted, a name will be provided.
+#' @param userEnv environment in which if-then-else statements in BUGS code will be evaluated if needed information not found in \code{constants}; intended primarily for internal use only
+#' @author NIMBLE development team
+#' @export
+#' @details
+#' See the User Manual or \code{help(\link{modelBaseClass})} for information about manipulating NIMBLE models created by \code{\link{nimbleModel}}, including methods that operate on models, such as \code{\link{getDependencies}}.
+#'
+#' The user may need to provide dimensions for certain variables as in some cases NIMBLE cannot automatically determine the dimensions and sizes of variables. See the User Manual for more information.
+#'
+#' As noted above, one may lump together constants and data (as part of the \code{constants} argument (unlike R interfaces to JAGS and BUGS where they are provided as the \code{data} argument). One may not provide lumped constants and data as the \code{data} argument.
+#'
+#' For variables that are a mixture of data nodes and non-data nodes, any values passed in via \code{inits} for components of the variable that are data will be ignored. All data values should be passed in through \code{data} (or \code{constants} as just discussed).
+#'
+#' @seealso \code{\link{readBUGSmodel}} for creating models from BUGS-format model files
+
+#' @examples
+#' code <- nimbleCode({
+#'     x ~ dnorm(mu, sd = 1)
+#'     mu ~ dnorm(0, sd = prior_sd)
+#' })
+#' constants = list(prior_sd = 1)
+#' data = list(x = 4)
+#' Rmodel <- nimbleModel(code, constants = constants, data = data)
+nimbleModel <- function(code,
+                        constants = list(),
+                        data = list(),
+                        inits = list(),
+                        dimensions = list(),
+                        returnDef = FALSE,
+                        where = globalenv(),
+                        debug = FALSE,
+                        check = getNimbleOption('checkModel'),
+                        calculate = TRUE,
+                        name = NULL,
+                        userEnv = parent.frame()) {
+    returnModel <- !returnDef
+    if(is.null(name)) name <- paste0(gsub(" ", "_", substr(deparse(substitute(code))[1], 1, 10)),
+                                     '_',
+                                     nimbleModelID())
+    name <- gsub("::", "_cc_", name) ## :: can arise from a call via do.call, for example, giving name with "base::quote_"...
     if(length(constants) && sum(names(constants) == ""))
       stop("BUGSmodel: 'constants' must be a named list")
     if(length(dimensions) && sum(names(dimensions) == ""))
       stop("BUGSmodel: 'dimensions' must be a named list")
     if(length(data) && sum(names(data) == ""))
         stop("BUGSmodel: 'data' must be a named list")
+    if(any(!sapply(data, function(x) {
+        is.numeric(x) || is.logical(x) ||
+            (is.data.frame(x) && all(sapply(x, 'is.numeric'))) })))
+        stop("BUGSmodel: elements of 'data' must be numeric")
     ## constantLengths <- unlist(lapply(constants, length))
     ## if(any(constantLengths > 1)) {
     ##     iLong <- which(constantLengths > 1)
@@ -18,7 +101,7 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
     ## }
     md <- modelDefClass$new(name = name)
     if(nimbleOptions('verbose')) message("defining model...")
-    md$setupModel(code=code, constants=constants, dimensions=dimensions, debug=debug)
+    md$setupModel(code=code, constants=constants, dimensions=dimensions, inits = inits, data = data, userEnv = userEnv, debug=debug)
     if(!returnModel) return(md)
     # move any data lumped in 'constants' into 'data' for
     # backwards compatibility with JAGS/BUGS
@@ -29,7 +112,7 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
         warning("BUGSmodel: found the same variable(s) in both 'data' and 'constants'; using variable(s) from 'data'.\n")
     if(sum(dataVarIndices)) {
         data <- c(data, constants[dataVarIndices])
-        cat("Adding", paste(names(constants)[dataVarIndices], collapse = ','), "as data for building model.\n")
+        if(nimbleOptions('verbose')) message("Adding ", paste(names(constants)[dataVarIndices], collapse = ', '), " as data for building model.")
     }
     if(nimbleOptions('verbose')) message("building model...")
     model <- md$newModel(data=data, inits=inits, where=where, check=check, calculate = calculate, debug = debug)
@@ -37,51 +120,14 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
     return(model)
 }
 
-
-#' Create a NIMBLE mode from BUGS code
-#'
-#' processes BUGS model code and optional constants, data, and initial values. Returns a NIMBLE model or model definition
-#'
-#' @param code code for the model in the form returned by \link{nimbleCode} or (equivalently) \code{quote}
-#' @param constants named list of constants in the model.  Constants cannot be subsequently modified. For compatibility with JAGS and BUGS, one can include data values with constants and \code{nimbleModel} will automatically distinguish them based on what appears on the left-hand side of expressions in \code{code}.
-#' @param data named list of values for the data nodes.  Data values can be subsequently modified.  Providing this argument also flags nodes as having data for purposes of algorithms that inspect model structure. Values that are NA will not be flagged as data.
-#' @param inits named list of starting values for model variables. Unlike JAGS, should only be a single list, not a list of lists.
-#' @param dimensions named list of dimensions for variables.  Only needed for variables used with empty indices in model code that are not provided in constants or data.
-#' @param returnDef logical indicating whether the model should be returned (FALSE) or just the model definition (TRUE).
-#' @param where argument passed to \code{setRefClass}, indicating the environment in which the reference class definitions generated for the model and its modelValues should be created.  This is needed for managing package namespace issues during package loading and does not normally need to be provided by a user.
-#' @param debug logical indicating whether to put the user in a browser for debugging.  Intended for developer use.
-#' @param check logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel', see help on \code{nimbleOptions} for details.
-#' @param calculate logical indicating whether to run \code{calculate} on the model after building it; this will calculate all deterministic nodes and logProbability values given the current state of all nodes. Default is TRUE. For large models, one might want to disable this, but note that deterministic nodes, including nodes introduced into the model by NIMBLE, may be \code{NA}. 
-#' @param name optional character vector giving a name of the model for internal use.  If omitted, a name will be provided.
-#' @author NIMBLE development team
-#' @export
-#' @details
-#' See the User Manual or \code{help(modelBaseClass)} for information about manipulating NIMBLE models created by \code{nimbleModel}, including methods that operate on models, such as \code{getDependencies}.
-#'
-#' The user may need to provide dimensions for certain variables as in some cases NIMBLE cannot automatically determine the dimensions and sizes of variables. See the User Manual for more information.
-#'
-#' As noted above, one may lump together constants and data (as part of the \code{constants} argument (unlike R interfaces to JAGS and BUGS where they are provided as the \code{data} argument). One may not provide lumped constants and data as the \code{data} argument.
-#'
-#' For variables that are a mixture of data nodes and non-data nodes, any values passed in via \code{inits} for components of the variable that are data will be ignored. All data values should be passed in through \code{data} (or \code{constants} as just discussed).
-#' @examples
-#' code <- nimbleCode({
-#'     x ~ dnorm(mu, sd = 1)
-#'     mu ~ dnorm(0, sd = prior_sd)
-#' })
-#' constants = list(prior_sd = 1)
-#' data = list(x = 4)
-#' Rmodel <- nimbleModel(code, constants = constants, data = data)
-nimbleModel <- function(code, constants=list(), data=list(), inits=list(), dimensions=list(), returnDef = FALSE, where=globalenv(), debug=FALSE, check=getNimbleOption('checkModel'), calculate = TRUE, name)
-    BUGSmodel(code, name, constants, dimensions, data, inits, returnModel = !returnDef, where, debug, check, calculate)
-
 #' Turn BUGS model code into an object for use in \code{nimbleModel} or \code{readBUGSmodel}
 #'
-#' Simply keeps model code as an R call object, the form needed by \link{nimbleModel} and optionally usable by \link{readBUGSmodel}
+#' Simply keeps model code as an R call object, the form needed by \code{\link{nimbleModel}} and optionally usable by \code{\link{readBUGSmodel}}.
 #'
 #' @param code expression providing the code for the model
 #' @author Daniel Turek
 #' @export
-#' @details It is equivalent to use the R function \code{quote}.  \code{nimbleCode} is simply provided as a more readable alternative for NIMBLE users not familiar with \code{quote}.
+#' @details It is equivalent to use the R function \code{\link{quote}}.  \code{nimbleCode} is simply provided as a more readable alternative for NIMBLE users not familiar with \code{quote}.
 #' @examples
 #' code <- nimbleCode({
 #'     x ~ dnorm(mu, sd = 1)
@@ -198,7 +244,7 @@ processNonParseableCode <- function(text) {
 #'
 #' \code{readBUGSmodel} processes inputs providing the model and values for constants, data, initial values of the model in a variety of forms, returning a NIMBLE BUGS R model
 #'
-#' @param model one of (1) a character string giving the file name containing the BUGS model code, with relative or absolute path, (2) an R function whose body is the BUGS model code, or (3) the output of \code{nimbleCode}. If a file name, the file can contain a 'var' block and 'data' block in the manner of the JAGS versions of the BUGS examples but should not contain references to other input data files nor a const block. The '.bug' or '.txt' extension can be excluded.
+#' @param model one of (1) a character string giving the file name containing the BUGS model code, with relative or absolute path, (2) an R function whose body is the BUGS model code, or (3) the output of \code{\link{nimbleCode}}. If a file name, the file can contain a 'var' block and 'data' block in the manner of the JAGS versions of the BUGS examples but should not contain references to other input data files nor a const block. The '.bug' or '.txt' extension can be excluded.
 #'
 #' @param data (optional) (1) character string giving the file name for an R file providing the input constants and data as R code [assigning individual objects or as a named list], with relative or absolute path, or (2) a named list providing the input constants and data. If neither is provided, the function will look for a file named 'name_of_model-data' including extensions .R, .r, or .txt.
 #'
@@ -208,21 +254,27 @@ processNonParseableCode <- function(text) {
 #'
 #' @param useInits boolean indicating whether to set the initial values, either based on \code{inits} or by finding the '-inits' file corresponding to the input model file
 #'
-#' @param debug logical indicating whether to put the user in a browser for debugging when \code{readBUGSmodel} calls \code{nimbleModel}.  Intended for developer use.
-#'
-#' @param check logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel', see help on \code{nimbleOptions} for details.
+#' @param debug logical indicating whether to put the user in a browser for debugging when \code{\link{readBUGSmodel}} calls \code{\link{nimbleModel}}.  Intended for developer use.
 #'
 #' @param returnComponents logical indicating whether to return pieces of model  object without building the model. Default is FALSE.
+#'
+#' @param check logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel'. See \code{\link{nimbleOptions}} for details.
+#'
+#' @param calculate logical indicating whether to run \code{\link{calculate}} on the model after building it; this will calculate all deterministic nodes and logProbability values given the current state of all nodes. Default is TRUE. For large models, one might want to disable this, but note that deterministic nodes, including nodes introduced into the model by NIMBLE, may be \code{NA}. 
 #'
 #' @author Christopher Paciorek
 #'
 #' @return returns a NIMBLE BUGS R model
 #'
-#' @details Note that \code{readBUGSmodel} should handle most common ways of providing information on a model as used in BUGS and JAGS but does not handle input model files that refer to additional files containing data. Please see the BUGS examples provided with JAGS (\url{http://sourceforge.net/projects/mcmc-jags/files/Examples/}) for examples of supported formats. Also, \code{readBUGSmodel} takes both constants and data via the 'data' argument, unlike \code{nimbleModel}, in which these are distinguished. The reason for allowing both to be given via 'data' is for backwards compatibility with the BUGS examples, in which constants and data are not distinguished.
+#' @details Note that \code{readBUGSmodel} should handle most common ways of providing information on a model as used in BUGS and JAGS but does not handle input model files that refer to additional files containing data. Please see the BUGS examples provided with NIMBLE in the \code{classic-bugs} directory of the installed NIMBLE package or JAGS (\url{http://sourceforge.net/projects/mcmc-jags/files/Examples/}) for examples of supported formats. Also, \code{readBUGSmodel} takes both constants and data via the 'data' argument, unlike \code{\link{nimbleModel}}, in which these are distinguished. The reason for allowing both to be given via 'data' is for backwards compatibility with the BUGS examples, in which constants and data are not distinguished.
 #'
+#' @seealso \code{\link{nimbleModel}}
+#' 
 #' @export
 #'
 #' @examples
+#' ## Reading a model defined in the R session
+#' 
 #' code <- nimbleCode({
 #'     x ~ dnorm(mu, sd = 1)
 #'     mu ~ dnorm(0, sd = prior_sd)
@@ -232,6 +284,13 @@ processNonParseableCode <- function(text) {
 #' model$x
 #' model[['mu']]
 #' model$calculate('x')
+#'
+#' ## Reading a classic BUGS model
+#'
+#' pumpModel <- readBUGSmodel('pump.bug', dir = getBUGSexampleDir('pump'))
+#' pumpModel$getVarNames()
+#' pumpModel$x
+#' 
 readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits = TRUE, debug = FALSE, returnComponents = FALSE, check = getNimbleOption('checkModel'), calculate = TRUE) {
 
   # helper function
@@ -251,7 +310,8 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
   if(is.function(model) || is.character(model)) {
       if(is.function(model)) modelText <- mergeMultiLineStatements(deparse(body(model)))
       if(is.character(model)) {
-          if(skip.file.path) modelFile <- model else modelFile <- file.path(dir, model)  # check for "" avoids having "/model.bug" when user provides ""
+          if(skip.file.path) modelFile <- model
+          else modelFile <- normalizePath(file.path(dir, model), winslash = "\\", mustWork=FALSE)  # check for "" avoids having "/model.bug" when user provides ""
           modelName <- gsub("\\..*", "", basename(model))
           if(!file.exists(modelFile)) {
               possibleNames <- c(paste0(modelFile, '.bug'), paste0(modelFile, '.txt'))
@@ -274,7 +334,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
       # note that split lines that are parseable are dealt with by parse()
   }
 
-  if(! class(model) == "{")
+  if(!inherits(model, "{"))
     stop("readBUGSmodel: cannot process 'model' input.")
 
   # process initial values
@@ -282,7 +342,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
   if(useInits) {
     initsFile <-  NULL
     if(is.character(inits)) {
-      initsFile <- if(skip.file.path) inits else file.path(dir, inits)
+      initsFile <- if(skip.file.path) inits else normalizePath(file.path(dir, inits), winslash = "\\", mustWork=FALSE)
       if(!file.exists(initsFile))
         stop("readBUGSmodel: 'inits' input does not reference an existing file.")
     }
@@ -300,7 +360,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
                       ## possibleNames <- c(possibleNames,
                       ##          file.path(dir, paste0(modelName, "-init.r")),
                       ##          file.path(dir, paste0(modelName, "-inits.r")))
-        if(!skip.file.path) possibleNames <- file.path(dir, possibleNames)
+        if(!skip.file.path) possibleNames <- normalizePath(file.path(dir, possibleNames), winslash = "\\", mustWork=FALSE)
         fileExistence <- file.exists(possibleNames)
         if(sum(fileExistence) > 1)
             stop("readBUGSmodel: multiple possible initial value files; please pass as explicit 'inits' argument.")
@@ -328,7 +388,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
 
   dataFile <-  NULL
   if(is.character(data)) {
-    dataFile <- if(skip.file.path) data else file.path(dir, data)
+    dataFile <- if(skip.file.path) data else normalizePath(file.path(dir, data), winslash = "\\", mustWork=FALSE)
     if(!file.exists(dataFile))
       stop("readBUGSmodel: 'data' input does not reference an existing file.")
   }
@@ -342,7 +402,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
         possibleNames <- c(possibleNames,
                            paste0(modelName, "-data.r"))
 ##                         file.path(dir, paste0(modelName, "-data.r")))
-      if(!skip.file.path) possibleNames <- file.path(dir, possibleNames)
+      if(!skip.file.path) possibleNames <- normalizePath(file.path(dir, possibleNames), winslash = "\\", mustWork=FALSE)
       fileExistence <- file.exists(possibleNames)
       if(sum(fileExistence) > 1)
           stop("readBUGSmodel: multiple possible initial value files; please pass as explicit 'data' argument.")
@@ -443,14 +503,16 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
 #'
 #' @return Character string of the fully pathed directory of the BUGS example.
 #'
+#' @seealso \code{\link{readBUGSmodel}} for usage in creating a model from a classic BUGS example
+#' 
 #' @export
 getBUGSexampleDir <- function(example){
-	dir <- system.file("classic-bugs", package = "nimble")
+    dir <- normalizePath(system.file("classic-bugs", package = "nimble"), winslash = "\\", mustWork=FALSE)
     vol <- NULL
-    if(file.exists(file.path(dir, "vol1", example))) vol <- "vol1"
-    if(file.exists(file.path(dir, "vol2", example))) vol <- "vol2"
+    if(file.exists(normalizePath(file.path(dir, "vol1", example), winslash = "\\", mustWork=FALSE))) vol <- "vol1"
+    if(file.exists(normalizePath(file.path(dir, "vol2", example), winslash = "\\", mustWork=FALSE))) vol <- "vol2"
     if(is.null(vol)) stop("Can't find path to ", example, ".\n")
-    dir <- file.path(dir, vol, example)
+    dir <- normalizePath(file.path(dir, vol, example), winslash = "\\", mustWork=FALSE)
     return(dir)
 }
 

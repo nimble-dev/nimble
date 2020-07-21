@@ -10,7 +10,7 @@
 #' @author Daniel Turek
 #' @export
 decide <- function(logMetropolisRatio) {
-  if(is.na(logMetropolisRatio))	return(FALSE)
+    if(is.na(logMetropolisRatio)) return(FALSE)
   if(logMetropolisRatio > 0) return(TRUE)
   if(runif(1,0,1) < exp(logMetropolisRatio)) return(TRUE)
   return(FALSE)
@@ -48,6 +48,7 @@ decide <- function(logMetropolisRatio) {
 #' -- If the proposal is rejected, the values and associated logProbs of all calcNodes are copied from the mvSaved object into the model object
 #' -- Return a logical value, indicating whether the proposal was accepted
 decideAndJump <- nimbleFunction(
+    name = 'decideAndJump',
     setup = function(model, mvSaved, calcNodes) { },
     run = function(modelLP1 = double(), modelLP0 = double(), propLP1 = double(), propLP0 = double()) {
         logMHR <- modelLP1 - modelLP0 - propLP1 + propLP0
@@ -56,7 +57,7 @@ decideAndJump <- nimbleFunction(
         } else   { nimCopy(from = mvSaved, to = model,   row = 1, nodes = calcNodes, logProb = TRUE) }
         returnType(logical())
         return(jump)
-    }, where = getLoadingNamespace()
+    }
 )
 
 
@@ -88,6 +89,7 @@ decideAndJump <- nimbleFunction(
 #' my_setAndCalc <- setAndCalculateOne(Rmodel, 'x[1]')
 #' lp <- my_setAndCalc$run(2)
 setAndCalculateOne <- nimbleFunction(
+    name = 'setAndCalculateOne',
     setup = function(model, targetNode) {
         targetNodeAsScalar <- model$expandNodeNames(targetNode, returnScalarComponents = TRUE)
         if(length(targetNodeAsScalar) > 1)     stop('more than one targetNode; cannot use setAndCalculateOne()')
@@ -98,7 +100,7 @@ setAndCalculateOne <- nimbleFunction(
         lp <- calculate(model, calcNodes)
         returnType(double())
         return(lp)
-    },  where = getLoadingNamespace()
+    }
 )
 
 
@@ -131,6 +133,7 @@ setAndCalculateOne <- nimbleFunction(
 #' my_setAndCalc <- setAndCalculate(Rmodel, c('x[1]', 'x[2]', 'y[1]', 'y[2]'))
 #' lp <- my_setAndCalc$run(c(1.2, 1.4, 7.6, 8.9))
 setAndCalculate <- nimbleFunction(
+    name = 'setAndCalculate',
     setup = function(model, targetNodes) {
         targetNodesAsScalar <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(targetNodes)
@@ -140,12 +143,13 @@ setAndCalculate <- nimbleFunction(
         lp <- calculate(model, calcNodes)
         returnType(double())
         return(lp)
-    }, where = getLoadingNamespace()
+    }
 )
 
 #' @rdname setAndCalculate
 #' @export
 setAndCalculateDiff <- nimbleFunction(
+    name = 'setAndCalculateDiff',
     setup = function(model, targetNodes) {
         targetNodesAsScalar <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(targetNodes)
@@ -155,12 +159,13 @@ setAndCalculateDiff <- nimbleFunction(
         lpD <- calculateDiff(model, calcNodes)
         returnType(double())
         return(lpD)
-    }, where = getLoadingNamespace()
+    }
 )
 
 
 calcAdaptationFactor <- nimbleFunction(
-    setup = function(paramDimension) {
+    name = 'calcAdaptationFactor',
+    setup = function(paramDimension, adaptFactorExponent) {
         ## optimal acceptance rates:  (dim=1) .44,    (dim=2) .35,    (dim=3) .32,    (dim=4) .25,    (dim>=5) .234
         acceptanceRates <- c(0.44, 0.35, 0.32, 0.25, 0.234)
         if(paramDimension > 5)     paramDimension <- 5
@@ -170,18 +175,22 @@ calcAdaptationFactor <- nimbleFunction(
     },
     run = function(acceptanceRate = double()) {
         timesAdapted <<- timesAdapted + 1
-        gamma1 <<- 1 / ((timesAdapted + 3) ^ 0.8)   ## need this variable separate; it's extracted for use in 'RW_block' sampler
+        gamma1 <<- 1 / ((timesAdapted + 3) ^ adaptFactorExponent)   ## need this variable separate; it's extracted for use in 'RW_block' sampler
         gamma2 <- 10 * gamma1
         adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
         returnType(double())
         return(adaptFactor)
     },
     methods = list(
+        getGamma1 = function() {
+            returnType(double())
+            return(gamma1)
+        },
         reset = function() {
             timesAdapted <<- 0
             gamma1       <<- 0
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -221,18 +230,46 @@ codeBlockClass <- setRefClass(
     
 )
 
+mcmc_generateControlListArgument <- function(control, controlDefaults) {
+    if(missing(control))           control         <- list()
+    if(missing(controlDefaults))   controlDefaults <- list()
+    thisControlList <- controlDefaults           ## start with all the defaults
+    thisControlList[names(control)] <- control   ## add in any controls provided as an argument
+    return(thisControlList)
+}
 
-mcmc_listContentsToStr <- function(ls) {
-    if(any(unlist(lapply(ls, is.function)))) warning('probably provided wrong type of function argument')
-    ls <- lapply(ls, function(el) if(is.nf(el)) 'function' else el)   ## functions -> 'function'
+
+
+mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonScalars=FALSE, displayConjugateDependencies=FALSE) {
+    ##if(any(unlist(lapply(ls, is.function)))) warning('probably provided wrong type of function argument')
+    if(!displayConjugateDependencies) {
+        if(grepl('^conjugate_d', names(ls)[1])) ls <- ls[1]    ## for conjugate samplers, remove all 'dep_dnorm', etc, control elements (don't print them!)
+        if(grepl('^CRP_cluster_wrapper', names(ls)[1]) && 'wrapped_type' %in% names(ls) &&
+           grepl('conjugate_d', ls$wrapped_type)[1]) ls <- ls[!names(ls) %in% c('wrapped_conf')]
+    }
+    if((names(ls)[1] == 'CRP sampler') && ('clusterVarInfo' %in% names(ls)))   ls[which(names(ls) == 'clusterVarInfo')] <- NULL   ## remove 'clusterVarInfo' from CRP sampler printing
+    ls <- lapply(ls, function(el) if(is.nf(el) || is.function(el)) 'function' else el)   ## functions -> 'function'
     ls2 <- list()
-    defaultOptions <- getNimbleOption('MCMCcontrolDefaultList')
+    ## to make displayControlDefaults argument work again, would need to code process
+    ## setup function of each sampler, find & extract the default control values, and pass
+    ## them into this function.  Then set:
+    ## defaultOptions <- [the default list for this sampler]
+    ## (the commented function below, mcmc_findControlListNamesInCode, is a helpful start).
+    ## old roxygen documentation for displayControlDefaults (from conf$print() method):
+    ## displayControlDefaults: A logical argument, specifying whether to display default values of control list elements (default FALSE).
+    ## -DT July 2017
     for(i in seq_along(ls)) {
         controlName <- names(ls)[i]
         controlValue <- ls[[i]]
         if(length(controlValue) == 0) next   ## remove length 0
-        if(controlName %in% names(defaultOptions))   ## skip default control values
-            if(identical(controlValue, defaultOptions[[controlName]])) next
+        ##if(!displayControlDefaults)
+        ##    if(controlName %in% names(defaultOptions))   ## skip default control values
+        ##        if(identical(controlValue, defaultOptions[[controlName]])) next
+        if(!displayNonScalars)
+            if(is.numeric(controlValue) || is.logical(controlValue))
+                if(length(controlValue) > 1)
+                    controlValue <- ifelse(is.null(dim(controlValue)), 'custom vector', 'custom array')
+        if(inherits(controlValue, 'samplerConf'))   controlValue <- controlValue$name
         deparsedItem <- deparse(controlValue)
         if(length(deparsedItem) > 1) deparsedItem <- paste0(deparsedItem, collapse='')
         ls2[[i]] <- paste0(controlName, ': ', deparsedItem)
@@ -247,27 +284,129 @@ mcmc_listContentsToStr <- function(ls) {
 }
 
 
-mcmc_findControlListNamesInCode <- function(code) {
-    if(is.function(code))     return(mcmc_findControlListNamesInCode(body(code)))
-    if(is.name(code) || is.numeric(code) || is.logical(code) || is.character(code) || is.pairlist(code))     return(character())
-    
-    if(is.call(code)) {
-        if(code[[1]] == '$' && code[[2]] == 'control') {
-            if(is.name(code[[3]])) { return(as.character(code[[3]]))
-            } else                 { warning(paste0('having trouble processing control list elements: ', deparse(code)))
-                                     return(character()) }
-        }
-        if(code[[1]] == '[[' && code[[2]] == 'control') {
-            if(is.character(code[[3]])) { return(as.character(code[[3]]))
-            } else                 { warning(paste0('having trouble processing control list elements: ', deparse(code)))
-                                     return(character()) }
-        }
-        ## code is some call, other than $ or [[
-        return(unique(unlist(lapply(code, mcmc_findControlListNamesInCode))))
-    }
-    browser()
-    stop('not sure how to handle this code expression')
+## obselete, since control defaults were moved to sampler function setup code
+## -DT July 2017
+##mcmc_findControlListNamesInCode <- function(code) {
+##    if(is.function(code))     return(mcmc_findControlListNamesInCode(body(code)))
+##    if(is.name(code) || is.numeric(code) || is.logical(code) || is.character(code) || is.pairlist(code))     return(character())
+##    if(is.call(code)) {
+##        if(code[[1]] == '$' && code[[2]] == 'control') {
+##            if(is.name(code[[3]])) { return(as.character(code[[3]]))
+##            } else                 { warning(paste0('having trouble processing control list elements: ', deparse(code)))
+##                                     return(character()) }
+##        }
+##        if(code[[1]] == '[[' && code[[2]] == 'control') {
+##            if(is.character(code[[3]])) { return(as.character(code[[3]]))
+##            } else                 { warning(paste0('having trouble processing control list elements: ', deparse(code)))
+##                                     return(character()) }
+##        }
+##        ## code is some call, other than $ or [[
+##        return(unique(unlist(lapply(code, mcmc_findControlListNamesInCode))))
+##    }
+##    browser()
+##    stop('not sure how to handle this code expression')
+##}
+
+
+
+#' @export
+samplesSummary <- function(samples) {
+    cbind(
+        `Mean`      = apply(samples, 2, mean),
+        `Median`    = apply(samples, 2, median),
+        `St.Dev.`   = apply(samples, 2, sd),
+        `95%CI_low` = apply(samples, 2, function(x) quantile(x, 0.025)),
+        `95%CI_upp` = apply(samples, 2, function(x) quantile(x, 0.975)))
 }
+
+
+
+
+## weed out missing indices from the monitors
+mcmc_processMonitorNames <- function(model, nodes) {
+    isLogProbName <- grepl('logProb', nodes)
+    expandedNodeNames <- model$expandNodeNames(nodes[!isLogProbName])
+    origLogProbNames <- nodes[isLogProbName]
+    expandedLogProbNames <- character()
+    if(length(origLogProbNames) > 0) {
+        nodeName_fromLogProbName <- gsub('logProb_', '', origLogProbNames)
+        expandedLogProbNames <- model$modelDef$nodeName2LogProbName(nodeName_fromLogProbName)
+    }
+    return(c(expandedNodeNames, expandedLogProbNames))
+}
+
+
+
+
+mcmc_checkWAICmonitors <- function(model, monitors, dataNodes) {
+    monitoredDetermNodes <- model$expandNodeNames(monitors)[model$isDeterm(model$expandNodeNames(monitors))]
+    if(length(monitoredDetermNodes) > 0) {
+        monitors <- monitors[- which(monitors %in% model$getVarNames(nodes = monitoredDetermNodes))]
+    }
+    thisNodes <- model$getNodeNames(stochOnly = TRUE, topOnly = TRUE)
+    thisVars <- model$getVarNames(nodes = thisNodes)
+    thisVars <- thisVars[!(thisVars %in% monitors)]
+    while(length(thisVars) > 0) {
+        nextNodes <- model$getDependencies(thisVars, stochOnly = TRUE, omit = monitoredDetermNodes, self = FALSE, includeData = TRUE)
+        if(any(nextNodes %in% dataNodes)) {
+            badDataNodes <- dataNodes[dataNodes %in% nextNodes]
+            if(length(badDataNodes) > 10) {
+                badDataNodes <- c(badDataNodes[1:10], "...")
+            }
+            stop(paste0("In order for a valid WAIC calculation, all parameters of",
+                        " data nodes in the model must be monitored, or be", 
+                        " downstream from monitored nodes.", 
+                        " See help(buildMCMC) for more information on valid sets of",
+                        " monitored nodes for WAIC calculations.", "\n",
+                        " Currently, the following data nodes have un-monitored",
+                        " upstream parameters:", "\n ", 
+                        paste0(badDataNodes, collapse = ", ")))
+        }
+        thisVars <- model$getVarNames(nodes = nextNodes)
+        thisVars <- thisVars[!(thisVars %in% monitors)]
+    }
+    message('Monitored nodes are valid for WAIC')
+}
+
+
+## formerly used in conf$printSamplers(byType = TRUE)
+## to compress scalar index ranges of variables.
+## deprecated Nov 2019.
+##mcmc_compressIndexRanges <- function(nums) {
+##    nums <- sort(unique(nums))
+##    rangeStartInd <- c(1, which(diff(nums) != 1) + 1)
+##    ranges <- vector('list', length(rangeStartInd))
+##    for(i in seq_along(rangeStartInd)) {
+##        startInd <- rangeStartInd[i]
+##        if(i == length(rangeStartInd)) {
+##            if(rangeStartInd[i] == length(nums)) {
+##                ranges[[i]] <- nums[startInd]
+##            } else {
+##                ranges[[i]] <- substitute(START:END, list(START = as.numeric(nums[startInd]),
+##                                                          END = as.numeric(nums[length(nums)])))
+##            }
+##        } else {
+##            if(startInd+1 < rangeStartInd[i+1]) {
+##                ranges[[i]] <- substitute(START:END, list(START = as.numeric(nums[startInd]),
+##                                                          END = as.numeric(nums[rangeStartInd[i+1]-1])))
+##            } else ranges[[i]] <- nums[startInd]
+##        }
+##    }
+##    return(ranges)
+##}
+##
+##
+##mcmc_getIndexNumberFromNodeNames <- function(nodeNames, indNumber) {
+##    (nodeInsideBrackets <- gsub('^[[:alpha:]]+\\[(.+)\\]$', '\\1', nodeNames))
+##    splitList <- strsplit(nodeInsideBrackets, ',')
+##    if(length(splitList[[1]]) < indNumber) stop('in mcmc_getIndexNumberFromNodeNames: indNumber exceeds node dimension', call. = FALSE)
+##    indices <- as.numeric(sapply(splitList, function(el) el[indNumber]))
+##    return(indices)
+##}
+
+
+
+
 
 
 

@@ -7,7 +7,7 @@ cleanWhite <- function(s) gsub('[[:blank:]]+', ' ', s)
 ## Below there are some wrappers for common cases like cppDouble, cppNimArrPtr, cppVoid, etc.
 cppVar <- setRefClass('cppVar',
                              fields = list(
-                                 baseType = 'ANY',		#			'character',
+                                 baseType = 'ANY',	#'character',
                                  ptr = 'ANY',		#'numeric',
                                  ref = 'ANY',		#'logical',
                                  name = 'ANY'), 	#'character'),
@@ -19,16 +19,16 @@ cppVar <- setRefClass('cppVar',
                 	          	  name <<- character()
 					    		callSuper(...)
                              	},
-                                 generate = function(printName = .self$name, ...) {
+                                 generate = function(printName = Rname2CppName(.self$name), ...) {
                                      ptrs <- if(length(ptr) > 0) paste(rep('*', ptr), collapse = '')
                                      if(length(printName) > 0) printName <- paste0(printName, collapse = ', ')
                                      cleanWhite(paste(baseType, ptrs, if(identical(ref, TRUE)) '&' else NULL, printName))
                                  },
                                  generateUse = function(...) {
-                                     name
+                                     Rname2CppName(name)
                                  },
-                                 generateUseDeref = function(...) { ## used to be asArg = FALSE
-                                     paste0('(', paste(rep('*', max(0, ptr)), collapse = ''), name, ')') ## used to be ptr-asArg
+                                 generateUseDeref = function(...) { 
+                                     paste0('(', paste(rep('*', max(0, ptr)), collapse = ''), Rname2CppName(name), ')') ## used to be ptr-asArg
                                  }
                                  )
                             )
@@ -39,8 +39,8 @@ cppVarFull <- setRefClass('cppVarFull',
                       contains = 'cppVar',
                       fields = list(
                           templateArgs = 'ANY', #'list',
-                          baseScope = 'ANY', #'list',
-                          baseConst = 'ANY', #'logical',
+                          baseScope = 'ANY',    #'list',
+                          baseConst = 'ANY',    #'logical',
                           baseConstPtr = 'ANY', #'numeric',
                           const = 'ANY', 	#'logical',
                           static = 'ANY', 	#'logical',
@@ -51,15 +51,15 @@ cppVarFull <- setRefClass('cppVarFull',
                           ),
                       methods = list(
                           initialize = function(...) {
-                          	  templateArgs <<- list()
-                          	  baseScope <<- list()
-                          	  baseConstPtr <<- numeric()
-                          	  baseConst <<- logical()
-                          	  const <<- logical()
-                          	  static <<- logical()
-                          	  arraySizes <<- integer()   
-                          	  constructor <<- character()
-                                  silent <<- FALSE
+                              templateArgs <<- list()
+                              baseScope <<- list()
+                              baseConstPtr <<- numeric()
+                              baseConst <<- logical()
+                              const <<- logical()
+                              static <<- logical()
+                              arraySizes <<- integer()   
+                              constructor <<- character()
+                              silent <<- FALSE
                               selfDereference <<- FALSE
                               callSuper(...)
                           },
@@ -72,7 +72,7 @@ cppVarFull <- setRefClass('cppVarFull',
                                   else callSuper(...)
                               }
                           },
-                          generate = function(printName = .self$name, ...) {
+                          generate = function(printName = Rname2CppName(.self$name), ...) {
                               if(silent) return(character())
                               bCP <- if(length(baseConst) > 0) { 
                                   if(length(baseConstPtr) > 0) paste(paste(rep('*', baseConstPtr), collapse = ''), 'const')
@@ -108,7 +108,7 @@ cppStrideType <- function(name = character(0), type = "Stride", strides,...) {
 
 cppEigenMap <- function(name = character(0), type = 'double', eigMatrix = TRUE, strides = numeric(), constructor = '(0,0,0)', ...) {
     templateArgs <- list( paste0(if(eigMatrix) 'MatrixX' else 'ArrayXX',
-                                 if(type == 'double') 'd' else 'i' ))
+                                 if(type == 'double') 'd' else if(type == 'integer') 'i' else 'b' ))
     if(length(strides) > 0) templateArgs[[2]] <- cppStrideType(strides = strides)
     cppVarFull(name = name,
                baseType = 'Map',
@@ -152,7 +152,6 @@ cppVecNimArrPtr <- function(name = character(0), nDim = 1, type = 'double', ptr 
 
 cppSEXP <- function(name = character(0), ...) cppVar(name = name, baseType = 'SEXP', ptr = 0, ...)
 
-cppNodeFunctionVector <- function(name = character(0), ...) cppVar(name = name, baseType = 'NodeVectorClass', ptr = 0, ...)
 cppNodeFunctionVector <- function(name = character(0), ...) cppVar(name = name, baseType = 'NodeVectorClassNew', ptr = 0, ...) 
 
 ## to be defunct

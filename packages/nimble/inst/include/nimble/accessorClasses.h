@@ -1,3 +1,24 @@
+/*
+ * NIMBLE: an R package for programming with BUGS models.
+ * Copyright (C) 2014-2017 Perry de Valpine, Christopher Paciorek,
+ * Daniel Turek, Clifford Anderson-Bergman, Nick Michaud, Fritz Obermeyer,
+ * Duncan Temple Lang.
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, a copy is available at
+ * https://www.R-project.org/Licenses/
+ */
+
 // NOTE: THESE FUNCTIONS WILL ASSUME MODELS ARE OF CLASS
 // "ModelBase". THIS CLASS CAN BE FOUND IN "ModelClassUtils.h" 
 
@@ -10,7 +31,7 @@
 #include "NimArrBase.h"
 #include "NimArr.h"			
 #include "ModelClassUtils.h"
-#include "RcppUtils.h"
+#include "RcppNimbleUtils.h"
 #include <Rinternals.h>
 #include "R.h"
 
@@ -24,28 +45,20 @@ using std::cout;
 /////////////////////////////////
 // 1. NodeVectors:
 /////////////////////////////////
-class NodeVectorClass {
- public:
-  vector<nodeFun *> nodeFunPtrs;
-  virtual vector<nodeFun *> &getNodeFunctionPtrs() {return(nodeFunPtrs);}
-  // to be inherited and implemented differently when we have dynamic dependencies
-  virtual ~NodeVectorClass() {};
-};
 
-class oneNodeUseInfo {
+// This is a single instruction applying a nodeFun to a single node represented by operand.
+class NodeInstruction {
  public:
   nodeFun *nodeFunPtr;
-  useInfoForIndexedNodeInfo useInfo;
-  oneNodeUseInfo(nodeFun *nFP, int firstIndex) {
-    nodeFunPtr = nFP;
-    useInfo.indicesForIndexedNodeInfo.push_back(firstIndex);
-  }
+  int operand;  // An index into a nodeFun's indexedNodeInfoTable field.
+  NodeInstruction(nodeFun *nFP, int op) : nodeFunPtr(nFP), operand(op) {}
 };
 
+// This is a collection of instructions denoting a sort of "program".
 class NodeVectorClassNew {
  public:
-  vector<oneNodeUseInfo> useInfoVec;
-  vector<oneNodeUseInfo> &getUseInfoVec() {return(useInfoVec);}
+  vector<NodeInstruction> instructions;
+  vector<NodeInstruction> &getInstructions() { return instructions; }
 };
 
 ///// Using NodeVectors:
@@ -72,38 +85,73 @@ void simulate(NodeVectorClassNew &nodes, int iNodeFunction);
 
 // for these, if there is use of iNodeFunction, it is generated directly from cppOutputGetParam
 //getParam_0D
-inline double getParam_0D_double(int paramID, const oneNodeUseInfo &useInfo) {
-  return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID, useInfo.useInfo));
-  //return(useInfo.nodeFunPtr->getParam_0D_double(paramID, (*(useInfo.nodeFunPtr->getIndexedNodeInfoTablePtr()))[ useInfo.useInfo.indicesForIndexedNodeInfo[0] ] ) );
-};
-inline double getParam_0D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) { 
+inline double getParam_0D_double(int paramID, const NodeInstruction &useInfo) {
+  return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID, useInfo.operand));
+}
+inline double getParam_0D_double(int paramID, const NodeInstruction &useInfo, int iNodeFunction) { 
   /* iNodeFunction sometimes needs to be generated in a call even if not needed */
   /* but we want to avoid compiled warnings about an unused argument */
   /* the following line of code tries to make the compiler think iNodeFunction will be used */
   if(iNodeFunction) paramID += 0;
-  return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID, useInfo.useInfo));
-};
+  return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID, useInfo.operand));
+}
 template<typename paramIDtype>
-inline double getParam_0D_double(const paramIDtype &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
-return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID[iNodeFunction], useInfo.useInfo));
-};
-
-//template inline double getParam_0D_double<NimArr<1, int> >(const NimArr<1, int> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
-//template inline double getParam_0D_double<NimArr<1, double> >(const NimArr<1, double> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
+inline double getParam_0D_double(const paramIDtype &paramID, const NodeInstruction &useInfo, int iNodeFunction) {
+  iNodeFunction = paramID[0] == -1 ? 1 : iNodeFunction;
+return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID[iNodeFunction], useInfo.operand));
+}
 
 //getParam_1D
-NimArr<1, double> getParam_1D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction = 0);
-template<typename paramIDtype>
-NimArr<1, double> getParam_1D_double(const paramIDtype &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
-extern template NimArr<1, double> getParam_1D_double<NimArr<1, int> >(const NimArr<1, int> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
-extern template NimArr<1, double> getParam_1D_double<NimArr<1, double> >(const NimArr<1, double> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
+NimArr<1, double> getParam_1D_double(int paramID, const NodeInstruction &useInfo, int iNodeFunction = 0);
+
+template<class paramIDtype>
+NimArr<1, double> getParam_1D_double(const paramIDtype &paramID, const NodeInstruction &useInfo, int iNodeFunction) {
+  iNodeFunction = paramID[0] == -1 ? 1 : iNodeFunction;
+  return(useInfo.nodeFunPtr->getParam_1D_double_block(paramID[iNodeFunction], useInfo.operand));
+}
 
 //getParam_2D
-NimArr<2, double> getParam_2D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction = 0);
-template<typename paramIDtype>
-NimArr<2, double> getParam_2D_double(const paramIDtype &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
-extern template NimArr<2, double> getParam_2D_double<NimArr<1, int> >(const NimArr<1, int> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
-extern template NimArr<2, double> getParam_2D_double<NimArr<1, double> >(const NimArr<1, double> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
+NimArr<2, double> getParam_2D_double(int paramID, const NodeInstruction &useInfo, int iNodeFunction = 0);
+template<class paramIDtype>
+NimArr<2, double> getParam_2D_double(const paramIDtype &paramID, const NodeInstruction &useInfo, int iNodeFunction) {
+  iNodeFunction = paramID[0] == -1 ? 1 : iNodeFunction;
+  return(useInfo.nodeFunPtr->getParam_2D_double_block(paramID[iNodeFunction], useInfo.operand));
+}
+
+// code for getBound copied over from getParam; only 0D currently used as we set bounds same for all values in multivariate nodes
+//getBound_0D
+inline double getBound_0D_double(int boundID, const NodeInstruction &useInfo) {
+  return(useInfo.nodeFunPtr->getBound_0D_double_block(boundID, useInfo.operand));
+}
+inline double getBound_0D_double(int boundID, const NodeInstruction &useInfo, int iNodeFunction) { 
+  /* iNodeFunction sometimes needs to be generated in a call even if not needed */
+  /* but we want to avoid compiled warnings about an unused argument */
+  /* the following line of code tries to make the compiler think iNodeFunction will be used */
+  if(iNodeFunction) boundID += 0;
+  return(useInfo.nodeFunPtr->getBound_0D_double_block(boundID, useInfo.operand));
+}
+template<typename boundIDtype>
+inline double getBound_0D_double(const boundIDtype &boundID, const NodeInstruction &useInfo, int iNodeFunction) {
+return(useInfo.nodeFunPtr->getBound_0D_double_block(boundID[iNodeFunction], useInfo.operand));
+}
+
+//getBound_1D
+NimArr<1, double> getBound_1D_double(int boundID, const NodeInstruction &useInfo, int iNodeFunction = 0);
+
+
+template<class boundIDtype>
+NimArr<1, double> getBound_1D_double(const boundIDtype &boundID, const NodeInstruction &useInfo, int iNodeFunction) {
+  return(useInfo.nodeFunPtr->getBound_1D_double_block(boundID[iNodeFunction], useInfo.operand));
+}
+
+
+//getBound_2D
+NimArr<2, double> getBound_2D_double(int boundID, const NodeInstruction &useInfo, int iNodeFunction = 0);
+template<class boundIDtype>
+NimArr<2, double> getBound_2D_double(const boundIDtype &boundID, const NodeInstruction &useInfo, int iNodeFunction) {
+  return(useInfo.nodeFunPtr->getBound_2D_double_block(boundID[iNodeFunction], useInfo.operand));
+}
+
 
 /////////////////////
 // new version of variable accessors using maps (offset and strided windows into multivariate objects (NimArr<>s) )
@@ -114,7 +162,8 @@ class SingleVariableMapAccessBase {
  public:
   int offset, length;
   bool singleton;
-  vector<int> sizes, strides; 
+  vector<int> sizes, strides;
+ SingleVariableMapAccessBase() : offset(0), singleton(false) {length = 0;} /* length(0) triggers the Rf_length macro mixup */
   virtual ~SingleVariableMapAccessBase();
   virtual NimArrType *getNimArrPtr()=0;
   void calculateLength() {
@@ -134,6 +183,7 @@ class SingleVariableMapAccessBase {
 class ManyVariablesMapAccessorBase {
  public:
   int totalLength;
+ ManyVariablesMapAccessorBase() : totalLength(0) {}
   int &getTotalLength() {return(totalLength);}
   virtual vector<SingleVariableMapAccessBase *> &getMapAccessVector()=0;
   virtual void  setRow(int i) = 0;
@@ -160,6 +210,7 @@ class ManyVariablesMapAccessor : public ManyVariablesMapAccessorBase {
  public:
   vector<SingleVariableMapAccessBase *> varAccessors;
   virtual vector<SingleVariableMapAccessBase *> &getMapAccessVector() {return(varAccessors);}
+  int &getNodeLength(int index) {return(varAccessors[index-1]->getLength());}
   ~ManyVariablesMapAccessor();
   void setRow(int i){PRINTF("Bug detected in code: attempting to setRow for model. Can only setRow for modelValues\n");}
   void resize(int n){
@@ -190,7 +241,7 @@ class SingleModelValuesMapAccess : public SingleVariableMapAccessBase {
 class ManyModelValuesMapAccessor : public ManyVariablesMapAccessorBase {
   public:
   int currentRow;
-  ManyModelValuesMapAccessor();
+ ManyModelValuesMapAccessor() : currentRow(0) {}
   vector<SingleVariableMapAccessBase *> varAccessors;
   virtual vector<SingleVariableMapAccessBase *> &getMapAccessVector() {return(varAccessors);}
   virtual void setRow(int i);// see .cpp
@@ -215,95 +266,21 @@ void nimCopy(ManyVariablesMapAccessorBase &from, ManyVariablesMapAccessorBase &t
 
 void setValues(NimArrBase<double> &nimArr, ManyVariablesMapAccessor &MVA);
 void setValues(NimArrBase<int> &nimArr, ManyVariablesMapAccessor &MVA);
+void setValues(NimArrBase<double> &nimArr, ManyVariablesMapAccessor &MVA, int index);
+void setValues(NimArrBase<int> &nimArr, ManyVariablesMapAccessor &MVA, int index);
 void getValues(NimArr<1, double> &nimArr, ManyVariablesMapAccessor &MVA);
 void getValues(NimArr<1, int> &nimArr, ManyVariablesMapAccessor &MVA);
-
-
-
-///////////////////////////////
-// 2. Variable accessors
-//
-// These are trickier because there are different types inside of NimArr<>s.
-// We now have a type system so we can extract the type in the copy function.
-// We *may* need to templatize types here, but I think we can avoid it.
-///////////////////////////////
-
-// Base class for access to one NimArr<>
-class SingleVariableAccessBase {
- public:
-  int flatIndexStart, flatIndexEnd; // For 1-3: In R these should be 1,3; In C++: 0, 3
-  int length; // copying function can check for singletons if it wants to
-  int getIndexStart() {return(flatIndexStart);}  
-  int getIndexEnd() {return(flatIndexEnd);}
-  int getLength() {return(length);}
-  virtual NimArrType *getNimArrPtr()=0; //
-  virtual ~SingleVariableAccessBase() {};
-};
-
-// Derived class for access to one NimArr<> in a model
-class SingleVariableAccess : public SingleVariableAccessBase {
- public:
-  NimArrType **ppVar; // I think we have to do some casting when populating this
-  virtual NimArrType *getNimArrPtr() {return(*ppVar);}
-  ~SingleVariableAccess() {};
-};
-
-// Base class for vector of single variables accessors
-class ManyVariablesAccessorBase {
- public:
-  virtual vector<SingleVariableAccessBase *> &getAccessVector()=0;
-  virtual void  setRow(int i) = 0;
-  virtual ~ManyVariablesAccessorBase() {};
-};
-
-// Derived class for vector of single variable accessors to NimArr<>s in a model
-class ManyVariablesAccessor : public ManyVariablesAccessorBase {
- public:
-  vector<SingleVariableAccessBase *> varAccessors;
-  virtual vector<SingleVariableAccessBase *> &getAccessVector() {return(varAccessors);}
-  ~ManyVariablesAccessor();
-
-  void setRow(int i){PRINTF("Bug detected in code: attempting to setRow for model. Can only setRow for modelValues\n");}
-};
-
-/////////////////////////////////
-// 3. modelValues accessors
-// 
-// These are like model variable accessors but need a row index
-/////////////////////////////////
-
-// Derived class for access to one NimArr<> in a modelValues
-// This uses some things not yet written: a vecNimArrType base class with a getRowTypePtr().
-class SingleModelValuesAccess : public SingleVariableAccessBase {
- public:
-  NimVecType *pVVar;   // Cliff and I talked about making a vecNimArrType base class
-  int currentRow;
-  virtual NimArrType *getNimArrPtr() {return(pVVar->getRowTypePtr(currentRow));} // Need to put a function like this in vecNimArrType base class
-  ~SingleModelValuesAccess() {};
-  void setRow(int i) {currentRow = i;}
-  int getRow() {return(currentRow);}
-};
-
-// Derived class for a vector of single variable accessors to NimArr<>s in a modelValues
-// The row(i) member function sets the currentRow of all the single accessors and returns the vector of them
-class ManyModelValuesAccessor : public ManyVariablesAccessorBase {
-  public:
-  int currentRow;
-  vector<SingleVariableAccessBase *> varAccessors;
-  virtual vector<SingleVariableAccessBase *> &getAccessVector() {return(varAccessors);}
-  virtual void setRow(int i);// see .cpp
-  ~ManyModelValuesAccessor() {};
-};
-
-
+void getValues(NimArr<1, double> &nimArr, ManyVariablesMapAccessor &MVA, int index);
+void getValues(NimArr<1, int> &nimArr, ManyVariablesMapAccessor &MVA, int index);
 
 ///////
-// NEW copierClass
+// copierClass
 ///////
 
 class rowInfoClass {
  public:
   int rowFrom, rowTo;
+ rowInfoClass() : rowFrom(0), rowTo(0) {}
 };
 
 class copierClass { // virtual base class
@@ -330,6 +307,7 @@ template<class Tfrom, class Tto>
   class singletonCopierClass_M2MV : public copierClass {
  public:
   int toOffset, fromOffset;
+ singletonCopierClass_M2MV() : toOffset(0), fromOffset(0) {}
   singletonCopierClass_M2MV(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to, int notUsed1, int notUsed2) {
     fromNimArr =  static_cast<NimArrType**>(from->getObject());
     toVecNimArr = static_cast<NimVecType*>(to->getObject());
@@ -348,6 +326,7 @@ template<class Tfrom, class Tto>
   class singletonCopierClass_M2M : public copierClass {
  public:
   int toOffset, fromOffset;
+ singletonCopierClass_M2M() : toOffset(0), fromOffset(0) {}
   singletonCopierClass_M2M(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to, int notUsed1, int notUsed2) {
     fromNimArr =  static_cast<NimArrType**>(from->getObject());
     toNimArr = static_cast<NimArrType**>(to->getObject());
@@ -366,6 +345,7 @@ template<class Tfrom, class Tto>
   class singletonCopierClass_MV2M : public copierClass {
  public:
   int toOffset, fromOffset;
+ singletonCopierClass_MV2M() : toOffset(0), fromOffset(0) {}
   singletonCopierClass_MV2M(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to, int notUsed1, int notUsed2) {
     fromVecNimArr =  static_cast<NimVecType*>(from->getObject());
     toNimArr = static_cast<NimArrType**>(to->getObject());
@@ -384,6 +364,7 @@ template<class Tfrom, class Tto>
   class singletonCopierClass_MV2MV : public copierClass {
  public:
   int toOffset, fromOffset;
+ singletonCopierClass_MV2MV() : toOffset(0), fromOffset(0) {}
   singletonCopierClass_MV2MV(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to, int notUsed1, int notUsed2) {
     fromVecNimArr =  static_cast<NimVecType*>(from->getObject());
     toVecNimArr = static_cast<NimVecType*>(to->getObject());
@@ -402,6 +383,7 @@ class blockCopierClassBase : public copierClass {
  public:
   //  int toOffset, fromOffset;
   bool isFromMV, isToMV;
+ blockCopierClassBase() : isFromMV(false), isToMV(false) {}
   // put common initializations here
   // for now leave strides and sizes dynamically accessed
   blockCopierClassBase(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to, int isFromMV1, int isToMV1) {
@@ -504,141 +486,115 @@ extern copierClassBuilderCase< blockCopierClass<double, double, 4>, blockCopierC
 
 /////////////////////////////////
 // nimCopy function
-//
-// Now we are ready to write a fairly general copy function
-// I am calling it nimCopy to avoid name conflicts with std::copy or others.
 /////////////////////////////////
 void nimCopy(const copierVectorClass &copiers);
 void nimCopy(copierVectorClass &copiers, int rowFrom);
 void nimCopy(copierVectorClass &copiers, int rowFrom, int rowTo);
 void nimCopy(copierVectorClass &copiers, int rowFrom, int rowTo, int unused);
-
-
-void nimCopy(ManyVariablesAccessorBase &from, ManyVariablesAccessorBase &to);
-void nimCopyOne(SingleVariableAccessBase *from, SingleVariableAccessBase *to);
-
-// This templated piece is given in the .h file
-template<class Tfrom, class Tto>
-void nimCopyOneTyped(SingleVariableAccessBase *fromSVA, SingleVariableAccessBase *toSVA) {
-  NimArrBase<Tfrom> *fromNimPtr = static_cast<NimArrBase<Tfrom> *> ( (fromSVA)->getNimArrPtr() ); //	I don't believe static casting should be necessary
-  NimArrBase<Tto>  *toNimPtr = static_cast<NimArrBase<Tto> *> ( (toSVA)->getNimArrPtr() );		//	Same
-  if(fromSVA->getLength() != toSVA->getLength()) {
-    _nimble_global_output<<"Error in nimCopyOneTyped: lengths do not match.\n";
-    _nimble_global_output << "FromLength = " << fromSVA->getLength() << " ToLength = "<< toSVA->getLength() << "\n";
-    nimble_print_to_R(_nimble_global_output);
-    return;
-  }
-  if(fromSVA->getLength() == 1) {
-    (*toNimPtr)[toSVA->getIndexStart()] = (*fromNimPtr)[fromSVA->getIndexStart()];
-    return;
-  }
-  
-  
-  std::copy( fromNimPtr->getPtr() + fromSVA->getIndexStart(),
-	    fromNimPtr->getPtr() + fromSVA->getIndexEnd() + 1,
-	    toNimPtr->getPtr() + toSVA->getIndexStart());
-}
-
-void nimCopy(ManyVariablesAccessorBase &from, int rowFrom, ManyVariablesAccessorBase &to);
-
-void nimCopy(ManyVariablesAccessorBase &from, int rowFrom, ManyVariablesAccessorBase &to, int rowTo);
-
-void nimCopy(ManyVariablesAccessorBase &from, ManyVariablesAccessorBase &to, int rowTo);
 	
 void dynamicMapCopyCheck(NimArrType *NAT, int offset, vector<int> &strides, vector<int> &sizes);
 void singletonCopyCheck(NimArrType *NAT, int offset);
 
-/* template<int D, class T> */
-/* void nimArr_2_SingleModelAccess(SingleVariableAccess* SMVAPtr, NimArr<D, T>* nimArrPtr, int nimBegin); */
-/* template<int D, class T> */
-/* void nimArr_2_ManyModelAccess(ManyVariablesAccessor &MMVAPtr, NimArr<D, T>* nimArrPtr); */
+template<class T>
+void SingleModelAccess_2_nimArr(SingleVariableMapAccessBase* SMVAPtr, NimArrBase<T> &nimArr, int nimBegin, int nimStride){
+  NimArrType* SMA_NimTypePtr = (*SMVAPtr).getNimArrPtr();
+  nimType SMA_Type = (*SMA_NimTypePtr).getNimType();
+  NimArrBase<double>* SMA_NimArrPtrD;
+  NimArrBase<int>* SMA_NimArrPtrI;
+  if(SMVAPtr->getSingleton()) {
+    switch(SMA_Type) {
+    case DOUBLE:
+      (*nimArr.getVptr())[nimBegin] = (*static_cast<NimArrBase<double> *>(SMA_NimTypePtr))[SMVAPtr->offset];
+      break;
+    case INT:
+      (*nimArr.getVptr())[nimBegin] = (*static_cast<NimArrBase<int> *>(SMA_NimTypePtr))[SMVAPtr->offset];
+      break;
+    default:
+      PRINTF("Copying type for SingleModelAccess_2_nimArr not supported\n");
+      break;
+    }
+  } else {
+    switch(SMA_Type) {
+    case DOUBLE:
+      SMA_NimArrPtrD = static_cast<NimArrBase<double>*>(SMA_NimTypePtr);
+      dynamicMapCopyDimToFlat<double, T>(&nimArr, nimBegin, nimStride, SMA_NimArrPtrD, SMVAPtr->getOffset(), SMVAPtr->getStrides(), SMVAPtr->getSizes() );
+      break;
+    case INT:
+      SMA_NimArrPtrI = static_cast<NimArrBase<int>*>(SMA_NimTypePtr);
+      dynamicMapCopyDimToFlat<int, T>(&nimArr, nimBegin, nimStride, SMA_NimArrPtrI, SMVAPtr->getOffset(), SMVAPtr->getStrides(), SMVAPtr->getSizes());
+      break;
+    default:
+      PRINTF("Copying type for SingleModelAccess_2_nimArr not supported\n");
+      break;
+    }
+  }
+}
 
 template<class T>
-void nimArr_2_SingleModelAccess(SingleVariableAccess* SMVAPtr, NimArrBase<T>* nimArrPtr, int nimBegin);
-template<class T>
-void nimArr_2_ManyModelAccess(ManyVariablesAccessor &MMVAPtr, NimArrBase<T>* nimArrPtr);
+void nimArr_2_SingleModelAccess(SingleVariableMapAccessBase* SMVAPtr, NimArrBase<T> &nimArr, int nimBegin, int nimStride){
 
-template<int D, class T>
-void SingleModelAccess_2_nimArr(SingleVariableAccess* SMVAPtr, NimArr<D, T>* nimArrPtr, int nimBegin);
-template<int D, class T>
-void ManyModelAccess_2_nimArr(ManyVariablesAccessor &MMVAPtr, NimArr<D, T>* nimArrPtr);
+  NimArrType* SMA_NimTypePtr = (*SMVAPtr).getNimArrPtr();
+  nimType SMA_Type = (*SMA_NimTypePtr).getNimType();
+  NimArrBase<double>* SMA_NimArrPtrD;
+  NimArrBase<int>* SMA_NimArrPtrI;
 
-/* void setValues(NimArr<1, double> &nimArr, ManyVariablesAccessor &MVA); */
-/* void setValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA); */
+  if(SMVAPtr->getSingleton()) {
+    switch(SMA_Type) {
+    case DOUBLE:
+      (*static_cast<NimArrBase<double> *>(SMA_NimTypePtr))[SMVAPtr->offset] = (*nimArr.getVptr())[nimBegin];
+      break;
+    case INT:
+      (*static_cast<NimArrBase<double> *>(SMA_NimTypePtr))[SMVAPtr->offset] = (*nimArr.getVptr())[nimBegin];
+      break;
+    default:
+      PRINTF("Copying type for nimArr_2_SingleModelAccess not supported\n");
+      break;
+    }
+  } else {
+    switch(SMA_Type) {
+    case DOUBLE:
+      SMA_NimArrPtrD = static_cast<NimArrBase<double>*>(SMA_NimTypePtr);
+      dynamicMapCopyFlatToDim<T, double>(SMA_NimArrPtrD, SMVAPtr->getOffset(), SMVAPtr->getStrides(), SMVAPtr->getSizes(), &nimArr, nimBegin, nimStride);
+      break;
+    case INT:
+      SMA_NimArrPtrI = static_cast<NimArrBase<int>*>(SMA_NimTypePtr);
+      dynamicMapCopyFlatToDim<T, int>(SMA_NimArrPtrI, SMVAPtr->getOffset(), SMVAPtr->getStrides(), SMVAPtr->getSizes(), &nimArr, nimBegin, nimStride);
+      break;
+    default:
+      PRINTF("Copying type for nimArr_2_SingleModelAccess not supported\n");
+      break;
+    }
+  }
+}
 
-void setValues(NimArrBase<double> &nimArr, ManyVariablesAccessor &MVA);
-void setValues(NimArrBase<int> &nimArr, ManyVariablesAccessor &MVA);
-
-void getValues(NimArr<1, double> &nimArr, ManyVariablesAccessor &MVA);
-void getValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA);
-
-
-//double calculate(NodeVectorClass &nodes);
-//double getLogProb(NodeVectorClass &nodes);
-//void simulate(NodeVectorClass &nodes);
-
-void cAddNodeFun(NodeVectorClass nVObj, nodeFun* nFPtr);
-void cAddVariableAccessor(ManyVariablesAccessor* mVAPtr, SingleVariableAccess* sVAPtr, int index);
-template<class T>
-void cRemoveAccessor(T* aPtr, int index, bool removeAll);
-void setModelValuesAccessorRow(ManyVariablesAccessorBase &access);
-
-
-SingleModelValuesAccess* cMakeSingleModelValuesAccessor(NimVecType* varPtr, int beginIndex, int endIndex, int row);
-SingleVariableAccess* cMakeSingleVariableAccessor(NimArrType** varPtr, int beginIndex, int endIndex);
+void populateNodeFxnVectorNew_internal(NodeVectorClassNew* nfv, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_ROWINDS );
+void populateNodeFxnVectorNew_copyFromRobject(void *nodeFxnVec_to, SEXP S_nodeFxnVec_from );
 
 extern "C" {
-  SEXP makeSingleVariableAccessor(SEXP rModelPtr, SEXP elementName,  SEXP beginIndex, SEXP endIndex);
-  SEXP makeSingleModelValuesAccessor(SEXP rModelValuesPtr, SEXP elementName,  SEXP curRow, SEXP beginIndex, SEXP endIndex);
-
-  SEXP getModelAccessorValues(SEXP accessor);
-  SEXP getMVAccessorValues(SEXP accessor);
-
-  //SEXP newNodeFxnVector(SEXP size);
-  SEXP setNodeModelPtr(SEXP nodeFxnPtr, SEXP modelElementPtr, SEXP nodeElementName);
-  //SEXP resizeNodeFxnVector(SEXP nodeFxnVecPtr, SEXP size);
-  //  SEXP addNodeFun(SEXP nVPtr, SEXP nFPtr, SEXP addAtEnd, SEXP index);
-  //SEXP removeNodeFun(SEXP rPtr, SEXP index, SEXP removeAll);
-	
-  SEXP newManyVariableAccessor(SEXP size);
-  SEXP addSingleVariableAccessor(SEXP MVAPtr, SEXP SVAPtr, SEXP addAtEnd, SEXP index);
   SEXP resizeManyModelVarAccessor(SEXP manyModelVarPtr, SEXP size);
-  SEXP removeModelVariableAccessor(SEXP rPtr, SEXP index, SEXP removeAll);
-	
-  SEXP newManyModelValuesAccessor(SEXP size);
-  SEXP resizeManyModelValuesAccessor(SEXP manyModelValuesPtr, SEXP size);
-  SEXP addSingleModelValuesAccessor(SEXP MVAPtr, SEXP SVAPtr, SEXP addAtEnd, SEXP index);
-  SEXP removeModelValuesAccessor(SEXP rPtr, SEXP index, SEXP removeAll);
-	 
+  SEXP resizeManyModelValuesAccessor(SEXP manyModelValuesPtr, SEXP size);	 
   SEXP manualSetNRows(SEXP Sextptr, SEXP nRows);
 
-  SEXP parseVar(SEXP Sinput);
-  SEXP getVarAndIndicesExtPtr(SEXP Sstring, SEXP SboolExtPtr);
   SEXP getVarAndIndices(SEXP Sstring);
   SEXP varAndIndices2mapParts(SEXP SvarAndIndicesExtPtr, SEXP Ssizes, SEXP SnDim);
   SEXP var2mapParts(SEXP Sinput, SEXP Ssizes, SEXP SnDim);
   
-  //  SEXP populateNodeFxnVector(SEXP nodeFxnVec, SEXP nodeNames, SEXP );
-  SEXP populateNodeFxnVector_byGID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj);
   SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_ROWINDS);
   SEXP populateIndexedNodeInfoTable(SEXP StablePtr, SEXP StableContents);
   SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SEXP SsizesAndNdims, SEXP SModelOrModelValuesPtr );
   SEXP populateValueMapAccessors(SEXP StargetPtr, SEXP SsourceList, SEXP SModelOrModelValuesPtr );
-  //	SEXP populateNumberedObject_withSingleModelValuesAccessors(SEXP mvPtr, SEXP varName, SEXP beginIndex, SEXP varLength, SEXP curRow, SEXP SnumbObj);
+
   SEXP populateNumberedObject_withSingleModelValuesAccessors(SEXP mvPtr, SEXP varName, SEXP GIDs, SEXP curRow, SEXP SnumbObj);
-  //    SEXP populateModelValuesAccessors_byGID(SEXP SmodelValuesAccessorVector, SEXP S_GIDs, SEXP SnumberedObj);
 
   SEXP populateCopierVector(SEXP ScopierVector, SEXP SfromPtr, SEXP StoPtr, SEXP SintIsFromMV, SEXP SintIsToMV);
   
   SEXP populateNumberedObject_withSingleModelVariablesAccessors(SEXP modelPtr, SEXP varName, SEXP sGIDS, SEXP SvalidIndices, SEXP SnumbObj);
   SEXP populateModelVariablesAccessors_byGID(SEXP SmodelVariableAccessorVector, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_LP_GIDs, SEXP S_LP_numberedObj);
-
-  SEXP new_SingleModelValuesAccessor_NumberedObjects();
-  SEXP new_SingleModelVariablesAccessor_NumberedObjects();
 }
-void  SingleVA_Finalizer ( SEXP Sv );
-void  SingleMVA_Finalizer ( SEXP Sv );
 void NodeVector_Finalizer( SEXP Sv);
 void ManyVariable_Finalizer(SEXP Sv);
 void ManyMV_Finalizer(SEXP Sv);
-#endif 			
+
+indexedNodeInfo generateDummyIndexedNodeInfo();
+
+#endif

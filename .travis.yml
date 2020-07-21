@@ -1,6 +1,30 @@
 language: r
+r:
+    - 4.0
 
-sudo: required
+dist: bionic
+sudo: false
+
+cache:
+  packages: true
+  directories:
+    - $HOME/.cache/pip
+
+# We parallelize the tests into baches, and run only one batch on OS X.
+matrix:
+  include:
+    - os: osx
+      env: NIMBLE_TEST_BATCH=1
+    - os: linux
+      env: NIMBLE_TEST_BATCH=1
+    - os: linux
+      env: NIMBLE_TEST_BATCH=2
+    - os: linux
+      env: NIMBLE_TEST_BATCH=3
+    - os: linux
+      env: NIMBLE_TEST_BATCH=4
+    - os: linux
+      env: NIMBLE_TEST_BATCH=5
 
 warnings_are_errors: true
 
@@ -13,19 +37,27 @@ notifications:
 
 branches:
   only:
+    - master
     - devel
-##  - master
+
+latex: false  # Work around tlmgr issues.
+
+addons:
+  apt:
+    packages:
+      - time  # For /usr/bin/time profiling.
 
 install:
-##  - Rscript -e "install.packages('devtools', repos = 'http://cran.us.r-project.org')"
-  - Rscript -e "install.packages('igraph',   repos = 'http://cran.us.r-project.org')"
-  - Rscript -e "install.packages('coda',     repos = 'http://cran.us.r-project.org')"
-  - Rscript -e "install.packages('testthat', repos = 'http://cran.us.r-project.org')"
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then mkdir $HOME/bin; ln -s $(which pip2) $HOME/bin/pip; fi
+  - pip install --upgrade --force-reinstall --user travis pip setuptools wheel virtualenv
+  - ./install_requirements.R
+  # - pip freeze
   - R CMD build packages/nimble
   - R CMD INSTALL packages/nimble
 
 script:
-    - Rscript packages/nimble/inst/tests/test-mcmc.R
-    - Rscript packages/nimble/inst/tests/test-models.R
-##  - Rscript packages/nimble/inst/tests/test-trunc.R
-##  - Rscript packages/nimble/inst/tests/test-others.R
+  # - pip freeze
+  - ./run_tests.R
+
+after_success:
+  - Rscript -e 'library(covr); if(R.version$os == "linux-gnu") codecov()'

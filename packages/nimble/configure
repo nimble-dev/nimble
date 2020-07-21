@@ -622,9 +622,7 @@ ac_includes_default="\
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 USE_REGISTRATION
-PKG_LIBS
 RPATH
-FLIBS
 R_ENABLE_LIB
 NIMBLE_LIB_DIR
 NIMBLE_INC_DIR
@@ -632,6 +630,7 @@ NIMBLE_DIR
 R_PACKAGE_DIR
 NEED_MAKEVARS_FILE
 EIGEN_INC
+CPPAD_INC
 EGREP
 GREP
 CXXCPP
@@ -642,6 +641,7 @@ CPPFLAGS
 LDFLAGS
 CXXFLAGS
 CXX
+GNUMAKEFILE_INCLUDE_MAKECONF
 target_alias
 host_alias
 build_alias
@@ -661,6 +661,7 @@ infodir
 docdir
 oldincludedir
 includedir
+runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -684,8 +685,9 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 with_eigen
+with_cppad
 enable_dylib
-enable_flibs
+enable_debugging
 '
       ac_precious_vars='build_alias
 host_alias
@@ -735,6 +737,7 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
+runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE}'
@@ -987,6 +990,15 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
+  -runstatedir | --runstatedir | --runstatedi | --runstated \
+  | --runstate | --runstat | --runsta | --runst | --runs \
+  | --run | --ru | --r)
+    ac_prev=runstatedir ;;
+  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
+  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
+  | --run=* | --ru=* | --r=*)
+    runstatedir=$ac_optarg ;;
+
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1124,7 +1136,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir
+		libdir localedir mandir runstatedir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1277,6 +1289,7 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
+  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -1305,12 +1318,13 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-dylib            use a single shared libnimble rather than linking code into each DLL/DSO generated when compiling generated code
-  --enable-flibs        include FLIBS flags in Makevars, which is not really necessary but is expected by CRAN
+  --enable-debugging            compiled libnimble with debugging information
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-eigen            path for the directory containing Eigen/ directory with all of the #include files
+  --with-cppad            path for the directory containing cppad/ directory
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -1989,6 +2003,127 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
+
+NEED_MAKEVARS_FILE=TRUE
+
+: ${R_HOME=`R RHOME`}
+if test -z "${R_HOME}"; then
+    as_fn_error $? "Could not determine R_HOME." "$LINENO" 5
+fi
+
+
+
+# Check whether --with-eigen was given.
+if test "${with_eigen+set}" = set; then :
+  withval=$with_eigen; EIGEN_DIR="${withval}"
+fi
+
+
+
+# Check whether --with-cppad was given.
+if test "${with_cppad+set}" = set; then :
+  withval=$with_cppad; CPPAD_DIR="${withval}"
+fi
+
+
+# Check whether --enable-dylib was given.
+if test "${enable_dylib+set}" = set; then :
+  enableval=$enable_dylib; ENABLE_LIB=${enableval}
+else
+  if ! test `uname` = "Linux" ; then
+   ENABLE_LIB=false
+else
+   ENABLE_LIB=true
+fi
+
+fi
+
+
+if test -n "${NO_LIBNIMBLE}" ; then
+  ENABLE_LIB=false
+  echo "Disabling libnimble."
+fi
+
+if test -n "${LIBNIMBLE}" ; then
+  ENABLE_LIB=true
+  echo "Enabling libnimble."
+fi
+
+# Check whether --enable-debugging was given.
+if test "${enable_debugging+set}" = set; then :
+  enableval=$enable_debugging; ENABLE_DEBUGGING=${enableval}
+else
+  ENABLE_DEBUGGING=no
+fi
+
+
+if test "${ENABLE_DEBUGGING}" = "yes"; then
+   echo "enabling R's default debugging information in libnimble"
+   GNUMAKEFILE_INCLUDE_MAKECONF="\$(R_HOME)/etc/\$(R_ARCH)/Makeconf"
+else
+   GNUMAKEFILE_INCLUDE_MAKECONF="Makeconf"
+fi
+
+
+if test -n "$EIGEN_DIR" ; then
+  echo "Checking eigen directory $EIGEN_DIR"
+  if ! test -d "$EIGEN_DIR" ; then
+     echo "$EIGEN_DIR is not a directory"
+  fi
+
+  if ! test -d "$EIGEN_DIR/Eigen" ; then
+     echo "$EIGEN_DIR does not contain the directory Eigen"
+     exit 1;
+  fi
+
+  if ! test -f "$EIGEN_DIR/Eigen/Dense" ; then
+     echo "$EIGEN_DIR/Eigen does not contain the file Dense"
+     exit 1;
+  fi
+
+  if ! test "${EIGEN_DIR}" = "" ; then
+    EIGEN_INC="-I${EIGEN_DIR}"
+  fi
+fi
+
+if test -n "$CPPAD_DIR" ; then
+  echo "Checking cppad directory CPPAD_DIR"
+  if ! test -d "$CPPAD_DIR" ; then
+     echo "$CPPAD_DIR is not a directory"
+  fi
+
+  if ! test -d "$CPPAD_DIR/cppad" ; then
+     echo "$CPPAD_DIR does not contain the directory cppad"
+     exit 1;
+  fi
+
+  if ! test -f "$CPPAD_DIR/cppad/configure.hpp" ; then
+     echo "$CPPAD_DIR/cppad does not contain the file configure.hpp"
+     exit 1;
+  fi
+fi
+
+if test -n "CPPAD_DIR" && ! test "${CPPAD_DIR}" = "" ; then
+   echo "Setting CPPFLAGS to find CppAD"
+   export CPPFLAGS="-I${CPPAD_DIR}"
+fi
+
+if test -n "$EIGEN_DIR" && ! test "${EIGEN_DIR}" = "" ; then
+   echo "Setting CPPFLAGS to find Eigen"
+   export CPPFLAGS="-I${EIGEN_DIR}"
+fi
+
+
+CXX11=`"${R_HOME}/bin/R" CMD config CXX11`
+CXX11STD=`"${R_HOME}/bin/R" CMD config CXX11STD`
+CXX="${CXX11} ${CXX11STD}"
+CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXX11FLAGS`
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -2490,87 +2625,15 @@ else
     CXXFLAGS=
   fi
 fi
-ac_ext=c
-ac_cpp='$CPP $CPPFLAGS'
-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_c_compiler_gnu
-
-
-NEED_MAKEVARS_FILE=TRUE
-
-
-# Check whether --with-eigen was given.
-if test "${with_eigen+set}" = set; then :
-  withval=$with_eigen; EIGEN_DIR="${withval}"
-fi
-
-
-# Check whether --enable-dylib was given.
-if test "${enable_dylib+set}" = set; then :
-  enableval=$enable_dylib; ENABLE_LIB=${enableval}
-else
-  if ! test `uname` = "Linux" ; then
-   ENABLE_LIB=false
-else
-   ENABLE_LIB=true
-fi
-
-fi
-
-
-# Check whether --enable-flibs was given.
-if test "${enable_flibs+set}" = set; then :
-  enableval=$enable_flibs; ENABLE_FLIBS=${enableval}
-else
-  ENABLE_FLIBS=false
-fi
-
-
-if test -n "${NO_LIBNIMBLE}" ; then
-  ENABLE_LIB=false
-  echo "Disabling libnimble."
-fi
-
-if test -n "${LIBNIMBLE}" ; then
-  ENABLE_LIB=true
-  echo "Enabling libnimble."
-fi
-
-
-if test -n "$EIGEN_DIR" ; then
-  echo "Checking eigen directory $EIGEN_DIR"
-  if ! test -d "$EIGEN_DIR" ; then
-     echo "$EIGEN_DIR is not a directory"
-  fi
-
-  if ! test -d "$EIGEN_DIR/Eigen" ; then
-     echo "$EIGEN_DIR does not contain the directory Eigen"
-     exit 1;
-  fi
-
-  if ! test -f "$EIGEN_DIR/Eigen/Dense" ; then
-     echo "$EIGEN_DIR/Eigen does not contain the file Dense"
-     exit 1;
-  fi
-
-  if ! test "${EIGEN_DIR}" = "" ; then
-    EIGEN_INC="-I${EIGEN_DIR}"
-  fi
-fi
-
-
-if test -n "$EIGEN_DIR" && ! test "${EIGEN_DIR}" = "" ; then
-   echo "Setting CPPFLAGS to find Eigen"
-   export CPPFLAGS="-I${EIGEN_DIR}"
-fi
-
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
+
+
+echo "working on eigen"
 
 
 ac_ext=cpp
@@ -2974,20 +3037,26 @@ if test "x$ac_cv_header_Eigen_Dense" = xyes; then :
 #define HAVE_EIGEN_DENSE 1
 _ACEOF
  echo "Found Eigen/Dense";
+		  if test -e "NOT_IN_TARBALL" ; then
+		   echo "Providing your own Eigen only works if installing from a tarball.  Try R CMD BUILD nimble; R CMD INSTALL --configure-args='--with-eigen=YOUR_EIGEN_PATH' nimble_0.6-1.tar.gz or something similar."
+		  else
+		   echo "Not installing Eigen with NIMBLE"
+		   rm -r inst/include/Eigen
+		  fi
 
 else
-  echo "Cannot find Eigen/Dense include file.";
-                  echo "Using the version of Eigen provided locally with the R package";
-                  echo "To avoid this, re-install and specify the path containing the Eigen/ directory via";
-                  echo "   --with-eigen (see INSTALL for syntax) or set the environment variable EIGEN_DIR";
-                  cp -r inst/Eigen_local inst/include/Eigen ;
-                  EIGEN_DIR=""
+  echo "Using the version of Eigen provided with NIMBLE";
+		  EIGEN_DIR=""
 
 fi
 
 done
 
 
+if test -n "$CPPAD_DIR" ; then
+echo "Using CppAD directory ${CPPAD_DIR}"
+CPPAD_INC="-I$CPPAD_DIR"
+fi
 
 if test -n "$EIGEN_DIR" ; then
 echo "Using Eigen directory ${EIGEN_DIR}"
@@ -2999,11 +3068,19 @@ fi
 
 
 
-NIMBLE_DIR=${R_PACKAGE_DIR}
-echo "NIMBLE_DIR = ${NIMBLE_DIR}"
+
+if test "${ENABLE_LIB}" != "false" ; then
+ NIMBLE_DIR="__NIMBLE_DIR__"
+else
+ NIMBLE_DIR="WILL_BE_SET_IN_LOCAL_MAKEVARS"
+fi
 
 
-NIMBLE_INC_DIR=${NIMBLE_DIR}/include
+if test "${ENABLE_LIB}" != "false" ; then
+ NIMBLE_INC_DIR="__NIMBLE_INC_DIR__"
+else
+ NIMBLE_INC_DIR="WILL_BE_SET_IN_LOCAL_MAKEVARS"
+fi
 
 
 if test "${ENABLE_LIB}" = "yes" ; then
@@ -3012,35 +3089,22 @@ elif test "${ENABLE_LIB}" = "no" ; then
   ENABLE_LIB="FALSE"
 fi
 
+if test "${ENABLE_LIB}" != "false" ; then
+ NIMBLE_LIB_DIR="__NIMBLE_LIB_DIR__"
+else
+ NIMBLE_LIB_DIR="WILL_BE_SET_IN_LOCAL_MAKEVARS"
+fi
 
-NIMBLE_LIB_DIR=${NIMBLE_DIR}/CppCode
 
 
-
-R_ENABLE_LIB=`echo "${ENABLE_LIB}" | tr "a-z" "A-Z"`
+R_ENABLE_LIB=`echo "${ENABLE_LIB}" | tr "[a-z]" "[A-Z]"`
 echo "ENABLE_LIB=${ENABLE_LIB}"
 
 
-ENABLE_FLIBS=`echo "${ENABLE_FLIBS}" | tr "a-z" "A-Z"`
-if test "${ENABLE_FLIBS}" = "TRUE"; then
-  echo "including FLIBS in Makevars as expected for CRAN"
-  FLIBS="\$(FLIBS)"
-else
-  echo "not including FLIBS in Makevars.  use --configure-args=\'--enable-flibs=true\' when testing for CRAN."
-  FLIBS=""
-fi
-
-
 if ! test `uname` = "Darwin" ; then
-RPATH="-Wl,-rpath=${NIMBLE_DIR}/CppCode"
+RPATH="__RPATH__"   ## -Wl,-rpath=${NIMBLE_DIR}/CppCode"
 fi
 
-
-if test "${ENABLE_LIB}" != "false" ; then
-  #XX
-  PKG_LIBS="-L../inst/CppCode -lnimble $RPATH"
-#  PKG_LIBS="-L. -lnimble $RPATH"
-fi
 
 
 USE_REGISTRATION=".NimbleUseRegistration = TRUE"
@@ -4207,17 +4271,25 @@ $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
 
 
+if test "${ENABLE_DEBUGGING}" != "yes"; then
+  echo "removing debugging flags"
+  (cd inst/CppCode ; ${MAKE} -f GNUmakefile_customizeMakeconf localMakeconf)
+fi
 
+cp inst/CppCode/dists.cpp src
+cp inst/CppCode/RcppUtils.cpp src
+cp inst/CppCode/nimbleGraph.cpp src
+cp inst/CppCode/eigenUsingClasses.cpp src
 
 if test "${ENABLE_LIB}" != "false" ; then
- echo "Building libnimble"
- (cd inst/CppCode ; ${MAKE} )
-# cp inst/CppCode/libnimble.dylib src
-# if ! test -e $R_PACKAGE_DIR/libs/ ; then
-#    mkdir -p $R_PACKAGE_DIR/libs/
-# fi
- #cp inst/CppCode/libnimble.dylib $R_PACKAGE_DIR/libs/libnimble.dylib
+  echo "Building libnimble"
+  (cd inst/CppCode ; ${MAKE} -f${GNUMAKEFILE_INCLUDE_MAKECONF} -fGNUmakefile)
+
 else
-  cp inst/CppCode/*.cpp src
-  (cd inst/CppCode ; ${MAKE} libnimble.a)
+  echo "Building libnimble.a"
+  (cd inst/CppCode ; ${MAKE} -f${GNUMAKEFILE_INCLUDE_MAKECONF} -fGNUmakefile libnimble.a)
+fi
+
+if test "${ENABLE_DEBUGGING}" != "yes"; then
+  (cd inst/CppCode ; ${MAKE} -f GNUmakefile_customizeMakeconf clean)
 fi

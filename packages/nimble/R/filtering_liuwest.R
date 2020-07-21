@@ -21,12 +21,14 @@ LWSetMeanVirtual <- nimbleFunctionVirtual(
 
 # Has a return_mean method which returns the mean of a normally distributed nimble node.
 paramMean <- nimbleFunction(
+    name = 'paramMean',
   contains = LWSetMeanVirtual,
   setup = function(model, node){
+    ## check that node has a normal distribution!
   },
     run = function() {
         model[[node]] <<- model$getParam(node, 'mean')
-    }, where = getLoadingNamespace()                                    
+    }                                    
 )
 
 LWSetParVirtual <- nimbleFunctionVirtual(
@@ -39,6 +41,7 @@ LWSetParVirtual <- nimbleFunctionVirtual(
 )
 
 doPars <- nimbleFunction(
+    name = 'doPars',
   contains = LWSetParVirtual,
   setup = function(parName, mvWSamples, mvEWSamples) {
   },
@@ -99,19 +102,37 @@ doPars <- nimbleFunction(
       returnType(double(2))
       return(matOut)
     } 
-  ), where = getLoadingNamespace())
+  ))
 
 
 LWStep <- nimbleFunction(
+    name = 'LWStep',
   contains = LWStepVirtual,
   setup = function(model, mvWSamples, mvEWSamples, nodes, paramVarDims, iNode, paramNodes, paramVars, names, saveAll, d, silent = FALSE) {
     notFirst <- iNode != 1
     prevNode <- nodes[if(notFirst) iNode-1 else iNode]
-    prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
+
+    modelSteps <- particleFilter_splitModelSteps(model, nodes, iNode, notFirst)
+    prevDeterm <- modelSteps$prevDeterm
+    calc_thisNode_self <- modelSteps$calc_thisNode_self
+    calc_thisNode_deps <- modelSteps$calc_thisNode_deps
+    
     thisNode <- nodes[iNode]
     parDeterm <- model$getDependencies(paramNodes, determOnly=TRUE)
-    thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
-    thisData   <- model$getDependencies(thisNode, dataOnly = TRUE)
+    ## Remove any element of parDeterm that is not needed by prevDeterm, calc_thisNode_self or calc_thisNode_deps
+    nodes_that_matter <- c(prevDeterm, calc_thisNode_self, calc_thisNode_deps)
+    if(length(parDeterm) > 0) {
+        thisDeterm_is_intermediate <- logical(length(parDeterm))
+        for(i in seq_along(parDeterm)) {
+            theseDeps <- model$getDependencies(parDeterm[i])
+            thisDeterm_is_intermediate[i] <- !(parDeterm[i] %in% nodes_that_matter) & any(theseDeps %in% nodes_that_matter)
+        }
+        parDeterm <- parDeterm[thisDeterm_is_intermediate]
+    }
+    parAndPrevDeterm <- c(parDeterm, prevDeterm)
+    parAndPrevDeterm <- model$expandNodeNames(parAndPrevDeterm, sort = TRUE) ## Ensure sorting, because a node in parDeterm that is also in prevDeterm will have been removed from parDeterm, but that is where it potentially comes first.
+    
+
     isLast <- (iNode == length(nodes))
             
     t <- iNode  # current time point
@@ -182,13 +203,12 @@ LWStep <- nimbleFunction(
        for(i in 1:m) {
          copy(mvWSamples, model, prevXName, prevNode, row=i)
          values(model, paramNodes) <<- meanVec[,i]
-         calculate(model, parDeterm) 
-         calculate(model, prevDeterm) 
+         calculate(model, parAndPrevDeterm) 
          for(j in 1:numLatentNodes){
            setMeanList[[j]]$run()
          }
-         calculate(model, thisDeterm)
-         auxWts[i] <- exp(calculate(model, thisData))
+         calculate(model, calc_thisNode_self)
+         auxWts[i] <- exp(calculate(model, calc_thisNode_deps))
          if(is.nan(auxWts[i])) auxWts[i] <- 0 #check for ok param values
          preWts[i] <- exp(log(auxWts[i]))*wts[i] #first resample weights
        }
@@ -224,11 +244,10 @@ LWStep <- nimbleFunction(
          simulate(model, paramNodes)
          tmpPars[,i] <- values(model,paramNodes)
        }
-      calculate(model, parDeterm) 
-      simulate(model, thisNode)
+      calculate(model, parAndPrevDeterm) 
+      simulate(model, calc_thisNode_self)
       copy(model, mvWSamples, nodes = thisNode, nodesTo = thisXName, rowTo = i)
-      calculate(model, thisDeterm)
-      l[i]  <- exp(calculate(model, thisData))
+      l[i]  <- exp(calculate(model, calc_thisNode_deps))
       if(is.nan(l[i])) l[i] <- 0
       #rescale weights by pre-sampling weight
       if(notFirst)
@@ -264,13 +283,14 @@ LWStep <- nimbleFunction(
        } 
      }
   return(0)
-  },  where = getLoadingNamespace()
+  }
 )
 
 # Has two methods: shrinkMean, which shrinks each parameter particle towards
 # the mean of all particles, and cholesVar, which returns the cholesky 
 # decomposition of the weighted MC covariance matrix
 LWparFunc <- nimbleFunction(
+    name = 'LWparFunc',
   setup = function(d, parDim, prevInd){
     # Calculate h^2 and a using specified discount factor d
     hsq <- 1-((3*d-1)/(2*d))^2 
@@ -305,7 +325,7 @@ LWparFunc <- nimbleFunction(
       
       return(varMat)
     }
-  ), where = getLoadingNamespace() 
+  ) 
 )
 
 #' Create a Liu and West particle filter algorithm.  
@@ -314,9 +334,13 @@ LWparFunc <- nimbleFunction(
 #'
 #' @param model A NIMBLE model object, typically representing a state 
 #'  space model or a hidden Markov model
-#' @param nodes A character vector specifying the latent model nodes 
-#'  over which the particle filter will stochastically integrate over to
-#'  estimate the log-likelihood function
+#' @param nodes  A character vector specifying the latent model nodes 
+#'  over which the particle filter will stochastically integrate to
+#'  estimate the log-likelihood function.  All provided nodes must be stochastic.
+#'  Can be one of three forms: a variable name, in which case all elements in the variable
+#'  are taken to be latent (e.g., 'x'); an indexed variable, in which case all indexed elements are taken
+#'  to be latent (e.g., 'x[1:100]' or 'x[1:100, 1:2]'); or a vector of multiple nodes, one per time point,
+#'  in increasing time order (e.g., c("x[1:2, 1]", "x[1:2, 2]", "x[1:2, 3]", "x[1:2, 4]")).
 #' @param params A character vector specifying the top-level parameters to estimate the posterior distribution of. 
 #'   If unspecified, parameter nodes are specified as all stochastic top level nodes which
 #'  are not in the set of latent nodes specified in \code{nodes}.
@@ -331,8 +355,9 @@ LWparFunc <- nimbleFunction(
 #'  \item{d}{A discount factor for the Liu-West filter.  Should be close to,
 #'  but not above, 1.}
 #'  \item{saveAll}{Indicates whether to save state samples for all time points (TRUE), or only for the most recent time point (FALSE)}
-#' \item{timeIndex}{An integer used to manually specify which dimension of the latent state variable indexes time.  
+#'  \item{timeIndex}{An integer used to manually specify which dimension of the latent state variable indexes time.  
 #'  Only needs to be set if the number of time points is less than or equal to the size of the latent state at each time point.}
+#'  \item{initModel}{A logical value indicating whether to initialize the model before running the filtering algorithm.  Defaults to TRUE.}
 #' }
 #' 
 #'  The Liu and West filter samples from the posterior 
@@ -369,36 +394,21 @@ LWparFunc <- nimbleFunction(
 #' lw_sigma_x <- as.matrix(Cmy_LWF$mvEWSamples, 'sigma_x')
 #' }
 buildLiuWestFilter <- nimbleFunction(
+    name = 'buildLiuWestFilter',
   setup = function(model, nodes, params = NULL, control = list()){
-    
+    warning("The Liu-West filter ofen performs poorly and is provided primarily for didactic purposes.")
     #control list extraction
     saveAll <- control[['saveAll']]
     silent <- control[['silent']]
     d <- control[['d']]
     timeIndex <- control[['timeIndex']]
+    initModel <- control[['initModel']]
     if(is.null(silent)) silent <- FALSE
     if(is.null(saveAll)) saveAll <- FALSE
     if(is.null(d)) d <- .99
-    
-    #get latent state info
-    varName <- sapply(nodes, function(x){return(model$getVarNames(nodes = x))})
-    if(length(unique(varName))>1){
-      stop("all latent nodes must come from same variable")
-    }
-    varName <- varName[1]
-    info <- model$getVarInfo(varName)
-    latentDims <- info$nDim
-    if(is.null(timeIndex)){
-      timeIndex <- which.max(info$maxs)
-      timeLength <- max(info$maxs)
-      if(sum(info$maxs==timeLength)>1) # check if multiple dimensions share the max index size
-        stop("unable to determine which dimension indexes time. 
-             Specify manually using the 'timeIndex' control list argument")
-    } else{
-      timeLength <- info$maxs[timeIndex]
-    }
-    nodes <- paste(info$varName,"[",rep(",", timeIndex-1), 1:timeLength,
-                   rep(",", info$nDim - timeIndex),"]", sep="")
+    if(is.null(initModel)) initModel <- TRUE
+    ## get latent state info
+    nodes <- findLatentNodes(model, nodes, timeIndex)
     latentVars <- model$getVarNames(nodes = nodes)
     
     # if unspecified, parameter nodes are specified as all stochastic top level nodes which
@@ -411,20 +421,19 @@ buildLiuWestFilter <- nimbleFunction(
     }
     params <- model$expandNodeNames(params, sort = TRUE)
     if(identical(params, character(0)))
-      stop('must be at least one higher level parameter for Liu and West filter to work')
+      stop('There must be at least one higher level parameter for Liu and West filter to work.')
     if(any(params %in% nodes))
-      stop('parameters cannot be latent states')
+      stop('Parameters cannot be latent states.')
     if(!all(params%in%model$getNodeNames(stochOnly=TRUE)))
-      stop('parameters must be stochastic nodes')
+      stop('Parameters must be stochastic nodes.')
     paramVars <-  model$getVarNames(nodes =  params)  # need var names too
     pardimcheck <- sapply(paramVars, function(n){
       if(length(nimDim(model[[n]]))>1)
-        stop("Liu and West filter doesn't work for matrix valued top level parameters")
+        stop("Liu and West filter doesn't work for matrix valued top level parameters.")
     })
     
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
-    if(length(unique(dims)) > 1) stop('sizes or dimension of latent 
-                                      states varies')
+    if(length(unique(dims)) > 1) stop('Sizes or dimensions of latent states varies.')
     paramDims <-   sapply(params, function(n) nimDim(model[[n]]))
     
     my_initializeModel <- initializeModel(model, silent = silent)
@@ -484,7 +493,7 @@ buildLiuWestFilter <- nimbleFunction(
     
   },
   run = function(m = integer(default = 10000)) {
-    my_initializeModel$run()
+    if(initModel == TRUE) my_initializeModel$run()
     resize(mvWSamples, m)
     resize(mvEWSamples, m)
     
@@ -495,7 +504,7 @@ buildLiuWestFilter <- nimbleFunction(
        LWStepFunctions[[iNode]]$run(m)
     }
     return()
-  },  where = getLoadingNamespace()
+  }
 )
 
 

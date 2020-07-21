@@ -10,11 +10,7 @@ for f in $FILES ; do
 done
 
 (cd inst/CppCode ; make clean)
-(cd src ; rm *.o)
-
-if test -d inst/include/Eigen ; then
-  rm -fr inst/include/Eigen
-fi
+#(cd src ; rm *.o)
 
 
 

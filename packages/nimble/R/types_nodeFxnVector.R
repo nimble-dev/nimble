@@ -4,47 +4,50 @@
 ## simulate(model_nodes)
 ## model_nodes$getNodeFunctions() returns a list of the nfRefClassObjets underlying the nodeFunctions
 
-nodeFunctionVector <- setRefClass(
-    Class = 'nodeFunctionVector',
-    fields = list(
-        model = 'ANY',
-        gids = 'ANY',
-        indexingInfo = 'ANY'
-                  ),
-               #   nodes = 'ANY'),
-               #   nodeFunctionRefClassObjects = 'ANY'),
-    methods = list(
-        initialize = function(model, nodeNames, excludeData = FALSE, env = parent.frame()) {
-            model <<- model
-            if(length(nodeNames) == 0) {
-            	gids <<- numeric(0)
-                indexingInfo <<- list(declIDs = integer(), rowIndices = integer())
-            } else {
-                if(is.numeric(nodeNames)) 		#In case we start with graph ids instead of names
-                    temp_gids <- unique(sort(nodeNames, FALSE),
-                                                  FALSE,
-                                                  FALSE,
-                                                  NA) ##unique( sort(nodeNames) )
-                                    # temp_gids <- .Internal(unique(.Internal(sort(nodeNames, FALSE)), F,F,NA))
-    	        else 
-                    temp_gids <- unique(sort(model$modelDef$nodeName2GraphIDs(nodeNames), FALSE),
-                                                  FALSE,
-                                                  FALSE,
-                                                  NA) ##unique( sort(model$modelDef$nodeName2GraphIDs(nodeNames)))
-            # temp_gids <- .Internal(unique(.Internal(sort(model$modelDef$nodeName2GraphIDs(nodeNames), FALSE)), F,F,NA))))
-    	        if(excludeData == TRUE)
-                    temp_gids <- temp_gids[!model$isDataFromGraphID(temp_gids)]
-                gids <<- temp_gids ## old nodeFun system
-                indexingInfo <<- model$modelDef$graphIDs2indexedNodeInfo(temp_gids) ## new nodeFun system
+nodeFunctionVector <-
+    function(model,
+             nodeNames,
+             excludeData = FALSE,
+             sortUnique = TRUE,
+             errorContext = "")
+{
+    ##        model <<- model
+    if(length(nodeNames) == 0) {
+        gids <- numeric(0)
+        indexingInfo <- list(declIDs = integer(), rowIndices = integer())
+    } else {
+        if(sortUnique) {
+            temp_gids <-
+                unique(
+                    sort(model$modelDef$nodeName2GraphIDs(nodeNames)),
+                    FALSE,
+                    FALSE,
+                    NA) 
+            if(excludeData == TRUE)
+                temp_gids <-
+                    temp_gids[!model$isDataFromGraphID(temp_gids)]
+        } else {
+            temp_gids <-
+                model$modelDef$nodeName2GraphIDs(nodeNames, unique = FALSE)
+            if(length(temp_gids) != length(nodeNames))
+                stop(paste0("In nodeFunctionVector from a case like model$doSomething(nodes[i]) where nodes may not contain well-defined node names.  Context is ",
+                            errorContext))
+            if(excludeData) {
+                if(sum(model$isDataFromGraphID(temp_gids)) > 0)
+                    ## message uses "includeData" instead of "excludeData" b/c that's what users see as argument
+                    warning(paste0("In nodeFunctionVector, usage is of the form model$doSomething(nodes[i]) where nodes includes data nodes, but includeData is FALSE.  Set includeData = TRUE if you need to include data nodes in this case.  Context is ",
+                                   errorContext))
             }
-        },
-        getNodeNames = function(){ ## not used anywhere. provided only for debugging/inspection
-        	model$expandNodeNames(gids)	
-        },
-        show = function() {
-            cat('nodeFunctionVector: \n')
-            print(cbind(indexingInfo$declIDs, indexingInfo$unrolledIndicesMatrixRows))
         }
-    )
-)
+        gids <- temp_gids
+        indexingInfo <-
+            model$modelDef$graphIDs2indexedNodeInfo(temp_gids)
+    }
+    ## Any modification to this list ordering needs to be updated in
+    ## populateNodeFxnVectorNew_copyFromRobject in accessorClasses.cpp
+    structure(list(gids = gids,
+                   indexingInfo = indexingInfo,
+                   model = model),
+              class = "nodeFunctionVector")
+}
 

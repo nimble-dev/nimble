@@ -1,3 +1,24 @@
+/*
+ * NIMBLE: an R package for programming with BUGS models.
+ * Copyright (C) 2014-2017 Perry de Valpine, Christopher Paciorek,
+ * Daniel Turek, Clifford Anderson-Bergman, Nick Michaud, Fritz Obermeyer,
+ * Duncan Temple Lang.
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, a copy is available at
+ * https://www.R-project.org/Licenses/
+ */
+
 #include "nimble/ModelClassUtils.h"
 
 SEXP getModelValuesPtrFromModel (SEXP rPtr){
@@ -14,12 +35,8 @@ SEXP getModelValuesPtrFromModel (SEXP rPtr){
 	return(rModelValuesPtr) ;
 }
 
-
-
-
-
 NimArrType** cGetModelElementPtr(SEXP Sextptr, SEXP Sname) {
-  if(!isString(Sname)) {
+  if(!Rf_isString(Sname)) {
     PRINTF("Error: Sname is not character!\n");
     return(NULL);
   }
@@ -54,24 +71,17 @@ SEXP getMVBuildName (SEXP rPtr){
 	string mVBuildName = (*modelValuesPtr).getMVBuildName();
 	if (mVBuildName == "missing")
 		PRINTF("Warning: buildName missing in modelValues! \nConstructor must assign the string buildName to the name which call a SEXP that builds modelValues object\n");
-	SEXP rName = allocVector(STRSXP, 1);
-	SET_STRING_ELT(rName, 0, mkChar(mVBuildName.c_str() ) );
+	SEXP rName = Rf_allocVector(STRSXP, 1);
 	PROTECT(rName);
-	UNPROTECT(1);
+	SEXP mvbn = Rf_mkChar(mVBuildName.c_str() );
+	PROTECT(mvbn);
+	SET_STRING_ELT(rName, 0, mvbn );
+	UNPROTECT(2);
 	return(rName);
 }
 
 SEXP derefPtr(SEXP SmultiPtr) {
   void **doublePtr = static_cast<void **>(R_ExternalPtrAddr(SmultiPtr));
   return(R_MakeExternalPtr( static_cast<void *>(*doublePtr), R_NilValue, R_NilValue) );
-}
-
-// This is used when we have a NimArr<>* in a model and a NimArr<>** that needs to point to it.
-// We assume we have an extptr to each
-SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr) {
-  void *singlePtr = R_ExternalPtrAddr(SsinglePtr); // this is really a **
-  void **doublePtr = static_cast<void **>(R_ExternalPtrAddr(SdoublePtr)); // this is really a ***.  
-  *doublePtr = singlePtr;
-  return(R_NilValue);
 }
 

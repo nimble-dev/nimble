@@ -68,6 +68,7 @@ nl_vectorizedExpandNodeIndex <- function(nodes, env = parent.frame()) {
 
 ## checks that all nodeNames are present in model
 nl_checkNodeNamesInModel <- function(model, nodeNames, determOnly = FALSE, stochOnly = FALSE) {
+    # this function not used in package, but if it were, would be good to have error messages indicate which nodes are the issue; see below for analogous situation for nl_checkVarNamesInModel
     if(!all(nodeNames %in% model$getNodeNames()))      stop('all node names not in model')
     if(determOnly) if(!all(nodeNames %in% model$getNodeNames(determOnly = TRUE)))      stop('all node names are not deterministic')
     if(stochOnly)  if(!all(nodeNames %in% model$getNodeNames(stochOnly = TRUE)))       stop('all node names are not stochastic')
@@ -75,7 +76,9 @@ nl_checkNodeNamesInModel <- function(model, nodeNames, determOnly = FALSE, stoch
 
 ## checks that all varNames are present in model
 nl_checkVarNamesInModel <- function(model, varNames) {
-    if(!all(varNames %in% model$getVarNames(includeLogProb = TRUE)))      stop('all variable names are not in model')
+    found <- varNames %in% model$getVarNames(includeLogProb = TRUE)
+    if(!all(found)) 
+        stop('These variables are not in model: ', paste(varNames[!found], collapse = ','), '.')
 }
 
 nl_nodeVectorReadyNodes <- function(model, nodeNames, includeData = TRUE){
@@ -182,7 +185,7 @@ as.matrix.modelValuesBaseClass <- function(x, varNames, ...){
 	ans <- matrix(0.1, nrow = nrows, ncol = length(flatNames))
 	colIndex = 1
 	for(i in seq_along(varNames)){
-		.Call('fastMatrixInsert', ans, modelValuesElement2Matrix(x, varNames[i]) , as.integer(1), as.integer(colIndex) ) 		
+		.Call(fastMatrixInsert, ans, modelValuesElement2Matrix(x, varNames[i]) , as.integer(1), as.integer(colIndex) ) 		
 		colIndex = colIndex + prod(x$sizes[[varNames[i] ]])
 		}
 	colnames(ans) <- flatNames
@@ -198,7 +201,7 @@ as.matrix.CmodelValues <- function(x, varNames, ...){
 	ans <- matrix(0.1, nrow = nrows, ncol = length(flatNames))
 	colIndex = 1
 	for(i in seq_along(varNames)){
-		.Call('fastMatrixInsert', ans, modelValuesElement2Matrix(x, varNames[i]) , as.integer(1), as.integer(colIndex) ) 		
+		.Call(fastMatrixInsert, ans, modelValuesElement2Matrix(x, varNames[i]) , as.integer(1), as.integer(colIndex) ) 		
 		colIndex = colIndex + prod(x$sizes[[varNames[i] ]])
 		}
 	colnames(ans) <- flatNames
@@ -215,22 +218,37 @@ modelValuesElement2Matrix <- function(mv, varName){
 
 Cmatrix2mvOneVar <- function(mat, mv, varName, k){
 	ptr <- mv$componentExtptrs[[varName]]
-	if(inherits(ptr, 'externalptr'))
-		.Call('matrix2VecNimArr', ptr, mat, rowStart = as.integer(1), rowEnd = k )
-	else
-		stop('varName not found in modelValues')
+	if(inherits(ptr, 'externalptr')) {
+            eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$matrix2VecNimArr, ptr, mat, rowStart = as.integer(1), rowEnd = k ))
+        } else
+            stop('varName not found in modelValues')
 }
 
+#' Set values of one variable of a modelValues object from an R matrix
+#'
+#' Normally a modelValues object is accessed one "row" at a time.  This function allows all rows for one variable to set from a matrix with one dimension more than the variable to be set.
+#'
+#' @param mat Input matrix
+#'
+#' @param mv  modelValues object to be modified.
+#'
+#' @param varName Character string giving the name of the variable on \code{mv} to be set
+#'
+#' @param k Number of rows to use
+#'
+#' @export
+#' @details
+#' This function may be deprecated in the future when a more natural system for interacting with modelValues objects is developed.
 Rmatrix2mvOneVar <- function(mat, mv, varName, k){
 	if( mv$symTab$symbols[[varName]][['type']] == 'double'){
 		storage.mode(mat) <- 'double'
 		len <- ncol(mat)
-		.Call('matrix2ListDouble', mat, mv[[varName]], listStartIndex = as.integer(1), RnRows = k, Rlength = as.integer(mv$sizes[[varName]]) )
+		.Call(matrix2ListDouble, mat, mv[[varName]], listStartIndex = as.integer(1), RnRows = k, Rlength = as.integer(mv$sizes[[varName]]) )
 	}
 	if( mv$symTab$symbols[[varName]][['type']] == 'int'){
 		storage.mode(mat) <- 'integer'
 		len <- ncol(mat)
-		.Call('matrix2ListInt', mat, mv[[varName]], listStartIndex = as.integer(1), RnRows = k, Rlength = as.integer(mv$sizes[[varName]]) )
+		.Call(matrix2ListInt, mat, mv[[varName]], listStartIndex = as.integer(1), RnRows = k, Rlength = as.integer(mv$sizes[[varName]]) )
 	}
 }
 

@@ -1,0 +1,773 @@
+Files: R/*
+Copyright: Copyright (C) 2014-2020 the NIMBLE authors.
+License: BSD_3_clause
+
+Files: CppCode/* include/nimble/*
+Copyright: Copyright (C) 2014-2020 the NIMBLE authors, unless otherwise stated.
+License: GPL (>=2)
+
+Files: inst/include/Eigen/SparseLU inst/include/Eigen/src/SparseLU/SparseLU_SupernodalMatrix.h
+inst/include/Eigen/src/SparseLU/SparseLU_column_bmod.h inst/include/Eigen/src/SparseLU/SparseLU_panel_bmod.h
+inst/include/Eigen/src/SparseLU/SparseLU_kernel_bmod.h
+Copyright: Copyright (C) 2012 Désiré Nuentsa-Wakam, Gael Guennebaud 
+License: MPL-2
+
+Files: inst/include/Eigen/StdDeque inst/include/Eigen/StdVector
+Copyright: Copyright (C) 2009 Gael Guennebaud, Hauke Heibel 
+License: MPL-2
+
+Files: inst/include/Eigen/src/SVD/BDCSVD.h
+Copyright: Copyright (C) 2013 Gauthier Brun, Nicolas Carre, Jean Ceccato, Pierre Zoppitelli, Jitse Niesen
+Copyright: Copyright (C) 2014-2016 Gael Guennebaud 
+License: MPL-2
+
+Files: inst/include/Eigen/src/SVD/UpperBidiagonalization.h
+Copyright: Copyright (C) 2010 Benoit Jacob
+Copyright: Copyright (C) 2013-2014 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/SVD/JacobiSVD_LAPACKE.h inst/include/Eigen/src/PardisoSupport/PardisoSupport.h
+inst/include/Eigen/src/Eigenvalues/SelfAdjointEigenSolver_LAPACKE.h inst/include/Eigen/src/Eigenvalues/RealSchur_LAPACKE.h
+inst/include/Eigen/src/Eigenvalues/ComplexSchur_LAPACKE.h inst/include/Eigen/src/Cholesky/LLT_LAPACKE.h
+inst/include/Eigen/src/LU/PartialPivLU_LAPACKE.h inst/include/Eigen/src/Core/util/MKL_support.h
+inst/include/Eigen/src/Core/products/SelfadjointMatrixVector_BLAS.h inst/include/Eigen/src/Core/products/GeneralMatrixVector_BLAS.h
+inst/include/Eigen/src/Core/products/GeneralMatrixMatrixTriangular_BLAS.h inst/include/Eigen/src/Core/products/TriangularMatrixMatrix_BLAS.h
+inst/include/Eigen/src/Core/products/SelfadjointMatrixMatrix_BLAS.h inst/include/Eigen/src/Core/products/TriangularMatrixVector_BLAS.h
+inst/include/Eigen/src/Core/products/TriangularSolverMatrix_BLAS.h inst/include/Eigen/src/Core/products/GeneralMatrixMatrix_BLAS.h
+inst/include/Eigen/src/QR/ColPivHouseholderQR_LAPACKE.h inst/include/Eigen/src/QR/HouseholderQR_LAPACKE.h
+Copyright: Copyright (c) 2011, Intel Corporation. All rights reserved.
+License: 
+ Redistribution and use in source and binary forms, with or without modification,
+ are permitted provided that the following conditions are met:
+
+ * Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+ * Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+ * Neither the name of Intel Corporation nor the names of its contributors may
+   be used to endorse or promote products derived from this software without
+   specific prior written permission.
+
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Files: inst/include/Eigen/src/SVD/JacobiSVD.h
+Copyright: Copyright (C) 2009-2010 Benoit Jacob
+Copyright: Copyright (C) 2013-2014 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/SVD/SVDBase.h
+Copyright: Copyright (C) 2009-2010 Benoit Jacob
+Copyright: Copyright (C) 2014 Gael Guennebaud 
+Copyright: Copyright (C) 2013 Gauthier Brun, Nicolas Carre, Jean Ceccato, Pierre Zoppitelli
+License: MPL-2
+
+Files: inst/include/Eigen/src/Householder/HouseholderSequence.h
+Copyright: Copyright (C) 2009 Gael Guennebaud
+Copyright: Copyright (C) 2010 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/Householder/BlockHouseholder.h
+Copyright: Copyright (C) 2010 Vincent Lejeune, Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Householder/Householder.h
+Copyright: Copyright (C) 2010 Benoit Jacob
+Copyright: Copyright (C) 2009 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/misc/lapacke.h
+Copyright: Copyright (c) 2010, Intel Corporation. All rights reserved.
+License: 
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in the
+      documentation and/or other materials provided with the distribution.
+    * Neither the name of Intel Corporation nor the names of its contributors
+      may be used to endorse or promote products derived from this software
+      without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+  THE POSSIBILITY OF SUCH DAMAGE.
+
+Files: inst/include/Eigen/src/misc/Image.h inst/include/Eigen/src/misc/Kernel.h
+Copyright: Copyright (C) 2009 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/misc/RealSvd2x2.h
+Copyright: Copyright (C) 2009-2010 Benoit Jacob
+Copyright: Copyright (C) 2013-2016 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/SparseLU/SparseLU_pruneL.h inst/include/Eigen/src/SparseLU/SparseLU_Utils.h
+inst/include/Eigen/src/SparseLU/SparseLU_Memory.h inst/include/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h
+inst/include/Eigen/src/SparseLU/SparseLU_panel_dfs.h inst/include/Eigen/src/SparseLU/SparseLU_relax_snode.h
+inst/include/Eigen/src/SparseLU/SparseLU_copy_to_ucol.h inst/include/Eigen/src/SparseLU/SparseLUImpl.h
+inst/include/Eigen/src/SparseLU/SparseLU_pivotL.h inst/include/Eigen/src/SparseLU/SparseLU_Structs.h
+inst/include/Eigen/src/SparseLU/SparseLU_column_dfs.h inst/include/Eigen/src/SparseCore/SparseColEtree.h
+inst/include/Eigen/src/MetisSupport/MetisSupport.h inst/include/Eigen/src/OrderingMethods/Ordering.h
+inst/include/Eigen/src/OrderingMethods/Eigen_Colamd.h inst/include/Eigen/src/PaStiXSupport/PaStiXSupport.h
+Copyright: Copyright (C) 2012 Désiré Nuentsa-Wakam
+License: MPL-2
+
+Files: inst/include/Eigen/src/SparseLU/SparseLU_gemm_kernel.h inst/include/Eigen/src/SparseCore/SparsePermutation.h
+inst/include/Eigen/src/Core/Ref.h
+Copyright: Copyright (C) 2012 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/SparseLU/SparseLU.h
+Copyright: Copyright (C) 2012 Désiré Nuentsa-Wakam
+Copyright: Copyright (C) 2012-2014 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/SparseLU/SparseLU_kernel_bmod.h
+Copyright: Copyright (C) 2012 Désiré Nuentsa-Wakam, Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/SparseCore/SparseBlock.h inst/include/Eigen/src/SparseCore/SparseCwiseBinaryOp.h
+inst/include/Eigen/src/SparseCore/SparseAssign.h inst/include/Eigen/src/SparseCore/CompressedStorage.h
+inst/include/Eigen/src/SparseCore/SparseMatrix.h  inst/include/Eigen/src/SparseCore/MappedSparseMatrix.h
+inst/include/Eigen/src/SparseCore/SparseUtil.h inst/include/Eigen/src/SparseCore/SparseMatrixBase.h
+inst/include/Eigen/src/SparseCore/SparseRedux.h inst/include/Eigen/src/SparseCore/SparseFuzzy.h
+inst/include/Eigen/src/SparseCore/SparseSparseProductWithPruning.h inst/include/Eigen/src/Core/CoreIterators.h 
+Copyright: Copyright (C) 2008-2014 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/SparseCore/SparseTranspose.h inst/include/Eigen/src/SparseCore/SparseProduct.h
+inst/include/Eigen/src/SparseCore/SparseVector.h inst/include/Eigen/src/SparseCore/ConservativeSparseSparseProduct.h
+inst/include/Eigen/src/SparseCore/SparseDenseProduct.h inst/include/Eigen/src/SparseCore/SparseCwiseUnaryOp.h
+inst/include/Eigen/src/SuperLUSupport/SuperLUSupport.h
+Copyright: Copyright (C) 2008-2015 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/SparseCore/SparseTriangularView.h
+Copyright: Copyright (C) 2009-2015 Gael Guennebaud
+Copyright: Copyright (C) 2012 Désiré Nuentsa-Wakam
+License: MPL-2
+
+Files: inst/include/Eigen/src/SparseCore/SparseRef.h inst/include/Eigen/src/SparseCore/SparseCompressedBase.h
+inst/include/Eigen/src/SparseCore/SparseMap.h inst/include/Eigen/src/Core/SolverBase.h
+inst/include/Eigen/src/IterativeLinearSolvers/LeastSquareConjugateGradient.h 
+Copyright: Copyright (C) 2015 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/SparseCore/SparseSelfAdjointView.h
+Copyright: Copyright (C) 2009-2014 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/SparseCore/SparseSolverBase.h inst/include/Eigen/src/Core/Inverse.h 
+Copyright: Copyright (C) 2014 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/SparseCore/TriangularSolver.h inst/include/Eigen/src/SparseCore/AmbiVector.h
+inst/include/Eigen/src/SparseCore/SparseDot.h inst/include/Eigen/src/Cholesky/LLT.h inst/include/Eigen/src/Geometry/Rotation2D.h
+inst/include/Eigen/src/Geometry/AngleAxis.h inst/include/Eigen/src/Geometry/Scaling.h inst/include/Eigen/src/Geometry/EulerAngles.h
+inst/include/Eigen/src/Geometry/Translation.h inst/include/Eigen/src/Geometry/AlignedBox.h inst/include/Eigen/src/Geometry/RotationBase.h
+inst/include/Eigen/src/Core/BooleanRedux.h inst/include/Eigen/src/Core/Visitor.h inst/include/Eigen/src/Core/Random.h 
+Copyright: Copyright (C) 2008 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/SparseCore/SparseDiagonalProduct.h
+Copyright: Copyright (C) 2009-2015 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/SparseCore/SparseView.h
+Copyright: Copyright (C) 2011-2014 Gael Guennebaud
+Copyright: Copyright (C) 2010 Daniel Lowengrub 
+License: MPL-2
+
+Files: inst/include/Eigen/src/SPQRSupport/SuiteSparseQRSupport.h
+Copyright: Copyright (C) 2012 Désiré Nuentsa-Wakam
+Copyright: Copyright (C) 2014 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Eigenvalues/RealSchur.h inst/include/Eigen/src/Eigenvalues/EigenSolver.h
+Copyright: Copyright (C) 2008 Gael Guennebaud 
+Copyright: Copyright (C) 2010,2012 Jitse Niesen
+License: MPL-2
+
+Files: inst/include/Eigen/src/Eigenvalues/RealQZ.h
+Copyright: Copyright (C) Copyright (C) 2012 Alexey Korepanov
+License: MPL-2
+
+Files: inst/include/Eigen/src/Eigenvalues/SelfAdjointEigenSolver.h
+Copyright: Copyright (C) 2008-2010 Gael Guennebaud 
+Copyright: Copyright (C) 2010 Jitse Niesen
+License: MPL-2
+
+Files: inst/include/Eigen/src/Eigenvalues/HessenbergDecomposition.h
+Copyright: Copyright (C) 2008-2009 Gael Guennebaud 
+Copyright: Copyright (C) 2010 Jitse Niesen
+License: MPL-2
+
+Files: inst/include/Eigen/src/Eigenvalues/GeneralizedEigenSolver.h
+Copyright: Copyright (C) 2012-2016 Gael Guennebaud 
+Copyright: Copyright (C) 2010,2012 Jitse Niesen
+Copyright: Copyright (C) 2016 Tobias Wood
+License: MPL-2
+
+Files: inst/include/Eigen/src/Eigenvalues/ComplexSchur.h inst/include/Eigen/src/Eigenvalues/ComplexEigenSolver.h
+Copyright: Copyright (C) 2009 Claire Maurice
+Copyright: Copyright (C) 2009 Gael Guennebaud
+Copyright: Copyright (C) 2010,2012 Jitse Niesen
+License: MPL-2
+
+Files: inst/include/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h inst/include/Eigen/src/Eigenvalues/Tridiagonalization.h
+Copyright: Copyright (C) 2008 Gael Guennebaud
+Copyright: Copyright (C) 2010 Jitse Niesen
+License: MPL-2
+
+Files: inst/include/Eigen/src/Eigenvalues/GeneralizedSelfAdjointEigenSolver.h
+Copyright: Copyright (C) 2008-2010 Gael Guennebaud
+Copyright: Copyright (C) 2010 Jitse Niesen
+License: MPL-2
+
+Files: inst/include/Eigen/src/CholmodSupport/CholmodSupport.h inst/include/Eigen/src/Core/CwiseNullaryOp.h
+inst/include/Eigen/src/Core/Select.h 
+Copyright: Copyright (C) 2008-2010 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/OrderingMethods/Amd.h
+Copyright: Copyright (C) 2010 Gael Guennebaud
+Copyright: Copyright (C) 2006 Timothy A. Davis
+License: MPL-2
+
+Files: inst/include/Eigen/src/Cholesky/LDLT.h
+Copyright: Copyright (C) 2008-2011 Gael Guennebaud
+Copyright: Copyright (C) 2009 Keir Mierle 
+Copyright: Copyright (C) 2009 Benoit Jacob
+Copyright: Copyright (C) 2011 Timothy E. Holy
+License: MPL-2
+
+Files: inst/include/Eigen/src/Jacobi/Jacobi.h
+Copyright: Copyright (C) 2009 Benoit Jacob, Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/LU/arch/Inverse_SSE.h
+Copyright: Copyright (C) 2001 Intel Corporation
+Copyright: Copyright (C) 2010 Gael Guennebaud
+Copyright: Copyright (C) 2009 Benoit Jacob
+Copyright: Copyright (C) 2011 Timothy E. Holy
+License: MPL-2
+
+Files: inst/include/Eigen/src/LU/FullPivLU.h
+Copyright: Copyright (C) 2006-2009 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/LU/InverseImpl.h
+Copyright: Copyright (C) 2008-2010 Benoit Jacob
+Copyright: Copyright (C) 2008-2014 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/LU/Determinant.h
+Copyright: Copyright (C) 2008 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/LU/PartialPivLU.h
+Copyright: Copyright (C) 2006-2009 Benoit Jacob
+Copyright: Copyright (C) 2009 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/SparseCholesky/SimplicialCholesky_impl.h inst/include/Eigen/src/SparseCholesky/SimplicialCholesky.h
+Copyright: Copyright (C) 2008-2012 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Geometry/Umeyama.h
+Copyright: Copyright (C) 2009 Hauke Heibel
+License: MPL-2
+
+Files: inst/include/Eigen/src/Geometry/ParametrizedLine.h inst/include/Eigen/src/Geometry/Hyperplane.h
+Copyright: Copyright (C) 2008 Gael Guennebaud, Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/Geometry/arch/Geometry_SSE.h
+Copyright: Copyright (C) 2009 Rohit Garg
+Copyright: Copyright (C) 2009-2010 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Geometry/Quaternion.h
+Copyright: Copyright (C) 2008-2010 Gael Guennebaud
+Copyright: Copyright (C) 2009 Mathieu Gautier
+License: MPL-2
+
+Files: inst/include/Eigen/src/Geometry/Transform.h
+Copyright: Copyright (C) 2008 Gael Guennebaud
+Copyright: Copyright (C) 2009 Benoit Jacob
+Copyright: Copyright (C) 2010 Hauke Heibel
+License: MPL-2
+
+Files: inst/include/Eigen/src/Geometry/OrthoMethods.h
+Copyright: Copyright (C) 2008-2009 Gael Guennebaud
+Copyright: Copyright (C) 2006-2008 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/Geometry/Homogeneous.h inst/include/Eigen/src/Core/CwiseUnaryView.h
+inst/include/Eigen/src/Core/SelfCwiseBinaryOp.h inst/include/Eigen/src/Core/ForceAlignedAccess.h
+inst/include/Eigen/src/Core/products/GeneralMatrixMatrixTriangular.h 
+Copyright: Copyright (C) 2009-2010 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/DiagonalMatrix.h
+Copyright: Copyright (C) 2009 Gael Guennebaud
+Copyright: Copyright (C) 2007-2009 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/IO.h inst/include/Eigen/src/Core/Fuzzy.h
+Copyright: Copyright (C) 2006-2008 Benoit Jacob
+Copyright: Copyright (C) 2008 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/NestByValue.h inst/include/Eigen/src/Core/CommaInitializer.h
+inst/include/Eigen/src/Core/GenericPacketMath.h inst/include/Eigen/src/Core/Redux.h
+inst/include/Eigen/src/Core/util/XprHelper.h 
+Copyright: Copyright (C) 2008 Gael Guennebaud
+Copyright: Copyright (C) 2006-2008 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/MatrixBase.h
+Copyright: Copyright (C) 2006-2009 Benoit Jacob
+Copyright: Copyright (C) 2008 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/Assign_MKL.h
+Copyright: Copyright (C) 2011 Intel Corporation
+Copyright: Copyright (C) 2015 Gael Guennebaud
+License: 
+ Redistribution and use in source and binary forms, with or without modification,
+ are permitted provided that the following conditions are met:
+
+ * Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+ * Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+ * Neither the name of Intel Corporation nor the names of its contributors may
+   be used to endorse or promote products derived from this software without
+   specific prior written permission.
+
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Files: inst/include/Eigen/src/Core/SolveTriangular.h inst/include/Eigen/src/Core/arch/SSE/PacketMath.h
+inst/include/Eigen/src/Core/products/GeneralBlockPanelKernel.h inst/include/Eigen/src/Core/products/GeneralMatrixVector.h
+inst/include/Eigen/src/Core/products/SelfadjointMatrixVector.h inst/include/Eigen/src/Core/products/GeneralMatrixMatrix.h 
+Copyright: Copyright (C) 2008-2009 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/Stride.h
+Copyright: Copyright (C) 2010 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/TriangularMatrix.h
+Copyright: Copyright (C) 2008 Benoit Jacob
+Copyright: Copyright (C) 2008-2009 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/Product.h inst/include/Eigen/src/UmfPackSupport/UmfPackSupport.h
+Copyright: Copyright (C) 2008-2011 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/MapBase.h
+Copyright: Copyright (C) 2007-2010 Benoit Jacob
+Copyright: Copyright (C) 2008 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/ConditionEstimator.h inst/include/Eigen/src/QR/CompleteOrthogonalDecomposition.h
+Copyright: Copyright (C) 2016 Rasmus Munk Larsen
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/ArrayWrapper.h inst/include/Eigen/src/Core/Replicate.h inst/include/Eigen/src/Core/util/BlasUtil.h 
+Copyright: Copyright (C) 2009-2010 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/VectorwiseOp.h inst/include/Eigen/src/Core/VectorBlock.h inst/include/Eigen/src/plugins/BlockMethods.h
+Copyright: Copyright (C) 2008-2010 Gael Guennebaud
+Copyright: Copyright (C) 2006-2008 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/GlobalFunctions.h
+Copyright: Copyright (C) 2010-2016 Gael Guennebaud
+Copyright: Copyright (C) 2010 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/DiagonalProduct.h
+Copyright: Copyright (C) 2008 Gael Guennebaud
+Copyright: Copyright (C) 2007-2009 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/Solve.h inst/include/Eigen/src/IterativeLinearSolvers/SolveWithGuess.h
+Copyright: Copyright (C) 2014 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/functors/AssignmentFunctors.h inst/include/Eigen/src/Core/functors/BinaryFunctors.h
+inst/include/Eigen/src/Core/functors/StlFunctors.h inst/include/Eigen/src/Core/arch/Default/Settings.h
+inst/include/Eigen/src/Core/products/TriangularSolverVector.h 
+Copyright: Copyright (C) 2008-2010 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/functors/NullaryFunctors.h inst/include/Eigen/src/Core/functors/UnaryFunctors.h
+Copyright: Copyright (C) 2008-2016 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/functors/TernaryFunctors.h
+Copyright: Copyright (C) 2016 Eugene Brevdo
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/DenseCoeffsBase.h inst/include/Eigen/src/Core/NumTraits.h inst/include/Eigen/src/Core/MathFunctions.h 
+Copyright: Copyright (C) 2006-2010 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/Array.h inst/include/Eigen/src/Core/products/TriangularMatrixMatrix.h
+inst/include/Eigen/src/Core/products/SelfadjointRank2Update.h inst/include/Eigen/src/Core/products/SelfadjointMatrixMatrix.h
+inst/include/Eigen/src/Core/products/TriangularSolverMatrix.h inst/include/Eigen/src/Core/products/TriangularMatrixVector.h
+inst/include/Eigen/src/Core/products/SelfadjointProduct.h inst/include/Eigen/src/Core/SelfAdjointView.h
+inst/include/Eigen/src/Core/ArrayBase.h inst/include/Eigen/src/Core/StableNorm.h inst/include/Eigen/src/Core/BandMatrix.h
+inst/include/Eigen/src/Core/NoAlias.h 
+Copyright: Copyright (C) 2009 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/Block.h
+Copyright: Copyright (C) 2008 Gael Guennebaud
+Copyright: Copyright (C) 2006-2010 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/Reverse.h
+Copyright: Copyright (C) 2006-2008 Benoit Jacob
+Copyright: Copyright (C) 2009 Ricard Marxer
+Copyright: Copyright (C) 2009-2010 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/arch/AltiVec/Complex.h
+Copyright: Copyright (C) 2010 Gael Guennebaud
+Copyright: Copyright (C) 2010-2016 Konstantinos Margaritis
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/arch/AltiVec/MathFunctions.h inst/include/Eigen/src/Core/arch/ZVector/MathFunctions.h
+Copyright: Copyright (C) 2007 Julien Pommier
+Copyright: Copyright (C) 2009 Gael Guennebaud
+Copyright: Copyright (C) 2016 Konstantinos Margaritis
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/arch/AltiVec/PacketMath.h
+Copyright: Copyright (C) 2008-2016 Konstantinos Margaritis
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/arch/AVX/TypeCasting.h
+Copyright: Copyright (C) 2015 Benoit Steiner
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/arch/AVX/Complex.h inst/include/Eigen/src/Core/arch/AVX/PacketMath.h
+inst/include/Eigen/src/Core/arch/CUDA/Complex.h inst/include/Eigen/src/Core/arch/CUDA/MathFunctions.h
+inst/include/Eigen/src/Core/arch/CUDA/PacketMath.h
+Copyright: Copyright (C) 2014 Benoit Steiner
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/arch/AVX/MathFunctions.h
+Copyright: Copyright (C) 2014 Pedro Gonnet
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/arch/NEON/Complex.h
+Copyright: Copyright (C) 2010 Gael Guennebaud
+Copyright: Copyright (C) 2010 Konstantinos Margaritis
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/arch/NEON/PacketMath.h
+Copyright: Copyright (C) 2008-2009 Gael Guennebaud
+Copyright: Copyright (C) 2010 Konstantinos Margaritis
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/arch/ZVector/Complex.h
+Copyright: Copyright (C) 2010 Gael Guennebaud
+Copyright: Copyright (C) 2016 Konstantinos Margaritis
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/arch/ZVector/MathFunctions.h
+Copyright: Copyright (C) 2007 Julien Pommier
+Copyright: Copyright (C) 2009 Gael Guennebaud
+Copyright: Copyright (C) 2016 Konstantinos Margaritis
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/arch/ZVector/PacketMath.h
+Copyright: Copyright (C) 2016 Konstantinos Margaritis
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/arch/AVX512/MathFunctions.h
+Copyright: Copyright (C) 2016 Pedro Gonnet
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/arch/AVX512/PacketMath.h inst/include/Eigen/src/Core/arch/CUDA/TypeCasting.h
+inst/include/Eigen/src/Core/arch/CUDA/PacketMathHalf.h
+Copyright: Copyright (C) 2016 Benoit Steiner
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/arch/CUDA/Half.h
+Copyright: Copyright (C) 2016 Fabian Giesen
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/arch/SSE/TypeCasting.h
+Copyright: Copyright (C) 2015 Benoit Steiner
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/arch/SSE/Complex.h inst/include/Eigen/src/Core/products/Parallelizer.h 
+Copyright: Copyright (C) 2010 Gael Guennebaud
+Note that a pragma disabling a compiler warning in this file has been commented out
+to avoid CRAN warnings.
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/arch/SSE/MathFunctions.h
+Copyright: Copyright (C) 2007 Julien Pommier
+Copyright: Copyright (C) 2009 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/arch/Default/Settings.h inst/include/Eigen/src/Core/Swap.h 
+Copyright: Copyright (C) 2006-2008 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/MathFunctionsImpl.h
+Copyright: Copyright (C) 2014 Pedro Gonnet
+Copyright: Copyright (C) 2016 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/AssignEvaluator.h
+Copyright: Copyright (C) 2011 Benoit Jacob
+Copyright: Copyright (C) 2011-2014 Gael Guennebaud
+Copyright: Copyright (C) 2009 Jitse Niesen
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/DenseBase.h
+Copyright: Copyright (C) 2007-2010 Benoit Jacob
+Copyright: Copyright (C) 2008-2010 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/ReturnByValue.h
+Copyright: Copyright (C) 2009-2010 Gael Guennebaud
+Copyright: Copyright (C) 2009-2010 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/util/Meta.h
+Copyright: Copyright (C) 2008-2015 Gael Guennebaud
+Copyright: Copyright (C) 2006-2008 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/util/StaticAssert.h
+Copyright: Copyright (C) 2008 Gael Guennebaud, Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/util/ForwardDeclarations.h
+Copyright: Copyright (C) 2007-2010 Benoit Jacob
+Copyright: Copyright (C) 2008-2009 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/util/Constants.h
+Copyright: Copyright (C) 2008-2015 Gael Guennebaud
+Copyright: Copyright (C) 2007-2009 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/util/Memory.h
+Copyright: Copyright (C) 2008-2015 Gael Guennebaud
+Copyright: Copyright (C) 2008-2009 Benoit Jacob 
+Copyright: Copyright (C) 2009 Kenneth Riddile 
+Copyright: Copyright (C) 2010 Hauke Heibel 
+Copyright: Copyright (C) 2010 Thomas Capricelli
+Copyright: Copyright (C) 2013 Pavel Holoborodko 
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/util/Macros.h
+Copyright: Copyright (C) 2008-2015 Gael Guennebaud
+Copyright: Copyright (C) 2006-2008 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/Matrix.h
+Copyright: Copyright (C) 2006-2010 Benoit Jacob
+Copyright: Copyright (C) 2008-2009 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/CoreEvaluators.h
+Copyright: Copyright (C) 2011 Benoit Jacob
+Copyright: Copyright (C) 2011-2014 Gael Guennebaud
+Copyright: Copyright (C) 2011-2012 Jitse Niesen
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/Transpose.h
+Copyright: Copyright (C) 2006-2008 Benoit Jacob
+Copyright: Copyright (C) 2009-2014 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/Map.h
+Copyright: Copyright (C) 2007-2010 Benoit Jacob
+Copyright: Copyright (C) 2008 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/Diagonal.h
+Copyright: Copyright (C) 2007-2009 Benoit Jacob
+Copyright: Copyright (C) 2009-2010 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/PlainObjectBase.h inst/include/Eigen/src/plugins/MatrixCwiseBinaryOps.h
+inst/include/Eigen/src/plugins/MatrixCwiseUnaryOps.h 
+Copyright: Copyright (C) 2008-2009 Gael Guennebaud
+Copyright: Copyright (C) 2006-2008 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/CwiseBinaryOp.h inst/include/Eigen/src/Core/CwiseUnaryOp.h
+Copyright: Copyright (C) 2008-2014 Gael Guennebaud
+Copyright: Copyright (C) 2006-2008 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/EigenBase.h
+Copyright: Copyright (C) 2009 Benoit Jacob, Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/DenseStorage.h
+Copyright: Copyright (C) 2008 Gael Guennebaud
+Copyright: Copyright (C) 2006-2009 Benoit Jacob
+Copyright: Copyright (C) 2010-2013 Hauke Heibel
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/ProductEvaluators.h
+Copyright: Copyright (C) 2006-2008 Benoit Jacob
+Copyright: Copyright (C) 2008-2010 Gael Guennebaud
+Copyright: Copyright (C) 2011 Jitse Niesen
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/GeneralProduct.h
+Copyright: Copyright (C) 2006-2008 Benoit Jacob
+Copyright: Copyright (C) 2008-2011 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/PermutationMatrix.h
+Copyright: Copyright (C) 2009 Benoit Jacob
+Copyright: Copyright (C) 2009-2015 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/CwiseTernaryOp.h
+Copyright: Copyright (C) 2008-2014 Gael Guennebaud
+Copyright: Copyright (C) 2006-2008 Benoit Jacob
+Copyright: Copyright (C) 2016 Eugene Brevdo
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/Transpositions.h
+Copyright: Copyright (C) 2010-2011 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/Dot.h
+Copyright: Copyright (C) 2006-2008, 2010 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/Core/Assign.h
+Copyright: Copyright (C) 2007 Michael Olbrich
+Copyright: Copyright (C) 2006-2010 Benoit Jacob
+Copyright: Copyright (C) 2008 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/plugins/CommonCwiseBinaryOps.h
+Copyright: Copyright (C) 2008-2016 Gael Guennebaud
+Copyright: Copyright (C) 2006-2008 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/plugins/CommonCwiseUnaryOps.h
+Copyright: Copyright (C) 2008-2009 Gael Guennebaud
+Copyright: Copyright (C) 2006-2008 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/IterativeLinearSolvers/ConjugateGradient.h
+inst/include/Eigen/src/IterativeLinearSolvers/BasicPreconditioners.h
+inst/include/Eigen/src/IterativeLinearSolvers/IterativeSolverBase.h 
+Copyright: Copyright (C) 2011-2014 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/IterativeLinearSolvers/IncompleteCholesky.h
+Copyright: Copyright (C) 2012 Désiré Nuentsa-Wakam
+Copyright: Copyright (C) 2015 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/IterativeLinearSolvers/IncompleteLUT.h
+Copyright: Copyright (C) 2012 Désiré Nuentsa-Wakam
+Copyright: Copyright (C) 2014 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/IterativeLinearSolvers/BiCGSTAB.h
+Copyright: Copyright (C) 2011-2014 Gael Guennebaud
+Copyright: Copyright (C) 2012 Désiré Nuentsa-Wakam
+License: MPL-2
+
+Files: inst/include/Eigen/src/StlSupport/StdList.h
+Copyright: Copyright (C) 2009 Hauke Heibel
+License: MPL-2
+
+Files: inst/include/Eigen/src/StlSupport/details.h inst/include/Eigen/src/StlSupport/StdVector.h
+inst/include/Eigen/src/StlSupport/StdDeque.h
+Copyright: Copyright (C) 2009 Gael Guennebaud
+Copyright: Copyright (C) 2009 Hauke Heibel
+License: MPL-2
+
+Files: inst/include/Eigen/src/SparseQR/SparseQR.h
+Copyright: Copyright (C) 2012-2013 Désiré Nuentsa-Wakam
+Copyright: Copyright (C) 2012-2014 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/src/QR/ColPivHouseholderQR.h inst/include/Eigen/src/QR/FullPivHouseholderQR.h
+Copyright: Copyright (C) 2008-2009 Gael Guennebaud
+Copyright: Copyright (C) 2009 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/src/QR/HouseholderQR.h
+Copyright: Copyright (C) 2008-2010 Gael Guennebaud 
+Copyright: Copyright (C) 2009 Benoit Jacob
+Copyright: Copyright (C) 2010 Vincent Lejeune
+License: MPL-2
+
+Files: inst/include/Eigen/src/QR/FullPivHouseholderQR.h
+Copyright: Copyright (C) 2008-2009 Gael Guennebaud
+Copyright: Copyright (C) 2009 Benoit Jacob
+License: MPL-2
+
+Files: inst/include/Eigen/SparseCholesky
+Copyright: Copyright (C) 2008-2013 Gael Guennebaud
+License: MPL-2
+
+Files: inst/include/Eigen/Core
+Copyright: Copyright (C) 2008 Gael Guennebaud
+Copyright: Copyright (C) 2007-2011 Benoit Jacob
+License: MPL-2
+
+Files: configure
+Copyright: Copyright (C) 1992-1996, 1998-2012 Free Software Foundation, Inc.
+License:
+   This configure script is free software; the Free Software Foundation
+   gives unlimited permission to copy, distribute and modify it.
+
+Files: classic-bugs/*
+Copyright: Copyright (C) Martyn Plummer
+License:
+   GPL version 2 and MIT licenses
