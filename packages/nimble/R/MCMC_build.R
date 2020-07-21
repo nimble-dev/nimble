@@ -144,6 +144,7 @@ buildMCMC <- nimbleFunction(
     run = function(
         niter                 = integer(),
         reset                 = logical(default = TRUE),
+        resetMV               = logical(default = FALSE), ## Allows resetting mvSamples when reset==FALSE
         time                  = logical(default = FALSE),
         progressBar           = logical(default = TRUE),
         ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
@@ -167,8 +168,13 @@ buildMCMC <- nimbleFunction(
         } else {
             if(nburnin != 0)   stop('cannot specify nburnin when using reset = FALSE.')
             if(dim(samplerTimes)[1] != length(samplerFunctions) + 1)   samplerTimes <<- numeric(length(samplerFunctions) + 1)   ## first run: default inititialization to zero
-            mvSamples_copyRow  <- getsize(mvSamples)
-            mvSamples2_copyRow <- getsize(mvSamples2)
+            if (resetMV) {
+                mvSamples_copyRow  <- 0
+                mvSamples2_copyRow <- 0                
+            } else {
+                mvSamples_copyRow  <- getsize(mvSamples)
+                mvSamples2_copyRow <- getsize(mvSamples2)
+            }
         }
         resize(mvSamples,  mvSamples_copyRow  + floor((niter-nburnin) / thinToUseVec[1]))
         resize(mvSamples2, mvSamples2_copyRow + floor((niter-nburnin) / thinToUseVec[2]))
