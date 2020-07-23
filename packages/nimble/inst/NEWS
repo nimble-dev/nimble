@@ -4,6 +4,8 @@ USER LEVEL CHANGES
 
 -- Allow use `logdet` in model code (Issue #1018).
 
+-- New `resetMV` argument available to `mcmc$run` method, which in combination with `reset = FALSE`, specifying `resetMV = TRUE` will continue the current run of the MCMC, but discard any previously-collected samples.
+
                             CHANGES IN VERSION 0.9.1 (May 2020)
 
 USER LEVEL CHANGES
