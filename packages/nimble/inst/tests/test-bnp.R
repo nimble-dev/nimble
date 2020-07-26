@@ -5947,8 +5947,8 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   y <- matrix(5, nrow=3, ncol=4)
   data <- list(y = y)
   model <- nimbleModel(code, data = data, inits = inits)
-  conf <- configureMCMC(model)
-  mcmc <- buildMCMC(conf)
+  expect_error(conf <- configureMCMC(model),
+               "sampler_CRP: Detected use of multiple stochastic indexes of a variable")
 
   ## crossed clustering with truncation 
   code <- nimbleCode({
@@ -5971,7 +5971,8 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   data <- list(y = y)
   model <- nimbleModel(code, data = data, inits = inits)
   conf <- configureMCMC(model)
-  mcmc <- buildMCMC(conf)
+  expect_error(conf <- configureMCMC(model),
+               "sampler_CRP: Detected use of multiple stochastic indexes of a variable")
 
 })
 
