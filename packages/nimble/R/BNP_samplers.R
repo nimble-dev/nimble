@@ -30,7 +30,7 @@ getNsave <- nimbleFunction(
   setup = function(mvSaved){
     niter <- 0
   },
-  run=function(){
+  run = function(){
     niter <<- getsize(mvSaved) # number of iterations in the MCMC
   },
   methods = list( reset = function () {} )
