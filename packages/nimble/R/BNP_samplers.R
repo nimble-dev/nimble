@@ -249,11 +249,6 @@ sampleDPmeasure <- nimbleFunction(
         mvIndexes[l,(tildeVarsColsSum[j]+1):tildeVarsColsSum[j+1] ] <- which(aux != 0)
       }
     }
-
-    ## Storage object to be sized in run code based on MCMC output.
-    samples <- matrix(0, nrow = 1, ncol = 1)   
-    ## Truncation level of the random measure 
-    truncG <- 0 
     
     ## control list extraction
     ## The error of approximation G is given by (conc / (conc +1))^{truncG-1}. 
