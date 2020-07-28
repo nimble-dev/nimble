@@ -3218,7 +3218,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   n <- 5
   n2 <- 4
   J <- 3
-  constants <- list(n = n, J = J)
+  constants <- list(n = n, n2 = n2, J = J)
   data <- list(y = matrix(rnorm(n*J),n,J))
   inits <- list(alpha = 1, xi = rep(1, n),
                 thetaTilde = matrix(rnorm(J*n2), n2, J))
