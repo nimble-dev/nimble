@@ -3569,7 +3569,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
                 thetaTilde = rnorm(n), tauTilde = rgamma(n, 1, 1))
   model <- nimbleModel(code, data = data, constants = constants, inits = inits)
   expect_silent(conf <- configureMCMC(model, print = FALSE))
-  expect_error(mcmc <- buildMCMC(conf), "sampler_CRP: detected that deterministic nodes are being clustered")
+  expect_error(mcmc <- buildMCMC(conf), "findClusterNodes: detected that deterministic nodes are being clustered")
 
   ## Model A: dnorm obs, dmnorm prior
   code <- nimbleCode({
