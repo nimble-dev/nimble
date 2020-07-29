@@ -3257,7 +3257,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   n <- 5
   n2 <- 4
   J <- 3
-  constants <- list(n = n, J = J)
+  constants <- list(n = n, n2 = n2, J = J)
   data <- list(y = matrix(rnorm(n*J),n,J))
   inits <- list(alpha = 1, xi = rep(1, n),
                 thetaTilde = matrix(rnorm(J*n), n, J))
@@ -3520,7 +3520,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   n <- 5
   n2 <- 4
   J <- 3
-  constants <- list(n = n, J = J)
+  constants <- list(n = n, n2 = n2, J = J)
   data <- list(y = rnorm(n))
   inits <- list(alpha = 1, xi = rep(1, n),
                 thetaTilde = rnorm(n2), s2tilde = runif(n))
@@ -4023,7 +4023,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
 
   n <- 5
   J <- 2
-  constants <- list(n = n)
+  constants <- list(n = n, J = J)
   data <- list(y = matrix(rnorm(n*J), n, J))
   inits <- list(alpha = 1, xi = rep(1, n),
                 thetaTilde = rnorm(n), sigmaTilde = matrix(rgamma(n*J, 1, 1), n, J))
@@ -4407,7 +4407,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
       for(i in 1:n)
           for(j in 1:J)
               beta[j, i] ~ dnorm(0,1)
-      xi[1:4] ~ dCRP(1, size=4)
+      xi[1:n] ~ dCRP(1, size = n)
   })
   n  <- 5
   J <- 2
@@ -5136,7 +5136,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
                 thetaTilde = rnorm(n))
   model <- nimbleModel(code, data = data, constants = constants, inits = inits)
   expect_silent(conf <- configureMCMC(model, print = FALSE))
-  expect_error(mcmc <- buildMCMC(conf), "sampler_CRP: Detected unusual indexing")
+  expect_error(mcmc <- buildMCMC(conf), "sampler_CRP: differing number of clusters")
 
   ## cases of multiple obs per group regarding priors on cluster parameters
 
@@ -5895,7 +5895,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   n <- 5
   n2 <- 4
   J <- 3
-  constants <- list(n = n, J = J)
+  constants <- list(n = n, n2 = n2, J = J)
   data <- list(y = matrix(rnorm(n*J),n,J))
   inits <- list(alpha = 1, xi = rep(1, n+1),
                 thetaTilde = matrix(rnorm(J*n), n, J))
@@ -5919,7 +5919,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   n <- 5
   n2 <- 4
   J <- 3
-  constants <- list(n = n, J = J)
+  constants <- list(n = n, n2 = n2, J = J)
   data <- list(y = matrix(rnorm(n*J),n,J))
   inits <- list(alpha = 1, xi = rep(1, n-1),
                 thetaTilde = matrix(rnorm(J*n), n, J))
@@ -5947,8 +5947,10 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   y <- matrix(5, nrow=3, ncol=4)
   data <- list(y = y)
   model <- nimbleModel(code, data = data, inits = inits)
-  expect_error(conf <- configureMCMC(model),
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  expect_error(mcmc <- buildMCMC(conf),
                "sampler_CRP: Detected use of multiple stochastic indexes of a variable")
+
 
   ## crossed clustering with truncation 
   code <- nimbleCode({
@@ -5970,9 +5972,10 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   y <- matrix(5, nrow=3, ncol=4)
   data <- list(y = y)
   model <- nimbleModel(code, data = data, inits = inits)
-  conf <- configureMCMC(model)
-  expect_error(conf <- configureMCMC(model),
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  expect_error(mcmc <- buildMCMC(conf),
                "sampler_CRP: Detected use of multiple stochastic indexes of a variable")
+
 
 })
 
