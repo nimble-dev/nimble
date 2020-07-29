@@ -1411,6 +1411,12 @@ sampler_CRP <- nimbleFunction(
     
     nData <- length(dataNodes)
 
+    ## Check that no use of multiple clustering variables, such as 'thetaTilde[xi[i], eta[j]]'.
+    ## It's likely that if we set the non-conjugate sampler and turn off wrapping omits sampling of empty clusters
+    ## (which is not set up correctly for this case), that the existing code would give correct sampling.
+    if(any(clusterVarInfo$multipleStochIndexes))
+        stop("sampler_CRP: Detected use of multiple stochastic indexes of a variable: ", deparse(clusterVarInfo$indexExpr[[1]]), ". NIMBLE's CRP sampling is not yet set up to handle this case. Please contact the NIMBLE development team if you are interested in this functionality.")
+
     ## Check there is at least one or more "observation" per random index.
     ## Note that cases like mu[xi[i],xi[j]] are being trapped in findClusterNodes().
     if(n > nData)
@@ -1647,13 +1653,8 @@ sampler_CRP <- nimbleFunction(
             if(nIntermClusNodesPerClusID > 0) {
               model$calculate(intermNodes[((i-1)*nIntermClusNodesPerClusID+1):(i*nIntermClusNodesPerClusID)]) 
             }
-            model$calculate(dataNodes[((i-1)*nObsPerClusID+1):(i*nObsPerClusID)])       
-            curLogProb[iprob] <<- 0 # <<-
-            for(j1 in 1:nObsPerClusID) {
-                ## getLogProb can be done on a vector of nodes to avoid loop here.
-              curLogProb[iprob] <<- curLogProb[iprob] + model$getLogProb(dataNodes[(i-1)*nObsPerClusID+j1])  
-            }  
-            curLogProb[iprob] <<- log(xiCounts[xiUniques[j]]) + curLogProb[iprob] 
+            curLogProb[iprob] <<- log(xiCounts[xiUniques[j]]) +
+                model$calculate(dataNodes[((i-1)*nObsPerClusID+1):(i*nObsPerClusID)])
             reorderXiUniques[iprob] <- xiUniques[j]
             iprob <- iprob + 1
           }
@@ -1685,16 +1686,12 @@ sampler_CRP <- nimbleFunction(
       } else { # cluster is not a singleton.
         ## First, compute probability of sampling an existing label.
         for(j in 1:k) { 
-          model[[target]][i] <<- xiUniques[j]  # <<-
+          model[[target]][i] <<- xiUniques[j]  
           if(nIntermClusNodesPerClusID > 0) {
             model$calculate(intermNodes[((i-1)*nIntermClusNodesPerClusID+1):(i*nIntermClusNodesPerClusID)]) 
           }
-          model$calculate(dataNodes[((i-1)*nObsPerClusID+1):(i*nObsPerClusID)])       
-          curLogProb[j] <<- 0 # <<-
-          for(j1 in 1:nObsPerClusID) {
-            curLogProb[j] <<- curLogProb[j] + model$getLogProb(dataNodes[(i-1)*nObsPerClusID+j1])   
-          }  
-          curLogProb[j] <<- log(xiCounts[xiUniques[j]]) + curLogProb[j] 
+          curLogProb[j] <<- log(xiCounts[xiUniques[j]]) +
+              model$calculate(dataNodes[((i-1)*nObsPerClusID+1):(i*nObsPerClusID)])       
         }
         ## Second, compute probability of sampling a new cluster depending on the value of kNew.       
         if(kNew == 0) { # no new cluster can be created 
