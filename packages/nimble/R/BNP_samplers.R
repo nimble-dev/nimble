@@ -292,19 +292,6 @@ sampleDPmeasure <- nimbleFunction(
     truncG <- log(epsilon) / log(concAux / (concAux+1)) 
     truncG <- ceiling(truncG) 
     
-    ## sampling stick-breaking weights: as many as truncG
-    weightsTmp <- nimNumeric(truncG)
-    vaux <- rbeta(1, 1, concAux)
-    v1prod <- 1
-    weightsTmp[1] <- vaux  
-    for(l1 in 2:truncG) {
-      v1prod <- v1prod * (1-vaux)
-      vaux <- rbeta(1, 1, concAux)
-      weightsTmp[l1] <- vaux * v1prod 
-    }
-    weightsTmp[1:truncG] <- weightsTmp[1:truncG] / (1 - v1prod * (1-vaux)) # normalizing weigths
-    
-    
     ## getting the unique cluster variables that where sampled in the mcmc and the sampling probabilities of the polya urn of the unique cluster variables
     probs <- nimNumeric(N) # polya urn probabilities
     uniqueValues <- matrix(0, nrow = N, ncol = tildeVarsColsSum[p+1])  # unique cluster variables
@@ -330,12 +317,43 @@ sampleDPmeasure <- nimbleFunction(
     ## copy tilde parents into model for use in simulation below when simulate atoms of G_0  
     nimCopy(mvSaved, model, parentNodesTildeVars, row = m)
     
+    
+    ## sampling random measure:
+    # this is the reduced version in the sense that weights of identical atoms are added up
+    # weights and atom are sampled in the same loop
+    
+    ## sampling stick-breaking weights: as many as truncG
+        
     ## reduced samples from random measure: 
+    weights <- nimNumeric(truncG) # weights of random measure
+    weightsTmp <- nimNumeric(truncG)
+    atoms <- matrix(0, ncol = tildeVarsColsSum[p+1], nrow = truncG) # atoms of random measure
     indexesG <- nimNumeric(truncG) # indicates if an existing or a new atom is sampled from the polya urn. New tom are indicated by newValueIndex 
-    weights <- nimNumeric(truncG) # weights if random measure
-    atoms <- matrix(0, ncol = tildeVarsColsSum[p+1], nrow = truncG) # atoms if random measure
     indexG0 <- newValueIndex # used for new atoms
+    
+    #vaux <- rbeta(1, 1, concAux)
+    #v1prod <- 1
+    #weightsTmp[1] <- vaux  
+    #for(l1 in 2:truncG) {
+    #  v1prod <- v1prod * (1-vaux)
+    #  vaux <- rbeta(1, 1, concAux)
+    #  weightsTmp[l1] <- vaux * v1prod 
+    #}
+    #weightsTmp[1:truncG] <- weightsTmp[1:truncG] / (1 - v1prod * (1-vaux)) # normalizing weigths
+    
+    vaux <- rbeta(1, 1, concAux)
+    v1prod <- 1
     for(l1 in 1:truncG) {
+      # sampling a weight
+      if(l1 == 1) {
+        weightsTmp[l1] <- vaux 
+      } else {
+        v1prod <- v1prod * (1-vaux)
+        vaux <- rbeta(1, 1, concAux)
+        weightsTmp[l1] <- vaux * v1prod 
+      }
+
+      # sampling an atom
       indexesG[l1] <- rcat(prob = probs[1:newValueIndex])
       if(indexesG[l1] < newValueIndex) { # an existing atom was sampled and the corresponding weights are added
         weights[indexesG[l1]] <- weights[indexesG[l1]] + weightsTmp[l1] 
@@ -357,6 +375,8 @@ sampleDPmeasure <- nimbleFunction(
         indexG0 <- indexG0 + 1
       }
     }
+    weights[1:truncG] <- weights[1:truncG] / (1 - v1prod * (1-vaux)) # normalizing weigths
+    
 
     # check that all unique tilde variables were actually sampled. If not we need to rearrange when creating final output
     missingIndex <- nimNumeric(newValueIndex-1)
