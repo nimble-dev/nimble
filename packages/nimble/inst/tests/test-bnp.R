@@ -1837,7 +1837,7 @@ test_that("check use of epsilon parameters in getSamplesDPmeasure", {
   n <- 30
   constants <- list(n = n)
   data <- list(y = rnorm(n, 0, 1))
-  inits <- list(alpha = 1, mu0 = 0, sd0 = 5, xi = rep(1, n),
+  inits <- list(alpha = 1, mu0 = 0, sd0 = 5, xi = 1:n,
                 muTilde = rep(0,n))
   model <- nimbleModel(code, data = data, constants = constants, inits = inits)
   cmodel <- compileNimble(model)
@@ -1846,12 +1846,16 @@ test_that("check use of epsilon parameters in getSamplesDPmeasure", {
   cmcmc <- compileNimble(mcmc, project = model)
   
   output <- runMCMC(cmcmc, niter=1, nburnin=0, thin=1 , inits=inits, setSeed=FALSE)
+  
+  set.seed(1)
   outputG <- getSamplesDPmeasure(cmcmc)
   tr1 <- nrow(outputG[[1]])
   
+  set.seed(1)
   outputG <- getSamplesDPmeasure(cmcmc, epsilon = 0.1)
   tr2 <- nrow(outputG[[1]])
   
+  set.seed(1)
   outputG <- getSamplesDPmeasure(cmcmc, epsilon = 0.00001)
   tr3 <- nrow(outputG[[1]])
 
