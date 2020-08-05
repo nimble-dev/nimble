@@ -71,6 +71,7 @@ getParentNodes <- function(nodes, model, returnType = 'names', stochOnly = FALSE
 #'
 #' @param MCMC an MCMC class object, either compiled or uncompiled.
 #' @param epsilon  used for determining the truncation level of the representation of the random measure.
+#' @param setSeed Logical or numeric argument. If a single numeric value is provided, R's random number seed will be set to this value. In the case of a logical value, if \code{TRUE}, then R's random number seed will be set to \code{1}. Note that specifying the argument \code{setSeed = 0} does not prevent setting the RNG seed, but rather sets the random number generation seed to \code{0}.  Default value is \code{FALSE}.
 #' 
 #' @author Claudia Wehrhahn and Christopher Paciorek
 #' 
@@ -101,7 +102,7 @@ getParentNodes <- function(nodes, model, returnType = 'names', stochOnly = FALSE
 #'   runMCMC(cmcmc, niter = 1000)
 #'   outputG <- getSamplesDPmeasure(cmcmc)
 #' }
-getSamplesDPmeasure <- function(MCMC, epsilon = 1e-4) {
+getSamplesDPmeasure <- function(MCMC, epsilon = 1e-4, setSeed = FALSE) {
   if(exists('model',MCMC, inherits = FALSE)) compiled <- FALSE else compiled <- TRUE
   if(compiled) {
     if(!exists('Robject', MCMC, inherits = FALSE) || !exists('model', MCMC$Robject, inherits = FALSE))
@@ -117,6 +118,15 @@ getSamplesDPmeasure <- function(MCMC, epsilon = 1e-4) {
 
   niter <- getsize(MCMC$mvSamples)
   samplesMeasure <- list()
+  
+  # setSeed argument:
+  if(is.numeric(setSeed)) {
+    set.seed(setSeed[1])
+    if(length(setSeed) > 1) {
+      nimCat('getSamplesDPmeasure: setSeed argument has length > 1 and only the first element will be used') 
+    }
+  } else if(setSeed) set.seed(1)
+  
   if(compiled) {
     csampler <- compileNimble(rsampler, project = model)
     for(i in 1:niter) {
