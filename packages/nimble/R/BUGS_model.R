@@ -467,7 +467,7 @@ unique: should names be the unique names or should original ordering of nodes (a
 '
 
                                       if(length(nodes) == 0) return(if(returnType=='names') character() else numeric())
-                                      graphID <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents, unique = unique)
+                                      graphID <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents, unique = unique, ignoreNotFound = TRUE)
                                       expandNodeNamesFromGraphIDs(graphID, returnScalarComponents, returnType, sort)
                                       ## if(sort)
                                       ##     graphID <- sort(graphID)
@@ -1032,14 +1032,14 @@ Checks for errors in model specification and for missing values that prevent use
                                                   if(!nimble:::isValid(val)) badVars[[nimble:::whyInvalid(val)]] <- c(badVars[[nimble:::whyInvalid(val)]], nn)
                                               } else if(type == 'determ') {
                                                   test <- try(calculate(nn))
-                                                  if(class(test) == 'try-error')
+                                                  if(inherits(test, 'try-error'))
                                                       cat("Note: cannot calculate logProb for node ", nn, ".\n")
                                                   val <- .self[[nn]]
                                                   if(!nimble:::isValid(val)) badVars[[nimble:::whyInvalid(val)]] <- c(badVars[[nimble:::whyInvalid(val)]], nn)
                                               } else if(type == 'stoch') {
                                                   if(!nimble:::isValid(val)) badVars[[nimble:::whyInvalid(val)]] <- c(badVars[[nimble:::whyInvalid(val)]], nn)
                                                   test <- try(val <- calculate(nn))
-                                                  if(class(test) == 'try-error')
+                                                  if(inherits(test, 'try-error'))
                                                       cat("Note: cannot calculate logProb for node ", nn, ".\n")
 
                                                   if(!nimble:::isValid(val)) badVars[[nimble:::whyInvalid(val)]] <- c(badVars[[nimble:::whyInvalid(val)]], paste0('logProb_', nn))

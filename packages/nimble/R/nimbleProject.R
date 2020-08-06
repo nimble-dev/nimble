@@ -996,7 +996,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
             ## If they do, we skip over writing, compiling and loading steps.
             hasCobjectInterface <- unlist(lapply(funList, function(x) {
                 RCO <- nf_getRefClassObject(x)
-                !(class(RCO$.CobjectInterface) == 'uninitializedField' || is.null(RCO$.CobjectInterface))
+                !(inherits(RCO$.CobjectInterface, 'uninitializedField') || is.null(RCO$.CobjectInterface))
             }))
 
             if(!any(hasCobjectInterface)) {

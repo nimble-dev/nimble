@@ -5,18 +5,17 @@
 require(nimble)
 ``` 
 
-# Sequential Monte Carlo and MCEM {#cha:algos-provided}
+# Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM {#cha:algos-provided}
 
-
-The NIMBLE algorithm library is growing and as of version 0.6-7 includes a suite of Sequential Monte Carlo algorithms as well as a more robust MCEM and k-fold cross-validation. 
+The NIMBLE algorithm library is growing and currently includes a suite of sequential Monte Carlo (particle filtering) algorithms, particle MCMC for combining particle filters with MCMC, iterated filtering version 2 and Monte Carlo expectation maximization (MCEM) for maximum likelihood estimation, and k-fold cross-validation. 
  
-## Particle Filters / Sequential Monte Carlo
+## Particle filters / sequential Monte Carlo and iterated filtering
 
 ### Filtering algorithms
 
-  NIMBLE includes algorithms for five different types of sequential Monte Carlo (also known as particle filters), which can be used to sample from the latent states and approximate the log likelihood of a state space model.  The particle filters currently implemented in NIMBLE are the bootstrap filter, the auxiliary particle filter, the Liu-West filter, the ensemble Kalman filter, and the iterated filter 2 (IF2), which can be built, respectively, with calls to `buildBootstrapFilter`, `buildAuxiliaryFilter`, `buildLiuWestFilter`, `buildEnsembleKF`, and `buildIteratedFilter2`.  Each particle filter requires setup arguments  `model` and `nodes`; the latter should be a character vector specifying latent model nodes.  In addition, each particle filter can be customized using a `control` list argument.  Details on the control options and specifics of the filtering algorithms can be found in the help pages for the functions.
+NIMBLE includes algorithms for four different types of sequential Monte Carlo (also known as particle filters), which can be used to sample from the latent states and approximate the log likelihood of a state-space model.  These include the bootstrap filter, the auxiliary particle filter, the Liu-West filter, and the ensemble Kalman filter.  The iterated filtering version 2 (IF2) is a related method for maximum-likelihood estimation.  Each of these is built with the eponymous functions `buildBootstrapFilter`, `buildAuxiliaryFilter`, `buildLiuWestFilter`, `buildEnsembleKF`, and `buildIteratedFilter2`.  Each method requires setup arguments  `model` and `nodes`; the latter should be a character vector specifying latent model nodes.  In addition, each method can be customized using a `control` list argument.  Details on the control options and specifics of the algorithms can be found in the help pages for the functions.
   
-  Once built, each filter can be run by specifying the number of particles.  Each filter has a modelValues object named `mvEWSamples` that is populated with equally-weighted samples from the posterior distribution of the latent states (and in the case of the Liu-West filter, the posterior distribution of the top level parameters as well) as the filter is run.  The bootstrap, auxiliary, Liu-West, and IF2 filters also have another modelValues object, `mvWSamples`, which has unequally-weighted samples from the posterior distribution of the latent states, along with weights for each particle.   In addition, the bootstrap and auxiliary particle filters return estimates of the log-likelihood of the given state space model.
+Once built, each filter can be run by specifying the number of particles.  Each filter has a modelValues object named `mvEWSamples` that is populated with equally-weighted samples from the posterior distribution of the latent states (and in the case of the Liu-West filter, the posterior distribution of the top level parameters as well) as the filter is run.  The bootstrap, auxiliary, and Liu-West filters, as well as the IF2 method, also have another modelValues object, `mvWSamples`.  This has unequally-weighted samples from the posterior distribution of the latent states, along with weights for each particle.  In addition, the bootstrap and auxiliary particle filters return estimates of the log-likelihood of the given state-space model.
   
  We first create a linear state-space model to use as an example for our particle filter algorithms. 
  
@@ -59,8 +58,10 @@ rTimeModel$mu_0 <- 1
 
 cTimeModel <- compileNimble(rTimeModel)
 ```
+
+#### Bootstrap filter
   
-  Here is an example of building and running the bootstrap filter.
+Here is an example of building and running the bootstrap filter.
   
 ```{r, boot_Filter_Chunk}
 
@@ -78,7 +79,10 @@ bootLLEst <- cBootF$run(parNum)
 # sample size (ESS) at each time point
 bootESS <- cBootF$returnESS()
 ```
-  Next, we provide an example of building and running the auxiliary particle filter. Note that a filter cannot be built on a model that already has a filter specialized to it, so we create a new copy of our state space model first.
+
+#### Auxiliary particle filter
+
+Next, we provide an example of building and running the auxiliary particle filter. Note that a filter cannot be built on a model that already has a filter specialized to it, so we create a new copy of our state space model first.
   
 ```{r, aux_Filter_Chunk, results = "hide"}
 
@@ -96,7 +100,9 @@ auxLLEst <- cAuxF$run(parNum)
 # sample size (ESS) at each time point
 auxESS <- cAuxF$returnESS()
 ```
-  
+
+#### Liu and West filter
+
 Now we give an example of building and running the Liu and West filter, which can sample from the posterior distribution of top-level parameters as well as latent states. Note that the Liu-West filter ofen performs poorly and is provided primarily for didactic purposes. The Liu and West filter accepts an additional `params` argument, specifying the top-level parameters to be sampled. 
 
 ```{r, lw_Filter_Chunk, results = "hide"}
@@ -114,7 +120,9 @@ cLWF <- compileNimble(rLWF,project = LWTimeModel)
 cLWF$run(parNum)
 ```
 
-Finally, we give an example of building and running the ensemble Kalman filter, which can sample from the posterior distribution of latent states. 
+#### Ensemble Kalman filter
+
+Next we give an example of building and running the ensemble Kalman filter, which can sample from the posterior distribution of latent states. 
 
 ```{r, ENKF_Filter_Chunk, results = "hide"}
 # Copy model
@@ -149,13 +157,14 @@ auxWts <- as.matrix(cAuxF$mvWSamples, "wts")
 aEWSamp <- as.matrix(cLWF$mvEWSamples, "a")
 ```
 
-The IF2 is somewhat different than the other filters in that the goal of the algorithm is to find the maximum likelihood estimates of the model parameters. To do so, the algorithm represents both latent states and parameters using particles that are weighted and resampled during the iterations, where the perturbations to the parameter particles follow a schedule of decreasing magnitude to yield convergence to the MLE.
+#### Iterated filtering 2 (IF2)
+
+The IF2 method accomplishes maximum likelihood estimation using a scheme wherein both latent states and parameters are represented by particles that are weighted and resampled during the iterations.  Iterations include perturbations to the parameter particles following a schedule of decreasing magnitude to yield convergence to the MLE.
 
 Here we apply IF2 to Nile River flow data, specifying a changepoint in the year the Aswan Dam was constructed, as the dam altered river flows.
 
 ```{r, if2-model}
 library(FKF)
-y <- Nile
 
 flowCode <- nimbleCode({
     for(t in 1:n)
@@ -197,15 +206,15 @@ cFilter  <- compileNimble(filter, project = flowModel)
 
 We now run the algorithm with 1000 particles for 100 iterations with the schedule parameter equal to 0.2.
 
-In addition to the estimates, we can extract the values of the log-likelihood, the estimates and the standard deviation of the parameter particles as they evolve over the iterations, so as to assess convergence.
+In addition to the estimates, we can extract the values of the log-likelihood, the estimates and the standard deviation of the parameter particles as they evolve over the iterations, in order to assess convergence.
 
 
 ```{r, if2-run}
 set.seed(1)
 est <- cFilter$run(m = 1000, niter = 100, alpha = 0.2)
 
-cFilter$estimates[95:100,]
-cFilter$logLik[90:100]
+cFilter$estimates[95:100,] ## Last 5 iterations of parameter values
+cFilter$logLik[90:100] ## Last 5 iterations of log likelihood values
 ```
 
 Comparing to use of the the Kalman Filter from the FKF package, we see the log-likelihood is fairly similar:
@@ -219,7 +228,7 @@ Zt <- Tt <- matrix(1)
 
 fkfResult <- fkf(HHt = matrix(exp(2*est[1])),
                  GGt = matrix(exp(2*est[2])),
-                 yt = rbind(y),
+                 yt = rbind(Nile),
                  a0 = 1120,
                  P0 = matrix(100),
                  dt = dtpred, ct = ct, Zt = Zt, Tt = Tt)
@@ -265,13 +274,20 @@ timeConf <- configureMCMC(rTimeModel)   # default MCMC configuration
 
 # Add random walk PMCMC sampler with particle number optimization.
 timeConf$addSampler(target = c("a", "b", "c", "mu_0"), type = "RW_PF_block",
-                    control <- list(propCov= diag(4), adaptScaleOnly = FALSE,
+                    control = list(propCov= diag(4), adaptScaleOnly = FALSE,
                                  latents = "x", pfOptimizeNparticles = TRUE))
 ```
   
-The  `type = "RW_PF"` and `type = "RW_PF_block"` samplers
-default to using a bootstrap filter.  However, more efficient results
-can often be obtained by using a custom filtering algorithm.  Choice
+The  `type = "RW_PF"` and `type = "RW_PF*block"` samplers
+default to using a bootstrap filter.  The adapatation control
+parameters `adaptive`, `adaptInterval`, and 
+`adaptScaleOnly` work in the same way as for an `RW` and `RW*block` samplers.
+However, it is not clear if the same approach to adaptation works well
+for PMCMC, so one should consider turning off adaptation and using
+a well-chosen proposal covariance.
+
+It is also possible that more efficient results
+can be obtained by using a custom filtering algorithm.  Choice
 of filtering algorithm can be controlled by the `pfType` control
 list entry.  The `pfType` entry can be set either to
 `'bootstrap'` (the default), `'auxiliary'`, or the name of a
@@ -368,7 +384,11 @@ pumpMCEM <- buildMCEM(model = pump,
 ```
 
   The first argument `buildMCEM`, `model`, is a NIMBLE model, which can be
-  either the uncompiled or compiled version. At the moment, the model provided cannot be part of another MCMC sampler.  The ascent-based MCEM algorithm has a number of control options:
+  either the uncompiled or compiled version. At the moment, the model provided cannot be part of another MCMC sampler.  
+
+Initial values for the parameters are taken to be the values in the model at the time `buildMCEM` is called, unless the values in the compiled model are changed before running the MCEM.
+
+The ascent-based MCEM algorithm has a number of control options:
  
  
   The `latentNodes` argument should indicate the nodes that will be

@@ -86,8 +86,10 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
     xChol = x;
   else {
     xChol = new double[p*p];
-    for(i = 0; i < p*p; i++) 
-      xChol[i] = x[i];
+    // only need upper triangle for dpotrf chol calculation
+    for(j = 0; j < p; j++)
+      for(i = 0; i <= j; i++) 
+        xChol[j*p+i] = x[j*p+i];
   }
   F77_CALL(dpotrf)(&uplo, &p, xChol, &p, &info);
   for(i = 0; i < p*p; i += p + 1) 
@@ -100,6 +102,10 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
   double tmp_dens = 0.0;
   if(scale_param) {
     // chol(x) %*% inverse(chol)
+    // need lower triangle of xChol to have zeros as dtrsm assumes it is full matrix
+    for(j = 0; j < p-1; j++)
+      for(i = j+1; i < p; i++)
+        xChol[j*p+i] = 0.0;
     F77_CALL(dtrsm)(&sideR, &uplo, &transN, &diag, &p, &p, &alpha, 
                     chol, &p, xChol, &p);
     // trace of crossproduct of result is sum of squares of elements

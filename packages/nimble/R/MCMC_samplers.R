@@ -8,6 +8,7 @@
 #' @rdname samplers
 #' @export
 sampler_BASE <- nimbleFunctionVirtual(
+    name = 'sampler_BASE',
     methods = list(
         reset = function() { }
     )
@@ -35,7 +36,7 @@ sampler_posterior_predictive <- nimbleFunction(
     },
     methods = list(
         reset = function() { }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -75,7 +76,7 @@ sampler_binary <- nimbleFunction(
     },
     methods = list(
         reset = function() { }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -132,7 +133,7 @@ sampler_categorical <- nimbleFunction(
     },
     methods = list(
         reset = function() { }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -148,11 +149,12 @@ sampler_RW <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        logScale      <- if(!is.null(control$log))           control$log           else FALSE
-        reflective    <- if(!is.null(control$reflective))    control$reflective    else FALSE
-        adaptive      <- if(!is.null(control$adaptive))      control$adaptive      else TRUE
-        adaptInterval <- if(!is.null(control$adaptInterval)) control$adaptInterval else 200
-        scale         <- if(!is.null(control$scale))         control$scale         else 1
+        logScale            <- if(!is.null(control$log))                 control$log                 else FALSE
+        reflective          <- if(!is.null(control$reflective))          control$reflective          else FALSE
+        adaptive            <- if(!is.null(control$adaptive))            control$adaptive            else TRUE
+        adaptInterval       <- if(!is.null(control$adaptInterval))       control$adaptInterval       else 200
+        adaptFactorExponent <- if(!is.null(control$adaptFactorExponent)) control$adaptFactorExponent else 0.8
+        scale               <- if(!is.null(control$scale))               control$scale               else 1
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
@@ -173,6 +175,8 @@ sampler_RW <- nimbleFunction(
         if(length(targetAsScalar) > 1)   stop('cannot use RW sampler on more than one target; try RW_block sampler')
         if(model$isDiscrete(target))     stop('cannot use RW sampler on discrete-valued target; try slice sampler')
         if(logScale & reflective)        stop('cannot use reflective RW sampler on a log scale (i.e. with options log=TRUE and reflective=TRUE')
+        if(adaptFactorExponent < 0)      stop('cannot use RW sampler with adaptFactorExponent control parameter less than 0')
+        if(scale < 0)                    stop('cannot use RW sampler with scale control parameter less than 0')
     },
     run = function() {
         currentValue <- model[[target]]
@@ -217,12 +221,12 @@ sampler_RW <- nimbleFunction(
                 acceptanceRate <- timesAccepted / timesRan
                 timesAdapted <<- timesAdapted + 1
                 if(saveMCMChistory) {
-                    setSize(scaleHistory, timesAdapted)         ## scaleHistory
-                    scaleHistory[timesAdapted] <<- scale        ## scaleHistory
-                    setSize(acceptanceHistory, timesAdapted)         ## scaleHistory
+                    setSize(scaleHistory, timesAdapted)                 ## scaleHistory
+                    scaleHistory[timesAdapted] <<- scale                ## scaleHistory
+                    setSize(acceptanceHistory, timesAdapted)            ## scaleHistory
                     acceptanceHistory[timesAdapted] <<- acceptanceRate  ## scaleHistory
                 }
-                gamma1 <<- 1/((timesAdapted + 3)^0.8)
+                gamma1 <<- 1/((timesAdapted + 3)^adaptFactorExponent)
                 gamma2 <- 10 * gamma1
                 adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
                 scale <<- scale * adaptFactor
@@ -239,12 +243,11 @@ sampler_RW <- nimbleFunction(
                         scale <<- 0.5*(upper-lower)
                     }
                 }
-
                 timesRan <<- 0
                 timesAccepted <<- 0
             }
         },
-        getScaleHistory = function() {  ## scaleHistory
+        getScaleHistory = function() {       ## scaleHistory
             returnType(double(1))
             if(saveMCMChistory) {
                 return(scaleHistory)
@@ -279,7 +282,7 @@ sampler_RW <- nimbleFunction(
             }
             gamma1 <<- 0
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -295,12 +298,13 @@ sampler_RW_block <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        adaptive       <- if(!is.null(control$adaptive))       control$adaptive       else TRUE
-        adaptScaleOnly <- if(!is.null(control$adaptScaleOnly)) control$adaptScaleOnly else FALSE
-        adaptInterval  <- if(!is.null(control$adaptInterval))  control$adaptInterval  else 200
-        scale          <- if(!is.null(control$scale))          control$scale          else 1
-        propCov        <- if(!is.null(control$propCov))        control$propCov        else 'identity'
-        tries          <- if(!is.null(control$tries))          control$tries          else 1
+        adaptive            <- if(!is.null(control$adaptive))            control$adaptive            else TRUE
+        adaptScaleOnly      <- if(!is.null(control$adaptScaleOnly))      control$adaptScaleOnly      else FALSE
+        adaptInterval       <- if(!is.null(control$adaptInterval))       control$adaptInterval       else 200
+        adaptFactorExponent <- if(!is.null(control$adaptFactorExponent)) control$adaptFactorExponent else 0.8
+        scale               <- if(!is.null(control$scale))               control$scale               else 1
+        propCov             <- if(!is.null(control$propCov))             control$propCov             else 'identity'
+        tries               <- if(!is.null(control$tries))               control$tries               else 1
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
@@ -331,10 +335,10 @@ sampler_RW_block <- nimbleFunction(
         ##        my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
         targetNodesAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
 ##        my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
-        my_calcAdaptationFactor <- calcAdaptationFactor(d)
+        my_calcAdaptationFactor <- calcAdaptationFactor(d, adaptFactorExponent)
         ## checks
-        if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
-        if(class(propCov[1,1]) != 'numeric')  stop('propCov matrix must be numeric\n')
+        if(!inherits(propCov, 'matrix'))        stop('propCov must be a matrix\n')
+        if(!inherits(propCov[1,1], 'numeric'))  stop('propCov matrix must be numeric\n')
         if(!all(dim(propCov) == d))           stop('propCov matrix must have dimension ', d, 'x', d, '\n')
         if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
     },
@@ -396,7 +400,7 @@ sampler_RW_block <- nimbleFunction(
                 scale <<- scale * adaptFactor
                 ## calculate empirical covariance, and adapt proposal covariance
                 if(!adaptScaleOnly) {
-                    gamma1 <- my_calcAdaptationFactor$gamma1
+                    gamma1 <- my_calcAdaptationFactor$getGamma1()
                     for(i in 1:d)     empirSamp[, i] <<- empirSamp[, i] - mean(empirSamp[, i])
                     empirCov <- (t(empirSamp) %*% empirSamp) / (timesRan-1)
                     propCov <<- propCov + gamma1 * (empirCov - propCov)
@@ -450,7 +454,7 @@ sampler_RW_block <- nimbleFunction(
             }
             my_calcAdaptationFactor$reset()
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -496,7 +500,7 @@ sampler_RW_llFunction <- nimbleFunction(
         reset = function() {
             targetRWSamplerFunction$reset()
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -604,7 +608,7 @@ sampler_slice <- nimbleFunction(
             timesAdapted <<- 0
             sumJumps     <<- 0
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -669,7 +673,7 @@ sampler_ess <- nimbleFunction(
     },
     methods = list(
         reset = function() { }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -855,7 +859,7 @@ sampler_AF_slice <- nimbleFunction(
             adaptWidthInterval <<- 1
             widthIndicatorVec  <<- rep(1, d)
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -877,7 +881,7 @@ getPosteriorDensityFromConjSampler <- nimbleFunction(
         posteriorLogDensity <- conjugateSamplerFunction$getPosteriorLogDensity()
         returnType(double())
         return(posteriorLogDensity)
-    }, where = getLoadingNamespace()
+    }
 )
 
 #' @rdname samplers
@@ -945,7 +949,7 @@ sampler_crossLevel <- nimbleFunction(
                 lowConjugateSamplerFunctions[[iSF]]$reset()
             }
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -961,13 +965,14 @@ sampler_RW_llFunction_block <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        adaptive       <- if(!is.null(control$adaptive))       control$adaptive       else TRUE
-        adaptScaleOnly <- if(!is.null(control$adaptScaleOnly)) control$adaptScaleOnly else FALSE
-        adaptInterval  <- if(!is.null(control$adaptInterval))  control$adaptInterval  else 200
-        scale          <- if(!is.null(control$scale))          control$scale          else 1
-        propCov        <- if(!is.null(control$propCov))        control$propCov        else 'identity'
-        llFunction     <- if(!is.null(control$llFunction))     control$llFunction     else stop('RW_llFunction_block sampler missing required control argument: llFunction')
-        includesTarget <- if(!is.null(control$includesTarget)) control$includesTarget else stop('RW_llFunction_block sampler missing required control argument: includesTarget')
+        adaptive            <- if(!is.null(control$adaptive))            control$adaptive            else TRUE
+        adaptScaleOnly      <- if(!is.null(control$adaptScaleOnly))      control$adaptScaleOnly      else FALSE
+        adaptInterval       <- if(!is.null(control$adaptInterval))       control$adaptInterval       else 200
+        adaptFactorExponent <- if(!is.null(control$adaptFactorExponent)) control$adaptFactorExponent else 0.8
+        scale               <- if(!is.null(control$scale))               control$scale               else 1
+        propCov             <- if(!is.null(control$propCov))             control$propCov             else 'identity'
+        llFunction          <- if(!is.null(control$llFunction))          control$llFunction          else stop('RW_llFunction_block sampler missing required control argument: llFunction')
+        includesTarget      <- if(!is.null(control$includesTarget))      control$includesTarget      else stop('RW_llFunction_block sampler missing required control argument: includesTarget')
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
@@ -985,10 +990,10 @@ sampler_RW_llFunction_block <- nimbleFunction(
         ## nested function and function list definitions
         my_setAndCalculate <- setAndCalculate(model, target)
         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
-        my_calcAdaptationFactor <- calcAdaptationFactor(d)
+        my_calcAdaptationFactor <- calcAdaptationFactor(d, adaptFactorExponent)
         ## checks
-        if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
-        if(class(propCov[1,1]) != 'numeric')  stop('propCov matrix must be numeric\n')
+        if(!inherits(propCov, 'matrix'))        stop('propCov must be a matrix\n')
+        if(!inherits(propCov[1,1], 'numeric'))  stop('propCov matrix must be numeric\n')
         if(!all(dim(propCov) == d))           stop('propCov matrix must have dimension ', d, 'x', d, '\n')
         if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
     },
@@ -1019,7 +1024,7 @@ sampler_RW_llFunction_block <- nimbleFunction(
                 scale <<- scale * adaptFactor
                 ## calculate empirical covariance, and adapt proposal covariance
                 if(!adaptScaleOnly) {
-                    gamma1 <- my_calcAdaptationFactor$gamma1
+                    gamma1 <- my_calcAdaptationFactor$getGamma1()
                     for(i in 1:d)     empirSamp[, i] <<- empirSamp[, i] - mean(empirSamp[, i])
                     empirCov <- (t(empirSamp) %*% empirSamp) / (timesRan-1)
                     propCov <<- propCov + gamma1 * (empirCov - propCov)
@@ -1039,7 +1044,7 @@ sampler_RW_llFunction_block <- nimbleFunction(
             timesAdapted  <<- 0
             my_calcAdaptationFactor$reset()
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1214,7 +1219,7 @@ sampler_RW_PF <- nimbleFunction(
             storeParticleLP <<- -Inf
             gamma1 <<- 0
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1230,17 +1235,18 @@ sampler_RW_PF_block <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target,  control) {
         ## control list extraction
-        adaptive       <- if(!is.null(control$adaptive))             control$adaptive             else TRUE
-        adaptScaleOnly <- if(!is.null(control$adaptScaleOnly))       control$adaptScaleOnly       else FALSE
-        adaptInterval  <- if(!is.null(control$adaptInterval))        control$adaptInterval        else 200
-        scale          <- if(!is.null(control$scale))                control$scale                else 1
-        propCov        <- if(!is.null(control$propCov))              control$propCov              else 'identity'
-        existingPF     <- if(!is.null(control$pf))                   control$pf                   else NULL
-        m              <- if(!is.null(control$pfNparticles))         control$pfNparticles         else 1000
-        filterType     <- if(!is.null(control$pfType))               control$pfType               else 'bootstrap'
-        filterControl  <- if(!is.null(control$pfControl))            control$pfControl            else list()
-        optimizeM      <- if(!is.null(control$pfOptimizeNparticles)) control$pfOptimizeNparticles else FALSE
-        latents        <- if(!is.null(control$latents))              control$latents              else stop('RW_PF sampler missing required control argument: latents')
+        adaptive            <- if(!is.null(control$adaptive))             control$adaptive             else TRUE
+        adaptScaleOnly      <- if(!is.null(control$adaptScaleOnly))       control$adaptScaleOnly       else FALSE
+        adaptInterval       <- if(!is.null(control$adaptInterval))        control$adaptInterval        else 200
+        adaptFactorExponent <- if(!is.null(control$adaptFactorExponent))  control$adaptFactorExponent  else 0.8
+        scale               <- if(!is.null(control$scale))                control$scale                else 1
+        propCov             <- if(!is.null(control$propCov))              control$propCov              else 'identity'
+        existingPF          <- if(!is.null(control$pf))                   control$pf                   else NULL
+        m                   <- if(!is.null(control$pfNparticles))         control$pfNparticles         else 1000
+        filterType          <- if(!is.null(control$pfType))               control$pfType               else 'bootstrap'
+        filterControl       <- if(!is.null(control$pfControl))            control$pfControl            else list()
+        optimizeM           <- if(!is.null(control$pfOptimizeNparticles)) control$pfOptimizeNparticles else FALSE
+        latents             <- if(!is.null(control$latents))              control$latents              else stop('RW_PF sampler missing required control argument: latents')
         
         if(!is.null(control$pfLookahead)) {
           print("Warning, the `pfLookahead` control list argument is deprecated
@@ -1288,7 +1294,7 @@ sampler_RW_PF_block <- nimbleFunction(
         ## nested function and function list definitions
         my_setAndCalculate <- setAndCalculate(model, target)
         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
-        my_calcAdaptationFactor <- calcAdaptationFactor(d)
+        my_calcAdaptationFactor <- calcAdaptationFactor(d, adaptFactorExponent)
         if(!is.null(existingPF)) {
             my_particleFilter <- existingPF
         } else {
@@ -1319,8 +1325,8 @@ sampler_RW_PF_block <- nimbleFunction(
         }
         particleMV <- my_particleFilter$mvEWSamples
         ## checks
-        if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
-        if(class(propCov[1,1]) != 'numeric')  stop('propCov matrix must be numeric\n')
+        if(!inherits(propCov, 'matrix'))        stop('propCov must be a matrix\n')
+        if(!inherits(propCov[1,1], 'numeric'))  stop('propCov matrix must be numeric\n')
         if(!all(dim(propCov) == d))           stop('propCov matrix must have dimension ', d, 'x', d, '\n')
         if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
         if(length(targetAsScalar) < 2)        stop('less than two top-level targets; cannot use RW_PF_block sampler, try RW_PF sampler')
@@ -1393,7 +1399,7 @@ sampler_RW_PF_block <- nimbleFunction(
                 scale <<- scale * adaptFactor
                 ## calculate empirical covariance, and adapt proposal covariance
                 if(!adaptScaleOnly) {
-                    gamma1 <- my_calcAdaptationFactor$gamma1
+                    gamma1 <- my_calcAdaptationFactor$getGamma1()
                     for(i in 1:d)     empirSamp[, i] <<- empirSamp[, i] - mean(empirSamp[, i])
                     empirCov <- (t(empirSamp) %*% empirSamp) / (timesRan-1)
                     propCov <<- propCov + gamma1 * (empirCov - propCov)
@@ -1415,7 +1421,7 @@ sampler_RW_PF_block <- nimbleFunction(
             timesAdapted  <<- 0
             my_calcAdaptationFactor$reset()
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1546,13 +1552,13 @@ sampler_RW_multinomial <- nimbleFunction(
             ENSwapDeltaMatrix <<- Ones
             RescaleThreshold  <<- 0.2 * Ones
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
 
 #####################################################################################
-### RW_dirichlet sampler for multinomial distributions ##############################
+### RW_dirichlet sampler for dirichlet distributions ################################
 #####################################################################################
 
 #' @rdname samplers
@@ -1562,9 +1568,10 @@ sampler_RW_dirichlet <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        adaptive      <- if(!is.null(control$adaptive))      control$adaptive      else TRUE
-        adaptInterval <- if(!is.null(control$adaptInterval)) control$adaptInterval else 200
-        scaleOriginal <- if(!is.null(control$scale))         control$scale         else 1
+        adaptive            <- if(!is.null(control$adaptive))            control$adaptive            else TRUE
+        adaptInterval       <- if(!is.null(control$adaptInterval))       control$adaptInterval       else 200
+        adaptFactorExponent <- if(!is.null(control$adaptFactorExponent)) control$adaptFactorExponent else 0.8
+        scaleOriginal       <- if(!is.null(control$scale))               control$scale               else 1
         ## node list generation
         calcNodes <- model$getDependencies(target)
         depNodes  <- model$getDependencies(target, self = FALSE)
@@ -1576,6 +1583,7 @@ sampler_RW_dirichlet <- nimbleFunction(
         timesRan         <- 0
         timesAcceptedVec <- rep(0, d)
         timesAdapted     <- 0
+        optimalAR        <- 0.44
         gamma1           <- 0
         ## checks
         if(length(model$expandNodeNames(target)) > 1)    stop('RW_dirichlet sampler only applies to one target node')
@@ -1607,8 +1615,8 @@ sampler_RW_dirichlet <- nimbleFunction(
             if(timesRan %% adaptInterval == 0) {
                 acceptanceRateVec <- timesAcceptedVec / timesRan
                 timesAdapted <<- timesAdapted + 1
-                gamma1 <<- 1/((timesAdapted + 3)^0.8)
-                adaptFactorVec <- exp(10 * gamma1 * (acceptanceRateVec - 0.44))   ## optimalAR = 0.44
+                gamma1 <<- 1/((timesAdapted + 3)^adaptFactorExponent)
+                adaptFactorVec <- exp(10 * gamma1 * (acceptanceRateVec - optimalAR))
                 scaleVec <<- scaleVec * adaptFactorVec
                 timesRan <<- 0
                 timesAcceptedVec <<- numeric(d, 0)
@@ -1624,7 +1632,7 @@ sampler_RW_dirichlet <- nimbleFunction(
             timesAdapted     <<- 0
             gamma1           <<- 0
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1639,10 +1647,11 @@ sampler_RW_wishart <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        adaptive       <- if(!is.null(control$adaptive))       control$adaptive       else TRUE
-        adaptInterval  <- if(!is.null(control$adaptInterval))  control$adaptInterval  else 200
-        scale          <- if(!is.null(control$scale))          control$scale          else 1
-        propCov        <- if(!is.null(control$propCov))        control$propCov        else 'identity'
+        adaptive            <- if(!is.null(control$adaptive))            control$adaptive            else TRUE
+        adaptInterval       <- if(!is.null(control$adaptInterval))       control$adaptInterval       else 200
+        adaptFactorExponent <- if(!is.null(control$adaptFactorExponent)) control$adaptFactorExponent else 0.8
+        scale               <- if(!is.null(control$scale))               control$scale               else 1
+        propCov             <- if(!is.null(control$propCov))             control$propCov             else 'identity'
         ## node list generation
         target <- model$expandNodeNames(target)
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
@@ -1666,12 +1675,12 @@ sampler_RW_wishart <- nimbleFunction(
         propValue         <- array(0, c(d,d))
         propValue_chol    <- array(0, c(d,d))
         ## nested function and function list definitions
-        my_calcAdaptationFactor <- calcAdaptationFactor(nTheta)
+        my_calcAdaptationFactor <- calcAdaptationFactor(nTheta, adaptFactorExponent)
         ## checks
         dist <- model$getDistribution(target)
         if(d < 2)                             stop('RW_wishart sampler requires target node dimension to be at least 2x2')
-        if(class(propCov) != 'matrix')        stop('propCov must be a matrix')
-        if(class(propCov[1,1]) != 'numeric')  stop('propCov matrix must be numeric')
+        if(!inherits(propCov, 'matrix'))        stop('propCov must be a matrix')
+        if(!inherits(propCov[1,1], 'numeric'))  stop('propCov matrix must be numeric')
         if(!all(dim(propCov) == nTheta))      stop('propCov matrix must have dimension ', d, 'x', d)
         if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
     },
@@ -1721,7 +1730,7 @@ sampler_RW_wishart <- nimbleFunction(
                 adaptFactor <- my_calcAdaptationFactor$run(acceptanceRate)
                 scale <<- scale * adaptFactor
                 ## calculate empirical covariance, and adapt proposal covariance
-                gamma1 <- my_calcAdaptationFactor$gamma1
+                gamma1 <- my_calcAdaptationFactor$getGamma1()
                 for(i in 1:nTheta)     empirSamp[, i] <<- empirSamp[, i] - mean(empirSamp[, i])
                 empirCov <- (t(empirSamp) %*% empirSamp) / (timesRan-1)
                 propCov <<- propCov + gamma1 * (empirCov - propCov)
@@ -1741,7 +1750,7 @@ sampler_RW_wishart <- nimbleFunction(
             timesAdapted  <<- 0
             my_calcAdaptationFactor$reset()
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1783,7 +1792,7 @@ CAR_scalar_postPred <- nimbleFunction(
     },
     methods = list(
         reset = function() { }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1857,7 +1866,7 @@ CAR_scalar_conjugate <- nimbleFunction(
     },
     methods = list(
         reset = function() { }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1878,8 +1887,8 @@ CAR_scalar_RW <- nimbleFunction(
         timesRan      <- 0
         timesAccepted <- 0
         timesAdapted  <- 0
-        gamma1        <- 0
         optimalAR     <- 0.44
+        gamma1        <- 0
         ## nested function and function list definitions
         dcarList <- nimbleFunctionList(CAR_evaluateDensity_base)
         if(proper) { dcarList[[1]] <- CAR_proper_evaluateDensity(model, targetScalar, neighborNodes, neighborWeights, Mi)
@@ -1930,7 +1939,7 @@ CAR_scalar_RW <- nimbleFunction(
             timesAdapted  <<- 0
             gamma1 <<- 0
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1995,7 +2004,7 @@ sampler_CAR_normal <- nimbleFunction(
             for(iSF in seq_along(componentSamplerFunctions))
                 componentSamplerFunctions[[iSF]]$reset()
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -2055,7 +2064,7 @@ sampler_CAR_proper <- nimbleFunction(
             for(iSF in seq_along(componentSamplerFunctions))
                 componentSamplerFunctions[[iSF]]$reset()
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -2089,6 +2098,7 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item reflective. A logical argument, specifying whether the normal proposal distribution should reflect to stay within the range of the target distribution. (default = FALSE)
 #' \item adaptive. A logical argument, specifying whether the sampler should adapt the scale (proposal standard deviation) throughout the course of MCMC execution to achieve a theoretically desirable acceptance rate. (default = TRUE)
 #' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the RW sampler will perform its adaptation procedure.  This updates the scale variable, based upon the sampler's achieved acceptance rate over the past adaptInterval iterations. (default = 200)
+#' \item adaptFactorExponent. Exponent controling the rate of decay of the scale adaptation factor.  See Shaby and Wells, 2011, for details. (default = 0.8)
 #' \item scale. The initial value of the normal proposal standard deviation.  If adaptive = FALSE, scale will never change. (default = 1)
 #' }
 #'
@@ -2103,9 +2113,12 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item adaptive. A logical argument, specifying whether the sampler should adapt the scale (a coefficient for the entire proposal covariance matrix) and propCov (the multivariate normal proposal covariance matrix) throughout the course of MCMC execution.  If only the scale should undergo adaptation, this argument should be specified as TRUE. (default = TRUE)
 #' \item adaptScaleOnly. A logical argument, specifying whether adaption should be done only for scale (TRUE) or also for provCov (FALSE).  This argument is only relevant when adaptive = TRUE.  When adaptScaleOnly = FALSE, both scale and propCov undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When adaptScaleOnly = TRUE, only the proposal scale is adapted. (default = FALSE)
 #' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the RW_block sampler will perform its adaptation procedure, based on the past adaptInterval iterations. (default = 200)
+#' \item adaptFactorExponent. Exponent controling the rate of decay of the scale adaptation factor.  See Shaby and Wells, 2011, for details. (default = 0.8)
 #' \item scale. The initial value of the scalar multiplier for propCov.  If adaptive = FALSE, scale will never change. (default = 1)
 #' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the character string 'identity', in which case the identity matrix of the appropriate dimension will be used for the initial proposal covariance matrix. (default = 'identity')
 #' }
+#'
+#' Note that modifying elements of the control list may greatly affect the performance of this sampler. In particular, the sampler can take a long time to find a good proposal covariance when the elements being sampled are not on the same scale. We recommend providing an informed value for \code{propCov} in this case (possibly simply a diagonal matrix that approximates the relative scales), as well as possibly providing a value of \code{scale} that errs on the side of being too small. You may also consider decreasing \code{adaptFactorExponent} and/or \code{adaptInterval}, as doing so has greatly improved performance in some cases. 
 #'
 #' @section RW_llFunction sampler:
 #'
@@ -2183,6 +2196,7 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item adaptive. A logical argument, specifying whether the sampler should adapt the proposal covariance throughout the course of MCMC execution. (default is TRUE)
 #' \item adaptScaleOnly. A logical argument, specifying whether adaption should be done only for scale (TRUE) or also for provCov (FALSE).  This argument is only relevant when adaptive = TRUE.  When adaptScaleOnly = FALSE, both scale and propCov undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When adaptScaleOnly = TRUE, only the proposal scale is adapted. (default = FALSE)
 #' \item adaptInterval. The interval on which to perform adaptation. (default = 200)
+#' \item adaptFactorExponent. Exponent controling the rate of decay of the scale adaptation factor.  See Shaby and Wells, 2011, for details. (default = 0.8)
 #' \item scale. The initial value of the scalar multiplier for propCov.  If adaptive = FALSE, scale will never change. (default = 1)
 #' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the character string 'identity', in which case the identity matrix of the appropriate dimension will be used for the initial proposal covariance matrix. (default = 'identity')
 #' \item llFunction. A specialized nimbleFunction that accepts no arguments and returns a scalar double number.  The return value must be the total log-likelihood of all stochastic dependents of the target nodes -- and, if includesTarget = TRUE, of the target node(s) themselves --  or whatever surrogate is being used for the total log-likelihood.  This is a required element with no default.
@@ -2220,6 +2234,7 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item adaptScaleOnly. A logical argument, specifying whether adaptation should be done only for \code{scale} (TRUE) or also for \code{provCov} (FALSE).  This argument is only relevant when \code{adaptive = TRUE}.  When \code{adaptScaleOnly = FALSE}, both \code{scale} and \code{propCov} undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When \code{adaptScaleOnly = TRUE}, only the proposal scale is adapted. (default = FALSE)
 #' \item adaptInterval. The interval on which to perform adaptation. (default = 200)
 #' \item scale. The initial value of the scalar multiplier for \code{propCov}.  If \code{adaptive = FALSE}, \code{scale} will never change. (default = 1)
+#' \item adaptFactorExponent. Exponent controling the rate of decay of the scale adaptation factor.  See Shaby and Wells, 2011, for details. (default = 0.8)
 #' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the \code{'identity'}, in which case the identity matrix of the appropriate dimension will be used for the initial proposal covariance matrix. (default is \code{'identity'})
 #' \item pfNparticles.  The number of particles to use in the approximation to the log likelihood of the data (default = 1000).
 #' \item latents.  Character vector specifying the nodes that are latent states over which the particle filter will operate to approximate the log-likelihood function.
@@ -2248,6 +2263,7 @@ sampler_CAR_proper <- nimbleFunction(
 #' \itemize{
 #' \item adaptive. A logical argument, specifying whether the sampler should independently adapt the scale (proposal standard deviation, on the log scale) for each componentwise Metropolis-Hasting update, to achieve a theoretically desirable acceptance rate for each. (default = TRUE)
 #' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the sampler will perform its adaptation procedure.  (default = 200)
+#' \item adaptFactorExponent. Exponent controling the rate of decay of the scale adaptation factor.  See Shaby and Wells, 2011, for details. (default = 0.8)
 #' \item scale. The initial value of the proposal standard deviation (on the log scale) for each component of the reparameterized Dirichlet distribution.  If adaptive = FALSE, the proposal standard deviations will never change. (default = 1)
 #' }
 #'
@@ -2259,6 +2275,7 @@ sampler_CAR_proper <- nimbleFunction(
 #' \itemize{
 #' \item adaptive. A logical argument, specifying whether the sampler should adapt the scale and proposal covariance for the multivariate normal Metropolis-Hasting proposals, to achieve a theoretically desirable acceptance rate for each. (default = TRUE)
 #' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the sampler will perform its adaptation procedure.  (default = 200)
+#' \item adaptFactorExponent. Exponent controling the rate of decay of the scale adaptation factor.  See Shaby and Wells, 2011, for details. (default = 0.8)
 #' \item scale. The initial value of the scalar multiplier for the multivariate normal Metropolis-Hastings proposal covariance.  If adaptive = FALSE, scale will never change. (default = 1)
 #' }
 #'
@@ -2289,10 +2306,16 @@ sampler_CAR_proper <- nimbleFunction(
 #' @section CRP sampler:
 #' 
 #' The CRP sampler is designed for fitting models involving Dirichlet process mixtures. It is exclusively assigned by NIMBLE's default MCMC configuration to nodes having the Chinese Restaurant Process distribution, \code{dCRP}. It executes sequential sampling of each component of the node (i.e., the cluster membership of each element being clustered). Internally, either of two samplers can be assigned, depending on conjugate or non-conjugate structures within the model. For conjugate and non-conjugate model structures, updates are based on Algorithm 2 and Algorithm 8 in Neal (2000), respectively.
-#'  
+#'
+#  The CRP sampler accepts the following control list elements:
+#' \itemize{
+#' \item \code{checkConjugacy}. A logical argument, specifying whether to assign conjugate samplers if valid. (default = \code{TRUE})
+#' \item \code{printTruncation}. A logical argument, specifying whether to print a warning when the MCMC attempts to use more clusters than the maximum number specified in the model. Only relevant where the user has specified the maximum number of clusters to be less than the number of observations. (default = \code{TRUE})
+#' }
+#' 
 #' @section CRP_concentration sampler:
 #' 
-#' The CRP_concentration sampler is designed for Bayesian nonparametric mixture modeling. It is exclusively assigned to the concentration parameter of the Dirichlet process when the model is specified using theChinese Restaurant Process distribution, \code{dCRP}. This sampler is assigned by default by NIMBLE's default MCMC configuration and is and can only be used when the prior for the concentration is a gamma distribution. The assigned sampler is an augmented beta-gamma sampler as discussed in Section 6 in Escobar and West (1995).
+#' The CRP_concentration sampler is designed for Bayesian nonparametric mixture modeling. It is exclusively assigned to the concentration parameter of the Dirichlet process when the model is specified using the Chinese Restaurant Process distribution, \code{dCRP}. This sampler is assigned by default by NIMBLE's default MCMC configuration and can only be used when the prior for the concentration parameter is a gamma distribution. The assigned sampler is an augmented beta-gamma sampler as discussed in Section 6 in Escobar and West (1995).
 #' 
 #' @section posterior_predictive sampler:
 #'
@@ -2302,20 +2325,21 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' The posterior_predictive sampler accepts no control list arguments.
 #'
-#' @section RJ sampler:
-#'  
-#' This sampler performs reversible jump MCMC steps for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{configureRJ} function, when the model code is written without using indicator variables. See \code{help{configureRJ}} for details. It is not intended for direct assignment by users.
+#' @section RJ_fixed_prior sampler:
+#'
+#' This sampler proposes addition/removal for variable of interest in the framework of variable selection using reversible jump MCMC, with a specified prior probability of inclusion.  A normal proposal distribution is used to generate proposals for the addition of the variable. This is a specialized sampler used by \code{configureRJ} function, when the model code is written without using indicator variables. See \code{help{configureRJ}} for details. It is not intended for direct assignment.
 #'
 #' @section RJ_indicator sampler:
-#'  
-#' This sampler performs reversible jump MCMC steps for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{configureRJ} function, when the model code is written using indicator variables. See \code{help{configureRJ}} for details. It is not intended for direct assignment by users.
 #'
-#' @section toggled sampler:
-#' This sampler wraps around the assigned sampler for a node and does sampling only when the target is in the model, as part of reversible jump MCMC. This is a specialized sampler used by \code{configureRJ} when adding a reversible jump MCMC . See \code{help{configureRJ}} for details. It is not intended for direct assignment by users.
+#' This sampler proposes transitions of a binary indicator variable, corresponding to a variable of interest, in the framework of variable selection using reversible jump MCMC.  This is a specialized sampler used by \code{configureRJ} function, when the model code is written using indicator variables. See \code{help{configureRJ}} for details. It is not intended for direct assignment.
+#'
+#' @section RJ_toggled sampler:
+#'
+#' This sampler operates in the framework of variable selection using reversible jump MCMC.  Specifically, it conditionally performs updates of the target variable of interest using the originally-specified sampling configuration, when variable is "in the model".  This is a specialized sampler used by \code{configureRJ} when adding a reversible jump MCMC . See \code{help{configureRJ}} for details. It is not intended for direct assignment.
 #'
 #' @name samplers
 #'
-#' @aliases sampler posterior_predictive RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block RW_PF RW_PF_block sampler_posterior_predictive sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block sampler_RW_PF sampler_RW_PF_block CRP CRP_concentration DPmeasure RJ RJ_indicator toggled
+#' @aliases sampler posterior_predictive RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block RW_PF RW_PF_block sampler_posterior_predictive sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block sampler_RW_PF sampler_RW_PF_block CRP CRP_concentration DPmeasure RJ_fixed_prior RJ_indicator RJ_toggled
 #'
 #' @examples
 #' ## y[1] ~ dbern() or dbinom():

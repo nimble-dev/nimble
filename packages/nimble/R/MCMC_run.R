@@ -96,7 +96,7 @@ runMCMC <- function(mcmc,
                     summary = FALSE,
                     WAIC = FALSE) {
     if(missing(mcmc)) stop('must provide a NIMBLE MCMC algorithm')
-    if(!identical(nf_getGeneratorFunction(mcmc), buildMCMC)) stop('mcmc argument must be a NIMBLE MCMC algorithm')
+    if(!identical(nfGetDefVar(mcmc, 'name'), 'MCMC')) stop('mcmc argument must be a NIMBLE MCMC algorithm')
     if(!is.Cnf(mcmc)) message('Warning: running an uncompiled MCMC algorithm, use compileNimble() for faster execution.')
     if(!samples && !summary && !WAIC) stop('no output specified, use samples = TRUE, summary = TRUE, or WAIC = TRUE')
     if(nchains < 1) stop('must have nchains > 0')
@@ -188,13 +188,15 @@ runMCMC <- function(mcmc,
 #'
 #' The entry point for this function is providing the \code{code}, \code{constants}, \code{data} and \code{inits} arguments, to create a new NIMBLE model object, or alternatively providing an exisiting NIMBLE model object as the \code{model} argument.
 #'
-#' @param code The quoted code expression representing the model, such as the return value from a call to \code{nimbleCode}).  No default value, this is a required argument.
+#' @param code The quoted code expression representing the model, such as the return value from a call to \code{nimbleCode}). Not required if \code{model} is provided.  
 #' 
 #' @param constants Named list of constants in the model.  Constants cannot be subsequently modified. For compatibility with JAGS and BUGS, one can include data values with constants and \code{nimbleModel} will automatically distinguish them based on what appears on the left-hand side of expressions in \code{code}.
 #' 
 #' @param data Named list of values for the data nodes.  Data values can be subsequently modified.  Providing this argument also flags nodes as having data for purposes of algorithms that inspect model structure. Values that are NA will not be flagged as data.
 #'
 #' @param inits Argument to specify initial values for the model object, and for each MCMC chain.  See details.
+#'
+#' @param dimensions Named list of dimensions for variables.  Only needed for variables used with empty indices in model code that are not provided in constants or data.
 #'
 #' @param model A compiled or uncompiled NIMBLE model object.  When provided, this model will be used to configure the MCMC algorithm to be executed, rather than using the \code{code}, \code{constants}, \code{data} and \code{inits} arguments to create a new model object.  However, if also provided, the \code{inits} argument will still be used to initialize this model prior to running each MCMC chain.
 #' 
@@ -269,6 +271,7 @@ nimbleMCMC <- function(code,
                        constants = list(),
                        data = list(),
                        inits,
+                       dimensions = list(),
                        model,
                        monitors,
                        thin = 1,
@@ -305,8 +308,8 @@ nimbleMCMC <- function(code,
             } else if(is.list(inits) && (length(inits) > 0) && is.list(inits[[1]])) {
                 theseInits <- inits[[1]]
             } else theseInits <- inits
-            Rmodel <- nimbleModel(code, constants, data, theseInits, check = check)    ## inits provided
-        } else Rmodel <- nimbleModel(code, constants, data, check = check)             ## inits not provided
+            Rmodel    <- nimbleModel(code, constants, data, theseInits, dimensions = dimensions, check = check)    ## inits provided
+        } else Rmodel <- nimbleModel(code, constants, data,             dimensions = dimensions, check = check)    ## inits not provided
     } else {              ## model object provided
         if(!is.model(model)) stop('model argument must be a NIMBLE model object')
         Rmodel <- if(is.Rmodel(model)) model else model$Rmodel

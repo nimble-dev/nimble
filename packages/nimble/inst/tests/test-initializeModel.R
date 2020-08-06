@@ -111,18 +111,18 @@ test_that('initializeModel works correctly for state space models', {
     set.seed(0)
     Cinit$run()
     
-    expect_equal(Rmodel$calculate(), -73.10372, tol = 0.000001)
-    expect_equal(Cmodel$calculate(), -73.10372, tol = 0.000001)
+    expect_equal(Rmodel$calculate(), -77.49817, tol = 0.000001)
+    expect_equal(Cmodel$calculate(), -77.49817, tol = 0.000001)
     
     stateSpaceModel<-nimbleModel(code = stateSpaceCode,data = datalist,constants=constants,inits = inits, calculate = FALSE)
     bootstrapFilter<-buildBootstrapFilter(stateSpaceModel,nodes='prob',control=list(saveAll=TRUE))
     compiledList<-compileNimble(stateSpaceModel,bootstrapFilter)
     
     set.seed(0)
-    expect_equal(bootstrapFilter$run(10), -48.38688, tol = 0.000001)
+    expect_equal(bootstrapFilter$run(10), -52.78133, tol = 0.000001)
     
     set.seed(0)
-    expect_equal(compiledList$bootstrapFilter$run(10), -48.38688, tol = 0.000001)
+    expect_equal(compiledList$bootstrapFilter$run(10), -52.78133, tol = 0.000001)
 })
 
 

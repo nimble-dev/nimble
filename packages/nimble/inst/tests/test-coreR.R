@@ -752,6 +752,13 @@ logicalTests <- list(
          outputType = quote(double(2)), checkEqual = TRUE)
 )
 
+anyNaTests <- list(
+    list(name = "use any_na", expr = quote(out <- any_na(arg1)),
+         args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- rnorm(5); arg1[2] <- NA}),
+         outputType = quote(logical(0)))
+)
+
 returnTests <- list(
     list(name = "return(rnorm scalar)",
          expr = quote({}),
@@ -1004,6 +1011,7 @@ seqTestsResults <- test_coreRfeature_batch(seqTests, 'seqTests') ## lapply(seqTe
 nonSeqIndexTestsResults <- test_coreRfeature_batch(nonSeqIndexTests, 'nonSeqIndexTests') ## lapply(nonSeqIndexTests, test_coreRfeature)
 indexChainTestsResults <- test_coreRfeature_batch(indexChainTests, 'indexChainTests') ## lapply(indexChainTests, test_coreRfeature)
 logicalTestsResults <- test_coreRfeature_batch(logicalTests, 'logicalTests') ## lapply(logicalTests, test_coreRfeature)
+anyNaTestResults <- test_coreRfeature_batch(anyNaTests, 'anyNaTests') 
 returnTestResults <- test_coreRfeature_batch(returnTests, 'returnTests') ## lapply(returnTests, test_coreRfeature)
 simpleCopyTestResults <- test_coreRfeature_batch(simpleCopyTests, 'simpleCopyTests') 
 higherDimBlockTestResults <- test_coreRfeature_batch(higherDimBlockTests, 'higherDimBlockTests') 

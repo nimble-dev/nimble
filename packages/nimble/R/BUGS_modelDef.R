@@ -180,8 +180,11 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
     buildSymbolTable()                    ## 
     genIsDataVarInfo()                    ## only the maxs is ever used, in newModel
     genVarNames()                         ## sets varNames <<- c(names(varInfo), names(logProbVarInfo))
+    warnRHSonlyDynIdx()                   ## warns user if RHS-only nodes used in indexing (inefficient)
     return(NULL)        
 })
+
+
 
 codeProcessIfThenElse <- function(code, constants, envir = parent.frame()) {
     codeLength <- length(code)
@@ -688,7 +691,7 @@ modelDefClass$methods(expandDistributions = function() {
 modelDefClass$methods(checkMultivarExpr = function() {
     checkForExpr <- function(expr) {
         ##output <- FALSE
-        if(length(expr) == 1 && class(expr) %in% c("name", "numeric")) return(FALSE)
+        if(length(expr) == 1 && (inherits(expr, "name") || inherits(expr, "numeric"))) return(FALSE)
         if(!deparse(expr[[1]]) == '[') return(TRUE)
         ## recurse only on the first argument of the `[`
         return(checkForExpr(expr[[2]]))
@@ -981,7 +984,7 @@ replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) 
                     # if(callChar != ':') {
                     if(!is.vectorized(code)) {
                         if(is.null(neverReplaceable[[callChar]])) {
-                            if(class(get(callChar, constEnv)) == 'function') {
+                            if(inherits(get(callChar, constEnv),'function')) {
                                 testcode <- as.numeric(eval(code, constEnv))
                                 if(length(testcode) == 1) code <- testcode
                             }
@@ -2715,6 +2718,43 @@ modelDefClass$methods(genVarNames = function() {
     varNames <<- c(names(varInfo), names(logProbVarInfo))
 })
 
+modelDefClass$methods(warnRHSonlyDynIdx = function() {
+    ## Warn if dynamic indexing involves non-constant RHS-only nodes as this causes
+    ## additional dependencies and slower computations.
+    for(i in seq_along(declInfo)) {
+        decl <- declInfo[[i]]
+        if(exists('dynamicIndexInfo', decl) && length(decl[['dynamicIndexInfo']])) {
+            ## Determine vars used in dynamic indexing.
+            vars <- lapply(decl[['dynamicIndexInfo']], function(x) {
+                if(exists('indexCode', x))
+                    return(all.vars(x[['indexCode']]))
+            })
+            vars <- unique(unlist(vars))
+            vars <- vars[vars %in% decl$rhsVars]
+            ## Evaluate indexing to determine nodes used in dynamic indexing.
+            nr <- min(50, nrow(decl$unrolledIndicesMatrix))  # avoid doing full expansion for speed
+            nodes <- lapply(seq_along(vars), function(idx) {
+                ## In most cases, there will be only one parentNode, but if a var is used multiple times on RHS
+                ## one can get multiple parentNodes. Modified as of issue #996.
+                parentNodes <- decl$symbolicParentNodesReplaced[which(vars[idx] == decl$rhsVars)]
+                return(
+                    unlist(lapply(seq_along(parentNodes), function(node) {
+                        sapply(seq_len(nr), function(row) {
+                            deparse(eval(substitute(substitute(e, 
+                                                               as.list(decl$unrolledIndicesMatrix[row, ])),
+                                                    list(e = parentNodes[[node]]))))
+                        })
+                    })))
+            })
+            nodes <- unique(unlist(nodes))
+            nodes <- nodes[nodes %in% maps$nodeNamesRHSonly]
+            if(length(nodes))
+                warning("Detected use of non-constant indexes: ", paste(nodes, collapse = ', '), ifelse(nr == 50, ", ...", "."), " For computational efficiency we recommend specifying these in 'constants'.")
+        }
+    }
+    return(NULL)
+})
+
 modelDefClass$methods(buildSymbolTable = function() {
     ## uses varInfo and logProbVarInfo to set field: symTab
     
@@ -2844,18 +2884,21 @@ modelDefClass$methods(graphIDs2indexedNodeInfo = function(graphIDs) {
     list(declIDs = as.integer(declIDs), unrolledIndicesMatrixRows = as.integer(rowIndices))
 })
 
-modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TRUE, unique = TRUE){
+modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TRUE, unique = TRUE, ignoreNotFound = TRUE){
     if(length(nodeName) == 0)
         return(NULL)
     ## If unique is FALSE, we still use unique for each element of nodeName
     ## but we allow non-uniqueness across elements in the result
     if(nodeFunctionID) {
         if(unique)
-            output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2GraphID_functions_and_RHSonly))
+            output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2GraphID_functions_and_RHSonly, ignoreNotFound = ignoreNotFound))
         else
-            output2 <- unlist(lapply(parseEvalNumericManyList(nodeName, env = maps$vars2GraphID_functions_and_RHSonly), unique))
+            output2 <- unlist(lapply(parseEvalNumericManyList(nodeName, env = maps$vars2GraphID_functions_and_RHSonly, ignoreNotFound = ignoreNotFound), unique))
     } else {
-        output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2ID_elements))
+        if(unique)
+            output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2ID_elements))
+        else
+            output2 <- parseEvalNumericMany(nodeName, env = maps$vars2ID_elements)
     }
     output <- output2
     return(output[!is.na(output)])
@@ -2933,33 +2976,101 @@ parseEvalNumericManyHandleError <- function(cond, x, env) {
     invokeRestart('abort')
 }
 
-parseEvalNumericMany <- function(x, env) {
-    withCallingHandlers(
+handleOutOfBounds <- function(x, env) {
+    ## Extend dimension of variable to match any greater extents indicated in 'x'.
+    expr <- parse(text = x, keep.source = FALSE)[[1]]
+    if(length(expr) == 1) return(NA)  ## However, should never have non-indexed expression given only invoked when subscript out of bounds
+    var <- deparse(expr[[2]])
+    oldDims <- dim(env[[var]])
+    newDims <- sapply(expr[3:length(expr)], function(e) {
+        if(length(e) == 1) return(e)
+        return(e[[3]]) })
+    if(length(newDims) != length(oldDims))
+        return(NA)
+    ## Ensure new var is at least as big as old var.
+    newDims[newDims < oldDims] <- oldDims[newDims < oldDims]
+    env2 <- new.env()
+    env2[[var]] <- as.numeric(NA)
+    length(env2[[var]]) <- prod(newDims)
+    dim(env2[[var]]) <- newDims
+
+    ## Put values from old into new by constructing and evaluating
+    ## `env2[[var]][1:oldDims[1],...] <- env[[var]]`
+    subsetExpr <- quote(env2[[var]][1])
+    for(i in seq_along(oldDims))
+        subsetExpr[[2+i]] <- 1:oldDims[i]
+    fullExpr <- quote(tmp <- env[[var]])
+    fullExpr[[2]] <- subsetExpr
+    eval(fullExpr)
+
+    ## Now evaluate in new environment.
+    tmp <- try(as.numeric(eval(parse(text = x, keep.source = FALSE)[[1]], envir = env2)), silent = TRUE)
+    if(is(tmp, 'try-error'))
+        return(NA) else return(tmp)
+}
+
+parseEvalNumericMany <- function(x, env, ignoreNotFound = FALSE) {
+    if(ignoreNotFound) {  ## Return NA when not found.
         if(length(x) > 1) {
-            as.numeric(eval(parse(text = paste0('c(', paste0(x, collapse=','),')'), keep.source = FALSE)[[1]], envir = env))
-        } else 
-            as.numeric(eval(parse(text = x, keep.source = FALSE)[[1]], envir = env))
-       ,
-        error = function(cond) {
-           parseEvalNumericManyHandleError(cond, x, env)
+            ## First try to do as vectorized call.
+            output <- try(as.numeric(eval(parse(text = paste0('c(', paste0(x, collapse=','),')'), keep.source = FALSE)[[1]], envir = env)), silent = TRUE)
+            if(!is(output, 'try-error')) return(output)
         }
-    )
+        ## Go through one by one if errors, or if there is a single input.
+        output <- lapply(x, function(val) {
+            tmp <- try(as.numeric(eval(parse(text = val, keep.source = FALSE)[[1]], envir = env)), silent = TRUE)
+            if(is(tmp, 'try-error')) {
+                if(length(grep("subscript out of bounds", tmp))) {
+                    return(handleOutOfBounds(val, env))
+                } else return(NA)
+            } else return(tmp)
+        })
+        return(unlist(output))
+    } else {  ## Error out when not found.
+        withCallingHandlers(
+            if(length(x) > 1) {
+                as.numeric(eval(parse(text = paste0('c(', paste0(x, collapse=','),')'), keep.source = FALSE)[[1]], envir = env))
+            } else 
+                as.numeric(eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)),
+            error = function(cond) {
+                parseEvalNumericManyHandleError(cond, x, env)
+            }
+        )
+    }
 }
 
 
-parseEvalNumericManyList <- function(x, env) {
-    withCallingHandlers(
-        eval(.Call(makeParsedVarList, x), envir = env)
-        ## Above line replaces:
-        ## if(length(x) > 1) {
-        ##     eval(parse(text = paste0('list(', paste0("as.numeric(",x,")", collapse=','),')'), keep.source = FALSE)[[1]], envir = env)
-        ## } else 
-        ##     eval(parse(text = paste0('list(as.numeric(',x,'))'), keep.source = FALSE)[[1]], envir = env)
-       ,
-        error = function(cond) {
-            parseEvalNumericManyHandleError(cond, x, env)
-        }
-    )
+parseEvalNumericManyList <- function(x, env, ignoreNotFound = FALSE) {
+    if(ignoreNotFound) {  ## Return NA when not found.
+       output <- try(eval(.Call(makeParsedVarList, x), envir = env), silent = TRUE)
+        if(!is(output, 'try-error'))
+            return(output)
+        
+        ## Go through one by one if errors, or if there is a single input.
+        output <- lapply(x, function(val) {
+            ## I don't think there is a need to use makeParsedVarList if input is one element.
+            tmp <- try(as.numeric(eval(parse(text = val, keep.source = FALSE)[[1]], envir = env)), silent = TRUE)
+            if(is(tmp, 'try-error')) {
+                if(length(grep("subscript out of bounds", tmp))) {
+                    return(handleOutOfBounds(val, env))
+                } else return(NA)
+            } else return(tmp)
+        })
+        return(output)  
+    } else {
+        withCallingHandlers(
+            eval(.Call(makeParsedVarList, x), envir = env)
+            ## Above line replaces:
+            ## if(length(x) > 1) {
+            ##     eval(parse(text = paste0('list(', paste0("as.numeric(",x,")", collapse=','),')'), keep.source = FALSE)[[1]], envir = env)
+            ## } else 
+            ##     eval(parse(text = paste0('list(as.numeric(',x,'))'), keep.source = FALSE)[[1]], envir = env)
+           ,
+            error = function(cond) {
+                parseEvalNumericManyHandleError(cond, x, env)
+            }
+        )
+    }
 }
 
 parseEvalCharacter <- function(x, env){

@@ -1,5 +1,4 @@
-Table: (#tab:coreR) Basic R manipulation functions in NIMBLE. To find help in R for NIMBLE's version of a function, use the "nim" prefix and capitalize the next
-letter. E.g. `help(nimC)` for help with `c()`.
+Table: (#tab:coreR) Basic R manipulation functions in NIMBLE. For some of these functions, in addition to the usual use of `help()`, you can find help in R for NIMBLE's version of a function by using the "nim" prefix and capitalizing the next letter. E.g. `help(nimC)` for help with `c()`.
 
   Function        Comments (differences from R)
   --------------- -----------------------------------
@@ -15,7 +14,9 @@ letter. E.g. `help(nimC)` for help with `c()`.
   `length()`
   `is.na()`       Does not correctly handle NAs from R that are type `'logical'`, 
                   so convert these using `as.numeric()` before passing from R to NIMBLE.
-  `is.nan()`
+  `is.nan()`      Treats `NA` of type 'double' as being `NaN` and `NA` of type 'logical' as not being `NaN`.
+  `any()`         One argument only; NAs treated as FALSE.
+  `all()`         One argument only; NAs treated as FALSE.
   `numeric()`     Allows additional arguments to control initialization.
   `logical()`     Allows additional arguments to control initialization.
   `integer()`     Allows additional arguments to control initialization.

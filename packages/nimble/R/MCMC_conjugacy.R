@@ -146,7 +146,7 @@ conjugacyRelationshipsInputList <- list(
          ## changing to only use link='identity' case, since the link='linear' case was not correct.
          ## -DT March 2017
          ## link = 'linear',
-         link = 'identity',
+         link = 'multiplicative',
          dependents = list(
              ## parentheses added to the contribution_R calculation:
              ## colVec * (rowVec * matrix)
@@ -155,16 +155,16 @@ conjugacyRelationshipsInputList <- list(
              ## changing to only use link='identity' case, since the link='linear' case was not correct
              ## -DT March 2017
              ## dmnorm = list(param = 'prec', contribution_R = 'asCol(value-mean) %*% (asRow(value-mean) %*% coeff)', contribution_df = '1')),
-             dmnorm = list(param = 'prec', contribution_R = 'asCol(value-mean) %*% asRow(value-mean)', contribution_df = '1')),
+             dmnorm = list(param = 'prec', contribution_R = 'coeff * asCol(value-mean) %*% asRow(value-mean)', contribution_df = '1')),
          posterior = 'dwish_chol(cholesky    = chol(prior_R + contribution_R),
                                  df          = prior_df + contribution_df,
                                  scale_param = 0)'),
 
     ## inverse wishart
     list(prior = 'dinvwish',
-         link = 'identity',
+         link = 'multiplicative',
          dependents = list(
-             dmnorm = list(param = 'cov', contribution_S = 'asCol(value-mean) %*% asRow(value-mean)', contribution_df = '1')),
+             dmnorm = list(param = 'cov', contribution_S = 'asCol(value-mean) %*% asRow(value-mean) / coeff', contribution_df = '1')),
          posterior = 'dinvwish_chol(cholesky    = chol(prior_S + contribution_S),
                                     df          = prior_df + contribution_df,
                                     scale_param = 1)')
@@ -495,8 +495,7 @@ conjugacyClass <- setRefClass(
                                setup    = SETUPFUNCTION,
                                run      = RUNFUNCTION,
                                methods  = list(getPosteriorLogDensity = GETPOSTERIORLOGDENSITYFUNCTION,
-                                               reset                  = function() {}),
-                               where    = getLoadingNamespace()
+                                               reset                  = function() {})
                 ),
                 list(SETUPFUNCTION                  = genSetupFunction(dependentCounts = dependentCounts, doDependentScreen = doDependentScreen),
                      RUNFUNCTION                    = genRunFunction(dependentCounts = dependentCounts, doDependentScreen = doDependentScreen),
@@ -566,10 +565,13 @@ conjugacyClass <- setRefClass(
             
             targetNdim <- getDimension(prior)
             targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
+            targetCoeffNdimSave <- targetCoeffNdim 
             for(iDepCount in seq_along(dependentCounts)) {
                 distName <- names(dependentCounts)[iDepCount]
                 if(!is.null(dependents[[distName]]$link)) currentLink <- dependents[[distName]]$link else currentLink <- link
                 if(currentLink %in% c('multiplicative', 'linear', 'linear_plus_inprod') || (nimbleOptions()$allowDynamicIndexing && currentLink == 'identity' && doDependentScreen)) {
+                    if(currentLink == 'multiplicative')   ## There are no cases where we allow non-scalar 'coeff'.
+                        targetCoeffNdim <- 0
                     functionBody$addCode({
                         DEP_OFFSET_VAR2 <- array(0, dim = DECLARE_SIZE_OFFSET)                   ## the 2's here are *only* to prevent warnings about
                         DEP_COEFF_VAR2  <- array(0, dim = DECLARE_SIZE_COEFF)                    ## assigning into member variable names using
@@ -577,6 +579,7 @@ conjugacyClass <- setRefClass(
                             DEP_COEFF_VAR2      = as.name(paste0('dep_', distName, '_coeff')),   ## so it doesn't recognize the ref class field name
                             DECLARE_SIZE_OFFSET = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), as.name(paste0('dep_', distName, '_nodeSizeMax')), as.name(paste0('dep_', distName, '_nodeSizeMax')), targetNdim),
                             DECLARE_SIZE_COEFF  = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), as.name(paste0('dep_', distName, '_nodeSizeMax')), quote(d),                                          targetCoeffNdim)))
+                    targetCoeffNdim <- targetCoeffNdimSave
                 }
             }
 
@@ -729,11 +732,13 @@ conjugacyClass <- setRefClass(
             links <- rep(link, length(dependentCounts))
             for(iDepCount in seq_along(dependentCounts)) {
                 distName <- names(dependentCounts)[iDepCount]
-                if(!is.null(dependents[[distName]]$link)) links[iDepCount] <- dependents[[distName]]$link # clau: extra ) deleted.
+                if(!is.null(dependents[[distName]]$link)) links[iDepCount] <- dependents[[distName]]$link 
             }
             if(any(links %in% c('multiplicative', 'linear', 'linear_plus_inprod')) || (nimbleOptions()$allowDynamicIndexing && any(links == 'identity') && doDependentScreen)) {
                 targetNdim <- getDimension(prior)
                 targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
+                if(all(links == 'multiplicative'))   ## There are no cases where we allow non-scalar 'coeff'.
+                    targetCoeffNdim <- 0
 
                 switch(as.character(targetNdim),
                        `0` = {
@@ -821,32 +826,33 @@ conjugacyClass <- setRefClass(
                                                 list(FORLOOPBODY = forLoopBody$getCode()))
                        },
                        `2` = {
+                           if(!all(links == 'multiplicative')) stop("Found non-multiplicative link for 2-d variable.")
+
                            functionBody$addCode({
-                               ## I <- model[[target]] * 0
-                               ## for(sizeIndex in 1:d)   { I[sizeIndex, sizeIndex] <- 1 }
-                               ## model[[target]] <<- I   ## initially, propogate through X = I
-                               I <- diag(d)
-                               model[[target]] <<- I   ## initially, propogate through X = I
+                               model[[target]] <<- diag(d)
                                calculate(model, calcNodesDeterm)
                            })
 
+                           ## Use _COEFF_VAR to store value; we need this for stoch indexing case
+                           ## where we determine that coeff = 0 because the potential dependency is not a dependency
+                           ## given current index values.
                            for(iDepCount in seq_along(dependentCounts)) {
                                distName <- names(dependentCounts)[iDepCount]
                                functionBody$addCode({
                                    for(iDep in 1:N_DEP) {
-                                       ##thisNodeSize <- DEP_NODESIZES[iDep]  ## not needed for targetDim=2 case ????
-                                       DEP_OFFSET_VAR[iDep, 1:d, 1:d] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME)  ## DEP_OFFSET_VAR = A+B(I) = A+B
+                                       DEP_COEFF_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME)[1, 1]   ## DEP_COEFF_VAR = (A+2B)-(A+B) = B
                                    }
                                },
                                                     list(N_DEP          = as.name(paste0('N_dep_', distName)),
-                                                         ##DEP_NODESIZES  = as.name(paste0('dep_', distName, '_nodeSizes')),  ## not needed for targetDim=2 case ????
-                                                         DEP_OFFSET_VAR = as.name(paste0('dep_', distName, '_offset')),
-                                                         DEP_NODENAMES  = as.name(paste0('dep_', distName,'_nodeNames')),
+                                                         DEP_COEFF_VAR  = as.name(paste0('dep_', distName, '_coeff')),
+                                                         DEP_NODENAMES  = as.name(paste0('dep_', distName, '_nodeNames')),
                                                          PARAM_NAME     = dependents[[distName]]$param))
                            }
 
                            functionBody$addCode({
-                               model[[target]] <<- I * 2   ## now, propogate through X = 2I
+                               ## Can't use zeros matrix as Cholesky fails; this is solely to determine if
+                               ## potential dependency is not a dependency of target (due to stochastic indexing).
+                               model[[target]] <<- 2*diag(d)  
                                calculate(model, calcNodesDeterm)
                            })
 
@@ -854,26 +860,13 @@ conjugacyClass <- setRefClass(
                                distName <- names(dependentCounts)[iDepCount]
                                functionBody$addCode({
                                    for(iDep in 1:N_DEP) {
-                                       ##thisNodeSize <- DEP_NODESIZES[iDep]  ## not needed for targetDim=2 case ????
-                                       DEP_COEFF_VAR[iDep, 1:d, 1:d] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME) - DEP_OFFSET_VAR[iDep, 1:d, 1:d]   ## DEP_COEFF_VAR = (A+2B)-(A+B) = B
+                                       DEP_COEFF_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME)[1, 1] - DEP_COEFF_VAR[iDep]
                                    }
                                },
                                                     list(N_DEP          = as.name(paste0('N_dep_', distName)),
-                                                         ##DEP_NODESIZES  = as.name(paste0('dep_', distName, '_nodeSizes')),  ## not needed for targetDim=2 case ????
                                                          DEP_COEFF_VAR  = as.name(paste0('dep_', distName, '_coeff')),
                                                          DEP_NODENAMES  = as.name(paste0('dep_', distName, '_nodeNames')),
-                                                         PARAM_NAME     = dependents[[distName]]$param,
-                                                         DEP_OFFSET_VAR = as.name(paste0('dep_', distName, '_offset'))))
-                               functionBody$addCode({
-                                   for(iDep in 1:N_DEP) {
-                                       ##thisNodeSize <- DEP_NODESIZES[iDep]  ## not needed for targetDim=2 case ????
-                                       DEP_OFFSET_VAR[iDep, 1:d, 1:d] <<- DEP_OFFSET_VAR[iDep, 1:d, 1:d] - DEP_COEFF_VAR[iDep, 1:d, 1:d]   ## now, DEP_OFFSET_VAR = (A+B)-(B) = A
-                                   }
-                               },
-                                                    list(N_DEP          = as.name(paste0('N_dep_', distName)),
-                                                         ##DEP_NODESIZES  = as.name(paste0('dep_', distName, '_nodeSizes')),  ## not needed for targetDim=2 case ????
-                                                         DEP_OFFSET_VAR = as.name(paste0('dep_', distName, '_offset')),
-                                                         DEP_COEFF_VAR  = as.name(paste0('dep_', distName, '_coeff'))))
+                                                         PARAM_NAME     = dependents[[distName]]$param))
                            }
 
                        },
@@ -884,6 +877,8 @@ conjugacyClass <- setRefClass(
 
             targetNdim <- getDimension(prior)
             targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
+            if(all(links == 'multiplicative'))   ## There are no cases where we allow non-scalar 'coeff'.
+                targetCoeffNdim <- 0
             ## contribution terms have been moved to be setup function outputs,
             ## but we still need to *zero these variables out* before adding contribution terms into them
             for(contributionName in posteriorObject$neededContributionNames) {
@@ -928,7 +923,7 @@ conjugacyClass <- setRefClass(
                     if(!(contributionName %in% dependents[[distName]]$contributionNames))     next
                     contributionExpr <- eval(substitute(substitute(EXPR, subList), list(EXPR=dependents[[distName]]$contributionExprs[[contributionName]])))
                     if(nimbleOptions()$allowDynamicIndexing && doDependentScreen) { ## FIXME: would be nice to only have one if() here when we loop through multiple parameters
-                        if(targetNdim == 0)
+                        if(targetCoeffNdim == 0)
                             forLoopBody$addCode(if(COEFF_EXPR != 0) CONTRIB_NAME <<- CONTRIB_NAME + CONTRIB_EXPR,
                                                 list(COEFF_EXPR = subList$coeff, CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
                         else forLoopBody$addCode(if(min(COEFF_EXPR) != 0 | max(COEFF_EXPR) != 0) CONTRIB_NAME <<- CONTRIB_NAME + CONTRIB_EXPR,
@@ -1149,12 +1144,26 @@ cc_linkCheck <- function(linearityCheck, link) {
     if(!(link %in% c('identity', 'multiplicative', 'linear', 'linear_plus_inprod', 'stick_breaking')))
         stop(paste0('unknown link: \'', link, '\''))
     if(is.null(linearityCheck))    return(FALSE)
-    offset <- linearityCheck$offset
-    scale  <- linearityCheck$scale
-    if(link == 'identity'       && offset == 0 && scale == 1)     return(TRUE)
-    if(link == 'multiplicative' && offset == 0)                   return(TRUE)
-    if(link == 'linear' || link == 'linear_plus_inprod')          return(TRUE)
+    offset      <- linearityCheck$offset
+    scale       <- linearityCheck$scale
+    if(link == 'identity'       && offset == 0 && scale == 1)                  return(TRUE)
+    ## We currently have no conjugacies where the scale can be a matrix, so check
+    ## that 'scale' is a scalar.
+    ## In particular we want to avoid that case when dealing with Wishart-related conjugacies.
+    if(link == 'multiplicative' && offset == 0 && cc_checkScalar(scale))       return(TRUE)
+    if(link == 'linear' || link == 'linear_plus_inprod')                       return(TRUE)
     return(FALSE)
+}
+
+cc_checkScalar <- function(expr) {
+    if(length(expr) == 1) return(TRUE)
+    if(expr[[1]] == ":") return(FALSE)
+    ## We don't know the output dims of all functions,
+    ## as there can be user-defined functions that produce non-scalar output from scalar inputs,
+    ## so only say it could be scalar (based on input args) in specific known cases we enumerate.
+    if(deparse(expr[[1]]) %in% c('(','[','*','+','-','/','exp','log','^','pow','sqrt')) {
+        return(all(sapply(expr[2:length(expr)], cc_checkScalar)))
+    } else return(FALSE)
 }
 
 ## checks the parameter expressions in the stochastic distribution of depNode

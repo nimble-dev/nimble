@@ -1067,8 +1067,9 @@ paramInfo_SetupTemplate <- setupCodeTemplateClass(
     makeName = function(argList){Rname2CppName(paste(deparse(argList$model), deparse(argList$node), deparse(argList$param), 'paramInfo', sep='_'))},
     makeOtherNames = function(name,argList) {Rname2CppName(paste0(name,'_ID'))},
     codeTemplate = quote({
-        PARAMINFONAME <- makeParamInfo(MODEL, NODE, PARAM)
+        PARAMINFONAME <- nimble:::makeParamInfo(MODEL, NODE, PARAM)
         PARAMIDNAME <- PARAMINFONAME$paramID
+        PARAMINFONAME$paramID <- NULL
        }),
     makeCodeSubList = function(resultName, argList){
         list(PARAMINFONAME = as.name(resultName),
@@ -1083,8 +1084,9 @@ boundInfo_SetupTemplate <- setupCodeTemplateClass(
     makeName = function(argList){Rname2CppName(paste(deparse(argList$model), deparse(argList$node), deparse(argList$bound), 'boundInfo', sep='_'))},
     makeOtherNames = function(name,argList) {Rname2CppName(paste0(name,'_ID'))},
     codeTemplate = quote({
-        BOUNDINFONAME <- makeBoundInfo(MODEL, NODE, BOUND)
+        BOUNDINFONAME <- nimble:::makeBoundInfo(MODEL, NODE, BOUND)
         BOUNDIDNAME <- BOUNDINFONAME$boundID
+        BOUNDINFONAME$boundID <- NULL
        }),
     makeCodeSubList = function(resultName, argList){
         list(BOUNDINFONAME = as.name(resultName),
@@ -1153,7 +1155,7 @@ singleModelIndexAccess_SetupTemplate <- setupCodeTemplateClass(
 	makeName = code2Name_fromArgList,
 	
 	codeTemplate = quote({
-		VARANDINDICES <- nimbleInternalFunctions$getVarAndIndices(NODEVARNAME)
+		VARANDINDICES <- nimble:::nimbleInternalFunctions$getVarAndIndices(NODEVARNAME)
 		NEWVARNAME <- as.character(VARANDINDICES$varName)
 		MFLATINDEX <- nimble:::varAndIndices2flatIndex(VARANDINDICES, MODELVAREXPR$getVarInfo(NEWVARNAME))
 		VARACCESSOR <- nimble:::singleVarAccess(MODELVAREXPR, NEWVARNAME, useSingleIndex = TRUE)
@@ -1178,7 +1180,7 @@ map_SetupTemplate <- setupCodeTemplateClass(
 		return(output)
 	},
 	codeTemplate = quote({
-		VARANDINDICES <- nimbleInternalFunctions$getVarAndIndices(NODEVARNAME)
+		VARANDINDICES <- nimble:::nimbleInternalFunctions$getVarAndIndices(NODEVARNAME)
 		NEWVARNAME <- as.character(VARANDINDICES$varName)
                 map_SetupTemplate_vi <- MODEL$getVarInfo(NEWVARNAME)
 		map_SetupTemplate_mapParts <- nimble:::varAndIndices2mapParts(VARANDINDICES, map_SetupTemplate_vi$maxs, map_SetupTemplate_vi$nDim)
@@ -1203,7 +1205,7 @@ singleModelValuesAccessor_SetupTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are modelValues, var, row, code
 	makeName = code2Name_fromArgList,
 	codeTemplate = quote({
-		MVACCESS <- singleModelValuesAccess(MODELVALUES, VAR)
+		MVACCESS <- nimble:::singleModelValuesAccess(MODELVALUES, VAR)
 	}),
 	makeCodeSubList = function(resultName, argList){
 		list(MVACCESS = as.name(resultName),
@@ -1440,7 +1442,7 @@ matchKeywordCode <- function(code, nfProc){
         modCallName <- callName
         if(nfProc$setupSymTab$symbolExists(modCallName)) {
             symObj <- nfProc$setupSymTab$getSymbolObject(modCallName)
-            if(class(symObj) == "symbolMemberFunction") {
+            if(inherits(symObj, "symbolMemberFunction")) {
                 thisRCfunProc <- nfProc$RCfunProcs[[modCallName]]
                 if(is.null(thisRCfunProc)) stop(paste0("Cannot handle this expression (looks like a member function but something is wrong): ", deparse(code)), call. = FALSE)
                 thisFunctionMatch <- thisRCfunProc$RCfun$template

@@ -576,7 +576,12 @@ The `run` method has an optional `reset` argument.  When `reset = TRUE` (the def
   1. The internal modelValues `mvAccumulators` object for accumulator variables is reset to contain all zeros, and the number of accumulated iterations is reset to zero.
 
 
-When `mcmc$run(niter, reset = FALSE)` is called, the MCMC picks up from where it left off, continuing the previous chain and expanding the output as needed.  No values in the model are checked or altered, and sampler functions are not reset to their initial states.  
+When `mcmc$run(niter, reset = FALSE)` is called, the MCMC picks up from where it left off, continuing the previous chain and expanding the output as needed.  No values in the model are checked or altered, and sampler functions are not reset to their initial states.
+
+The `run` method also has an optional `resetMV` argument. This argument is only considered when`'reset` is set to `FALSE`. When `mcmc$run(niter, reset = FALSE, resetMV = TRUE)` is called the internal modelValues objects `mvSamples` and `mvSamples2` are each resized to the appropriate length for holding the requested number of samples (`niter/thin`, and `niter/thin2`, respectively) and the MCMC carries on from where it left off. In other words, the previously obtained samples are deleted (e.g. to reduce memory usage) prior to continuing the MCMC. The default value of  `resetMV`  is  `FALSE`. 
+
+
+
 
 ### Measuring sampler computation times: *getTimes* {#sec:sampler-time}
 
@@ -679,7 +684,7 @@ The `configureRJ` function modifies the MCMC configuration to (1) assign sampler
 
 <!--  See `help(configureRJ)` for details. -->
 
-In the following we provide an example for the two different model specifications. 
+In the following we provide an example for the two different model specifications.
 
 ### Using indicator variables {#sec:rjmcmc-indicator}
 
@@ -692,7 +697,6 @@ code <- nimbleCode({
   beta1 ~ dnorm(0, sd = 100)
   beta2 ~ dnorm(0, sd = 100)
   sigma ~ dunif(0, 100) 
-  
   z1 ~ dbern(psi)  ## indicator variable associated with beta1
   z2 ~ dbern(psi)  ## indicator variable associated with beta2
   psi ~ dbeta(1, 1) ## hyperprior on inclusion probability
@@ -714,8 +718,8 @@ Y <- rnorm(N, 1.5 + 2 * x1, sd = 1)
 
 RJexampleModel <- nimbleModel(code, constants = list(N = N),
                               data = list(Y = Y, x1 = x1, x2 = x2), 
-                              inits = list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y),
-                              z2 = 1, z1 = 1, psi = 0.5))
+                              inits = list(beta0 = 0, beta1 = 0, beta2 = 0,
+                              sigma = sd(Y), z2 = 1, z1 = 1, psi = 0.5))
 
 RJexampleConf <- configureMCMC(RJexampleModel)
 ```
@@ -729,7 +733,7 @@ At this point we can modify the MCMC configuration object, `RJexampleConf`, to u
 
 
 ```{r indicators: configureRJ, results = "hide"}
-configureRJ(mcmcConf = RJexampleConf,     
+configureRJ(conf = RJexampleConf,     
             targetNodes = c("beta1", "beta2"),
             indicatorNodes = c('z1', 'z2'),
             control = list(mean = c(0, 0), scale = 2))
@@ -772,7 +776,8 @@ code <- nimbleCode({
 ## build the model
 RJexampleModel2 <- nimbleModel(code, constants = list(N = N),
                                data = list(Y = Y, x1 = x1, x2 = x2), 
-                               inits=  list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y)))
+                               inits = list(beta0 = 0, beta1 = 0, beta2 = 0,
+                                            sigma = sd(Y)))
 
 RJexampleConf2 <- configureMCMC(RJexampleModel2)
 ```
@@ -782,11 +787,11 @@ RJexampleConf2 <- configureMCMC(RJexampleModel2)
 RJexampleConf2$printSamplers()
 ```
 
-In this case, since there are no indicator variables, we need to pass to `configureRJ` the prior inclusion probabilities for each node in `targetNodes`, by specifying either one common value or a vector of values for the argument `priorProb`. Notice that this case does not allow for a stochastic prior. 
+In this case, since there are no indicator variables, we need to pass to `configureRJ` the prior inclusion probabilities for each node in `targetNodes`, by specifying either one common value or a vector of values for the argument `priorProb`. This case does not allow for a stochastic prior. 
 
 
 ```{r no indicators: configureRJ, results = "hide"}
-configureRJ(mcmcConf = RJexampleConf2,     
+configureRJ(conf = RJexampleConf2,     
             targetNodes = c("beta1", "beta2"),
             priorProb = 0.5,
             control = list(mean = 0, scale = 2, fixedValue = c(1.5, 0)))
@@ -1054,6 +1059,6 @@ Please see the `compareMCMCs` package for the features previously provided by `M
 
 ## Running MCMC chains in parallel
 
-It is possible to run multiple chains in parallel using standard R parallelization packages such as `parallal`, `foreach`, and `future`. However, you must create separate copies of all model and MCMC objects using `nimbleModel`, `buildMCMC`, `compileNimble`, etc. This is because NIMBLE uses Reference Classes and R6 classes, so copying such objects simply creates a new variable name that refers to the original object.
+It is possible to run multiple chains in parallel using standard R parallelization packages such as `parallel`, `foreach`, and `future`. However, you must create separate copies of all model and MCMC objects using `nimbleModel`, `buildMCMC`, `compileNimble`, etc. This is because NIMBLE uses Reference Classes and R6 classes, so copying such objects simply creates a new variable name that refers to the original object.
 
 Thus, in your parallel loop or lapply-style statement, you should run `nimbleModel` and all subsequent calls to create and compile the model and MCMC algorithm within the parallelized block of code, once for each MCMC chain being run in parallel.

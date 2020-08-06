@@ -41,6 +41,8 @@ run tests on all OS ideally
 change version number in UserManual/src/{title.tex,_output.yml}
 rebuild manual as further test of package
 
+run examples in nimble-demos as further test
+
 check reverse dependencies:
 
 from nimble/packages, with the current nimble .tar.gz in that directory, do:
@@ -82,7 +84,7 @@ Once CRAN package accepted:
 
 (make sure both html and pdf versions of manual are updated and in repo before doing zenodo upload)
 
-create new version with tarball and manual in Zenodo. Note that inst/CITATION uses the version-independent DOI so don't need to update DOI in CITATION or on badge on r-nimble.org.
+create new version with package tarball and manual in Zenodo. Note that inst/CITATION uses the version-independent DOI so don't need to update DOI in CITATION or on badge on r-nimble.org.
 However we might revisit this as that means that users will cite the version independent DOI at the same time they refer to a specific NIMBLE version. Probably ok and means we don't have to mint the DOI just as we are about to submit to CRAN and then shunt aside the new Zenodo version if there is a CRAN problem.
 
 login to nature.berkeley.edu: ssh to your_calnet_id@nature.berkeley.edu and use CalNet password
@@ -113,17 +115,18 @@ go to website: R-nimble.org/login and login
 note that to make a new blog post or modify pages, need to 
 deactivate Google analyticator on Plugins -> Installed Plugins page
 
-change Downloads page on R-nimble.org to reflect new version; creating link for newly-deprecated version on Archived versions page.
+change Downloads page on R-nimble.org to reflect new version (including 'download source pkg' link);
+creating link for newly-deprecated version on Archived versions page.
 
 update previous releases page
-
-update documentation page with link to updated manual
 
 update archived versions of NIMBLE and User Manual
 
 add info on new release to release notes page
 
 update version numbering on license and citation page
+
+This is a good time to update info on our core developer team on the website if needed.
 
 make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag (not just a 'category'!!!) if you want it picked up by R-bloggers)
 (best to point with a hyperlink to the info on versions/news on webpage not to NEWS)
@@ -136,6 +139,8 @@ send notice to nimble-announce, nimble-users as christopher.paciorek@gmail.com (
 reactivate Google Analyticator by clicking on 'activate' on Plugins -> Installed Plugins 
 *****************
 
+post examples as run on new version
+
 make sure to merge devel into master branch
 
 git checkout master
@@ -143,6 +148,8 @@ git merge devel
 git commit -am'merged new version onto master'
 
 probably best at this point also to merge master onto devel
+
+For version 0.10.0 before add tag as suggested here, try to add a release as per below and see if tag is auto-generated.
 
 git tag -a v$VERSION -m "NIMBLE version $VERSION release, December 31, 2014"
 git push --tags    ## this is how you push *tags* to the remote

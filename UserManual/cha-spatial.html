@@ -1,13 +1,12 @@
 <!DOCTYPE html>
-<html >
-
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
 <head>
 
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title></title>
-  <meta name="description" content="This is the NIMBLE User Manual.">
-  <meta name="generator" content="bookdown 0.7 and GitBook 2.6.7">
+  <meta name="description" content="This is the NIMBLE User Manual." />
+  <meta name="generator" content="bookdown 0.12 and GitBook 2.6.7" />
 
   <meta property="og:title" content="" />
   <meta property="og:type" content="book" />
@@ -25,15 +24,16 @@
 
 
 
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
 <link rel="prev" href="cha-algos-provided.html">
 <link rel="next" href="cha-bnp.html">
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.8.0</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.9.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -128,18 +128,17 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html"><i class="fa fa-check"></i><b>4</b> Installing NIMBLE</a><ul>
 <li class="chapter" data-level="4.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:requ-run-nimble"><i class="fa fa-check"></i><b>4.1</b> Requirements to run NIMBLE</a></li>
 <li class="chapter" data-level="4.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:compiler"><i class="fa fa-check"></i><b>4.2</b> Installing a C++ compiler for NIMBLE to use</a><ul>
-<li class="chapter" data-level="4.2.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#os-x"><i class="fa fa-check"></i><b>4.2.1</b> OS X</a></li>
+<li class="chapter" data-level="4.2.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#macos"><i class="fa fa-check"></i><b>4.2.1</b> MacOS</a></li>
 <li class="chapter" data-level="4.2.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#linux"><i class="fa fa-check"></i><b>4.2.2</b> Linux</a></li>
 <li class="chapter" data-level="4.2.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#windows"><i class="fa fa-check"></i><b>4.2.3</b> Windows</a></li>
 </ul></li>
-<li class="chapter" data-level="4.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#installing-the-nimble-package"><i class="fa fa-check"></i><b>4.3</b> Installing the NIMBLE package</a><ul>
-<li class="chapter" data-level="4.3.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#problems-with-installation"><i class="fa fa-check"></i><b>4.3.1</b> Problems with installation</a></li>
-</ul></li>
-<li class="chapter" data-level="4.4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#customizing-your-installation"><i class="fa fa-check"></i><b>4.4</b> Customizing your installation</a><ul>
-<li class="chapter" data-level="4.4.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#using-your-own-copy-of-eigen"><i class="fa fa-check"></i><b>4.4.1</b> Using your own copy of Eigen</a></li>
-<li class="chapter" data-level="4.4.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#using-libnimble"><i class="fa fa-check"></i><b>4.4.2</b> Using libnimble</a></li>
-<li class="chapter" data-level="4.4.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:blas"><i class="fa fa-check"></i><b>4.4.3</b> BLAS and LAPACK</a></li>
-<li class="chapter" data-level="4.4.4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#customizing-compilation-of-the-nimble-generated-c"><i class="fa fa-check"></i><b>4.4.4</b> Customizing compilation of the NIMBLE-generated C++</a></li>
+<li class="chapter" data-level="4.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#installing-the-nimble-package"><i class="fa fa-check"></i><b>4.3</b> Installing the NIMBLE package</a></li>
+<li class="chapter" data-level="4.4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#troubleshooting-installation-problems"><i class="fa fa-check"></i><b>4.4</b> Troubleshooting installation problems</a></li>
+<li class="chapter" data-level="4.5" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#customizing-your-installation"><i class="fa fa-check"></i><b>4.5</b> Customizing your installation</a><ul>
+<li class="chapter" data-level="4.5.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#using-your-own-copy-of-eigen"><i class="fa fa-check"></i><b>4.5.1</b> Using your own copy of Eigen</a></li>
+<li class="chapter" data-level="4.5.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#using-libnimble"><i class="fa fa-check"></i><b>4.5.2</b> Using libnimble</a></li>
+<li class="chapter" data-level="4.5.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:blas"><i class="fa fa-check"></i><b>4.5.3</b> BLAS and LAPACK</a></li>
+<li class="chapter" data-level="4.5.4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#customizing-compilation-of-the-nimble-generated-c"><i class="fa fa-check"></i><b>4.5.4</b> Customizing compilation of the NIMBLE-generated C++</a></li>
 </ul></li>
 </ul></li>
 <li class="part"><span><b>II Models in NIMBLE</b></span></li>
@@ -173,6 +172,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="6.2.5" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:why-use-node"><i class="fa fa-check"></i><b>6.2.5</b> Why use node names?</a></li>
 <li class="chapter" data-level="6.2.6" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:cdisdata"><i class="fa fa-check"></i><b>6.2.6</b> Checking if a node holds data</a></li>
 </ul></li>
+<li class="chapter" data-level="6.3" data-path="cha-building-models.html"><a href="cha-building-models.html#using-models-in-parallel"><i class="fa fa-check"></i><b>6.3</b> Using models in parallel</a></li>
 </ul></li>
 <li class="part"><span><b>III Algorithms in NIMBLE</b></span></li>
 <li class="chapter" data-level="7" data-path="cha-mcmc.html"><a href="cha-mcmc.html"><i class="fa fa-check"></i><b>7</b> MCMC</a><ul>
@@ -185,11 +185,12 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="7.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:runMCMC"><i class="fa fa-check"></i><b>7.4</b> User-friendly execution of MCMC algorithms: <em>runMCMC</em></a></li>
 <li class="chapter" data-level="7.5" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:executing-the-mcmc-algorithm"><i class="fa fa-check"></i><b>7.5</b> Running the MCMC</a><ul>
 <li class="chapter" data-level="7.5.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:sampler-time"><i class="fa fa-check"></i><b>7.5.1</b> Measuring sampler computation times: <em>getTimes</em></a></li>
+<li class="chapter" data-level="7.5.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#assessing-the-adaption-process-of-rw-and-rw_block-samplers"><i class="fa fa-check"></i><b>7.5.2</b> Assessing the adaption process of <em>RW</em> and <em>RW_block</em> samplers</a></li>
 </ul></li>
 <li class="chapter" data-level="7.6" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:extracting-samples"><i class="fa fa-check"></i><b>7.6</b> Extracting MCMC samples</a></li>
 <li class="chapter" data-level="7.7" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:WAIC"><i class="fa fa-check"></i><b>7.7</b> Calculating WAIC</a></li>
 <li class="chapter" data-level="7.8" data-path="cha-mcmc.html"><a href="cha-mcmc.html#k-fold-cross-validation"><i class="fa fa-check"></i><b>7.8</b> k-fold cross-validation</a></li>
-<li class="chapter" data-level="7.9" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc"><i class="fa fa-check"></i><b>7.9</b> Reversible Jump MCMC</a><ul>
+<li class="chapter" data-level="7.9" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc"><i class="fa fa-check"></i><b>7.9</b> Variable selection using Reversible Jump MCMC</a><ul>
 <li class="chapter" data-level="7.9.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc-indicator"><i class="fa fa-check"></i><b>7.9.1</b> Using indicator variables</a></li>
 <li class="chapter" data-level="7.9.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc-no-indicator"><i class="fa fa-check"></i><b>7.9.2</b> Without indicator variables</a></li>
 </ul></li>
@@ -200,9 +201,10 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 </ul></li>
 <li class="chapter" data-level="7.11" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-example-litters"><i class="fa fa-check"></i><b>7.11</b> Detailed MCMC example: <em>litters</em></a></li>
 <li class="chapter" data-level="7.12" data-path="cha-mcmc.html"><a href="cha-mcmc.html#mcmc-suite-compare-mcmcs"><i class="fa fa-check"></i><b>7.12</b> Comparing different MCMCs with <em>MCMCsuite</em> and <em>compareMCMCs</em></a></li>
+<li class="chapter" data-level="7.13" data-path="cha-mcmc.html"><a href="cha-mcmc.html#running-mcmc-chains-in-parallel"><i class="fa fa-check"></i><b>7.13</b> Running MCMC chains in parallel</a></li>
 </ul></li>
-<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Sequential Monte Carlo and MCEM</a><ul>
-<li class="chapter" data-level="8.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#particle-filters-sequential-monte-carlo"><i class="fa fa-check"></i><b>8.1</b> Particle Filters / Sequential Monte Carlo</a><ul>
+<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM</a><ul>
+<li class="chapter" data-level="8.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#particle-filters-sequential-monte-carlo-and-iterated-filtering"><i class="fa fa-check"></i><b>8.1</b> Particle filters / sequential Monte Carlo and iterated filtering</a><ul>
 <li class="chapter" data-level="8.1.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#filtering-algorithms"><i class="fa fa-check"></i><b>8.1.1</b> Filtering algorithms</a></li>
 <li class="chapter" data-level="8.1.2" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:particle-mcmc"><i class="fa fa-check"></i><b>8.1.2</b> Particle MCMC (PMCMC)</a></li>
 </ul></li>
@@ -384,15 +386,15 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <p>Here we provide an example model using the intrinsic Gaussian <code>dcar_normal</code> distribution. The CAR process values are used in a spatially-dependent Poisson regression.</p>
 <p>To mimic the behavior of WinBUGS, we specify <code>zero_mean = 1</code> to enforce a zero-mean constraint on the CAR process, and therefore include a separate intercept term <code>alpha</code> in the model. Note that we do not necessarily recommend imposing this constraint, per the discussion earlier in this chapter.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-    alpha ~<span class="st"> </span><span class="kw">dflat</span>()
-    beta ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)
-    tau ~<span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)
-    for(k in <span class="dv">1</span>:L)
+    alpha <span class="op">~</span><span class="st"> </span><span class="kw">dflat</span>()
+    beta <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)
+    tau <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)
+    <span class="cf">for</span>(k <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>L)
         weights[k] &lt;-<span class="st"> </span><span class="dv">1</span>
-    s[<span class="dv">1</span>:N] ~<span class="st"> </span><span class="kw">dcar_normal</span>(adj[<span class="dv">1</span>:L], weights[<span class="dv">1</span>:L], num[<span class="dv">1</span>:N], tau, <span class="dt">zero_mean =</span> <span class="dv">1</span>)
-    for(i in <span class="dv">1</span>:N) {
-        <span class="kw">log</span>(lambda[i]) &lt;-<span class="st"> </span>alpha +<span class="st"> </span>beta*x[i] +<span class="st"> </span>s[i]
-        y[i] ~<span class="st"> </span><span class="kw">dpois</span>(lambda[i])
+    s[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dcar_normal</span>(adj[<span class="dv">1</span><span class="op">:</span>L], weights[<span class="dv">1</span><span class="op">:</span>L], num[<span class="dv">1</span><span class="op">:</span>N], tau, <span class="dt">zero_mean =</span> <span class="dv">1</span>)
+    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {
+        <span class="kw">log</span>(lambda[i]) &lt;-<span class="st"> </span>alpha <span class="op">+</span><span class="st"> </span>beta<span class="op">*</span>x[i] <span class="op">+</span><span class="st"> </span>s[i]
+        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dpois</span>(lambda[i])
     }
 })
 
@@ -442,15 +444,15 @@ Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, c
 <p>We provide two example models using the proper Gaussian <code>dcar_proper</code> distribution. In both, the CAR process values are used in a spatially-dependent logistic regression to model binary presence/absence data. In the first example, the <code>C</code> and <code>M</code> parameters are omitted, which uses weights equal to one for all neighbor relationships. In the second example, symmetric unnormalized weights are specified, and <code>as.carCM</code> is used to construct the <code>C</code> and <code>M</code> parameters to the <code>dcar_proper</code> distribution.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># omitting C and M sets all non-zero weights to one</span>
 code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-    mu0 ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)
-    tau ~<span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)
-    gamma ~<span class="st"> </span><span class="kw">dunif</span>(-<span class="dv">1</span>, <span class="dv">1</span>)
-    s[<span class="dv">1</span>:N] ~<span class="st"> </span><span class="kw">dcar_proper</span>(mu[<span class="dv">1</span>:N], <span class="dt">adj=</span>adj[<span class="dv">1</span>:L], <span class="dt">num=</span>num[<span class="dv">1</span>:N], <span class="dt">tau=</span>tau, 
+    mu0 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)
+    tau <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)
+    gamma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)
+    s[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dcar_proper</span>(mu[<span class="dv">1</span><span class="op">:</span>N], <span class="dt">adj=</span>adj[<span class="dv">1</span><span class="op">:</span>L], <span class="dt">num=</span>num[<span class="dv">1</span><span class="op">:</span>N], <span class="dt">tau=</span>tau, 
                          <span class="dt">gamma=</span>gamma)
-    for(i in <span class="dv">1</span>:N) {
+    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {
         mu[i] &lt;-<span class="st"> </span>mu0
         <span class="kw">logit</span>(p[i]) &lt;-<span class="st"> </span>s[i]
-        y[i] ~<span class="st"> </span><span class="kw">dbern</span>(p[i])
+        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dbern</span>(p[i])
     }
 })
 
@@ -463,21 +465,21 @@ Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, c
 
 <span class="co"># specify symmetric unnormalized weights, use as.carCM to generate C and M</span>
 code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-    mu0 ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)
-    tau ~<span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)
-    gamma ~<span class="st"> </span><span class="kw">dunif</span>(-<span class="dv">1</span>, <span class="dv">1</span>)
-    s[<span class="dv">1</span>:N] ~<span class="st"> </span><span class="kw">dcar_proper</span>(mu[<span class="dv">1</span>:N], C[<span class="dv">1</span>:L], adj[<span class="dv">1</span>:L], num[<span class="dv">1</span>:N], M[<span class="dv">1</span>:N], tau, 
+    mu0 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)
+    tau <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)
+    gamma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)
+    s[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dcar_proper</span>(mu[<span class="dv">1</span><span class="op">:</span>N], C[<span class="dv">1</span><span class="op">:</span>L], adj[<span class="dv">1</span><span class="op">:</span>L], num[<span class="dv">1</span><span class="op">:</span>N], M[<span class="dv">1</span><span class="op">:</span>N], tau, 
                          gamma)
-    for(i in <span class="dv">1</span>:N) {
+    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {
         mu[i] &lt;-<span class="st"> </span>mu0
         <span class="kw">logit</span>(p[i]) &lt;-<span class="st"> </span>s[i]
-        y[i] ~<span class="st"> </span><span class="kw">dbern</span>(p[i])
+        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dbern</span>(p[i])
     }
 })
 
 weights &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">4</span>)
 CM &lt;-<span class="st"> </span><span class="kw">as.carCM</span>(adj, weights, num)
-constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">C =</span> CM$C, <span class="dt">adj =</span> adj, <span class="dt">num =</span> num, <span class="dt">M =</span> CM$M, <span class="dt">N =</span> <span class="dv">4</span>, <span class="dt">L =</span> <span class="dv">6</span>)
+constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">C =</span> CM<span class="op">$</span>C, <span class="dt">adj =</span> adj, <span class="dt">num =</span> num, <span class="dt">M =</span> CM<span class="op">$</span>M, <span class="dt">N =</span> <span class="dv">4</span>, <span class="dt">L =</span> <span class="dv">6</span>)
 Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</code></pre></div>
 <p>Each of the resulting models may be carried through to MCMC sampling. NIMBLE will assign a specialized sampler to update the elements of the CAR process. See Chapter <a href="cha-mcmc.html#cha:mcmc">7</a> for information about NIMBLE’s MCMC engine, and Section <a href="cha-spatial.html#sec:spatial-mcmc-sampling-car">9.3</a> for details on MCMC sampling of the CAR processes.</p>
 </div>
@@ -521,14 +523,14 @@ Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, c
 </div>
 <h3>References</h3>
 <div id="refs" class="references">
-<div id="ref-Rue_Held_2005">
-<p>Rue, H., and L. Held. 2005. <em>Gaussian Markov Random Fields: Theory and Applications</em>. Boca Raton: Chapman &amp; Hall.</p>
-</div>
 <div id="ref-Banerjee_etal_2015">
 <p>Banerjee, S., B.P. Carlin, and A.E. Gelfand. 2015. <em>Hierarchical Modeling and Analysis for Spatial Data</em>. 2nd ed. Boca Raton: Chapman &amp; Hall.</p>
 </div>
 <div id="ref-Paciorek_2009">
 <p>Paciorek, C.J. 2009. “Understanding Intrinsic Gaussian Markov Random Field Spatial Models, Including Intrinsic Conditional Autoregressive Models.” University of California, Berkeley. <a href="http://www.stat.berkeley.edu/~paciorek/research/techVignettes/techVignette5.pdf" class="uri">http://www.stat.berkeley.edu/~paciorek/research/techVignettes/techVignette5.pdf</a>.</p>
+</div>
+<div id="ref-Rue_Held_2005">
+<p>Rue, H., and L. Held. 2005. <em>Gaussian Markov Random Fields: Theory and Applications</em>. Boca Raton: Chapman &amp; Hall.</p>
 </div>
 </div>
             </section>
@@ -557,7 +559,7 @@ gitbook.start({
 "google": false,
 "linkedin": false,
 "weibo": false,
-"instapper": false,
+"instapaper": false,
 "vk": false,
 "all": ["facebook", "google", "twitter", "linkedin", "weibo", "instapaper"]
 },
@@ -567,6 +569,10 @@ gitbook.start({
 "size": 2
 },
 "edit": {
+"link": null,
+"text": null
+},
+"history": {
 "link": null,
 "text": null
 },
@@ -585,7 +591,7 @@ gitbook.start({
     var script = document.createElement("script");
     script.type = "text/javascript";
     var src = "";
-    if (src === "" || src === "true") src = "https://cdn.bootcss.com/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML";
+    if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
     if (location.protocol !== "file:" && /^https?:/.test(src))
       src = src.replace(/^https?:/, '');
     script.src = src;

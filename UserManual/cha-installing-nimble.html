@@ -1,13 +1,12 @@
 <!DOCTYPE html>
-<html >
-
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
 <head>
 
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title></title>
-  <meta name="description" content="This is the NIMBLE User Manual.">
-  <meta name="generator" content="bookdown 0.7 and GitBook 2.6.7">
+  <meta name="description" content="This is the NIMBLE User Manual." />
+  <meta name="generator" content="bookdown 0.12 and GitBook 2.6.7" />
 
   <meta property="og:title" content="" />
   <meta property="og:type" content="book" />
@@ -25,15 +24,16 @@
 
 
 
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
 <link rel="prev" href="cha-more-introduction.html">
 <link rel="next" href="cha-writing-models.html">
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.8.0</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.9.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -128,18 +128,17 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html"><i class="fa fa-check"></i><b>4</b> Installing NIMBLE</a><ul>
 <li class="chapter" data-level="4.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:requ-run-nimble"><i class="fa fa-check"></i><b>4.1</b> Requirements to run NIMBLE</a></li>
 <li class="chapter" data-level="4.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:compiler"><i class="fa fa-check"></i><b>4.2</b> Installing a C++ compiler for NIMBLE to use</a><ul>
-<li class="chapter" data-level="4.2.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#os-x"><i class="fa fa-check"></i><b>4.2.1</b> OS X</a></li>
+<li class="chapter" data-level="4.2.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#macos"><i class="fa fa-check"></i><b>4.2.1</b> MacOS</a></li>
 <li class="chapter" data-level="4.2.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#linux"><i class="fa fa-check"></i><b>4.2.2</b> Linux</a></li>
 <li class="chapter" data-level="4.2.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#windows"><i class="fa fa-check"></i><b>4.2.3</b> Windows</a></li>
 </ul></li>
-<li class="chapter" data-level="4.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#installing-the-nimble-package"><i class="fa fa-check"></i><b>4.3</b> Installing the NIMBLE package</a><ul>
-<li class="chapter" data-level="4.3.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#problems-with-installation"><i class="fa fa-check"></i><b>4.3.1</b> Problems with installation</a></li>
-</ul></li>
-<li class="chapter" data-level="4.4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#customizing-your-installation"><i class="fa fa-check"></i><b>4.4</b> Customizing your installation</a><ul>
-<li class="chapter" data-level="4.4.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#using-your-own-copy-of-eigen"><i class="fa fa-check"></i><b>4.4.1</b> Using your own copy of Eigen</a></li>
-<li class="chapter" data-level="4.4.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#using-libnimble"><i class="fa fa-check"></i><b>4.4.2</b> Using libnimble</a></li>
-<li class="chapter" data-level="4.4.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:blas"><i class="fa fa-check"></i><b>4.4.3</b> BLAS and LAPACK</a></li>
-<li class="chapter" data-level="4.4.4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#customizing-compilation-of-the-nimble-generated-c"><i class="fa fa-check"></i><b>4.4.4</b> Customizing compilation of the NIMBLE-generated C++</a></li>
+<li class="chapter" data-level="4.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#installing-the-nimble-package"><i class="fa fa-check"></i><b>4.3</b> Installing the NIMBLE package</a></li>
+<li class="chapter" data-level="4.4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#troubleshooting-installation-problems"><i class="fa fa-check"></i><b>4.4</b> Troubleshooting installation problems</a></li>
+<li class="chapter" data-level="4.5" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#customizing-your-installation"><i class="fa fa-check"></i><b>4.5</b> Customizing your installation</a><ul>
+<li class="chapter" data-level="4.5.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#using-your-own-copy-of-eigen"><i class="fa fa-check"></i><b>4.5.1</b> Using your own copy of Eigen</a></li>
+<li class="chapter" data-level="4.5.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#using-libnimble"><i class="fa fa-check"></i><b>4.5.2</b> Using libnimble</a></li>
+<li class="chapter" data-level="4.5.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:blas"><i class="fa fa-check"></i><b>4.5.3</b> BLAS and LAPACK</a></li>
+<li class="chapter" data-level="4.5.4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#customizing-compilation-of-the-nimble-generated-c"><i class="fa fa-check"></i><b>4.5.4</b> Customizing compilation of the NIMBLE-generated C++</a></li>
 </ul></li>
 </ul></li>
 <li class="part"><span><b>II Models in NIMBLE</b></span></li>
@@ -173,6 +172,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="6.2.5" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:why-use-node"><i class="fa fa-check"></i><b>6.2.5</b> Why use node names?</a></li>
 <li class="chapter" data-level="6.2.6" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:cdisdata"><i class="fa fa-check"></i><b>6.2.6</b> Checking if a node holds data</a></li>
 </ul></li>
+<li class="chapter" data-level="6.3" data-path="cha-building-models.html"><a href="cha-building-models.html#using-models-in-parallel"><i class="fa fa-check"></i><b>6.3</b> Using models in parallel</a></li>
 </ul></li>
 <li class="part"><span><b>III Algorithms in NIMBLE</b></span></li>
 <li class="chapter" data-level="7" data-path="cha-mcmc.html"><a href="cha-mcmc.html"><i class="fa fa-check"></i><b>7</b> MCMC</a><ul>
@@ -185,11 +185,12 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="7.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:runMCMC"><i class="fa fa-check"></i><b>7.4</b> User-friendly execution of MCMC algorithms: <em>runMCMC</em></a></li>
 <li class="chapter" data-level="7.5" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:executing-the-mcmc-algorithm"><i class="fa fa-check"></i><b>7.5</b> Running the MCMC</a><ul>
 <li class="chapter" data-level="7.5.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:sampler-time"><i class="fa fa-check"></i><b>7.5.1</b> Measuring sampler computation times: <em>getTimes</em></a></li>
+<li class="chapter" data-level="7.5.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#assessing-the-adaption-process-of-rw-and-rw_block-samplers"><i class="fa fa-check"></i><b>7.5.2</b> Assessing the adaption process of <em>RW</em> and <em>RW_block</em> samplers</a></li>
 </ul></li>
 <li class="chapter" data-level="7.6" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:extracting-samples"><i class="fa fa-check"></i><b>7.6</b> Extracting MCMC samples</a></li>
 <li class="chapter" data-level="7.7" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:WAIC"><i class="fa fa-check"></i><b>7.7</b> Calculating WAIC</a></li>
 <li class="chapter" data-level="7.8" data-path="cha-mcmc.html"><a href="cha-mcmc.html#k-fold-cross-validation"><i class="fa fa-check"></i><b>7.8</b> k-fold cross-validation</a></li>
-<li class="chapter" data-level="7.9" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc"><i class="fa fa-check"></i><b>7.9</b> Reversible Jump MCMC</a><ul>
+<li class="chapter" data-level="7.9" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc"><i class="fa fa-check"></i><b>7.9</b> Variable selection using Reversible Jump MCMC</a><ul>
 <li class="chapter" data-level="7.9.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc-indicator"><i class="fa fa-check"></i><b>7.9.1</b> Using indicator variables</a></li>
 <li class="chapter" data-level="7.9.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc-no-indicator"><i class="fa fa-check"></i><b>7.9.2</b> Without indicator variables</a></li>
 </ul></li>
@@ -200,9 +201,10 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 </ul></li>
 <li class="chapter" data-level="7.11" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-example-litters"><i class="fa fa-check"></i><b>7.11</b> Detailed MCMC example: <em>litters</em></a></li>
 <li class="chapter" data-level="7.12" data-path="cha-mcmc.html"><a href="cha-mcmc.html#mcmc-suite-compare-mcmcs"><i class="fa fa-check"></i><b>7.12</b> Comparing different MCMCs with <em>MCMCsuite</em> and <em>compareMCMCs</em></a></li>
+<li class="chapter" data-level="7.13" data-path="cha-mcmc.html"><a href="cha-mcmc.html#running-mcmc-chains-in-parallel"><i class="fa fa-check"></i><b>7.13</b> Running MCMC chains in parallel</a></li>
 </ul></li>
-<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Sequential Monte Carlo and MCEM</a><ul>
-<li class="chapter" data-level="8.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#particle-filters-sequential-monte-carlo"><i class="fa fa-check"></i><b>8.1</b> Particle Filters / Sequential Monte Carlo</a><ul>
+<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM</a><ul>
+<li class="chapter" data-level="8.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#particle-filters-sequential-monte-carlo-and-iterated-filtering"><i class="fa fa-check"></i><b>8.1</b> Particle filters / sequential Monte Carlo and iterated filtering</a><ul>
 <li class="chapter" data-level="8.1.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#filtering-algorithms"><i class="fa fa-check"></i><b>8.1.1</b> Filtering algorithms</a></li>
 <li class="chapter" data-level="8.1.2" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:particle-mcmc"><i class="fa fa-check"></i><b>8.1.2</b> Particle MCMC (PMCMC)</a></li>
 </ul></li>
@@ -346,33 +348,32 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <h1><span class="header-section-number">Chapter 4</span> Installing NIMBLE</h1>
 <div id="sec:requ-run-nimble" class="section level2">
 <h2><span class="header-section-number">4.1</span> Requirements to run NIMBLE</h2>
-<p>You can run NIMBLE on any of the three common operating systems: Linux, Mac OS X, or Windows.</p>
+<p>You can run NIMBLE on any of the three common operating systems: Linux, MacOS, or Windows.</p>
 <p>The following are required to run NIMBLE.</p>
 <ol style="list-style-type: decimal">
-<li><a href="http://www.cran.r-project.org">R</a>, of course.</li>
-<li>The <a href="http://www.cran.r-project.org/web/packages/igraph/index.html">igraph</a> and <a href="http://www.cran.r-project.org/web/packages/coda/index.html">coda</a> R packages.</li>
+<li><a href="https://www.cran.r-project.org">R</a>, of course.</li>
+<li>The <a href="https://www.cran.r-project.org/web/packages/igraph/index.html">igraph</a>, <a href="https://www.cran.r-project.org/web/packages/coda/index.html">coda</a> and <a href="https://www.cran.r-project.org/web/packages/R6/index.html">R6</a> R packages.</li>
 <li>A working C++ compiler that NIMBLE can use from R on your system. There are standard open-source C++ compilers that the R community has already made easy to install. See Section <a href="cha-installing-nimble.html#sec:compiler">4.2</a> for instructions. You don’t need to know anything about C++ to use NIMBLE. This must be done before installing NIMBLE.</li>
 </ol>
 <p>NIMBLE also uses a couple of C++ libraries that you don’t need to install, as they will already be on your system or are provided by NIMBLE.</p>
 <ol style="list-style-type: decimal">
-<li>The <a href="http://eigen.tuxfamily.org">Eigen</a> C++ library for linear algebra. This comes with NIMBLE, or you can use your own copy.</li>
-<li>The BLAS and LAPACK numerical libraries. These come with R, but see Section <a href="cha-installing-nimble.html#sec:blas">4.4.3</a> for how to use a faster version of the BLAS.</li>
+<li>The <a href="https://eigen.tuxfamily.org">Eigen</a> C++ library for linear algebra. This comes with NIMBLE, or you can use your own copy.</li>
+<li>The BLAS and LAPACK numerical libraries. These come with R, but see Section <a href="cha-installing-nimble.html#sec:blas">4.5.3</a> for how to use a faster version of the BLAS.</li>
 </ol>
 <p>Most fairly recent versions of these requirements should work. <!---  [look into giving more detailed version requirements] --></p>
 </div>
 <div id="sec:compiler" class="section level2">
 <h2><span class="header-section-number">4.2</span> Installing a C++ compiler for NIMBLE to use</h2>
 <p>NIMBLE needs a C++ compiler and the standard utility <em>make</em> in order to generate and compile C++ for models and algorithms.<a href="#fn8" class="footnoteRef" id="fnref8"><sup>8</sup></a></p>
-<div id="os-x" class="section level3">
-<h3><span class="header-section-number">4.2.1</span> OS X</h3>
-<p>On OS X, you should install <em>Xcode</em>. The command-line tools, which are available as a smaller installation, should be sufficient. This is freely available from the <a href="https://developer.apple.com/xcode/downloads/">Apple developer site</a> and the <a href="https://itunes.apple.com/us/app/xcode/id497799835?ls=1&amp;mt=12">App Store</a>. <!---  Perry asked if App Store link is stable - Chris checked and it seems fine for now (and is the top hit on a Google search ... --></p>
-<p>For the compiler to work correctly for OS X, the installed R must be for the correct version of OS X. For example, R for Snow Leopard (OS X version 10.8) will attempt to use an incorrect C++ compiler if the installed OS X is actually version 10.9 or higher. <!---  PdV -- rewrote this -- need to check example. --></p>
+<div id="macos" class="section level3">
+<h3><span class="header-section-number">4.2.1</span> MacOS</h3>
+<p>On MacOS, you should install <em>Xcode</em>. The command-line tools, which are available as a smaller installation, should be sufficient. This is freely available from the <a href="https://developer.apple.com/xcode/downloads/">Apple developer site</a> and the <a href="https://itunes.apple.com/us/app/xcode/id497799835?ls=1&amp;mt=12">App Store</a>. <!---  Perry asked if App Store link is stable - Chris checked and it seems fine for now (and is the top hit on a Google search ... --></p>
 <p>In the somewhat unlikely event you want to install from the source package rather than the CRAN binary package, the easiest approach is to use the source package provided at <a href="https://R-nimble.org">R-nimble.org</a>. If you do want to install from the source package provided by CRAN, you’ll need to install <a href="https://r.research.att.com/libs/gfortran-4.8.2-darwin13.tar.bz2">this gfortran package</a>.</p>
 </div>
 <div id="linux" class="section level3">
 <h3><span class="header-section-number">4.2.2</span> Linux</h3>
 <p>On Linux, you can install the GNU compiler suite (<em>gcc</em>/<em>g++</em>). You can use the package manager to install pre-built binaries. On Ubuntu, the following command will install or update <em>make</em>, <em>gcc</em> and <em>libc</em>.</p>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">sudo</span> apt-get install build-essential</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="fu">sudo</span> apt-get install build-essential</code></pre></div>
 </div>
 <div id="windows" class="section level3">
 <h3><span class="header-section-number">4.2.3</span> Windows</h3>
@@ -384,16 +385,41 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <h2><span class="header-section-number">4.3</span> Installing the NIMBLE package</h2>
 <p>Since NIMBLE is an R package, you can install it in the usual way, via <code>install.packages(&quot;nimble&quot;)</code> in R or using the <code>R CMD INSTALL</code> method if you download the package source directly.</p>
 <p>NIMBLE can also be obtained from the <a href="https://r-nimble.org">NIMBLE website</a>. To install from our website, please see our <a href="https://r-nimble.org/download">Download page</a> for the specific invocation of <code>install.packages</code>.</p>
-<div id="problems-with-installation" class="section level3">
-<h3><span class="header-section-number">4.3.1</span> Problems with installation</h3>
-<p>We have tested the installation on the three commonly used platforms – MacOS, Linux, Windows<a href="#fn9" class="footnoteRef" id="fnref9"><sup>9</sup></a>. We don’t anticipate problems with installation, but we want to hear about any and help resolve them. Please post about installation problems to the <a href="https://groups.google.com/forum/#!forum/nimble-users">nimble-users Google group</a> or email <a href="mailto:nimble.stats@gmail.com">nimble.stats@gmail.com</a>.</p>
 </div>
+<div id="troubleshooting-installation-problems" class="section level2">
+<h2><span class="header-section-number">4.4</span> Troubleshooting installation problems</h2>
+<p>We have tested the installation on the three commonly used platforms – MacOS, Linux, Windows<a href="#fn9" class="footnoteRef" id="fnref9"><sup>9</sup></a>. We don’t anticipate problems with installation, but we want to hear about any and help resolve them.</p>
+<p>The following are some troubleshooting tips that have helped users in some situations.</p>
+<p>For Windows:</p>
+<ul>
+<li>Be sure to check box to set <code>PATH</code> when installing Rtools.exe. Alternatively, one can set the <code>PATH</code> manually using syntax similar to this (after changing <code>C:\\Rtools\\bin;C:\\Rtools\\mingw_64\\bin</code> to be appropriate for your system):</li>
+</ul>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">path &lt;-<span class="st"> </span><span class="kw">Sys.getenv</span>(<span class="st">&#39;PATH&#39;</span>)
+newPath &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;C:</span><span class="ch">\\</span><span class="st">Rtools</span><span class="ch">\\</span><span class="st">bin;C:</span><span class="ch">\\</span><span class="st">Rtools</span><span class="ch">\\</span><span class="st">mingw_64</span><span class="ch">\\</span><span class="st">bin;&quot;</span>,
+                 path, <span class="dt">sep =</span> <span class="st">&quot;&quot;</span>)
+<span class="kw">Sys.setenv</span>(<span class="dt">PATH =</span> newPath) </code></pre></div>
+<ul>
+<li>Be sure the <code>Rtools.exe</code> version matches the R version.</li>
+<li>Try re-installing <code>Rtools</code> followed by re-installing NIMBLE.</li>
+<li>If there are filesystem or permissions issues, it is possible to install NIMBLE in a local directory using the <code>lib</code> argument to <code>install.packages</code>.</li>
+<li>In the past we’ve heard reports from Windows users of problems when their filesystem involved a space in a directory name in the path to <code>RHOME</code>. We’ve also heard reports from Windows users of problems when R is installed on a network drive. We think both of these issues have been resolved.</li>
+</ul>
+<p>For MacOS:</p>
+<ul>
+<li>Newly installed Xcode/command line tools may need to be started once manually to provide a one-time permission before they will work from NIMBLE.</li>
+<li>If multiple C++ compilers are present on a system, be sure the <code>PATH</code> will find the right one.</li>
+</ul>
+<p>All operating systems:</p>
+<ul>
+<li>If problems arise from generating and compiling C++ files from the default location in R’s <code>tempdir()</code>, one can use the <code>dirName</code> argument to <code>compileNimble</code> to put such files elsewhere, such as in a local working directory.</li>
+</ul>
+<p>If those suggestions don’t help, please post about installation problems to the <a href="https://groups.google.com/forum/#!forum/nimble-users">nimble-users Google group</a> or email <a href="mailto:nimble.stats@gmail.com">nimble.stats@gmail.com</a>.</p>
 </div>
 <div id="customizing-your-installation" class="section level2">
-<h2><span class="header-section-number">4.4</span> Customizing your installation</h2>
+<h2><span class="header-section-number">4.5</span> Customizing your installation</h2>
 <p>For most installations, you can ignore low-level details. However, there are some options that some users may want to utilize.</p>
 <div id="using-your-own-copy-of-eigen" class="section level3">
-<h3><span class="header-section-number">4.4.1</span> Using your own copy of Eigen</h3>
+<h3><span class="header-section-number">4.5.1</span> Using your own copy of Eigen</h3>
 <!--- ### Finding the Eigen Header Files -->
 <p>NIMBLE uses the Eigen C++ template library for linear algebra. Version 3.2.1 of Eigen is included in the NIMBLE package and that version will be used unless the package’s configuration script finds another version on the machine. This works well, and the following is only relevant if you want to use a different (e.g., newer) version.</p>
 <p>The configuration script looks in the standard include directories, e.g. <code>/usr/include</code> and <code>/usr/local/include</code> for the header file <code>Eigen/Dense</code>. You can specify a particular location in either of two ways:</p>
@@ -404,16 +430,16 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <p>In these cases, the directory should be the full path to the directory that contains the Eigen directory, e.g., <code>/usr/include/eigen3</code>. It is not the full path to the Eigen directory itself, i.e., NOT <code>/usr/include/eigen3/Eigen</code>.</p>
 </div>
 <div id="using-libnimble" class="section level3">
-<h3><span class="header-section-number">4.4.2</span> Using libnimble</h3>
-<p>NIMBLE generates specialized C++ code for user-specified models and nimbleFunctions. This code uses some NIMBLE C++ library classes and functions. By default, on Linux the library code is compiled once as a linkable library - <em>libnimble.so</em>. This single instance of the library is then linked with the code for each generated model. In contrast, the default for Windows and Mac OS X is to compile the library code as a static library - <em>libnimble.a</em> - that is compiled into each model’s and each algorithm’s own dynamically loadable library (DLL). This does repeat the same code across models and so occupies more memory. There may be a marginal speed advantage. If one would like to enable the linkable library in place of the static library (do this only on Mac OS X and other UNIX variants and not on Windows), one can install the source package with the configuration argument <code>--enable-dylib</code> set to true. First obtain the NIMBLE source package (which will have the extension <code>.tar.gz</code> from <a href="https://r-nimble.org/download">our website</a> and then install as follows, replacing <code>VERSION</code> with the appropriate version number:</p>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">R</span> CMD INSTALL --configure-args=<span class="st">&#39;--enable-dylib=true&#39;</span> nimble_VERSION.tar.gz</code></pre></div>
+<h3><span class="header-section-number">4.5.2</span> Using libnimble</h3>
+<p>NIMBLE generates specialized C++ code for user-specified models and nimbleFunctions. This code uses some NIMBLE C++ library classes and functions. By default, on Linux the library code is compiled once as a linkable library - <em>libnimble.so</em>. This single instance of the library is then linked with the code for each generated model. In contrast, the default for Windows and MacOS is to compile the library code as a static library - <em>libnimble.a</em> - that is compiled into each model’s and each algorithm’s own dynamically loadable library (DLL). This does repeat the same code across models and so occupies more memory. There may be a marginal speed advantage. If one would like to enable the linkable library in place of the static library (do this only on MacOS and other UNIX variants and not on Windows), one can install the source package with the configuration argument <code>--enable-dylib</code> set to true. First obtain the NIMBLE source package (which will have the extension <code>.tar.gz</code> from <a href="https://r-nimble.org/download">our website</a> and then install as follows, replacing <code>VERSION</code> with the appropriate version number:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">R</span> CMD INSTALL --configure-args=<span class="st">&#39;--enable-dylib=true&#39;</span> nimble_VERSION.tar.gz</code></pre></div>
 </div>
 <div id="sec:blas" class="section level3">
-<h3><span class="header-section-number">4.4.3</span> BLAS and LAPACK</h3>
+<h3><span class="header-section-number">4.5.3</span> BLAS and LAPACK</h3>
 <p>NIMBLE also uses BLAS and LAPACK for some of its linear algebra (in particular calculating density values and generating random samples from multivariate distributions). NIMBLE will use the same BLAS and LAPACK installed on your system that R uses. Note that a fast (and where appropriate, threaded) BLAS can greatly increase the speed of linear algebra calculations. See Section A.3.1 of the <a href="https://cran.r-project.org/doc/manuals/r-release/R-admin.html">R Installation and Administration manual</a> available on CRAN for more details on providing a fast BLAS for your R installation.</p>
 </div>
 <div id="customizing-compilation-of-the-nimble-generated-c" class="section level3">
-<h3><span class="header-section-number">4.4.4</span> Customizing compilation of the NIMBLE-generated C++</h3>
+<h3><span class="header-section-number">4.5.4</span> Customizing compilation of the NIMBLE-generated C++</h3>
 <p>For each model or nimbleFunction, NIMBLE can generate and compile C++. To compile generated C++, NIMBLE makes system calls starting with <code>R CMD SHLIB</code> and therefore uses the regular R configuration in <code>${R_HOME}/etc/${R_ARCH}/Makeconf</code>. NIMBLE places a <code>Makevars</code> file in the directory in which the code is generated, and <code>R CMD SHLIB</code> uses this file as usual.</p>
 <p>In all but specialized cases, the general compilation mechanism will suffice. However, one can customize this. One can specify the location of an alternative <code>Makevars</code> (or <code>Makevars.win</code>) file to use. Such an alternative file should define the variables <code>PKG_CPPFLAGS</code> and <code>PKG_LIBS</code>. These should contain, respectively, the pre-processor flag to locate the NIMBLE include directory, and the necessary libraries to link against (and their location as necessary), e.g., <em>Rlapack</em> and <em>Rblas</em> on Windows, and <em>libnimble</em>. Advanced users can also change their default compilers by editing the <em>Makevars</em> file, see Section 1.2.1 of the <a href="https://cran.r-project.org/doc/manuals/r-release/R-exts.html">Writing R Extensions manual</a> available on CRAN.</p>
 <p>Use of this file allows users to specify additional compilation and linking flags. See the Writing R Extensions manual for more details of how this can be used and what it can contain.</p>
@@ -428,7 +454,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <div class="footnotes">
 <hr />
 <ol start="8">
-<li id="fn8"><p>This differs from most packages, which might need a C++ compiler only when the package is built. If you normally install R packages using <code>install.packages</code> on Windows or OS X, the package arrives already built to your system.<a href="cha-installing-nimble.html#fnref8">↩</a></p></li>
+<li id="fn8"><p>This differs from most packages, which might need a C++ compiler only when the package is built. If you normally install R packages using <code>install.packages</code> on Windows or MacOS, the package arrives already built to your system.<a href="cha-installing-nimble.html#fnref8">↩</a></p></li>
 <li id="fn9"><p>We’ve tested NIMBLE on Windows 7, 8 and 10.<a href="cha-installing-nimble.html#fnref9">↩</a></p></li>
 </ol>
 </div>
@@ -458,7 +484,7 @@ gitbook.start({
 "google": false,
 "linkedin": false,
 "weibo": false,
-"instapper": false,
+"instapaper": false,
 "vk": false,
 "all": ["facebook", "google", "twitter", "linkedin", "weibo", "instapaper"]
 },
@@ -468,6 +494,10 @@ gitbook.start({
 "size": 2
 },
 "edit": {
+"link": null,
+"text": null
+},
+"history": {
 "link": null,
 "text": null
 },
@@ -486,7 +516,7 @@ gitbook.start({
     var script = document.createElement("script");
     script.type = "text/javascript";
     var src = "";
-    if (src === "" || src === "true") src = "https://cdn.bootcss.com/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML";
+    if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
     if (location.protocol !== "file:" && /^https?:/.test(src))
       src = src.replace(/^https?:/, '');
     script.src = src;

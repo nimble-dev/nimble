@@ -1,6 +1,6 @@
 language: r
 r:
-    - 3.5
+    - 4.0
 
 dist: bionic
 sudo: false
@@ -37,6 +37,7 @@ notifications:
 
 branches:
   only:
+    - master
     - devel
 
 latex: false  # Work around tlmgr issues.

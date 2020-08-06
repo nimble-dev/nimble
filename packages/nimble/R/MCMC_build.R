@@ -19,6 +19,8 @@
 #'
 #' \code{reset}: Boolean specifying whether to reset the internal MCMC sampling algorithms to their initial state (in terms of self-adapting tuning parameters), and begin recording posterior sample chains anew. Specifying \code{reset = FALSE} allows the MCMC algorithm to continue running from where it left off, appending additional posterior samples to the already existing sample chains. Generally, \code{reset = FALSE} should only be used when the MCMC has already been run (default = TRUE).
 #'
+#' \code{resetMV}: Boolean specifying whether to begin recording posterior sample chains anew. This argument is only considered when using \code{reset = FALSE}.  Specifying \code{reset = FALSE, resetMV = TRUE} allows the MCMC algorithm to continue running from where it left off, but without appending the new posterior samples to the already existing samples, i.e. all previously obtained samples will be erased. This option can help reduce memory usage during burn-in (default = FALSE).
+#'
 #' \code{nburnin}: Number of initial, pre-thinning, MCMC iterations to discard (default = 0).
 #'
 #' \code{time}: Boolean specifying whether to record runtimes of the individual internal MCMC samplers.  When \code{time = TRUE}, a vector of runtimes (measured in seconds) can be extracted from the MCMC using the method \code{mcmc$getTimes()} (default = FALSE).
@@ -176,6 +178,7 @@ buildMCMC <- nimbleFunction(
     run = function(
         niter                 = integer(),
         reset                 = logical(default = TRUE),
+        resetMV               = logical(default = FALSE), ## Allows resetting mvSamples when reset==FALSE
         time                  = logical(default = FALSE),
         progressBar           = logical(default = TRUE),
         ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
@@ -183,7 +186,9 @@ buildMCMC <- nimbleFunction(
         nburnin               = integer(default =  0),
         thin                  = integer(default = -1),
         thin2                 = integer(default = -1)) {
-        if(nburnin < 0)   stop('cannot specify nburnin < 0')
+        if(niter < 0)       stop('cannot specify niter < 0')
+        if(nburnin < 0)     stop('cannot specify nburnin < 0')
+        if(nburnin > niter) stop('cannot specify nburnin > niter')
         thinToUseVec <<- thinFromConfVec
         if(thin  != -1)   thinToUseVec[1] <<- thin
         if(thin2 != -1)   thinToUseVec[2] <<- thin2
@@ -202,8 +207,13 @@ buildMCMC <- nimbleFunction(
         } else {
             if(nburnin != 0)   stop('cannot specify nburnin when using reset = FALSE.')
             if(dim(samplerTimes)[1] != length(samplerFunctions) + 1)   samplerTimes <<- numeric(length(samplerFunctions) + 1)   ## first run: default inititialization to zero
-            mvSamples_copyRow  <- getsize(mvSamples)
-            mvSamples2_copyRow <- getsize(mvSamples2)
+            if (resetMV) {
+                mvSamples_copyRow  <- 0
+                mvSamples2_copyRow <- 0                
+            } else {
+                mvSamples_copyRow  <- getsize(mvSamples)
+                mvSamples2_copyRow <- getsize(mvSamples2)
+            }
         }
         resize(mvSamples,  mvSamples_copyRow  + floor((niter-nburnin) / thinToUseVec[1]))
         resize(mvSamples2, mvSamples2_copyRow + floor((niter-nburnin) / thinToUseVec[2]))
@@ -325,7 +335,6 @@ buildMCMC <- nimbleFunction(
             if(is.nan(WAIC)) print('WAIC was calculated as NaN.  You may need to add monitors to model latent states, in order for a valid WAIC calculation.')
             returnType(double())
             return(WAIC)
-        }),
-    where = getLoadingNamespace()
+        })
 )
 

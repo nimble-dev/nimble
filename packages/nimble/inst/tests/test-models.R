@@ -630,6 +630,137 @@ test_that("handling of missing indexes of expressions:", {
     cm <- compileNimble(m)  # if compilation fails, test_that should catch this; having trouble using expect_message as behavior of whether a message is detected seems to differ when running tests locally versus Travis.
 })
 
+test_that("warning when RHS only nodes used as dynamic indexes", {
+    code <- nimbleCode({
+        for(i in 1:3) 
+            y[i] ~ dnorm(mu[k[i]+1], 1)
+        for(i in 1:3)
+            mu[i] ~ dnorm(0,1)
+    })
+    
+    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3))),
+                   "Detected use of non-constant indexes")
+    expect_warning(m <- nimbleModel(code, data = list(k = rep(1,3))),
+                   "Detected use of non-constant indexes")
+    ## Hack, but this allows detection of lack of warning given that
+    ## Travis and non-Travis behave differently in terms of silent vs. message.
+    warnOptions <- options()$warn
+    options(warn = 2)
+    ## if this were to warn, it would cause error
+    m <- nimbleModel(code, constants = list(k = rep(1,3)))
+    options(warn = warnOptions)
+
+    myfun <- nimbleFunction(run = function(x = double()) {
+        returnType(double())
+        return(1)
+    })
+    temporarilyAssignInGlobalEnv(myfun)
+    
+    code <- nimbleCode({
+        for(i in 1:3) 
+            y[i] ~ dnorm(mu[myfun(k[i])], 1)
+        for(i in 1:3)
+            mu[i] ~ dnorm(0,1)
+    })
+    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3))),
+                   "Detected use of non-constant indexes")
+
+    code <- nimbleCode({
+        for(i in 1:3)
+            y[i] ~ dnorm(mu[k[j[i]]+1], 1)
+        for(i in 1:3)
+            mu[i] ~ dnorm(0,1)
+    })
+    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3)), constants = list(j=1:3)), "Detected use of non-constant indexes")
+    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3), j=1:3)),
+                   "Detected use of non-constant indexes")
+
+    ## We don't detect when deterministic node intervenes.
+    code <- nimbleCode({
+        for(i in 1:3) {
+            y[i] ~ dnorm(mu[k[i]+1], 1)
+            k[i] <- kk[i] + 1
+        }
+        for(i in 1:5)
+            mu[i] ~ dnorm(0,1)
+    })
+    ## Hack, but this allows detection of lack of warning given that
+    ## Travis and non-Travis behave differently in terms of silent vs. message.
+    warnOptions <- options()$warn
+    options(warn = 2)
+    ## if this were to warn, it would cause error
+    m <- nimbleModel(code, inits = list(k = rep(1,3)), constants = list(kk = 1:3))
+    m <- nimbleModel(code, inits = list(k = rep(1,3), kk = 1:3))
+    options(warn = warnOptions)
+
+    code <- nimbleCode({
+        for(i in 1:3) 
+            y[i] ~ dnorm(mu[2, k[i]+j[i]],1)
+        for(i in 1:3)
+            for(ii in 1:4)
+                mu[i, ii] ~ dnorm(0,1)
+    })
+    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3), j = rep(1,3))),
+                   "Detected use of non-constant indexes")
+    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3)), constants = list(j = rep(1,3))),
+                   "Detected use of non-constant indexes")
+
+    code <- nimbleCode({
+        for(i in 1:3) 
+            y[i] ~ dnorm(mu[k[i]+1, k[i]+j[i]],1)
+        for(i in 1:3)
+            for(ii in 1:4)
+                mu[i, ii] ~ dnorm(0,1)
+    })
+    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3), j = rep(1,3))),
+                   "Detected use of non-constant indexes")
+    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3)), constants = list(j = rep(1,3))),
+                   "Detected use of non-constant indexes")
+
+
+    code <- nimbleCode({
+        for(i in 1:3) 
+            y[i,1:2] ~ dmnorm(mu[1:2, k[i]], prec[1:2,1:2])
+        for(i in 1:3)
+            mu[1:2, i] ~ dmnorm(z[1:2], prec[1:2,1:2])
+    })
+    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3))),
+                   "Detected use of non-constant indexes")
+    ## Hack, but this allows detection of lack of warning given that
+    ## Travis and non-Travis behave differently in terms of silent vs. message.
+    warnOptions <- options()$warn
+    options(warn = 2)
+    ## if this were to warn, it would cause error
+    m <- nimbleModel(code, constants = list(k = rep(1,3)))
+    options(warn = warnOptions)
+
+    ## To test for problem raised in issue #996
+    code <- nimbleCode({
+        for(i in 1:5)
+            y[i] ~ dnorm(X[idx[i, 1],idx[i, 2]]*X[idx[i, 1], idx[i, 4]], 1)
+        for(i in 1:6)
+            for(j in 1:6)
+                X[i,j] ~ dnorm(0,1)
+    })
+    
+    expect_warning(m <- nimbleModel(code, data = list(y=rnorm(5), idx = matrix(rep(1:6), 6, 6))),
+                   "Detected use of non-constant indexes")
+    expect_warning(m <- nimbleModel(code, data = list(y=rnorm(5)), inits = list(idx = matrix(rep(1:6), 6, 6))),
+                   "Detected use of non-constant indexes")
+
+})
+
+test_that("dmvt usage", {
+    code <- nimbleCode({
+    	 y1[1:n] ~ dmvt(z[1:n], pr[1:n, 1:n], 4)
+	 y2[1:n] ~ dmvt(z[1:n], scale = pr[1:n, 1:n], df = 4)
+    })
+    n <- 3
+    m <- nimbleModel(code, inits = list(pr = diag(rep(2,n))), constants = list(n = n))	 
+    expect_identical(m$getParam('y1[1:3]', 'prec'), diag(rep(2, n)))
+    expect_equal(m$getParam('y2[1:3]', 'prec'), diag(rep(0.5, n)))
+})
+
 sink(NULL)
 
 if(FALSE){  ## no warnings being generated in goldFile anymore (perhaps a change in testthat versions?)

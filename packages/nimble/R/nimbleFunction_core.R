@@ -32,6 +32,11 @@ nimbleFunctionVirtual <- function(contains = NULL,
     generatorFunction <- function() {}
     force(contains)
     nfRefClassDef <- nfRefClass <- NULL ## Existence of these makes this treated like a nfGenerator
+    environment(generatorFunction) <- GFenv <- new.env()
+    parent.env(GFenv) <- parent.frame()
+    for(var in c('generatorFunction','nfRefClassDef','nfRefClass','run','methods','methodList','name', 'className', 'contains', 'virtual')) {
+        GFenv[[var]] <- get(var)
+    }
     return(generatorFunction)
 }
 
@@ -111,12 +116,17 @@ nimbleFunction <- function(setup         = NULL,
     generatorFunction <- eval(nf_createGeneratorFunctionDef(setup))
     force(contains) ## eval the contains so it is in this environment
     formals(generatorFunction) <- nf_createGeneratorFunctionArgs(setup, parent.frame())
+    environment(generatorFunction) <- GFenv <- new.env()
+    parent.env(GFenv) <- parent.frame()
 
     .globalSetupEnv <- new.env()
     if(!is.null(globalSetup)) {
         if(!is.function(globalSetup)) stop('If globalSetup is not NULL, it must be a function', call. = FALSE)
         if(!length(formals(globalSetup))==0) stop('globalSetup cannot take input arguments', call. = FALSE)
         eval(body(globalSetup), envir = .globalSetupEnv)
+    }
+    for(var in c('generatorFunction','nfRefClassDef','nfRefClass','setup','run','methods','methodList','name', 'className', 'contains', 'enableDerivs', 'virtual', '.globalSetupEnv', '.namesToCopy', '.namesToCopyFromGlobalSetup', '.namesToCopyFromSetup','declaredSetupOutputNames','.globalSetupEnv')) {
+        GFenv[[var]] <- get(var)
     }
     return(generatorFunction)
 }
@@ -296,10 +306,10 @@ nf_createGeneratorFunctionDef <- function(setup) {
       ## assign setupOutputs into reference class object
       if(!nimbleOptions()$compileOnly)
         for(.var_unique_name_1415927 in .namesToCopyFromGlobalSetup)    { 
-          nfRefClassObject[[.var_unique_name_1415927]] <- nf_preProcessMemberDataObject(get(.var_unique_name_1415927, envir = .globalSetupEnv)) 
+          nfRefClassObject[[.var_unique_name_1415927]] <- nimble:::nf_preProcessMemberDataObject(get(.var_unique_name_1415927, envir = .globalSetupEnv)) 
         }
       for(.var_unique_name_1415927 in .namesToCopyFromSetup)    {
-        nfRefClassObject[[.var_unique_name_1415927]] <- nf_preProcessMemberDataObject(get(.var_unique_name_1415927)) 
+        nfRefClassObject[[.var_unique_name_1415927]] <- nimble:::nf_preProcessMemberDataObject(get(.var_unique_name_1415927)) 
       }
       return(nfRefClassObject)
     },

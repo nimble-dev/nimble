@@ -94,13 +94,13 @@ MCMCconf <- setRefClass(
             monitors,                thin  = 1,
             monitors2 = character(), thin2 = 1,
             accumulators = character(),
-            useConjugacy = TRUE,
+            useConjugacy = getNimbleOption('MCMCuseConjugacy'),
             onlyRW = FALSE,
             onlySlice = FALSE,
             multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
             enableWAIC = getNimbleOption('MCMCenableWAIC'),
             warnNoSamplerAssigned = TRUE,
-            print = FALSE, ...) {
+            print = TRUE, ...) {
             '
 Creates a MCMC configuration for a given model.  The resulting object is suitable as an argument to buildMCMC.
 
@@ -145,7 +145,7 @@ enableWAIC: A logical argument, specifying whether to enable WAIC calculations f
 
 warnNoSamplerAssigned: A logical argument specifying whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule. Default is TRUE.
 
-print: A logical argument specifying whether to print the ordered list of default samplers.  Default is FALSE.
+print: A logical argument specifying whether to print the montiors and samplers.  Default is TRUE.
 
 ...: Additional named control list elements for default samplers, or additional arguments to be passed to the autoBlock function when autoBlock = TRUE.
 '
@@ -181,7 +181,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
                         stop('assigning samplers to non-stochastic nodes: ',
                              paste0(nodes[!model$isStoch(nodes)],
                                     collapse=', ')) }    ## ensure all target node(s) are stochastic
-            }
+                }
             }
             
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
@@ -317,9 +317,10 @@ print: A logical argument specifying whether to print the ordered list of defaul
                         if(nodeDist == 'dcar_normal')  { addSampler(target = node, type = 'CAR_normal');         next }
                         if(nodeDist == 'dcar_proper')  { addSampler(target = node, type = 'CAR_proper');         next }
                         if(nodeDist == 'dCRP')         {
-                            addSampler(target = node, type = 'CRP', control = list(useConjugacy = useConjugacy))
                             numCRPnodes <- numCRPnodes + 1
                             clusterNodeInfo[[numCRPnodes]] <- findClusterNodes(model, node)
+                            addSampler(target = node, type = 'CRP', control = list(checkConjugacy = useConjugacy,
+                                                                                   clusterVarInfo = clusterNodeInfo[[numCRPnodes]]))
                             dcrpNode[numCRPnodes] <- node
                             next
                         }
@@ -369,29 +370,37 @@ print: A logical argument specifying whether to print the ordered list of defaul
 
                 ## For CRP-based models, wrap samplers for cluster parameters so not sampled if cluster is unoccupied.
                 if(!is.null(clusterNodeInfo)) {
+                    allClusterNodes <- lapply(clusterNodeInfo, function(x) x$clusterNodes)
                     for(k in seq_along(clusterNodeInfo)) {
-                        for(clusterNodes in clusterNodeInfo[[k]]$clusterNodes) {
-                            samplers <- getSamplers(clusterNodes)
-                            removeSamplers(clusterNodes)
-                            for(i in seq_along(samplers)) {
-                                node <- samplers[[i]]$target
-                                addSampler(target = node, type = 'CRP_cluster_wrapper',
-                                           control = list(wrapped_type = samplers[[i]]$name, wrapped_conf = samplers[[i]],
-                                                          dcrpNode = dcrpNode[[k]], clusterID = i))
-                                ## Note for more general clustering: will probably change to
-                                ## 'clusterID=clusterNodeInfo[[k]]$clusterIDs[[??]][i]'
-                                ## which means we probably need to change to for(clusterNodesIdx in seq_along(clusterNodeInfo[[k]]$clusterNodes))
+                        for(idx in seq_along(clusterNodeInfo[[k]]$clusterNodes)) {
+                            clusterNodes <- clusterNodeInfo[[k]]$clusterNodes[[idx]]
+                            if(length(allClusterNodes) == 1 || !any(clusterNodes %in% unlist(allClusterNodes[-k]))) {
+                                ## For now avoid wrapper if any overlap of clusterNodes, as hard to determine if cluster is occupied.
+                                ## We'll need to come back to this to handle the mu[xi[i],eta[j]] case if we want to
+                                ## avoid sampling empty clusters in that case.
+
+                                samplers <- getSamplers(clusterNodes)
+                                removeSamplers(clusterNodes)
+                                for(i in seq_along(samplers)) {
+                                    node <- samplers[[i]]$target
+                                    ## getSamplers() returns samplers in order of configuration not in order of input.
+                                    clusterID <- which(clusterNodes == node)
+                                    if(length(clusterID) != 1)
+                                       stop("Cannot determine wrapped sampler for cluster parameter ", node, ".")
+                                    addSampler(target = node, type = 'CRP_cluster_wrapper',
+                                               control = list(wrapped_type = samplers[[i]]$name, wrapped_conf = samplers[[i]],
+                                                              dcrpNode = dcrpNode[[k]], clusterID = clusterNodeInfo[[k]]$clusterIDs[[idx]][clusterID]))
+                                }
                             }
                         }
                     }
                 }
-
             }
             
             if(print)   show()    ##printSamplers()
         },
 
-        addConjugateSampler = function(conjugacyResult, dynamicallyIndexed = FALSE, dcrpNode = NULL, clusterID = NULL, print = FALSE) {
+        addConjugateSampler = function(conjugacyResult, dynamicallyIndexed = FALSE, print = FALSE) {
             ## update May 2016: old (non-dynamic) system is no longer supported -DT
             ##if(!getNimbleOption('useDynamicConjugacy')) {
             ##    addSampler(target = conjugacyResult$target, type = conjugacyResult$type, control = conjugacyResult$control)
@@ -490,25 +499,25 @@ Invisibly returns a list of the current sampler configurations, which are sample
             thisControlList <- mcmc_generateControlListArgument(control=controlArgs, controlDefaults=controlDefaults)  ## should name arguments
             
             if(!scalarComponents) {
-                addSamplerOne(thisSamplerName, samplerFunction, target, thisControlList)
+                addSamplerOne(thisSamplerName, samplerFunction, target, thisControlList, print)
             } else {  ## assign sampler type to each scalar component of target
                 targetAsScalars <- model$expandNodeNames(target)
                 for(i in seq_along(targetAsScalars)) {
-                    addSamplerOne(thisSamplerName, samplerFunction, targetAsScalars[i], thisControlList)
+                    addSamplerOne(thisSamplerName, samplerFunction, targetAsScalars[i], thisControlList, print)
                 }
             }
             
-            if(print) printSamplers(newSamplerInd)
             return(invisible(samplerConfs))
         },
 
-        addSamplerOne = function(thisSamplerName, samplerFunction, targetOne, thisControlList) {
+        addSamplerOne = function(thisSamplerName, samplerFunction, targetOne, thisControlList, print) {
             '
 For internal use only
 '
             newSamplerInd <- length(samplerConfs) + 1
             samplerConfs[[newSamplerInd]] <<- samplerConf(name=thisSamplerName, samplerFunction=samplerFunction, target=targetOne, control=thisControlList, model=model)
             samplerExecutionOrder <<- c(samplerExecutionOrder, newSamplerInd)
+            if(print) printSamplers(newSamplerInd)
         },
         
         removeSamplers = function(..., ind, print = FALSE) {
@@ -631,8 +640,8 @@ byType: A logical argument, specifying whether the nodes being sampled should be
             for(i in ind) {
                 info <- paste0('[', i, '] ', makeSpaces(i), samplerConfs[[i]]$toStr(displayControlDefaults, displayNonScalars, displayConjugateDependencies))
                 if(samplerConfs[[i]]$name %in% c('CRP', 'CRP_moreGeneral')) {
-                    if(exists('useConjugacy', samplerConfs[[i]]$control) &&
-                       samplerConfs[[i]]$control$useConjugacy) {
+                    if(exists('checkConjugacy', samplerConfs[[i]]$control) &&
+                       samplerConfs[[i]]$control$checkConjugacy) {
                         conjInfo <- checkCRPconjugacy(model, samplerConfs[[i]]$target)
                         if(is.null(conjInfo)) conjInfo <- "non-conjugate"
                     } else conjInfo <- "non-conjugate"
@@ -649,8 +658,7 @@ byType: A logical argument, specifying whether the nodes being sampled should be
 
         printSamplersByType = function(ind) {
             if(length(ind) == 0) return(invisible(NULL))
-            indent1 <- ''
-            indent2 <- '  - '
+            indent <- '  - '
             samplerTypes <- unlist(lapply(ind, function(i) samplerConfs[[i]]$name))
             samplerTypes <- gsub('^conjugate_.+', 'conjugate', samplerTypes)
             uniqueSamplerTypes <- sort(unique(samplerTypes), decreasing = TRUE)
@@ -658,14 +666,13 @@ byType: A logical argument, specifying whether the nodes being sampled should be
             names(nodesSortedBySamplerType) <- uniqueSamplerTypes
             for(i in seq_along(nodesSortedBySamplerType)) {
                 theseSampledNodes <- nodesSortedBySamplerType[[i]]
-                cat(paste0(indent1, names(nodesSortedBySamplerType)[i], ' sampler (', length(theseSampledNodes), ')\n'))
+                cat(paste0(names(nodesSortedBySamplerType)[i], ' sampler (', length(theseSampledNodes), ')\n'))
                 colonBool <- grepl(':', theseSampledNodes)
                 lengthGToneBool <- sapply(theseSampledNodes, length) > 1
                 multivariateBool <- colonBool | lengthGToneBool
                 univariateList <- theseSampledNodes[!multivariateBool]
                 multivariateList <- theseSampledNodes[multivariateBool]
-                if(length(univariateList) > 0) {
-                    ## univariate samplers:
+                if(length(univariateList) > 0) {   ## univariate samplers:
                     theseUniVars <- model$getVarNames(nodes = univariateList)
                     uniNodesListByVar <- lapply(theseUniVars, function(var)
                         unlist(univariateList[(univariateList == var) |
@@ -674,22 +681,37 @@ byType: A logical argument, specifying whether the nodes being sampled should be
                     for(j in seq_along(uniNodesListByVar)) {
                         theseNodes <- uniNodesListByVar[[j]]
                         isIndexed <- grepl("\\[", theseNodes[1])
-                        if(isIndexed) {
-                            numElements <- length(theseNodes)
-                            sTag <- ifelse(numElements>1, 's', '')
-                            cat(paste0(indent2, theseUniVars[j], '[]  (', numElements, ' element', sTag, ')'))
-                        } else {
-                            if(length(theseNodes) > 1) stop('something wrong')
-                            cat(paste0(indent2, theseNodes))
-                        }
-                        cat('\n')
-                    }
+                        if(isIndexed) { numElements <- length(theseNodes)
+                                        sTag <- ifelse(numElements>1, 's', '')
+                                        cat(paste0(indent, theseUniVars[j], '[]  (', numElements, ' element', sTag, ')'))
+                                    } else cat(paste0(indent, theseNodes))
+                        cat('\n') }
                 }
-                if(length(multivariateList) > 0) {
-                    ## multivariate samplers:
-                    multivariateCompressed <- sapply(multivariateList, function(nns) if(length(nns)==1) nns else paste0(nns, collapse = ', '))
-                    multivariateCompressedIndent <- paste0(indent2, multivariateCompressed)
-                    cat(paste0(multivariateCompressedIndent, collapse = '\n'), '\n')
+                if(length(multivariateList) > 0) {   ## multivariate samplers:
+                    multiLengthGToneBool <- sapply(multivariateList, length) > 1
+                    LGoneNodes <- multivariateList[multiLengthGToneBool]
+                    LEoneNodes <- multivariateList[!multiLengthGToneBool]
+                    if(length(LEoneNodes) > 0) {
+                        theseMultiVars <- model$getVarNames(nodes = LEoneNodes)
+                        multiNodesListByVar <- lapply(theseMultiVars, function(var)
+                            unlist(LEoneNodes[ grepl(paste0('^', var, '\\['), LEoneNodes) ]))
+                        if(length(unlist(multiNodesListByVar)) != length(LEoneNodes)) stop('something went wrong')
+                        for(j in seq_along(multiNodesListByVar)) {
+                            theseNodes <- multiNodesListByVar[[j]]
+                            numElements <- length(theseNodes)
+                            if(numElements > 4) {
+                                sTag <- ifelse(numElements>1, 's', '')
+                                cat(paste0(indent, theseMultiVars[j], '[]  (', numElements, ' multivariate element', sTag, ')'))
+                                cat('\n')
+                            } else { theseNodesIndent <- paste0(indent, theseNodes)
+                                     cat(paste0(theseNodesIndent, collapse = '\n'), '\n') }
+                        }
+                    }
+                    if(length(LGoneNodes) > 0) {
+                        LGoneNodesCompressed <- sapply(LGoneNodes, function(nns) if(length(nns)==1) nns else paste0(nns, collapse = ', '))
+                        LGoneNodesCompressedIndent <- paste0(indent, LGoneNodesCompressed)
+                        cat(paste0(LGoneNodesCompressedIndent, collapse = '\n'), '\n')
+                    }
                 }
             }
         },
@@ -791,7 +813,7 @@ Details: See the initialize() function
                 if(getNimbleOption('MCMCmonitorAllSampledNodes')) {
                     vars <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
                 } else {
-                    vars <- model$getNodeNames(stochOnly = TRUE, topOnly = TRUE)
+                    vars <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE, topOnly = TRUE)
                 }
             } else {
                 vars <- unlist(vars)
@@ -982,59 +1004,6 @@ waic: A logical argument, indicating whether to enable WAIC calculations in the 
     )
 )
 
-checkCRPconjugacy <- function(model, target) {
-    ## Checks if can use conjugacy in drawing new components for dCRP node updating.
-    ## Should detect various univariate cases and normal-invgamma case.
-    ## We don't yet handle conjugacies with non-identity relationships.
-    
-    conjugate <- FALSE 
-    
-    targetElementExample <- model$expandNodeNames(target, returnScalarComponents=TRUE)[1]
-
-    clusterVarInfo <- findClusterNodes(model, target)
- 
-    ## Check conjugacy for one cluster node (for efficiency reasons) and then make sure all
-    ## cluster nodes are IID and dependent nodes are from same declaration so conjugacy check for one should hold for all.
-    ## Note that cases where intermediate deterministic nodes are not from same declaration should be caught in sampler_CRP
-    ## because we don't allow cluster ID to appear in multiple declarations, so can't have mu[1] <- muTilde[xi[1]]; mu[2] <- exp(muTilde[xi[2]])
-    if(length(clusterVarInfo$clusterVars) == 1) {  ## for now avoid case of mixing over multiple parameters, but allow dnorm_dinvgamma below
-        clusterNodes <- clusterVarInfo$clusterNodes[[1]]  # e.g., 'thetatilde[1]',...,
-        ## Currently we only handle offsets and coeffs for dnorm case;
-        ## will add Pois-gamma and possibly MVN cases.
-        identityLink <- TRUE
-        conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
-        if(!length(conjugacy) && model$getDistribution(clusterNodes[1]) == 'dnorm') {
-            identityLink <- FALSE
-            conjugacy <- model$checkConjugacy(clusterNodes[1])  ## check non-identity link too
-        }
-        if(length(conjugacy)) {
-            conjugacyType <- paste0(conjugacy[[1]]$type, '_', sub('dep_', '', names(conjugacy[[1]]$control)))
-            if(!identityLink)
-                conjugacyType <- paste0(conjugacyType, '_nonidentity')
-            conjugate <- TRUE
-            ## Check that dependent nodes ('observations') from same declaration.
-            ## This should ensure they have same distribution and parameters are being
-            ## clustered in same way, but also allows other parameters to vary, e.g.,
-            ## y[i] ~ dnorm(mu[xi[i]], s2[i])
-            depNodes <- model$getDependencies(clusterNodes[1], stochOnly = TRUE, self=FALSE)
-            if(length(unique(model$getDeclID(depNodes))) != 1)  ## make sure all dependent nodes from same declaration (i.e., exchangeable)
-                conjugate <- FALSE
-
-            ## Check that cluster nodes are IID
-            valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
-            names(valueExprs) <- NULL
-            if(length(unique(valueExprs)) != 1)
-                conjugate <- FALSE
-        }
-    }
-    ## check for dnorm_dinvgamma conjugacy
-    if(length(clusterVarInfo$clusterVars) == 2 &&
-       checkNormalInvGammaConjugacy(model, clusterVarInfo)) {
-        conjugate <- TRUE
-        conjugacyType <- "conjugate_dnorm_invgamma_dnorm"
-    }
-    if(conjugate) return(conjugacyType) else return(NULL)
-}
 
 rule <- setRefClass(
     Class = 'rule',
@@ -1334,15 +1303,16 @@ nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
 configureMCMC <- function(model, nodes, control = list(), 
                           monitors, thin = 1, monitors2 = character(), thin2 = 1,
                           accumulators = character(),
-                          useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE,
+                          useConjugacy = getNimbleOption('MCMCuseConjugacy'),
+                          onlyRW = FALSE, onlySlice = FALSE,
                           multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
                           enableWAIC = getNimbleOption('MCMCenableWAIC'),
-                          print = FALSE, ##getNimbleOption('verbose'),
+                          print = getNimbleOption('verbose'),
                           autoBlock = FALSE, oldConf,
                           rules = getNimbleOption('MCMCdefaultSamplerAssignmentRules'),
                           warnNoSamplerAssigned = TRUE, ...) {
     
-    if(class(rules) != 'samplerAssignmentRules') stop('rules argument must be a samplerAssignmentRules object')
+    if(!inherits(rules, 'samplerAssignmentRules')) stop('rules argument must be a samplerAssignmentRules object')
 
     if(!missing(oldConf)){
         if(!is(oldConf, 'MCMCconf'))
@@ -1365,7 +1335,7 @@ configureMCMC <- function(model, nodes, control = list(),
                          enableWAIC = enableWAIC,
                          warnNoSamplerAssigned = warnNoSamplerAssigned,
                          print = print, ...)
-    return(thisConf)	
+    return(invisible(thisConf))
 }
 
 
@@ -1373,7 +1343,7 @@ configureMCMC <- function(model, nodes, control = list(),
 # This is function which builds a new MCMCconf from an old MCMCconf
 # This is required to be able to a new C-based MCMC without recompiling
 makeNewConfFromOldConf <- function(oldMCMCconf){
-    newMCMCconf <- configureMCMC(oldMCMCconf$model, nodes = NULL)
+    newMCMCconf <- configureMCMC(oldMCMCconf$model, nodes = NULL, print = FALSE)
     newMCMCconf$monitors <- oldMCMCconf$monitors
     newMCMCconf$monitors2 <- oldMCMCconf$monitors2
     newMCMCconf$thin <- oldMCMCconf$thin

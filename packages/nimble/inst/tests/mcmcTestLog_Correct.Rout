@@ -2979,6 +2979,17 @@ sd      0.6607385   0.5216073    1.807713
 2.5%   -3.3270012   0.4077250    3.190403
 97.5%  -0.7673714   2.3647559   10.362390
 ===== Finished MCMC test for conjugate Wishart. =====
+===== Starting MCMC test for conjugate Wishart, scaled. =====
+      Omega[1, 1] Omega[2, 1] Omega[3, 1] Omega[1, 2] Omega[2, 2] Omega[3, 2]
+mean   0.35321660 -0.19514399  -0.6501530 -0.19514399   0.2376399   0.4332497
+sd     0.09429255  0.06497621   0.2099087  0.06497621   0.0677129   0.1621212
+2.5%   0.19117100 -0.34069029  -1.0797370 -0.34069029   0.1271453   0.1596554
+97.5%  0.55407639 -0.08167258  -0.2912551 -0.08167258   0.3907858   0.7630663
+      Omega[1, 3] Omega[2, 3] Omega[3, 3]
+mean   -0.6501530   0.4332497   2.0405923
+sd      0.2099087   0.1621212   0.5846388
+2.5%   -1.0797370   0.1596554   1.0318190
+97.5%  -0.2912551   0.7630663   3.3513359
+===== Finished MCMC test for conjugate Wishart, scaled. =====
 ===== Starting MCMC test for conjugate MVN with ragged dependencies. ========== Starting MCMC test for binary sampler. ========== Starting MCMC test for binary sampler handles out of bounds. ========== Starting MCMC test for RW_multinomial sampler. ========== Starting MCMC test RW_multinomial sampler on distribution of size 2. ========== Starting MCMC test if RW_dirichlet sampler consistent with conjugate multinomial sampler. ========== Starting MCMC test RW_dirichlet sampler more complicated. =====thin = 1: alpha, theta, p1, p2
-===== Starting MCMC test dcar_normal sampling. ========== Starting test dcar_proper density evaluations. ========== Starting MCMC test dcar_proper sampling. =====thin = 1: tau, gamma, x
 ===== Starting MCMC test of logProb variable monitoring =====
