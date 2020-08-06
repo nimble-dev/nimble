@@ -78,9 +78,9 @@
 #'
 #' @section Accumulators:
 #'
-#' Accumulators can be used to calculate the cumulative sum, and sum-of-squares, for an arbitrary set of model variables during the course of MCMC sampling.  These accumulated values can subsequently be accessed and used to calculate posterior mean and posterior standard deviation, even when monitors are not assigned, and therefore samples are not recorded, for model variables.  Accumulator values are cumulatively summed regardless of any thinning or burn-in (which only affect the posterior samples recorded).
+#' Accumulators can be used to calculate the cumulative sum, and sum-of-squares, for an arbitrary set of model variables during the course of MCMC sampling.  These accumulated values can subsequently be accessed and used to calculate posterior mean and posterior standard deviation, even when monitors are not assigned, and therefore samples are not recorded, for model variables.  Accumulator values are cumulatively summed beginning only after any burn-in interval which is specified.  However, following the burn-in period all consecutive MCMC samples are accumulated, regardless of any specified thinning interval (which only affects the collection of samples).
 #'
-#' Accumulator variables must be specified in the MCMC configuration object, using either the \code{setAccumulators} method of the MCMC configuration object as \code{conf$setAccumulators('x', 'y')}, or via the \code{accumulators} argument to \code{configureMCMC} as \code{conf <- configureMCMC(Rmodel, accumulators = c('x', 'y'))}.  Accumulator variables can be reset using \code{conf$resetAccumulators()}.
+#' Accumulator variables must be specified in the MCMC configuration object, using either the \code{setAccumulators} method of the MCMC configuration object as \code{conf$setAccumulators('x', 'y')}, or via the \code{accumulators} argument to \code{configureMCMC} as \code{conf <- configureMCMC(Rmodel, accumulators = c('x', 'y'))}.  Accumulator variables can be reset using \code{conf$resetAccumulators()}, and the current accumulator variables can be printed using \code{conf$printAccumulators()}.
 #'
 #' After running an MCMC algorithm, a matrix containing the cumulative sums, and sums-of-squares, for the specified variables can be retrieved using \code{as.matrix(mcmc$mvAccumulators)}.  The first row of this matrix contains the cumulative sums, and the second row contains the cumulative sums-of-squares.  The total number of summed values (resulting from that many MCMC iterations) can be retrieved using the \code{getAccumulatorIterations} method of the MCMC object, as \code{mcmc$getAccumulatorIterations()}.
 #'
@@ -255,19 +255,19 @@ buildMCMC <- nimbleFunction(
                     mvSamples2_copyRow <- mvSamples2_copyRow + 1
                     nimCopy(from = model, to = mvSamples2, row = mvSamples2_copyRow, nodes = monitors2)
                 }
-            }
-            ## accumulators:
-            ## https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
-            ## ####### accumulators (using array):
-            ## #####if(numAccumulators > 0) {
-            ## #####    accumulatorValues[1:numAccumulators, 1] <<- accumulatorValues[1:numAccumulators, 1] + values(model, accumulators)
-            ## #####    accumulatorValues[1:numAccumulators, 2] <<- accumulatorValues[1:numAccumulators, 2] + values(model, accumulators)^2
-            ## #####    accumulatorValues[numAccumulators+1, 1] <<- accumulatorValues[numAccumulators+1, 1] + 1
-            ## #####}
-            ## accumulators (using modelValues):
-            if(numAccumulatorVars > 0) {
-                for(i in 1:numAccumulatorVars)   accumulatorsNFL[[i]]$run()
-                nAccumulatorIterations <<- nAccumulatorIterations + 1
+                ## accumulators:
+                ## https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
+                ## ####### accumulators (using array):
+                ## #####if(numAccumulators > 0) {
+                ## #####    accumulatorValues[1:numAccumulators, 1] <<- accumulatorValues[1:numAccumulators, 1] + values(model, accumulators)
+                ## #####    accumulatorValues[1:numAccumulators, 2] <<- accumulatorValues[1:numAccumulators, 2] + values(model, accumulators)^2
+                ## #####    accumulatorValues[numAccumulators+1, 1] <<- accumulatorValues[numAccumulators+1, 1] + 1
+                ## #####}
+                ## accumulators (using modelValues):
+                if(numAccumulatorVars > 0) {
+                    for(i in 1:numAccumulatorVars)   accumulatorsNFL[[i]]$run()
+                    nAccumulatorIterations <<- nAccumulatorIterations + 1
+                }
             }
             ## progress bar:
             if(progressBar & (iter == progressBarNextFloor)) {
