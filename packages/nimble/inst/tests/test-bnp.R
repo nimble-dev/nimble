@@ -1393,7 +1393,7 @@ test_that("check iid assumption in sampleDPmeasure", {
 })
 
 
-test_that("check use of epsilon parameters in getSamplesDPmeasure", {
+test_that("check use of epsilon parameter in getSamplesDPmeasure", {
   set.seed(1)
   
   code <- nimbleCode({
@@ -1413,7 +1413,7 @@ test_that("check use of epsilon parameters in getSamplesDPmeasure", {
   n <- 30
   constants <- list(n = n)
   data <- list(y = rnorm(n, 0, 1))
-  inits <- list(alpha = 1, mu0 = 0, sd0 = 5, xi = rep(1,n),
+  inits <- list(alpha = 1, mu0 = 0, sd0 = 5, xi = 1:n,
                 muTilde = rep(0,n))
   model <- nimbleModel(code, data = data, constants = constants, inits = inits)
   cmodel <- compileNimble(model)
@@ -1432,12 +1432,10 @@ test_that("check use of epsilon parameters in getSamplesDPmeasure", {
   outputG <- getSamplesDPmeasure(cmcmc, epsilon = 0.00001, setSeed = 1)
   tr3 <- nrow(outputG[[1]])
 
-  if(FALSE) {  # temporarily disabled while we figure out the random seed issue.
-      expect_true(tr1 > tr2,
-                  info='getSamplesDPmeasure: truncation level for larger epsilon incorrectly computed')
-      expect_true(tr1 < tr3,
-                  info='getSamplesDPmeasure: truncation level for smaller epsilon incorrectly computed')
-  }
+  expect_true(tr1 > tr2,
+              info='getSamplesDPmeasure: truncation level for larger epsilon incorrectly computed')
+  expect_true(tr1 < tr3,
+              info='getSamplesDPmeasure: truncation level for smaller epsilon incorrectly computed')
   if(.Platform$OS.type != "windows") {
       nimble:::clearCompiled(model)
   }
