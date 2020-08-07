@@ -1412,134 +1412,6 @@ test_that("Test computations (prior predictive and posterior) and sampler assign
   }
 )
   
-
-
-test_that("Test that weights of getSamplesDPmeasure function are correctly computed", {
-  
-  # model with fixed concentration parameter
-  set.seed(0)
-  code <- nimbleCode({
-    for(i in 1:20) {
-      y[i] ~ dnorm( thetaTilde[xi[i]] , var = 1) 
-      thetaTilde[i] ~ dnorm(0, var = 100)
-    }
-    xi[1:20] ~ dCRP(1, size=20)
-  })
-  Inits <- list(xi = rep(1, 20), thetaTilde = rep(0,20))
-  Data <- list(y = c(rnorm(10, -2.5, 1), rnorm(10, 2.5, 1) ))
-  model <- nimbleModel(code, data=Data, inits=Inits, calculate=TRUE)
-  cmodel<-compileNimble(model)
-  mConf <- configureMCMC(model, monitors = c('xi','thetaTilde'))
-  mMCMC <- buildMCMC(mConf)
-  cMCMC <- compileNimble(mMCMC, project = model)
-  out <- runMCMC(cMCMC, niter = 1, nburnin = 0)
-  
-  # new weigths:
-  set.seed(0)
-  sampleG <- getSamplesDPmeasure(cMCMC)
-  
-  # old weights:
-  set.seed(0)
-  sampleG_old <- getSamplesDPmeasure_old(cMCMC)
-  
-  trunc <- sampleG_old$trunc
-  weights <- sampleG_old$samples[1, 1:trunc]
-  atoms <- sampleG_old$samples[1, (trunc+1):(2*trunc)]
-  atomsUnique <- unique(atoms)
-  
-  ##check that unique atoms are the same:
-  # check that they have the same number of unique atoms
-  expect_equal(length(atomsUnique), nrow(sampleG[[1]]), tol=0, scale=1,
-               info = paste0("incorrect number of unique atoms in getSamplesDPmeasure"))
-  # check that values of unique atoms are the same
-  sameAtoms <- c()
-  for(i in seq_along(sampleG[[1]][,2])) {
-    if(sum(sampleG[[1]][i,2] == atomsUnique) == 1) {
-      sameAtoms[i] <- TRUE
-    } else {
-      sameAtoms[i] <- FALSE
-    }
-  }
-  expect_equal(length(sampleG[[1]][,2]), sum(sameAtoms), tol=0, scale=1,
-               info = paste0("incorrect values of unique atoms in getSamplesDPmeasure"))
-  
-  # adding weights from old output:
-  weights_old <- c()
-  for(i in seq_along(atomsUnique)) {
-    weights_old[i] <- sum(weights[atoms == atomsUnique[i]])
-  }
-  # check computations of weights:
-  for(i in seq_along(sampleG[[1]][,2])) {
-    index <- which(atomsUnique == sampleG[[1]][i,2])
-    aux <- as.numeric(sampleG[[1]][i,1]) # seems that the name "weights" was causing an error in the expect_equal function
-    expect_equal(aux, weights_old[index], tol=10^(-4), scale=1,
-                 info = paste0("incorrect new computation of weight ", i, " in getSamplesDPmeasure"))
-  }
-
-  
-  # model with random concentration parameter
-  set.seed(0)
-  code <- nimbleCode({
-    for(i in 1:20) {
-      y[i] ~ dnorm( thetaTilde[xi[i]] , var = 1) 
-      thetaTilde[i] ~ dnorm(0, var = 100)
-    }
-    xi[1:20] ~ dCRP(alpha, size=20)
-    alpha ~ dgamma(1, 1)
-  })
-  Inits <- list(xi = rep(1, 20), thetaTilde = rep(0,20), alpha = 1)
-  Data <- list(y = c(rnorm(10, -2.5, 1), rnorm(10, 2.5, 1) ))
-  model <- nimbleModel(code, data=Data, inits=Inits, calculate=TRUE)
-  cmodel<-compileNimble(model)
-  mConf <- configureMCMC(model, monitors = c('xi','thetaTilde', 'alpha'))
-  mMCMC <- buildMCMC(mConf)
-  cMCMC <- compileNimble(mMCMC, project = model)
-  out <- runMCMC(cMCMC, niter = 1, nburnin = 0)
-  
-  set.seed(0)
-  sampleG <- getSamplesDPmeasure(cMCMC)
-  
-  # old weights:
-  set.seed(0)
-  sampleG_old <- getSamplesDPmeasure_old(cMCMC)
-  
-  trunc <- sampleG_old$trunc
-  weights <- sampleG_old$samples[1, 1:trunc]
-  atoms <- sampleG_old$samples[1, (trunc+1):(2*trunc)]
-  atomsUnique <- unique(atoms)
-  
-  ##check that unique atoms are the same:
-  # check that they have the same number of unique atoms
-  expect_equal(length(atomsUnique), nrow(sampleG[[1]]), tol=0, scale=1,
-               info = paste0("incorrect number of unique atoms in getSamplesDPmeasure with random concentration parameter"))
-  # check that values of unique atoms are the same
-  sameAtoms <- c()
-  for(i in seq_along(sampleG[[1]][,2])) {
-    if(sum(sampleG[[1]][i,2] == atomsUnique) == 1) {
-      sameAtoms[i] <- TRUE
-    } else {
-      sameAtoms[i] <- FALSE
-    }
-  }
-  expect_equal(length(sampleG[[1]][,2]), sum(sameAtoms), tol=0, scale=1,
-               info = paste0("incorrect values of unique atoms in getSamplesDPmeasure with random concentration parameter"))
-  
-  # adding weights from old output:
-  weights_old <- c()
-  for(i in seq_along(atomsUnique)) {
-    weights_old[i] <- sum(weights[atoms == atomsUnique[i]])
-  }
-  # check computations of weights:
-  for(i in seq_along(sampleG[[1]][,2])) {
-    index <- which(atomsUnique == sampleG[[1]][i,2])
-    aux <- as.numeric(sampleG[[1]][i,1]) # seems that the name "weights" was causing an error in the expect_equal function
-    expect_equal(aux, weights_old[index], tol=10^(-4), scale=1,
-                 info = paste0("incorrect new computation of weight ", i, " in getSamplesDPmeasure with random concentration parameter"))
-  }
-
-})
-
-
 test_that("sampleDPmeasure: testing that required variables in MCMC modelValues are monitored", {
   set.seed(1)
   
@@ -1817,7 +1689,7 @@ test_that("check iid assumption in sampleDPmeasure", {
 })
 
 
-test_that("check use of epsilon parameters in getSamplesDPmeasure", {
+test_that("check use of epsilon parameter in getSamplesDPmeasure", {
   set.seed(1)
   
   code <- nimbleCode({
@@ -1837,7 +1709,7 @@ test_that("check use of epsilon parameters in getSamplesDPmeasure", {
   n <- 30
   constants <- list(n = n)
   data <- list(y = rnorm(n, 0, 1))
-  inits <- list(alpha = 1, mu0 = 0, sd0 = 5, xi = rep(1, n),
+  inits <- list(alpha = 1, mu0 = 0, sd0 = 5, xi = 1:n,
                 muTilde = rep(0,n))
   model <- nimbleModel(code, data = data, constants = constants, inits = inits)
   cmodel <- compileNimble(model)
@@ -1846,21 +1718,20 @@ test_that("check use of epsilon parameters in getSamplesDPmeasure", {
   cmcmc <- compileNimble(mcmc, project = model)
   
   output <- runMCMC(cmcmc, niter=1, nburnin=0, thin=1 , inits=inits, setSeed=FALSE)
-  outputG <- getSamplesDPmeasure(cmcmc)
+  
+  outputG <- getSamplesDPmeasure(cmcmc, setSeed = 1)
   tr1 <- nrow(outputG[[1]])
   
-  outputG <- getSamplesDPmeasure(cmcmc, epsilon = 0.1)
+  outputG <- getSamplesDPmeasure(cmcmc, epsilon = 0.1, setSeed = 1)
   tr2 <- nrow(outputG[[1]])
   
-  outputG <- getSamplesDPmeasure(cmcmc, epsilon = 0.00001)
+  outputG <- getSamplesDPmeasure(cmcmc, epsilon = 0.00001, setSeed = 1)
   tr3 <- nrow(outputG[[1]])
 
-  if(FALSE) {  # temporarily disabled while we figure out the random seed issue.
-      expect_true(tr1 > tr2,
-                  info='getSamplesDPmeasure: truncation level for larger epsilon incorrectly computed')
-      expect_true(tr1 < tr3,
-                  info='getSamplesDPmeasure: truncation level for smaller epsilon incorrectly computed')
-  }
+  expect_true(tr1 > tr2,
+              info='getSamplesDPmeasure: truncation level for larger epsilon incorrectly computed')
+  expect_true(tr1 < tr3,
+              info='getSamplesDPmeasure: truncation level for smaller epsilon incorrectly computed')
   if(.Platform$OS.type != "windows") {
       nimble:::clearCompiled(model)
   }

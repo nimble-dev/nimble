@@ -71,6 +71,7 @@ getParentNodes <- function(nodes, model, returnType = 'names', stochOnly = FALSE
 #'
 #' @param MCMC an MCMC class object, either compiled or uncompiled.
 #' @param epsilon  used for determining the truncation level of the representation of the random measure.
+#' @param setSeed Logical or numeric argument. If a single numeric value is provided, R's random number seed will be set to this value. In the case of a logical value, if \code{TRUE}, then R's random number seed will be set to \code{1}. Note that specifying the argument \code{setSeed = 0} does not prevent setting the RNG seed, but rather sets the random number generation seed to \code{0}.  Default value is \code{FALSE}.
 #' 
 #' @author Claudia Wehrhahn and Christopher Paciorek
 #' 
@@ -101,7 +102,7 @@ getParentNodes <- function(nodes, model, returnType = 'names', stochOnly = FALSE
 #'   runMCMC(cmcmc, niter = 1000)
 #'   outputG <- getSamplesDPmeasure(cmcmc)
 #' }
-getSamplesDPmeasure <- function(MCMC, epsilon = 1e-4) {
+getSamplesDPmeasure <- function(MCMC, epsilon = 1e-4, setSeed = FALSE) {
   if(exists('model',MCMC, inherits = FALSE)) compiled <- FALSE else compiled <- TRUE
   if(compiled) {
     if(!exists('Robject', MCMC, inherits = FALSE) || !exists('model', MCMC$Robject, inherits = FALSE))
@@ -113,10 +114,18 @@ getSamplesDPmeasure <- function(MCMC, epsilon = 1e-4) {
     mvSamples <- MCMC$mvSamples
   }
   
-  rsampler <- nimble:::sampleDPmeasure(model, mvSamples, epsilon) # 
+  rsampler <- sampleDPmeasure(model, mvSamples, epsilon) # 
 
   niter <- getsize(MCMC$mvSamples)
   samplesMeasure <- list()
+  
+  if(is.numeric(setSeed)) {
+    set.seed(setSeed[1])
+    if(length(setSeed) > 1) {
+      nimCat('getSamplesDPmeasure: setSeed argument has length > 1 and only the first element will be used') 
+    }
+  } else if(setSeed) set.seed(1)
+  
   if(compiled) {
     csampler <- compileNimble(rsampler, project = model)
     for(i in 1:niter) {
@@ -130,9 +139,9 @@ getSamplesDPmeasure <- function(MCMC, epsilon = 1e-4) {
   
   
   dcrpVar <- rsampler$dcrpVar
-  clusterVarInfo <- nimble:::findClusterNodes(model, dcrpVar) 
+  clusterVarInfo <- findClusterNodes(model, dcrpVar) 
   p <- rsampler$p
-  namesVars <- nimble:::getSamplesDPmeasureNames(clusterVarInfo, model, 1, p)
+  namesVars <- getSamplesDPmeasureNames(clusterVarInfo, model, 1, p)
   for(i in 1:niter) {
     colnames(samplesMeasure[[i]]) <- c("weights", namesVars)
   }
@@ -166,7 +175,7 @@ sampleDPmeasure <- nimbleFunction(
     
     ## Find the cluster variables, named tildeVars
     dcrpElements <- model$expandNodeNames(dcrpNode, returnScalarComponents = TRUE)
-    clusterVarInfo <- nimble:::findClusterNodes(model, dcrpVar) 
+    clusterVarInfo <- findClusterNodes(model, dcrpVar) 
     tildeVars <- clusterVarInfo$clusterVars
     if( is.null(tildeVars) )  ## probably unnecessary as checked in CRP sampler, but best to be safe
       stop('sampleDPmeasure: The model should have at least one cluster variable.\n')
@@ -186,13 +195,13 @@ sampleDPmeasure <- nimbleFunction(
         isIID <- FALSE
     }
     
-    if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvGammaConjugacy(model, clusterVarInfo, length(dcrpElements), 'dinvgamma'))
+    if(!isIID && length(tildeVars) == 2 && checkNormalInvGammaConjugacy(model, clusterVarInfo, length(dcrpElements), 'dinvgamma'))
       isIID <- TRUE
-    if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvGammaConjugacy(model, clusterVarInfo, length(dcrpElements), 'dgamma'))
+    if(!isIID && length(tildeVars) == 2 && checkNormalInvGammaConjugacy(model, clusterVarInfo, length(dcrpElements), 'dgamma'))
       isIID <- TRUE
-    if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvWishartConjugacy(model, clusterVarInfo, length(dcrpElements), 'dinvwish'))
+    if(!isIID && length(tildeVars) == 2 && checkNormalInvWishartConjugacy(model, clusterVarInfo, length(dcrpElements), 'dinvwish'))
       isIID <- TRUE
-    if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvWishartConjugacy(model, clusterVarInfo, length(dcrpElements), 'dwish'))
+    if(!isIID && length(tildeVars) == 2 && checkNormalInvWishartConjugacy(model, clusterVarInfo, length(dcrpElements), 'dwish'))
       isIID <- TRUE
     ## Tricky as MCMC might not be using conjugacy, but presumably ok to proceed regardless of how
     ## MCMC was done, since conjugacy existing would guarantee IID.
@@ -216,7 +225,7 @@ sampleDPmeasure <- nimbleFunction(
       stop('sampleDPmeasure: The stochastic parent nodes of the cluster variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
 
     ## Check that parent nodes of cluster IDs are monitored.  
-    parentNodesXi <- nimble:::getParentNodes(dcrpNode, model, returnType = 'names', stochOnly = TRUE)
+    parentNodesXi <- getParentNodes(dcrpNode, model, returnType = 'names', stochOnly = TRUE)
     
     if(!all(model$getVarNames(nodes = parentNodesXi) %in% mvSavedVars))
       stop('sampleDPmeasure: The stochastic parent nodes of the membership variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
@@ -291,19 +300,6 @@ sampleDPmeasure <- nimbleFunction(
     truncG <- log(epsilon) / log(concAux / (concAux+1)) 
     truncG <- ceiling(truncG) 
     
-    ## sampling stick-breaking weights: as many as truncG
-    weightsTmp <- nimNumeric(truncG)
-    vaux <- rbeta(1, 1, concAux)
-    v1prod <- 1
-    weightsTmp[1] <- vaux  
-    for(l1 in 2:truncG) {
-      v1prod <- v1prod * (1-vaux)
-      vaux <- rbeta(1, 1, concAux)
-      weightsTmp[l1] <- vaux * v1prod 
-    }
-    weightsTmp[1:truncG] <- weightsTmp[1:truncG] / (1 - v1prod * (1-vaux)) # normalizing weigths
-    
-    
     ## getting the unique cluster variables that where sampled in the mcmc and the sampling probabilities of the polya urn of the unique cluster variables
     probs <- nimNumeric(N) # polya urn probabilities
     uniqueValues <- matrix(0, nrow = N, ncol = tildeVarsColsSum[p+1])  # unique cluster variables
@@ -329,12 +325,43 @@ sampleDPmeasure <- nimbleFunction(
     ## copy tilde parents into model for use in simulation below when simulate atoms of G_0  
     nimCopy(mvSaved, model, parentNodesTildeVars, row = m)
     
+    
+    ## sampling random measure:
+    # this is the reduced version in the sense that weights of identical atoms are added up
+    # weights and atom are sampled in the same loop
+    
+    ## sampling stick-breaking weights: as many as truncG
+        
     ## reduced samples from random measure: 
+    weights <- nimNumeric(truncG) # weights of random measure
+    weightsTmp <- nimNumeric(truncG)
+    atoms <- matrix(0, ncol = tildeVarsColsSum[p+1], nrow = truncG) # atoms of random measure
     indexesG <- nimNumeric(truncG) # indicates if an existing or a new atom is sampled from the polya urn. New tom are indicated by newValueIndex 
-    weights <- nimNumeric(truncG) # weights if random measure
-    atoms <- matrix(0, ncol = tildeVarsColsSum[p+1], nrow = truncG) # atoms if random measure
     indexG0 <- newValueIndex # used for new atoms
+    
+    #vaux <- rbeta(1, 1, concAux)
+    #v1prod <- 1
+    #weightsTmp[1] <- vaux  
+    #for(l1 in 2:truncG) {
+    #  v1prod <- v1prod * (1-vaux)
+    #  vaux <- rbeta(1, 1, concAux)
+    #  weightsTmp[l1] <- vaux * v1prod 
+    #}
+    #weightsTmp[1:truncG] <- weightsTmp[1:truncG] / (1 - v1prod * (1-vaux)) # normalizing weigths
+    
+    vaux <- rbeta(1, 1, concAux)
+    v1prod <- 1
     for(l1 in 1:truncG) {
+      # sampling a weight
+      if(l1 == 1) {
+        weightsTmp[l1] <- vaux 
+      } else {
+        v1prod <- v1prod * (1-vaux)
+        vaux <- rbeta(1, 1, concAux)
+        weightsTmp[l1] <- vaux * v1prod 
+      }
+
+      # sampling an atom
       indexesG[l1] <- rcat(prob = probs[1:newValueIndex])
       if(indexesG[l1] < newValueIndex) { # an existing atom was sampled and the corresponding weights are added
         weights[indexesG[l1]] <- weights[indexesG[l1]] + weightsTmp[l1] 
@@ -356,8 +383,9 @@ sampleDPmeasure <- nimbleFunction(
         indexG0 <- indexG0 + 1
       }
     }
+    weights[1:truncG] <- weights[1:truncG] / (1 - v1prod * (1-vaux)) # normalizing weigths
 
-    # check that all unique tilde variables were actually sampled. If not we need to rearrange when creating final output
+    ## check that all unique tilde variables were actually sampled. If not we need to rearrange when creating final output
     missingIndex <- nimNumeric(newValueIndex-1)
     uniqueIndex <- 1:(newValueIndex - 1)
     ii <- 1
