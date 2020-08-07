@@ -12,6 +12,303 @@ nimbleOptions(MCMCprogressBar = FALSE)
 context('Testing of BNP functionality')
 
 
+
+# adding old function of getSamplesDPmeasure function
+#--------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+## old version
+getSamplesDPmeasure_old <- function(MCMC, epsilon = 1e-4) {
+  if(exists('model',MCMC, inherits = FALSE)) compiled <- FALSE else compiled <- TRUE
+  if(compiled) {
+    if(!exists('Robject', MCMC, inherits = FALSE) || !exists('model', MCMC$Robject, inherits = FALSE))
+      stop("getSamplesDPmeasure: problem with finding model object in compiled MCMC")
+    model <- MCMC$Robject$model
+    mvSamples <- MCMC$Robject$mvSamples
+  } else {
+    model <- MCMC$model
+    mvSamples <- MCMC$mvSamples
+  }
+  
+  ## Create and run the DPmeasure sampler.
+  rsampler <- sampleDPmeasure_old(model, mvSamples, epsilon)
+  if(compiled) {
+    csampler <- compileNimble(rsampler, project = model)
+    csampler$run()
+    samplesMeasure <- csampler$samples
+  } else {
+    rsampler$run()
+    samplesMeasure <- rsampler$samples
+  }
+  
+  dcrpVar <- rsampler$dcrpVar
+  clusterVarInfo <- nimble:::findClusterNodes(model, dcrpVar) 
+  namesVars <- rsampler$tildeVars
+  p <- length(namesVars)
+  
+  truncG <- ncol(samplesMeasure) / (rsampler$tildeVarsColsSum[p+1]+1) 
+  namesW <- sapply(seq_len(truncG), function(i) paste0("weight[", i, "]"))
+  namesAtoms <- nimble:::getSamplesDPmeasureNames(clusterVarInfo, model, truncG, p)
+  
+  colnames(samplesMeasure) <- c(namesW, namesAtoms)
+  
+  output <- list(samples = samplesMeasure, trunc = truncG)
+  return(output)
+}
+
+
+sampleDPmeasure_old <- nimbleFunction(
+  name = 'sampleDPmeasure_old',
+
+  setup=function(model, mvSaved, epsilon){
+    ## Determine variables in the mv object and nodes/variables in the model.
+    mvSavedVars <- mvSaved$varNames
+    
+    stochNodes <- model$getNodeNames(stochOnly = TRUE)
+    distributions <- model$getDistribution(stochNodes) 
+    
+    ## Determine if there is a dCRP-distributed node and that it is monitored.
+    dcrpIndex <- which(distributions == 'dCRP')
+    if(length(dcrpIndex) == 1) {
+      dcrpNode <- stochNodes[dcrpIndex] 
+      dcrpVar <- model$getVarNames(nodes = dcrpNode)
+    } else {
+      if(length(dcrpIndex) == 0 ){
+        stop('sampleDPmeasure: One node with a dCRP distribution is required.\n')
+      }
+      stop('sampleDPmeasure: Currently only models with one node with a dCRP distribution are allowed.\n')
+    }
+    if(sum(dcrpVar == mvSavedVars) == 0)
+      stop('sampleDPmeasure: The node having the dCRP distribution has to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
+    
+    ## Find the cluster variables, named tildeVars
+    dcrpElements <- model$expandNodeNames(dcrpNode, returnScalarComponents = TRUE)
+    clusterVarInfo <- nimble:::findClusterNodes(model, dcrpVar) 
+    tildeVars <- clusterVarInfo$clusterVars
+    if( is.null(tildeVars) )  ## probably unnecessary as checked in CRP sampler, but best to be safe
+      stop('sampleDPmeasure: The model should have at least one cluster variable.\n')
+    
+    ## Check that cluster parameters are IID (across clusters, non-IID within clusters is ok), as required for random measure G
+    isIID <- TRUE
+    for(i in seq_along(clusterVarInfo$clusterNodes)) {
+      clusterNodes <- clusterVarInfo$clusterNodes[[i]]  # e.g., 'thetatilde[1]',...,
+      clusterIDs <- clusterVarInfo$clusterIDs[[i]]
+      splitNodes <- split(clusterNodes, clusterIDs)
+      valueExprs <- lapply(splitNodes, function(x) {
+        out <- sapply(x, model$getValueExpr)
+        names(out) <- NULL
+        out
+      })
+      if(length(unique(valueExprs)) != 1) 
+        isIID <- FALSE
+    }
+    
+    if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvGammaConjugacy(model, clusterVarInfo, length(dcrpElements), 'dinvgamma'))
+      isIID <- TRUE
+    if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvGammaConjugacy(model, clusterVarInfo, length(dcrpElements), 'dgamma'))
+      isIID <- TRUE
+    if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvWishartConjugacy(model, clusterVarInfo, length(dcrpElements), 'dinvwish'))
+      isIID <- TRUE
+    if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvWishartConjugacy(model, clusterVarInfo, length(dcrpElements), 'dwish'))
+      isIID <- TRUE
+    ## Tricky as MCMC might not be using conjugacy, but presumably ok to proceed regardless of how
+    ## MCMC was done, since conjugacy existing would guarantee IID.
+    if(!isIID) stop('sampleDPmeasure: cluster parameters have to be independent and identically distributed. \n')
+    
+    ## Check that necessary variables are being monitored.
+    
+    ## Check that cluster variables are monitored.
+    counts <- tildeVars %in% mvSavedVars
+    if( sum(counts) != length(tildeVars) ) 
+      stop('sampleDPmeasure: The node(s) representing the cluster variables must be monitored in the MCMC (and therefore stored in the modelValues object).\n')  
+    
+    parentNodesTildeVars <- NULL
+    candidateParentNodes <- model$getNodeNames(includeData = FALSE, stochOnly = TRUE)
+    candidateParentNodes <- candidateParentNodes[!candidateParentNodes %in% unlist(clusterVarInfo$clusterNodes)]
+    for(i in seq_along(candidateParentNodes)) {
+      aux <- model$getDependencies(candidateParentNodes[i], self = FALSE)
+      for(j in seq_along(tildeVars)) {
+        if(sum(aux == clusterVarInfo$clusterNodes[[j]][1]))
+          parentNodesTildeVars <- c(parentNodesTildeVars, candidateParentNodes[i])
+      }
+    }
+    if(length(parentNodesTildeVars)) {
+      parentNodesTildeVarsDeps <- model$getDependencies(parentNodesTildeVars, self = FALSE)
+    } else parentNodesTildeVarsDeps <- NULL
+    ## make sure tilde nodes are included (e.g., if a tilde node has no stoch parents) so they get simulated
+    parentNodesTildeVarsDeps <- model$topologicallySortNodes(c(parentNodesTildeVarsDeps, unlist(clusterVarInfo$clusterNodes)))
+    
+    if(!all(model$getVarNames(nodes = parentNodesTildeVars) %in% mvSavedVars))
+      stop('sampleDPmeasure: The stochastic parent nodes of the cluster variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
+    if(is.null(parentNodesTildeVars)) parentNodesTildeVars <- tildeVars  ## to avoid NULL which causes compilation issues
+    
+    ## Check that parent nodes of cluster IDs are monitored.   
+    parentNodesXi <- NULL
+    candidateParentNodes <- model$getNodeNames(includeData = FALSE, stochOnly = TRUE)
+    candidateParentNodes <- candidateParentNodes[!candidateParentNodes == dcrpNode]
+    for(i in seq_along(candidateParentNodes)) {
+      aux <- model$getDependencies(candidateParentNodes[i], self = FALSE)
+      if(sum(aux == dcrpNode)) {
+        parentNodesXi <- c(parentNodesXi, candidateParentNodes[i])
+      }
+    }
+    
+    if(!all(model$getVarNames(nodes = parentNodesXi) %in% mvSavedVars))
+      stop('sampleDPmeasure: The stochastic parent nodes of the membership variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
+    if(is.null(parentNodesXi)) parentNodesXi <- dcrpNode  ## to avoid NULL which causes compilation issues
+    
+    ## End of checks of monitors.
+    
+    fixedConc <- TRUE # assume that conc parameter is fixed. This will change in the if statement if necessary
+    if(length(parentNodesXi)) {
+      fixedConc <- FALSE
+      parentNodesXiDeps <- model$getDependencies(parentNodesXi, self = FALSE)
+      parentNodesXiDeps <- parentNodesXiDeps[!parentNodesXiDeps == dcrpNode]
+    } else {
+      parentNodesXiDeps <- dcrpNode
+    }
+    
+    dataNodes <- model$getDependencies(dcrpNode, stochOnly = TRUE, self = FALSE)
+    N <- length(model$expandNodeNames(dcrpNode, returnScalarComponents = TRUE))
+    
+    p <- length(tildeVars)
+    lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE))
+    dimTildeVarsNim <- numeric(p+1) # nimble dimension (0 is scalar, 1 is 2D array, 2 is 3D array) (dimTildeVarsNim=dimTildeNim)
+    dimTildeVars <- numeric(p+1) # dimension to be used in run code (dimTildeVars=dimTilde)
+    for(i in 1:p) {
+      dimTildeVarsNim[i] <- model$getDimension(clusterVarInfo$clusterNodes[[i]][1])
+      dimTildeVars[i] <- lengthData^(dimTildeVarsNim[i]) 
+    }
+    nTildeVarsPerCluster <-  clusterVarInfo$numNodesPerCluster
+    nTilde <- numeric(p+1)
+    nTilde[1:p] <- clusterVarInfo$nTilde / nTildeVarsPerCluster
+    if(any(nTilde[1:p] != nTilde[1])){
+      stop('sampleDPmeasure: All cluster parameters must have the same number of parameters.\n')
+    }
+    
+    
+    tildeVarsCols <- c(dimTildeVars[1:p]*nTildeVarsPerCluster, 0)
+    tildeVarsColsSum <- c(0, cumsum(tildeVarsCols))
+    mvIndexes <- matrix(0, nrow=nTilde[1], ncol=(sum(dimTildeVars[1:p]*nTildeVarsPerCluster))) 
+    for(j in 1:p) {
+      tildeNodesModel <- model$expandNodeNames(clusterVarInfo$clusterVars[j], returnScalarComponents=TRUE) # tilde nodes j in model
+      allIndexes <- 1:length(tildeNodesModel)
+      for(l in 1:nTilde[1]) {
+        clusterID <- l
+        tildeNodesPerClusterID <- model$expandNodeNames(clusterVarInfo$clusterNodes[[j]][clusterVarInfo$clusterIDs[[j]] == clusterID], returnScalarComponents=TRUE) # tilde nodes in cluster with id 1
+        aux <- match(tildeNodesModel, tildeNodesPerClusterID, nomatch = 0) 
+        mvIndexes[l,(tildeVarsColsSum[j]+1):tildeVarsColsSum[j+1] ] <- which(aux != 0)
+      }
+    }
+    
+    
+    ## Storage object to be sized in run code based on MCMC output.
+    samples <- matrix(0, nrow = 1, ncol = 1)   
+    ## Truncation level of the random measure 
+    truncG <- 0 
+    niter <- 0
+    ## control list extraction
+    ## The error of approximation G is given by (conc / (conc +1))^{truncG-1}. 
+    ## we are going to define an error of approximation and based on the posterior values of the conc parameter define the truncation level of G
+    ## the error is between errors that are considered very very small in the folowing papers
+    ## Ishwaran, H., & James, L. F. (2001). Gibbs sampling methods for stick-breaking priors. Journal of the American Statistical Association, 96(453), 161-173.
+    ## Ishwaran, H., & Zarepour, M. (2000). Markov chain Monte Carlo in approximate Dirichlet and beta two-parameter process hierarchical models. Biometrika, 87(2), 371-390.
+    # epsilon <- 1e-4
+    
+    setupOutputs(lengthData, dcrpVar)
+  },
+  
+  run=function(){
+    
+    niter <<- getsize(mvSaved) # number of iterations in the MCMC
+    
+    # defining the truncation level of the random measure's representation:
+    if( fixedConc ) {
+      concSamples <- nimNumeric(length = niter, value = model$getParam(dcrpNode, 'conc'))
+    } else {
+      concSamples <- numeric(niter)
+      for( iiter in 1:niter ) {
+        nimCopy(from = mvSaved, to = model, nodes = parentNodesXi, row=iiter) 
+        model$calculate(parentNodesXiDeps)
+        concSamples[iiter] <- model$getParam(dcrpNode, 'conc')
+      }
+    }
+    dcrpAux <- mean(concSamples) + N
+    
+    truncG <<- log(epsilon) / log(dcrpAux / (dcrpAux+1))
+    truncG <<- ceiling(truncG)
+    
+    ## Storage object: matrix with nrow = number of MCMC iterations, and ncol = (1 + p)*truncG, where
+    ## truncG the truncation level of the random measure G (an integer given by the values of conc parameter)
+    ## (p+1) denoted the number of parameters, each of length truncG, to be stored: p is the number of cluster components (length(tildeVars)) and 1 is for the weights.
+    samples <<- matrix(0, nrow = niter, ncol = truncG*(tildeVarsColsSum[p+1]+1))
+    
+    ## computing G(.) = sum_{l=1}^{truncG} w_l delta_{atom_l} (.):
+    for(iiter in 1:niter){
+      checkInterrupt()
+      
+      ## sampling weights:
+      vaux <- rbeta(1, 1, concSamples[iiter] + N)
+      v1prod <- 1
+      samples[iiter, 1] <<- vaux  
+      for(l1 in 2:truncG) {
+        v1prod <- v1prod * (1-vaux)
+        vaux <- rbeta(1, 1, concSamples[iiter] + N)
+        samples[iiter, l1] <<- vaux * v1prod 
+      }
+      samples[iiter, 1:truncG] <<- samples[iiter, 1:truncG] / (1 - v1prod * (1-vaux)) # normalizing
+      
+      ## sampling atoms:
+      ## getting the sampled unique values (tilde variables) and their probabilities of being sampled,
+      ## need for computing density later.
+      probs <- nimNumeric(N)
+      uniqueValues <- matrix(0, nrow = N, ncol = tildeVarsColsSum[p+1])  
+      xiiter <- mvSaved[dcrpVar, iiter]
+      range <- min(xiiter):max(xiiter) 
+      index <- 1
+      for(i in seq_along(range)){   
+        cond <- sum(xiiter == range[i])
+        if(cond > 0){
+          probs[index] <- cond
+          ## slight workaround because can't compile mvSaved[tildeVars[j], iiter]  
+          nimCopy(mvSaved, model, tildeVars, row = iiter)
+          for(j in 1:p){
+            jcols <- (tildeVarsColsSum[j]+1):tildeVarsColsSum[j+1]
+            uniqueValues[index, jcols] <- values(model, tildeVars[j])[mvIndexes[range[i], jcols]]
+          }
+          index <- index+1
+        }
+      }
+      probs[index] <- concSamples[iiter] 
+      newValueIndex <- index 
+      
+      ## copy tilde parents into model for use in simulation below when simulate atoms of G_0  
+      nimCopy(mvSaved, model, parentNodesTildeVars, row = iiter)
+      
+      sumCol <- truncG
+      for(l1 in 1:truncG) {
+        index <- rcat(prob = probs[1:newValueIndex])
+        if(index == newValueIndex){   # sample from G_0
+          model$simulate(parentNodesTildeVarsDeps)
+          for(j in 1:p){
+            jcols <- (sumCol + 1):(sumCol + tildeVarsCols[j]) 
+            samples[iiter, jcols] <<- values(model, tildeVars[j])[mvIndexes[1,  (tildeVarsColsSum[j]+1):tildeVarsColsSum[j+1]]] # <<-
+            sumCol <- sumCol + tildeVarsCols[j] 
+          }
+        } else {   # sample one of the existing values
+          for(j in 1:p){
+            jcols <- (sumCol +1):(sumCol + tildeVarsCols[j])
+            samples[iiter, jcols] <<- uniqueValues[index, (tildeVarsColsSum[j]+1):tildeVarsColsSum[j+1]] # <<-
+            sumCol <- sumCol + tildeVarsCols[j] 
+          }
+        }
+      }
+      
+    }
+  },
+  methods = list( reset = function () {} )
+)
+
+
 test_that("Test computations (prior predictive and posterior) and sampler assignment for conjugate CRP samplers", {
   set.seed(0)
   
@@ -1115,7 +1412,6 @@ test_that("Test computations (prior predictive and posterior) and sampler assign
   }
 )
   
-
 test_that("sampleDPmeasure: testing that required variables in MCMC modelValues are monitored", {
   set.seed(1)
   
@@ -2756,21 +3052,24 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   expect_equal(n, clusterNodeInfo$nTilde)
   
   ## Awkward trapping of observations with different distributions.
-  ## We should trap this when checking conjugacy instead and simply assign non-conjugate sampler.
+  ## This fails because we want the indexing of cluster parameters to be one contiguous block.
   code <- nimbleCode({
     xi[1:n] ~ dCRP(conc, n)
     for(i in 1:n) 
       y[i] ~ dnorm(mu[i], var = 1)
-    for(i in 1:(n-1))
-      mu[i] <- muTilde[xi[i]]
-    mu[n] <- exp(muTilde[xi[n]])
+    for(i in 1:(n-2))
+        mu[i] <- muTilde[xi[i]]
+    for(j in (n-1):n)
+        mu[j] <- exp(muTilde[xi[j]])
     for(i in 1:n)
       muTilde[i] ~ dnorm(0, 1)
   })
+  constSave <- const
+  const$n <- 4
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
   conf <- configureMCMC(m)
-  expect_error(mcmc <- buildMCMC(conf), "Detected unusual indexing in")
-  
+  expect_error(mcmc <- buildMCMC(conf), "differing number of clusters indicated by")
+  const <- constSave
   
   ## conjugate but observations not IID  
   code <- nimbleCode({
@@ -3100,6 +3399,2819 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   })
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
   expect_error(conf <- configureMCMC(m), "CRP variable used multiple times in")
+
+  ## Various additional cases based on more general BNP functionality
+
+  ## Basic more general case
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J) {
+              y[i, j] ~ dnorm(thetaTilde[xi[i], j], 1)
+              thetaTilde[i, j] ~ dnorm(0, 1)
+          }}
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+  
+  n <- 5
+  J <- 3
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(J*n), n, J))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  expect_identical(cn$clusterNodes[[1]], c(matrix(model$expandNodeNames('thetaTilde'), J, n, byrow = TRUE)))
+  expect_identical(cn$numNodesPerCluster, as.integer(J))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_conjugate_dnorm_dnorm")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, each = J))
+
+  ## Basic case of truncated parameters
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J) {
+              y[i, j] ~ dnorm(thetaTilde[xi[i], j], 1)
+          }}
+      for(i in 1:n2) {
+          for(j in 1:J) {
+              thetaTilde[i, j] ~ dnorm(0, 1)
+          }}
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  n2 <- 4
+  J <- 3
+  constants <- list(n = n, n2 = n2, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(J*n2), n2, J))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  expect_identical(cn$clusterNodes[[1]], c(matrix(model$expandNodeNames('thetaTilde'), J, n2, byrow = TRUE)))
+  expect_identical(cn$numNodesPerCluster, as.integer(J))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_warning(mcmc <- buildMCMC(conf), "is less than the number of potential")
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_conjugate_dnorm_dnorm")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n2*J))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n2, each = J))
+
+  ## Truncated and intermediate
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J) {
+              y[i, j] ~ dnorm(theta[i, j], 1)
+              theta[i, j] <- thetaTilde[xi[i], j]
+          }}
+      for(i in 1:n2)
+          for(j in 1:J)
+              thetaTilde[i, j] ~ dnorm(0, 1)
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  n2 <- 4
+  J <- 3
+  constants <- list(n = n, n2 = n2, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(J*n), n, J))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  nodes <- nodes[nodes %in% model$getNodeNames()]
+  expect_identical(cn$clusterNodes[[1]], c(matrix(nodes, J, n2, byrow = TRUE)))
+  expect_identical(cn$numNodesPerCluster, as.integer(J))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_warning(mcmc <- buildMCMC(conf), "is less than the number of potential")
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_conjugate_dnorm_dnorm")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(J))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n2*J))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n2, each = J))
+
+  ## Column instead of row
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J) {
+              y[j, i] ~ dnorm(thetaTilde[j, xi[i]], 1)
+              thetaTilde[j, i] ~ dnorm(0, 1)
+          }}
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 3
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J),J,n))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(J*n), J, n))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  expect_identical(cn$clusterNodes[[1]], model$expandNodeNames('thetaTilde'))
+  expect_identical(cn$numNodesPerCluster, as.integer(J))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_conjugate_dnorm_dnorm")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, each = J))
+
+  ## Column in instead of row, different loop ordering
+  code <- nimbleCode({
+      for(j in 1:J) {
+          for(i in 1:n) {
+              y[j, i] ~ dnorm(thetaTilde[j, xi[i]], 1)
+              thetaTilde[j, i] ~ dnorm(0, 1)
+          }}
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 3
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J),J,n))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(J*n), J, n))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  expect_identical(cn$clusterNodes[[1]], model$expandNodeNames('thetaTilde'))
+  expect_identical(cn$numNodesPerCluster, as.integer(J))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_conjugate_dnorm_dnorm")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, J))
+
+  ## Column instead of row, intermediate nodes, indexes swapped
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J) {
+              y[j, i] ~ dnorm(theta[j, i], 1)
+              theta[j, i] <- thetaTilde[xi[i], j]
+              thetaTilde[i, j] ~ dnorm(0, 1)
+          }}
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 3
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J),J,n))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(J*n), n, J))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], c(matrix(nodes, J, n, byrow = TRUE)))
+  expect_identical(cn$numNodesPerCluster, as.integer(J))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_conjugate_dnorm_dnorm")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(J))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, each = J))
+
+
+  ## index offset
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J) {
+              y[i, j] ~ dnorm(thetaTilde[xi[i]+1, j], 1)
+          }}
+      for(i in 2:(n+1)) {
+          for(j in 1:J) {
+              thetaTilde[i, j] ~ dnorm(0, 1)
+          }}
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 3
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(J*(n+1)), n+1, J))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], c(matrix(nodes, J, n+1, byrow = TRUE)[,-1]))
+  expect_identical(cn$numNodesPerCluster, as.integer(J))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_conjugate_dnorm_dnorm")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, each = J))
+
+
+  ## index offset, with intermediate
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J) {
+              y[i, j] ~ dnorm(theta[i, j], 1)
+              theta[i,j] <- thetaTilde[xi[i]+1, j]
+          }}
+      for(i in 2:(n+1)) {
+          for(j in 1:J) {
+              thetaTilde[i, j] ~ dnorm(0, 1)
+          }}
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 3
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(J*(n+1)), n+1, J))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], c(matrix(nodes, J, n+1, byrow = TRUE)[,-1]))
+  expect_identical(cn$numNodesPerCluster, as.integer(J))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_conjugate_dnorm_dnorm")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(J))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, each = J))
+
+  ## multiple obs, but only single thetaTilde in each group
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J) {
+              y[i, j] ~ dnorm(thetaTilde[xi[i]], 1)
+          }
+          thetaTilde[i] ~ dnorm(0, 1)
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 3
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = rnorm(n))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  expect_identical(cn$clusterNodes[[1]], model$expandNodeNames('thetaTilde'))
+  expect_identical(cn$numNodesPerCluster, 1L)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), 1:n)
+  
+  ## Detection of differing number of cluster parameters
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y[i] ~ dnorm(thetaTilde[xi[i]], s2tilde[xi[i]])
+          s2tilde[i] ~ dunif(0, 10)
+      }
+      for(i in 1:n2) 
+          thetaTilde[i] ~ dnorm(0, 1)
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  n2 <- 4
+  J <- 3
+  constants <- list(n = n, n2 = n2, J = J)
+  data <- list(y = rnorm(n))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = rnorm(n2), s2tilde = runif(n))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  expect_error(mcmc <- buildMCMC(conf), "sampler_CRP: In a model with multiple cluster parameters")
+
+  ## Detection of differing number of cluster parameters, complicated indexing
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y[i] ~ dnorm(thetaTilde[xi[i]], s2tilde[xi[i]+1])
+          s2tilde[i] ~ dunif(0, 10)
+          thetaTilde[i] ~ dnorm(0, 1)
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 3
+  constants <- list(n = n, J = J)
+  data <- list(y = rnorm(n))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = rnorm(n), s2tilde = runif(n))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  expect_error(mcmc <- buildMCMC(conf), "sampler_CRP: In a model with multiple cluster parameters")
+
+  ## Another variation where we have intermediate nodes and dependency in cluster nodes
+  ## clustering of deterministic nodes - not allowed
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y[i] ~ dnorm(theta[i], sd = sigma[i])
+          theta[i] <- thetaTilde[xi[i]]
+          sigma[i] <- sigmaTilde[xi[i]]
+          sigmaTilde[i] <- 1 / tauTilde[i]
+          thetaTilde[i] ~ dnorm(mu, var = sigmaTilde[i])
+          tauTilde[i] ~ dgamma(a, b)
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+  n <- 5
+  J <- 2
+  constants <- list(n = n)
+  data <- list(y = rnorm(n))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = rnorm(n), tauTilde = rgamma(n, 1, 1))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  expect_error(mcmc <- buildMCMC(conf), "findClusterNodes: detected that deterministic nodes are being clustered")
+
+  ## Model A: dnorm obs, dmnorm prior
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J)
+              y[i,j] ~ dnorm(thetaTilde[xi[i],j], 1)
+          thetaTilde[i, 1:J] ~ dmnorm(mn[1:J], iden[1:J,1:J])
+      }
+      mn[1:J] <- mu*ones[1:J]
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 3
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(J*n), n, J),
+                iden = diag(3), mu = 0)
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  expect_identical(cn$numNodesPerCluster, 1L)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), 1:n)
+
+  ## Model B: separate prior specifications
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:2) {
+              y[i, j] ~ dnorm(thetaTilde[xi[i], j], 1)
+          }
+          thetaTilde[i, 1] ~ dnorm(0, 1)
+          thetaTilde[i, 2] ~ dnorm(0, 1)
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 2
+  constants <- list(n = n, J=J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(J*n), n, J))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], c(matrix(nodes, J, n, byrow =  TRUE)))
+  expect_identical(cn$numNodesPerCluster, as.integer(J))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_conjugate_dnorm_dnorm")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, J))
+
+
+  ## Model C: dmnorm obs, dmnorm prior
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y[i, 1:J] ~ dmnorm(thetaTilde[xi[i],1:J], iden[1:J,1:J])
+          thetaTilde[i, 1:J] ~ dmnorm(mn[1:J], iden[1:J,1:J])
+      }
+      mn[1:J] <- mu*ones[1:J]
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 3
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(J*n), n, J),
+                iden = diag(3), mu = 0)
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  expect_identical(cn$numNodesPerCluster, 1L)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_conjugate_dmnorm_dmnorm")
+  expect_identical(crpSampler$nObsPerClusID, 1)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), 1:n)
+
+
+  ## Model D: dmnorm obs, dnorm prior
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y[i, 1:J] ~ dmnorm(thetaTilde[xi[i],1:J], iden[1:J,1:J])
+          for(j in 1:J)
+              thetaTilde[i, j] ~ dnorm(0,1)
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 3
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(J*n), n, J),
+                iden = diag(J))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], c(matrix(nodes, J, n, byrow = TRUE)))
+  expect_identical(cn$numNodesPerCluster, as.integer(J))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, 1)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, each = J))
+
+  ## Model E: dmnorm obs, separate prior declarations
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y[i, 1:2] ~ dmnorm(thetaTilde[xi[i],1:2], iden[1:2,1:2])
+          thetaTilde[i, 1] ~ dnorm(0,1)
+          thetaTilde[i, 2] ~ dnorm(0,1)
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 2
+  constants <- list(n = n)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(J*n), n, J),
+                iden = diag(J))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], c(matrix(nodes, J, n, byrow = TRUE)))
+  expect_identical(cn$numNodesPerCluster, as.integer(J))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, 1)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, J))
+
+  ## Model F: dnorm obs, separate priors
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y1[i] ~ dnorm(thetaTilde1[xi[i]], 1)
+          y2[i] ~ dnorm(thetaTilde2[xi[i]], 1)
+          thetaTilde1[i] ~ dnorm(mu, sigma)
+          thetaTilde2[i] ~ dnorm(mu, sigma)
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  constants <- list(n = n)
+  data <- list(y1 = rnorm(n), y2 = rnorm(n))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde1 = rnorm(n), thetaTilde2 = rnorm(n))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde1')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  expect_identical(cn$numNodesPerCluster, rep(1L, 2))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde1')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), 1:n)
+
+  ## Model F: non conjugate, non-identical priors
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y[i] ~ dnorm(thetaTilde[xi[i]], 1)
+      }
+      thetaTilde[1] ~ dnorm(mu, sigma)
+      for(i in 2:n) 
+          thetaTilde[i] ~ dgamma(1,1)
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  constants <- list(n = n)
+  data <- list(y = rnorm(n))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = rnorm(n))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  expect_identical(cn$numNodesPerCluster, 1L)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, 1)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), as.integer(c(2:n, 1)))
+
+  ## Model F: non conjugate, non-identical data
+  ## doesn't detect presence of some conjugacies because only check first set
+  ## weird setup causes us to say we can't handle this case
+  code <- nimbleCode({
+      for(i in 3:n) {
+          y[i] ~ dt(thetaTilde[xi[i]], 1, 1)
+      }
+      for(i in 1:2)
+          y[i] ~ dnorm(thetaTilde[xi[i]], 1)
+      for(i in 1:n) 
+          thetaTilde[i] ~ dnorm(0,1)
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  constants <- list(n = n)
+  data <- list(y = rnorm(n))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = rnorm(n))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  expect_error(mcmc <- buildMCMC(conf), "sampler_CRP: In a model with multiple cluster parameters")
+
+  ## Model F: non conjugate, non-identical data nodes
+  code <- nimbleCode({
+      for(i in 2:n) {
+          y[i] ~ dt(thetaTilde[xi[i]], 1, 1)
+      }
+      y[1] ~ dnorm(thetaTilde[xi[1]], 1)
+      for(i in 1:n) 
+          thetaTilde[i] ~ dnorm(0,1)
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  constants <- list(n = n)
+  data <- list(y = rnorm(n))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = rnorm(n))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  expect_error(mcmc <- buildMCMC(conf), "sampler_CRP: Detected unusual indexing")
+
+  ## another case of mixed distributions
+  code <- nimbleCode({
+      for(i in 1:(n-1)) {
+          for(j in 1:J) {
+              y[i, j] ~ dnorm(thetaTilde[xi[i], j], 1)
+              thetaTilde[i, j] ~ dnorm(0, 1)
+          }}
+      for(j in 1:J) {
+          y[n, j] ~ dt(thetaTilde[xi[n], j], 1 ,1)
+          thetaTilde[n, j] ~ dnorm(0, 1)
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 3
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(J*n), n, J))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  expect_error(mcmc <- buildMCMC(conf), "sampler_CRP: Detected unusual indexing")
+
+  ## Model G: separate declarations for obs
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y1[i] ~ dnorm(thetaTilde[xi[i], 1], 1)
+          y2[i] ~ dnorm(thetaTilde[xi[i], 2], 1)
+          for(j in 1:2)
+              thetaTilde[i, j] ~ dnorm(0, 1)
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 2
+  constants <- list(n = n)
+  data <- list(y1 = rnorm(n), y2 = rnorm(n))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(n*J),n,J))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], nodes[1:n])
+  expect_identical(cn$numNodesPerCluster, rep(1L, 2))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, J))
+
+
+  ## Model H: separate obs and prior declarations
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y1[i] ~ dnorm(thetaTilde[xi[i], 1], 1)
+          y2[i] ~ dnorm(thetaTilde[xi[i], 2], 1)
+          thetaTilde[i, 1] ~ dnorm(0, 1)
+          thetaTilde[i, 2] ~ dnorm(0, 1)
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 2
+  constants <- list(n = n)
+  data <- list(y1 = rnorm(n), y2 = rnorm(n))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(n*J),n,J))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], nodes[1:n])
+  expect_identical(cn$numNodesPerCluster, rep(1L, 2))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, J))
+
+  ## Model I: separate declarations for obs, dmnorm for prior
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y1[i] ~ dnorm(thetaTilde[xi[i], 1], 1)
+          y2[i] ~ dnorm(thetaTilde[xi[i], 2], 1)
+          thetaTilde[i, 1:2] ~ dmnorm(mn[1:2], iden[1:2,1:2])
+      }
+      mn[1:2] <- mu*ones[1:2]
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 2
+  constants <- list(n = n)
+  data <- list(y1 = rnorm(n), y2 = rnorm(n))
+  inits <- list(alpha = 1, xi = rep(1, n), iden = diag(1, 2),
+                thetaTilde = matrix(rnorm(n*J), n, J), ones = rep(1,2))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  expect_identical(cn$numNodesPerCluster, rep(1L, 2))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), 1:n)
+
+  ## model J: mixed indexing of two cluster vars
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J) {
+              y[i,j] ~ dnorm(theta[i], sd = sigma[i,j])        
+              sigma[i,j] <- sigmaTilde[xi[i], j]
+              sigmaTilde[i,j] ~ dinvgamma(a, b)
+          }
+          theta[i] <- thetaTilde[xi[i]]
+          thetaTilde[i] ~ dnorm(mu, phi)
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 2
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J), n, J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = rnorm(n), sigmaTilde = matrix(rgamma(n*J, 1, 1), n, J))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[2]], nodes)
+  nodes <- model$expandNodeNames('sigmaTilde')
+  expect_identical(cn$clusterNodes[[1]], c(matrix(nodes, J, n, byrow = TRUE)))
+  expect_identical(cn$numNodesPerCluster, c(2L, 1L))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(J+1))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- c(conf$getSamplers('thetaTilde'), conf$getSamplers('sigmaTilde'))
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*(J+1)))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), c(1:n, rep(1:n, each = J)))
+
+
+  ## Model K: more complicated intermediate nodes
+  ## We do not have normal-gamma conj set up; this is ok.
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y[i] ~ dnorm(theta[i], sd = sigma[i])
+          theta[i] <- thetaTilde[xi[i]]
+          sigma[i] <- 1 / tau[i]
+          tau[i] <- tauTilde[xi[i]]
+          thetaTilde[i] ~ dnorm(mu, var = sigmaTilde[i])
+          sigmaTilde[i] <- 1 / tauTilde[i]
+          tauTilde[i] ~ dgamma(a, b)
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+  n <- 5
+  J <- 2
+  constants <- list(n = n)
+  data <- list(y = rnorm(n))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = rnorm(n), tauTilde = rgamma(n, 1, 1))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[2]], nodes)
+  nodes <- model$expandNodeNames('tauTilde')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  expect_identical(cn$numNodesPerCluster, rep(1L, 2))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, 1)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(3))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- c(conf$getSamplers('thetaTilde'), conf$getSamplers('tauTilde'))
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, J))
+
+  ## 3-d case with non-variable 3rd index
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J) {
+              y[i,j] ~ dnorm(thetaTilde[xi[i], 2, j] , var = 1)
+          }
+      }
+      for(i in 1:n) {
+          for(j in 1:J) {
+              for(k in 1:2) {
+                  thetaTilde[i, k, j] ~ dnorm(0,1)
+              }
+          }
+      }
+      xi[1:n] ~ dCRP(1, size=n)
+  })
+
+  n <- 5
+  J <- 3
+  constants  <- list(n = n, J = J) 
+  inits <- list(xi = rep(1, n), 
+                thetaTilde = array(0, c(n,2,J)))
+  y <- matrix(0, nrow = n , ncol= J) 
+  data <- list(y = y)
+  model <- nimbleModel(code, data = data, inits = inits, constants = constants)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], c(t(array(nodes, c(n, 2, J))[,2,])))
+  expect_identical(cn$numNodesPerCluster, as.integer(J))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_conjugate_dnorm_dnorm")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')[16:30]
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, each = J))
+
+
+  ## 3-d case with full third index
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(k in 1:2) {
+              for(j in 1:J) {
+                  y[k,i,j] ~ dnorm(thetaTilde[k, xi[i], j] , var = 1)
+              }
+          }
+      }
+      for(i in 1:n) {
+          for(j in 1:J) {
+              for(k in 1:2) {
+                  thetaTilde[k, i, j] ~ dnorm(0,1)
+              }
+          }
+      }
+      xi[1:n] ~ dCRP(1, size=n)
+  })
+
+  n <- 5
+  J <- 3
+  constants  <- list(n = n, J = J) 
+  inits <- list(xi = rep(1, n), 
+                thetaTilde = array(0, c(2, n, J)))
+  y <- array(0, c(2, n, J))
+  data <- list(y = y)
+  model <- nimbleModel(code, data = data, inits = inits, constants = constants)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- c(matrix(model$expandNodeNames('thetaTilde[1:2, 1, 1:3]'), J, 2, byrow = TRUE),
+             matrix(model$expandNodeNames('thetaTilde[1:2, 2, 1:3]'), J, 2, byrow = TRUE),
+             matrix(model$expandNodeNames('thetaTilde[1:2, 3, 1:3]'), J, 2, byrow = TRUE),
+             matrix(model$expandNodeNames('thetaTilde[1:2, 4, 1:3]'), J, 2, byrow = TRUE),
+             matrix(model$expandNodeNames('thetaTilde[1:2, 5, 1:3]'), J, 2, byrow = TRUE))
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  expect_identical(cn$numNodesPerCluster, 6L)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_conjugate_dnorm_dnorm")
+  expect_identical(crpSampler$nObsPerClusID, 2*J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J*2))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, each = J*2))
+
+  ## index is a function - not allowed
+  code <- nimbleCode({
+      for(i in 1:3) {
+          for(j in 1:4) {
+              y[i,j] ~ dnorm(thetaTilde[xi[3-i+1], j] , var = 1) 
+              thetaTilde[i, j] ~ dnorm(0,1)
+          }
+      }
+      xi[1:3] ~ dCRP(1, size=3)
+  })
+
+  inits <- list(xi = c(1, 1, 1), 
+                thetaTilde = matrix(0, nrow=3,  ncol=4))
+  y <- matrix(5, nrow=3, ncol=4) 
+  data <- list(y = y)
+  model <- nimbleModel(code, data = data, inits = inits)
+  expect_error(conf <- configureMCMC(model, print = FALSE),
+               "findClusterNodes: Detected that a cluster parameter is indexed by a function")
+
+  ## index is a function - not allowed
+  code <- nimbleCode({
+      for(i in 1:3) {
+          for(j in 1:4) {
+              y[i,j] ~ dnorm(thetaTilde[xi[i+j], j] , var = 1) 
+              thetaTilde[i, j] ~ dnorm(0,1)
+          }
+      }
+      xi[1:7] ~ dCRP(1, size=7)
+  })
+
+  inits <- list(xi = rep(1,7), 
+                thetaTilde = matrix(0, nrow=3,  ncol=4))
+
+  y <- matrix(5, nrow=3, ncol=4) 
+  data <- list(y = y)
+  model <- nimbleModel(code, data = data, inits = inits)
+  expect_error(conf <- configureMCMC(model, print = FALSE),
+               "findClusterNodes: Detected that a cluster parameter is indexed by a function")
+
+  ## Cases of multiple use of CRP node 
+
+  ## use of xi[i] and xi[j] in same statement - not allowed
+  code <- nimbleCode({
+      for(i in 1:3) {
+          for(j in 1:4) {
+              y[i,j] ~ dnorm(thetaTilde[xi[i], xi[j]] , var = 1) 
+              thetaTilde[i, j] ~ dnorm(0,1)
+          }
+      }
+      xi[1:4] ~ dCRP(1, size=4)
+  })
+  inits <- list(xi = rep(1,7), 
+                thetaTilde = matrix(0, nrow=3,  ncol=4))
+
+  y <- matrix(5, nrow=3, ncol=4) 
+  data <- list(y = y)
+  model <- nimbleModel(code, data = data, inits = inits)
+  expect_error(conf <- configureMCMC(model, print = FALSE),
+               "findClusterNodes: CRP variable used multiple times")
+
+  ## use of xi[i] and xi[i] in same parameter - not allowed
+  code <- nimbleCode({
+      for(i in 1:4) {
+          for(j in 1:4) {
+              y[i,j] ~ dnorm(thetaTilde[xi[i], xi[i]] , var = 1) 
+              thetaTilde[i, j] ~ dnorm(0,1)
+          }
+      }
+      xi[1:4] ~ dCRP(1, size=4)
+  })
+  inits <- list(xi = rep(1,7), 
+                thetaTilde = matrix(0, nrow=4,  ncol=4))
+
+  y <- matrix(5, nrow=4, ncol=4)
+  data <- list(y = y)
+  model <- nimbleModel(code, data = data, inits = inits)
+  expect_error(conf <- configureMCMC(model, print = FALSE),
+               "findClusterNodes: CRP variable used multiple times")
+
+  ## xi[i] and xi[j] in separate parameters - not allowed
+  code <- nimbleCode({
+      for(i in 1:4) {
+          for(j in 1:4) {
+              y[i,j] ~ dnorm(thetaTilde[xi[i]], var = s2Tilde[xi[j]])
+          }
+      }
+      for(i in 1:4)
+          thetaTilde[i] ~ dnorm(0,1)
+      for(i in 1:4)
+          s2Tilde[i] ~ dnorm(0,1)
+      xi[1:4] ~ dCRP(1, size=4)
+  })
+  inits <- list(xi = rep(1,4))
+  y <- matrix(5, nrow=4, ncol=4)
+  data <- list(y = y)
+  model <- nimbleModel(code, data = data, inits = inits)
+  expect_error(conf <- configureMCMC(model, print = FALSE),
+               "findClusterNodes: found cluster membership parameters that use different indexing variables")
+
+  ## xi[i] used twice in same parameter legitimately
+  ## conjugate but we are not set up to use this conjugacy
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y[i] ~ dnorm(b0[xi[i]] + b1[xi[i]]*x[i], var = 1)
+      }
+      for(i in 1:n) {
+          b0[i] ~ dnorm(0,1)
+          b1[i] ~ dnorm(0,1)
+      }
+      xi[1:n] ~ dCRP(1, size=n)
+  })
+  n  <- 5
+  constants <- list(n = n)
+  data = list(y = rnorm(n))
+  inits = list(x = rnorm(n), xi = rep(1,n))
+  model <- nimbleModel(code, data = data, inits = inits, constants = constants)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('b0')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  nodes <- model$expandNodeNames('b1')
+  expect_identical(cn$clusterNodes[[2]], nodes)
+  expect_identical(cn$numNodesPerCluster, rep(1L, 2))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, 1)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(1))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- c(conf$getSamplers('b0'), conf$getSamplers('b1'))
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*2))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, 2))
+
+  ## xi[i] used twice in same parameter, variation
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y[i] ~ dnorm(beta[xi[i], 1] + beta[xi[i], 2]*x[i], var = 1)
+      }
+      for(i in 1:n) {
+          beta[i,1] ~ dnorm(0,1)
+          beta[i,2] ~ dnorm(0,1)
+      }
+      xi[1:n] ~ dCRP(1, size = n)
+  })
+  n  <- 5
+  constants <- list(n = n)
+  data = list(y = rnorm(n))
+  inits = list(x = rnorm(n), xi = rep(1,n))
+  model <- nimbleModel(code, data = data, inits = inits, constants = constants)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('beta')
+  expect_identical(cn$clusterNodes[[1]], nodes[1:n])
+  expect_identical(cn$clusterNodes[[2]], nodes[(n+1):(2*n)])
+  expect_identical(cn$numNodesPerCluster, rep(1L, 2))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, 1)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(1))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('beta')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*2))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, 2))
+
+  ## xi[i] used twice in same parameter, another variation
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y[i] ~ dnorm(beta[xi[i], 1] + beta[xi[i], 2]*x[i], var = 1)
+      }
+      for(i in 1:n) 
+          for(j in 1:2) 
+              beta[i,j] ~ dnorm(0,1)
+      xi[1:n] ~ dCRP(1, size=n)
+  })
+  n  <- 5
+  constants <- list(n = n)
+  data = list(y = rnorm(n))
+  inits = list(x = rnorm(n), xi = rep(1,n))
+  model <- nimbleModel(code, data = data, inits = inits, constants = constants)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('beta')
+  expect_identical(cn$clusterNodes[[1]], nodes[1:n])
+  expect_identical(cn$clusterNodes[[2]], nodes[(n+1):(2*n)])
+  expect_identical(cn$numNodesPerCluster, rep(1L, 2))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, 1)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(1))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('beta')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*2))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, 2))
+
+
+  ## use of inprod
+  ## conj not detected as we are only set up for b0 + x[i]*b1[xi[i]] type conjugacy
+  ## not b0[xi[i]]+x[i]*b1[xi[i]]
+  ## need to think more about when the nonidentity dnorm-dnorm conjugacy would be used
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y[i] ~ dnorm(inprod(beta[1:J, xi[i]], x[i,1:J]), var = 1)
+      }
+      for(i in 1:n)
+          for(j in 1:J)
+              beta[j, i] ~ dnorm(0,1)
+      xi[1:n] ~ dCRP(1, size = n)
+  })
+  n  <- 5
+  J <- 2
+  constants <- list(n = n, J = J)
+  data = list(y = rnorm(n))
+  inits = list(x = matrix(rnorm(n*J),n,J), xi = rep(1,n))
+  model <- nimbleModel(code, data = data, inits = inits, constants = constants)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('beta')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  expect_identical(cn$numNodesPerCluster, as.integer(J))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, 1)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('beta')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*2))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, each = J))
+
+
+  ## a variation on the previous case, changing the prior
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y[i] ~ dnorm(inprod(beta[1:J, xi[i]], x[i,1:J]), var = 1)
+      }
+      for(i in 1:n)
+          beta[1:J, i] ~ dmnorm(z[1:J], pr[1:J,1:J])
+      xi[1:n] ~ dCRP(1, size=n)
+  })
+
+  n <- 5
+  J <- 2
+  constants <- list(n = n, J = J)
+  data = list(y = rnorm(n))
+  inits = list(x = matrix(rnorm(n*J),n,J), xi = rep(1,n), pr = diag(J))
+  model <- nimbleModel(code, data = data, inits = inits, constants = constants)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('beta')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  expect_identical(cn$numNodesPerCluster, as.integer(1))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, 1)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('beta')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), 1:n)
+
+  ## non-independent observations within a group - not allowed
+  code <- nimbleCode({
+      for(i in 1:4) {
+          for(j in 2:3) {
+              y[i,j] ~ dnorm(mu[xi[i]] + y[i,j-1], 1)
+          }
+      }
+      for(i in 1:4) {
+          mu[i] ~ dnorm(0,1)
+      }
+      xi[1:4] ~ dCRP(1, size=4)
+  })
+  data = list(y =matrix( rnorm(4*3), 4 ,3))
+  inits = list(xi = rep(1,4))
+  model <- nimbleModel(code, data = data, inits = inits)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  expect_error(mcmc <- buildMCMC(conf), "sampler_CRP: Variables being clustered must be conditionally independent")
+
+  ## another non-indep of observations within a group - not allowed
+  code <- nimbleCode({
+      for(i in 1:4) {
+          for(j in 2:3) {
+              y[i,j] ~ dnorm(mu[xi[i]], exp(y[i,j-1]))
+          }
+      }
+      for(i in 1:4) {
+          mu[i] ~ dnorm(0,1)
+      }
+      xi[1:4] ~ dCRP(1, size=4)
+  })
+  data = list(y =matrix( rnorm(4*3), 4 ,3))
+  inits = list(xi = rep(1,4))
+  model <- nimbleModel(code, data = data, inits = inits)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  expect_error(mcmc <- buildMCMC(conf), "sampler_CRP: Variables being clustered must be conditionally independent")
+
+  ## observations dependent across group - not allowed
+  code <- nimbleCode({
+      for(i in 2:4) {
+          for(j in 1:3) {
+              y[i,j] ~ dnorm(mu[xi[i]] + y[i-1,j], 1)
+          }
+      }
+      for(i in 1:4) {
+          mu[i] ~ dnorm(0,1)
+      }
+      xi[1:4] ~ dCRP(1, size=4)
+  })
+  data = list(y =matrix( rnorm(4*3), 4 ,3))
+  inits = list(xi = rep(1,4))
+  model <- nimbleModel(code, data = data, inits = inits)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  expect_error(mcmc <- buildMCMC(conf), "sampler_CRP: Variables being clustered must be conditionally independent")
+
+  ## observations dependent across group, second case - not allowed
+  code <- nimbleCode({
+      for(i in 1:3) {
+          for(j in 1:3) {
+              y[i,j] ~ dnorm(mu[xi[i]] + y[i+1,j], 1)
+          }
+      }
+      for(i in 1:4) {
+          mu[i] ~ dnorm(0,1)
+      }
+      xi[1:4] ~ dCRP(1, size=4)
+  })
+  data = list(y =matrix( rnorm(4*3), 4 ,3))
+  inits = list(xi = rep(1,4))
+  model <- nimbleModel(code, data = data, inits = inits)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  ## errors with lack of independence but error doesn't distinguish within vs. between group
+  expect_error(mcmc <- buildMCMC(conf), "sampler_CRP: Variables being clustered must be conditionally independent")
+
+  ## non-independence across groups, third case - not allowed
+  code <- nimbleCode({
+      for(i in 1:4) {
+          y[i,1] ~ dnorm(mu[xi[i]], 1)
+          for(j in 2:3) {
+              y[i,j] ~ dnorm(mu[xi[i]] + y[i,j-1], 1)
+          }
+      }
+      for(i in 1:4) {
+          mu[i] ~ dnorm(0,1)
+      }
+      xi[1:4] ~ dCRP(1, size=4)
+  })
+  data = list(y =matrix( rnorm(4*3), 4 ,3))
+  inits = list(xi = rep(1,4))
+  model <- nimbleModel(code, data = data, inits = inits)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  ## errors with lack of independence but error doesn't distinguish within vs. between group
+  expect_error(mcmc <- buildMCMC(conf), "sampler_CRP: Variables being clustered must be conditionally independent")
+
+  ## y dependence in multivariate way
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y[i,1:2] ~ dmnorm(mu[xi[i], 1:2], cov = sigma[xi[i],1:2,1:2])
+          mu[i, 1:2] ~ dmnorm(mu0[1:2], iden[1:2,1:2])
+          sigma[i,1:2,1:2] ~ dinvwish(S[1:2,1:2], nu)
+      }
+      xi[1:n] ~ dCRP(1, size=n)
+  })
+  n <- 5
+  data = list(y =matrix( rnorm(n*2), n ,2))
+  sigma <- array(0, c(n, 2, 2))
+  for(i in 1:n)
+      sigma[i, 1:2, 1:2] <- diag(2)
+  inits = list(xi = rep(1,n), iden = diag(2), sigma = sigma, S = diag(2))
+  model <- nimbleModel(code, constants = list(n = n), data = data, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('mu')
+  expect_identical(cn$clusterNodes[[2]], nodes)
+  nodes <- model$expandNodeNames('sigma')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  
+  expect_identical(cn$numNodesPerCluster, rep(1L, 2))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, 1)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(1))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- c(conf$getSamplers('mu'), conf$getSamplers('sigma'))
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*2))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, 2))
+
+  ## various dmnorm-invwish cases
+  sigma <- array(0, c(n, 2, 2))
+  for(i in 1:n)
+      sigma[i, 1:2, 1:2] <- diag(2)
+
+  ## single obs per clusterID
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y[i,1:2] ~ dmnorm(mu[xi[i], 1:2], cov = sigma[xi[i],1:2,1:2])
+          mu[i, 1:2] ~ dmnorm(mu0[1:2], cov = sigmaAux[i,1:2,1:2])
+          sigmaAux[i,1:2,1:2] <- sigma[i,1:2,1:2]/kappa
+          sigma[i,1:2,1:2] ~ dinvwish(S[1:2,1:2], nu)
+      }
+      xi[1:n] ~ dCRP(1, size=n)
+  })
+  n <- 5
+  data = list(y =matrix( rnorm(n*2), n ,2))
+  inits = list(xi = rep(1,n), S = diag(2), sigma = sigma, kappa = 1)
+  model <- nimbleModel(code, constants = list(n = n), data = data, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('mu')
+  expect_identical(cn$clusterNodes[[2]], nodes)
+  nodes <- model$expandNodeNames('sigma')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  
+  expect_identical(cn$numNodesPerCluster, rep(1L, 2))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_conjugate_dmnorm_invwish_dmnorm")
+  expect_identical(crpSampler$nObsPerClusID, 1)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(1))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- c(conf$getSamplers('mu'), conf$getSamplers('sigma'))
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*2))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, 2))
+
+  ## standard case with multiple obs
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:2) {
+              y[i, j,1:2] ~ dmnorm(mu[xi[i], j, 1:2], cov = sigma[xi[i], j, 1:2,1:2])
+              mu[i, j, 1:2] ~ dmnorm(mu0[1:2], cov = sigmaAux[i, j, 1:2,1:2])
+              sigmaAux[i, j, 1:2,1:2] <- sigma[i, j, 1:2,1:2]/kappa
+              sigma[i, j, 1:2,1:2] ~ dinvwish(S[1:2,1:2], nu)
+          }}
+      xi[1:n] ~ dCRP(1, size=n)
+  })
+  n <- 5
+  sigma <- array(0, c(n, 2, 2, 2))
+  for(i in 1:n)
+      for(j in 1:2) 
+      sigma[i, j, 1:2, 1:2] <- diag(2)
+  data = list(y =array(rnorm(n*2*2), c(n, 2, 2)))
+  inits = list(xi = rep(1,n), kappa = 1, sigma = sigma, S = diag(2))
+  model <- nimbleModel(code, constants = list(n=n), data = data, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('mu')
+  expect_identical(cn$clusterNodes[[2]], c(matrix(nodes, 2, n, byrow = TRUE)))
+  nodes <- model$expandNodeNames('sigma')
+  expect_identical(cn$clusterNodes[[1]], c(matrix(nodes, 2, n, byrow = TRUE)))
+  
+  expect_identical(cn$numNodesPerCluster, rep(2L, 2))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_conjugate_dmnorm_invwish_dmnorm")
+  expect_identical(crpSampler$nObsPerClusID, 2)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(2))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- c(conf$getSamplers('mu'), conf$getSamplers('sigma'))
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*2*2))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(rep(1:n, each = 2), 2))
+
+
+  ## not IID across clusters
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:2) {
+              y[i, j,1:2] ~ dmnorm(mu[xi[i], j, 1:2], cov = sigma[xi[i], j, 1:2,1:2])
+              mu[i, j, 1:2] ~ dmnorm(mu0[i, 1:2], cov = sigmaAux[i, j, 1:2,1:2])
+              sigmaAux[i, j, 1:2,1:2] <- sigma[i, j, 1:2,1:2]/kappa
+              sigma[i, j, 1:2,1:2] ~ dinvwish(S[1:2,1:2], nu)
+          }}
+      xi[1:n] ~ dCRP(1, size=n)
+  })
+  n <- 5
+  data = list(y =array(rnorm(n*2*2), c(n, 2, 2)))
+  inits = list(xi = rep(1,n), kappa = 1, S = diag(2), sigma = sigma)
+  model <- nimbleModel(code, data = data, inits = inits, constants = list(n = n))
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('mu')
+  expect_identical(cn$clusterNodes[[2]], c(matrix(nodes, 2, n, byrow = TRUE)))
+  nodes <- model$expandNodeNames('sigma')
+  expect_identical(cn$clusterNodes[[1]], c(matrix(nodes, 2, n, byrow = TRUE)))
+  
+  expect_identical(cn$numNodesPerCluster, rep(2L, 2))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, 2)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(2))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- c(conf$getSamplers('mu'), conf$getSamplers('sigma'))
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*2*2))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(rep(1:n, each = 2), 2))
+
+
+  ## IID across but not within clusters
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:2) {
+              y[i, j,1:2] ~ dmnorm(mu[xi[i], j, 1:2], cov = sigma[xi[i], j, 1:2,1:2])
+              mu[i, j, 1:2] ~ dmnorm(mu0[j, 1:2], cov = sigmaAux[i, j, 1:2,1:2])
+              sigmaAux[i, j, 1:2,1:2] <- sigma[i, j, 1:2,1:2]/kappa
+              sigma[i, j, 1:2,1:2] ~ dinvwish(S[1:2,1:2], nu)
+          }}
+      xi[1:n] ~ dCRP(1, size=n)
+  })
+  n <- 5
+  data = list(y =array(rnorm(n*2*2), c(n, 2, 2)))
+  inits = list(xi = rep(1,n), kappa = 1, sigma = sigma, S = diag(2))
+  model <- nimbleModel(code, data = data, inits = inits, constants = list(n=n))
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('mu')
+  expect_identical(cn$clusterNodes[[2]], c(matrix(nodes, 2, n, byrow = TRUE)))
+  nodes <- model$expandNodeNames('sigma')
+  expect_identical(cn$clusterNodes[[1]], c(matrix(nodes, 2, n, byrow = TRUE)))
+  
+  expect_identical(cn$numNodesPerCluster, rep(2L, 2))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_conjugate_dmnorm_invwish_dmnorm")
+  expect_identical(crpSampler$nObsPerClusID, 2)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(2))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- c(conf$getSamplers('mu'), conf$getSamplers('sigma'))
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*2*2))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(rep(1:n, each = 2), 2))
+
+
+  ## no dependence on sigma in mu prior
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:2) {
+              y[i, j,1:2] ~ dmnorm(mu[xi[i], j, 1:2], cov = sigma[xi[i], j, 1:2,1:2])
+              mu[i, j, 1:2] ~ dmnorm(mu0[1:2], cov = pr[1:2,1:2])
+              sigma[i, j, 1:2,1:2] ~ dinvwish(S[1:2,1:2], nu)
+          }}
+      xi[1:n] ~ dCRP(1, size=n)
+  })
+  n <- 5
+  data = list(y =array(rnorm(n*2*2), c(n, 2, 2)))
+  inits = list(xi = rep(1,n), sigma = sigma, pr = diag(2), S = diag(2))
+  model <- nimbleModel(code, data = data, inits = inits, constants = list(n=n))
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('mu')
+  expect_identical(cn$clusterNodes[[2]], c(matrix(nodes, 2, n, byrow = TRUE)))
+  nodes <- model$expandNodeNames('sigma')
+  expect_identical(cn$clusterNodes[[1]], c(matrix(nodes, 2, n, byrow = TRUE)))
+  
+  expect_identical(cn$numNodesPerCluster, rep(2L, 2))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, 2)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(2))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- c(conf$getSamplers('mu'), conf$getSamplers('sigma'))
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*2*2))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(rep(1:n, each = 2), 2))
+
+  ## only one sigma per cluster
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:2) {
+              y[i, j, 1:2] ~ dmnorm(mu[xi[i], j, 1:2], cov = sigma[xi[i], 1:2,1:2])
+              mu[i, j, 1:2] ~ dmnorm(mu0[1:2], cov = sigmaAux[i, 1:2,1:2])
+          }
+          sigmaAux[i, 1:2,1:2] <- sigma[i, 1:2,1:2]/kappa
+          sigma[i, 1:2,1:2] ~ dinvwish(S[1:2,1:2], nu)
+      }
+      xi[1:n] ~ dCRP(1, size=n)
+  })
+  sigma <- array(0, c(n, 2, 2))
+  for(i in 1:n)
+      sigma[i, 1:2, 1:2] <- diag(2)
+  n <- 5
+  data = list(y =array(rnorm(n*2*2), c(n, 2, 2)))
+  inits = list(xi = rep(1,n), sigma = sigma, S = diag(2), kappa = 1)
+  model <- nimbleModel(code, data = data, inits = inits, constants = list(n = n))
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('mu')
+  expect_identical(cn$clusterNodes[[2]], c(matrix(nodes, 2, n, byrow = TRUE)))
+  nodes <- model$expandNodeNames('sigma')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  
+  expect_identical(cn$numNodesPerCluster, c(1L, 2L))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, 2)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(1))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- c(conf$getSamplers('mu'), conf$getSamplers('sigma'))
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*3))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), c(rep(1:n, each = 2), 1:n))
+
+  ## only one mu and one sigma per cluster
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:2) 
+              y[i, j,1:2] ~ dmnorm(mu[xi[i], 1:2], cov = sigma[xi[i], 1:2,1:2])
+          mu[i, 1:2] ~ dmnorm(mu0[1:2], cov = sigmaAux[i, 1:2,1:2])
+          sigmaAux[i, 1:2,1:2] <- sigma[i, 1:2,1:2]/kappa
+          sigma[i, 1:2,1:2] ~ dinvwish(S[1:2,1:2], nu)
+      }
+      xi[1:n] ~ dCRP(1, size=n)
+  })
+  n <- 5
+  data = list(y =array(rnorm(n*2*2), c(5, 2, 2)))
+  inits = list(xi = rep(1,n), kappa = 1, S = diag(2), sigma = sigma)
+  model <- nimbleModel(code, data = data, inits = inits, constants = list(n=n))
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('mu')
+  expect_identical(cn$clusterNodes[[2]], nodes)
+  nodes <- model$expandNodeNames('sigma')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  
+  expect_identical(cn$numNodesPerCluster, rep(1L, 2))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, 2)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(1))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- c(conf$getSamplers('mu'), conf$getSamplers('sigma'))
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*2))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, 2))
+
+  ## y dependence in multivariate way
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y[i,1:2] ~ dmnorm(mu[xi[i], 1:2], cov = sigma[1:2,1:2])
+          mu[i, 1:2] ~ dmnorm(mu0[1:2], iden[1:2,1:2])
+      }
+      xi[1:n] ~ dCRP(1, size=n)
+  })
+  n <- 5
+  data = list(y =matrix( rnorm(n*2), n ,2))
+  inits = list(xi = rep(1,n), iden = diag(2), sigma = diag(2))
+  model <- nimbleModel(code, data = data, inits = inits, constants = list(n=n))
+  
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('mu')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  
+  expect_identical(cn$numNodesPerCluster, 1L)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_conjugate_dmnorm_dmnorm")
+  expect_identical(crpSampler$nObsPerClusID, 1)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('mu')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), 1:n)
+
+
+  ## clusters not independent - not allowed
+  code <- nimbleCode({
+      for(i in 1:4) 
+          y[i] ~ dnorm(thetaTilde[xi[i]], 1)
+      thetaTilde[1] ~ dnorm(a,1)
+      for(i in 2:4)
+          thetaTilde[i] ~ dnorm(thetaTilde[i-1], 1)
+      xi[1:4] ~ dCRP(1, size=4)
+      a ~ dunif(0,1)
+  })
+  data = list(y = rnorm(4))
+  inits = list(xi = rep(1,4))
+  model <- nimbleModel(code, data = data, inits = inits)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  expect_error(mcmc <- buildMCMC(conf), "sampler_CRP: cluster parameters must be independent across clusters")
+
+  ## clusters not indep - alternative case - not allowed
+  code <- nimbleCode({
+      for(i in 1:4) 
+          y[i] ~ dnorm(thetaTilde[xi[i]], 1)
+      thetaTilde[4] ~ dnorm(0,1)
+      for(i in 1:3)
+          thetaTilde[i] ~ dnorm(thetaTilde[i+1], 1)
+      xi[1:4] ~ dCRP(1, size=4)
+  })
+  data = list(y = rnorm(4))
+  inits = list(xi = rep(1,4))
+  model <- nimbleModel(code, data = data, inits = inits)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  expect_error(mcmc <- buildMCMC(conf), "sampler_CRP: cluster parameters must be independent across clusters")
+
+
+  ## clusters not indep, with mv declaration - not allowed
+  ## errors when trying to wrap sampler because there is only
+  ## one cluster node. Might want have configureMCMC
+  ## give up on wrapping and then have error occur in buildMCMC().
+  code <- nimbleCode({
+      for(i in 1:4) 
+          y[i] ~ dnorm(thetaTilde[xi[i]], 1)
+      thetaTilde[1:4] ~ dmnorm(z[1:4], iden[1:4,1:4]) # formally indep but not known to us
+      xi[1:4] ~ dCRP(1, size=4)
+  })
+  data = list(y = rnorm(4))
+  inits = list(xi = rep(1,4), iden = diag(4))
+  model <- nimbleModel(code, data = data, inits = inits)
+  expect_error(conf <- configureMCMC(model, print = FALSE),
+               "Cannot determine wrapped sampler for cluster parameter")
+
+  ## clusters indep G0 but not IID
+  code <- nimbleCode({
+      for(i in 1:4)  {
+          y[i] ~ dnorm(thetaTilde[xi[i]], 1)
+          thetaTilde[i] ~ dnorm(i, 1)
+      }
+      xi[1:4] ~ dCRP(1, size=4)
+  })
+  n <- 4
+  data = list(y = rnorm(4))
+  inits = list(xi = rep(1,4))
+  model <- nimbleModel(code, data = data, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:4]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  
+  expect_identical(cn$numNodesPerCluster, 1L)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, 1)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), 1:n)
+
+
+  ## clusters indep G0 but not IID, case 2
+  code <- nimbleCode({
+      for(i in 1:4) 
+          y[i] ~ dnorm(thetaTilde[xi[i]], 1)
+      for(i in 1:3) 
+          thetaTilde[i] ~ dnorm(0, 1)
+      thetaTilde[4] ~ dnorm(5, 2)
+      xi[1:4] ~ dCRP(1, size=4)
+  })
+  n <- 4
+  data = list(y = rnorm(4))
+  inits = list(xi = rep(1,4))
+  model <- nimbleModel(code, data = data, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:4]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  
+  expect_identical(cn$numNodesPerCluster, 1L)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, 1)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), 1:n)
+
+  
+  ## various cases of clusters indep but not IID G0
+  code <- nimbleCode({
+      for(i in 1:3) {
+          y[i] ~ dnorm(thetaTilde[xi[i]], 1)
+      }
+      thetaTilde[1] ~ dnorm(0, 1)
+      thetaTilde[2] ~ dgamma(1, 1)
+      thetaTilde[3] ~ dnorm(5, 1)
+      xi[1:3] ~ dCRP(alpha, size = 3)
+  })
+
+  n <- 3
+  constants <- list(n = n)
+  data <- list(y = rnorm(n))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = rnorm(n))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  cn <- nimble:::findClusterNodes(model, 'xi[1:4]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  
+  expect_identical(cn$numNodesPerCluster, 1L)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, 1)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), 1:n)
+
+
+  code <- nimbleCode({
+      for(i in 1:3) {
+          y[i] ~ dnorm(theta[i], 1)
+          theta[i] <- thetaTilde[xi[i]]
+      }
+      thetaTilde[1] ~ dnorm(0, 1)
+      thetaTilde[2] ~ dgamma(1, 1)
+      thetaTilde[3] ~ dnorm(5, 1)
+      xi[1:3] ~ dCRP(alpha, size = 3)
+  })
+
+  n <- 3
+  constants <- list(n = n)
+  data <- list(y = rnorm(n))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = rnorm(n))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:4]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  
+  expect_identical(cn$numNodesPerCluster, 1L)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, 1)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(1))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), 1:n)
+
+
+  ## case that is not allowed; doesn't like that thetas defined without using an indexing variable
+  code <- nimbleCode({
+      for(i in 1:3) {
+          y[i] ~ dnorm(theta[i], 1)
+          thetaTilde[i] ~ dnorm(0,1)
+      }
+      theta[1] <- thetaTilde[xi[1]]
+      theta[2] <- exp(thetaTilde[xi[2]])
+      theta[3] <- thetaTilde[xi[3]]
+      xi[1:3] ~ dCRP(alpha, size = 3)
+  })
+
+  n <- 3
+  constants <- list(n = n)
+  data <- list(y = rnorm(n))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = rnorm(n))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  expect_error(mcmc <- buildMCMC(conf), "sampler_CRP: Detected unusual indexing")
+
+  ## another variation
+  code <- nimbleCode({
+      for(i in 1:4) {
+          y[i] ~ dnorm(theta[i], 1)
+          thetaTilde[i] ~ dnorm(0,1)
+      }
+      for(i in 1:2) 
+          theta[i] <- thetaTilde[xi[i]]
+      for(j in 3:4)
+          theta[j] <- exp(thetaTilde[xi[j]])
+      xi[1:4] ~ dCRP(alpha, size = 4)
+  })
+
+  n <- 4
+  constants <- list(n = n)
+  data <- list(y = rnorm(n))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = rnorm(n))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  expect_error(mcmc <- buildMCMC(conf), "sampler_CRP: differing number of clusters")
+
+  ## cases of multiple obs per group regarding priors on cluster parameters
+
+  ## clusters indep G0; multiple obs per group
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J) {
+              y[i, j] ~ dnorm(thetaTilde[xi[i], j], 1)
+              thetaTilde[i, j] ~ dnorm(i, 1)  # IID within cluster, indep across
+          }}
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 3
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(J*n), n, J))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], c(matrix(nodes, J, n, byrow = TRUE)))
+  expect_identical(cn$numNodesPerCluster, as.integer(J))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, each = J))
+
+
+  ## clusters IID G0; indep but not identically distributed within cluster, 
+  ## this uses conjugacy
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J) {
+              y[i, j] ~ dnorm(thetaTilde[xi[i], j], 1)
+              thetaTilde[i, j] ~ dnorm(j, 1)   # indep within cluster, IID across
+          }}
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 3
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(J*n), n, J))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], c(matrix(nodes, J, n, byrow = TRUE)))
+  expect_identical(cn$numNodesPerCluster, as.integer(J))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_conjugate_dnorm_dnorm")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, each = J))
+
+
+  ## clusters IID G0; indep but not identically distributed within cluster, 
+  ## this case is of interest, discussed 2020-01-24 at Berkeley meeting
+
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y[i, 1] ~ dnorm(thetaTilde[xi[i], 1], 1)
+          y[i, 2] ~ dgamma(thetaTilde[xi[i], 2], 1)
+          thetaTilde[i, 1] ~ dnorm(0, 1)   # indep within cluster, IID across
+          thetaTilde[i, 2] ~ dgamma(1, 1)   # indep within cluster, IID across
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 2
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = cbind(rnorm(n), rgamma(n,1,1)))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], nodes[1:n])
+  expect_identical(cn$clusterNodes[[2]], nodes[(n+1):(2*n)])
+  expect_identical(cn$numNodesPerCluster, rep(1L, 2))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, J))
+
+
+  ## clusters IID G0, indep within cluster
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J) {
+              y[i, j] ~ dnorm(thetaTilde[xi[i], j], 1)
+          }
+          thetaTilde[i, 1] ~ dnorm(0, 1)
+          thetaTilde[i, 2] ~ dgamma(3, 1)
+          thetaTilde[i, 3] ~ dnorm(5, 1)
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 3
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(J*n), n, J))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], c(matrix(nodes, J, n, byrow = TRUE)))
+  expect_identical(cn$numNodesPerCluster, as.integer(J))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, J))
+
+  
+  ## clusters IID G0; dep within cluster
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J) {
+              y[i, j] ~ dnorm(thetaTilde[xi[i], j], 1)
+          }
+          thetaTilde[i, 1] ~ dnorm(0,1)
+          thetaTilde[i, 2] ~ dnorm(thetaTilde[i,1], 1)
+          thetaTilde[i, 3] ~ dnorm(thetaTilde[i,2], 1)
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 3
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(J*n), n, J))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], c(matrix(nodes, J, n, byrow = TRUE)))
+  expect_identical(cn$numNodesPerCluster, as.integer(J))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, J))
+
+  ## mutilde and s2tilde; not conjugate
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J) {
+              y[i, j] ~ dnorm(thetaTilde[xi[i], j], var = s2tilde[xi[i]])
+              thetaTilde[i, j] ~ dnorm(0, 1)
+          }
+          s2tilde[i] ~ dinvgamma(1,1)
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 3
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(J*n), n, J), s2tilde = rgamma(n, 1, 1))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('s2tilde')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[2]], c(matrix(nodes, J, n, byrow = TRUE)))
+  expect_identical(cn$numNodesPerCluster, c(1L, 3L))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(1))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers(c('thetaTilde', 's2tilde'))
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*(J+1)))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), c(1:n, rep(1:n, each = J)))
+
+
+  ## mutilde and s2tilde; not conjugate, case 2
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J) {
+              y[i, j] ~ dnorm(thetaTilde[xi[i]], var = s2tilde[xi[i]])
+          }
+          thetaTilde[i] ~ dnorm(0, 1)
+          s2tilde[i] ~ dinvgamma(1,1)
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 3
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = rnorm(n), s2tilde = rgamma(n, 1, 1))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('s2tilde')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[2]], nodes)
+  expect_identical(cn$numNodesPerCluster, c(1L, 1L))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(1))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers(c('thetaTilde', 's2tilde'))
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*2))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, 2))
+
+  ## mutilde and s2tilde; standard conjugacy                      
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J) {
+              y[i, j] ~ dnorm(thetaTilde[xi[i], j], var = s2tilde[xi[i], j])
+              thetaTilde[i, j] ~ dnorm(theta0, var = s2tilde[i, j]/kappa)
+              s2tilde[i, j] ~ dinvgamma(1,1)
+          }
+
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 3
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(J*n), n, J), s2tilde = matrix(rgamma(J*n, 1, 1),n,J))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('s2tilde')
+  expect_identical(cn$clusterNodes[[1]], c(matrix(nodes, J, n, byrow = TRUE)))
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[2]], c(matrix(nodes, J, n, byrow = TRUE)))
+  expect_identical(cn$numNodesPerCluster, rep(as.integer(J), 2))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_conjugate_dnorm_invgamma_dnorm")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(J))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers(c('thetaTilde', 's2tilde'))
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J*2))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(rep(1:n, each = J), 2))
+
+
+
+  ## mutilde and s2tilde; standard conjugacy but indexing is weird
+  ## this has deps for s2tilde[1,1], but I think ok as changing s2tilde[1,1]
+  ## doesn't impact likelihood so will amount to sample from prior
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J) {
+              y[i, j] ~ dnorm(thetaTilde[xi[i], j], var = s2tilde[xi[i]+1, j])
+              thetaTilde[i, j] ~ dnorm(theta0, var = s2tilde[i+1, j]/kappa)
+          }
+      }
+      for(i in 1:(n+1)) {
+          for(j in 1:J) {
+              s2tilde[i, j] ~ dinvgamma(1,1)
+          }
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 3
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(J*n), n, J), s2tilde = matrix(rgamma(J*(n+1), 1, 1),n+1,J))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('s2tilde')
+  expect_identical(cn$clusterNodes[[1]], c(matrix(nodes, J, n+1, byrow = TRUE)[,-1]))
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[2]], c(matrix(nodes, J, n, byrow = TRUE)))
+  expect_identical(cn$numNodesPerCluster, rep(as.integer(J), 2))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_conjugate_dnorm_invgamma_dnorm")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(J))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers(c('thetaTilde', 's2tilde'))[-(1:J)]
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J*2))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(rep(1:n, each = J), 2))
+
+  ## mutilde and s2tilde, IID across cluster, indep within, conjugate
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J) {
+              y[i, j] ~ dnorm(thetaTilde[xi[i], j], var = s2tilde[xi[i], j])
+              thetaTilde[i, j] ~ dnorm(j, var = s2tilde[i, j]/kappa)
+              s2tilde[i, j] ~ dinvgamma(1,1)
+          }
+
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 3
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(J*n), n, J), s2tilde = matrix(rgamma(J*n, 1, 1),n,J))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('s2tilde')
+  expect_identical(cn$clusterNodes[[1]], c(matrix(nodes, J, n, byrow = TRUE)))
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[2]], c(matrix(nodes, J, n, byrow = TRUE)))
+  expect_identical(cn$numNodesPerCluster, rep(as.integer(J), 2))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_conjugate_dnorm_invgamma_dnorm")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(J))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers(c('thetaTilde', 's2tilde'))
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J*2))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(rep(1:n, each = J), 2))
+
+  ## mutilde and s2tilde, not IID across clusters
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J) {
+              y[i, j] ~ dnorm(thetaTilde[xi[i], j], var = s2tilde[xi[i], j])
+              thetaTilde[i, j] ~ dnorm(i, var = s2tilde[i, j]/kappa)
+              s2tilde[i, j] ~ dinvgamma(1,1)
+          }
+
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 3
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(J*n), n, J), s2tilde = matrix(rgamma(J*n, 1, 1),n,J))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('s2tilde')
+  expect_identical(cn$clusterNodes[[1]], c(matrix(nodes, J, n, byrow = TRUE)))
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[2]], c(matrix(nodes, J, n, byrow = TRUE)))
+  expect_identical(cn$numNodesPerCluster, rep(as.integer(J), 2))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(J))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers(c('thetaTilde', 's2tilde'))
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J*2))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(rep(1:n, each = J), 2))
+
+  ## mutilde and s2tilde; not conj because don't have one parameter set per obs
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J) {
+              y[i, j] ~ dnorm(thetaTilde[xi[i]], var = s2tilde[xi[i]])
+          }
+          thetaTilde[i] ~ dnorm(theta0, var = s2tilde[i]/kappa)
+          s2tilde[i] ~ dinvgamma(1,1)
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 3
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = rnorm(n), s2tilde = rgamma(n, 1, 1))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('s2tilde')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[2]], nodes)
+  expect_identical(cn$numNodesPerCluster, rep(as.integer(1), 2))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(1))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers(c('thetaTilde', 's2tilde'))
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*2))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), rep(1:n, 2))
+
+  ## weird case of multiple thetaTilde but not s2tilde
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J) {
+              y[i, j] ~ dnorm(thetaTilde[xi[i], j], var = s2tilde[xi[i]])
+              thetaTilde[i,j] ~ dnorm(theta0, var = s2tilde[i]/kappa)
+          }
+          s2tilde[i] ~ dinvgamma(1,1)
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  J <- 3
+  constants <- list(n = n, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = matrix(rnorm(J*n), n, J), s2tilde = rgamma(n, 1, 1))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('s2tilde')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[2]], c(matrix(nodes, J, n, byrow = TRUE)))
+  expect_identical(cn$numNodesPerCluster, c(1L, 3L))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, J)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(1))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers(c('thetaTilde', 's2tilde'))
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*(J+1)))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), c(1:n, rep(1:n, each = J)))
+
+  ## function in index - not allowed
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y[i] ~ dnorm(thetaTilde[xi[n-i+1]], 1)
+      }
+      for(i in 1:n) {
+          thetaTilde[i] ~ dnorm(0, 1)
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  constants <- list(n = n)
+  data <- list(y = rnorm(n))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = rnorm(n))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  expect_error(conf <- configureMCMC(model, print = FALSE),
+                "findClusterNodes: Detected that a cluster parameter is indexed by a function")
+
+  ## function in index - not allowed
+  ## errors because can't figure out indexing of xi
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y[i] ~ dnorm(thetaTilde[xi[exp(i)]], 1)
+      }
+      for(i in 1:n) {
+          thetaTilde[i] ~ dnorm(0, 1)
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  constants <- list(n = n)
+  data <- list(y = rnorm(n))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = rnorm(n))
+  expect_error(model <- nimbleModel(code, data = data, constants = constants, inits = inits),
+               "dimensions specified are smaller than")
+
+
+  ## function in index - not allowed
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y[i] ~ dnorm(thetaTilde[xi[i]], s2tilde[xi[n-i+1]])
+      }
+      for(i in 1:n) {
+          thetaTilde[i] ~ dnorm(0, 1)
+      }
+      for(i in 1:n)
+          s2tilde[i] ~ dunif(0, 10)
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  constants <- list(n = n)
+  data <- list(y = rnorm(n))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = rnorm(n), s2tilde = runif(n+1))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  expect_error(conf <- configureMCMC(model, print = FALSE),
+               "findClusterNodes: Detected that a cluster parameter is indexed by a function")
+
+  ## use of tilde var in two separate parameters; allowed, non-conj
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y[i] ~ dnorm(thetaTilde[xi[i]], exp(thetaTilde[xi[i]]))
+      }
+      for(i in 1:n) {
+          thetaTilde[i] ~ dnorm(0, 1)
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  constants <- list(n = n)
+  data <- list(y = rnorm(n))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = rnorm(n))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  expect_identical(cn$numNodesPerCluster, rep(1L, 2))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, 1)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(1))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), 1:n)
+
+  ## use of tilde var in two separate parameters, partial intermediate; allowed, non-conj
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y[i] ~ dnorm(theta[i], exp(thetaTilde[xi[i]]))
+      }
+      for(i in 1:n) {
+          thetaTilde[i] ~ dnorm(0, 1)
+          theta[i] <- thetaTilde[xi[i]]
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  constants <- list(n = n)
+  data <- list(y = rnorm(n))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = rnorm(n))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  expect_identical(cn$numNodesPerCluster, rep(1L, 2))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, 1)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(2))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), 1:n)
+
+
+  ## case where inconsistent indexing would mess up cluster creation
+  ## and nosample-empty-clusters
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y[i] ~ dnorm(thetaTilde[xi[i]+1], exp(thetaTilde[xi[i]]))
+      }
+      for(i in 1:(n+1)) {
+          thetaTilde[i] ~ dnorm(0, 1)
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  constants <- list(n = n)
+  data <- list(y = rnorm(n))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = rnorm(n+1))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  expect_error(mcmc <- buildMCMC(conf), "sampler_CRP: Inconsistent indexing")
+
+  ## two obs declarations so conj not detected
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y1[i] ~ dnorm(thetaTilde[xi[i]], 1)
+          y2[i] ~ dnorm(thetaTilde[xi[i]], 1)
+          thetaTilde[i] ~ dnorm(mu, sigma)
+      }
+      xi[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  constants <- list(n = n)
+  data <- list(y1 = rnorm(n), y2 = rnorm(n))
+  inits <- list(alpha = 1, xi = rep(1, n),
+                thetaTilde = rnorm(n))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  cn <- nimble:::findClusterNodes(model, 'xi[1:5]')
+  nodes <- model$expandNodeNames('thetaTilde')
+  expect_identical(cn$clusterNodes[[1]], nodes)
+  expect_identical(cn$numNodesPerCluster, rep(1L, 2))
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_silent(mcmc <- buildMCMC(conf))
+  crpSampler <- mcmc$samplerFunctions[[crpIndex]]
+  expect_equal(crpSampler$sampler, "CRP_nonconjugate")
+  expect_identical(crpSampler$nObsPerClusID, 2)
+  expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
+  expect_identical(crpSampler$n, as.integer(n))
+
+  paramSamplers <- conf$getSamplers('thetaTilde')
+  expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n))
+  ids <- sapply(paramSamplers, function(x) x$control$clusterID)
+  expect_identical(as.integer(ids), 1:n)
+
+
+  ## thetaTildes indexed by multiple cluster variables - not allowed
+  code <- nimbleCode({
+      for(i in 1:n) {
+          y[i] ~ dnorm(thetaTilde[xi[i]], 1)
+          z[i] ~ dnorm(thetaTilde[eta[i]], 1)
+          thetaTilde[i] ~ dnorm(0, 1)
+      }                  
+      xi[1:n] ~ dCRP(alpha, size = n)
+      eta[1:n] ~ dCRP(alpha, size = n)
+  })
+
+  n <- 5
+  constants <- list(n = n)
+  data <- list(y = rnorm(n), z = rnorm(n))
+  inits <- list(alpha = 1, xi = rep(1, n), eta = rep(1,n),
+                thetaTilde = rnorm(n))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  expect_error(mcmc <- buildMCMC(conf), "sampler_CRP: Only the variables being clustered")
+
+  ## too many xi values
+  ## This error should be trapped more cleanly.
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J) {
+              y[i, j] ~ dnorm(thetaTilde[xi[i], j], 1)
+          }}
+      for(i in 1:n) {
+          for(j in 1:J) {
+              thetaTilde[i, j] ~ dnorm(0, 1)
+          }}
+      xi[1:(n+1)] ~ dCRP(alpha, size = n+1)
+  })
+
+  n <- 5
+  n2 <- 4
+  J <- 3
+  constants <- list(n = n, n2 = n2, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n+1),
+                thetaTilde = matrix(rnorm(J*n), n, J))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  expect_error(mcmc <- buildMCMC(conf), "replacement has length zero")
+
+  ## too few xi values
+  code <- nimbleCode({
+      for(i in 1:n) {
+          for(j in 1:J) {
+              y[i, j] ~ dnorm(thetaTilde[xi[i], j], 1)
+          }}
+      for(i in 1:n) {
+          for(j in 1:J) {
+              thetaTilde[i, j] ~ dnorm(0, 1)
+          }}
+      xi[1:(n-1)] ~ dCRP(alpha, size = n-1)
+  })
+
+  n <- 5
+  n2 <- 4
+  J <- 3
+  constants <- list(n = n, n2 = n2, J = J)
+  data <- list(y = matrix(rnorm(n*J),n,J))
+  inits <- list(alpha = 1, xi = rep(1, n-1),
+                thetaTilde = matrix(rnorm(J*n), n, J))
+  expect_error(model <- nimbleModel(code, data = data, constants = constants, inits = inits),
+                                        "dimensions specified are smaller than model specification")
+
+
+  ## Model 3 not yet available, but here are some initial cases
+
+  ## Crossed clustering (model 3)
+
+  code <- nimbleCode({
+      for(i in 1:3) {
+          for(j in 1:4) {
+              y[i,j] ~ dnorm( thetaTilde[xi[i], eta[j]] , var = 1) 
+              thetaTilde[i, j] ~ dnorm(0, 1)
+          }
+      }
+      xi[1:3] ~ dCRP(1, size=3)
+      eta[1:4] ~ dCRP(1, size=4)
+  })
+  inits <- list(xi = rep(1,3), eta = rep(1,4), 
+                thetaTilde = matrix(0, nrow=3,  ncol=4))
+
+  y <- matrix(5, nrow=3, ncol=4)
+  data <- list(y = y)
+  model <- nimbleModel(code, data = data, inits = inits)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  expect_error(mcmc <- buildMCMC(conf),
+               "sampler_CRP: Detected use of multiple stochastic indexes of a variable")
+
+
+  ## crossed clustering with truncation 
+  code <- nimbleCode({
+      for(i in 1:3) {
+          for(j in 1:4) {
+              y[i,j] ~ dnorm( thetaTilde[xi[i], eta[j]] , var = 1)
+          }}
+      for(i in 1:2) {
+          for(j in 1:3) {
+              thetaTilde[i, j] ~ dnorm(0, 1)
+          }
+      }
+      xi[1:3] ~ dCRP(1, size=3)
+      eta[1:4] ~ dCRP(1, size=4)
+  })
+  inits <- list(xi = rep(1,3), eta = rep(1,4), 
+                thetaTilde = matrix(0, nrow=3,  ncol=4))
+
+  y <- matrix(5, nrow=3, ncol=4)
+  data <- list(y = y)
+  model <- nimbleModel(code, data = data, inits = inits)
+  expect_silent(conf <- configureMCMC(model, print = FALSE))
+  expect_error(mcmc <- buildMCMC(conf),
+               "sampler_CRP: Detected use of multiple stochastic indexes of a variable")
+
+
 })
 
 

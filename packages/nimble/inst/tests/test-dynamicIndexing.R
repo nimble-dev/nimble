@@ -6,6 +6,10 @@ RwarnLevel <- options('warn')$warn
 options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
+oldWidth <- getOption("width")
+options(width = 1000)
+oldMaxPrint <- getOption("max.print")
+options(max.print = 100000)
 
 source(system.file(file.path('tests', 'dynamicIndexingTestLists.R'), package = 'nimble'))
 
@@ -353,7 +357,9 @@ test_that('basic mixture model with conjugacy', {
     d <- 4
     set.seed(2)
     mns <- c(-.9, .2, 1.6, -1.1)
+    mu_tol <- c(0.05, 0.05, 0.02, 0.05)
     p <- c(.4, .14, .1, .36)
+    p_tol <- c(.1, .02, .02, .05)
     sds <- c(.2, .4, .2, .1)
     k <- sample(1:d, n, replace = TRUE, prob = p)
     y <- rnorm(n, mns[k], sds[k])
@@ -381,20 +387,20 @@ test_that('basic mixture model with conjugacy', {
                            mu0 = 0, a = 1, b = 1, tau = 1, alpha = rep(1, 4)),
               results = list(mean = list("mu[1]" = mns[4],
                                          "mu[2]" = mns[3],
-                                         "mu[3]" = mns[1],
-                                         "mu[4]" = mns[2],
+                                         "mu[3]" = mns[2],
+                                         "mu[4]" = mns[1],
                                          "p[1]" = p[4],
                                          "p[2]" = p[3],
-                                         "p[3]" = p[1],
-                                         "p[4]" = p[2])),
-              resultsTolerance = list(mean = list("mu[1]" = .05,
-                                                  "mu[2]" = .02,
-                                                  "mu[3]" = .05,
-                                                  "mu[4]" = .05,
-                                                  "p[1]" = .05,
-                                                  "p[2]" = .02,
-                                                  "p[3]" = .1,
-                                                  "p[4]" = .02)),
+                                         "p[3]" = p[2],
+                                         "p[4]" = p[1])),
+              resultsTolerance = list(mean = list("mu[1]" = mu_tol[4],
+                                                  "mu[2]" = mu_tol[3],
+                                                  "mu[3]" = mu_tol[2],
+                                                  "mu[4]" = mu_tol[1],
+                                                  "p[1]" = p_tol[4],
+                                                  "p[2]" = p_tol[3],
+                                                  "p[3]" = p_tol[2],
+                                                  "p[4]" = p_tol[1])),
               avoidNestedTest = TRUE)
 
 })
@@ -403,7 +409,9 @@ test_that('basic mixture model without conjugacy', {
     n <- 1000; d <- 4
     set.seed(2)
     mns <- c(8, 15, 0.5, 4)
+    mu_tol <- c(1.5, 1, .5, .8)
     p <- c(.45, .14, .05, .36)
+    p_tol <- c(.12, .05, .03, .12)
     k <- sample(1:d, n, replace = TRUE, prob = p)
     y <- rpois(n, mns[k])
     code <- nimbleCode({
@@ -425,21 +433,21 @@ test_that('basic mixture model without conjugacy', {
                            p = rep(.25, 4), k = sample(1:4, n, replace = TRUE),
                            mu0 = 4, tau = 1, alpha = rep(1, 4)),
               results = list(mean = list("mu[1]" = mns[3],
-                                         "mu[2]" = mns[4],
-                                         "mu[3]" = mns[1],
+                                         "mu[2]" = mns[1],
+                                         "mu[3]" = mns[4],
                                          "mu[4]" = mns[2],
                                          "p[1]" = p[3],
-                                         "p[2]" = p[4],
-                                         "p[3]" = p[1],
+                                         "p[2]" = p[1],
+                                         "p[3]" = p[4],
                                          "p[4]" = p[2])),
-              resultsTolerance = list(mean = list("mu[1]" = .5,
-                                                  "mu[2]" = .8,
-                                                  "mu[3]" = 1.5,
-                                                  "mu[4]" = 1,
-                                                  "p[1]" = .03,
-                                                  "p[2]" = .12,
-                                                  "p[3]" = .12,
-                                                  "p[4]" = .05)),
+              resultsTolerance = list(mean = list("mu[1]" = mu_tol[3],
+                                                  "mu[2]" = mu_tol[1],
+                                                  "mu[3]" = mu_tol[4],
+                                                  "mu[4]" = mu_tol[2],
+                                                  "p[1]" = p_tol[3],
+                                                  "p[2]" = p_tol[1],
+                                                  "p[3]" = p_tol[4],
+                                                  "p[4]" = p_tol[2])),
               avoidNestedTest=TRUE)
 })
 
@@ -553,3 +561,5 @@ options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
 nimbleOptions(allowDynamicIndexing = nimbleAllowDynamicIndexingSetting)
+options(width = oldWidth)
+options(max.print = oldMaxPrint)

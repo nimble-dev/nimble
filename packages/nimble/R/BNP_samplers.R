@@ -114,12 +114,11 @@ getSamplesDPmeasure <- function(MCMC, epsilon = 1e-4, setSeed = FALSE) {
     mvSamples <- MCMC$mvSamples
   }
   
-  rsampler <- nimble:::sampleDPmeasure(model, mvSamples, epsilon) # 
+  rsampler <- sampleDPmeasure(model, mvSamples, epsilon) # 
 
   niter <- getsize(MCMC$mvSamples)
   samplesMeasure <- list()
   
-  # setSeed argument:
   if(is.numeric(setSeed)) {
     set.seed(setSeed[1])
     if(length(setSeed) > 1) {
@@ -140,9 +139,9 @@ getSamplesDPmeasure <- function(MCMC, epsilon = 1e-4, setSeed = FALSE) {
   
   
   dcrpVar <- rsampler$dcrpVar
-  clusterVarInfo <- nimble:::findClusterNodes(model, dcrpVar) 
+  clusterVarInfo <- findClusterNodes(model, dcrpVar) 
   p <- rsampler$p
-  namesVars <- nimble:::getSamplesDPmeasureNames(clusterVarInfo, model, 1, p)
+  namesVars <- getSamplesDPmeasureNames(clusterVarInfo, model, 1, p)
   for(i in 1:niter) {
     colnames(samplesMeasure[[i]]) <- c("weights", namesVars)
   }
@@ -176,7 +175,7 @@ sampleDPmeasure <- nimbleFunction(
     
     ## Find the cluster variables, named tildeVars
     dcrpElements <- model$expandNodeNames(dcrpNode, returnScalarComponents = TRUE)
-    clusterVarInfo <- nimble:::findClusterNodes(model, dcrpVar) 
+    clusterVarInfo <- findClusterNodes(model, dcrpVar) 
     tildeVars <- clusterVarInfo$clusterVars
     if( is.null(tildeVars) )  ## probably unnecessary as checked in CRP sampler, but best to be safe
       stop('sampleDPmeasure: The model should have at least one cluster variable.\n')
@@ -196,13 +195,13 @@ sampleDPmeasure <- nimbleFunction(
         isIID <- FALSE
     }
     
-    if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvGammaConjugacy(model, clusterVarInfo, length(dcrpElements), 'dinvgamma'))
+    if(!isIID && length(tildeVars) == 2 && checkNormalInvGammaConjugacy(model, clusterVarInfo, length(dcrpElements), 'dinvgamma'))
       isIID <- TRUE
-    if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvGammaConjugacy(model, clusterVarInfo, length(dcrpElements), 'dgamma'))
+    if(!isIID && length(tildeVars) == 2 && checkNormalInvGammaConjugacy(model, clusterVarInfo, length(dcrpElements), 'dgamma'))
       isIID <- TRUE
-    if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvWishartConjugacy(model, clusterVarInfo, length(dcrpElements), 'dinvwish'))
+    if(!isIID && length(tildeVars) == 2 && checkNormalInvWishartConjugacy(model, clusterVarInfo, length(dcrpElements), 'dinvwish'))
       isIID <- TRUE
-    if(!isIID && length(tildeVars) == 2 && nimble:::checkNormalInvWishartConjugacy(model, clusterVarInfo, length(dcrpElements), 'dwish'))
+    if(!isIID && length(tildeVars) == 2 && checkNormalInvWishartConjugacy(model, clusterVarInfo, length(dcrpElements), 'dwish'))
       isIID <- TRUE
     ## Tricky as MCMC might not be using conjugacy, but presumably ok to proceed regardless of how
     ## MCMC was done, since conjugacy existing would guarantee IID.
@@ -226,7 +225,7 @@ sampleDPmeasure <- nimbleFunction(
       stop('sampleDPmeasure: The stochastic parent nodes of the cluster variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
 
     ## Check that parent nodes of cluster IDs are monitored.  
-    parentNodesXi <- nimble:::getParentNodes(dcrpNode, model, returnType = 'names', stochOnly = TRUE)
+    parentNodesXi <- getParentNodes(dcrpNode, model, returnType = 'names', stochOnly = TRUE)
     
     if(!all(model$getVarNames(nodes = parentNodesXi) %in% mvSavedVars))
       stop('sampleDPmeasure: The stochastic parent nodes of the membership variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
@@ -259,7 +258,6 @@ sampleDPmeasure <- nimbleFunction(
     if(any(nTilde[1:p] != nTilde[1])){
       stop('sampleDPmeasure: All cluster parameters must have the same number of parameters.\n')
     }
-    
     
     tildeVarsCols <- c(dimTildeVars[1:p]*nTildeVarsPerCluster, 0)
     tildeVarsColsSum <- c(0, cumsum(tildeVarsCols))
@@ -386,9 +384,8 @@ sampleDPmeasure <- nimbleFunction(
       }
     }
     weights[1:truncG] <- weights[1:truncG] / (1 - v1prod * (1-vaux)) # normalizing weigths
-    
 
-    # check that all unique tilde variables were actually sampled. If not we need to rearrange when creating final output
+    ## check that all unique tilde variables were actually sampled. If not we need to rearrange when creating final output
     missingIndex <- nimNumeric(newValueIndex-1)
     uniqueIndex <- 1:(newValueIndex - 1)
     ii <- 1
@@ -1442,6 +1439,12 @@ sampler_CRP <- nimbleFunction(
     
     nData <- length(dataNodes)
 
+    ## Check that no use of multiple clustering variables, such as 'thetaTilde[xi[i], eta[j]]'.
+    ## It's likely that if we set the non-conjugate sampler and turn off wrapping omits sampling of empty clusters
+    ## (which is not set up correctly for this case), that the existing code would give correct sampling.
+    if(any(clusterVarInfo$multipleStochIndexes))
+        stop("sampler_CRP: Detected use of multiple stochastic indexes of a variable: ", deparse(clusterVarInfo$indexExpr[[1]]), ". NIMBLE's CRP sampling is not yet set up to handle this case. Please contact the NIMBLE development team if you are interested in this functionality.")
+
     ## Check there is at least one or more "observation" per random index.
     ## Note that cases like mu[xi[i],xi[j]] are being trapped in findClusterNodes().
     if(n > nData)
@@ -1678,13 +1681,8 @@ sampler_CRP <- nimbleFunction(
             if(nIntermClusNodesPerClusID > 0) {
               model$calculate(intermNodes[((i-1)*nIntermClusNodesPerClusID+1):(i*nIntermClusNodesPerClusID)]) 
             }
-            model$calculate(dataNodes[((i-1)*nObsPerClusID+1):(i*nObsPerClusID)])       
-            curLogProb[iprob] <<- 0 # <<-
-            for(j1 in 1:nObsPerClusID) {
-                ## getLogProb can be done on a vector of nodes to avoid loop here.
-              curLogProb[iprob] <<- curLogProb[iprob] + model$getLogProb(dataNodes[(i-1)*nObsPerClusID+j1])  
-            }  
-            curLogProb[iprob] <<- log(xiCounts[xiUniques[j]]) + curLogProb[iprob] 
+            curLogProb[iprob] <<- log(xiCounts[xiUniques[j]]) +
+                model$calculate(dataNodes[((i-1)*nObsPerClusID+1):(i*nObsPerClusID)])
             reorderXiUniques[iprob] <- xiUniques[j]
             iprob <- iprob + 1
           }
@@ -1716,16 +1714,12 @@ sampler_CRP <- nimbleFunction(
       } else { # cluster is not a singleton.
         ## First, compute probability of sampling an existing label.
         for(j in 1:k) { 
-          model[[target]][i] <<- xiUniques[j]  # <<-
+          model[[target]][i] <<- xiUniques[j]  
           if(nIntermClusNodesPerClusID > 0) {
             model$calculate(intermNodes[((i-1)*nIntermClusNodesPerClusID+1):(i*nIntermClusNodesPerClusID)]) 
           }
-          model$calculate(dataNodes[((i-1)*nObsPerClusID+1):(i*nObsPerClusID)])       
-          curLogProb[j] <<- 0 # <<-
-          for(j1 in 1:nObsPerClusID) {
-            curLogProb[j] <<- curLogProb[j] + model$getLogProb(dataNodes[(i-1)*nObsPerClusID+j1])   
-          }  
-          curLogProb[j] <<- log(xiCounts[xiUniques[j]]) + curLogProb[j] 
+          curLogProb[j] <<- log(xiCounts[xiUniques[j]]) +
+              model$calculate(dataNodes[((i-1)*nObsPerClusID+1):(i*nObsPerClusID)])       
         }
         ## Second, compute probability of sampling a new cluster depending on the value of kNew.       
         if(kNew == 0) { # no new cluster can be created 
