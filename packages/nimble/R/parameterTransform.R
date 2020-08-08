@@ -244,7 +244,7 @@ parameterTransform <- nimbleFunction(
                           {                         ## 7: multivariate {wishart, inverse-wishart}
                               dd <- transformData[iNode,DATA1]
                               lpAdd <- dd * log(2)
-                              for(j in 1:dd)   lpAdd <- lpAdd + (dd+2-j) * theseValues[j*(j+1)/2]
+                              for(j in 1:dd)   lpAdd <- lpAdd + (dd+2-j) * theseValues[0.5*j*(j+1)] # "/2" instead of "*0.5" inserts a double cast in C++ that breaks the CppAD system at the time of this writing
                           },
                           {                         ## 8: multivariate dirichlet
                               ## copied from inverseTransform method:
@@ -277,11 +277,7 @@ parameterTransform <- nimbleFunction(
             return(lp)
         }
     ),
-    enableDerivs = 'inverseTransform',
+    enableDerivs = list(inverseTransform = list(),
+                        calcLogDetJacobian = list(noDeriv_vars = c('iNode','j','dd','ddm1','i'))),
     where = getLoadingNamespace()
 )
-
-
-
-
-
