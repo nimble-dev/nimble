@@ -220,10 +220,10 @@ parameterTransform <- nimbleFunction(
             returnType(double(1))
             return(modelValuesVector)
         },
-        calcLogDetJacobian = function(transformedValues = double(1)) {
+        logDetJacobian = function(transformedValues = double(1)) {
             ## DT: general intended usage of this method:
             ## values(model, nodes) <- pt$inverseTransform(transformedValues)
-            ## lp <- model$calculate(calcNodes) + pt$calcLogDetJacobian(transformedValues)
+            ## lp <- model$calculate(calcNodes) + pt$logDetJacobian(transformedValues)
             lp <- 0
             for(iNode in 1:nNodes) {
                 theseValues <- transformedValues[transformData[iNode,TIND1]:transformData[iNode,TIND2]]
@@ -278,6 +278,6 @@ parameterTransform <- nimbleFunction(
         }
     ),
     enableDerivs = list(inverseTransform = list(),
-                        calcLogDetJacobian = list(noDeriv_vars = c('iNode','j','dd','ddm1','i'))),
+                        logDetJacobian = list(noDeriv_vars = c('iNode','j','dd','ddm1','i'))),
     where = getLoadingNamespace()
 )

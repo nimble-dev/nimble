@@ -1071,7 +1071,7 @@ sampler_HMC <- nimbleFunction(
         },
         logH = function(qArg = double(1), pArg = double(1)) {
             values(model, targetNodes) <<- my_parameterTransform$inverseTransform(qArg)
-            lp <- model$calculate(calcNodes) - sum(pArg^2)/2 + my_parameterTransform$calcLogDetJacobian(qArg)
+            lp <- model$calculate(calcNodes) - sum(pArg^2)/2 + my_parameterTransform$logDetJacobian(qArg)
             returnType(double())
             return(lp)
         },

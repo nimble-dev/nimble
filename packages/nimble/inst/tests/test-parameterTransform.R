@@ -47,7 +47,7 @@ test_that('exact values from uncompiled and compiled parameterTransform', {
     expect_true(all(round(vals - c(0.00, 1.00, 5.00, 0.00, 0.00, 0.00, 0.04, 0.40, 0.80, 0.40, 5.00, 9.00, 0.80, 9.00, 33.00), 16) == 0))
     expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 0, 0, -1.6094379124341, 2, 0, 4, 1, 1.38629436111989), 14) == 0))
     expect_true(all(vals - vals2 == 0))
-    expect_true(round(theNF$calcLogDetJacobian(tVals), 7) == -0.9571127)
+    expect_true(round(theNF$logDetJacobian(tVals), 7) == -0.9571127)
     ##
     ## test compiled
     theNF <- Cpt
@@ -59,7 +59,7 @@ test_that('exact values from uncompiled and compiled parameterTransform', {
     expect_true(all(round(vals - c(0.00, 1.00, 5.00, 0.00, 0.00, 0.00, 0.04, 0.40, 0.80, 0.40, 5.00, 9.00, 0.80, 9.00, 33.00), 16) == 0))
     expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 0, 0, -1.6094379124341, 2, 0, 4, 1, 1.38629436111989), 14) == 0))
     expect_true(all(vals - vals2 == 0))
-    expect_true(round(theNF$calcLogDetJacobian(tVals), 7) == -0.9571127)
+    expect_true(round(theNF$logDetJacobian(tVals), 7) == -0.9571127)
 })
 
 
@@ -110,7 +110,7 @@ test_that('exact values parameterTransform of multivariate dmnorm and dwish node
     expect_true(all(round(vals,15) - c(0, 1, 5, 0.5, 4, 1, -1, 0, 0, 0, 0.16, 1.2, 2, 1.2, 10, 14, 2, 14, 42, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1) == 0))
     expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 1.38629436111989, 1, -0.405465108108164, 0, 0, 0, -0.916290731874155, 3, -0.00000000000000177635683940025, 5, -1, 1.38629436111989, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 14) == 0))
     expect_true(all(vals - vals2 == 0))
-    expect_true(round(theNF$calcLogDetJacobian(tVals) - 4.54724272356, 11) == 0)
+    expect_true(round(theNF$logDetJacobian(tVals) - 4.54724272356, 11) == 0)
     ##
     ## test compiled
     theNF <- Cpt
@@ -122,7 +122,7 @@ test_that('exact values parameterTransform of multivariate dmnorm and dwish node
     expect_true(all(round(vals,15) - c(0, 1, 5, 0.5, 4, 1, -1, 0, 0, 0, 0.16, 1.2, 2, 1.2, 10, 14, 2, 14, 42, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1) == 0))
     expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 1.38629436111989, 1, -0.405465108108164, 0, 0, 0, -0.916290731874155, 3, -0.00000000000000177635683940025, 5, -1, 1.38629436111989, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 14) == 0))
     expect_true(all(vals - vals2 == 0))
-    expect_true(round(theNF$calcLogDetJacobian(tVals) - 4.54724272356, 11) == 0)
+    expect_true(round(theNF$logDetJacobian(tVals) - 4.54724272356, 11) == 0)
 })
 
 
@@ -163,7 +163,7 @@ test_that('parameterTransform for dirichlet distribution', {
     expect_true(all(round(vals,15) - c(.5, .5, .2, .3, .5, .1, .2, .3, .05, .35) == 0))
     expect_true(all(round(tVals - c(0.0000000, -1.3862944, -0.5108256, -2.1972246, -1.2527630, -0.2876821, -1.9459101)) == 0))
     expect_true(all(round(vals - vals2, 16) == 0))
-    expect_true(theNF$calcLogDetJacobian(tVals) + 14.0544024662466205 == 0)
+    expect_true(theNF$logDetJacobian(tVals) + 14.0544024662466205 == 0)
     ##
     ## test compiled
     theNF <- Cpt
@@ -175,7 +175,7 @@ test_that('parameterTransform for dirichlet distribution', {
     expect_true(all(round(vals,15) - c(.5, .5, .2, .3, .5, .1, .2, .3, .05, .35) == 0))
     expect_true(all(round(tVals - c(0.0000000, -1.3862944, -0.5108256, -2.1972246, -1.2527630, -0.2876821, -1.9459101)) == 0))
     expect_true(all(round(vals - vals2, 16) == 0))
-    expect_true(theNF$calcLogDetJacobian(tVals) + 14.0544024662466205 == 0)
+    expect_true(theNF$logDetJacobian(tVals) + 14.0544024662466205 == 0)
 })
 
 
