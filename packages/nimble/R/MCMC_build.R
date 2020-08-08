@@ -28,10 +28,12 @@
 #' \code{progressBar}: Boolean specifying whether to display a progress bar during MCMC execution (default = TRUE).  The progress bar can be permanently disabled by setting the system option \code{nimbleOptions(MCMCprogressBar = FALSE)}.
 #'
 #' Samples corresponding to the \code{monitors} and \code{monitors2} from the MCMCconf are stored into the interval variables \code{mvSamples} and \code{mvSamples2}, respectively.
-#' These may be accessed and converted into R matrix objects via:
+#' These may be accessed and converted into R matrix or list objects via:
 #' \code{as.matrix(mcmc$mvSamples)}
+#' \code{as.list(mcmc$mvSamples)}
 #' \code{as.matrix(mcmc$mvSamples2)}
-#'
+#' \code{as.list(mcmc$mvSamples2)}
+#' 
 #' The uncompiled MCMC function may be compiled to a compiled MCMC object, taking care to compile in the same project as the R model object, using:
 #' \code{Cmcmc <- compileNimble(Rmcmc, project = Rmodel)}
 #'
@@ -91,6 +93,7 @@
 #' Cmcmc <- compileNimble(Rmcmc, project=Rmodel)
 #' Cmcmc$run(10000)
 #' samples <- as.matrix(Cmcmc$mvSamples)
+#' samplesList <- as.list(Cmcmc$mvSamples)
 #' head(samples)
 #' WAIC <- Cmcmc$calculateWAIC(nburnin = 1000)
 #' }

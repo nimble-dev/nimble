@@ -94,6 +94,30 @@ test_that("as.list works for CmodelValues",
     
     m <- nimbleModel(mc)
     mcmc <- buildMCMC(m)
+
+    ## uncompiled
+    mcmc$run(30)
+    samples <- as.matrix(mcmc$mvSamples)
+    
+    test <- as.list(mcmc$mvSamples)
+    
+    expect_identical(unname(samples[,1:3]), test$x)
+    expect_identical(unname(samples[,4:6]), test$y[,1:3,1])
+    expect_identical(unname(samples[,7:9]), test$y[,1:3,2])
+    expect_identical(unname(samples[,10:12]), test$z[,1:3,1,1])
+    expect_identical(unname(samples[,13:15]), test$z[,1:3,2,1])
+    expect_identical(unname(samples[,16:18]), test$z[,1:3,1,2])
+    expect_identical(unname(samples[,19:21]), test$z[,1:3,2,2])
+    expect_identical(unname(samples[,22:24]), test$z[,1:3,1,3])
+    expect_identical(unname(samples[,25:27]), test$z[,1:3,2,3])
+    
+    test <- as.list(mcmc$mvSamples, 'y')
+
+    expect_identical(names(test), 'y')
+    expect_identical(unname(samples[,4:6]), test$y[,1:3,1])
+    expect_identical(unname(samples[,7:9]), test$y[,1:3,2])
+
+    ## compiled
     cm <- compileNimble(m)
     cmcmc <- compileNimble(mcmc, project = m)
     
