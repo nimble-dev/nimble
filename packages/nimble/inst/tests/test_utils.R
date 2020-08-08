@@ -1306,7 +1306,7 @@ derivsNimbleFunctionParamTransform <- nimbleFunction(
     },
     run = function(transformed_x = double(1),
         order = double(1)) {
-        ans <- nimDerivs(tapedModelCalculateCalcNodes(transformed_x), order = order, wrt = nimDerivs_wrt,
+        ans <- nimDerivs(inverseTransformStoreCalculate(transformed_x), order = order, wrt = nimDerivs_wrt,
                          model = model, updateNodes = nimDerivs_updateNodes,
                          constantNodes = nimDerivs_constantNodes)
 
@@ -1314,13 +1314,13 @@ derivsNimbleFunctionParamTransform <- nimbleFunction(
         returnType(ADNimbleList())
     },
     methods = list(
-        tapedModelCalculateCalcNodes = function(transformed_x = double(1)) {
+        inverseTransformStoreCalculate = function(transformed_x = double(1)) {
             values(model, wrt) <<- my_parameterTransform$inverseTransform(transformed_x)
             lp <- model$calculate(calcNodes)
             returnType(double())
             return(lp)
         }
-    ), enableDerivs = 'tapedModelCalculateCalcNodes'   
+    ), enableDerivs = 'inverseTransformStoreCalculate'
 )
 
 

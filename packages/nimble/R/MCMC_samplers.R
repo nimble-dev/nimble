@@ -1050,8 +1050,7 @@ sampler_HMC <- nimbleFunction(
             j <- j + 1
             checkInterrupt()
         }
-        values(model, targetNodes) <<- my_parameterTransform$inverseTransform(qNew)
-        model$calculate(calcNodes)
+        inverseTransformStoreCalculate(qNew)
         nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
         if(timesRan <= nwarmup) {
             Hbar <<- (1 - 1/(timesRan+t0)) * Hbar + 1/(timesRan+t0) * (delta - btNL$a/btNL$na)
@@ -1070,19 +1069,18 @@ sampler_HMC <- nimbleFunction(
             for(i in 1:d)   p[i] <<- rnorm(1, 0, sqrtM[i])
         },
         logH = function(qArg = double(1), pArg = double(1)) {
-            values(model, targetNodes) <<- my_parameterTransform$inverseTransform(qArg)
-            lp <- model$calculate(calcNodes) - sum(pArg^2)/2 + my_parameterTransform$logDetJacobian(qArg)
+            lp <- inverseTransformStoreCalculate(qArg) - sum(pArg^2)/2 + my_parameterTransform$logDetJacobian(qArg)
             returnType(double())
             return(lp)
         },
-        tapedModelCalculateCalcNodes = function(qArg = double(1)) {
+        inverseTransformStoreCalculate = function(qArg = double(1)) {
             values(model, targetNodes) <<- my_parameterTransform$inverseTransform(qArg)
             lp <- model$calculate(calcNodes)
             returnType(double())
             return(lp)
         },
         gradient = function(qArg = double(1)) {
-            derivsOutput <- nimDerivs(tapedModelCalculateCalcNodes(qArg), order = 1, wrt = nimDerivs_wrt, model = model, updateNodes = nimDerivs_updateNodes, constantNodes = nimDerivs_constantNodes)
+            derivsOutput <- nimDerivs(inverseTransformStoreCalculate(qArg), order = 1, wrt = nimDerivs_wrt, model = model, updateNodes = nimDerivs_updateNodes, constantNodes = nimDerivs_constantNodes)
             grad <<- derivsOutput$jacobian[1, 1:d]
             ###print('=========================================')
             ###print('qArg:');   print(qArg)
@@ -1183,7 +1181,7 @@ sampler_HMC <- nimbleFunction(
             nwarmup        <<- nwarmupOrig
         }
     ),
-    enableDerivs = 'tapedModelCalculateCalcNodes',
+    enableDerivs = 'inverseTransformStoreCalculate',
     where = getLoadingNamespace()
 )
 
