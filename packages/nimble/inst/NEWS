@@ -6,6 +6,8 @@ USER LEVEL CHANGES
 
 -- New `resetMV` argument available to `mcmc$run` method, which in combination with `reset = FALSE`, specifying `resetMV = TRUE` will continue the current run of the MCMC, but discard any previously-collected samples.
 
+-- New methods `setMonitors` and `setMonitors2` added for MCMC configuraiton objects.  These methods replace the current set of monitors (or monitors2) with the specified variables.
+
                             CHANGES IN VERSION 0.9.1 (May 2020)
 
 USER LEVEL CHANGES
