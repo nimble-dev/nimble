@@ -164,14 +164,14 @@ as.matrix(customMV)        # convert all variables
 
 `as.list` will return a list with an element for each variable.  Each
 element will be an array of the same size and shape as the variable
-with an additional index for the row (e.g., MCMC iteration when used for
-MCMC output).  By default row is the first index, but it
+with an additional index for the iteration (e.g., MCMC iteration when used for
+MCMC output).  By default iteration is the first index, but it
 can be the last if needed.
 
 ```{r, as.list-mv}
 as.list(customMV, 'a')    # get only 'a'
 as.list(customMV)         # get all variables
-as.list(customMV, 'a', iterationAsFirstIndex = TRUE) # put row in last index
+as.list(customMV, 'a', iterationAsLastIndex = TRUE) # put iteration in last index
 ```
 
 If a variable is a scalar, using `unlist` in R to extract all rows as a vector can be useful.

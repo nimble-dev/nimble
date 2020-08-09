@@ -208,7 +208,7 @@ as.matrix.CmodelValues <- function(x, varNames, ...){
 	return(ans)
 }
 
-as.list.modelValuesBaseClass <- function(x, varNames, iterationAsFirstIndex = TRUE, ...) {
+as.list.modelValuesBaseClass <- function(x, varNames, iterationAsLastIndex = FALSE, ...) {
   if(missing(varNames))
     varNames <- x$varNames
   nrows <- getsize(x)
@@ -219,7 +219,7 @@ as.list.modelValuesBaseClass <- function(x, varNames, iterationAsFirstIndex = TR
     matrixVersion <- do.call("c", lapply(samples, as.numeric))
     ansDims <- c(dims, nrows)
     results[[v]] <- array(matrixVersion, dim = ansDims)
-    if(iterationAsFirstIndex) {
+    if(!iterationAsLastIndex) {
       nDim <- length(ansDims)
       results[[v]] <- aperm(results[[v]], c(nDim, 1:(nDim-1)))
     }
@@ -227,7 +227,7 @@ as.list.modelValuesBaseClass <- function(x, varNames, iterationAsFirstIndex = TR
   results
 }
 
-as.list.CmodelValues <- function(x, varNames, iterationAsFirstIndex = TRUE, ...) {
+as.list.CmodelValues <- function(x, varNames, iterationAsLastIndex = FALSE, ...) {
   if(missing(varNames))
     varNames <- x$varNames
   nrows <- getsize(x)
@@ -238,7 +238,7 @@ as.list.CmodelValues <- function(x, varNames, iterationAsFirstIndex = TRUE, ...)
     matrixVersion <- do.call("c", lapply(samples, as.numeric))
     ansDims <- c(dims, nrows)
     results[[v]] <- array(matrixVersion, dim = ansDims)
-    if(iterationAsFirstIndex) {
+    if(!iterationAsLastIndex) {
       nDim <- length(ansDims)
       results[[v]] <- aperm(results[[v]], c(nDim, 1:(nDim-1)))
     }

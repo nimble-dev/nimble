@@ -93,7 +93,7 @@
 #' Cmcmc <- compileNimble(Rmcmc, project=Rmodel)
 #' Cmcmc$run(10000)
 #' samples <- as.matrix(Cmcmc$mvSamples)
-#' samplesList <- as.list(Cmcmc$mvSamples)
+#' samplesAsList <- as.list(Cmcmc$mvSamples)
 #' head(samples)
 #' WAIC <- Cmcmc$calculateWAIC(nburnin = 1000)
 #' }

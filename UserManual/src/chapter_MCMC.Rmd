@@ -613,7 +613,7 @@ The column names of the matrices will be the node names of nodes in the monitore
 mean(samplesMatrix[, "x[2]"])
 ```
 
-The list version will contain an element for each variable that will be the size and shape of the variable with an additional index for MCMC iteration.  By default MCMC iteration will be the first index, but including `iterationAsFirstIndex = FALSE` will make it the last index.
+The list version will contain an element for each variable that will be the size and shape of the variable with an additional index for MCMC iteration.  By default MCMC iteration will be the first index, but including `iterationAsLastIndex = TRUE` will make it the last index.
 
 Obtaining samples as matrices or lists is most common, but see Section \@ref(sec:modelValues-struct) for more about programming with modelValues objects, especially if you want to write nimbleFunctions to use the samples.
 
