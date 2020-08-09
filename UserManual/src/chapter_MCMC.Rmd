@@ -388,7 +388,7 @@ ordering <- mcmcConf$getSamplerExecutionOrder()
 mcmcConf$printSamplers(executionOrder = TRUE)
 ```
 
-#### Monitors and thinning intervals: *printMonitors*, *getMonitors*, *addMonitors*, *setThin*, and *resetMonitors*
+#### Monitors and thinning intervals: *printMonitors*, *getMonitors*, *setMonitors*, *addMonitors*, *resetMonitors* and *setThin*
 
 An MCMC configuration object contains two independent sets of variables to monitor, each with their own thinning interval: `thin` corresponding to `monitors`, and `thin2` corresponding to `monitors2`.  Monitors operate at the *variable* level.  Only entire model variables may be monitored.  Specifying a monitor on a *node*, e.g., `x[1]`, will result in the entire variable `x` being monitored.
 
@@ -404,6 +404,12 @@ mcmcConf <- configureMCMC(Rmodel, monitors = c("alpha", "beta"),
 # This results in the same monitors as above
 mcmcConf$addMonitors("alpha", "beta")
 mcmcConf$addMonitors2("x")
+```
+
+A new set of monitor variables can be added to the MCMC configuration, overwriting the current monitors, using the `setMonitors` method:
+```{r, setMonitors, eval=FALSE}
+# Replace old monitors, now monitor "delta" and "gamma" only
+mcmcConf$setMonitors("gamma", "delta")
 ```
 
 Similarly, either thinning interval may be set at either step:
