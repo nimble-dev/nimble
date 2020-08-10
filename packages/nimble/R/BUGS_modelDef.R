@@ -2905,38 +2905,15 @@ modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TR
 })
 
 ## next two functions work for properly formed nodeNames.
-modelDefClass$methods(nodeName2LogProbName = function(nodeName){ ## used in 3 places: MCMC_build, valuesAccessorVector, and cppInterfaces_models
-    ## This function needs better processing.
+modelDefClass$methods(nodeName2LogProbName = function(nodeName){
     if(length(nodeName) == 0)
-        return(NULL)
-    
-##     ## 1. so this needs to first get to a nodeFunctionID
-##     graphIDs <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions, USE.NAMES = FALSE)))
-##     ## 2. get node function names
-##     fullNodeNames <- maps$graphID_2_nodeName[graphIDs]
-##     ## 3 get corresponding logProbNames
-##     output <- unique(unlist(sapply(fullNodeNames, parseEvalCharacter, env = maps$vars2LogProbName, USE.NAMES = FALSE)))
+        return(character())
 
-##     ##graphIDs2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2GraphID_functions))
-##     ##fullNodeNames2 <- maps$graphID_2_nodeName[graphIDs2]
-##     ##output2 <- unique(parseEvalCharacterMany(fullNodeNames2, env = maps$vars2LogProbName))
-## ##    output2 <- unique(parseEvalCharacterMany(nodeName, env = maps$vars2LogProbName)) ## output2
-## ##    if(!identical(output[!is.na(output)], as.character(output2[!is.na(output2)]))) browser()
-##     output <- output[!is.na(output)]
+    graphIDs <- unique(parseEvalNumericMany(nodeName, env =  maps$vars2GraphID_functions))
+    output <- maps$graphID_2_logProbName[graphIDs]
+    output <- output[!is.na(output)]
 
-    graphIDs2 <- unique(parseEvalNumericMany(nodeName, env =  maps$vars2GraphID_functions))
-    output2 <- maps$graphID_2_logProbName[graphIDs2]
-    output2 <- output2[!is.na(output2)]
-
-    ## fullNodeNames2 <- maps$graphID_2_nodeName[graphIDs [maps$types[graphIDs] == "stoch"] ]
-    ## output2 <- gsub(":[0123456789]+", "", fullNodeNames2 )
-    ## output2 <- output2[!is.na(output2)]
-    ## output2 <- paste0("logProb_", output2)
-##    if(!identical(output, output2)) browser()
-
-##    output <- output2
-    return(output2)
-##    return(output[!is.na(output)])
+    return(output)
 })
 
 ## modelDefClass$methods(nodeName2LogProbID = function(nodeName){ ## used only in cppInterfaces_models
