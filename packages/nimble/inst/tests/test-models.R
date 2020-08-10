@@ -801,6 +801,23 @@ test_that("handling of contiguous blocks", {
     indArr[1, 1, 1] <- indArr[2, 2, 2] <- 2
     out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
     expect_identical(out$names, c('y[1%.s%3, 1%.s%3, 1%.s%3]', 'y[1%.s%2, 1%.s%2, 1%.s%2]'))
+
+    ## Another case that would formerly error out
+    code <- nimbleCode({
+        R[1:3,1:3] <- exp(-dist[1:3, 1:3])
+	y[1] ~ dnorm(0, sd = R[1,1])
+	y[2] ~ dnorm(0, sd = R[1,2])
+	y[3] ~ dnorm(0, sd = R[2,1])
+	y[4] ~ dnorm(0, sd = R[2,3])
+	y[5] ~ dnorm(0, sd = R[3,2])
+	y[6] ~ dnorm(0, sd = R[3,3])
+    })
+    n <- 4
+    dd <- matrix(1, n, n); dd[1,4] <- dd[4,1] <- dd[2,3] <- dd[3,2] <- sqrt(2)
+    diag(dd) <- 0
+    model <- nimbleModel(code, inits = list(dist = dd[1:3,1:3]))
+
+    
 })
 
 
