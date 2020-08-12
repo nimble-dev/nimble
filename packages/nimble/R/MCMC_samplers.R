@@ -624,6 +624,9 @@ sampler_slice <- nimbleFunction(
             timesRan     <<- 0
             timesAdapted <<- 0
             sumJumps     <<- 0
+            if(saveMCMChistory) {
+                widthHistory  <<- c(0, 0)    ## widthHistory
+            }
         }
     )
 )
