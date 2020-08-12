@@ -573,6 +573,10 @@ sampler_slice <- nimbleFunction(
         timesRan      <- 0
         timesAdapted  <- 0
         sumJumps      <- 0
+        widthHistory  <- c(0, 0)   ## widthHistory
+        if(nimbleOptions('MCMCsaveHistory')) {
+            saveMCMChistory <- TRUE
+        } else saveMCMChistory <- FALSE
         discrete      <- model$isDiscrete(target)
         ## checks
         if(length(targetAsScalar) > 1)     stop('cannot use slice sampler on more than one target node')
@@ -641,15 +645,31 @@ sampler_slice <- nimbleFunction(
                 meanJump <- sumJumps / timesRan
                 width <<- width + (2*meanJump - width) * adaptFactor   # exponentially decaying adaptation of 'width' -> 2 * (avg. jump distance)
                 timesAdapted <<- timesAdapted + 1
+                if(saveMCMChistory) {
+                    setSize(widthHistory, timesAdapted)                 ## widthHistory
+                    widthHistory[timesAdapted] <<- width                ## widthHistory
+                }
                 timesRan <<- 0
                 sumJumps <<- 0
             }
         },
+        getWidthHistory = function() {       ## widthHistory
+            returnType(double(1))
+            if(saveMCMChistory) {
+                return(widthHistory)
+            } else {
+                print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC")
+                return(numeric(1, 0))
+            }
+       },
         reset = function() {
             width        <<- widthOriginal
             timesRan     <<- 0
             timesAdapted <<- 0
             sumJumps     <<- 0
+            if(saveMCMChistory) {
+                widthHistory  <<- c(0, 0)    ## widthHistory
+            }
         }
     )
 )
