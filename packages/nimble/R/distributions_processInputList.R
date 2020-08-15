@@ -292,7 +292,10 @@ checkDistributionFunctions <- function(distributionInput, userEnv) {
                                                           returnCreation <- "x <- nimMatrix()"
         # build nf from text as unclear how to pairlist info in rargInfo with substitute
         nfCode <- paste0("nimbleFunction(run = function(", args, ") { stop('user-defined distribution ", densityName, " provided without random generation function.')\nreturnType(", returnType, ")\n", returnCreation, "\nreturn(x)})")
+	## Need to assign to GlobalEnv as that is where model-building process looks.
+	## Also assign to userEnv as code below looks there.
         assign(simulateName, eval(parse(text = nfCode)), envir = userEnv)
+	assign(simulateName, eval(parse(text = nfCode)), envir = .GlobalEnv)
     }
 
     dargs <- args <- formals(get(densityName, pos = userEnv))
