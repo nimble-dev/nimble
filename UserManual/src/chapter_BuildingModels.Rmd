@@ -76,7 +76,7 @@ everything else as constants.
 Values for nodes that appear only on the right-hand side of BUGS
 declarations (e.g., covariates/predictors) can be provided as constants or as data or initial values. There is no real difference between providing as data or initial values and the values can be added after building a model via `setInits` or `setData`. 
 
-#### Providing data and initial values to an existing model
+#### Providing (or changing) data and initial values for an existing model
 
 Whereas constants must be provided during the call to
 `nimbleModel`, data and initial values can be provided later via
@@ -93,6 +93,20 @@ algorithm should over-write data or not.  For example, NIMBLE's
 can be told to do so.  Values of data variables can be replaced, and
 the indication of which nodes should be treated as data can be reset
 by using the `resetData` method, e.g. `pump$resetData()`.
+
+To change data values without any modification of which nodes are
+flagged as containing data, simply use R's usual assignment syntax
+to assign values in a compiled (or, more rarely, an uncompiled) model, e.g.,
+
+```{r, eval=FALSE}
+cModel$y <- c(1.5, 2.5, 1.7)
+```
+
+This can be useful for running an MCMC with a different dataset of the same size without
+having to rebuild and recompile the MCMC, such as in a simulation study.
+It is possible to change the data values in a compiled model using `setData`,
+but we don't recommend doing this because `setData` won't modify which nodes are flagged
+as containing data in the already-constructed MCMC, thereby potentially introducing confusion.
 
 #### Missing data values
 
