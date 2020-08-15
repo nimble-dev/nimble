@@ -12,6 +12,19 @@ NIMBLE allows you to define your own functions and distributions as *nimbleFunct
 
 Since NIMBLE allows you to wrap calls to external compiled code or arbitrary R functions as nimbleFunctions, and since you can define model functions and distributions as nimbleFunctions, you can combine these features to build external compiled code or arbitrary R functions into a model.  See Sections \@ref(sec:calling-external-code)-\@ref(sec:calling-R-code).
 
+Note that NIMBLE generally expects user-defined distributions or functions to be defined in the global environment.
+If you define them in a function (which would generally be the case if you are using them in the context of parallelization), one approach would be to assign them to the global environment in your function:
+
+```{r, eval=FALSE}
+## for a user-defined function
+assign('myfun', myfun, envir = .GlobalEnv)
+## for a user-defined distribution
+assign('dfoo', dfoo, envir = .GlobalEnv)
+assign('rfoo', rfoo, envir = .GlobalEnv)
+## similarly for 'p' and 'q' functions if you define them
+```
+
+
 ## User-defined functions {#sec:user-functions}
 
 To provide a new function for use in BUGS code, simply create a nimbleFunction that has no *setup* code as discussed in Chapter \@ref(cha:RCfunctions). Then use it in your BUGS code. That's it.
