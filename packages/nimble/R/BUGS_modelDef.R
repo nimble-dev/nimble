@@ -119,7 +119,6 @@ modelDefClass <- setRefClass('modelDefClass',
                              ))
 
 
-
 ## This is the master entry function
 ##
 ## NOTES:
