@@ -85,6 +85,7 @@ size_t atomic_index(
 #ifndef USING_CPPAD_IN_NIMBLE
     static std::vector<atomic_index_info> vec;
 #else
+    //    std::cout<<"atomic_index using "<<atomic_index_info_vec_manager<Base>::manage()<<std::endl;
     std::vector<atomic_index_info> &vec = *atomic_index_info_vec_manager<Base>::manage();
 #endif
     

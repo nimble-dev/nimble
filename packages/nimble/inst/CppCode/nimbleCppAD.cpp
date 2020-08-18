@@ -700,9 +700,16 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
 							   const NimArr<1, double> &wrtVector,
 							   bool reset,
 							   nimSmartPtr<NIMBLE_ADCLASS> ansList) {
+  // If use_meta_tape is true, then double-recording will be used.
+  // This means that a first tape will be recorded, then a second tape will be recorded of obtaining 1st order derivatives from the first tape.
+  // When derivatives are requested, 0th order will be obtained from the regular model (not AD tape),
+  // 1st order will be 0th order of the second tape, and 2nd order will be 1st order of the second tape.
+  // If use_meta_tape is false, then the (single, first) tape will be used "directly" for 0th, 1st or 2nd order.
   bool use_meta_tape = true;
 
+  // Record tape(s) if this is the first time or if reset is true.
   if(!ADinfo.ADtape || reset) {
+    // Delete previous tape if it exists.
     if(ADinfo.ADtape)
       delete ADinfo.ADtape;
     if(!use_meta_tape) {
@@ -720,19 +727,22 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
       int length_wrt = nodes.model_wrt_accessor.getTotalLength();
       int length_independent = length_wrt;
       int length_extraInput = nodes.model_extraInput_accessor.getTotalLength();
-      vector< CppAD::AD<double> > dependentVars(length_wrt); // This will be the gradient
+      vector< CppAD::AD<double> > dependentVars(length_wrt); // This will be the jacobian from the first tape, i.e. value of the second tape
       vector< CppAD::AD<double> > independentVars(length_independent);
       vector< CppAD::AD<double> > dynamicVars(length_extraInput);
-      size_t abort_op_index = 0; 
+      size_t abort_op_index = 0;
       bool   record_compare = true;
       NimArr<1, double > NimArrVars;
       NimArrVars.setSize(length_wrt);
+      // Initialize values of independentVars, before recording.
       getValues(NimArrVars, nodes.model_wrt_accessor);
       for(int iii = 0; iii < length_wrt; ++iii)
 	independentVars[iii] = NimArrVars[iii];
       // std::copy(NimArrVars.getPtr(),
       // 		NimArrVars.getPtr() + length_wrt,
       // 		independentVars.begin());
+      //
+      // Initialize values of dynamicVars, before recording.
       if(length_extraInput > 0) {
 	NimArr<1, double> NimArr_dynamicVars;
 	NimArr_dynamicVars.setSize(length_extraInput);
@@ -745,11 +755,14 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
       }
       // std::cout<<"B"<<std::endl;
       nimSmartPtr<NIMBLE_ADCLASS_META> ansList_meta = new NIMBLE_ADCLASS_META;
-      CppAD::Independent(independentVars, abort_op_index, record_compare, dynamicVars); // start recording new tape
+      // start recording new (second) tape
+      CppAD::Independent(independentVars, abort_op_index, record_compare, dynamicVars);
+      // Trick CppAD statics to work across nimble compilation units
       set_CppAD_tape_info_for_model my_tape_info_RAII_(nodes,
 						       CppAD::AD<double>::get_tape_id_nimble(),
 						       CppAD::AD<double>::get_tape_handle_nimble());
       set_CppAD_atomic_info_for_model(nodes, CppAD::local::atomic_index_info_vec_manager<double>::manage());
+      // Set up inputs to first tape (recorded in second tape)
       ADinfo.independentVars_meta.resize(length_wrt);
       ADinfo.dynamicVars_meta.resize(length_extraInput);
       if(length_extraInput > 0) {
@@ -791,9 +804,14 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
       delete firstTape;
     }
   }
+
+  // Recording, if needed, is done.
+  // From here on is use of the tape(s).  This may be used much more often than recording section above.
+  
   // std::cout<<"G"<<std::endl;
 
   // std::cout<<"getDerivs_calculate_internal A"<<std::endl;
+  // Copy values from the model into the independentVars
   int length_wrt = nodes.model_wrt_accessor.getTotalLength();
   int length_independent = length_wrt;
   ADinfo.independentVars.resize(length_independent);
@@ -808,6 +826,8 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
   // std::cout<<"H"<<std::endl;
   
   /* set dynamic */
+  // Copy extraInput (CppAD "dynamic") values from the model into the dynamicVars
+  // *and* set them in the tape.
   size_t length_extraNodes_accessor = nodes.model_extraInput_accessor.getTotalLength();
   if(length_extraNodes_accessor > 0) {
     NimArr<1, double> NimArr_dynamicVars;

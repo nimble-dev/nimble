@@ -14,6 +14,7 @@ bool atomic_lgamma_class::forward(
      const CppAD::vector<double>&               taylor_x     ,
      CppAD::vector<double>&                     taylor_y     )
 {
+  // std::cout<<"lgamma forward baseOrder = "<<baseOrder<<std::endl;
      //    std::cout<<"forward "<<order_low<<" "<<order_up<<" "<<taylor_x[0]<<std::endl;
      if(order_low <= 0 & order_up >= 0) {
 	  if(baseOrder == 0)
@@ -47,6 +48,7 @@ bool atomic_lgamma_class::reverse(
      CppAD::vector<double>&                     partial_x   ,
      const CppAD::vector<double>&               partial_y   )
 {
+  //  std::cout<<"lgamma reverse baseOrder = "<<baseOrder<<std::endl;
      //    std::cout<<"reverse "<<order_up<<" "<<taylor_x[0]<<" "<<partial_y[0]<<std::endl;
      partial_x[0] = 0;
      if(order_up >= 1) partial_x[1] = 0;
@@ -72,7 +74,8 @@ bool atomic_lgamma_class::forward(
      CppAD::vector< CppAD::AD<double> >&                     taylor_y     )
 {
      //  printf("In lgamma meta-forward for orders %lu %lu\n", order_low, order_up);
-
+  // std::cout<<"lgamma meta-forward baseOrder = "<<baseOrder<<std::endl;
+  
      if(order_low <= 0 & order_up >= 0) {
 	  taylor_y[0] = nimDerivs_lgammafn(taylor_x[0], baseOrder); // This puts it in the new tape being recorded
      }
@@ -98,6 +101,8 @@ bool atomic_lgamma_class::reverse(
      CppAD::vector< CppAD::AD<double> >&                     partial_x   ,
      const CppAD::vector< CppAD::AD<double> >&               partial_y   ) 
 {
+  // std::cout<<"lgamma meta-reverse baseOrder = "<<baseOrder<<std::endl;
+
      //  printf("In lgamma meta-reverse for order_up %lu\n", order_up);
      partial_x[0] = 0;
      if(order_up >= 1) partial_x[1] = 0;
