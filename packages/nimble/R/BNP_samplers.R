@@ -36,31 +36,6 @@ getNsave <- nimbleFunction(
   methods = list( reset = function () {} )
 )
 
-getParentNodes <- function(nodes, model, returnType = 'names', stochOnly = FALSE) {
-  ## adapted from BUGS_modelDef creation of edgesFrom2To
-  getParentNodesCore <- function(nodes, model, returnType = 'names', stochOnly = FALSE) {
-    nodeIDs <- model$expandNodeNames(nodes, returnType = "ids")
-    fromIDs <- sort(unique(unlist(edgesTo2From[nodeIDs])))
-    fromNodes <- maps$graphID_2_nodeName[fromIDs]
-    if(!length(fromNodes))
-      return(character(0))
-    fromNodesDet <- fromNodes[model$modelDef$maps$types[fromIDs] == 'determ']
-    ## Recurse through parents of deterministic nodes.
-    fromNodes <- c(if(stochOnly) fromNodes[model$modelDef$maps$types[fromIDs] == 'stoch'] else fromNodes, 
-                   if(length(fromNodesDet)) getParentNodesCore(fromNodesDet, model, returnType, stochOnly) else character(0))
-    fromNodes
-  }
-  
-  maps <- model$modelDef$maps
-  maxNodeID <- length(maps$vertexID_2_nodeID) ## should be same as length(maps$nodeNames)
-  ## Only determine edgesTo2From once and then obtain in getParentNodesCore via scoping.
-  edgesLevels <- if(maxNodeID > 0) 1:maxNodeID else numeric(0)
-  fedgesTo <- factor(maps$edgesTo, levels = edgesLevels) ## setting levels ensures blanks inserted into the splits correctly
-  edgesTo2From <- split(maps$edgesFrom, fedgesTo)
-  
-  getParentNodesCore(nodes, model, returnType, stochOnly)
-}
-
 ##-----------------------------------------
 ##  Wrapper function for sampleDPmeasure
 ##-----------------------------------------
@@ -83,7 +58,7 @@ getParentNodes <- function(nodes, model, returnType = 'names', stochOnly = FALSE
 #' 
 #' The \code{epsilon} argument is optional and used to determine the truncation level of the random measure. \code{epsilon} is the tail probability of the random measure, which together with posterior samples of the concentration parameter, determines the truncation level. The default value is 1e-4.
 #'  
-#' The output is a list of matrices. Each matrix represents a sample from the random measure. In order to reduce the output's dimensionality, the weigths of identical atoms are added up. The stick-breaking weights are named \code{weights} and the atoms are named based on the cluster variables in the model.
+#' The output is a list of matrices. Each matrix represents a sample from the random measure. In order to reduce the output's dimensionality, the weights of identical atoms are added up. The stick-breaking weights are named \code{weights} and the atoms are named based on the cluster variables in the model.
 #' 
 #' For more details about sampling the random measure and determining its truncation level, see Section 3 in Gelfand, A.E. and Kottas, A. 2002.
 #' 
@@ -92,7 +67,7 @@ getParentNodes <- function(nodes, model, returnType = 'names', stochOnly = FALSE
 #'
 #' Sethuraman, J. (1994). A constructive definition of Dirichlet priors. \emph{Statistica Sinica}, 639-650.
 #'
-#' Gelfand, A.E. and Kottas, A. (2002). A computational approach for full nonparametric Bayesian inference under Dirichlet process mixture models. \emph{ournal of Computational and Graphical Statistics}, 11(2), 289-305.
+#' Gelfand, A.E. and Kottas, A. (2002). A computational approach for full nonparametric Bayesian inference under Dirichlet process mixture models. \emph{Journal of Computational and Graphical Statistics}, 11(2), 289-305.
 #' @examples
 #' \dontrun{
 #'   conf <- configureMCMC(model)

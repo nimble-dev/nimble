@@ -383,7 +383,7 @@ prepareDistributionInput <- function(densityName, userEnv) {
     cdfName <- sub('^d', 'p', densityName)
     quantileName <- sub('^d', 'q', densityName)
     out$pqAvail <- exists(cdfName, where = userEnv) && exists(quantileName, where = userEnv) && is.rcf(get(cdfName, pos = userEnv)) &&
-        is.rcf(get(quantileName, pos = UserEnv))
+        is.rcf(get(quantileName, pos = userEnv))
 
     # check consistent types
     if(out$pqAvail) {
