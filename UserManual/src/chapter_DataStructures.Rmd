@@ -148,17 +148,30 @@ customMV$a
 
 
 Often it is useful to convert a modelValues object to a matrix for use
-in R.  For example, we may want to convert MCMC output into a matrix
-for use with the `coda` package for processing MCMC samples. This
-can be done with the `as.matrix` method for modelValues
-objects. This will generate column names from every scalar element of
-variables (e.g. "b[1, 1]" ,"b[2, 1]", etc.). The rows of
-the modelValues will be the rows of the matrix, with any matrices or
-arrays converted to a vector based on column-major ordering.
+in R.  For example, we may want to convert MCMC output into a matrix,
+for use with the `coda` package for processing MCMC samples, or into a
+list. This can be done with the `as.matrix` and `as.list` methods for
+modelValues objects, respectively. `as.matrix` will generate column
+names from every scalar element of variables (e.g. "b[1, 1]" ,"b[2,
+1]", etc.). The rows of the modelValues will be the rows of the
+matrix, with any matrices or arrays converted to a vector based on
+column-major ordering.
   
 ```{r, as.matrix-mv}
 as.matrix(customMV, 'a')   # convert 'a'
 as.matrix(customMV)        # convert all variables
+```
+
+`as.list` will return a list with an element for each variable.  Each
+element will be an array of the same size and shape as the variable
+with an additional index for the iteration (e.g., MCMC iteration when used for
+MCMC output).  By default iteration is the first index, but it
+can be the last if needed.
+
+```{r, as.list-mv}
+as.list(customMV, 'a')    # get only 'a'
+as.list(customMV)         # get all variables
+as.list(customMV, 'a', iterationAsLastIndex = TRUE) # put iteration in last index
 ```
 
 If a variable is a scalar, using `unlist` in R to extract all rows as a vector can be useful.
