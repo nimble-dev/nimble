@@ -25,14 +25,14 @@ rCRP(n, conc = 1, size)
 \code{dCRP} gives the density, and \code{rCRP} gives random generation.
 }
 \description{
-EXPERIMENTAL Density and random generation for the Chinese
+Density and random generation for the Chinese
   Restaurant Process distribution.
 }
 \details{
 The Chinese restaurant process distribution is a distribution
 on the space of partitions of the positive integers. 
-The distribution with concentration parameter \eqn{=\alpha}{= conc} has 
-probability function 
+The distribution with concentration parameter \eqn{\alpha} equal to \code{conc} 
+has probability function 
 \deqn{
 f(x_i \mid x_1, \ldots, x_{i-1})=\frac{1}{i-1+\alpha}\sum_{j=1}^{i-1}\delta_{x_j}+
 \frac{\alpha}{i-1+\alpha}\delta_{x^{new}},}
