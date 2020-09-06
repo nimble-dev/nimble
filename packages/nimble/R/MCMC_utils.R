@@ -296,6 +296,20 @@ mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonS
 }
 
 
+
+#' @export
+extractControlElement <- function(controlList, elementName, defaultValue) {
+    if(missing(controlList) | !is.list(controlList))      stop('extractControlElement: controlList argument must be a list')
+    if(missing(elementName) | !is.character(elementName)) stop('extractControlElement: elementName argument must be a character string variable name')
+    if(missing(defaultValue))                             stop('extractControlElement: defaultValue argument must be provided')
+    if(elementName %in% names(controlList)) {
+        return(controlList[[elementName]])
+    } else {
+        return(defaultValue)
+    }
+}
+
+
 ## obselete, since control defaults were moved to sampler function setup code
 ## -DT July 2017
 ##mcmc_findControlListNamesInCode <- function(code) {

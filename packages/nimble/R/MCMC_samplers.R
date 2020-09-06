@@ -167,12 +167,12 @@ sampler_RW <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        logScale            <- if(!is.null(control$log))                 control$log                 else FALSE
-        reflective          <- if(!is.null(control$reflective))          control$reflective          else FALSE
-        adaptive            <- if(!is.null(control$adaptive))            control$adaptive            else TRUE
-        adaptInterval       <- if(!is.null(control$adaptInterval))       control$adaptInterval       else 200
-        adaptFactorExponent <- if(!is.null(control$adaptFactorExponent)) control$adaptFactorExponent else 0.8
-        scale               <- if(!is.null(control$scale))               control$scale               else 1
+        logScale            <- extractControlElement(control, 'log',                 FALSE)
+        reflective          <- extractControlElement(control, 'reflective',          FALSE)
+        adaptive            <- extractControlElement(control, 'adaptive',            TRUE)
+        adaptInterval       <- extractControlElement(control, 'adaptInterval',       200)
+        adaptFactorExponent <- extractControlElement(control, 'adaptFactorExponent', 0.8)
+        scale               <- extractControlElement(control, 'scale',               1)
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
@@ -326,13 +326,13 @@ sampler_RW_block <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        adaptive            <- if(!is.null(control$adaptive))            control$adaptive            else TRUE
-        adaptScaleOnly      <- if(!is.null(control$adaptScaleOnly))      control$adaptScaleOnly      else FALSE
-        adaptInterval       <- if(!is.null(control$adaptInterval))       control$adaptInterval       else 200
-        adaptFactorExponent <- if(!is.null(control$adaptFactorExponent)) control$adaptFactorExponent else 0.8
-        scale               <- if(!is.null(control$scale))               control$scale               else 1
-        propCov             <- if(!is.null(control$propCov))             control$propCov             else 'identity'
-        tries               <- if(!is.null(control$tries))               control$tries               else 1
+        adaptive            <- extractControlElement(control, 'adaptive',            TRUE)
+        adaptScaleOnly      <- extractControlElement(control, 'adaptScaleOnly',      FALSE)
+        adaptInterval       <- extractControlElement(control, 'adaptInterval',       200)
+        adaptFactorExponent <- extractControlElement(control, 'adaptFactorExponent', 0.8)
+        scale               <- extractControlElement(control, 'scale',               1)
+        propCov             <- extractControlElement(control, 'propCov',             'identity')
+        tries               <- extractControlElement(control, 'tries',               1)
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
@@ -507,9 +507,9 @@ sampler_RW_llFunction <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        adaptive       <- if(!is.null(control$adaptive))       control$adaptive       else TRUE
-        adaptInterval  <- if(!is.null(control$adaptInterval))  control$adaptInterval  else 200
-        scale          <- if(!is.null(control$scale))          control$scale          else 1
+        adaptive       <- extractControlElement(control, 'adaptive',       TRUE)
+        adaptInterval  <- extractControlElement(control, 'adaptInterval',  200)
+        scale          <- extractControlElement(control, 'scale',          1)
         llFunction     <- if(!is.null(control$llFunction))     control$llFunction     else stop('RW_llFunction sampler missing required control argument: llFunction')
         includesTarget <- if(!is.null(control$includesTarget)) control$includesTarget else stop('RW_llFunction sampler missing required control argument: includesTarget')
         ## node list generation
@@ -554,12 +554,12 @@ sampler_slice <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        adaptive               <- if(!is.null(control$adaptive))               control$adaptive               else TRUE
-        adaptInterval          <- if(!is.null(control$adaptInterval))          control$adaptInterval          else 200
-        width                  <- if(!is.null(control$sliceWidth))             control$sliceWidth             else 1
-        maxSteps               <- if(!is.null(control$sliceMaxSteps))          control$sliceMaxSteps          else 100
-        maxContractions        <- if(!is.null(control$maxContractions))        control$maxContractions        else 1000
-        maxContractionsWarning <- if(!is.null(control$maxContractionsWarning)) control$maxContractionsWarning else TRUE
+        adaptive               <- extractControlElement(control, 'adaptive',               TRUE)
+        adaptInterval          <- extractControlElement(control, 'adaptInterval',          200)
+        width                  <- extractControlElement(control, 'sliceWidth',             1)
+        maxSteps               <- extractControlElement(control, 'sliceMaxSteps',          100)
+        maxContractions        <- extractControlElement(control, 'maxContractions',        1000)
+        maxContractionsWarning <- extractControlElement(control, 'maxContractionsWarning', TRUE)
         eps <- 1e-15
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
@@ -688,8 +688,8 @@ sampler_ess <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        maxContractions        <- if(!is.null(control$maxContractions))        control$maxContractions        else 1000
-        maxContractionsWarning <- if(!is.null(control$maxContractionsWarning)) control$maxContractionsWarning else TRUE
+        maxContractions        <- extractControlElement(control, 'maxContractions',        1000)
+        maxContractionsWarning <- extractControlElement(control, 'maxContractionsWarning', TRUE)
         eps <- 1e-15
         ## node list generation
         target <- model$expandNodeNames(target)
@@ -750,14 +750,14 @@ sampler_AF_slice <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        widthVec               <- if(!is.null(control$sliceWidths))              control$sliceWidths              else 'oneVec'
-        maxSteps               <- if(!is.null(control$sliceMaxSteps))            control$sliceMaxSteps            else 100
-        adaptFactorMaxIter     <- if(!is.null(control$sliceAdaptFactorMaxIter))  control$sliceAdaptFactorMaxIter  else 15000
-        adaptFactorInterval    <- if(!is.null(control$sliceAdaptFactorInterval)) control$sliceAdaptFactorInterval else 1000
-        adaptWidthMaxIter      <- if(!is.null(control$sliceAdaptWidthMaxIter))   control$sliceAdaptWidthMaxIter   else 512
-        adaptWidthTolerance    <- if(!is.null(control$sliceAdaptWidthTolerance)) control$sliceAdaptWidthTolerance else 0.1
-        maxContractions        <- if(!is.null(control$maxContractions))          control$maxContractions          else 1000
-        maxContractionsWarning <- if(!is.null(control$maxContractionsWarning))   control$maxContractionsWarning   else TRUE
+        widthVec               <- extractControlElement(control, 'sliceWidths',              'oneVec')
+        maxSteps               <- extractControlElement(control, 'sliceMaxSteps',            100)
+        adaptFactorMaxIter     <- extractControlElement(control, 'sliceAdaptFactorMaxIter',  15000)
+        adaptFactorInterval    <- extractControlElement(control, 'sliceAdaptFactorInterval', 1000)
+        adaptWidthMaxIter      <- extractControlElement(control, 'sliceAdaptWidthMaxIter',   512)
+        adaptWidthTolerance    <- extractControlElement(control, 'sliceAdaptWidthTolerance', 0.1)
+        maxContractions        <- extractControlElement(control, 'maxContractions',          1000)
+        maxContractionsWarning <- extractControlElement(control, 'maxContractionsWarning',   TRUE)
         eps <- 1e-15
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
@@ -959,7 +959,7 @@ sampler_crossLevel <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        adaptive <- if(!is.null(control$adaptive)) control$adaptive else TRUE
+        adaptive <- extractControlElement(control, 'adaptive', TRUE)
         ## node list generation
         target       <- model$expandNodeNames(target)
         lowNodes     <- model$getDependencies(target, self = FALSE, stochOnly = TRUE, includeData = FALSE)
@@ -1054,12 +1054,12 @@ sampler_RW_llFunction_block <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        adaptive            <- if(!is.null(control$adaptive))            control$adaptive            else TRUE
-        adaptScaleOnly      <- if(!is.null(control$adaptScaleOnly))      control$adaptScaleOnly      else FALSE
-        adaptInterval       <- if(!is.null(control$adaptInterval))       control$adaptInterval       else 200
-        adaptFactorExponent <- if(!is.null(control$adaptFactorExponent)) control$adaptFactorExponent else 0.8
-        scale               <- if(!is.null(control$scale))               control$scale               else 1
-        propCov             <- if(!is.null(control$propCov))             control$propCov             else 'identity'
+        adaptive            <- extractControlElement(control, 'adaptive',            TRUE)
+        adaptScaleOnly      <- extractControlElement(control, 'adaptScaleOnly',      FALSE)
+        adaptInterval       <- extractControlElement(control, 'adaptInterval',       200)
+        adaptFactorExponent <- extractControlElement(control, 'adaptFactorExponent', 0.8)
+        scale               <- extractControlElement(control, 'scale',               1)
+        propCov             <- extractControlElement(control, 'propCov',             'identity')
         llFunction          <- if(!is.null(control$llFunction))          control$llFunction          else stop('RW_llFunction_block sampler missing required control argument: llFunction')
         includesTarget      <- if(!is.null(control$includesTarget))      control$includesTarget      else stop('RW_llFunction_block sampler missing required control argument: includesTarget')
         ## node list generation
@@ -1149,14 +1149,14 @@ sampler_RW_PF <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        adaptive       <- if(!is.null(control$adaptive))             control$adaptive             else TRUE
-        adaptInterval  <- if(!is.null(control$adaptInterval))        control$adaptInterval        else 200
-        scale          <- if(!is.null(control$scale))                control$scale                else 1
-        m              <- if(!is.null(control$pfNparticles))         control$pfNparticles         else 1000
-        existingPF     <- if(!is.null(control$pf))                   control$pf                   else NULL
-        filterType     <- if(!is.null(control$pfType))               control$pfType               else 'bootstrap'
-        filterControl  <- if(!is.null(control$pfControl))            control$pfControl            else list()
-        optimizeM      <- if(!is.null(control$pfOptimizeNparticles)) control$pfOptimizeNparticles else FALSE
+        adaptive       <- extractControlElement(control, 'adaptive',             TRUE)
+        adaptInterval  <- extractControlElement(control, 'adaptInterval',        200)
+        scale          <- extractControlElement(control, 'scale',                1)
+        m              <- extractControlElement(control, 'pfNparticles',         1000)
+        existingPF     <- extractControlElement(control, 'pf',                   NULL)
+        filterType     <- extractControlElement(control, 'pfType',               'bootstrap')
+        filterControl  <- extractControlElement(control, 'pfControl',            list())
+        optimizeM      <- extractControlElement(control, 'pfOptimizeNparticles', FALSE)
         latents        <- if(!is.null(control$latents))              control$latents              else stop('RW_PF sampler missing required control argument: latents')
         if(!is.null(control$pfLookahead)) {
           print("Warning, the `pfLookahead` control list argument is deprecated
@@ -1319,17 +1319,17 @@ sampler_RW_PF_block <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target,  control) {
         ## control list extraction
-        adaptive            <- if(!is.null(control$adaptive))             control$adaptive             else TRUE
-        adaptScaleOnly      <- if(!is.null(control$adaptScaleOnly))       control$adaptScaleOnly       else FALSE
-        adaptInterval       <- if(!is.null(control$adaptInterval))        control$adaptInterval        else 200
-        adaptFactorExponent <- if(!is.null(control$adaptFactorExponent))  control$adaptFactorExponent  else 0.8
-        scale               <- if(!is.null(control$scale))                control$scale                else 1
-        propCov             <- if(!is.null(control$propCov))              control$propCov              else 'identity'
-        existingPF          <- if(!is.null(control$pf))                   control$pf                   else NULL
-        m                   <- if(!is.null(control$pfNparticles))         control$pfNparticles         else 1000
-        filterType          <- if(!is.null(control$pfType))               control$pfType               else 'bootstrap'
-        filterControl       <- if(!is.null(control$pfControl))            control$pfControl            else list()
-        optimizeM           <- if(!is.null(control$pfOptimizeNparticles)) control$pfOptimizeNparticles else FALSE
+        adaptive            <- extractControlElement(control, 'adaptive',             TRUE)
+        adaptScaleOnly      <- extractControlElement(control, 'adaptScaleOnly',       FALSE)
+        adaptInterval       <- extractControlElement(control, 'adaptInterval',        200)
+        adaptFactorExponent <- extractControlElement(control, 'adaptFactorExponent',  0.8)
+        scale               <- extractControlElement(control, 'scale',                1)
+        propCov             <- extractControlElement(control, 'propCov',              'identity')
+        existingPF          <- extractControlElement(control, 'pf',                   NULL)
+        m                   <- extractControlElement(control, 'pfNparticles',         1000)
+        filterType          <- extractControlElement(control, 'pfType',               'bootstrap')
+        filterControl       <- extractControlElement(control, 'pfControl',            list())
+        optimizeM           <- extractControlElement(control, 'pfOptimizeNparticles', FALSE)
         latents             <- if(!is.null(control$latents))              control$latents              else stop('RW_PF sampler missing required control argument: latents')
         if(!is.null(control$pfLookahead)) {
           print("Warning, the `pfLookahead` control list argument is deprecated
@@ -1515,8 +1515,8 @@ sampler_RW_multinomial <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        adaptive      <- if(!is.null(control$adaptive))      control$adaptive      else TRUE
-        adaptInterval <- if(!is.null(control$adaptInterval)) control$adaptInterval else 200
+        adaptive      <- extractControlElement(control, 'adaptive',      TRUE)
+        adaptInterval <- extractControlElement(control, 'adaptInterval', 200)
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         targetAllNodes <- unique(model$expandNodeNames(target))
@@ -1646,10 +1646,10 @@ sampler_RW_dirichlet <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        adaptive            <- if(!is.null(control$adaptive))            control$adaptive            else TRUE
-        adaptInterval       <- if(!is.null(control$adaptInterval))       control$adaptInterval       else 200
-        adaptFactorExponent <- if(!is.null(control$adaptFactorExponent)) control$adaptFactorExponent else 0.8
-        scaleOriginal       <- if(!is.null(control$scale))               control$scale               else 1
+        adaptive            <- extractControlElement(control, 'adaptive',            TRUE)
+        adaptInterval       <- extractControlElement(control, 'adaptInterval',       200)
+        adaptFactorExponent <- extractControlElement(control, 'adaptFactorExponent', 0.8)
+        scaleOriginal       <- extractControlElement(control, 'scale',               1)
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
@@ -1735,11 +1735,11 @@ sampler_RW_wishart <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        adaptive            <- if(!is.null(control$adaptive))            control$adaptive            else TRUE
-        adaptInterval       <- if(!is.null(control$adaptInterval))       control$adaptInterval       else 200
-        adaptFactorExponent <- if(!is.null(control$adaptFactorExponent)) control$adaptFactorExponent else 0.8
-        scale               <- if(!is.null(control$scale))               control$scale               else 1
-        propCov             <- if(!is.null(control$propCov))             control$propCov             else 'identity'
+        adaptive            <- extractControlElement(control, 'adaptive',            TRUE)
+        adaptInterval       <- extractControlElement(control, 'adaptInterval',       200)
+        adaptFactorExponent <- extractControlElement(control, 'adaptFactorExponent', 0.8)
+        scale               <- extractControlElement(control, 'scale',               1)
+        propCov             <- extractControlElement(control, 'propCov',             'identity')
         ## node list generation
         target <- model$expandNodeNames(target)
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
@@ -1975,9 +1975,9 @@ CAR_scalar_RW <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, targetScalar, neighborNodes, neighborWeights, Mi, control, proper) {
         ## control list extraction
-        adaptive      <- if(!is.null(control$adaptive))      control$adaptive      else TRUE
-        adaptInterval <- if(!is.null(control$adaptInterval)) control$adaptInterval else 200
-        scale         <- if(!is.null(control$scale))         control$scale         else 1
+        adaptive      <- extractControlElement(control, 'adaptive',      TRUE)
+        adaptInterval <- extractControlElement(control, 'adaptInterval', 200)
+        scale         <- extractControlElement(control, 'scale',         1)
         ## node list generation
         depNodes <- model$getDependencies(targetScalar, self = FALSE)
         copyNodes <- c(targetScalar, depNodes)
@@ -2055,7 +2055,7 @@ sampler_CAR_normal <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        useConjugacy  <- if(!is.null(control$carUseConjugacy)) control$carUseConjugacy else TRUE
+        useConjugacy  <- extractControlElement(control, 'carUseConjugacy', TRUE)
         ## node list generation
         target <- model$expandNodeNames(target)
         targetScalarComponents <- model$expandNodeNames(target, returnScalarComponents = TRUE)
@@ -2120,7 +2120,7 @@ sampler_CAR_proper <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        useConjugacy  <- if(!is.null(control$carUseConjugacy)) control$carUseConjugacy else TRUE
+        useConjugacy  <- extractControlElement(control, 'carUseConjugacy', TRUE)
         ## node list generation
         target <- model$expandNodeNames(target)
         targetScalarComponents <- model$expandNodeNames(target, returnScalarComponents = TRUE)
