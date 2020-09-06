@@ -510,8 +510,8 @@ sampler_RW_llFunction <- nimbleFunction(
         adaptive       <- extractControlElement(control, 'adaptive',       TRUE)
         adaptInterval  <- extractControlElement(control, 'adaptInterval',  200)
         scale          <- extractControlElement(control, 'scale',          1)
-        llFunction     <- if(!is.null(control$llFunction))     control$llFunction     else stop('RW_llFunction sampler missing required control argument: llFunction')
-        includesTarget <- if(!is.null(control$includesTarget)) control$includesTarget else stop('RW_llFunction sampler missing required control argument: includesTarget')
+        llFunction     <- extractControlElement(control, 'llFunction',     error = 'RW_llFunction sampler missing required control argument: llFunction')
+        includesTarget <- extractControlElement(control, 'includesTarget', error = 'RW_llFunction sampler missing required control argument: includesTarget')
         ## node list generation
         calcNodes <- model$getDependencies(target)
         ## nested function and function list definitions
@@ -1060,8 +1060,8 @@ sampler_RW_llFunction_block <- nimbleFunction(
         adaptFactorExponent <- extractControlElement(control, 'adaptFactorExponent', 0.8)
         scale               <- extractControlElement(control, 'scale',               1)
         propCov             <- extractControlElement(control, 'propCov',             'identity')
-        llFunction          <- if(!is.null(control$llFunction))          control$llFunction          else stop('RW_llFunction_block sampler missing required control argument: llFunction')
-        includesTarget      <- if(!is.null(control$includesTarget))      control$includesTarget      else stop('RW_llFunction_block sampler missing required control argument: includesTarget')
+        llFunction          <- extractControlElement(control, 'llFunction',          error = 'RW_llFunction_block sampler missing required control argument: llFunction')
+        includesTarget      <- extractControlElement(control, 'includesTarget',      error = 'RW_llFunction_block sampler missing required control argument: includesTarget')
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
@@ -1157,17 +1157,17 @@ sampler_RW_PF <- nimbleFunction(
         filterType     <- extractControlElement(control, 'pfType',               'bootstrap')
         filterControl  <- extractControlElement(control, 'pfControl',            list())
         optimizeM      <- extractControlElement(control, 'pfOptimizeNparticles', FALSE)
-        latents        <- if(!is.null(control$latents))              control$latents              else stop('RW_PF sampler missing required control argument: latents')
-        if(!is.null(control$pfLookahead)) {
+        latents        <- extractControlElement(control, 'latents',              error = 'RW_PF sampler missing required control argument: latents')
+        if('pfLookahead' %in% names(control)) {
           print("Warning, the `pfLookahead` control list argument is deprecated
                 and will not be supported in future versions of NIMBLE. Please
                 specify the lookahead function via the pfControl argument 
                 instead.")
-          filterControl$lookahead  <-  control$pfLookahead
-        }                    
-        else if(is.null(filterControl$lookahead)) {
-          filterControl$lookahead  <-  'simulate'
-        } 
+          filterControl$lookahead <- control[['pfLookahead']]
+        }
+        else if(!('lookahead' %in% names(filterControl))) {
+          filterControl$lookahead <- 'simulate'
+        }
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
@@ -1330,17 +1330,17 @@ sampler_RW_PF_block <- nimbleFunction(
         filterType          <- extractControlElement(control, 'pfType',               'bootstrap')
         filterControl       <- extractControlElement(control, 'pfControl',            list())
         optimizeM           <- extractControlElement(control, 'pfOptimizeNparticles', FALSE)
-        latents             <- if(!is.null(control$latents))              control$latents              else stop('RW_PF sampler missing required control argument: latents')
-        if(!is.null(control$pfLookahead)) {
+        latents             <- extractControlElement(control, 'latents',              error = 'RW_PF sampler missing required control argument: latents')
+        if('pfLookahead' %in% names(control)) {
           print("Warning, the `pfLookahead` control list argument is deprecated
                 and will not be supported in future versions of NIMBLE. Please
                 specify the lookahead function via the pfControl argument 
                 instead.")
-          filterControl$lookahead  <-  control$pfLookahead
-        }                    
-        else if(is.null(filterControl$lookahead)) {
-          filterControl$lookahead  <-  'simulate'
-        } 
+          filterControl$lookahead <- control[['pfLookahead']]
+        }
+        else if(!('lookahead' %in% names(filterControl))) {
+          filterControl$lookahead <- 'simulate'
+        }
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
