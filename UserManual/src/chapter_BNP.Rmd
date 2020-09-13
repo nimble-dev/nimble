@@ -111,13 +111,11 @@ One of the advantages of BNP mixture models is that the number of clusters is tr
 
 ### Extensions {#sec:extensionscrp}
 
-The BNP functionality has been recently extended to more general models. These extensions enable users, for instance, to use a DP or DPM prior for the distribution of the random effects in a generalized linear mixed effects model with mutiple measurements over time or multiple trials per participant. 
-
-#### Example {#sec:exextensionscrp}
+The BNP functionality in NIMBLE was extended in version 0.10.0 to more general models. These extensions enable users, for instance, to use a DP or DPM prior for the distribution of the random effects in a generalized linear mixed effects model with mutiple measurements over time or multiple trials per participant. 
 
 The following example illustrates how to use NIMBLE in a random effects model with repeated measurements per subject using a DP prior for the distribution of the subject's random effects. The model is given by
 
-$$ y_{i,j} \mid \tilde{\boldsymbol{\theta}}, z_i, \sigma^2 \ {\sim}\ N(\tilde{\theta}_{z_i}, {\sigma}^2,)\hspace{0.5cm} i = 1, \ldots, N,\hspace{0.5cm} j = 1, \ldots, J, $$
+$$ y_{i,j} \mid \tilde{\boldsymbol{\theta}}, z_i, \sigma^2 \ {\sim}\ N(\tilde{\boldsymbol{\theta}}_{z_i}, {\sigma}^2,)\hspace{0.5cm} i = 1, \ldots, N,\hspace{0.5cm} j = 1, \ldots, J, $$
 
 $$ \boldsymbol{z} \sim \mbox{CRP}(\alpha), \hspace{0.5cm} \alpha \sim \mbox{Gamma}(1, 1), $$
 
@@ -149,6 +147,8 @@ inits <- list(thetatilde = rnorm(constants$M, 0, 10),
               sigma2 = 1)
 modelRandEff <- nimbleModel(code, constants, data, inits)
 ```
+
+Alternatively, each subject could have a vector of parameters being clustered. For example in the model above one could instead specify a vector of means, such as `thetaTilde[z[i], j]`, instead of a single mean. 
 
 As before, the model can be fitted through  MCMC sampling. NIMBLE will assign a specialized sampler to update `z` and `alpha`. See Chapter  \@ref(cha:mcmc) for information about NIMBLE's MCMC engine, and Section \@ref(sec:mcmcdcrp) for details on  MCMC sampling of the CRP.
 
@@ -238,7 +238,7 @@ NIMBLE's MCMC engine provides specialized samplers for the `dCRP` distribution, 
   1. A non-conjugate sampler in the case of the baseline distribution  not being conjugate for the mixture kernel.
 
 
-Note that both samplers are specialized versions that operate on a vector having a CRP distribution. Details of these assignments are strictly internal to the CRP samplers. The current release of NIMBLE supports conjugate sampling for the `dCRP` distribution for the relationships listed in Table \@ref(tab:BNPconjugacy). Additional relationships are provided in Table \@ref(tab:BNPconjugacy2) for normal mixture kernels when both,  mean and  variance, are unknown.
+Note that both samplers are specialized versions that operate on a vector having a CRP distribution. Details of these assignments are strictly internal to the CRP samplers. The current release of NIMBLE supports conjugate sampling for the `dCRP` distribution for the relationships listed in Table \@ref(tab:BNPconjugacy). Additional relationships are provided in Table \@ref(tab:BNPconjugacy2) for normal mixture kernels when both mean and  variance are unknown.
 
 
 ```{r, child = 'tables/BNPconjugacyTable.md'}
