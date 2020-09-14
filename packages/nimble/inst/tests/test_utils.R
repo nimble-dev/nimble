@@ -209,7 +209,11 @@ test_coreRfeature_batch_internal <- function(input_batch, verbose = nimbleOption
             if(is.null(input[['return']])) { ## use default 'out' object
                 if(!checkEqual) {
                     expect_identical(class(out), class(out_nfC), info = paste('iden tmp test of class', class(out), class(out_nfC)))
-                    # class(out) <- class(out_nfC)
+                                        # class(out) <- class(out_nfC)
+                    tmp1 <- out
+                    tmp2 <- out_nfC
+                    attributes(tmp)  <- attributes(tmp2)  <- NULL
+                    expect_identical(tmp1, tmp2, info = 'att stripped')
                     expect_identical(out, out_nfR, info = "Identical test of coreRfeature (direct R vs. R nimbleFunction)")
                     expect_identical(out, out_nfC, info = "Identical test of coreRfeature (direct R vs. C++ nimbleFunction)")
                 } else {
@@ -318,8 +322,8 @@ test_coreRfeature_internal <- function(input, verbose = nimbleOptions('verbose')
   if(is.null(checkEqual)) checkEqual <- FALSE
   if(is.null(input[['return']])) { ## use default 'out' object
       if(!checkEqual) {
-          expect_identical(out, out_nfR, info = paste0("Identical test of coreRfeature (direct R vs. R nimbleFunction): ", input$name))
-          expect_identical(out, out_nfC, info = paste0("Identical test of coreRfeature (direct R vs. C++ nimbleFunction): ", input$name))
+          expect_identical(out, out_nfR, info = paste0("FOO Identical test of coreRfeature (direct R vs. R nimbleFunction): ", input$name))
+          expect_identical(out, out_nfC, info = paste0("FOO Identical test of coreRfeature (direct R vs. C++ nimbleFunction): ", input$name))
       } else {
           expect_equal(out, out_nfR, info = paste0("Equal test of coreRfeature (direct R vs. R nimbleFunction): ", input$name) )
           expect_equal(out, out_nfC, info = paste0("Equal test of coreRfeature (direct R vs. C++ nimbleFunction): ", input$name))
