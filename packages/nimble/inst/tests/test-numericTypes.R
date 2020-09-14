@@ -279,7 +279,7 @@ binaryMatrixOpTypeTests <- indexNames(binaryMatrixOpTypeTests)
 #reductionLogicalResults <- test_coreRfeature_batch(reductionTypeTestsLogical, 'reductionTypeTestsLogical') ## lapply(reductionTypeTestsLogical, test_coreRfeature)
 reductionMatrixSquareResults <- test_coreRfeature_batch(reductionTypeTestsMatrixSquare[3:4], 'reductionTypeTestsMatrixSquare[3:4]') ## lapply(reductionTypeTestsMatrixSquare[3:4], test_coreRfeature)
 #binaryCwiseMidOpsResults <- test_coreRfeature_batch(binaryCwiseTypeTestsMidOps, 'binaryCwiseTypeTestsMidOps') ## lapply(binaryCwiseTypeTestsMidOps, test_coreRfeature)
-#binaryCwiseInProdResults <- test_coreRfeature_batch(binaryCwiseTypeTestsInprod, 'binaryCwiseTypeTestsInprod') ## lapply(binaryCwiseTypeTestsInprod, test_coreRfeature)
+binaryCwiseInProdResults <- test_coreRfeature_batch(binaryCwiseTypeTestsInprod, 'binaryCwiseTypeTestsInprod') ## lapply(binaryCwiseTypeTestsInprod, test_coreRfeature)
 #binaryCwiseLeftPromoteResults <- test_coreRfeature_batch(binaryCwiseTypeTestsLeftPromotOps, 'binaryCwiseTypeTestsLeftPromotOps') ## lapply(binaryCwiseTypeTestsLeftPromotOps, test_coreRfeature)
 #binaryMatrixOpResults <- test_coreRfeature_batch(binaryMatrixOpTypeTests, 'binaryMatrixOpTypeTests') ## lapply(binaryMatrixOpTypeTests, test_coreRfeature)
 
