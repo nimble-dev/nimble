@@ -212,7 +212,7 @@ test_coreRfeature_batch_internal <- function(input_batch, verbose = nimbleOption
                     expect_identical(dim(out), dim(out_nfC), info = 'iden test of dim')
                     expect_identical(round(out, 10), round(out_nfC, 10), info='iden test of round')
                     expect_identical(out, out_nfR, info = "Identical test of coreRfeature (direct R vs. R nimbleFunction)")
-                    expect_identical(out, out_nfC, info = "Identical test of coreRfeature (direct R vs. C++ nimbleFunction)")
+                    expect_identical(out, out_nfC, info = paste("Identical test of coreRfeature (direct R vs. C++ nimbleFunction)", out[1], " ", out_nfC[1]))
                 } else {
                     expect_equal(out, out_nfR, info = "Equal test of coreRfeature (direct R vs. R nimbleFunction)")
                     expect_equal(out, out_nfC, info = "Equal test of coreRfeature (direct R vs. C++ nimbleFunction)")
