@@ -198,7 +198,7 @@ parseTreeSubstitute <- function(pt, pattern, replacement) {
 }
 
 
-CppNameLabelMaker <- labelFunctionCreator('UID')
+CppNameLabelMaker <- labelFunctionCreator('___TRUNC___')
 
 # no longer documented in Rd
 # Generates a valid C++ name from an R Name
@@ -216,10 +216,9 @@ CppNameLabelMaker <- labelFunctionCreator('UID')
 Rname2CppName <- function(rName, colonsOK = TRUE, maxLength = 250) {
     ## This will serve to replace and combine our former Rname2CppName and nameMashupFromExpr
     ## which were largely redundant
-    if (!is.character(rName)) {
-        browser()
+    if (!is.character(rName)) 
         rName <- deparse(rName)
-        }
+
     if( colonsOK) {
         # Substitute single colons but preserve double colons.
         rName <- gsub('::', '_DOUBLE_COLON_', rName)
@@ -264,8 +263,8 @@ Rname2CppName <- function(rName, colonsOK = TRUE, maxLength = 250) {
     rName <- gsub('^([[:digit:]])', 'd\\1', rName)    # if begins with a digit, add 'd' in front
     rName <- sapply(rName,
                     function(x) {
-                        if(nchar(x) > maxLength)  # cut off 50 extra to ensure result is less than maxLength so not subsequently modified 
-                            x <- paste0(substring(x, 1, maxLength), '_', CppNameLabelMaker())
+                        if(nchar(x) > maxLength && !grep("___TRUNC___", x)) 
+                            x <- paste0(substring(x, 1, maxLength), CppNameLabelMaker())
                         return(x)
                     })
     rName
