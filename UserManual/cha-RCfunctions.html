@@ -232,6 +232,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="10.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:crp"><i class="fa fa-check"></i><b>10.2</b> Chinese Restaurant Process model</a><ul>
 <li class="chapter" data-level="10.2.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-density-2"><i class="fa fa-check"></i><b>10.2.1</b> Specification and density</a></li>
 <li class="chapter" data-level="10.2.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:excrp"><i class="fa fa-check"></i><b>10.2.2</b> Example</a></li>
+<li class="chapter" data-level="10.2.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:extensionscrp"><i class="fa fa-check"></i><b>10.2.3</b> Extensions</a></li>
 </ul></li>
 <li class="chapter" data-level="10.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:sb"><i class="fa fa-check"></i><b>10.3</b> Stick-breaking model</a><ul>
 <li class="chapter" data-level="10.3.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-function"><i class="fa fa-check"></i><b>10.3.1</b> Specification and function</a></li>
@@ -327,6 +328,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
+<li class="chapter" data-level="16" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i><b>16</b> References</a></li>
 </ul>
 
       </nav>
@@ -394,7 +396,7 @@ y &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1
 <h3><span class="header-section-number">11.2.2</span> Basic operations</h3>
 <p>Basic R operations supported for NIMBLE compilation are listed in Table <a href="cha-RCfunctions.html#tab:coreR">11.1</a>.</p>
 <table>
-<caption><span id="tab:coreR">Table 11.1: </span> Basic R manipulation functions in NIMBLE. To find help in R for NIMBLE’s version of a function, use the “nim” prefix and capitalize the next letter. E.g. <code>help(nimC)</code> for help with <code>c()</code>.</caption>
+<caption><span id="tab:coreR">Table 11.1: </span> Basic R manipulation functions in NIMBLE. For some of these functions, in addition to the usual use of <code>help()</code>, you can find help in R for NIMBLE’s version of a function by using the “nim” prefix and capitalizing the next letter. E.g. <code>help(nimC)</code> for help with <code>c()</code>.</caption>
 <thead>
 <tr class="header">
 <th align="left">Function</th>
@@ -452,7 +454,15 @@ y &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1
 </tr>
 <tr class="odd">
 <td align="left"><code>is.nan()</code></td>
-<td align="left"></td>
+<td align="left">Treats <code>NA</code> of type ‘double’ as being <code>NaN</code> and <code>NA</code> of type ‘logical’ as not being <code>NaN</code>.</td>
+</tr>
+<tr class="even">
+<td align="left"><code>any()</code></td>
+<td align="left">One argument only; NAs treated as FALSE.</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>all()</code></td>
+<td align="left">One argument only; NAs treated as FALSE.</td>
 </tr>
 <tr class="even">
 <td align="left"><code>numeric()</code></td>
@@ -510,7 +520,7 @@ y &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1
 </div>
 <div id="sec:basic-math-linear" class="section level3">
 <h3><span class="header-section-number">11.2.3</span> Math and linear algebra</h3>
-<p>Numeric scalar and matrix mathematical operations are listed in Tables @ref{tab:functions}-@ref{tab:functionsMatrix}.</p>
+<p>Numeric scalar and matrix mathematical operations are listed in Tables <a href="cha-writing-models.html#tab:functions">5.4</a>-<a href="cha-writing-models.html#tab:functionsMatrix">5.5</a>.</p>
 <!---
 would need to do some sed manipulation to be able to automate this cross-ref
 \@ref(tab:functions) and \@ref(tab:functionsMatrix).
@@ -1214,7 +1224,7 @@ myMatrix &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span clas
 </div>
 <div id="sec:size-warn-potent" class="section level4">
 <h4><span class="header-section-number">11.3.2.7</span> Size warnings and the potential for crashes</h4>
-<p>For matrix algebra, NIMBLE cannot ensure perfect behavior because sizes are not known until run time. Therefore, it is possible for you to write code that will crash your R session. In Version 0.9.0, NIMBLE attempts to issue a warning if sizes are not compatible, but it does not halt execution. Therefore, if you execute <code>A &lt;- M1 %*% M2</code>, and <code>M1</code> and <code>M2</code> are not compatible for matrix multiplication, NIMBLE will output a warning that the number of rows of <code>M1</code> does not match the number of columns of <code>M2</code>. After that warning the statement will be executed and may result in a crash. Another easy way to write code that will crash is to do things like <code>Y[5:10, 20:30] &lt;- x</code> without ensuring Y is at least 10x30. In the future we hope to prevent crashes, but in Version 0.9.0 we limit ourselves to trying to provide useful information.</p>
+<p>For matrix algebra, NIMBLE cannot ensure perfect behavior because sizes are not known until run time. Therefore, it is possible for you to write code that will crash your R session. In Version 0.10.0, NIMBLE attempts to issue a warning if sizes are not compatible, but it does not halt execution. Therefore, if you execute <code>A &lt;- M1 %*% M2</code>, and <code>M1</code> and <code>M2</code> are not compatible for matrix multiplication, NIMBLE will output a warning that the number of rows of <code>M1</code> does not match the number of columns of <code>M2</code>. After that warning the statement will be executed and may result in a crash. Another easy way to write code that will crash is to do things like <code>Y[5:10, 20:30] &lt;- x</code> without ensuring Y is at least 10x30. In the future we hope to prevent crashes, but in Version 0.10.0 we limit ourselves to trying to provide useful information.</p>
 </div>
 </div>
 </div>
