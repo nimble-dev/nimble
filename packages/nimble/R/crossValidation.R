@@ -27,7 +27,8 @@ calcCrossVal <- function(i,
                          nburnin,
                          returnSamples,
                          nBootReps, 
-                         silent){
+                         silent,
+                         lossFunctionIsSimple = TRUE){
   message(paste("dropping data fold", i))
   model <- conf$model
   leaveOutNames <- model$expandNodeNames(foldFunction(i))
@@ -57,6 +58,7 @@ calcCrossVal <- function(i,
   if(!silent) modelMCMCConf <- configureMCMC(newModel, nodes = leaveOutNames, monitors = leaveOutNames)
   else modelMCMCConf <- suppressMessages(configureMCMC(newModel, nodes = leaveOutNames, monitors = leaveOutNames))
   if(!predLoss) modelMCMCConf$samplerConfs <- c(conf$samplerConfs,modelMCMCConf$samplerConfs)
+  if(!lossFunctionIsSimple) modelMCMCConf$addMonitors(conf$monitors)
   if(!silent){
     modelMCMC <- buildMCMC(modelMCMCConf)
     C.modelMCMC <- compileNimble(modelMCMC,
@@ -69,13 +71,16 @@ calcCrossVal <- function(i,
                                    project = newModel))
       silentNull <- suppressMessages(C.modelMCMC$run(niter, progressBar = FALSE))
   }
-  MCMCout <- as.matrix(C.modelMCMC$mvSamples)[,leaveOutNames, drop = FALSE]
-  sampNum <- dim(MCMCout)[1]
-  startIndex <- nburnin+1
+  if(lossFunctionIsSimple) {
+      MCMCout <- as.matrix(C.modelMCMC$mvSamples)[,leaveOutNames, drop = FALSE]
+      sampNum <- dim(MCMCout)[1]
+      startIndex <- nburnin+1
+  }
   if(predLoss){
     values(model, missingDataNames) <- saveData
   }
   if(!is.na(nBootReps)){
+      if(lossFunctionIsSimple) warning("Using nBootReps wtih lossFunctionIsSample = FALSE is not yet supported.")
     crossValAveSD <- calcCrossValSD(MCMCout=MCMCout, sampNum=sampNum,
                                     nBootReps=nBootReps,
                                     saveData=saveData,
@@ -85,7 +90,11 @@ calcCrossVal <- function(i,
   else{
     crossValAveSD <- NA
   }
-  crossVal <- mean(apply(MCMCout[startIndex:sampNum,, drop = FALSE], 1, lossFunction, saveData))
+  if(lossFunctionIsSimple) {
+      crossVal <- mean(apply(MCMCout[startIndex:sampNum,, drop = FALSE], 1, lossFunction, saveData))
+  } else {
+      crossVal <- lossFunction(C.modelMCMC, Cmodel, leaveOutNames)
+  }
   if(predLoss){
     crossVal <- log(crossVal)
   }
@@ -287,7 +296,8 @@ runCrossValidate <- function(MCMCconfiguration,
                              returnSamples = FALSE,
                              nCores = 1,
                              nBootReps = 200,
-                             silent = FALSE){
+                             silent = FALSE,
+                             lossFunctionIsSimple = TRUE){
   
   model <- MCMCconfiguration$model
   niter <- MCMCcontrol[['niter']] 
@@ -338,7 +348,8 @@ runCrossValidate <- function(MCMCconfiguration,
                             returnSamples,
                             nBootReps,
                             mc.cores = nCores,
-                            silent)
+                            silent,
+                            lossFunctionIsSimple = lossFunctionIsSimple)
   } else{
       crossValOut <- lapply(1:k, calcCrossVal,
                             MCMCconfiguration,
@@ -348,7 +359,8 @@ runCrossValidate <- function(MCMCconfiguration,
                             nburnin,
                             returnSamples,
                             nBootReps,
-                            silent)
+                            silent,
+                            lossFunctionIsSimple = lossFunctionIsSimple)
   }
   CVvalue <- mean(sapply(crossValOut, function(x) x$crossValAverage),
                   na.rm=TRUE)
