@@ -8,6 +8,10 @@ USER LEVEL CHANGES
 
 -- New methods `setMonitors` and `setMonitors2` added for MCMC configuraiton objects.  These methods replace the current set of monitors (or monitors2) with the specified variables.
 
+BUG FIXES
+
+-- Updated all MCMC sampler functions to use a new syntax for control list element extraction, which prevents a possible caused by R's partial matching of list names.
+
                             CHANGES IN VERSION 0.9.1 (May 2020)
 
 USER LEVEL CHANGES
