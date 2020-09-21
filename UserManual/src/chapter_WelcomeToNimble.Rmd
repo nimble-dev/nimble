@@ -28,9 +28,9 @@ Please join the mailing lists
 telling us what you want to do with it, what you like, and what could
 be better.  We have a lot of ideas for how to improve it, but we want
 your help and ideas too.  You can also follow and contribute to
-developer discussions on the
-[wiki of our GitHub
-  repository](https://github.com/nimble-dev/nimble/wiki).
+developer discussions on
+[our GitHub
+  repository](https://github.com/nimble-dev/nimble).
 
 If you use NIMBLE in your work, please cite us, as this helps justify past and future funding
 for the development of NIMBLE. For more information, please call `citation('nimble')` in R.

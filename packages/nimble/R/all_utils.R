@@ -1,5 +1,3 @@
-
-
 double <- function(ndim, dims) {}
 
 ## Sequential label generation system:

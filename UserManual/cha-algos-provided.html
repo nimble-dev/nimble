@@ -232,6 +232,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="10.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:crp"><i class="fa fa-check"></i><b>10.2</b> Chinese Restaurant Process model</a><ul>
 <li class="chapter" data-level="10.2.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-density-2"><i class="fa fa-check"></i><b>10.2.1</b> Specification and density</a></li>
 <li class="chapter" data-level="10.2.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:excrp"><i class="fa fa-check"></i><b>10.2.2</b> Example</a></li>
+<li class="chapter" data-level="10.2.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:extensionscrp"><i class="fa fa-check"></i><b>10.2.3</b> Extensions</a></li>
 </ul></li>
 <li class="chapter" data-level="10.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:sb"><i class="fa fa-check"></i><b>10.3</b> Stick-breaking model</a><ul>
 <li class="chapter" data-level="10.3.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-function"><i class="fa fa-check"></i><b>10.3.1</b> Specification and function</a></li>
@@ -327,6 +328,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
+<li class="chapter" data-level="16" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i><b>16</b> References</a></li>
 </ul>
 
       </nav>
@@ -457,7 +459,7 @@ cENKF &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rENKF,
 cENKF<span class="op">$</span><span class="kw">run</span>(parNum)</code></pre></div>
 <p>Once each filter has been run, we can extract samples from the posterior distribution of our latent states as follows:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Equally-weighted samples (available from all filters)</span>
-bootEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cBootF<span class="op">$</span>mvEWSamples)
+bootEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cBootF<span class="op">$</span>mvEWSamples) <span class="co"># alternative: as.list</span>
 auxEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cAuxF<span class="op">$</span>mvEWSamples)
 LWFEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cLWF<span class="op">$</span>mvEWSamples)
 ENKFEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cENKF<span class="op">$</span>mvEWSamples)
@@ -545,7 +547,7 @@ fkfResult<span class="op">$</span>logLik</code></pre></div>
 </div>
 <div id="sec:particle-mcmc" class="section level3">
 <h3><span class="header-section-number">8.1.2</span> Particle MCMC (PMCMC)</h3>
-<p>Particle MCMC (PMCMC) is a method that uses MCMC for top-level model parameters and uses a particle filter to approximate the time-series likelihood for use in determining MCMC acceptance probabilities <span class="citation">(Andrieu, Doucet, and Holenstein <a href="#ref-Andrieu_Doucet_Holenstein_2010">2010</a>)</span>. NIMBLE implements PMCMC by providing random-walk Metropolis-Hastings samplers for model parameters that make use of particle filters in this way. These samplers can use NIMBLE’s bootstrap filter or auxiliary particle filter, or they can use a user-defined filter. Whichever filter is specified will be used to obtain estimates of the likelihood of the state-space model (marginalizing over the latent states), which is used for calculation of the Metropolis-Hastings acceptance probability. The <code>RW_PF</code> sampler uses a univariate normal proposal distribution, and can be used to sample scalar top-level parameters. The <code>RW_PF_block</code> sampler uses a multivariate normal proposal distribution and can be used to jointly sample vectors of top-level parameters. The PMCMC samplers can be specified with a call to <code>addSampler</code> with <code>type = &quot;RW_PF&quot;</code> or <code>type = &quot;RW_PF_block&quot;</code>, a syntax similar to the other MCMC samplers listed in Section <a href="cha-mcmc.html#sec:samplers-provided">7.10</a>.</p>
+<p>Particle MCMC (PMCMC) is a method that uses MCMC for top-level model parameters and uses a particle filter to approximate the time-series likelihood for use in determining MCMC acceptance probabilities <span class="citation">(Andrieu, Doucet, and Holenstein <a href="references.html#ref-Andrieu_Doucet_Holenstein_2010">2010</a>)</span>. NIMBLE implements PMCMC by providing random-walk Metropolis-Hastings samplers for model parameters that make use of particle filters in this way. These samplers can use NIMBLE’s bootstrap filter or auxiliary particle filter, or they can use a user-defined filter. Whichever filter is specified will be used to obtain estimates of the likelihood of the state-space model (marginalizing over the latent states), which is used for calculation of the Metropolis-Hastings acceptance probability. The <code>RW_PF</code> sampler uses a univariate normal proposal distribution, and can be used to sample scalar top-level parameters. The <code>RW_PF_block</code> sampler uses a multivariate normal proposal distribution and can be used to jointly sample vectors of top-level parameters. The PMCMC samplers can be specified with a call to <code>addSampler</code> with <code>type = &quot;RW_PF&quot;</code> or <code>type = &quot;RW_PF_block&quot;</code>, a syntax similar to the other MCMC samplers listed in Section <a href="cha-mcmc.html#sec:samplers-provided">7.10</a>.</p>
 <p>The <code>RW_PF</code> sampler and <code>RW_PF_block</code> sampler can be customized using the <code>control</code> list argument to set the adaptive properties of the sampler and options for the particle filter algorithm to be used. In addition, providing <code>pfOptimizeNparticles=TRUE</code> in the <code>control</code> list will use an experimental algorithm to estimate the optimal number of particles to use in the particle filter. See <code>help(samplers)</code> for details. The MCMC configuration for the <code>timeModel</code> in the previous section will serve as an example for the use of our PMCMC sampler. Here we use the identity matrix as our proposal covariance matrix.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">timeConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(rTimeModel)   <span class="co"># default MCMC configuration</span>
 
@@ -586,7 +588,9 @@ pumpMCEM &lt;-<span class="st"> </span><span class="kw">buildMCEM</span>(<span c
                       <span class="dt">boxConstraints =</span> <span class="kw">list</span>( <span class="kw">list</span>( <span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>), 
                                                   <span class="dt">limits =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="ot">Inf</span>) ) ), 
                       <span class="dt">buffer =</span> <span class="fl">1e-6</span>)</code></pre></div>
-<p>The first argument <code>buildMCEM</code>, <code>model</code>, is a NIMBLE model, which can be either the uncompiled or compiled version. At the moment, the model provided cannot be part of another MCMC sampler. The ascent-based MCEM algorithm has a number of control options:</p>
+<p>The first argument <code>buildMCEM</code>, <code>model</code>, is a NIMBLE model, which can be either the uncompiled or compiled version. At the moment, the model provided cannot be part of another MCMC sampler.</p>
+<p>Initial values for the parameters are taken to be the values in the model at the time <code>buildMCEM</code> is called, unless the values in the compiled model are changed before running the MCEM.</p>
+<p>The ascent-based MCEM algorithm has a number of control options:</p>
 <p>The <code>latentNodes</code> argument should indicate the nodes that will be integrated over (sampled via MCMC), rather than maximized. These nodes must be stochastic, not deterministic! <code>latentNodes</code> will be expanded as described in Section <a href="cha-using-models.html#sec:arbitr-coll-nodes">13.3.1.1</a>. I.e., either <code>latentNodes = &quot;x&quot;</code> or <code>latentNodes = c(&quot;x[1]&quot;, &quot;x[2]&quot;)</code> will treat <code>x[1]</code> and <code>x[2]</code> as latent nodes if <code>x</code> is a vector of two values. All other non-data nodes will be maximized over. Note that <code>latentNodes</code> can include discrete nodes, but the nodes to be maximized cannot.</p>
 <p>The <code>burnIn</code> argument indicates the number of samples from the MCMC for the E-step that should be discarded when computing the expected likelihood in the M-step. Note that <code>burnIn</code> can be set to values lower than in standard MCMC computations, as each iteration will start where the last left off.</p>
 <p>The <code>mcmcControl</code> argument will be passed to <code>configureMCMC</code> to define the MCMC to be used.</p>
@@ -643,12 +647,6 @@ pumpCov &lt;-<span class="st"> </span>pumpMCEM<span class="op">$</span><span cla
 % Rscript -e "library(knitr);  knit2pdf('includesSpatialOnly.Rnw')"; open -a "Google Chrome" includesSpatialOnly.pdf
 -->
 </div>
-</div>
-</div>
-<h3>References</h3>
-<div id="refs" class="references">
-<div id="ref-Andrieu_Doucet_Holenstein_2010">
-<p>Andrieu, Christophe, Arnaud Doucet, and Roman Holenstein. 2010. “Particle Markov Chain Monte Carlo Methods.” <em>Journal of the Royal Statistical Society: Series B (Statistical Methodology)</em> 72 (3): 269–342. doi:<a href="https://doi.org/10.1111/j.1467-9868.2009.00736.x">10.1111/j.1467-9868.2009.00736.x</a>.</p>
 </div>
 </div>
             </section>

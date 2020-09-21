@@ -232,6 +232,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="10.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:crp"><i class="fa fa-check"></i><b>10.2</b> Chinese Restaurant Process model</a><ul>
 <li class="chapter" data-level="10.2.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-density-2"><i class="fa fa-check"></i><b>10.2.1</b> Specification and density</a></li>
 <li class="chapter" data-level="10.2.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:excrp"><i class="fa fa-check"></i><b>10.2.2</b> Example</a></li>
+<li class="chapter" data-level="10.2.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:extensionscrp"><i class="fa fa-check"></i><b>10.2.3</b> Extensions</a></li>
 </ul></li>
 <li class="chapter" data-level="10.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:sb"><i class="fa fa-check"></i><b>10.3</b> Stick-breaking model</a><ul>
 <li class="chapter" data-level="10.3.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-function"><i class="fa fa-check"></i><b>10.3.1</b> Specification and function</a></li>
@@ -327,6 +328,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
+<li class="chapter" data-level="16" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i><b>16</b> References</a></li>
 </ul>
 
       </nav>
@@ -466,9 +468,9 @@ mcmc.out &lt;-<span class="st"> </span><span class="kw">nimbleMCMC</span>(<span 
 <li>If the node has a conjugate relationship between its prior distribution and the distributions of its stochastic dependents, a <code>conjugate</code> (`Gibbs’) sampler is assigned.</li>
 <li>If the node follows a multinomial distribution, then a <code>RW_multinomial</code> sampler is assigned. This is a discrete random-walk sampler in the space of multinomial outcomes.</li>
 <li>If a node follows a Dirichlet distribution, then a <code>RW_dirichlet</code> sampler is assigned. This is a random walk sampler in the space of the simplex defined by the Dirichlet.</li>
-<li>If the node follows any other multivariate distribution, then a <code>RW_block</code> sampler is assigned for all elements. This is a Metropolis-Hastings adaptive random-walk sampler with a multivariate normal proposal <span class="citation">(Roberts and Sahu <a href="#ref-Roberts_Sahu_1997">1997</a>)</span>.</li>
+<li>If the node follows any other multivariate distribution, then a <code>RW_block</code> sampler is assigned for all elements. This is a Metropolis-Hastings adaptive random-walk sampler with a multivariate normal proposal <span class="citation">(Roberts and Sahu <a href="references.html#ref-Roberts_Sahu_1997">1997</a>)</span>.</li>
 <li>If the node is binary-valued (strictly taking values 0 or 1), then a <code>binary</code> sampler is assigned. This sampler calculates the conditional probability for both possible node values and draws the new node value from the conditional distribution, in effect making a Gibbs sampler.</li>
-<li>If the node is otherwise discrete-valued, then a <code>slice</code> sampler is assigned <span class="citation">(R. M. Neal <a href="#ref-Neal2003">2003</a>)</span>.</li>
+<li>If the node is otherwise discrete-valued, then a <code>slice</code> sampler is assigned <span class="citation">(R. M. Neal <a href="references.html#ref-Neal2003">2003</a>)</span>.</li>
 <li>If none of the above criteria are satisfied, then a <code>RW</code> sampler is assigned. This is a Metropolis-Hastings adaptive random-walk sampler with a univariate normal proposal distribution.</li>
 </ol>
 <p>These sampler assignment rules can be inspected, reordered, and easily modified using the system option <code>nimbleOptions(&quot;MCMCdefaultSamplerAssignmentRules&quot;)</code> and customized <code>samplerAssignmentRules</code> objects.</p>
@@ -637,10 +639,10 @@ ordering &lt;-<span class="st"> </span>mcmcConf<span class="op">$</span><span cl
 <span class="co"># print the sampler functions in the order of execution</span>
 mcmcConf<span class="op">$</span><span class="kw">printSamplers</span>(<span class="dt">executionOrder =</span> <span class="ot">TRUE</span>)</code></pre></div>
 </div>
-<div id="monitors-and-thinning-intervals-printmonitors-getmonitors-addmonitors-setthin-and-resetmonitors" class="section level4">
-<h4><span class="header-section-number">7.2.2.9</span> Monitors and thinning intervals: <em>printMonitors</em>, <em>getMonitors</em>, <em>addMonitors</em>, <em>setThin</em>, and <em>resetMonitors</em></h4>
+<div id="monitors-and-thinning-intervals-printmonitors-getmonitors-setmonitors-addmonitors-resetmonitors-and-setthin" class="section level4">
+<h4><span class="header-section-number">7.2.2.9</span> Monitors and thinning intervals: <em>printMonitors</em>, <em>getMonitors</em>, <em>setMonitors</em>, <em>addMonitors</em>, <em>resetMonitors</em> and <em>setThin</em></h4>
 <p>An MCMC configuration object contains two independent sets of variables to monitor, each with their own thinning interval: <code>thin</code> corresponding to <code>monitors</code>, and <code>thin2</code> corresponding to <code>monitors2</code>. Monitors operate at the <em>variable</em> level. Only entire model variables may be monitored. Specifying a monitor on a <em>node</em>, e.g., <code>x[1]</code>, will result in the entire variable <code>x</code> being monitored.</p>
-<p>The variables specified in <code>monitors</code> and <code>monitors2</code> will be recorded (with thinning interval <code>thin</code>) into objects called <code>mvSamples</code> and <code>mvSamples2</code>, contained within the MCMC object. These are both <em>modelValues</em> objects; modelValues are NIMBLE data structures used to store multiple sets of values of model variables<a href="#fn17" class="footnoteRef" id="fnref17"><sup>17</sup></a>. These can be accessed as the member data <code>mvSamples</code> and <code>mvSamples2</code> of the MCMC object, and they can be converted to matrices using <code>as.matrix</code> (see Section <a href="cha-mcmc.html#sec:extracting-samples">7.6</a>).</p>
+<p>The variables specified in <code>monitors</code> and <code>monitors2</code> will be recorded (with thinning interval <code>thin</code>) into objects called <code>mvSamples</code> and <code>mvSamples2</code>, contained within the MCMC object. These are both <em>modelValues</em> objects; modelValues are NIMBLE data structures used to store multiple sets of values of model variables<a href="#fn17" class="footnoteRef" id="fnref17"><sup>17</sup></a>. These can be accessed as the member data <code>mvSamples</code> and <code>mvSamples2</code> of the MCMC object, and they can be converted to matrices using <code>as.matrix</code> or lists using <code>as.list</code> (see Section <a href="cha-mcmc.html#sec:extracting-samples">7.6</a>).</p>
 <p>Monitors may be added to the MCMC configuration either in the original call to <code>configureMCMC</code> or using the <code>addMonitors</code> method:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Using an argument to configureMCMC</span>
 mcmcConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(Rmodel, <span class="dt">monitors =</span> <span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>), 
@@ -650,6 +652,9 @@ mcmcConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(Rmo
 <span class="co"># This results in the same monitors as above</span>
 mcmcConf<span class="op">$</span><span class="kw">addMonitors</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>)
 mcmcConf<span class="op">$</span><span class="kw">addMonitors2</span>(<span class="st">&quot;x&quot;</span>)</code></pre></div>
+<p>A new set of monitor variables can be added to the MCMC configuration, overwriting the current monitors, using the <code>setMonitors</code> method:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Replace old monitors, now monitor &quot;delta&quot; and &quot;gamma&quot; only</span>
+mcmcConf<span class="op">$</span><span class="kw">setMonitors</span>(<span class="st">&quot;gamma&quot;</span>, <span class="st">&quot;delta&quot;</span>)</code></pre></div>
 <p>Similarly, either thinning interval may be set at either step:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Using an argument to configureMCMC</span>
 mcmcConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(Rmodel, <span class="dt">thin =</span> <span class="dv">1</span>, <span class="dt">thin2 =</span> <span class="dv">100</span>)
@@ -750,6 +755,7 @@ mcmc.out &lt;-<span class="st"> </span><span class="kw">runMCMC</span>(Cmcmc, <s
 <li>The internal modelValues objects <code>mvSamples</code> and <code>mvSamples2</code> are each resized to the appropriate length for holding the requested number of samples (<code>niter/thin</code>, and <code>niter/thin2</code>, respectively).</li>
 </ol>
 <p>When <code>mcmc$run(niter, reset = FALSE)</code> is called, the MCMC picks up from where it left off, continuing the previous chain and expanding the output as needed. No values in the model are checked or altered, and sampler functions are not reset to their initial states.</p>
+<p>The <code>run</code> method also has an optional <code>resetMV</code> argument. This argument is only considered when<code>'reset</code> is set to <code>FALSE</code>. When <code>mcmc$run(niter, reset = FALSE, resetMV = TRUE)</code> is called the internal modelValues objects <code>mvSamples</code> and <code>mvSamples2</code> are each resized to the appropriate length for holding the requested number of samples (<code>niter/thin</code>, and <code>niter/thin2</code>, respectively) and the MCMC carries on from where it left off. In other words, the previously obtained samples are deleted (e.g. to reduce memory usage) prior to continuing the MCMC. The default value of <code>resetMV</code> is <code>FALSE</code>.</p>
 <div id="sec:sampler-time" class="section level3">
 <h3><span class="header-section-number">7.5.1</span> Measuring sampler computation times: <em>getTimes</em></h3>
 <p>If you want to obtain the computation time spent in each sampler, you can set <code>time=TRUE</code> as a run-time argument and then use the method <code>getTimes()</code> obtain the times. For example,</p>
@@ -781,19 +787,22 @@ cmcmc<span class="op">$</span>samplerFunctions[[idx]]getPropCovHistory   ## only
 <p>After executing the MCMC, the output samples can be extracted as follows:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mvSamples &lt;-<span class="st"> </span>mcmc<span class="op">$</span>mvSamples
 mvSamples2 &lt;-<span class="st"> </span>mcmc<span class="op">$</span>mvSamples2</code></pre></div>
-<p>These <em>modelValues</em> objects can be converted into matrices using <code>as.matrix</code>:</p>
+<p>These <em>modelValues</em> objects can be converted into matrices using <code>as.matrix</code> or lists using <code>as.list</code>:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">samplesMatrix &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(mvSamples)
-samplesMatrix2 &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(mvSamples2)</code></pre></div>
+samplesList &lt;-<span class="st"> </span><span class="kw">as.list</span>(mvSamples)
+samplesMatrix2 &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(mvSamples2)
+samplesList2 &lt;-<span class="st"> </span><span class="kw">as.list</span>(mvSamples2)</code></pre></div>
 <p>The column names of the matrices will be the node names of nodes in the monitored variables. Then, for example, the mean of the samples for node <code>x[2]</code> could be calculated as:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">mean</span>(samplesMatrix[, <span class="st">&quot;x[2]&quot;</span>])</code></pre></div>
-<p>Obtaining samples as matrices is most common, but see Section <a href="cha-data-structures.html#sec:modelValues-struct">14.1</a> for more about programming with modelValues objects, especially if you want to write nimbleFunctions to use the samples.</p>
+<p>The list version will contain an element for each variable that will be the size and shape of the variable with an additional index for MCMC iteration. By default MCMC iteration will be the first index, but including <code>iterationAsLastIndex = TRUE</code> will make it the last index.</p>
+<p>Obtaining samples as matrices or lists is most common, but see Section <a href="cha-data-structures.html#sec:modelValues-struct">14.1</a> for more about programming with modelValues objects, especially if you want to write nimbleFunctions to use the samples.</p>
 </div>
 <div id="sec:WAIC" class="section level2">
 <h2><span class="header-section-number">7.7</span> Calculating WAIC</h2>
-<p>Once an MCMC algorithm has been run, as described in Section <a href="cha-mcmc.html#sec:executing-the-mcmc-algorithm">7.5</a>, the WAIC <span class="citation">(Watanabe <a href="#ref-Watanabe_2010">2010</a>)</span> can be calculated from the posterior samples produced by the MCMC algorithm. Note that in order to calculate the WAIC value after running an MCMC algorithm, the argument <code>enableWAIC = TRUE</code> must have been supplied to <code>configureMCMC</code> or to <code>buildMCMC</code>, or the <code>enableWAIC</code> NIMBLE option must have been set to <code>TRUE</code>.</p>
+<p>Once an MCMC algorithm has been run, as described in Section <a href="cha-mcmc.html#sec:executing-the-mcmc-algorithm">7.5</a>, the WAIC <span class="citation">(Watanabe <a href="references.html#ref-Watanabe_2010">2010</a>)</span> can be calculated from the posterior samples produced by the MCMC algorithm. Note that in order to calculate the WAIC value after running an MCMC algorithm, the argument <code>enableWAIC = TRUE</code> must have been supplied to <code>configureMCMC</code> or to <code>buildMCMC</code>, or the <code>enableWAIC</code> NIMBLE option must have been set to <code>TRUE</code>.</p>
 <p>The WAIC is calculated by calling the member method <code>mcmc$calculateWAIC</code> (see <code>help(buildMCMC)</code> in R for more details). The <code>calculateWAIC</code> method has one required argument, <code>nburnin</code>, the number of initial samples to discard prior to WAIC calculation. <code>nburnin</code> defaults to 0. This burn-in is done in addition to any burn-in specified when running the MCMC, and the burn-in is applied to the samples before any thinning specified when setting up or running the MCMC.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">Cmcmc<span class="op">$</span><span class="kw">calculateWAIC</span>(<span class="dt">nburnin =</span> <span class="dv">100</span>)</code></pre></div>
-<p>Note that there is not a unique value of WAIC for a model. WAIC is calculated from Equations 5, 12, and 13 in <span class="citation">(Gelman, Hwang, and Vehtari <a href="#ref-Gelman_etal_2014">2014</a>)</span> (i.e. using WAIC2). In NIMBLE, the set of all stochastic nodes monitored by the MCMC object will be treated as <span class="math inline">\(\theta\)</span> for the purposes of Equation 5 from <span class="citation">(Gelman, Hwang, and Vehtari <a href="#ref-Gelman_etal_2014">2014</a>)</span>.</p>
+<p>Note that there is not a unique value of WAIC for a model. WAIC is calculated from Equations 5, 12, and 13 in <span class="citation">(Gelman, Hwang, and Vehtari <a href="references.html#ref-Gelman_etal_2014">2014</a>)</span> (i.e. using WAIC2). In NIMBLE, the set of all stochastic nodes monitored by the MCMC object will be treated as <span class="math inline">\(\theta\)</span> for the purposes of Equation 5 from <span class="citation">(Gelman, Hwang, and Vehtari <a href="references.html#ref-Gelman_etal_2014">2014</a>)</span>.</p>
 <p>In many cases one would want <span class="math inline">\(\theta\)</span> to be the set of all stochastic nodes in the model, in which case the user <em>must</em> set the MCMC monitors to include all stochastic nodes; by default the MCMC monitors are only the top-level nodes of the model.</p>
 </div>
 <div id="k-fold-cross-validation" class="section level2">
@@ -803,7 +812,7 @@ samplesMatrix2 &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(m
 <div id="sec:rjmcmc" class="section level2">
 <h2><span class="header-section-number">7.9</span> Variable selection using Reversible Jump MCMC</h2>
 <p>A common method for Bayesian variable selection in regression-style problems is to define a space of different models and have MCMC sample over the models as well as the parameters for each model. The models differ in which explanatory variables are included. Often this idea is implemented in the BUGS language by writing the largest possible model and including indicator variables to turn regression parameters off and on (see model code below for an example of how indicator variables can be used). Foramally, that approach doesn’t sample between different models, instead embedding the models in one large model. However, that approach can result in poor mixing and require compromises in choices of prior distributions because a given regression parameter will sample from its prior when the corresponding indicator is 0. It is also computationally wasteful, because sampling effort will be spent on a coefficient even if it has no effect because the corresponding indicator is 0.</p>
-<p>A different view of the problem is that the different combinations of coefficients represent models of different dimensions. Reversible Jump MCMC <span class="citation">(Green <a href="#ref-Green_1995">1995</a>)</span> (RJMCMC) is a general framework for MCMC simulation in which the dimension of the parameter space can vary between iterates of the Markov chain. The reversible jump sampler can be viewed as an extension of the Metropolis-Hastings algorithm onto more general state spaces. NIMBLE provides an implementation of RJMCMC for variable selection that requires the user to write the largest model of interest and supports use of indicator variables but formally uses RJMCMC sampling for better mixing and efficiency. When a coefficient is not in the model (or its indicator is 0), it will not be sampled, and it will therefore not follow its prior in that case.</p>
+<p>A different view of the problem is that the different combinations of coefficients represent models of different dimensions. Reversible Jump MCMC <span class="citation">(Green <a href="references.html#ref-Green_1995">1995</a>)</span> (RJMCMC) is a general framework for MCMC simulation in which the dimension of the parameter space can vary between iterates of the Markov chain. The reversible jump sampler can be viewed as an extension of the Metropolis-Hastings algorithm onto more general state spaces. NIMBLE provides an implementation of RJMCMC for variable selection that requires the user to write the largest model of interest and supports use of indicator variables but formally uses RJMCMC sampling for better mixing and efficiency. When a coefficient is not in the model (or its indicator is 0), it will not be sampled, and it will therefore not follow its prior in that case.</p>
 <p>In technical detail, given two models <span class="math inline">\(M_1\)</span> and <span class="math inline">\(M_2\)</span> of possibly different dimensions, the core idea of RJMCMC is to remove the difference in the dimensions of models <span class="math inline">\(M_1\)</span> and <span class="math inline">\(M_2\)</span> by supplementing the corresponding parameters <span class="math inline">\(\boldsymbol{\theta_1}\)</span> and <span class="math inline">\(\boldsymbol{\theta_2}\)</span> with auxiliary variables <span class="math inline">\(\boldsymbol{u}_{1 \rightarrow 2}\)</span> and <span class="math inline">\(\boldsymbol{u}_{2 \rightarrow 1}\)</span> such that <span class="math inline">\((\boldsymbol{\theta_1}, \boldsymbol{u}_{1 \rightarrow 2})\)</span> and <span class="math inline">\((\boldsymbol{\theta_2}, \boldsymbol{u}_{2 \rightarrow 1})\)</span> are in bijection, <span class="math inline">\((\boldsymbol{\theta_2}, \boldsymbol{u}_{2 \rightarrow 1}) = \Psi(\boldsymbol{\theta_1}, \boldsymbol{u}_{1 \rightarrow 2})\)</span>. The corresponding Metropolis-Hastings acceptance probability is generalized accounting for the proposal density for the auxiliary variables.</p>
 <p>NIMBLE implements RJMCMC for variable selection using a univariate normal distribution centered on 0 (or some fixed value) as the proposal density for parameters being added to the model. Two ways to set up models for RJMCMC are supported, which differ by whether the inclusion probabilities for each parameter are assumed known or must be written in the model:</p>
 <ul>
@@ -1120,7 +1129,7 @@ RJexampleConf2<span class="op">$</span><span class="kw">printSamplers</span>()</
 </div>
 <div id="customized-log-likelihood-evaluations-rw_llfunction-sampler" class="section level3">
 <h3><span class="header-section-number">7.10.2</span> Customized log-likelihood evaluations: <em>RW_llFunction sampler</em></h3>
-<p>Sometimes it is useful to control the log-likelihood calculations used for an MCMC updater instead of simply using the model. For example, one could use a sampler with a log-likelihood that analytically (or numerically) integrates over latent model nodes. Or one could use a sampler with a log-likelihood that comes from a stochastic approximation such as a particle filter (see below), allowing composition of a particle MCMC (PMCMC) algorithm <span class="citation">(Andrieu, Doucet, and Holenstein <a href="#ref-Andrieu_Doucet_Holenstein_2010">2010</a>)</span>. The <code>RW_llFunction</code> sampler handles this by using a Metropolis-Hastings algorithm with a normal proposal distribution and a user-provided log-likelihood function. To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction. The log-likelihood function may use the same model as the MCMC as a setup argument (as does the example below), but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise).</p>
+<p>Sometimes it is useful to control the log-likelihood calculations used for an MCMC updater instead of simply using the model. For example, one could use a sampler with a log-likelihood that analytically (or numerically) integrates over latent model nodes. Or one could use a sampler with a log-likelihood that comes from a stochastic approximation such as a particle filter (see below), allowing composition of a particle MCMC (PMCMC) algorithm <span class="citation">(Andrieu, Doucet, and Holenstein <a href="references.html#ref-Andrieu_Doucet_Holenstein_2010">2010</a>)</span>. The <code>RW_llFunction</code> sampler handles this by using a Metropolis-Hastings algorithm with a normal proposal distribution and a user-provided log-likelihood function. To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction. The log-likelihood function may use the same model as the MCMC as a setup argument (as does the example below), but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise).</p>
 <p>The <code>RW_llFunction</code> sampler can be customized using the <code>control</code> list argument to set the initial proposal distribution scale and the adaptive properties for the Metropolis-Hastings sampling. In addition, the <code>control</code> list argument must contain a named <code>llFunction</code> element. This is the specialized nimbleFunction that calculates the log-likelihood; it must accept no arguments and return a scalar double number. The return value must be the total log-likelihood of all stochastic dependents of the <code>target</code> nodes – and, if <code>includesTarget = TRUE</code>, of the target node(s) themselves – or whatever surrogate is being used for the total log-likelihood. This is a required <code>control</code> list element with no default. See <code>help(samplers)</code> for details.</p>
 <p>Here is a complete example:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
@@ -1261,7 +1270,7 @@ Cmcmc_CL &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(mcm
 <span class="co"># run the default MCMC function,</span>
 <span class="co"># and example the mean of mu[1]</span>
 Cmcmc<span class="op">$</span><span class="kw">run</span>(<span class="dv">1000</span>)
-cSamplesMatrix &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(Cmcmc<span class="op">$</span>mvSamples)
+cSamplesMatrix &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(Cmcmc<span class="op">$</span>mvSamples) <span class="co"># alternative: as.list</span>
 <span class="kw">mean</span>(cSamplesMatrix[, <span class="st">&quot;mu[1]&quot;</span>])
 
 <span class="co"># run the crossLevel MCMC function,</span>
@@ -1290,27 +1299,6 @@ samplesList &lt;-<span class="st"> </span><span class="kw">runMCMC</span>(Cmcmc_
 <p>Thus, in your parallel loop or lapply-style statement, you should run <code>nimbleModel</code> and all subsequent calls to create and compile the model and MCMC algorithm within the parallelized block of code, once for each MCMC chain being run in parallel.</p>
 
 <!--- % See http://yihui.name/knitr/demo/child/ for documentation on the parent/child document system of knitr -->
-</div>
-</div>
-<h3>References</h3>
-<div id="refs" class="references">
-<div id="ref-Andrieu_Doucet_Holenstein_2010">
-<p>Andrieu, Christophe, Arnaud Doucet, and Roman Holenstein. 2010. “Particle Markov Chain Monte Carlo Methods.” <em>Journal of the Royal Statistical Society: Series B (Statistical Methodology)</em> 72 (3): 269–342. doi:<a href="https://doi.org/10.1111/j.1467-9868.2009.00736.x">10.1111/j.1467-9868.2009.00736.x</a>.</p>
-</div>
-<div id="ref-Gelman_etal_2014">
-<p>Gelman, A., J. Hwang, and A. Vehtari. 2014. “Understanding Predictive Information Criteria for Bayesian Model.” <em>Statistics and Computing</em> 24 (6): 997–1016.</p>
-</div>
-<div id="ref-Green_1995">
-<p>Green, Peter J. 1995. “Reversible Jump Markov Chain Monte Carlo Computation and Bayesian Model Determination.” <em>Biometrika</em> 82 (4). Oxford University Press: 711–32.</p>
-</div>
-<div id="ref-Neal2003">
-<p>Neal, Radford M. 2003. “Slice Sampling.” <em>The Annals of Statistics</em> 31 (3): 705–41.</p>
-</div>
-<div id="ref-Roberts_Sahu_1997">
-<p>Roberts, G. O., and S. K. Sahu. 1997. “Updating Schemes, Correlation Structure, Blocking and Parameterization for the Gibbs Sampler.” <em>Journal of the Royal Statistical Society: Series B (Statistical Methodology)</em> 59 (2): 291–317. doi:<a href="https://doi.org/10.1111/1467-9868.00070">10.1111/1467-9868.00070</a>.</p>
-</div>
-<div id="ref-Watanabe_2010">
-<p>Watanabe, Sumio. 2010. “Asymptotic Equivalence of Bayes Cross Validation and Widely Applicable Information Criterion in Singular Learning Theory.” <em>Journal of Machine Learning Research</em> 11 (Dec): 3571–94.</p>
 </div>
 </div>
 <div class="footnotes">

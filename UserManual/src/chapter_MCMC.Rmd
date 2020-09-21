@@ -392,7 +392,7 @@ mcmcConf$printSamplers(executionOrder = TRUE)
 
 An MCMC configuration object contains two independent sets of variables to monitor, each with their own thinning interval: `thin` corresponding to `monitors`, and `thin2` corresponding to `monitors2`.  Monitors operate at the *variable* level.  Only entire model variables may be monitored.  Specifying a monitor on a *node*, e.g., `x[1]`, will result in the entire variable `x` being monitored.
 
-The variables specified in `monitors`  and `monitors2` will be recorded (with thinning interval `thin`) into objects called `mvSamples` and `mvSamples2`, contained within the MCMC object. These are both *modelValues* objects; modelValues are NIMBLE data structures used to store multiple sets of values of model variables^[See Section \@ref(sec:modelValues-struct) for general information on modelValues.].  These can be accessed as the member data `mvSamples` and `mvSamples2` of the MCMC object, and they can be converted to matrices using `as.matrix` (see Section \@ref(sec:extracting-samples)).
+The variables specified in `monitors`  and `monitors2` will be recorded (with thinning interval `thin`) into objects called `mvSamples` and `mvSamples2`, contained within the MCMC object. These are both *modelValues* objects; modelValues are NIMBLE data structures used to store multiple sets of values of model variables^[See Section \@ref(sec:modelValues-struct) for general information on modelValues.].  These can be accessed as the member data `mvSamples` and `mvSamples2` of the MCMC object, and they can be converted to matrices using `as.matrix` or lists using `as.list` (see Section \@ref(sec:extracting-samples)).
 
 Monitors may be added to the MCMC configuration either in the original call to `configureMCMC` or using the `addMonitors` method:
 ```{r, addMonitors, eval=FALSE}
@@ -604,11 +604,13 @@ mvSamples <- mcmc$mvSamples
 mvSamples2 <- mcmc$mvSamples2
 ```
 
-These *modelValues* objects can be converted into matrices using `as.matrix`:
+These *modelValues* objects can be converted into matrices using `as.matrix` or lists using `as.list`:
 
 ```{r, as.matrix-samples, eval=FALSE}
 samplesMatrix <- as.matrix(mvSamples)
+samplesList <- as.list(mvSamples)
 samplesMatrix2 <- as.matrix(mvSamples2)
+samplesList2 <- as.list(mvSamples2)
 ```
 
 The column names of the matrices will be the node names of nodes in the monitored variables.  Then, for example, the mean of the samples for node `x[2]` could be calculated as:
@@ -617,7 +619,9 @@ The column names of the matrices will be the node names of nodes in the monitore
 mean(samplesMatrix[, "x[2]"])
 ```
 
-Obtaining samples as matrices is most common, but see Section \@ref(sec:modelValues-struct) for more about programming with modelValues objects, especially if you want to write nimbleFunctions to use the samples.
+The list version will contain an element for each variable that will be the size and shape of the variable with an additional index for MCMC iteration.  By default MCMC iteration will be the first index, but including `iterationAsLastIndex = TRUE` will make it the last index.
+
+Obtaining samples as matrices or lists is most common, but see Section \@ref(sec:modelValues-struct) for more about programming with modelValues objects, especially if you want to write nimbleFunctions to use the samples.
 
 ## Calculating WAIC {#sec:WAIC}
 
@@ -1013,7 +1017,7 @@ Cmcmc_CL <- compileNimble(mcmc_CL, project = Rmodel2)
 # run the default MCMC function,
 # and example the mean of mu[1]
 Cmcmc$run(1000)
-cSamplesMatrix <- as.matrix(Cmcmc$mvSamples)
+cSamplesMatrix <- as.matrix(Cmcmc$mvSamples) # alternative: as.list
 mean(cSamplesMatrix[, "mu[1]"])
 
 # run the crossLevel MCMC function,
@@ -1042,3 +1046,5 @@ Please see the `compareMCMCs` package for the features previously provided by `M
 It is possible to run multiple chains in parallel using standard R parallelization packages such as `parallel`, `foreach`, and `future`. However, you must create separate copies of all model and MCMC objects using `nimbleModel`, `buildMCMC`, `compileNimble`, etc. This is because NIMBLE uses Reference Classes and R6 classes, so copying such objects simply creates a new variable name that refers to the original object.
 
 Thus, in your parallel loop or lapply-style statement, you should run `nimbleModel` and all subsequent calls to create and compile the model and MCMC algorithm within the parallelized block of code, once for each MCMC chain being run in parallel.
+
+

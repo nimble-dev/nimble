@@ -449,9 +449,13 @@ In the case of right-censoring, `censored[i]` should be given as `data` with a v
 `t[i]` is right-censored (`t[i] > c[i]`) and 0 if it is
 observed.  The data vector for `t` should have `NA` (indicating
 missing data) for any censored `t[i]` entries. (As a result, these
-nodes will be sampled in an MCMC.)  The data vector for `c` should
+nodes will be sampled in an MCMC.)  The vector for `c` should
 give the censoring times corresponding to censored entries and a value
-above the observed times for uncensored entries (e.g., `Inf`). 
+above the observed times for uncensored entries (e.g., `Inf`). The values for `c`
+can be provided via `constants`, `inits`, or `data`. We recommend providing
+via `constants` for values that are fixed and via `inits` for values that are 
+to be estimated or might be changed for some reason.
+
 Left-censored observations would be specified by setting `censored[i]` to 0 
 and `t[i]` to `NA`. 
   

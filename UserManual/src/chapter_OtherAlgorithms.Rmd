@@ -140,7 +140,7 @@ cENKF$run(parNum)
   
 ```{r, particle_Filter_Samples, eval=FALSE}
 # Equally-weighted samples (available from all filters)
-bootEWSamp <- as.matrix(cBootF$mvEWSamples)
+bootEWSamp <- as.matrix(cBootF$mvEWSamples) # alternative: as.list
 auxEWSamp <- as.matrix(cAuxF$mvEWSamples)
 LWFEWSamp <- as.matrix(cLWF$mvEWSamples)
 ENKFEWSamp <- as.matrix(cENKF$mvEWSamples)
