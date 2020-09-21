@@ -370,7 +370,7 @@ carBounds <- nimbleFunction(
         L <- dim(adj)[1]
         Cmatrix <- CAR_calcCmatrix(C[1:L], adj[1:L], num[1:N])
         x <- diag(M^-0.5) %*% Cmatrix %*% diag(M^0.5)
-        eigenvalues <- eigen(x, only.values = TRUE)$values
+        eigenvalues <- nimEigen(x, only.values = TRUE)$values
         lower <- 1 / max(eigenvalues)
         upper <- 1 / min(eigenvalues)
         bounds <- c(lower, upper)
@@ -445,7 +445,15 @@ CAR_calcEVs2 <- nimbleFunction(
     run = function(adj = double(1), num = double(1)) {
         C <- CAR_calcC(adj, num)
         Cmatrix <- CAR_calcCmatrix(C, adj, num)
-        evs <- eigen(Cmatrix, only.values = TRUE)$values
+        evs <- nimEigen(Cmatrix, only.values = TRUE)$values
+        ## new code below, to replace NaN eigenvalues of Cmatrix with 0,
+        ## which occurs when Cmatrix is singular
+        ## -DT June 2020
+        if(any_nan(evs)) {
+            for(i in 1:length(evs)) {
+                if(is.nan(evs[i])) evs[i] <- 0
+            }
+        }
         returnType(double(1))
         return(evs)
     }
@@ -461,7 +469,15 @@ CAR_calcEVs3 <- nimbleFunction(
     name = 'CAR_calcEVs3',
     run = function(C = double(1), adj = double(1), num = double(1)) {
         Cmatrix <- CAR_calcCmatrix(C, adj, num)
-        evs <- eigen(Cmatrix, only.values = TRUE)$values
+        evs <- nimEigen(Cmatrix, only.values = TRUE)$values
+        ## new code below, to replace NaN eigenvalues of Cmatrix with 0,
+        ## which occurs when Cmatrix is singular
+        ## -DT June 2020
+        if(any_nan(evs)) {
+            for(i in 1:length(evs)) {
+                if(is.nan(evs[i])) evs[i] <- 0
+            }
+        }
         returnType(double(1))
         return(evs)
     }

@@ -609,7 +609,13 @@ probability calculations are done using `model$calculate(calcNodes)`.
 In the `run` function, the `mvSaved` modelValues object is kept up-to-date with
 the current state of the model, depending on whether the proposed
 changed was accepted.  This is done using the `copy` function, to copy values between the model and `mvSaved` objects.
-        
+
+Note that NIMBLE generally expects the user-defined sampler to be defined in the global environment.
+If you define it in a function (which would generally be the case if you are using it in the context of parallelization), one approach would be to assign the user-defined sampler to the global environment in your function:
+
+```{r, eval=FALSE}
+assign('sampler_yourSampler', sampler_yourSampler, envir = .GlobalEnv)
+```
         
         
 ## Copying nimbleFunctions (and NIMBLE models)

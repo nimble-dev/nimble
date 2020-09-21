@@ -67,7 +67,7 @@ The joint probability function of $z=(z_1, \ldots, z_N)$,  with concentration pa
 
 $$p(\boldsymbol{z} \mid \alpha) \propto \frac{\Gamma{(\alpha)}}{\Gamma{(\alpha + n)}} \alpha^{N^{\star}(\boldsymbol{z})}\prod_{k=1}^{N^{\star}(\boldsymbol{z})}\Gamma(m_{k}(\boldsymbol{z})),$$
 
-\noindent where $m_k(\boldsymbol{z})$ denotes the number of elements in  $\boldsymbol{z}$ that are equal to $k$.  The full conditional distribution for $z_i$ given $z_{-i}$ is 
+\noindent where $m_k(\boldsymbol{z})$ denotes the number of elements in  $\boldsymbol{z}$ that are equal to $k$, $N^{\star}(\boldsymbol{z})$ denotes the number of unique elements in $\boldsymbol{z}$, and $\Gamma(\cdot)$ denotes the gamma function.  The full conditional distribution for $z_i$ given $z_{-i}$ is 
 
 $$p(z_i  = m \mid z_{-i}, \alpha) = \frac{1}{n-1+\alpha} \sum_{j \neq i}1_{\{z_j\}} (m)+ \frac{\alpha}{n-1+\alpha}1_{\{z^{new}\}}(m),$$
 
@@ -88,7 +88,7 @@ code <- nimbleCode({
   z[1:N] ~ dCRP(alpha, size = N)
   alpha ~ dgamma(1, 1)
   for(i in 1:M) {
-    thetatilde[i] ~ dnorm(0, 100)
+    thetatilde[i] ~ dnorm(0, var = 100)
     s2tilde[i] ~ dinvgamma(1, 1)
   }
   for(i in 1:N) 
@@ -102,13 +102,55 @@ inits <- list(thetatilde = rnorm(constants$M, 0, 10),
               s2tilde = rinvgamma(constants$M, 1, 1), 
               z = sample(1:10, size = constants$N, replace = TRUE),
               alpha  = 1)
-Rmodel <- nimbleModel(code, constants, data, inits)
+model <- nimbleModel(code, constants, data, inits)
 ```
 
-The resulting model may be fitted through  MCMC sampling. NIMBLE will assign a specialized sampler to update `z` and `alpha`. See Chapter  \@ref(cha:mcmc) for information about NIMBLE's MCMC engine, and Section \@ref(sec:mcmcdcrp) for details on  MCMC sampling of the CRP. 
+The model can be fitted through  MCMC sampling. NIMBLE will assign a specialized sampler to update `z` and `alpha`. See Chapter  \@ref(cha:mcmc) for information about NIMBLE's MCMC engine, and Section \@ref(sec:mcmcdcrp) for details on  MCMC sampling of the CRP. 
 
 One of the advantages of BNP mixture models is that the number of clusters is treated as random. Therefore, in MCMC sampling, the number of cluster parameters varies with the iteration. Since NIMBLE does not currently allow dynamic length allocation, the number of unique cluster parameters, $N^{\star}$, has to be fixed. One safe option is to set this number to $N$, but this is inefficient, both in terms of computation and in terms of storage, because in practice it is often that $N^{\star} < N$. In addition, configuring and building the MCMC can be slow (and use a lot of memory) for large $N$. In an effort to mitigate these inefficiencies, we allow the user to set $N^{\star} = M$, with $M<N$, as seen in the example above.  However, if this number is too small and is exceeded in any iteration a warning is issued.
 
+### Extensions {#sec:extensionscrp}
+
+The BNP functionality in NIMBLE was extended in version 0.10.0 to more general models. These extensions enable users, for instance, to use a DP or DPM prior for the distribution of the random effects in a generalized linear mixed effects model with mutiple measurements over time or multiple trials per participant. 
+
+The following example illustrates how to use NIMBLE in a random effects model with repeated measurements per subject using a DP prior for the distribution of the subject's random effects. The model is given by
+
+$$ y_{i,j} \mid \tilde{\boldsymbol{\theta}}, z_i, \sigma^2 \ {\sim}\ N(\tilde{\boldsymbol{\theta}}_{z_i}, {\sigma}^2,)\hspace{0.5cm} i = 1, \ldots, N,\hspace{0.5cm} j = 1, \ldots, J, $$
+
+$$ \boldsymbol{z} \sim \mbox{CRP}(\alpha), \hspace{0.5cm} \alpha \sim \mbox{Gamma}(1, 1), $$
+
+$$ \tilde{\theta}_m \overset{iid}{\sim} N(0, 100),  \hspace{0.2cm} m=1, \ldots, M, \hspace{0.5cm} {\sigma}^2 \sim InvGamma(1, 1). $$
+
+The corresponding NIMBLE code is
+
+```{r, dCRP_moreGeneral_Chunk, results = "hide", message = FALSE}
+code <- nimbleCode({
+  z[1:N] ~ dCRP(alpha, size = N)
+  alpha ~ dgamma(1, 1)
+  sigma2 ~ dinvgamma(1, 1)
+  for(i in 1:M) {
+    thetatilde[i] ~ dnorm(0, var = 100) 
+  }
+  for(i in 1:N) {
+    for(j in 1:J) {
+      y[i, j] ~ dnorm(thetatilde[z[i]], var = sigma2)
+    }
+  }
+})
+
+set.seed(1)
+constants <- list(N = 10, J = 5, M = 5)
+data <- list(y = matrix(c(rnorm(25, -25, 1), rnorm(25, 25, 1)), ncol=constants$J, nrow=constants$N, byrow=TRUE))
+inits <- list(thetatilde = rnorm(constants$M, 0, 10), 
+              z = sample(1:5, size = constants$N, replace = TRUE),
+              alpha  = 1,
+              sigma2 = 1)
+modelRandEff <- nimbleModel(code, constants, data, inits)
+```
+
+Alternatively, each subject could have a vector of parameters being clustered. For example in the model above one could instead specify a vector of means, such as `thetaTilde[z[i], j]`, instead of a single mean. 
+
+As before, the model can be fitted through  MCMC sampling. NIMBLE will assign a specialized sampler to update `z` and `alpha`. See Chapter  \@ref(cha:mcmc) for information about NIMBLE's MCMC engine, and Section \@ref(sec:mcmcdcrp) for details on  MCMC sampling of the CRP.
 
 ## Stick-breaking model {#sec:sb}
 
@@ -160,7 +202,7 @@ code <- nimbleCode({
   alpha ~ dgamma(1, 1)
   w[1:L] <- stick_breaking(v[1:(L-1)])
   for(i in 1:L) {
-    thetastar[i] ~ dnorm(0, 100)
+    thetastar[i] ~ dnorm(0, var = 100)
     s2star[i] ~ dinvgamma(1, 1)
   }
   for(i in 1:N) {
@@ -177,7 +219,7 @@ inits <- list(thetastar = rnorm(constants$L, 0, 100),
               z = sample(1:10, size = constants$N, replace = TRUE),
               v  = rbeta(constants$L, 1, 1),
               alpha = 1)
-RmodelSB <- nimbleModel(code, constants, data, inits)
+modelSB <- nimbleModel(code, constants, data, inits)
 ```
 
 The resulting model may be carried through to MCMC sampling. NIMBLE will assign a specialized sampler to update `v`. See Chapter  \@ref(cha:mcmc) for information about NIMBLE's MCMC engine, and Section \@ref(sec:mcmcsb) for details on  MCMC sampling of the stick-breaking weights. 
@@ -196,7 +238,17 @@ NIMBLE's MCMC engine provides specialized samplers for the `dCRP` distribution, 
   1. A non-conjugate sampler in the case of the baseline distribution  not being conjugate for the mixture kernel.
 
 
-Note that both samplers are specialized versions that operate on a vector having a CRP distribution. Details of these assignments are strictly internal to the CRP samplers.  Additionally, a specialized sampler is assigned to the `conc` hyper parameter when a gamma hyper prior is assigned, see section 6 in @escobar_west_95 for more details. Otherwise, a random walk Metropolis-Hastings sampler is assigned.
+Note that both samplers are specialized versions that operate on a vector having a CRP distribution. Details of these assignments are strictly internal to the CRP samplers. The current release of NIMBLE supports conjugate sampling for the `dCRP` distribution for the relationships listed in Table \@ref(tab:BNPconjugacy). Additional relationships are provided in Table \@ref(tab:BNPconjugacy2) for normal mixture kernels when both mean and  variance are unknown.
+
+
+```{r, child = 'tables/BNPconjugacyTable.md'}
+```
+
+
+```{r, child = 'tables/BNPconjugacyTable2.md'}
+```
+
+Additionally, a specialized sampler is assigned to the `conc` hyper parameter when a gamma hyper prior is assigned, see section 6 in @escobar_west_95 for more details. Otherwise, a random walk Metropolis-Hastings sampler is assigned.
 
 #### Initial values
 
@@ -204,25 +256,39 @@ Valid initial values should be provided for all elements of the process specifie
 
 #### Sampling the random measure
 
-In  BNP models, it is oftenly of interest to make inference about the unknown measure $G$.  NIMBLE provides a sampler, `getSamplesDPmeasure`, for this random measure when a CRP structure is involved in the model. 
+In  BNP models, it is oftenly of interest to make inference about the unknown measure $G$. NIMBLE provides the `getSamplesDPmeasure` sampler to generate posterior samples of the random measure $G$ when a CRP structure is involved in the model. 
 
-The argument of the `getSamplesDPmeasure` function is a compiled or uncompiled MCMC object. The MCMC object should monitor the membership (clustering) variable, the cluster parameters, all stochastic nodes of the cluster parameters, and the concentration parameter, if it is random. Use the `monitors` argument when configuring the MCMC to ensure these variables are monitored in the MCMC. 
+The `getSamplesDPmeasure` function has two arguments: `MCMC` and `epsilon`.
+
+The `MCMC` argument is a compiled or uncompiled MCMC object. The MCMC object should monitor the membership (or clustering) variable, the cluster parameters, all stochastic nodes of the cluster parameters, and the concentration parameter, if it is random. Use the `monitors` argument when configuring the MCMC to ensure these variables are monitored.
+
+The `epsilon` argument is used to determine the truncation level of the representation of the random measure. Its default value is $1e-04$.
 
 The sampler is used only after the MCMC for the model has been run; more details are available from `help(getsamplesDPmeasure)`.
+
+Posterior samples of the random measure $G$ are (almost surely) of the form $\sum_{l=1}^{\infty}w_l\delta_{\theta_l}$, where $\delta_{\theta}$ is the Dirac measure at $\theta$, $w_l$ are stick-breaking weights, and $\theta_l$ are atoms (or point masses). The variables that define the stick-breaking weights are iid $Beta(1, \alpha + N)$ distributed, where $\alpha$ is the concentration parameter of the CRP distribution and $N$ is the sample size. Independently, the atoms, $\theta_l$, are iid and follow a distribution of the form
+
+$$(\alpha+N)^{-1}\sum_{k=1}^{N^{\star}(\boldsymbol{z})}m_k(\boldsymbol{z})\delta_{\{\tilde{\theta}_k\}} + \alpha(\alpha+N)^{-1}G_0,$$
+
+where $G_0$ is the prior baseline distribution, and $\boldsymbol{z}$ and $\tilde{\theta}_k$ are posterior samples of the labeling vector and cluster parameters, respectively. Their values, together with the values of $\alpha$ (if random) are obtained from the MCMC’s output. Expressions $m_k(\boldsymbol{z})$ and $N^{\star}(\boldsymbol{z})$ are defined as in section \@ref(sec:crp). 
+
+The `getsamplesDPmeasure` function provides samples of a truncated version of the infinite mixture to a level $L$. The truncation level $L$ is such that the tail probability left from the approximation is at most `epsilon`, denoted $\epsilon$. The following relationship determines the truncation level: $L = log(\epsilon) / log[(\alpha+N) / (\alpha + N +1)]$. The value of $L$ varies at each iteration of the MCMC's output when $\alpha$ is random, while it is the same at each iteration when $\alpha$ is fixed. For more details about sampling the random measure and its truncation level see @gelfand_2002.     
+
+Because of the discrete nature of the atom's distribution, the stick-breaking representation truncated to a level $L$ will generally have repeated values. Therefore, in order to reduce the output's dimensionality, the stick-breaking weights of identical atoms are added up. This results in samples of $G$ that have only the 'unique' atoms in $\{\theta_l\}_{l=1}^L$.
 
 The following code exemplifies how to generate samples from $G$ after defining the model as in Section \@ref(sec:excrp).
 
 ```{r, get_DP_measure_samples_Chunk, results = "hide", eval = FALSE, message = FALSE}
-Cmodel <- compileNimble(Rmodel)
+cmodel <- compileNimble(model)
 
 monitors <- c('z', 'thetatilde', 's2tilde' , 'alpha')
-RmodelConf <- configureMCMC(Rmodel, monitors = monitors)
-RmodelMCMC <- buildMCMC(RmodelConf)
+modelConf <- configureMCMC(model, monitors = monitors)
+modelMCMC <- buildMCMC(modelConf)
 
-CmodelMCMC <- compileNimble(RmodelMCMC, project = Rmodel)
-CmodelMCMC$run(1000)
+cmodelMCMC <- compileNimble(modelMCMC, project = model)
+cmodelMCMC$run(1000)
 
-samplesG <- getSamplesDPmeasure(CmodelMCMC)
+samplesG <- getSamplesDPmeasure(cmodelMCMC)
 ```
 
 ### Sampling stick-breaking models {#sec:mcmcsb}

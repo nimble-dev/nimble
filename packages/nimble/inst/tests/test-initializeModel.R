@@ -41,6 +41,7 @@ test_that('initializeModel works', {
     expect_true(is.na(Cmodel$x[6]))
 })
 
+
 test_that('initializeModel recalculates all deterministic nodes in topological order', {
     set.seed(0)
     code <- nimbleCode({

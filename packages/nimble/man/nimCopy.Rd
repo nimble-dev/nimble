@@ -6,7 +6,7 @@
 \title{Copying function for NIMBLE}
 \usage{
 nimCopy(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA,
-  logProb = FALSE)
+  logProb = FALSE, logProbOnly = FALSE)
 }
 \arguments{
 \item{from}{Either a NIMBLE model or modelValues object}

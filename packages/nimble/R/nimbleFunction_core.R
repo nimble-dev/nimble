@@ -118,8 +118,8 @@ nimbleFunction <- function(setup         = NULL,
     formals(generatorFunction) <- nf_createGeneratorFunctionArgs(setup, parent.frame())
     environment(generatorFunction) <- GFenv <- new.env()
     parent.env(GFenv) <- parent.frame()
-    
-    .globalSetupEnv <- new.env()
+
+        .globalSetupEnv <- new.env()
     if(!is.null(globalSetup)) {
         if(!is.function(globalSetup)) stop('If globalSetup is not NULL, it must be a function', call. = FALSE)
         if(!length(formals(globalSetup))==0) stop('globalSetup cannot take input arguments', call. = FALSE)

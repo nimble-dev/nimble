@@ -140,7 +140,7 @@ cENKF$run(parNum)
   
 ```{r, particle_Filter_Samples, eval=FALSE}
 # Equally-weighted samples (available from all filters)
-bootEWSamp <- as.matrix(cBootF$mvEWSamples)
+bootEWSamp <- as.matrix(cBootF$mvEWSamples) # alternative: as.list
 auxEWSamp <- as.matrix(cAuxF$mvEWSamples)
 LWFEWSamp <- as.matrix(cLWF$mvEWSamples)
 ENKFEWSamp <- as.matrix(cENKF$mvEWSamples)
@@ -384,7 +384,11 @@ pumpMCEM <- buildMCEM(model = pump,
 ```
 
   The first argument `buildMCEM`, `model`, is a NIMBLE model, which can be
-  either the uncompiled or compiled version. At the moment, the model provided cannot be part of another MCMC sampler.  The ascent-based MCEM algorithm has a number of control options:
+  either the uncompiled or compiled version. At the moment, the model provided cannot be part of another MCMC sampler.  
+
+Initial values for the parameters are taken to be the values in the model at the time `buildMCEM` is called, unless the values in the compiled model are changed before running the MCEM.
+
+The ascent-based MCEM algorithm has a number of control options:
  
  
   The `latentNodes` argument should indicate the nodes that will be

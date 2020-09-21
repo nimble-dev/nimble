@@ -232,6 +232,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="10.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:crp"><i class="fa fa-check"></i><b>10.2</b> Chinese Restaurant Process model</a><ul>
 <li class="chapter" data-level="10.2.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-density-2"><i class="fa fa-check"></i><b>10.2.1</b> Specification and density</a></li>
 <li class="chapter" data-level="10.2.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:excrp"><i class="fa fa-check"></i><b>10.2.2</b> Example</a></li>
+<li class="chapter" data-level="10.2.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:extensionscrp"><i class="fa fa-check"></i><b>10.2.3</b> Extensions</a></li>
 </ul></li>
 <li class="chapter" data-level="10.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:sb"><i class="fa fa-check"></i><b>10.3</b> Stick-breaking model</a><ul>
 <li class="chapter" data-level="10.3.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-function"><i class="fa fa-check"></i><b>10.3.1</b> Specification and function</a></li>
@@ -327,6 +328,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
+<li class="chapter" data-level="16" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i><b>16</b> References</a></li>
 </ul>
 
       </nav>
@@ -390,10 +392,13 @@ pump &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(<span cla
 <p>For compatibility with BUGS and JAGS, NIMBLE allows both to be provided in the <code>constants</code> argument to <code>nimbleModel</code>, in which case NIMBLE handles values for stochastic nodes as data and everything else as constants.</p>
 <p>Values for nodes that appear only on the right-hand side of BUGS declarations (e.g., covariates/predictors) can be provided as constants or as data or initial values. There is no real difference between providing as data or initial values and the values can be added after building a model via <code>setInits</code> or <code>setData</code>.</p>
 </div>
-<div id="providing-data-and-initial-values-to-an-existing-model" class="section level4">
-<h4><span class="header-section-number">6.1.1.2</span> Providing data and initial values to an existing model</h4>
+<div id="providing-or-changing-data-and-initial-values-for-an-existing-model" class="section level4">
+<h4><span class="header-section-number">6.1.1.2</span> Providing (or changing) data and initial values for an existing model</h4>
 <p>Whereas constants must be provided during the call to <code>nimbleModel</code>, data and initial values can be provided later via the model member functions <code>setData</code> and <code>setInits</code>. For example, if <code>pumpData</code> is a named list of data values (as above), then <code>pump$setData(pumpData)</code> sets the named variables to the values in the list.</p>
 <p><code>setData</code> does two things: it sets the values of the data nodes, and it flags those nodes as containing data. nimbleFunction programmers can then use that information to control whether an algorithm should over-write data or not. For example, NIMBLE’s <code>simulate</code> functions by default do not overwrite data values but can be told to do so. Values of data variables can be replaced, and the indication of which nodes should be treated as data can be reset by using the <code>resetData</code> method, e.g. <code>pump$resetData()</code>.</p>
+<p>To change data values without any modification of which nodes are flagged as containing data, simply use R’s usual assignment syntax to assign values in a compiled (or, more rarely, an uncompiled) model, e.g.,</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cModel<span class="op">$</span>y &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="fl">1.5</span>, <span class="fl">2.5</span>, <span class="fl">1.7</span>)</code></pre></div>
+<p>This can be useful for running an MCMC with a different dataset of the same size without having to rebuild and recompile the MCMC, such as in a simulation study. It is possible to change the data values in a compiled model using <code>setData</code>, but we don’t recommend doing this because <code>setData</code> won’t modify which nodes are flagged as containing data in the already-constructed MCMC, thereby potentially introducing confusion.</p>
 </div>
 <div id="missing-data-values" class="section level4">
 <h4><span class="header-section-number">6.1.1.3</span> Missing data values</h4>
@@ -405,8 +410,18 @@ pumpDataNew &lt;-<span class="st"> </span>pumpData
 pumpDataNew<span class="op">$</span>x[<span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">3</span>)] &lt;-<span class="st"> </span><span class="ot">NA</span>
 pumpMiss<span class="op">$</span><span class="kw">setData</span>(pumpDataNew)
 
-pumpMissConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(pumpMiss)
-pumpMissConf<span class="op">$</span><span class="kw">addMonitors</span>(<span class="st">&#39;x&#39;</span>, <span class="st">&#39;alpha&#39;</span>, <span class="st">&#39;beta&#39;</span>, <span class="st">&#39;theta&#39;</span>)</code></pre></div>
+pumpMissConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(pumpMiss)</code></pre></div>
+<pre><code>## ===== Monitors =====
+## thin = 1: alpha, beta
+## ===== Samplers =====
+## RW sampler (1)
+##   - alpha
+## posterior_predictive sampler (2)
+##   - x[]  (2 elements)
+## conjugate sampler (11)
+##   - beta
+##   - theta[]  (10 elements)</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpMissConf<span class="op">$</span><span class="kw">addMonitors</span>(<span class="st">&#39;x&#39;</span>, <span class="st">&#39;alpha&#39;</span>, <span class="st">&#39;beta&#39;</span>, <span class="st">&#39;theta&#39;</span>)</code></pre></div>
 <pre><code>## thin = 1: alpha, beta, x, theta</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpMissMCMC &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(pumpMissConf)
 Cobj &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(pumpMiss, pumpMissMCMC)

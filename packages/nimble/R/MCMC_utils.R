@@ -49,15 +49,27 @@ decide <- function(logMetropolisRatio) {
 #' -- Return a logical value, indicating whether the proposal was accepted
 decideAndJump <- nimbleFunction(
     name = 'decideAndJump',
-    setup = function(model, mvSaved, calcNodes) { },
+    setup = function(model, mvSaved, target, calcNodes) {
+        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
+        isStochCalcNodesNoSelf <- model$isStoch(calcNodesNoSelf)   ## should be made faster
+        calcNodesNoSelfDeterm <- calcNodesNoSelf[!isStochCalcNodesNoSelf]
+        calcNodesNoSelfStoch <- calcNodesNoSelf[isStochCalcNodesNoSelf]
+    },
     run = function(modelLP1 = double(), modelLP0 = double(), propLP1 = double(), propLP0 = double()) {
         logMHR <- modelLP1 - modelLP0 - propLP1 + propLP0
         jump <- decide(logMHR)
-        if(jump) { nimCopy(from = model,   to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-        } else   { nimCopy(from = mvSaved, to = model,   row = 1, nodes = calcNodes, logProb = TRUE) }
+        if(jump) {
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelfDeterm, logProb = FALSE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelfStoch, logProbOnly = TRUE)
+        } else {
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesNoSelfDeterm, logProb = FALSE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesNoSelfStoch, logProbOnly = TRUE)
+        }
         returnType(logical())
         return(jump)
-    }, where = getLoadingNamespace()
+    }
 )
 
 
@@ -100,7 +112,7 @@ setAndCalculateOne <- nimbleFunction(
         lp <- calculate(model, calcNodes)
         returnType(double())
         return(lp)
-    },  where = getLoadingNamespace()
+    }
 )
 
 
@@ -143,7 +155,7 @@ setAndCalculate <- nimbleFunction(
         lp <- calculate(model, calcNodes)
         returnType(double())
         return(lp)
-    }, where = getLoadingNamespace()
+    }
 )
 
 #' @rdname setAndCalculate
@@ -159,7 +171,7 @@ setAndCalculateDiff <- nimbleFunction(
         lpD <- calculateDiff(model, calcNodes)
         returnType(double())
         return(lpD)
-    }, where = getLoadingNamespace()
+    }
 )
 
 
@@ -190,7 +202,7 @@ calcAdaptationFactor <- nimbleFunction(
             timesAdapted <<- 0
             gamma1       <<- 0
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -247,6 +259,7 @@ mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonS
         if(grepl('^CRP_cluster_wrapper', names(ls)[1]) && 'wrapped_type' %in% names(ls) &&
            grepl('conjugate_d', ls$wrapped_type)[1]) ls <- ls[!names(ls) %in% c('wrapped_conf')]
     }
+    if((names(ls)[1] == 'CRP sampler') && ('clusterVarInfo' %in% names(ls)))   ls[which(names(ls) == 'clusterVarInfo')] <- NULL   ## remove 'clusterVarInfo' from CRP sampler printing
     ls <- lapply(ls, function(el) if(is.nf(el) || is.function(el)) 'function' else el)   ## functions -> 'function'
     ls2 <- list()
     ## to make displayControlDefaults argument work again, would need to code process
@@ -280,6 +293,20 @@ mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonS
     str <- gsub('\"', '', str)
     str <- gsub('c\\((.*?)\\)', '\\1', str)
     return(str)
+}
+
+
+
+#' @export
+extractControlElement <- function(controlList, elementName, defaultValue, error) {
+    if(missing(controlList) | !is.list(controlList))      stop('extractControlElement: controlList argument must be a list')
+    if(missing(elementName) | !is.character(elementName)) stop('extractControlElement: elementName argument must be a character string variable name')
+    if(missing(defaultValue) & missing(error))            stop('extractControlElement: must provide either defaultValue or error argument')
+    if(elementName %in% names(controlList)) {
+        return(controlList[[elementName]])
+    } else {
+        if(!missing(defaultValue)) return(defaultValue) else stop(error)
+    }
 }
 
 

@@ -158,6 +158,8 @@ dynLibLine <- "useDynLib(nimble, .registration = TRUE)"
 
 S3methods <- c("as.matrix, CmodelValues",
                "as.matrix, modelValuesBaseClass",
+	       "as.list, CmodelValues",
+	       "as.list, modelValuesBaseClass",
                "length, nimPointerList")
 
 S3methods <- paste("S3method(", S3methods, ")", sep = "", collapse = "\n")

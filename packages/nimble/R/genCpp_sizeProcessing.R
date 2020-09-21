@@ -1653,7 +1653,8 @@ sizeFor <- function(code, symTab, typeEnv) {
     return(if(length(asserts) == 0) invisible(NULL) else asserts)
 }
 
-sizeInsertIntermediate <- function(code, argID, symTab, typeEnv, forceAssign = FALSE) {
+sizeInsertIntermediate <- function(code, argID, symTab, typeEnv, forceAssign = FALSE,
+                                   forceType = NULL) { ## only used by sizeColonOperator to force lifted range ends to be integer
     newName <- IntermLabelMaker()
     ## I think it is valid and general to catch maps here.
     ## For most variables, creating an intermediate involves interN <- expression being lifted
@@ -1680,6 +1681,8 @@ sizeInsertIntermediate <- function(code, argID, symTab, typeEnv, forceAssign = F
         newExpr <- newAssignmentExpression()
         setArg(newExpr, 1, RparseTree2ExprClasses(as.name(newName))) 
         setArg(newExpr, 2, code$args[[argID]]) ## The setArg function should set code$caller (to newExpr) and code$callerArgID (to 3)
+        if(!is.null(forceType))
+            newExpr$args[[2]]$type <- forceType
         ans <- c(sizeAssignAfterRecursing(newExpr, symTab, typeEnv, NoEigenizeMap = TRUE), list(newExpr))
 
         newArgExpr <- RparseTree2ExprClasses(as.name(newName))
@@ -2602,7 +2605,7 @@ sizeColonOperator <- function(code, symTab, typeEnv, recurse = TRUE) {
         if(inherits(code$args[[i]], 'exprClass')) {
             if(!code$args[[i]]$isName) {
               if(! (code$args[[i]]$name == '[' && (code$args[[i]]$args[[1]]$name == 'dim' && code$args[[i]]$args[[1]]$args[[1]]$name == 'nfVar'))){
-                asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv) )
+                asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv, forceType = "integer") )
               }
             }
         }
@@ -3346,61 +3349,61 @@ sizePassByMap <- function(code, symTab, typeEnv) {
 ## the functions dim and length would be taken over to work on the sizeExprs.
 ## but for now it can just return NAs for size expressions, and then the new returned value will have default size expressions (dim(name)[1], etc)
 ##
-generalFunSizeHandler <- function(code, symTab, typeEnv, returnType, args, chainedCall = FALSE) {
-    useArgs <- unlist(lapply(args, function(x) as.character(x[[1]]) %in% c('double', 'integer', 'logical')))
+## generalFunSizeHandler <- function(code, symTab, typeEnv, returnType, args, chainedCall = FALSE) {
+##     useArgs <- unlist(lapply(args, function(x) as.character(x[[1]]) %in% c('double', 'integer', 'logical')))
     
-    if(chainedCall) useArgs <- c(FALSE, useArgs)
-    if(length(code$args) != length(useArgs)) {
-        stop(exprClassProcessingErrorMsg(code, 'In generalFunSizeHandler: Wrong number of arguments.'), call. = FALSE)
-    }
-    ## Note this is NOT checking the dimensions of each arg. useArgs just means it will recurse on that and lift or do as needed
+##     if(chainedCall) useArgs <- c(FALSE, useArgs)
+##     if(length(code$args) != length(useArgs)) {
+##         stop(exprClassProcessingErrorMsg(code, 'In generalFunSizeHandler: Wrong number of arguments.'), call. = FALSE)
+##     }
+##     ## Note this is NOT checking the dimensions of each arg. useArgs just means it will recurse on that and lift or do as needed
     
-    asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs)
+##     asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs)
 
-    ## lift any argument that is an expression
-    for(i in seq_along(code$args)) {
-        if(useArgs[i]) {
-            if(inherits(code$args[[i]], 'exprClass')) {
-                if(!code$args[[i]]$isName) {
-                    asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv) )
-                }
-            }
-        }
-    }
-    if(inherits(returnType, 'symbolNimbleList')) {
-        code$type <- 'nimbleList'
-        code$sizeExprs <- returnType
-        code$toEigenize <- 'maybe'
-        code$nDim <- 0
-        liftIfAmidExpression <- TRUE
-    } else {
-        returnSymbolBasic <- inherits(returnType, 'symbolBasic')
-        returnTypeLabel <- if(returnSymbolBasic) returnType$type else as.character(returnType[[1]])
+##     ## lift any argument that is an expression
+##     for(i in seq_along(code$args)) {
+##         if(useArgs[i]) {
+##             if(inherits(code$args[[i]], 'exprClass')) {
+##                 if(!code$args[[i]]$isName) {
+##                     asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv) )
+##                 }
+##             }
+##         }
+##     }
+##     if(inherits(returnType, 'symbolNimbleList')) {
+##         code$type <- 'nimbleList'
+##         code$sizeExprs <- returnType
+##         code$toEigenize <- 'maybe'
+##         code$nDim <- 0
+##         liftIfAmidExpression <- TRUE
+##     } else {
+##         returnSymbolBasic <- inherits(returnType, 'symbolBasic')
+##         returnTypeLabel <- if(returnSymbolBasic) returnType$type else as.character(returnType[[1]])
         
-        if(returnTypeLabel == 'void') {
-            code$type <- returnTypeLabel
-            code$toEigenize <- 'unknown'
-            return(asserts)
-        }
-        returnNDim <- if(returnSymbolBasic) returnType$nDim
-                      else if(length(returnType) > 1) as.numeric(returnType[[2]]) else 0
+##         if(returnTypeLabel == 'void') {
+##             code$type <- returnTypeLabel
+##             code$toEigenize <- 'unknown'
+##             return(asserts)
+##         }
+##         returnNDim <- if(returnSymbolBasic) returnType$nDim
+##                       else if(length(returnType) > 1) as.numeric(returnType[[2]]) else 0
                                                                 
-        returnSizeExprs <- vector('list', returnNDim) ## This stays blank (NULLs), so if assigned as a RHS, the LHS will get default sizes
-        code$type <- returnTypeLabel
-        code$nDim <- returnNDim
-        code$sizeExprs <- returnSizeExprs
-        code$toEigenize <- if(code$nDim == 0) 'maybe' else 'no'
-        liftIfAmidExpression <- code$nDim > 0
-    }
+##         returnSizeExprs <- vector('list', returnNDim) ## This stays blank (NULLs), so if assigned as a RHS, the LHS will get default sizes
+##         code$type <- returnTypeLabel
+##         code$nDim <- returnNDim
+##         code$sizeExprs <- returnSizeExprs
+##         code$toEigenize <- if(code$nDim == 0) 'maybe' else 'no'
+##         liftIfAmidExpression <- code$nDim > 0
+##     }
     
-    if(liftIfAmidExpression) {
-        if(!(code$caller$name %in% c('{','<-','<<-','='))) {
-            asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
-        } else
-            typeEnv$.ensureNimbleBlocks <- TRUE
-    }
-    return(asserts)
-}
+##     if(liftIfAmidExpression) {
+##         if(!(code$caller$name %in% c('{','<-','<<-','='))) {
+##             asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+##         } else
+##             typeEnv$.ensureNimbleBlocks <- TRUE
+##     }
+##     return(asserts)
+## }
 
 generalFunSizeHandlerFromSymbols <- function(code, symTab, typeEnv, returnSymbol, argSymTab, chainedCall = FALSE) {
     ## symbols should be in order
@@ -3413,7 +3416,7 @@ generalFunSizeHandlerFromSymbols <- function(code, symTab, typeEnv, returnSymbol
     
     if(chainedCall) useArgs <- c(FALSE, useArgs)
     if(length(code$args) != length(useArgs)) {
-        stop(exprClassProcessingErrorMsg(code, 'In generalFunSizeHandler: Wrong number of arguments.'), call. = FALSE)
+        stop(exprClassProcessingErrorMsg(code, 'In generalFunSizeHandlerFromSymbols: Wrong number of arguments.'), call. = FALSE)
     }
     ## Note this is NOT checking the dimensions of each arg. useArgs just means it will recurse on that and lift or do as needed
 
@@ -3442,7 +3445,11 @@ generalFunSizeHandlerFromSymbols <- function(code, symTab, typeEnv, returnSymbol
         if(useArgs[i]) {
             if(inherits(code$args[[i]], 'exprClass')) {
                 if(!code$args[[i]]$isName) {
-                    asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv) )
+                    forceType <- NULL
+                    iSym <- i - chainedCall
+                    if(argSymTab$symbols[[iSym]]$nDim == 0) ## We're only here if useArgs[i] is TRUE, which means nDim and type should be set
+                        forceType <- argSymTab$symbols[[iSym]]$type
+                    asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv, forceType = forceType) )
                 }
             }
         }
