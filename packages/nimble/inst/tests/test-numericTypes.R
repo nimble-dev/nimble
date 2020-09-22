@@ -219,7 +219,7 @@ binaryCwiseTypeTestsLeftPromotOps <- unlist(recursive = FALSE,
 binaryCwiseTypeTestsLeftPromotOps <- indexNames(binaryCwiseTypeTestsLeftPromotOps)
 
 
-makeBinaryMatrixOpTypeTest <- function(name, funName, LHStype, LHSdims, RHStype, RHSdims, outputNDim) {
+makeBinaryMatrixOpTypeTest <- function(name, funName, LHStype, LHSdims, RHStype, RHSdims, outputNDim, checkEqual = FALSE) {
     outputHandling <- nimble:::returnTypeHandling[[funName]]
     
     if(is.null(outputHandling)) outputType <- LHStype
@@ -250,7 +250,8 @@ makeBinaryMatrixOpTypeTest <- function(name, funName, LHStype, LHSdims, RHStype,
                  LHSTYPE = LHStype, RHSTYPE = RHStype,
                  LHSSEQFROM = LHSseqFrom, LHSSEQBY = LHSseqBy,
                  RHSSEQFROM = RHSseqFrom, RHSSEQBY = RHSseqBy)),
-         outputType = substitute(OUTPUTTYPE(NDIM), list(OUTPUTTYPE = as.name(outputType), NDIM = outputNDim)))
+         outputType = substitute(OUTPUTTYPE(NDIM), list(OUTPUTTYPE = as.name(outputType), NDIM = outputNDim)),
+         checkEqual = checkEqual)
 }
 
 
@@ -264,7 +265,7 @@ binaryMatrixOpTypeTests <- unlist(recursive = FALSE,
                                                      LHSdims = rep(list(c(3, 2), c(3, 2), 3      , 3), 9),
                                                      RHSdims = rep(list(c(2, 2), 2      , c(3, 1), 3), 9),
                                                      MoreArgs = list(name = x, funName = x, outputNDim = 2),
-                                                     SIMPLIFY = FALSE) 
+                                                     SIMPLIFY = FALSE, checkEqual = TRUE) 
                                           }
                                           )
                               )
