@@ -1,7 +1,7 @@
 sizeProc_storage_mode <- function(x) {
     if(is.na(x))
         if(storage.mode(x) == 'logical')
-            return('integer') ## promote logical NA to integer for compiled code.
+            return('double') ## promote logical NA to double for compiled code.
     storage.mode(x)
 }
     
