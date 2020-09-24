@@ -461,7 +461,7 @@ Invisibly returns a list of the current sampler configurations, which are sample
                 }
                 if(thisSamplerName %in% c("RW_PF", "RW_PF_block")) {
                     if (!("nimbleSMC" %in% (installed.packages()[,"Package"]))) {
-                        stop(paste0("Particle filters have been moved to the auxilliary package `nimbleSMC`. ",
+                        stop(paste0("Particle filters have been moved to the auxiliary package `nimbleSMC`. ",
                                     "Install and load `nimbleSMC` to use them."))
                     } else if (!("nimbleSMC" %in% .packages())) {
                         stop("`nimbleSMC` must be loaded to use particle filtering samplers.")
