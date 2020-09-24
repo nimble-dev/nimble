@@ -524,6 +524,12 @@ default value), we could still get to the values of interest using
   provided it as a setup argument to illustrate that option.
 
 
+#### Use double for vectors, matrices or arrays that pass from BUGS code to run code
+Numeric values within BUGS code are interpreted as type double. This is the case even for stochatic nodes assigned to discrete probability distributions, such as dpois, dmulti, dcat etc. 
+As a consequence, care must be taken that vectors, matrices or arrays that are to be passed via BUGS code to run code must be declared as type double and not as type integer.
+Doing otherwise will result in compilation failure. 
+
+
 ## Example: writing user-defined samplers to extend NIMBLE's MCMC engine {#sec:user-samplers}
 
 One important use of nimbleFunctions is to write additional samplers that can be used in NIMBLE's MCMC engine. This allows a user to write a custom sampler for one or more nodes in a model, as well as for programmers to provide general samplers for use in addition to the library of samplers provided with NIMBLE. 
