@@ -5,11 +5,12 @@
 \title{Build the MCMCconf object for construction of an MCMC object}
 \usage{
 configureMCMC(model, nodes, control = list(), monitors, thin = 1,
-  monitors2 = character(), thin2 = 1, useConjugacy = TRUE,
-  onlyRW = FALSE, onlySlice = FALSE,
+  monitors2 = character(), thin2 = 1,
+  useConjugacy = getNimbleOption("MCMCuseConjugacy"), onlyRW = FALSE,
+  onlySlice = FALSE,
   multivariateNodesAsScalars = getNimbleOption("MCMCmultivariateNodesAsScalars"),
-  enableWAIC = getNimbleOption("MCMCenableWAIC"), print = FALSE,
-  autoBlock = FALSE, oldConf,
+  enableWAIC = getNimbleOption("MCMCenableWAIC"),
+  print = getNimbleOption("verbose"), autoBlock = FALSE, oldConf,
   rules = getNimbleOption("MCMCdefaultSamplerAssignmentRules"),
   warnNoSamplerAssigned = TRUE, ...)
 }

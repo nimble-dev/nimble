@@ -26,6 +26,15 @@ getParentNodes <- function(nodes, model, returnType = 'names', stochOnly = FALSE
     getParentNodesCore(nodes, model, returnType, stochOnly)
 }
 
+getNsave <- nimbleFunction(
+  setup = function(mvSaved){
+    niter <- 0
+  },
+  run = function(){
+    niter <<- getsize(mvSaved) # number of iterations in the MCMC
+  },
+  methods = list( reset = function () {} )
+)
 
 ##-----------------------------------------
 ##  Wrapper function for sampleDPmeasure
@@ -37,6 +46,7 @@ getParentNodes <- function(nodes, model, returnType = 'names', stochOnly = FALSE
 #'
 #' @param MCMC an MCMC class object, either compiled or uncompiled.
 #' @param epsilon  used for determining the truncation level of the representation of the random measure.
+#' @param setSeed Logical or numeric argument. If a single numeric value is provided, R's random number seed will be set to this value. In the case of a logical value, if \code{TRUE}, then R's random number seed will be set to \code{1}. Note that specifying the argument \code{setSeed = 0} does not prevent setting the RNG seed, but rather sets the random number generation seed to \code{0}.  Default value is \code{FALSE}.
 #' 
 #' @author Claudia Wehrhahn and Christopher Paciorek
 #' 
@@ -46,16 +56,18 @@ getParentNodes <- function(nodes, model, returnType = 'names', stochOnly = FALSE
 #'
 #' The \code{MCMC} argument is an object of class MCMC provided by \code{buildMCMC}, or its compiled version. The MCMC should already have been run, as \code{getSamplesDPmeasure} uses the posterior samples to generate samples of the random measure. Note that the monitors associated with that MCMC must include the cluster membership variable (which has the \code{dCRP} distribution), the cluster parameter variables, all variables directly determining the \code{dCRP} concentration parameter, and any stochastic parent variables of the cluster parameter variables. See \code{help(configureMCMC)} or \code{help(addMonitors)} for information on specifying monitors for an MCMC.
 #' 
-#' The \code{epsilon} argument is used to determine the truncation level of the random measure. \code{epsilon} is the tail probability of the random measure, which together with posterior samples of the concentration parameter, determines the truncation level (see Section 3 in Gelfand, A.E. and Kottas, A. 2002). The default value is 1e-4.
+#' The \code{epsilon} argument is optional and used to determine the truncation level of the random measure. \code{epsilon} is the tail probability of the random measure, which together with posterior samples of the concentration parameter, determines the truncation level. The default value is 1e-4.
 #'  
-#' The returned list contains a matrix with samples from the random measure (one sample per row) and the truncation level. The stick-breaking weights are named \code{weights} and the atoms, or point masses, are named based on the cluster variables in the model.
+#' The output is a list of matrices. Each matrix represents a sample from the random measure. In order to reduce the output's dimensionality, the weights of identical atoms are added up. The stick-breaking weights are named \code{weights} and the atoms are named based on the cluster variables in the model.
+#' 
+#' For more details about sampling the random measure and determining its truncation level, see Section 3 in Gelfand, A.E. and Kottas, A. 2002.
 #' 
 #' @seealso \code{\link{buildMCMC}}, \code{\link{configureMCMC}}, 
 #' @references
 #'
 #' Sethuraman, J. (1994). A constructive definition of Dirichlet priors. \emph{Statistica Sinica}, 639-650.
 #'
-#' Gelfand, A.E. and Kottas, A. (2002). A computational approach for full nonparametric Bayesian inference under Dirichlet process mixture models. \emph{ournal of Computational and Graphical Statistics}, 11(2), 289-305.
+#' Gelfand, A.E. and Kottas, A. (2002). A computational approach for full nonparametric Bayesian inference under Dirichlet process mixture models. \emph{Journal of Computational and Graphical Statistics}, 11(2), 289-305.
 #' @examples
 #' \dontrun{
 #'   conf <- configureMCMC(model)
@@ -64,54 +76,59 @@ getParentNodes <- function(nodes, model, returnType = 'names', stochOnly = FALSE
 #'   cmcmc <- compileNimble(mcmc, project = model)
 #'   runMCMC(cmcmc, niter = 1000)
 #'   outputG <- getSamplesDPmeasure(cmcmc)
-#'   samples <- outputG$samples
-#'   truncation <- output$trunc
 #' }
-getSamplesDPmeasure <- function(MCMC, epsilon = 1e-4) {
-    if(exists('model',MCMC, inherits = FALSE)) compiled <- FALSE else compiled <- TRUE
-    if(compiled) {
-      if(!exists('Robject', MCMC, inherits = FALSE) || !exists('model', MCMC$Robject, inherits = FALSE))
-        stop("getSamplesDPmeasure: problem with finding model object in compiled MCMC")
-      model <- MCMC$Robject$model
-      mvSamples <- MCMC$Robject$mvSamples
-    } else {
-      model <- MCMC$model
-      mvSamples <- MCMC$mvSamples
-    }
+getSamplesDPmeasure <- function(MCMC, epsilon = 1e-4, setSeed = FALSE) {
+  if(exists('model',MCMC, inherits = FALSE)) compiled <- FALSE else compiled <- TRUE
+  if(compiled) {
+    if(!exists('Robject', MCMC, inherits = FALSE) || !exists('model', MCMC$Robject, inherits = FALSE))
+      stop("getSamplesDPmeasure: problem with finding model object in compiled MCMC")
+    model <- MCMC$Robject$model
+    mvSamples <- MCMC$Robject$mvSamples
+  } else {
+    model <- MCMC$model
+    mvSamples <- MCMC$mvSamples
+  }
+  
+  rsampler <- sampleDPmeasure(model, mvSamples, epsilon) # 
 
-    ## Create and run the DPmeasure sampler.
-    rsampler <- sampleDPmeasure(model, mvSamples, epsilon)
-    if(compiled) {
-      csampler <- compileNimble(rsampler, project = model)
-      csampler$run()
-      samplesMeasure <- csampler$samples
-    } else {
-      rsampler$run()
-      samplesMeasure <- rsampler$samples
+  niter <- getsize(MCMC$mvSamples)
+  samplesMeasure <- list()
+  
+  if(is.numeric(setSeed)) {
+    set.seed(setSeed[1])
+    if(length(setSeed) > 1) {
+      nimCat('getSamplesDPmeasure: setSeed argument has length > 1 and only the first element will be used') 
     }
-    
-    dcrpVar <- rsampler$dcrpVar
-    clusterVarInfo <- findClusterNodes(model, dcrpVar) 
-    namesVars <- rsampler$tildeVars
-    p <- length(namesVars)
-
-    truncG <- ncol(samplesMeasure) / (rsampler$tildeVarsColsSum[p+1]+1) 
-    namesW <- sapply(seq_len(truncG), function(i) paste0("weight[", i, "]"))
-    namesAtoms <- getSamplesDPmeasureNames(clusterVarInfo, model, truncG, p)
-    
-    colnames(samplesMeasure) <- c(namesW, namesAtoms)
-    
-    output <- list(samples = samplesMeasure, trunc = truncG)
-    return(output)
+  } else if(setSeed) set.seed(1)
+  
+  if(compiled) {
+    csampler <- compileNimble(rsampler, project = model)
+    for(i in 1:niter) {
+      samplesMeasure[[i]] <- csampler$run(i)
+    }
+  } else {
+    for(i in 1:niter) {
+      samplesMeasure[[i]] <- rsampler$run(i)
+    }
+  }
+  
+  
+  dcrpVar <- rsampler$dcrpVar
+  clusterVarInfo <- findClusterNodes(model, dcrpVar) 
+  p <- rsampler$p
+  namesVars <- getSamplesDPmeasureNames(clusterVarInfo, model, 1, p)
+  for(i in 1:niter) {
+    colnames(samplesMeasure[[i]]) <- c("weights", namesVars)
+  }
+  
+  return(samplesMeasure)
 }
 
 
 sampleDPmeasure <- nimbleFunction(
   name = 'sampleDPmeasure',
-  contains=sampler_BASE,
-  
-  setup=function(model, mvSaved, epsilon){
-    ## Determine variables in the mv object and nodes/variables in the model.
+
+  setup = function(model, mvSaved, epsilon) { # 
     mvSavedVars <- mvSaved$varNames
     
     stochNodes <- model$getNodeNames(stochOnly = TRUE)
@@ -137,7 +154,7 @@ sampleDPmeasure <- nimbleFunction(
     tildeVars <- clusterVarInfo$clusterVars
     if( is.null(tildeVars) )  ## probably unnecessary as checked in CRP sampler, but best to be safe
       stop('sampleDPmeasure: The model should have at least one cluster variable.\n')
-
+    
     ## Check that cluster parameters are IID (across clusters, non-IID within clusters is ok), as required for random measure G
     isIID <- TRUE
     for(i in seq_along(clusterVarInfo$clusterNodes)) {
@@ -154,34 +171,25 @@ sampleDPmeasure <- nimbleFunction(
     }
     
     if(!isIID && length(tildeVars) == 2 && checkNormalInvGammaConjugacy(model, clusterVarInfo, length(dcrpElements), 'dinvgamma'))
-        isIID <- TRUE
+      isIID <- TRUE
     if(!isIID && length(tildeVars) == 2 && checkNormalInvGammaConjugacy(model, clusterVarInfo, length(dcrpElements), 'dgamma'))
       isIID <- TRUE
     if(!isIID && length(tildeVars) == 2 && checkNormalInvWishartConjugacy(model, clusterVarInfo, length(dcrpElements), 'dinvwish'))
-        isIID <- TRUE
+      isIID <- TRUE
     if(!isIID && length(tildeVars) == 2 && checkNormalInvWishartConjugacy(model, clusterVarInfo, length(dcrpElements), 'dwish'))
       isIID <- TRUE
-      ## Tricky as MCMC might not be using conjugacy, but presumably ok to proceed regardless of how
-      ## MCMC was done, since conjugacy existing would guarantee IID.
+    ## Tricky as MCMC might not be using conjugacy, but presumably ok to proceed regardless of how
+    ## MCMC was done, since conjugacy existing would guarantee IID.
     if(!isIID) stop('sampleDPmeasure: cluster parameters have to be independent and identically distributed. \n')
-
+    
     ## Check that necessary variables are being monitored.
-      
+    
     ## Check that cluster variables are monitored.
     counts <- tildeVars %in% mvSavedVars
     if( sum(counts) != length(tildeVars) ) 
       stop('sampleDPmeasure: The node(s) representing the cluster variables must be monitored in the MCMC (and therefore stored in the modelValues object).\n')  
     
-    parentNodesTildeVars <- NULL
-    candidateParentNodes <- model$getNodeNames(includeData = FALSE, stochOnly = TRUE)
-    candidateParentNodes <- candidateParentNodes[!candidateParentNodes %in% unlist(clusterVarInfo$clusterNodes)]
-    for(i in seq_along(candidateParentNodes)) {
-      aux <- model$getDependencies(candidateParentNodes[i], self = FALSE)
-      for(j in seq_along(tildeVars)) {
-        if(sum(aux == clusterVarInfo$clusterNodes[[j]][1]))
-          parentNodesTildeVars <- c(parentNodesTildeVars, candidateParentNodes[i])
-      }
-    }
+    parentNodesTildeVars <- getParentNodes(tildeVars, model, returnType = 'names', stochOnly = TRUE)
     if(length(parentNodesTildeVars)) {
       parentNodesTildeVarsDeps <- model$getDependencies(parentNodesTildeVars, self = FALSE)
     } else parentNodesTildeVarsDeps <- NULL
@@ -190,37 +198,27 @@ sampleDPmeasure <- nimbleFunction(
     
     if(!all(model$getVarNames(nodes = parentNodesTildeVars) %in% mvSavedVars))
       stop('sampleDPmeasure: The stochastic parent nodes of the cluster variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
-    if(is.null(parentNodesTildeVars)) parentNodesTildeVars <- tildeVars  ## to avoid NULL which causes compilation issues
 
-    ## Check that parent nodes of cluster IDs are monitored.   
-    parentNodesXi <- NULL
-    candidateParentNodes <- model$getNodeNames(includeData = FALSE, stochOnly = TRUE)
-    candidateParentNodes <- candidateParentNodes[!candidateParentNodes == dcrpNode]
-    for(i in seq_along(candidateParentNodes)) {
-      aux <- model$getDependencies(candidateParentNodes[i], self = FALSE)
-      if(sum(aux == dcrpNode)) {
-        parentNodesXi <- c(parentNodesXi, candidateParentNodes[i])
-      }
-    }
+    ## Check that parent nodes of cluster IDs are monitored.  
+    parentNodesXi <- getParentNodes(dcrpNode, model, returnType = 'names', stochOnly = TRUE)
     
     if(!all(model$getVarNames(nodes = parentNodesXi) %in% mvSavedVars))
       stop('sampleDPmeasure: The stochastic parent nodes of the membership variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
-    if(is.null(parentNodesXi)) parentNodesXi <- dcrpNode  ## to avoid NULL which causes compilation issues
-
+    
     ## End of checks of monitors.
-      
+    
     fixedConc <- TRUE # assume that conc parameter is fixed. This will change in the if statement if necessary
     if(length(parentNodesXi)) {
       fixedConc <- FALSE
       parentNodesXiDeps <- model$getDependencies(parentNodesXi, self = FALSE)
       parentNodesXiDeps <- parentNodesXiDeps[!parentNodesXiDeps == dcrpNode]
     } else {
-      parentNodesXiDeps <- dcrpNode
+      parentNodesXiDeps <- dcrpNode 
     }
     
     dataNodes <- model$getDependencies(dcrpNode, stochOnly = TRUE, self = FALSE)
     N <- length(model$expandNodeNames(dcrpNode, returnScalarComponents = TRUE))
-
+    
     p <- length(tildeVars)
     lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE))
     dimTildeVarsNim <- numeric(p+1) # nimble dimension (0 is scalar, 1 is 2D array, 2 is 3D array) (dimTildeVarsNim=dimTildeNim)
@@ -249,11 +247,6 @@ sampleDPmeasure <- nimbleFunction(
         mvIndexes[l,(tildeVarsColsSum[j]+1):tildeVarsColsSum[j+1] ] <- which(aux != 0)
       }
     }
-
-    ## Storage object to be sized in run code based on MCMC output.
-    samples <- matrix(0, nrow = 1, ncol = 1)   
-    ## Truncation level of the random measure 
-    truncG <- 0 
     
     ## control list extraction
     ## The error of approximation G is given by (conc / (conc +1))^{truncG-1}. 
@@ -262,97 +255,150 @@ sampleDPmeasure <- nimbleFunction(
     ## Ishwaran, H., & James, L. F. (2001). Gibbs sampling methods for stick-breaking priors. Journal of the American Statistical Association, 96(453), 161-173.
     ## Ishwaran, H., & Zarepour, M. (2000). Markov chain Monte Carlo in approximate Dirichlet and beta two-parameter process hierarchical models. Biometrika, 87(2), 371-390.
     # epsilon <- 1e-4
-
-    setupOutputs(lengthData, dcrpVar)
+    setupOutputs(dcrpVar)
+    
   },
-  
-  run=function(){
+  run = function(m = integer()) {
+    returnType(double(2))
     
-    niter <- getsize(mvSaved) # number of iterations in the MCMC
+    ## value of concentraton parameter
+    if( fixedConc ) { 
+      concSamples <- model$getParam(dcrpNode, 'conc')
+    } else { 
+      nimCopy(from = mvSaved, to = model, nodes = parentNodesXi, row = m) 
+      model$calculate(parentNodesXiDeps)
+      concSamples <- model$getParam(dcrpNode, 'conc')
+    }
     
-    # defining the truncation level of the random measure's representation:
-    if( fixedConc ) {
-      concSamples <- nimNumeric(length = niter, value = model$getParam(dcrpNode, 'conc'))
-    } else {
-      concSamples <- numeric(niter)
-      for( iiter in 1:niter ) {
-        nimCopy(from = mvSaved, to = model, nodes = parentNodesXi, row=iiter) 
-        model$calculate(parentNodesXiDeps)
-        concSamples[iiter] <- model$getParam(dcrpNode, 'conc')
+    ## truncation level
+    concAux <- concSamples + N
+    truncG <- log(epsilon) / log(concAux / (concAux+1)) 
+    truncG <- ceiling(truncG) 
+    
+    ## getting the unique cluster variables that where sampled in the mcmc and the sampling probabilities of the polya urn of the unique cluster variables
+    probs <- nimNumeric(N) # polya urn probabilities
+    uniqueValues <- matrix(0, nrow = N, ncol = tildeVarsColsSum[p+1])  # unique cluster variables
+    xiiter <- mvSaved[dcrpVar, m]
+    range <- min(xiiter):max(xiiter) 
+    index <- 1
+    for(i in seq_along(range)){   
+      cond <- sum(xiiter == range[i])
+      if(cond > 0){
+        probs[index] <- cond
+        ## slight workaround because can't compile mvSaved[tildeVars[j], m]  
+        nimCopy(mvSaved, model, tildeVars, row = m)
+        for(j in 1:p){
+          jcols <- (tildeVarsColsSum[j]+1):tildeVarsColsSum[j+1]
+          uniqueValues[index, jcols] <- values(model, tildeVars[j])[mvIndexes[range[i], jcols]]
+        }
+        index <- index+1
       }
     }
-    dcrpAux <- mean(concSamples) + N
+    probs[index] <- concSamples # last probability of the polya urn (the sample concetration parameter)
+    newValueIndex <- index 
     
-    truncG <<- log(epsilon) / log(dcrpAux / (dcrpAux+1))
-    truncG <<- ceiling(truncG)
+    ## copy tilde parents into model for use in simulation below when simulate atoms of G_0  
+    nimCopy(mvSaved, model, parentNodesTildeVars, row = m)
     
-    ## Storage object: matrix with nrow = number of MCMC iterations, and ncol = (1 + p)*truncG, where
-    ## truncG the truncation level of the random measure G (an integer given by the values of conc parameter)
-    ## (p+1) denoted the number of parameters, each of length truncG, to be stored: p is the number of cluster components (length(tildeVars)) and 1 is for the weights.
-    samples <<- matrix(0, nrow = niter, ncol = truncG*(tildeVarsColsSum[p+1]+1))
     
-    ## computing G(.) = sum_{l=1}^{truncG} w_l delta_{atom_l} (.):
-    for(iiter in 1:niter){
-      checkInterrupt()
-      
-      ## sampling weights:
-      vaux <- rbeta(1, 1, concSamples[iiter] + N)
-      v1prod <- 1
-      samples[iiter, 1] <<- vaux  
-      for(l1 in 2:truncG) {
+    ## sampling random measure:
+    # this is the reduced version in the sense that weights of identical atoms are added up
+    # weights and atom are sampled in the same loop
+    
+    ## sampling stick-breaking weights: as many as truncG
+        
+    ## reduced samples from random measure: 
+    weights <- nimNumeric(truncG) # weights of random measure
+    weightsTmp <- nimNumeric(truncG)
+    atoms <- matrix(0, ncol = tildeVarsColsSum[p+1], nrow = truncG) # atoms of random measure
+    indexesG <- nimNumeric(truncG) # indicates if an existing or a new atom is sampled from the polya urn. New tom are indicated by newValueIndex 
+    indexG0 <- newValueIndex # used for new atoms
+    
+    #vaux <- rbeta(1, 1, concAux)
+    #v1prod <- 1
+    #weightsTmp[1] <- vaux  
+    #for(l1 in 2:truncG) {
+    #  v1prod <- v1prod * (1-vaux)
+    #  vaux <- rbeta(1, 1, concAux)
+    #  weightsTmp[l1] <- vaux * v1prod 
+    #}
+    #weightsTmp[1:truncG] <- weightsTmp[1:truncG] / (1 - v1prod * (1-vaux)) # normalizing weigths
+    
+    vaux <- rbeta(1, 1, concAux)
+    v1prod <- 1
+    for(l1 in 1:truncG) {
+      # sampling a weight
+      if(l1 == 1) {
+        weightsTmp[l1] <- vaux 
+      } else {
         v1prod <- v1prod * (1-vaux)
-        vaux <- rbeta(1, 1, concSamples[iiter] + N)
-        samples[iiter, l1] <<- vaux * v1prod 
+        vaux <- rbeta(1, 1, concAux)
+        weightsTmp[l1] <- vaux * v1prod 
       }
-      samples[iiter, 1:truncG] <<- samples[iiter, 1:truncG] / (1 - v1prod * (1-vaux)) # normalizing
-      
-      ## sampling atoms:
-      ## getting the sampled unique values (tilde variables) and their probabilities of being sampled,
-      ## need for computing density later.
-      probs <- nimNumeric(N)
-      uniqueValues <- matrix(0, nrow = N, ncol = tildeVarsColsSum[p+1])  
-      xiiter <- mvSaved[dcrpVar, iiter]
-      range <- min(xiiter):max(xiiter) 
-      index <- 1
-      for(i in seq_along(range)){   
-        cond <- sum(xiiter == range[i])
-        if(cond > 0){
-          probs[index] <- cond
-          ## slight workaround because can't compile mvSaved[tildeVars[j], iiter]  
-          nimCopy(mvSaved, model, tildeVars, row = iiter)
-          for(j in 1:p){
-            jcols <- (tildeVarsColsSum[j]+1):tildeVarsColsSum[j+1]
-            uniqueValues[index, jcols] <- values(model, tildeVars[j])[mvIndexes[range[i], jcols]]
-          }
-          index <- index+1
-        }
-      }
-      probs[index] <- concSamples[iiter] 
-      newValueIndex <- index 
-      
-      ## copy tilde parents into model for use in simulation below when simulate atoms of G_0  
-      nimCopy(mvSaved, model, parentNodesTildeVars, row = iiter)
 
-      sumCol <- truncG
-      for(l1 in 1:truncG) {
-        index <- rcat(prob = probs[1:newValueIndex])
-        if(index == newValueIndex){   # sample from G_0
-          model$simulate(parentNodesTildeVarsDeps)
-          for(j in 1:p){
-            jcols <- (sumCol + 1):(sumCol + tildeVarsCols[j]) 
-            samples[iiter, jcols] <<- values(model, tildeVars[j])[mvIndexes[1,  (tildeVarsColsSum[j]+1):tildeVarsColsSum[j+1]]] # <<-
-            sumCol <- sumCol + tildeVarsCols[j] 
-          }
-        } else {   # sample one of the existing values
-          for(j in 1:p){
-            jcols <- (sumCol +1):(sumCol + tildeVarsCols[j])
-            samples[iiter, jcols] <<- uniqueValues[index, (tildeVarsColsSum[j]+1):tildeVarsColsSum[j+1]] # <<-
-            sumCol <- sumCol + tildeVarsCols[j] 
-          }
+      # sampling an atom
+      indexesG[l1] <- rcat(prob = probs[1:newValueIndex])
+      if(indexesG[l1] < newValueIndex) { # an existing atom was sampled and the corresponding weights are added
+        weights[indexesG[l1]] <- weights[indexesG[l1]] + weightsTmp[l1] 
+        sumCol <- 0
+        for(j in 1:p){
+          jcols <- (sumCol + 1):(sumCol + tildeVarsCols[j]) 
+          atoms[indexesG[l1], jcols] <-  uniqueValues[indexesG[l1], (tildeVarsColsSum[j]+1):tildeVarsColsSum[j+1]]  
+          sumCol <- sumCol + tildeVarsCols[j] 
+        }
+      } else { # a new atom is sampled (from G0) with its corresponding new weight
+        weights[indexG0] <-  weightsTmp[l1] 
+        model$simulate(parentNodesTildeVarsDeps)
+        sumCol <- 0
+        for(j in 1:p){
+          jcols <- (sumCol + 1):(sumCol + tildeVarsCols[j])
+          atoms[indexG0, jcols] <- values(model, tildeVars[j])[mvIndexes[1,  (tildeVarsColsSum[j]+1):tildeVarsColsSum[j+1]]] # <<-
+          sumCol <- sumCol + tildeVarsCols[j] 
+        }
+        indexG0 <- indexG0 + 1
+      }
+    }
+    weights[1:truncG] <- weights[1:truncG] / (1 - v1prod * (1-vaux)) # normalizing weigths
+
+    ## check that all unique tilde variables were actually sampled. If not we need to rearrange when creating final output
+    missingIndex <- nimNumeric(newValueIndex-1)
+    uniqueIndex <- 1:(newValueIndex - 1)
+    ii <- 1
+    for(i in seq_along(uniqueIndex)) {
+      if( !any(indexesG == uniqueIndex[i]) ) {
+        missingIndex[ii] <- uniqueIndex[i]
+        ii <- ii + 1
+      }
+    }
+    
+    # final sample of the random measure saved in 'output'
+    nrowG <- indexG0 - 1 - (ii - 1)
+    output <- nimNumeric(nrowG*(tildeVarsColsSum[p+1]+1))
+    ii <- 1
+    imissing <- 1 
+    for(i in 1:(indexG0 - 1)) { # saving weights
+      if(i != missingIndex[imissing]) {
+        output[ii] <- weights[i]
+        ii <- ii + 1  
+      } else {
+        imissing <- imissing + 1
+      }
+    }
+    for(j in 1:tildeVarsColsSum[p+1]) { # saving atoms
+      imissing <- 1
+      for(i in 1:(indexG0 - 1)) {
+        if(i != missingIndex[imissing]) {
+          output[ii] <- atoms[i, j]
+          ii <- ii + 1  
+        } else {
+          imissing <- imissing + 1
         }
       }
-      
     }
+    
+    outputG <- matrix(nimNumeric(value = output, length=(nrowG*(tildeVarsColsSum[p+1]+1))), ncol=(tildeVarsColsSum[p+1]+1), nrow=nrowG)
+    
+    return(outputG)
   },
   methods = list( reset = function () {} )
 )
@@ -1368,6 +1414,12 @@ sampler_CRP <- nimbleFunction(
     
     nData <- length(dataNodes)
 
+    ## Check that no use of multiple clustering variables, such as 'thetaTilde[xi[i], eta[j]]'.
+    ## It's likely that if we set the non-conjugate sampler and turn off wrapping omits sampling of empty clusters
+    ## (which is not set up correctly for this case), that the existing code would give correct sampling.
+    if(any(clusterVarInfo$multipleStochIndexes))
+        stop("sampler_CRP: Detected use of multiple stochastic indexes of a variable: ", deparse(clusterVarInfo$indexExpr[[1]]), ". NIMBLE's CRP sampling is not yet set up to handle this case. Please contact the NIMBLE development team if you are interested in this functionality.")
+
     ## Check there is at least one or more "observation" per random index.
     ## Note that cases like mu[xi[i],xi[j]] are being trapped in findClusterNodes().
     if(n > nData)
@@ -1604,13 +1656,8 @@ sampler_CRP <- nimbleFunction(
             if(nIntermClusNodesPerClusID > 0) {
               model$calculate(intermNodes[((i-1)*nIntermClusNodesPerClusID+1):(i*nIntermClusNodesPerClusID)]) 
             }
-            model$calculate(dataNodes[((i-1)*nObsPerClusID+1):(i*nObsPerClusID)])       
-            curLogProb[iprob] <<- 0 # <<-
-            for(j1 in 1:nObsPerClusID) {
-                ## getLogProb can be done on a vector of nodes to avoid loop here.
-              curLogProb[iprob] <<- curLogProb[iprob] + model$getLogProb(dataNodes[(i-1)*nObsPerClusID+j1])  
-            }  
-            curLogProb[iprob] <<- log(xiCounts[xiUniques[j]]) + curLogProb[iprob] 
+            curLogProb[iprob] <<- log(xiCounts[xiUniques[j]]) +
+                model$calculate(dataNodes[((i-1)*nObsPerClusID+1):(i*nObsPerClusID)])
             reorderXiUniques[iprob] <- xiUniques[j]
             iprob <- iprob + 1
           }
@@ -1642,16 +1689,12 @@ sampler_CRP <- nimbleFunction(
       } else { # cluster is not a singleton.
         ## First, compute probability of sampling an existing label.
         for(j in 1:k) { 
-          model[[target]][i] <<- xiUniques[j]  # <<-
+          model[[target]][i] <<- xiUniques[j]  
           if(nIntermClusNodesPerClusID > 0) {
             model$calculate(intermNodes[((i-1)*nIntermClusNodesPerClusID+1):(i*nIntermClusNodesPerClusID)]) 
           }
-          model$calculate(dataNodes[((i-1)*nObsPerClusID+1):(i*nObsPerClusID)])       
-          curLogProb[j] <<- 0 # <<-
-          for(j1 in 1:nObsPerClusID) {
-            curLogProb[j] <<- curLogProb[j] + model$getLogProb(dataNodes[(i-1)*nObsPerClusID+j1])   
-          }  
-          curLogProb[j] <<- log(xiCounts[xiUniques[j]]) + curLogProb[j] 
+          curLogProb[j] <<- log(xiCounts[xiUniques[j]]) +
+              model$calculate(dataNodes[((i-1)*nObsPerClusID+1):(i*nObsPerClusID)])       
         }
         ## Second, compute probability of sampling a new cluster depending on the value of kNew.       
         if(kNew == 0) { # no new cluster can be created 

@@ -292,7 +292,10 @@ checkDistributionFunctions <- function(distributionInput, userEnv) {
                                                           returnCreation <- "x <- nimMatrix()"
         # build nf from text as unclear how to pairlist info in rargInfo with substitute
         nfCode <- paste0("nimbleFunction(run = function(", args, ") { stop('user-defined distribution ", densityName, " provided without random generation function.')\nreturnType(", returnType, ")\n", returnCreation, "\nreturn(x)})")
+	## Need to assign to GlobalEnv as that is where model-building process looks.
+	## Also assign to userEnv as code below looks there.
         assign(simulateName, eval(parse(text = nfCode)), envir = userEnv)
+	assign(simulateName, eval(parse(text = nfCode)), envir = .GlobalEnv)
     }
 
     dargs <- args <- formals(get(densityName, pos = userEnv))
@@ -347,8 +350,9 @@ getMaxDim <- function(typeList)
 getValueDim <- function(distObject) 
     distObject$types$value$nDim
 
-prepareDistributionInput <- function(dist) {
+prepareDistributionInput <- function(densityName, userEnv) {
     out <- list()
+    dist <- get(densityName, pos = userEnv)
     args <- formals(dist)
     args <- args[!names(args) %in% c('x', 'log')]
     if(!length(args))
@@ -358,45 +362,46 @@ prepareDistributionInput <- function(dist) {
     if(length(args) > 1)
         argInfo <- paste0(paste0(names(args)[-length(args)], sep = ',', collapse = ''), names(args)[length(args)],
                           collapse = '')
-    out$BUGSdist <- paste0(dist, "(", argInfo, ")", collapse = '')
-    typeInfo <- get('nfMethodRCobject', environment(eval(as.name(dist))))$argInfo
+    out$BUGSdist <- paste0(densityName, "(", argInfo, ")", collapse = '')
+    typeInfo <- get('nfMethodRCobject', environment(eval(as.name(densityName), envir = userEnv)))$argInfo
     out$types <- paste0('value = ', deparse(typeInfo$x))
     typeInfo <- typeInfo[!names(typeInfo) %in% c('x', 'log')]
     if(length(typeInfo))
         out$types <- c(out$types, paste0(names(typeInfo), ' = ', sapply(typeInfo, deparse)))
 
     # check consistent types
-    simulateName <- sub('^d', 'r', dist)
-    typeInfo <- get('nfMethodRCobject', environment(eval(as.name(simulateName))))$argInfo
+    simulateName <- sub('^d', 'r', densityName)
+    typeInfo <- get('nfMethodRCobject', environment(eval(as.name(simulateName), envir = userEnv)))$argInfo
     typeInfo <- typeInfo[names(typeInfo) != "n"]
     rtypes <- character(0)
     if(length(typeInfo))
         rtypes <- c(rtypes, paste0(names(typeInfo), ' = ', sapply(typeInfo, deparse)))
     if(!identical(out$types[-1], rtypes))
-        stop(paste0("prepareDistributionInfo: types/dimensions of parameters are not the same in density and simulation functions: '", dist, "' and '", simulateName, "'."))
+        stop(paste0("prepareDistributionInfo: types/dimensions of parameters are not the same in density and simulation functions: '", densityName, "' and '", simulateName, "'."))
 
     # check for p and q functions
-    cdfName <- sub('^d', 'p', dist)
-    quantileName <- sub('^d', 'q', dist)
-    out$pqAvail <- exists(cdfName) && exists(quantileName) && is.rcf(get(cdfName)) && is.rcf(get(quantileName))
+    cdfName <- sub('^d', 'p', densityName)
+    quantileName <- sub('^d', 'q', densityName)
+    out$pqAvail <- exists(cdfName, where = userEnv) && exists(quantileName, where = userEnv) && is.rcf(get(cdfName, pos = userEnv)) &&
+        is.rcf(get(quantileName, pos = userEnv))
 
     # check consistent types
     if(out$pqAvail) {
-        typeInfo <- get('nfMethodRCobject', environment(eval(as.name(cdfName))))$argInfo
+        typeInfo <- get('nfMethodRCobject', environment(eval(as.name(cdfName), envir = userEnv)))$argInfo
         typeInfo <- typeInfo[!names(typeInfo) %in% c('q', 'log.p', 'lower.tail')]
         ptypes <- numeric(0)
         if(length(typeInfo))
             ptypes <- c(ptypes, paste0(names(typeInfo), ' = ', sapply(typeInfo, deparse)))
         if(!identical(out$types[-1], ptypes))
-            stop(paste0("prepareDistributionInfo: types/dimensions of parameters are not the same in the density and distribution functions: '", dist, "' and '", cdfName, "'."))
+            stop(paste0("prepareDistributionInfo: types/dimensions of parameters are not the same in the density and distribution functions: '", densityName, "' and '", cdfName, "'."))
   
-        typeInfo <- get('nfMethodRCobject', environment(eval(as.name(quantileName))))$argInfo
+        typeInfo <- get('nfMethodRCobject', environment(eval(as.name(quantileName), envir = userEnv)))$argInfo
         typeInfo <- typeInfo[!names(typeInfo) %in% c('p', 'log.p', 'lower.tail')]
         qtypes <- numeric(0)
         if(length(typeInfo))
             qtypes <- c(qtypes, paste0(names(typeInfo), ' = ', sapply(typeInfo, deparse)))
         if(!identical(out$types[-1], qtypes))
-            stop(paste0("prepareDistributionInfo: types/dimensions of parameters are not the same in the density and quantile functions: '", dist, "' and '", quantileName, "'."))
+            stop(paste0("prepareDistributionInfo: types/dimensions of parameters are not the same in the density and quantile functions: '", densityName, "' and '", quantileName, "'."))
     }
     return(out)
 }
@@ -542,7 +547,7 @@ registerDistributions <- function(distributionsInput, userEnv = parent.frame(), 
            sapply(distributionsInput, checkDistributionInput)
         sapply(distributionsInput, checkDistributionFunctions, userEnv = userEnv)
         if(is.character(distributionsInput)) {
-          distributionsInput <- lapply(distributionsInput, prepareDistributionInput)
+          distributionsInput <- lapply(distributionsInput, prepareDistributionInput, userEnv = userEnv)
           names(distributionsInput) <- nms
         }
            
@@ -927,4 +932,5 @@ scalar_distribution_pFuns <- gsub("^d", "p", scalar_pqAvail_dFuns)
 scalar_distribution_qFuns <- gsub("^d", "q", scalar_pqAvail_dFuns)
 
 rm(nms, scalar_distribution_bool, scalar_pqAvail_bool, scalar_pqAvail_dFuns)
+
 

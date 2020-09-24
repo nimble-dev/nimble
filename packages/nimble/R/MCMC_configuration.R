@@ -45,7 +45,7 @@ samplerConf <- setRefClass(
 ## NOTE: the empty lines are important in the final formatting, so please don't remove any of them in your own help info
 
 #' Class \code{MCMCconf}
-#' @aliases MCMCconf addSampler removeSamplers setSamplers printSamplers getSamplers setSamplerExecutionOrder getSamplerExecutionOrder addMonitors addMonitors2 resetMonitors getMonitors getMonitors2 printMonitors setThin setThin2
+#' @aliases MCMCconf addSampler removeSamplers setSamplers printSamplers getSamplers setSamplerExecutionOrder getSamplerExecutionOrder addMonitors addMonitors2 setMonitors setMonitors2 resetMonitors getMonitors getMonitors2 printMonitors setThin setThin2
 #' @export
 #' @description
 #' Objects of this class configure an MCMC algorithm, specific to a particular model.  Objects are normally created by calling \code{\link{configureMCMC}}.
@@ -832,6 +832,38 @@ print: A logical argument specifying whether to print all current monitors (defa
 Details: See the initialize() function
             '
             addMonitors(..., ind = 2, print = print)
+        },
+
+        setMonitors = function(..., ind = 1, print = TRUE) {
+            '
+Sets new variables to the list of monitors.
+
+Arguments:
+
+...: One or more character vectors of indexed nodes, or variables, which are to be monitored.  These replace the current monitors list.
+
+print: A logical argument specifying whether to print all current monitors (default TRUE).
+
+Details: See the initialize() function
+            '
+            if(ind == 1)   monitors  <<- character()
+            if(ind == 2)   monitors2 <<- character()
+            addMonitors(..., ind = ind, print = print)
+        },
+
+        setMonitors2 = function(..., print = TRUE) {
+            '
+Sets new variables to the list of monitors2.
+
+Arguments:
+
+...: One or more character vectors of indexed nodes, or variables, which are to be monitored.  These replace the current monitors2 list.
+
+print: A logical argument specifying whether to print all current monitors (default TRUE).
+
+Details: See the initialize() function
+            '
+            setMonitors(..., ind = 2, print = print)
         },
         
         resetMonitors = function() {

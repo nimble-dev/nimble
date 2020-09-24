@@ -2,7 +2,7 @@ language: r
 r:
     - 4.0
 
-dist: bionic
+dist: bionic  ## removed Aug 2020 due to travis errors, see: https://travis-ci.community/t/r-install-broken-travis-ci-rstudio-org-returns-403/9640; added back Sep 2020 as seemed fine on further testing
 sudo: false
 
 cache:

@@ -4,6 +4,15 @@ USER LEVEL CHANGES
 
 -- Allow use `logdet` in model code (Issue #1018).
 
+-- New `resetMV` argument available to `mcmc$run` method, which in combination with `reset = FALSE`, specifying `resetMV = TRUE` will continue the current run of the MCMC, but discard any previously-collected samples.
+
+-- New methods `setMonitors` and `setMonitors2` added for MCMC configuraiton objects.  These methods replace the current set of monitors (or monitors2) with the specified variables.
+
+BUG FIXES
+
+-- Fixed a bug in k-fold cross-validation routine (`runCrossValidate`), where the merging of MCMC sampler configurations was done incorrectly.
+-- Updated all MCMC sampler functions to use a new syntax for control list element extraction, which prevents a possible caused by R's partial matching of list names.
+
                             CHANGES IN VERSION 0.9.1 (May 2020)
 
 USER LEVEL CHANGES

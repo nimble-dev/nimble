@@ -49,12 +49,24 @@ decide <- function(logMetropolisRatio) {
 #' -- Return a logical value, indicating whether the proposal was accepted
 decideAndJump <- nimbleFunction(
     name = 'decideAndJump',
-    setup = function(model, mvSaved, calcNodes) { },
+    setup = function(model, mvSaved, target, calcNodes) {
+        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
+        isStochCalcNodesNoSelf <- model$isStoch(calcNodesNoSelf)   ## should be made faster
+        calcNodesNoSelfDeterm <- calcNodesNoSelf[!isStochCalcNodesNoSelf]
+        calcNodesNoSelfStoch <- calcNodesNoSelf[isStochCalcNodesNoSelf]
+    },
     run = function(modelLP1 = double(), modelLP0 = double(), propLP1 = double(), propLP0 = double()) {
         logMHR <- modelLP1 - modelLP0 - propLP1 + propLP0
         jump <- decide(logMHR)
-        if(jump) { nimCopy(from = model,   to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-        } else   { nimCopy(from = mvSaved, to = model,   row = 1, nodes = calcNodes, logProb = TRUE) }
+        if(jump) {
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelfDeterm, logProb = FALSE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelfStoch, logProbOnly = TRUE)
+        } else {
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesNoSelfDeterm, logProb = FALSE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesNoSelfStoch, logProbOnly = TRUE)
+        }
         returnType(logical())
         return(jump)
     }
@@ -281,6 +293,20 @@ mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonS
     str <- gsub('\"', '', str)
     str <- gsub('c\\((.*?)\\)', '\\1', str)
     return(str)
+}
+
+
+
+#' @export
+extractControlElement <- function(controlList, elementName, defaultValue, error) {
+    if(missing(controlList) | !is.list(controlList))      stop('extractControlElement: controlList argument must be a list')
+    if(missing(elementName) | !is.character(elementName)) stop('extractControlElement: elementName argument must be a character string variable name')
+    if(missing(defaultValue) & missing(error))            stop('extractControlElement: must provide either defaultValue or error argument')
+    if(elementName %in% names(controlList)) {
+        return(controlList[[elementName]])
+    } else {
+        if(!missing(defaultValue)) return(defaultValue) else stop(error)
+    }
 }
 
 

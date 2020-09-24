@@ -139,6 +139,65 @@ test_that("Radon model cross-validation runs using MSE loss: ", {
                               nBootReps = 2)
 })
 
+test_that("dyes model cross-validation exact results", {
+    dyesCode <- nimbleCode({
+        for (i in 1:BATCHES) {
+            for (j in 1:SAMPLES) {
+                y[i,j] ~ dnorm(mu[i], tau.within);
+            }
+            mu[i] ~ dnorm(theta, tau.between);
+        }
+        theta ~ dnorm(0.0, 1.0E-10);
+        tau.within ~ dgamma(0.001, 0.001);  sigma2.within <- 1/tau.within;
+        tau.between ~ dgamma(0.001, 0.001);  sigma2.between <- 1/tau.between;
+    })
+    ##
+    dyesData <- list(y = matrix(c(1545, 1540, 1595, 1445, 1595,
+                         1520, 1440, 1555, 1550, 1440,
+                         1630, 1455, 1440, 1490, 1605,
+                         1595, 1515, 1450, 1520, 1560,
+                         1510, 1465, 1635, 1480, 1580,
+                         1495, 1560, 1545, 1625, 1445),
+                         nrow = 6, ncol = 5))
+    ##
+    dyesConsts <- list(BATCHES = 6, SAMPLES = 5)
+    ##
+    dyesInits <- list(theta = 1500, tau.within = 1, tau.between =  1)
+    ##
+    dyesModel <- nimbleModel(dyesCode, dyesConsts, dyesData, dyesInits)
+    ##
+    dyesFoldFunction <- function(i){
+        foldNodes_i <- paste0('y[', i, ', ]')  # will return 'y[1,]' for i = 1 e.g.
+        return(foldNodes_i)
+    }
+    ##
+    RMSElossFunction <- function(simulatedDataValues, actualDataValues){
+        dataLength <- length(simulatedDataValues) # simulatedDataValues is a vector
+        SSE <- 0
+        for(i in 1:dataLength){
+            SSE <- SSE + (simulatedDataValues[i] - actualDataValues[i])^2
+        }
+        MSE <- SSE / dataLength
+        RMSE <- sqrt(MSE)
+        return(RMSE)
+    }
+    ##
+    dyesMCMCconfiguration <- configureMCMC(dyesModel)
+    ##
+    set.seed(0)
+    ##
+    crossValOutput <- runCrossValidate(MCMCconfiguration = dyesMCMCconfiguration, k = 6,
+                                       foldFunction = dyesFoldFunction,
+                                       lossFunction = RMSElossFunction,
+                                       MCMCcontrol = list(niter = 5000, nburnin = 500))
+    ##
+    expect_equal(crossValOutput$CVvalue, 63.872534)
+    expect_equal(crossValOutput$CVstandardError, 0.0023289839)
+    expect_equal(unname(sapply(crossValOutput$foldCVinfo, function(x) x['foldCVvalue'])), c(56.525316, 41.326957, 73.621281, 61.466634, 109.806489, 40.488530))
+    expect_equal(unname(sapply(crossValOutput$foldCVinfo, function(x) x['foldCVstandardError'])), c(0.0052012467, 0.0058034916, 0.0060221136, 0.0059338851, 0.0045952414, 0.0064763733))
+})
+
+
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)

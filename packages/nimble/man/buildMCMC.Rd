@@ -25,6 +25,8 @@ Calling buildMCMC(conf) will produce an uncompiled MCMC function object.  The un
 
 \code{reset}: Boolean specifying whether to reset the internal MCMC sampling algorithms to their initial state (in terms of self-adapting tuning parameters), and begin recording posterior sample chains anew. Specifying \code{reset = FALSE} allows the MCMC algorithm to continue running from where it left off, appending additional posterior samples to the already existing sample chains. Generally, \code{reset = FALSE} should only be used when the MCMC has already been run (default = TRUE).
 
+\code{resetMV}: Boolean specifying whether to begin recording posterior sample chains anew. This argument is only considered when using \code{reset = FALSE}.  Specifying \code{reset = FALSE, resetMV = TRUE} allows the MCMC algorithm to continue running from where it left off, but without appending the new posterior samples to the already existing samples, i.e. all previously obtained samples will be erased. This option can help reduce memory usage during burn-in (default = FALSE).
+
 \code{nburnin}: Number of initial, pre-thinning, MCMC iterations to discard (default = 0).
 
 \code{time}: Boolean specifying whether to record runtimes of the individual internal MCMC samplers.  When \code{time = TRUE}, a vector of runtimes (measured in seconds) can be extracted from the MCMC using the method \code{mcmc$getTimes()} (default = FALSE).
@@ -32,9 +34,11 @@ Calling buildMCMC(conf) will produce an uncompiled MCMC function object.  The un
 \code{progressBar}: Boolean specifying whether to display a progress bar during MCMC execution (default = TRUE).  The progress bar can be permanently disabled by setting the system option \code{nimbleOptions(MCMCprogressBar = FALSE)}.
 
 Samples corresponding to the \code{monitors} and \code{monitors2} from the MCMCconf are stored into the interval variables \code{mvSamples} and \code{mvSamples2}, respectively.
-These may be accessed and converted into R matrix objects via:
+These may be accessed and converted into R matrix or list objects via:
 \code{as.matrix(mcmc$mvSamples)}
+\code{as.list(mcmc$mvSamples)}
 \code{as.matrix(mcmc$mvSamples2)}
+\code{as.list(mcmc$mvSamples2)}
 
 The uncompiled MCMC function may be compiled to a compiled MCMC object, taking care to compile in the same project as the R model object, using:
 \code{Cmcmc <- compileNimble(Rmcmc, project = Rmodel)}
@@ -95,6 +99,7 @@ Cmodel <- compileNimble(Rmodel)
 Cmcmc <- compileNimble(Rmcmc, project=Rmodel)
 Cmcmc$run(10000)
 samples <- as.matrix(Cmcmc$mvSamples)
+samplesAsList <- as.list(Cmcmc$mvSamples)
 head(samples)
 WAIC <- Cmcmc$calculateWAIC(nburnin = 1000)
 }

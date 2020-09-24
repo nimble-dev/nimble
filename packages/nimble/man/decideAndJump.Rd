@@ -5,7 +5,7 @@
 \title{Creates a nimbleFunction for executing the Metropolis-Hastings jumping decision,
 and updating values in the model, or in a carbon copy modelValues object, accordingly.}
 \usage{
-decideAndJump(model, mvSaved, calcNodes)
+decideAndJump(model, mvSaved, target, calcNodes)
 }
 \arguments{
 \item{model}{An uncompiled or compiled NIMBLE model object.}

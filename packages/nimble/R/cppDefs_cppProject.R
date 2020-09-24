@@ -227,7 +227,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                                               class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))
                                            }
                                        }
-                                       return(dyn.load(ssDllName, local = TRUE))
+                                       return(dyn.load(basename(ssDllName), local = TRUE))
                                    },
                                    compileDynamicRegistrations = function(showCompilerOutput = nimbleOptions('showCompilerOutput')) {
                                        timeStamp <- format(Sys.time(), "%m_%d_%H_%M_%S")
@@ -322,7 +322,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        if(isTRUE(nimbleOptions()$stopCompilationBeforeLinking)) stop("safely stopping before linking", call.=FALSE)
                                    },
                                    loadSO = function(name) {
-                                       dll <<- dyn.load(getSOName(name, dirName), local = TRUE)
+                                       dll <<- dyn.load(getSOName(), local = TRUE)
                                    },
                                    unloadSO = function(check = TRUE, force = FALSE) { ## The book-keeping on different names isn't quite connected to here yet.  Instead we just unload dll.
 				       if(!is.null(dll)) {
@@ -338,7 +338,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        } else
                                            FALSE
                                    },
-                                   getSOName = function(name, dirName = ".") {
+                                   getSOName = function() {
                                            return(outputSOfile)
                                        },
                                    createDir = function() {
