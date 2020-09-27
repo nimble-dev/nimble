@@ -36,7 +36,11 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   nimbleProject = 'ANY'
                                   ),
                               methods = list(
-                                  calculate = function(nodes) nimble::calculate(.self, nodes),
+                                  calculate = function(nodes)
+'
+See `help(calculate)`
+'
+                                      nimble::calculate(.self, nodes),
                                   calculateDiff = function(nodes) nimble::calculateDiff(.self, nodes),
                                   getLogProb = function(nodes) nimble::getLogProb(.self, nodes),
                                   simulate = function(nodes, includeData = FALSE) nimble::simulate(.self, nodes, includeData),
