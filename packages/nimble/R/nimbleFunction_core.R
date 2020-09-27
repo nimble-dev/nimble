@@ -287,6 +287,8 @@ nf_getNamesFromSetupOutputDeclaration <- function(setupOutputsDeclaration) {
 }
 
 ## processing of all objects to become NF member data
+## needs to be exported as otherwise use of nimble::: in `nf_createGeneratorFunctionDef()` gives R CMD check NOTE
+#' @export
 nf_preProcessMemberDataObject <- function(obj) {
     if(is(obj, 'CmodelBaseClass')) {
         warning('This nimbleFunction was passed a *compiled* model object.\nInstead, the corresponding *uncompiled* model object was used.', call. = FALSE)
@@ -305,10 +307,10 @@ nf_createGeneratorFunctionDef <- function(setup) {
       ## assign setupOutputs into reference class object
       if(!nimbleOptions()$compileOnly)
         for(.var_unique_name_1415927 in .namesToCopyFromGlobalSetup)    { 
-          nfRefClassObject[[.var_unique_name_1415927]] <- nimble:::nf_preProcessMemberDataObject(get(.var_unique_name_1415927, envir = .globalSetupEnv)) 
+          nfRefClassObject[[.var_unique_name_1415927]] <- nf_preProcessMemberDataObject(get(.var_unique_name_1415927, envir = .globalSetupEnv)) 
         }
       for(.var_unique_name_1415927 in .namesToCopyFromSetup)    {
-        nfRefClassObject[[.var_unique_name_1415927]] <- nimble:::nf_preProcessMemberDataObject(get(.var_unique_name_1415927)) 
+        nfRefClassObject[[.var_unique_name_1415927]] <- nf_preProcessMemberDataObject(get(.var_unique_name_1415927)) 
       }
       return(nfRefClassObject)
     },
