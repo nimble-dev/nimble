@@ -1837,7 +1837,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
             }
             ## and warn if type issue e.g. int <- double
             if(assignmentTypeWarn(LHS$type, RHStype)) {
-                message(paste0('Warning, RHS numeric type is losing information in assignment to LHS.', nimDeparse(code)))
+                message(paste0('Warning, RHS numeric type is losing information in assignment to LHS in line:\n', nimDeparse(code)))
             }
         }
     }
