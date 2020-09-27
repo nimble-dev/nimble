@@ -27,6 +27,7 @@ decide <- function(logMetropolisRatio) {
 #' 
 #' @param model An uncompiled or compiled NIMBLE model object.  
 #' @param mvSaved A modelValues object containing identical variables and logProb variables as the model. Can be created by \code{modelValues(model)}.
+#' @param target A character vector providing the target node.
 #' @param calcNodes A character vector representing a set of nodes in the model (and hence also the modelValues) object.  
 #' @author Daniel Turek
 #' @export
@@ -296,8 +297,6 @@ mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonS
 }
 
 
-
-#' @export
 extractControlElement <- function(controlList, elementName, defaultValue, error) {
     if(missing(controlList) | !is.list(controlList))      stop('extractControlElement: controlList argument must be a list')
     if(missing(elementName) | !is.character(elementName)) stop('extractControlElement: elementName argument must be a character string variable name')

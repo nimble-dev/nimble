@@ -305,10 +305,10 @@ nf_createGeneratorFunctionDef <- function(setup) {
       ## assign setupOutputs into reference class object
       if(!nimbleOptions()$compileOnly)
         for(.var_unique_name_1415927 in .namesToCopyFromGlobalSetup)    { 
-          nfRefClassObject[[.var_unique_name_1415927]] <- nf_preProcessMemberDataObject(get(.var_unique_name_1415927, envir = .globalSetupEnv)) 
+          nfRefClassObject[[.var_unique_name_1415927]] <- nimble:::nf_preProcessMemberDataObject(get(.var_unique_name_1415927, envir = .globalSetupEnv)) 
         }
       for(.var_unique_name_1415927 in .namesToCopyFromSetup)    {
-        nfRefClassObject[[.var_unique_name_1415927]] <- nf_preProcessMemberDataObject(get(.var_unique_name_1415927)) 
+        nfRefClassObject[[.var_unique_name_1415927]] <- nimble:::nf_preProcessMemberDataObject(get(.var_unique_name_1415927)) 
       }
       return(nfRefClassObject)
     },

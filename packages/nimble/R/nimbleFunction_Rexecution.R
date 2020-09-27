@@ -3,6 +3,7 @@
 
 #' NIMBLE language functions for R-like vector construction
 #'
+#' @description
 #' The functions \code{c}, \code{rep}, \code{seq}, \code{\code{which}, \code{diag}, \code{length}, \code{seq_along}, \code{is.na}, \code{is.nan}, \code{any}, and \code{all} can be used in nimbleFunctions and compiled using \code{compileNimble}.
 #' 
 #' @name nimble-R-functions
@@ -13,7 +14,6 @@
 #' @param to end value of sequence.
 #' @param by increment of the sequence.
 #' @param length.out desired length of the sequence.
-#' @param along.with take the length from the length of this argument.
 #'
 #' @aliases nimC nimRep nimSeq c rep seq which diag length seq_along is.na is.nan any all
 #'
@@ -691,6 +691,8 @@ values <- function(model, nodes, accessorIndex){
 #' @param rowTo		If \code{to} is a modelValues, the row which will be copied to. If \code{rowTo == NA}, will automatically be set to \code{row}
 #' @param logProb	A logical value indicating whether the log probabilities of the given nodes should also be copied (i.e. if \code{nodes = 'x'}
 #' and \code{logProb = TRUE}, then both \code{'x'} and \code{'logProb_x'} will be copied)
+#' @param logProbOnly   A logical value indicating whether only the log probabilities of the given nodes should be copied (i.e. if \code{nodes = 'x')
+#' and \code{logProbOnly = TRUE}, then only \code{'logProb_x'} will be copied)
 #'
 #' @aliases copy
 #'
