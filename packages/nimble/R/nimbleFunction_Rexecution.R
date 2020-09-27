@@ -3,8 +3,8 @@
 
 #' NIMBLE language functions for R-like vector construction
 #'
-#' The functions \code{c}, \code{rep}, \code{seq}, \code{\code{which}, \code{diag}, \code{length}, \code{seq_along}, \code{is.na}, \code{is.nan}, \code{any}, and \code{all} can be used in nimbleFunctions and compiled using \code{compileNimble}.
-#' 
+#' The functions \code{c}, \code{rep}, \code{seq}, \code{which}, \code{diag}, \code{length}, \code{seq_along}, \code{is.na}, \code{is.nan}, \code{any}, and \code{all} can be used in nimbleFunctions and compiled using \code{compileNimble}.
+#'
 #' @name nimble-R-functions
 #' 
 #' @param ... values to be concatenated.
@@ -33,7 +33,7 @@
 #' 
 #' \code{seq_along} behaves like the R version.
 #'
-#' \code{is.na} behaves like the R version but does not correctly handle \code{NA} values from R that are type 'logical', so convert these using as.numeric() before passing from R to NIMBLE.
+#' \code{is.na} behaves like the R version but does not correctly handle \code{NA} values from R that are type 'logical', so convert these using \code{as.numeric()} before passing from R to NIMBLE.
 #' 
 #' \code{is.nan} behaves like the R version, but treats \code{NA} of type 'double' as being \code{NaN} and \code{NA} of type 'logical' as not being \code{NaN}. 
 #' 
