@@ -89,20 +89,152 @@ test_that("literal double NaN", {
     expect_true(is.nan(cnf()), 'NaN compiled')
 })
 
-test_that("literal double NA", {
+test_that("literal NA cases", {
     nf <- nimbleFunction(
-        run = function() {
-            ans <- NA
-            return(ans)
-            returnType(double())
-        })
-    expect_true(is.na(nf()), 'NA uncompiled')
+        setup = TRUE,
+        methods = list(
+            ## doubles
+            dvec = function(y = double(1)) {
+                returnType(double(1))
+                y[1] <- NA
+                return(y)
+            },
+            dvec_add = function(y = double(1)) {
+                returnType(double(1))
+                y[1] <- y[1] + NA
+                return(y)
+            },
+            dvec_mult = function(y = double(1)) {
+                returnType(double(1))
+                y[1] <- y[1] * NA
+                return(y)
+            },
+            dscalar = function(y = double(0)) {
+                returnType(double(0))
+                y <- NA 
+                return(y)
+            },
+            dscalar_input = function(y = double(0, default = as.numeric(NA))) {
+                ## test will use y = NA
+                returnType(logical(0))
+                if(is.na(y)) ans <- TRUE else ans <- FALSE
+                return(ans)
+            },
+            ## integers
+            ## We are not sure that all cases of math with integer NA
+            ## should work, but these basic tests work.
+            ivec = function(y = integer(1)) {
+                returnType(integer(1))
+                y[1] <- NA
+                return(y)
+            },
+            ivec_add = function(y = integer(1)) {
+                returnType(integer(1))
+                y[1] <- y[1] + NA
+                return(y)
+            },
+            ivec_mult = function(y = integer(1)) {
+                returnType(integer(1))
+                y[1] <- y[1] * NA
+                return(y)
+            },
+            iscalar = function(y = integer(0)) {
+                returnType(integer(0))
+                y <- NA 
+                return(y)
+            },
+            iscalar_input = function(y = integer(0, default = as.integer(NA))) {
+                returnType(logical(0))
+                if(is.na(y)) ans <- TRUE else ans <- FALSE
+                return(ans)
+            },
+            ## logical
+            lvec_fails = function(y = logical(1)) {
+                returnType(logical(1))
+                y[1] <- NA ## I don't expect this to work
+                return(y)
+            },
+            lscalar_fails = function(y = logical(0)) {
+                returnType(logical(0))
+                y <- NA ## I don't expect this to work
+                return(y)
+            },
+            ## casting returns
+            create_return_d = function() {
+                ans <- NA
+                return(ans)
+                returnType(double())
+            },
+            create_return_i = function() {
+                ans <- NA
+                return(ans)
+                returnType(integer())
+            },
+            create_return_l_fails = function() {
+                ans <- NA
+                return(ans)
+                returnType(logical())
+            }
+        )
+    )
 
-    # Known failure https://github.com/nimble-dev/nimble/issues/487
-    expect_error({
-        cnf <- compileNimble(nf)
-        expect_true(is.na(cnf()), 'NA compiled')
-    }, info = 'Literal NA is not supported in C++ code')
+    nf1 <- nf()
+    cnf1 <- compileNimble(nf1)
+    for(i in 1:2) {
+        if(i == 1) {
+            compiled <- FALSE
+            f <- nf1
+        } else {
+            compiled <- TRUE
+            f <- cnf1
+        }
+        expect_true(is.na(f$dvec(as.numeric(1:3))[1]), 'NA dvec')
+        expect_true(is.na(f$dvec_add(as.numeric(1:3))[1]), 'NA dvec_add')
+        expect_true(is.na(f$dvec_mult(as.numeric(1:3))[1]), 'NA dvec_mult')
+        expect_true(is.na(f$dscalar(as.numeric(1))), 'NA dscalar')
+        expect_true(f$dscalar_input(as.numeric(NA)), 'NA dscalar_input')
+        ## KNOWN FAILURE:
+        if(compiled) 
+            expect_false(f$dscalar_input(NA), 'compiled NA dscalar_input fails to cast from logical')
+        else
+            expect_true(f$dscalar_input(NA), 'NA dscalar_input fails to cast from logical')
+        
+        expect_true(is.na(f$ivec(as.integer(1:3))[1]), 'NA ivec')
+        expect_true(is.na(f$ivec_add(as.integer(1:3))[1]), 'NA ivec_add')
+        expect_true(is.na(f$ivec_mult(as.integer(1:3))[1]), 'NA ivec_mult')
+        expect_true(is.na(f$iscalar(as.integer(1))), 'NA iscalar')
+        ## KNOWN FAILURE:
+        if(compiled)
+            expect_false(f$iscalar_input(as.integer(NA)), 'compiled NA dscalar_input fails')
+        else
+            expect_true(f$iscalar_input(as.integer(NA)), 'NA dscalar_input')
+        ## KNOWN FAILURE:
+        if(compiled)
+            expect_false(f$iscalar_input(NA), 'compiled NA dscalar_input fails to cast from logical')
+        else
+            expect_true(f$iscalar_input(NA), 'NA dscalar_input')
+
+        if(compiled)
+            ## KNOWN FAILURE:
+            expect_false(is.na(f$lscalar_fails(TRUE)), 'compiled NA lscalar_input fails')
+        else
+            expect_true(is.na(f$lscalar_fails(TRUE)), 'NA lscalar_input')
+
+        if(compiled)
+            ## KNOWN FAILURE:
+            expect_false(is.na(f$lvec_fails(c(TRUE, TRUE))[1]), 'compiled NA lvec_input fails')
+        else
+            expect_true(is.na(f$lvec_fails(c(TRUE, TRUE))[1]), 'NA lvec_input')
+
+        
+        expect_true(is.na(f$create_return_d()), 'NA create_return_d')
+        expect_true(is.na(f$create_return_i()), 'NA create_return_i')
+        if(compiled)
+            ## KNOWN FAILURE:
+            expect_false(is.na(f$create_return_l_fails()), 'compiled NA create_return_l_fails fails')
+        else
+            expect_true(is.na(f$create_return_l_fails()), 'NA create_return_l_fails')
+    }
 })
 
 test_that('is.nan of scalar', {
