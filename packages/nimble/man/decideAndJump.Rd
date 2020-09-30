@@ -12,6 +12,8 @@ decideAndJump(model, mvSaved, target, calcNodes)
 
 \item{mvSaved}{A modelValues object containing identical variables and logProb variables as the model. Can be created by \code{modelValues(model)}.}
 
+\item{target}{A character vector providing the target node.}
+
 \item{calcNodes}{A character vector representing a set of nodes in the model (and hence also the modelValues) object.}
 }
 \description{

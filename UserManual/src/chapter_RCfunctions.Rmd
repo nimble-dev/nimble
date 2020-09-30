@@ -393,6 +393,16 @@ for(i in 1:10)
    x[i] <- foo(y[i]) 
 ```
 
+#### How NIMBLE handles `NA`
+
+NIMBLE supports use of `NA` with some caveats.  In the compiled version of a nimbleFunction:
+
+  - `NA` values in a logical scalar or vector will not work;
+  - Assigning `NA` to a new variable will make that variable have type double (in R, this would be a logical!);
+  - Non-trivial use of `NA` in integer variables may fail by having the value become a large (negative) number;
+  - Use of `NA` in doubles should generally work.
+
+These issues arise because NIMBLE uses R's encoding of NA values in C(++) but uses native compiled math and type-casting in C++, which do not always preserve R's NA encodings.  In summary, NA should generally work for doubles and should be used cautiously (i.e. after you test that what you need to work actually works) for integers.  For some needs, NaN is a suitable alternative to NA.
 
 
 #### Changing the sizes of existing objects: *setSize* {#sec:chang-sizes-exist}

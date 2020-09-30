@@ -42,8 +42,8 @@ test_that("expandNodeNames works for various cases, including going beyond exten
    expect_equal(m$expandNodeNames(c("theta[1:3, 3:5]", "theta[3:5, 1:3]"), unique = FALSE),
                 c("theta[1, 3]","theta[2, 3]","theta[3, 3]","theta[3, 1]","theta[3, 2]","theta[3, 3]"))
                                   
-   ## misformed
-   expect_equal(m$expandNodeNames("theta[[[a"), character(0))
+   ## indexing with a variable
+   expect_error(m$expandNodeNames("theta[[a]]"), "variable was found in the indexing")
 
    ## multivariate node
    expect_equal(m$expandNodeNames("p[1:4]"), "p[1:4]")

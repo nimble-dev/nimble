@@ -3011,6 +3011,11 @@ handleOutOfBounds <- function(x, env) {
 }
 
 parseEvalNumericMany <- function(x, env, ignoreNotFound = FALSE) {
+    ## avoid evaluating variables in index expr, such as "y[idx]".
+    allVars <- all.vars(parse(text = x))
+    nonLocalVars <- !allVars %in% ls(env)
+    if(any(nonLocalVars))
+        stop("parseEvalNumericMany: a variable was found in the indexing in ", x, ".")
     if(ignoreNotFound) {  ## Return NA when not found.
         if(length(x) > 1) {
             ## First try to do as vectorized call.
@@ -3042,6 +3047,11 @@ parseEvalNumericMany <- function(x, env, ignoreNotFound = FALSE) {
 
 
 parseEvalNumericManyList <- function(x, env, ignoreNotFound = FALSE) {
+    ## avoid evaluating variables in index expr, such as "y[idx]".
+    allVars <- all.vars(parse(text = x))
+    nonLocalVars <- !allVars %in% ls(env)
+    if(any(nonLocalVars))
+        stop("parseEvalNumericMany: a variable was found in the indexing in ", x, ".")
     if(ignoreNotFound) {  ## Return NA when not found.
        output <- try(eval(.Call(makeParsedVarList, x), envir = env), silent = TRUE)
         if(!is(output, 'try-error'))

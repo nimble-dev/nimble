@@ -820,6 +820,15 @@ test_that("handling of contiguous blocks", {
     
 })
 
+test_that("error produced when variable used in index", {
+    code <- nimbleCode({
+        for(i in 1:2)
+            y[i] ~ dnorm(0,1)
+    })
+    m <- nimbleModel(code)
+    idx <- 1
+    expect_error(m$expandNodeNames("y[idx]"), "parseEvalNumericMany: a variable was found")
+})
 
 test_that("dmvt usage", {
     code <- nimbleCode({

@@ -30,7 +30,7 @@
   
   
 <link rel="prev" href="cha-data-structures.html">
-
+<link rel="next" href="references.html">
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -232,6 +232,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="10.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:crp"><i class="fa fa-check"></i><b>10.2</b> Chinese Restaurant Process model</a><ul>
 <li class="chapter" data-level="10.2.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-density-2"><i class="fa fa-check"></i><b>10.2.1</b> Specification and density</a></li>
 <li class="chapter" data-level="10.2.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:excrp"><i class="fa fa-check"></i><b>10.2.2</b> Example</a></li>
+<li class="chapter" data-level="10.2.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:extensionscrp"><i class="fa fa-check"></i><b>10.2.3</b> Extensions</a></li>
 </ul></li>
 <li class="chapter" data-level="10.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:sb"><i class="fa fa-check"></i><b>10.3</b> Stick-breaking model</a><ul>
 <li class="chapter" data-level="10.3.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-function"><i class="fa fa-check"></i><b>10.3.1</b> Specification and function</a></li>
@@ -327,6 +328,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
+<li class="chapter" data-level="16" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i><b>16</b> References</a></li>
 </ul>
 
       </nav>
@@ -348,13 +350,13 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <h1><span class="header-section-number">Chapter 15</span> Writing nimbleFunctions to interact with models</h1>
 <div id="sec:writ-nimble-funct" class="section level2">
 <h2><span class="header-section-number">15.1</span> Overview</h2>
-<p>When you write an R function, you say what the input arguments are, you provide the code for execution, and in that code you give the value to be returned<a href="#fn26" class="footnoteRef" id="fnref26"><sup>26</sup></a>. Using the <code>function</code> keyword in R triggers the operation of creating an object that is the function.</p>
+<p>When you write an R function, you say what the input arguments are, you provide the code for execution, and in that code you give the value to be returned<a href="#fn28" class="footnoteRef" id="fnref28"><sup>28</sup></a>. Using the <code>function</code> keyword in R triggers the operation of creating an object that is the function.</p>
 <p>Creating nimbleFunctions is similar, but there are two kinds of code and two steps of execution:</p>
 <ol style="list-style-type: decimal">
 <li><em>Setup</em> code is provided as a regular R function, but the programmer does not control what it returns. Typically the inputs to <em>setup</em> code are objects like a model, a vector of nodes, a modelValues object or a modelValues configuration, or another nimbleFunction. The setup code, as its name implies, sets up information for run-time code. It is executed in R, so it can use any aspect of R.</li>
 <li><p><em>Run</em> code is provided in the NIMBLE language, which was introduced in Chapter <a href="cha-RCfunctions.html#cha:RCfunctions">11</a>. This is similar to a narrow subset of R, but it is important to remember that it is different – defined by what can be compiled – and much more limited. <em>Run</em> code can use the objects created by the <em>setup</em> code. In addition, some information on variable types must be provided for input arguments, the return value, and in some circumstances for local variables. There are two kinds of <em>run</em> code:</p>
 <ol style="list-style-type: lower-alpha">
-<li>There is always a primary function, given as the argument <code>run</code><a href="#fn27" class="footnoteRef" id="fnref27"><sup>27</sup></a>.</li>
+<li>There is always a primary function, given as the argument <code>run</code><a href="#fn29" class="footnoteRef" id="fnref29"><sup>29</sup></a>.</li>
 <li>There can optionally be other functions, or ‘methods’ in the language of object-oriented programming, that share the same objects created by the <em>setup</em> function.</li>
 </ol></li>
 </ol>
@@ -384,7 +386,7 @@ logProbCalcPlusA<span class="op">$</span><span class="kw">run</span>(<span class
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">testModel<span class="op">$</span>a  <span class="co"># &quot;a&quot; was set to 0.5 + valueToAdd</span></code></pre></div>
 <pre><code>## [1] 1.25</code></pre>
 <p>The call to the R function called <code>nimbleFunction</code> returns a function, similarly to defining a function in R. That function, <code>logProbCalcPlus</code>, takes arguments for its <code>setup</code> function, executes it, and returns an object, <code>logProbCalcPlusA</code>, that has a <em>run</em> member function (method) accessed by <code>$run</code>. In this case, the <code>setup</code> function obtains the stochastic dependencies of the <code>node</code> using the <code>getDependencies</code> member function of the model (see Section <a href="cha-using-models.html#sec:cdgetdependencies">13.1.3</a>) and stores them in <code>dependentNodes</code>. In this way, <code>logProbCalcPlus</code> can adapt to any model. It also creates a variable, <code>valueToAdd</code>, that can be used by the nimbleFunction.</p>
-<p>The object <code>logProbCalcPlusA</code>, returned by <code>logProbCalcPlus</code>, is permanently bound to the results of the processed <code>setup</code> function. In this case, <code>logProbCalcPlusA$run</code> takes a scalar input value, <code>P</code>, assigns <code>P + valueToAdd</code> to the given node in the model, and returns the sum of the log probabilities of that node and its stochastic dependencies<a href="#fn28" class="footnoteRef" id="fnref28"><sup>28</sup></a>. We say <code>logProbCalcPlusA</code> is an ‘instance’ of <code>logProbCalcPlus</code> that is ‘specialized’ or ‘bound’ to <code>a</code> and <code>testModel</code>. Usually, the <code>setup</code> code will be where information about the model structure is determined, and then the <code>run</code> code can use that information without repeatedly, redundantly recomputing it. A nimbleFunction can be called repeatedly (one can think of it as a generator), each time returning a specialized nimbleFunction.</p>
+<p>The object <code>logProbCalcPlusA</code>, returned by <code>logProbCalcPlus</code>, is permanently bound to the results of the processed <code>setup</code> function. In this case, <code>logProbCalcPlusA$run</code> takes a scalar input value, <code>P</code>, assigns <code>P + valueToAdd</code> to the given node in the model, and returns the sum of the log probabilities of that node and its stochastic dependencies<a href="#fn30" class="footnoteRef" id="fnref30"><sup>30</sup></a>. We say <code>logProbCalcPlusA</code> is an ‘instance’ of <code>logProbCalcPlus</code> that is ‘specialized’ or ‘bound’ to <code>a</code> and <code>testModel</code>. Usually, the <code>setup</code> code will be where information about the model structure is determined, and then the <code>run</code> code can use that information without repeatedly, redundantly recomputing it. A nimbleFunction can be called repeatedly (one can think of it as a generator), each time returning a specialized nimbleFunction.</p>
 <p>Readers familiar with object-oriented programming may find it useful to think in terms of class definitions and objects. <code>nimbleFunction</code> creates a class definition. Each specialized nimbleFunction is one object in the class. The setup arguments are used to define member data in the object.</p>
 </div>
 <div id="sec:using-comp-nimbl" class="section level2">
@@ -430,7 +432,7 @@ lpA</code></pre></div>
 </div>
 <div id="sec:access-modify-numer" class="section level3">
 <h3><span class="header-section-number">15.3.2</span> Accessing and modifying numeric values from setup</h3>
-<p>While models and nodes created during setup cannot be modified<a href="#fn29" class="footnoteRef" id="fnref29"><sup>29</sup></a>, numeric values and modelValues can be, as illustrated by extending the example from above.</p>
+<p>While models and nodes created during setup cannot be modified<a href="#fn31" class="footnoteRef" id="fnref31"><sup>31</sup></a>, numeric values and modelValues can be, as illustrated by extending the example from above.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">logProbCalcPlusA<span class="op">$</span>valueToAdd  <span class="co"># in the uncompiled version</span></code></pre></div>
 <pre><code>## [1] 1</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">logProbCalcPlusA<span class="op">$</span>valueToAdd &lt;-<span class="st"> </span><span class="dv">2</span>
@@ -701,7 +703,7 @@ savedWeights &lt;-<span class="st"> </span>CImpWeights<span class="op">$</span>s
 <p>if Z is a vector or matrix, and</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">C[<span class="dv">6</span><span class="op">:</span><span class="dv">10</span>] &lt;-<span class="st"> </span>mv[v, i][<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>, k] <span class="op">+</span><span class="st"> </span>B</code></pre></div>
 <p>if B is a vector or matrix.</p>
-<p>The NIMBLE language allows scalars, but models defined from BUGS code are never created as purely scalar nodes. Instead, a single node such as defined by <code>z ~ dnorm(0, 1)</code> is implemented as a vector of length 1, similar to R. When using <code>z</code> via <code>model$z</code> or <code>model[[&quot;z&quot;]]</code>, NIMBLE will try to do the right thing by treating this as a scalar. In the event of problems<a href="#fn30" class="footnoteRef" id="fnref30"><sup>30</sup></a>, a more explicit way to access <code>z</code> is <code>model$z[1]</code> or <code>model[[&quot;z&quot;]][1]</code>.</p>
+<p>The NIMBLE language allows scalars, but models defined from BUGS code are never created as purely scalar nodes. Instead, a single node such as defined by <code>z ~ dnorm(0, 1)</code> is implemented as a vector of length 1, similar to R. When using <code>z</code> via <code>model$z</code> or <code>model[[&quot;z&quot;]]</code>, NIMBLE will try to do the right thing by treating this as a scalar. In the event of problems<a href="#fn32" class="footnoteRef" id="fnref32"><sup>32</sup></a>, a more explicit way to access <code>z</code> is <code>model$z[1]</code> or <code>model[[&quot;z&quot;]][1]</code>.</p>
 </div>
 <div id="sec:incl-other-meth" class="section level3">
 <h3><span class="header-section-number">15.4.6</span> Including other methods in a nimbleFunction</h3>
@@ -783,7 +785,7 @@ CusePreviousDemo1<span class="op">$</span><span class="kw">run</span>(<span clas
 <div id="sec:virt-nimbl-nimbl" class="section level3">
 <h3><span class="header-section-number">15.4.8</span> Virtual nimbleFunctions and nimbleFunctionLists</h3>
 <p>Often it is useful for one nimbleFunction to have a list of other nimbleFunctions, all of whose methods have the same arguments and return types. For example, NIMBLE’s MCMC engine contains a list of samplers that are each nimbleFunctions.</p>
-<p>To make such a list, NIMBLE provides a way to declare the arguments and return types of methods: virtual nimbleFunctions created by <code>nimbleFunctionVirtual</code>. Other nimbleFunctions can inherit from virtual nimbleFunctions, which in R is called ‘containing’ them. Readers familiar with object oriented programming will recognize this as a simple class inheritance system. In Version 0.9.0 it is limited to simple, single-level inheritance.</p>
+<p>To make such a list, NIMBLE provides a way to declare the arguments and return types of methods: virtual nimbleFunctions created by <code>nimbleFunctionVirtual</code>. Other nimbleFunctions can inherit from virtual nimbleFunctions, which in R is called ‘containing’ them. Readers familiar with object oriented programming will recognize this as a simple class inheritance system. In Version 0.10.0 it is limited to simple, single-level inheritance.</p>
 <p>Here is how it works:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">baseClass &lt;-<span class="st"> </span><span class="kw">nimbleFunctionVirtual</span>(
     <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">x =</span> <span class="kw">double</span>(<span class="dv">1</span>)) {<span class="kw">returnType</span>(<span class="kw">double</span>())},
@@ -975,6 +977,8 @@ MCMC algorithm, is <code>my_RW</code>. Thus, this sampler can be added to an exi
 </ul>
 <p>The purpose of the <code>setup</code> function is generally two-fold. First, to extract control parameters from the <code>control</code> list; in the example, the proposal standard deviation <code>scale</code>. It is good practice to specify default values for any control parameters that are not provided in the <code>control</code> argument, as done in the example. Second, to generate any sets of nodes needed in the <code>run</code> function. In many sampling algorithms, as here, <code>calcNodes</code> is used to represent the target node(s) and dependencies up to the first layer of stochastic nodes, as this is precisely what is required for calculating the Metropolis-Hastings acceptance probability. These probability calculations are done using <code>model$calculate(calcNodes)</code>.</p>
 <p>In the <code>run</code> function, the <code>mvSaved</code> modelValues object is kept up-to-date with the current state of the model, depending on whether the proposed changed was accepted. This is done using the <code>copy</code> function, to copy values between the model and <code>mvSaved</code> objects.</p>
+<p>Note that NIMBLE generally expects the user-defined sampler to be defined in the global environment. If you define it in a function (which would generally be the case if you are using it in the context of parallelization), one approach would be to assign the user-defined sampler to the global environment in your function:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">assign</span>(<span class="st">&#39;sampler_yourSampler&#39;</span>, sampler_yourSampler, <span class="dt">envir =</span> .GlobalEnv)</code></pre></div>
 </div>
 <div id="copying-nimblefunctions-and-nimble-models" class="section level2">
 <h2><span class="header-section-number">15.6</span> Copying nimbleFunctions (and NIMBLE models)</h2>
@@ -1020,116 +1024,16 @@ MCMC algorithm, is <code>my_RW</code>. Thus, this sampler can be added to an exi
 <p>The option <code>clearNimbleFunctionsAfterCompiling</code> is more drastic, and it is experimental, so ‘buyer beware’. This will clear much of the contents of an uncompiled nimbleFunction object after it has been compiled in an effort to free some memory. We expect to be able to keep making NIMBLE more efficient – faster execution and lower memory use – in the future. <!--- % ### rankSample 
 %% \label{sec:ranksample} --></p>
 
-<div id="refs" class="references">
-<div>
-<p>Andrieu, Christophe, Arnaud Doucet, and Roman Holenstein. 2010. “Particle Markov Chain Monte Carlo Methods.” <em>Journal of the Royal Statistical Society: Series B (Statistical Methodology)</em> 72 (3): 269–342. doi:<a href="https://doi.org/10.1111/j.1467-9868.2009.00736.x">10.1111/j.1467-9868.2009.00736.x</a>.</p>
-</div>
-<div>
-<p>Banerjee, S., B.P. Carlin, and A.E. Gelfand. 2015. <em>Hierarchical Modeling and Analysis for Spatial Data</em>. 2nd ed. Boca Raton: Chapman &amp; Hall.</p>
-</div>
-<div>
-<p>Blackwell, D, and J MacQueen. 1973. “Ferguson Distributions via Pólya Urn Schemes.” <em>The Annals of Statistics</em> 1: 353–55.</p>
-</div>
-<div>
-<p>Escobar, M D. 1994. “Estimating normal means with a Dirichlet process prior.” <em>Journal of the American Statistical Association</em> 89: 268–77.</p>
-</div>
-<div>
-<p>Escobar, M D, and M West. 1995. “Bayesian density estimation and inference using mixtures.” <em>Journal of the American Statistical Association</em> 90: 577–88.</p>
-</div>
-<div>
-<p>Ferguson, T S. 1973. “A Bayesian Analysis of Some Nonparametric Problems.” <em>Annals of Statistics</em> 1: 209–30.</p>
-</div>
-<div>
-<p>———. 1974. “Prior Distribution on the Spaces of Probability Measures.” <em>Annals of Statistics</em> 2: 615–29.</p>
-</div>
-<div>
-<p>Gelman, A., J. Hwang, and A. Vehtari. 2014. “Understanding Predictive Information Criteria for Bayesian Model.” <em>Statistics and Computing</em> 24 (6): 997–1016.</p>
-</div>
-<div>
-<p>George, E.I., U.E. Makov, and A.F.M. Smith. 1993. “Conjugate Likelihood Distributions.” <em>Scandinavian Journal of Statistics</em> 20 (2): 147–56.</p>
-</div>
-<div>
-<p>Green, Peter J. 1995. “Reversible Jump Markov Chain Monte Carlo Computation and Bayesian Model Determination.” <em>Biometrika</em> 82 (4). Oxford University Press: 711–32.</p>
-</div>
-<div>
-<p>Ishwaran, H, and L F James. 2002. “Approximate Dirichlet Process Computing in Finite Normal Mixtures: Smoothing and Prior Information.” <em>Journal of Computational and Graphical Statistics</em> 11: 508–32.</p>
-</div>
-<div>
-<p>Ishwaran, Hemant, and Lancelot F James. 2001. “Gibbs Sampling Methods for Stick-Breaking Priors.” <em>Journal of the American Statistical Association</em> 96 (453). Taylor &amp; Francis: 161–73.</p>
-</div>
-<div>
-<p>Lo, A Y. 1984. “On a Class of Bayesian Nonparametric Estimates I: Density Estimates.” <em>The Annals of Statistics</em> 12: 351–57.</p>
-</div>
-<div>
-<p>Lunn, David, David Spiegelhalter, Andrew Thomas, and Nicky Best. 2009. “The BUGS Project: Evolution, Critique and Future Directions.” <em>Statistics in Medicine</em> 28 (25): 3049–67. doi:<a href="https://doi.org/10.1002/sim.3680">10.1002/sim.3680</a>.</p>
-</div>
-<div>
-<p>Neal, R. 2000. “Markov chain sampling methods for Dirichlet process mixture models.” <em>Journal of Computational and Graphical Statistics</em> 9: 249–65.</p>
-</div>
-<div>
-<p>Neal, Radford M. 2003. “Slice Sampling.” <em>The Annals of Statistics</em> 31 (3): 705–41.</p>
-</div>
-<div>
-<p>Paciorek, C.J. 2009. “Understanding Intrinsic Gaussian Markov Random Field Spatial Models, Including Intrinsic Conditional Autoregressive Models.” University of California, Berkeley. <a href="http://www.stat.berkeley.edu/~paciorek/research/techVignettes/techVignette5.pdf" class="uri">http://www.stat.berkeley.edu/~paciorek/research/techVignettes/techVignette5.pdf</a>.</p>
-</div>
-<div>
-<p>Roberts, G. O., and S. K. Sahu. 1997. “Updating Schemes, Correlation Structure, Blocking and Parameterization for the Gibbs Sampler.” <em>Journal of the Royal Statistical Society: Series B (Statistical Methodology)</em> 59 (2): 291–317. doi:<a href="https://doi.org/10.1111/1467-9868.00070">10.1111/1467-9868.00070</a>.</p>
-</div>
-<div>
-<p>Rue, H., and L. Held. 2005. <em>Gaussian Markov Random Fields: Theory and Applications</em>. Boca Raton: Chapman &amp; Hall.</p>
-</div>
-<div>
-<p>Sethuraman, J. 1994. “A Constructive Definition of Dirichlet Prior.” <em>Statistica Sinica</em> 2: 639–50.</p>
-</div>
-<div>
-<p>Watanabe, Sumio. 2010. “Asymptotic Equivalence of Bayes Cross Validation and Widely Applicable Information Criterion in Singular Learning Theory.” <em>Journal of Machine Learning Research</em> 11 (Dec): 3571–94.</p>
 </div>
 </div>
-</div>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 <div class="footnotes">
 <hr />
-<ol start="26">
-<li id="fn26"><p>Normally this is the value of the last evaluated code, or the argument to <code>return</code>.<a href="cha-progr-with-models.html#fnref26">↩</a></p></li>
-<li id="fn27"><p>This can be omitted if you don’t need it.<a href="cha-progr-with-models.html#fnref27">↩</a></p></li>
-<li id="fn28"><p>Note the use of the global assignment operator to assign into the model. This is necessary for assigning into variables from the <code>setup</code> function, at least if you want to avoid warnings from R. These warnings come from R’s reference class system.<a href="cha-progr-with-models.html#fnref28">↩</a></p></li>
-<li id="fn29"><p>Actually, they can be, but only for uncompiled nimbleFunctions.<a href="cha-progr-with-models.html#fnref29">↩</a></p></li>
-<li id="fn30"><p>Please tell us!<a href="cha-progr-with-models.html#fnref30">↩</a></p></li>
+<ol start="28">
+<li id="fn28"><p>Normally this is the value of the last evaluated code, or the argument to <code>return</code>.<a href="cha-progr-with-models.html#fnref28">↩</a></p></li>
+<li id="fn29"><p>This can be omitted if you don’t need it.<a href="cha-progr-with-models.html#fnref29">↩</a></p></li>
+<li id="fn30"><p>Note the use of the global assignment operator to assign into the model. This is necessary for assigning into variables from the <code>setup</code> function, at least if you want to avoid warnings from R. These warnings come from R’s reference class system.<a href="cha-progr-with-models.html#fnref30">↩</a></p></li>
+<li id="fn31"><p>Actually, they can be, but only for uncompiled nimbleFunctions.<a href="cha-progr-with-models.html#fnref31">↩</a></p></li>
+<li id="fn32"><p>Please tell us!<a href="cha-progr-with-models.html#fnref32">↩</a></p></li>
 </ol>
 </div>
             </section>
@@ -1137,8 +1041,8 @@ MCMC algorithm, is <code>my_RW</code>. Thus, this sampler can be added to an exi
           </div>
         </div>
       </div>
-<a href="cha-data-structures.html" class="navigation navigation-prev navigation-unique" aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
-
+<a href="cha-data-structures.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="references.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>

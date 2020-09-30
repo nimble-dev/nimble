@@ -232,6 +232,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="10.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:crp"><i class="fa fa-check"></i><b>10.2</b> Chinese Restaurant Process model</a><ul>
 <li class="chapter" data-level="10.2.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-density-2"><i class="fa fa-check"></i><b>10.2.1</b> Specification and density</a></li>
 <li class="chapter" data-level="10.2.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:excrp"><i class="fa fa-check"></i><b>10.2.2</b> Example</a></li>
+<li class="chapter" data-level="10.2.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:extensionscrp"><i class="fa fa-check"></i><b>10.2.3</b> Extensions</a></li>
 </ul></li>
 <li class="chapter" data-level="10.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:sb"><i class="fa fa-check"></i><b>10.3</b> Stick-breaking model</a><ul>
 <li class="chapter" data-level="10.3.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-function"><i class="fa fa-check"></i><b>10.3.1</b> Specification and function</a></li>
@@ -327,6 +328,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
+<li class="chapter" data-level="16" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i><b>16</b> References</a></li>
 </ul>
 
       </nav>
@@ -348,6 +350,13 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <h1><span class="header-section-number">Chapter 12</span> Creating user-defined BUGS distributions and functions</h1>
 <p>NIMBLE allows you to define your own functions and distributions as <em>nimbleFunction</em>s for use in BUGS code. As a result, NIMBLE frees you from being constrained to the functions and distributions discussed in Chapter <a href="cha-writing-models.html#cha:writing-models">5</a>. For example, instead of setting up a Dirichlet prior with multinomial data and needing to use MCMC, one could recognize that this results in a Dirichlet-multinomial distribution for the data and provide that as a user-defined distribution instead.</p>
 <p>Since NIMBLE allows you to wrap calls to external compiled code or arbitrary R functions as nimbleFunctions, and since you can define model functions and distributions as nimbleFunctions, you can combine these features to build external compiled code or arbitrary R functions into a model. See Sections <a href="cha-RCfunctions.html#sec:calling-external-code">11.6</a>-<a href="cha-RCfunctions.html#sec:calling-R-code">11.7</a>.</p>
+<p>Note that NIMBLE generally expects user-defined distributions or functions to be defined in the global environment. If you define them in a function (which would generally be the case if you are using them in the context of parallelization), one approach would be to assign them to the global environment in your function:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## for a user-defined function
+<span class="kw">assign</span>(<span class="st">&#39;myfun&#39;</span>, myfun, <span class="dt">envir =</span> .GlobalEnv)
+## for a user-defined distribution
+<span class="kw">assign</span>(<span class="st">&#39;dfoo&#39;</span>, dfoo, <span class="dt">envir =</span> .GlobalEnv)
+<span class="kw">assign</span>(<span class="st">&#39;rfoo&#39;</span>, rfoo, <span class="dt">envir =</span> .GlobalEnv)
+## similarly for &#39;p&#39; and &#39;q&#39; functions if you define them</code></pre></div>
 <div id="sec:user-functions" class="section level2">
 <h2><span class="header-section-number">12.1</span> User-defined functions</h2>
 <p>To provide a new function for use in BUGS code, simply create a nimbleFunction that has no <em>setup</em> code as discussed in Chapter <a href="cha-RCfunctions.html#cha:RCfunctions">11</a>. Then use it in your BUGS code. That’s it.</p>
@@ -383,7 +392,7 @@ code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
 </div>
 <div id="sec:user-distributions" class="section level2">
 <h2><span class="header-section-number">12.2</span> User-defined distributions</h2>
-<p>To provide a user-defined distribution, you need to define density (‘d’) and simulation (‘r’) <code>nimbleFunctions</code>, without setup code, for your distribution. In some cases you can then simply use your distribution in BUGS code as you would any distribution already provided by NIMBLE, while in others you need to explicitly register your distribution as described in Section <a href="cha-user-defined.html#sec:registerDistributions">12.2.1</a>.</p>
+<p>To provide a user-defined distribution, you need to define density (‘d’) and (optionally<a href="#fn22" class="footnoteRef" id="fnref22"><sup>22</sup></a>) simulation (‘r’) <code>nimbleFunctions</code>, without setup code, for your distribution. In many cases you can then simply use your distribution in BUGS code as you would any distribution already provided by NIMBLE, while in a few special cases<a href="#fn23" class="footnoteRef" id="fnref23"><sup>23</sup></a> you need to explicitly register your distribution as described in Section <a href="cha-user-defined.html#sec:registerDistributions">12.2.1</a>.</p>
 <p>You can optionally provide distribution (‘p’) and quantile (‘q’) functions, which will allow truncation to be applied to a user-defined distribution. You can also provide a list of alternative parameterizations, but only if you explicitly register the distribution.</p>
 <p>Here is an extended example of providing a univariate exponential distribution (solely for illustration as this is already provided by NIMBLE) and a multivariate Dirichlet-multinomial distribution.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">dmyexp &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
@@ -433,9 +442,9 @@ ddirchmulti &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>
     <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">x =</span> <span class="kw">double</span>(<span class="dv">1</span>), <span class="dt">alpha =</span> <span class="kw">double</span>(<span class="dv">1</span>), <span class="dt">size =</span> <span class="kw">double</span>(<span class="dv">0</span>), 
         <span class="dt">log =</span> <span class="kw">integer</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="dv">0</span>)) {
         <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">0</span>))
-        logProb &lt;-<span class="st"> </span><span class="kw">lgamma</span>(size) <span class="op">-</span><span class="st"> </span><span class="kw">sum</span>(<span class="kw">lgamma</span>(x)) <span class="op">+</span><span class="st"> </span><span class="kw">lgamma</span>(<span class="kw">sum</span>(alpha)) <span class="op">-</span><span class="st"> </span>
-<span class="st">            </span><span class="kw">sum</span>(<span class="kw">lgamma</span>(alpha)) <span class="op">+</span><span class="st"> </span><span class="kw">sum</span>(<span class="kw">lgamma</span>(alpha <span class="op">+</span><span class="st"> </span>x)) <span class="op">-</span><span class="st"> </span><span class="kw">lgamma</span>(<span class="kw">sum</span>(alpha) <span class="op">+</span><span class="st"> </span>
-<span class="st">                                                                 </span>size)
+        logProb &lt;-<span class="st"> </span><span class="kw">lgamma</span>(size<span class="op">+</span><span class="dv">1</span>) <span class="op">-</span><span class="st"> </span><span class="kw">sum</span>(<span class="kw">lgamma</span>(x<span class="op">+</span><span class="dv">1</span>)) <span class="op">+</span><span class="st"> </span><span class="kw">lgamma</span>(<span class="kw">sum</span>(alpha)) <span class="op">-</span>
+<span class="st">            </span><span class="kw">sum</span>(<span class="kw">lgamma</span>(alpha)) <span class="op">+</span><span class="st"> </span><span class="kw">sum</span>(<span class="kw">lgamma</span>(alpha <span class="op">+</span><span class="st"> </span>x)) <span class="op">-</span>
+<span class="st">            </span><span class="kw">lgamma</span>(<span class="kw">sum</span>(alpha) <span class="op">+</span><span class="st"> </span>size)
         <span class="cf">if</span>(log) <span class="kw">return</span>(logProb)
         <span class="cf">else</span> <span class="kw">return</span>(<span class="kw">exp</span>(logProb))
     })
@@ -456,9 +465,9 @@ code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
      })
 
 model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">K =</span> <span class="dv">5</span>, <span class="dt">n =</span> <span class="dv">10</span>))</code></pre></div>
-<pre><code>## Registering the following user-provided distributions: ddirchmulti .
+<pre><code>## Registering the following user-provided distributions: ddirchmulti
 ## NIMBLE has registered ddirchmulti as a distribution based on its use in BUGS code. Note that if you make changes to the nimbleFunctions for the distribution, you must call &#39;deregisterDistributions&#39; before using the distribution in BUGS code for those changes to take effect.
-## Registering the following user-provided distributions: dmyexp .
+## Registering the following user-provided distributions: dmyexp
 ## NIMBLE has registered dmyexp as a distribution based on its use in BUGS code. Note that if you make changes to the nimbleFunctions for the distribution, you must call &#39;deregisterDistributions&#39; before using the distribution in BUGS code for those changes to take effect.</code></pre>
 <p>The distribution-related functions should take as input the parameters for a single parameterization, which will be the canonical parameterization that NIMBLE will use.</p>
 <p>Here are more details on the requirements for distribution-related nimbleFunctions, which follow R’s conventions:</p>
@@ -468,7 +477,7 @@ model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <s
 <li>NIMBLE uses doubles for numerical calculations, so we suggest simply using doubles in general, even for integer-valued parameters or values of random variables.</li>
 <li>All density functions must have as their last argument <code>log</code> and implement return of the log probability density. NIMBLE algorithms typically use only <code>log = 1</code>, but we recommend you implement the <code>log = 0</code> case for completeness.</li>
 <li>All distribution and quantile functions must have their last two arguments be (in order) <code>lower.tail</code> and <code>log.p</code>. These functions must work for <code>lower.tail = 1</code> (i.e., TRUE) and <code>log.p = 0</code> (i.e., FALSE), as these are the inputs we use when working with truncated distributions. It is your choice whether you implement the necessary calculations for other combinations of these inputs, but again we recommend doing so for completeness.</li>
-<li>Define the nimbleFunctions in R’s global environment. Don’t expect R’s standard scoping to work<a href="#fn22" class="footnoteRef" id="fnref22"><sup>22</sup></a>.</li>
+<li>Define the nimbleFunctions in R’s global environment. Don’t expect R’s standard scoping to work<a href="#fn24" class="footnoteRef" id="fnref24"><sup>24</sup></a>.</li>
 </ul>
 <div id="sec:registerDistributions" class="section level3">
 <h3><span class="header-section-number">12.2.1</span> Using <em>registerDistributions</em> for alternative parameterizations and providing other information</h3>
@@ -489,8 +498,8 @@ model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <s
         <span class="dt">range =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="ot">Inf</span>)
         )
     ))</code></pre></div>
-<pre><code>## Registering the following user-provided distributions: dmyexp .
-## Overwriting the following user-supplied distributions: dmyexp .</code></pre>
+<pre><code>## Registering the following user-provided distributions: dmyexp
+## Overwriting the following user-supplied distributions: dmyexp</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
      y[<span class="dv">1</span><span class="op">:</span>K] <span class="op">~</span><span class="st"> </span><span class="kw">ddirchmulti</span>(alpha[<span class="dv">1</span><span class="op">:</span>K], n)
      <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>K) {
@@ -515,7 +524,9 @@ model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <s
 <div class="footnotes">
 <hr />
 <ol start="22">
-<li id="fn22"><p>NIMBLE can’t use R’s standard scoping because it doesn’t work for R reference classes, and nimbleFunctions are implemented as custom-generated reference classes.<a href="cha-user-defined.html#fnref22">↩</a></p></li>
+<li id="fn22"><p>You need to provide the simulation (‘r’) function if any algorithm used with a model that uses the distribution needs to simulate from the distribution; this is not the case for NIMBLE’s built-in MCMC sampler functions and therefore the simulation function is not required for standard MCMC in NIMBLE.<a href="cha-user-defined.html#fnref22">↩</a></p></li>
+<li id="fn23"><p>These include providing alternative parameterizations, specifying the range of the distribution, or specifying that the distribution is a discrete distribution.<a href="cha-user-defined.html#fnref23">↩</a></p></li>
+<li id="fn24"><p>NIMBLE can’t use R’s standard scoping because it doesn’t work for R reference classes, and nimbleFunctions are implemented as custom-generated reference classes.<a href="cha-user-defined.html#fnref24">↩</a></p></li>
 </ol>
 </div>
             </section>

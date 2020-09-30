@@ -71,6 +71,7 @@ explicitUndocFuns <- c("[,numberedModelValuesAccessors-method",
                        "is.Cnf",
                        "is.Rmodel",
                        "is.model",
+                       "nf_preProcessMemberDataObject",
                        "samplesSummary")
 
 additionalExports <- c("calc_dmnormConjugacyContributions",
@@ -87,6 +88,7 @@ additionalExports <- c("calc_dmnormConjugacyContributions",
                        "getNimbleProject",
                        "cc_getNodesInExpr",
                        "nimbleInternalFunctions",
+                       "nimbleFunctionList",
                        "nimbleUserNamespace")
 
 internals <- c(undocClasses, explicitUndocFuns, additionalExports)

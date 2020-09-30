@@ -292,10 +292,13 @@ checkDistributionFunctions <- function(distributionInput, userEnv) {
                                                           returnCreation <- "x <- nimMatrix()"
         # build nf from text as unclear how to pairlist info in rargInfo with substitute
         nfCode <- paste0("nimbleFunction(run = function(", args, ") { stop('user-defined distribution ", densityName, " provided without random generation function.')\nreturnType(", returnType, ")\n", returnCreation, "\nreturn(x)})")
-	## Need to assign to GlobalEnv as that is where model-building process looks.
-	## Also assign to userEnv as code below looks there.
-        assign(simulateName, eval(parse(text = nfCode)), envir = userEnv)
-	assign(simulateName, eval(parse(text = nfCode)), envir = .GlobalEnv)
+	## Want to assign to same environmet as the 'd' function.
+        ## If user does use `assign` to put in GlobalEnv, we don't
+        ## do that here automatically as CRAN policy says packages should not modify the GlobalEnv.
+        ## Should be ok in terms of running the model inside a function, so long as
+        ## the simulate function is not called, which it shouldn't be as it is a dummy.
+        assign(simulateName, eval(parse(text = nfCode)), userEnv)
+
     }
 
     dargs <- args <- formals(get(densityName, pos = userEnv))
