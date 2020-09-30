@@ -297,6 +297,15 @@ mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonS
 }
 
 
+#' Extract named elements from MCMC sampler control list
+#'
+#' @param controlList control list object, which is passed as an argument to all MCMC sampler setup functions.
+#' @param elementName character string, giving the name of the element to be extracted from the control list.
+#' @param defaultValue default value of the control list element, giving the value to be used when the elementName does not exactly match the name of an element in the controlList.
+#' @param error character string, giving the error message to be printed if no defaultValue is provided and elementName does not match the name of an element in the controlList.
+#' @return The element of controlList with name matching elementName; or, if no controlList name matches elementName, rather the defaultValue is returned.
+#' @author Daniel Turek
+#' @export
 extractControlElement <- function(controlList, elementName, defaultValue, error) {
     if(missing(controlList) | !is.list(controlList))      stop('extractControlElement: controlList argument must be a list')
     if(missing(elementName) | !is.character(elementName)) stop('extractControlElement: elementName argument must be a character string variable name')
