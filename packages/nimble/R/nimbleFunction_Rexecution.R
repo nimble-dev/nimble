@@ -6,7 +6,7 @@
 #' The functions \code{c}, \code{rep}, \code{seq}, \code{which}, \code{diag}, \code{length}, \code{seq_along}, \code{is.na}, \code{is.nan}, \code{any}, and \code{all} can be used in nimbleFunctions and compiled using \code{compileNimble}.
 #' 
 #' @name nimble-R-functions
-#' 
+#'
 #' @param ... values to be concatenated.
 #' @param x vector of values to be replicated (\code{rep}), or logical array or vector (\code{which}), or object whose length is wanted (\code{length}), or input value (\code{diag}), or vector of values to be tested/checked (\code{is.na}, \code{is.nan}, \code{any}, \code{all}).
 #' @param from starting value of sequence.
