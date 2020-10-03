@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/nimble-dev/nimble.svg?branch=devel)](https://travis-ci.org/nimble-dev/nimble)
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/nimble-dev/nimble?branch=devel&svg=true)](https://ci.appveyor.com/project/nimble-dev/nimble)
-[![CRAN](http://www.r-pkg.org/badges/version/nimble)](https://cran.r-project.org/web/packages/nimble)
+[![CRAN](http://www.r-pkg.org/badges/version/nimble)](https://CRAN.R-project.org/package=nimble)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1211190.svg)](https://zenodo.org/record/1211190)
 [![Google Group](https://img.shields.io/badge/google-group-blue.svg)](https://groups.google.com/forum/#!forum/nimble-users)
 
