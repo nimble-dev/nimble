@@ -88,7 +88,7 @@ additionalExports <- c("calc_dmnormConjugacyContributions",
                        "getNimbleProject",
                        "cc_getNodesInExpr",
                        "nimbleInternalFunctions",
-                       "nimbleFunctionList",
+##                       "nimbleFunctionList",
                        "nimbleUserNamespace")
 
 internals <- c(undocClasses, explicitUndocFuns, additionalExports)
