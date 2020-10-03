@@ -87,6 +87,7 @@ additionalExports <- c("calc_dmnormConjugacyContributions",
                        "getNimbleProject",
                        "cc_getNodesInExpr",
                        "calcAdaptationFactor",
+                       "is.nfGenerator",
                        "nimbleInternalFunctions",
                        "nimbleUserNamespace")
 

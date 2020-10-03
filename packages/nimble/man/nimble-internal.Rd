@@ -35,6 +35,8 @@
 \alias{singleModelValuesAccess}
 \alias{getNimbleProject}
 \alias{cc_getNodesInExpr}
+\alias{calcAdaptationFactor}
+\alias{is.nfGenerator}
 \alias{nimbleInternalFunctions}
 \alias{nimbleUserNamespace}
 \description{
