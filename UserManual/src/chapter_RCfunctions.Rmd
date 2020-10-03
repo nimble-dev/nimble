@@ -586,6 +586,8 @@ Functions with return values must have their return type explicitly declared usi
 no return value, which is the default if no `returnType` statement
 is included.  
 
+Note that because all values in models are stored as doubles and because of some limitations in NIMBLE's automatic casting, non-scalar return values of user-defined distributions must be doubles.
+
 ## Compiled nimbleFunctions pass arguments by reference {#sec:comp-nimbl-pass}
 
 Uncompiled nimbleFunctions pass arguments like R does, by copy.  If
