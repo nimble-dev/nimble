@@ -88,8 +88,11 @@ additionalExports <- c("calc_dmnormConjugacyContributions",
                        "getNimbleProject",
                        "cc_getNodesInExpr",
                        "nimbleInternalFunctions",
-##                       "nimbleFunctionList",
                        "nimbleUserNamespace")
+
+## Not clear why we need this but this is not being put in NAMESPACE otherwise.
+## It can't be in 'additionalExports' as it does have documentation.
+additionalExportsNotInternal <- c('nimbleFunctionList')
 
 internals <- c(undocClasses, explicitUndocFuns, additionalExports)
 
@@ -175,7 +178,7 @@ exportText <- exportText[grep("^$", exportText, invert = TRUE)]
 exportText[exportText == "S3method(is.na,vec)"] <- "export(is.na.vec)"
 exportText[exportText == "S3method(is.nan,vec)"] <- "export(is.nan.vec)"
 
-additionalExports <- c(additionalExports, 'nimbleType')  # nimbleType needed it is being exported only as a class as it is officially a refClass not a function
+additionalExports <- c(additionalExports, additionalExportsNotInternal, 'nimbleType')  # nimbleType needed it is being exported only as a class as it is officially a refClass not a function
 exportTextAdd <- paste0("export(", additionalExports, ")")
 exportText <- c(exportTextAdd, exportText)
 
