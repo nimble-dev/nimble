@@ -11,6 +11,8 @@ The NIMBLE algorithm library is growing and currently includes a suite of sequen
  
 ## Particle filters / sequential Monte Carlo and iterated filtering
 
+As of Version 0.10.0 of NIMBLE, all of NIMBLE's sequential Monte Carlo/particle filtering functionality lives in the `nimbleSMC` package. Please load this package before trying to use these algorithms.
+
 ### Filtering algorithms
 
 NIMBLE includes algorithms for four different types of sequential Monte Carlo (also known as particle filters), which can be used to sample from the latent states and approximate the log likelihood of a state-space model.  These include the bootstrap filter, the auxiliary particle filter, the Liu-West filter, and the ensemble Kalman filter.  The iterated filtering version 2 (IF2) is a related method for maximum-likelihood estimation.  Each of these is built with the eponymous functions `buildBootstrapFilter`, `buildAuxiliaryFilter`, `buildLiuWestFilter`, `buildEnsembleKF`, and `buildIteratedFilter2`.  Each method requires setup arguments  `model` and `nodes`; the latter should be a character vector specifying latent model nodes.  In addition, each method can be customized using a `control` list argument.  Details on the control options and specifics of the algorithms can be found in the help pages for the functions.
