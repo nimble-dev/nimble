@@ -118,12 +118,13 @@ nimbleFunction <- function(setup         = NULL,
     environment(generatorFunction) <- GFenv <- new.env()
     parent.env(GFenv) <- parent.frame()
 
-    .globalSetupEnv <- new.env()
+        .globalSetupEnv <- new.env()
     if(!is.null(globalSetup)) {
         if(!is.function(globalSetup)) stop('If globalSetup is not NULL, it must be a function', call. = FALSE)
         if(!length(formals(globalSetup))==0) stop('globalSetup cannot take input arguments', call. = FALSE)
         eval(body(globalSetup), envir = .globalSetupEnv)
     }
+
     for(var in c('generatorFunction','nfRefClassDef','nfRefClass','setup','run','methods','methodList','name', 'className', 'contains', 'enableDerivs', 'virtual', '.globalSetupEnv', '.namesToCopy', '.namesToCopyFromGlobalSetup', '.namesToCopyFromSetup','declaredSetupOutputNames','.globalSetupEnv')) {
         GFenv[[var]] <- get(var)
     }
