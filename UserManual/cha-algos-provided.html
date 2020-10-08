@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.9.0</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.10.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -351,6 +351,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <p>The NIMBLE algorithm library is growing and currently includes a suite of sequential Monte Carlo (particle filtering) algorithms, particle MCMC for combining particle filters with MCMC, iterated filtering version 2 and Monte Carlo expectation maximization (MCEM) for maximum likelihood estimation, and k-fold cross-validation.</p>
 <div id="particle-filters-sequential-monte-carlo-and-iterated-filtering" class="section level2">
 <h2><span class="header-section-number">8.1</span> Particle filters / sequential Monte Carlo and iterated filtering</h2>
+<p>As of Version 0.10.0 of NIMBLE, all of NIMBLE’s sequential Monte Carlo/particle filtering functionality lives in the <code>nimbleSMC</code> package. Please load this package before trying to use these algorithms.</p>
 <div id="filtering-algorithms" class="section level3">
 <h3><span class="header-section-number">8.1.1</span> Filtering algorithms</h3>
 <p>NIMBLE includes algorithms for four different types of sequential Monte Carlo (also known as particle filters), which can be used to sample from the latent states and approximate the log likelihood of a state-space model. These include the bootstrap filter, the auxiliary particle filter, the Liu-West filter, and the ensemble Kalman filter. The iterated filtering version 2 (IF2) is a related method for maximum-likelihood estimation. Each of these is built with the eponymous functions <code>buildBootstrapFilter</code>, <code>buildAuxiliaryFilter</code>, <code>buildLiuWestFilter</code>, <code>buildEnsembleKF</code>, and <code>buildIteratedFilter2</code>. Each method requires setup arguments <code>model</code> and <code>nodes</code>; the latter should be a character vector specifying latent model nodes. In addition, each method can be customized using a <code>control</code> list argument. Details on the control options and specifics of the algorithms can be found in the help pages for the functions.</p>

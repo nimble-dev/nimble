@@ -3,6 +3,7 @@
 
 ```{r, echo=FALSE}
 require(nimble)
+require(nimbleSMC, quietly = TRUE, warn.conflicts = FALSE)
 ``` 
 
 # Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM {#cha:algos-provided}

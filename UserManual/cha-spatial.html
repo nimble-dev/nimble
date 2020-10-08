@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.9.0</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.10.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -391,8 +391,6 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
     alpha <span class="op">~</span><span class="st"> </span><span class="kw">dflat</span>()
     beta <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)
     tau <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)
-    <span class="cf">for</span>(k <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>L)
-        weights[k] &lt;-<span class="st"> </span><span class="dv">1</span>
     s[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dcar_normal</span>(adj[<span class="dv">1</span><span class="op">:</span>L], weights[<span class="dv">1</span><span class="op">:</span>L], num[<span class="dv">1</span><span class="op">:</span>N], tau, <span class="dt">zero_mean =</span> <span class="dv">1</span>)
     <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {
         <span class="kw">log</span>(lambda[i]) &lt;-<span class="st"> </span>alpha <span class="op">+</span><span class="st"> </span>beta<span class="op">*</span>x[i] <span class="op">+</span><span class="st"> </span>s[i]
@@ -400,7 +398,8 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
     }
 })
 
-constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">4</span>, <span class="dt">L =</span> <span class="dv">8</span>, <span class="dt">num =</span> <span class="kw">c</span>(<span class="dv">3</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">1</span>),
+L &lt;-<span class="st"> </span><span class="dv">8</span>
+constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">4</span>, <span class="dt">L =</span> L, <span class="dt">num =</span> <span class="kw">c</span>(<span class="dv">3</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">1</span>), <span class="dt">weights =</span> <span class="kw">rep</span>(<span class="dv">1</span>, L),
                   <span class="dt">adj =</span> <span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">1</span>), <span class="dt">x =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">8</span>))
 data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">c</span>(<span class="dv">6</span>, <span class="dv">9</span>, <span class="dv">7</span>, <span class="dv">12</span>))
 inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">alpha =</span> <span class="dv">0</span>, <span class="dt">beta =</span> <span class="dv">0</span>, <span class="dt">tau =</span> <span class="dv">1</span>, <span class="dt">s =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>))
