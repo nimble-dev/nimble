@@ -55,6 +55,7 @@ run nimbleSMC R CMD check and tests
 
 If have problems with check_packages_in_dir, can
 download .tar.gz for reverse dependencies and run R CMD check on it.
+This was necessary for exPrior, nimbleEcology and nimbleSMC in 0.10.0.
 
 At one point bcgam testing was failing, but seems fine as of 2019-10-04.
 
