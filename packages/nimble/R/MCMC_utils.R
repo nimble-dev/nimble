@@ -345,12 +345,30 @@ extractControlElement <- function(controlList, elementName, defaultValue, error)
 
 #' @export
 samplesSummary <- function(samples) {
-    cbind(
+    summary <- try(cbind(
         `Mean`      = apply(samples, 2, mean),
         `Median`    = apply(samples, 2, median),
         `St.Dev.`   = apply(samples, 2, sd),
         `95%CI_low` = apply(samples, 2, function(x) quantile(x, 0.025)),
-        `95%CI_upp` = apply(samples, 2, function(x) quantile(x, 0.975)))
+        `95%CI_upp` = apply(samples, 2, function(x) quantile(x, 0.975))),
+                   silent = TRUE)
+    if(inherits(summary, 'try-error')) {
+        warning('Could not calculate the full summary of posterior samples, possibly due to NA or NaN values present in the samples array', call. = FALSE)
+        summary <- array(as.numeric(NA), dim = c(ncol(samples), 5))
+        rownames(summary) <- colnames(samples)
+        colnames(summary) <- c('Mean','Median','St.Dev.','95%CI_low','95%CI_upp')
+        if(ncol(samples) > 0) for(i in 1:ncol(samples)) {
+            theseSamples <- samples[,i]
+            if(isValid(theseSamples)) {
+                summary[i, 1] <- mean(theseSamples)
+                summary[i, 2] <- median(theseSamples)
+                summary[i, 3] <- sd(theseSamples)
+                summary[i, 4] <- quantile(theseSamples, 0.025)
+                summary[i, 5] <- quantile(theseSamples, 0.975)
+            }
+        }
+    }
+    return(summary)
 }
 
 
