@@ -157,15 +157,15 @@ git commit -am'merged new version onto master'
 
 probably best at this point also to merge master onto devel
 
-Create a new GitHub release via https://github.com/nimble-dev/nimble/releases baed on master. This will also create a tag, so no need to separately use `git tag` or `git push --tags`. 
+Create a new GitHub release via https://github.com/nimble-dev/nimble/releases baed on master. Include a blurb about the release.  This will also create a tag, so no need to separately use `git tag` or `git push --tags`. 
+
+Note that adding a release used to autogenerate a zenodo page and DOI but per below comment I don't think this linking is still in effect.  
 
 update version number in DESC in devel
 
 ### updating Github README
 
 Update version number in README.md, including in the citation section.
-
-Might as well add a release to Github under Releases tab based on new version tag. This used to autogenerate a zenodo page and DOI but per below comment I don't think this linking is still in effect. Make sure new release is tagged in GH as 'latest release' (figure out how to do this). Also add a blurb about the release.  
 
 Unfortunately in v0.6-10 zenodo integration was somehow turned off and in the process of trying to add it manually, Chris got an entirely different zenodo instnace.
 
