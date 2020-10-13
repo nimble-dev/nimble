@@ -63,7 +63,7 @@ library(devtools)
 install.packages("nimble", type = "source", repos = "https://r-nimble.org")
 ```
 
-Note that NIMBLE's sequential Monte Carlo (SMC; aka particle filtering) methodsa are now (as of version 0.10.0) in the `nimbleSMC` package.
+Note that NIMBLE's sequential Monte Carlo (SMC; aka particle filtering) methods are now (as of version 0.10.0) in the `nimbleSMC` package.
 
 Note that `MCMCsuite` and `compareMCMCs` are being migrated to the `compareMCMCs` package.  To install this:
 ```r
