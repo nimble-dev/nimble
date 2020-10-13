@@ -30,6 +30,11 @@ R CMD build nimble
 R CMD check --as-cran nimble_${VERSION}.tar.gz
 # officially this should be done on a development build of R, but now can be done formally using rhub (see below), so doing on your own machine in a release version of R just serves as a first pass
 
+Recently I've been getting this warning on my Ubuntu machine:
+Compilation used the following non-portable flag(s):
+  ‘-Wdate-time’ ‘-Werror=format-security’ ‘-Wformat’
+Seems like it might just be my local system. As long as doesn't show in win-builder or rhub (non-ubuntu/debian systems), should be ok.
+
 R CMD INSTALL nimble_${VERSION}.tar.gz
 
 Run tests via ./run_tests.R
