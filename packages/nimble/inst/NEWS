@@ -1,3 +1,7 @@
+USER LEVEL CHANGES
+
+-- `samplesSummary` function (and also `runMCMC(..., summary = TRUE)`) was made to be robust against non-valid values in posterior samples array.
+
                             CHANGES IN VERSION 0.10.0 (October 2020)
 
 USER LEVEL CHANGES
