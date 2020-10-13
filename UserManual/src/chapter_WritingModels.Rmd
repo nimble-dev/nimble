@@ -351,7 +351,7 @@ We plan to, but do not currently, include the following distributions as part of
 
 ### Available BUGS language functions {#subsec:BUGS-lang-fxns}
 
-Tables 5.4-5.5 show the available operators and functions.
+Tables \@ref(tab:functions)-\@ref(tab:functionsMatrix) show the available operators and functions.
 <!---\@ref(tab:functions)-\@ref(tab:functionsMatrix) 
 Hard-coding these as not clear how to have tables here and in Chapter 11 use same source files but numbered distinctly
 --> 

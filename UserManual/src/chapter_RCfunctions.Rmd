@@ -139,7 +139,7 @@ compatibility.  In a future version of NIMBLE, `declare` may be removed.
 
 ### Math and linear algebra {#sec:basic-math-linear}
 
-Numeric scalar and matrix mathematical operations are listed in Tables \@ref(tab:functions)-\@ref(tab:functionsMatrix).
+Numeric scalar and matrix mathematical operations are listed in Tables \@ref(tab:functions2)-\@ref(tab:functionsMatrix2).
 
 <!---
 would need to do some sed manipulation to be able to automate this cross-ref
@@ -154,15 +154,20 @@ generally only work for vectors and matrices, not arrays with more
 than two dimensions.  The only exception is assignment: `A = B` will
 work up to NIMBLE's current limit of four dimensions.
 
-```{r, child = 'tables/functionTableLong.md'}
+```{r echo=FALSE, include=FALSE}
+system("cp tables/functionTableLong.md tmp1.md")
+system("sed -i 's/tab:functions/tab:functions2/' tmp1.md")
+```
+```{r, child = 'tmp1.md'}
 ```
 ```{r echo=FALSE, include=FALSE}
-system("cat tables/functionTableMatrixLong.md tables/eigenSvdTableMatrixAsNimList.md > tmp.md")
+system("cat tables/functionTableMatrixLong.md tables/eigenSvdTableMatrixAsNimList.md > tmp2.md")
+system("sed -i 's/tab:functionsMatrix/tab:functionsMatrix2/' tmp2.md")
 ```
-```{r, child = 'tmp.md'}
+```{r, child = 'tmp2.md'}
 ```
 ```{r echo=FALSE, include=FALSE}
-system("rm -rf tmp.md")
+system("rm -rf tmp{1,2}.md")
 ```
 
 
