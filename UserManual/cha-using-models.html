@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.9.0</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.10.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -487,18 +487,16 @@ m<span class="op">$</span><span class="kw">isEndNode</span>(<span class="st">&#3
 </div>
 <div id="sec:getParam" class="section level3">
 <h3><span class="header-section-number">13.2.3</span> Getting distribution parameter values for a node</h3>
-<p>The function <code>getParam</code> provides access to values of the parameters of a node’s distribution. <code>getParam</code> can be used as global function taking a model as the first argument, or it can be used as a model member function. The next two arguments must be the name of one (stochastic) node and the name of a parameter for the distribution followed by that node. The parameter does not have to be one of the parameters used when the node was declared. Alternative parameterization values can also be obtained. See Section <a href="cha-writing-models.html#subsec:distributions">5.2.4.1</a> for available parameterizations. (These can also be seen in <code>nimble:::distributionsInputList</code>.)</p>
+<p>The function <code>getParam</code> provides access to values of the parameters of a node’s distribution. The two arguments must be the name of one (stochastic) node and the name of a parameter for the distribution followed by that node. The parameter does not have to be one of the parameters used when the node was declared. Alternative parameterization values can also be obtained. See Section <a href="cha-writing-models.html#subsec:distributions">5.2.4.1</a> for available parameterizations. (These can also be seen in <code>nimble:::distributionsInputList</code>.)</p>
 <p>Here is an example:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">gammaModel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(
     <span class="kw">nimbleCode</span>({
         a <span class="op">~</span><span class="st"> </span><span class="kw">dlnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)
         x <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="dt">shape =</span> <span class="dv">2</span>, <span class="dt">scale =</span> a)
     }), <span class="dt">data =</span> <span class="kw">list</span>(<span class="dt">x =</span> <span class="fl">2.4</span>), <span class="dt">inits =</span> <span class="kw">list</span>(<span class="dt">a =</span> <span class="fl">1.2</span>))
-<span class="kw">getParam</span>(gammaModel, <span class="st">&#39;x&#39;</span>, <span class="st">&#39;scale&#39;</span>)</code></pre></div>
+gammaModel<span class="op">$</span><span class="kw">getParam</span>(<span class="st">&#39;x&#39;</span>, <span class="st">&#39;scale&#39;</span>)</code></pre></div>
 <pre><code>## [1] 1.2</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">getParam</span>(gammaModel, <span class="st">&#39;x&#39;</span>, <span class="st">&#39;rate&#39;</span>)</code></pre></div>
-<pre><code>## [1] 0.8333333</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">gammaModel<span class="op">$</span><span class="kw">getParam</span>(<span class="st">&#39;x&#39;</span>,<span class="st">&#39;rate&#39;</span>)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">gammaModel<span class="op">$</span><span class="kw">getParam</span>(<span class="st">&#39;x&#39;</span>, <span class="st">&#39;rate&#39;</span>)</code></pre></div>
 <pre><code>## [1] 0.8333333</code></pre>
 <p><code>getParam</code> is part of the NIMBLE language, so it can be used in run code of nimbleFunctions.</p>
 </div>

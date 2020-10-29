@@ -215,7 +215,7 @@ as.list.modelValuesBaseClass <- function(x, varNames, iterationAsLastIndex = FAL
   results <- list()
   for(v in varNames) {
     samples <- x[[v]]
-    dims <- nimble:::dimOrLength(samples[[1]])
+    dims <- dimOrLength(samples[[1]])
     matrixVersion <- do.call("c", lapply(samples, as.numeric))
     ansDims <- c(dims, nrows)
     results[[v]] <- array(matrixVersion, dim = ansDims)
@@ -234,7 +234,7 @@ as.list.CmodelValues <- function(x, varNames, iterationAsLastIndex = FALSE, ...)
   results <- list()
   for(v in varNames) {
     samples <- x[[v]]
-    dims <- nimble:::dimOrLength(samples[[1]])
+    dims <- dimOrLength(samples[[1]])
     matrixVersion <- do.call("c", lapply(samples, as.numeric))
     ansDims <- c(dims, nrows)
     results[[v]] <- array(matrixVersion, dim = ansDims)

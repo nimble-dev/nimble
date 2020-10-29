@@ -102,7 +102,8 @@ to assign values in a compiled (or, more rarely, an uncompiled) model, e.g.,
 cModel$y <- c(1.5, 2.5, 1.7)
 ```
 
-This can be useful for running an MCMC with a different dataset of the same size without
+This can be useful for running an MCMC with a different dataset of the same size
+(and of course the same pattern of missingness, if any) without
 having to rebuild and recompile the MCMC, such as in a simulation study.
 It is possible to change the data values in a compiled model using `setData`,
 but we don't recommend doing this because `setData` won't modify which nodes are flagged

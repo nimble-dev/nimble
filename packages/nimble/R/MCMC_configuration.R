@@ -459,7 +459,15 @@ Invisibly returns a list of the current sampler configurations, which are sample
                 if(thisSamplerName == 'RW_block' && !silent) {
                     message('Note: Assigning an RW_block sampler to nodes with very different scales can result in low MCMC efficiency.  If all nodes assigned to RW_block are not on a similar scale, we recommend providing an informed value for the \"propCov\" control list argument, or using the AFSS sampler instead.')
                 }
-                if(exists(type) && is.nfGenerator(eval(as.name(type)))) {   ## try to find sampler function 'type'
+                if(thisSamplerName %in% c("RW_PF", "RW_PF_block")) {
+                    if (!("nimbleSMC" %in% (installed.packages()[,"Package"]))) {
+                        stop(paste0("Particle filters have been moved to the `nimbleSMC` package. ",
+                                    "Install and load `nimbleSMC` to use them."))
+                    } else if (!("nimbleSMC" %in% .packages())) {
+                        stop("`nimbleSMC` must be loaded to use particle filtering samplers.")
+                    }
+                }
+                if(exists(type, inherits = TRUE) && is.nfGenerator(eval(as.name(type)))) {   ## try to find sampler function 'type'
                     samplerFunction <- eval(as.name(type))
                 } else {
                     sampler_type <- paste0('sampler_', type)   ## next, try to find sampler function 'sampler_type'

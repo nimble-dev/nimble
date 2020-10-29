@@ -140,7 +140,8 @@ code <- nimbleCode({
 
 set.seed(1)
 constants <- list(N = 10, J = 5, M = 5)
-data <- list(y = matrix(c(rnorm(25, -25, 1), rnorm(25, 25, 1)), ncol=constants$J, nrow=constants$N, byrow=TRUE))
+data <- list(y = matrix(c(rnorm(25, -25, 1), rnorm(25, 25, 1)), ncol=constants$J,
+                        nrow=constants$N, byrow=TRUE))
 inits <- list(thetatilde = rnorm(constants$M, 0, 10), 
               z = sample(1:5, size = constants$N, replace = TRUE),
               alpha  = 1,

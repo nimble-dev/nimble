@@ -139,7 +139,7 @@ compatibility.  In a future version of NIMBLE, `declare` may be removed.
 
 ### Math and linear algebra {#sec:basic-math-linear}
 
-Numeric scalar and matrix mathematical operations are listed in Tables \@ref(tab:functions)-\@ref(tab:functionsMatrix).
+Numeric scalar and matrix mathematical operations are listed in Tables \@ref(tab:functions2)-\@ref(tab:functionsMatrix2).
 
 <!---
 would need to do some sed manipulation to be able to automate this cross-ref
@@ -154,15 +154,20 @@ generally only work for vectors and matrices, not arrays with more
 than two dimensions.  The only exception is assignment: `A = B` will
 work up to NIMBLE's current limit of four dimensions.
 
-```{r, child = 'tables/functionTableLong.md'}
+```{r echo=FALSE, include=FALSE}
+system("cp tables/functionTableLong.md tmp1.md")
+system("sed -i 's/tab:functions/tab:functions2/' tmp1.md")
+```
+```{r, child = 'tmp1.md'}
 ```
 ```{r echo=FALSE, include=FALSE}
-system("cat tables/functionTableMatrixLong.md tables/eigenSvdTableMatrixAsNimList.md > tmp.md")
+system("cat tables/functionTableMatrixLong.md tables/eigenSvdTableMatrixAsNimList.md > tmp2.md")
+system("sed -i 's/tab:functionsMatrix/tab:functionsMatrix2/' tmp2.md")
 ```
-```{r, child = 'tmp.md'}
+```{r, child = 'tmp2.md'}
 ```
 ```{r echo=FALSE, include=FALSE}
-system("rm -rf tmp.md")
+system("rm -rf tmp{1,2}.md")
 ```
 
 
@@ -393,6 +398,16 @@ for(i in 1:10)
    x[i] <- foo(y[i]) 
 ```
 
+#### How NIMBLE handles `NA`
+
+NIMBLE supports use of `NA` with some caveats.  In the compiled version of a nimbleFunction:
+
+  - `NA` values in a logical scalar or vector will not work;
+  - Assigning `NA` to a new variable will make that variable have type double (in R, this would be a logical!);
+  - Non-trivial use of `NA` in integer variables may fail by having the value become a large (negative) number;
+  - Use of `NA` in doubles should generally work.
+
+These issues arise because NIMBLE uses R's encoding of NA values in C(++) but uses native compiled math and type-casting in C++, which do not always preserve R's NA encodings.  In summary, NA should generally work for doubles and should be used cautiously (i.e. after you test that what you need to work actually works) for integers.  For some needs, NaN is a suitable alternative to NA.
 
 
 #### Changing the sizes of existing objects: *setSize* {#sec:chang-sizes-exist}
@@ -575,6 +590,8 @@ myfun <- nimbleFunction(
 Functions with return values must have their return type explicitly declared using `returnType`, which can occur anywhere in the run code. For example `returnType(integer(2))` declares the return type to be a matrix of integers. A return type of `void()` means there is
 no return value, which is the default if no `returnType` statement
 is included.  
+
+Note that because all values in models are stored as doubles and because of some limitations in NIMBLE's automatic casting, non-scalar return values of user-defined distributions must be doubles.
 
 ## Compiled nimbleFunctions pass arguments by reference {#sec:comp-nimbl-pass}
 

@@ -113,7 +113,7 @@ runMCMC <- function(mcmc,
     thinToUseVec <- c(0, 0)
     thinToUseVec[1] <- if(!missing(thin))  thin  else mcmc$thinFromConfVec[1]
     thinToUseVec[2] <- if(!missing(thin2)) thin2 else mcmc$thinFromConfVec[2]
-    if(thinToUseVec[1] > 1 && nburnin > 0) message("runMCMC's handling of nburnin changed in nimble version 0.6-11. Previously, nburnin samples were discarded *post-thinning*.  Now nburnin samples are discarded *pre-thinning*.  The number of samples returned will be floor((niter-nburnin)/thin).")
+    ## if(thinToUseVec[1] > 1 && nburnin > 0) message("runMCMC's handling of nburnin changed in nimble version 0.6-11. Previously, nburnin samples were discarded *post-thinning*.  Now nburnin samples are discarded *pre-thinning*.  The number of samples returned will be floor((niter-nburnin)/thin).")
     ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
     ##samplerExecutionOrderToUse <- if(!missing(samplerExecutionOrder)) samplerExecutionOrder else mcmc$samplerExecutionOrderFromConfPlusTwoZeros[mcmc$samplerExecutionOrderFromConfPlusTwoZeros>0]
     for(i in 1:nchains) {

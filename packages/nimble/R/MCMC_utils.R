@@ -27,6 +27,7 @@ decide <- function(logMetropolisRatio) {
 #' 
 #' @param model An uncompiled or compiled NIMBLE model object.  
 #' @param mvSaved A modelValues object containing identical variables and logProb variables as the model. Can be created by \code{modelValues(model)}.
+#' @param target A character vector providing the target node.
 #' @param calcNodes A character vector representing a set of nodes in the model (and hence also the modelValues) object.  
 #' @author Daniel Turek
 #' @export
@@ -296,7 +297,14 @@ mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonS
 }
 
 
-
+#' Extract named elements from MCMC sampler control list
+#'
+#' @param controlList control list object, which is passed as an argument to all MCMC sampler setup functions.
+#' @param elementName character string, giving the name of the element to be extracted from the control list.
+#' @param defaultValue default value of the control list element, giving the value to be used when the elementName does not exactly match the name of an element in the controlList.
+#' @param error character string, giving the error message to be printed if no defaultValue is provided and elementName does not match the name of an element in the controlList.
+#' @return The element of controlList with name matching elementName; or, if no controlList name matches elementName, rather the defaultValue is returned.
+#' @author Daniel Turek
 #' @export
 extractControlElement <- function(controlList, elementName, defaultValue, error) {
     if(missing(controlList) | !is.list(controlList))      stop('extractControlElement: controlList argument must be a list')
@@ -337,12 +345,30 @@ extractControlElement <- function(controlList, elementName, defaultValue, error)
 
 #' @export
 samplesSummary <- function(samples) {
-    cbind(
+    summary <- try(cbind(
         `Mean`      = apply(samples, 2, mean),
         `Median`    = apply(samples, 2, median),
         `St.Dev.`   = apply(samples, 2, sd),
         `95%CI_low` = apply(samples, 2, function(x) quantile(x, 0.025)),
-        `95%CI_upp` = apply(samples, 2, function(x) quantile(x, 0.975)))
+        `95%CI_upp` = apply(samples, 2, function(x) quantile(x, 0.975))),
+                   silent = TRUE)
+    if(inherits(summary, 'try-error')) {
+        warning('Could not calculate the full summary of posterior samples, possibly due to NA or NaN values present in the samples array', call. = FALSE)
+        summary <- array(as.numeric(NA), dim = c(ncol(samples), 5))
+        rownames(summary) <- colnames(samples)
+        colnames(summary) <- c('Mean','Median','St.Dev.','95%CI_low','95%CI_upp')
+        if(ncol(samples) > 0) for(i in 1:ncol(samples)) {
+            theseSamples <- samples[,i]
+            if(isValid(theseSamples)) {
+                summary[i, 1] <- mean(theseSamples)
+                summary[i, 2] <- median(theseSamples)
+                summary[i, 3] <- sd(theseSamples)
+                summary[i, 4] <- quantile(theseSamples, 0.025)
+                summary[i, 5] <- quantile(theseSamples, 0.975)
+            }
+        }
+    }
+    return(summary)
 }
 
 

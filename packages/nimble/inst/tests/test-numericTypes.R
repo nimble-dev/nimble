@@ -274,7 +274,7 @@ binaryMatrixOpTypeTests <- indexNames(binaryMatrixOpTypeTests)
 
 
 unaryCwiseResults <- test_coreRfeature_batch(unaryCwiseTypeTests, 'unaryCwiseTypeTests') ## lapply(unaryCwiseTypeTests, test_coreRfeature)
-#binaryCwiseResults <- test_coreRfeature_batch(binaryCwiseTypeTests, 'binaryCwiseTypeTests') ## lapply(binaryCwiseTypeTests, test_coreRfeature)
+binaryCwiseResults <- test_coreRfeature_batch(binaryCwiseTypeTests, 'binaryCwiseTypeTests') ## lapply(binaryCwiseTypeTests, test_coreRfeature)
 binaryCwiseLogicalResults <- test_coreRfeature_batch(binaryCwiseTypeTestsLogicals, 'binaryCwiseTypeTestsLogicals') ## lapply(binaryCwiseTypeTestsLogicals, test_coreRfeature)
 reductionResults <- test_coreRfeature_batch(reductionTypeTests, 'reductionTypeTests') ## lapply(reductionTypeTests, test_coreRfeature)
 reductionLogicalResults <- test_coreRfeature_batch(reductionTypeTestsLogical, 'reductionTypeTestsLogical') ## lapply(reductionTypeTestsLogical, test_coreRfeature)

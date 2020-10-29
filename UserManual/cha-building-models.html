@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.9.0</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.10.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -398,7 +398,7 @@ pump &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(<span cla
 <p><code>setData</code> does two things: it sets the values of the data nodes, and it flags those nodes as containing data. nimbleFunction programmers can then use that information to control whether an algorithm should over-write data or not. For example, NIMBLE’s <code>simulate</code> functions by default do not overwrite data values but can be told to do so. Values of data variables can be replaced, and the indication of which nodes should be treated as data can be reset by using the <code>resetData</code> method, e.g. <code>pump$resetData()</code>.</p>
 <p>To change data values without any modification of which nodes are flagged as containing data, simply use R’s usual assignment syntax to assign values in a compiled (or, more rarely, an uncompiled) model, e.g.,</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cModel<span class="op">$</span>y &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="fl">1.5</span>, <span class="fl">2.5</span>, <span class="fl">1.7</span>)</code></pre></div>
-<p>This can be useful for running an MCMC with a different dataset of the same size without having to rebuild and recompile the MCMC, such as in a simulation study. It is possible to change the data values in a compiled model using <code>setData</code>, but we don’t recommend doing this because <code>setData</code> won’t modify which nodes are flagged as containing data in the already-constructed MCMC, thereby potentially introducing confusion.</p>
+<p>This can be useful for running an MCMC with a different dataset of the same size (and of course the same pattern of missingness, if any) without having to rebuild and recompile the MCMC, such as in a simulation study. It is possible to change the data values in a compiled model using <code>setData</code>, but we don’t recommend doing this because <code>setData</code> won’t modify which nodes are flagged as containing data in the already-constructed MCMC, thereby potentially introducing confusion.</p>
 </div>
 <div id="missing-data-values" class="section level4">
 <h4><span class="header-section-number">6.1.1.3</span> Missing data values</h4>

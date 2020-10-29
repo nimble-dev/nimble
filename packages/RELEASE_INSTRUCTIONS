@@ -30,6 +30,11 @@ R CMD build nimble
 R CMD check --as-cran nimble_${VERSION}.tar.gz
 # officially this should be done on a development build of R, but now can be done formally using rhub (see below), so doing on your own machine in a release version of R just serves as a first pass
 
+Recently I've been getting this warning on my Ubuntu machine:
+Compilation used the following non-portable flag(s):
+  ‘-Wdate-time’ ‘-Werror=format-security’ ‘-Wformat’
+Seems like it might just be my local system. As long as doesn't show in win-builder or rhub (non-ubuntu/debian systems), should be ok.
+
 R CMD INSTALL nimble_${VERSION}.tar.gz
 
 Run tests via ./run_tests.R
@@ -51,8 +56,11 @@ summary(out)
 Can also do this to see if anything has changed:
 tools::check_packages_in_dir_changes('.', reverse = list()) # for this you need an the most recent version of nimble as the 'old'
 
+run nimbleSMC R CMD check and tests
+
 If have problems with check_packages_in_dir, can
 download .tar.gz for reverse dependencies and run R CMD check on it.
+This was necessary for exPrior, nimbleEcology and nimbleSMC in 0.10.0.
 
 At one point bcgam testing was failing, but seems fine as of 2019-10-04.
 
@@ -149,18 +157,15 @@ git commit -am'merged new version onto master'
 
 probably best at this point also to merge master onto devel
 
-For version 0.10.0 before add tag as suggested here, try to add a release as per below and see if tag is auto-generated.
+Create a new GitHub release via https://github.com/nimble-dev/nimble/releases baed on master. Include a blurb about the release.  This will also create a tag, so no need to separately use `git tag` or `git push --tags`. 
 
-git tag -a v$VERSION -m "NIMBLE version $VERSION release, December 31, 2014"
-git push --tags    ## this is how you push *tags* to the remote
+Note that adding a release used to autogenerate a zenodo page and DOI but per below comment I don't think this linking is still in effect.  
 
 update version number in DESC in devel
 
 ### updating Github README
 
 Update version number in README.md, including in the citation section.
-
-Might as well add a release to Github under Releases tab based on new version tag. This used to autogenerate a zenodo page and DOI but per below comment I don't think this linking is still in effect. Make sure new release is tagged in GH as 'latest release' (figure out how to do this). Also add a blurb about the release.  
 
 Unfortunately in v0.6-10 zenodo integration was somehow turned off and in the process of trying to add it manually, Chris got an entirely different zenodo instnace.
 

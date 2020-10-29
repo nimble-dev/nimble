@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.9.0</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.10.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -474,7 +474,7 @@ model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <s
 <ul>
 <li>Your distribution-related functions must have names that begin with ‘d’, ‘r’, ‘p’ and ‘q’. The name of the distribution must not be identical to any of the NIMBLE-provided distributions.</li>
 <li>All simulation (‘r’) functions must take <code>n</code> as their first argument. Note that you may simply have your function only handle <code>n=1</code> and return an warning for other values of <code>n</code>.</li>
-<li>NIMBLE uses doubles for numerical calculations, so we suggest simply using doubles in general, even for integer-valued parameters or values of random variables.</li>
+<li>NIMBLE uses doubles for numerical calculations, so we suggest simply using doubles in general, even for integer-valued parameters or values of random variables. In fact, non-scalars must be declared as doubles.</li>
 <li>All density functions must have as their last argument <code>log</code> and implement return of the log probability density. NIMBLE algorithms typically use only <code>log = 1</code>, but we recommend you implement the <code>log = 0</code> case for completeness.</li>
 <li>All distribution and quantile functions must have their last two arguments be (in order) <code>lower.tail</code> and <code>log.p</code>. These functions must work for <code>lower.tail = 1</code> (i.e., TRUE) and <code>log.p = 0</code> (i.e., FALSE), as these are the inputs we use when working with truncated distributions. It is your choice whether you implement the necessary calculations for other combinations of these inputs, but again we recommend doing so for completeness.</li>
 <li>Define the nimbleFunctions in R’s global environment. Don’t expect R’s standard scoping to work<a href="#fn24" class="footnoteRef" id="fnref24"><sup>24</sup></a>.</li>

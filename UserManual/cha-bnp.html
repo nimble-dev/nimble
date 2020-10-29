@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.9.0</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.10.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -414,11 +414,9 @@ model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, co
 </div>
 <div id="sec:extensionscrp" class="section level3">
 <h3><span class="header-section-number">10.2.3</span> Extensions</h3>
-<p>The BNP functionality has been recently extended to more general models. These extensions enable users, for instance, to use a DP or DPM prior for the distribution of the random effects in a generalized linear mixed effects model with mutiple measurements over time or multiple trials per participant.</p>
-<div id="sec:exextensionscrp" class="section level4">
-<h4><span class="header-section-number">10.2.3.1</span> Example</h4>
+<p>The BNP functionality in NIMBLE was extended in version 0.10.0 to more general models. These extensions enable users, for instance, to use a DP or DPM prior for the distribution of the random effects in a generalized linear mixed effects model with mutiple measurements over time or multiple trials per participant.</p>
 <p>The following example illustrates how to use NIMBLE in a random effects model with repeated measurements per subject using a DP prior for the distribution of the subject’s random effects. The model is given by</p>
-<p><span class="math display">\[ y_{i,j} \mid \tilde{\boldsymbol{\theta}}, z_i, \sigma^2 \ {\sim}\ N(\tilde{\theta}_{z_i}, {\sigma}^2,)\hspace{0.5cm} i = 1, \ldots, N,\hspace{0.5cm} j = 1, \ldots, J, \]</span></p>
+<p><span class="math display">\[ y_{i,j} \mid \tilde{\boldsymbol{\theta}}, z_i, \sigma^2 \ {\sim}\ N(\tilde{\boldsymbol{\theta}}_{z_i}, {\sigma}^2,)\hspace{0.5cm} i = 1, \ldots, N,\hspace{0.5cm} j = 1, \ldots, J, \]</span></p>
 <p><span class="math display">\[ \boldsymbol{z} \sim \mbox{CRP}(\alpha), \hspace{0.5cm} \alpha \sim \mbox{Gamma}(1, 1), \]</span></p>
 <p><span class="math display">\[ \tilde{\theta}_m \overset{iid}{\sim} N(0, 100),  \hspace{0.2cm} m=1, \ldots, M, \hspace{0.5cm} {\sigma}^2 \sim InvGamma(1, 1). \]</span></p>
 <p>The corresponding NIMBLE code is</p>
@@ -438,14 +436,15 @@ model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, co
 
 <span class="kw">set.seed</span>(<span class="dv">1</span>)
 constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">10</span>, <span class="dt">J =</span> <span class="dv">5</span>, <span class="dt">M =</span> <span class="dv">5</span>)
-data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">matrix</span>(<span class="kw">c</span>(<span class="kw">rnorm</span>(<span class="dv">25</span>, <span class="dv">-25</span>, <span class="dv">1</span>), <span class="kw">rnorm</span>(<span class="dv">25</span>, <span class="dv">25</span>, <span class="dv">1</span>)), <span class="dt">ncol=</span>constants<span class="op">$</span>J, <span class="dt">nrow=</span>constants<span class="op">$</span>N, <span class="dt">byrow=</span><span class="ot">TRUE</span>))
+data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">matrix</span>(<span class="kw">c</span>(<span class="kw">rnorm</span>(<span class="dv">25</span>, <span class="dv">-25</span>, <span class="dv">1</span>), <span class="kw">rnorm</span>(<span class="dv">25</span>, <span class="dv">25</span>, <span class="dv">1</span>)), <span class="dt">ncol=</span>constants<span class="op">$</span>J,
+                        <span class="dt">nrow=</span>constants<span class="op">$</span>N, <span class="dt">byrow=</span><span class="ot">TRUE</span>))
 inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">thetatilde =</span> <span class="kw">rnorm</span>(constants<span class="op">$</span>M, <span class="dv">0</span>, <span class="dv">10</span>), 
               <span class="dt">z =</span> <span class="kw">sample</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>, <span class="dt">size =</span> constants<span class="op">$</span>N, <span class="dt">replace =</span> <span class="ot">TRUE</span>),
               <span class="dt">alpha  =</span> <span class="dv">1</span>,
               <span class="dt">sigma2 =</span> <span class="dv">1</span>)
 modelRandEff &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</code></pre></div>
+<p>Alternatively, each subject could have a vector of parameters being clustered. For example in the model above one could instead specify a vector of means, such as <code>thetaTilde[z[i], j]</code>, instead of a single mean.</p>
 <p>As before, the model can be fitted through MCMC sampling. NIMBLE will assign a specialized sampler to update <code>z</code> and <code>alpha</code>. See Chapter <a href="cha-mcmc.html#cha:mcmc">7</a> for information about NIMBLE’s MCMC engine, and Section <a href="cha-bnp.html#sec:mcmcdcrp">10.4.1</a> for details on MCMC sampling of the CRP.</p>
-</div>
 </div>
 </div>
 <div id="sec:sb" class="section level2">
@@ -511,7 +510,7 @@ modelSB &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, 
 <li>A conjugate sampler in the case of the baseline distribution being conjugate for the mixture kernel.</li>
 <li>A non-conjugate sampler in the case of the baseline distribution not being conjugate for the mixture kernel.</li>
 </ol>
-<p>Note that both samplers are specialized versions that operate on a vector having a CRP distribution. Details of these assignments are strictly internal to the CRP samplers. The current release of NIMBLE supports conjugate sampling for the <code>dCRP</code> distribution for the relationships listed in Table <a href="cha-bnp.html#tab:BNPconjugacy">10.1</a>. Additional relationships are provided in Table <a href="cha-bnp.html#tab:BNPconjugacy2">10.2</a> for normal mixture kernels when both, mean and variance, are unknown.</p>
+<p>Note that both samplers are specialized versions that operate on a vector having a CRP distribution. Details of these assignments are strictly internal to the CRP samplers. The current release of NIMBLE supports conjugate sampling for the <code>dCRP</code> distribution for the relationships listed in Table <a href="cha-bnp.html#tab:BNPconjugacy">10.1</a>. Additional relationships are provided in Table <a href="cha-bnp.html#tab:BNPconjugacy2">10.2</a> for normal mixture kernels when both mean and variance are unknown.</p>
 <table>
 <caption><span id="tab:BNPconjugacy">Table 10.1: </span> Conjugate relationships for the <code>dCRP</code> distribution supported by NIMBLE’s MCMC engine.</caption>
 <thead>
