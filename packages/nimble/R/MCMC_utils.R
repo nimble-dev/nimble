@@ -344,7 +344,7 @@ extractControlElement <- function(controlList, elementName, defaultValue, error)
 
 
 #' @export
-samplesSummary <- function(samples) {
+samplesSummary <- function(samples, round) {
     summary <- try(cbind(
         `Mean`      = apply(samples, 2, mean),
         `Median`    = apply(samples, 2, median),
@@ -368,6 +368,7 @@ samplesSummary <- function(samples) {
             }
         }
     }
+    if(!missing(round)) summary <- round(summary, digits = round)
     return(summary)
 }
 
