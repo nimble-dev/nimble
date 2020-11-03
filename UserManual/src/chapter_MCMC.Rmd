@@ -180,17 +180,17 @@ The default sampler assigned to a stochastic node is determined by the following
   1. If none of the above criteria are satisfied, then a `RW` sampler is assigned.  This is a Metropolis-Hastings adaptive random-walk sampler with a univariate normal proposal distribution.
 
 
-These sampler assignment rules can be inspected, reordered, and easily modified using the system option `nimbleOptions("MCMCdefaultSamplerAssignmentRules")` and customized  `samplerAssignmentRules` objects.
+<!-- These sampler assignment rules can be inspected, reordered, and easily modified using the system option `nimbleOptions("MCMCdefaultSamplerAssignmentRules")` and customized  `samplerAssignmentRules` objects. -->
 
 Details of each sampler and its control parameters can be found by invoking `help(samplers)`.
 
-#### Sampler assignment rules
+<!-- #### Sampler assignment rules
 
-The behavior of `configureMCMC` can be customized to control how samplers are assigned.  A new set of sampler assignment rules can be created using `samplerAssignmentRules`, which can be modified using the `addRule` and `reorder` methods, then passed as an argument to `configureMCMC`.  Alternatively, the default behavior of `configureMCMC` can be altered by setting the system option `MCMCdefaultSamplerAssignmentRules` to a custom `samplerAssignmentRules` object.  See `help(samplerAssignmentRules)` for details.
+The behavior of `configureMCMC` can be customized to control how samplers are assigned.  A new set of sampler assignment rules can be created using `samplerAssignmentRules`, which can be modified using the `addRule` and `reorder` methods, then passed as an argument to `configureMCMC`.  Alternatively, the default behavior of `configureMCMC` can be altered by setting the system option `MCMCdefaultSamplerAssignmentRules` to a custom `samplerAssignmentRules` object.  See `help(samplerAssignmentRules)` for details. -->
 
 #### Options to control default sampler assignments
 
-As a lightweight alternative to using `samplerAssignmentRules`, very basic control of default sampler assignments is provided via two arguments to `configureMCMC`.  The `useConjugacy` argument controls whether conjugate samplers are assigned when possible, and the  `multivariateNodesAsScalars` argument controls whether scalar elements of multivariate nodes are sampled individually. See `help(configureMCMC)` for usage details.
+Very basic control of default sampler assignments is provided via two arguments to `configureMCMC`.  The `useConjugacy` argument controls whether conjugate samplers are assigned when possible, and the  `multivariateNodesAsScalars` argument controls whether scalar elements of multivariate nodes are sampled individually. See `help(configureMCMC)` for usage details.
 <!--- % The following optional control arguments to `configureMCMC()` may be used to override the default assignment of sampler algorithms: -->
 
 <!--- 
@@ -225,18 +225,17 @@ If a data node is included in `nodes`, *it will be assigned a sampler*.  This is
 #### Creating an empty configuration 
 If you plan to customize the choice of all samplers, it can be useful to obtain a configuration with no sampler assignments at all.  This can be done by any of `nodes = NULL`, `nodes = character()`, or `nodes = list()`. 
 
-#### Overriding the default sampler assignment rules
+<!-- #### Overriding the default sampler assignment rules
 The default rules used for assigning samplers to model nodes can be overridden using the `rules` argument to `configureMCMC`.  This argument must be an object of class `samplerAssignmentRules`, which defines an ordered set of rules for assigning samplers.  Rules can be modified and reordered, to give different precedence to particular samplers, or to assign user-defined samplers (see section \@ref(sec:user-samplers)).  The following example creates a new set of rules (which initially contains the default assignment rules), reorders the rules, adds a new rule, then uses these rules to create an MCMC configuration object.
 
-```{r, mcmcconfrules, eval=FALSE}
+r, mcmcconfrules, eval=FALSE}
 my_rules <- samplerAssignmentRules()
 my_rules$reorder(c(8, 1:7))
 my_rules$addRule(condition = quote(model$getDistribution(node) == "dmnorm"),
                  sampler = new_dmnorm_sampler)
 mcmcConf <- configureMCMC(Rmodel, rules = my_rules)
-```
 
-In addition, the default behavior of `configureMCMC` can be altered by setting the system option `nimbleOptions(MCMCdefaultSamplerAssignmentRules = my_rules)`, or reset to the original default behavior using `nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())`.
+In addition, the default behavior of `configureMCMC` can be altered by setting the system option `nimbleOptions(MCMCdefaultSamplerAssignmentRules = my_rules)`, or reset to the original default behavior using `nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())`. -->
 
 #### Overriding the default sampler control list values
 The default values of control list elements for all sampling algorithms may be overridden through use of the `control` argument to `configureMCMC`, which should be a named list. 
