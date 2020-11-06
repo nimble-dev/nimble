@@ -204,6 +204,8 @@ The default MCMC configuration includes monitors on all top-level stochastic nod
 
 #### Automated parameter blocking
 
+\emph{The automated parameter blocking algorithm is no longer actively maintained.  In some cases, it may not operate correctly with more recent system features and/or distributions.}
+
 The default configuration may be replaced by one generated from an automated parameter blocking algorithm.  This algorithm determines groupings of model nodes that, when jointly sampled with a `RW_block` sampler, increase overall MCMC efficiency.  Overall efficiency is defined as the effective sample size of the slowest-mixing node divided by computation time.  This is done by:
 
 ```{r, mcmcconf5, eval=FALSE}
