@@ -43,7 +43,7 @@ autoBlock <- function(Rmodel,
                       verbose = FALSE,
                       makePlots = FALSE,
                       round = TRUE ) {
-    cat('The autoBlock option is no longer actively maintained.  In some cases, it may not operate correctly with more recent system features and/or distributions\n.')
+    cat('\nThe autoBlock option is no longer actively maintained.  In some cases, it may not operate correctly with more recent system features and/or distributions.\n\n')
     if(autoIt < 10000) stop('Minimum auto-blocking iterations is 10,000')
     control <- list(niter=autoIt, setSeed=setSeed, verbose=verbose, makePlots=makePlots)
     ab <- autoBlockClass(Rmodel, control)
