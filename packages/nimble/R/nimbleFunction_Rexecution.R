@@ -196,7 +196,7 @@ makeParamInfo <- function(model, nodes, param) {
   if(types[1] %in% c('integer', 'logical')) types[1] <- 'double'
 
   if(length(paramIDs) == 1) { ## We could shortcut on this case earlier
-    paramIDvec <- paramIDs
+    paramIDvec <- c(-1L, paramIDs[1]) # paramIDs
   } else {
     if(length(unique(paramIDs)) == 1) {
       # They are all the same.
@@ -265,6 +265,8 @@ getParam <- function(model, node, param, nodeFunctionIndex) {
         if(is.na(paramInfo$type)) stop(paste('getParam called with empty or invalid node:', as.character(node)))
     }
     paramID <- paramInfo$paramID
+    if(paramID[1]==-1)
+        paramID <- paramID[2]
     nDim <- paramInfo$nDim
     type <- paramInfo$type
     unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ indexingInfo$unrolledIndicesMatrixRows[1], ]
