@@ -142,7 +142,7 @@ buildMCMC <- nimbleFunction(
         enableWAIC <- enableWAICargument || conf$enableWAIC   ## enableWAIC comes from MCMC configuration, or from argument to buildMCMC
         if(enableWAIC) {
             if(dataNodeLength == 0)   stop('WAIC cannot be calculated, as no data nodes were detected in the model.')
-            mcmc_checkWAICmonitors(model = model, monitors = sampledNodes, dataNodes = dataNodes)
+            mcmc_checkWAICmonitors_conditional(model = model, monitors = sampledNodes, dataNodes = dataNodes)
         }
     },
 
