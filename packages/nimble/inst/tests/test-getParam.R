@@ -179,5 +179,122 @@ test_that('getParam, user-defined integer-valued', {
     expect_identical(cm$getParam('y','thetaInt'), 1, 'issue with getParam with integer parameter')
 })
 
+test_that("getParam works in various multi-instance combinations", {
+  code <- nimbleCode({
+    a ~ dnorm(0, 1)
+    for(i in 1:3) x[i] ~ dnorm(a, 1)
+    b ~ dbeta(a,3)
+    for(i in 1:3) y[i] ~ dbeta(5, a)
+  })
+  
+  m <- nimbleModel(code, inits = list(a = 1, x = 2:4, b = .5, y = c(0.6, 0.7, 0.8)))
+  cm <- compileNimble(m)
+  
+  # two singletons
+  getSomeParams1 <- nimbleFunction(
+    setup = function(model, nodes, param = "value") {
+      nodes <- model$expandNodeNames(nodes)
+      numNodes <- length(nodes)    
+    },
+    run = function() {
+      v <- numeric(numNodes)
+      for(i in 1:numNodes) {
+        v[i] <- model$getParam(nodes[i], param)
+      }
+      return(v);
+      returnType(double(1))
+    }
+  )
+  gsp1_1 <- getSomeParams1(m, "b", "mean")
+  gsp1_2 <- getSomeParams1(m, "x[1]", "mean")
+  cgsp1 <- compileNimble(gsp1_1, gsp1_2, project = m)
+  expect_identical(gsp1_1$run(), cgsp1$gsp1_1$run())
+  expect_identical(gsp1_2$run(), cgsp1$gsp1_2$run())
+
+  # one singleton and one doublet, each from a single declaration
+  getSomeParams2 <- nimbleFunction(
+    setup = function(model, nodes, param = "value") {
+      nodes <- model$expandNodeNames(nodes)
+      numNodes <- length(nodes)
+    },
+    run = function() {
+      v <- numeric(numNodes)    
+      for(i in 1:numNodes) {
+        v[i] <- model$getParam(nodes[i], param)
+      }
+      return(v);
+      returnType(double(1))
+    }
+  )
+  gsp2_1 <- getSomeParams2(m, "b", "mean")
+  gsp2_2 <- getSomeParams2(m, "x[2:3]", "mean")
+  cgsp2 <- compileNimble(gsp2_1, gsp2_2, project = m)
+  expect_identical(gsp2_1$run(), cgsp2$gsp2_1$run())
+  expect_identical(gsp2_2$run(), cgsp2$gsp2_2$run())
+
+  # two doublets, each from a single declaration
+  getSomeParams3 <- nimbleFunction(
+    setup = function(model, nodes, param = "value") {
+      nodes <- model$expandNodeNames(nodes)
+      numNodes <- length(nodes)
+    },
+    run = function() {
+      v <- numeric(numNodes)    
+      for(i in 1:numNodes) {
+        v[i] <- model$getParam(nodes[i], param)
+      }
+      return(v);
+      returnType(double(1))
+    }
+  )
+  gsp3_1 <- getSomeParams3(m, "x[1:3]", "mean")
+  gsp3_2 <- getSomeParams3(m, "y[1:3]", "mean")
+  cgsp3 <- compileNimble(gsp3_1, gsp3_2, project = m)
+  expect_identical(gsp3_1$run(), cgsp3$gsp3_1$run())
+  expect_identical(gsp3_2$run(), cgsp3$gsp3_2$run())
+
+  # two doublets, with both from a multiple declarations
+  getSomeParams4 <- nimbleFunction(
+    setup = function(model, nodes, param = "value") {
+      nodes <- model$expandNodeNames(nodes)
+      numNodes <- length(nodes)
+    },
+    run = function() {
+      v <- numeric(numNodes)    
+      for(i in 1:numNodes) {
+        v[i] <- model$getParam(nodes[i], param)
+      }
+      return(v);
+      returnType(double(1))
+    }
+  )
+  gsp4_1 <- getSomeParams4(m, c("b", "x[1:3]"), "mean")
+  gsp4_2 <- getSomeParams4(m, c("b", "y[1:3]"), "mean")
+  cgsp4 <- compileNimble(gsp4_1, gsp4_2, project = m)
+  expect_identical(gsp4_1$run(), cgsp4$gsp4_1$run())
+  expect_identical(gsp4_2$run(), cgsp4$gsp4_2$run())
+
+  # two doublets, with one from a multiple declarations and one from a single declaration
+  getSomeParams5 <- nimbleFunction(
+    setup = function(model, nodes, param = "value") {
+      nodes <- model$expandNodeNames(nodes)
+      numNodes <- length(nodes)
+    },
+    run = function() {
+      v <- numeric(numNodes)    
+      for(i in 1:numNodes) {
+        v[i] <- model$getParam(nodes[i], param)
+      }
+      return(v);
+      returnType(double(1))
+    }
+  )
+  gsp5_1 <- getSomeParams5(m, c("x[1:3]"), "mean")
+  gsp5_2 <- getSomeParams5(m, c("b", "y[1:3]"), "mean")
+  cgsp5 <- compileNimble(gsp5_1, gsp5_2, project = m)
+  expect_identical(gsp5_1$run(), cgsp5$gsp5_1$run()) ## Failure in 0.10-0
+  expect_identical(gsp5_2$run(), cgsp5$gsp5_2$run())
+})
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
