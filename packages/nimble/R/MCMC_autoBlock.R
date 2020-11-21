@@ -1,5 +1,7 @@
 #' Automated parameter blocking procedure for efficient MCMC sampling
 #' 
+#' The automated parameter blocking algorithm is no longer actively maintained.  In some cases, it may not operate correctly with more recent system features and/or distributions.
+#' 
 #' Runs NIMBLE's automated blocking procedure for a given model object, to dynamically determine a blocking scheme of the continuous-valued model nodes.  This blocking scheme is designed to produce efficient MCMC sampling (defined as number of effective samples generated per second of algorithm runtime).  See Turek, et al (2015) for details of this algorithm.  This also (optionally) compares this blocked MCMC against several static MCMC algorithms, including all univariate sampling, blocking of all continuous-valued nodes, NIMBLE's default MCMC configuration, and custom-specified blockings of parameters.
 #' 
 #' This method allows for fine-tuned usage of the automated blocking procedure.  However, the main entry point to the automatic blocking procedure is intended to be through either buildMCMC(..., autoBlock = TRUE), or configureMCMC(..., autoBlock = TRUE).
@@ -41,6 +43,7 @@ autoBlock <- function(Rmodel,
                       verbose = FALSE,
                       makePlots = FALSE,
                       round = TRUE ) {
+    cat('\nThe autoBlock option is no longer actively maintained.  In some cases, it may not operate correctly with more recent system features and/or distributions.\n\n')
     if(autoIt < 10000) stop('Minimum auto-blocking iterations is 10,000')
     control <- list(niter=autoIt, setSeed=setSeed, verbose=verbose, makePlots=makePlots)
     ab <- autoBlockClass(Rmodel, control)
