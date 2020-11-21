@@ -388,38 +388,22 @@ mcmc_processMonitorNames <- function(model, nodes) {
     return(c(expandedNodeNames, expandedLogProbNames))
 }
 
-
 mcmc_checkWAICmonitors_conditional <- function(model, monitors, dataNodes) {
-    monitoredDetermNodes <- model$expandNodeNames(monitors)[model$isDeterm(model$expandNodeNames(monitors))]
-    if(length(monitoredDetermNodes) > 0) {
-        monitors <- monitors[- which(monitors %in% model$getVarNames(nodes = monitoredDetermNodes))]
-    }
-    
-    thisNodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
-    thisVars <- model$getVarNames(nodes = thisNodes)
-    thisVars <- thisVars[!(thisVars %in% monitors)]
-
-    ## No unmonitored nodes should have direct data dependencies.
-    badVars <- sapply(thisVars, function(oneVar) {
-        nextNodes <- model$getDependencies(oneVar, stochOnly = TRUE, omit = monitoredDetermNodes,
-                                           self = FALSE, includeData = TRUE)
-        if(any(dataNodes %in% nextNodes))
-            return(oneVar) else return(as.character(NA))
-    })
-    badVars <- badVars[!is.na(badVars)]
-
-    if(length(badVars) > 10) {
-        badVars <- c(badVars[1:10], "...")
-    }
-    if(length(badVars)) 
+    parentNodes <- getParentNodes(dataNodes, model, stochOnly = TRUE)
+    parentVars <- model$getVarNames(nodes = parentNodes)
+    wh <- which(!parentVars %in% monitors)
+    if(length(wh)) {
+        if(length(wh) > 10)
+            badVars <- c(parentVars[wh[1:10]], "...") else badVars <- parentVars[wh]
         stop(paste0("In calculate WAIC in NIMBLE, all parameters of",
                     " data nodes in the model must be monitored.", "\n", 
                     "  Currently, the following parameters are not monitored: ",
                     paste0(badVars, collapse = ", ")))
+    }
     message('Monitored nodes are valid for WAIC.')
 }
 
-
+## Used through version 0.10.0 and likely to be used in some form once we re-introduce mWAIC
 mcmc_checkWAICmonitors <- function(model, monitors, dataNodes) {
     monitoredDetermNodes <- model$expandNodeNames(monitors)[model$isDeterm(model$expandNodeNames(monitors))]
     if(length(monitoredDetermNodes) > 0) {
