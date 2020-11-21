@@ -1,6 +1,22 @@
+                            CHANGES IN VERSION 0.10.1 (Novembere 2020)
+                            
 USER LEVEL CHANGES
 
--- `samplesSummary` function (and also `runMCMC(..., summary = TRUE)`) was made to be robust against non-valid values in posterior samples array.
+-- Add `round` argument to `samplesSummary` (PR #1077).
+
+-- `samplesSummary` function (and also `runMCMC(..., summary = TRUE)`) was made to be robust against non-valid values in posterior samples array (PR #1075).
+
+BUG FIXES
+
+-- Fix `makeParamInfo` when there is only one declID involved to address a bug affecting usage of `getParam`. This bug was introduced in version 0.10.0 when reducing memory use of `getParam` (PR #1016). This fixes incorrect behavior of conjugate samplers (because of incorrect inputs from `getParam`) under certain model structures, in particular state-space style models. 
+
+-- Prevent usage of marginal version of WAIC (i.e., when not monitoring all direct stochastic parents of data nodes); use of marginal version of WAIC in previous versions gave incorrect results (PR #1081).
+
+DEVELOPER LEVEL CHANGES
+
+-- Deprecate `samplerAssignmnentRules` system (PR #1078).
+
+-- Deprecate `autoBlock` MCMC option (PR #1079).
 
                             CHANGES IN VERSION 0.10.0 (October 2020)
 
