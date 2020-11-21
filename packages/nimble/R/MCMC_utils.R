@@ -395,7 +395,7 @@ mcmc_checkWAICmonitors_conditional <- function(model, monitors, dataNodes) {
     if(length(wh)) {
         if(length(wh) > 10)
             badVars <- c(parentVars[wh[1:10]], "...") else badVars <- parentVars[wh]
-        stop(paste0("In calculate WAIC in NIMBLE, all parameters of",
+        stop(paste0("To calculate WAIC in NIMBLE, all parameters of",
                     " data nodes in the model must be monitored.", "\n", 
                     "  Currently, the following parameters are not monitored: ",
                     paste0(badVars, collapse = ", ")))
