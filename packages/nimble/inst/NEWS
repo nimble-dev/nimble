@@ -8,9 +8,9 @@ USER LEVEL CHANGES
 
 BUG FIXES
 
--- Fix `makeParamInfo` when there is only one declID involved to address a bug affecting usage of `getParam`. This bug was introduced in version 0.10.0 when reducing memory use of `getParam` (PR #1016). This fixes incorrect behavior of conjugate samplers (because of incorrect inputs from `getParam`) under certain model structures, in particular state-space style models. 
+-- Fix `makeParamInfo` when there is only one declID involved to address a bug affecting usage of `getParam`. This bug was introduced in version 0.10.0 when reducing memory use of `getParam` (PR #1016). This fixes incorrect behavior of conjugate samplers (because of incorrect inputs from `getParam`) under certain model structures, in particular state-space style models (PR #1080). 
 
--- Prevent usage of marginal version of WAIC (i.e., when not monitoring all direct stochastic parents of data nodes); use of marginal version of WAIC in previous versions gave incorrect results (PR #1081).
+-- Prevent usage of marginal version of WAIC (i.e., when not monitoring all direct stochastic parents of data nodes); use of marginal version of WAIC in previous versions gave incorrect results (PR #1083).
 
 DEVELOPER LEVEL CHANGES
 
