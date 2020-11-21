@@ -159,9 +159,11 @@ asCol <- function(x) {
 #'
 #' @param param A character string naming a parameter of the distribution followed by node, such as "mean", "rate", "lambda", or whatever parameter names are relevant for the distribution of the node.
 #'
+#' @param vector A logical indicating whether nodes should definitely be treated as a vector in compiled code, even if it has length = 1.  For type consistency, the compiler needs this option.  If nodes has length > 1, this argument is ignored.
+#' 
 #' @export
 #' @details This is used internally by \code{\link{getParam}}.  It is not intended for direct use by a user or even a nimbleFunction programmer.
-makeParamInfo <- function(model, nodes, param) {
+makeParamInfo <- function(model, nodes, param, vector = FALSE) {
     ## updating to allow nodes to be a vector. getParam only works for a scalar but in a case like nodes[i] the param info is set up for the entire vector.
 
     ## this allows for(i in seq_along(nodes)) a <- a + model$getParam(nodes[i], 'mean') through compilation even if some instances have nodes empty and so won't be called.
@@ -196,7 +198,10 @@ makeParamInfo <- function(model, nodes, param) {
   if(types[1] %in% c('integer', 'logical')) types[1] <- 'double'
 
   if(length(paramIDs) == 1) { ## We could shortcut on this case earlier
-    paramIDvec <- paramIDs
+    if(vector)
+      paramIDvec <- c(-1L, paramIDs[1]) # paramIDs is length 1 anyway
+    else
+      paramIDvec <- paramIDs[1]
   } else {
     if(length(unique(paramIDs)) == 1) {
       # They are all the same.
@@ -265,6 +270,8 @@ getParam <- function(model, node, param, nodeFunctionIndex) {
         if(is.na(paramInfo$type)) stop(paste('getParam called with empty or invalid node:', as.character(node)))
     }
     paramID <- paramInfo$paramID
+    if(paramID[1]==-1)
+        paramID <- paramID[2]
     nDim <- paramInfo$nDim
     type <- paramInfo$type
     unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ indexingInfo$unrolledIndicesMatrixRows[1], ]
