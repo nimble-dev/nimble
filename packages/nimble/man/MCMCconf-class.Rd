@@ -108,7 +108,7 @@ Arguments:
 
 ind: A numeric vector or character vector.  A numeric vector may be used to specify the indices of the samplerConf objects to return, or a character vector may be used to indicate a set of target nodes and/or variables, for which all samplers acting on these nodes will be returned. For example, getSamplers('x') will return all samplerConf objects whose target is model node 'x', or whose targets are contained (entirely or in part) in the model variable 'x'.  If omitted, then all samplerConf objects in this MCMC configuration object are returned.}
 
-\item{\code{initialize(model, nodes, control = list(), rules, monitors, thin = 1,
+\item{\code{initialize(model, nodes, control = list(), monitors, thin = 1,
   monitors2 = character(), thin2 = 1,
   useConjugacy = getNimbleOption("MCMCuseConjugacy"), onlyRW = FALSE,
   onlySlice = FALSE,

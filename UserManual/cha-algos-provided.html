@@ -510,9 +510,8 @@ flowModel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(flow
                                       <span class="st">&#39;meanShift1899&#39;</span>),
                            <span class="dt">baselineNode =</span> <span class="st">&#39;x0&#39;</span>,
                            <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">sigma =</span> <span class="kw">c</span>(<span class="fl">0.1</span>, <span class="fl">0.1</span>, <span class="dv">5</span>),
-                                          <span class="dt">initParamSigma =</span> <span class="kw">c</span>(<span class="fl">0.1</span>, <span class="fl">0.1</span>, <span class="dv">5</span>)))</code></pre></div>
-<pre><code>## buildIteratedFilter2: IF2 algorithm built to maximize parameters: logSigmaInnovations, logSigmaMeasurements, meanShift1899.</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cFlowModel &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(flowModel)
+                                          <span class="dt">initParamSigma =</span> <span class="kw">c</span>(<span class="fl">0.1</span>, <span class="fl">0.1</span>, <span class="dv">5</span>)))
+cFlowModel &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(flowModel)
 cFilter  &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(filter, <span class="dt">project =</span> flowModel)</code></pre></div>
 <p>We now run the algorithm with 1000 particles for 100 iterations with the schedule parameter equal to 0.2.</p>
 <p>In addition to the estimates, we can extract the values of the log-likelihood, the estimates and the standard deviation of the parameter particles as they evolve over the iterations, in order to assess convergence.</p>
