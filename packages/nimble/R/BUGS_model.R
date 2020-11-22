@@ -1419,3 +1419,30 @@ whyInvalid <- function(value) {
 #' @name modelInitialization
 #' @rdname modelInitialization
 #' @export
+
+## FIXME: this is a temporary function (used in BNP sampler setup and WAIC checking)
+## until we bring this into the full model API
+getParentNodes <- function(nodes, model, returnType = 'names', stochOnly = FALSE) {
+    ## adapted from BUGS_modelDef creation of edgesFrom2To
+    getParentNodesCore <- function(nodes, model, returnType = 'names', stochOnly = FALSE) {
+        nodeIDs <- model$expandNodeNames(nodes, returnType = "ids")
+        fromIDs <- sort(unique(unlist(edgesTo2From[nodeIDs])))
+        fromNodes <- maps$graphID_2_nodeName[fromIDs]
+        if(!length(fromNodes))
+            return(character(0))
+        fromNodesDet <- fromNodes[model$modelDef$maps$types[fromIDs] == 'determ']
+        ## Recurse through parents of deterministic nodes.
+        fromNodes <- c(if(stochOnly) fromNodes[model$modelDef$maps$types[fromIDs] == 'stoch'] else fromNodes, 
+                       if(length(fromNodesDet)) getParentNodesCore(fromNodesDet, model, returnType, stochOnly) else character(0))
+        fromNodes
+    }
+    
+    maps <- model$modelDef$maps
+    maxNodeID <- length(maps$vertexID_2_nodeID) ## should be same as length(maps$nodeNames)
+    ## Only determine edgesTo2From once and then obtain in getParentNodesCore via scoping.
+    edgesLevels <- if(maxNodeID > 0) 1:maxNodeID else numeric(0)
+    fedgesTo <- factor(maps$edgesTo, levels = edgesLevels) ## setting levels ensures blanks inserted into the splits correctly
+    edgesTo2From <- split(maps$edgesFrom, fedgesTo)
+
+    getParentNodesCore(nodes, model, returnType, stochOnly)
+}

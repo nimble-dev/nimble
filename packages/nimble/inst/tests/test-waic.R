@@ -38,15 +38,16 @@ test_that("school model WAIC is accurate", {
   CschoolSATmcmc <- compileNimble(schoolSATmcmc, project = schoolSATmodel)
   CschoolSATmcmc$run(50000)
   expect_equal(CschoolSATmcmc$calculateWAIC(), 61.8, tolerance = 2.0)
+
   schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('mu', 'itau'))
-  expect_message(buildMCMC(schoolSATmcmcConf, enableWAIC = TRUE), 
-  "Monitored nodes are valid for WAIC",
-  all = FALSE, fixed = TRUE)
-  schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('mu'))
-  expect_error(buildMCMC(schoolSATmcmcConf, enableWAIC = TRUE))
+  expect_error(buildMCMC(schoolSATmcmcConf, enableWAIC = TRUE), 
+               "To calculate WAIC in NIMBLE, all parameters")
+  ## mWAIC not enabled as of 0.10.1
+  ## schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('mu'))
+  ## expect_error(buildMCMC(schoolSATmcmcConf, enableWAIC = TRUE))
   ## different set of monitors than above, so different waic value expected
-  expect_equal(nimbleMCMC(model = schoolSATmodel, WAIC = TRUE)$WAIC, 67, 
-               tolerance = 8) 
+  ## expect_equal(nimbleMCMC(model = schoolSATmodel, WAIC = TRUE)$WAIC, 67, tolerance = 8) 
+
   schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('schoolmean'))
   schoolSATmcmc <- buildMCMC(schoolSATmcmcConf, enableWAIC = TRUE)
   CschoolSATmcmc <- compileNimble(schoolSATmcmc, project = schoolSATmodel, 
@@ -107,41 +108,36 @@ test_that("voter model WAIC is accurate", {
                            constants = constList,
                            inits = list(beta_1 = 44, beta_2 = 3.75, 
                                         sigma = 4.4))
+
   votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_1',
                                                           'beta_2',
-                                                          'sigma'))
+                                                          'sigma_2'))
   expect_message(buildMCMC(votermcmcConf, enableWAIC = TRUE), 
                  "Monitored nodes are valid for WAIC",
                  all = FALSE, fixed = TRUE)
+
+  votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_12',
+                                                          'beta_2',
+                                                          'sigma'))
+  expect_error(buildMCMC(votermcmcConf, enableWAIC = TRUE), 
+                 "To calculate WAIC in NIMBLE, all parameters")
   
-  votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_1',
-                                                          'beta_2',
-                                                          'sigma_2'))
-  expect_message(buildMCMC(votermcmcConf, enableWAIC = TRUE), 
-                 "Monitored nodes are valid for WAIC",
-                 all = FALSE, fixed = TRUE)
-  votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_1',
-                                                          'beta_2',
-                                                          'sigma',
-                                                          'sigma_2'))
-  expect_message(buildMCMC(votermcmcConf, enableWAIC = TRUE), 
-                 "Monitored nodes are valid for WAIC",
-                 all = FALSE, fixed = TRUE)
   votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_12',
                                                           'beta_2',
                                                           'sigma_2'))
-  expect_message(buildMCMC(votermcmcConf, enableWAIC = TRUE), 
-                 "Monitored nodes are valid for WAIC",
-                 all = FALSE, fixed = TRUE)
+  expect_error(buildMCMC(votermcmcConf, enableWAIC = TRUE),
+                 "To calculate WAIC in NIMBLE, all parameters")
+
   votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_12',
                                                           'beta_2',
                                                           'sigma'))
-  expect_message(buildMCMC(votermcmcConf, enableWAIC = TRUE), 
-                 "Monitored nodes are valid for WAIC",
-                 all = FALSE, fixed = TRUE)
+  expect_error(buildMCMC(votermcmcConf, enableWAIC = TRUE), 
+                 "To calculate WAIC in NIMBLE, all parameters")
+
   votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_1',
                                                           'beta_2'))
-  expect_error(buildMCMC(votermcmcConf, enableWAIC = TRUE))
+  expect_error(buildMCMC(votermcmcConf, enableWAIC = TRUE),
+               "To calculate WAIC in NIMBLE, all parameters")
 })
 
 

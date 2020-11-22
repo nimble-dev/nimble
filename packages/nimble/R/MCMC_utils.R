@@ -388,9 +388,23 @@ mcmc_processMonitorNames <- function(model, nodes) {
     return(c(expandedNodeNames, expandedLogProbNames))
 }
 
+## As of 0.10.1 stop WAIC if not monitoring all parameters of data nodes
+mcmc_checkWAICmonitors_conditional <- function(model, monitors, dataNodes) {
+    parentNodes <- getParentNodes(dataNodes, model, stochOnly = TRUE)
+    parentVars <- model$getVarNames(nodes = parentNodes)
+    wh <- which(!parentVars %in% monitors)
+    if(length(wh)) {
+        if(length(wh) > 10)
+            badVars <- c(parentVars[wh[1:10]], "...") else badVars <- parentVars[wh]
+        stop(paste0("To calculate WAIC in NIMBLE, all parameters of",
+                    " data nodes in the model must be monitored.", "\n", 
+                    "  Currently, the following parameters are not monitored: ",
+                    paste0(badVars, collapse = ", ")))
+    }
+    message('Monitored nodes are valid for WAIC.')
+}
 
-
-
+## Used through version 0.10.0 and likely to be used in some form once we re-introduce mWAIC
 mcmc_checkWAICmonitors <- function(model, monitors, dataNodes) {
     monitoredDetermNodes <- model$expandNodeNames(monitors)[model$isDeterm(model$expandNodeNames(monitors))]
     if(length(monitoredDetermNodes) > 0) {

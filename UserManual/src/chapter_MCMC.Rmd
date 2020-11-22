@@ -635,11 +635,12 @@ Cmcmc$calculateWAIC(nburnin = 100)
 ```
 
 Note that there is not a unique value of WAIC for a model. WAIC is calculated from
-Equations 5, 12, and 13 in [@Gelman_etal_2014] (i.e. using \emph{p}WAIC2). In NIMBLE, the set
-of all stochastic nodes monitored by the MCMC object will be treated as
-$\theta$ for the purposes of Equation 5 from [@Gelman_etal_2014].
+Equations 5, 12, and 13 in [@Gelman_etal_2014] (i.e., using \emph{p}WAIC2). The current version of NIMBLE only provides the conditional WAIC, namely the version of WAIC where all parameters directly involved in the likelihood are treated as
+$\theta$ for the purposes of Equation 5 from [@Gelman_etal_2014]. As a result, the user *must* set the MCMC monitors (via the `monitors` argument) to include all stochastic nodes that are parents of any data nodes; by default the MCMC monitors are only the top-level nodes of the model.
 
-In many cases one would want $\theta$ to be the set of all stochastic nodes in the model, in which case the user *must* set the MCMC monitors to include all stochastic nodes; by default the MCMC monitors are only the top-level nodes of the model.
+In some cases, one would want to calculate the marginal version of WAIC, integrating over latent variables, e.g., [@Ariyo_etal_2019]. NIMBLE does not currently provide this version of WAIC (although you could monitor the relevant nodes and carry out the calculations yourself based on the MCMC output).
+
+Also note that WAIC relies on a partition of the observations, i.e., 'pointwise' prediction. In NIMBLE the sum over log pointwise predictive density values treats each data node as contributing a single value to the sum. When a data node is multivariate, that data node contributes a single value to the sum based on the joint density of the elements in the node. Note that if one wants the WAIC calculation to be based on the joint likelihood for each group of observations (e.g., grouping the observations from each person or unit in a longitudinal data context), one would need to use a multivariate distribution for the observations in each group (potentially by writing a user-defined distribution).
 
 ## k-fold cross-validation
 

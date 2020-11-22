@@ -56,28 +56,26 @@
 #' 
 #' The \code{calculateWAIC} method calculates the WAIC of the model that the
 #' MCMC was performed on. The WAIC (Watanabe, 2010) is calculated from
-#' Equations 5, 12, and 13 in Gelman et al. (2014) (i.e. using \emph{p}WAIC2).  The set
-#' of all stochastic nodes monitored by the MCMC object will be treated as
-#' \eqn{theta} for the purposes of Equation 5 from Gelman et al. (2014). 
-#' All non-monitored nodes downstream of the monitored nodes that are necessary
-#' to calculate \eqn{p(y|theta)} will be simulated from the posterior samples of 
-#' \eqn{theta}.  This allows customization of exactly what predictive 
-#' distribution \eqn{p(y|theta)} to use for calculations.  For more detail
-#' on the use of different predictive distributions, see Section 2.5 from Gelman et al.
-#' (2014). Note that by default only top-level stochastic nodes are monitored, but
-#' in many situations one would want to set monitors on all stochastic nodes so that
-#' all stochastic nodes are treated as \eqn{theta} for the WAIC calculation.
-#' 
-#' Note that there exist sets of monitored parameters that do not lead to valid
-#' WAIC calculations.  Specifically, for a valid WAIC calculation, every 
-#' node that a data node depends on must be either monitored, or be
-#' downstream from monitored nodes.  An easy way to ensure this is satisfied
-#' is to monitor all top-level parameters in a model (NIMBLE's default).  
-#' Another way to guarantee correctness is to monitor all nodes
-#' directly upstream from a data node. However, other combinations of monitored
-#' nodes are also valid.  If \code{enableWAIC = TRUE}, NIMBLE checks to see if
-#' the set of monitored nodes is valid, and returns an error if not.
-#' 
+#' Equations 5, 12, and 13 in Gelman et al. (2014) (i.e., using \emph{p}WAIC2).
+#'
+#' Note that there is not a unique value of WAIC for a model. The current version of
+#' NIMBLE only provides the conditional WAIC, namely the version of WAIC where all
+#' parameters directly involved in the likelihood are treated as \eqn{theta}
+#' for the purposes of Equation 5 from Gelman et al. (2014). As a result, the user
+#' must set the MCMC monitors (via the \code{monitors} argument) to include all stochastic
+#' nodes that are parents of any data nodes; by default the MCMC monitors are only
+#' the top-level nodes of the model. For more detail on the use of different predictive
+#' distributions, see Section 2.5 from Gelman et al. (2014) or Ariyo et al. (2019).
+
+#' Also note that WAIC relies on a partition of the observations, i.e., 'pointwise'
+#' prediction. In NIMBLE the sum over log pointwise predictive density values treats
+#' each data node as contributing a single value to the sum. When a data node is
+#' multivariate, that data node contributes a single value to the sum based on the
+#' joint density of the elements in the node. Note that if one wants the WAIC
+#' calculation to be based on the joint predictive density for each group of observations
+#' (e.g., grouping the observations from each person or unit in a longitudinal
+#' data context), one would need to use a multivariate distribution for the
+#' observations in each group (potentially by writing a user-defined distribution).
 #' 
 #' @examples
 #' \dontrun{
@@ -87,7 +85,7 @@
 #'     y ~ dnorm(x, 1)
 #' })
 #' Rmodel <- nimbleModel(code, data = list(y = 0))
-#' conf <- configureMCMC(Rmodel)
+#' conf <- configureMCMC(Rmodel, monitors = c('mu', 'x'))
 #' Rmcmc <- buildMCMC(conf, enableWAIC = TRUE)
 #' Cmodel <- compileNimble(Rmodel)
 #' Cmcmc <- compileNimble(Rmcmc, project=Rmodel)
@@ -106,6 +104,8 @@
 #' Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation and widely applicable information criterion in singular learning theory. \emph{Journal of Machine Learning Research} 11: 3571-3594.
 #' 
 #' Gelman, A., Hwang, J. and Vehtari, A. (2014). Understanding predictive information criteria for Bayesian models. \emph{Statistics and Computing} 24(6): 997-1016.
+#'
+#' Ariyo, O., Quintero, A., Munoz, J., Verbeke, G. and Lesaffre, E. (2019). Bayesian model selection in linear mixed models for longitudinal data. \emph{Journal of Applied Statistics} 47: 890-913.
 #' @export
 buildMCMC <- nimbleFunction(
     name = 'MCMC',
@@ -142,7 +142,7 @@ buildMCMC <- nimbleFunction(
         enableWAIC <- enableWAICargument || conf$enableWAIC   ## enableWAIC comes from MCMC configuration, or from argument to buildMCMC
         if(enableWAIC) {
             if(dataNodeLength == 0)   stop('WAIC cannot be calculated, as no data nodes were detected in the model.')
-            mcmc_checkWAICmonitors(model = model, monitors = sampledNodes, dataNodes = dataNodes)
+            mcmc_checkWAICmonitors_conditional(model = model, monitors = sampledNodes, dataNodes = dataNodes)
         }
     },
 
