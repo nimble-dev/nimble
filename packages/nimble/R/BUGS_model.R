@@ -1445,5 +1445,5 @@ getParentNodes <- function(nodes, model, returnType = 'names', stochOnly = FALSE
 #'
 #' @name modelInitialization
 #' @rdname modelInitialization
-#' @export
+NULL
 
