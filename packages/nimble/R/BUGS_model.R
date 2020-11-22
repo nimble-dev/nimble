@@ -1407,19 +1407,6 @@ whyInvalid <- function(value) {
     stop('should never happen')
 }
 
-#' Information on initial values in a nimbleModel
-#'
-#'  Having uninitialized nodes in a nimbleModel can potentially cause some algorithms to fail, and can lead to poor performance in others.  Here are some
-#'  general guidelines on  how non-intitialized variables can affect performance:
-#'  \itemize{
-#'    \item MCMC will atuo-initialize, but will do so from the prior distribution.  This can cause slow convergence, especially in the case of diffuse priors.
-#'    \item Likewise, particle filtering methods will initialize top-level parameters from their prior distributions, which can lead to errors or poor performance in these methods.
-#' }
-#'
-#' @name modelInitialization
-#' @rdname modelInitialization
-#' @export
-
 ## FIXME: this is a temporary function (used in BNP sampler setup and WAIC checking)
 ## until we bring this into the full model API
 getParentNodes <- function(nodes, model, returnType = 'names', stochOnly = FALSE) {
@@ -1446,3 +1433,17 @@ getParentNodes <- function(nodes, model, returnType = 'names', stochOnly = FALSE
 
     getParentNodesCore(nodes, model, returnType, stochOnly)
 }
+
+#' Information on initial values in a nimbleModel
+#'
+#'  Having uninitialized nodes in a nimbleModel can potentially cause some algorithms to fail, and can lead to poor performance in others.  Here are some
+#'  general guidelines on  how non-intitialized variables can affect performance:
+#'  \itemize{
+#'    \item MCMC will atuo-initialize, but will do so from the prior distribution.  This can cause slow convergence, especially in the case of diffuse priors.
+#'    \item Likewise, particle filtering methods will initialize top-level parameters from their prior distributions, which can lead to errors or poor performance in these methods.
+#' }
+#'
+#' @name modelInitialization
+#' @rdname modelInitialization
+#' @export
+
