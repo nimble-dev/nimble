@@ -62,6 +62,8 @@ If have problems with check_packages_in_dir, can
 download .tar.gz for reverse dependencies and run R CMD check on it.
 This was necessary for exPrior, nimbleEcology and nimbleSMC in 0.10.0.
 
+exPrior seems to no longer be on CRAN as of 2020-11-23
+
 At one point bcgam testing was failing, but seems fine as of 2019-10-04.
 
 we could put new version of manual in inst/doc, but not doing that because we don't want to add to the size of the tarball/package install)
