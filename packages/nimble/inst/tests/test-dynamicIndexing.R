@@ -191,7 +191,7 @@ test_that("Testing multivariate normal-Wishart dependency conjugacy detection wi
         k ~ dcat(p[1:3])
     })
     m = nimbleModel(code, inits = list(k = 1, pr0 = diag(3), pr = diag(3),
-                                       z = rep(1,3)))
+                                       z = rep(1,3)), data = list(y = rep(0,3)))
     conf <- configureMCMC(m)
     expect_match(conf$getSamplers()[[2]]$name, "conjugate_dwish_dmnorm",
                  info = "failed to detect wishart-dmnorm conjugacy in multivariate multi-conjugacy setting")
@@ -211,7 +211,7 @@ test_that("Testing multivariate normal-Wishart dependency conjugacy detection wi
         k ~ dcat(p[1:3])
     })
     m = nimbleModel(code, inits = list(k = 1, pr0 = diag(3), pr = diag(3),
-                                       z = rep(1,3)))
+                                       z = rep(1,3)), data = list(y = rep(0,3)))
     conf <- configureMCMC(m)
     expect_match(conf$getSamplers()[[3]]$name, "conjugate_dmnorm_dmnorm",
             info = "failed to detect dmnorm-dmnorm conjugacy in multivariate crossed multi-conjugacy setting")
