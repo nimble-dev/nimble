@@ -189,17 +189,19 @@ print: A logical argument specifying whether to print the montiors and samplers.
                 ## determine node branch points of any trailing model branches of entirely non-data nodes.
                 ## call these posterior predictive branch nodes - they'll get a posterior_predictive_branch sampler.
                 posteriorPredictiveBranchNodes <- character()
-                nodesAlreadyInBranch <- character()
-                stochNonDataNodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
-                stochNonDataNodes <- intersect(stochNonDataNodes, nodes)
-                for(node in stochNonDataNodes) {
-                    if(node %in% nodesAlreadyInBranch) next
-                    if(model$isEndNode(node)) next
-                    if(length(model$getDependencies(node, stochOnly = TRUE, dataOnly = TRUE, downstream = TRUE)) > 0) next
-                    posteriorPredictiveBranchNodes <- c(posteriorPredictiveBranchNodes, node)
-                    theseDownstreamStochNonDataNodes <- model$getDependencies(node, stochOnly = TRUE, downstream = TRUE, self = FALSE)
-                    nodesAlreadyInBranch <- c(nodesAlreadyInBranch, theseDownstreamStochNonDataNodes)
-                    nodes <- setdiff(nodes, theseDownstreamStochNonDataNodes)
+                if(getNimbleOption('MCMCusePosteriorPredictiveBranchSampler')) {
+                    nodesAlreadyInBranch <- character()
+                    stochNonDataNodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
+                    stochNonDataNodes <- intersect(stochNonDataNodes, nodes)
+                    for(node in stochNonDataNodes) {
+                        if(node %in% nodesAlreadyInBranch) next
+                        if(model$isEndNode(node)) next
+                        if(length(model$getDependencies(node, stochOnly = TRUE, dataOnly = TRUE, downstream = TRUE)) > 0) next
+                        posteriorPredictiveBranchNodes <- c(posteriorPredictiveBranchNodes, node)
+                        theseDownstreamStochNonDataNodes <- model$getDependencies(node, stochOnly = TRUE, downstream = TRUE, self = FALSE)
+                        nodesAlreadyInBranch <- c(nodesAlreadyInBranch, theseDownstreamStochNonDataNodes)
+                        nodes <- setdiff(nodes, theseDownstreamStochNonDataNodes)
+                    }
                 }
                 nodeIDs <- model$expandNodeNames(nodes, returnType = 'ids')
                 isEndNode <-  model$isEndNode(nodeIDs) ## isEndNode can be modified later to avoid adding names when input is IDs

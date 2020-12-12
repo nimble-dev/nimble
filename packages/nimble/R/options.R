@@ -64,6 +64,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         MCMCmultivariateNodesAsScalars = FALSE,
         MCMCmonitorAllSampledNodes = FALSE,
         MCMCuseConjugacy = TRUE,
+        MCMCusePosteriorPredictiveBranchSampler = TRUE,
         MCMCenableWAIC = FALSE
         
         ## default settings for MCMC samplers

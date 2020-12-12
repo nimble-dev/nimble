@@ -6,6 +6,8 @@ RwarnLevel <- options('warn')$warn
 options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
+nimblePPBranchSamplerSetting <- getNimbleOption('MCMCusePosteriorPredictiveBranchSampler')
+nimbleOptions(MCMCusePosteriorPredictiveBranchSampler = FALSE)
 
 ## If you do *not* want to write to results files
 ##    comment out the sink() call below.  And consider setting verbose = FALSE 
@@ -1730,3 +1732,4 @@ if(!generatingGoldFile) {
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
+nimbleOptions(MCMCusePosteriorPredictiveBranchSampler = nimblePPBranchSamplerSetting)
