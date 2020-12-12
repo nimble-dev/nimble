@@ -82,7 +82,7 @@ MCMCconf <- setRefClass(
         samplerConfs        = 'ANY',
         samplerExecutionOrder = 'ANY',
         controlDefaults     = 'ANY',
-        namedSamplerLabelMaker = 'ANY',
+        ##namedSamplerLabelMaker = 'ANY',  ## usage long since deprecated (Dec 2020)
         mvSamples1Conf      = 'ANY',
         mvSamples2Conf      = 'ANY'
     ),
@@ -160,7 +160,7 @@ print: A logical argument specifying whether to print the montiors and samplers.
             samplerConfs <<- list()
             samplerExecutionOrder <<- numeric()
             controlDefaults <<- list(...)
-            namedSamplerLabelMaker <<- labelFunctionCreator('namedSampler')
+            ##namedSamplerLabelMaker <<- labelFunctionCreator('namedSampler')  ## usage long since deprecated (Dec 2020)
             for(i in seq_along(control))     controlDefaults[[names(control)[i]]] <<- control[[i]]
             if(identical(nodes, character())) {
                 nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
@@ -186,6 +186,21 @@ print: A logical argument specifying whether to print the montiors and samplers.
                 isEndNode <- model$isEndNode(nodes)
                 if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
             } else {
+                ## determine node branch points of any trailing model branches of entirely non-data nodes.
+                ## call these posterior predictive branch nodes - they'll get a posterior_predictive_branch sampler.
+                posteriorPredictiveBranchNodes <- character()
+                nodesAlreadyInBranch <- character()
+                stochNonDataNodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
+                stochNonDataNodes <- intersect(stochNonDataNodes, nodes)
+                for(node in stochNonDataNodes) {
+                    if(node %in% nodesAlreadyInBranch) next
+                    if(model$isEndNode(node)) next
+                    if(length(model$getDependencies(node, stochOnly = TRUE, dataOnly = TRUE, downstream = TRUE)) > 0) next
+                    posteriorPredictiveBranchNodes <- c(posteriorPredictiveBranchNodes, node)
+                    theseDownstreamStochNonDataNodes <- model$getDependencies(node, stochOnly = TRUE, downstream = TRUE, self = FALSE)
+                    nodesAlreadyInBranch <- c(nodesAlreadyInBranch, theseDownstreamStochNonDataNodes)
+                    nodes <- setdiff(nodes, theseDownstreamStochNonDataNodes)
+                }
                 nodeIDs <- model$expandNodeNames(nodes, returnType = 'ids')
                 isEndNode <-  model$isEndNode(nodeIDs) ## isEndNode can be modified later to avoid adding names when input is IDs
                 if(useConjugacy) conjugacyResultsAll <- nimble:::conjugacyRelationshipsObject$checkConjugacy(model, nodeIDs) ## Later, this can go through model$checkConjugacy if we make it check whether nodes are already nodeIDs.  To isolate changes, I am doing it directly here.
@@ -266,6 +281,9 @@ print: A logical argument specifying whether to print the montiors and samplers.
                     }
                     ## if node has 0 stochastic dependents, assign 'posterior_predictive' sampler (e.g. for predictive nodes)
                     if(isEndNode[i]) { addSampler(target = node, type = 'posterior_predictive');     next }
+
+                    ## if nodes is a branch point of a network of entirely non-data nodes, assign 'posterior_predictive_branch' sampler
+                    if(node %in% posteriorPredictiveBranchNodes) { addSampler(target = node, type = 'posterior_predictive_branch');     next }
                     
                     ## for multivariate nodes, either add a conjugate sampler, RW_multinomial, or RW_block sampler
                     if(nodeLength > 1) {
@@ -315,7 +333,7 @@ print: A logical argument specifying whether to print the montiors and samplers.
                     ## if node distribution is discrete, assign 'slice' sampler
                     if(discrete) { addSampler(target = node, type = 'slice');     next }
                     
-                    ## if node distribution is dgamma and its dependency is dCRP, assign 'augmented_BetaGamma' sampler
+                    ## if node distribution is dgamma and its dependency is dCRP, assign 'CRP_concentration' sampler
                     if(check_dCRP) {
                         if(nodeDist == 'dgamma'){
                             depNode <- model$getDependencies(node, self=FALSE)
@@ -465,7 +483,7 @@ Invisibly returns a list of the current sampler configurations, which are sample
 
             if(!(all(model$isStoch(target)))) { warning(paste0('No sampler assigned to non-stochastic node: ', paste0(target,collapse=', '))); return(invisible(samplerConfs)) }   ## ensure all target node(s) are stochastic
 
-            ##libraryTag <- if(nameProvided) namedSamplerLabelMaker() else thisSamplerName   ## unique tag for each 'named' sampler, internal use only
+            ##libraryTag <- if(nameProvided) namedSamplerLabelMaker() else thisSamplerName   ## unique tag for each 'named' sampler, internal use only  ## usage long since deprecated (Dec 2020)
             ##if(is.null(controlNamesLibrary[[libraryTag]]))   controlNamesLibrary[[libraryTag]] <<- mcmc_findControlListNamesInCode(samplerFunction)   ## populate control names library
             ##requiredControlNames <- controlNamesLibrary[[libraryTag]]
             controlArgs <- c(control, list(...))
@@ -1070,7 +1088,7 @@ makeNewConfFromOldConf <- function(oldMCMCconf){
     newMCMCconf$samplerConfs <- oldMCMCconf$samplerConfs
     newMCMCconf$samplerExecutionOrder <- oldMCMCconf$samplerExecutionOrder
     newMCMCconf$controlDefaults <- oldMCMCconf$controlDefaults
-    newMCMCconf$namedSamplerLabelMaker <- oldMCMCconf$namedSamplerLabelMaker
+    ##newMCMCconf$namedSamplerLabelMaker <- oldMCMCconf$namedSamplerLabelMaker  ## usage long since deprecated (Dec 2020)
     newMCMCconf$mvSamples1Conf <- oldMCMCconf$mvSamples1Conf
     newMCMCconf$mvSamples2Conf <- oldMCMCconf$mvSamples2Conf
     return(newMCMCconf)	
