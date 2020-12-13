@@ -179,31 +179,30 @@ print: A logical argument specifying whether to print the montiors and samplers.
             
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
             if(!useNewConfigureMCMC) {
-                if(!(all(model$isStoch(nodes)))) { stop('assigning samplers to non-stochastic nodes: ', paste0(nodes[!model$isStoch(nodes)], collapse=', ')) }    ## ensure all target node(s) are stochastic
-            }
-
-            if(!useNewConfigureMCMC) {
+                if(!(all(model$isStoch(nodes)))) { stop('assigning samplers to non-stochastic nodes: ', paste0(nodes[!model$isStoch(nodes)], collapse=', ')) }
                 isEndNode <- model$isEndNode(nodes)
                 if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
             } else {
+                nodeIDs <- model$expandNodeNames(nodes, returnType = 'ids')
                 ## determine node branch points of any trailing model branches of entirely non-data nodes.
                 ## call these posterior predictive branch nodes - they'll get a posterior_predictive_branch sampler.
-                posteriorPredictiveBranchNodes <- character()
+                posteriorPredictiveBranchNodeIDs <- numeric()
                 if(getNimbleOption('MCMCusePosteriorPredictiveBranchSampler')) {
-                    nodesAlreadyInBranch <- character()
-                    stochNonDataNodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
-                    stochNonDataNodes <- intersect(stochNonDataNodes, nodes)
-                    for(node in stochNonDataNodes) {
-                        if(node %in% nodesAlreadyInBranch) next
-                        if(model$isEndNode(node)) next
-                        if(length(model$getDependencies(node, stochOnly = TRUE, dataOnly = TRUE, downstream = TRUE)) > 0) next
-                        posteriorPredictiveBranchNodes <- c(posteriorPredictiveBranchNodes, node)
-                        theseDownstreamStochNonDataNodes <- model$getDependencies(node, stochOnly = TRUE, downstream = TRUE, self = FALSE)
-                        nodesAlreadyInBranch <- c(nodesAlreadyInBranch, theseDownstreamStochNonDataNodes)
-                        nodes <- setdiff(nodes, theseDownstreamStochNonDataNodes)
+                    nodeIDsAlreadyInBranch <- numeric()
+                    stochNonDataNodeIDs <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE, returnType = 'ids')
+                    stochNonDataNodeIDs <- intersect(stochNonDataNodeIDs, nodeIDs)
+                    for(nodeID in stochNonDataNodeIDs) {
+                        if(nodeID %in% nodeIDsAlreadyInBranch) next
+                        if(model$isEndNode(nodeID)) next
+                        if(length(model$getDependencies(nodeID, stochOnly = TRUE, dataOnly = TRUE, downstream = TRUE, returnType = 'ids')) > 0) next
+                        posteriorPredictiveBranchNodeIDs <- c(posteriorPredictiveBranchNodeIDs, nodeID)
+                        theseDownstreamStochNonDataNodeIDs <- model$getDependencies(nodeID, stochOnly = TRUE, downstream = TRUE, self = FALSE, returnType = 'ids')
+                        nodeIDsAlreadyInBranch <- c(nodeIDsAlreadyInBranch, theseDownstreamStochNonDataNodeIDs)
+                        nodeIDs <- setdiff(nodeIDs, theseDownstreamStochNonDataNodeIDs)
                     }
+                    nodes <- model$modelDef$maps$nodeNames[nodeIDs]
+                    posteriorPredictiveBranchNodes <- model$modelDef$maps$nodeNames[posteriorPredictiveBranchNodeIDs]
                 }
-                nodeIDs <- model$expandNodeNames(nodes, returnType = 'ids')
                 isEndNode <-  model$isEndNode(nodeIDs) ## isEndNode can be modified later to avoid adding names when input is IDs
                 if(useConjugacy) conjugacyResultsAll <- nimble:::conjugacyRelationshipsObject$checkConjugacy(model, nodeIDs) ## Later, this can go through model$checkConjugacy if we make it check whether nodes are already nodeIDs.  To isolate changes, I am doing it directly here.
                 nodeDeclIDs <- model$modelDef$maps$graphID_2_declID[nodeIDs] ## Below, nodeDeclIDs[i] gives the nodeDeclID.  We could add an interface to get this.
