@@ -186,8 +186,9 @@ print: A logical argument specifying whether to print the montiors and samplers.
                 nodeIDs <- model$expandNodeNames(nodes, returnType = 'ids')
                 ## determine node branch points of any trailing model branches of entirely non-data nodes.
                 ## call these posterior predictive branch nodes - they'll get a posterior_predictive_branch sampler.
-                posteriorPredictiveBranchNodeIDs <- numeric()
+                posteriorPredictiveBranchNodes <- character()
                 if(getNimbleOption('MCMCusePosteriorPredictiveBranchSampler')) {
+                    posteriorPredictiveBranchNodeIDs <- numeric()
                     nodeIDsAlreadyInBranch <- numeric()
                     stochNonDataNodeIDs <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE, returnType = 'ids')
                     stochNonDataNodeIDs <- intersect(stochNonDataNodeIDs, nodeIDs)
