@@ -183,23 +183,33 @@ print: A logical argument specifying whether to print the montiors and samplers.
                 isEndNode <- model$isEndNode(nodes)
                 if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
             } else {
-                nodeIDs <- model$expandNodeNames(nodes, returnType = 'ids')
                 ## determine node branch points of any trailing model branches of entirely non-data nodes.
                 ## call these posterior predictive branch nodes - they'll get a posterior_predictive_branch sampler.
+                nodeIDs <- model$expandNodeNames(nodes, returnType = 'ids')
                 posteriorPredictiveBranchNodes <- character()
                 if(getNimbleOption('MCMCusePosteriorPredictiveBranchSampler')) {
+                    stochNonDataIDs <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE, returnType = 'ids')
+                    candidateNodeIDs <- stochNonDataIDs[!model$isEndNode(stochNonDataIDs)]
+                    dataNodeIDs <- model$getNodeNames(dataOnly = TRUE, returnType = 'ids')
+                    dataNodeParentIDs <- model$expandNodeNames(getParentNodes(dataNodeIDs, model, stochOnly = TRUE), returnType = 'ids')
+                    candidateNodeIDs <- setdiff(candidateNodeIDs, dataNodeParentIDs)
+                    nCandidate <- length(candidateNodeIDs)
+                    nextCandInd <- 1
                     posteriorPredictiveBranchNodeIDs <- numeric()
-                    nodeIDsAlreadyInBranch <- numeric()
-                    stochNonDataNodeIDs <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE, returnType = 'ids')
-                    stochNonDataNodeIDs <- intersect(stochNonDataNodeIDs, nodeIDs)
-                    for(nodeID in stochNonDataNodeIDs) {
-                        if(nodeID %in% nodeIDsAlreadyInBranch) next
-                        if(model$isEndNode(nodeID)) next
-                        if(length(model$getDependencies(nodeID, stochOnly = TRUE, dataOnly = TRUE, downstream = TRUE, returnType = 'ids')) > 0) next
-                        posteriorPredictiveBranchNodeIDs <- c(posteriorPredictiveBranchNodeIDs, nodeID)
-                        theseDownstreamStochNonDataNodeIDs <- model$getDependencies(nodeID, stochOnly = TRUE, downstream = TRUE, self = FALSE, returnType = 'ids')
-                        nodeIDsAlreadyInBranch <- c(nodeIDsAlreadyInBranch, theseDownstreamStochNonDataNodeIDs)
-                        nodeIDs <- setdiff(nodeIDs, theseDownstreamStochNonDataNodeIDs)
+                    while(nextCandInd <= nCandidate) {
+                        thisCandNodeID <- as.numeric(candidateNodeIDs[nextCandInd])
+                        if(length(model$getDependencies(thisCandNodeID, dataOnly = TRUE, downstream = TRUE, returnType = 'ids')) > 0) {
+                            nextCandInd <- nextCandInd + 1
+                            next
+                        }
+                        posteriorPredictiveBranchNodeIDs <- c(posteriorPredictiveBranchNodeIDs, thisCandNodeID)
+                        if(nextCandInd > 1)   candidateNodeIDs <- candidateNodeIDs[-(1:(nextCandInd-1))]
+                        candidateNodeIDs <- setdiff(candidateNodeIDs, model$getDependencies(thisCandNodeID, stochOnly = TRUE, downstream = TRUE, returnType = 'ids'))
+                        nCandidate <- length(candidateNodeIDs)
+                        nextCandInd <- 1
+                    }
+                    for(nID in posteriorPredictiveBranchNodeIDs) {
+                        nodeIDs <- setdiff(nodeIDs, model$getDependencies(nID, self = FALSE, stochOnly = TRUE, downstream = TRUE, returnType = 'ids'))
                     }
                     nodes <- model$modelDef$maps$nodeNames[nodeIDs]
                     posteriorPredictiveBranchNodes <- model$modelDef$maps$nodeNames[posteriorPredictiveBranchNodeIDs]
