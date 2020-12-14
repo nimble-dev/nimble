@@ -213,13 +213,13 @@ print: A logical argument specifying whether to print the montiors and samplers.
                         nID <- posteriorPredictiveBranchNodeIDs[i]
                         if(length(model$getDependencies(nID, dataOnly = TRUE, downstream = TRUE, returnType = 'ids')) > 0) stop('something went wrong in configureMCMC, finding posterior predictive branch nodes')
                         ## if all nodes in the posterior predictive branch were going to be sampled:
-                        if(all(model$getDependencies(nID, stochOnly = TRUE, downstream = TRUE, returnType = 'ids') %in% nodeIDs)) {
-                            nodeIDs <- setdiff(nodeIDs, model$getDependencies(nID, self = FALSE, stochOnly = TRUE, downstream = TRUE, returnType = 'ids'))
-                        } else {
-                            indToKeep[i] <- FALSE
-                        }
+                        if(!all(model$getDependencies(nID, stochOnly = TRUE, downstream = TRUE, returnType = 'ids') %in% nodeIDs))   indToKeep[i] <- FALSE
                     }
                     posteriorPredictiveBranchNodeIDs <- posteriorPredictiveBranchNodeIDs[indToKeep]
+                    for(i in seq_along(posteriorPredictiveBranchNodeIDs)) {
+                        nID <- posteriorPredictiveBranchNodeIDs[i]
+                        nodeIDs <- setdiff(nodeIDs, model$getDependencies(nID, self = FALSE, stochOnly = TRUE, downstream = TRUE, returnType = 'ids'))
+                    }
                     nodes <- model$modelDef$maps$nodeNames[nodeIDs]
                     posteriorPredictiveBranchNodes <- model$modelDef$maps$nodeNames[posteriorPredictiveBranchNodeIDs]
                 }
