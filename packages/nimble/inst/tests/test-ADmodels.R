@@ -1,5 +1,6 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 nimbleOptions(experimentalEnableDerivs = TRUE)
+## PdV: is next line still needed?
 nimbleOptions(useADreconfigure = TRUE)
 
 ##nimbleOptions(showCompilerOutput = TRUE)
@@ -240,6 +241,8 @@ data <- list(y = c(20.24405,20.57693,20.49357,20.34159,20.45759,20.43326,20.2055
 inits <- list(a = 0.95, b=1, sigOE=0.05,sigPN = 0.2,  x= c(20.26036,20.51331,20.57057,20.35633,20.33736,20.47321,20.22002,20.14917,20.19216,20.26969,20.21135,20.22745,20.20466,20.41158,20.13408,20.08023,19.98956,20.13543,20.32709,20.55840,20.88206,20.74740,20.47671,20.14012,20.29953,20.33778,20.80916,20.75773,20.84349,20.35654,20.41045,20.20180,20.02872,19.74226,19.80483,19.81842,19.69770,19.84564,19.88211,19.70559,19.56090,19.73728,19.66545,19.88158,20.13870,20.39163,20.37372,20.47429,20.39414,20.42024,20.55560,20.40462,20.15831,19.89425,19.79939,19.72692,19.74565,19.42233,19.22730,19.36489,19.37289,19.19050,19.00823,19.35738,19.14293,19.48812,19.67329,19.82750,19.58979,19.43634,19.61278,19.56739,19.38584,19.19260,19.32732,19.65500,19.65295,19.84843,19.68285,19.69620,19.77497,20.31795,20.45797,20.32650,20.24045,20.60507,20.51597,20.30076,19.98100,19.86709,19.85965,19.74822,19.86730,19.90523,19.86970,19.87286,20.28417,20.46212,20.22618,20.13689))
 model <- nimbleModel(code, constants = constants, data = data, inits = inits)
 test_ADModelCalculate(model, name = 'state space model', useFasterRderivs=TRUE, relTol = c(1e-15, 1e-6, 1e-3))
+
+## Note: look at SSM that PdV added related to getParam issue and see if analogous to above model or not.
 
 ## link functions on stochastic nodes (not covered in BUGS examples)
 ## plus alt params and NIMBLE-provided distributions
@@ -565,6 +568,8 @@ code <- nimbleCode({
 })
 model <- nimbleModel(code, data = list(y = rnorm(1)), inits = list(sigma = rgamma(1, 1, 1), mu = rnorm(1)))
 test_ADModelCalculate(model, x = 'random', useParamTransform = TRUE, name = 'basic param transform')
+
+
 ## this has subtle error in $value and in what is stored in the compiled model after running derivs
 ## when doing deriv of loglik wrt mu,sigma
 # [1] "not checking compiled logProb/non-wrt nodes retention for order=1:2 as not yet fixed"
@@ -574,6 +579,8 @@ test_ADModelCalculate(model, x = 'random', useParamTransform = TRUE, name = 'bas
 # Objects equal but not identical
 
 ## error does not occur if don't use transformation system and provide equivalent x for mu and sigma ( the latter after exponentiating)
+
+## Note: need use of param transform for more cases - ddirch, dwish, dinvwish
 
 ## user-defined distribution
 dGPdist <- nimbleFunction(

@@ -1505,20 +1505,28 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
         cDerivs <- compileNimble(rDerivs, project = model)
 
         if(useFasterRderivs) {
-            if(useParamTransform)
-                stop("'useFasterRderivs' not yet set up with parameter transform system.")
             ## Set up a nf so R derivs use a model calculate that is done fully in compiled code (cModel$calculate loops over nodes in R)
-            rCalcNodes <- calcNodesForDerivs(model, calcNodes = calcNodes, wrt = wrt)  
-            cCalcNodes <- compileNimble(rCalcNodes, project = model)
-
-            rVals_orig <- cVals_orig
-            ## temporarilyAssignInGlobalEnv(cCalcNodes)
-
-            ## Need wrapper so that we are calling nimDerivs on a function call and not a nf method
-            wrapper <- function(x) {
-                cCalcNodes$run(x)
+            if(useParamTransform) {
+                ## stop("'useFasterRderivs' not yet set up with parameter transform system.")
+                
+                ## Need wrapper so that we are calling nimDerivs on a function call and not a nf method
+                wrapper <- function(x) {
+                    cDerivs$inverseTransformStoreCalculate(x)
+                }                
+            } else {
+                rCalcNodes <- calcNodesForDerivs(model, calcNodes = calcNodes, wrt = wrt)  
+                cCalcNodes <- compileNimble(rCalcNodes, project = model)
+                
+                ## temporarilyAssignInGlobalEnv(cCalcNodes)
+                
+                ## Need wrapper so that we are calling nimDerivs on a function call and not a nf method
+                wrapper <- function(x) {
+                    cCalcNodes$run(x)
+                }
             }
             
+            rVals_orig <- cVals_orig
+
             rOutput12 <- nimDerivs(wrapper(x), order = 1:2)
             rVals12 <- values(cModel, otherNodes)
             rLogProb12 <- cModel$getLogProb(calcNodes)
@@ -1638,9 +1646,11 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
         }
         expect_identical(cLogProb01, cLogProb_new) 
         expect_identical(cVals01, cVals_new)
-        print("not checking compiled logProb/non-wrt nodes retention for order=1:2 as not yet fixed")
-        ## expect_identical(cLogProb12, cLogProb_orig)
-        ## expect_identical(cVals12, cVals_orig)
+        ## At one point this was an issue.
+        ## print("not checking compiled logProb/non-wrt nodes retention for order=1:2 as not yet fixed")
+        ## Not clear if next check should be expect_identical
+        expect_equal(cLogProb12, cLogProb_orig)
+        expect_identical(cVals12, cVals_orig)
         
     })
 }
