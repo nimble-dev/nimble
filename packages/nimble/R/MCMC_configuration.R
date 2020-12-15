@@ -187,7 +187,7 @@ print: A logical argument specifying whether to print the montiors and samplers.
                 ## call these posterior predictive branch nodes - they'll get a posterior_predictive_branch sampler.
                 nodeIDs <- model$expandNodeNames(nodes, returnType = 'ids')
                 posteriorPredictiveBranchNodes <- character()
-                if(getNimbleOption('MCMCusePosteriorPredictiveBranchSampler')) {
+                if(getNimbleOption('MCMCjointSamplePredictiveBranches')) {
                     stochNonDataIDs <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE, returnType = 'ids')
                     candidateNodeIDs <- stochNonDataIDs[!model$isEndNode(stochNonDataIDs)]
                     dataNodeIDs <- model$getNodeNames(dataOnly = TRUE, returnType = 'ids')
