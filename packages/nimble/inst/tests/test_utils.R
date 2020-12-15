@@ -1648,8 +1648,8 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
         expect_identical(cVals01, cVals_new)
         ## At one point this was an issue.
         ## print("not checking compiled logProb/non-wrt nodes retention for order=1:2 as not yet fixed")
-        ## Not clear if next check should be expect_identical
-        expect_equal(cLogProb12, cLogProb_orig)
+        ## Not clear if next check should be expect_identical (in many cases they are identical)
+        expect_identical(cLogProb12, cLogProb_orig)
         expect_identical(cVals12, cVals_orig)
         
     })

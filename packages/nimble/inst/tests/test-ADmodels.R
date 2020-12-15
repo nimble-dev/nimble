@@ -247,8 +247,6 @@ test_ADModelCalculate(model, name = 'state space model', useFasterRderivs = TRUE
 ## very slow, but passes with expect_identical being fine
 test_ADModelCalculate(model, name = 'state space model', useFasterRderivs = FALSE, relTol = c(1e-15, 1e-6, 1e-3))
 
-## Note: look at SSM that PdV added related to getParam issue and see if analogous to above model or not.
-
 ## link functions on stochastic nodes (not covered in BUGS examples)
 ## plus alt params and NIMBLE-provided distributions
 code <- nimbleCode({
@@ -261,8 +259,11 @@ code <- nimbleCode({
     mu0 ~ dnorm(0, .00001)  # dflat()  # dflat not handled 
 })
 n <- 10
+log_mu_init <- rnorm(1)
 model <- nimbleModel(code, constants = list(n = n), data = list(y = rpois(n, 1)),
-                     inits = list(mu0 = rnorm(1), sigma = runif(1), mu = rnorm(1), a = runif(1), b = runif(1)))
+                     inits = list(mu0 = rnorm(1), sigma = runif(1), mu = exp(log_mu_init),
+                                log_mu = log_mu_init, a = runif(1), b = runif(1)))
+## 
 test_ADModelCalculate(model, name = 'stochastic link model')
 
 ## dexp and dt, which are provided by NIMBLE to allow expanded parameterizations
@@ -297,8 +298,10 @@ n <- 10
 model <- nimbleModel(code, constants = list(n = n), data = list(y = rpois(n, 1)),
                      inits = list(logmu = rnorm(n)))
 test_ADModelCalculate(model, name = 'deterministic vectorized model')
+## Note cVals12[7] is not identical to cVals_orig[7] or cVals01[7], but is equal.
 
-## truncation and constraints
+## truncation
+## Note that constraints are not handled
 set.seed(1)
 code <- nimbleCode({
     for(i in 1:n) {
@@ -311,12 +314,12 @@ code <- nimbleCode({
     mu[4] ~ T(dnorm(0,1), 0, )
 })
 n <- 10
-inits <- list(mu = c(0.35, -0.25, 1.3, -2.7), pr = diag(rep(1,4)))
+inits <- list(mu = c(0.35, -0.25, 1.3, 2.7), pr = diag(rep(1,4)))
 y <- matrix(0, n, 4)
-for(i in 1:4)
+for(i in 1:n)
     y[i, ] <- rmnorm_chol(1, inits$mu, diag(rep(0.2, 4)), prec_param = FALSE)
 model <- nimbleModel(code, constants = list(n = n), data = list(y = y), inits = inits)
-test_ADModelCalculate(model, name = 'truncation/constraints model')
+test_ADModelCalculate(model, name = 'truncation model')
 
 
 ## complicated indexing 
@@ -339,6 +342,7 @@ model <- nimbleModel(code, inits = inits)
 model$simulate()
 model$calculate()
 model$setData('y','w')
+## Ok, except for one erroneous logProb (cLogProb12 is NaN);  NCT issue #248
 test_ADModelCalculate(model, name = 'complicated indexing')
 
 
@@ -358,15 +362,6 @@ model$calculate()
 model$setData('y1', 'y2')
 test_ADModelCalculate(model, name = 'complicated indexing')
 
-## dirichlet as likelihood so not differentiating wrt something with constraint.
-code <- nimbleCode({
-    p[1:k] ~ ddirch(alpha[1:k])
-    for(i in 1:k)
-        alpha[i] ~ dgamma(1.3, 1.5)
-})
-k <- 4
-m <- nimbleModel(code, constants = list(k = k), data = list(p = c(.2, .4, .15, .25)), inits = list(alpha = runif(4)))
-test_ADModelCalculate(m, verbose = TRUE)
 
 ## vectorized covariance matrix
 code <- nimbleCode({
@@ -384,7 +379,8 @@ model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, rho 
 model$simulate()
 model$calculate()
 model$setData('y')
-test_ADModelCalculate(model, name = 'dmnorm with vectorized covariance matrix', relTol = c(1e-14, 1e-8, 1e-3))
+## Note: cVals12 not identical to cVals_orig, but is equal.
+test_ADModelCalculate(model, name = 'dmnorm with vectorized covariance matrix')
 
 
 ## vectorized covariance matrix, chol param
@@ -401,11 +397,13 @@ code <- nimbleCode({
 n <- 5
 locs <- runif(n)
 dd <- fields::rdist(locs)
-model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, rho = rgamma(1, 1, 1),
-                                                                 z = rep(0, n), pr = diag(n)))
+model <- nimbleModel(code, constants = list(n = n),
+                     inits = list(dist = dd, rho = rgamma(1, 1, 1),
+                                  z = rep(0, n), pr = diag(n)))
 model$simulate()
 model$calculate()
 model$setData('y')
+## Note: cVals12 not identical to cVals_orig, but is equal.
 test_ADModelCalculate(model, name = 'dmnorm with vectorized covariance matrix, chol param')
 
 
@@ -462,12 +460,13 @@ code <- nimbleCode({
 n <- 5
 locs <- runif(n)
 dd <- fields::rdist(locs)
-model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, rho = rgamma(1, 1, 1),
-                                                                 z = rep(0, n), pr = diag(n)))
+model <- nimbleModel(code, constants = list(n = n),
+                     inits = list(dist = dd, rho = rgamma(1, 1, 1),
+                                  z = rep(0, n), pr = diag(n)))
 model$simulate()
 model$calculate()
 model$setData('y')
-test_ADModelCalculate(model, name = 'dmnorm with user-defined vectorized fxn', relTol = c(1e-14, 1e-8, 1e-3))
+test_ADModelCalculate(model, name = 'dmnorm with user-defined vectorized fxn')
 
 ## other dmnorm parameterizations
 code <- nimbleCode({
@@ -487,8 +486,9 @@ n <- 5
 locs <- runif(n)
 dd <- fields::rdist(locs)
 Sigma <- exp(-dd/0.1)
-model <- nimbleModel(code, constants = list(n = n), inits = list(z = rep(0, n), pr = diag(n),
-                                                                 Sigma = Sigma, Q = solve(Sigma)))
+model <- nimbleModel(code, constants = list(n = n),
+                     inits = list(z = rep(0, n), pr = diag(n),
+                                  Sigma = Sigma, Q = solve(Sigma)))
 model$simulate()
 model$calculate()
 model$setData('y')
@@ -515,24 +515,23 @@ n <- 5
 locs <- runif(n)
 dd <- fields::rdist(locs)
 Sigma <- exp(-dd/0.1)
-model <- nimbleModel(code, constants = list(n = n), inits = list(z = rep(0, n), pr = diag(n),
-                                                                 Sigma = Sigma, Q = solve(Sigma)))
+model <- nimbleModel(code, constants = list(n = n),
+                     inits = list(z = rep(0, n), pr = diag(n),
+                                  Sigma = Sigma, Q = solve(Sigma)))
 model$simulate()
 model$calculate()
 model$setData('y')
 test_ADModelCalculate(model, name = 'various dmvt parameterizations')
 
-## ddirch so long as not differentiating w.r.t. the random variable (since it has constraints)
-
+## dirichlet as likelihood so not differentiating wrt something with constraint.
 code <- nimbleCode({
     p[1:k] ~ ddirch(alpha[1:k])
     for(i in 1:k)
-        alpha[i] ~ dgamma(1.5, 0.7)
+        alpha[i] ~ dgamma(1.3, 1.5)
 })
-k <- 5
-model <- nimbleModel(code, constants = list(k = k), data = list(p = rdirch(1, rep(1, k))),
-                     inits = list(alpha = rgamma(5, 1, 1)))
-test_ADModelCalculate(model, name = 'ddirch')
+k <- 4
+m <- nimbleModel(code, constants = list(k = k), data = list(p = c(.2, .4, .15, .25)), inits = list(alpha = runif(4)))
+test_ADModelCalculate(m, name = 'Dirichlet likelihood')
 
 ## dwish and dinvwish so long as not differentiating w.r.t. the random variable (since it has constraints)
 ## Note that nu must exceed n and can't be set to runif(0,1) via test_ADModelCalculate.
@@ -560,6 +559,7 @@ model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, nu =
 model$simulate()
 model$calculate()
 model$setData(c('W1','W2','W3','W4','IW1','IW2','IW3','IW4'))
+## Note: cVals12 not identical to cVals_orig, but is equal.
 test_ADModelCalculate(model, name = 'dwish, dinvwish')
 
 ## Parameter transform system and full use of ddirch, dwish, dinvwish
