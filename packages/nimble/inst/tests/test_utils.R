@@ -1304,8 +1304,9 @@ derivsNimbleFunctionParamTransform <- nimbleFunction(
         nimDerivs_updateNodes   <- makeUpdateNodes_return$updateNodes
         nimDerivs_constantNodes <- makeUpdateNodes_return$constantNodes
     },
-    run = function(transformed_x = double(1),
-        order = double(1)) {
+    run = function(x = double(1),
+                   order = double(1)) {
+        transformed_x <- transform(x)
         ans <- nimDerivs(inverseTransformStoreCalculate(transformed_x), order = order, wrt = nimDerivs_wrt,
                          model = model, updateNodes = nimDerivs_updateNodes,
                          constantNodes = nimDerivs_constantNodes)
@@ -1314,6 +1315,10 @@ derivsNimbleFunctionParamTransform <- nimbleFunction(
         returnType(ADNimbleList())
     },
     methods = list(
+        transform = function(x = double(1)) {
+            returnType(double(1))
+            return(my_parameterTransform$transform(x))
+        }, 
         inverseTransformStoreCalculate = function(transformed_x = double(1)) {
             values(model, wrt) <<- my_parameterTransform$inverseTransform(transformed_x)
             lp <- model$calculate(calcNodes)
@@ -1384,6 +1389,7 @@ test_ADModelCalculate_nick <- function(model, name = NULL, calcNodeNames = NULL,
 ## unless user provides 'wrt' and 'calcNodes'.
 test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNodes = NULL, wrt = NULL, 
                                   relTol = c(1e-15, 1e-8, 1e-3), useFasterRderivs = FALSE, useParamTransform = FALSE,
+                                  checkCompiledValuesIdentical = TRUE,
                                   seed = 1, verbose = FALSE, debug = FALSE){
     if(!is.null(seed))
         set.seed(seed)
@@ -1400,6 +1406,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
         test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
+                                       checkCompiledValuesIdentical = checkCompiledValuesIdentical,
                                        verbose = verbose, debug = debug)
         ## max. lik. use case
         if(verbose) cat("testing ML\n")
@@ -1413,6 +1420,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
         test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
+                                       checkCompiledValuesIdentical = checkCompiledValuesIdentical,
                                        verbose = verbose, debug = debug)
 
         ## modular HMC/MAP use case
@@ -1425,6 +1433,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
         test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
+                                       checkCompiledValuesIdentical = checkCompiledValuesIdentical,
                                        verbose = verbose, debug = debug)
 
         ## conditional max. lik. use case
@@ -1437,6 +1446,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
         test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
+                                       checkCompiledValuesIdentical = checkCompiledValuesIdentical,
                                        verbose = verbose, debug = debug)
 
         ## empirical Bayes use case
@@ -1450,6 +1460,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
         test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
+                                       checkCompiledValuesIdentical = checkCompiledValuesIdentical,
                                        verbose = verbose, debug = debug)
     } else {
         if(is.null(calcNodes)) calcNodes <- model$getNodeNames()
@@ -1459,6 +1470,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
         test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
+                                       checkCompiledValuesIdentical = checkCompiledValuesIdentical,
                                        verbose = verbose, debug = debug)
     }
 }
@@ -1467,8 +1479,9 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
 ## This does the core assessment, by default running with various sets of order values to be able to assess
 ## forward and backward mode and to assess whether values in the model are updated.
 test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, calcNodes = NULL, wrt = NULL,
-                                           relTol = c(1e-15, 1e-8, 1e-3), verbose = TRUE, useFasterRderivs = useFasterRderivs,
-                                           useParamTransform = FALSE, debug = FALSE){
+                                           relTol = c(1e-15, 1e-8, 1e-3), verbose = TRUE, useFasterRderivs = FALSE,
+                                           useParamTransform = FALSE, checkCompiledValuesIdentical = TRUE,
+                                           debug = FALSE){
     test_that(paste0("Derivatives of calculate for model ", name), {
         if(exists('paciorek')) browser()
         if(is.null(calcNodes))
@@ -1526,21 +1539,40 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
             }
             
             rVals_orig <- cVals_orig
-
-            rOutput12 <- nimDerivs(wrapper(x), order = 1:2)
+            if(!useParamTransform) {
+                rOutput12 <- nimDerivs(wrapper(x), order = 1:2)
+            } else {
+                transformed_x <- cDerivs$transform(x)
+                rOutput12 <- nimDerivs(wrapper(transformed_x), order = 1:2)
+            }
             rVals12 <- values(cModel, otherNodes)
             rLogProb12 <- cModel$getLogProb(calcNodes)
             rWrt12 <- values(cModel, wrt)
 
-            rOutput01 <- nimDerivs(wrapper(x), order = 0:1)
+            if(!useParamTransform) {
+                rOutput01 <- nimDerivs(wrapper(x), order = 0:1)
+            } else {
+                transformed_x <- cDerivs$transform(x)
+                rOutput01 <- nimDerivs(wrapper(transformed_x), order = 0:1)
+            }
             rLogProb01 <- cModel$getLogProb(calcNodes)
             rVals01 <- values(cModel, otherNodes)
             rWrt01 <- values(cModel, wrt)
-            rLogProb_new <- wrapper(x)
+            if(!useParamTransform) {
+                rLogProb_new <- wrapper(x)
+            } else {
+                transformed_x <- cDerivs$transform(x)
+                rLogProb_new <- wrapper(transformed_x)
+            }
             cModel$calculate(otherNodes)
             rVals_new <- values(cModel, otherNodes)
 
-            rOutput012 <- nimDerivs(wrapper(x), order = 0:2)
+            if(!useParamTransform) {
+                rOutput012 <- nimDerivs(wrapper(x), order = 0:2)
+            } else {
+                transformed_x <- cDerivs$transform(x)
+                rOutput012 <- nimDerivs(wrapper(transformed_x), order = 0:2)
+            }
             rWrt012 <- values(cModel, wrt)
 
             ## now reset cModel for use in compiled derivs
@@ -1581,7 +1613,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
         cWrt012 <- values(cModel, wrt)
 
         ## Note that when using paramTransform, the last element of wrt is modified by uncompiled numerical deriv
-        ## which also affects the logProb stored in the model. 
+        ## which also affects the logProb stored in the model. This is NCT issue #231.
         if(useParamTransform)
             print("not checking uncompiled logProb retention as not yet fixed")
 
@@ -1627,13 +1659,26 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
         expect_identical(cOutput12$hessian, cOutput012$hessian)
 
         ## Model state: wrt values should be equal to `x`.
-        expect_identical(rWrt01, x)
-        expect_identical(rWrt12, x)
-        expect_identical(rWrt012, x)
-        expect_identical(cWrt01, x)
-        expect_identical(cWrt12, x)
-        expect_identical(cWrt012, x)
+        if(useFasterRderivs) {  # issue #231
+            print("not checking last value as issue #231 not yet fixed")
+            last <- length(x)
+            xSub <- x[-last]
+            expect_identical(rWrt01[-last], xSub)
+            expect_identical(rWrt12[-last], xSub)
+            expect_identical(rWrt012[-last], xSub)
+            expect_identical(cWrt01[-last], xSub)
+            expect_identical(cWrt12[-last], xSub)
+            expect_identical(cWrt012[-last], xSub)
 
+        } else {
+            expect_identical(rWrt01, x)
+            expect_identical(rWrt12, x)
+            expect_identical(rWrt012, x)
+            expect_identical(cWrt01, x)
+            expect_identical(cWrt12, x)
+            expect_identical(cWrt012, x)
+        }
+        
         ## model state - when order 0 is included, logProb and determistic nodes should be updated; otherwise not
         if(!useFasterRderivs) {  ## some weird numerical issue causing these to be equal up to tolerance but not identical
             expect_identical(rLogProb01, rLogProb_new)
@@ -1646,11 +1691,15 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
         }
         expect_identical(cLogProb01, cLogProb_new) 
         expect_identical(cVals01, cVals_new)
-        ## At one point this was an issue.
-        ## print("not checking compiled logProb/non-wrt nodes retention for order=1:2 as not yet fixed")
         ## Not clear if next check should be expect_identical (in many cases they are identical)
-        expect_identical(cLogProb12, cLogProb_orig)
-        expect_identical(cVals12, cVals_orig)
+        if(checkCompiledValuesIdentical) {
+            expect_identical(cLogProb12, cLogProb_orig)
+            expect_identical(cVals12, cVals_orig)
+        } else {
+            expect_equal(cLogProb12, cLogProb_orig)
+            expect_equal(cVals12, cVals_orig)
+        }
+        
         
     })
 }

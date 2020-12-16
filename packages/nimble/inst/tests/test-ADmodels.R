@@ -175,6 +175,10 @@ test_that("Derivs of calculate function work for rats model", {
 
 ## Start of Chris' tests ##
 
+
+## NOTE: probably should change to expect_equal when compare compiled logProb and model values as otherwise don't do all
+## 5 use cases in test_ADModelCalculate.
+
 ## basic model, with lifted nodes
 
 set.seed(1)
@@ -210,13 +214,14 @@ data <- list(y = rnorm(3))
 model <- nimbleModel(code, data = data)
 model$simulate()
 model$calculate()
+## cLogProb12 equal but not identical to cLogProb_orig
 test_ADModelCalculate(model, name = 'basic state space') 
 
 ## basic tricky indexing
 code <- nimbleCode({
     y[1:2] ~ dmnorm(z[1:2], cov = covMat[,])
     z[1] <- x[2]
-    z[2:3] <- x[1:2] + c(1,1)
+    z[2:3] <- x[1:2] + 1
     x[1] ~ dnorm(.1, 10)
     x[2] ~ dnorm(1, 3)
 })
@@ -241,11 +246,11 @@ data <- list(y = c(20.24405,20.57693,20.49357,20.34159,20.45759,20.43326,20.2055
 inits <- list(a = 0.95, b=1, sigOE=0.05,sigPN = 0.2,  x= c(20.26036,20.51331,20.57057,20.35633,20.33736,20.47321,20.22002,20.14917,20.19216,20.26969,20.21135,20.22745,20.20466,20.41158,20.13408,20.08023,19.98956,20.13543,20.32709,20.55840,20.88206,20.74740,20.47671,20.14012,20.29953,20.33778,20.80916,20.75773,20.84349,20.35654,20.41045,20.20180,20.02872,19.74226,19.80483,19.81842,19.69770,19.84564,19.88211,19.70559,19.56090,19.73728,19.66545,19.88158,20.13870,20.39163,20.37372,20.47429,20.39414,20.42024,20.55560,20.40462,20.15831,19.89425,19.79939,19.72692,19.74565,19.42233,19.22730,19.36489,19.37289,19.19050,19.00823,19.35738,19.14293,19.48812,19.67329,19.82750,19.58979,19.43634,19.61278,19.56739,19.38584,19.19260,19.32732,19.65500,19.65295,19.84843,19.68285,19.69620,19.77497,20.31795,20.45797,20.32650,20.24045,20.60507,20.51597,20.30076,19.98100,19.86709,19.85965,19.74822,19.86730,19.90523,19.86970,19.87286,20.28417,20.46212,20.22618,20.13689))
 model <- nimbleModel(code, constants = constants, data = data, inits = inits)
 
-## last of 104 elements not identical in: rWrt01 vs. x, rWrt12 vs. x rWrt012 vs. x
-test_ADModelCalculate(model, name = 'state space model', useFasterRderivs = TRUE, relTol = c(1e-15, 1e-6, 1e-3))
+## last of 104 elements not identical in: rWrt01 vs. x, rWrt12 vs. x rWrt012 vs. x (issue 231)
+test_ADModelCalculate(model, name = 'state space model', useFasterRderivs = TRUE)
 
 ## very slow, but passes with expect_identical being fine
-test_ADModelCalculate(model, name = 'state space model', useFasterRderivs = FALSE, relTol = c(1e-15, 1e-6, 1e-3))
+test_ADModelCalculate(model, name = 'state space model', useFasterRderivs = FALSE)
 
 ## link functions on stochastic nodes (not covered in BUGS examples)
 ## plus alt params and NIMBLE-provided distributions
@@ -263,7 +268,7 @@ log_mu_init <- rnorm(1)
 model <- nimbleModel(code, constants = list(n = n), data = list(y = rpois(n, 1)),
                      inits = list(mu0 = rnorm(1), sigma = runif(1), mu = exp(log_mu_init),
                                 log_mu = log_mu_init, a = runif(1), b = runif(1)))
-## 
+## cLogProb12 equal but not identical to cLogProb_orig
 test_ADModelCalculate(model, name = 'stochastic link model')
 
 ## dexp and dt, which are provided by NIMBLE to allow expanded parameterizations
@@ -297,8 +302,9 @@ code <- nimbleCode({
 n <- 10
 model <- nimbleModel(code, constants = list(n = n), data = list(y = rpois(n, 1)),
                      inits = list(logmu = rnorm(n)))
-test_ADModelCalculate(model, name = 'deterministic vectorized model')
 ## Note cVals12[7] is not identical to cVals_orig[7] or cVals01[7], but is equal.
+test_ADModelCalculate(model, name = 'deterministic vectorized model')
+
 
 ## truncation
 ## Note that constraints are not handled
@@ -379,7 +385,6 @@ model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, rho 
 model$simulate()
 model$calculate()
 model$setData('y')
-## Note: cVals12 not identical to cVals_orig, but is equal.
 test_ADModelCalculate(model, name = 'dmnorm with vectorized covariance matrix')
 
 
@@ -403,7 +408,7 @@ model <- nimbleModel(code, constants = list(n = n),
 model$simulate()
 model$calculate()
 model$setData('y')
-## Note: cVals12 not identical to cVals_orig, but is equal.
+## cLogProb12 equal but not identical to cLogProb_orig
 test_ADModelCalculate(model, name = 'dmnorm with vectorized covariance matrix, chol param')
 
 
@@ -521,6 +526,7 @@ model <- nimbleModel(code, constants = list(n = n),
 model$simulate()
 model$calculate()
 model$setData('y')
+## cLogProb12 equal but not identical to cLogProb_orig
 test_ADModelCalculate(model, name = 'various dmvt parameterizations')
 
 ## dirichlet as likelihood so not differentiating wrt something with constraint.
@@ -531,6 +537,7 @@ code <- nimbleCode({
 })
 k <- 4
 m <- nimbleModel(code, constants = list(k = k), data = list(p = c(.2, .4, .15, .25)), inits = list(alpha = runif(4)))
+## cLogProb12 equal but not identical to cLogProb_orig
 test_ADModelCalculate(m, name = 'Dirichlet likelihood')
 
 ## dwish and dinvwish so long as not differentiating w.r.t. the random variable (since it has constraints)
@@ -562,32 +569,59 @@ model$setData(c('W1','W2','W3','W4','IW1','IW2','IW3','IW4'))
 ## Note: cVals12 not identical to cVals_orig, but is equal.
 test_ADModelCalculate(model, name = 'dwish, dinvwish')
 
-## Parameter transform system and full use of ddirch, dwish, dinvwish
-## Try also with dgamma, dinvgamma (do with var in dnorm so include lifted)
 
-set.seed(1)
-code <- nimbleCode({
-    y ~ dnorm(mu, sd = sigma)
-    sigma ~ dinvgamma(1.3, 0.7)
-    mu ~ dnorm(0, 1)
+## simple user-defined distribution
+dmyexp <- nimbleFunction(
+    run = function(x = double(0), rate = double(0, default = 1), 
+        log = integer(0, default = 0)) {
+        returnType(double(0))
+        logProb <- log(rate) - x*rate
+        if(log) return(logProb)
+        else return(exp(logProb)) 
+    }, enableDerivs = TRUE)
+
+code <- nimbleCode({ 
+    y ~ dmyexp(rho)
+    rho ~ dgamma(2, 3)
 })
-model <- nimbleModel(code, data = list(y = rnorm(1)), inits = list(sigma = rgamma(1, 1, 1), mu = rnorm(1)))
-test_ADModelCalculate(model, x = 'random', useParamTransform = TRUE, name = 'basic param transform')
 
+model <- nimbleModel(code, data = list(y = rgamma(1,1,1)), inits = list(rho = rgamma(1, 1, 1)))
+## Note cLogProb12 equal but not identical to cLogProg_orig
+test_ADModelCalculate(model, name = 'simple user-defined distribution')
 
-## this has subtle error in $value and in what is stored in the compiled model after running derivs
-## when doing deriv of loglik wrt mu,sigma
-# [1] "not checking compiled logProb/non-wrt nodes retention for order=1:2 as not yet fixed"
-# [1] "not checking compiled logProb/non-wrt nodes retention for order=1:2 as not yet fixed"
-# Error: Test failed: 'Derivatives of calculate for model basic param transform'
-# * `cLogProb01` not identical to `cLogProb_new`.
-# Objects equal but not identical
+## vectorized powers cause problems
+dtest <- nimbleFunction(
+    run = function(x = double(0), mu = double(1), 
+                   log = integer(0, default = 0)) {
+        returnType(double(0))
+        tmp <- mu^2
+        out <- tmp[1]
+        if(log) return(out) else return(exp(out))
+    }, enableDerivs = TRUE)
 
-## error does not occur if don't use transformation system and provide equivalent x for mu and sigma ( the latter after exponentiating)
+rtest <- nimbleFunction(
+    run = function(n = integer(0), mu = double(1)) {
+        returnType(double(0))
+        out <- rnorm(1, 0, 1)
+        return(out)
+    })
 
-## Note: need use of param transform for more cases - ddirch, dwish, dinvwish
+code <- nimbleCode({ 
+    y ~ dtest(mu[1:2])
+    mu[1] ~ dnorm(0,1)
+    mu[2] ~ dnorm(0,1)
+})
+
+model <- nimbleModel(code, inits = list(mu = rnorm(2)))
+model$simulate()
+model$calculate()
+model$setData('y')
+## NaN values in compiled derivs
+test_ADModelCalculate(model, name = 'vectorized power')
+
 
 ## user-defined distribution
+
 dGPdist <- nimbleFunction(
     run = function(x = double(1), dist = double(2), rho = double(0),
                    log = integer(0, default = 0)) {
@@ -623,8 +657,13 @@ model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, rho 
 model$simulate()
 model$calculate()
 model$setData('y')
+## all compiled Jacobian/Hessian values are NaN
+## issue seems to be in qf^2
 test_ADModelCalculate(model, name = 'user-defined distribution')
-## model now compiles but numerical differences; see later comments in NCT issue #220
+## (formerly: model compiles but numerical differences; see later comments in NCT issue #220)
+
+
+
 
 ## Use additional matrix functions
 ## logdet() not yet allowed
@@ -656,103 +695,168 @@ model <- nimbleModel(code, constants = list(n = n, x = rnorm(n), z = rep(0, n), 
 model$simulate()
 model$calculate()
 model$setData(c('y1','yy')) # 'y2'
+## Note: cVals12 not identical to cVals_orig, but is equal.
 test_ADModelCalculate(model, name = 'various matrix functions')
-  
 
-## come back to this when have wish/invwish (and will need to use parameter transforms)
-if(FALSE) {  
-    ## won't work because of dinvwish, dwish
-    code <- nimbleCode({
-        Sigma1[1:n,1:n] <- exp(-dist[1:n,1:n]/rho)
-        Sigma2[1:n,1:n] <- covFunLoop(dist[1:n,1:n], rho)
-        Sigma3[1:n,1:n] <- covFunVec(dist[1:n,1:n], rho)
-        
-        y[1, 1:n] ~ dmnorm(mu1[1:n], cov = Sigma1[1:n,1:n])
-        y[2, 1:n] ~ dmnorm(mu2[1:n], cov = Sigma2[1:n,1:n])
-        y[3, 1:n] ~ dmnorm(mu3[1:n], cov = Sigma3[1:n,1:n])
+## Parameter transform system and full use of ddirch, dwish, dinvwish
+## Try also with dgamma, dinvgamma (do with var in dnorm so include lifted)
 
-        Q[1:n,1:n] <- inverse(Sigma1[1:n, 1:n])
-        y[4, 1:n] ~ dmnorm(mu4[1:n], Q[1:n,1:n])
+## basic variance component
+set.seed(1)
+code <- nimbleCode({
+    y ~ dnorm(mu, sd = sigma)
+    sigma ~ dinvgamma(1.3, 0.7)
+    mu ~ dnorm(0, 1)
+})
+model <- nimbleModel(code, data = list(y = rnorm(1)), inits = list(sigma = rgamma(1, 1, 1), mu = rnorm(1)))
+## cLogProb01 and cLogProb12 equal but not identical to cLogProb_{new,orig}
+## this is affected by issue #231
+test_ADModelCalculate(model, useParamTransform = TRUE, name = 'basic param transform')
 
-        Uprec[1:n, 1:n] <- chol(Q[1:n,1:n])
-        Ucov[1:n, 1:n] <- chol(Sigma1[1:n,1:n])
-        y[5, 1:n] ~ dmnorm(mu5[1:n], cholesky = Uprec[1:n,1:n], prec_param = 1)
-        y[6, 1:n] ~ dmnorm(mu6[1:n], cholesky = Ucov[1:n,1:n], prec_param = 0)
-        y[7, 1:n] ~ dGPdist(dist[1:n, 1:n], rho)
-        
-        W1[1:n, 1:n] ~ dinvwish(R = R[1:n,1:n], df = nu)
+## bug if useParamTransform and useFasterRderivs
 
-        UR[1:n, 1:n] <- chol(R[1:n,1:n])
-        US[1:n, 1:n] <- chol(inverse(R[1:n,1:n]))
-        W2[1:n, 1:n] ~ dinvwish(cholesky = UR[1:n,1:n], df = nu, scale_param = 0)
-        W3[1:n, 1:n] ~ dinvwish(cholesky = US[1:n,1:n], df = nu, scale_param = 1)
+## Dirichlet
+code <- nimbleCode({
+    y[1:k] ~ dmulti(p[1:k], n)
+    p[1:k] ~ ddirch(alpha[1:k])
+    for(i in 1:k)
+        alpha[i] ~ dgamma(1.3, 1.5)
+})
+n <- 30
+k <- 4
+m <- nimbleModel(code, constants = list(k = k, n = n), data = list(y = rmulti(1, n, rep(1/k, k))), inits = list(p = c(.2, .4, .15, .25), alpha = runif(4)))
+## cLogProb01 equal but not identical to cLogProb_new
+## cWrt equal to x but not identical in x[7]
+## this is affected by issue #231, which affects x[7] and x[8] because of back-transform changing param dimension
+test_ADModelCalculate(m, useParamTransform = TRUE, name = 'Dirichlet paramTransform')
 
-        W4[1:n, 1:5] ~ dwish(R[1:n, 1:n], df = nu)
-        W5[1:n, 1:5] ~ dwish(cholesky = UR[1:n, 1:n], df = nu, scale_param = 0)
-        W6[1:n, 1:5] ~ dwish(cholesky = US[1:n, 1:n], df = nu, scale_param = 1)
-        
-        mu1[1:n] ~ dmnorm(z[1:n], cov = W1[1:n,1:n])
-        mu2[1:n] ~ dmnorm(z[1:n], cov = W2[1:n,1:n])
-        mu3[1:n] ~ dmnorm(z[1:n], cov = W3[1:n,1:n])
-        mu4[1:n] ~ dmnorm(z[1:n], W4[1:n,1:n])
-        mu5[1:n] ~ dmnorm(z[1:n], W5[1:n,1:n])
-        mu6[1:n] ~ dmnorm(z[1:n], W6[1:n,1:n])
-        rho ~ dgamma(2, 3)
-        nu ~ dunif(10, 20)
-    })
+code <- nimbleCode({
+    Sigma1[1:n,1:n] <- exp(-dist[1:n,1:n]/rho)
+    Sigma2[1:n,1:n] <- covFunLoop(dist[1:n,1:n], rho)
+    Sigma3[1:n,1:n] <- covFunVec(dist[1:n,1:n], rho)
+    
+    y[1, 1:n] ~ dmnorm(mu1[1:n], cov = Sigma1[1:n,1:n])
+    y[2, 1:n] ~ dmnorm(mu2[1:n], cov = Sigma2[1:n,1:n])
+    y[3, 1:n] ~ dmnorm(mu3[1:n], cov = Sigma3[1:n,1:n])
 
+    Q[1:n,1:n] <- inverse(Sigma1[1:n, 1:n])
+    y[4, 1:n] ~ dmnorm(mu4[1:n], Q[1:n,1:n])
 
-    n <- 5
-    locs <- runif(n)
-    dd <- fields::rdist(locs)
-    R <- crossprod(matrix(rnorm(n^2), n, n))
-    model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, R = R, nu = 15, rho = rgamma(1, 1, 1),
-                                                            z = rep(0, n)))
-    model$simulate()
-    model$calculate()
-    model$setData('y')
-    test_ADModelCalculate(model, name = 'various multivariate dists')
+    Uprec[1:n, 1:n] <- chol(Q[1:n,1:n])
+    Ucov[1:n, 1:n] <- chol(Sigma1[1:n,1:n])
+    y[5, 1:n] ~ dmnorm(mu5[1:n], cholesky = Uprec[1:n,1:n], prec_param = 1)
+    y[6, 1:n] ~ dmnorm(mu6[1:n], cholesky = Ucov[1:n,1:n], prec_param = 0)
+    ## previous bug prevents this:
+    ## y[7, 1:n] ~ dGPdist(dist[1:n, 1:n], rho)
+    
+    W1[1:n, 1:n] ~ dinvwish(R = R[1:n,1:n], df = nu)
 
-    ## removing dwish/dinvwish
-    code <- nimbleCode({
-        Sigma1[1:n,1:n] <- exp(-dist[1:n,1:n]/rho)
-        Sigma2[1:n,1:n] <- covFunLoop(dist[1:n,1:n], rho)
-        Sigma3[1:n,1:n] <- covFunVec(dist[1:n,1:n], rho)
-        
-        y[1, 1:n] ~ dmnorm(mu1[1:n], cov = Sigma1[1:n,1:n])
-        y[2, 1:n] ~ dmnorm(mu2[1:n], cov = Sigma2[1:n,1:n])
-        y[3, 1:n] ~ dmnorm(mu3[1:n], cov = Sigma3[1:n,1:n])
+    UR[1:n, 1:n] <- chol(R[1:n,1:n])
+    US[1:n, 1:n] <- chol(inverse(R[1:n,1:n]))
+    W2[1:n, 1:n] ~ dinvwish(cholesky = UR[1:n,1:n], df = nu, scale_param = 0)
+    W3[1:n, 1:n] ~ dinvwish(cholesky = US[1:n,1:n], df = nu, scale_param = 1)
 
-        Q[1:n,1:n] <- inverse(Sigma1[1:n, 1:n])
-        y[4, 1:n] ~ dmnorm(mu4[1:n], Q[1:n,1:n])
-
-        Uprec[1:n, 1:n] <- chol(Q[1:n,1:n])
-        Ucov[1:n, 1:n] <- chol(Sigma1[1:n,1:n])
-        y[5, 1:n] ~ dmnorm(mu5[1:n], cholesky = Uprec[1:n,1:n], prec_param = 1)
-        y[6, 1:n] ~ dmnorm(mu6[1:n], cholesky = Ucov[1:n,1:n], prec_param = 0)
-        y[7, 1:n] ~ dGPdist(dist[1:n, 1:n], rho)
-        
-        mu1[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
-        mu2[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
-        mu3[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
-        mu4[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
-        mu5[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
-        mu6[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
-        rho ~ dgamma(2, 3)
-    })
+    W4[1:n, 1:5] ~ dwish(R[1:n, 1:n], df = nu)
+    W5[1:n, 1:5] ~ dwish(cholesky = UR[1:n, 1:n], df = nu, scale_param = 0)
+    W6[1:n, 1:5] ~ dwish(cholesky = US[1:n, 1:n], df = nu, scale_param = 1)
+    
+    mu1[1:n] ~ dmnorm(z[1:n], cov = W1[1:n,1:n])
+    mu2[1:n] ~ dmnorm(z[1:n], cov = W2[1:n,1:n])
+    mu3[1:n] ~ dmnorm(z[1:n], cov = W3[1:n,1:n])
+    mu4[1:n] ~ dmnorm(z[1:n], W4[1:n,1:n])
+    mu5[1:n] ~ dmnorm(z[1:n], W5[1:n,1:n])
+    mu6[1:n] ~ dmnorm(z[1:n], W6[1:n,1:n])
+    rho ~ dgamma(2, 3)
+    nu ~ dunif(10, 20)
+})
 
 
-    n <- 5
-    locs <- runif(n)
-    dd <- fields::rdist(locs)
-    model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, rho = rgamma(1, 1, 1),
-                                                            z = rep(0, n), pr = diag(n)))
-    model$simulate()
-    model$calculate()
-    model$setData('y')
-    test_ADModelCalculate(model, name = 'reduced set of multivariate dists')
+n <- 5
+locs <- runif(n)
+dd <- fields::rdist(locs)
+R <- crossprod(matrix(rnorm(n^2), n, n))
+model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, R = R, nu = 15, rho = rgamma(1, 1, 1),
+                                                                 z = rep(0, n)))
+model$simulate()
+model$calculate()
+model$setData('y')
+test_ADModelCalculate(model, useParamTransform = TRUE, name = 'various multivariate dists')
+## NaN in R derivs - why?
+test_ADModelCalculate(model, useParamTransform = TRUE, useFasterRderivs = TRUE, name = 'various multivariate dists')
 
-}
+
+## simplification
+
+code <- nimbleCode({
+    y[1:n] ~ dmnorm(mu[1:n], cov = Sigma[1:n,1:n])
+    mu[1:n] ~ dmnorm(z[1:n], cov = W[1:n,1:n])
+    W[1:n, 1:n] ~ dinvwish(R = R[1:n,1:n], df = nu)
+   
+    nu ~ dunif(10, 20)
+})
+
+
+n <- 5
+locs <- runif(n)
+dd <- fields::rdist(locs)
+R <- crossprod(matrix(rnorm(n^2), n, n))
+Sigma <- R
+model <- nimbleModel(code, constants = list(n = n), inits = list(R = R, nu = 15, Sigma = Sigma, z = rep(0, n)))
+model$simulate()
+model$calculate()
+model$setData('y')
+## various equal but not identical cases
+test_ADModelCalculate(model, useParamTransform = TRUE, name = 'basic invwish case')
+## incorrect R derivs and wrong dimension
+test_ADModelCalculate(model, useParamTransform = TRUE, useFasterRderivs = TRUE, name = 'basic invwish case')
+
+
+## without dwish/dinvwish
+code <- nimbleCode({
+    Sigma1[1:n,1:n] <- exp(-dist[1:n,1:n]/rho)
+    Sigma2[1:n,1:n] <- covFunLoop(dist[1:n,1:n], rho)
+    Sigma3[1:n,1:n] <- covFunVec(dist[1:n,1:n], rho)
+    
+    y[1, 1:n] ~ dmnorm(mu1[1:n], cov = Sigma1[1:n,1:n])
+    y[2, 1:n] ~ dmnorm(mu2[1:n], cov = Sigma2[1:n,1:n])
+    y[3, 1:n] ~ dmnorm(mu3[1:n], cov = Sigma3[1:n,1:n])
+
+    Q[1:n,1:n] <- inverse(Sigma1[1:n, 1:n])
+    y[4, 1:n] ~ dmnorm(mu4[1:n], Q[1:n,1:n])
+
+    Uprec[1:n, 1:n] <- chol(Q[1:n,1:n])
+    Ucov[1:n, 1:n] <- chol(Sigma1[1:n,1:n])
+    y[5, 1:n] ~ dmnorm(mu5[1:n], cholesky = Uprec[1:n,1:n], prec_param = 1)
+    y[6, 1:n] ~ dmnorm(mu6[1:n], cholesky = Ucov[1:n,1:n], prec_param = 0)
+    ## y[7, 1:n] ~ dGPdist(dist[1:n, 1:n], rho)
+    
+    mu1[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
+    mu2[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
+    mu3[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
+    mu4[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
+    mu5[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
+    mu6[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
+    rho ~ dgamma(2, 3)
+})
+
+n <- 5
+locs <- runif(n)
+dd <- fields::rdist(locs)
+model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, rho = rgamma(1, 1, 1),
+                                                                 z = rep(0, n), pr = diag(n)))
+model$simulate()
+model$calculate()
+model$setData('y')
+
+## slow
+## cVals12 equal but not identical to cVals_orig
+system.time(test_ADModelCalculate(model, name = 'various multivariate dists'))
+
+## faster
+## cVals12 equal but not identical to cVals_orig
+## last of elements not identical in: rWrt01 vs. x, rWrt12 vs. x rWrt012 vs. x (issue 231)
+system.time(test_ADModelCalculate(model, useFasterRderivs = TRUE, name = 'various multivariate dists'))
+
 
 
 ## loop through BUGS models
@@ -770,16 +874,21 @@ if(FALSE) {
 ## now loop through BUGS models.
 ## figure out if need to simulate for any of these as we do above for 'epil'
 ## also will need to specify bugs,inits,data files by specific name in some cases where naming is non-standard
-examples <- c('pump', 'beetles', 'blocker', 'equiv', 'line', 'epil', 'rats', 'oxford')
+examples <- c('blocker', 'dyes', 'epil', 'equiv', 'line', 'oxford', 'pump', 'rats', 'beetles', 'jaw', 'dugongs')
 bugsFile <- examples
 initsFile <- dataFile <- rep(NA, length(examples))
 names(bugsFile) <- names(initsFile) <- names(dataFile) <- examples
 
+## add schools, jaw as have Wishart
+## try bones as dcat is likelihood
+## try inhaler as dcat in likelihood
+## try leuk, litters, salm, seeds
+
+
 ## biops has stoch indexing so left out for now
 ## bones has dcat so left out for now
 ## lsat requires setting some indexing and doing a bunch of initialization
-## kidney has dinterval so left out for now
-## schools, jaw have wishart so left out for now
+## kidney, mice has dinterval so left out for now
 ## TODO: look at the various other bugs examples to see if there are others we should include
 
 ## oxford gives all NaN values for R derivs; C derivs have some -Inf for gradient and some NaNs for Hessian.
@@ -810,7 +919,6 @@ simulateNodes['equiv'] <- 'd'
 simulateNodes['oxford'] <- 'sigma'
 simulateNodes['dugongs'] <- 'gamma'
 simulateNodes['jaw'] <- 'Omega'
-simulateNodes['kidney'] <- 'b'
 
 relTol_default <- eval(formals(test_ADModelCalculate)$relTol)
 
