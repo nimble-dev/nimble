@@ -187,7 +187,13 @@ print: A logical argument specifying whether to print the montiors and samplers.
                 ## call these posterior predictive branch nodes - they'll get a posterior_predictive_branch sampler.
                 nodeIDs <- model$expandNodeNames(nodes, returnType = 'ids')
                 posteriorPredictiveBranchNodes <- character()
-                if(getNimbleOption('MCMCjointlySamplePredictiveBranches')) {
+                anyPPnodes <- any(model$isEndNode(model$getNodeNames(stochOnly = TRUE, includeData = FALSE)))
+                ## DT: decided I didn't like this additional output message below;
+                ##     this isn't the nimbleModel() function, afterall.
+                ##if(!getNimbleOption('MCMCjointlySamplePredictiveBranches') & anyPPnodes) {
+                ##    message('Detected presense of posterior predictive model nodes.  If many predictive nodes exist in a trailing jointly posterior predictive network, then MCMC sampling of these posterior predictive nodes may be improved by enabling the NIMBLE package option \'MCMCjointlySamplePredictiveBranches\' prior to configuring the MCMC algorithm.')
+                ##}
+                if(getNimbleOption('MCMCjointlySamplePredictiveBranches') & anyPPnodes) {
                     stochNonDataIDs <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE, returnType = 'ids')
                     candidateNodeIDs <- stochNonDataIDs[!model$isEndNode(stochNonDataIDs)]
                     dataNodeIDs <- model$getNodeNames(dataOnly = TRUE, returnType = 'ids')
