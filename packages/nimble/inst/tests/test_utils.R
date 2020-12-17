@@ -1288,7 +1288,7 @@ derivsNimbleFunction <- nimbleFunction(
   run = function(x = double(1),
                  order = double(1)) {
     values(model, wrt) <<- x  
-    ans <- nimDerivs(model$calculate(calcNodes), wrt = wrt, order = order)
+    ans <- nimDerivs(model$calculate(calcNodes), wrt = wrt, order = order, reset = TRUE)
     return(ans)
     returnType(ADNimbleList())
   }  ## don't need enableDerivs if call nimDerivs directly, but would if just have model$calc in nf
@@ -1309,7 +1309,7 @@ derivsNimbleFunctionParamTransform <- nimbleFunction(
         transformed_x <- transform(x)
         ans <- nimDerivs(inverseTransformStoreCalculate(transformed_x), order = order, wrt = nimDerivs_wrt,
                          model = model, updateNodes = nimDerivs_updateNodes,
-                         constantNodes = nimDerivs_constantNodes)
+                         constantNodes = nimDerivs_constantNodes, reset = TRUE)
 
         return(ans)
         returnType(ADNimbleList())
@@ -1540,20 +1540,20 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
             
             rVals_orig <- cVals_orig
             if(!useParamTransform) {
-                rOutput12 <- nimDerivs(wrapper(x), order = 1:2)
+                rOutput12 <- nimDerivs(wrapper(x), order = 1:2, reset = TRUE)
             } else {
                 transformed_x <- cDerivs$transform(x)
-                rOutput12 <- nimDerivs(wrapper(transformed_x), order = 1:2)
+                rOutput12 <- nimDerivs(wrapper(transformed_x), order = 1:2, reset = TRUE)
             }
             rVals12 <- values(cModel, otherNodes)
             rLogProb12 <- cModel$getLogProb(calcNodes)
             rWrt12 <- values(cModel, wrt)
 
             if(!useParamTransform) {
-                rOutput01 <- nimDerivs(wrapper(x), order = 0:1)
+                rOutput01 <- nimDerivs(wrapper(x), order = 0:1, reset = TRUE)
             } else {
                 transformed_x <- cDerivs$transform(x)
-                rOutput01 <- nimDerivs(wrapper(transformed_x), order = 0:1)
+                rOutput01 <- nimDerivs(wrapper(transformed_x), order = 0:1, reset = TRUE)
             }
             rLogProb01 <- cModel$getLogProb(calcNodes)
             rVals01 <- values(cModel, otherNodes)
@@ -1568,10 +1568,10 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
             rVals_new <- values(cModel, otherNodes)
 
             if(!useParamTransform) {
-                rOutput012 <- nimDerivs(wrapper(x), order = 0:2)
+                rOutput012 <- nimDerivs(wrapper(x), order = 0:2, reset = TRUE)
             } else {
                 transformed_x <- cDerivs$transform(x)
-                rOutput012 <- nimDerivs(wrapper(transformed_x), order = 0:2)
+                rOutput012 <- nimDerivs(wrapper(transformed_x), order = 0:2, reset = TRUE)
             }
             rWrt012 <- values(cModel, wrt)
 
@@ -1612,18 +1612,22 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
         cOutput012 <- cDerivs$run(x, 0:2)
         cWrt012 <- values(cModel, wrt)
 
-        ## Note that when using paramTransform, the last element of wrt is modified by uncompiled numerical deriv
+        ## Note that when using deriv of method containing model$calculate, we are not restoring values
+        ## The last element of wrt is modified by uncompiled numerical deriv
         ## which also affects the logProb stored in the model. This is NCT issue #231.
-        if(useParamTransform)
-            print("not checking uncompiled logProb retention as not yet fixed")
+        if(useParamTransform || useFasterRderivs)
+            print("not checking uncompiled retention in uncompiled model given NCT issue 231")
 
         ## 0th order 'derivative'
+        expect_identical(cOutput01$value, cLogProb_orig)
+        expect_identical(cOutput012$value, cLogProb_orig)
         expect_equal(rOutput01$value, cOutput01$value, tolerance = relTol[1])
-        if(!useParamTransform) 
-            expect_identical(rOutput01$value, rLogProb_new)
         expect_equal(rOutput012$value, cOutput012$value, tolerance = relTol[1])
-        if(!useParamTransform) 
+        if(!useParamTransform && !useFasterRderivs) {
+            expect_identical(rOutput01$value, rLogProb_new)
             expect_identical(rOutput012$value, rLogProb_new)
+        }
+        
         expect_equal(sum(is.na(rOutput01$value)), 0, info = "NAs found in uncompiled 0th derivative")
         expect_equal(sum(is.na(cOutput01$value)), 0, info = "NAs found in compiled 0th derivative")
         expect_equal(sum(is.na(rOutput012$value)), 0, info = "NAs found in uncompiled 0th derivative")
@@ -1642,9 +1646,8 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
         expect_equal(sum(is.na(rOutput012$jacobian)), 0, info = "NAs found in uncompiled 1st derivative")
         expect_equal(sum(is.na(cOutput012$jacobian)), 0, info = "NAs found in compiled 1st derivative")
 
-        ## explicit comparison of forward- and reverse-mode first derivs, though in both cases R deriv should be finite diff,
-        ## so this shouldn't be needed
-        ## should this be identical?
+        ## explicit comparison of first derivs;
+        ## both of these are reverse mode because 2nd order reverse also invokes first order reverse
         expect_identical(cOutput01$jacobian, cOutput012$jacobian)
 
         ## 2nd derivative
@@ -1659,45 +1662,44 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
         expect_identical(cOutput12$hessian, cOutput012$hessian)
 
         ## Model state: wrt values should be equal to `x`.
-        if(useFasterRderivs) {  # issue #231
+        if(useFasterRderivs || useParamTransform) {  # issue #231
             print("not checking last value as issue #231 not yet fixed")
             last <- length(x)
             xSub <- x[-last]
             expect_identical(rWrt01[-last], xSub)
             expect_identical(rWrt12[-last], xSub)
             expect_identical(rWrt012[-last], xSub)
-            expect_identical(cWrt01[-last], xSub)
-            expect_identical(cWrt12[-last], xSub)
-            expect_identical(cWrt012[-last], xSub)
-
         } else {
             expect_identical(rWrt01, x)
             expect_identical(rWrt12, x)
             expect_identical(rWrt012, x)
-            expect_identical(cWrt01, x)
-            expect_identical(cWrt12, x)
-            expect_identical(cWrt012, x)
         }
+        expect_identical(cWrt01, x)
+        expect_identical(cWrt12, x)
+        expect_identical(cWrt012, x)
         
         ## model state - when order 0 is included, logProb and determistic nodes should be updated; otherwise not
-        if(!useFasterRderivs) {  ## some weird numerical issue causing these to be equal up to tolerance but not identical
+        if(!useFasterRderivs && !useParamTransform) {
+            ## issue #231 causes stored logProb values to be incorrect (I think)
+            ## presumably determistic nodes could be affected by difference in x[n] also
             expect_identical(rLogProb01, rLogProb_new)
             expect_identical(rVals01, rVals_new)
-        }
-        if(!useFasterRderivs) {  ## Doesn't use nimDerivs(model$calculate), so can't assess model update/lack of update in R version
-            if(!useParamTransform)  ## does deriv of method not of model$calculate, so no restoration of values
-                expect_identical(rLogProb12, rLogProb_orig)
+            expect_identical(rLogProb12, rLogProb_orig)
             expect_identical(rVals12, rVals_orig)
         }
-        expect_identical(cLogProb01, cLogProb_new) 
-        expect_identical(cVals01, cVals_new)
-        ## Not clear if next check should be expect_identical (in many cases they are identical)
+
+        ## Not clear if next check should be expect_identical (in many cases they are identical);
+        ## Check with PdV whether values from taped model could get into the compiled model.
         if(checkCompiledValuesIdentical) {
             expect_identical(cLogProb12, cLogProb_orig)
             expect_identical(cVals12, cVals_orig)
+            expect_identical(cLogProb01, cLogProb_new) 
+            expect_identical(cVals01, cVals_new)
         } else {
             expect_equal(cLogProb12, cLogProb_orig)
             expect_equal(cVals12, cVals_orig)
+            expect_equal(cLogProb01, cLogProb_new) 
+            expect_equal(cVals01, cVals_new)
         }
         
         
