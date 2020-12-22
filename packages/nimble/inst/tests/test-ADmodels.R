@@ -264,10 +264,10 @@ log_mu_init <- rnorm(1)
 model <- nimbleModel(code, constants = list(n = n), data = list(y = rpois(n, 1)),
                      inits = list(mu0 = rnorm(1), sigma = runif(1), mu = exp(log_mu_init),
                                 log_mu = log_mu_init, a = runif(1), b = runif(1)))
+## Heisenbug: with verbose=F (the default), can get cLogProb12 equal but not identical to cLogProb_orig
 test_ADModelCalculate(model, name = 'stochastic link model')
 
 ## dexp and dt, which are provided by NIMBLE to allow expanded parameterizations
-
 code <- nimbleCode({
     for(i in 1:n) {
         y[i] ~ dnorm(mu[i], sd = sigma)
@@ -283,7 +283,7 @@ n <- 10
 model <- nimbleModel(code, constants = list(n = n), data = list(y = rnorm(n)),
                      inits = list(mu = rnorm(n), sigma = runif(1), nu = 2.5, mu0 = rnorm(1), sd0 = runif(1),
                                   tau = runif(1)))
-## Heisenbug: with verbose=F (the default), can get cLogProb12 equal but not identical to cLogProb_orig
+## (not seeing anymore) Heisenbug: with verbose=F (the default), can get cLogProb12 equal but not identical to cLogProb_orig
 test_ADModelCalculate(model, name = 'dt and dexp model')
 
 ## vectorized deterministic nodes
@@ -298,7 +298,7 @@ code <- nimbleCode({
 n <- 10
 model <- nimbleModel(code, constants = list(n = n), data = list(y = rpois(n, 1)),
                      inits = list(logmu = rnorm(n)))
-## Note cVals12[5] is not identical to cVals_orig[5] or cVals01[5], but is equal.
+## Note cVals12[2] is not identical to cVals_orig[2] or cVals01[2], but is equal.
 ## Not clear why.
 test_ADModelCalculate(model, name = 'deterministic vectorized model')
 test_ADModelCalculate(model, checkCompiledValuesIdentical = FALSE, name = 'deterministic vectorized model')
@@ -347,7 +347,6 @@ model$simulate()
 model$calculate()
 model$setData('y','w')
 ## Ok, except for one erroneous logProb (cLogProb12 is NaN);  NCT issue #248
-## Failing on HMC/MAP so need to check later use cases.
 test_ADModelCalculate(model, name = 'complicated indexing')
 
 
@@ -407,9 +406,10 @@ model <- nimbleModel(code, constants = list(n = n),
 model$simulate()
 model$calculate()
 model$setData('y')
-## cLogProb12 equal but not identical to cLogProb_orig on HMC/MAP
-## Need to check other cases.
+## (sometimes get) cLogProb12 equal but not identical to cLogProb_orig 
 test_ADModelCalculate(model, name = 'dmnorm with vectorized covariance matrix, chol param')
+## cVals12 equal but not identical to cVals_orig
+test_ADModelCalculate(model, verbose = TRUE, name = 'dmnorm with vectorized covariance matrix, chol param')
 test_ADModelCalculate(model, checkCompiledValuesIdentical = FALSE,
                       name = 'dmnorm with vectorized covariance matrix, chol param')
 
@@ -446,7 +446,7 @@ model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, rho 
 model$simulate()
 model$calculate()
 model$setData('y')
-## cLogProb12 equal but not identical to cLogProb_orig on HMC/MAP
+## cLogProb12 equal but not identical to cLogProb_orig 
 test_ADModelCalculate(model, name = 'dnorm with user-defined fxn for covariance with loops')
 test_ADModelCalculate(model, checkCompiledValuesIdentical = FALSE,
                       name = 'dnorm with user-defined fxn for covariance with loops')
@@ -502,7 +502,7 @@ model <- nimbleModel(code, constants = list(n = n),
 model$simulate()
 model$calculate()
 model$setData('y')
-## Heisenbug: cLogProb12 equal but not identical to cLogProb_orig if verbose = FALSE (default)
+## (not seeing anymore) Heisenbug: cLogProb12 equal but not identical to cLogProb_orig if verbose = FALSE (default)
 test_ADModelCalculate(model, name = 'various dmnorm parameterizations')
 
 
@@ -533,7 +533,7 @@ model <- nimbleModel(code, constants = list(n = n),
 model$simulate()
 model$calculate()
 model$setData('y')
-## cLogProb12 equal but not identical to cLogProb_orig in HMC/MAP
+## cLogProb12 equal but not identical to cLogProb_orig
 test_ADModelCalculate(model, name = 'various dmvt parameterizations')
 test_ADModelCalculate(model, checkCompiledValuesIdentical = FALSE, name = 'various dmvt parameterizations')
 
@@ -545,7 +545,7 @@ code <- nimbleCode({
 })
 k <- 4
 model <- nimbleModel(code, constants = list(k = k), data = list(p = c(.2, .4, .15, .25)), inits = list(alpha = runif(4)))
-## cLogProb12 equal but not identical to cLogProb_orig in HMC/MAP
+## cLogProb12 equal but not identical to cLogProb_orig
 test_ADModelCalculate(model, name = 'Dirichlet likelihood')
 test_ADModelCalculate(model, checkCompiledValuesIdentical = FALSE, name = 'Dirichlet likelihood')
 
@@ -576,7 +576,9 @@ model$simulate()
 model$calculate()
 model$setData(c('W1','W2','W3','W4','IW1','IW2','IW3','IW4'))
 
-## Note: cVals12 not identical to cVals_orig, but is equal in HMC/MAP case.
+## cVals12 not identical to cVals_orig
+## cLogProb12 equal but not identical to cLogProb_orig
+## (formerly) greater than tolerance gap between uncompiled and compiled 0th deriv
 test_ADModelCalculate(model, verbose = TRUE, name = 'dwish, dinvwish')
 test_ADModelCalculate(model, checkCompiledValuesIdentical = FALSE, name = 'dwish, dinvwish')
 
@@ -597,10 +599,10 @@ code <- nimbleCode({
 })
 
 model <- nimbleModel(code, data = list(y = rgamma(1,1,1)), inits = list(rho = rgamma(1, 1, 1)))
-## Note cLogProb12 equal but not identical to cLogProg_orig in HMC/MAP case
+## Note cLogProb12 equal but not identical to cLogProg_orig
 test_ADModelCalculate(model, name = 'simple user-defined distribution')
-## error in pracma:hessian in HMC/MAP partial case - COME BACK TO THIS and check if need to file issue
 test_ADModelCalculate(model, checkCompiledValuesIdentical = FALSE, name = 'simple user-defined distribution')
+
 
 ## vectorized powers cause problems, issue #253
 dtest <- nimbleFunction(
@@ -704,7 +706,7 @@ model <- nimbleModel(code, constants = list(n = n, x = rnorm(n), z = rep(0, n), 
 model$simulate()
 model$calculate()
 model$setData(c('y1','yy')) # 'y2'
-## Note: cVals12 not identical to cVals_orig, but is equal in HMC/MAP case.
+## (formerly) cVals12 not identical to cVals_orig, but is equal
 test_ADModelCalculate(model, name = 'various matrix functions')
 test_ADModelCalculate(model, checkCompiledValuesIdentical = FALSE, name = 'various matrix functions')
 
@@ -720,11 +722,25 @@ code <- nimbleCode({
     mu ~ dnorm(0, 1)
 })
 model <- nimbleModel(code, data = list(y = rnorm(1)), inits = list(sigma = rgamma(1, 1, 1), mu = rnorm(1)))
+## compiled 0th derivative equal but not identical to logProb
 ## cLogProb01 and cLogProb12 equal but not identical to cLogProb_{new,orig}
-## this is affected by issue #231
 test_ADModelCalculate(model, useParamTransform = TRUE, name = 'basic param transform')
+test_ADModelCalculate(model, useParamTransform = TRUE, useFasterRderivs = TRUE, name = 'basic param transform')
+test_ADModelCalculate(model, useParamTransform = TRUE, checkCompiledValuesIdentical = FALSE, name = 'basic param transform')
+test_ADModelCalculate(model, useParamTransform = TRUE, useFasterRderivs = TRUE, checkCompiledValuesIdentical = FALSE, name = 'basic param transform')
 
-## bug if useParamTransform and useFasterRderivs
+set.seed(1)
+code <- nimbleCode({
+    y ~ dnorm(mu, var = sigma2)
+    sigma2 ~ dinvgamma(1.3, 0.7)
+    mu ~ dnorm(0, 1)
+})
+model <- nimbleModel(code, data = list(y = rnorm(1)), inits = list(sigma2 = rgamma(1, 1, 1), mu = rnorm(1)))
+## compiled 0th derivative equal but not identical to logProb 
+## cLogProb01 and cLogProb12 equal but not identical to cLogProb_{new,orig} 
+test_ADModelCalculate(model, useParamTransform = TRUE, name = 'basic param transform, with lifted')
+test_ADModelCalculate(model, useParamTransform = TRUE, checkCompiledValuesIdentical = FALSE, name = 'basic param transform, with lifted')
+
 
 ## Dirichlet
 code <- nimbleCode({
@@ -736,10 +752,14 @@ code <- nimbleCode({
 n <- 30
 k <- 4
 model <- nimbleModel(code, constants = list(k = k, n = n), data = list(y = rmulti(1, n, rep(1/k, k))), inits = list(p = c(.2, .4, .15, .25), alpha = runif(4)))
-## cLogProb01 equal but not identical to cLogProb_new
+## compiled 0th derivative equal but not identical to logProb 
+## cLogProb01 and cLogProb12 equal but not identical to cLogProb_{new,orig} 
 ## cWrt equal to x but not identical in x[7]
-## this is affected by issue #231, which affects x[7] and x[8] because of back-transform changing param dimension
+## for rWrt, this is affected by issue #231, which affects x[7] and x[8] because of back-transform changing param dimension
 test_ADModelCalculate(model, useParamTransform = TRUE, name = 'Dirichlet paramTransform')
+test_ADModelCalculate(model, useParamTransform = TRUE, checkCompiledValuesIdentical = FALSE, name = 'Dirichlet paramTransform')
+
+
 
 code <- nimbleCode({
     Sigma1[1:n,1:n] <- exp(-dist[1:n,1:n]/rho)
@@ -791,83 +811,16 @@ model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, R = 
 model$simulate()
 model$calculate()
 model$setData('y')
-test_ADModelCalculate(model, useParamTransform = TRUE, name = 'various multivariate dists')
-## NaN in R derivs - why?
+## compiled 0th derivative equal but not identical to logProb
+## also, compiled and uncompiled 0th deriv a bit outside specified tolerance
+## cLogProb01 and cLogProb12 equal but not identical to cLogProb_{new,orig}
+## cWrt equal to x but not identical for a few values
+## for rWrt, this is affected by issue #231, which affects multiple values because of back-transform changing param dimension
 test_ADModelCalculate(model, useParamTransform = TRUE, useFasterRderivs = TRUE, name = 'various multivariate dists')
+test_ADModelCalculate(model, useParamTransform = TRUE, checkCompiledValuesIdentical = FALSE, useFasterRderivs = TRUE, name = 'various multivariate dists')
 
-
-## simplification
-
-code <- nimbleCode({
-    y[1:n] ~ dmnorm(mu[1:n], cov = Sigma[1:n,1:n])
-    mu[1:n] ~ dmnorm(z[1:n], cov = W[1:n,1:n])
-    W[1:n, 1:n] ~ dinvwish(R = R[1:n,1:n], df = nu)
-   
-    nu ~ dunif(10, 20)
-})
-
-
-n <- 5
-locs <- runif(n)
-dd <- fields::rdist(locs)
-R <- crossprod(matrix(rnorm(n^2), n, n))
-Sigma <- R
-model <- nimbleModel(code, constants = list(n = n), inits = list(R = R, nu = 15, Sigma = Sigma, z = rep(0, n)))
-model$simulate()
-model$calculate()
-model$setData('y')
-## various equal but not identical cases
-test_ADModelCalculate(model, useParamTransform = TRUE, name = 'basic invwish case')
-## incorrect R derivs and wrong dimension
-test_ADModelCalculate(model, useParamTransform = TRUE, useFasterRderivs = TRUE, name = 'basic invwish case')
-
-
-## without dwish/dinvwish
-code <- nimbleCode({
-    Sigma1[1:n,1:n] <- exp(-dist[1:n,1:n]/rho)
-    Sigma2[1:n,1:n] <- covFunLoop(dist[1:n,1:n], rho)
-    Sigma3[1:n,1:n] <- covFunVec(dist[1:n,1:n], rho)
-    
-    y[1, 1:n] ~ dmnorm(mu1[1:n], cov = Sigma1[1:n,1:n])
-    y[2, 1:n] ~ dmnorm(mu2[1:n], cov = Sigma2[1:n,1:n])
-    y[3, 1:n] ~ dmnorm(mu3[1:n], cov = Sigma3[1:n,1:n])
-
-    Q[1:n,1:n] <- inverse(Sigma1[1:n, 1:n])
-    y[4, 1:n] ~ dmnorm(mu4[1:n], Q[1:n,1:n])
-
-    Uprec[1:n, 1:n] <- chol(Q[1:n,1:n])
-    Ucov[1:n, 1:n] <- chol(Sigma1[1:n,1:n])
-    y[5, 1:n] ~ dmnorm(mu5[1:n], cholesky = Uprec[1:n,1:n], prec_param = 1)
-    y[6, 1:n] ~ dmnorm(mu6[1:n], cholesky = Ucov[1:n,1:n], prec_param = 0)
-    ## y[7, 1:n] ~ dGPdist(dist[1:n, 1:n], rho)
-    
-    mu1[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
-    mu2[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
-    mu3[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
-    mu4[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
-    mu5[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
-    mu6[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
-    rho ~ dgamma(2, 3)
-})
-
-n <- 5
-locs <- runif(n)
-dd <- fields::rdist(locs)
-model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, rho = rgamma(1, 1, 1),
-                                                                 z = rep(0, n), pr = diag(n)))
-model$simulate()
-model$calculate()
-model$setData('y')
-
-## slow
-## cVals12 equal but not identical to cVals_orig
-system.time(test_ADModelCalculate(model, name = 'various multivariate dists'))
-
-## faster
-## cVals12 equal but not identical to cVals_orig
-## last of elements not identical in: rWrt01 vs. x, rWrt12 vs. x rWrt012 vs. x (issue 231)
-system.time(test_ADModelCalculate(model, useFasterRderivs = TRUE, name = 'various multivariate dists'))
-
+## quite slow
+test_ADModelCalculate(model, useParamTransform = TRUE, name = 'various multivariate dists')
 
 
 ## loop through BUGS models

@@ -1429,6 +1429,8 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         calcNodes <- model$getNodeNames()
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         wrt <- sample(wrt, round(length(wrt)/2), replace = FALSE)
+        if(!length(wrt))
+            wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         tmp <- values(model, wrt)
         if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
         test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
@@ -1442,6 +1444,8 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         calcNodes <- model$getNodeNames()
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         wrt <- sample(wrt, round(length(wrt)/2), replace = FALSE)
+        if(!length(wrt))
+            wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         tmp <- values(model, wrt)
         if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
         test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
@@ -1482,6 +1486,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
                                            relTol = c(1e-15, 1e-8, 1e-3), verbose = TRUE, useFasterRderivs = FALSE,
                                            useParamTransform = FALSE, checkCompiledValuesIdentical = TRUE,
                                            debug = FALSE){
+    try(  ## Needed so that test failures in one scenario don't prevent later scenarios from being tested.
     test_that(paste0("Derivatives of calculate for model ", name), {
         if(exists('paciorek')) browser()
         if(is.null(calcNodes))
@@ -1619,8 +1624,13 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
             print("not checking uncompiled retention in uncompiled model given NCT issue 231")
 
         ## 0th order 'derivative'
-        expect_identical(cOutput01$value, cLogProb_orig)
-        expect_identical(cOutput012$value, cLogProb_orig)
+        if(checkCompiledValuesIdentical) {
+            expect_identical(cOutput01$value, cLogProb_orig)
+            expect_identical(cOutput012$value, cLogProb_orig)
+        } else {
+            expect_equal(cOutput01$value, cLogProb_orig)
+            expect_equal(cOutput012$value, cLogProb_orig)
+        }
         expect_equal(rOutput01$value, cOutput01$value, tolerance = relTol[1])
         expect_equal(rOutput012$value, cOutput012$value, tolerance = relTol[1])
         if(!useParamTransform && !useFasterRderivs) {
@@ -1704,6 +1714,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
         
         
     })
+    )
 }
 
 
