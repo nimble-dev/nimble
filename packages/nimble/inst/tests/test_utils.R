@@ -1404,10 +1404,10 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         tmp <- values(model, wrt)
         if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
-        test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
+        try(test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                        checkCompiledValuesIdentical = checkCompiledValuesIdentical,
-                                       verbose = verbose, debug = debug)
+                                       verbose = verbose, debug = debug))
         ## max. lik. use case
         if(verbose) cat("testing ML\n")
         values(model, nodes) <- vals
@@ -1418,10 +1418,10 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE) # will include hyps if present, but derivs wrt those should be zero
         tmp <- values(model, wrt)
         if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
-        test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
+        try(test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                        checkCompiledValuesIdentical = checkCompiledValuesIdentical,
-                                       verbose = verbose, debug = debug)
+                                       verbose = verbose, debug = debug))
 
         ## modular HMC/MAP use case
         if(verbose) cat("testing HMC/MAP partial\n")
@@ -1433,10 +1433,10 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
             wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         tmp <- values(model, wrt)
         if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
-        test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
+        try(test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                        checkCompiledValuesIdentical = checkCompiledValuesIdentical,
-                                       verbose = verbose, debug = debug)
+                                       verbose = verbose, debug = debug))
 
         ## conditional max. lik. use case
         if(verbose) cat("testing ML partial\n")
@@ -1448,10 +1448,10 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
             wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         tmp <- values(model, wrt)
         if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
-        test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
+        try(test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                        checkCompiledValuesIdentical = checkCompiledValuesIdentical,
-                                       verbose = verbose, debug = debug)
+                                       verbose = verbose, debug = debug))
 
         ## empirical Bayes use case
         if(verbose) cat('testing EB\n')
@@ -1462,20 +1462,20 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         tmp <- values(model, wrt)
         if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
-        test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
+        try(test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                        checkCompiledValuesIdentical = checkCompiledValuesIdentical,
-                                       verbose = verbose, debug = debug)
+                                       verbose = verbose, debug = debug))
     } else {
         if(is.null(calcNodes)) calcNodes <- model$getNodeNames()
         if(is.null(wrt)) wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         ## Apply test to user-provided sets of nodes
         tmp <- values(model, wrt)
         if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
-        test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
+        try(test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                        checkCompiledValuesIdentical = checkCompiledValuesIdentical,
-                                       verbose = verbose, debug = debug)
+                                       verbose = verbose, debug = debug))
     }
 }
 
@@ -1486,7 +1486,6 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
                                            relTol = c(1e-15, 1e-8, 1e-3), verbose = TRUE, useFasterRderivs = FALSE,
                                            useParamTransform = FALSE, checkCompiledValuesIdentical = TRUE,
                                            debug = FALSE){
-    try(  ## Needed so that test failures in one scenario don't prevent later scenarios from being tested.
     test_that(paste0("Derivatives of calculate for model ", name), {
         if(exists('paciorek')) browser()
         if(is.null(calcNodes))
@@ -1714,7 +1713,6 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
         
         
     })
-    )
 }
 
 

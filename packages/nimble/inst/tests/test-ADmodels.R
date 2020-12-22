@@ -838,40 +838,32 @@ if(FALSE) {
 ## now loop through BUGS models.
 ## figure out if need to simulate for any of these as we do above for 'epil'
 ## also will need to specify bugs,inits,data files by specific name in some cases where naming is non-standard
-examples <- c('blocker', 'dyes', 'epil', 'equiv', 'line', 'oxford', 'pump', 'rats', 'beetles', 'jaw', 'dugongs')
+examples <- c('blocker', 'dyes', 'epil', 'equiv', 'line', 'oxford', 'pump', 'rats', 'beetles', 'jaw', 'dugongs', 'schools', 'bones','litters', 'seeds')
 bugsFile <- examples
 initsFile <- dataFile <- rep(NA, length(examples))
 names(bugsFile) <- names(initsFile) <- names(dataFile) <- examples
 
-## add schools, jaw as have Wishart
-## try bones as dcat is likelihood
-## try inhaler as dcat in likelihood
-## try leuk, litters, salm, seeds
-
+## try inhaler as dcat in likelihood if can get bones to work
 
 ## biops has stoch indexing so left out for now
-## bones has dcat so left out for now
 ## lsat requires setting some indexing and doing a bunch of initialization
 ## kidney, mice has dinterval so left out for now
-## TODO: look at the various other bugs examples to see if there are others we should include
+## TODO: look at the various other bugs Volume 2 examples to see if there are others we should include
 
-## oxford gives all NaN values for R derivs; C derivs have some -Inf for gradient and some NaNs for Hessian.
-## Need to look at model structure to see what is going on.
-
-## dyes has differences O(1e-3) for gradient and O(0.1) for Hessian; need to look in more detail
-## dugongs has differences O(1) for gradient and hessian
 
 ## customize file names as needed
 bugsFile['beetles'] <- 'beetles-logit'
 bugsFile['jaw'] <- 'jaw-constant'
 bugsFile['epil'] <- 'epil2'
 bugsFile <- paste0(bugsFile, '.bug')
+
 initsFile['epil'] <- 'epil-inits.R'
 dataFile['epil'] <- 'epil-data.R'
 initsFile['jaw'] <- 'jaw-inits.R'
 dataFile['jaw'] <- 'jaw-data.R'
 initsFile['beetles'] <- 'beetles-inits.R'
 dataFile['beetles'] <- 'beetles-data.R'
+initsFile['schools'] <- 'schools-inits.R'
 
 ## customize whether any nodes need to be initialized
 simulateNodes <- list()
@@ -884,13 +876,13 @@ simulateNodes['oxford'] <- 'sigma'
 simulateNodes['dugongs'] <- 'gamma'
 simulateNodes['jaw'] <- 'Omega'
 
-relTol_default <- eval(formals(test_ADModelCalculate)$relTol)
 
+relTol_default <- eval(formals(test_ADModelCalculate)$relTol)
 relTols <- list()
 length(relTols) <- length(examples)
 names(relTols) <- examples
-relTols[['rats']] <- relTol_default
-relTols[['rats']][2] <- 1e-4   ## this seems pretty bad for gradient tolerance; investigate further
+
+
 
 for(i in seq_along(examples)) {
     cat("Testing ", examples[i], ".\n")
@@ -905,8 +897,52 @@ for(i in seq_along(examples)) {
     if(is.null(relTols[[examples[i]]])) {
         relTol <- relTol_default
     } else relTol = relTols[[examples[i]]]
-    test_ADModelCalculate(model, name = bugsFile[i], relTol = relTol, useFasterRderivs = TRUE)
+    test_ADModelCalculate(model, useParamTransform = TRUE, verbose = TRUE, name = bugsFile[i], relTol = relTol, useFasterRderivs = TRUE)
 }
+
+## need to monkey with leuk code, which makes it a pain to deal with directories as done above.
+writeLines(c("var", "Y[N,T],", "dN[N,T];"), con = file.path(tempdir(), "leuk.bug"))
+system.in.dir(paste("cat leuk.bug >>", file.path(tempdir(), "leuk.bug")), dir = system.file('classic-bugs','vol1','leuk', package = 'nimble'))
+system.in.dir(paste("sed -i -e 's/step/nimStep/g'", file.path(tempdir(), "leuk.bug")))
+model <- readBUGSmodel(model = file.path(tempdir(), "leuk.bug"), data = system.file('classic-bugs','vol1','leuk','leuk-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol1','leuk','leuk-init.R', package = 'nimble'), useInits = TRUE)
+out <- model$calculate()
+test_ADModelCalculate(model, useParamTransform = TRUE, verbose = TRUE, name = bugsFile[i], relTol = relTol, useFasterRderivs = TRUE)
+
+
+## salmno - hERE
+writeLines(c("var","logx[doses];"), con = file.path(tempdir(), "salm.bug"))
+##system(paste0("echo 'var\nlogx[doses];' >> ", file.path(tempdir(), "salm.bug")))
+system.in.dir(paste("cat salm.bug >>", file.path(tempdir(), "salm.bug")), dir = system.file('classic-bugs','vol1','salm', package = 'nimble'))
+##system(paste("cat", system.file('classic-bugs','vol1','salm','salm.bug', package = 'nimble'), ">>", file.path(tempdir(), "salm.bug")))
+##system(paste("sed -i -e 's/logx\\[\\]/logx\\[1:doses\\]/g'", file.path(tempdir(), "salm.bug"))) ## alternative way to get size info in there
+## testBUGSmodel('salm', dir = "", model = file.path(tempdir(), "salm.bug"), data = system.file('classic-bugs','vol1','salm','salm-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol1','salm','salm-init.R', package = 'nimble'),  useInits = TRUE)
+
+
+## blocker: compiled 0th deriv equal not identical to cLogProb_orig for HMC/MAP partial
+## dyes: all set
+## epil: compiled 0th deriv equal not identical to cLogProb_orig, cLogProb{12,01} equal not identical to cLogProb_{orig,new}
+## equiv: all set
+## line: all set
+## oxford: compiled 0th deriv equal not identical to cLogProb_orig, cLogProb{12,01} equal not identical to cLogProb_{orig,new} 
+## pump: compiled 0th deriv equal not identical to cLogProb_orig, rWrt and cWrt equal but not identical to x, cLogProb12 and cVals12 equal but not identical to cLogProb_orig and cVals_orig
+## rats:
+## HMC/MAP partial: compiled 0th deriv equal not identical to cLogProb_orig
+## ML partial - compiled 0th deriv equal not identical to cLogProb_orig; uncompiled/compiled Jacobian values out of tolerance
+## beetles: compiled 0th deriv equal not identical to cLogProb_orig (and effect on comp/uncomp 0th deriv match); cLogProb{12,01} equal not identical to cLogProb_{orig,new}, 
+## jaw: cVals{12,01} equal not identical to cVals_{orig,new}; rWrt equal not identical to x.
+## dugongs: serious problems here
+## schools: cVals{12,01} equal not identical to cVals_{orig,new}; cWrt, rWrt equal not identical to x.
+## bones: compilation error - look at this
+## leuk: tons of NAs in compiled derivs
+## litters: compilation error
+## seeds: various NAs
+
+## Issues as of spring 2020:
+## oxford gives all NaN values for R derivs; C derivs have some -Inf for gradient and some NaNs for Hessian.
+## Need to look at model structure to see what is going on.
+
+## dyes has differences O(1e-3) for gradient and O(0.1) for Hessian; need to look in more detail
+## dugongs has differences O(1) for gradient and hessian
 
 
 ## Issues as of spring 2019; keeping for now in case they help in understanding current issues listed above.
