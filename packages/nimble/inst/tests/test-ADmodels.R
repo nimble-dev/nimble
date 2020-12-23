@@ -325,6 +325,25 @@ for(i in 1:n)
 model <- nimbleModel(code, constants = list(n = n), data = list(y = y), inits = inits)
 test_ADModelCalculate(model, name = 'truncation model')
 
+code <- nimbleCode({
+    y ~ dnorm(mu, 1)
+    mu ~ T(dnorm(mu0, 1), 0, 10)
+    mu0 ~ dnorm(0,1)
+})
+model <- nimbleModel(code, data = list(y = 1), inits = list(mu = 0.5, mu0 = 1))
+## compilation error: issue #254
+test_ADModelCalculate(model, name = 'truncation on non-top node')
+
+
+code <- nimbleCode({
+    y ~ dnorm(mu, 1)
+    mu ~ T(dbeta(a,b), 0.1, 0.8)
+    a ~ dunif(0, 5)
+    b ~ dunif(0,5 )
+})
+model <- nimbleModel(code, data = list(y = 1), inits = list(mu = 0.5,a=1,b=1))
+test_ADModelCalculate(model, name = 'truncation with dbeta')
+
 
 ## complicated indexing 
 code <- nimbleCode({
@@ -836,15 +855,13 @@ if(FALSE) {
 }
 
 ## now loop through BUGS models.
-## figure out if need to simulate for any of these as we do above for 'epil'
-## also will need to specify bugs,inits,data files by specific name in some cases where naming is non-standard
-examples <- c('blocker', 'dyes', 'epil', 'equiv', 'line', 'oxford', 'pump', 'rats', 'beetles', 'jaw', 'dugongs', 'schools', 'bones','litters', 'seeds')
+examples <- c('blocker', 'dyes', 'epil', 'equiv', 'line', 'oxford', 'pump', 'rats', 'beetles', 'jaw', 'dugongs', 'schools', 'seeds')
 bugsFile <- examples
 initsFile <- dataFile <- rep(NA, length(examples))
 names(bugsFile) <- names(initsFile) <- names(dataFile) <- examples
 
-## try inhaler as dcat in likelihood if can get bones to work
-
+## litters uses truncation on non-top node (issue #254) so left out for now
+## bones, inhaler has dcat so left out for now (but we should be able to handle this)
 ## biops has stoch indexing so left out for now
 ## lsat requires setting some indexing and doing a bunch of initialization
 ## kidney, mice has dinterval so left out for now
@@ -869,13 +886,14 @@ initsFile['schools'] <- 'schools-inits.R'
 simulateNodes <- list()
 length(simulateNodes) <- length(examples)
 names(simulateNodes) <- examples
-simulateNodes['epil'] <- 'b1'
-simulateNodes['dyes'] <- 'mu'
-simulateNodes['equiv'] <- 'd'
-simulateNodes['oxford'] <- 'sigma'
-simulateNodes['dugongs'] <- 'gamma'
-simulateNodes['jaw'] <- 'Omega'
-
+simulateNodes[['epil']] <- 'b1'
+simulateNodes[['dyes']] <- 'mu'
+simulateNodes[['equiv']] <- 'd'
+simulateNodes[['oxford']] <- 'sigma'
+simulateNodes[['dugongs']] <- 'gamma'
+simulateNodes[['jaw']] <- 'Omega'
+## simulateNodes[['litters']] <- c('mu', 'theta')
+simulateNodes[['seeds']] <- 'b'
 
 relTol_default <- eval(formals(test_ADModelCalculate)$relTol)
 relTols <- list()
@@ -900,24 +918,28 @@ for(i in seq_along(examples)) {
     test_ADModelCalculate(model, useParamTransform = TRUE, verbose = TRUE, name = bugsFile[i], relTol = relTol, useFasterRderivs = TRUE)
 }
 
-## need to monkey with leuk code, which makes it a pain to deal with directories as done above.
+## need to monkey with leuk and salm code, which makes it a pain to deal with directories as done above.
+
+## leuk
 writeLines(c("var", "Y[N,T],", "dN[N,T];"), con = file.path(tempdir(), "leuk.bug"))
 system.in.dir(paste("cat leuk.bug >>", file.path(tempdir(), "leuk.bug")), dir = system.file('classic-bugs','vol1','leuk', package = 'nimble'))
 system.in.dir(paste("sed -i -e 's/step/nimStep/g'", file.path(tempdir(), "leuk.bug")))
 model <- readBUGSmodel(model = file.path(tempdir(), "leuk.bug"), data = system.file('classic-bugs','vol1','leuk','leuk-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol1','leuk','leuk-init.R', package = 'nimble'), useInits = TRUE)
 out <- model$calculate()
-test_ADModelCalculate(model, useParamTransform = TRUE, verbose = TRUE, name = bugsFile[i], relTol = relTol, useFasterRderivs = TRUE)
+## issue #253
+test_ADModelCalculate(model, useParamTransform = TRUE, verbose = TRUE, name = 'leuk', relTol = relTol_default, useFasterRderivs = TRUE)
 
-
-## salmno - hERE
+## salm
 writeLines(c("var","logx[doses];"), con = file.path(tempdir(), "salm.bug"))
-##system(paste0("echo 'var\nlogx[doses];' >> ", file.path(tempdir(), "salm.bug")))
 system.in.dir(paste("cat salm.bug >>", file.path(tempdir(), "salm.bug")), dir = system.file('classic-bugs','vol1','salm', package = 'nimble'))
-##system(paste("cat", system.file('classic-bugs','vol1','salm','salm.bug', package = 'nimble'), ">>", file.path(tempdir(), "salm.bug")))
-##system(paste("sed -i -e 's/logx\\[\\]/logx\\[1:doses\\]/g'", file.path(tempdir(), "salm.bug"))) ## alternative way to get size info in there
-## testBUGSmodel('salm', dir = "", model = file.path(tempdir(), "salm.bug"), data = system.file('classic-bugs','vol1','salm','salm-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol1','salm','salm-init.R', package = 'nimble'),  useInits = TRUE)
+model <- readBUGSmodel(model = file.path(tempdir(), "salm.bug"), data = system.file('classic-bugs','vol1','salm','salm-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol1','salm','salm-init.R', package = 'nimble'), useInits = TRUE)
+model$simulate('lambda')
+model$calculate()
+## rWrt, cWrt equal not identical to x
+test_ADModelCalculate(model, useParamTransform = TRUE, verbose = TRUE, name = 'salm', relTol = relTol_default, useFasterRderivs = TRUE)
 
 
+## Results as of 2020-12-23
 ## blocker: compiled 0th deriv equal not identical to cLogProb_orig for HMC/MAP partial
 ## dyes: all set
 ## epil: compiled 0th deriv equal not identical to cLogProb_orig, cLogProb{12,01} equal not identical to cLogProb_{orig,new}
@@ -930,13 +952,13 @@ system.in.dir(paste("cat salm.bug >>", file.path(tempdir(), "salm.bug")), dir = 
 ## ML partial - compiled 0th deriv equal not identical to cLogProb_orig; uncompiled/compiled Jacobian values out of tolerance
 ## beetles: compiled 0th deriv equal not identical to cLogProb_orig (and effect on comp/uncomp 0th deriv match); cLogProb{12,01} equal not identical to cLogProb_{orig,new}, 
 ## jaw: cVals{12,01} equal not identical to cVals_{orig,new}; rWrt equal not identical to x.
-## dugongs: serious problems here
+## dugongs: issue 255
 ## schools: cVals{12,01} equal not identical to cVals_{orig,new}; cWrt, rWrt equal not identical to x.
-## bones: compilation error - look at this
-## leuk: tons of NAs in compiled derivs
-## litters: compilation error
-## seeds: various NAs
+## leuk: tons of NAs in compiled derivs, presumably issue #253
+## seeds: compiled 0th deriv equal not identical to cLogProb_orig, cLogProb{12,01} equal not identical to cLogProb_{orig,new}
 
+
+################### OLD NOTES #####################
 ## Issues as of spring 2020:
 ## oxford gives all NaN values for R derivs; C derivs have some -Inf for gradient and some NaNs for Hessian.
 ## Need to look at model structure to see what is going on.
