@@ -210,6 +210,59 @@ test_that('very simple example setup', {
               avoidNestedTest = TRUE)
 })
 
+### linear Gaussian state-space model (of length 5)
+
+test_that('linear Gaussian state-space model MCMC works', {
+  set.seed(0)
+  n <- 5
+  a <- 6
+  b <- 0.8
+  sigmaPN <- 2
+  sigmaOE <- 4
+  set.seed(0)
+  x <- numeric(n)
+  y <- numeric(n)
+  x[1] <- 1
+  y[1] <- rnorm(1, x[1], sigmaOE)
+  for(i in 2:n) {
+    x[i] <- rnorm(1, a+b*x[i-1], sigmaPN)
+    y[i] <- rnorm(1, x[i], sigmaOE)
+  }
+  code <- nimbleCode({
+    a ~ dnorm(0, sd = 10000)
+    b ~ dnorm(0, sd = 10000)
+    sigmaPN ~ dunif(0, 10000)
+    sigmaOE ~ dunif(0, 10000)
+    x[1] ~ dnorm(0, sd = 10000)
+    y[1] ~ dnorm(x[1], sd = sigmaOE)
+    for(t in 2:N) {
+      x[t] ~ dnorm(a + b*x[t-1], sd = sigmaPN)
+      y[t] ~ dnorm(x[t], sd = sigmaOE)
+    }
+  })
+  constants <- list(N = length(y))
+  data <- list(y = y)
+  inits <- list(a=6, b=0.8, sigmaOE=4, sigmaPN=2, x=y+rnorm(length(y)))
+
+  test_mcmc(model = code,
+            name = 'linear Gaussian state-space model',
+            data = c(data, constants),
+            inits = inits,
+            seed = 123,
+            resampleData = FALSE,
+            results = list(
+              mean = list(a = 37.36, b = -2.26, sigmaPN = 5.27, sigmaOE = 5.08),
+              sd = list(a = 30.14, b = 2.60, sigmaPN = 6.54, sigmaOE = 2.96)),
+            ## The expected results come from exactly these run conditions,
+            ## so they are essentially exact MCMC chain replication results.
+            ## For that reason, tolerances are all set to the precision with
+            ## which the numbers were entered, to nearest 0.01.
+            resultsTolerance = list(mean = list(a = .01, b = .01, sigmaPN=0.01, sigmaOE=0.01),
+                                    sd = list(a = .01, b = .01, sigmaPN=0.01, sigmaOE=0.01)),
+            avoidNestedTest = TRUE)
+})
+
+
 ### basic block sampler example
 
 test_that('basic no-block sampler setup', {

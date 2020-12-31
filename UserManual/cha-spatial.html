@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.9.0</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.10.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -232,6 +232,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="10.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:crp"><i class="fa fa-check"></i><b>10.2</b> Chinese Restaurant Process model</a><ul>
 <li class="chapter" data-level="10.2.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-density-2"><i class="fa fa-check"></i><b>10.2.1</b> Specification and density</a></li>
 <li class="chapter" data-level="10.2.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:excrp"><i class="fa fa-check"></i><b>10.2.2</b> Example</a></li>
+<li class="chapter" data-level="10.2.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:extensionscrp"><i class="fa fa-check"></i><b>10.2.3</b> Extensions</a></li>
 </ul></li>
 <li class="chapter" data-level="10.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:sb"><i class="fa fa-check"></i><b>10.3</b> Stick-breaking model</a><ul>
 <li class="chapter" data-level="10.3.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-function"><i class="fa fa-check"></i><b>10.3.1</b> Specification and function</a></li>
@@ -327,6 +328,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
+<li class="chapter" data-level="16" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i><b>16</b> References</a></li>
 </ul>
 
       </nav>
@@ -350,7 +352,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <div id="intrinsic-gaussian-car-model-dcar_normal" class="section level2">
 <h2><span class="header-section-number">9.1</span> Intrinsic Gaussian CAR model: <em>dcar_normal</em></h2>
 <p>The intrinsic Gaussian conditional autoregressive (ICAR) model used to model dependence of block-level values (e.g., spatial areas or temporal blocks) is implemented in NIMBLE as the <code>dcar_normal</code> distribution. Additional details for using this distribution are available using <code>help('CAR-Normal')</code>.</p>
-<p>ICAR models are improper priors for random fields (e.g., temporal or spatial processes). The prior is a joint prior across a collection of latent process values. For more technical details on CAR models, including higher-order CAR models, please see <span class="citation">Rue and Held (<a href="#ref-Rue_Held_2005">2005</a>)</span>, <span class="citation">Banerjee, Carlin, and Gelfand (<a href="#ref-Banerjee_etal_2015">2015</a>)</span>, and <span class="citation">Paciorek (<a href="#ref-Paciorek_2009">2009</a>)</span>. Since the distribution is improper it should not be used as the distribution for data values, but rather to specify a prior for an unknown process. As discussed in the references above, the distribution can be seen to be a proper density in a reduced dimension subspace; thus the impropriety only holds on one or more linear combinations of the latent process values.</p>
+<p>ICAR models are improper priors for random fields (e.g., temporal or spatial processes). The prior is a joint prior across a collection of latent process values. For more technical details on CAR models, including higher-order CAR models, please see <span class="citation">Rue and Held (<a href="references.html#ref-Rue_Held_2005">2005</a>)</span>, <span class="citation">Banerjee, Carlin, and Gelfand (<a href="references.html#ref-Banerjee_etal_2015">2015</a>)</span>, and <span class="citation">Paciorek (<a href="references.html#ref-Paciorek_2009">2009</a>)</span>. Since the distribution is improper it should not be used as the distribution for data values, but rather to specify a prior for an unknown process. As discussed in the references above, the distribution can be seen to be a proper density in a reduced dimension subspace; thus the impropriety only holds on one or more linear combinations of the latent process values.</p>
 <p>In addition to our focus here on CAR modeling for spatial data, the ICAR model can also be used in other contexts, such as for temporal data in a discrete time context.</p>
 <div id="specification-and-density" class="section level3">
 <h3><span class="header-section-number">9.1.1</span> Specification and density</h3>
@@ -362,7 +364,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <p>The <code>adj</code>, <code>weights</code> and <code>num</code> parameters define the adjacency structure and associated weights of the spatially-dependent field. See <code>help('CAR-Normal')</code> for details of these parameters. When specifying a CAR distribution, these parameters must have constant values. They do not necessarily have to be specified as <code>constants</code> when creating a model object using <code>nimbleModel</code>, but they should be defined in a static way: as right-hand-side only variables with initial values provided as <code>constants</code>, <code>data</code> or <code>inits</code>, or using fixed numerical deterministic declarations. Each of these two approaches for specifying values are shown in the example.</p>
 <p>The adjacency structure defined by <code>adj</code> and the associated <code>weights</code> must be symmetric. That is, if region <span class="math inline">\(i\)</span> is neighbor of region <span class="math inline">\(j\)</span>, then region <span class="math inline">\(j\)</span> must also be a neighbor of region <span class="math inline">\(i\)</span>. Further, the weights associated with these reciprocating relationships must be equal. NIMBLE performs a check of these symmetries and will issue an error message if asymmetry is detected.</p>
 <p>The scalar precision <code>tau</code> may be treated as an unknown model parameter and itself assigned a prior distribution. Care should be taken in selecting a prior distribution for <code>tau</code>, and WinBUGS suggests that users be prepared to carry out a sensitivity analysis for this choice.</p>
-<p>When specifying a higher-order CAR process, the number of constraints <code>c</code> can be explicitly provided in the model specification. This would be the case, for example, when specifying a thin-plate spline (second-order) CAR model, for which <code>c</code> should be 2 for a one-dimensional process and 3 for a two-dimensional (e.g., spatial) process, as discussed in <span class="citation">Rue and Held (<a href="#ref-Rue_Held_2005">2005</a>)</span> and <span class="citation">Paciorek (<a href="#ref-Paciorek_2009">2009</a>)</span>. If <code>c</code> is omitted, NIMBLE will calculate <code>c</code> as the number of disjoint groups of regions in the adjacency structure, which implicitly assumes a first-order CAR process for each group.</p>
+<p>When specifying a higher-order CAR process, the number of constraints <code>c</code> can be explicitly provided in the model specification. This would be the case, for example, when specifying a thin-plate spline (second-order) CAR model, for which <code>c</code> should be 2 for a one-dimensional process and 3 for a two-dimensional (e.g., spatial) process, as discussed in <span class="citation">Rue and Held (<a href="references.html#ref-Rue_Held_2005">2005</a>)</span> and <span class="citation">Paciorek (<a href="references.html#ref-Paciorek_2009">2009</a>)</span>. If <code>c</code> is omitted, NIMBLE will calculate <code>c</code> as the number of disjoint groups of regions in the adjacency structure, which implicitly assumes a first-order CAR process for each group.</p>
 <p>By default there is no zero-mean constraint imposed on the CAR process, and thus the mean is implicit within the CAR process values, with an implicit improper flat prior on the mean. To avoid non-identifiability, one should not include an additional parameter for the mean (e.g., do not include an intercept term in a simple CAR model with first-order neighborhood structure). When there are disjoint groups of regions and the constraint is not imposed, there is an implicit distinct improper flat prior on the mean for each group, and it would not make sense to impose the constraint since the constraint holds across all regions. Similarly, if one sets up a neighborhood structure for higher-order CAR models, it would not make sense to impose the zero-mean constraint as that would account for only one of the eigenvalues that are zero. Imposing this constraint (by specifying the parameter <code>zero_mean = 1</code>) allows users to model the process mean separately, and hence a separate intercept term should be included in the model.</p>
 <p>NIMBLE provides a convenience function <code>as.carAdjacency</code> for converting other representations of the adjacency information into the required <code>adj</code>, <code>weights</code>, <code>num</code> format. This function can convert:</p>
 <ul>
@@ -389,8 +391,6 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
     alpha <span class="op">~</span><span class="st"> </span><span class="kw">dflat</span>()
     beta <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)
     tau <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)
-    <span class="cf">for</span>(k <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>L)
-        weights[k] &lt;-<span class="st"> </span><span class="dv">1</span>
     s[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dcar_normal</span>(adj[<span class="dv">1</span><span class="op">:</span>L], weights[<span class="dv">1</span><span class="op">:</span>L], num[<span class="dv">1</span><span class="op">:</span>N], tau, <span class="dt">zero_mean =</span> <span class="dv">1</span>)
     <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {
         <span class="kw">log</span>(lambda[i]) &lt;-<span class="st"> </span>alpha <span class="op">+</span><span class="st"> </span>beta<span class="op">*</span>x[i] <span class="op">+</span><span class="st"> </span>s[i]
@@ -398,7 +398,8 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
     }
 })
 
-constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">4</span>, <span class="dt">L =</span> <span class="dv">8</span>, <span class="dt">num =</span> <span class="kw">c</span>(<span class="dv">3</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">1</span>),
+L &lt;-<span class="st"> </span><span class="dv">8</span>
+constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">4</span>, <span class="dt">L =</span> L, <span class="dt">num =</span> <span class="kw">c</span>(<span class="dv">3</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">1</span>), <span class="dt">weights =</span> <span class="kw">rep</span>(<span class="dv">1</span>, L),
                   <span class="dt">adj =</span> <span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">1</span>), <span class="dt">x =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">8</span>))
 data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">c</span>(<span class="dv">6</span>, <span class="dv">9</span>, <span class="dv">7</span>, <span class="dv">12</span>))
 inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">alpha =</span> <span class="dv">0</span>, <span class="dt">beta =</span> <span class="dv">0</span>, <span class="dt">tau =</span> <span class="dv">1</span>, <span class="dt">s =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>))
@@ -409,7 +410,7 @@ Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, c
 <div id="proper-gaussian-car-model-dcar_proper" class="section level2">
 <h2><span class="header-section-number">9.2</span> Proper Gaussian CAR model: <em>dcar_proper</em></h2>
 <p>The proper Gaussian conditional autoregressive model used to model dependence of block-level values (e.g., spatial areas or temporal blocks) is implemented in NIMBLE as the <code>dcar_proper</code> distribution. Additional details of using this distribution are available using <code>help('CAR-Proper')</code>.</p>
-<p>Proper CAR models are proper priors for random fields (e.g., temporal or spatial processes). The prior is a joint prior across a collection of latent process values. For more technical details on proper CAR models please see <span class="citation">Banerjee, Carlin, and Gelfand (<a href="#ref-Banerjee_etal_2015">2015</a>)</span>, including considerations of why the improper CAR model may be preferred.</p>
+<p>Proper CAR models are proper priors for random fields (e.g., temporal or spatial processes). The prior is a joint prior across a collection of latent process values. For more technical details on proper CAR models please see <span class="citation">Banerjee, Carlin, and Gelfand (<a href="references.html#ref-Banerjee_etal_2015">2015</a>)</span>, including considerations of why the improper CAR model may be preferred.</p>
 <p>In addition to our focus here on CAR modeling for spatial data, the proper CAR model can also be used in other contexts, such as for temporal data in a discrete time context.</p>
 <div id="specification-and-density-1" class="section level3">
 <h3><span class="header-section-number">9.2.1</span> Specification and density</h3>
@@ -512,25 +513,13 @@ Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, c
 <div id="zero-mean-constraint" class="section level3">
 <h3><span class="header-section-number">9.3.3</span> Zero-mean constraint</h3>
 <p>A zero-mean constraint is available for the intrinsic Gaussian <code>dcar_normal</code> distribution. This constraint on the ICAR process values is imposed during MCMC sampling, if the argument <code>zero_mean = 1</code>, mimicking the behavior of WinBUGS. Following the univariate updates on each component, the mean is subtracted away from all process values, resulting in a zero-mean process.</p>
-<p>Note that this is <em>not</em> equivalent to sampling under the constraint that the mean is zero (see p. 36 of <span class="citation">Rue and Held (<a href="#ref-Rue_Held_2005">2005</a>)</span>) so should be treated as an ad hoc approach and employed with caution.</p>
+<p>Note that this is <em>not</em> equivalent to sampling under the constraint that the mean is zero (see p. 36 of <span class="citation">Rue and Held (<a href="references.html#ref-Rue_Held_2005">2005</a>)</span>) so should be treated as an ad hoc approach and employed with caution.</p>
 
 <!--- % See http://yihui.name/knitr/demo/child/ for documentation on the parent/child document system of knitr -->
 <!---  
 % Rscript -e "library(knitr);  knit2pdf('includesSpatialOnly.Rnw')"; open -a "Google Chrome" includesSpatialOnly.pdf (I'm not sure what to do here...)
 -->
 </div>
-</div>
-</div>
-<h3>References</h3>
-<div id="refs" class="references">
-<div id="ref-Banerjee_etal_2015">
-<p>Banerjee, S., B.P. Carlin, and A.E. Gelfand. 2015. <em>Hierarchical Modeling and Analysis for Spatial Data</em>. 2nd ed. Boca Raton: Chapman &amp; Hall.</p>
-</div>
-<div id="ref-Paciorek_2009">
-<p>Paciorek, C.J. 2009. “Understanding Intrinsic Gaussian Markov Random Field Spatial Models, Including Intrinsic Conditional Autoregressive Models.” University of California, Berkeley. <a href="http://www.stat.berkeley.edu/~paciorek/research/techVignettes/techVignette5.pdf" class="uri">http://www.stat.berkeley.edu/~paciorek/research/techVignettes/techVignette5.pdf</a>.</p>
-</div>
-<div id="ref-Rue_Held_2005">
-<p>Rue, H., and L. Held. 2005. <em>Gaussian Markov Random Fields: Theory and Applications</em>. Boca Raton: Chapman &amp; Hall.</p>
 </div>
 </div>
             </section>

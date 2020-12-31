@@ -119,7 +119,6 @@ modelDefClass <- setRefClass('modelDefClass',
                              ))
 
 
-
 ## This is the master entry function
 ##
 ## NOTES:
@@ -427,7 +426,7 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
             if(code[[i]][[1]] == '<-')
                 checkForDeterministicDorR(code[[i]])
 
-            BUGSdeclClassObject$setup(code[[i]], contextID, lineNumber)
+            BUGSdeclClassObject$setup(code[[i]], contextID, lineNumber, userEnv = userEnv)
             declInfo[[iAns]] <<- BUGSdeclClassObject
         }
         if(code[[i]][[1]] == 'for') {        ## e.g. (for i in 1:N).  New context (for-loop info) needed
@@ -549,7 +548,7 @@ modelDefClass$methods(addMissingIndexing = function() {
         newCode <- addMissingIndexingRecurse(BUGSdecl$code, dimensionsList)
         
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber)
+        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, userEnv = BUGSdecl$envir)
         declInfo[[i]] <<- BUGSdeclClassObject
     }
 })
@@ -666,7 +665,7 @@ modelDefClass$methods(processBoundsAndTruncation = function() {
             BUGSdecl$code <- newCode
         }
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(BUGSdecl$code, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, truncated, boundExprs)
+        BUGSdeclClassObject$setup(BUGSdecl$code, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, truncated, boundExprs, userEnv = BUGSdecl$envir)
         declInfo[[i]] <<- BUGSdeclClassObject
     }
 })
@@ -683,7 +682,7 @@ modelDefClass$methods(expandDistributions = function() {
         newCode[[3]] <- evalInDistsMatchCallEnv(BUGSdecl$valueExpr)
         
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$boundExprs)
+        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$boundExprs, userEnv = BUGSdecl$envir)
         declInfo[[i]] <<- BUGSdeclClassObject
     }
 })
@@ -755,11 +754,11 @@ modelDefClass$methods(processLinks = function() {
             newCode <- substitute(A <- B, list(A = BUGSdecl$targetNodeExpr, B = newRHS))
             
             BUGSdeclClassObject <- BUGSdeclClass$new()
-            BUGSdeclClassObject$setup(code, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$boundExprs)
+            BUGSdeclClassObject$setup(code, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$boundExprs, userEnv = BUGSdecl$envir)
             newDeclInfo[[nextNewDeclInfoIndex]]     <- BUGSdeclClassObject
             
             BUGSdeclClassObject <- BUGSdeclClass$new()
-            BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$boundExprs)
+            BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$boundExprs, userEnv = BUGSdecl$envir)
             newDeclInfo[[nextNewDeclInfoIndex + 1]] <- BUGSdeclClassObject
             
         } else {    # deterministic node
@@ -769,7 +768,7 @@ modelDefClass$methods(processLinks = function() {
             newCode <- substitute(A <- B, list(A = newLHS, B = newRHS))
             
             BUGSdeclClassObject <- BUGSdeclClass$new()
-            BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$boundExprs)
+            BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$boundExprs, userEnv = BUGSdecl$envir)
             newDeclInfo[[nextNewDeclInfoIndex]] <- BUGSdeclClassObject
         }
     }  # close loop over declInfo
@@ -862,7 +861,7 @@ modelDefClass$methods(reparameterizeDists = function() {
         
         BUGSdeclClassObject <- BUGSdeclClass$new()
                                         # note at this point boundExprs set back to NULL as all info in lower,upper in valueExpr
-        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, NULL)
+        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, NULL, userEnv = BUGSdecl$envir)
         declInfo[[i]] <<- BUGSdeclClassObject
       }  # close loop over declInfo
   })
@@ -889,7 +888,7 @@ modelDefClass$methods(addRemainingDotParams = function() {
         newCode <- BUGSdecl$code
         newCode[[3]] <- newValueExpr
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$boundExprs)
+        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$boundExprs, userEnv = BUGSdecl$envir)
         declInfo[[iDecl]] <<- BUGSdeclClassObject
     }
 })
@@ -901,7 +900,7 @@ modelDefClass$methods(replaceAllConstants = function() {
         newCode <- replaceConstantsRecurse(declInfo[[i]]$code, constantsEnv, constantsNamesList)$code
         
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, declInfo[[i]]$contextID, declInfo[[i]]$sourceLineNumber, declInfo[[i]]$truncated, declInfo[[i]]$boundExprs)
+        BUGSdeclClassObject$setup(newCode, declInfo[[i]]$contextID, declInfo[[i]]$sourceLineNumber, declInfo[[i]]$truncated, declInfo[[i]]$boundExprs, userEnv = declInfo[[i]]$envir)
         declInfo[[i]] <<- BUGSdeclClassObject
     }
 })
@@ -1047,7 +1046,7 @@ modelDefClass$methods(liftExpressionArgs = function() {
                 
                 if(!identicalNewDecl) {
                     BUGSdeclClassObject <- BUGSdeclClass$new()
-                    BUGSdeclClassObject$setup(newNodeCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, FALSE, NULL)   ## keep new declaration in the same context, regardless of presence/absence of indexing
+                    BUGSdeclClassObject$setup(newNodeCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, FALSE, NULL, userEnv = BUGSdecl$envir)   ## keep new declaration in the same context, regardless of presence/absence of indexing
                     newDeclInfo[[nextNewDeclInfoIndex]] <- BUGSdeclClassObject
                     
                     nextNewDeclInfoIndex <- nextNewDeclInfoIndex + 1     ## update for lifting other nodes, and re-adding BUGSdecl at the end
@@ -1058,7 +1057,7 @@ modelDefClass$methods(liftExpressionArgs = function() {
         newCode[[3]] <- newValueExpr
         
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$boundExprs)
+        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$boundExprs, userEnv = BUGSdecl$envir)
         newDeclInfo[[nextNewDeclInfoIndex]] <- BUGSdeclClassObject    ## regardless of anything, add BUGSdecl itself in
     }    # closes loop over declInfo
     declInfo <<- newDeclInfo
@@ -1503,22 +1502,47 @@ makeVertexNamesFromIndexArray2 <- function(indArr, minInd = 1, varName) {
     ## etc.
     splits <- lapply(arrayWithIndices, split, indArr)
 
-    ## info is a list of summaries from the splits
-    ## each entry is (min, max, 0/1 for vector, 0/1 for contiguous)
-    info <- lapply(splits, lapply, makeSplitInfo)
+    ## info is a list of matrices with summaries from the splits, 
+    ## the four rows are (min, max, 0/1 for vector, 0/1 for contiguous)
+    info <- lapply(splits, sapply, makeSplitInfo)  
 
+    ## Detect and fix cases of non-contiguous indices such as splits being `1`: [1 2] and `2`: [1 2] or `1`: [1, 2] and `2`: [2 1] 
+    if(nDim > 1) {   ## Initial determination of contiguity is fine for vectors
+        vec <- info[[1]][3, ]
+        contig <- info[[1]][4, ]
+        for(j in 2:nDim) {
+            vec <- vec + info[[j]][3, ]
+            contig <- contig + info[[j]][4, ]
+        }
+        wh <- which(vec > 1 & contig == nDim)  # 2 or more dimensional block and all determined to be contiguous
+        
+        ## Multiply extent in each index to get size of block if all entries included.
+        implied_len <- ( info[[1]][2, wh] - info[[1]][1, wh] + 1 ) *  ( info[[2]][2, wh] - info[[2]][1, wh] + 1 )
+        if(nDim > 2)
+            for(j in 3:nDim)
+                implied_len <- implied_len * ( info[[j]][2,wh] - info[[j]][1,wh] + 1 )
+        actual_len <- sapply(splits[[1]][wh], length)
+        
+        ## When entries do not fill out the block, set contiguity to 0 for non-scalar indexes.
+        wh <- wh[actual_len != implied_len]
+        if(length(wh)) 
+            for(j in 1:nDim) 
+                info[[j]][4, wh[info[[j]][3, wh] == 1]] <- 0
+    }
+    
     ## From here on is the construction of string labels from the info
-    dimStrings <- lapply(info, function(x) {
-        all <- do.call('rbind', x)   ## This makes a table with a row for each unique element of indArr
-        ## and columns following the order of info
-        seps <- rep(':', nrow(all))  ## initialize seps and modify later if needed 
-        scal <- all[,3]==0           ## which rows are for scalar elements
+    dimStrings <- lapply(info, function(all) {
+        ## `all` is a table with a column for each unique element of indArr
+        ## and rows following the order of info
+        seps <- rep(':', ncol(all))  ## initialize seps and modify later if needed 
+        scal <- all[3,]==0           ## which rows are for scalar elements
         seps[scal] <- ''             ## set the sep for scalars to ''
-        seps[all[,4]==0] <- '%.s%'    ## for rows that are not contiguous, use i %.s% j. Any actual call to %.s% results in an error.
-        maxStrs <- as.character(all[,2]) ## maximums
+        seps[all[4,]==0] <- '%.s%'    ## for rows that are not contiguous, use i %.s% j. Any actual call to %.s% results in an error.
+        maxStrs <- as.character(all[2,]) ## maximums
         maxStrs[scal] <- ''              ## clear maximums for scalars 
-        paste0(all[,1], seps, maxStrs)   ## paste minimum-separator-maximum
+        paste0(all[1,], seps, maxStrs)   ## paste minimum-separator-maximum
     })
+
     dimStrings[['sep']] <- ', '
     newNames <- paste0(varName, '[',  do.call('paste', dimStrings), ']') ## paste together pieces from different dimensions
     list(indices = as.integer(names(splits[[1]])), names = newNames)
@@ -2682,7 +2706,7 @@ modelDefClass$methods(genUnknownIndexDeclarations = function() {
                     rhsCode <- lhsCode
                     rhsCode <- stripUnknownIndexFromVarNameInBracketExpr(rhsCode)
                     newCode <- substitute(LHS <- RHS, list(LHS = lhsCode, RHS = rhsCode))
-                    BUGSdeclClassObject$setup(newCode, declInfo[[i]]$contextID, declInfo[[i]]$sourceLineNumber)
+                    BUGSdeclClassObject$setup(newCode, declInfo[[i]]$contextID, declInfo[[i]]$sourceLineNumber, userEnv = declInfo[[i]]$envir)
                     BUGSdeclClassObject$setIndexVariableExprs(contexts[[declInfo[[i]]$contextID]]$indexVarExprs)
                     BUGSdeclClassObject$genSymbolicParentNodes(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames,
                                                               contextID = declInfo[[i]]$contextID)
@@ -2908,38 +2932,15 @@ modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TR
 })
 
 ## next two functions work for properly formed nodeNames.
-modelDefClass$methods(nodeName2LogProbName = function(nodeName){ ## used in 3 places: MCMC_build, valuesAccessorVector, and cppInterfaces_models
-    ## This function needs better processing.
+modelDefClass$methods(nodeName2LogProbName = function(nodeName){
     if(length(nodeName) == 0)
-        return(NULL)
-    
-##     ## 1. so this needs to first get to a nodeFunctionID
-##     graphIDs <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions, USE.NAMES = FALSE)))
-##     ## 2. get node function names
-##     fullNodeNames <- maps$graphID_2_nodeName[graphIDs]
-##     ## 3 get corresponding logProbNames
-##     output <- unique(unlist(sapply(fullNodeNames, parseEvalCharacter, env = maps$vars2LogProbName, USE.NAMES = FALSE)))
+        return(character())
 
-##     ##graphIDs2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2GraphID_functions))
-##     ##fullNodeNames2 <- maps$graphID_2_nodeName[graphIDs2]
-##     ##output2 <- unique(parseEvalCharacterMany(fullNodeNames2, env = maps$vars2LogProbName))
-## ##    output2 <- unique(parseEvalCharacterMany(nodeName, env = maps$vars2LogProbName)) ## output2
-## ##    if(!identical(output[!is.na(output)], as.character(output2[!is.na(output2)]))) browser()
-##     output <- output[!is.na(output)]
+    graphIDs <- unique(parseEvalNumericMany(nodeName, env =  maps$vars2GraphID_functions))
+    output <- maps$graphID_2_logProbName[graphIDs]
+    output <- output[!is.na(output)]
 
-    graphIDs2 <- unique(parseEvalNumericMany(nodeName, env =  maps$vars2GraphID_functions))
-    output2 <- maps$graphID_2_logProbName[graphIDs2]
-    output2 <- output2[!is.na(output2)]
-
-    ## fullNodeNames2 <- maps$graphID_2_nodeName[graphIDs [maps$types[graphIDs] == "stoch"] ]
-    ## output2 <- gsub(":[0123456789]+", "", fullNodeNames2 )
-    ## output2 <- output2[!is.na(output2)]
-    ## output2 <- paste0("logProb_", output2)
-##    if(!identical(output, output2)) browser()
-
-##    output <- output2
-    return(output2)
-##    return(output[!is.na(output)])
+    return(output)
 })
 
 ## modelDefClass$methods(nodeName2LogProbID = function(nodeName){ ## used only in cppInterfaces_models
@@ -3013,6 +3014,11 @@ handleOutOfBounds <- function(x, env) {
 }
 
 parseEvalNumericMany <- function(x, env, ignoreNotFound = FALSE) {
+    ## avoid evaluating variables in index expr, such as "y[idx]".
+    allVars <- all.vars(parse(text = x))
+    nonLocalVars <- !allVars %in% ls(env)
+    if(any(nonLocalVars))
+        stop("parseEvalNumericMany: a variable was found in the indexing in ", x, ".")
     if(ignoreNotFound) {  ## Return NA when not found.
         if(length(x) > 1) {
             ## First try to do as vectorized call.
@@ -3044,6 +3050,11 @@ parseEvalNumericMany <- function(x, env, ignoreNotFound = FALSE) {
 
 
 parseEvalNumericManyList <- function(x, env, ignoreNotFound = FALSE) {
+    ## avoid evaluating variables in index expr, such as "y[idx]".
+    allVars <- all.vars(parse(text = x))
+    nonLocalVars <- !allVars %in% ls(env)
+    if(any(nonLocalVars))
+        stop("parseEvalNumericMany: a variable was found in the indexing in ", x, ".")
     if(ignoreNotFound) {  ## Return NA when not found.
        output <- try(eval(.Call(makeParsedVarList, x), envir = env), silent = TRUE)
         if(!is(output, 'try-error'))

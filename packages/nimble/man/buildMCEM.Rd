@@ -53,7 +53,7 @@ The M-step is done by a nimble MCMC sampler. The E-step is done by a call to R's
 }
 \details{
 \code{buildMCEM} calls the NIMBLE compiler to create the MCMC and objective function as nimbleFunctions.  If the given model has already been used in compiling other nimbleFunctions, it is possible you will need to create a new copy of the model for buildMCEM to use.
-Uses an ascent-based MCEM algorithm, which includes rules for automatically increasing the number of MC samples as iterations increase, and for determining when convergence has been reached.  Constraints for parameter values can be provided.  If contstraints are not provided, they will be automatically determined by NIMBLE.
+Uses an ascent-based MCEM algorithm, which includes rules for automatically increasing the number of MC samples as iterations increase, and for determining when convergence has been reached.  Constraints for parameter values can be provided.  If constraints are not provided, they will be automatically determined by NIMBLE. Initial values for the parameters are taken to be the values in the model at the time \code{buildMCEM} is called, unless the values in the compiled model are changed before running the MCEM.
 }
 \section{\code{run} Arguments}{
 

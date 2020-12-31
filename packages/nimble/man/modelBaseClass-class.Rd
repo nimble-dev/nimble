@@ -41,6 +41,10 @@ See documentation for \code{\link{nimbleModel}} for details of creating an R mod
 \section{Methods}{
 
 \describe{
+\item{\code{calculate(nodes)}}{See `help(calculate)`}
+
+\item{\code{calculateDiff(nodes)}}{See `help(calculateDiff)`}
+
 \item{\code{check()}}{Checks for errors in model specification and for missing values that prevent use of calculate/simulate on any nodes}
 
 \item{\code{checkBasics()}}{Checks for size/dimension mismatches and for presence of NAs in model variables (the latter is not an error but a note of this is given to the user)}
@@ -67,6 +71,8 @@ returnType: return type. Options are 'names' (character vector) or 'ids' (graph 
 sort: should names be topologically sorted before being returned?
 
 unique: should names be the unique names or should original ordering of nodes (after expansion of any variable names into node names) be preserved}
+
+\item{\code{getBound(node, bound)}}{See `help(getBound)`                                                                                                                                                                                                                               }
 
 \item{\code{getCode()}}{Return the code for a model after
 ,
@@ -146,6 +152,8 @@ Details: The return value is a character vector with an element for each node in
 
 Details: See documentation for member method getDependencies.}
 
+\item{\code{getLogProb(nodes)}}{See `help(getLogProb)`}
+
 \item{\code{getNodeNames(determOnly = FALSE, stochOnly = FALSE, includeData = TRUE,
   dataOnly = FALSE, includeRHSonly = FALSE, topOnly = FALSE,
   latentOnly = FALSE, endOnly = FALSE, returnType = "names",
@@ -174,6 +182,8 @@ returnType: Character argument specific type object returned. Options are 'names
 returnScalar Componenets: Logical argument specifying whether multivariate nodes should return full node name (i.e. 'x[1:2]') or should break down into scalar componenets (i.e. 'x[1]' and 'x[2]')
 
 Details: Multiple logical input arguments may be used simultaneously.  For example, model$getNodeNames(endOnly = TRUE, dataOnly = TRUE) will return all end-level nodes from the model which are designated as 'data'.}
+
+\item{\code{getParam(node, param)}}{See `help(getParam)`                                                                                                                                                                                                                               }
 
 \item{\code{getVarNames(includeLogProb = FALSE, nodes)}}{Returns the names of all variables in a model, optionally including the logProb variables
 
@@ -292,6 +302,8 @@ Details: If a provided value (or the current value in the model when only a name
 Arguments:
 
 inits: A named list.  The names of list elements must correspond to model variable names.  The elements of the list must be of class numeric, with size and dimension each matching the corresponding model variable.}
+
+\item{\code{simulate(nodes, includeData = FALSE)}}{See `help(simulate)`                                                                                                                                                                                                                                }
 
 \item{\code{topologicallySortNodes(nodes, returnType = "names")}}{Sorts the input list of node names according to the topological dependence ordering of the model structure.
 

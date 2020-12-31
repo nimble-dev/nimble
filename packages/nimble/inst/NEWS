@@ -1,5 +1,130 @@
+                            CHANGES IN VERSION 0.10.1 (Novembere 2020)
+                            
+USER LEVEL CHANGES
+
+-- Add `round` argument to `samplesSummary` (PR #1077).
+
+-- `samplesSummary` function (and also `runMCMC(..., summary = TRUE)`) was made to be robust against non-valid values in posterior samples array (PR #1075).
+
+BUG FIXES
+
+-- Fix `makeParamInfo` when there is only one declID involved to address a bug affecting usage of `getParam`. This bug was introduced in version 0.10.0 when reducing memory use of `getParam` (PR #1016). This fixes incorrect behavior of conjugate samplers (because of incorrect inputs from `getParam`) under certain model structures, in particular state-space style models (PR #1080). 
+
+-- Prevent usage of marginal version of WAIC (i.e., when not monitoring all direct stochastic parents of data nodes); use of marginal version of WAIC in previous versions gave incorrect results (PR #1083).
+
+DEVELOPER LEVEL CHANGES
+
+-- Deprecate `samplerAssignmnentRules` system (PR #1078).
+
+-- Deprecate `autoBlock` MCMC option (PR #1079).
+
+                            CHANGES IN VERSION 0.10.0 (October 2020)
+
+USER LEVEL CHANGES
+
+-- Greatly extend BNP functionality with the CRP (Chinese restaurant process)
+   distribution by allowing multiple observations to be grouped together (e.g.,
+   for longitudinal or time series data) without requiring they be specified
+   as a multivariate node (PR #1033).
+
+-- Add a variety of conjugate cases to BNP conjugate samplers (PR #1033).
+
+-- Greatly improve efficiency of model and MCMC building and configuration for
+   BNP-based models with CRP components (PR #1033).
+
+-- Move all sequential Monte Carlo (SMC; aka particle filtering) methods to
+   new package `nimbleSMC`, including various particle-filter-based MCMC
+   samplers.
+
+-- Prevent use of variables in indexes of nodes, such as `y[idx]`, which was
+   incorrectly being evaluated based on R scoping rules (PR #1064).
+
+-- Allow use of `logdet` in model code (Issue #1018).
+
+-- New `resetMV` argument available to `mcmc$run` method. In combination
+   with `reset = FALSE`, specifying `resetMV = TRUE` will continue the current
+   run of the MCMC, but discard any previously-collected samples
+   (PR #1051; thanks to 'DJRP').
+
+-- New methods `setMonitors` and `setMonitors2` added for MCMC configuration
+   objects.  These methods replace the current set of monitors (or monitors2)
+   with the specified variables (PR #1061).
+
+-- Add `as.list` method for modelValues objects (PR #1060).
+
+-- Update `getSamplesDPmeasure` function to improve efficiency and reduce
+   output size; output is now a list of matrices (PR #1059).
+
+-- Add `dimensions` argument to `nimbleMCMC` (PR #1058).
+
+-- Add method `getWidthHistory` to slice sampler to retrieve sampling history
+   information (PR #1057; thanks to 'rpatin').
+
+-- Various improvements to the manual. 
+
+BUG FIXES
+
+-- Fix a bug in k-fold cross-validation routine (`runCrossValidate`), where
+   the merging of MCMC sampler configurations was done incorrectly and causing
+   incorrect results (PR #1068).
+
+-- Fix bug giving incorrect `dwish` density when using non-default S
+   parameterization (PR #1017).
+
+-- Fix incorrect NaN eigenvalues in singular normalized adjacency matrices
+   under `dcar_normal` (PR #1019).
+
+-- Update all MCMC sampler functions to use a new syntax for control list
+   element extraction, which prevents a possible bug caused by R's partial
+   matching of list names (PR #1065).
+
+-- Define auto-generated simulation ('r') functions for user-defined
+   distributions in the global environment to avoid scoping issues (PR #1063).
+
+-- Update user-defined distribution processing so user-defined distributions
+   can be defined inside functions (PR #1063).
+
+-- Fix bug preventing use of `dirName` argument to `compileNimble` (PR #1062).
+
+-- Fix a bug preventing model building when there are overly long names of
+   model variables resulting from long deterministic expressions in model code
+   (PR #1069).
+
+-- Fix `buildMCEM` so it works with a compiled model as argument (PR #1028).
+
+-- Fix `dmvt` so default unnamed parameters work (PR #1027).
+
+-- Fix error in model building in corner case where
+   `makeVertexNamesFromIndexArray2` made a simplifying assumption to conclude
+   a block of nodes was contiguous (PR #1026).
+
+-- Fix bug in `nimbleRcall` causing run-time warnings when `returnType` is void
+   (PR #1013). 
+
+DEVELOPER LEVEL CHANGES
+
+-- Improve efficiency of `getParam` implementation, which improves speed for
+   MCMC compilation (PR #1016). 
+
+-- Improve MCMC sampling efficiency by not copying data nodes, only data node
+   logProbs, during sampler execution for various samplers (PR #1040).
+
+-- Update Travis testing to use R 4.0.
+
+-- Remove `GID_map` internal to modelValues (PR #1032).
+
+-- Remove deprecated function `getLoadingNamespace` and (deprecated) use of
+   `where=getLoadingNamespace`. Also improve handling of environments set up
+   by `nimbleFunction` to make it easier to write packages depending on NIMBLE
+   (PRs #1029, 1011).
+
+-- Force intermediates of index range expressions to be of type 'int' for use
+   in AD (PR #1024).
+
+
+
                             CHANGES IN VERSION 0.9.1 (May 2020)
-  
+
 USER LEVEL CHANGES
 
 -- Switched from use of `system` to `system2` to avoid problems with installation under R 4.0 on Windows (PR #1003).

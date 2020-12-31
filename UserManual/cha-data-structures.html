@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.9.0</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.10.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -232,6 +232,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="10.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:crp"><i class="fa fa-check"></i><b>10.2</b> Chinese Restaurant Process model</a><ul>
 <li class="chapter" data-level="10.2.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-density-2"><i class="fa fa-check"></i><b>10.2.1</b> Specification and density</a></li>
 <li class="chapter" data-level="10.2.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:excrp"><i class="fa fa-check"></i><b>10.2.2</b> Example</a></li>
+<li class="chapter" data-level="10.2.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:extensionscrp"><i class="fa fa-check"></i><b>10.2.3</b> Extensions</a></li>
 </ul></li>
 <li class="chapter" data-level="10.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:sb"><i class="fa fa-check"></i><b>10.3</b> Stick-breaking model</a><ul>
 <li class="chapter" data-level="10.3.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-function"><i class="fa fa-check"></i><b>10.3.1</b> Specification and function</a></li>
@@ -327,6 +328,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
+<li class="chapter" data-level="16" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i><b>16</b> References</a></li>
 </ul>
 
       </nav>
@@ -352,7 +354,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <div id="sec:modelValues-struct" class="section level2">
 <h2><span class="header-section-number">14.1</span> The modelValues data structure</h2>
 <p>modelValues are containers designed for storing values for models. They may be used for model outputs or model inputs. A modelValues object will contain <em>rows</em> of variables. Each row contains one object of each variable, which may be multivariate. The simplest way to build a modelValues object is from a model object. This will create a modelValues object with the same variables as the model. Although they were motivated by models, one is free to set up a modelValues with any variables one wants.</p>
-<p>As with the material in the rest of this chapter, modelValues objects will generally be used in nimbleFunctions that interact with models (see Chapter <a href="cha-progr-with-models.html#cha:progr-with-models">15</a>)<a href="#fn24" class="footnoteRef" id="fnref24"><sup>24</sup></a>. modelValues objects can be defined either in setup code or separately in R (and then passed as an argument to setup code). The modelValues object can then used in run code of nimbleFunctions.</p>
+<p>As with the material in the rest of this chapter, modelValues objects will generally be used in nimbleFunctions that interact with models (see Chapter <a href="cha-progr-with-models.html#cha:progr-with-models">15</a>)<a href="#fn26" class="footnoteRef" id="fnref26"><sup>26</sup></a>. modelValues objects can be defined either in setup code or separately in R (and then passed as an argument to setup code). The modelValues object can then used in run code of nimbleFunctions.</p>
 <div id="creating-modelvalues-objects" class="section level3">
 <h3><span class="header-section-number">14.1.1</span> Creating modelValues objects</h3>
 <p>Here is a simple example of creating a modelValues object:</p>
@@ -459,7 +461,7 @@ customMV[[<span class="st">&#39;b&#39;</span>]][[<span class="dv">2</span>]] &lt
 ## 
 ## [[3]]
 ## [1] NA NA</code></pre>
-<p>Often it is useful to convert a modelValues object to a matrix for use in R. For example, we may want to convert MCMC output into a matrix for use with the <code>coda</code> package for processing MCMC samples. This can be done with the <code>as.matrix</code> method for modelValues objects. This will generate column names from every scalar element of variables (e.g. “b[1, 1]” ,“b[2, 1]”, etc.). The rows of the modelValues will be the rows of the matrix, with any matrices or arrays converted to a vector based on column-major ordering.</p>
+<p>Often it is useful to convert a modelValues object to a matrix for use in R. For example, we may want to convert MCMC output into a matrix, for use with the <code>coda</code> package for processing MCMC samples, or into a list. This can be done with the <code>as.matrix</code> and <code>as.list</code> methods for modelValues objects, respectively. <code>as.matrix</code> will generate column names from every scalar element of variables (e.g. “b[1, 1]” ,“b[2, 1]”, etc.). The rows of the modelValues will be the rows of the matrix, with any matrices or arrays converted to a vector based on column-major ordering.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">as.matrix</span>(customMV, <span class="st">&#39;a&#39;</span>)   <span class="co"># convert &#39;a&#39;</span></code></pre></div>
 <pre><code>##      a[1] a[2]
 ## [1,]    0    1
@@ -470,6 +472,46 @@ customMV[[<span class="st">&#39;b&#39;</span>]][[<span class="dv">2</span>]] &lt
 ## [1,]    0    1       1       1       1       1   NA
 ## [2,]    2    4       2       2       2       2   NA
 ## [3,]   NA   NA      NA      NA      NA      NA   NA</code></pre>
+<p><code>as.list</code> will return a list with an element for each variable. Each element will be an array of the same size and shape as the variable with an additional index for the iteration (e.g., MCMC iteration when used for MCMC output). By default iteration is the first index, but it can be the last if needed.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">as.list</span>(customMV, <span class="st">&#39;a&#39;</span>)    <span class="co"># get only &#39;a&#39;</span></code></pre></div>
+<pre><code>## $a
+##      [,1] [,2]
+## [1,]    0    1
+## [2,]    2    4
+## [3,]   NA   NA</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">as.list</span>(customMV)         <span class="co"># get all variables</span></code></pre></div>
+<pre><code>## $a
+##      [,1] [,2]
+## [1,]    0    1
+## [2,]    2    4
+## [3,]   NA   NA
+## 
+## $b
+## , , 1
+## 
+##      [,1] [,2]
+## [1,]    1    1
+## [2,]    2    2
+## [3,]   NA   NA
+## 
+## , , 2
+## 
+##      [,1] [,2]
+## [1,]    1    1
+## [2,]    2    2
+## [3,]   NA   NA
+## 
+## 
+## $c
+##      [,1]
+## [1,]   NA
+## [2,]   NA
+## [3,]   NA</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">as.list</span>(customMV, <span class="st">&#39;a&#39;</span>, <span class="dt">iterationAsLastIndex =</span> <span class="ot">TRUE</span>) <span class="co"># put iteration in last index</span></code></pre></div>
+<pre><code>## $a
+##      [,1] [,2] [,3]
+## [1,]    0    2   NA
+## [2,]    1    4   NA</code></pre>
 <p>If a variable is a scalar, using <code>unlist</code> in R to extract all rows as a vector can be useful.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">customMV[<span class="st">&#39;c&#39;</span>, <span class="dv">1</span>] &lt;-<span class="st"> </span><span class="dv">1</span>
 customMV[<span class="st">&#39;c&#39;</span>, <span class="dv">2</span>] &lt;-<span class="st"> </span><span class="dv">2</span>
@@ -523,7 +565,7 @@ cSimManyXY<span class="op">$</span><span class="kw">run</span>(<span class="dt">
 </div>
 <div id="sec:nimbleLists" class="section level2">
 <h2><span class="header-section-number">14.2</span> The nimbleList data structure</h2>
-<p>nimbleLists provide a container for storing different types of objects in NIMBLE, similar to the list data structure in R. Before a nimbleList can be created and used, a <em>definition</em><a href="#fn25" class="footnoteRef" id="fnref25"><sup>25</sup></a> for that nimbleList must be created that provides the names, types, and dimensions of the elements in the nimbleList. nimbleList definitions must be created in R (either in R’s global environment or in setup code), but the nimbleList instances can be created in run code.</p>
+<p>nimbleLists provide a container for storing different types of objects in NIMBLE, similar to the list data structure in R. Before a nimbleList can be created and used, a <em>definition</em><a href="#fn27" class="footnoteRef" id="fnref27"><sup>27</sup></a> for that nimbleList must be created that provides the names, types, and dimensions of the elements in the nimbleList. nimbleList definitions must be created in R (either in R’s global environment or in setup code), but the nimbleList instances can be created in run code.</p>
 <p>Unlike lists in R, nimbleLists must have the names and types of all list elements provided by a definition before the list can be used. A nimbleList definition can be made by using the <code>nimbleList</code> function in one of two manners. The first manner is to provide the <code>nimbleList</code> function with a series of expressions of the form <code>name = type(nDim)</code>, similar to the specification of run-time arguments to nimbleFunctions. The types allowed for a nimbleList are the same as those allowed as run-time arguments to a nimbleFunction, described in Section <a href="cha-RCfunctions.html#sec:decl-argum-return">11.4</a>. For example, the following line of code creates a nimbleList definition with two elements: <code>x</code>, which is a scalar integer, and <code>Y</code>, which is a matrix of doubles.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"> exampleNimListDef &lt;-<span class="st"> </span><span class="kw">nimbleList</span>(<span class="dt">x =</span> <span class="kw">integer</span>(<span class="dv">0</span>), <span class="dt">Y =</span> <span class="kw">double</span>(<span class="dv">2</span>))</code></pre></div>
 <p>The second method of creating a nimbleList definition is by providing an R list of <em>nimbleType</em> objects to the <code>nimbleList()</code> function. A nimbleType object can be created using the <code>nimbleType</code> function, which must be provided with three arguments: the <code>name</code> of the element being created, the <code>type</code> of the element being created, and the <code>dim</code> of the element being created. For example, the following code creates a list with two nimbleType objects and uses these objects to create a nimbleList definition.</p>
@@ -550,7 +592,7 @@ cSimManyXY<span class="op">$</span><span class="kw">run</span>(<span class="dt">
  
 <span class="co"># pass exampleNimList as argument to mynf</span>
 <span class="kw">mynf</span>(exampleNimList)</code></pre></div>
-<pre><code>## nimbleList object of type nfRefClass_70
+<pre><code>## nimbleList object of type nfRefClass_52
 ## Field &quot;x&quot;:
 ## [1] 7
 ## Field &quot;Y&quot;:
@@ -609,9 +651,9 @@ outputList<span class="op">$</span>demoEigenList<span class="op">$</span>values<
 </div>
 <div class="footnotes">
 <hr />
-<ol start="24">
-<li id="fn24"><p>One may want to read this section after an initial reading of Chapter <a href="cha-progr-with-models.html#cha:progr-with-models">15</a>.<a href="cha-data-structures.html#fnref24">↩</a></p></li>
-<li id="fn25"><p>The <em>configuration</em> for a modelValues object is the same concept as a <em>definition</em> here; in a future release of NIMBLE we may make the usage more consistent between modelValues and nimbleLists.<a href="cha-data-structures.html#fnref25">↩</a></p></li>
+<ol start="26">
+<li id="fn26"><p>One may want to read this section after an initial reading of Chapter <a href="cha-progr-with-models.html#cha:progr-with-models">15</a>.<a href="cha-data-structures.html#fnref26">↩</a></p></li>
+<li id="fn27"><p>The <em>configuration</em> for a modelValues object is the same concept as a <em>definition</em> here; in a future release of NIMBLE we may make the usage more consistent between modelValues and nimbleLists.<a href="cha-data-structures.html#fnref27">↩</a></p></li>
 </ol>
 </div>
             </section>

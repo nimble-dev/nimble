@@ -15,17 +15,16 @@ ADbreak <- function(x) x
 
 #' NIMBLE language functions for R-like vector construction
 #'
-#' The functions \code{c}, \code{rep}, \code{seq}, \code{\code{which}, \code{diag}, \code{length}, \code{seq_along}, \code{is.na}, \code{is.nan}, \code{any}, and \code{all} can be used in nimbleFunctions and compiled using \code{compileNimble}.
-#' 
+#' The functions \code{c}, \code{rep}, \code{seq}, \code{which}, \code{diag}, \code{length}, \code{seq_along}, \code{is.na}, \code{is.nan}, \code{any}, and \code{all} can be used in nimbleFunctions and compiled using \code{compileNimble}.
+#'
 #' @name nimble-R-functions
-#' 
+#'
 #' @param ... values to be concatenated.
 #' @param x vector of values to be replicated (\code{rep}), or logical array or vector (\code{which}), or object whose length is wanted (\code{length}), or input value (\code{diag}), or vector of values to be tested/checked (\code{is.na}, \code{is.nan}, \code{any}, \code{all}).
 #' @param from starting value of sequence.
 #' @param to end value of sequence.
 #' @param by increment of the sequence.
 #' @param length.out desired length of the sequence.
-#' @param along.with take the length from the length of this argument.
 #'
 #' @aliases nimC nimRep nimSeq c rep seq which diag length seq_along is.na is.nan any all
 #'
@@ -46,7 +45,7 @@ ADbreak <- function(x) x
 #' 
 #' \code{seq_along} behaves like the R version.
 #'
-#' \code{is.na} behaves like the R version but does not correctly handle \code{NA} values from R that are type 'logical', so convert these using as.numeric() before passing from R to NIMBLE.
+#' \code{is.na} behaves like the R version but does not correctly handle \code{NA} values from R that are type 'logical', so convert these using \code{as.numeric()} before passing from R to NIMBLE.
 #' 
 #' \code{is.nan} behaves like the R version, but treats \code{NA} of type 'double' as being \code{NaN} and \code{NA} of type 'logical' as not being \code{NaN}. 
 #' 
@@ -172,9 +171,11 @@ asCol <- function(x) {
 #'
 #' @param param A character string naming a parameter of the distribution followed by node, such as "mean", "rate", "lambda", or whatever parameter names are relevant for the distribution of the node.
 #'
+#' @param vector A logical indicating whether nodes should definitely be treated as a vector in compiled code, even if it has length = 1.  For type consistency, the compiler needs this option.  If nodes has length > 1, this argument is ignored.
+#' 
 #' @export
 #' @details This is used internally by \code{\link{getParam}}.  It is not intended for direct use by a user or even a nimbleFunction programmer.
-makeParamInfo <- function(model, nodes, param) {
+makeParamInfo <- function(model, nodes, param, vector = FALSE) {
     ## updating to allow nodes to be a vector. getParam only works for a scalar but in a case like nodes[i] the param info is set up for the entire vector.
 
     ## this allows for(i in seq_along(nodes)) a <- a + model$getParam(nodes[i], 'mean') through compilation even if some instances have nodes empty and so won't be called.
@@ -209,7 +210,10 @@ makeParamInfo <- function(model, nodes, param) {
   if(types[1] %in% c('integer', 'logical')) types[1] <- 'double'
 
   if(length(paramIDs) == 1) { ## We could shortcut on this case earlier
-    paramIDvec <- paramIDs
+    if(vector)
+      paramIDvec <- c(-1L, paramIDs[1]) # paramIDs is length 1 anyway
+    else
+      paramIDvec <- paramIDs[1]
   } else {
     if(length(unique(paramIDs)) == 1) {
       # They are all the same.
@@ -278,6 +282,8 @@ getParam <- function(model, node, param, nodeFunctionIndex) {
         if(is.na(paramInfo$type)) stop(paste('getParam called with empty or invalid node:', as.character(node)))
     }
     paramID <- paramInfo$paramID
+    if(paramID[1]==-1)
+        paramID <- paramID[2]
     nDim <- paramInfo$nDim
     type <- paramInfo$type
     unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ indexingInfo$unrolledIndicesMatrixRows[1], ]
@@ -700,6 +706,8 @@ values <- function(model, nodes, accessorIndex){
 #' @param rowTo		If \code{to} is a modelValues, the row which will be copied to. If \code{rowTo == NA}, will automatically be set to \code{row}
 #' @param logProb	A logical value indicating whether the log probabilities of the given nodes should also be copied (i.e. if \code{nodes = 'x'}
 #' and \code{logProb = TRUE}, then both \code{'x'} and \code{'logProb_x'} will be copied)
+#' @param logProbOnly   A logical value indicating whether only the log probabilities of the given nodes should be copied (i.e. if \code{nodes = 'x'}
+#' and \code{logProbOnly = TRUE}, then only \code{'logProb_x'} will be copied)
 #'
 #' @aliases copy
 #'
@@ -739,14 +747,14 @@ values <- function(model, nodes, accessorIndex){
 #' 
 #' cCopy$run() ## execute the copy with the compiled function
 #' }
-nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA, logProb = FALSE){
+nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA, logProb = FALSE, logProbOnly = FALSE){
     if(is.null(nodes) )
         nodes = from$getVarNames(includeLogProb = logProb) ## allNodeNames(from)
     if( inherits(from, "modelBaseClass") ){
-        accessFrom = modelVariableAccessorVector(from, nodes, logProb = logProb)
+        accessFrom = modelVariableAccessorVector(from, nodes, logProb = logProb, logProbOnly = logProbOnly)
     } else
         if(inherits(from, "modelValuesBaseClass") || inherits(from, "CmodelValues")) {
-            accessFrom = modelValuesAccessorVector(from, nodes, logProb = logProb)
+            accessFrom = modelValuesAccessorVector(from, nodes, logProb = logProb, logProbOnly = logProbOnly)
             if(is.na(row))
                 stop("Error: need to supply 'row' for a modelValues copy")
             ##accessFrom$setRow(row) ## NEW ACCESSORS
@@ -755,15 +763,15 @@ nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA
 
     if( inherits(to, "modelBaseClass") ){
         if(is.null(nodesTo) ) 
-            accessTo = modelVariableAccessorVector(to, nodes, logProb = logProb)
+            accessTo = modelVariableAccessorVector(to, nodes, logProb = logProb, logProbOnly = logProbOnly)
         else
-            accessTo = modelVariableAccessorVector(to, nodesTo, logProb = logProb)
+            accessTo = modelVariableAccessorVector(to, nodesTo, logProb = logProb, logProbOnly = logProbOnly)
     } else
         if(inherits(to, "modelValuesBaseClass") || inherits(to, "CmodelValues")) {
             if(is.null(nodesTo) ) 
-                accessTo = modelValuesAccessorVector(to, nodes, logProb = logProb)
+                accessTo = modelValuesAccessorVector(to, nodes, logProb = logProb, logProbOnly = logProbOnly)
             else
-                accessTo = modelValuesAccessorVector(to, nodesTo, logProb = logProb)
+                accessTo = modelValuesAccessorVector(to, nodesTo, logProb = logProb, logProbOnly = logProbOnly)
             if(is.na(rowTo))
                 rowTo = row
             ##accessTo$setRow(rowTo) ## NEW ACCESSORS

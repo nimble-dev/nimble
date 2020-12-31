@@ -24,7 +24,7 @@ bibentry(
 )
 
 bibentry(
- bibtype = "misc",
+ bibtype = "manual",
  title = "{NIMBLE}: {MCMC}, Particle Filtering, and Programmable Hierarchical Modeling",
  author = c(person("Perry", "de Valpine"),
             person("Christopher", "Paciorek"),
@@ -44,7 +44,7 @@ bibentry(
 )
 
 bibentry(
- bibtype = "misc",
+ bibtype = "manual",
  title = "{NIMBLE} User Manual",
  author = c(person("Perry", "de Valpine"),
             person("Christopher", "Paciorek"),

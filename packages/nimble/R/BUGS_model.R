@@ -36,13 +36,41 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   nimbleProject = 'ANY'
                                   ),
                               methods = list(
-                                  calculate = function(nodes) nimble::calculate(.self, nodes),
-                                  calculateDiff = function(nodes) nimble::calculateDiff(.self, nodes),
-                                  getLogProb = function(nodes) nimble::getLogProb(.self, nodes),
-                                  simulate = function(nodes, includeData = FALSE) nimble::simulate(.self, nodes, includeData),
-                                  getParam = function(node, param) nimble::getParam(.self, node, param),
-                                  getBound = function(node, bound) nimble::getBound(.self, node, bound),
-
+                                  calculate = function(nodes) {
+'
+See `help(calculate)`
+'
+                                      nimble::calculate(.self, nodes)
+                                  },
+                                  calculateDiff = function(nodes) {
+'
+See `help(calculateDiff)`
+'
+                                      nimble::calculateDiff(.self, nodes)
+                                  },
+                                  getLogProb = function(nodes) {
+'
+See `help(getLogProb)`
+'
+                                      nimble::getLogProb(.self, nodes)
+                                  },
+                                  simulate = function(nodes, includeData = FALSE) {
+'
+See `help(simulate)`                                                                                                                                                                                                                                
+'
+                                      nimble::simulate(.self, nodes, includeData)
+                                  },
+                                  getParam = function(node, param) {                                                                                                                                                                                 '
+See `help(getParam)`                                                                                                                                                                                                                               
+'
+                                      nimble::getParam(.self, node, param)
+                                  },
+                                  getBound = function(node, bound) {
+'                                                                                                                                                                                                                                                    
+See `help(getBound)`                                                                                                                                                                                                                               
+'
+                                      nimble::getBound(.self, node, bound)
+                                  },
                                   getGraph = function() graph,
                                   setGraph = function(value) graph <<- value,
                                   plotGraph = function() igraph::plot.igraph(graph),
@@ -467,7 +495,7 @@ unique: should names be the unique names or should original ordering of nodes (a
 '
 
                                       if(length(nodes) == 0) return(if(returnType=='names') character() else numeric())
-                                      graphID <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents, unique = unique)
+                                      graphID <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents, unique = unique, ignoreNotFound = TRUE)
                                       expandNodeNamesFromGraphIDs(graphID, returnScalarComponents, returnType, sort)
                                       ## if(sort)
                                       ##     graphID <- sort(graphID)
@@ -1403,6 +1431,33 @@ whyInvalid <- function(value) {
     stop('should never happen')
 }
 
+## FIXME: this is a temporary function (used in BNP sampler setup and WAIC checking)
+## until we bring this into the full model API
+getParentNodes <- function(nodes, model, returnType = 'names', stochOnly = FALSE) {
+    ## adapted from BUGS_modelDef creation of edgesFrom2To
+    getParentNodesCore <- function(nodes, model, returnType = 'names', stochOnly = FALSE) {
+        nodeIDs <- model$expandNodeNames(nodes, returnType = "ids")
+        fromIDs <- sort(unique(unlist(edgesTo2From[nodeIDs])))
+        fromNodes <- maps$graphID_2_nodeName[fromIDs]
+        if(!length(fromNodes))
+            return(character(0))
+        fromNodesDet <- fromNodes[model$modelDef$maps$types[fromIDs] == 'determ']
+        ## Recurse through parents of deterministic nodes.
+        fromNodes <- c(if(stochOnly) fromNodes[model$modelDef$maps$types[fromIDs] == 'stoch'] else fromNodes, 
+                       if(length(fromNodesDet)) getParentNodesCore(fromNodesDet, model, returnType, stochOnly) else character(0))
+        fromNodes
+    }
+    
+    maps <- model$modelDef$maps
+    maxNodeID <- length(maps$vertexID_2_nodeID) ## should be same as length(maps$nodeNames)
+    ## Only determine edgesTo2From once and then obtain in getParentNodesCore via scoping.
+    edgesLevels <- if(maxNodeID > 0) 1:maxNodeID else numeric(0)
+    fedgesTo <- factor(maps$edgesTo, levels = edgesLevels) ## setting levels ensures blanks inserted into the splits correctly
+    edgesTo2From <- split(maps$edgesFrom, fedgesTo)
+
+    getParentNodesCore(nodes, model, returnType, stochOnly)
+}
+
 #' Information on initial values in a nimbleModel
 #'
 #'  Having uninitialized nodes in a nimbleModel can potentially cause some algorithms to fail, and can lead to poor performance in others.  Here are some
@@ -1414,4 +1469,5 @@ whyInvalid <- function(value) {
 #'
 #' @name modelInitialization
 #' @rdname modelInitialization
-#' @export
+NULL
+

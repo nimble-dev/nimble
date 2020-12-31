@@ -65,15 +65,15 @@ withTempProject <- function(code) {
     eval(code)
 }
 
-expect_compiles <- function(..., info = NULL, link = FALSE, force01 = TRUE) {
+expect_compiles <- function(..., info = NULL, link = FALSE, forceO1 = TRUE) {
     oldSCBL <- nimbleOptions('stopCompilationBeforeLinking')
     nimbleOptions(stopCompilationBeforeLinking = !link)
-    oldForce01 <- nimbleOptions('force01')
-    nimbleOptions(forceO1 = force01)
+    oldForceO1 <- nimbleOptions('forceO1')
+    nimbleOptions(forceO1 = forceO1)
     on.exit({
         assign('.check', 1, globalenv())
         nimbleOptions(stopCompilationBeforeLinking = oldSCBL)
-        nimbleOptions(forceO1 = oldForce01)
+        nimbleOptions(forceO1 = oldForceO1)
     }, add = TRUE)
     if(!link) {
         ans <- try(compileNimble(...)) ## expecting a thrown error
@@ -208,8 +208,12 @@ test_coreRfeature_batch_internal <- function(input_batch, verbose = nimbleOption
             if(is.null(checkEqual)) checkEqual <- FALSE
             if(is.null(input[['return']])) { ## use default 'out' object
                 if(!checkEqual) {
+                    expect_identical(class(out), class(out_nfC), info = paste('iden tmp test of class', class(out), class(out_nfC)))
+                    expect_identical(dim(out), dim(out_nfC), info = 'iden test of dim')
+                    expect_identical(round(out, 10), round(out_nfC, 10), info='iden test of round')
                     expect_identical(out, out_nfR, info = "Identical test of coreRfeature (direct R vs. R nimbleFunction)")
-                    expect_identical(out, out_nfC, info = "Identical test of coreRfeature (direct R vs. C++ nimbleFunction)")
+                    wh <- which.max(abs(out - out_nfC))
+                    expect_identical(out, out_nfC, info = paste("Identical test of coreRfeature (direct R vs. C++ nimbleFunction)", system('gcc --version', intern = T)[1], ' ', sprintf("%0.20f", out[wh]), " ", sprintf("%0.20f", out_nfC[wh])))
                 } else {
                     expect_equal(out, out_nfR, info = "Equal test of coreRfeature (direct R vs. R nimbleFunction)")
                     expect_equal(out, out_nfC, info = "Equal test of coreRfeature (direct R vs. C++ nimbleFunction)")
@@ -316,8 +320,8 @@ test_coreRfeature_internal <- function(input, verbose = nimbleOptions('verbose')
   if(is.null(checkEqual)) checkEqual <- FALSE
   if(is.null(input[['return']])) { ## use default 'out' object
       if(!checkEqual) {
-          expect_identical(out, out_nfR, info = paste0("Identical test of coreRfeature (direct R vs. R nimbleFunction): ", input$name))
-          expect_identical(out, out_nfC, info = paste0("Identical test of coreRfeature (direct R vs. C++ nimbleFunction): ", input$name))
+          expect_identical(out, out_nfR, info = paste0("FOO Identical test of coreRfeature (direct R vs. R nimbleFunction): ", input$name))
+          expect_identical(out, out_nfC, info = paste0("FOO Identical test of coreRfeature (direct R vs. C++ nimbleFunction): ", input$name))
       } else {
           expect_equal(out, out_nfR, info = paste0("Equal test of coreRfeature (direct R vs. R nimbleFunction): ", input$name) )
           expect_equal(out, out_nfC, info = paste0("Equal test of coreRfeature (direct R vs. C++ nimbleFunction): ", input$name))

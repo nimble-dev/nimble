@@ -27,6 +27,7 @@ decide <- function(logMetropolisRatio) {
 #' 
 #' @param model An uncompiled or compiled NIMBLE model object.  
 #' @param mvSaved A modelValues object containing identical variables and logProb variables as the model. Can be created by \code{modelValues(model)}.
+#' @param target A character vector providing the target node.
 #' @param calcNodes A character vector representing a set of nodes in the model (and hence also the modelValues) object.  
 #' @author Daniel Turek
 #' @export
@@ -49,15 +50,27 @@ decide <- function(logMetropolisRatio) {
 #' -- Return a logical value, indicating whether the proposal was accepted
 decideAndJump <- nimbleFunction(
     name = 'decideAndJump',
-    setup = function(model, mvSaved, calcNodes) { },
+    setup = function(model, mvSaved, target, calcNodes) {
+        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
+        isStochCalcNodesNoSelf <- model$isStoch(calcNodesNoSelf)   ## should be made faster
+        calcNodesNoSelfDeterm <- calcNodesNoSelf[!isStochCalcNodesNoSelf]
+        calcNodesNoSelfStoch <- calcNodesNoSelf[isStochCalcNodesNoSelf]
+    },
     run = function(modelLP1 = double(), modelLP0 = double(), propLP1 = double(), propLP0 = double()) {
         logMHR <- modelLP1 - modelLP0 - propLP1 + propLP0
         jump <- decide(logMHR)
-        if(jump) { nimCopy(from = model,   to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-        } else   { nimCopy(from = mvSaved, to = model,   row = 1, nodes = calcNodes, logProb = TRUE) }
+        if(jump) {
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelfDeterm, logProb = FALSE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelfStoch, logProbOnly = TRUE)
+        } else {
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesNoSelfDeterm, logProb = FALSE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesNoSelfStoch, logProbOnly = TRUE)
+        }
         returnType(logical())
         return(jump)
-    }, where = getLoadingNamespace()
+    }
 )
 
 
@@ -100,7 +113,7 @@ setAndCalculateOne <- nimbleFunction(
         lp <- calculate(model, calcNodes)
         returnType(double())
         return(lp)
-    },  where = getLoadingNamespace()
+    }
 )
 
 
@@ -143,7 +156,7 @@ setAndCalculate <- nimbleFunction(
         lp <- calculate(model, calcNodes)
         returnType(double())
         return(lp)
-    }, where = getLoadingNamespace()
+    }
 )
 
 #' @rdname setAndCalculate
@@ -159,7 +172,7 @@ setAndCalculateDiff <- nimbleFunction(
         lpD <- calculateDiff(model, calcNodes)
         returnType(double())
         return(lpD)
-    }, where = getLoadingNamespace()
+    }
 )
 
 
@@ -190,7 +203,7 @@ calcAdaptationFactor <- nimbleFunction(
             timesAdapted <<- 0
             gamma1       <<- 0
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -247,6 +260,7 @@ mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonS
         if(grepl('^CRP_cluster_wrapper', names(ls)[1]) && 'wrapped_type' %in% names(ls) &&
            grepl('conjugate_d', ls$wrapped_type)[1]) ls <- ls[!names(ls) %in% c('wrapped_conf')]
     }
+    if((names(ls)[1] == 'CRP sampler') && ('clusterVarInfo' %in% names(ls)))   ls[which(names(ls) == 'clusterVarInfo')] <- NULL   ## remove 'clusterVarInfo' from CRP sampler printing
     ls <- lapply(ls, function(el) if(is.nf(el) || is.function(el)) 'function' else el)   ## functions -> 'function'
     ls2 <- list()
     ## to make displayControlDefaults argument work again, would need to code process
@@ -283,6 +297,27 @@ mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonS
 }
 
 
+#' Extract named elements from MCMC sampler control list
+#'
+#' @param controlList control list object, which is passed as an argument to all MCMC sampler setup functions.
+#' @param elementName character string, giving the name of the element to be extracted from the control list.
+#' @param defaultValue default value of the control list element, giving the value to be used when the elementName does not exactly match the name of an element in the controlList.
+#' @param error character string, giving the error message to be printed if no defaultValue is provided and elementName does not match the name of an element in the controlList.
+#' @return The element of controlList with name matching elementName; or, if no controlList name matches elementName, rather the defaultValue is returned.
+#' @author Daniel Turek
+#' @export
+extractControlElement <- function(controlList, elementName, defaultValue, error) {
+    if(missing(controlList) | !is.list(controlList))      stop('extractControlElement: controlList argument must be a list')
+    if(missing(elementName) | !is.character(elementName)) stop('extractControlElement: elementName argument must be a character string variable name')
+    if(missing(defaultValue) & missing(error))            stop('extractControlElement: must provide either defaultValue or error argument')
+    if(elementName %in% names(controlList)) {
+        return(controlList[[elementName]])
+    } else {
+        if(!missing(defaultValue)) return(defaultValue) else stop(error)
+    }
+}
+
+
 ## obselete, since control defaults were moved to sampler function setup code
 ## -DT July 2017
 ##mcmc_findControlListNamesInCode <- function(code) {
@@ -309,13 +344,32 @@ mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonS
 
 
 #' @export
-samplesSummary <- function(samples) {
-    cbind(
+samplesSummary <- function(samples, round) {
+    summary <- try(cbind(
         `Mean`      = apply(samples, 2, mean),
         `Median`    = apply(samples, 2, median),
         `St.Dev.`   = apply(samples, 2, sd),
         `95%CI_low` = apply(samples, 2, function(x) quantile(x, 0.025)),
-        `95%CI_upp` = apply(samples, 2, function(x) quantile(x, 0.975)))
+        `95%CI_upp` = apply(samples, 2, function(x) quantile(x, 0.975))),
+                   silent = TRUE)
+    if(inherits(summary, 'try-error')) {
+        warning('Could not calculate the full summary of posterior samples, possibly due to NA or NaN values present in the samples array', call. = FALSE)
+        summary <- array(as.numeric(NA), dim = c(ncol(samples), 5))
+        rownames(summary) <- colnames(samples)
+        colnames(summary) <- c('Mean','Median','St.Dev.','95%CI_low','95%CI_upp')
+        if(ncol(samples) > 0) for(i in 1:ncol(samples)) {
+            theseSamples <- samples[,i]
+            if(isValid(theseSamples)) {
+                summary[i, 1] <- mean(theseSamples)
+                summary[i, 2] <- median(theseSamples)
+                summary[i, 3] <- sd(theseSamples)
+                summary[i, 4] <- quantile(theseSamples, 0.025)
+                summary[i, 5] <- quantile(theseSamples, 0.975)
+            }
+        }
+    }
+    if(!missing(round)) summary <- round(summary, digits = round)
+    return(summary)
 }
 
 
@@ -334,9 +388,23 @@ mcmc_processMonitorNames <- function(model, nodes) {
     return(c(expandedNodeNames, expandedLogProbNames))
 }
 
+## As of 0.10.1 stop WAIC if not monitoring all parameters of data nodes
+mcmc_checkWAICmonitors_conditional <- function(model, monitors, dataNodes) {
+    parentNodes <- getParentNodes(dataNodes, model, stochOnly = TRUE)
+    parentVars <- model$getVarNames(nodes = parentNodes)
+    wh <- which(!parentVars %in% monitors)
+    if(length(wh)) {
+        if(length(wh) > 10)
+            badVars <- c(parentVars[wh[1:10]], "...") else badVars <- parentVars[wh]
+        stop(paste0("To calculate WAIC in NIMBLE, all parameters of",
+                    " data nodes in the model must be monitored.", "\n", 
+                    "  Currently, the following parameters are not monitored: ",
+                    paste0(badVars, collapse = ", ")))
+    }
+    message('Monitored nodes are valid for WAIC.')
+}
 
-
-
+## Used through version 0.10.0 and likely to be used in some form once we re-introduce mWAIC
 mcmc_checkWAICmonitors <- function(model, monitors, dataNodes) {
     monitoredDetermNodes <- model$expandNodeNames(monitors)[model$isDeterm(model$expandNodeNames(monitors))]
     if(length(monitoredDetermNodes) > 0) {

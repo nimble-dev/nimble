@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.9.0</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.10.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -232,6 +232,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="10.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:crp"><i class="fa fa-check"></i><b>10.2</b> Chinese Restaurant Process model</a><ul>
 <li class="chapter" data-level="10.2.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-density-2"><i class="fa fa-check"></i><b>10.2.1</b> Specification and density</a></li>
 <li class="chapter" data-level="10.2.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:excrp"><i class="fa fa-check"></i><b>10.2.2</b> Example</a></li>
+<li class="chapter" data-level="10.2.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:extensionscrp"><i class="fa fa-check"></i><b>10.2.3</b> Extensions</a></li>
 </ul></li>
 <li class="chapter" data-level="10.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:sb"><i class="fa fa-check"></i><b>10.3</b> Stick-breaking model</a><ul>
 <li class="chapter" data-level="10.3.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-function"><i class="fa fa-check"></i><b>10.3.1</b> Specification and function</a></li>
@@ -327,6 +328,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
+<li class="chapter" data-level="16" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i><b>16</b> References</a></li>
 </ul>
 
       </nav>
@@ -358,7 +360,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li>supporting a variety of more flexible syntax such as R-like named parameters and more general algebraic expressions.</li>
 </ol>
 <p>By supporting new functions and distributions, NIMBLE makes BUGS an extensible language, which is a major departure from previous packages that implement BUGS.</p>
-<p>We adopted BUGS because it has been so successful, with over 30,000 users by the time they stopped counting <span class="citation">(Lunn et al. <a href="#ref-Lunn_Spiegelhalter_Thomas_Best_2009">2009</a>)</span>. Many papers and books provide BUGS code as a way to document their statistical models. We describe NIMBLE’s version of BUGS later. The web sites for WinBUGS, OpenBUGS and JAGS provide other useful documntation on writing models in BUGS. For the most part, if you have BUGS code, you can try NIMBLE.</p>
+<p>We adopted BUGS because it has been so successful, with over 30,000 users by the time they stopped counting <span class="citation">(Lunn et al. <a href="references.html#ref-Lunn_Spiegelhalter_Thomas_Best_2009">2009</a>)</span>. Many papers and books provide BUGS code as a way to document their statistical models. We describe NIMBLE’s version of BUGS later. The web sites for WinBUGS, OpenBUGS and JAGS provide other useful documntation on writing models in BUGS. For the most part, if you have BUGS code, you can try NIMBLE.</p>
 <p>NIMBLE does several things with BUGS code:</p>
 <ol style="list-style-type: decimal">
 <li>NIMBLE creates a <em>model definition</em> object that knows everything about the variables and their relationships written in the BUGS code. Usually you’ll ignore the <em>model definition</em> and let NIMBLE’s default options take you directly to the next step.</li>
@@ -393,7 +395,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 </div>
 <div id="sec:nimble-algor-libr" class="section level2">
 <h2><span class="header-section-number">3.3</span> The NIMBLE algorithm library</h2>
-<p>In Version 0.9.0, the NIMBLE algorithm library includes:</p>
+<p>In Version 0.10.1, the NIMBLE algorithm library includes:</p>
 <ol style="list-style-type: decimal">
 <li>MCMC with samplers including conjugate (Gibbs), slice, adaptive random walk (with options for reflection or sampling on a log scale), adaptive block random walk, and elliptical slice, among others. You can modify sampler choices and configurations from R before compiling the MCMC. You can also write new samplers as nimbleFunctions.</li>
 <li>Reversible jump MCMC for variable selection.</li>
@@ -411,12 +413,6 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <p>More about the NIMBLE algorithm library is in Chapter <a href="cha-algos-provided.html#cha:algos-provided">8</a>.</p>
 
 <!--- % See http://yihui.name/knitr/demo/child/ for documentation on the parent/child document system of knitr -->
-</div>
-</div>
-<h3>References</h3>
-<div id="refs" class="references">
-<div id="ref-Lunn_Spiegelhalter_Thomas_Best_2009">
-<p>Lunn, David, David Spiegelhalter, Andrew Thomas, and Nicky Best. 2009. “The BUGS Project: Evolution, Critique and Future Directions.” <em>Statistics in Medicine</em> 28 (25): 3049–67. doi:<a href="https://doi.org/10.1002/sim.3680">10.1002/sim.3680</a>.</p>
 </div>
 </div>
 <div class="footnotes">

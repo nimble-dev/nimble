@@ -13,8 +13,8 @@ copierVector <- function(accessFrom_name, accessTo_name, isFromMV, isToMV) {
     ans
 }
 
-modelValuesAccessorVector <- function(mv, nodeNames, logProb = FALSE) {
-    ans <- list(mv, substitute(nodeNames), logProb, parent.frame())
+modelValuesAccessorVector <- function(mv, nodeNames, logProb = FALSE, logProbOnly = FALSE) {
+    ans <- list(mv, substitute(nodeNames), logProb | logProbOnly, parent.frame(), logProbOnly)
     class(ans) <- c('modelValuesAccessorVector', 'valuesAccessorVector')
     ans
 }
@@ -24,7 +24,10 @@ makeSetCodeFromAccessorVector <- function(accessorVector) {
     modelOrModelValues <- accessorVector[[1]]
     if(accessorVector[[3]]) {## logProb == TRUE
         isLogProbName <- grepl('logProb_', nodeNames)
-        nodeNames <- c(nodeNames, modelOrModelValues$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
+        if(accessorVector[[5]]) ## logProbOnly == TRUE
+            nodeNames <- c(modelOrModelValues$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
+        else
+            nodeNames <- c(nodeNames, modelOrModelValues$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
     }
     if(inherits(accessorVector, 'modelValuesAccessorVector'))
         setCode <- lapply(nodeNames, function(nn) {
@@ -48,7 +51,10 @@ makeGetCodeFromAccessorVector <- function(accessorVector) {
     modelOrModelValues <- accessorVector[[1]]
     if(accessorVector[[3]]) {## logProb == TRUE
         isLogProbName <- grepl('logProb_', nodeNames)
-        nodeNames <- c(nodeNames, modelOrModelValues$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
+        if(accessorVector[[5]]) ## logProbOnly == TRUE
+            nodeNames <- c(modelOrModelValues$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
+        else            
+            nodeNames <- c(nodeNames, modelOrModelValues$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
     }
     if(inherits(accessorVector, 'modelValuesAccessorVector'))
         getCode <- lapply(nodeNames, function(nn) {
@@ -78,7 +84,10 @@ makeMapInfoFromAccessorVectorFaster <- function(accessorVector ) {
         ## In this case, substr comparison is even more efficient
         ## isLogProbName <- grepl('logProb_', nodeNames)
         isLogProbName <- substr(nodeNames, 1, 8) == 'logProb_'
-        nodeNames <- c(nodeNames, sourceObject$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
+        if(accessorVector[[5]]) ## logProbOnly == TRUE
+            nodeNames <- c(sourceObject$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
+        else
+            nodeNames <- c(nodeNames, sourceObject$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
     }
     varNames <- .Call(parseVar, nodeNames)
     symTab <- sourceObject$getSymbolTable()
@@ -94,7 +103,10 @@ makeMapInfoFromAccessorVector <- function(accessorVector ) {
     
     if(accessorVector[[3]]) {## logProb == TRUE
         isLogProbName <- grepl('logProb_', nodeNames)
-        nodeNames <- c(nodeNames, sourceObject$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
+        if(accessorVector[[5]]) ## logProbOnly == TRUE
+            nodeNames <- c(sourceObject$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
+        else
+            nodeNames <- c(nodeNames, sourceObject$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
     }
     
     mapInfo <- lapply(nodeNames, function(z) {
@@ -111,9 +123,10 @@ makeMapInfoFromAccessorVector <- function(accessorVector ) {
         ans
     }) ## list elements will be offset, sizes, strides, varName, and singleton in that order.  Any changes must be propogated to C++
 
-    if(length(accessorVector) > 4) { ## set the length variable in the calling (setup) environment if needed
-        assign(accessorVector[[5]], length, envir = accessorVector[[4]]) 
-    }
+    ## Might need to go back and check if this was ever called.
+    ## if(length(accessorVector) > 4) { ## set the length variable in the calling (setup) environment if needed
+    ##     assign(accessorVector[[5]], length, envir = accessorVector[[4]]) 
+    ## }
     mapInfo
 }
 

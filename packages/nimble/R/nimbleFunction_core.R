@@ -32,6 +32,11 @@ nimbleFunctionVirtual <- function(contains = NULL,
     generatorFunction <- function() {}
     force(contains)
     nfRefClassDef <- nfRefClass <- NULL ## Existence of these makes this treated like a nfGenerator
+    environment(generatorFunction) <- GFenv <- new.env()
+    parent.env(GFenv) <- parent.frame()
+    for(var in c('generatorFunction','nfRefClassDef','nfRefClass','run','methods','methodList','name', 'className', 'contains', 'virtual')) {
+        GFenv[[var]] <- get(var)
+    }
     return(generatorFunction)
 }
 
@@ -87,7 +92,6 @@ nimbleFunction <- function(setup         = NULL,
     }
 
     virtual <- FALSE
-
     # we now include the namespace in the name of the RefClass to avoid two nfs having RefClass of same name but existing in different namespaces
     if(is.na(name)) name <- nf_refClassLabelMaker(envName = environmentName(where))
     className <- name
@@ -153,12 +157,18 @@ nimbleFunction <- function(setup         = NULL,
     generatorFunction <- eval(nf_createGeneratorFunctionDef(setup))
     force(contains) ## eval the contains so it is in this environment
     formals(generatorFunction) <- nf_createGeneratorFunctionArgs(setup, parent.frame())
+    environment(generatorFunction) <- GFenv <- new.env()
+    parent.env(GFenv) <- parent.frame()
 
-    .globalSetupEnv <- new.env()
+        .globalSetupEnv <- new.env()
     if(!is.null(globalSetup)) {
         if(!is.function(globalSetup)) stop('If globalSetup is not NULL, it must be a function', call. = FALSE)
         if(!length(formals(globalSetup))==0) stop('globalSetup cannot take input arguments', call. = FALSE)
         eval(body(globalSetup), envir = .globalSetupEnv)
+    }
+
+    for(var in c('generatorFunction','nfRefClassDef','nfRefClass','setup','run','methods','methodList','name', 'className', 'contains', 'enableDerivs', 'virtual', '.globalSetupEnv', '.namesToCopy', '.namesToCopyFromGlobalSetup', '.namesToCopyFromSetup','declaredSetupOutputNames','.globalSetupEnv')) {
+        GFenv[[var]] <- get(var)
     }
     return(generatorFunction)
 }
@@ -414,6 +424,8 @@ nf_getNamesFromSetupOutputDeclaration <- function(setupOutputsDeclaration) {
 }
 
 ## processing of all objects to become NF member data
+## needs to be exported as otherwise use of nimble::: in `nf_createGeneratorFunctionDef()` gives R CMD check NOTE
+#' @export
 nf_preProcessMemberDataObject <- function(obj) {
     if(is(obj, 'CmodelBaseClass')) {
         warning('This nimbleFunction was passed a *compiled* model object.\nInstead, the corresponding *uncompiled* model object was used.', call. = FALSE)

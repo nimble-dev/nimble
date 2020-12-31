@@ -67,7 +67,8 @@ nimbleOrRfunctionNames <- c('[',
                             'prod',
                             'asRow',
                             'asCol',
-                            'chol',
+                            'logdet',    
+			    'chol',
                             'inverse',
                             'forwardsolve',
                             'backsolve',
@@ -151,10 +152,13 @@ BUGSdeclClass <- setRefClass(
         origIDs = 'ANY',
         graphIDs = 'ANY',
         unrolledIndicesMatrix = 'ANY',
-        numUnrolledNodes = 'ANY' ## differs from outputSize ONLY for a
-                                 ## no-context singleton, a ~ dnorm(b,
-                                 ## c), so numUnrolledNodes is 1 but
-                                 ## outputSize is 0
+        numUnrolledNodes = 'ANY', ## differs from outputSize ONLY for a
+                                  ## no-context singleton, a ~ dnorm(b,
+                                  ## c), so numUnrolledNodes is 1 but
+                                  ## outputSize is 0
+        envir = 'ANY' ## environment from which nimbleModel called,
+                      ## set here rather than in modelDef because
+                      ## environment is used in calls to functions from BUGSdeclClass.
     ),   
     
     methods = list(
@@ -228,7 +232,8 @@ BUGSdeclClass$methods(
                      contextID,
                      sourceLineNum,
                      truncated = FALSE,
-                     boundExprs = NULL) {
+                     boundExprs = NULL,
+                     userEnv = .GlobalEnv) {
         ## This is the master entry function.
         ## Argument 'contextID' is used to set field: contextID.
         ## Argument 'code' is used to set the fields:
@@ -242,6 +247,7 @@ BUGSdeclClass$methods(
         code <<- code
         truncated <<- truncated
         boundExprs <<- boundExprs
+        envir <<- userEnv
         
         if(code[[1]] == '~') {
             type <<- 'stoch'
@@ -329,7 +335,8 @@ BUGSdeclClass$methods(
                                            constantsNamesList,
                                            context$indexVarExprs,
                                            nimFunNames,
-                                           contextID = contextID)
+                                           contextID = contextID,
+                                           envir = envir)
                 ) 
         }
 )
@@ -408,7 +415,8 @@ BUGSdeclClass$methods(
                                        c(context$indexVarExprs,
                                          replacementNameExprs),
                                        nimFunNames,
-                                       contextID = contextID)
+                                       contextID = contextID,
+                                       envir = envir)
             )
     if(!nimbleOptions()$allowDynamicIndexing) {
         rhsVars <<-
@@ -490,7 +498,8 @@ BUGSdeclClass$methods(
             genReplacementsAndCodeRecurse(code,
                                           c(constantsNamesList,
                                             context$indexVarExprs),
-                                          nimFunNames)
+                                          nimFunNames,
+                                          envir = envir)
         replacements <<- replacementsAndCode$replacements
         codeReplaced <<- replacementsAndCode$codeReplaced
         
@@ -617,7 +626,8 @@ getSymbolicParentNodes <- function(code,
                                    indexNames = list(),
                                    nimbleFunctionNames = list(),
                                    addDistNames = FALSE,
-                                   contextID = NULL) {
+                                   contextID = NULL,
+                                   envir = .GlobalEnv) {
     if(addDistNames)
         nimbleFunctionNames <- c(nimbleFunctionNames,
                                  getAllDistributionsInfo('namesExprList'))
@@ -625,11 +635,12 @@ getSymbolicParentNodes <- function(code,
                                          constNames,
                                          indexNames,
                                          nimbleFunctionNames,
-                                         contextID)
+                                         contextID,
+                                         envir)
     return(ans$code)
 }
 
-getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames = list(), nimbleFunctionNames = list(), contextID = NULL) {
+getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames = list(), nimbleFunctionNames = list(), contextID = NULL, envir = .GlobalEnv) {
     ## This takes as input some code and returns the variables in it.
     ## It expects one line of code, not a '{' expression.
     ##
@@ -719,7 +730,8 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                                                          constNames,
                                                          indexNames,
                                                          nimbleFunctionNames,
-                                                         contextID)
+                                                         contextID,
+                                                         envir)
                        )
             ## unpack the codes returned from recursion
             contentsCode <-
@@ -742,7 +754,8 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                                               constNames,
                                               indexNames,
                                               nimbleFunctionNames,
-                                              contextID)
+                                              contextID,
+                                              envir)
             
             ## error if it looks like mu[i][j] where i is a for-loop index
             if(variable$hasIndex)
@@ -833,7 +846,8 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                                                           constNames,
                                                           indexNames,
                                                           nimbleFunctionNames,
-                                                          contextID)
+                                                          contextID,
+                                                          envir)
                     )
                 else ## foo(x): recurse on x
                     contents <- lapply(
@@ -843,7 +857,8 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                                                           constNames,
                                                           indexNames,
                                                           nimbleFunctionNames,
-                                                          contextID)
+                                                          contextID,
+                                                          envir)
                     )
                 ## unpack results of recursion
                 contentsCode <- unlist(
@@ -870,10 +885,10 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             isRfunction <- !any(code[[1]] == nimbleFunctionNames)
             funName <- deparse(code[[1]])
             isRonly <- isRfunction &
-                (!checkNimbleOrRfunctionNames(funName))
+                (!checkNimbleOrRfunctionNames(funName, envir))
             ## if it can be called only in R but not all contents are replaceable, generate error:
             if(isRonly & !allContentsReplaceable) {
-                if(!exists(funName))
+                if(!exists(funName, envir))
                     stop("R function '", funName,"' does not exist.")
                 unreplaceable <-
                     sapply(contents[!contentsReplaceable],
@@ -894,11 +909,11 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                deparse(code)))
 }
 
-checkNimbleOrRfunctionNames <- function(functionName) {
+checkNimbleOrRfunctionNames <- function(functionName, envir) {
     if(any(functionName == nimbleOrRfunctionNames))
         return(TRUE)
-    if(exists(functionName) &&
-       is.rcf(get(functionName)))
+    if(exists(functionName, envir) &&
+       is.rcf(get(functionName, envir)))
         return(TRUE)  ## Would like to do this by R's scoping rules here and in genCpp_sizeProcessing but that is problematic
     return(FALSE)
 }
@@ -909,7 +924,8 @@ genReplacementsAndCodeRecurse <- function(code,
                                           constAndIndexNames,
                                           nimbleFunctionNames,
                                           replaceVariableLHS = TRUE,
-                                          debug = FALSE) {
+                                          debug = FALSE,
+                                          envir = .GlobalEnv) {
     if(debug) browser()
     if(is.numeric(code) || is.logical(code) ||
        (nimbleOptions()$allowDynamicIndexing &&
@@ -945,7 +961,8 @@ genReplacementsAndCodeRecurse <- function(code,
                     genReplacementsAndCodeRecurse(x,
                                                   constAndIndexNames,
                                                   nimbleFunctionNames,
-                                                  debug = debug)
+                                                  debug = debug,
+                                                  envir = envir)
             )
             contentsCodeReplaced <-
                 lapply(contents, function(x) x$codeReplaced)
@@ -958,7 +975,8 @@ genReplacementsAndCodeRecurse <- function(code,
                     genReplacementsAndCodeRecurse(code[[2]],
                                                   constAndIndexNames,
                                                   nimbleFunctionNames,
-                                                  debug = debug)
+                                                  debug = debug,
+                                                  envir = envir)
                 if(variable$replaceable &&
                    all(contentsReplaceable))
                     return(replaceAllCodeSuccessfully(code))
@@ -980,7 +998,8 @@ genReplacementsAndCodeRecurse <- function(code,
                             genReplacementsAndCodeRecurse(code[[2]],
                                                           constAndIndexNames,
                                                           nimbleFunctionNames,
-                                                          replaceVariableLHS = FALSE, debug)
+                                                          replaceVariableLHS = FALSE, debug,
+                                                          envir = envir)
                         ),
                         lapply(
                             code[-c(1,2)],
@@ -988,7 +1007,8 @@ genReplacementsAndCodeRecurse <- function(code,
                                 genReplacementsAndCodeRecurse(x,
                                                               constAndIndexNames,
                                                               nimbleFunctionNames,
-                                                              debug = debug))
+                                                              debug = debug,
+                                                              envir = envir))
                     )
             } else {
                 contents <- lapply(
@@ -997,7 +1017,8 @@ genReplacementsAndCodeRecurse <- function(code,
                         genReplacementsAndCodeRecurse(x,
                                                       constAndIndexNames,
                                                       nimbleFunctionNames,
-                                                      debug = debug))
+                                                      debug = debug,
+                                                      envir = envir))
             }
             contentsCodeReplaced <- lapply(contents, function(x) x$codeReplaced)
             contentsReplacements <- lapply(contents, function(x) x$replacements)
@@ -1017,7 +1038,7 @@ genReplacementsAndCodeRecurse <- function(code,
             funName <- deparse(code[[1]])
             (
                 (funName %in% functionsThatShouldNeverBeReplacedInBUGScode) ||
-                (exists(funName) && is.rcf(get(funName)))
+                (exists(funName, envir) && is.rcf(get(funName, envir)))
             )
         }
         )
@@ -1035,7 +1056,7 @@ genReplacementsAndCodeRecurse <- function(code,
         isRfunction <- !any(code[[1]] == nimbleFunctionNames)
         isRonly <-
             isRfunction &
-            !checkNimbleOrRfunctionNames(deparse(code[[1]]))
+            !checkNimbleOrRfunctionNames(deparse(code[[1]]), envir)
         if(deparse(code[[1]]) == '$')
             isRonly <- FALSE
         if(isRonly & !allContentsReplaceable)

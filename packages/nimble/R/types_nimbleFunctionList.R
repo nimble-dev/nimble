@@ -32,16 +32,21 @@ nimbleFunctionList <- setRefClass('nimbleFunctionList',
                                           this_contains <- nfGetDefVar(x, 'contains')
                                           done <- FALSE
                                           ok <- FALSE
+                                          baseClassName <- environment(baseClass)[['name']]
                                           while(!done) {
                                               if(is.null(this_contains)) {
                                                   done <- TRUE
                                               }
-                                              else if(identical(this_contains, baseClass)) {
-                                                  ok <- TRUE
-                                                  done <- TRUE
+                                              else {
+                                                  this_name <- environment(this_contains)[['name']]
+                                                  if(identical(this_name, baseClassName)) {
+                                                      ok <- TRUE
+                                                      done <- TRUE
+                                                  }
                                               }
                                               ## recurse up inheritance path
-                                              this_contains <- nfGetDefVar(this_contains, 'contains')
+                                              if(!done)
+                                                  this_contains <- nfGetDefVar(this_contains, 'contains')
                                           }
                                           ok
                                       },

@@ -98,10 +98,17 @@ nimCppKeywordsThatFillSemicolon <- c(
 
 ## Main function for generating C++ output
 nimGenerateCpp <- function(code, symTab = NULL, indent = '', showBracket = TRUE, asArg = FALSE) {
-    if(is.numeric(code)) return(if(is.nan(code)) "(nimble_NaN())" else code)
-    if(is.character(code)) return(paste0('\"', gsub("\\n","\\\\n", code), '\"'))
+    ## The literal token NA should not appear in code as numeric or character, since it is logical in R.
+    ## Hence the checking of is.na cases for is.numeric and is.character are defensive only and not expected to be necessary.
+    if(is.numeric(code)) return(if(is.nan(code)) "(nimble_NaN())" else if(is.na(code)) 'NA_REAL' else code)
+    if(is.character(code)) {if(is.na(code)) stop("Character NA is not supported for compilation."); return(paste0('\"', gsub("\\n","\\\\n", code), '\"'))}
     if(is.null(code)) return('R_NilValue')
-    if(is.logical(code) ) return(if(code) 'true' else 'false')
+    ## In R's internals (Arith.h), there are R_NaReal and R_NaInt.  Then in Rmath, NA_REAL is defined to what is ultimately R_NaReal
+    ## It would be tempting to us R_NaReal for doubles and R_NaInt for ints, but R_NaReal (NA_REAL) seems to provide desired behavior
+    ## for arithmetic for both double and int.  E.g. 1 + NA_REAL will result in NA_REAL for either double or int,
+    ## but 1 + R_NaInt will not result in R_NaInt for int.  Hence, we use NA_REAL for every case of NA.
+    ## Note that NA will not work for bools in compiled code -- a meaningful mismatch from R, where NA defaults to logical.
+    if(is.logical(code) ) return(if(is.na(code)) 'NA_REAL' else if(code) 'true' else 'false')
     if(is.list(code) ) stop("Error generating C++ code, there is a list where there shouldn't be one.  It is probably inside map information.", call. = FALSE)
 
     if(length(code$isName) == 0) stop("Error generating C++ code, length(code$isName) == 0.", call. = FALSE)
