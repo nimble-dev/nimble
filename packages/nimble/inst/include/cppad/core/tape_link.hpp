@@ -20,6 +20,9 @@ in the Eclipse Public License, Version 2.0 are satisfied:
 # include <cppad/utility/thread_alloc.hpp>
 
 namespace CppAD { // BEGIN_CPPAD_NAMESPACE
+
+#include "nimble_ADbase_tape_link_extensions.hpp"
+
 /*!
 \file tape_link.hpp
 Routines that Link AD<Base> and local::ADTape<Base> Objects.
