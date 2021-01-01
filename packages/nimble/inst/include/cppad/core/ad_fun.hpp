@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_AD_FUN_HPP
 # define CPPAD_CORE_AD_FUN_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -41,14 +41,15 @@ derivative values, and other values related to the corresponding function.
 $childtable%
     omh/adfun.omh%
     include/cppad/core/optimize.hpp%
-    example/abs_normal/abs_normal.omh%
     include/cppad/core/fun_check.hpp%
     include/cppad/core/check_for_nan.hpp
 %$$
 
 $end
 */
+# include <cppad/core/graph/cpp_graph.hpp>
 # include <cppad/local/subgraph/info.hpp>
+# include <cppad/local/graph/cpp_graph_op.hpp>
 
 namespace CppAD { // BEGIN_CPPAD_NAMESPACE
 /*!
@@ -73,6 +74,12 @@ private:
     // ------------------------------------------------------------
     // Private member variables
     // ------------------------------------------------------------
+
+    /// name of this function (so far only json operations use this value)
+    std::string function_name_;
+
+    /// Did the previous optimzation exceed the collision limit
+    bool exceed_collision_limit_;
 
     /// Is this function obejct a base2ad return value
     /// (special becasue some compliers need copy constructor in this case)
@@ -128,7 +135,7 @@ private:
 
     /// Variable on the tape corresponding to each vecad load operation
     /// (if zero, the operation corresponds to a parameter).
-    local::pod_vector<addr_t> load_op_;
+    local::pod_vector<addr_t> load_op2var_;
 
     /// the operation sequence corresponding to this object
     local::player<Base> play_;
@@ -136,11 +143,11 @@ private:
     /// Packed results of the forward mode Jacobian sparsity calculations.
     /// for_jac_sparse_pack_.n_set() != 0  implies other sparsity results
     /// are empty
-    local::sparse_pack for_jac_sparse_pack_;
+    local::sparse::pack_setvec for_jac_sparse_pack_;
 
     /// Set results of the forward mode Jacobian sparsity calculations
     /// for_jac_sparse_set_.n_set() != 0  implies for_sparse_pack_ is empty.
-    local::sparse_list for_jac_sparse_set_;
+    local::sparse::list_setvec for_jac_sparse_set_;
 
     /// subgraph information for this object
     local::subgraph::subgraph_info subgraph_info_;
@@ -295,10 +302,21 @@ public:
     // assignment operator
     // (doxygen in cppad/core/fun_construct.hpp)
     void operator=(const ADFun& f);
-# if CPPAD_USE_CPLUSPLUS_2011
     // assignment operator with move semantics
     void operator=(ADFun&& f);
-# endif
+
+    // create from Json or C++ AD graph
+    void from_json(const std::string& json);
+    void from_graph(const cpp_graph& graph_obj);
+    void from_graph(
+        const cpp_graph&    graph_obj  ,
+        const vector<bool>& dyn2var    ,
+        const vector<bool>& var2dyn
+    );
+
+    // create a Json or C++ AD graph
+    std::string to_json(void);
+    void to_graph(cpp_graph& graph_obj);
 
     // create ADFun< AD<Base> > from this ADFun<Base>
     // (doxygen in cppad/core/base2ad.hpp)
@@ -330,10 +348,10 @@ public:
     template <class BaseVector>
     BaseVector Forward(size_t q, size_t r, const BaseVector& x);
 
-    /// forward mode user API, multiple directions one order.
+    /// forward mode user API, multiple orders one direction.
     template <class BaseVector>
-    BaseVector Forward(size_t q,
-        const BaseVector& x, std::ostream& s = std::cout
+    BaseVector Forward(
+        size_t q, const BaseVector& xq, std::ostream& s = std::cout
     );
 
     /// reverse mode sweep
@@ -502,7 +520,7 @@ public:
     void ForSparseHesCheckpoint(
         vector<bool>&                 r         ,
         vector<bool>&                 s         ,
-        local::sparse_list&                  h
+        local::sparse::list_setvec&   h
     );
 
     // reverse mode Hessian sparsity pattern
@@ -519,7 +537,7 @@ public:
         size_t                        q         ,
         vector<bool>&                 s         ,
         bool                          transpose ,
-        local::sparse_list&                  h
+        local::sparse::list_setvec&   h
     );
 
     // internal set sparsity version of RevSparseJac
@@ -527,22 +545,26 @@ public:
     // (used by checkpoint functions only)
     void RevSparseJacCheckpoint(
         size_t                        q          ,
-        const local::sparse_list&     r          ,
+        const local::sparse::list_setvec&     r          ,
         bool                          transpose  ,
         bool                          dependency ,
-        local::sparse_list&                  s
+        local::sparse::list_setvec&   s
     );
 
     // internal set sparsity version of RevSparseJac
     // (doxygen in cppad/core/for_sparse_jac.hpp)
     // (used by checkpoint functions only)
     void ForSparseJacCheckpoint(
-    size_t                        q          ,
-    const local::sparse_list&     r          ,
-    bool                          transpose  ,
-    bool                          dependency ,
-    local::sparse_list&                  s
+    size_t                             q          ,
+    const local::sparse::list_setvec&  r          ,
+    bool                               transpose  ,
+    bool                               dependency ,
+    local::sparse::list_setvec&        s
     );
+
+    /// did previous optimization exceed the collision limit
+    bool exceed_collision_limit(void) const
+    {   return exceed_collision_limit_; }
 
     /// amount of memory used for boolean Jacobain sparsity pattern
     size_t size_forward_bool(void) const
@@ -621,7 +643,7 @@ public:
 
     /// number of VecAD indices in the operation sequence
     size_t size_VecAD(void) const
-    {   return play_.num_vec_ind_rec(); }
+    {   return play_.num_var_vecad_ind_rec(); }
 
     /// set number of orders currently allocated (user API)
     void capacity_order(size_t c);
@@ -805,7 +827,7 @@ public:
     /// Deprecated: Does this AD operation sequence use
     /// VecAD<Base>::reference operands
     bool use_VecAD(void) const
-    {   return play_.num_vec_ind_rec() > 0; }
+    {   return play_.num_var_vecad_ind_rec() > 0; }
 
     /// Deprecated: # taylor_ coefficient orders calculated
     /// (per variable,direction)
@@ -829,10 +851,12 @@ public:
 # include <cppad/local/sweep/rev_jac.hpp>
 # include <cppad/local/sweep/rev_hes.hpp>
 # include <cppad/local/sweep/for_hes.hpp>
+# include <cppad/core/graph/from_graph.hpp>
+# include <cppad/core/graph/to_graph.hpp>
 
 // user interfaces
 # include <cppad/core/parallel_ad.hpp>
-# include <cppad/core/independent.hpp>
+# include <cppad/core/independent/independent.hpp>
 # include <cppad/core/dependent.hpp>
 # include <cppad/core/fun_construct.hpp>
 # include <cppad/core/base2ad.hpp>
@@ -843,5 +867,7 @@ public:
 # include <cppad/core/omp_max_thread.hpp>
 # include <cppad/core/optimize.hpp>
 # include <cppad/core/abs_normal_fun.hpp>
+# include <cppad/core/graph/from_json.hpp>
+# include <cppad/core/graph/to_json.hpp>
 
 # endif

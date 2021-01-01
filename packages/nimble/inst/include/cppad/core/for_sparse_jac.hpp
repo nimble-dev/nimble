@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_FOR_SPARSE_JAC_HPP
 # define CPPAD_CORE_FOR_SPARSE_JAC_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-19 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -263,7 +263,7 @@ void ADFun<Base,RecBase>::ForSparseJacCase(
     SetVector&          s             )
 {
     // used to identify the RecBase type in calls to sweeps
-    RecBase not_used_rec_base;
+    RecBase not_used_rec_base(0.0);
     //
     size_t m = Range();
     size_t n = Domain();
@@ -333,7 +333,7 @@ void ADFun<Base,RecBase>::ForSparseJacCase(
                 s[ i * q + j ] = false;
         }
         CPPAD_ASSERT_UNKNOWN( for_jac_sparse_pack_.end() == q );
-        local::sparse_pack::const_iterator
+        local::sparse::pack_setvec::const_iterator
             itr(for_jac_sparse_pack_, dep_taddr_[i] );
         size_t j = *itr;
         while( j < q )
@@ -383,7 +383,7 @@ void ADFun<Base,RecBase>::ForSparseJacCase(
     SetVector&                 s             )
 {
     // used to identify the RecBase type in calls to sweeps
-    RecBase not_used_rec_base;
+    RecBase not_used_rec_base(0.0);
     //
     size_t m = Range();
     size_t n = Domain();
@@ -482,7 +482,7 @@ void ADFun<Base,RecBase>::ForSparseJacCase(
         // extract results from for_jac_sparse_set_
         // and add corresponding elements to sets in s
         CPPAD_ASSERT_UNKNOWN( for_jac_sparse_set_.end() == q );
-        local::sparse_list::const_iterator
+        local::sparse::list_setvec::const_iterator
             itr_2(for_jac_sparse_set_, dep_taddr_[i] );
         size_t j = *itr_2;
         while( j < q )
@@ -660,14 +660,14 @@ In this case
 */
 template <class Base, class RecBase>
 void ADFun<Base,RecBase>::ForSparseJacCheckpoint(
-    size_t                        q          ,
-    const local::sparse_list&     r          ,
-    bool                          transpose  ,
-    bool                          dependency ,
-    local::sparse_list&                  s          )
+    size_t                             q          ,
+    const local::sparse::list_setvec&  r          ,
+    bool                               transpose  ,
+    bool                               dependency ,
+    local::sparse::list_setvec&        s          )
 {
     // used to identify the RecBase type in calls to sweeps
-    RecBase not_used_rec_base;
+    RecBase not_used_rec_base(0.0);
     //
     size_t n = Domain();
     size_t m = Range();
@@ -697,7 +697,7 @@ void ADFun<Base,RecBase>::ForSparseJacCheckpoint(
     // set sparsity pattern for dependent variables
     if( transpose )
     {   for(size_t i = 0; i < q; i++)
-        {   local::sparse_list::const_iterator itr(r, i);
+        {   local::sparse::list_setvec::const_iterator itr(r, i);
             size_t j = *itr;
             while( j < n )
             {   for_jac_sparse_set_.post_element( ind_taddr_[j], i );
@@ -707,7 +707,7 @@ void ADFun<Base,RecBase>::ForSparseJacCheckpoint(
     }
     else
     {   for(size_t j = 0; j < n; j++)
-        {   local::sparse_list::const_iterator itr(r, j);
+        {   local::sparse::list_setvec::const_iterator itr(r, j);
             size_t i = *itr;
             while( i < q )
             {   for_jac_sparse_set_.post_element( ind_taddr_[j], i );
@@ -742,7 +742,7 @@ void ADFun<Base,RecBase>::ForSparseJacCheckpoint(
 
         // extract the result from for_jac_sparse_set_
         CPPAD_ASSERT_UNKNOWN( for_jac_sparse_set_.end() == q );
-        local::sparse_list::const_iterator
+        local::sparse::list_setvec::const_iterator
             itr(for_jac_sparse_set_, dep_taddr_[i] );
         size_t j = *itr;
         while( j < q )

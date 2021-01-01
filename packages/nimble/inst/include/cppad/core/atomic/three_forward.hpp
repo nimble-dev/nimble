@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_ATOMIC_THREE_FORWARD_HPP
 # define CPPAD_CORE_ATOMIC_THREE_FORWARD_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -44,8 +44,7 @@ $icode%ok% = %afun%.forward(
 )%$$
 
 $subhead Prototype$$
-$srcfile%include/cppad/core/atomic/three_forward.hpp
-    %0%// BEGIN_PROTOTYPE_BASE%// END_PROTOTYPE_BASE%1
+$srcthisfile%0%// BEGIN_PROTOTYPE_BASE%// END_PROTOTYPE_BASE%1
 %$$
 
 $head AD<Base>$$
@@ -64,8 +63,7 @@ $icode%ok% = %afun%.forward(
 )%$$
 
 $subhead Prototype$$
-$srcfile%include/cppad/core/atomic/three_forward.hpp
-    %0%// BEGIN_PROTOTYPE_AD_BASE%// END_PROTOTYPE_AD_BASE%1
+$srcthisfile%0%// BEGIN_PROTOTYPE_AD_BASE%// END_PROTOTYPE_AD_BASE%1
 %$$
 
 $head Implementation$$
@@ -96,15 +94,22 @@ Often, this is not necessary and $icode need_y$$ is used to specify this.
 The value $cref/type_y/atomic_three_for_type/type_y/$$ is used
 to determine which coefficients are necessary as follows:
 
+$subhead Constant Parameters$$
+If $icode%need_y% == size_t(constant_enum)%$$,
+then only the taylor coefficients
+for $latex Y_i (t)$$ where $icode%type_y%[%i%] == constant_enum%$$
+are necessary.
+This is the case during a $cref from_json$$ operation.
+
 $subhead Dynamic Parameters$$
-If $icode%need_y == size_t(dynamic_enum)%$$,
+If $icode%need_y% == size_t(dynamic_enum)%$$,
 then only the taylor coefficients
 for $latex Y_i (t)$$ where $icode%type_y%[%i%] == dynamic_enum%$$
 are necessary.
 This is the case during an $cref new_dynamic$$ operation.
 
 $subhead Variables$$
-If $icode%need_y == size_t(variable_enum)%$$,
+If $icode%need_y% == size_t(variable_enum)%$$,
 If $codei%ad_type_enum(%need_y%)% == variable_enum%$$,
 then only the taylor coefficients
 for $latex Y_i (t)$$ where $icode%type_y%[%i%] == variable_enum%$$
@@ -151,6 +156,22 @@ to the derivatives of $latex X(t)$$ at $latex t = 0$$ in the following way:
 $latex \[
     x_j^k = \frac{1}{ k ! } X_j^{(k)} (0)
 \] $$
+
+$subhead parameters$$
+If the $th j$$ component of $icode x$$ corresponds to a parameter,
+$codei%
+    %type_x%[%j%] < CppAD::variable_enum
+%$$
+In this case,
+the $th j$$ component of $icode parameter_x$$ is equal to $latex x_j^0$$;
+i.e.,
+$codei%
+    %parameter_x%[%j%] == %taylor_x%[ %j% * ( %q% + 1 ) + 0 ]
+%$$
+Furthermore, for $icode%k% > 0%$$,
+$codei%
+    %taylor_x%[ %j% * ( %q% + 1 ) + %k% ] == 0
+%$$
 
 $head ataylor_x$$
 The specifications for $icode ataylor_x$$ is the same as for $icode taylor_x$$

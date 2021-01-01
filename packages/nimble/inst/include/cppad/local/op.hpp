@@ -1,7 +1,7 @@
 # ifndef CPPAD_LOCAL_OP_HPP
 # define CPPAD_LOCAL_OP_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-17 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -13,10 +13,10 @@ in the Eclipse Public License, Version 2.0 are satisfied:
 ---------------------------------------------------------------------------- */
 
 // used by the sparse operators
-# include <cppad/local/sparse_internal.hpp>
+# include <cppad/local/sparse/internal.hpp>
 
 // operations
-# include <cppad/core/std_math_98.hpp>
+# include <cppad/core/std_math_11.hpp>
 # include <cppad/local/abs_op.hpp>
 # include <cppad/local/add_op.hpp>
 # include <cppad/local/acos_op.hpp>
@@ -48,8 +48,8 @@ in the Eclipse Public License, Version 2.0 are satisfied:
 # include <cppad/local/sinh_op.hpp>
 # include <cppad/local/sqrt_op.hpp>
 # include <cppad/local/sub_op.hpp>
-# include <cppad/local/sparse_binary_op.hpp>
-# include <cppad/local/sparse_unary_op.hpp>
+# include <cppad/local/sparse/binary_op.hpp>
+# include <cppad/local/sparse/unary_op.hpp>
 # include <cppad/local/store_op.hpp>
 # include <cppad/local/tan_op.hpp>
 # include <cppad/local/tanh_op.hpp>

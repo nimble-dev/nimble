@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_SPARSE_HES_HPP
 # define CPPAD_CORE_SPARSE_HES_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-19 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -233,7 +233,7 @@ It returns $code true$$, for success, and $code false$$ otherwise.
 $end
 */
 # include <cppad/core/cppad_assert.hpp>
-# include <cppad/local/sparse_internal.hpp>
+# include <cppad/local/sparse/internal.hpp>
 # include <cppad/local/color_general.hpp>
 # include <cppad/local/color_symmetric.hpp>
 
@@ -421,9 +421,9 @@ size_t ADFun<Base,RecBase>::sparse_hes(
         bool transpose   = true;
         bool zero_empty  = false;
         bool input_empty = true;
-        local::sparse_list internal_pattern;
+        local::sparse::list_setvec internal_pattern;
         internal_pattern.resize(n, n);
-        local::set_internal_sparsity(zero_empty, input_empty,
+        local::sparse::set_internal_pattern(zero_empty, input_empty,
             transpose, internal_index, internal_pattern, pattern
         );
         //
@@ -479,7 +479,7 @@ size_t ADFun<Base,RecBase>::sparse_hes(
     //
     size_t n_color = 1;
     for(size_t j = 0; j < n; j++) if( color[j] < n )
-        n_color = std::max(n_color, color[j] + 1);
+        n_color = std::max<size_t>(n_color, color[j] + 1);
     //
     // initialize the return Hessian values as zero
     for(size_t k = 0; k < K; k++)

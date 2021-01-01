@@ -1,7 +1,7 @@
 # ifndef CPPAD_LOCAL_OPTIMIZE_GET_OP_USAGE_HPP
 # define CPPAD_LOCAL_OPTIMIZE_GET_OP_USAGE_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -11,11 +11,6 @@ Secondary License when the conditions for such availability set forth
 in the Eclipse Public License, Version 2.0 are satisfied:
       GNU General Public License, Version 2.0 or later.
 ---------------------------------------------------------------------------- */
-/*!
-\file get_cexp_info.hpp
-Create operator information tables
-*/
-
 # include <cppad/local/optimize/cexp_info.hpp>
 # include <cppad/local/optimize/usage.hpp>
 # include <cppad/local/sweep/call_atomic.hpp>
@@ -46,61 +41,85 @@ inline bool op_add_or_sub(
 }
 
 /*!
-Increarse argument usage and propagate cexp_set from result to argument.
+$begin optimize_op_inc_arg_usage$$
+$spell
+    cexp
+    op
+    arg
+    csum
+    optimizer
+$$
 
-\param play
+$section
+Increase Argument Usage and Propagate cexp_set From Result to Argument
+$$
+
+$head Prototype$$
+$srcthisfile%
+    0%// BEGIN_OP_INC_ARG_USAGE%// END_PROTOTYPE%1
+%$$
+
+
+$head play$$
 is the player for the old operation sequence.
 
-\param sum_result
-is result an addition or subtraction operator (passed for speed so
-do not need to call op_add_or_sub for result).
+$head check_csum$$
+is result an addition or subtraction operator,
+and the optimizer is allowed to generate cumulative sum operators.
 
-\param i_result
+$head i_result$$
 is the operator index for the result operator.
+There are no posting waiting to be processed for the corresponding cexp_set.
 
-\param i_arg
+$head i_arg$$
 is the operator index for the argument to the result operator.
+There may be postings waiting to be processed for the corresponding cexp_set.
 
-\param op_usage
+$head op_usage$$
 structure that holds the information for each of the operators.
 The output value of op_usage[i_arg] is increased; to be specific,
-If sum_result is true and the input value of op_usage[i_arg]
+If check_csum is true and the input value of op_usage[i_arg]
 is usage_t(no_usage), its output value is usage_t(csum_usage).
 Otherwise, the output value of op_usage[i_arg] is usage_t(yes_usage).
 
-\param cexp_set
-This is a vector of sets with one set for each operator. We denote
-the i-th set by set[i].
+$head cexp_set$$
+This is a vector of sets with one set for each operator.
+We denote the i-th set by set[i].
+These are the conditional expression conditions that must be
+satisfied for this argument to be used.
 
-\li
+$list number$$
 In the special case where cexp_set.n_set() is zero,
 cexp_set is not changed.
-
-\li
+$lnext
 If cexp_set.n_set() != 0 and op_usage[i_arg] == usage_t(no_usage),
 the input value of set[i_arg] must be empty.
 In this case the output value if set[i_arg] is equal to set[i_result]
 (which may also be empty).
-
-\li
+$lnext
 If cexp_set.n_set() != 0 and op_usage[i_arg] != usage_t(no_usage),
 the output value of set[i_arg] is the intersection of
 its input value and set[i_result].
+$lend
+
+$end
 */
+// BEGIN_OP_INC_ARG_USAGE
 template <class Base>
 void op_inc_arg_usage(
     const player<Base>*         play           ,
-    bool                        sum_result     ,
+    bool                        check_csum     ,
     size_t                      i_result       ,
     size_t                      i_arg          ,
     pod_vector<usage_t>&        op_usage       ,
-    sparse_list&                cexp_set       )
+    sparse::list_setvec&        cexp_set       )
+// END_PROTOTYPE
 {   // value of argument input on input to this routine
     enum_usage arg_usage = enum_usage( op_usage[i_arg] );
     //
     // new value for usage
     op_usage[i_arg] = usage_t(yes_usage);
-    if( sum_result )
+    if( check_csum )
     {   if( arg_usage == no_usage )
         {   OpCode op_a = play->GetOp(i_arg);
             if( op_add_or_sub( op_a ) )
@@ -115,10 +134,13 @@ void op_inc_arg_usage(
     //
     if( arg_usage == no_usage )
     {   // set[i_arg] = set[i_result]
+        // not necessary to process posts for set i_result
         cexp_set.assignment(i_arg, i_result, cexp_set);
     }
     else
     {   // set[i_arg] = set[i_arg] intersect set[i_result]
+        // is necessary to process postts for set i_arg
+        cexp_set.process_post(i_arg);
         cexp_set.binary_intersection(i_arg, i_arg, i_result, cexp_set);
     }
     //
@@ -126,89 +148,123 @@ void op_inc_arg_usage(
 }
 
 /*!
-Use reverse activity analysis to get usage information for each operator.
+$begin optimize_get_op_usage$$
+$spell
+    Ind
+    var
+    itr
+    dep_taddr
+    cexp
+    vecad
+    Addr
+    iterator
+    NumRes
+    PriOp
+    Exp
+    bool
+    Vec
+$$
 
-\tparam Base
+$section
+Use Reverse Activity Analysis to Get Usage Information for Each Operator
+$$
+
+$head Prototype$$
+$srcthisfile%
+    0%// BEGIN_GET_OP_USAGE%// END_PROTOTYPE%1
+%$$
+
+$head Base$$
 Base type for the operator; i.e., this operation was recorded
-using AD<Base> and computations by this routine are done using type Base.
+using $codei%AD<%Base%>%$$ and computations by this routine are done
+using type $icode Base$$.
 
-\tparam Addr
+$head Addr$$
 Type used by random iterator for the player.
 
-\param conditional_skip
-If conditional_skip this is true, the conditional expression information
-cexp_info will be calculated.
-This may be time intensive and may not have much benefit in the optimized
-recording.
+$head cumulative_sum_op$$
+If this is true (false), cumulative summation operator are allowed
+(not allowed) to be generated by the optimization.
 
-\param compare_op
+$head compare_op$$
 if this is true, arguments are considered used if they appear in compare
 operators. This is a side effect because compare operators have boolean
 results (and the result is not in the tape; i.e. NumRes(op) is zero
 for these operators. (This is an example of a side effect.)
 
-\param print_for_op
+$head print_for_op$$
 if this is true, arguments are considered used if they appear in
 print forward operators; i.e., PriOp.
 This is also a side effect; i.e. NumRes(PriOp) is zero.
 
-\param play
+$head conditional_skip$$
+If this is true,
+the conditional expression information cexp_info will be calculated.
+This may be time intensive and may not have much benefit in the optimized
+recording.
+
+
+$head play$$
 This is the operation sequence.
 
-\param random_itr
+$head random_itr$$
 This is a random iterator for the operation sequence.
 
-\param dep_taddr
+$head dep_taddr$$
 is a vector of indices for the dependent variables
 (where the reverse activity analysis starts).
 
-\param cexp2op
+$head cexp2op$$
 The input size of this vector must be zero.
-Upon retun it has size equal to the number of conditional expressions,
+Upon return it has size equal to the number of conditional expressions,
 CExpOp operators. The value $icode%cexp2op[%j%]%$$ is the operator
-index corresponding to the $th j$$ operator.
+index corresponding to the $th j$$ conditional expressions.
 
-\param cexp_set
+$head cexp_set$$
 This is a vector of sets that is empty on input.
-If conditional_skip is false, cexp_usage is not modified.
+If $icode conditional_skip$$ is false, $icode cexp_usage$$ is not modified.
 Otherwise, set[i] is a set of elements for the i-th operator.
 Suppose that e is an element of set[i], j = e / 2, k = e % 2.
-If the comparision for the j-th conditional expression is equal to bool(k),
+If the comparison for the j-th conditional expression is equal to bool(k),
 the i-th operator can be skipped (is not used by any of the results).
-Note the the j indexs the CExpOp operators in the operation sequence.
+Note that j indexes the CExpOp operators in the operation sequence.
 
-\param vecad_used
+$head vecad_used$$
 The input size of this vector must be zero.
-Upon retun it has size equal to the number of VecAD vectors
-in the operations sequences; i.e., play->num_vecad_vec_rec().
-The VecAD vectors are indexed in the order that thier indices apprear
+Upon return it has size equal to the number of VecAD vectors
+in the operations sequences; i.e., play->num_var_vecad_rec().
+The VecAD vectors are indexed in the order that their indices appear
 in the one large play->GetVecInd that holds all the VecAD vectors.
 
-\param op_usage
+$head op_usage$$
 The input size of this vector must be zero.
 Upon return it has size equal to the number of operators
 in the operation sequence; i.e., num_op = play->nun_var_rec().
-The value op_usage[i] have been set to the usage for
+The value $icode%op_usage%[%i%]%$$ has been set to the usage for
 the i-th operator in the operation sequence.
 Atomic function calls are a special case,
 the first and second AFunOp have usage corresponding to the entire call.
 The arguments have the usage for particular parameter or variable.
 This usage is only for creating variables, not for creating
 dynamic parameters.
-*/
 
+$end
+*/
+// BEGIN_GET_OP_USAGE
 template <class Addr, class Base>
 void get_op_usage(
     bool                                        conditional_skip    ,
     bool                                        compare_op          ,
     bool                                        print_for_op        ,
+    bool                                        cumulative_sum_op   ,
     const player<Base>*                         play                ,
     const play::const_random_iterator<Addr>&    random_itr          ,
     const pod_vector<size_t>&                   dep_taddr           ,
     pod_vector<addr_t>&                         cexp2op             ,
-    sparse_list&                                cexp_set            ,
+    sparse::list_setvec&                        cexp_set            ,
     pod_vector<bool>&                           vecad_used          ,
     pod_vector<usage_t>&                        op_usage            )
+// END_PROTOTYPE
 {
     CPPAD_ASSERT_UNKNOWN( cexp_set.n_set()  == 0 );
     CPPAD_ASSERT_UNKNOWN( vecad_used.size() == 0 );
@@ -219,7 +275,7 @@ void get_op_usage(
     //
     // initialize mapping from variable index to operator index
     CPPAD_ASSERT_UNKNOWN(
-        size_t( std::numeric_limits<addr_t>::max() ) >= num_op
+        size_t( (std::numeric_limits<addr_t>::max)() ) >= num_op
     );
     // -----------------------------------------------------------------------
     // information about current operator
@@ -240,14 +296,15 @@ void get_op_usage(
     vector<bool>         depend_x;  // arguments that are used
     //
     // parameter information (used by atomic function calls)
+# ifndef NDEBUG
     size_t num_par = play->num_par_rec();
-    const Base* parameter = CPPAD_NULL;
-    if( num_par > 0 )
-        parameter = play->GetPar();
+# endif
+    CPPAD_ASSERT_UNKNOWN( num_par > 0 )
+    const Base* parameter = play->GetPar();
     // -----------------------------------------------------------------------
     // vecad information
-    size_t num_vecad      = play->num_vecad_vec_rec();
-    size_t num_vecad_ind  = play->num_vec_ind_rec();
+    size_t num_vecad      = play->num_var_vecad_rec();
+    size_t num_vecad_ind  = play->num_var_vecad_ind_rec();
     //
     vecad_used.resize(num_vecad);
     for(size_t i = 0; i < num_vecad; i++)
@@ -315,6 +372,10 @@ void get_op_usage(
     i_op = num_op;
     while(i_op != 0 )
     {   --i_op;
+        if( num_set > 0 )
+        {   // no more elements will be added to this set
+            cexp_set.process_post(i_op);
+        }
         //
         // this operator information
         random_itr.op_info(i_op, op, arg, i_var);
@@ -323,7 +384,7 @@ void get_op_usage(
         // (This only makes sense when NumRes(op) > 0.)
         usage_t use_result = op_usage[i_op];
         //
-        bool sum_op = false;
+        bool check_csum = false;
         switch( op )
         {
             // =============================================================
@@ -332,7 +393,7 @@ void get_op_usage(
 
             // Only one variable with index arg[0]
             case SubvpOp:
-            sum_op = true;
+            check_csum = cumulative_sum_op;
             //
             case AbsOp:
             case AcosOp:
@@ -345,6 +406,7 @@ void get_op_usage(
             case CoshOp:
             case DivvpOp:
             case ErfOp:
+            case ErfcOp:
             case ExpOp:
             case Expm1Op:
             case LogOp:
@@ -361,7 +423,7 @@ void get_op_usage(
             if( use_result != usage_t(no_usage) )
             {   size_t j_op = random_itr.var2op(size_t(arg[0]));
                 op_inc_arg_usage(
-                    play, sum_op, i_op, j_op, op_usage, cexp_set
+                    play, check_csum, i_op, j_op, op_usage, cexp_set
                 );
             }
             break; // --------------------------------------------
@@ -369,7 +431,7 @@ void get_op_usage(
             // Only one variable with index arg[1]
             case AddpvOp:
             case SubpvOp:
-            sum_op = true;
+            check_csum = cumulative_sum_op;
             //
             case DisOp:
             case DivpvOp:
@@ -380,7 +442,7 @@ void get_op_usage(
             if( use_result != usage_t(no_usage) )
             {   size_t j_op = random_itr.var2op(size_t(arg[1]));
                 op_inc_arg_usage(
-                    play, sum_op, i_op, j_op, op_usage, cexp_set
+                    play, check_csum, i_op, j_op, op_usage, cexp_set
                 );
             }
             break; // --------------------------------------------
@@ -388,7 +450,7 @@ void get_op_usage(
             // arg[0] and arg[1] are the only variables
             case AddvvOp:
             case SubvvOp:
-            sum_op = true;
+            check_csum = cumulative_sum_op;
             //
             case DivvvOp:
             case MulvvOp:
@@ -399,7 +461,7 @@ void get_op_usage(
             {   for(size_t i = 0; i < 2; i++)
                 {   size_t j_op = random_itr.var2op(size_t(arg[i]));
                     op_inc_arg_usage(
-                        play, sum_op, i_op, j_op, op_usage, cexp_set
+                        play, check_csum, i_op, j_op, op_usage, cexp_set
                     );
                 }
             }
@@ -419,14 +481,14 @@ void get_op_usage(
                 if( arg[1] & 1 )
                 {   size_t j_op = random_itr.var2op(size_t(arg[2]));
                     op_inc_arg_usage(
-                        play, sum_op, i_op, j_op, op_usage, cexp_set
+                        play, check_csum, i_op, j_op, op_usage, cexp_set
                     );
                 }
                 // propgate from result to right argument
                 if( arg[1] & 2 )
                 {   size_t j_op = random_itr.var2op(size_t(arg[3]));
                     op_inc_arg_usage(
-                            play, sum_op, i_op, j_op, op_usage, cexp_set
+                            play, check_csum, i_op, j_op, op_usage, cexp_set
                     );
                 }
                 // are if_true and if_false cases the same variable
@@ -440,14 +502,14 @@ void get_op_usage(
                     bool can_skip = conditional_skip & (! same_variable);
                     can_skip     &= op_usage[j_op] == usage_t(no_usage);
                     op_inc_arg_usage(
-                        play, sum_op, i_op, j_op, op_usage, cexp_set
+                        play, check_csum, i_op, j_op, op_usage, cexp_set
                     );
                     if( can_skip )
                     {   // j_op corresponds to the value used when the
                         // comparison result is true. It can be skipped when
                         // the comparison is false (0).
                         size_t element = 2 * cexp_index + 0;
-                        cexp_set.add_element(j_op, element);
+                        cexp_set.post_element(j_op, element);
                         //
                         op_usage[j_op] = usage_t(yes_usage);
                     }
@@ -459,14 +521,14 @@ void get_op_usage(
                     bool can_skip = conditional_skip & (! same_variable);
                     can_skip     &= op_usage[j_op] == usage_t(no_usage);
                     op_inc_arg_usage(
-                        play, sum_op, i_op, j_op, op_usage, cexp_set
+                        play, check_csum, i_op, j_op, op_usage, cexp_set
                     );
                     if( can_skip )
                     {   // j_op corresponds to the value used when the
                         // comparison result is false. It can be skipped when
                         // the comparison is true (0).
                         size_t element = 2 * cexp_index + 1;
-                        cexp_set.add_element(j_op, element);
+                        cexp_set.post_element(j_op, element);
                         //
                         op_usage[j_op] = usage_t(yes_usage);
                     }
@@ -496,14 +558,14 @@ void get_op_usage(
                 {   // arg[1] is a variable
                     size_t j_op = random_itr.var2op(size_t(arg[1]));
                     op_inc_arg_usage(
-                        play, sum_op, i_op, j_op, op_usage, cexp_set
+                        play, check_csum, i_op, j_op, op_usage, cexp_set
                     );
                 }
                 if( arg[0] & 2 )
                 {   // arg[3] is a variable
                     size_t j_op = random_itr.var2op(size_t(arg[3]));
                     op_inc_arg_usage(
-                        play, sum_op, i_op, j_op, op_usage, cexp_set
+                        play, check_csum, i_op, j_op, op_usage, cexp_set
                     );
                 }
             }
@@ -524,7 +586,7 @@ void get_op_usage(
                 //
                 size_t j_op = random_itr.var2op(size_t(arg[1]));
                 op_inc_arg_usage(
-                    play, sum_op, i_op, j_op, op_usage, cexp_set
+                    play, check_csum, i_op, j_op, op_usage, cexp_set
                 );
             }
             break; // ----------------------------------------------
@@ -538,7 +600,7 @@ void get_op_usage(
                 //
                 size_t j_op = random_itr.var2op(size_t(arg[0]));
                 op_inc_arg_usage(
-                    play, sum_op, i_op, j_op, op_usage, cexp_set
+                    play, check_csum, i_op, j_op, op_usage, cexp_set
                 );
             }
             break; // ----------------------------------------------
@@ -555,7 +617,7 @@ void get_op_usage(
                 for(size_t i = 0; i < 2; i++)
                 {   size_t j_op = random_itr.var2op(size_t(arg[i]));
                     op_inc_arg_usage(
-                        play, sum_op, i_op, j_op, op_usage, cexp_set
+                        play, check_csum, i_op, j_op, op_usage, cexp_set
                     );
                 }
             }
@@ -619,10 +681,12 @@ void get_op_usage(
                 for(size_t i = 5; i < size_t(arg[2]); i++)
                 {   size_t j_op = random_itr.var2op(size_t(arg[i]));
                     op_inc_arg_usage(
-                        play, sum_op, i_op, j_op, op_usage, cexp_set
+                        play, check_csum, i_op, j_op, op_usage, cexp_set
                     );
                 }
             }
+            break;
+
             // =============================================================
             // user defined atomic operators
             // ============================================================
@@ -646,8 +710,10 @@ void get_op_usage(
                 );
 # ifndef NDEBUG
                 if( cexp_set.n_set() > 0 )
-                {   sparse_list_const_iterator itr(cexp_set, last_atom_i_op);
-                    CPPAD_ASSERT_UNKNOWN( *itr == cexp_set.end() );
+                {   cexp_set.process_post(last_atom_i_op);
+                    CPPAD_ASSERT_UNKNOWN(
+                        cexp_set.number_elements(last_atom_i_op) == 0
+                    );
                 }
 # endif
                 //
@@ -686,7 +752,7 @@ void get_op_usage(
                         {   CPPAD_ASSERT_UNKNOWN( atom_ix[j] > 0 );
                             if( depend_x[j] )
                             {   size_t j_op = random_itr.var2op(atom_ix[j]);
-                                op_inc_arg_usage(play, sum_op,
+                                op_inc_arg_usage(play, check_csum,
                                     last_atom_i_op, j_op, op_usage, cexp_set
                                 );
                             }
@@ -695,7 +761,9 @@ void get_op_usage(
                 }
                 // copy set infomation from last to first
                 if( cexp_set.n_set() > 0 )
+                {   cexp_set.process_post(last_atom_i_op);
                     cexp_set.assignment(i_op, last_atom_i_op, cexp_set);
+                }
                 // copy usage information from last to first
                 op_usage[i_op] = op_usage[last_atom_i_op];
             }
@@ -755,7 +823,7 @@ void get_op_usage(
             if( use_result )
             {   depend_y[atom_i] = true;
                 op_inc_arg_usage(
-                    play, sum_op, i_op, last_atom_i_op, op_usage, cexp_set
+                    play, check_csum, i_op, last_atom_i_op, op_usage, cexp_set
                 );
             }
             break; // --------------------------------------------------------

@@ -1,7 +1,7 @@
 # ifndef CPPAD_LOCAL_OPTIMIZE_GET_DYN_PREVIOUS_HPP
 # define CPPAD_LOCAL_OPTIMIZE_GET_DYN_PREVIOUS_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-19 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -180,7 +180,7 @@ void get_dyn_previous(
     // ----------------------------------------------------------------------
     // compute dyn_previous
     // ----------------------------------------------------------------------
-    sparse_list  hash_table_dyn;
+    sparse::list_setvec  hash_table_dyn;
     hash_table_dyn.resize(CPPAD_HASH_TABLE_SIZE, num_dynamic_par);
     //
     // Initialize in dyn_par_arg
@@ -245,6 +245,7 @@ void get_dyn_previous(
             case cos_dyn:
             case cosh_dyn:
             case erf_dyn:
+            case erfc_dyn:
             case exp_dyn:
             case expm1_dyn:
             case fabs_dyn:
@@ -276,7 +277,7 @@ void get_dyn_previous(
                 );
                 //
                 // iterator for the set with this hash code
-                sparse_list_const_iterator itr(hash_table_dyn, code);
+                sparse::list_setvec_const_iterator itr(hash_table_dyn, code);
                 //
                 // check for a match
                 count = 0;
@@ -307,7 +308,9 @@ void get_dyn_previous(
                     {   // restart list for this hash code
                         hash_table_dyn.clear(code);
                     }
-                    // add the entry to hash table
+                    // Add this entry to hash table.
+                    // Not using post_element becasue we need to iterate for
+                    // this code before adding another element for this code.
                     hash_table_dyn.add_element(code, i_dyn);
                 }
             }
@@ -342,7 +345,7 @@ void get_dyn_previous(
                 );
                 //
                 // iterator for the set with this hash code
-                sparse_list_const_iterator itr(hash_table_dyn, code);
+                sparse::list_setvec_const_iterator itr(hash_table_dyn, code);
                 //
                 // check for a match
                 count = 0;
@@ -377,7 +380,7 @@ void get_dyn_previous(
                 );
                 //
                 // iterator for the set with this hash code
-                sparse_list_const_iterator itr(hash_table_dyn, code_swp);
+                sparse::list_setvec_const_iterator itr(hash_table_dyn, code_swp);
                 //
                 // check for a match
                 while( ! match && *itr != num_dynamic_par )
@@ -407,7 +410,9 @@ void get_dyn_previous(
                 {   // restart list for this hash code
                     hash_table_dyn.clear(code);
                 }
-                // add the entry to hash table
+                // Add the entry to hash table
+                // Not using post_element becasue we need to iterate for
+                // this code before adding another element for this code.
                 hash_table_dyn.add_element(code, i_dyn);
             }
 
@@ -415,7 +420,7 @@ void get_dyn_previous(
             // skipping these cases for now
             case dis_dyn:
             case cond_exp_dyn:
-            case call_dyn:
+            case atom_dyn:
             case result_dyn:
             break;
 
@@ -427,8 +432,9 @@ void get_dyn_previous(
             break;
         }
         i_arg += num_arg_dyn(op);
-        if( op == call_dyn )
-        {   size_t n     = size_t( dyn_par_arg[i_arg + 1] );
+        if( op == atom_dyn )
+        {   CPPAD_ASSERT_UNKNOWN( num_arg_dyn(op) == 0 );
+            size_t n     = size_t( dyn_par_arg[i_arg + 1] );
             size_t m     = size_t( dyn_par_arg[i_arg + 2] );
             size_t n_arg = 5 + n + m;
             i_arg += n_arg;

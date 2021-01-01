@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_COND_EXP_HPP
 # define CPPAD_CORE_COND_EXP_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -225,14 +225,14 @@ AD<Base> CondExpOp(
         return result;
     }
 
-    // must use CondExp incase Base is an AD type and recording
+    // must use CondExp in case Base is an AD type and recording
     result.value_ = CondExpOp(cop,
         left.value_, right.value_, if_true.value_, if_false.value_);
 
     local::ADTape<Base> *tape = AD<Base>::tape_ptr();
 
     // add this operation to the tape
-    if( tape != CPPAD_NULL ) tape->Rec_.cond_exp(
+    if( tape != nullptr ) tape->Rec_.cond_exp(
             tape->id_, cop, result, left, right, if_true, if_false
     );
 

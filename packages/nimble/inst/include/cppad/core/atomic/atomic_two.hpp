@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_ATOMIC_ATOMIC_TWO_HPP
 # define CPPAD_CORE_ATOMIC_ATOMIC_TWO_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -139,7 +139,7 @@ $end
 
 # include <set>
 # include <cppad/core/cppad_assert.hpp>
-# include <cppad/local/sparse_internal.hpp>
+# include <cppad/local/sparse/internal.hpp>
 # include <cppad/local/atomic_index.hpp>
 
 // needed before one can use in_parallel
@@ -398,9 +398,10 @@ public:
         const vector<Base>&              x                ,
         const local::pod_vector<size_t>& x_index          ,
         const local::pod_vector<size_t>& y_index          ,
-        const InternalSparsity&          for_jac_sparsity ,
+        size_t                           np1              ,
+        size_t                           numvar           ,
         const InternalSparsity&          rev_jac_sparsity ,
-        InternalSparsity&                for_hes_sparsity
+        InternalSparsity&                for_sparsity
     );
     // deprecated versions
     virtual bool for_sparse_hes(
@@ -511,11 +512,11 @@ public:
     {   return sparsity_; }
 
     /// Name corresponding to a atomic_base object
-    const std::string afun_name(void) const
+    const std::string atomic_name(void) const
     {   bool        set_null = false;
         size_t      type  = 0;          // set to avoid warning
         std::string name;
-        void*       v_ptr = CPPAD_NULL; // set to avoid warning
+        void*       v_ptr = nullptr; // set to avoid warning
         local::atomic_index<Base>(set_null, index_, type, &name, v_ptr);
         CPPAD_ASSERT_UNKNOWN( type == 2 );
         return name;
@@ -524,24 +525,20 @@ public:
     /// has dropped out of scope by setting its pointer to null
     virtual ~atomic_base(void)
     {   // change object pointer to null, but leave name for error reporting
-      std::cout<<"entering destructor for atomic_base"<<std::endl;
         bool         set_null = true;
         size_t       type  = 0;          // set to avoid warning
-        std::string* name  = CPPAD_NULL;
-        void*        v_ptr = CPPAD_NULL; // set to avoid warning
-      std::cout<<"calling atomic_index for ~atomic_base"<<std::endl;
+        std::string* name  = nullptr;
+        void*        v_ptr = nullptr; // set to avoid warning
         local::atomic_index<Base>(set_null, index_, type, name, v_ptr);
-      std::cout<<"done calling atomic_index for ~atomic_base"<<std::endl;
         CPPAD_ASSERT_UNKNOWN( type == 2 );
         //
         // free temporary work memory
         for(size_t thread = 0; thread < CPPAD_MAX_NUM_THREADS; thread++)
             free_work(thread);
-      std::cout<<"done in destructor for atomic_base"<<std::endl;
     }
     /// allocates work_ for a specified thread
     void allocate_work(size_t thread)
-    {   if( work_[thread] == CPPAD_NULL )
+    {   if( work_[thread] == nullptr )
         {   // allocate the raw memory
             size_t min_bytes = sizeof(work_struct);
             size_t num_bytes;
@@ -555,7 +552,7 @@ public:
     }
     /// frees work_ for a specified thread
     void free_work(size_t thread)
-    {   if( work_[thread] != CPPAD_NULL )
+    {   if( work_[thread] != nullptr )
         {   // call destructor
             work_[thread]->~work_struct();
             // return memory to avialable pool for this thread
@@ -563,7 +560,7 @@ public:
                 reinterpret_cast<void*>(work_[thread])
             );
             // mark this thread as not allocated
-            work_[thread] = CPPAD_NULL;
+            work_[thread] = nullptr;
         }
         return;
     }
@@ -571,8 +568,8 @@ public:
     static atomic_base* class_object(size_t index)
     {   bool         set_null = false;
         size_t       type  = 0;          // set to avoid warning
-        std::string* name  = CPPAD_NULL;
-        void*        v_ptr = CPPAD_NULL; // set to avoid warning
+        std::string* name  = nullptr;
+        void*        v_ptr = nullptr; // set to avoid warning
         local::atomic_index<Base>(set_null, index, type, name, v_ptr);
         CPPAD_ASSERT_UNKNOWN( type == 2 );
         return reinterpret_cast<atomic_base*>( v_ptr );
@@ -582,7 +579,7 @@ public:
     {   bool        set_null = false;
         size_t      type  = 0;          // set to avoid warning
         std::string name;
-        void*       v_ptr = CPPAD_NULL; // set to avoid warning
+        void*       v_ptr = nullptr; // set to avoid warning
         local::atomic_index<Base>(set_null, index, type, &name, v_ptr);
         CPPAD_ASSERT_UNKNOWN( type == 2 );
         return name;

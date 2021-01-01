@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_SPARSE_JAC_HPP
 # define CPPAD_CORE_SPARSE_JAC_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-19 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -211,7 +211,7 @@ They return $code true$$, if they succeed, and $code false$$ otherwise.
 $end
 */
 # include <cppad/core/cppad_assert.hpp>
-# include <cppad/local/sparse_internal.hpp>
+# include <cppad/local/sparse/internal.hpp>
 # include <cppad/local/color_general.hpp>
 # include <cppad/utility/vector.hpp>
 
@@ -349,9 +349,9 @@ size_t ADFun<Base,RecBase>::sparse_jac_for(
         bool transpose   = true;
         bool zero_empty  = false;
         bool input_empty = true;
-        local::sparse_list pattern_transpose;
+        local::sparse::list_setvec pattern_transpose;
         pattern_transpose.resize(n, m);
-        local::set_internal_sparsity(zero_empty, input_empty,
+        local::sparse::set_internal_pattern(zero_empty, input_empty,
             transpose, internal_index, pattern_transpose, pattern
         );
         //
@@ -390,7 +390,7 @@ size_t ADFun<Base,RecBase>::sparse_jac_for(
     //
     size_t n_color = 1;
     for(size_t j = 0; j < n; j++) if( color[j] < n )
-        n_color = std::max(n_color, color[j] + 1);
+        n_color = std::max<size_t>(n_color, color[j] + 1);
     //
     // initialize the return Jacobian values as zero
     for(size_t k = 0; k < K; k++)
@@ -403,7 +403,7 @@ size_t ADFun<Base,RecBase>::sparse_jac_for(
     //
     while( color_count < n_color )
     {   // number of colors that will be in this group
-        size_t group_size = std::min(group_max, n_color - color_count);
+        size_t group_size = std::min<size_t>(group_max, n_color - color_count);
         //
         // forward mode values for independent and dependent variables
         BaseVector dx(n * group_size), dy(m * group_size);
@@ -542,9 +542,9 @@ size_t ADFun<Base,RecBase>::sparse_jac_rev(
         bool transpose   = false;
         bool zero_empty  = false;
         bool input_empty = true;
-        local::sparse_list internal_pattern;
+        local::sparse::list_setvec internal_pattern;
         internal_pattern.resize(m, n);
-        local::set_internal_sparsity(zero_empty, input_empty,
+        local::sparse::set_internal_pattern(zero_empty, input_empty,
             transpose, internal_index, internal_pattern, pattern
         );
         //
@@ -582,7 +582,7 @@ size_t ADFun<Base,RecBase>::sparse_jac_rev(
     //
     size_t n_color = 1;
     for(size_t i = 0; i < m; i++) if( color[i] < m )
-        n_color = std::max(n_color, color[i] + 1);
+        n_color = std::max<size_t>(n_color, color[i] + 1);
     //
     // initialize the return Jacobian values as zero
     for(size_t k = 0; k < K; k++)

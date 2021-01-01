@@ -1,7 +1,7 @@
 # ifndef CPPAD_LOCAL_AD_TAPE_HPP
 # define CPPAD_LOCAL_AD_TAPE_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -65,16 +65,33 @@ class ADTape {
         (const AD<Base> &u);
     // operators -----------------------------------------------------------
     // arithematic binary operators
+# if _MSC_VER
+    // see https://stackoverflow.com/questions/63288453
+    template <class Type> friend AD<Type> CppAD::operator * <Type>
+        (const AD<Type> &left, const AD<Type> &right);
+# else
+    friend AD<Base> CppAD::operator * <Base>
+        (const AD<Base> &left, const AD<Base> &right);
+# endif
     friend AD<Base> CppAD::operator + <Base>
         (const AD<Base> &left, const AD<Base> &right);
     friend AD<Base> CppAD::operator - <Base>
-        (const AD<Base> &left, const AD<Base> &right);
-    friend AD<Base> CppAD::operator * <Base>
         (const AD<Base> &left, const AD<Base> &right);
     friend AD<Base> CppAD::operator / <Base>
         (const AD<Base> &left, const AD<Base> &right);
 
     // comparison operators
+# if _MSC_VER
+    template <class Type> friend bool CppAD::operator == <Type>
+        (const AD<Type> &left, const AD<Type> &right);
+    template <class Type> friend bool CppAD::operator != <Type>
+        (const AD<Type> &left, const AD<Type> &right);
+# else
+    friend bool CppAD::operator == <Base>
+        (const AD<Base> &left, const AD<Base> &right);
+    friend bool CppAD::operator != <Base>
+        (const AD<Base> &left, const AD<Base> &right);
+# endif
     friend bool CppAD::operator < <Base>
         (const AD<Base> &left, const AD<Base> &right);
     friend bool CppAD::operator <= <Base>
@@ -82,10 +99,6 @@ class ADTape {
     friend bool CppAD::operator > <Base>
         (const AD<Base> &left, const AD<Base> &right);
     friend bool CppAD::operator >= <Base>
-        (const AD<Base> &left, const AD<Base> &right);
-    friend bool CppAD::operator == <Base>
-        (const AD<Base> &left, const AD<Base> &right);
-    friend bool CppAD::operator != <Base>
         (const AD<Base> &left, const AD<Base> &right);
     // ======================================================================
 
@@ -119,12 +132,6 @@ private:
         const AD<Base> &right         ,
         const AD<Base> &trueCase      ,
         const AD<Base> &falseCase
-    );
-
-    // place a VecAD object in the tape
-    size_t AddVec(
-        size_t                         length,
-        const pod_vector_maybe<Base>&  data
     );
 
 public:
@@ -172,49 +179,6 @@ addr_t ADTape<Base>::RecordParOp(const AD<Base>& y)
         Rec_.PutArg(ind);
     }
     return z_taddr;
-}
-
-/*!
-Put initialization for a VecAD<Base> object in the tape.
-
-This routine should be called once for each VecAD object when just
-before it changes from a parameter to a variable.
-
-\param length
-size of the <tt>VecAD<Base></tt> object.
-
-\param data
-initial values for the <tt>VecAD<Base></tt> object
-(values before it becomes a variable).
-
-\return
-index of the start of this vector in the list of vector indices.
-The value for this vector index is the length of the vector.
-There are length indices following for this vector.
-The values for these vector indices are the corresponding
-parameter indices in the tape for the initial value of the corresponding
-vec_ad element.
-
-\par 2DO
-All these operates are preformed in Rec_, so we should
-move this routine from <tt>ADTape<Base></tt> to <tt>recorder<Base></tt>.
-*/
-template <class Base>
-size_t ADTape<Base>::AddVec(size_t length, const pod_vector_maybe<Base>& data)
-{   CPPAD_ASSERT_UNKNOWN( length > 0 );
-
-    // store the length in VecInd
-    addr_t start = Rec_.PutVecInd( addr_t(length) );
-
-    // store indices of the values in VecInd
-    for(size_t i = 0; i < length; i++)
-    {
-        addr_t value_index = Rec_.put_con_par( data[i] );
-        Rec_.PutVecInd( value_index );
-    }
-
-    // return the taddr of the length (where the vector starts)
-    return size_t(start);
 }
 
 } } // END_CPPAD_LOCAL_NAMESPACE

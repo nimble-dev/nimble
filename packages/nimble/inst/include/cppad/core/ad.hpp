@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_AD_HPP
 # define CPPAD_CORE_AD_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -18,9 +18,9 @@ in the Eclipse Public License, Version 2.0 are satisfied:
 
 // define the template classes that are used by the AD template class
 # include <cppad/local/op_code_dyn.hpp>
-# include <cppad/local/op_code.hpp>
+# include <cppad/local/op_code_var.hpp>
 # include <cppad/core/ad_type.hpp>
-# include <cppad/local/recorder.hpp>
+# include <cppad/local/record/recorder.hpp>
 # include <cppad/local/play/player.hpp>
 # include <cppad/local/ad_tape.hpp>
 
@@ -245,20 +245,16 @@ public:
     AD sqrt_me(void) const;
     AD tan_me(void) const;
     AD tanh_me(void) const;
-# if CPPAD_USE_CPLUSPLUS_2011
-    AD erf_me(void) const;
     AD asinh_me(void) const;
     AD acosh_me(void) const;
     AD atanh_me(void) const;
+    AD erf_me(bool complemnet) const;
     AD expm1_me(void) const;
     AD log1p_me(void) const;
-# endif
 
     // ----------------------------------------------------------
     // static public member functions
 
-#include "nimble_ADbase_extensions.hpp"
-  
     // abort current AD<Base> recording
     static void        abort_recording(void);
 

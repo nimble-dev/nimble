@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_TAPE_LINK_HPP
 # define CPPAD_CORE_TAPE_LINK_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -20,9 +20,6 @@ in the Eclipse Public License, Version 2.0 are satisfied:
 # include <cppad/utility/thread_alloc.hpp>
 
 namespace CppAD { // BEGIN_CPPAD_NAMESPACE
-
-#include "nimble_ADbase_tape_link_extensions.hpp"
-  
 /*!
 \file tape_link.hpp
 Routines that Link AD<Base> and local::ADTape<Base> Objects.
@@ -95,7 +92,7 @@ is the base type corresponding to AD<Base> operations.
 \return
 is a pointer to the tape that is currently recording AD<Base> operations
 for the current thread.
-If this value is CPPAD_NULL, there is no tape currently
+If this value is nullptr, there is no tape currently
 recording AD<Base> operations for this thread.
 */
 template <class Base>
@@ -126,7 +123,7 @@ tape for this thread which is a user error.
 
 \return
 is a pointer to the tape that is currently recording AD<Base> operations
-for the current thread (and it is not CPPAD_NULL).
+for the current thread (and it is not nullptr).
 
 \par Restrictions
 This routine should only be called if there is a tape recording operaitons
@@ -140,7 +137,7 @@ local::ADTape<Base>* AD<Base>::tape_ptr(tape_id_t tape_id)
         "Attempt to use an AD variable with two different threads."
     );
     CPPAD_ASSERT_UNKNOWN( tape_id == *tape_id_ptr(thread) );
-    CPPAD_ASSERT_UNKNOWN( *tape_handle(thread) != CPPAD_NULL );
+    CPPAD_ASSERT_UNKNOWN( *tape_handle(thread) != nullptr );
     return *tape_handle(thread);
 }
 
@@ -174,7 +171,7 @@ The value of <tt>*tape_id_ptr(thread)</tt> will be advanced by
 
 \return
 - <tt>job == new_tape_manage</tt>: a pointer to the new tape is returned.
-- <tt>job == delete_tape_manage</tt>: the value CPPAD_NULL is returned.
+- <tt>job == delete_tape_manage</tt>: the value nullptr is returned.
 */
 template <class Base>
 local::ADTape<Base>*  AD<Base>::tape_manage(tape_manage_enum job)
@@ -193,7 +190,7 @@ local::ADTape<Base>*  AD<Base>::tape_manage(tape_manage_enum job)
     if( job == new_tape_manage )
     {
         // tape for this thread must be null at the start
-        CPPAD_ASSERT_UNKNOWN( *tape_h  == CPPAD_NULL );
+        CPPAD_ASSERT_UNKNOWN( *tape_h  == nullptr );
 
         // allocate separate memroy to avoid false sharing
         *tape_h = new local::ADTape<Base>();
@@ -204,7 +201,7 @@ local::ADTape<Base>*  AD<Base>::tape_manage(tape_manage_enum job)
         {   size_t new_tape_id = thread + CPPAD_MAX_NUM_THREADS;
             CPPAD_ASSERT_KNOWN(
                 size_t( std::numeric_limits<tape_id_t>::max() ) >= new_tape_id,
-                "cppad_tape_id_type maximum value has been execeeded"
+                "cppad_tape_id_type maximum value has been exceeded"
             );
             *tape_id_p = static_cast<tape_id_t>( new_tape_id );
         }
@@ -219,9 +216,9 @@ local::ADTape<Base>*  AD<Base>::tape_manage(tape_manage_enum job)
     // delete_tape_manage
     if( job == delete_tape_manage )
     {   // delete this tape
-        CPPAD_ASSERT_UNKNOWN( *tape_h  != CPPAD_NULL );
+        CPPAD_ASSERT_UNKNOWN( *tape_h  != nullptr );
         delete *tape_h;
-        *tape_h = CPPAD_NULL;
+        *tape_h = nullptr;
         //
         // advance tape_id so that all AD<Base> variables become parameters
         CPPAD_ASSERT_KNOWN(
@@ -251,7 +248,7 @@ The current thread must be given by
 \return
 is a pointer to the tape that is currently recording AD<Base> operations
 for the current thread.
-This value must not be CPPAD_NULL; i.e., there must be a tape currently
+This value must not be nullptr; i.e., there must be a tape currently
 recording AD<Base> operations for this thread.
 */
 
@@ -260,7 +257,7 @@ local::ADTape<Base> *AD<Base>::tape_this(void) const
 {
     size_t thread = size_t( tape_id_ % CPPAD_MAX_NUM_THREADS );
     CPPAD_ASSERT_UNKNOWN( tape_id_ == *tape_id_ptr(thread) );
-    CPPAD_ASSERT_UNKNOWN( *tape_handle(thread) != CPPAD_NULL );
+    CPPAD_ASSERT_UNKNOWN( *tape_handle(thread) != nullptr );
     return *tape_handle(thread);
 }
 
