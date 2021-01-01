@@ -1002,7 +1002,7 @@ sampler_langevin <- nimbleFunction(
             scaleVec     <<- matrix(1, nrow = d, ncol = 1)
             epsilonVec   <<- scale * scaleVec
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 
@@ -1250,8 +1250,7 @@ sampler_HMC <- nimbleFunction(
             nwarmup        <<- nwarmupOrig
         }
     ),
-    enableDerivs = 'inverseTransformStoreCalculate',
-    where = getLoadingNamespace()
+    enableDerivs = 'inverseTransformStoreCalculate'
 )
 
 

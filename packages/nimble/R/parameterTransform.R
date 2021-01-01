@@ -278,6 +278,5 @@ parameterTransform <- nimbleFunction(
         }
     ),
     enableDerivs = list(inverseTransform = list(),
-                        logDetJacobian = list(noDeriv_vars = c('iNode','j','dd','ddm1','i'))),
-    where = getLoadingNamespace()
+                        logDetJacobian = list(noDeriv_vars = c('iNode','j','dd','ddm1','i')))
 )
