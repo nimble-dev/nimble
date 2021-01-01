@@ -108,6 +108,8 @@ struct atomic_index_info {
     void*       ptr;
 };
 
+#include "nimble_atomic_index.hpp"
+    
 // BEGIN_ATOMIC_INDEX
 template <class Base>
 size_t atomic_index(
