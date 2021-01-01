@@ -1,7 +1,7 @@
 # ifndef CPPAD_LOCAL_SWEEP_CALL_ATOMIC_HPP
 # define CPPAD_LOCAL_SWEEP_CALL_ATOMIC_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -73,11 +73,11 @@ void call_atomic_forward(
 {   CPPAD_ASSERT_UNKNOWN( 0 < atom_index );
     bool         set_null = false;
     size_t       type     = 0;          // set to avoid warning
-    std::string* name_ptr = CPPAD_NULL;
-    void*        v_ptr    = CPPAD_NULL; // set to avoid warning
+    std::string* name_ptr = nullptr;
+    void*        v_ptr    = nullptr; // set to avoid warning
     local::atomic_index<RecBase>(set_null, atom_index, type, name_ptr, v_ptr);
 # ifndef NDEBUG
-    bool ok = v_ptr != CPPAD_NULL;
+    bool ok = v_ptr != nullptr;
     if( ok )
     {
         if( type == 2 )
@@ -104,7 +104,7 @@ void call_atomic_forward(
         std::string name;
         local::atomic_index<RecBase>(set_null, atom_index, type, &name, v_ptr);
         std::string msg = name;
-        if( v_ptr == CPPAD_NULL )
+        if( v_ptr == nullptr )
             msg += ": this atomic_three function has been deleted";
         else
             msg += ": atomic forward returned false";
@@ -182,11 +182,11 @@ void call_atomic_reverse(
 {   CPPAD_ASSERT_UNKNOWN( 0 < atom_index );
     bool         set_null = false;
     size_t       type     = 0;          // set to avoid warning
-    std::string* name_ptr = CPPAD_NULL;
-    void*        v_ptr    = CPPAD_NULL; // set to avoid warning
+    std::string* name_ptr = nullptr;
+    void*        v_ptr    = nullptr; // set to avoid warning
     local::atomic_index<RecBase>(set_null, atom_index, type, name_ptr, v_ptr);
 # ifndef NDEBUG
-    bool ok = v_ptr != CPPAD_NULL;
+    bool ok = v_ptr != nullptr;
     if( ok )
     {
         if( type == 2 )
@@ -212,7 +212,7 @@ void call_atomic_reverse(
         std::string name;
         local::atomic_index<RecBase>(set_null, atom_index, type, &name, v_ptr);
         std::string msg = name;
-        if( v_ptr == CPPAD_NULL )
+        if( v_ptr == nullptr )
             msg += ": this atomic_three function has been deleted";
         else
             msg += ": atomic reverse returned false";
@@ -247,7 +247,7 @@ and to this atomic function.
 
 \tparam InternalSparsity
 is the internal type used to represent sparsity; i.e.,
-sparse_pack or sparse_list.
+sparse::pack_setvec or sparse::list_setvec.
 
 \param atom_index [in]
 is the index, in local::atomic_index, corresponding to this atomic function.
@@ -292,11 +292,11 @@ void call_atomic_for_jac_sparsity(
 {   CPPAD_ASSERT_UNKNOWN( 0 < atom_index );
     bool         set_null = false;
     size_t       type     = 0;          // set to avoid warning
-    std::string* name_ptr = CPPAD_NULL;
-    void*        v_ptr    = CPPAD_NULL; // set to avoid warning
+    std::string* name_ptr = nullptr;
+    void*        v_ptr    = nullptr; // set to avoid warning
     local::atomic_index<RecBase>(set_null, atom_index, type, name_ptr, v_ptr);
 # ifndef NDEBUG
-    bool ok = v_ptr != CPPAD_NULL;
+    bool ok = v_ptr != nullptr;
     if ( ok )
     {
         if( type == 2 )
@@ -323,7 +323,7 @@ void call_atomic_for_jac_sparsity(
             set_null, atom_index, type, &name, v_ptr
         );
         std::string msg = name;
-        if( v_ptr == CPPAD_NULL )
+        if( v_ptr == nullptr )
             msg += ": this atomic_three function has been deleted";
         else
             msg += ": atomic jac_sparsity returned false";
@@ -358,7 +358,7 @@ and to this atomic function.
 
 \tparam InternalSparsity
 is the internal type used to represent sparsity; i.e.,
-sparse_pack or sparse_list.
+sparse::pack_setvec or sparse::list_setvec.
 
 \param atom_index [in]
 is the index, in local::atomic_index, corresponding to this atomic function.
@@ -403,11 +403,11 @@ void call_atomic_rev_jac_sparsity(
 {   CPPAD_ASSERT_UNKNOWN( 0 < atom_index );
     bool         set_null = false;
     size_t       type     = 0;          // set to avoid warning
-    std::string* name_ptr = CPPAD_NULL;
-    void*        v_ptr    = CPPAD_NULL; // set to avoid warning
+    std::string* name_ptr = nullptr;
+    void*        v_ptr    = nullptr; // set to avoid warning
     local::atomic_index<RecBase>(set_null, atom_index, type, name_ptr, v_ptr);
 # ifndef NDEBUG
-    bool ok = v_ptr != CPPAD_NULL;
+    bool ok = v_ptr != nullptr;
     if( ok )
     {
         if( type == 2 )
@@ -434,7 +434,7 @@ void call_atomic_rev_jac_sparsity(
             set_null, atom_index, type, &name, v_ptr
         );
         std::string msg = name;
-        if( v_ptr == CPPAD_NULL )
+        if( v_ptr == nullptr )
             msg += ": this atomic_three function has been deleted";
         else
             msg += ": atomic jac_sparsity returned false";
@@ -460,53 +460,114 @@ void call_atomic_rev_jac_sparsity(
 # endif
 }
 // ----------------------------------------------------------------------------
-/*!
-Forward Hessian sparsity callback to atomic functions.
+/*
+$begin call_atomic_for_hes_sparsiy$$
+$spell
+    hes
+    np
+    numvar
+    jac
+    Jacobian
+    afun
+    setvec
+$$
 
-\tparam Base
-is the type corresponding to parameter_x
+$section Forward Hessian Sparsity Callback to Atomic Functions.$$
+
+$head Syntax$$
+$codei%call_atomic_for_hes_sparsity(
+    %atom_index%, %atom_old%, %parameter_x%, %type_x%, %x_index%, %y_index%,
+    %np1%, %numvar%, %rev_jac_sparsity%, %for_sparsity%
+)%$$
+
+$head Prototype$$
+$srcthisfile%
+0%// BEGIN_call_atomic_for_hes_sparsity%// END_call_atomic_for_hes_sparsity%1
+%$$
+
+$head C++ Source$$
+The C++ source code corresponding to this operation is a
+$cref/atomic function call/atomic_three/Syntax/Use Atomic Function/$$
+$codei%
+    %afun%(%ax%, %ay%)
+%$$
+We refer to the corresponding function using $latex y = f(x)$$.
+
+$head Base$$
+is the type corresponding to $icode parameter_x$$
 and to this atomic function.
 
-\tparam InternalSparsity
+$head InternalSparsity$$
 is the internal type used to represent sparsity; i.e.,
-sparse_pack or sparse_list.
+$code sparse::pack_setvec$$ or $code sparse::list_setvec$$.
 
-\param atom_index [in]
+$head atom_index$$
 is the index, in local::atomic_index, corresponding to this atomic function.
 
-\param atom_old [in]
+$head atom_old$$
 is the extra id information for this atomic function in the atomic_one case.
 
-\param parameter_x [in]
+$head parameter_x$$
 value of the parameter arguments to the atomic function
 (other arguments have the value nan).
 
-\param type_x [in]
+$head type_x$$
 type for each component of x (not used by atomic_two interface).
 
-\param x_index [in]
+$head x_index$$
 is a mapping from the index of an atomic function argument
 to the corresponding variable on the tape.
+We use $icode m_x$$ to denote the maximum value w.r.t $icode i$$ of
+$icode%x_index%[%i%]%$$.
 
-\param y_index [in]
+$head y_index$$
 is a mapping from the index of an atomic function result
 to the corresponding variable on the tape.
+It should hold that $icode%m_i% < y_index%[%i%]%$$ for all $icode i$$.
 
-\param for_jac_sparsity
-For j = 0, ... , n-1, the sparsity pattern with index x_index[j],
-is the forward Jacobian sparsity for the j-th argument to this atomic function.
+$head np1$$
+This is the number of independent variables plus one;
+i.e. size of $icode x$$ plus one.
 
-\param rev_jac_sparsity
+$head numvar$$
+This is the total number of variables in the tape.
+
+$head rev_jac_sparsity$$
 For i = 0, ... , m-1, the sparsity pattern with index y_index[i],
 is the reverse Jacobian sparsity for the i-th result to this atomic function.
 This shows which components of the result affect the function we are
 computing the Hessian of.
 
-\param for_hes_sparsity
-This is the sparsity pattern for the Hessian. On input, the non-linear
-terms in the atomic fuction have not been included. Upon return, they
-have been included.
+$head for_sparsity$$
+We have the conditions $icode%np1% = %for_sparsity%.end()%$$
+and $icode%for_sparsity%.n_set() = %np1% + %numvar%$$.
+
+$subhead Input Jacobian Sparsity$$
+For $icode%i%= 0, ..., %m_x%$$,
+the $icode%np1%+%i%$$ row of $icode for_sparsity$$ is the Jacobian sparsity
+for the $th i$$ variable. These values do not change.
+Note that $icode%i%=0%$$ corresponds to a parameter and
+the corresponding Jacobian sparsity is empty.
+
+$subhead Input Hessian Sparsity$$
+For $icode%i%=1, ..., %n%$$,
+the $th i$$ row of $icode for_sparsity$$ is the Hessian sparsity
+before including the function $latex y = f(x)$$.
+
+$subhead Output Jacobian Sparsity$$
+For $icode%i%=0, ..., %y_index%.size()%$$,
+row $icode%np1%+%y_index%[%i%]%$$
+of $icode for_sparsity$$ is the Jacobian sparsity
+for the variable with index $icode%y_index%[%i%]%$$.
+
+$subhead Output Hessian Sparsity$$
+For $icode%i%=1, ..., %n%$$,
+the $th i$$ row of $icode for_sparsity$$ is the Hessian sparsity
+after including the function $latex y = f(x)$$.
+
+$end
 */
+// BEGIN_call_atomic_for_hes_sparsity
 template <class Base, class RecBase, class InternalSparsity>
 void call_atomic_for_hes_sparsity(
     size_t                       atom_index        ,
@@ -515,17 +576,22 @@ void call_atomic_for_hes_sparsity(
     const vector<ad_type_enum>&  type_x            ,
     const pod_vector<size_t>&    x_index           ,
     const pod_vector<size_t>&    y_index           ,
-    const InternalSparsity&      for_jac_sparsity  ,
+    size_t                       np1               ,
+    size_t                       numvar            ,
     const InternalSparsity&      rev_jac_sparsity  ,
-    InternalSparsity&            for_hes_sparsity  )
+    InternalSparsity&            for_sparsity      )
+// END_call_atomic_for_hes_sparsity
 {   CPPAD_ASSERT_UNKNOWN( 0 < atom_index );
+    CPPAD_ASSERT_UNKNOWN( for_sparsity.end() == np1 );
+    CPPAD_ASSERT_UNKNOWN( for_sparsity.n_set() == np1 + numvar );
+
     bool         set_null = false;
     size_t       type     = 0;          // set to avoid warning
-    std::string* name_ptr = CPPAD_NULL;
-    void*        v_ptr    = CPPAD_NULL; // set to avoid warning
+    std::string* name_ptr = nullptr;
+    void*        v_ptr    = nullptr; // set to avoid warning
     local::atomic_index<RecBase>(set_null, atom_index, type, name_ptr, v_ptr);
 # ifndef NDEBUG
-    bool ok = v_ptr != CPPAD_NULL;
+    bool ok = v_ptr != nullptr;
     if( ok )
     {
         if( type == 2 )
@@ -536,9 +602,10 @@ void call_atomic_for_hes_sparsity(
                 parameter_x,
                 x_index,
                 y_index,
-                for_jac_sparsity,
+                np1,
+                numvar,
                 rev_jac_sparsity,
-                for_hes_sparsity
+                for_sparsity
             );
         }
         else
@@ -550,9 +617,10 @@ void call_atomic_for_hes_sparsity(
                 type_x,
                 x_index,
                 y_index,
-                for_jac_sparsity,
+                np1,
+                numvar,
                 rev_jac_sparsity,
-                for_hes_sparsity
+                for_sparsity
             );
         }
     }
@@ -563,7 +631,7 @@ void call_atomic_for_hes_sparsity(
             set_null, atom_index, type, &name, v_ptr
         );
         std::string msg = name;
-        if( v_ptr == CPPAD_NULL )
+        if( v_ptr == nullptr )
             msg += ": this atomic_three function has been deleted";
         else
             msg += ": atomic hes_sparsity returned false";
@@ -578,9 +646,10 @@ void call_atomic_for_hes_sparsity(
             parameter_x,
             x_index,
             y_index,
-            for_jac_sparsity,
+            np1,
+            numvar,
             rev_jac_sparsity,
-            for_hes_sparsity
+            for_sparsity
         );
     }
     else
@@ -592,9 +661,10 @@ void call_atomic_for_hes_sparsity(
             type_x,
             x_index,
             y_index,
-            for_jac_sparsity,
+            np1,
+            numvar,
             rev_jac_sparsity,
-            for_hes_sparsity
+            for_sparsity
         );
     }
 # endif
@@ -609,7 +679,7 @@ and to this atomic function.
 
 \tparam InternalSparsity
 is the internal type used to represent sparsity; i.e.,
-sparse_pack or sparse_list.
+sparse::pack_setvec or sparse::list_setvec.
 
 \param atom_index [in]
 is the index, in local::atomic_index, corresponding to this atomic function.
@@ -666,11 +736,11 @@ void call_atomic_rev_hes_sparsity(
 {   CPPAD_ASSERT_UNKNOWN( 0 < atom_index );
     bool         set_null = false;
     size_t       type     = 0;          // set to avoid warning
-    std::string* name_ptr = CPPAD_NULL;
-    void*        v_ptr    = CPPAD_NULL; // set to avoid warning
+    std::string* name_ptr = nullptr;
+    void*        v_ptr    = nullptr; // set to avoid warning
     local::atomic_index<RecBase>(set_null, atom_index, type, name_ptr, v_ptr);
 # ifndef NDEBUG
-    bool ok = v_ptr != CPPAD_NULL;
+    bool ok = v_ptr != nullptr;
     if( ok )
     {
         if( type == 2 )
@@ -708,7 +778,7 @@ void call_atomic_rev_hes_sparsity(
             set_null, atom_index, type, &name, v_ptr
         );
         std::string msg = name;
-        if( v_ptr == CPPAD_NULL )
+        if( v_ptr == nullptr )
             msg += ": this atomic_three function has been deleted";
         else
             msg += ": atomic hes_sparsity returned false";
@@ -779,11 +849,11 @@ void call_atomic_rev_depend(
 {   CPPAD_ASSERT_UNKNOWN( 0 < atom_index );
     bool         set_null = false;
     size_t       type     = 0;          // set to avoid warning
-    std::string* name_ptr = CPPAD_NULL;
-    void*        v_ptr    = CPPAD_NULL; // set to avoid warning
+    std::string* name_ptr = nullptr;
+    void*        v_ptr    = nullptr; // set to avoid warning
     local::atomic_index<RecBase>(set_null, atom_index, type, name_ptr, v_ptr);
 # ifndef NDEBUG
-    bool ok = v_ptr != CPPAD_NULL;
+    bool ok = v_ptr != nullptr;
     if( ok )
     {
         if( type == 2 )
@@ -805,7 +875,7 @@ void call_atomic_rev_depend(
         std::string name;
         local::atomic_index<RecBase>(set_null, atom_index, type, &name, v_ptr);
         std::string msg = name;
-        if( v_ptr == CPPAD_NULL )
+        if( v_ptr == nullptr )
             msg += ": this atomic_three function has been deleted";
         else
             msg += ": atomic rev_depend returned false";

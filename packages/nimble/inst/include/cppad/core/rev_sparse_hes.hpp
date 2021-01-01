@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_REV_SPARSE_HES_HPP
 # define CPPAD_CORE_REV_SPARSE_HES_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-19 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -231,7 +231,7 @@ void ADFun<Base,RecBase>::RevSparseHesCase(
     SetVector&        h                )
 {
     // used to identify the RecBase type in calls to sweeps
-    RecBase not_used_rec_base;
+    RecBase not_used_rec_base(0.0);
     //
     size_t n = Domain();
     size_t m = Range();
@@ -274,7 +274,7 @@ void ADFun<Base,RecBase>::RevSparseHesCase(
     }
 
     // vector of sets that will hold reverse Hessain values
-    local::sparse_pack rev_hes_pattern;
+    local::sparse::pack_setvec rev_hes_pattern;
     rev_hes_pattern.resize(num_var_tape_, q);
 
     // compute the Hessian sparsity patterns
@@ -310,7 +310,7 @@ void ADFun<Base,RecBase>::RevSparseHesCase(
 
         // extract the result from rev_hes_pattern
         CPPAD_ASSERT_UNKNOWN( rev_hes_pattern.end() == q );
-        local::sparse_pack::const_iterator itr(rev_hes_pattern, j + 1);
+        local::sparse::pack_setvec::const_iterator itr(rev_hes_pattern, j + 1);
         i = *itr;
         while( i < q )
         {   if( transpose )
@@ -354,7 +354,7 @@ void ADFun<Base,RecBase>::RevSparseHesCase(
     SetVector&                h                )
 {
     // used to identify the RecBase type in calls to sweeps
-    RecBase not_used_rec_base;
+    RecBase not_used_rec_base(0.0);
     //
     size_t n = Domain();
 # ifndef NDEBUG
@@ -412,7 +412,7 @@ void ADFun<Base,RecBase>::RevSparseHesCase(
 
 
     // vector of sets that will hold reverse Hessain values
-    local::sparse_list rev_hes_pattern;
+    local::sparse::list_setvec rev_hes_pattern;
     rev_hes_pattern.resize(num_var_tape_, q);
 
     // compute the Hessian sparsity patterns
@@ -439,7 +439,7 @@ void ADFun<Base,RecBase>::RevSparseHesCase(
         // extract the result from rev_hes_pattern
         // and add corresponding elements to result sets in h
         CPPAD_ASSERT_UNKNOWN( rev_hes_pattern.end() == q );
-        local::sparse_list::const_iterator itr_2(rev_hes_pattern, j+1);
+        local::sparse::list_setvec::const_iterator itr_2(rev_hes_pattern, j+1);
         i = *itr_2;
         while( i < q )
         {   if( transpose )
@@ -569,10 +569,10 @@ void ADFun<Base,RecBase>::RevSparseHesCheckpoint(
     size_t                        q         ,
     vector<bool>&                 s         ,
     bool                          transpose ,
-    local::sparse_list&           h         )
+    local::sparse::list_setvec&   h         )
 {
     // used to identify the RecBase type in calls to sweeps
-    RecBase not_used_rec_base;
+    RecBase not_used_rec_base(0.0);
     //
     size_t n = Domain();
     size_t m = Range();
@@ -594,7 +594,7 @@ void ADFun<Base,RecBase>::RevSparseHesCheckpoint(
     }
 
     // holds reverse Hessian sparsity pattern for all variables
-    local::sparse_list rev_hes_pattern;
+    local::sparse::list_setvec rev_hes_pattern;
     rev_hes_pattern.resize(num_var_tape_, q);
 
     // compute Hessian sparsity pattern for all variables
@@ -625,7 +625,7 @@ void ADFun<Base,RecBase>::RevSparseHesCheckpoint(
 
         // extract the result from rev_hes_pattern
         CPPAD_ASSERT_UNKNOWN( rev_hes_pattern.end() == q );
-        local::sparse_list::const_iterator itr(rev_hes_pattern, j + 1);
+        local::sparse::list_setvec::const_iterator itr(rev_hes_pattern, j + 1);
         size_t i = *itr;
         while( i < q )
         {   if( transpose )

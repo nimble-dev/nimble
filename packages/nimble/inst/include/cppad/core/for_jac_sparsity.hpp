@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_FOR_JAC_SPARSITY_HPP
 # define CPPAD_CORE_FOR_JAC_SPARSITY_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-19 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -165,7 +165,7 @@ $end
 -----------------------------------------------------------------------------
 */
 # include <cppad/core/ad_fun.hpp>
-# include <cppad/local/sparse_internal.hpp>
+# include <cppad/local/sparse/internal.hpp>
 
 namespace CppAD { // BEGIN_CPPAD_NAMESPACE
 
@@ -216,7 +216,7 @@ void ADFun<Base,RecBase>::for_jac_sparsity(
     sparse_rc<SizeVector>&       pattern_out      )
 {
     // used to identify the RecBase type in calls to sweeps
-    RecBase not_used_rec_base;
+    RecBase not_used_rec_base(0.0);
     //
     // number or rows, columns, and non-zeros in pattern_in
     size_t nr_in  = pattern_in.nr();
@@ -241,7 +241,7 @@ void ADFun<Base,RecBase>::for_jac_sparsity(
         for_jac_sparse_set_.resize(0, 0);
         //
         // set sparsity patttern for independent variables
-        local::set_internal_sparsity(
+        local::sparse::set_internal_pattern(
             zero_empty            ,
             input_empty           ,
             transpose             ,
@@ -261,7 +261,7 @@ void ADFun<Base,RecBase>::for_jac_sparsity(
 
         );
         // set the output pattern
-        local::get_internal_sparsity(
+        local::sparse::get_internal_pattern(
             transpose, dep_taddr_, for_jac_sparse_pack_, pattern_out
         );
     }
@@ -273,7 +273,7 @@ void ADFun<Base,RecBase>::for_jac_sparsity(
         for_jac_sparse_pack_.resize(0, 0);
         //
         // set sparsity patttern for independent variables
-        local::set_internal_sparsity(
+        local::sparse::set_internal_pattern(
             zero_empty            ,
             input_empty           ,
             transpose             ,
@@ -293,7 +293,7 @@ void ADFun<Base,RecBase>::for_jac_sparsity(
 
         );
         // get the ouput pattern
-        local::get_internal_sparsity(
+        local::sparse::get_internal_pattern(
             transpose, dep_taddr_, for_jac_sparse_set_, pattern_out
         );
     }

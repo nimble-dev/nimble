@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_ZDOUBLE_HPP
 # define CPPAD_CORE_ZDOUBLE_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -249,15 +249,14 @@ class zdouble {
     CPPAD_ZDOUBLE_STD_MATH_FRIEND(tan)
     CPPAD_ZDOUBLE_STD_MATH_FRIEND(tanh)
     //
-# if CPPAD_USE_CPLUSPLUS_2011
-    CPPAD_ZDOUBLE_STD_MATH_FRIEND(erf)
     CPPAD_ZDOUBLE_STD_MATH_FRIEND(asinh)
     CPPAD_ZDOUBLE_STD_MATH_FRIEND(acosh)
     CPPAD_ZDOUBLE_STD_MATH_FRIEND(atanh)
+    CPPAD_ZDOUBLE_STD_MATH_FRIEND(erf)
+    CPPAD_ZDOUBLE_STD_MATH_FRIEND(erfc)
     CPPAD_ZDOUBLE_STD_MATH_FRIEND(expm1)
     CPPAD_ZDOUBLE_STD_MATH_FRIEND(log1p)
     //
-# endif
 private:
     /// The value for this object
     double dbl_;
@@ -479,9 +478,6 @@ CPPAD_ZDOUBLE_STD_MATH(tan)
 /// Normal standard math function
 CPPAD_ZDOUBLE_STD_MATH(tanh)
 //
-# if CPPAD_USE_CPLUSPLUS_2011
-/// C++2011 standard math function
-CPPAD_ZDOUBLE_STD_MATH(erf)
 /// C++2011 standard math function
 CPPAD_ZDOUBLE_STD_MATH(asinh)
 /// C++2011 standard math function
@@ -489,10 +485,13 @@ CPPAD_ZDOUBLE_STD_MATH(acosh)
 /// C++2011 standard math function
 CPPAD_ZDOUBLE_STD_MATH(atanh)
 /// C++2011 standard math function
+CPPAD_ZDOUBLE_STD_MATH(erf)
+/// C++2011 standard math function
+CPPAD_ZDOUBLE_STD_MATH(erfc)
+/// C++2011 standard math function
 CPPAD_ZDOUBLE_STD_MATH(expm1)
 /// C++2011 standard math function
 CPPAD_ZDOUBLE_STD_MATH(log1p)
-# endif
 
 /// Base type requirement: abs
 inline zdouble abs(const zdouble& x)

@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_REV_HES_SPARSITY_HPP
 # define CPPAD_CORE_REV_HES_SPARSITY_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-19 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -122,7 +122,7 @@ $end
 -----------------------------------------------------------------------------
 */
 # include <cppad/core/ad_fun.hpp>
-# include <cppad/local/sparse_internal.hpp>
+# include <cppad/local/sparse/internal.hpp>
 
 namespace CppAD { // BEGIN_CPPAD_NAMESPACE
 
@@ -168,7 +168,7 @@ void ADFun<Base,RecBase>::rev_hes_sparsity(
     sparse_rc<SizeVector>&       pattern_out      )
 {
     // used to identify the RecBase type in calls to sweeps
-    RecBase not_used_rec_base;
+    RecBase not_used_rec_base(0.0);
     //
     size_t n  = Domain();
     size_t m  = Range();
@@ -200,7 +200,7 @@ void ADFun<Base,RecBase>::rev_hes_sparsity(
         //
         // allocate memory for bool sparsity calculation
         // (sparsity pattern is emtpy after a resize)
-        local::sparse_pack internal_hes;
+        local::sparse::pack_setvec internal_hes;
         internal_hes.resize(num_var_tape_, ell);
         //
         // compute the Hessian sparsity pattern
@@ -214,7 +214,7 @@ void ADFun<Base,RecBase>::rev_hes_sparsity(
             not_used_rec_base
         );
         // get sparstiy pattern for independent variables
-        local::get_internal_sparsity(
+        local::sparse::get_internal_pattern(
             transpose, ind_taddr_, internal_hes, pattern_out
         );
     }
@@ -229,7 +229,7 @@ void ADFun<Base,RecBase>::rev_hes_sparsity(
         //
         // allocate memory for bool sparsity calculation
         // (sparsity pattern is emtpy after a resize)
-        local::sparse_list internal_hes;
+        local::sparse::list_setvec internal_hes;
         internal_hes.resize(num_var_tape_, ell);
         //
         // compute the Hessian sparsity pattern
@@ -243,7 +243,7 @@ void ADFun<Base,RecBase>::rev_hes_sparsity(
             not_used_rec_base
         );
         // get sparstiy pattern for independent variables
-        local::get_internal_sparsity(
+        local::sparse::get_internal_pattern(
             transpose, ind_taddr_, internal_hes, pattern_out
         );
     }

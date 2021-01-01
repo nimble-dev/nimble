@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_REV_JAC_SPARSITY_HPP
 # define CPPAD_CORE_REV_JAC_SPARSITY_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-19 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -118,7 +118,7 @@ $end
 -----------------------------------------------------------------------------
 */
 # include <cppad/core/ad_fun.hpp>
-# include <cppad/local/sparse_internal.hpp>
+# include <cppad/local/sparse/internal.hpp>
 
 namespace CppAD { // BEGIN_CPPAD_NAMESPACE
 
@@ -169,7 +169,7 @@ void ADFun<Base,RecBase>::rev_jac_sparsity(
     sparse_rc<SizeVector>&       pattern_out      )
 {
     // used to identify the RecBase type in calls to sweeps
-    RecBase not_used_rec_base;
+    RecBase not_used_rec_base(0.0);
     //
     // number or rows, columns, and non-zeros in pattern_in
     size_t nr_in  = pattern_in.nr();
@@ -193,11 +193,11 @@ void ADFun<Base,RecBase>::rev_jac_sparsity(
     if( internal_bool )
     {   // allocate memory for bool sparsity calculation
         // (sparsity pattern is emtpy after a resize)
-        local::sparse_pack internal_jac;
+        local::sparse::pack_setvec internal_jac;
         internal_jac.resize(num_var_tape_, ell);
         //
         // set sparsity patttern for dependent variables
-        local::set_internal_sparsity(
+        local::sparse::set_internal_pattern(
             zero_empty            ,
             input_empty           ,
             ! transpose           ,
@@ -217,18 +217,18 @@ void ADFun<Base,RecBase>::rev_jac_sparsity(
 
         );
         // get sparstiy pattern for independent variables
-        local::get_internal_sparsity(
+        local::sparse::get_internal_pattern(
             ! transpose, ind_taddr_, internal_jac, pattern_out
         );
     }
     else
     {   // allocate memory for bool sparsity calculation
         // (sparsity pattern is emtpy after a resize)
-        local::sparse_list internal_jac;
+        local::sparse::list_setvec internal_jac;
         internal_jac.resize(num_var_tape_, ell);
         //
         // set sparsity patttern for dependent variables
-        local::set_internal_sparsity(
+        local::sparse::set_internal_pattern(
             zero_empty            ,
             input_empty           ,
             ! transpose           ,
@@ -248,7 +248,7 @@ void ADFun<Base,RecBase>::rev_jac_sparsity(
 
         );
         // get sparstiy pattern for independent variables
-        local::get_internal_sparsity(
+        local::sparse::get_internal_pattern(
             ! transpose, ind_taddr_, internal_jac, pattern_out
         );
     }

@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_DEPENDENT_HPP
 # define CPPAD_CORE_DEPENDENT_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -149,7 +149,7 @@ template <class ADvector>
 void ADFun<Base,RecBase>::Dependent(const ADvector &y)
 {   local::ADTape<Base>* tape = AD<Base>::tape_ptr();
     CPPAD_ASSERT_KNOWN(
-        tape != CPPAD_NULL,
+        tape != nullptr,
         "Can't store current operation sequence in this ADFun object"
         "\nbecause there is no active tape (for this thread)."
     );
@@ -271,17 +271,14 @@ void ADFun<Base,RecBase>::Dependent(local::ADTape<Base> *tape, const ADvector &y
     base2ad_return_value_      = false;
     has_been_optimized_        = false;
     //
-    // size_t values in this object except for num_var_tape_
+    // size_t values in this object
     compare_change_count_      = 1;
     compare_change_number_     = 0;
     compare_change_op_index_   = 0;
     num_order_taylor_          = 0;
     cap_order_taylor_          = 0;
     num_direction_taylor_      = 0;
-
-    // num_var_tape_
-    // Now that all the variables are in the tape, we can set this value.
-    num_var_tape_       = tape->Rec_.num_var_rec();
+    num_var_tape_              = tape->Rec_.num_var_rec();
 
     // taylor_
     taylor_.resize(0);
@@ -289,8 +286,8 @@ void ADFun<Base,RecBase>::Dependent(local::ADTape<Base> *tape, const ADvector &y
     // cskip_op_
     cskip_op_.resize( tape->Rec_.num_op_rec() );
 
-    // load_op_
-    load_op_.resize( tape->Rec_.num_load_op_rec() );
+    // load_op2var_
+    load_op2var_.resize( tape->Rec_.num_var_load_rec() );
 
     // play_
     // Now that each dependent variable has a place in the tape,

@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_CHKPOINT_ONE_CHKPOINT_ONE_HPP
 # define CPPAD_CORE_CHKPOINT_ONE_CHKPOINT_ONE_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -11,8 +11,8 @@ Secondary License when the conditions for such availability set forth
 in the Eclipse Public License, Version 2.0 are satisfied:
       GNU General Public License, Version 2.0 or later.
 ---------------------------------------------------------------------------- */
-# include <cppad/local/sparse_list.hpp>
-# include <cppad/local/sparse_pack.hpp>
+# include <cppad/local/sparse/list_setvec.hpp>
+# include <cppad/local/sparse/pack_setvec.hpp>
 
 namespace CppAD { // BEGIN_CPPAD_NAMESPACE
 /*!
@@ -58,7 +58,7 @@ $codei%checkpoint<%Base%> %atom_fun%(
 checkpoint<%Base%>::clear()%$$
 
 $head See Also$$
-$cref atomic_two$$, $cref reverse_checkpoint.cpp$$
+$cref atomic_two$$, $cref rev_checkpoint.cpp$$
 
 $head Purpose$$
 
@@ -84,7 +84,7 @@ is used during a forward or reverse mode sweep.
 $subhead Restriction$$
 The $cref/operation sequence/glossary/Operation/Sequence/$$
 representing $latex f(x)$$ cannot depend on the value of $latex x$$.
-The approach in the $cref reverse_checkpoint.cpp$$ example case be applied
+The approach in the $cref rev_checkpoint.cpp$$ example case be applied
 when the operation sequence depends on $latex x$$.
 
 $subhead Multiple Level AD$$
@@ -271,11 +271,11 @@ private:
         //
         /// sparsity for entire Jacobian f(x)^{(1)}
         /// does not change so can cache it
-        local::sparse_list         jac_sparse_set_;
+        local::sparse::list_setvec jac_sparse_set_;
         vectorBool                 jac_sparse_bool_;
         //
         /// sparsity for sum_i f_i(x)^{(2)} does not change so can cache it
-        local::sparse_list         hes_sparse_set_;
+        local::sparse::list_setvec hes_sparse_set_;
         vectorBool                 hes_sparse_bool_;
     };
     /// This version of work is const except during constructor
@@ -286,7 +286,7 @@ private:
     //
     /// allocate member_ for this thread
     void allocate_member(size_t thread)
-    {   if( member_[thread] == CPPAD_NULL )
+    {   if( member_[thread] == nullptr )
         {   member_[thread] = new member_struct;
             // The function is recorded in sequential mode and placed in
             // const_member_.f_, other threads have copy.
@@ -297,9 +297,9 @@ private:
     //
     /// free member_ for this thread
     void free_member(size_t thread)
-    {   if( member_[thread] != CPPAD_NULL )
+    {   if( member_[thread] != nullptr )
         {   delete member_[thread];
-            member_[thread] = CPPAD_NULL;
+            member_[thread] = nullptr;
         }
         return;
     }
@@ -401,7 +401,7 @@ public:
     {
 # ifndef NDEBUG
         if( thread_alloc::in_parallel() )
-        {   std::string msg = atomic_base<Base>::afun_name();
+        {   std::string msg = atomic_base<Base>::atomic_name();
             msg += ": checkpoint destructor called in parallel mode.";
             CPPAD_ASSERT_KNOWN(false, msg.c_str() );
         }

@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_FUN_CONSTRUCT_HPP
 # define CPPAD_CORE_FUN_CONSTRUCT_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -246,6 +246,8 @@ i.e., operation sequences that were recorded using the type AD<Base>.
 */
 template <class Base, class RecBase>
 ADFun<Base,RecBase>::ADFun(void) :
+function_name_(""),
+exceed_collision_limit_(false),
 base2ad_return_value_(false),
 has_been_optimized_(false),
 check_for_nan_(true) ,
@@ -309,7 +311,11 @@ void ADFun<Base,RecBase>::operator=(const ADFun& f)
 {
     // go through member variables in ad_fun.hpp order
     //
+    // string objects
+    function_name_             = f.function_name_;
+    //
     // bool objects
+    exceed_collision_limit_    = f.exceed_collision_limit_;
     base2ad_return_value_      = false;
     has_been_optimized_        = f.has_been_optimized_;
     check_for_nan_             = f.check_for_nan_;
@@ -328,7 +334,7 @@ void ADFun<Base,RecBase>::operator=(const ADFun& f)
     dep_taddr_                 = f.dep_taddr_;
     dep_parameter_             = f.dep_parameter_;
     cskip_op_                  = f.cskip_op_;
-    load_op_                   = f.load_op_;
+    load_op2var_               = f.load_op2var_;
     //
     // pod_vector_maybe_vectors
     taylor_                    = f.taylor_;
@@ -346,12 +352,15 @@ void ADFun<Base,RecBase>::operator=(const ADFun& f)
     // sparse_list
     for_jac_sparse_set_        = f.for_jac_sparse_set_;
 }
-# if CPPAD_USE_CPLUSPLUS_2011
 /// Move semantics version of assignment operator
 template <class Base, class RecBase>
 void ADFun<Base,RecBase>::operator=(ADFun&& f)
 {
+    // string objects
+    function_name_.swap( f.function_name_ );
+    //
     // bool objects
+    exceed_collision_limit_    = f.exceed_collision_limit_;
     base2ad_return_value_      = false; // f might be, but this is not
     has_been_optimized_        = f.has_been_optimized_;
     check_for_nan_             = f.check_for_nan_;
@@ -371,7 +380,7 @@ void ADFun<Base,RecBase>::operator=(ADFun&& f)
     dep_parameter_.swap(  f.dep_parameter_);
     taylor_.swap(         f.taylor_);
     cskip_op_.swap(       f.cskip_op_);
-    load_op_.swap(        f.load_op_);
+    load_op2var_.swap(    f.load_op2var_);
     //
     // player
     play_.swap(f.play_);
@@ -385,7 +394,6 @@ void ADFun<Base,RecBase>::operator=(ADFun&& f)
     // sparse_list
     for_jac_sparse_set_.swap( f.for_jac_sparse_set_);
 }
-# endif
 
 /*!
 ADFun constructor from an operation sequence.
@@ -426,7 +434,7 @@ template <class ADVector>
 ADFun<Base,RecBase>::ADFun(const ADVector &x, const ADVector &y)
 {
     // used to identify the RecBase type in calls to sweeps
-    RecBase not_used_rec_base;
+    RecBase not_used_rec_base(0.0);
 
     CPPAD_ASSERT_KNOWN(
         x.size() > 0,
@@ -466,6 +474,8 @@ ADFun<Base,RecBase>::ADFun(const ADVector &x, const ADVector &y)
     // stop the tape and store the operation sequence
     Dependent(tape, y);
 
+    // This function has not yet been optimized
+    exceed_collision_limit_    = false;
 
     // ad_fun.hpp member values not set by dependent
     check_for_nan_       = true;
@@ -489,10 +499,10 @@ ADFun<Base,RecBase>::ADFun(const ADVector &x, const ADVector &y)
 
     // use independent variable values to fill in values for others
     CPPAD_ASSERT_UNKNOWN( cskip_op_.size() == play_.num_op_rec() );
-    CPPAD_ASSERT_UNKNOWN( load_op_.size()  == play_.num_load_op_rec() );
+    CPPAD_ASSERT_UNKNOWN( load_op2var_.size()  == play_.num_var_load_rec() );
     local::sweep::forward0(&play_, std::cout, false,
         n, num_var_tape_, cap_order_taylor_, taylor_.data(),
-        cskip_op_.data(), load_op_,
+        cskip_op_.data(), load_op2var_,
         compare_change_count_,
         compare_change_number_,
         compare_change_op_index_,

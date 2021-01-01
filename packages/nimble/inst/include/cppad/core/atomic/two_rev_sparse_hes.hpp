@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_ATOMIC_TWO_REV_SPARSE_HES_HPP
 # define CPPAD_CORE_ATOMIC_TWO_REV_SPARSE_HES_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-19 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -371,10 +371,10 @@ bool atomic_base<Base>::rev_sparse_hes(
         //
         pack_v.resize(n * q);
         //
-        local::get_internal_sparsity(
+        local::sparse::get_internal_pattern(
             transpose, x_index, for_jac_sparsity, pack_r
         );
-        local::get_internal_sparsity(
+        local::sparse::get_internal_pattern(
             transpose, y_index, rev_hes_sparsity, pack_u
         );
         //
@@ -382,10 +382,10 @@ bool atomic_base<Base>::rev_sparse_hes(
         if( ! ok )
             ok = rev_sparse_hes(vx, bool_s, bool_t, q, pack_r, pack_u, pack_v);
         if( ! ok )
-        {   msg = afun_name() + msg + " sparsity = pack_sparsity_enum";
+        {   msg = atomic_name() + msg + " sparsity = pack_sparsity_enum";
             CPPAD_ASSERT_KNOWN(false, msg.c_str());
         }
-        local::set_internal_sparsity(zero_empty, input_empty,
+        local::sparse::set_internal_pattern(zero_empty, input_empty,
             transpose, x_index, rev_hes_sparsity, pack_v
         );
     }
@@ -396,10 +396,10 @@ bool atomic_base<Base>::rev_sparse_hes(
         //
         bool_v.resize(n * q);
         //
-        local::get_internal_sparsity(
+        local::sparse::get_internal_pattern(
             transpose, x_index, for_jac_sparsity, bool_r
         );
-        local::get_internal_sparsity(
+        local::sparse::get_internal_pattern(
             transpose, y_index, rev_hes_sparsity, bool_u
         );
         //
@@ -407,10 +407,10 @@ bool atomic_base<Base>::rev_sparse_hes(
         if( ! ok )
             ok = rev_sparse_hes(vx, bool_s, bool_t, q, bool_r, bool_u, bool_v);
         if( ! ok )
-        {   msg = afun_name() + msg + " sparsity = bool_sparsity_enum";
+        {   msg = atomic_name() + msg + " sparsity = bool_sparsity_enum";
             CPPAD_ASSERT_KNOWN(false, msg.c_str());
         }
-        local::set_internal_sparsity(zero_empty, input_empty,
+        local::sparse::set_internal_pattern(zero_empty, input_empty,
             transpose, x_index, rev_hes_sparsity, bool_v
         );
     }
@@ -422,10 +422,10 @@ bool atomic_base<Base>::rev_sparse_hes(
         //
         set_v.resize(n);
         //
-        local::get_internal_sparsity(
+        local::sparse::get_internal_pattern(
             transpose, x_index, for_jac_sparsity, set_r
         );
-        local::get_internal_sparsity(
+        local::sparse::get_internal_pattern(
             transpose, y_index, rev_hes_sparsity, set_u
         );
         //
@@ -433,10 +433,10 @@ bool atomic_base<Base>::rev_sparse_hes(
         if( ! ok )
             ok = rev_sparse_hes(vx, bool_s, bool_t, q, set_r, set_u, set_v);
         if( ! ok )
-        {   msg = afun_name() + msg + " sparsity = set_sparsity_enum";
+        {   msg = atomic_name() + msg + " sparsity = set_sparsity_enum";
             CPPAD_ASSERT_KNOWN(false, msg.c_str());
         }
-        local::set_internal_sparsity(zero_empty, input_empty,
+        local::sparse::set_internal_pattern(zero_empty, input_empty,
             transpose, x_index, rev_hes_sparsity, set_v
         );
     }

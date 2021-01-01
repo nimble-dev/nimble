@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_PARALLEL_AD_HPP
 # define CPPAD_CORE_PARALLEL_AD_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -82,7 +82,7 @@ void parallel_ad(void)
         "parallel_ad must be called before entering parallel execution mode."
     );
     CPPAD_ASSERT_KNOWN(
-        AD<Base>::tape_ptr() == CPPAD_NULL ,
+        AD<Base>::tape_ptr() == nullptr ,
         "parallel_ad cannot be called while a tape recording is in progress"
     );
 
@@ -95,12 +95,12 @@ void parallel_ad(void)
     local::two_element_std_set<size_t>();
 
     // the sparse_pack class has member functions with static data
-    local::sparse_pack sp;
+    local::sparse::pack_setvec sp;
     sp.resize(1, 1);       // so can call add_element
     sp.add_element(0, 0);  // has static data
     sp.clear(0);           // has static data
     sp.is_element(0, 0);   // has static data
-    local::sparse_pack::const_iterator itr(sp, 0); // has static data
+    local::sparse::pack_setvec::const_iterator itr(sp, 0); // has static data
     ++itr;                                  // has static data
 
     // statics that depend on the value of Base

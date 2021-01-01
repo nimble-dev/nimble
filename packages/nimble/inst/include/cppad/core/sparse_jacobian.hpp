@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_SPARSE_JACOBIAN_HPP
 # define CPPAD_CORE_SPARSE_JACOBIAN_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-19 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -435,7 +435,7 @@ size_t ADFun<Base,RecBase>::SparseJacobianFor(
     }
     size_t n_color = 1;
     for(j = 0; j < n; j++) if( color[j] < n )
-        n_color = std::max(n_color, color[j] + 1);
+        n_color = std::max<size_t>(n_color, color[j] + 1);
 
     // initialize the return value
     for(k = 0; k < K; k++)
@@ -476,7 +476,7 @@ size_t ADFun<Base,RecBase>::SparseJacobianFor(
     k = 0;
     while( count_color < n_color )
     {   // number of colors we will do this time
-        size_t r = std::min(max_r , n_color - count_color);
+        size_t r = std::min<size_t>(max_r , n_color - count_color);
         BaseVector dx(n * r), dy(m * r);
 
         // loop over colors we will do this tme
@@ -632,7 +632,7 @@ size_t ADFun<Base,RecBase>::SparseJacobianRev(
     }
     size_t n_color = 1;
     for(i = 0; i < m; i++) if( color[i] < m )
-        n_color = std::max(n_color, color[i] + 1);
+        n_color = std::max<size_t>(n_color, color[i] + 1);
 
     // weighting vector for calls to reverse
     BaseVector w(m);
@@ -773,7 +773,7 @@ size_t ADFun<Base,RecBase>::SparseJacobianForward(
         return n_sweep;
 
     typedef typename SetVector::value_type Set_type;
-    typedef typename local::internal_sparsity<Set_type>::pattern_type Pattern_type;
+    typedef typename local::sparse::internal_pattern<Set_type>::pattern_type Pattern_type;
     Pattern_type s_transpose;
     if( work.color.size() == 0 )
     {   bool transpose = true;
@@ -888,7 +888,7 @@ size_t ADFun<Base,RecBase>::SparseJacobianReverse(
         return n_sweep;
 
     typedef typename SetVector::value_type Set_type;
-    typedef typename local::internal_sparsity<Set_type>::pattern_type Pattern_type;
+    typedef typename local::sparse::internal_pattern<Set_type>::pattern_type Pattern_type;
     Pattern_type s;
     if( work.color.size() == 0 )
     {   bool transpose = false;
@@ -946,7 +946,7 @@ BaseVector ADFun<Base,RecBase>::SparseJacobian(
     CheckSimpleVector<Base, BaseVector>();
 
     typedef typename SetVector::value_type Set_type;
-    typedef typename local::internal_sparsity<Set_type>::pattern_type Pattern_type;
+    typedef typename local::sparse::internal_pattern<Set_type>::pattern_type Pattern_type;
 
     // initialize the return value as zero
     Base zero(0);

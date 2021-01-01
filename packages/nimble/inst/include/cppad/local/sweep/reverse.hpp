@@ -1,7 +1,7 @@
 # ifndef CPPAD_LOCAL_SWEEP_REVERSE_HPP
 # define CPPAD_LOCAL_SWEEP_REVERSE_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -137,8 +137,8 @@ of the independent variables).
 Note that all the operators in an atomic function call are skipped as a block,
 so only the last AFunOp fore each call needs to have cskip_op[i] true.
 
-\param var_by_load_op
-is a vector with size play->num_load_op_rec().
+\param load_op2var
+is a vector with size play->num_var_load_rec().
 It contains the variable index corresponding to each load instruction.
 In the case where the index is zero,
 the instruction corresponds to a parameter (not variable).
@@ -179,7 +179,7 @@ void reverse(
     size_t                      K,
     Base*                       Partial,
     bool*                       cskip_op,
-    const pod_vector<Addr>&     var_by_load_op,
+    const pod_vector<Addr>&     load_op2var,
     Iterator&                   play_itr,
     const RecBase&              not_used_rec_base
 )
@@ -192,9 +192,8 @@ void reverse(
     const size_t num_par = play->num_par_rec();
 
     // pointer to the beginning of the parameter vector
-    const Base* parameter = CPPAD_NULL;
-    if( num_par > 0 )
-        parameter = play->GetPar();
+    CPPAD_ASSERT_UNKNOWN( num_par > 0 )
+    const Base* parameter = play->GetPar();
 
     // work space used by AFunOp.
     const size_t         atom_k  = d;   // highest order we are differentiating
@@ -294,7 +293,6 @@ void reverse(
             break;
             // --------------------------------------------------
 
-# if CPPAD_USE_CPLUSPLUS_2011
             case AcoshOp:
             // sqrt(x * x - 1), acosh(x)
             CPPAD_ASSERT_UNKNOWN( i_var < numvar );
@@ -302,7 +300,6 @@ void reverse(
                 d, i_var, size_t(arg[0]), J, Taylor, K, Partial
             );
             break;
-# endif
             // --------------------------------------------------
 
             case AddvvOp:
@@ -329,7 +326,6 @@ void reverse(
             break;
             // --------------------------------------------------
 
-# if CPPAD_USE_CPLUSPLUS_2011
             case AsinhOp:
             // sqrt(1 + x * x), asinh(x)
             CPPAD_ASSERT_UNKNOWN( i_var < numvar );
@@ -337,7 +333,6 @@ void reverse(
                 d, i_var, size_t(arg[0]), J, Taylor, K, Partial
             );
             break;
-# endif
             // --------------------------------------------------
 
             case AtanOp:
@@ -349,7 +344,6 @@ void reverse(
             break;
             // -------------------------------------------------
 
-# if CPPAD_USE_CPLUSPLUS_2011
             case AtanhOp:
             // 1 - x * x, atanh(x)
             CPPAD_ASSERT_UNKNOWN( i_var < numvar );
@@ -357,7 +351,6 @@ void reverse(
                 d, i_var, size_t(arg[0]), J, Taylor, K, Partial
             );
             break;
-# endif
             // -------------------------------------------------
 
             case BeginOp:
@@ -448,13 +441,12 @@ void reverse(
 
             // --------------------------------------------------
 
-# if CPPAD_USE_CPLUSPLUS_2011
             case ErfOp:
+            case ErfcOp:
             reverse_erf_op(
-                d, i_var, arg, parameter, J, Taylor, K, Partial
+                op, d, i_var, arg, parameter, J, Taylor, K, Partial
             );
             break;
-# endif
             // --------------------------------------------------
 
             case ExpOp:
@@ -464,13 +456,11 @@ void reverse(
             break;
             // --------------------------------------------------
 
-# if CPPAD_USE_CPLUSPLUS_2011
             case Expm1Op:
             reverse_expm1_op(
                 d, i_var, size_t(arg[0]), J, Taylor, K, Partial
             );
             break;
-# endif
             // --------------------------------------------------
 
             case InvOp:
@@ -479,14 +469,14 @@ void reverse(
 
             case LdpOp:
             reverse_load_op(
-            op, d, i_var, arg, J, Taylor, K, Partial, var_by_load_op.data()
+            op, d, i_var, arg, J, Taylor, K, Partial, load_op2var.data()
             );
             break;
             // -------------------------------------------------
 
             case LdvOp:
             reverse_load_op(
-            op, d, i_var, arg, J, Taylor, K, Partial, var_by_load_op.data()
+            op, d, i_var, arg, J, Taylor, K, Partial, load_op2var.data()
             );
             break;
             // --------------------------------------------------
@@ -515,13 +505,11 @@ void reverse(
             break;
             // --------------------------------------------------
 
-# if CPPAD_USE_CPLUSPLUS_2011
             case Log1pOp:
             reverse_log1p_op(
                 d, i_var, size_t(arg[0]), J, Taylor, K, Partial
             );
             break;
-# endif
             // --------------------------------------------------
 
             case MulpvOp:

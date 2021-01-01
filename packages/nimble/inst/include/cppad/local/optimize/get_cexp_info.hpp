@@ -1,7 +1,7 @@
 # ifndef CPPAD_LOCAL_OPTIMIZE_GET_CEXP_INFO_HPP
 # define CPPAD_LOCAL_OPTIMIZE_GET_CEXP_INFO_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -11,10 +11,6 @@ Secondary License when the conditions for such availability set forth
 in the Eclipse Public License, Version 2.0 are satisfied:
       GNU General Public License, Version 2.0 or later.
 ---------------------------------------------------------------------------- */
-/*!
-\file get_cexp_info.hpp
-Create operator information tables
-*/
 
 # include <cppad/local/optimize/match_op.hpp>
 # include <cppad/local/optimize/cexp_info.hpp>
@@ -24,77 +20,113 @@ Create operator information tables
 namespace CppAD { namespace local { namespace optimize {
 
 /*!
-Convert conditional expression skip information from sets for each
-operation to sets for each conditional expression operator.
+$begin optimize_get_cexp_info.hpp$$
+$spell
+    cexp
+    itr
+    op
+    iterator
+    bool
+    Exp
+    deallocate
+    Funap
+    Funav
+    Funrp
+    Funrv
+    num
+    var
+$$
+
+$section Information for Each Conditional Expression$$
+
+$head Syntax$$
+$codei%get_cexp_info(
+    %play%,
+    %random_itr%,
+    %op_previous%,
+    %op_usage%,
+    %cexp2op%,
+    %cexp_set%,
+    %cexp_info%,
+    %skip_op_true%,
+    %skip_op_false%
+)%$$
+
+$head Prototype$$
+$srcthisfile%
+    0%// BEGIN_PROTOTYPE%// END_PROTOTYPE%1
+%$$
+
+
+$head Restrictions$$
 Do not call this routine unless you are optimizing conditional expressions
 and there are conditional expressions in the operation sequence.
 
-\tparam Base
+$head Base$$
 base type for the operator; i.e., this operation was recorded
-using AD< Base > and computations by this routine are done using type
- Base.
+using AD<Base> and computations by this routine are done using type Base.
 
-\param play
+$head play$$
 This is the old operation sequence.
 
-\param random_itr
+$head random_itr$$
 This is a random iterator for the old operation sequence.
 
-\param cexp2op
+$head cexp2op$$
 This is the number of conditional expressions in the operation sequence
 and must be non-zero.
 
-\param cexp_set
-This is a vector of sets that is empty on input.
-Otherwise, set[i] is a set of elements for the i-th operator.
-Suppose that e is an element of set[i], j = e / 2, k = e % 2.
-If the comparision for the j-th conditional expression is equal to bool(k),
+$head cexp_set$$
+This is a vector of sets, the i-th set, set[i],
+is a set of elements for the i-th operator.
+If e is an element of set[i], let j = e / 2 and k = e % 2.
+If the comparison for the j-th conditional expression is equal to bool(k),
 the i-th operator can be skipped (is not used by any of the results).
-Note the the j indexs the CExpOp operators in the operation sequence.
+Note that j indexes the subset of operators that are conditional expressions
+in the old operation sequence.
 
-\param cexp_info
+$head cexp_info$$
 The input size of this vector must be zero.
-Otherwise,
-upon return cexp_info has size equal to the number of conditional expressions
+Upon return cexp_info has size equal to the number of conditional expressions
 in the operation sequence; i.e., the number of CExpOp operators.
 The value cexp_info[j] is the information corresponding to the j-th
 conditional expression in the operation sequence.
 This vector is in the same order as the operation sequence; i.e.
 if j1 > j2, cexp_info[j1].i_op > cexp_info[j2].i_op.
 Note that skip_op_true and skip_op_false could be part of this structure,
-but then we would allocate and deallocate two vectors for each conditonal
+but then we would allocate and deallocate two vectors for each conditional
 expression in the operation sequence.
 
-\param skip_op_true
+$head skip_op_true$$
 This vector of sets is empty on input.
 Upon return, the j-th set is the operators that are not used when
 comparison result for cexp_info[j] is true.
 Note that FunapOp, FunavOp, FunrpOp, and FunrvOp, are not in this
 set and should be skipped when the corresponding AFunOp are skipped.
 
-\param skip_op_false
+$head skip_op_false$$
 This vector of sets is empty on input.
 Upon return, the j-th set is the operators that are not used when
 comparison result for cexp_info[j] is false.
 Note that FunapOp, FunavOp, FunrpOp, and FunrvOp, are not in this
 set and should be skipped when the corresponding AFunOp are skipped.
 
-\param op_previous
-The input size of this vector must be zero.
-Upon return it has size equal to the number of operators
+$head op_previous$$
+This argument has size equal to the number of operators
 in the operation sequence; i.e., num_op = play->nun_var_rec().
 If op_previous[i] == 0, no replacement was found for the i-th operator.
 If op_previous[i] != 0, op_usage[ op_previous[i] ] == usage_t(yes_usage).
 
-\param op_usage
-The input size of this vector must be zero.
-Upon return it has size equal to the number of operators
+$head op_usage$$
+This argument has size equal to the number of operators
 in the operation sequence; i.e., num_op = play->nun_var_rec().
-The value op_usage[i]
-have been set to the usage for
+The value op_usage[i] is the usage for
 the i-th operator in the operation sequence.
+
+$end
 */
 
+// BEGIN_PROTOTYPE
 template <class Addr, class Base>
 void get_cexp_info(
     const player<Base>*                         play                ,
@@ -102,10 +134,11 @@ void get_cexp_info(
     const pod_vector<addr_t>&                   op_previous         ,
     const pod_vector<usage_t>&                  op_usage            ,
     const pod_vector<addr_t>&                   cexp2op             ,
-    const sparse_list&                          cexp_set            ,
+    const sparse::list_setvec&                  cexp_set            ,
     vector<struct_cexp_info>&                   cexp_info           ,
-    sparse_list&                                skip_op_true        ,
-    sparse_list&                                skip_op_false       )
+    sparse::list_setvec&                        skip_op_true        ,
+    sparse::list_setvec&                        skip_op_false       )
+// END_PROTOTYPE
 {
     CPPAD_ASSERT_UNKNOWN( cexp_set.n_set() > 0  );
     CPPAD_ASSERT_UNKNOWN( cexp_info.size() == 0 );
@@ -120,7 +153,7 @@ void get_cexp_info(
     //
     // initialize mapping from variable index to operator index
     CPPAD_ASSERT_UNKNOWN(
-        size_t( std::numeric_limits<addr_t>::max() ) >= num_op
+        size_t( (std::numeric_limits<addr_t>::max)() ) >= num_op
     );
     // ----------------------------------------------------------------------
     // compute cexp_info
@@ -152,10 +185,9 @@ void get_cexp_info(
         // max_left_right
         addr_t index    = 0;
         if( arg[1] & 1 )
-            index = std::max(index, info.left);
+            index = std::max<addr_t>(index, info.left);
         if( arg[1] & 2 )
-            index = std::max(index, info.right);
-        CPPAD_ASSERT_UNKNOWN( index > 0 );
+            index = std::max<addr_t>(index, info.right);
         info.max_left_right = index;
         //
         cexp_info[i] = info;
@@ -168,7 +200,7 @@ void get_cexp_info(
         keep     &= op_usage[i_op] != usage_t(csum_usage);
         keep     &= op_previous[i_op] == 0;
         if( keep )
-        {   sparse_list_const_iterator itr(cexp_set, i_op);
+        {   sparse::list_setvec_const_iterator itr(cexp_set, i_op);
             if( *itr != cexp_set.end() )
             {   if( play->GetOp(i_op) == AFunOp )
                 {   // i_op is the first operations in this atomic function call.
@@ -195,18 +227,18 @@ void get_cexp_info(
                 bool   compare = bool( element % 2 );
                 if( compare == false )
                 {   // cexp_info[index].skip_op_false.push_back(i_op);
-                    skip_op_false.add_element(index, i_op);
+                    skip_op_false.post_element(index, i_op);
                     if( j_op != i_op )
                     {   // cexp_info[index].skip_op_false.push_back(j_op);
-                        skip_op_false.add_element(index, j_op);
+                        skip_op_false.post_element(index, j_op);
                     }
                 }
                 else
                 {   // cexp_info[index].skip_op_true.push_back(i_op);
-                    skip_op_true.add_element(index, i_op);
+                    skip_op_true.post_element(index, i_op);
                     if( j_op != i_op )
                     {   // cexp_info[index].skip_op_true.push_back(j_op);
-                        skip_op_true.add_element(index, j_op);
+                        skip_op_true.post_element(index, j_op);
                     }
                 }
                 ++itr;
@@ -214,6 +246,11 @@ void get_cexp_info(
         }
         CPPAD_ASSERT_UNKNOWN( i_op <= j_op );
         i_op += (1 + j_op) - i_op;
+    }
+    // process postings for skip_op_false, skip_op_true
+    for(size_t i = 0; i < num_cexp_op; ++i)
+    {   skip_op_false.process_post(i);
+        skip_op_true.process_post(i);
     }
     return;
 }

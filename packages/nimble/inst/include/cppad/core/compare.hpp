@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_COMPARE_HPP
 # define CPPAD_CORE_COMPARE_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -128,7 +128,7 @@ bool operator < (const AD<Base> &left , const AD<Base> &right)
     //
     // check if we are recording compare operators
     local::ADTape<Base> *tape = AD<Base>::tape_ptr();
-    if( tape == CPPAD_NULL )
+    if( tape == nullptr )
         return result;
     if( ! tape->Rec_.get_record_compare() )
         return result;
@@ -224,7 +224,7 @@ bool operator <= (const AD<Base> &left , const AD<Base> &right)
     //
     // check if we are recording compare operators
     local::ADTape<Base> *tape = AD<Base>::tape_ptr();
-    if( tape == CPPAD_NULL )
+    if( tape == nullptr )
         return result;
     if( ! tape->Rec_.get_record_compare() )
         return result;
@@ -320,7 +320,7 @@ bool operator > (const AD<Base> &left , const AD<Base> &right)
     //
     // check if we are recording compare operators
     local::ADTape<Base> *tape = AD<Base>::tape_ptr();
-    if( tape == CPPAD_NULL )
+    if( tape == nullptr )
         return result;
     if( ! tape->Rec_.get_record_compare() )
         return result;
@@ -416,7 +416,7 @@ bool operator >= (const AD<Base> &left , const AD<Base> &right)
     //
     // check if we are recording compare operators
     local::ADTape<Base> *tape = AD<Base>::tape_ptr();
-    if( tape == CPPAD_NULL )
+    if( tape == nullptr )
         return result;
     if( ! tape->Rec_.get_record_compare() )
         return result;
@@ -512,7 +512,7 @@ bool operator == (const AD<Base> &left , const AD<Base> &right)
     //
     // check if we are recording compare operators
     local::ADTape<Base> *tape = AD<Base>::tape_ptr();
-    if( tape == CPPAD_NULL )
+    if( tape == nullptr )
         return result;
     if( ! tape->Rec_.get_record_compare() )
         return result;
@@ -536,53 +536,11 @@ bool operator == (const AD<Base> &left , const AD<Base> &right)
         left.tape_id_ == right.tape_id_ || ! match_left || ! match_right ,
         "==: AD variables or dynamic parameters on different threads."
     );
-    if( var_left )
-    {   if( var_right )
-        {   // variable == variable
-            tape->Rec_.PutArg(left.taddr_, right.taddr_);
-            if( result )
-                tape->Rec_.PutOp(local::EqvvOp);
-            else
-                tape->Rec_.PutOp(local::NevvOp);
-        }
-        else
-        {   // variable == parameter
-            addr_t p = right.taddr_;
-            if( ! dyn_right )
-                p = tape->Rec_.put_con_par(right.value_);
-            tape->Rec_.PutArg(p, left.taddr_);
-            if( result )
-                tape->Rec_.PutOp(local::EqpvOp);
-            else
-                tape->Rec_.PutOp(local::NepvOp);
-        }
-    }
-    else if ( var_right )
-    {   // parameter == variable
-        addr_t p = left.taddr_;
-        if( ! dyn_left )
-            p = tape->Rec_.put_con_par(left.value_);
-        tape->Rec_.PutArg(p, right.taddr_);
-        if( result )
-            tape->Rec_.PutOp(local::EqpvOp);
-        else
-            tape->Rec_.PutOp(local::NepvOp);
-    }
-    else if( dyn_left | dyn_right )
-    {   // parameter == parameter
-        addr_t arg0 = left.taddr_;
-        addr_t arg1 = right.taddr_;
-        if( ! dyn_left )
-            arg0 = tape->Rec_.put_con_par(left.value_);
-        if( ! dyn_right )
-            arg1 = tape->Rec_.put_con_par(right.value_);
-        //
-        tape->Rec_.PutArg(arg0, arg1);
-        if( result )
-            tape->Rec_.PutOp(local::EqppOp);
-        else
-            tape->Rec_.PutOp(local::NeppOp);
-    }
+    //
+    tape->Rec_.comp_eq(
+        var_left, var_right, dyn_left, dyn_right, left, right, result
+    );
+    //
     return result;
 }
 // convert other cases into the case above
@@ -596,7 +554,7 @@ bool operator != (const AD<Base> &left , const AD<Base> &right)
     //
     // check if we are recording compare operators
     local::ADTape<Base> *tape = AD<Base>::tape_ptr();
-    if( tape == CPPAD_NULL )
+    if( tape == nullptr )
         return result;
     if( ! tape->Rec_.get_record_compare() )
         return result;

@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_ATOMIC_THREE_HES_SPARSITY_HPP
 # define CPPAD_CORE_ATOMIC_THREE_HES_SPARSITY_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-18 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -27,8 +27,7 @@ $icode%ok% = %afun%.hes_sparsity(
 )%$$
 
 $head Prototype$$
-$srcfile%include/cppad/core/atomic/three_hes_sparsity.hpp
-    %0%// BEGIN_PROTOTYPE%// END_PROTOTYPE%1
+$srcthisfile%0%// BEGIN_PROTOTYPE%// END_PROTOTYPE%1
 %$$
 
 $head Implementation$$
@@ -134,6 +133,8 @@ bool atomic_three<Base>::hes_sparsity(
 {   return false; }
 /*!
 Link from forward Hessian sweep to atomic_three.
+2DO: move this functiton outside this file so can change
+developer documentation to omhelp formating.
 
 \tparam InternalSparsity
 Is the used internaly for sparsity calculations; i.e.,
@@ -159,7 +160,7 @@ The index zero is used for parameters.
 On input, for j = 0, ... , n-1, the sparsity pattern with index x_index[j],
 is the forward Jacobian sparsity for the j-th argument to this atomic function.
 
-\param rev_jac_sparsity
+\param rev_jac_pattern
 On input, for i = 0, ... , m-1, the sparsity pattern with index y_index[i],
 is the reverse Jacobian sparsity for the i-th result to this atomic function.
 This shows which components of the result affect the function we are
@@ -177,11 +178,15 @@ bool atomic_three<Base>::for_hes_sparsity(
     const vector<ad_type_enum>&      type_x           ,
     const local::pod_vector<size_t>& x_index          ,
     const local::pod_vector<size_t>& y_index          ,
-    const InternalSparsity&          for_jac_sparsity ,
-    const InternalSparsity&          rev_jac_sparsity ,
-    InternalSparsity&                hes_sparsity_for )
+    size_t                           np1              ,
+    size_t                           numvar           ,
+    const InternalSparsity&          rev_jac_pattern  ,
+    InternalSparsity&                for_sparsity     )
 {   typedef typename InternalSparsity::const_iterator const_iterator;
-    CPPAD_ASSERT_UNKNOWN( rev_jac_sparsity.end() == 1 );
+    //
+    CPPAD_ASSERT_UNKNOWN( rev_jac_pattern.end() == 1 );
+    CPPAD_ASSERT_UNKNOWN( for_sparsity.end() == np1 );
+    CPPAD_ASSERT_UNKNOWN( for_sparsity.n_set() == np1 + numvar );
     size_t n      = x_index.size();
     size_t m      = y_index.size();
     //
@@ -189,53 +194,78 @@ bool atomic_three<Base>::for_hes_sparsity(
     vector<bool> select_x(n);
     for(size_t j = 0; j < n; j++)
     {   // check if should compute pattern w.r.t x[j]
-        const_iterator itr(for_jac_sparsity, x_index[j]);
-        size_t i = *itr;
-        select_x[j] = i < for_jac_sparsity.end();
-        CPPAD_ASSERT_UNKNOWN( x_index[j] > 0 || ! select_x[j] );
+        select_x[j] = for_sparsity.number_elements(np1 + x_index[j]) > 0;
     }
     //
     // bool select_y
     vector<bool> select_y(m);
     for(size_t i = 0; i < m; i++)
     {   // check if we should include y[i]
-        select_y[i] = rev_jac_sparsity.is_element(y_index[i], 0);
-        CPPAD_ASSERT_UNKNOWN( y_index[i] > 0 || ! select_y[i] );
+        select_y[i] = rev_jac_pattern.number_elements(y_index[i]) > 0;
     }
-    //
-    // call user's version of atomic function
+    // ------------------------------------------------------------------------
+    // call user's version of atomic function for Jacobian
     sparse_rc< vector<size_t> > pattern_out;
-    bool ok = hes_sparsity(
+    bool dependency = false;
+    bool ok = jac_sparsity(
+        parameter_x, type_x, dependency, select_x, select_y, pattern_out
+    );
+    if( ! ok )
+        return false;
+    //
+    // transfer sparsity patterns from pattern_out to var_sparsity
+    size_t                nnz = pattern_out.nnz();
+    const vector<size_t>& row( pattern_out.row() );
+    const vector<size_t>& col( pattern_out.col() );
+    for(size_t k = 0; k < nnz; ++k)
+    {   size_t i = row[k];
+        size_t j = col[k];
+        CPPAD_ASSERT_KNOWN(
+            select_y[i] & select_x[j],
+            "atomic: jac_sparsity: pattern_out not in "
+            "select_x or select_y range"
+        );
+        const_iterator itr(for_sparsity, np1 + x_index[j]);
+        size_t ell = *itr;
+        while( ell < np1 )
+        {   for_sparsity.post_element(np1 + y_index[i], ell );
+            ell = *(++itr);
+        }
+    }
+    for(size_t i = 0; i < m; ++i)
+        for_sparsity.process_post( np1 + y_index[i] );
+    // ------------------------------------------------------------------------
+    // call user's version of atomic function for Hessian
+    ok = hes_sparsity(
         parameter_x, type_x, select_x, select_y, pattern_out
     );
     if( ! ok )
         return ok;
     //
     // add new elements to Hessian sparisty in calling routine
-    const vector<size_t>& row( pattern_out.row() );
-    const vector<size_t>& col( pattern_out.col() );
-    for(size_t k = 0; k < pattern_out.nnz(); ++k)
+    nnz = pattern_out.nnz();
+    for(size_t k = 0; k < nnz; ++k)
     {   size_t r = row[k];
         size_t c = col[k];
         CPPAD_ASSERT_KNOWN(
             select_x[r] & select_x[c],
             "atomic: hes_sparsity: pattern_out not in select_x range"
         );
-        const_iterator itr_1(for_jac_sparsity, x_index[r]);
+        const_iterator itr_1(for_sparsity, np1 + x_index[r]);
         size_t v1 = *itr_1;
-        while( v1 < for_jac_sparsity.end() )
-        {   hes_sparsity_for.binary_union(
-                v1, v1, x_index[c], for_jac_sparsity
+        while( v1 < np1 )
+        {   for_sparsity.binary_union(
+                v1, v1, np1 + x_index[c], for_sparsity
              );
              v1 = *(++itr_1);
         }
         // no need to add same elements twice
         if( c != r )
-        {   const_iterator itr_2(for_jac_sparsity, x_index[c]);
+        {   const_iterator itr_2(for_sparsity, np1 + x_index[c]);
             size_t v2 = *itr_2;
-            while( v2 < for_jac_sparsity.end() )
-            {   hes_sparsity_for.binary_union(
-                    v2, v2, x_index[r], for_jac_sparsity
+            while( v2 < np1 )
+            {   for_sparsity.binary_union(
+                    v2, v2, np1 + x_index[r], for_sparsity
                 );
                 v2 = *(++itr_2);
             }
@@ -266,9 +296,9 @@ is the variable index, on the tape, for the results for this function.
 This size of y_index is m, the number of results for this function.
 The index zero is used for parameters.
 
-\param for_jac_sparsity
+\param for_jac_pattern
 On input, for j = 0, ... , n-1, the sparsity pattern with index x_index[j],
-is the forward Jacobian sparsity for the j-th argument to this atomic function.
+is the forward Jacobian pattern for the j-th argument to this atomic function.
 
 \param rev_jac_flag
 On input, for i = 0, ... , m-1, rev_jac_flag[ y_index[i] ] is true
@@ -291,7 +321,7 @@ bool atomic_three<Base>::rev_hes_sparsity(
     const vector<ad_type_enum>&      type_x           ,
     const local::pod_vector<size_t>& x_index          ,
     const local::pod_vector<size_t>& y_index          ,
-    const InternalSparsity&          for_jac_sparsity ,
+    const InternalSparsity&          for_jac_pattern  ,
     bool*                            rev_jac_flag     ,
     InternalSparsity&                hes_sparsity_rev )
 {   typedef typename InternalSparsity::const_iterator const_iterator;
@@ -302,9 +332,9 @@ bool atomic_three<Base>::rev_hes_sparsity(
     vector<bool> select_x(n);
     for(size_t j = 0; j < n; j++)
     {   // check if should compute pattern w.r.t x[j]
-        const_iterator itr(for_jac_sparsity, x_index[j]);
+        const_iterator itr(for_jac_pattern, x_index[j]);
         size_t i = *itr;
-        select_x[j] = i < for_jac_sparsity.end();
+        select_x[j] = i < for_jac_pattern.end();
         CPPAD_ASSERT_UNKNOWN( x_index[j] > 0 || ! select_x[j] );
     }
     //
@@ -368,10 +398,10 @@ bool atomic_three<Base>::rev_hes_sparsity(
             "atomic: hes_sparsity: pattern_out not in select_x range"
         );
         hes_sparsity_rev.binary_union(
-            x_index[r], x_index[r], x_index[c], for_jac_sparsity
+            x_index[r], x_index[r], x_index[c], for_jac_pattern
         );
         hes_sparsity_rev.binary_union(
-            x_index[c], x_index[c], x_index[r], for_jac_sparsity
+            x_index[c], x_index[c], x_index[r], for_jac_pattern
         );
     }
     return ok;
