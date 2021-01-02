@@ -854,6 +854,7 @@ if(FALSE) {
     test_ADModelCalculate(model, name = 'epil', useFasterRderivs = TRUE)
 }
 
+
 ## now loop through BUGS models.
 examples <- c('blocker', 'dyes', 'epil', 'equiv', 'line', 'oxford', 'pump', 'rats', 'beetles', 'jaw', 'dugongs', 'schools', 'seeds')
 bugsFile <- examples

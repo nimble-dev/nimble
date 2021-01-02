@@ -63,19 +63,4 @@ gd_getDependencies_IDs <- function(graph, maps, nodes, omit, downstream) {
 
 gd_allNeighbors <- function(graph, nodes) stop("shouldn't be calling gd_allNeighbors any more")
 
-## This is an experimental function needed for derivatives.
-## If it works well, it could be raised to the status of a
-## model method.  It is something we've thought about needing before.
-getParentNodes <- function(nodes, model) {
-    ## adapted from BUGS_modelDef creation of edgesFrom2To
-    maps <- model$modelDef$maps
-    maxNodeID <- length(maps$vertexID_2_nodeID) ## should be same as length(maps$nodeNames)
-    
-    edgesLevels <- if(maxNodeID > 0) 1:maxNodeID else numeric(0)
-    fedgesTo <- factor(maps$edgesTo, levels = edgesLevels) ## setting levels ensures blanks inserted into the splits correctly
-    edgesTo2From <<- split(maps$edgesFrom, fedgesTo)
-    nodeIDs <- model$expandNodeNames(nodes, returnType = "ids")
-    fromIDs <- sort(unique(unlist(edgesTo2From[nodeIDs])))
-    fromNodes <- maps$graphID_2_nodeName[fromIDs]
-    fromNodes
-}
+
