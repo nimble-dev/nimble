@@ -121,7 +121,13 @@ size_t atomic_index(
 // END_PROTOTYPE
 {   //
     // information for each index
+#ifndef USING_CPPAD_IN_NIMBLE
     static std::vector<atomic_index_info> vec;
+#else
+    //    std::cout<<"atomic_index using "<<atomic_index_info_vec_manager_nimble<Base>::manage()<<std::endl;
+    std::vector<atomic_index_info> &vec = *atomic_index_info_vec_manager_nimble<Base>::manage();
+#endif
+
 # ifndef NDEBUG
     if( index_in == 0 || set_null )
     {   CPPAD_ASSERT_KNOWN( ! thread_alloc::in_parallel(),

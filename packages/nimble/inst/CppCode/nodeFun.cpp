@@ -59,7 +59,7 @@ void nodeFun::initialize_AD_model_before_recording(NodeVectorClassNew_derivs &NV
 }
 
 void nodeFun::set_atomic_info_from_nodeFun(std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
-  CppAD::local::atomic_index_info_vec_manager<double>::manage(1, vec_ptr);
+  CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage(1, vec_ptr);
 }
 
 void nodeFun::set_tape_ptr_from_nodeFun(CppAD::tape_id_t tape_id,

@@ -4,7 +4,7 @@
 /* It is important that this not cross compilation units (e.g. via alternative design using inline) */
 /* because the point is to be able to have one compilation unit set the vec_ptr of another. */
 template <class Base>
-class atomic_index_info_vec_manager {
+class atomic_index_info_vec_manager_nimble {
 public:
   static std::vector<atomic_index_info>* manage(int set = 0, // 0=return stored ptr, 1 = set stored ptr to provided value and return, 2 = set stored ptr to internval object
 						std::vector<atomic_index_info>* input_vec_ptr = 0

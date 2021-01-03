@@ -88,9 +88,9 @@ set_CppAD_tape_info_for_model::~set_CppAD_tape_info_for_model() {
 CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
 					 bool includeExtraOutputStep,
 					 bool recordingInfo__isRecording) {
-  // std::cout <<"entering calculate_ADproxyModel"<< std::endl;//"entering calculate_ADproxyModel" << "\n";
-  // std::cout<<"handle address: "<<CppAD::AD<double>::get_handle_address_nimble()<<std::endl;
-
+  //   std::cout <<"entering calculate_ADproxyModel"<< std::endl;
+  //  std::cout<<"handle address: "<<CppAD::AD<double>::get_handle_address_nimble()<<std::endl;
+  
   CppAD::AD<double> ans = 0;
   const vector<NodeInstruction> &instructions = nodes.getInstructions();
   vector<NodeInstruction>::const_iterator iNode(instructions.begin());

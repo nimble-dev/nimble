@@ -691,7 +691,7 @@ exprClasses_modifyForAD <- function(code, symTab,
             set_atomic_info_line <- RparseTree2ExprClasses(cppLiteral(
                 paste0("set_CppAD_atomic_info_for_model(",
                        workEnv[['nodeFxnVector_name']],
-                       ", CppAD::local::atomic_index_info_vec_manager<double>::manage());")))
+                       ", CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage());")))
 
         ## This inserts a single line at the beginning by
         ## creating a new `{` block.
