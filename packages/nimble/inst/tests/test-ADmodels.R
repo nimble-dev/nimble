@@ -241,11 +241,7 @@ data <- list(y = c(20.24405,20.57693,20.49357,20.34159,20.45759,20.43326,20.2055
 inits <- list(a = 0.95, b=1, sigOE=0.05,sigPN = 0.2,  x= c(20.26036,20.51331,20.57057,20.35633,20.33736,20.47321,20.22002,20.14917,20.19216,20.26969,20.21135,20.22745,20.20466,20.41158,20.13408,20.08023,19.98956,20.13543,20.32709,20.55840,20.88206,20.74740,20.47671,20.14012,20.29953,20.33778,20.80916,20.75773,20.84349,20.35654,20.41045,20.20180,20.02872,19.74226,19.80483,19.81842,19.69770,19.84564,19.88211,19.70559,19.56090,19.73728,19.66545,19.88158,20.13870,20.39163,20.37372,20.47429,20.39414,20.42024,20.55560,20.40462,20.15831,19.89425,19.79939,19.72692,19.74565,19.42233,19.22730,19.36489,19.37289,19.19050,19.00823,19.35738,19.14293,19.48812,19.67329,19.82750,19.58979,19.43634,19.61278,19.56739,19.38584,19.19260,19.32732,19.65500,19.65295,19.84843,19.68285,19.69620,19.77497,20.31795,20.45797,20.32650,20.24045,20.60507,20.51597,20.30076,19.98100,19.86709,19.85965,19.74822,19.86730,19.90523,19.86970,19.87286,20.28417,20.46212,20.22618,20.13689))
 model <- nimbleModel(code, constants = constants, data = data, inits = inits)
 
-## last of 104 elements not equal in: rWrt01 vs. x, rWrt12 vs. x rWrt012 vs. x (issue 231)
 test_ADModelCalculate(model, name = 'state space model', useFasterRderivs = TRUE)
-
-## very slow, but passes 
-test_ADModelCalculate(model, name = 'state space model', useFasterRderivs = FALSE)
 
 ## link functions on stochastic nodes (not covered in BUGS examples)
 ## plus alt params and NIMBLE-provided distributions
@@ -760,6 +756,21 @@ model <- nimbleModel(code, data = list(y = rnorm(1)), inits = list(sigma2 = rgam
 test_ADModelCalculate(model, useParamTransform = TRUE, name = 'basic param transform, with lifted')
 test_ADModelCalculate(model, useParamTransform = TRUE, checkCompiledValuesIdentical = FALSE, name = 'basic param transform, with lifted')
 
+## now check if model is out-of-state
+set.seed(1)
+code <- nimbleCode({
+    y ~ dnorm(0, sd = sigma)
+    sigma <- sqrt(sigma2)
+    sigma2 ~ dinvgamma(1.3, 0.7)
+})
+model <- nimbleModel(code, data = list(y = rnorm(1)), inits = list(sigma2 = 2))
+model$sigma <- 1
+model$calculate('y')
+model$logProb_y
+## fails due to issue #256
+test_ADModelCalculate(model)
+test_ADModelCalculate(model, useParamTransform = TRUE)
+test_ADModelCalculate(model, useFasterRderivs = TRUE)
 
 ## Dirichlet
 code <- nimbleCode({
@@ -773,11 +784,9 @@ k <- 4
 model <- nimbleModel(code, constants = list(k = k, n = n), data = list(y = rmulti(1, n, rep(1/k, k))), inits = list(p = c(.2, .4, .15, .25), alpha = runif(4)))
 ## compiled 0th derivative equal but not identical to logProb 
 ## cLogProb01 and cLogProb12 equal but not identical to cLogProb_{new,orig} 
-## cWrt equal to x but not identical in x[7]
-## for rWrt, this is affected by issue #231, which affects x[7] and x[8] because of back-transform changing param dimension
+## rWrt, cWrt equal to x but not identical in x[7]
 test_ADModelCalculate(model, useParamTransform = TRUE, name = 'Dirichlet paramTransform')
 test_ADModelCalculate(model, useParamTransform = TRUE, checkCompiledValuesIdentical = FALSE, name = 'Dirichlet paramTransform')
-
 
 
 code <- nimbleCode({
@@ -832,9 +841,9 @@ model$calculate()
 model$setData('y')
 ## compiled 0th derivative equal but not identical to logProb
 ## also, compiled and uncompiled 0th deriv a bit outside specified tolerance
-## cLogProb01 and cLogProb12 equal but not identical to cLogProb_{new,orig}
-## cWrt equal to x but not identical for a few values
-## for rWrt, this is affected by issue #231, which affects multiple values because of back-transform changing param dimension
+## cVals01, cVals12, cLogProb01 and cLogProb12 equal but not identical to cVals_{new,orig}, cLogProb_{new,orig}
+## rLogProb12, rVals12 equal not identical to rLogProb_orig, rVals_orig
+## rWrt, cWrt equal to x but not identical for a few values
 test_ADModelCalculate(model, useParamTransform = TRUE, useFasterRderivs = TRUE, name = 'various multivariate dists')
 test_ADModelCalculate(model, useParamTransform = TRUE, checkCompiledValuesIdentical = FALSE, useFasterRderivs = TRUE, name = 'various multivariate dists')
 

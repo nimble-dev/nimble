@@ -1391,82 +1391,117 @@ test_ADModelCalculate_nick <- function(model, name = NULL, calcNodeNames = NULL,
 ## Chris' version of test_ADModelCalculate
 ## By default test a standardized set of {wrt, calcNodes} pairs representing common use cases (MAP, max lik, EB),
 ## unless user provides 'wrt' and 'calcNodes'.
-test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNodes = NULL, wrt = NULL, 
+test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNodes = NULL, wrt = NULL,
                                   relTol = c(1e-15, 1e-8, 1e-3), useFasterRderivs = FALSE, useParamTransform = FALSE,
                                   checkCompiledValuesIdentical = TRUE,
                                   seed = 1, verbose = FALSE, debug = FALSE){
     if(!is.null(seed))
         set.seed(seed)
     initsHandling <- x
+    ## Save model state so can restore for later use cases below.
+    mv <- modelValues(model)
+    nodes <- model$getNodeNames()
+    nimCopy(model, mv, nodes, nodes, rowTo = 1, logProb = TRUE)
+
     if(is.null(wrt) && is.null(calcNodes)) {
-        nodes <- model$getNodeNames(includeData = FALSE)
-        vals <- values(model, nodes)
         
         ## HMC/MAP use case
         if(verbose) cat("testing HMC/MAP\n")
         calcNodes <- model$getNodeNames()
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         tmp <- values(model, wrt)
-        if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
-        try(test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
+        ## Hopefully values in (0,1) will always be legitimate for our test models.
+        if(initsHandling == 'given') {
+            x <- tmp
+        } else if(initsHandling == 'random') {
+            x <- runif(length(tmp))
+        } 
+        xNew <- runif(length(tmp))
+        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt,
+                                           savedMV = mv, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                        checkCompiledValuesIdentical = checkCompiledValuesIdentical,
                                        verbose = verbose, debug = debug))
         ## max. lik. use case
         if(verbose) cat("testing ML\n")
-        values(model, nodes) <- vals
+        nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         calcNodes <- model$getNodeNames()
         topNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
         latentNodes <- model$getNodeNames(latentOnly = TRUE, stochOnly = TRUE, includeData = FALSE)
         calcNodes <- calcNodes[!calcNodes %in% c(topNodes, latentNodes)]  # should be data + deterministic
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE) # will include hyps if present, but derivs wrt those should be zero
         tmp <- values(model, wrt)
-        if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
-        try(test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
+        if(initsHandling == 'given') {
+            x <- tmp
+            xNew <- runif(length(tmp))
+        } else if(initsHandling == 'random') {
+            x <- runif(length(tmp))
+            xNew <- runif(length(tmp))
+        } else stop('value of initsHandling not recognized.')
+        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt,
+                                           savedMV =mv, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                        checkCompiledValuesIdentical = checkCompiledValuesIdentical,
                                        verbose = verbose, debug = debug))
 
         ## modular HMC/MAP use case
         if(verbose) cat("testing HMC/MAP partial\n")
-        values(model, nodes) <- vals
+        nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         calcNodes <- model$getNodeNames()
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         wrt <- sample(wrt, round(length(wrt)/2), replace = FALSE)
         if(!length(wrt))
             wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         tmp <- values(model, wrt)
-        if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
-        try(test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
+        if(initsHandling == 'given') {
+            x <- tmp
+        } else if(initsHandling == 'random') {
+            x <- runif(length(tmp))
+        } 
+        xNew <- runif(length(tmp))
+        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt,
+                                           savedMV = mv, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                        checkCompiledValuesIdentical = checkCompiledValuesIdentical,
                                        verbose = verbose, debug = debug))
 
         ## conditional max. lik. use case
         if(verbose) cat("testing ML partial\n")
-        values(model, nodes) <- vals
+        nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         calcNodes <- model$getNodeNames()
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         wrt <- sample(wrt, round(length(wrt)/2), replace = FALSE)
         if(!length(wrt))
             wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         tmp <- values(model, wrt)
-        if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
-        try(test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
+        if(initsHandling == 'given') {
+            x <- tmp
+        } else if(initsHandling == 'random') {
+            x <- runif(length(tmp))
+        } 
+        xNew <- runif(length(tmp))
+        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt,
+                                           savedMV = mv, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                        checkCompiledValuesIdentical = checkCompiledValuesIdentical,
                                        verbose = verbose, debug = debug))
 
         ## empirical Bayes use case
         if(verbose) cat('testing EB\n')
-        values(model, nodes) <- vals
+        nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         calcNodes <- model$getNodeNames()
         topNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
         calcNodes <- calcNodes[!calcNodes %in% topNodes]  # EB doesn't use hyperpriors
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         tmp <- values(model, wrt)
-        if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
-        try(test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
+        if(initsHandling == 'given') {
+            x <- tmp
+        } else if(initsHandling == 'random') {
+            x <- runif(length(tmp))
+        } 
+        xNew <- runif(length(tmp))
+        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt,
+                                           savedMV = mv, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                        checkCompiledValuesIdentical = checkCompiledValuesIdentical,
                                        verbose = verbose, debug = debug))
@@ -1475,8 +1510,13 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         if(is.null(wrt)) wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         ## Apply test to user-provided sets of nodes
         tmp <- values(model, wrt)
-        if(initsHandling != 'given') x <- runif(length(tmp)) else x <- tmp
-        try(test_ADModelCalculate_internal(model, name = name, x = x, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
+        if(initsHandling == 'given') {
+            x <- tmp
+        } else if(initsHandling == 'random') {
+            x <- runif(length(tmp))
+        } 
+        xNew <- runif(length(tmp))
+        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                        checkCompiledValuesIdentical = checkCompiledValuesIdentical,
                                        verbose = verbose, debug = debug))
@@ -1486,38 +1526,32 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
 
 ## This does the core assessment, by default running with various sets of order values to be able to assess
 ## forward and backward mode and to assess whether values in the model are updated.
-test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, calcNodes = NULL, wrt = NULL,
+test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL, xNew = NULL,
+                                           calcNodes = NULL, wrt = NULL, savedMV = NULL, 
                                            relTol = c(1e-15, 1e-8, 1e-3), verbose = TRUE, useFasterRderivs = FALSE,
                                            useParamTransform = FALSE, checkCompiledValuesIdentical = TRUE,
                                            debug = FALSE){
+
     test_that(paste0("Derivatives of calculate for model ", name), {
         if(exists('paciorek')) browser()
         if(is.null(calcNodes))
             calcNodes <- model$getNodeNames()
 
+        nodes  <- model$getNodeNames()
         if(!(exists('CobjectInterface', model) && !is(model$CobjectInterface, 'uninitializedField'))) {
             cModel <- compileNimble(model)
         } else {
             cModel <- eval(quote(model$CobjectInterface))
+            nimCopy(savedMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
         }
-        nodes <- model$getNodeNames(includeData = FALSE)
-        vals <- values(model, nodes)
-        values(cModel, nodes) <- vals
 
         if(is.null(wrt)) wrt <- calcNodes
         wrt <- model$expandNodeNames(wrt, unique = FALSE)
         discrete <- sapply(wrt, function(x) model$isDiscrete(x))
         wrt <- wrt[is.na(discrete) | !discrete]  # NAs from deterministic nodes, which in most cases should be continuous
 
-        ## Store current logProb and non-wrt values to check that order=c(1,2) doesn't change them.
-        model$calculate()
-        cModel$calculate()
-        rLogProb_orig <- model$getLogProb(calcNodes)
-        cLogProb_orig <- cModel$getLogProb(calcNodes)
         otherNodes <- model$getNodeNames()
         otherNodes <- otherNodes[!otherNodes %in% wrt]
-        rVals_orig <- values(model, otherNodes)
-        cVals_orig <- values(cModel, otherNodes)
 
         if(useParamTransform) {
             rDerivs <- derivsNimbleFunctionParamTransform(model, calcNodes = calcNodes, wrt = wrt)
@@ -1545,177 +1579,186 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', x = NULL, ca
                     cCalcNodes$run(x)
                 }
             }
-            
-            rVals_orig <- cVals_orig
-            if(!useParamTransform) {
-                rOutput12 <- nimDerivs(wrapper(x), order = 1:2, reset = TRUE)
-            } else {
-                transformed_x <- cDerivs$transform(x)
-                rOutput12 <- nimDerivs(wrapper(transformed_x), order = 1:2, reset = TRUE)
-            }
-            rVals12 <- values(cModel, otherNodes)
-            rLogProb12 <- cModel$getLogProb(calcNodes)
-            rWrt12 <- values(cModel, wrt)
-
-            if(!useParamTransform) {
-                rOutput01 <- nimDerivs(wrapper(x), order = 0:1, reset = TRUE)
-            } else {
-                transformed_x <- cDerivs$transform(x)
-                rOutput01 <- nimDerivs(wrapper(transformed_x), order = 0:1, reset = TRUE)
-            }
-            rLogProb01 <- cModel$getLogProb(calcNodes)
-            rVals01 <- values(cModel, otherNodes)
-            rWrt01 <- values(cModel, wrt)
-            if(!useParamTransform) {
-                rLogProb_new <- wrapper(x)
-            } else {
-                transformed_x <- cDerivs$transform(x)
-                rLogProb_new <- wrapper(transformed_x)
-            }
-            cModel$calculate(otherNodes)
-            rVals_new <- values(cModel, otherNodes)
-
-            if(!useParamTransform) {
-                rOutput012 <- nimDerivs(wrapper(x), order = 0:2, reset = TRUE)
-            } else {
-                transformed_x <- cDerivs$transform(x)
-                rOutput012 <- nimDerivs(wrapper(transformed_x), order = 0:2, reset = TRUE)
-            }
-            rWrt012 <- values(cModel, wrt)
-
-            ## now reset cModel for use in compiled derivs
-            values(cModel, nodes) <- vals
-            cModel$calculate()
-        } else {
-            rOutput12 <- rDerivs$run(x, 1:2)
-            rVals12 <- values(model, otherNodes)
-            rLogProb12 <- model$getLogProb(calcNodes)
-            rWrt12 <- values(model, wrt)
-
-            rOutput01 <- rDerivs$run(x, 0:1)
-            rLogProb01 <- model$getLogProb(calcNodes)
-            rVals01 <- values(model, otherNodes)
-            rWrt01 <- values(model, wrt)
-            rLogProb_new <- model$calculate(calcNodes)
-            model$calculate(otherNodes)
-            rVals_new <- values(model, otherNodes)
-
-            rOutput012 <- rDerivs$run(x, 0:2)
-            rWrt012 <- values(model, wrt)
         }
+
+        xList <- list(xOrig)
+        if(FALSE) {  # enable this to check 2nd run through
+            if(!is.null(xNew))
+                xList[[2]] <- xNew
+        }
+        for(x in xList) {
         
-        cOutput12 <- cDerivs$run(x, 1:2)
-        cVals12 <- values(cModel, otherNodes)
-        cLogProb12 <- cModel$getLogProb(calcNodes)
-        cWrt12 <- values(cModel, wrt)
+            ## Store current logProb and non-wrt values to check that order=c(1,2) doesn't change them.
+            ## Don't calculate model as want to assess possibility model is out-of-state.
+            ## model$calculate()
+            ## cModel$calculate()
+            rLogProb_orig <- model$getLogProb(calcNodes)
+            cLogProb_orig <- cModel$getLogProb(calcNodes)
+            rVals_orig <- values(model, otherNodes)
+            cVals_orig <- values(cModel, otherNodes)
 
-        cOutput01 <- cDerivs$run(x, 0:1)
-        cVals01 <- values(cModel, otherNodes)
-        cLogProb01 <- cModel$getLogProb(calcNodes)
-        cWrt01 <- values(cModel, wrt)
-        cLogProb_new <- cModel$calculate(calcNodes)
-        cModel$calculate(otherNodes)
-        cVals_new <- values(cModel, otherNodes)
+            if(useFasterRderivs) {
+                
+                rVals_orig <- cVals_orig
+                if(!useParamTransform) {
+                    rOutput12 <- nimDerivs(wrapper(x), order = 1:2, reset = TRUE)
+                } else {
+                    transformed_x <- cDerivs$transform(x)
+                    rOutput12 <- nimDerivs(wrapper(transformed_x), order = 1:2, reset = TRUE)
+                }
+                rVals12 <- values(cModel, otherNodes)
+                rLogProb12 <- cModel$getLogProb(calcNodes)
+                rWrt12 <- values(cModel, wrt)
 
-        cOutput012 <- cDerivs$run(x, 0:2)
-        cWrt012 <- values(cModel, wrt)
+                if(!useParamTransform) {
+                    rOutput01 <- nimDerivs(wrapper(x), order = 0:1, reset = TRUE)
+                } else {
+                    transformed_x <- cDerivs$transform(x)
+                    rOutput01 <- nimDerivs(wrapper(transformed_x), order = 0:1, reset = TRUE)
+                }
+                rLogProb01 <- cModel$getLogProb(calcNodes)
+                rVals01 <- values(cModel, otherNodes)
+                rWrt01 <- values(cModel, wrt)
+                if(!useParamTransform) {
+                    rLogProb_new <- wrapper(x)
+                } else {
+                    transformed_x <- cDerivs$transform(x)
+                    rLogProb_new <- wrapper(transformed_x)
+                }
+                cModel$calculate(otherNodes)
+                rVals_new <- values(cModel, otherNodes)
 
-        ## Note that when using deriv of method containing model$calculate, we are not restoring values
-        ## The last element of wrt is modified by uncompiled numerical deriv
-        ## which also affects the logProb stored in the model. This is NCT issue #231.
-        if(useParamTransform || useFasterRderivs)
-            print("not checking uncompiled retention in uncompiled model given NCT issue 231")
+                if(!useParamTransform) {
+                    rOutput012 <- nimDerivs(wrapper(x), order = 0:2, reset = TRUE)
+                } else {
+                    transformed_x <- cDerivs$transform(x)
+                    rOutput012 <- nimDerivs(wrapper(transformed_x), order = 0:2, reset = TRUE)
+                }
+                rWrt012 <- values(cModel, wrt)
 
-        ## 0th order 'derivative'
-        if(checkCompiledValuesIdentical) {
-            expect_identical(cOutput01$value, cLogProb_orig)
-            expect_identical(cOutput012$value, cLogProb_orig)
-        } else {
-            expect_equal(cOutput01$value, cLogProb_orig)
-            expect_equal(cOutput012$value, cLogProb_orig)
-        }
-        expect_equal(rOutput01$value, cOutput01$value, tolerance = relTol[1])
-        expect_equal(rOutput012$value, cOutput012$value, tolerance = relTol[1])
-        if(!useParamTransform && !useFasterRderivs) {
+                ## now reset cModel for use in compiled derivs
+                nimCopy(savedMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+
+            } else {
+                rOutput12 <- rDerivs$run(x, 1:2)
+                rVals12 <- values(model, otherNodes)
+                rLogProb12 <- model$getLogProb(calcNodes)
+                rWrt12 <- values(model, wrt)
+
+                rOutput01 <- rDerivs$run(x, 0:1)
+                rLogProb01 <- model$getLogProb(calcNodes)
+                rVals01 <- values(model, otherNodes)
+                rWrt01 <- values(model, wrt)
+                rLogProb_new <- model$calculate(calcNodes)
+                model$calculate(otherNodes)
+                rVals_new <- values(model, otherNodes)
+
+                rOutput012 <- rDerivs$run(x, 0:2)
+                rWrt012 <- values(model, wrt)
+            }
+            
+            cOutput12 <- cDerivs$run(x, 1:2)
+            cVals12 <- values(cModel, otherNodes)
+            cLogProb12 <- cModel$getLogProb(calcNodes)
+            cWrt12 <- values(cModel, wrt)
+
+            cOutput01 <- cDerivs$run(x, 0:1)
+            cVals01 <- values(cModel, otherNodes)
+            cLogProb01 <- cModel$getLogProb(calcNodes)
+            cWrt01 <- values(cModel, wrt)
+            cLogProb_new <- cModel$calculate(calcNodes)
+            cModel$calculate(otherNodes)
+            cVals_new <- values(cModel, otherNodes)
+
+            cOutput012 <- cDerivs$run(x, 0:2)
+            cWrt012 <- values(cModel, wrt)
+
+            ## 0th order 'derivative'
             expect_identical(rOutput01$value, rLogProb_new)
             expect_identical(rOutput012$value, rLogProb_new)
-        }
-        
-        expect_equal(sum(is.na(rOutput01$value)), 0, info = "NAs found in uncompiled 0th derivative")
-        expect_equal(sum(is.na(cOutput01$value)), 0, info = "NAs found in compiled 0th derivative")
-        expect_equal(sum(is.na(rOutput012$value)), 0, info = "NAs found in uncompiled 0th derivative")
-        expect_equal(sum(is.na(cOutput012$value)), 0, info = "NAs found in compiled 0th derivative")
+            if(checkCompiledValuesIdentical) {
+                expect_identical(cOutput01$value, cLogProb_new)
+                expect_identical(cOutput012$value, cLogProb_new)
+            } else {
+                expect_equal(cOutput01$value, cLogProb_new)
+                expect_equal(cOutput012$value, cLogProb_new)
+            }
+            expect_equal(rOutput01$value, cOutput01$value, tolerance = relTol[1])
+            expect_equal(rOutput012$value, cOutput012$value, tolerance = relTol[1])
+            
+            expect_equal(sum(is.na(rOutput01$value)), 0, info = "NAs found in uncompiled 0th derivative")
+            expect_equal(sum(is.na(cOutput01$value)), 0, info = "NAs found in compiled 0th derivative")
+            expect_equal(sum(is.na(rOutput012$value)), 0, info = "NAs found in uncompiled 0th derivative")
+            expect_equal(sum(is.na(cOutput012$value)), 0, info = "NAs found in compiled 0th derivative")
 
-        ## 1st derivative
-        expect_equal(rOutput01$jacobian, cOutput01$jacobian, tolerance = relTol[2])
-        expect_equal(sum(is.na(rOutput01$jacobian)), 0, info = "NAs found in uncompiled 1st derivative")
-        expect_equal(sum(is.na(cOutput01$jacobian)), 0, info = "NAs found in compiled 1st derivative")
+            ## 1st derivative
+            expect_equal(rOutput01$jacobian, cOutput01$jacobian, tolerance = relTol[2])
+            expect_equal(sum(is.na(rOutput01$jacobian)), 0, info = "NAs found in uncompiled 1st derivative")
+            expect_equal(sum(is.na(cOutput01$jacobian)), 0, info = "NAs found in compiled 1st derivative")
 
-        expect_equal(rOutput12$jacobian, cOutput12$jacobian, tolerance = relTol[2])
-        expect_equal(sum(is.na(rOutput12$jacobian)), 0, info = "NAs found in uncompiled 1st derivative")
-        expect_equal(sum(is.na(cOutput12$jacobian)), 0, info = "NAs found in compiled 1st derivative")
+            expect_equal(rOutput12$jacobian, cOutput12$jacobian, tolerance = relTol[2])
+            expect_equal(sum(is.na(rOutput12$jacobian)), 0, info = "NAs found in uncompiled 1st derivative")
+            expect_equal(sum(is.na(cOutput12$jacobian)), 0, info = "NAs found in compiled 1st derivative")
 
-        expect_equal(rOutput012$jacobian, cOutput012$jacobian, tolerance = relTol[2])
-        expect_equal(sum(is.na(rOutput012$jacobian)), 0, info = "NAs found in uncompiled 1st derivative")
-        expect_equal(sum(is.na(cOutput012$jacobian)), 0, info = "NAs found in compiled 1st derivative")
+            expect_equal(rOutput012$jacobian, cOutput012$jacobian, tolerance = relTol[2])
+            expect_equal(sum(is.na(rOutput012$jacobian)), 0, info = "NAs found in uncompiled 1st derivative")
+            expect_equal(sum(is.na(cOutput012$jacobian)), 0, info = "NAs found in compiled 1st derivative")
 
-        ## explicit comparison of first derivs;
-        ## both of these are reverse mode because 2nd order reverse also invokes first order reverse
-        expect_identical(cOutput01$jacobian, cOutput012$jacobian)
+            ## explicit comparison of first derivs;
+            ## both of these are reverse mode because 2nd order reverse also invokes first order reverse
+            expect_identical(cOutput01$jacobian, cOutput012$jacobian)
 
-        ## 2nd derivative
-        expect_equal(rOutput12$hessian, cOutput12$hessian, tolerance = relTol[3])
-        expect_equal(sum(is.na(rOutput12$hessian)), 0, info = "NAs found in uncompiled 2nd derivative")
-        expect_equal(sum(is.na(cOutput12$hessian)), 0, info = "NAs found in compiled 2nd derivative")
+            ## 2nd derivative
+            expect_equal(rOutput12$hessian, cOutput12$hessian, tolerance = relTol[3])
+            expect_equal(sum(is.na(rOutput12$hessian)), 0, info = "NAs found in uncompiled 2nd derivative")
+            expect_equal(sum(is.na(cOutput12$hessian)), 0, info = "NAs found in compiled 2nd derivative")
 
-        expect_equal(rOutput012$hessian, cOutput012$hessian, tolerance = relTol[3])
-        expect_equal(sum(is.na(rOutput012$hessian)), 0, info = "NAs found in uncompiled 2nd derivative")
-        expect_equal(sum(is.na(cOutput012$hessian)), 0, info = "NAs found in compiled 2nd derivative")
+            expect_equal(rOutput012$hessian, cOutput012$hessian, tolerance = relTol[3])
+            expect_equal(sum(is.na(rOutput012$hessian)), 0, info = "NAs found in uncompiled 2nd derivative")
+            expect_equal(sum(is.na(cOutput012$hessian)), 0, info = "NAs found in compiled 2nd derivative")
 
-        expect_identical(cOutput12$hessian, cOutput012$hessian)
+            expect_identical(cOutput12$hessian, cOutput012$hessian)
 
-        ## Model state: wrt values should be equal to `x`.
-        if(useFasterRderivs || useParamTransform) {  # issue #231
-            print("not checking last value as issue #231 not yet fixed")
-            last <- length(x)
-            xSub <- x[-last]
-            expect_identical(rWrt01[-last], xSub)
-            expect_identical(rWrt12[-last], xSub)
-            expect_identical(rWrt012[-last], xSub)
-        } else {
+            ## Model state: wrt values should be equal to `x`.
             expect_identical(rWrt01, x)
             expect_identical(rWrt12, x)
             expect_identical(rWrt012, x)
-        }
-        expect_identical(cWrt01, x)
-        expect_identical(cWrt12, x)
-        expect_identical(cWrt012, x)
-        
-        ## model state - when order 0 is included, logProb and determistic nodes should be updated; otherwise not
-        if(!useFasterRderivs && !useParamTransform) {
-            ## issue #231 causes stored logProb values to be incorrect (I think)
-            ## presumably determistic nodes could be affected by difference in x[n] also
+            expect_identical(cWrt01, x)
+            expect_identical(cWrt12, x)
+            expect_identical(cWrt012, x)
+
+            ## Also, should we take otherNodes and break into those that are in calcNodes and those not?
+            ## Those in not in calcNodes should never be changed. So maybe nothing to check.
+            
+            ## model state - when order 0 is included, logProb and determistic nodes should be updated; otherwise not
+            ## However, useFasterRderivs and useParamTransform, model$calculate is called in the method whose deriv
+            ## is taken, so even when order 0 is not included, expect updated values.
             expect_identical(rLogProb01, rLogProb_new)
             expect_identical(rVals01, rVals_new)
-            expect_identical(rLogProb12, rLogProb_orig)
-            expect_identical(rVals12, rVals_orig)
+            if(useFasterRderivs || useParamTransform) {
+                expect_identical(rLogProb12, rLogProb_new)
+                expect_identical(rVals12, rVals_new)
+            } else {
+                expect_identical(rLogProb12, rLogProb_orig)
+                expect_identical(rVals12, rVals_orig)
+            }
+            
+            ## Not clear if next check should be expect_identical (in many cases they are identical);
+            ## Check with PdV whether values from taped model could get into the compiled model.        
+            if(checkCompiledValuesIdentical) {
+                expect_fun <- expect_identical
+            } else expect_fun <- expect_equal
+            
+            expect_fun(cLogProb01, cLogProb_new) 
+            expect_fun(cVals01, cVals_new)
+            if(useFasterRderivs || useParamTransform) {
+                expect_fun(cLogProb12, cLogProb_new)
+                expect_fun(cVals12, cVals_new)
+            } else {
+                expect_fun(cLogProb12, cLogProb_orig)
+                expect_fun(cVals12, cVals_orig)
+            }
         }
-
-        ## Not clear if next check should be expect_identical (in many cases they are identical);
-        ## Check with PdV whether values from taped model could get into the compiled model.
-        if(checkCompiledValuesIdentical) {
-            expect_identical(cLogProb12, cLogProb_orig)
-            expect_identical(cVals12, cVals_orig)
-            expect_identical(cLogProb01, cLogProb_new) 
-            expect_identical(cVals01, cVals_new)
-        } else {
-            expect_equal(cLogProb12, cLogProb_orig)
-            expect_equal(cVals12, cVals_orig)
-            expect_equal(cLogProb01, cLogProb_new) 
-            expect_equal(cVals01, cVals_new)
-        }
-        
-        
     })
 }
 

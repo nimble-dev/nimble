@@ -206,6 +206,12 @@ calcDerivs_internal <- function(func, X, order, resultIndices ) {
         outGrad <- jacobian(func, X)
     } else if(valueFlag)
         outVal <- func(X)
+
+    ## Run func one last time to make sure that if model calculations are in the method whose
+    ## derivative is taken that the values in the model are from the input and not values
+    ## from the finite element calculations.
+    func(X)
+
     
     outList <- ADNimbleList$new()
     if(!missing(resultIndices)) {
