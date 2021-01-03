@@ -1437,7 +1437,8 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         } else if(initsHandling == 'random') {
             x <- runif(length(tmp))
             xNew <- runif(length(tmp))
-        } else stop('value of initsHandling not recognized.')
+        } 
+        xNew <- runif(length(tmp))
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt,
                                            savedMV =mv, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
@@ -1562,8 +1563,6 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
         if(useFasterRderivs) {
             ## Set up a nf so R derivs use a model calculate that is done fully in compiled code (cModel$calculate loops over nodes in R)
             if(useParamTransform) {
-                ## stop("'useFasterRderivs' not yet set up with parameter transform system.")
-                
                 ## Need wrapper so that we are calling nimDerivs on a function call and not a nf method
                 wrapper <- function(x) {
                     cDerivs$inverseTransformStoreCalculate(x)
@@ -1582,10 +1581,9 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
         }
 
         xList <- list(xOrig)
-        if(FALSE) {  # enable this to check 2nd run through
-            if(!is.null(xNew))
-                xList[[2]] <- xNew
-        }
+        if(!is.null(xNew))
+            xList[[2]] <- xNew
+
         for(x in xList) {
         
             ## Store current logProb and non-wrt values to check that order=c(1,2) doesn't change them.
