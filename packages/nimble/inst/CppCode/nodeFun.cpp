@@ -105,161 +105,165 @@ void nodeFun::set_tape_ptr_from_nodeFun(CppAD::tape_id_t tape_id,
 // }
 
 void nodeFun::setup_extraOutput_step(NodeVectorClassNew_derivs &NV,
-				     CppAD::AD<double> &logProb) {
+				     CppAD::AD<double> &logProb,
+				     nimbleCppADinfoClass* ADinfoPtr) {
   // Call right after logProb = calculate_ADproxyModel.
   NV.extraOutputObject = 
     runExtraOutputObject(NV,
 			 // extraOutputs,
 			 //extraOutputDummyResult,
-			 logProb);       
+			 logProb,
+			 ADinfoPtr);
 }
 
-// Original version
-void nodeFun::recordTape(NodeVectorClassNew_derivs &NV) {
-  vector< CppAD::AD<double> > dependentVars(1);
-  NimArr<1, double> NimArrValues;
-  NimArr<1, CppAD::AD<double> > NimArrValues_AD;
-  
-  // 1. Copy all constantNodes values from model -> model_AD
-  int length_constant = NV.model_constant_accessor.getTotalLength();
-  if(length_constant > 0) {
-    NimArr<1, double> NimArrValues;
-    NimArr<1, CppAD::AD<double> > NimArrValues_AD;
-    NimArrValues.setSize(length_constant);
-    NimArrValues_AD.setSize(length_constant);
-    getValues(NimArrValues, NV.model_constant_accessor);
-    std::copy( NimArrValues.getPtr(),
-	       NimArrValues.getPtr() + length_constant,
-	       NimArrValues_AD.getPtr());
-    setValues_AD_AD(NimArrValues_AD, NV.model_AD_constant_accessor);
-  }
-  
-  // This does not solve the nan bug when tape optimization has been done
-  // Do the same for modelOutput nodes -- experimental for nan bug
-  int length_modelOutput = NV.model_modelOutput_accessor.getTotalLength();
-  if(length_modelOutput > 0) {
-    NimArr<1, double> NimArrValues;
-    NimArr<1, CppAD::AD<double> > NimArrValues_AD;
-    NimArrValues.setSize(length_modelOutput);
-    NimArrValues_AD.setSize(length_modelOutput);
-    getValues(NimArrValues, NV.model_modelOutput_accessor);
-    std::copy( NimArrValues.getPtr(),
-	       NimArrValues.getPtr() + length_modelOutput,
-	       NimArrValues_AD.getPtr());
-    setValues_AD_AD(NimArrValues_AD, NV.model_AD_modelOutput_accessor);
-  }
-  
-  // 2. Copy all wrtNodes values from model -> model_AD, AND
-  // 3. Copy all wrtNodes values from model -> independentVars, AND
-  // 4. independentVars should have an extra dummy element for getExtraInputs and setExtraInputs
-  int length_wrt = NV.model_wrt_accessor.getTotalLength();
-  int length_independent = length_wrt + 1; // extra element is dummy
-  vector< CppAD::AD<double> > independentVars(length_independent);
-  if(length_wrt > 0) {
-    NimArrValues.setSize(length_wrt);
-    getValues(NimArrValues, NV.model_wrt_accessor);
-    // 2
-    NimArrValues_AD.setSize(length_wrt);
-    std::copy( NimArrValues.getPtr(),
-	       NimArrValues.getPtr() + length_wrt,
-	       NimArrValues_AD.getPtr());
-    setValues_AD_AD(NimArrValues_AD, NV.model_AD_wrt_accessor);
-    // 3
-    std::copy(  NimArrValues.getPtr(),
-		NimArrValues.getPtr() + length_wrt,
-		independentVars.begin() );
-  }
-  independentVars[ length_independent - 1 ] = 0;
-  
-  // 5. Copy all extraInputNodes values from model -> model_AD (ditto, may be redundant)
-  
-  int length_extraInput = NV.model_extraInput_accessor.getTotalLength();
-  if(length_extraInput > 0) {
-    NimArrValues.setSize(length_extraInput);
-    NimArrValues_AD.setSize(length_extraInput);
-    getValues(NimArrValues, NV.model_extraInput_accessor);
-    std::copy( NimArrValues.getPtr(),
-	       NimArrValues.getPtr() + length_extraInput,
-	       NimArrValues_AD.getPtr());
-    setValues_AD_AD(NimArrValues_AD, NV.model_AD_extraInput_accessor);
-  }
-  
-  // 6. Start taping    
-  // Steps done via nodeFunInModelDLL-> need to happen in the model DLL,
-  // so that the same set of CppAD globals will be used as in taping.
-  setTapeIndependent(independentVars);
-  
-  // 7. Instantiate and call getExtraInputs atomic object, AND
-  // 8. Copy arr extraInputNodes AD objects from extraInputResult -> model_AD
-  if(length_extraInput > 0) {
-    std::vector< CppAD::AD<double> > extraInputDummyInput(1);
-    extraInputDummyInput[0] = independentVars[ length_independent - 1 ];
-    std::vector< CppAD::AD<double> > extraInputResults(length_extraInput);
-      // After this, the tape treats extraInputResults as a function of
-      // extraInputDummy.  This means during tape use, the extraInputObject
-      // functor will be called, and the extraInputResults will contain
-      // node values from the model.  By copying those during taping
-      // into the model_AD, those nodes play the right roles in the tape.
-      // 7.
+// // Original version
+// void nodeFun::recordTape(NodeVectorClassNew_derivs &NV) {
+//   std::cout<<"YOU ARE IN A FUNCTION TO BE DEPRECATED.  PLEASE LET PERRY KNOW HOW YOU GOT HERE."<<std::endl;
 
-    NV.extraInputObject = 
-      runExtraInputObject(NV,
-    			  extraInputDummyInput,
-    			  extraInputResults);
+//   vector< CppAD::AD<double> > dependentVars(1);
+//   NimArr<1, double> NimArrValues;
+//   NimArr<1, CppAD::AD<double> > NimArrValues_AD;
+  
+//   // 1. Copy all constantNodes values from model -> model_AD
+//   int length_constant = NV.model_constant_accessor.getTotalLength();
+//   if(length_constant > 0) {
+//     NimArr<1, double> NimArrValues;
+//     NimArr<1, CppAD::AD<double> > NimArrValues_AD;
+//     NimArrValues.setSize(length_constant);
+//     NimArrValues_AD.setSize(length_constant);
+//     getValues(NimArrValues, NV.model_constant_accessor);
+//     std::copy( NimArrValues.getPtr(),
+// 	       NimArrValues.getPtr() + length_constant,
+// 	       NimArrValues_AD.getPtr());
+//     setValues_AD_AD(NimArrValues_AD, NV.model_AD_constant_accessor);
+//   }
+  
+//   // This does not solve the nan bug when tape optimization has been done
+//   // Do the same for modelOutput nodes -- experimental for nan bug
+//   int length_modelOutput = NV.model_modelOutput_accessor.getTotalLength();
+//   if(length_modelOutput > 0) {
+//     NimArr<1, double> NimArrValues;
+//     NimArr<1, CppAD::AD<double> > NimArrValues_AD;
+//     NimArrValues.setSize(length_modelOutput);
+//     NimArrValues_AD.setSize(length_modelOutput);
+//     getValues(NimArrValues, NV.model_modelOutput_accessor);
+//     std::copy( NimArrValues.getPtr(),
+// 	       NimArrValues.getPtr() + length_modelOutput,
+// 	       NimArrValues_AD.getPtr());
+//     setValues_AD_AD(NimArrValues_AD, NV.model_AD_modelOutput_accessor);
+//   }
+  
+//   // 2. Copy all wrtNodes values from model -> model_AD, AND
+//   // 3. Copy all wrtNodes values from model -> independentVars, AND
+//   // 4. independentVars should have an extra dummy element for getExtraInputs and setExtraInputs
+//   int length_wrt = NV.model_wrt_accessor.getTotalLength();
+//   int length_independent = length_wrt + 1; // extra element is dummy
+//   vector< CppAD::AD<double> > independentVars(length_independent);
+//   if(length_wrt > 0) {
+//     NimArrValues.setSize(length_wrt);
+//     getValues(NimArrValues, NV.model_wrt_accessor);
+//     // 2
+//     NimArrValues_AD.setSize(length_wrt);
+//     std::copy( NimArrValues.getPtr(),
+// 	       NimArrValues.getPtr() + length_wrt,
+// 	       NimArrValues_AD.getPtr());
+//     setValues_AD_AD(NimArrValues_AD, NV.model_AD_wrt_accessor);
+//     // 3
+//     std::copy(  NimArrValues.getPtr(),
+// 		NimArrValues.getPtr() + length_wrt,
+// 		independentVars.begin() );
+//   }
+//   independentVars[ length_independent - 1 ] = 0;
+  
+//   // 5. Copy all extraInputNodes values from model -> model_AD (ditto, may be redundant)
+  
+//   int length_extraInput = NV.model_extraInput_accessor.getTotalLength();
+//   if(length_extraInput > 0) {
+//     NimArrValues.setSize(length_extraInput);
+//     NimArrValues_AD.setSize(length_extraInput);
+//     getValues(NimArrValues, NV.model_extraInput_accessor);
+//     std::copy( NimArrValues.getPtr(),
+// 	       NimArrValues.getPtr() + length_extraInput,
+// 	       NimArrValues_AD.getPtr());
+//     setValues_AD_AD(NimArrValues_AD, NV.model_AD_extraInput_accessor);
+//   }
+  
+//   // 6. Start taping    
+//   // Steps done via nodeFunInModelDLL-> need to happen in the model DLL,
+//   // so that the same set of CppAD globals will be used as in taping.
+//   setTapeIndependent(independentVars);
+  
+//   // 7. Instantiate and call getExtraInputs atomic object, AND
+//   // 8. Copy arr extraInputNodes AD objects from extraInputResult -> model_AD
+//   if(length_extraInput > 0) {
+//     std::vector< CppAD::AD<double> > extraInputDummyInput(1);
+//     extraInputDummyInput[0] = independentVars[ length_independent - 1 ];
+//     std::vector< CppAD::AD<double> > extraInputResults(length_extraInput);
+//       // After this, the tape treats extraInputResults as a function of
+//       // extraInputDummy.  This means during tape use, the extraInputObject
+//       // functor will be called, and the extraInputResults will contain
+//       // node values from the model.  By copying those during taping
+//       // into the model_AD, those nodes play the right roles in the tape.
+//       // 7.
 
-    // During recording this will no put values in extraInputResults
-    // but I don't think that will be a problem.  We are recording via
-    // ADtape.Dependent(X, Y), which does not call Forward(0) for values.
-    // 8.
+//     NV.extraInputObject = 
+//       runExtraInputObject(NV,
+//     			  extraInputDummyInput,
+//     			  extraInputResults);
+
+//     // During recording this will no put values in extraInputResults
+//     // but I don't think that will be a problem.  We are recording via
+//     // ADtape.Dependent(X, Y), which does not call Forward(0) for values.
+//     // 8.
     
-    NimArrValues_AD.setSize(length_extraInput);
-    std::copy(extraInputResults.begin(),
-	      extraInputResults.end(),
-	      NimArrValues_AD.getPtr());
-    setValues_AD_AD(NimArrValues_AD, NV.model_AD_extraInput_accessor);
-  }
-  // 9. Copy all wrtNodes AD objects from independentVars -> model_AD.
-    if(length_wrt > 0) {
-      NimArrValues_AD.setSize(length_wrt);
-      std::copy(independentVars.begin(),
-		independentVars.begin() + length_wrt,
-		NimArrValues_AD.getPtr());
-      setValues_AD_AD(NimArrValues_AD, NV.model_AD_wrt_accessor);
-    }
-    // 10. call calculate
-    CppAD::AD<double> logProb = call_calculate_ADproxyModel( NV );
-    // 11. Copy logProb to dependentVars[0]
+//     NimArrValues_AD.setSize(length_extraInput);
+//     std::copy(extraInputResults.begin(),
+// 	      extraInputResults.end(),
+// 	      NimArrValues_AD.getPtr());
+//     setValues_AD_AD(NimArrValues_AD, NV.model_AD_extraInput_accessor);
+//   }
+//   // 9. Copy all wrtNodes AD objects from independentVars -> model_AD.
+//     if(length_wrt > 0) {
+//       NimArrValues_AD.setSize(length_wrt);
+//       std::copy(independentVars.begin(),
+// 		independentVars.begin() + length_wrt,
+// 		NimArrValues_AD.getPtr());
+//       setValues_AD_AD(NimArrValues_AD, NV.model_AD_wrt_accessor);
+//     }
+//     // 10. call calculate
+//     CppAD::AD<double> logProb = call_calculate_ADproxyModel( NV );
+//     // 11. Copy logProb to dependentVars[0]
     
-    // 12. Call setModelOutputs to put AD modelOutputs into model
-    /* int length_modelOutput = model_modelOutput_accessor.getTotalLength(); */
-    /* NimArr<1, CppAD::AD<double> > NAV_AD; */
-    /* NAV_AD.setSize(length_modelOutput); */
-    /* std::vector< CppAD::AD<double> > extraOutputs(length_modelOutput); */
-    /* std::vector< CppAD::AD<double> > extraOutputDummyResult(1); */
+//     // 12. Call setModelOutputs to put AD modelOutputs into model
+//     /* int length_modelOutput = model_modelOutput_accessor.getTotalLength(); */
+//     /* NimArr<1, CppAD::AD<double> > NAV_AD; */
+//     /* NAV_AD.setSize(length_modelOutput); */
+//     /* std::vector< CppAD::AD<double> > extraOutputs(length_modelOutput); */
+//     /* std::vector< CppAD::AD<double> > extraOutputDummyResult(1); */
 
-    /* getValues_AD_AD( NAV_AD, model_AD_modelOutput_accessor); */
-    /* for(size_t ii = 0; ii < length_modelOutput; ++ii) { */
-    /*   extraOutputs[ii] = NAV_AD[ii]; */
-    /* } */
-    /* std::copy(NAV_AD.getPtr(), */
-    /* 	      NAV_AD.getPtr() + length_modelOutput, */
-    /* 	      extraOutputs.begin()); */
+//     /* getValues_AD_AD( NAV_AD, model_AD_modelOutput_accessor); */
+//     /* for(size_t ii = 0; ii < length_modelOutput; ++ii) { */
+//     /*   extraOutputs[ii] = NAV_AD[ii]; */
+//     /* } */
+//     /* std::copy(NAV_AD.getPtr(), */
+//     /* 	      NAV_AD.getPtr() + length_modelOutput, */
+//     /* 	      extraOutputs.begin()); */
 
-    NV.extraOutputObject = 
-      runExtraOutputObject(NV,
-    			   // extraOutputs,
-    			   //extraOutputDummyResult,
-    			   logProb);
-    dependentVars[0] = logProb;
-    // 13. Finish taping, AND
-    // 14. Call tape->optimize()
+//     NV.extraOutputObject = 
+//       runExtraOutputObject(NV,
+//     			   // extraOutputs,
+//     			   //extraOutputDummyResult,
+//     			   logProb);
+//     dependentVars[0] = logProb;
+//     // 13. Finish taping, AND
+//     // 14. Call tape->optimize()
     
-    finishADFun(NV.ADtape,
-		independentVars,
-		dependentVars);
+//     finishADFun(NV.ADtape,
+// 		independentVars,
+// 		dependentVars);
     
         
-}
+// }
 
 void nodeFun::setTapeIndependent(std::vector< CppAD::AD<double> > &independentVars) {
   CppAD::Independent(independentVars);
@@ -355,7 +359,8 @@ nodeFun::delete_extraInputObject(NodeVectorClassNew_derivs &NV) {
 
 atomic_extraOutputObject*
 nodeFun::runExtraOutputObject(NodeVectorClassNew_derivs &NV,
-			      CppAD::AD<double> &logProb) {
+			      CppAD::AD<double> &logProb,
+			      nimbleCppADinfoClass* ADinfoPtr) {
   size_t length_modelOutput = NV.model_modelOutput_accessor.getTotalLength();
   // std::cout<<"runExtraOutputObject length_modelOutput = "<<length_modelOutput<<std::endl;
   NimArr<1, CppAD::AD<double> > NAV_AD;
@@ -374,7 +379,8 @@ nodeFun::runExtraOutputObject(NodeVectorClassNew_derivs &NV,
   // std::cout<<"runExtraOutputObject C"<<std::endl;
   atomic_extraOutputObject* localExtraOutputObject =
     new atomic_extraOutputObject("extraOutputObject",
-				 &(NV.model_modelOutput_accessor));
+				 &(NV.model_modelOutput_accessor),
+				 ADinfoPtr);
 				 //&NV);
   // And then calling operator() with the local object will again use statics in the correct DLL
   // std::cout<<"runExtraOutputObject D"<<std::endl;
@@ -394,10 +400,10 @@ nodeFun::delete_extraOutputObject(NodeVectorClassNew_derivs &NV) {
   // std::cout<<"Done deleting extraOutputObject"<<std::endl;
 }
 
-CppAD::AD<double> nodeFun::call_calculate_ADproxyModel(NodeVectorClassNew_derivs &NV) {
-  CppAD::AD<double> logProb = ::calculate_ADproxyModel( NV );
-  return logProb;
-}
+// CppAD::AD<double> nodeFun::call_calculate_ADproxyModel(NodeVectorClassNew_derivs &NV) {
+//   CppAD::AD<double> logProb = ::calculate_ADproxyModel( NV );
+//   return logProb;
+// }
 
 
 // This makes a proxy "y = f(x)"
@@ -550,10 +556,11 @@ atomic_extraInputObject::rev_sparse_jac(
 // By definition the value and any derivatives for this proxy f()
 // are zero.
 atomic_extraOutputObject::atomic_extraOutputObject(const std::string& name,
-						   ManyVariablesMapAccessor* MVMA) :
+						   ManyVariablesMapAccessor* MVMA,
+						   nimbleCppADinfoClass* ADinfoPtr) :
 						   //NodeVectorClassNew_derivs* NV) :
   CppAD::atomic_base<double>(name, bool_sparsity_enum),
-  //  NV_(NV)
+  ADinfoPtr_(ADinfoPtr),
   MVMA_(MVMA),
   objName(name)
 {
@@ -562,53 +569,53 @@ atomic_extraOutputObject::atomic_extraOutputObject(const std::string& name,
 }
 
 
-bool atomic_extraOutputObject::forward(
-				      size_t                    p ,
-				      size_t                    q ,
-				      const ADvector<bool>&      vx ,
-				      ADvector<bool>&      vy ,
-				      const ADvector<double>&    tx ,
-				      ADvector<double>&    ty
-				      )
-{
-  //  std::cout<<"Entering atomic_extraOutputObject named "<<objName<<" with p = "<<p<<" and q = "<<q<<std::endl;
-  // std::cout<<"handle address: "<<CppAD::AD<double>::get_handle_address_nimble()<<std::endl;
-  // std::cout<<"tx.size() = "<<tx.size()<<" and ty.size() = "<<ty.size()<<std::endl;
+// bool atomic_extraOutputObject::forward(
+// 				      size_t                    p ,
+// 				      size_t                    q ,
+// 				      const ADvector<bool>&      vx ,
+// 				      ADvector<bool>&      vy ,
+// 				      const ADvector<double>&    tx ,
+// 				      ADvector<double>&    ty
+// 				      )
+// {
+//   //  std::cout<<"Entering atomic_extraOutputObject named "<<objName<<" with p = "<<p<<" and q = "<<q<<std::endl;
+//   // std::cout<<"handle address: "<<CppAD::AD<double>::get_handle_address_nimble()<<std::endl;
+//   // std::cout<<"tx.size() = "<<tx.size()<<" and ty.size() = "<<ty.size()<<std::endl;
   
-  // return flag
-  bool ok = true;
-    
-  if(vx.size() > 0) {// only true for Forward(0)
-    for(unsigned int i = 0; i < vy.size(); ++i) // should have size 1, but we'll handle anything.
-      vy[i] = true;
-  }
+//   // return flag
+//   bool ok = true;
+  
+//   if(vx.size() > 0) {// only true for Forward(0)
+//     for(unsigned int i = 0; i < vy.size(); ++i) // should have size 1, but we'll handle anything.
+//       vy[i] = true;
+//   }
       
-  size_t length_modelOutput_accessor = MVMA_->getTotalLength(); //NV_->model_modelOutput_accessor.getTotalLength();
-  // std::cout << "length_modelOutput_accessor =" << length_modelOutput_accessor << std::endl;
-  // if(length_modelOutput_accessor < tx.size()) {
-  //   std::cout<<"Problem: length_modelOutput_accessor < vx.size()"<<std::endl;
-  // }
+//   size_t length_modelOutput_accessor = MVMA_->getTotalLength(); //NV_->model_modelOutput_accessor.getTotalLength();
+//   // std::cout << "length_modelOutput_accessor =" << length_modelOutput_accessor << std::endl;
+//   // if(length_modelOutput_accessor < tx.size()) {
+//   //   std::cout<<"Problem: length_modelOutput_accessor < vx.size()"<<std::endl;
+//   // }
   
-  // 0th-order
-  if( p <= 0 ) {
-    // Put values in model.
-    //    std::cout<<"copying modelOutputs to model"<<std::endl;
-    NimArr<1, double> NimArr_tx;
-    NimArr_tx.setSize(length_modelOutput_accessor);
-    for(size_t i = 0; i < length_modelOutput_accessor; ++i) {
-      NimArr_tx[i] = tx[i*(q+1) + 0];
-      // std::cout<<NimArr_tx[i]<<" ";
-    }
-    // std::cout<<std::endl;
-    setValues(NimArr_tx, *MVMA_); //NV_->model_modelOutput_accessor);
-  }
+//   // 0th-order
+//   if( p <= 0 & ADinfoPtr_->updateModel() ) {
+//     // Put values in model.
+//     //    std::cout<<"copying modelOutputs to model"<<std::endl;
+//     NimArr<1, double> NimArr_tx;
+//     NimArr_tx.setSize(length_modelOutput_accessor);
+//     for(size_t i = 0; i < length_modelOutput_accessor; ++i) {
+//       NimArr_tx[i] = tx[i*(q+1) + 0];
+//       // std::cout<<NimArr_tx[i]<<" ";
+//     }
+//     // std::cout<<std::endl;
+//     setValues(NimArr_tx, *MVMA_); //NV_->model_modelOutput_accessor);
+//   }
 
-  for(unsigned int i = 0; i < ty.size(); ++i) {
-      ty[i] = 0.;
-  }
+//   for(unsigned int i = 0; i < ty.size(); ++i) {
+//       ty[i] = 0.;
+//   }
 
-  return ok;
-}
+//   return ok;
+// }
 
 // reverse
 bool

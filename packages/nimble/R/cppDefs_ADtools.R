@@ -523,7 +523,7 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
     localVars$addSymbol( CFT$returnType )
 
   recordingInfoSym <- cppVarFull(name = "recordingInfo_", baseType = "nimbleCppADrecordingInfoClass",
-                                 constructor = "(CppAD::AD<double>::get_tape_id_nimble(), CppAD::AD<double>::get_tape_handle_nimble())")
+                                 constructor = "(CppAD::AD<double>::get_tape_id_nimble(), CppAD::AD<double>::get_tape_handle_nimble(), &ADinfo)")
   localVars$addSymbol(recordingInfoSym)
   setRecordingFalseLine <- cppLiteral("recordingInfo_.recording()=false;")
   setRecordingTrueLine <- cppLiteral("recordingInfo_.recording()=true;")

@@ -78,7 +78,8 @@ nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(
 						 NodeVectorClassNew_derivs &nodes,
 						 const NimArr<1, double> &derivOrders) {
   // std::cout<<"need to propagate const-ness"<<std::endl;
-
+  std::cout<<"CALLING A FUNCTION THAT WE THOUGHT COULD BE DEPRECATED.  PLEASE REPORT TO PERRY."<<std::endl;
+  
   if(!nodes.tapeRecorded()) nodes.recordTape();
 #ifdef _TIME_AD
   derivs_main_timer.start();
@@ -117,6 +118,7 @@ nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(
 
 nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(
     NodeVectorClassNew_derivs &nodes, const double derivOrders) {
+  std::cout<<"CALLING A FUNCTION THAT WE THOUGHT COULD BE DEPRECATED.  PLEASE REPORT TO PERRY."<<std::endl;
   NimArr<1, double> orders(1);
   orders[0] = derivOrders;
   return (nimDerivs_calculate(nodes, orders));
@@ -127,6 +129,7 @@ nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(
 nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(
     NodeVectorClassNew_derivs &nodes, int iNodeFunction,
     NimArr<1, double> &derivOrders) {
+  std::cout<<"CALLING A FUNCTION THAT WE THOUGHT COULD BE DEPRECATED.  PLEASE REPORT TO PERRY."<<std::endl;
   nimSmartPtr<NIMBLE_ADCLASS> ADlist = new NIMBLE_ADCLASS;
   return (ADlist);
 }
@@ -283,23 +286,13 @@ void getDerivs_internal(vector<BASE> &independentVars,
     ansList->value.setSize(value_ans.size(), false, false);
     std::copy(value_ans.begin(), value_ans.end(), ansList->value.getPtr());
   }
-  static bool first = true;
   if(maxOrder > 0){
     std::size_t q = value_ans.size();
     vector<bool> infIndicators(q, false); // default values will be false 
     for(size_t inf_ind = 0; inf_ind < q; inf_ind++){
-      // if(first) {
-      // 	std::cout<<"Fix the inf and nan checking for CppAD::AD<double> case"<<std::endl;
-      // 	first = false;
-      // }
       if(check_inf_nan_gdi(value_ans[inf_ind])) {
 	infIndicators[inf_ind] = true;
       }
-      // if(((value_ans[inf_ind] == -std::numeric_limits<double>::infinity()) |
-      // 	  (value_ans[inf_ind] == std::numeric_limits<double>::infinity())) | 
-      // 	 (std::isnan(value_ans[inf_ind]))){
-      // 	infIndicators[inf_ind] = true;
-      // }
     }
     if (ordersFound[1]) {
       ansList->jacobian.setSize(q, wrt_n, false, false); 
@@ -421,6 +414,12 @@ void nimbleFunctionCppADbase::getDerivs_meta(nimbleCppADinfoClass &ADinfo,
 					     const NimArr<1, double> &wrtVector,
 					     nimSmartPtr<NIMBLE_ADCLASS_META> &ansList) {
   // std::cout<<"Entering getDerivs_meta"<<std::endl;
+  bool orderIncludesZero(false);
+  for(size_t i = 0; i < derivOrders.size(); ++ i) {orderIncludesZero |= (derivOrders[i] == 0);}
+  // std::cout << "orderIncludesZero = " << orderIncludesZero << std::endl;
+  bool oldUpdateModel = ADinfo.updateModel();
+  ADinfo.updateModel() = orderIncludesZero;
+
   CppAD::ADFun< CppAD::AD<double>, double > innerTape;
   innerTape = ADinfo.ADtape->base2ad();
   innerTape.new_dynamic(ADinfo.dynamicVars_meta);
@@ -431,7 +430,8 @@ void nimbleFunctionCppADbase::getDerivs_meta(nimbleCppADinfoClass &ADinfo,
 					   derivOrders,
 					   wrtVector,
 					   ansList);
-  // std::cout<<"Exiting getDerivs_meta"<<std::endl;
+  ADinfo.updateModel() = oldUpdateModel;
+  //  std::cout<<"Exiting getDerivs_meta"<<std::endl;
 }
   
 void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
@@ -439,6 +439,11 @@ void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
                                         const NimArr<1, double> &wrtVector,
                                         nimSmartPtr<NIMBLE_ADCLASS> &ansList) {
   // std::cout<<"Entering getDerivs"<<std::endl;
+  bool orderIncludesZero(false);
+  for(size_t i = 0; i < derivOrders.size(); ++ i) {orderIncludesZero |= (derivOrders[i] == 0);}
+  //  std::cout << "orderIncludesZero = " << orderIncludesZero << std::endl;
+  bool oldUpdateModel = ADinfo.updateModel();
+  ADinfo.updateModel() = orderIncludesZero;
   getDerivs_internal<double,
 		     CppAD::ADFun<double>,
 		     NIMBLE_ADCLASS>(ADinfo.independentVars,
@@ -446,145 +451,14 @@ void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
 		       derivOrders,
 		       wrtVector,
 		       ansList);
-  // std::cout<<"Exiting getDerivs"<<std::endl;
-    
-// #ifdef _TIME_AD
-//   derivs_getDerivs_timer_start();
-//   derivs_tick_id();
-//   derivs_show_id();  
-// #endif
-//   std::size_t n = ADinfo.independentVars.size();  // dim of independent vars
-
-//   std::size_t wrt_n = wrtVector.size();            // dim of wrt vars
-//   if(wrt_n == 2){
-//     if(wrtVector[1] == -1){
-//       wrt_n = 1;
-//     }
-//   }
-//   int orderSize = derivOrders.size();
-//   double const* array_derivOrders = derivOrders.getConstPtr();
-
-//   int maxOrder =
-//     *std::max_element(array_derivOrders, array_derivOrders + orderSize);
-//   bool ordersFound[3] = {false};
-
-//   for (int i = 0; i < orderSize; i++) {
-//     if ((array_derivOrders[i] > 2) | (array_derivOrders[i] < 0)) {
-//       printf("Error: Derivative orders must be between 0 and 2.\n");
-//     }
-//     ordersFound[static_cast<int>(array_derivOrders[i])] = true;
-//   }
-//   vector<double> value_ans;
-// #ifdef _TIME_AD
-//   derivs_run_tape_timer_start();
-// #endif
-//   value_ans = ADinfo.ADtape->Forward(0, ADinfo.independentVars);
-// #ifdef _TIME_AD
-//   derivs_run_tape_timer_stop();
-// #endif
-//   if (ordersFound[0]) {
-//     ansList->value = vectorDouble_2_NimArr(value_ans);
-//   }
-//   if(maxOrder > 0){
-//     std::size_t q = value_ans.size();
-//     vector<bool> infIndicators(q); // default values will be false 
-//     for(size_t inf_ind = 0; inf_ind < q; inf_ind++){
-//       if(((value_ans[inf_ind] == -std::numeric_limits<double>::infinity()) |
-//           (value_ans[inf_ind] == std::numeric_limits<double>::infinity())) | 
-// 	 (std::isnan(value_ans[inf_ind]))){
-// 	infIndicators[inf_ind] = true;
-//       }
-//     }
-//     if (ordersFound[1]) {
-//       ansList->jacobian.setSize(q, wrt_n, false, false); // setSize may be costly.  Possible to setSize outside of fxn, within chain rule algo, and only resize when necessary?
-//     }
-//     if (ordersFound[2]) {
-//       ansList->hessian.setSize(wrt_n, wrt_n, q, false, false);
-//     }
-//     vector<double> cppad_derivOut;
-//     std::vector<double> w(q, 0);
-//     for (size_t dy_ind = 0; dy_ind < q; dy_ind++) {
-//       //      std::vector<double> w(q, 0);
-//       w[dy_ind] = 1;
-//       if (maxOrder == 1) {   
-// 	if(!infIndicators[dy_ind]){
-// #ifdef _TIME_AD
-// 	  derivs_run_tape_timer_start();
-// #endif
-// 	  cppad_derivOut = ADinfo.ADtape->Reverse(1, w);
-// #ifdef _TIME_AD
-// 	  derivs_run_tape_timer_stop();
-// #endif
-// 	}
-//       } else {
-// 	for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
-// 	  if(!infIndicators[dy_ind]){
-// 	    int dx1_ind = wrtVector[vec_ind] - 1;
-// 	    std::vector<double> x1(n, 0);  // vector specifying first derivatives.
-// 	    // first specify coeffs for first dim
-// 	    // of s across all directions r, then
-// 	    // second dim, ...
-// 	    x1[dx1_ind] = 1;
-// #ifdef _TIME_AD
-// 	    derivs_run_tape_timer_start();
-// #endif
-// 	    ADinfo.ADtape->Forward(1, x1);
-// 	    cppad_derivOut = ADinfo.ADtape->Reverse(2, w);
-// #ifdef _TIME_AD
-// 	    derivs_run_tape_timer_stop();
-// #endif
-// 	  }
-// 	  for (size_t vec_ind2 = 0; vec_ind2 < wrt_n; vec_ind2++) {
-// 	    if(!infIndicators[dy_ind]){
-// 	      int dx2_ind = wrtVector[vec_ind2] - 1;
-// 	      ansList->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] =
-// 		cppad_derivOut[dx2_ind * 2 + 1];
-// 	    }
-// 	    else{
-// 	      ansList->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] = 
-// 		CppAD::numeric_limits<double>::quiet_NaN();
-// 	    }
-// 	  }
-// 	}
-//       }
-//       if (ordersFound[1]) {
-// 	double *LHS = ansList->jacobian.getPtr() + dy_ind;
-// 	if(!infIndicators[dy_ind]){
-// 	  double const *wrtVector_p = wrtVector.getConstPtr();
-// 	  double const *wrtVector_p_end = wrtVector_p + wrt_n;
-// 	    for(; wrtVector_p != wrtVector_p_end; LHS += q ) {
-// 	      *LHS = cppad_derivOut[(static_cast<int>(*wrtVector_p++) - 1) * maxOrder];
-// 	    }
-// 	} else {
-// 	  for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
-// 	    *LHS = CppAD::numeric_limits<double>::quiet_NaN();
-// 	    LHS += q;
-// 	  }
-// 	}
-
-// 	// for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
-// 	//   if(!infIndicators[dy_ind]){
-// 	//     int dx1_ind = wrtVector[vec_ind] - 1;
-// 	//     ansList->jacobian[vec_ind * q + dy_ind] =
-// 	//       cppad_derivOut[dx1_ind * maxOrder + 0];
-// 	//   }
-// 	//   else{
-// 	//     ansList->jacobian[vec_ind * q + dy_ind] =
-// 	//       CppAD::numeric_limits<double>::quiet_NaN();
-// 	//   }     
-// 	// }
-	
-//       }
-//       w[dy_ind] = 0;
-//     }
-//   }
-// #ifdef _TIME_AD
-//   derivs_getDerivs_timer_stop();
-// #endif
+  ADinfo.updateModel() = oldUpdateModel;
+  //  std::cout<<"Exiting getDerivs"<<std::endl;
 }
 
 
-CppAD::ADFun<double>* calculate_recordTape(NodeVectorClassNew_derivs &NV) {
+CppAD::ADFun<double>* calculate_recordTape(NodeVectorClassNew_derivs &NV,
+					   bool includeExtraOutputs,
+					   nimbleCppADinfoClass &ADinfo) {
   vector< CppAD::AD<double> > dependentVars(1);
   NimArr<1, double> NimArrValues;
   NimArr<1, CppAD::AD<double> > NimArrValues_AD;
@@ -678,9 +552,10 @@ CppAD::ADFun<double>* calculate_recordTape(NodeVectorClassNew_derivs &NV) {
   }
   
   // 10. call calculate.  This also sets up the extraOutput step
+  nimbleCppADrecordingInfoClass recordingInfo(true, &ADinfo);
   CppAD::AD<double> logProb = calculate_ADproxyModel(NV,
-						     true,
-						     true);
+						     includeExtraOutputs, // if true, model will be updated from tape.
+						     recordingInfo);
   dependentVars[0] = logProb;
   // 13. Finish taping, AND
   // 14. Call tape->optimize()
@@ -719,10 +594,10 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
     if(ADinfo.ADtape)
       delete ADinfo.ADtape;
     if(!use_meta_tape) {
-      ADinfo.ADtape = calculate_recordTape(nodes);
+      ADinfo.ADtape = calculate_recordTape(nodes, true, ADinfo);
     } else {
       CppAD::ADFun< double > *firstTape;
-      firstTape = calculate_recordTape(nodes);
+      firstTape = calculate_recordTape(nodes, false, ADinfo);
       CppAD::ADFun< CppAD::AD<double>, double > innerTape;
       // Make original tape use CppAD::AD<double> instead of double
       set_CppAD_atomic_info_for_model(nodes, CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage());
@@ -916,4 +791,143 @@ NimArr<1, double> make_vector_if_necessary(NimArr<1, int> a){
 		a.getPtr() + a.size(),
 		intArray.getPtr());
       return(intArray);
+}
+
+void setValues_AD_AD_taping(NimArr<1, CppAD::AD<double> > &v,
+			    ManyVariablesMapAccessor &MVA_AD,
+			    ManyVariablesMapAccessor &MVA_orig,
+			    nimbleCppADrecordingInfoClass &recordingInfo){
+  size_t totalLength = MVA_orig.getTotalLength();
+  if(!recordingInfo.recording()) {
+    // This could cause confusion:
+    // There are always two calls to functions with CppAD types.
+    // The first call occurs with recording *off*.  This ensures that any nested taping occurs.  (The nested call with itself do both of its calls, resulting in a tape, as part of the first call of an outer [meta] taping process.)
+
+    // At one stage of development, we always pulled the values out of the tape
+    // and put them in the model during the non-recording (first) call.  The below code block did that.
+    // Now we are turning that off.
+    
+    // We decided to never invoke updates of calculated values to the model during recording.
+    // However, if order 0 is not involved, then the model should not be modified.
+
+    // A potential concern is if updating the model ever plays a role in ensuring that it has valid
+    // values during the taping call.  I am not sure if that really comes into play or not.
+    // If it does, the user probably wants to run the function (or an appropriate model$calculate()
+    // prior to taping (which happens via nimDerivs())
+
+    // Code that previously ensured model updates from values()<- during the non-taping AD call.
+    /*
+    NimArr<1, double> dv;
+    dv.setSize(totalLength);
+    for(size_t ii = 0; ii < totalLength; ++ii) {
+      dv[ii] = CppAD::Value(v[ii]);
+    }
+    setValues(dv, MVA_orig);
+    */
+  } else {
+    // Make a new extraOutputObject, which during tape execution will copy to the real (non-AD) model
+    std::vector< CppAD::AD<double> > extraOutputDummyResult(1);
+    std::vector< CppAD::AD<double> > extraOutputs(totalLength);
+    for(size_t ii = 0; ii < totalLength; ++ii) {
+      extraOutputs[ii] = v[ii];
+    }
+    // std::cout << "remember to get the extraOutputObject destructed." << std::endl;
+    bool oldUpdateModel = recordingInfo.ADinfoPtr()->updateModel();
+    recordingInfo.ADinfoPtr()->updateModel() = false;
+
+    atomic_extraOutputObject* localExtraOutputObject =
+      new atomic_extraOutputObject("copying-extraOutputObject",
+				   &MVA_orig,
+				   recordingInfo.ADinfoPtr()); // These objects are stable members of nimbleFunction classes, so the pointer should be stable.
+
+    // Operate the object so it is recorded in the tape
+    (*localExtraOutputObject)(extraOutputs, extraOutputDummyResult);
+    recordingInfo.ADinfoPtr()->updateModel() = oldUpdateModel;
+    // It is unclear whether we then need to use the output in a way that forces CppAD to keep it as part of the calculation graph.
+    //   The concern is that otherwise CppAD might optimize it away by determining that nothing really depends on it.
+    //   The following line is essentially a no-operation for this purpose (extraOutputDummyResult[0] will always be 0 in value).
+    v[0] += extraOutputDummyResult[0];
+  }
+  setValues_AD_AD(v, MVA_AD); // record copying on the tape
+}
+
+bool atomic_extraOutputObject::forward(
+				      size_t                    p ,
+				      size_t                    q ,
+				      const ADvector<bool>&      vx ,
+				      ADvector<bool>&      vy ,
+				      const ADvector<double>&    tx ,
+				      ADvector<double>&    ty
+				      )
+{
+  // std::cout<<"Entering atomic_extraOutputObject named "<<objName<<" with p = "<<p<<" and q = "<<q<<std::endl;
+  // std::cout<<"handle address: "<<CppAD::AD<double>::get_handle_address_nimble()<<std::endl;
+  // std::cout<<"tx.size() = "<<tx.size()<<" and ty.size() = "<<ty.size()<<std::endl;
+  // return flag
+  bool ok = true;
+  
+  if(vx.size() > 0) {// only true for Forward(0)
+    for(unsigned int i = 0; i < vy.size(); ++i) // should have size 1, but we'll handle anything.
+      vy[i] = true;
+  }
+  
+  size_t length_modelOutput_accessor = MVMA_->getTotalLength(); //NV_->model_modelOutput_accessor.getTotalLength();
+  // std::cout << "length_modelOutput_accessor =" << length_modelOutput_accessor << std::endl;
+  // if(length_modelOutput_accessor < tx.size()) {
+  //   std::cout<<"Problem: length_modelOutput_accessor < vx.size()"<<std::endl;
+  // }
+  // 0th-order
+  if( (p <= 0) & (ADinfoPtr_->updateModel()) ) {
+    // Put values in model.
+    //   std::cout<<"putting values in model\n";
+    NimArr<1, double> NimArr_tx;
+    NimArr_tx.setSize(length_modelOutput_accessor);
+    for(size_t i = 0; i < length_modelOutput_accessor; ++i) {
+      NimArr_tx[i] = tx[i*(q+1) + 0];
+    }
+    setValues(NimArr_tx, *MVMA_); //NV_->model_modelOutput_accessor);
+    // std::cout<<"done putting values in model\n";
+  }
+
+  for(unsigned int i = 0; i < ty.size(); ++i) {
+      ty[i] = 0.;
+  }
+
+  return ok;
+}
+
+CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
+					 bool includeExtraOutputStep,
+					 nimbleCppADrecordingInfoClass &recordingInfo) {
+  //   std::cout <<"entering calculate_ADproxyModel"<< std::endl;
+  //  std::cout<<"handle address: "<<CppAD::AD<double>::get_handle_address_nimble()<<std::endl;
+  
+  CppAD::AD<double> ans = 0;
+  const vector<NodeInstruction> &instructions = nodes.getInstructions();
+  vector<NodeInstruction>::const_iterator iNode(instructions.begin());
+  vector<NodeInstruction>::const_iterator iNodeEnd(instructions.end());
+  // std::cout<<"starting node calcs in calculate_ADproxyModel"<<std::endl;
+  
+  for(; iNode != iNodeEnd; iNode++)
+    ans += iNode->nodeFunPtr->calculateBlock_ADproxyModel(iNode->operand);
+  if(includeExtraOutputStep && recordingInfo.recording()) {
+    //   std::cout<<"starting extraOutputStep"<<std::endl;
+    if(instructions.begin() != iNodeEnd) {
+      //    std::cout<<"will do extraOutputStep"<<std::endl;
+      // It is arbitrary to call this for the first node,
+      // but it is important to have it done by a nodeFun
+      // because that will be in the right compilation unit
+      // to access the right globals (statics) from CppAD.
+      bool oldUpdateModel = recordingInfo.ADinfoPtr()->updateModel();
+      recordingInfo.ADinfoPtr()->updateModel() = false;
+      
+      instructions.begin()->nodeFunPtr->setup_extraOutput_step( nodes,
+      								ans,
+								recordingInfo.ADinfoPtr() );
+      recordingInfo.ADinfoPtr()->updateModel() = oldUpdateModel;
+    }
+    //    std::cout<<"done with extraOutputStep"<<std::endl;
+  }
+
+  return(ans);
 }

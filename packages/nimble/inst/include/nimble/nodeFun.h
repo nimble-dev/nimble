@@ -25,6 +25,8 @@
 #include "smartPtrs.h"
 #include "NamedObjects.h"
 #include <cppad/cppad.hpp>
+class nimbleCppADinfoClass;
+class nimbleCppADrecordingInfoClass;
 
 #define ADvector CppAD::vector
 
@@ -95,9 +97,10 @@ class atomic_extraInputObject : public CppAD::atomic_base<double> {
 class atomic_extraOutputObject : public CppAD::atomic_base<double> {
   public:
  atomic_extraOutputObject(const std::string& name,
-			  ManyVariablesMapAccessor* MVMA);
-			 // NodeVectorClassNew_derivs* NV);
+			  ManyVariablesMapAccessor* MVMA,
+			  nimbleCppADinfoClass* ADinfoPtr);// NodeVectorClassNew_derivs* NV);
  private:
+ nimbleCppADinfoClass* ADinfoPtr_;
  // NodeVectorClassNew_derivs* NV_;//for access to model_extraInput_accessor;
  ManyVariablesMapAccessor* MVMA_;
  std::string objName;
@@ -217,11 +220,12 @@ class nodeFun : public NamedObjects {
 					 bool recover);
   // virtual void setup_extraInput_step(NodeVectorClassNew_derivs &NV);
   virtual void setup_extraOutput_step(NodeVectorClassNew_derivs &NV,
-				      CppAD::AD<double> &logProb);
+				      CppAD::AD<double> &logProb,
+				      nimbleCppADinfoClass* ADinfoPtr);
 
   // Next 3 functions are virtual to ensure the code in the model DLL
   // will be used so that the correct CppAD globals / statics will be found.
-  void recordTape(NodeVectorClassNew_derivs &NV);
+  // void recordTape(NodeVectorClassNew_derivs &NV);
   virtual void setTapeIndependent(std::vector< CppAD::AD<double> > &independentVars);
   virtual void finishADFun(CppAD::ADFun< double > &ADtape,
 			   std::vector< CppAD::AD<double> > &independentVars,
@@ -239,10 +243,11 @@ class nodeFun : public NamedObjects {
     delete_extraInputObject(NodeVectorClassNew_derivs &NV);
   virtual atomic_extraOutputObject*
     runExtraOutputObject(NodeVectorClassNew_derivs &NV,
-			 CppAD::AD<double> &logProb);
+			 CppAD::AD<double> &logProb,
+			 nimbleCppADinfoClass* ADinfoPtr);
   void
     delete_extraOutputObject(NodeVectorClassNew_derivs &NV);
-  virtual CppAD::AD<double> call_calculate_ADproxyModel(NodeVectorClassNew_derivs &NV);
+  //  virtual CppAD::AD<double> call_calculate_ADproxyModel(NodeVectorClassNew_derivs &NV);
 };
 
 #endif

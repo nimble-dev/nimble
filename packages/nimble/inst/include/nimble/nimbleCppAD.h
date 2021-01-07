@@ -128,27 +128,6 @@ void show_tick_id();
    object
    to generic CppAD driver wrappers like calcjacobian.
    Each nimbleFunction enabled for CppAD will have an object of this class. */
-
-class nimbleCppADrecordingInfoClass {
- private:
-  bool recording_;
-  CppAD::tape_id_t tape_id_;
-  CppAD::local::ADTape<double>* tape_handle_;
- public:
-  bool& recording() {return recording_;}
-  CppAD::tape_id_t& tape_id() {return tape_id_;}
-  CppAD::local::ADTape<double>* &tape_handle() {return tape_handle_;}
- nimbleCppADrecordingInfoClass(bool r_, CppAD::tape_id_t tid_, CppAD::local::ADTape<double>* th_) :
-  recording_(r_),
-    tape_id_(tid_),
-    tape_handle_(th_) {}
- nimbleCppADrecordingInfoClass(CppAD::tape_id_t tid_, CppAD::local::ADTape<double>* th_) :
-  recording_(false),
-    tape_id_(tid_),
-    tape_handle_(th_) {}
- nimbleCppADrecordingInfoClass() : recording_(false) {}
-};
-
 class nimbleCppADinfoClass {
  public:
   std::vector<double> independentVars;
@@ -163,10 +142,14 @@ class nimbleCppADinfoClass {
     updaterNV_ = &UNV;
     return *this;
   }
+  bool updateModel_;
+  bool &updateModel() {return updateModel_;}
  nimbleCppADinfoClass() :
   metaFlag(false),
     ADtape(0),
-    updaterNV_(0) {}
+    updaterNV_(0),
+    updateModel_(true)
+      {}
   ~nimbleCppADinfoClass() {
     if(ADtape) {
       delete ADtape;
@@ -174,6 +157,36 @@ class nimbleCppADinfoClass {
     }
   }
 };
+
+class nimbleCppADrecordingInfoClass {
+ private:
+  bool recording_;
+  CppAD::tape_id_t tape_id_;
+  CppAD::local::ADTape<double>* tape_handle_;
+  nimbleCppADinfoClass *ADinfoPtr_;
+ public:
+  bool& recording() {return recording_;}
+  CppAD::tape_id_t& tape_id() {return tape_id_;}
+  CppAD::local::ADTape<double>* &tape_handle() {return tape_handle_;}
+  nimbleCppADinfoClass* &ADinfoPtr() {return ADinfoPtr_;}
+ nimbleCppADrecordingInfoClass(bool r_, CppAD::tape_id_t tid_, CppAD::local::ADTape<double>* th_) :
+  recording_(r_),
+    tape_id_(tid_),
+    tape_handle_(th_) {}
+ nimbleCppADrecordingInfoClass(CppAD::tape_id_t tid_, CppAD::local::ADTape<double>* th_, nimbleCppADinfoClass *ADinfoPtr) :
+  recording_(false),
+    tape_id_(tid_),
+    tape_handle_(th_),
+    ADinfoPtr_(ADinfoPtr)
+    {}
+ nimbleCppADrecordingInfoClass(bool r_,  nimbleCppADinfoClass *ADinfoPtr) :
+  recording_(r_),
+    ADinfoPtr_(ADinfoPtr)
+    {}
+ nimbleCppADrecordingInfoClass() : recording_(false) {}
+};
+
+void setValues_AD_AD_taping(NimArr<1, CppAD::AD<double> > &v, ManyVariablesMapAccessor &MVA_AD, ManyVariablesMapAccessor &MVA_orig, nimbleCppADrecordingInfoClass &recordingInfo);
 
 void update_dynamicVars(NodeVectorClassNew_derivs &NV,
 			nimbleCppADinfoClass &ADinfo);

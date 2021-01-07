@@ -85,36 +85,37 @@ set_CppAD_tape_info_for_model::~set_CppAD_tape_info_for_model() {
   }
 }
 
-CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
-					 bool includeExtraOutputStep,
-					 bool recordingInfo__isRecording) {
-  //   std::cout <<"entering calculate_ADproxyModel"<< std::endl;
-  //  std::cout<<"handle address: "<<CppAD::AD<double>::get_handle_address_nimble()<<std::endl;
+// CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
+// 					 bool includeExtraOutputStep,
+// 					 nimbleCppADrecordingInfoClass &recordingInfo) {
+//   //   std::cout <<"entering calculate_ADproxyModel"<< std::endl;
+//   //  std::cout<<"handle address: "<<CppAD::AD<double>::get_handle_address_nimble()<<std::endl;
   
-  CppAD::AD<double> ans = 0;
-  const vector<NodeInstruction> &instructions = nodes.getInstructions();
-  vector<NodeInstruction>::const_iterator iNode(instructions.begin());
-  vector<NodeInstruction>::const_iterator iNodeEnd(instructions.end());
-  // std::cout<<"starting node calcs in calculate_ADproxyModel"<<std::endl;
+//   CppAD::AD<double> ans = 0;
+//   const vector<NodeInstruction> &instructions = nodes.getInstructions();
+//   vector<NodeInstruction>::const_iterator iNode(instructions.begin());
+//   vector<NodeInstruction>::const_iterator iNodeEnd(instructions.end());
+//   // std::cout<<"starting node calcs in calculate_ADproxyModel"<<std::endl;
   
-  for(; iNode != iNodeEnd; iNode++)
-    ans += iNode->nodeFunPtr->calculateBlock_ADproxyModel(iNode->operand);
-  if(includeExtraOutputStep && recordingInfo__isRecording) {
-    //  std::cout<<"starting extraOutputStep"<<std::endl;
-    if(instructions.begin() != iNodeEnd) {
-      //  std::cout<<"will do extraOutputStep"<<std::endl;
-      // It is arbitrary to call this for the first node,
-      // but it is important to have it done by a nodeFun
-      // because that will be in the right compilation unit
-      // to access the right globals (statics) from CppAD.
-      instructions.begin()->nodeFunPtr->setup_extraOutput_step( nodes,
-      								ans );
-    }
-    // std::cout<<"done with extraOutputStep"<<std::endl;
-  }
+//   for(; iNode != iNodeEnd; iNode++)
+//     ans += iNode->nodeFunPtr->calculateBlock_ADproxyModel(iNode->operand);
+//   if(includeExtraOutputStep && recordingInfo.recording()) {
+//     //  std::cout<<"starting extraOutputStep"<<std::endl;
+//     if(instructions.begin() != iNodeEnd) {
+//       //  std::cout<<"will do extraOutputStep"<<std::endl;
+//       // It is arbitrary to call this for the first node,
+//       // but it is important to have it done by a nodeFun
+//       // because that will be in the right compilation unit
+//       // to access the right globals (statics) from CppAD.
+//       instructions.begin()->nodeFunPtr->setup_extraOutput_step( nodes,
+//       								ans,
+// 								recordingInfo.ADinfoPtr() );
+//     }
+//     // std::cout<<"done with extraOutputStep"<<std::endl;
+//   }
 
-  return(ans);
-}
+//   return(ans);
+// }
 
 // void assign_extraInputDummy(NodeVectorClassNew_derivs &nodes,
 // 			    CppAD::AD<double> &extraInputDummy) {
@@ -497,40 +498,6 @@ void setValues(NimArrBase<int> &nimArr, ManyVariablesMapAccessor &MVA){
 void setValues_AD_AD(NimArrBase< CppAD::AD<double> > &nimArr,  ManyVariablesMapAccessor &MVA){
   nimArr_2_ManyModelAccess_AD_AD(MVA, nimArr);
 }
-
-void setValues_AD_AD_taping(NimArr<1, CppAD::AD<double> > &v,
-			    ManyVariablesMapAccessor &MVA_AD,
-			    ManyVariablesMapAccessor &MVA_orig,
-			    bool recording){
-  size_t totalLength = MVA_orig.getTotalLength();
-  if(!recording) {
-    NimArr<1, double> dv;
-    dv.setSize(totalLength);
-    for(size_t ii = 0; ii < totalLength; ++ii) {
-      dv[ii] = CppAD::Value(v[ii]);
-    }
-    setValues(dv, MVA_orig);
-  } else {
-    // Make a new extraOutputObject, which during tape execution will copy to the real (non-AD) model
-    std::vector< CppAD::AD<double> > extraOutputDummyResult(1);
-    std::vector< CppAD::AD<double> > extraOutputs(totalLength);
-    for(size_t ii = 0; ii < totalLength; ++ii) {
-      extraOutputs[ii] = v[ii];
-    }
-    // std::cout << "remember to get the extraOutputObject destructed." << std::endl;
-    atomic_extraOutputObject* localExtraOutputObject =
-      new atomic_extraOutputObject("copying-extraOutputObject",
-				   &MVA_orig); // These objects are stable members of nimbleFunction classes, so the pointer should be stable.
-  // Operate the object so it is recorded in the tape
-    (*localExtraOutputObject)(extraOutputs, extraOutputDummyResult);
-    // It is unclear whether we then need to use the output in a way that forces CppAD to keep it as part of the calculation graph.
-    //   The concern is that otherwise CppAD might optimize it away by determining that nothing really depends on it.
-    //   The following line is essentially a no-operation for this purpose (extraOutputDummyResult[0] will always be 0 in value).
-						    v[0] += extraOutputDummyResult[0];
-    }
-    setValues_AD_AD(v, MVA_AD); // record copying on the tape
-}
-
 
 void setValues(NimArrBase<double> &nimArr, ManyVariablesMapAccessor &MVA, int index){
   nimArr_2_ManyModelAccessIndex<double>(MVA, nimArr, index-1);
