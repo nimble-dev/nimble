@@ -266,7 +266,7 @@ processNonParseableCode <- function(text) {
 #'
 #' @return returns a NIMBLE BUGS R model
 #'
-#' @details Note that \code{readBUGSmodel} should handle most common ways of providing information on a model as used in BUGS and JAGS but does not handle input model files that refer to additional files containing data. Please see the BUGS examples provided with NIMBLE in the \code{classic-bugs} directory of the installed NIMBLE package or JAGS (\url{http://sourceforge.net/projects/mcmc-jags/files/Examples/}) for examples of supported formats. Also, \code{readBUGSmodel} takes both constants and data via the 'data' argument, unlike \code{\link{nimbleModel}}, in which these are distinguished. The reason for allowing both to be given via 'data' is for backwards compatibility with the BUGS examples, in which constants and data are not distinguished.
+#' @details Note that \code{readBUGSmodel} should handle most common ways of providing information on a model as used in BUGS and JAGS but does not handle input model files that refer to additional files containing data. Please see the BUGS examples provided with NIMBLE in the \code{classic-bugs} directory of the installed NIMBLE package or JAGS (\url{https://sourceforge.net/projects/mcmc-jags/files/Examples/}) for examples of supported formats. Also, \code{readBUGSmodel} takes both constants and data via the 'data' argument, unlike \code{\link{nimbleModel}}, in which these are distinguished. The reason for allowing both to be given via 'data' is for backwards compatibility with the BUGS examples, in which constants and data are not distinguished.
 #'
 #' @seealso \code{\link{nimbleModel}}
 #' 
@@ -334,7 +334,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
       # note that split lines that are parseable are dealt with by parse()
   }
 
-  if(! class(model) == "{")
+  if(!inherits(model, "{"))
     stop("readBUGSmodel: cannot process 'model' input.")
 
   # process initial values

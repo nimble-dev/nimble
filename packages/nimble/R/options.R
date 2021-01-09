@@ -54,14 +54,16 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         ##useDynamicConjugacy = TRUE,
 
 
+        ## samplerAssignmentRules system deprecated Nov 2020 -DT
         ## samplerAssignmentRules object that controls the default sampler assignments by configureMCMC.
         ## value is set to samplerAssignmentRules() (the defaults) in MCMC_configuration.R
         MCMCprogressBar = TRUE,
-        MCMCuseSamplerAssignmentRules = FALSE,
+        ##MCMCuseSamplerAssignmentRules = FALSE,
         MCMCsaveHistory = FALSE,
-        MCMCdefaultSamplerAssignmentRules = NULL,
+        ##MCMCdefaultSamplerAssignmentRules = NULL,
         MCMCmultivariateNodesAsScalars = FALSE,
         MCMCmonitorAllSampledNodes = FALSE,
+        MCMCuseConjugacy = TRUE,
         MCMCenableWAIC = FALSE
         
         ## default settings for MCMC samplers

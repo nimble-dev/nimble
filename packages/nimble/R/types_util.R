@@ -208,6 +208,43 @@ as.matrix.CmodelValues <- function(x, varNames, ...){
 	return(ans)
 }
 
+as.list.modelValuesBaseClass <- function(x, varNames, iterationAsLastIndex = FALSE, ...) {
+  if(missing(varNames))
+    varNames <- x$varNames
+  nrows <- getsize(x)
+  results <- list()
+  for(v in varNames) {
+    samples <- x[[v]]
+    dims <- dimOrLength(samples[[1]])
+    matrixVersion <- do.call("c", lapply(samples, as.numeric))
+    ansDims <- c(dims, nrows)
+    results[[v]] <- array(matrixVersion, dim = ansDims)
+    if(!iterationAsLastIndex) {
+      nDim <- length(ansDims)
+      results[[v]] <- aperm(results[[v]], c(nDim, 1:(nDim-1)))
+    }
+  }
+  results
+}
+
+as.list.CmodelValues <- function(x, varNames, iterationAsLastIndex = FALSE, ...) {
+  if(missing(varNames))
+    varNames <- x$varNames
+  nrows <- getsize(x)
+  results <- list()
+  for(v in varNames) {
+    samples <- x[[v]]
+    dims <- dimOrLength(samples[[1]])
+    matrixVersion <- do.call("c", lapply(samples, as.numeric))
+    ansDims <- c(dims, nrows)
+    results[[v]] <- array(matrixVersion, dim = ansDims)
+    if(!iterationAsLastIndex) {
+      nDim <- length(ansDims)
+      results[[v]] <- aperm(results[[v]], c(nDim, 1:(nDim-1)))
+    }
+  }
+  results
+}
 
 modelValuesElement2Matrix <- function(mv, varName){
 	if(length(varName) != 1)

@@ -4,7 +4,7 @@
 \alias{makeParamInfo}
 \title{Make an object of information about a model-parameter pairing for getParam.  Used internally}
 \usage{
-makeParamInfo(model, nodes, param)
+makeParamInfo(model, nodes, param, vector = FALSE)
 }
 \arguments{
 \item{model}{A model such as returned by \code{\link{nimbleModel}}.}
@@ -12,6 +12,8 @@ makeParamInfo(model, nodes, param)
 \item{nodes}{A character string naming one one or more stochastic nodes, such as "mu", "c('mu', 'beta[2]')", or "eta[1:3, 2]".  getParam only works for one node at a time, but if it is indexed (nodes[i]), then makeParamInfo sets up the information for the entire vector nodes.  The processing pathway is used by the NIMBLE compiler.}
 
 \item{param}{A character string naming a parameter of the distribution followed by node, such as "mean", "rate", "lambda", or whatever parameter names are relevant for the distribution of the node.}
+
+\item{vector}{A logical indicating whether nodes should definitely be treated as a vector in compiled code, even if it has length = 1.  For type consistency, the compiler needs this option.  If nodes has length > 1, this argument is ignored.}
 }
 \description{
 Creates a simple getParam_info object, which has a list with a paramID and a type

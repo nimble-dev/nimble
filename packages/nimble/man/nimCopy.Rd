@@ -6,7 +6,7 @@
 \title{Copying function for NIMBLE}
 \usage{
 nimCopy(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA,
-  logProb = FALSE)
+  logProb = FALSE, logProbOnly = FALSE)
 }
 \arguments{
 \item{from}{Either a NIMBLE model or modelValues object}
@@ -23,6 +23,9 @@ nimCopy(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA,
 
 \item{logProb}{A logical value indicating whether the log probabilities of the given nodes should also be copied (i.e. if \code{nodes = 'x'}
 and \code{logProb = TRUE}, then both \code{'x'} and \code{'logProb_x'} will be copied)}
+
+\item{logProbOnly}{A logical value indicating whether only the log probabilities of the given nodes should be copied (i.e. if \code{nodes = 'x'}
+and \code{logProbOnly = TRUE}, then only \code{'logProb_x'} will be copied)}
 }
 \description{
 Copies values from a NIMBLE model or modelValues object to another NIMBLE model or modelValues. Work in R and NIMBLE.  The NIMBLE keyword \code{copy} is identical to \code{nimCopy}

@@ -221,7 +221,7 @@ nimbleRcall <- function(prototype, returnType, Rfun, where = getNimbleFunctionEn
                             substitute(returnType(RT), list(RT = returnType))
                             )
     } else {
-        resultLines <- list(quote(UNPROTECT(1)),
+        resultLines <- list(substitute(nimVerbatim(UNPROTECT(2 + NARGS)), list(NARGS = length(args))),
                             substitute(returnType(RT), list(RT = returnType))
                             )
     }

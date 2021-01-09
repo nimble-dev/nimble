@@ -20,18 +20,61 @@ compareMCMCs <- function(...)
 MCMCsuite <- function(...)
     cat("This function now resides in a separate package. Please see https://github.com/nimble-dev/compareMCMCs.\n")
 
-## This is used in conjugacy definition for ddirch, to calculate 'contribution'
-## terms from dcat dependents.
-calc_dcatConjugacyContributions <- nimbleFunction(
-    name = 'calc_dcatConjugacyContributions',
-    run = function(ncat = double(0), value = double(0)) {
-        ans <- numeric(ncat)
-        ans[value] <- 1
-        return(ans)
-        returnType(double(1))
-    }
-)
 
+#' Placeholder for buildAuxiliaryFilter
+#'
+#' This function has been moved to the `nimbleSMC` package
+#'
+#' @param ... arguments
+#'
+#' @export
+#'
+buildAuxiliaryFilter <- function(...)
+    cat("NIMBLE's sequential Monte Carlo functionality, including this function, now resides in the 'nimbleSMC' package.\n")
+
+#' Placeholder for buildBootstrapFilter
+#'
+#' This function has been moved to the `nimbleSMC` package
+#'
+#' @param ... arguments
+#'
+#' @export
+#'
+buildBootstrapFilter <- function(...)
+    cat("NIMBLE's sequential Monte Carlo functionality, including this function, now resides in the 'nimbleSMC' package.\n")
+
+#' Placeholder for buildEnsembleKF
+#'
+#' This function has been moved to the `nimbleSMC` package
+#'
+#' @param ... arguments
+#'
+#' @export
+#'
+buildEnsembleKF <- function(...)
+    cat("NIMBLE's sequential Monte Carlo functionality, including this function, now resides in the 'nimbleSMC' package.\n")
+
+#' Placeholder for buildIteratedFilter2
+#'
+#' This function has been moved to the `nimbleSMC` package
+#'
+#' @param ... arguments
+#'
+#' @export
+#'
+buildIteratedFilter2 <- function(...)
+    cat("NIMBLE's sequential Monte Carlo functionality, including this function, now resides in the 'nimbleSMC' package.\n")
+
+#' Placeholder for buildLiuWestFilter
+#'
+#' This function has been moved to the `nimbleSMC` package
+#'
+#' @param ... arguments
+#'
+#' @export
+#'
+buildLiuWestFilter <- function(...)
+    cat("NIMBLE's sequential Monte Carlo functionality, including this function, now resides in the 'nimbleSMC' package.\n")
 
 ## used in altParams for dmnorm
 ## this needs to be sourced after nimbleFunction() is defined, so can't be done in distributions_inputList.R
@@ -52,6 +95,17 @@ calc_dmnormAltParams <- nimbleFunction(
     }
 )
 
+## This is used in conjugacy definition for ddirch, to calculate 'contribution'
+## terms from dcat dependents.
+calc_dcatConjugacyContributions <- nimbleFunction(
+    name = 'calc_dcatConjugacyContributions',
+    run = function(ncat = double(0), value = double(0)) {
+        ans <- numeric(ncat)
+        ans[value] <- 1
+        return(ans)
+        returnType(double(1))
+    }
+)
 
 ## used in conjugacy definition for dmnorm, to calculate 'contribution' terms;
 ## formerly avoided unnecessary matrix multiplications, when 'coeff' is identity matrix by numerical computation

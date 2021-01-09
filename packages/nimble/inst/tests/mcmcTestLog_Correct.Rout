@@ -2720,6 +2720,18 @@ sd    0.4469023 0.5324733
 2.5%  0.2876852 4.0208670
 97.5% 2.0595649 6.0008362
 ===== Finished MCMC test for very simple example. =====
+===== Starting MCMC test for linear Gaussian state-space model. =====
+              a         b    sigmaOE   sigmaPN       x[1]      x[2]      x[3]
+mean   22.98064 -0.922701 11.9236413 25.391832   8.124589  12.40342  13.57083
+sd     42.06592  3.067274 13.6871352 16.707731  15.175660  11.61479  11.58977
+2.5%  -59.32488 -7.655409  0.8851569  2.317225 -22.891119 -11.58120 -12.09003
+97.5% 130.69775  5.226793 45.3956161 57.219140  47.934397  45.23562  41.88527
+            x[4]      x[5]
+mean    9.955578  15.10239
+sd     12.492135  15.76483
+2.5%  -20.951050 -20.04025
+97.5%  37.194944  51.73233
+===== Finished MCMC test for linear Gaussian state-space model. =====
 ===== Starting MCMC test for basic no-block sampler. =====
             x[1]         x[2]       x[3]
 mean  -0.5911590 -0.004110959  0.6744219
@@ -2992,5 +3004,4 @@ sd      0.2099087   0.1621212   0.5846388
 97.5%  -0.2912551   0.7630663   3.3513359
 ===== Finished MCMC test for conjugate Wishart, scaled. =====
 ===== Starting MCMC test for conjugate MVN with ragged dependencies. ========== Starting MCMC test for binary sampler. ========== Starting MCMC test for binary sampler handles out of bounds. ========== Starting MCMC test for RW_multinomial sampler. ========== Starting MCMC test RW_multinomial sampler on distribution of size 2. ========== Starting MCMC test if RW_dirichlet sampler consistent with conjugate multinomial sampler. ========== Starting MCMC test RW_dirichlet sampler more complicated. =====thin = 1: alpha, theta, p1, p2
-===== Starting MCMC test dcar_normal sampling. ========== Starting test dcar_proper density evaluations. ========== Starting MCMC test dcar_proper sampling. =====thin = 1: tau, gamma, x
 ===== Starting MCMC test of logProb variable monitoring =====

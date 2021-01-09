@@ -501,8 +501,7 @@ conjugacyClass <- setRefClass(
                                setup    = SETUPFUNCTION,
                                run      = RUNFUNCTION,
                                methods  = list(getPosteriorLogDensity = GETPOSTERIORLOGDENSITYFUNCTION,
-                                               reset                  = function() {}),
-                               where    = getLoadingNamespace()
+                                               reset                  = function() {})
                 ),
                 list(SETUPFUNCTION                  = genSetupFunction(dependentCounts = dependentCounts, doDependentScreen = doDependentScreen),
                      RUNFUNCTION                    = genRunFunction(dependentCounts = dependentCounts, doDependentScreen = doDependentScreen),

@@ -351,8 +351,10 @@ We plan to, but do not currently, include the following distributions as part of
 
 ### Available BUGS language functions {#subsec:BUGS-lang-fxns}
 
-Tables \@ref(tab:functions)-\@ref(tab:functionsMatrix) show the
-available operators and functions. 
+Tables \@ref(tab:functions)-\@ref(tab:functionsMatrix) show the available operators and functions.
+<!---\@ref(tab:functions)-\@ref(tab:functionsMatrix) 
+Hard-coding these as not clear how to have tables here and in Chapter 11 use same source files but numbered distinctly
+--> 
 <!---  These are also available for `nimbleFunction` programming (see Chapter \@ref(cha:progr-with-models)).  In fact, BUGS model nodes are implemented as `nimbleFunction`s that are custom-generated from BUGS declarations, so it would be more correct to say that functions and operators available for `nimbleFunction`s are also available for the model declarations. -->
 Support for more general R expressions
 is covered in Chapter \@ref(cha:RCfunctions) about programming
@@ -447,9 +449,13 @@ In the case of right-censoring, `censored[i]` should be given as `data` with a v
 `t[i]` is right-censored (`t[i] > c[i]`) and 0 if it is
 observed.  The data vector for `t` should have `NA` (indicating
 missing data) for any censored `t[i]` entries. (As a result, these
-nodes will be sampled in an MCMC.)  The data vector for `c` should
+nodes will be sampled in an MCMC.)  The vector for `c` should
 give the censoring times corresponding to censored entries and a value
-above the observed times for uncensored entries (e.g., `Inf`). 
+above the observed times for uncensored entries (e.g., `Inf`). The values for `c`
+can be provided via `constants`, `inits`, or `data`. We recommend providing
+via `constants` for values that are fixed and via `inits` for values that are 
+to be estimated or might be changed for some reason.
+
 Left-censored observations would be specified by setting `censored[i]` to 0 
 and `t[i]` to `NA`. 
   

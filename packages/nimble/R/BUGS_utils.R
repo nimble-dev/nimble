@@ -190,12 +190,15 @@ getCallText <- function(code)      deparse(code[[1]])
 
 parseTreeSubstitute <- function(pt, pattern, replacement) {
     if(identical(pt, pattern))    return(replacement)
-    if(class(pt) == 'name')       return(pt)
+    if(inherits(pt, 'name'))       return(pt)
     if(is.numeric(pt))            return(pt)
     if(is.logical(pt))            return(as.numeric(pt)) # for now turn logicals into numerics until we propagate logicals to C++
     for(i in seq_along(pt))    { pt[[i]] <- parseTreeSubstitute(pt[[i]], pattern, replacement) }
     return(pt)
 }
+
+
+CppNameLabelMaker <- labelFunctionCreator('___TRUNC___')
 
 # no longer documented in Rd
 # Generates a valid C++ name from an R Name
@@ -210,10 +213,10 @@ parseTreeSubstitute <- function(pt, pattern, replacement) {
 # @export
 # @examples
 #  genName('theta[1]')
-Rname2CppName <- function(rName, colonsOK = TRUE) {
+Rname2CppName <- function(rName, colonsOK = TRUE, maxLength = 250) {
     ## This will serve to replace and combine our former Rname2CppName and nameMashupFromExpr
     ## which were largely redundant
-    if (!is.character(rName))
+    if (!is.character(rName)) 
         rName <- deparse(rName)
 
     if( colonsOK) {
@@ -258,6 +261,12 @@ Rname2CppName <- function(rName, colonsOK = TRUE) {
     rName <- gsub('\\^', '_tothe_', rName)
     rName <- gsub('^_+', '', rName) # remove leading underscores.  can arise from (a+b), for example
     rName <- gsub('^([[:digit:]])', 'd\\1', rName)    # if begins with a digit, add 'd' in front
+    rName <- sapply(rName,
+                    function(x) {
+                        if(nchar(x) > maxLength && !length(grep("___TRUNC___", x))) 
+                            x <- paste0(substring(x, 1, maxLength), CppNameLabelMaker())
+                        return(x)
+                    })
     rName
     
 }

@@ -45,7 +45,7 @@ samplerConf <- setRefClass(
 ## NOTE: the empty lines are important in the final formatting, so please don't remove any of them in your own help info
 
 #' Class \code{MCMCconf}
-#' @aliases MCMCconf addSampler removeSamplers setSamplers printSamplers getSamplers setSamplerExecutionOrder getSamplerExecutionOrder addMonitors addMonitors2 resetMonitors getMonitors getMonitors2 printMonitors setThin setThin2
+#' @aliases MCMCconf addSampler removeSamplers setSamplers printSamplers getSamplers setSamplerExecutionOrder getSamplerExecutionOrder addMonitors addMonitors2 setMonitors setMonitors2 resetMonitors getMonitors getMonitors2 printMonitors setThin setThin2
 #' @export
 #' @description
 #' Objects of this class configure an MCMC algorithm, specific to a particular model.  Objects are normally created by calling \code{\link{configureMCMC}}.
@@ -89,10 +89,10 @@ MCMCconf <- setRefClass(
     
     methods = list(
         
-        initialize = function(model, nodes, control = list(), rules,
+        initialize = function(model, nodes, control = list(), ##rules,
             monitors,                thin  = 1,
             monitors2 = character(), thin2 = 1,
-            useConjugacy = TRUE,
+            useConjugacy = getNimbleOption('MCMCuseConjugacy'),
             onlyRW = FALSE,
             onlySlice = FALSE,
             multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
@@ -182,88 +182,60 @@ print: A logical argument specifying whether to print the montiors and samplers.
                 if(!(all(model$isStoch(nodes)))) { stop('assigning samplers to non-stochastic nodes: ', paste0(nodes[!model$isStoch(nodes)], collapse=', ')) }    ## ensure all target node(s) are stochastic
             }
 
-            if(getNimbleOption('MCMCuseSamplerAssignmentRules')) {
-                ## use new system of samplerAssignmentRules
-                isEndNodeAll <- model$isEndNode(nodes)
-                isMultivariateAll <- model$isMultivariate(nodes)
-                isDiscreteAll <- model$isDiscrete(nodes)
-                isBinaryAll <- model$isBinary(nodes)
-                nodeDistributionsAll <- model$getDistribution(nodes)
-                if(useConjugacy) {
-                    conjugacyResultsAll <- model$checkConjugacy(nodes)
-                    isConjugateAll <- nodes %in% names(conjugacyResultsAll)
-                }
-                
-                ruleSelectFunction <- function() {}
-                body(ruleSelectFunction) <- rules$makeRuleSelectionCodeBlock()
-                
-                for(i in seq_along(nodes)) {
-                    node <- nodes[i]
-                    isEndNode <- isEndNodeAll[i]
-                    isMultivariate <- isMultivariateAll[i]
-                    isDiscrete <- isDiscreteAll[i]
-                    isBinary <- isBinaryAll[i]
-                    nodeDistribution <- nodeDistributionsAll[i]
-                    if(useConjugacy) isConjugate <- isConjugateAll[i]
-                    ruleSelectFunction()
-                }
+            if(!useNewConfigureMCMC) {
+                isEndNode <- model$isEndNode(nodes)
+                if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
             } else {
-                ## use old (static) system for assigning default samplers
-                if(!useNewConfigureMCMC) {
-                    isEndNode <- model$isEndNode(nodes)
-                    if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
-                } else {
-                    nodeIDs <- model$expandNodeNames(nodes, returnType = 'ids')
-                    isEndNode <-  model$isEndNode(nodeIDs) ## isEndNode can be modified later to avoid adding names when input is IDs
-                    if(useConjugacy) conjugacyResultsAll <- nimble:::conjugacyRelationshipsObject$checkConjugacy(model, nodeIDs) ## Later, this can go through model$checkConjugacy if we make it check whether nodes are already nodeIDs.  To isolate changes, I am doing it directly here.
-                    nodeDeclIDs <- model$modelDef$maps$graphID_2_declID[nodeIDs] ## Below, nodeDeclIDs[i] gives the nodeDeclID.  We could add an interface to get this.
-                    nodeDeclID_2_nodes <- split(nodes, nodeDeclIDs)
-                    
-                    uniqueNodeDeclIDs <- unique(nodeDeclIDs)
-                    nodeTraits <- lapply(uniqueNodeDeclIDs,
-                                         function(x) {
-                                             declInfo <- model$modelDef$declInfo[[x]]
-                                             dist <- declInfo$distributionName
-                                             distInfo <- getDistributionInfo(dist)
-                                             discrete <- distInfo$discrete
-                                             ## Following can be replaced by an efficiency version model$isBinary 
-                                             binary <- dist == 'dbern'
-                                             ## If dist == 'dbin', then binary-ness will be checked for each node, below
-                                             ## This could be improved to see if they all have a literal "1", for example.
-                                             ## The checking below is inefficient!
-                                             ## For nodeScalarComponents, we will check a single node
-                                             ## We could use returnType = 'ids', but we have a warning generated in that case,
-                                             ## for future investigation.
-                                             
-                                             ## Determining nodeLength is a bit tricky.
-                                             ## The only purpose is to determine scalar vs. non-scalar.
-                                             ## In the future, we may want to make this available in distributionInfo.
-                                             ## A difficulty is whether it is possible to declare a scalar
-                                             ##     case of a multivariate node.
-                                             ## If so, then the status (scalar vs non-scalar) needs to be checked
-                                             ## node by node, not just once for the declaration.
-                                             ## Here we use a system that marks scalar as scalar.  The alternative is really
-                                             ## "maybe non-scalar", in which case it is checked node-by-node below.
-                                             ## Unfortunately, this processing works from nodeNames.
-                                             allNodeScalarComponents <- model$expandNodeNames(
-                                                                               nodeDeclID_2_nodes[[as.character(x)]],
-                                                                               returnScalarComponents = TRUE)
-                                             nodeLength <- if(length(allNodeScalarComponents) ==
-                                                              length(nodeDeclID_2_nodes[[as.character(x)]]))
-                                                               1 else 2 ## 2 indicates "maybe non-scalar"
-                                             list(dist = dist,
-                                                  discrete = discrete,
-                                                  binary = binary,
-                                                  nodeLength = nodeLength)
-                                        }
-                                        )
-                    names(nodeTraits) <- as.character(uniqueNodeDeclIDs)
-                }
-               
+                nodeIDs <- model$expandNodeNames(nodes, returnType = 'ids')
+                isEndNode <-  model$isEndNode(nodeIDs) ## isEndNode can be modified later to avoid adding names when input is IDs
+                if(useConjugacy) conjugacyResultsAll <- nimble:::conjugacyRelationshipsObject$checkConjugacy(model, nodeIDs) ## Later, this can go through model$checkConjugacy if we make it check whether nodes are already nodeIDs.  To isolate changes, I am doing it directly here.
+                nodeDeclIDs <- model$modelDef$maps$graphID_2_declID[nodeIDs] ## Below, nodeDeclIDs[i] gives the nodeDeclID.  We could add an interface to get this.
+                nodeDeclID_2_nodes <- split(nodes, nodeDeclIDs)
+                
+                uniqueNodeDeclIDs <- unique(nodeDeclIDs)
+                nodeTraits <- lapply(uniqueNodeDeclIDs,
+                                     function(x) {
+                                         declInfo <- model$modelDef$declInfo[[x]]
+                                         dist <- declInfo$distributionName
+                                         distInfo <- getDistributionInfo(dist)
+                                         discrete <- distInfo$discrete
+                                         ## Following can be replaced by an efficiency version model$isBinary 
+                                         binary <- dist == 'dbern'
+                                         ## If dist == 'dbin', then binary-ness will be checked for each node, below
+                                         ## This could be improved to see if they all have a literal "1", for example.
+                                         ## The checking below is inefficient!
+                                         ## For nodeScalarComponents, we will check a single node
+                                         ## We could use returnType = 'ids', but we have a warning generated in that case,
+                                         ## for future investigation.
+                                         
+                                         ## Determining nodeLength is a bit tricky.
+                                         ## The only purpose is to determine scalar vs. non-scalar.
+                                         ## In the future, we may want to make this available in distributionInfo.
+                                         ## A difficulty is whether it is possible to declare a scalar
+                                         ##     case of a multivariate node.
+                                         ## If so, then the status (scalar vs non-scalar) needs to be checked
+                                         ## node by node, not just once for the declaration.
+                                         ## Here we use a system that marks scalar as scalar.  The alternative is really
+                                         ## "maybe non-scalar", in which case it is checked node-by-node below.
+                                         ## Unfortunately, this processing works from nodeNames.
+                                         allNodeScalarComponents <- model$expandNodeNames(
+                                             nodeDeclID_2_nodes[[as.character(x)]],
+                                             returnScalarComponents = TRUE)
+                                         nodeLength <- if(length(allNodeScalarComponents) ==
+                                                          length(nodeDeclID_2_nodes[[as.character(x)]]))
+                                                           1 else 2 ## 2 indicates "maybe non-scalar"
+                                         list(dist = dist,
+                                              discrete = discrete,
+                                              binary = binary,
+                                              nodeLength = nodeLength)
+                                     }
+                                     )
+                names(nodeTraits) <- as.character(uniqueNodeDeclIDs)
+                
                 allDists <- unlist(lapply(model$modelDef$declInfo, `[[`, 'distributionName'))
                 allDists <- allDists[!is.na(allDists)]
                 check_dCRP <- any(allDists == "dCRP")
-              
+                
                 clusterNodeInfo <- NULL; dcrpNode <- NULL; numCRPnodes <- 0
 
                 for(i in seq_along(nodes)) {
@@ -310,9 +282,10 @@ print: A logical argument specifying whether to print the montiors and samplers.
                         if(nodeDist == 'dcar_normal')  { addSampler(target = node, type = 'CAR_normal');         next }
                         if(nodeDist == 'dcar_proper')  { addSampler(target = node, type = 'CAR_proper');         next }
                         if(nodeDist == 'dCRP')         {
-                            addSampler(target = node, type = 'CRP', control = list(useConjugacy = useConjugacy))
                             numCRPnodes <- numCRPnodes + 1
                             clusterNodeInfo[[numCRPnodes]] <- findClusterNodes(model, node)
+                            addSampler(target = node, type = 'CRP', control = list(checkConjugacy = useConjugacy,
+                                                                                   clusterVarInfo = clusterNodeInfo[[numCRPnodes]]))
                             dcrpNode[numCRPnodes] <- node
                             next
                         }
@@ -362,29 +335,37 @@ print: A logical argument specifying whether to print the montiors and samplers.
 
                 ## For CRP-based models, wrap samplers for cluster parameters so not sampled if cluster is unoccupied.
                 if(!is.null(clusterNodeInfo)) {
+                    allClusterNodes <- lapply(clusterNodeInfo, function(x) x$clusterNodes)
                     for(k in seq_along(clusterNodeInfo)) {
-                        for(clusterNodes in clusterNodeInfo[[k]]$clusterNodes) {
-                            samplers <- getSamplers(clusterNodes)
-                            removeSamplers(clusterNodes)
-                            for(i in seq_along(samplers)) {
-                                node <- samplers[[i]]$target
-                                addSampler(target = node, type = 'CRP_cluster_wrapper',
-                                           control = list(wrapped_type = samplers[[i]]$name, wrapped_conf = samplers[[i]],
-                                                          dcrpNode = dcrpNode[[k]], clusterID = i))
-                                ## Note for more general clustering: will probably change to
-                                ## 'clusterID=clusterNodeInfo[[k]]$clusterIDs[[??]][i]'
-                                ## which means we probably need to change to for(clusterNodesIdx in seq_along(clusterNodeInfo[[k]]$clusterNodes))
+                        for(idx in seq_along(clusterNodeInfo[[k]]$clusterNodes)) {
+                            clusterNodes <- clusterNodeInfo[[k]]$clusterNodes[[idx]]
+                            if(length(allClusterNodes) == 1 || !any(clusterNodes %in% unlist(allClusterNodes[-k]))) {
+                                ## For now avoid wrapper if any overlap of clusterNodes, as hard to determine if cluster is occupied.
+                                ## We'll need to come back to this to handle the mu[xi[i],eta[j]] case if we want to
+                                ## avoid sampling empty clusters in that case.
+
+                                samplers <- getSamplers(clusterNodes)
+                                removeSamplers(clusterNodes)
+                                for(i in seq_along(samplers)) {
+                                    node <- samplers[[i]]$target
+                                    ## getSamplers() returns samplers in order of configuration not in order of input.
+                                    clusterID <- which(clusterNodes == node)
+                                    if(length(clusterID) != 1)
+                                       stop("Cannot determine wrapped sampler for cluster parameter ", node, ".")
+                                    addSampler(target = node, type = 'CRP_cluster_wrapper',
+                                               control = list(wrapped_type = samplers[[i]]$name, wrapped_conf = samplers[[i]],
+                                                              dcrpNode = dcrpNode[[k]], clusterID = clusterNodeInfo[[k]]$clusterIDs[[idx]][clusterID]))
+                                }
                             }
                         }
                     }
                 }
-
             }
             
             if(print)   show()    ##printSamplers()
         },
 
-        addConjugateSampler = function(conjugacyResult, dynamicallyIndexed = FALSE, dcrpNode = NULL, clusterID = NULL, print = FALSE) {
+        addConjugateSampler = function(conjugacyResult, dynamicallyIndexed = FALSE, print = FALSE) {
             ## update May 2016: old (non-dynamic) system is no longer supported -DT
             ##if(!getNimbleOption('useDynamicConjugacy')) {
             ##    addSampler(target = conjugacyResult$target, type = conjugacyResult$type, control = conjugacyResult$control)
@@ -450,7 +431,15 @@ Invisibly returns a list of the current sampler configurations, which are sample
                 if(thisSamplerName == 'RW_block' && !silent) {
                     message('Note: Assigning an RW_block sampler to nodes with very different scales can result in low MCMC efficiency.  If all nodes assigned to RW_block are not on a similar scale, we recommend providing an informed value for the \"propCov\" control list argument, or using the AFSS sampler instead.')
                 }
-                if(exists(type) && is.nfGenerator(eval(as.name(type)))) {   ## try to find sampler function 'type'
+                if(thisSamplerName %in% c("RW_PF", "RW_PF_block")) {
+                    if (!("nimbleSMC" %in% (installed.packages()[,"Package"]))) {
+                        stop(paste0("Particle filters have been moved to the `nimbleSMC` package. ",
+                                    "Install and load `nimbleSMC` to use them."))
+                    } else if (!("nimbleSMC" %in% .packages())) {
+                        stop("`nimbleSMC` must be loaded to use particle filtering samplers.")
+                    }
+                }
+                if(exists(type, inherits = TRUE) && is.nfGenerator(eval(as.name(type)))) {   ## try to find sampler function 'type'
                     samplerFunction <- eval(as.name(type))
                 } else {
                     sampler_type <- paste0('sampler_', type)   ## next, try to find sampler function 'sampler_type'
@@ -624,8 +613,8 @@ byType: A logical argument, specifying whether the nodes being sampled should be
             for(i in ind) {
                 info <- paste0('[', i, '] ', makeSpaces(i), samplerConfs[[i]]$toStr(displayControlDefaults, displayNonScalars, displayConjugateDependencies))
                 if(samplerConfs[[i]]$name %in% c('CRP', 'CRP_moreGeneral')) {
-                    if(exists('useConjugacy', samplerConfs[[i]]$control) &&
-                       samplerConfs[[i]]$control$useConjugacy) {
+                    if(exists('checkConjugacy', samplerConfs[[i]]$control) &&
+                       samplerConfs[[i]]$control$checkConjugacy) {
                         conjInfo <- checkCRPconjugacy(model, samplerConfs[[i]]$target)
                         if(is.null(conjInfo)) conjInfo <- "non-conjugate"
                     } else conjInfo <- "non-conjugate"
@@ -797,7 +786,7 @@ Details: See the initialize() function
                 if(getNimbleOption('MCMCmonitorAllSampledNodes')) {
                     vars <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
                 } else {
-                    vars <- model$getNodeNames(stochOnly = TRUE, topOnly = TRUE)
+                    vars <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE, topOnly = TRUE)
                 }
             } else {
                 vars <- unlist(vars)
@@ -823,6 +812,38 @@ print: A logical argument specifying whether to print all current monitors (defa
 Details: See the initialize() function
             '
             addMonitors(..., ind = 2, print = print)
+        },
+
+        setMonitors = function(..., ind = 1, print = TRUE) {
+            '
+Sets new variables to the list of monitors.
+
+Arguments:
+
+...: One or more character vectors of indexed nodes, or variables, which are to be monitored.  These replace the current monitors list.
+
+print: A logical argument specifying whether to print all current monitors (default TRUE).
+
+Details: See the initialize() function
+            '
+            if(ind == 1)   monitors  <<- character()
+            if(ind == 2)   monitors2 <<- character()
+            addMonitors(..., ind = ind, print = print)
+        },
+
+        setMonitors2 = function(..., print = TRUE) {
+            '
+Sets new variables to the list of monitors2.
+
+Arguments:
+
+...: One or more character vectors of indexed nodes, or variables, which are to be monitored.  These replace the current monitors2 list.
+
+print: A logical argument specifying whether to print all current monitors (default TRUE).
+
+Details: See the initialize() function
+            '
+            setMonitors(..., ind = 2, print = print)
         },
         
         resetMonitors = function() {
@@ -957,321 +978,15 @@ waic: A logical argument, indicating whether to enable WAIC calculations in the 
     )
 )
 
-checkCRPconjugacy <- function(model, target) {
-    ## Checks if can use conjugacy in drawing new components for dCRP node updating.
-    ## Should detect various univariate cases and normal-invgamma case.
-    ## We don't yet handle conjugacies with non-identity relationships.
-    
-    conjugate <- FALSE 
-    
-    targetElementExample <- model$expandNodeNames(target, returnScalarComponents=TRUE)[1]
-
-    clusterVarInfo <- findClusterNodes(model, target)
- 
-    ## Check conjugacy for one cluster node (for efficiency reasons) and then make sure all
-    ## cluster nodes are IID and dependent nodes are from same declaration so conjugacy check for one should hold for all.
-    ## Note that cases where intermediate deterministic nodes are not from same declaration should be caught in sampler_CRP
-    ## because we don't allow cluster ID to appear in multiple declarations, so can't have mu[1] <- muTilde[xi[1]]; mu[2] <- exp(muTilde[xi[2]])
-    if(length(clusterVarInfo$clusterVars) == 1) {  ## for now avoid case of mixing over multiple parameters, but allow dnorm_dinvgamma below
-        clusterNodes <- clusterVarInfo$clusterNodes[[1]]  # e.g., 'thetatilde[1]',...,
-        ## Currently we only handle offsets and coeffs for dnorm case;
-        ## will add Pois-gamma and possibly MVN cases.
-        identityLink <- TRUE
-        conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
-        if(!length(conjugacy) && model$getDistribution(clusterNodes[1]) == 'dnorm') {
-            identityLink <- FALSE
-            conjugacy <- model$checkConjugacy(clusterNodes[1])  ## check non-identity link too
-        }
-        if(length(conjugacy)) {
-            conjugacyType <- paste0(conjugacy[[1]]$type, '_', sub('dep_', '', names(conjugacy[[1]]$control)))
-            if(!identityLink)
-                conjugacyType <- paste0(conjugacyType, '_nonidentity')
-            conjugate <- TRUE
-            ## Check that dependent nodes ('observations') from same declaration.
-            ## This should ensure they have same distribution and parameters are being
-            ## clustered in same way, but also allows other parameters to vary, e.g.,
-            ## y[i] ~ dnorm(mu[xi[i]], s2[i])
-            depNodes <- model$getDependencies(clusterNodes[1], stochOnly = TRUE, self=FALSE)
-            if(length(unique(model$getDeclID(depNodes))) != 1)  ## make sure all dependent nodes from same declaration (i.e., exchangeable)
-                conjugate <- FALSE
-
-            ## Check that cluster nodes are IID
-            valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
-            names(valueExprs) <- NULL
-            if(length(unique(valueExprs)) != 1)
-                conjugate <- FALSE
-        }
-    }
-    ## check for dnorm_dinvgamma conjugacy
-    if(length(clusterVarInfo$clusterVars) == 2 &&
-       checkNormalInvGammaConjugacy(model, clusterVarInfo)) {
-        conjugate <- TRUE
-        conjugacyType <- "conjugate_dnorm_invgamma_dnorm"
-    }
-    if(conjugate) return(conjugacyType) else return(NULL)
-}
-
-rule <- setRefClass(
-    Class = 'rule',
-    fields = list(
-        condition = 'ANY',
-        sampler = 'ANY',
-        name = 'character'
-    ),
-    methods = list(
-        initialize = function(condition, sampler, name, nameProvided) {
-            condition <<- condition
-            sampler <<- sampler      ## must be of class: character, function, or call
-            name <<- name
-        },
-        getCondition = function()   return(condition),
-        getSampler = function()     return(sampler),
-        getName = function()        return(name),
-        show = function() {
-            if(is.character(sampler) || is.function(sampler)) sampPrint <- as.name(name) else sampPrint <- sampler    ## ifelse() fails here, seems to be R bug w/ quoted expressions
-            cat('condition: ', paste0(deparse(condition),sep='\n'), sep='')
-            cat('sampler:   ', paste0(deparse(sampPrint),sep='\n'), sep='')
-        }
-    )
-)
 
 
-addRuleToCodeBlock <- function(oldCode, rule) {
-    condition <- rule$getCondition()
-    sampler <- rule$getSampler()
-    name <- rule$getName()
-    if(is.call(sampler)) {
-        substitute(
-            if(CONDITION) { SAMPLER } else OLDCODE,
-            list(CONDITION = condition,
-                 SAMPLER = sampler,
-                 NAME = name,
-                 OLDCODE = oldCode))
-    } else {
-        substitute(
-            if(CONDITION) { addSampler(target = node, type = SAMPLER, name = NAME, silent = TRUE) } else OLDCODE,
-            list(CONDITION = condition,
-                 SAMPLER = sampler,
-                 NAME = name,
-                 OLDCODE = oldCode))
-    }
-}
-
-#' Class \code{samplerAssignmentRules}
-#' @aliases samplerAssignmentRules addRule reorder printRules
-#' @export
-#' @description
-#' Objects of this class specify an ordered set of rules for assigning MCMC sampling algorithms to the stochastic nodes in a BUGS model.
-#' This feature can be enabled by setting \code{nimbleOptions(MCMCuseSamplerAssignmentRules = TRUE)}.
-#' The rules can be modified to alter under what circumstances various samplers are assigned, and with what precedence.
-#' When assigning samplers to each stochastic node, the set of rules is traversed beginning with the first, until a matching rule is found.
-#' When a matching rule is found, the sampler specified by that rule is assigned (or general code for sampler assignment is executed),
-#' and the assignment process proceeds to the next stochastic node.  That is, a maximum of one rule can be invoked for each stochastic node.
-#' If no matching rule is found, an (optional) warning is issued and no sampler is assigned.
-#' Objects of this class may be passed using the \code{rules} argument to \code{\link{configureMCMC}} to customize the sampler assignment process.
-#' See documentation below for method \code{initialize()} for details of creating a samplerAssignmentRules object, 
-#' and methods \code{addRule()} and \code{reorder()} for adding and modifying the sampler assignment rules.
-#' The default behaviour of \code{\link{configureMCMC}} can be modified by setting the nimble option \'MCMCsamplerAssignmentRules\' to a customized samplerAssignmentRules object.
-#' The default behaviour of \code{\link{configureMCMC}} can be restored using \code{nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())}.
-#' @author Daniel Turek
-#' @seealso \code{\link{configureMCMC}}
-#' @examples
-#' \dontrun{
-#' ## enable the use of samplerAssignmentRules:
-#' nimbleOptions(MCMCuseSamplerAssignmentRules = TRUE)
-#' 
-#' ## omitting empty=TRUE creates a copy of nimble's default rules
-#' my_rules <- samplerAssignmentRules(empty = TRUE)
-#' 
-#' my_rules$addRule(quote(model$isEndNode(node)), "posterior_predictive")
-#' my_rules$addRule(quote(model$isDiscrete(node)), "my_new_discrete_sampler")
-#' my_rules$addRule(TRUE, "RW")   ## default catch-all sampler assignment
-#'
-#' ## print the ordered set of sampler assignment rules
-#' my_rules$printRules()
-#'
-#' ## assign samplers according to my_rules object
-#' conf <- configureMCMC(Rmodel, rules = my_rules)
-#' conf$printSamplers()
-#'
-#' ## view the current (default) assignment rules used by configureMCMC()
-#' nimbleOptions(MCMCdefaultSamplerAssignmentRules)
-#'
-#' ## change default behaviour of configureMCMC() to use my_rules
-#' nimbleOptions(MCMCdefaultSamplerAssignmentRules = my_rules)
-#' 
-#' ## reset configureMCMC() to use default rules
-#' nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
-#' }
-samplerAssignmentRules <- setRefClass(
-    Class = 'samplerAssignmentRules',
-    fields = list(
-        ruleList = 'list'       ## list of rule objects
-    ),
-    methods = list(
-        initialize = function(empty = FALSE, print = FALSE) {
-            '
-Creates a new samplerAssignmentRules object, which is a container for an ordered set of rules for MCMC sampler assignments.  Objects of this class may be passed using the \'rules\' argument to configureMCMC(), to customize the process of assigning samplers to stochastic model nodes.  By default, new samplerAssignmentRules objects are initialized having an exact copy of the default sampler assignment rules used by NIMBLE, and can thereafter be modified using the addRule() and reorder() methods.
-
-Arguments:
-
-empty: Logical argument (default = FALSE).  If TRUE, then a new samplerAssignmentRules object is created containing no rules.  The default behaviour creates new objects containing an exact copy of the default sampler assignment rules used by NIMBLE.
-
-print: Logical argument specifying whether to print the ordered list of sampler assignment rules (default FALSE).
-'
-            ruleList <<- list()
-            if(!empty) addDefaultSamplerAssignmentRules()
-            if(print) printRules()
-        },
-        makeRuleSelectionCodeBlock = function() {
-            code <- quote(if(warnNoSamplerAssigned) {    ## no matching rule was found
-                warning(paste0('No matching rule found, and no sampler assigned to node: ', node))
-            })
-            for(i in rev(seq_along(ruleList)))   ## important to add rules in *reverse* order
-                code <- addRuleToCodeBlock(code, ruleList[[i]])
-            return(code)
-        },
-        addRule = function(condition, sampler, position, name, print = FALSE) {
-            '
-Add a new rule for assigning sampler(s) to the samplerAssignmentRules object.  A rule consists of two parts: (1) a \'condition\' which determines when the rule is invoked, and (2) a \'sampler\' which governs the assignment of sampler(s) when the rule is invoked.  New rules can be inserted at an arbitrary position in the ordered set of rules.
-
-Arguments:
-
-condition: The \'condition\' argument must be a quoted R expression object, which will be evaluated and interpreted as a logical to control whether or not the rule is invoked.  The condition will be evaluated in an environment which contains the BUGS \'model\' object, the \'node\' name to which the rules (and hence the sampler assignment process) are being applied, and other sampler assignment related arguments of configureMCMC() (e.g., \'useConjugacy\' and \'multivariateNodesAsScalars\').  Thus, the condition expression may involve these names, as well as methods of BUGS model objects.  Creating an R expression object will generally use the function quote(...).  For example: addRule(condition = quote(model$isBinary(node)), ...).  Model-specific rules for particular nodes could be specified as: addRule(condition = quote(node == \'x\' || node == \'y\'), ...), or addRule(condition = quote(grepl(\'^sigma\', node)), ...).  Rules for specific distributions can be created as: addRule(condition = quote(model$getDistribution(node) == \'dpois\'), ...).  More complex, multi-line conditions can be specified as: addRule(condition = quote({ expression1;  expression2;  expression3 }), ...), the final expression of which will be evaluated and interpreted as a logical to control rule invocation.  A default, catch-all rule can specified as: addRule(condition = TRUE, ...), which will always be invoked whenever the sampler assignment process reaches this rule, and therefore subsequent rules will never be invoked.
-
-sampler: The \'sampler\' argument controls the sampler assignment process, once a rule is invoked (i.e., the \'condition\' evaluated to TRUE).  The \'sampler\' argument must take one of three different forms: (1) a character string giving the name of an MCMC nimbleFunction sampler, (2) an unspecialized nimbleFunction object which is a valid MCMC sampler, or (3) an arbitrary quoted R expression object, which will be executed to perform the sampler assignment process, and should generally make use of the method addSampler().  Example (1): addRule(..., sampler = \'slice\'), for assigning a \'slice\' sampler when the rule is invoked. Example (2): addRule(..., sampler = my_sampler_nimbleFunction), for assigning the sampling algorithm defined in the object my_sampler_nimbleFunction.  Note the same behaviour will result from: addRule(..., sampler = \'my_sampler_nimbleFunction\'), which will be also more informative when the list of assignment rules is printed.  Example (3): addRule(..., sampler = quote( addSampler(target=node, type=\'RW\', control=list(adaptive=FALSE)) )), for assigning a non-adaptive RW sampler.  Or, perhaps, addRule(..., sampler = quote( { addSampler(target=node, type=\'RW\');  addSampler(target=node, type=\'slice\') } )), for assigning two samplers.  This third option for specifying \'sampler\' as an arbitrary R expression allows for completely general and flexible behaviour of sampler assignment.
-
-position: Index of the position to add the new rule.  By default, new rules are added at the end of the current ordered set of rules (giving it the lowest priority in the sampler assignment process).  Specifying a position inserts the new rule at that position, and does not over-write an existing rule.
-
-name: Optional character string name for the sampler to be added, which is used by subsequent print methods.  If \'name\' is not provided, the \'sampler\' argument is used to generate the name.  Note, if the \'sampler\' argument is provided as an R expression making use of the addSampler method, then the \'name\' argument will not be passed on to the MCMC configuration object, and instead any call(s) to addSampler can explicitly make use of its own \'name\' argument.
-
-print: Logical argument specifying whether to print the newly-added sampler assignment rule (default FALSE).
-'
-            numRules <- length(ruleList)
-            if(missing(position)) position <- numRules + 1  ## default adds new rules at the end
-            if(position < 1) stop('cannot add new rules before position = 1')
-            if(position > numRules + 1)  stop('position specified is too high')
-            if(position < numRules + 1)
-                ruleList[(position+1):(numRules+1)] <<- ruleList[position:numRules]
-            nameProvided <- !missing(name)
-            if(!nameProvided) {
-                if(is.character(sampler)) {
-                    name <- gsub('^sampler_', '', sampler)   ## removes 'sampler_' from beginning, if present
-                } else if(is.function(sampler)) {
-                    samplerArg <- substitute(sampler)
-                    if(is.name(samplerArg)) {
-                        name <- gsub('^sampler_', '', deparse(samplerArg))
-                    } else { name <- 'custom_function' }
-                } else { name <- 'if this ever is printed, then something went wrong' }  ## sampler argument is a quoted expression, such as quote({ ... })
-            }
-            ruleList[[position]] <<- rule(condition, sampler, name, nameProvided)
-            if(print) printRules(position)
-        },
-        reorder = function(ind, print = FALSE) {
-            '
-Reorder the current ordered list of sampler assignment rules.  This method can be used to reorder the existing rules, as well as delete one or more rules.
-
-Arguments:
-
-ind: The indices of the current set of rules to keep.  Assuming there are 10 rules, reorder(1:5) will remove the final five rules, reorder(c(10,1:9)) will move the last (lowest priority) rule to the first position (highest priority), and reorder(8) deletes all rules except the eighth, making it the only (and hence first, highest priority) rule.
-
-print: Logical argument specifying whether to print the resulting ordered list of sampler assignment rules (default FALSE).
-'
-            if(min(ind) < 1) stop('index is below one')
-            if(max(ind) > length(ruleList)) stop('index is greater than number of rules')
-            ruleList <<- ruleList[ind]
-            if(print) printRules()
-        },
-        addDefaultSamplerAssignmentRules = function() {
-            
-	    ## posterior predictive nodes
-            addRule(quote(isEndNode), 'posterior_predictive')
-            
-	    ## conjugate nodes
-            addRule(quote(useConjugacy && isConjugate),
-                    quote(addConjugateSampler(conjugacyResult = conjugacyResultsAll[[node]],
-                                              dynamicallyIndexed = model$modelDef$varInfo[[model$getVarNames(nodes=node)]]$anyDynamicallyIndexed)))
-            
-	    ## multinomial
-            addRule(quote(nodeDistribution == 'dmulti'), 'RW_multinomial')
-            
-	    ## dirichlet
-            addRule(quote(nodeDistribution == 'ddirch'), 'RW_dirichlet')
-            
-	    ## wishart
-            addRule(quote(nodeDistribution == 'dwish'), 'RW_wishart')
-            
-            ## inverse-wishart
-            addRule(quote(nodeDistribution == 'dinvwish'), 'RW_wishart')
-            
-            ## CAR models
-            addRule(quote(model$getDistribution(node) == 'dcar_normal'), 'CAR_normal')
-            addRule(quote(model$getDistribution(node) == 'dcar_proper'), 'CAR_proper')
-
-            ## multivariate & multivariateNodesAsScalars: univariate RW
-            addRule(quote(isMultivariate && multivariateNodesAsScalars),
-                    quote(for(scalarNode in model$expandNodeNames(node, returnScalarComponents = TRUE)) {
-                        if(onlySlice) addSampler(target = scalarNode, type = 'slice')
-                        else          addSampler(target = scalarNode, type = 'RW')
-                    }))
-            
-            ## multivariate: RW_block
-            addRule(quote(isMultivariate), 'RW_block')
-
-	    ## onlyRW argument
-            addRule(quote(onlyRW && !isDiscrete), 'RW')
-            
-	    ## onlySlice argument
-            addRule(quote(onlySlice), 'slice')
-            
-	    ## binary-valued nodes
-            addRule(quote(isBinary), 'binary')
-            
-	    ## categorical
-            addRule(quote(nodeDistribution == 'dcat'), 'categorical')
-            
-	    ## discrete-valued nodes
-            addRule(quote(isDiscrete), 'slice')
-            
-	    ## default for continuous-valued nodes: RW
-            addRule(TRUE, 'RW')
-        },
-        printRules = function(ind) {
-            '
-Prints the ordered set of sampler assignment rules.
-
-Arguments:
-
-ind: A set of indicies, specifying which sampler assignment rules to print.  If omitted, all rules are printed.
-'
-            if(length(ruleList) == 0) {
-                cat('Empty list of sampler assignment rules\n')
-                return()
-            }
-            if(missing(ind)) ind <- 1:length(ruleList)   ## default is to print entire rule list
-            for(i in ind) {
-                cat('[[', i, ']]\n', sep='')
-                print(ruleList[[i]])
-                cat('\n')
-            }
-        },
-        show = function() {
-            printRules()
-        }
-    )
-)
-
-
-
-## set nimbleOption for configureMCMC() to default behaviour
-nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
 
 
 
 
 #' Build the MCMCconf object for construction of an MCMC object
 #'
-#' Creates a defaut MCMC configuration for a given model.  The resulting object is suitable as an argument to \code{\link{buildMCMC}}. The assignment of sampling algorithms may be controlled using the \code{rules} argument, if provided.
+#' Creates a defaut MCMC configuration for a given model.
 #'
 #'@param model A NIMBLE model object, created from \code{\link{nimbleModel}}
 #'@param nodes An optional character vector, specifying the nodes and/or variables for which samplers should be created.
@@ -1295,7 +1010,6 @@ nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
 #'@param onlySlice A logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes. Terminal nodes are still assigned a posterior_predictive sampler.
 #'@param multivariateNodesAsScalars A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided \code{useConjugacy == TRUE}), regardless of the value of this argument.
 #' @param enableWAIC A logical argument, specifying whether to enable WAIC calculations for the resulting MCMC algorithm.  Defaults to the value of \code{nimbleOptions('MCMCenableWAIC')}, which in turn defaults to FALSE.  Setting \code{nimbleOptions('enableWAIC' = TRUE)} will ensure that WAIC is enabled for all calls to \code{\link{configureMCMC}} and \code{\link{buildMCMC}}.
-#'@param rules An object of class samplerAssignmentRules, which governs the assigment of MCMC sampling algorithms to stochastic model nodes.  The default set of sampler assignment rules is specified by the nimble option \'MCMCdefaultSamplerAssignmentRules\'.
 #'@param warnNoSamplerAssigned A logical argument, with default value TRUE.  This specifies whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule.
 #'@param print A logical argument, specifying whether to print the ordered list of default samplers.
 #'@param autoBlock A logical argument specifying whether to use an automated blocking procedure to determine blocks of model nodes for joint sampling.  If TRUE, an MCMC configuration object will be created and returned corresponding to the results of the automated parameter blocking.  Default value is FALSE.
@@ -1304,18 +1018,21 @@ nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
 #'@author Daniel Turek
 #'@export 
 #'@details See \code{\link{MCMCconf}} for details on how to manipulate the \code{MCMCconf} object
-#'@seealso \code{\link{samplerAssignmentRules}} \code{\link{buildMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}
+#'@seealso \code{\link{buildMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}
 configureMCMC <- function(model, nodes, control = list(), 
                           monitors, thin = 1, monitors2 = character(), thin2 = 1,
-                          useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE,
+                          useConjugacy = getNimbleOption('MCMCuseConjugacy'),
+                          onlyRW = FALSE, onlySlice = FALSE,
                           multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
                           enableWAIC = getNimbleOption('MCMCenableWAIC'),
                           print = getNimbleOption('verbose'),
                           autoBlock = FALSE, oldConf,
-                          rules = getNimbleOption('MCMCdefaultSamplerAssignmentRules'),
+                          ## samplerAssignmentRules system deprecated Nov 2020 -DT
+                          ##rules = getNimbleOption('MCMCdefaultSamplerAssignmentRules'),
                           warnNoSamplerAssigned = TRUE, ...) {
     
-    if(class(rules) != 'samplerAssignmentRules') stop('rules argument must be a samplerAssignmentRules object')
+    ## samplerAssignmentRules system deprecated Nov 2020 -DT
+    ##if(!inherits(rules, 'samplerAssignmentRules')) stop('rules argument must be a samplerAssignmentRules object')
 
     if(!missing(oldConf)){
         if(!is(oldConf, 'MCMCconf'))
@@ -1329,7 +1046,7 @@ configureMCMC <- function(model, nodes, control = list(),
 
     if(autoBlock) return(autoBlock(model, ...)$conf)
 
-    thisConf <- MCMCconf(model = model, nodes = nodes, control = control, rules = rules,
+    thisConf <- MCMCconf(model = model, nodes = nodes, control = control, ##rules = rules,
                          monitors = monitors, thin = thin, monitors2 = monitors2, thin2 = thin2,
                          useConjugacy = useConjugacy,
                          onlyRW = onlyRW, onlySlice = onlySlice,
@@ -1337,7 +1054,7 @@ configureMCMC <- function(model, nodes, control = list(),
                          enableWAIC = enableWAIC,
                          warnNoSamplerAssigned = warnNoSamplerAssigned,
                          print = print, ...)
-    return(thisConf)	
+    return(invisible(thisConf))
 }
 
 
@@ -1345,7 +1062,7 @@ configureMCMC <- function(model, nodes, control = list(),
 # This is function which builds a new MCMCconf from an old MCMCconf
 # This is required to be able to a new C-based MCMC without recompiling
 makeNewConfFromOldConf <- function(oldMCMCconf){
-    newMCMCconf <- configureMCMC(oldMCMCconf$model, nodes = NULL)
+    newMCMCconf <- configureMCMC(oldMCMCconf$model, nodes = NULL, print = FALSE)
     newMCMCconf$monitors <- oldMCMCconf$monitors
     newMCMCconf$monitors2 <- oldMCMCconf$monitors2
     newMCMCconf$thin <- oldMCMCconf$thin

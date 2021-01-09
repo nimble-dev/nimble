@@ -13,8 +13,8 @@
 #' @author Claudia Wehrhahn
 #' @details The Chinese restaurant process distribution is a distribution
 #' on the space of partitions of the positive integers. 
-#' The distribution with concentration parameter \eqn{=\alpha}{= conc} has 
-#' probability function 
+#' The distribution with concentration parameter \eqn{\alpha} equal to \code{conc} 
+#' has probability function 
 #' \deqn{
 #' f(x_i \mid x_1, \ldots, x_{i-1})=\frac{1}{i-1+\alpha}\sum_{j=1}^{i-1}\delta_{x_j}+
 #' \frac{\alpha}{i-1+\alpha}\delta_{x^{new}},}
@@ -57,15 +57,16 @@ dCRP=nimbleFunction(
         #    nimCat("dCRP: value of concentration parameter has to be larger than zero.\n")
             return(NaN)
         }
+        if(any_na(x)) return(NaN)
         
         ldens <- 0 # log scale
         if(n > 1) {
             for(i in 2:n) {
                 counts <- sum(x[i] == x[1:(i-1)])
-                if( counts > 0 ) {
+                if( counts > 0) {
                     ldens <- ldens + log(counts / (i-1+conc))
                 } else {
-                  ldens <- ldens + log(conc / (i-1+conc))
+                    ldens <- ldens + log(conc / (i-1+conc))
                 }
             }
         }

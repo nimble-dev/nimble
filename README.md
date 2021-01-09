@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/nimble-dev/nimble.svg?branch=devel)](https://travis-ci.org/nimble-dev/nimble)
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/nimble-dev/nimble?branch=devel&svg=true)](https://ci.appveyor.com/project/nimble-dev/nimble)
-[![CRAN](http://www.r-pkg.org/badges/version/nimble)](https://cran.r-project.org/web/packages/nimble)
+[![CRAN](http://www.r-pkg.org/badges/version/nimble)](https://CRAN.R-project.org/package=nimble)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1211190.svg)](https://zenodo.org/record/1211190)
 [![Google Group](https://img.shields.io/badge/google-group-blue.svg)](https://groups.google.com/forum/#!forum/nimble-users)
 
@@ -63,6 +63,8 @@ library(devtools)
 install.packages("nimble", type = "source", repos = "https://r-nimble.org")
 ```
 
+Note that NIMBLE's sequential Monte Carlo (SMC; aka particle filtering) methods are now (as of version 0.10.0) in the `nimbleSMC` package.
+
 Note that `MCMCsuite` and `compareMCMCs` are being migrated to the `compareMCMCs` package.  To install this:
 ```r
 library(devtools)
@@ -78,9 +80,11 @@ D. Temple Lang, and R. Bodik. 2017. Programming with models: writing
 statistical algorithms for general model structures with
 NIMBLE. Journal of Computational and Graphical Statistics 26:403-413. [https://doi.org/10.1080/10618600.2016.1172487.](https://doi.org/10.1080/10618600.2016.1172487)
 
-To cite a version of the package, please cite:
+In published work that uses NIMBLE, please also cite the package version:
 
-NIMBLE Development Team. 2019. NIMBLE: MCMC, Particle Filtering, and Programmable Hierarchical Modeling.  doi: 10.5281/zenodo.1211190.. R package version 0.9.0, https://cran.r-project.org/package=nimble.
+de Valpine, P., C. Paciorek, D. Turek, N. Michaud, C. Anderson-Bergman, F. Obermeyer, C. Wehrhahn Cortes, A. Rodriguez, D. Temple Lang, and S. Paganin. 2020. NIMBLE: MCMC, Particle Filtering, and Programmable Hierarchical Modeling.  doi: 10.5281/zenodo.1211190. R package version 0.10.1, https://cran.r-project.org/package=nimble.
+
+To help us track usage to justify funding support for NIMBLE, please include the DOI in the citation.
 
 ## Licenses
 

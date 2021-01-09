@@ -180,17 +180,17 @@ The default sampler assigned to a stochastic node is determined by the following
   1. If none of the above criteria are satisfied, then a `RW` sampler is assigned.  This is a Metropolis-Hastings adaptive random-walk sampler with a univariate normal proposal distribution.
 
 
-These sampler assignment rules can be inspected, reordered, and easily modified using the system option `nimbleOptions("MCMCdefaultSamplerAssignmentRules")` and customized  `samplerAssignmentRules` objects.
+<!-- These sampler assignment rules can be inspected, reordered, and easily modified using the system option `nimbleOptions("MCMCdefaultSamplerAssignmentRules")` and customized  `samplerAssignmentRules` objects. -->
 
 Details of each sampler and its control parameters can be found by invoking `help(samplers)`.
 
-#### Sampler assignment rules
+<!-- #### Sampler assignment rules
 
-The behavior of `configureMCMC` can be customized to control how samplers are assigned.  A new set of sampler assignment rules can be created using `samplerAssignmentRules`, which can be modified using the `addRule` and `reorder` methods, then passed as an argument to `configureMCMC`.  Alternatively, the default behavior of `configureMCMC` can be altered by setting the system option `MCMCdefaultSamplerAssignmentRules` to a custom `samplerAssignmentRules` object.  See `help(samplerAssignmentRules)` for details.
+The behavior of `configureMCMC` can be customized to control how samplers are assigned.  A new set of sampler assignment rules can be created using `samplerAssignmentRules`, which can be modified using the `addRule` and `reorder` methods, then passed as an argument to `configureMCMC`.  Alternatively, the default behavior of `configureMCMC` can be altered by setting the system option `MCMCdefaultSamplerAssignmentRules` to a custom `samplerAssignmentRules` object.  See `help(samplerAssignmentRules)` for details. -->
 
 #### Options to control default sampler assignments
 
-As a lightweight alternative to using `samplerAssignmentRules`, very basic control of default sampler assignments is provided via two arguments to `configureMCMC`.  The `useConjugacy` argument controls whether conjugate samplers are assigned when possible, and the  `multivariateNodesAsScalars` argument controls whether scalar elements of multivariate nodes are sampled individually. See `help(configureMCMC)` for usage details.
+Very basic control of default sampler assignments is provided via two arguments to `configureMCMC`.  The `useConjugacy` argument controls whether conjugate samplers are assigned when possible, and the  `multivariateNodesAsScalars` argument controls whether scalar elements of multivariate nodes are sampled individually. See `help(configureMCMC)` for usage details.
 <!--- % The following optional control arguments to `configureMCMC()` may be used to override the default assignment of sampler algorithms: -->
 
 <!--- 
@@ -203,6 +203,8 @@ As a lightweight alternative to using `samplerAssignmentRules`, very basic contr
 The default MCMC configuration includes monitors on all top-level stochastic nodes of the model. Only variables that are monitored will have their samples saved for use outside of the MCMC. MCMC configurations include two sets of monitors, each with different thinning intervals.  By default, the second set of monitors (`monitors2`) is empty. 
 
 #### Automated parameter blocking
+
+\emph{The automated parameter blocking algorithm is no longer actively maintained.  In some cases, it may not operate correctly with more recent system features and/or distributions.}
 
 The default configuration may be replaced by one generated from an automated parameter blocking algorithm.  This algorithm determines groupings of model nodes that, when jointly sampled with a `RW_block` sampler, increase overall MCMC efficiency.  Overall efficiency is defined as the effective sample size of the slowest-mixing node divided by computation time.  This is done by:
 
@@ -225,18 +227,17 @@ If a data node is included in `nodes`, *it will be assigned a sampler*.  This is
 #### Creating an empty configuration 
 If you plan to customize the choice of all samplers, it can be useful to obtain a configuration with no sampler assignments at all.  This can be done by any of `nodes = NULL`, `nodes = character()`, or `nodes = list()`. 
 
-#### Overriding the default sampler assignment rules
+<!-- #### Overriding the default sampler assignment rules
 The default rules used for assigning samplers to model nodes can be overridden using the `rules` argument to `configureMCMC`.  This argument must be an object of class `samplerAssignmentRules`, which defines an ordered set of rules for assigning samplers.  Rules can be modified and reordered, to give different precedence to particular samplers, or to assign user-defined samplers (see section \@ref(sec:user-samplers)).  The following example creates a new set of rules (which initially contains the default assignment rules), reorders the rules, adds a new rule, then uses these rules to create an MCMC configuration object.
 
-```{r, mcmcconfrules, eval=FALSE}
+r, mcmcconfrules, eval=FALSE}
 my_rules <- samplerAssignmentRules()
 my_rules$reorder(c(8, 1:7))
 my_rules$addRule(condition = quote(model$getDistribution(node) == "dmnorm"),
                  sampler = new_dmnorm_sampler)
 mcmcConf <- configureMCMC(Rmodel, rules = my_rules)
-```
 
-In addition, the default behavior of `configureMCMC` can be altered by setting the system option `nimbleOptions(MCMCdefaultSamplerAssignmentRules = my_rules)`, or reset to the original default behavior using `nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())`.
+In addition, the default behavior of `configureMCMC` can be altered by setting the system option `nimbleOptions(MCMCdefaultSamplerAssignmentRules = my_rules)`, or reset to the original default behavior using `nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())`. -->
 
 #### Overriding the default sampler control list values
 The default values of control list elements for all sampling algorithms may be overridden through use of the `control` argument to `configureMCMC`, which should be a named list. 
@@ -388,11 +389,11 @@ ordering <- mcmcConf$getSamplerExecutionOrder()
 mcmcConf$printSamplers(executionOrder = TRUE)
 ```
 
-#### Monitors and thinning intervals: *printMonitors*, *getMonitors*, *addMonitors*, *setThin*, and *resetMonitors*
+#### Monitors and thinning intervals: *printMonitors*, *getMonitors*, *setMonitors*, *addMonitors*, *resetMonitors* and *setThin*
 
 An MCMC configuration object contains two independent sets of variables to monitor, each with their own thinning interval: `thin` corresponding to `monitors`, and `thin2` corresponding to `monitors2`.  Monitors operate at the *variable* level.  Only entire model variables may be monitored.  Specifying a monitor on a *node*, e.g., `x[1]`, will result in the entire variable `x` being monitored.
 
-The variables specified in `monitors`  and `monitors2` will be recorded (with thinning interval `thin`) into objects called `mvSamples` and `mvSamples2`, contained within the MCMC object. These are both *modelValues* objects; modelValues are NIMBLE data structures used to store multiple sets of values of model variables^[See Section \@ref(sec:modelValues-struct) for general information on modelValues.].  These can be accessed as the member data `mvSamples` and `mvSamples2` of the MCMC object, and they can be converted to matrices using `as.matrix` (see Section \@ref(sec:extracting-samples)).
+The variables specified in `monitors`  and `monitors2` will be recorded (with thinning interval `thin`) into objects called `mvSamples` and `mvSamples2`, contained within the MCMC object. These are both *modelValues* objects; modelValues are NIMBLE data structures used to store multiple sets of values of model variables^[See Section \@ref(sec:modelValues-struct) for general information on modelValues.].  These can be accessed as the member data `mvSamples` and `mvSamples2` of the MCMC object, and they can be converted to matrices using `as.matrix` or lists using `as.list` (see Section \@ref(sec:extracting-samples)).
 
 Monitors may be added to the MCMC configuration either in the original call to `configureMCMC` or using the `addMonitors` method:
 ```{r, addMonitors, eval=FALSE}
@@ -404,6 +405,12 @@ mcmcConf <- configureMCMC(Rmodel, monitors = c("alpha", "beta"),
 # This results in the same monitors as above
 mcmcConf$addMonitors("alpha", "beta")
 mcmcConf$addMonitors2("x")
+```
+
+A new set of monitor variables can be added to the MCMC configuration, overwriting the current monitors, using the `setMonitors` method:
+```{r, setMonitors, eval=FALSE}
+# Replace old monitors, now monitor "delta" and "gamma" only
+mcmcConf$setMonitors("gamma", "delta")
 ```
 
 Similarly, either thinning interval may be set at either step:
@@ -550,7 +557,12 @@ The `run` method has an optional `reset` argument.  When `reset = TRUE` (the def
   1. The internal modelValues objects `mvSamples` and `mvSamples2` are each resized to the appropriate length for holding the requested number of samples (`niter/thin`, and `niter/thin2`, respectively).
 
 
-When `mcmc$run(niter, reset = FALSE)` is called, the MCMC picks up from where it left off, continuing the previous chain and expanding the output as needed.  No values in the model are checked or altered, and sampler functions are not reset to their initial states.  
+When `mcmc$run(niter, reset = FALSE)` is called, the MCMC picks up from where it left off, continuing the previous chain and expanding the output as needed.  No values in the model are checked or altered, and sampler functions are not reset to their initial states.
+
+The `run` method also has an optional `resetMV` argument. This argument is only considered when`'reset` is set to `FALSE`. When `mcmc$run(niter, reset = FALSE, resetMV = TRUE)` is called the internal modelValues objects `mvSamples` and `mvSamples2` are each resized to the appropriate length for holding the requested number of samples (`niter/thin`, and `niter/thin2`, respectively) and the MCMC carries on from where it left off. In other words, the previously obtained samples are deleted (e.g. to reduce memory usage) prior to continuing the MCMC. The default value of  `resetMV`  is  `FALSE`. 
+
+
+
 
 ### Measuring sampler computation times: *getTimes* {#sec:sampler-time}
 
@@ -593,11 +605,13 @@ mvSamples <- mcmc$mvSamples
 mvSamples2 <- mcmc$mvSamples2
 ```
 
-These *modelValues* objects can be converted into matrices using `as.matrix`:
+These *modelValues* objects can be converted into matrices using `as.matrix` or lists using `as.list`:
 
 ```{r, as.matrix-samples, eval=FALSE}
 samplesMatrix <- as.matrix(mvSamples)
+samplesList <- as.list(mvSamples)
 samplesMatrix2 <- as.matrix(mvSamples2)
+samplesList2 <- as.list(mvSamples2)
 ```
 
 The column names of the matrices will be the node names of nodes in the monitored variables.  Then, for example, the mean of the samples for node `x[2]` could be calculated as:
@@ -606,7 +620,9 @@ The column names of the matrices will be the node names of nodes in the monitore
 mean(samplesMatrix[, "x[2]"])
 ```
 
-Obtaining samples as matrices is most common, but see Section \@ref(sec:modelValues-struct) for more about programming with modelValues objects, especially if you want to write nimbleFunctions to use the samples.
+The list version will contain an element for each variable that will be the size and shape of the variable with an additional index for MCMC iteration.  By default MCMC iteration will be the first index, but including `iterationAsLastIndex = TRUE` will make it the last index.
+
+Obtaining samples as matrices or lists is most common, but see Section \@ref(sec:modelValues-struct) for more about programming with modelValues objects, especially if you want to write nimbleFunctions to use the samples.
 
 ## Calculating WAIC {#sec:WAIC}
 
@@ -619,11 +635,12 @@ Cmcmc$calculateWAIC(nburnin = 100)
 ```
 
 Note that there is not a unique value of WAIC for a model. WAIC is calculated from
-Equations 5, 12, and 13 in [@Gelman_etal_2014] (i.e. using \emph{p}WAIC2). In NIMBLE, the set
-of all stochastic nodes monitored by the MCMC object will be treated as
-$\theta$ for the purposes of Equation 5 from [@Gelman_etal_2014].
+Equations 5, 12, and 13 in [@Gelman_etal_2014] (i.e., using \emph{p}WAIC2). The current version of NIMBLE only provides the conditional WAIC, namely the version of WAIC where all parameters directly involved in the likelihood are treated as
+$\theta$ for the purposes of Equation 5 from [@Gelman_etal_2014]. As a result, the user *must* set the MCMC monitors (via the `monitors` argument) to include all stochastic nodes that are parents of any data nodes; by default the MCMC monitors are only the top-level nodes of the model.
 
-In many cases one would want $\theta$ to be the set of all stochastic nodes in the model, in which case the user *must* set the MCMC monitors to include all stochastic nodes; by default the MCMC monitors are only the top-level nodes of the model.
+In some cases, one would want to calculate the marginal version of WAIC, integrating over latent variables, e.g., [@Ariyo_etal_2019]. NIMBLE does not currently provide this version of WAIC (although you could monitor the relevant nodes and carry out the calculations yourself based on the MCMC output).
+
+Also note that WAIC relies on a partition of the observations, i.e., 'pointwise' prediction. In NIMBLE the sum over log pointwise predictive density values treats each data node as contributing a single value to the sum. When a data node is multivariate, that data node contributes a single value to the sum based on the joint density of the elements in the node. Note that if one wants the WAIC calculation to be based on the joint likelihood for each group of observations (e.g., grouping the observations from each person or unit in a longitudinal data context), one would need to use a multivariate distribution for the observations in each group (potentially by writing a user-defined distribution).
 
 ## k-fold cross-validation
 
@@ -1002,7 +1019,7 @@ Cmcmc_CL <- compileNimble(mcmc_CL, project = Rmodel2)
 # run the default MCMC function,
 # and example the mean of mu[1]
 Cmcmc$run(1000)
-cSamplesMatrix <- as.matrix(Cmcmc$mvSamples)
+cSamplesMatrix <- as.matrix(Cmcmc$mvSamples) # alternative: as.list
 mean(cSamplesMatrix[, "mu[1]"])
 
 # run the crossLevel MCMC function,
@@ -1031,3 +1048,5 @@ Please see the `compareMCMCs` package for the features previously provided by `M
 It is possible to run multiple chains in parallel using standard R parallelization packages such as `parallel`, `foreach`, and `future`. However, you must create separate copies of all model and MCMC objects using `nimbleModel`, `buildMCMC`, `compileNimble`, etc. This is because NIMBLE uses Reference Classes and R6 classes, so copying such objects simply creates a new variable name that refers to the original object.
 
 Thus, in your parallel loop or lapply-style statement, you should run `nimbleModel` and all subsequent calls to create and compile the model and MCMC algorithm within the parallelized block of code, once for each MCMC chain being run in parallel.
+
+

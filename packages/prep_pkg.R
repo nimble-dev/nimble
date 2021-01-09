@@ -71,6 +71,7 @@ explicitUndocFuns <- c("[,numberedModelValuesAccessors-method",
                        "is.Cnf",
                        "is.Rmodel",
                        "is.model",
+                       "nf_preProcessMemberDataObject",
                        "samplesSummary")
 
 additionalExports <- c("calc_dmnormConjugacyContributions",
@@ -86,8 +87,14 @@ additionalExports <- c("calc_dmnormConjugacyContributions",
                        "singleModelValuesAccess",
                        "getNimbleProject",
                        "cc_getNodesInExpr",
+                       "calcAdaptationFactor",
+                       "is.nfGenerator",
                        "nimbleInternalFunctions",
                        "nimbleUserNamespace")
+
+## Not clear why we need this but this is not being put in NAMESPACE otherwise.
+## It can't be in 'additionalExports' as it does have documentation.
+additionalExportsNotInternal <- c('nimbleFunctionList')
 
 internals <- c(undocClasses, explicitUndocFuns, additionalExports)
 
@@ -158,6 +165,8 @@ dynLibLine <- "useDynLib(nimble, .registration = TRUE)"
 
 S3methods <- c("as.matrix, CmodelValues",
                "as.matrix, modelValuesBaseClass",
+	       "as.list, CmodelValues",
+	       "as.list, modelValuesBaseClass",
                "length, nimPointerList")
 
 S3methods <- paste("S3method(", S3methods, ")", sep = "", collapse = "\n")
@@ -171,7 +180,7 @@ exportText <- exportText[grep("^$", exportText, invert = TRUE)]
 exportText[exportText == "S3method(is.na,vec)"] <- "export(is.na.vec)"
 exportText[exportText == "S3method(is.nan,vec)"] <- "export(is.nan.vec)"
 
-additionalExports <- c(additionalExports, 'nimbleType')  # nimbleType needed it is being exported only as a class as it is officially a refClass not a function
+additionalExports <- c(additionalExports, additionalExportsNotInternal, 'nimbleType')  # nimbleType needed it is being exported only as a class as it is officially a refClass not a function
 exportTextAdd <- paste0("export(", additionalExports, ")")
 exportText <- c(exportTextAdd, exportText)
 
