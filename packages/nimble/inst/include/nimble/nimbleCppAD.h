@@ -144,11 +144,25 @@ class nimbleCppADinfoClass {
   }
   bool updateModel_;
   bool &updateModel() {return updateModel_;}
+  bool nodeFunPtrSet_;
+  nodeFun *nodeFunPtr_;
+  bool nodeFunPtrSet() {return nodeFunPtrSet_;}
+  nodeFun *nodeFunPtr() {return nodeFunPtr_;}
+  void set_nodeFunPtr(nodeFun *nfp) {
+    nodeFunPtr_ = nfp;
+    nodeFunPtrSet_ = true;
+  }
+  void clear_nodeFunPtr() {
+    nodeFunPtr_ = 0;
+    nodeFunPtrSet_ = false;
+  }
  nimbleCppADinfoClass() :
   metaFlag(false),
     ADtape(0),
     updaterNV_(0),
-    updateModel_(true)
+    updateModel_(true),
+    nodeFunPtrSet_(false),
+    nodeFunPtr_(0)
       {}
   ~nimbleCppADinfoClass() {
     if(ADtape) {

@@ -67,6 +67,11 @@ void set_CppAD_atomic_info_for_model(NodeVectorClassNew_derivs &nodes,
   }
 }
 
+void set_CppAD_atomic_info_for_model(nodeFun *nodeFunInModelDLL,
+				     std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  nodeFunInModelDLL->set_atomic_info_from_nodeFun(vec_ptr);
+}
+
 /* This is a class so it works by RAII */
 set_CppAD_tape_info_for_model::set_CppAD_tape_info_for_model(NodeVectorClassNew_derivs &nodes,
 				   CppAD::tape_id_t tape_id,
@@ -78,6 +83,19 @@ set_CppAD_tape_info_for_model::set_CppAD_tape_info_for_model(NodeVectorClassNew_
     nodeFunInModelDLL->set_tape_ptr_from_nodeFun(tape_id, tape_handle_, false);
   }
 }
+
+set_CppAD_tape_info_for_model::set_CppAD_tape_info_for_model() :
+  nodeFunInModelDLL(0),
+  not_empty(false) {}
+
+void set_CppAD_tape_info_for_model::set_from_nodeFunPtr(nodeFun *nodeFun_,
+							CppAD::tape_id_t tape_id,
+							CppAD::local::ADTape<double>* tape_handle_) {
+  not_empty = true;
+  nodeFunInModelDLL = nodeFun_;
+  nodeFunInModelDLL->set_tape_ptr_from_nodeFun(tape_id, tape_handle_, false);
+}
+
 
 set_CppAD_tape_info_for_model::~set_CppAD_tape_info_for_model() {
   if(not_empty) {

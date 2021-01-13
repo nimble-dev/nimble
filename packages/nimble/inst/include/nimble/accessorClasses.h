@@ -748,11 +748,18 @@ class NodeVectorClassNew_derivs;
 void set_CppAD_atomic_info_for_model(NodeVectorClassNew_derivs &nodes,
 				     std::vector<CppAD::local::atomic_index_info>* vec_ptr);
 
+void set_CppAD_atomic_info_for_model(nodeFun *nodeFunInModelDLL,
+				     std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+
 class set_CppAD_tape_info_for_model {
  public:
   set_CppAD_tape_info_for_model(NodeVectorClassNew_derivs &nodes,
 				   CppAD::tape_id_t tape_id,
 				   CppAD::local::ADTape<double>* tape_handle_);
+  set_CppAD_tape_info_for_model();
+  void set_from_nodeFunPtr(nodeFun *nodeFun_,
+			   CppAD::tape_id_t tape_id,
+			   CppAD::local::ADTape<double>* tape_handle_);
   ~set_CppAD_tape_info_for_model();
  private:
   nodeFun *nodeFunInModelDLL;
@@ -822,14 +829,13 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
   ManyVariablesMapAccessor model_AD_constant_accessor;
   CppAD::ADFun< double > ADtape;
   CppAD::AD<double> extraInputDummy;
-  atomic_extraInputObject *extraInputObject;
+  //atomic_extraInputObject *extraInputObject;
   atomic_extraOutputObject *extraOutputObject;
   bool tapeRecorded_;
- NodeVectorClassNew_derivs() : extraInputObject(0), extraOutputObject(0), tapeRecorded_(false) {}
+ NodeVectorClassNew_derivs() : extraOutputObject(0), tapeRecorded_(false) {}
   ~NodeVectorClassNew_derivs() {
     if(instructions.size() == 0) return;
     nodeFun* nodeFunInModelDLL = instructions[0].nodeFunPtr;
-    if(extraInputObject) nodeFunInModelDLL->delete_extraInputObject(*this);
     // the extraOutputObject needs to be deleted, but I wonder if the crashes upon exiting R
     // could be due to deleting it here before the tape itself has gone through destruction?
     if(extraOutputObject) nodeFunInModelDLL->delete_extraOutputObject(*this);

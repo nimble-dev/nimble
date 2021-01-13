@@ -56,83 +56,75 @@ class NIMBLE_ADCLASS_META : public pointedToBase {
 class NodeVectorClassNew_derivs;
 class ManyVariablesMapAccessor;
 
-class atomic_extraInputObject : public CppAD::atomic_base<double> {
-  public:
- atomic_extraInputObject(const std::string& name,
-			 NodeVectorClassNew_derivs* NV);
- private:
- NodeVectorClassNew_derivs* NV_;//for access to model_extraInput_accessor;
- 
-  virtual bool forward(
-		       size_t                    p ,
-		       size_t                    q ,
-		       const ADvector<bool>&      vx ,
-		       ADvector<bool>&      vy ,
-		       const ADvector<double>&    tx ,
-		       ADvector<double>&    ty
-		       );
-  virtual
-    bool reverse(
-		 size_t                    q ,
-		 const ADvector<double>&    tx ,
-		 const ADvector<double>&    ty ,
-		 ADvector<double>&    px ,
-		 const ADvector<double>&    py
-		 );
-  virtual
-    bool for_sparse_jac(
-			size_t                     q ,
-			const ADvector<bool>&   rt ,
-			ADvector<bool>&         st ,
-			const ADvector<double>&      x );
-  virtual
-    bool rev_sparse_jac(
-			size_t                     q ,
-			const ADvector<bool>&   rt ,
-			ADvector<bool>&         st ,
-			const ADvector<double>&      x );
-};
-
-
-class atomic_extraOutputObject : public CppAD::atomic_base<double> {
+class atomic_extraOutputObject : public CppAD::atomic_three<double> {
   public:
  atomic_extraOutputObject(const std::string& name,
 			  ManyVariablesMapAccessor* MVMA,
-			  nimbleCppADinfoClass* ADinfoPtr);// NodeVectorClassNew_derivs* NV);
+			  nimbleCppADinfoClass* ADinfoPtr);
  private:
  nimbleCppADinfoClass* ADinfoPtr_;
- // NodeVectorClassNew_derivs* NV_;//for access to model_extraInput_accessor;
  ManyVariablesMapAccessor* MVMA_;
  std::string objName;
 
+  virtual bool for_type(
+      const CppAD::vector<double>&               parameter_x ,
+      const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
+      CppAD::vector<CppAD::ad_type_enum>&        type_y      )
+  { 
+    type_y[0] = CppAD::variable_enum;
+    return true;
+  }
+  // rev_depend is used when the optimize() method is called for a tape (an ADFun).
+  virtual bool rev_depend(
+			  const CppAD::vector<double>&          parameter_x ,
+			  const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
+			  CppAD::vector<bool>&                depend_x    ,
+			  const CppAD::vector<bool>&          depend_y
+			  ) {
+    depend_x[0] = true;
+    return true;
+  }
+
+ 
+ //forward: as declared in atomic_three
+ //reverse: as declared in atomic_three
   virtual bool forward(
-		       size_t                    p ,
-		       size_t                    q ,
-		       const ADvector<bool>&      vx ,
-		       ADvector<bool>&      vy ,
-		       const ADvector<double>&    tx ,
-		       ADvector<double>&    ty
-		       );
-  virtual
-    bool reverse(
-		 size_t                    q ,
-		 const ADvector<double>&    tx ,
-		 const ADvector<double>&    ty ,
-		 ADvector<double>&    px ,
-		 const ADvector<double>&    py
-		 );
-  virtual
-    bool for_sparse_jac(
-			size_t                     q ,
-			const ADvector<bool>&   r ,
-			ADvector<bool>&         s ,
-			const ADvector<double>&      x );
-  virtual
-    bool rev_sparse_jac(
-			size_t                     q ,
-			const ADvector<bool>&   rt ,
-			ADvector<bool>&         st ,
-			const ADvector<double>&      x );
+		       const CppAD::vector<double>&               parameter_x  ,
+		       const CppAD::vector<CppAD::ad_type_enum>&  type_x       ,
+		       size_t                              need_y       ,
+		       size_t                              order_low    ,
+		       size_t                              order_up     ,
+		       const CppAD::vector<double>&               taylor_x     ,
+		       CppAD::vector<double>&                     taylor_y     );
+
+  virtual bool forward(
+		       const CppAD::vector< CppAD::AD<double> >&               parameter_x  ,
+		       const CppAD::vector<CppAD::ad_type_enum>&  type_x       ,
+		       size_t                              need_y       ,
+		       size_t                              order_low    ,
+		       size_t                              order_up     ,
+		       const CppAD::vector< CppAD::AD<double> >&               taylor_x     ,
+		       CppAD::vector< CppAD::AD<double> >&                     taylor_y     );
+  
+ //forward for double-taping: specialize to the relevant case
+ //reverse for double-taping: specialize to the relevant case
+  virtual bool reverse(
+		       const CppAD::vector< double>&               parameter_x ,
+		       const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
+		       size_t                              order_up    ,
+		       const CppAD::vector< double>&               taylor_x    ,
+		       const CppAD::vector< double>&               taylor_y    ,
+		       CppAD::vector< double>&                     partial_x   ,
+		       const CppAD::vector< double>&               partial_y   );
+  
+  virtual bool reverse(
+		       const CppAD::vector< CppAD::AD<double> >&               parameter_x ,
+		       const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
+		       size_t                              order_up    ,
+		       const CppAD::vector< CppAD::AD<double> >&               taylor_x    ,
+		       const CppAD::vector< CppAD::AD<double> >&               taylor_y    ,
+		       CppAD::vector< CppAD::AD<double> >&                     partial_x   ,
+		       const CppAD::vector< CppAD::AD<double> >&               partial_y   );  
 };
 
 
@@ -235,12 +227,12 @@ class nodeFun : public NamedObjects {
 		       std::vector< double > &dependentVars,
 		       const NimArr<1, double> &derivOrders,
 		       nimSmartPtr<NIMBLE_ADCLASS> &ansList);
-  virtual atomic_extraInputObject*
-    runExtraInputObject(NodeVectorClassNew_derivs &NV,
-			std::vector< CppAD::AD<double> > &extraInputDummyInput,
-			std::vector< CppAD::AD<double> > &extraInputResult);
-  void
-    delete_extraInputObject(NodeVectorClassNew_derivs &NV);
+  /* virtual atomic_extraInputObject* */
+  /*   runExtraInputObject(NodeVectorClassNew_derivs &NV, */
+  /* 			std::vector< CppAD::AD<double> > &extraInputDummyInput, */
+  /* 			std::vector< CppAD::AD<double> > &extraInputResult); */
+  /* void */
+  /*   delete_extraInputObject(NodeVectorClassNew_derivs &NV); */
   virtual atomic_extraOutputObject*
     runExtraOutputObject(NodeVectorClassNew_derivs &NV,
 			 CppAD::AD<double> &logProb,

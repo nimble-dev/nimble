@@ -413,16 +413,44 @@ void nimbleFunctionCppADbase::getDerivs_meta(nimbleCppADinfoClass &ADinfo,
 					     const NimArr<1, double> &derivOrders,
 					     const NimArr<1, double> &wrtVector,
 					     nimSmartPtr<NIMBLE_ADCLASS_META> &ansList) {
-  // std::cout<<"Entering getDerivs_meta"<<std::endl;
+  //  std::cout<<"Entering getDerivs_meta"<<std::endl;
+  // std::cout<<"ADinfo is at :"<< &ADinfo <<"\n";
+
   bool orderIncludesZero(false);
   for(size_t i = 0; i < derivOrders.size(); ++ i) {orderIncludesZero |= (derivOrders[i] == 0);}
   // std::cout << "orderIncludesZero = " << orderIncludesZero << std::endl;
   bool oldUpdateModel = ADinfo.updateModel();
   ADinfo.updateModel() = orderIncludesZero;
 
+  // We need to use the tricks to have CppAD statics in (potentially) two compilation units
+  // that were not linked together (one for model, one for the current algorithm)
+  // be matching.  This makes it so the CppAD tape handle and atomic information are shared.
+  // This is necessary even in this double taping step because of our atomic classes,
+  // which might reside in the other compilation unit.  During double taping, an atomic
+  // such as lgamma puts itself or other statics onto the new tape, and returns
+  // CppAD::AD variables created in the other compilation unit.
+
+  set_CppAD_tape_info_for_model my_tape_info_RAII_; // must be at function scope, not declared inside if(){}
+  
+  if(ADinfo.nodeFunPtrSet()) {
+    //    std::cout<<"tape_id and handle:"<< CppAD::AD<double>::get_tape_id_nimble()<<" "<< CppAD::AD<double>::get_tape_handle_nimble()<<"\n";
+    //    std::cout<<"atomic info:"<<CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage()<<"\n";
+    my_tape_info_RAII_.set_from_nodeFunPtr(ADinfo.nodeFunPtr(),
+					   CppAD::AD<double>::get_tape_id_nimble(),
+					   CppAD::AD<double>::get_tape_handle_nimble());
+    set_CppAD_atomic_info_for_model(ADinfo.nodeFunPtr(),
+				    CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage());
+    //    std::cout<<"done setting nodeFunPtr\n";
+  }
+
   CppAD::ADFun< CppAD::AD<double>, double > innerTape;
   innerTape = ADinfo.ADtape->base2ad();
   innerTape.new_dynamic(ADinfo.dynamicVars_meta);
+
+  //  std::cout<<" after making inner tape\n";
+  //  std::cout<<"tape_id and handle:"<< CppAD::AD<double>::get_tape_id_nimble()<<" "<< CppAD::AD<double>::get_tape_handle_nimble()<<"\n";
+  //  std::cout<<"atomic info:"<<CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage()<<"\n";
+
   getDerivs_internal< CppAD::AD<double>,
 		      CppAD::ADFun< CppAD::AD<double>, double >,
 		      NIMBLE_ADCLASS_META>(ADinfo.independentVars_meta,
@@ -827,6 +855,7 @@ void setValues_AD_AD_taping(NimArr<1, CppAD::AD<double> > &v,
   } else {
     // Make a new extraOutputObject, which during tape execution will copy to the real (non-AD) model
     std::vector< CppAD::AD<double> > extraOutputDummyResult(1);
+    extraOutputDummyResult[0] = 0;
     std::vector< CppAD::AD<double> > extraOutputs(totalLength);
     for(size_t ii = 0; ii < totalLength; ++ii) {
       extraOutputs[ii] = v[ii];
@@ -852,48 +881,60 @@ void setValues_AD_AD_taping(NimArr<1, CppAD::AD<double> > &v,
 }
 
 bool atomic_extraOutputObject::forward(
-				      size_t                    p ,
-				      size_t                    q ,
-				      const ADvector<bool>&      vx ,
-				      ADvector<bool>&      vy ,
-				      const ADvector<double>&    tx ,
-				      ADvector<double>&    ty
-				      )
-{
+				      const CppAD::vector<double>&               parameter_x  ,
+				      const CppAD::vector<CppAD::ad_type_enum>&  type_x       ,
+				      size_t                              need_y       ,
+				      size_t                              order_low    ,
+				      size_t                              order_up     ,
+				      const CppAD::vector<double>&               taylor_x     ,
+				      CppAD::vector<double>&                     taylor_y     ) {
   // std::cout<<"Entering atomic_extraOutputObject named "<<objName<<" with p = "<<p<<" and q = "<<q<<std::endl;
   // std::cout<<"handle address: "<<CppAD::AD<double>::get_handle_address_nimble()<<std::endl;
   // std::cout<<"tx.size() = "<<tx.size()<<" and ty.size() = "<<ty.size()<<std::endl;
   // return flag
   bool ok = true;
-  
-  if(vx.size() > 0) {// only true for Forward(0)
-    for(unsigned int i = 0; i < vy.size(); ++i) // should have size 1, but we'll handle anything.
-      vy[i] = true;
-  }
-  
+    
   size_t length_modelOutput_accessor = MVMA_->getTotalLength(); //NV_->model_modelOutput_accessor.getTotalLength();
   // std::cout << "length_modelOutput_accessor =" << length_modelOutput_accessor << std::endl;
   // if(length_modelOutput_accessor < tx.size()) {
   //   std::cout<<"Problem: length_modelOutput_accessor < vx.size()"<<std::endl;
   // }
   // 0th-order
-  if( (p <= 0) & (ADinfoPtr_->updateModel()) ) {
+  size_t q = order_up;
+  if( (order_low <= 0) & (ADinfoPtr_->updateModel()) ) {
     // Put values in model.
     //   std::cout<<"putting values in model\n";
     NimArr<1, double> NimArr_tx;
     NimArr_tx.setSize(length_modelOutput_accessor);
     for(size_t i = 0; i < length_modelOutput_accessor; ++i) {
-      NimArr_tx[i] = tx[i*(q+1) + 0];
+      NimArr_tx[i] = taylor_x[i*(q+1) + 0];
     }
     setValues(NimArr_tx, *MVMA_); //NV_->model_modelOutput_accessor);
     // std::cout<<"done putting values in model\n";
   }
 
-  for(unsigned int i = 0; i < ty.size(); ++i) {
-      ty[i] = 0.;
+  for(unsigned int i = 0; i < taylor_y.size(); ++i) {
+      taylor_y[i] = 0.;
   }
 
   return ok;
+}
+
+bool atomic_extraOutputObject::forward(
+				       const CppAD::vector< CppAD::AD<double> >&               parameter_x  ,
+				       const CppAD::vector<CppAD::ad_type_enum>&  type_x       ,
+				       size_t                              need_y       ,
+				       size_t                              order_low    ,
+				       size_t                              order_up     ,
+				       const CppAD::vector< CppAD::AD<double> >&               taylor_x     ,
+				       CppAD::vector< CppAD::AD<double> >&                     taylor_y     ) {
+  // This overload should only be used in a case of double-taping.
+  // What we do here is what gets recorded on the outer tape when this, the inner tape, is played.
+  // We could put a copy of the same, but the decision right now is to put nothing and simply record zeros.
+  for(unsigned int i = 0; i < taylor_y.size(); ++i) {
+    taylor_y[i] = CppAD::AD<double>(0.);
+  }
+  return true;
 }
 
 CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
@@ -907,6 +948,23 @@ CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
   vector<NodeInstruction>::const_iterator iNode(instructions.begin());
   vector<NodeInstruction>::const_iterator iNodeEnd(instructions.end());
   // std::cout<<"starting node calcs in calculate_ADproxyModel"<<std::endl;
+
+  // Set the nodeFunPtr in ADinfo to a single nodeFun (it could be any).
+  // This is used during getDerivs_meta to do the tricks to get CppAD
+  // to work across our two compilation units.  This is necessary for our atomic classes.
+  // Currently, it is thought that this is only necessary if there are
+  // nodeFunctions called (i.e. it is not the trivial case of no nodes).
+  // It is thought that this is not necessary if the only use of the model
+  // compilation unit is copying into and out of the ADproxyModel variables.
+  //
+  // Note that, at the time this is called, the compilation unit tricks
+  // have already been invoked for the current taping from generated code.
+  // Stashing it here is for future double taping of this tape.
+  if(instructions.size() > 0) {
+    nodeFun *nodeFunInModelDLL;
+    nodeFunInModelDLL = instructions[0].nodeFunPtr;
+    recordingInfo.ADinfoPtr()->set_nodeFunPtr(nodeFunInModelDLL);
+  }
   
   for(; iNode != iNodeEnd; iNode++)
     ans += iNode->nodeFunPtr->calculateBlock_ADproxyModel(iNode->operand);
@@ -928,6 +986,5 @@ CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
     }
     //    std::cout<<"done with extraOutputStep"<<std::endl;
   }
-
   return(ans);
 }
