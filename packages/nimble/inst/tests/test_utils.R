@@ -1292,7 +1292,7 @@ derivsNimbleFunction <- nimbleFunction(
   run = function(x = double(1),
                  order = double(1)) {
     values(model, wrt) <<- x  
-    ans <- nimDerivs(model$calculate(calcNodes), wrt = wrt, order = order, reset = TRUE)
+    ans <- nimDerivs(model$calculate(calcNodes), wrt = wrt, order = order, reset = FALSE)
     return(ans)
     returnType(ADNimbleList())
   }  ## don't need enableDerivs if call nimDerivs directly, but would if just have model$calc in nf
@@ -1313,7 +1313,7 @@ derivsNimbleFunctionParamTransform <- nimbleFunction(
         transformed_x <- transform(x)
         ans <- nimDerivs(inverseTransformStoreCalculate(transformed_x), order = order, wrt = nimDerivs_wrt,
                          model = model, updateNodes = nimDerivs_updateNodes,
-                         constantNodes = nimDerivs_constantNodes, reset = TRUE)
+                         constantNodes = nimDerivs_constantNodes, reset = FALSE)
 
         return(ans)
         returnType(ADNimbleList())
@@ -1406,7 +1406,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
     if(is.null(wrt) && is.null(calcNodes)) {
         
         ## HMC/MAP use case
-        if(verbose) cat("testing HMC/MAP\n")
+        if(verbose) cat("======================\ntesting HMC/MAP\n----------------------\n")
         calcNodes <- model$getNodeNames()
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         tmp <- values(model, wrt)
@@ -1423,7 +1423,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
                                        checkCompiledValuesIdentical = checkCompiledValuesIdentical,
                                        verbose = verbose, debug = debug))
         ## max. lik. use case
-        if(verbose) cat("testing ML\n")
+        if(verbose) cat("======================\ntesting ML\n----------------------\n")
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         calcNodes <- model$getNodeNames()
         topNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
@@ -1446,7 +1446,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
                                        verbose = verbose, debug = debug))
 
         ## modular HMC/MAP use case
-        if(verbose) cat("testing HMC/MAP partial\n")
+        if(verbose) cat("======================\ntesting HMC/MAP partial\n----------------------\n")
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         calcNodes <- model$getNodeNames()
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
@@ -1467,9 +1467,12 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
                                        verbose = verbose, debug = debug))
 
         ## conditional max. lik. use case
-        if(verbose) cat("testing ML partial\n")
+        if(verbose) cat("======================\ntesting ML partial\n----------------------\n")
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         calcNodes <- model$getNodeNames()
+        topNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
+        latentNodes <- model$getNodeNames(latentOnly = TRUE, stochOnly = TRUE, includeData = FALSE)
+        calcNodes <- calcNodes[!calcNodes %in% c(topNodes, latentNodes)]  # should be data + deterministic
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         wrt <- sample(wrt, round(length(wrt)/2), replace = FALSE)
         if(!length(wrt))
@@ -1487,8 +1490,8 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
                                        checkCompiledValuesIdentical = checkCompiledValuesIdentical,
                                        verbose = verbose, debug = debug))
 
-        ## empirical Bayes use case
-        if(verbose) cat('testing EB\n')
+        ## empirical Bayes use case (though not actually integrating over any latent nodes)
+        if(verbose) cat('======================\ntesting EB\n----------------------\n')
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         calcNodes <- model$getNodeNames()
         topNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
@@ -1529,9 +1532,9 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
 ## forward and backward mode and to assess whether values in the model are updated.
 test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL, xNew = NULL,
                                            calcNodes = NULL, wrt = NULL, savedMV = NULL, 
-                                           relTol = c(1e-15, 1e-8, 1e-3), verbose = TRUE, useFasterRderivs = FALSE,
+                                           relTol = c(1e-15, 1e-8, 1e-3), useFasterRderivs = FALSE,
                                            useParamTransform = FALSE, checkCompiledValuesIdentical = TRUE,
-                                           debug = FALSE){
+                                           verbose = FALSE, debug = FALSE){
 
     test_that(paste0("Derivatives of calculate for model ", name), {
         if(exists('paciorek')) browser()
@@ -1554,6 +1557,19 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
         otherNodes <- model$getNodeNames()
         otherNodes <- otherNodes[!otherNodes %in% wrt]
 
+        updateNodes <- makeUpdateNodes(wrt, calcNodes, model)$updateNodes
+        updateNodesDeps <- model$getDependencies(updateNodes)
+
+        ## Manipulations so can set random matrices to be positive definite.
+        ## Only needed for updateNodes, not wrt, because for wrt we'll need param transform anyway.
+        updateNodesAsNodes <- model$expandNodeNames(updateNodes)
+        checkSquareMatrix <- function(node) {
+            val <- model[[node]]
+            d <- dim(val)
+            if(!is.null(d) && length(d) == 2 && d[1] == d[2]) return(TRUE) else return(FALSE)
+        }        
+        updateNodesMat <- sapply(updateNodesAsNodes, checkSquareMatrix)
+        
         if(useParamTransform) {
             rDerivs <- derivsNimbleFunctionParamTransform(model, calcNodes = calcNodes, wrt = wrt)
         } else rDerivs <- derivsNimbleFunction(model, calcNodes = calcNodes, wrt = wrt)
@@ -1581,11 +1597,35 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
         }
 
         xList <- list(xOrig)
-        if(!is.null(xNew))
+        if(!is.null(xNew)) {
             xList[[2]] <- xNew
+            xList[[3]] <- xNew
+        }
 
-        for(x in xList) {
-        
+        for(idx in seq_along(xList)) {
+            if(verbose) {
+                if(idx == 1) cat("testing initial wrt values\n----------------------\n")
+                if(idx == 2) cat("testing new wrt values\n----------------------\n")
+                if(idx == 3) cat("testing new updateNode values\n----------------------\n")
+            }
+
+
+            if(idx == 3) {
+                ## Also modify updateNodes to make sure nothing has been incorrectly baked in.
+                if(verbose && length(updateNodes)) cat(paste0("Using updateNodes: ", paste0(updateNodes, collapse = ', '), "\n"))
+                values(model, updateNodes) <- runif(length(updateNodes))
+                ## Make sure updateNodes are positive definite if square matrices.
+                for(nodeIdx in seq_along(updateNodesAsNodes)) 
+                    if(updateNodesMat[nodeIdx])
+                        model[[updateNodesAsNodes[nodeIdx]]] <- t(model[[updateNodesAsNodes[nodeIdx]]]) %*%
+                            model[[updateNodesAsNodes[nodeIdx]]]
+                model$calculate(updateNodesDeps)
+                values(cModel, updateNodes) <- values(model, updateNodes)
+                cModel$calculate(updateNodesDeps)
+            }
+                
+            x <- xList[[idx]]
+            
             ## Store current logProb and non-wrt values to check that order=c(1,2) doesn't change them.
             ## Don't calculate model as want to assess possibility model is out-of-state.
             ## model$calculate()
@@ -1632,7 +1672,19 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                     transformed_x <- cDerivs$transform(x)
                     rOutput012 <- nimDerivs(wrapper(transformed_x), order = 0:2, reset = TRUE)
                 }
+                rVals012 <- values(cModel, otherNodes)
+                rLogProb012 <- cModel$getLogProb(calcNodes)
                 rWrt012 <- values(cModel, wrt)
+
+                if(!useParamTransform) {
+                    rOutput02 <- nimDerivs(wrapper(x), order = c(0,2), reset = TRUE)
+                } else {
+                    transformed_x <- cDerivs$transform(x)
+                    rOutput02 <- nimDerivs(wrapper(transformed_x), order = c(0,2), reset = TRUE)
+                }
+                rVals02 <- values(cModel, otherNodes)
+                rLogProb02 <- cModel$getLogProb(calcNodes)
+                rWrt02 <- values(cModel, wrt)
 
                 ## now reset cModel for use in compiled derivs
                 nimCopy(savedMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
@@ -1648,11 +1700,19 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 rVals01 <- values(model, otherNodes)
                 rWrt01 <- values(model, wrt)
                 rLogProb_new <- model$calculate(calcNodes)
-                model$calculate(otherNodes)
+                ## why was I doing this?
+                ## model$calculate(otherNodes)
                 rVals_new <- values(model, otherNodes)
 
                 rOutput012 <- rDerivs$run(x, 0:2)
+                rVals012 <- values(model, otherNodes)
+                rLogProb012 <- model$getLogProb(calcNodes)
                 rWrt012 <- values(model, wrt)
+
+                rOutput02 <- rDerivs$run(x, c(0,2))
+                rVals02 <- values(model, otherNodes)
+                rLogProb02 <- model$getLogProb(calcNodes)
+                rWrt02 <- values(model, wrt)
             }
             
             cOutput12 <- cDerivs$run(x, 1:2)
@@ -1665,29 +1725,73 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             cLogProb01 <- cModel$getLogProb(calcNodes)
             cWrt01 <- values(cModel, wrt)
             cLogProb_new <- cModel$calculate(calcNodes)
-            cModel$calculate(otherNodes)
+            ## why was I doing this?
+            ## cModel$calculate(otherNodes)
             cVals_new <- values(cModel, otherNodes)
 
             cOutput012 <- cDerivs$run(x, 0:2)
+            cVals012 <- values(cModel, otherNodes)
+            cLogProb012 <- cModel$getLogProb(calcNodes)
             cWrt012 <- values(cModel, wrt)
+
+            cOutput02 <- cDerivs$run(x, c(0,2))
+            cVals02 <- values(cModel, otherNodes)
+            cLogProb02 <- cModel$getLogProb(calcNodes)
+            cWrt02 <- values(cModel, wrt)
+            
+            ## Check results ##
+
+            ## Check that only requested orders provided.
+            expect_identical(length(rOutput01$value), 1L)
+            expect_identical(length(rOutput12$value), 0L)
+            expect_identical(length(rOutput012$value), 1L)
+            expect_identical(length(rOutput02$value), 1L)
+            expect_identical(length(cOutput01$value), 1L)
+            expect_identical(length(cOutput12$value), 0L)
+            expect_identical(length(cOutput012$value), 1L)
+            expect_identical(length(cOutput02$value), 1L)
+
+            expect_gte(length(rOutput01$jacobian), 1)
+            expect_gte(length(rOutput12$jacobian), 1)
+            expect_gte(length(rOutput012$jacobian), 1)
+            expect_identical(length(rOutput02$jacobian), 0L)
+            expect_gte(length(cOutput01$jacobian), 1)
+            expect_gte(length(cOutput12$jacobian), 1)
+            expect_gte(length(cOutput012$jacobian), 1)
+            expect_identical(length(cOutput02$jacobian), 0L)
+
+            expect_identical(length(rOutput01$hessian), 0L)
+            expect_gte(length(rOutput12$hessian), 1)
+            expect_gte(length(rOutput012$hessian), 1)
+            expect_gte(length(rOutput02$hessian), 1)
+            expect_identical(length(cOutput01$hessian), 0L)
+            expect_gte(length(cOutput12$hessian), 1)
+            expect_gte(length(cOutput012$hessian), 1)
+            expect_gte(length(cOutput02$hessian), 1)
 
             ## 0th order 'derivative'
             expect_identical(rOutput01$value, rLogProb_new)
             expect_identical(rOutput012$value, rLogProb_new)
+            expect_identical(rOutput02$value, rLogProb_new)
             if(checkCompiledValuesIdentical) {
                 expect_identical(cOutput01$value, cLogProb_new)
                 expect_identical(cOutput012$value, cLogProb_new)
+                expect_identical(cOutput02$value, cLogProb_new)
             } else {
                 expect_equal(cOutput01$value, cLogProb_new)
                 expect_equal(cOutput012$value, cLogProb_new)
+                expect_equal(cOutput02$value, cLogProb_new)
             }
             expect_equal(rOutput01$value, cOutput01$value, tolerance = relTol[1])
             expect_equal(rOutput012$value, cOutput012$value, tolerance = relTol[1])
+            expect_equal(rOutput02$value, cOutput02$value, tolerance = relTol[1])
             
             expect_equal(sum(is.na(rOutput01$value)), 0, info = "NAs found in uncompiled 0th derivative")
             expect_equal(sum(is.na(cOutput01$value)), 0, info = "NAs found in compiled 0th derivative")
             expect_equal(sum(is.na(rOutput012$value)), 0, info = "NAs found in uncompiled 0th derivative")
             expect_equal(sum(is.na(cOutput012$value)), 0, info = "NAs found in compiled 0th derivative")
+            expect_equal(sum(is.na(rOutput02$value)), 0, info = "NAs found in uncompiled 0th derivative")
+            expect_equal(sum(is.na(cOutput02$value)), 0, info = "NAs found in compiled 0th derivative")
 
             ## 1st derivative
             expect_equal(rOutput01$jacobian, cOutput01$jacobian, tolerance = relTol[2])
@@ -1705,6 +1809,8 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             ## explicit comparison of first derivs;
             ## both of these are reverse mode because 2nd order reverse also invokes first order reverse
             expect_identical(cOutput01$jacobian, cOutput012$jacobian)
+            
+            expect_identical(cOutput12$jacobian, cOutput012$jacobian)
 
             ## 2nd derivative
             expect_equal(rOutput12$hessian, cOutput12$hessian, tolerance = relTol[3])
@@ -1715,8 +1821,13 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             expect_equal(sum(is.na(rOutput012$hessian)), 0, info = "NAs found in uncompiled 2nd derivative")
             expect_equal(sum(is.na(cOutput012$hessian)), 0, info = "NAs found in compiled 2nd derivative")
 
-            expect_identical(cOutput12$hessian, cOutput012$hessian)
+            expect_equal(rOutput02$hessian, cOutput02$hessian, tolerance = relTol[3])
+            expect_equal(sum(is.na(rOutput02$hessian)), 0, info = "NAs found in uncompiled 2nd derivative")
+            expect_equal(sum(is.na(cOutput02$hessian)), 0, info = "NAs found in compiled 2nd derivative")
 
+            expect_identical(cOutput12$hessian, cOutput012$hessian)
+            expect_identical(cOutput02$hessian, cOutput012$hessian)
+            
             ## Model state: wrt values should be equal to `x`.
             expect_identical(rWrt01, x)
             expect_identical(rWrt12, x)
@@ -1733,6 +1844,10 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             ## is taken, so even when order 0 is not included, expect updated values.
             expect_identical(rLogProb01, rLogProb_new)
             expect_identical(rVals01, rVals_new)
+            expect_identical(rLogProb012, rLogProb_new)
+            expect_identical(rVals012, rVals_new)
+            expect_identical(rLogProb02, rLogProb_new)
+            expect_identical(rVals02, rVals_new)
             if(useFasterRderivs || useParamTransform) {
                 expect_identical(rLogProb12, rLogProb_new)
                 expect_identical(rVals12, rVals_new)
@@ -1749,6 +1864,10 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             
             expect_fun(cLogProb01, cLogProb_new) 
             expect_fun(cVals01, cVals_new)
+            expect_fun(cLogProb012, cLogProb_new) 
+            expect_fun(cVals012, cVals_new)
+            expect_fun(cLogProb02, cLogProb_new) 
+            expect_fun(cVals02, cVals_new)
             if(useFasterRderivs || useParamTransform) {
                 expect_fun(cLogProb12, cLogProb_new)
                 expect_fun(cVals12, cVals_new)
