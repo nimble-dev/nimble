@@ -37,7 +37,7 @@ Depends:
 Imports:
     methods,igraph,coda,R6
 Suggests:
-    testthat (<= 2.3.2)
+    testthat
 URL: https://r-nimble.org, https://github.com/nimble-dev/nimble
 SystemRequirements: GNU make
 License: BSD_3_clause + file LICENSE | GPL (>= 2)
