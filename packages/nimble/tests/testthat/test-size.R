@@ -52,13 +52,13 @@ testsScalar <- list(
          inits = list(mu1 = 0, mu2 = 0, sig = 1) ),
     list(name = 'scalar stochastic, parameter expression non-scalar, no indices',
          expectPass = FALSE, expectPassWithConst = TRUE,
-         knownProblem = FALSE, knownProblemWithConst = FALSE,
+         knownProblem = FALSE, knownProblemWithConst = FALSE, expectWarnWithConst = TRUE,
          expr = quote({y ~ dnorm(mu1%*%mu2, sd = sig)}), 
          inits = list(mu1 = vec2, mu2 = vec2, sig = 1) ),
     
     list(name = 'scalar stochastic, parameter expression non-scalar, RHS index',
          expectPass = FALSE, expectPassWithConst = FALSE,
-         knownProblem = FALSE, knownProblemWithConst = FALSE,
+         knownProblem = FALSE, knownProblemWithConst = FALSE, expectWarnWithConst = TRUE,
          expr = quote({y ~ dnorm((mu1%*%mu2)[1,1], sd = sig)}), 
          inits = list(mu1 = vec2, mu2 = vec2, sig = 1) ),
     
@@ -189,7 +189,7 @@ testsDeterm <- list(
          inits = list(a = mat2, b = 3 )),
     
     list(name = 'deterministic, non-scalar expression, no indices',
-         expectPass = FALSE, expectPassWithConst = TRUE,
+         expectPass = FALSE, expectPassWithConst = TRUE, expectWarnWithConst = TRUE,
          expr = quote({y <- a %*% b}),
          inits = list(a = vec2, b = vec2 )),
     # this compiles fine with RHS const, though warning is given during model building
@@ -217,6 +217,7 @@ testsDeterm <- list(
     list(name = 'deterministic, non-scalar expression, dimension mismatch',
          expectPass = FALSE,
          knownProblem = TRUE,
+         expectWarn = TRUE,
          expr = quote({y <- a[1:2,1:2] %*% b[1:2]}),
          inits = list(a = mat2, b = vec2 )),
 
@@ -227,6 +228,7 @@ testsDeterm <- list(
          inits = list(a = 3, b = 3)),
 
     list(name = 'deterministic, vector value, missing indices', expectPass = FALSE,
+         expectWarnWithConst = TRUE,
          expr = quote({y[1:2] <- a + b}),
          inits = list(a = vec2, b = vec2)),
     # errors for RHS const but not in model_check()
@@ -237,7 +239,7 @@ testsDeterm <- list(
          inits = list(a = mat2, b = vec2 )),
 
     list(name = 'deterministic, basic vector, missing indices',
-         expectPass = FALSE,
+         expectPass = FALSE, expectWarnWithConst = TRUE,
          expr = quote({y[1:2] <- a %*% b[1:2]}),
          inits = list(a = mat2, b = vec2 )),
     # errors for RHS const but not in model_check()
@@ -250,21 +252,25 @@ testsDeterm <- list(
     list(name = 'deterministic, basic vector, RHS dimension mismatch',
          expectPass = FALSE,
          knownProblem = TRUE,
+         expectWarn = TRUE,
          expr = quote({y[1:2] <- a[1:2] + b[1:2, 1:2]}),
          inits = list(a = vec2, b = mat2 )),
     list(name = 'deterministic, basic vector, size mismatch',
          expectPass = FALSE,
          knownProblem = TRUE,
+         expectWarn = TRUE,
          expr = quote({y[1:3] <- a[1:2,1:2] %*% b[1:2]}),
          inits = list(a = mat2, b = vec2 )),
     list(name = 'deterministic, basic vector, size mismatch 2',
          expectPass = FALSE,
          knownProblem = TRUE,
+         expectWarn = TRUE,
          expr = quote({y[1:2] <- a[1:3,1:3] %*% b[1:3]}),
          inits = list(a = mat3, b = rep(1,3) )),
     list(name = 'deterministic, basic vector dimension mismatch',
          expectPass = FALSE,
          knownProblem = TRUE,
+         expectWarn = TRUE,
          expr = quote({y[1:3] <- a[1:3,1:3] %*% b[1:3,1:3]}),
          inits = list(a = mat3, b = mat3 )),
     list(name = 'deterministic, basic matrix', expectPass = TRUE,
@@ -284,6 +290,7 @@ testsDeterm <- list(
     ## It is still dubious in any case, so rather than change expectPass to TRUE I will add knownProblem = TRUE
     list(name = 'deterministic, nodes within multivar variables, size mismatch', expectPass = FALSE,
          knownProblem = TRUE,
+         expectWarn = TRUE,
          expr = quote({
              for(i in 1:1)
                  y[1:3] <- a[1:2,1:2] %*% b[1:2, i]}),

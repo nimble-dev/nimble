@@ -120,15 +120,15 @@ test_that("getParentNodes works", {
     m <- nimbleModel(code,
                      data = list(y = matrix(rnorm(I*J), J, I)),
                      constants = constants)
-    expect_identical(getParentNodes('mu', m, stochOnly =  TRUE), character(0))
-    expect_identical(getParentNodes('mu', m), c('mu0', 'mu00'))
-    expect_identical(getParentNodes('y', m, stochOnly = TRUE),
+    expect_identical(nimble:::getParentNodes('mu', m, stochOnly =  TRUE), character(0))
+    expect_identical(nimble:::getParentNodes('mu', m), c('mu0', 'mu00'))
+    expect_identical(nimble:::getParentNodes('y', m, stochOnly = TRUE),
                      c('theta[1]','theta[2]','theta[3]', 'sigma'))
-    expect_identical(getParentNodes('y', m),
+    expect_identical(nimble:::getParentNodes('y', m),
                      c('lifted_d1_over_sqrt_oPsigma_cP', 'theta[1]','theta[2]','theta[3]', 'sigma'))
-    expect_identical(getParentNodes('y[2, 1:3]', m, stochOnly = TRUE),
+    expect_identical(nimble:::getParentNodes('y[2, 1:3]', m, stochOnly = TRUE),
                      c('theta[2]', 'sigma'))
-    expect_identical(getParentNodes('theta', m),
+    expect_identical(nimble:::getParentNodes('theta', m),
                      c('tau', 'mu'))
     
 })

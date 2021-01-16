@@ -1099,6 +1099,8 @@ test_size <- function(input, verbose = nimbleOptions('verbose')) {
     if(is.null(input$expectPassWithConst)) input$expectPassWithConst <- input$expectPass
     if(is.null(input$knownProblem)) input$knownProblem <- FALSE
     if(is.null(input$knownProblemWithConst)) input$knownProblemWithConst <- input$knownProblem
+    if(is.null(input$expectWarn)) input$expectWarn <- FALSE
+    if(is.null(input$expectWarnWithConst)) input$expectWarnWithConst <- input$expectWarn
 
     if(verbose) cat("### Testing", input$name, " with RHS variable ###\n")
     code <- quote({
@@ -1109,9 +1111,11 @@ test_size <- function(input, verbose = nimbleOptions('verbose')) {
     message = paste(input$name, 'with RHS variable', ifelse(input$expectPass, 'works', 'fails'), 'as expected')
     if (input$knownProblem) message = paste(message, 'marked as KNOWN ISSUE')
     if(xor(input$expectPass, input$knownProblem)) {
-        test_that(message, eval(code))
+        if(input$expectWarn) {
+            test_that(message, expect_warning(eval(code)))
+        } else test_that(message, expect_silent(eval(code)))
     } else {
-        test_that(message, expect_error(eval(code)))
+        test_that(message, expect_error(suppressWarnings(eval(code))))
     }
 
     if(verbose) cat("### Testing", input$name, "with RHS constant ###\n")
@@ -1123,9 +1127,12 @@ test_size <- function(input, verbose = nimbleOptions('verbose')) {
     message = paste(input$name, 'with RHS constant', ifelse(input$expectPassWithConst, 'works', 'fails'), 'as expected')
     if (input$knownProblemWithConst) message = paste(message, 'marked as KNOWN ISSUE')
     if(xor(input$expectPassWithConst, input$knownProblemWithConst)) {
-        test_that(message, eval(code))
+        if(input$expectWarnWithConst) {
+            test_that(message, expect_warning(eval(code)))
+        } else test_that(message, expect_silent(eval(code)))
     } else {
-        test_that(message, expect_error(eval(code)))
+        ## As of testthat 3.0, warnings bubble up so need to deal with them by suppression.
+        test_that(message, expect_error(suppressWarnings(eval(code))))
     }
 
     invisible(NULL)
