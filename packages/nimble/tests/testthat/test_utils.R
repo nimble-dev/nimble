@@ -1366,10 +1366,16 @@ stripTestPlacementWarning <- function(lines) {
     if(length(totalLines))
         return(lines[-totalLines]) else return(lines)
 }
-               
+
+stripTestsPassedMessage <- function(lines) {
+    stripLines <- grep("^Test passed", lines)
+    if(length(stripLines))
+       return(lines[-stripLines]) else return(lines)
+}
+    
 
 compareFilesByLine <- function(trialResults, correctResults, main = "") {
-    trialResults <- stripTestPlacementWarning(trialResults)
+    trialResults <- stripTestsPassedMessage(stripTestPlacementWarning(trialResults))
     correctResults <- stripTestPlacementWarning(correctResults)
     test_that(paste0(main, ': same number of output lines'),
           expect_equal(length(trialResults), length(correctResults)))
