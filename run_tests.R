@@ -110,7 +110,10 @@ if (require(sys)) {
 }
 
 # Run each test in a separate process to avoid dll garbage overload.
-runTest <- function(test, logToFile = FALSE, runViaTestthat = TRUE) {
+# As of recent (>= 3.0.0?) testthat versions, use of inst/tests is deprecated
+# and testthat wants a more formal approach to setup and cleanup code for each test file,
+# so for now, we'll just run 'manually'.
+runTest <- function(test, logToFile = FALSE, runViaTestthat = FALSE) {
     if (!logToFile) cat('--------------------------------------------------------------------------------\n')
     cat('TESTING', test, '\n')
     if (runViaTestthat) {
@@ -123,7 +126,7 @@ runTest <- function(test, logToFile = FALSE, runViaTestthat = TRUE) {
                          '  error = function(e) quit(status = 1))')
         command <- c(runner, '-e', custom_shQuote(script))
     } else {
-        command <- c(runner, file.path('packages', 'nimble', 'inst', 'tests', test))
+        command <- c(runner, file.path('packages', 'nimble', 'tests', 'testthat', test))
     }
     Sys.setenv(MAKEFLAGS = '-j1')  # Work around broken job pipe when GNU make is run under mclapply.
     if (logToFile) {
