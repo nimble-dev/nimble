@@ -1,4 +1,4 @@
-source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
 ## Testing functions that query distribution info based on distribution name or node/variable names
 

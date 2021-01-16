@@ -7,7 +7,7 @@
 ## 5) nimbleListDef is created outside of the nimbleFunction, nimbleListDef$new() used to create new nimbleList outside of the nimbleFunction,
 ##    nimbleList passed as argument to nimbleFunction
 
-source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
 RwarnLevel <- options('warn')$warn
 options(warn = 1)

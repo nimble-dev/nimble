@@ -1,7 +1,7 @@
 ## This test file also serves as a demo for experimental features: calling externally compiled code, and calling R functions from compiled nimbleFunctions.
 ## It covers rough draft functionality for calling external compiled functions and calling arbitrary R functions from within compiled nimbleFunction (including BUGS) code.
 
-source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
 RwarnLevel <- options('warn')$warn
 options(warn = 1)

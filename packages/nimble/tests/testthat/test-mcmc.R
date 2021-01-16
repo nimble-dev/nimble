@@ -1,4 +1,4 @@
-source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
 context("Testing of default MCMC")
 
@@ -1723,7 +1723,7 @@ sink(NULL)
 if(!generatingGoldFile) {
     trialResults <- readLines(tempFileName)
     trialResults <- trialResults[grep('Error in x$.self$finalize() : attempt to apply non-function', trialResults, invert = TRUE, fixed = TRUE)]
-    correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
+    correctResults <- readLines(system.file(file.path('tests', 'testthat', goldFileName), package = 'nimble'))
     compareFilesByLine(trialResults, correctResults)
 }
 

@@ -1,6 +1,6 @@
 context("Testing how nimbleFunctions use model variables and nodes")
 
-source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
 test_that("nimbleFunction use of model variables and nodes works",
 {

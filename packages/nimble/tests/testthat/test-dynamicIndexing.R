@@ -1,4 +1,4 @@
-source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
 context("Testing of dynamic indexing")
 
@@ -11,7 +11,7 @@ options(width = 1000)
 oldMaxPrint <- getOption("max.print")
 options(max.print = 100000)
 
-source(system.file(file.path('tests', 'dynamicIndexingTestLists.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'testthat', 'dynamicIndexingTestLists.R'), package = 'nimble'))
 
 nimbleAllowDynamicIndexingSetting <- nimbleOptions('allowDynamicIndexing')
 nimbleOptions(allowDynamicIndexing = TRUE)
@@ -553,7 +553,7 @@ sink(NULL)
 
 if(!generatingGoldFile) {
     trialResults <- readLines(tempFileName)
-    correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
+    correctResults <- readLines(system.file(file.path('tests', 'testthat', goldFileName), package = 'nimble'))
     compareFilesByLine(trialResults, correctResults)
 }
 

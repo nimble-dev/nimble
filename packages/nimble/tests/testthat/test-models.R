@@ -1,4 +1,4 @@
-source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
@@ -846,7 +846,7 @@ sink(NULL)
 if(FALSE){  ## no warnings being generated in goldFile anymore (perhaps a change in testthat versions?)
     if(!generatingGoldFile) {
         trialResults <- readLines(tempFileName)
-        correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
+        correctResults <- readLines(system.file(file.path('tests', 'testthat', goldFileName), package = 'nimble'))
         compareFilesByLine(trialResults, correctResults)
     }
 }

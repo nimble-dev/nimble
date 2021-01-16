@@ -1,4 +1,4 @@
-source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
 ## Tests for copy() [implemented as nimCopy], values(), and values()<-
 ## These use some of the same internals (accessors), so they are in the same testing file.

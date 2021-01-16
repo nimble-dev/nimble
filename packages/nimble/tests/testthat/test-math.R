@@ -2,7 +2,7 @@
 ## got to mathTestLists.R:
 ## enter each test as a list, with an informative name, NIMBLE expression to evaluate, vector of input dimensions, value of output dimension, and (if NIMBLE expression cannot be directly evaluated in R) the equivalent pure R expression whose result should match the NIMBLE result
 
-source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
@@ -11,7 +11,7 @@ nimbleOptions(verbose = FALSE)
 
 context("Testing of math functions in NIMBLE code")
 
-source(system.file(file.path('tests', 'mathTestLists.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'testthat', 'mathTestLists.R'), package = 'nimble'))
 
 set.seed(0)
 ans1 <- sapply(testsVaried, test_math, 'math')    ## 12

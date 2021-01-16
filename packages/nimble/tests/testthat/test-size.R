@@ -6,7 +6,7 @@
 ## with how expect_failure and expect_error are used in our other tests.
 ## Note that numerous error messages are expected here; check for test failures not denoted with 'KNOWN PROBLEM'
 
-source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
@@ -500,7 +500,7 @@ sink(NULL)
 
 if(!generatingGoldFile) {
     trialResults <- readLines(tempFileName)
-    correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
+    correctResults <- readLines(system.file(file.path('tests', 'testthat', goldFileName), package = 'nimble'))
     compareFilesByLine(trialResults, correctResults)
 }
 

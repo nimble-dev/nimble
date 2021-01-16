@@ -1,6 +1,6 @@
 ## These tests address construction and querying of the graph structure
 ## test-getDependencies has some more basic tests.
-source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
@@ -191,7 +191,7 @@ writeOutput(cases, outputFile)
 
 if(!generatingGoldFile) {
     trialResults <- readLines(tempFileName)
-    correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
+    correctResults <- readLines(system.file(file.path('tests', 'testthat', goldFileName), package = 'nimble'))
     compareFilesByLine(trialResults, correctResults)
 }
 

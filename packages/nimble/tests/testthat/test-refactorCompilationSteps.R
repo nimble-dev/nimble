@@ -1,4 +1,4 @@
-source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
 context("Testing of old vs. new generated C++ during refactoring steps")
 
@@ -69,7 +69,7 @@ compareOldAndNewMathTest <- function(input) {
         cat("End expected error message.\n")
 }
 
-source(system.file(file.path('tests', 'mathTestLists.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'testthat', 'mathTestLists.R'), package = 'nimble'))
 ## compilation of two modulo tests only fails if actual compilation is done,
 ## not just C++ generation, so this clunkily unsets knownFailure
 testsBasicMathModified <- lapply(testsBasicMath, function(x) {

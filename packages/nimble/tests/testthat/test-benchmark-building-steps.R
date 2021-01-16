@@ -2,7 +2,7 @@
 ## the model, configuring the MCMC, building the MCMC, and compiling
 ## the MCMC.
 
-source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
 RwarnLevel <- options('warn')$warn
 options(warn = 1)

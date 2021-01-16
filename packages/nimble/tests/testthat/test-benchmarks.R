@@ -6,7 +6,7 @@
 ##   NIMBLE_BENCHMARK_DIR - Directory where generated code is written.
 ##   NIMBLE_BENCHMARK_SEC - Minumum time to run each benchmark.
 
-source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
 # This makes it easier to debug compiler and linker errors on travis.
 if (nchar(Sys.getenv('CI'))) nimbleOptions(showCompilerOutput = TRUE)
