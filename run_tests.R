@@ -36,7 +36,7 @@ if (length(grep('^-', argv, invert = TRUE))) {
     allTests <- paste0('test-', argv[!grepl('^-', argv)], '.R')
 } else {
     # Run a default set of tests.
-    allTests <- list.files('packages/nimble/inst/tests')
+    allTests <- list.files('packages/nimble/tests/testthat')
     allTests <- allTests[grepl('test-.*\\.R', allTests)]
 
     # Avoid running these omitlisted tests, since they take too long.
