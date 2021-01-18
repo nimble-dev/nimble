@@ -165,12 +165,13 @@ test_that("Test that MCMC respects right-censoring bounds", {
     is.cens[1] <- TRUE
     yinits <- y
     yinits[is.cens] <- 55
+    yinits[!is.cens] <- NA
 
     constants <- list(n = n)
     data <- list(y = y, is.cens = is.cens)
     inits <- list(mu = mu, bnd = bnd, y = yinits)
 
-    Rmodel = nimbleModel(code, data = data, inits = inits,
+    Rmodel <- nimbleModel(code, data = data, inits = inits,
                          constants = constants)
     mcmcConf <- configureMCMC(Rmodel)
     mcmcConf$addMonitors('y[1]')
@@ -207,12 +208,13 @@ test_that("Test that MCMC respects left-censoring bounds", {
     not.cens[1] <- FALSE
     yinits <- y
     yinits[!not.cens] <- 35
+    yinits[not.cens] <- NA
     
     constants <- list(n = n)
     data <- list(y = y, not.cens = not.cens)
     inits <- list(mu = mu, bnd = bnd, y = yinits)
     
-    Rmodel = nimbleModel(code, data = data, inits = inits,
+    Rmodel <- nimbleModel(code, data = data, inits = inits,
                          constants = constants)
     mcmcConf <- configureMCMC(Rmodel)
     mcmcConf$addMonitors('y[1]')
@@ -252,6 +254,7 @@ test_that("Test that MCMC respects interval censoring", {
     data <- list(y = y, intvl = intvl)
     yinits <- y
     yinits[is.na(y)] <- c(rep(35, 4), rep(45, 4), rep(55, 4))
+    yinits[!is.na(y)]  <- NA
     inits <- list(mu = mu, y = yinits)
 
     Rmodel = nimbleModel(code, data = data, inits = inits, constants = constants)
@@ -272,7 +275,7 @@ test_that("Test that MCMC respects interval censoring", {
               resultsTolerance = list(mean = list(mu = 0.5, 'y[12]' = 0.5), sd = list(mu = .5, 'y[12]' = .5)), name = 'test of interval censoring')
 })
 
-                                        # test of dconstraint
+# test of dconstraint
 test_that("Test that MCMC respects constraints", {
     set.seed(0)
     code <- nimbleCode ({
@@ -448,8 +451,9 @@ test_that("Test that truncation with discrete distribution gives correct values"
     })
     
     n <- 10; p <- 0.3
-    m <- nimbleModel(code, constants = list(n = n, p = p),
-                     inits = list(a = 0.6, y = c(1,1,1,1,n-1)))
+    expect_warning(m <- nimbleModel(code, constants = list(n = n, p = p),
+                                    inits = list(a = 0.6, y = c(1,1,1,1,n-1))),
+                   "Lower bound is less than or equal to distribution lower bound")
     cm <- compileNimble(m)
     
     tmp <- dbinom(1:2, n, p)

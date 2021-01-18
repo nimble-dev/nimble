@@ -1,3 +1,5 @@
+source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
+
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
