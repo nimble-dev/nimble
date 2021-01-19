@@ -8,6 +8,8 @@
 #include <Rinternals.h>
 #include <Rmath.h>
 
+#include "nimDerivs_atomic_matmult.h"
+
 template<class T>
 class unary_atomic_class : public CppAD::atomic_three<T> {
   // This layer in the class hierarchy simply provides the same for_type and rev_depend

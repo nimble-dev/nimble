@@ -643,7 +643,8 @@ modifyForAD_handlers <- c(list(
     chainedCall = 'modifyForAD_chainedCall',
     getDerivs_wrapper = 'modifyForAD_getDerivs_wrapper',
     AssignEigenMap = 'modifyForAD_AssignEigenMap',
-    ADbreak = 'modifyForAD_ADbreak'),
+    ADbreak = 'modifyForAD_ADbreak',
+    `*` = 'modifyForAD_matmult'),
     makeCallList(recyclingRuleOperatorsAD, 'modifyForAD_RecyclingRule'),
     makeCallList(c('EIGEN_FS', 'EIGEN_BS', 'EIGEN_SOLVE'),
                  'modifyForAD_prependNimDerivs'))
@@ -710,6 +711,14 @@ exprClasses_modifyForAD <- function(code, symTab,
 
 modifyForAD_issueWarning <- function(code, symTab, workEnv) {
   warning(paste0("Operator ", code$name, " can cause problems (potentially crashes) from AD."), call.=FALSE)
+  invisible(NULL)
+}
+
+modifyForAD_matmult <- function(code, symTab, workEnv) {
+  if(!isTRUE(nimbleOptions("skipADmatMultAtomic")))
+    if(length(code$args)==2)  ## something is wrong if there are not 2 args
+      if(!(isEigScalar(code$args[[1]]) | isEigScalar(code$args[[2]]))) ## are both non-scalar?
+        code$name <- 'nimDerivs_matmult'
   invisible(NULL)
 }
 

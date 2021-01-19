@@ -45,6 +45,7 @@ template <typename Type>
 struct EigenTemplateTypes {
   typedef Matrix<Type, Dynamic, Dynamic> typeMatrixXd;
   typedef Map<typeMatrixXd, Unaligned, EigStrDyn > typeEigenMapStrd;
+  typedef Eigen::Map<const typeMatrixXd, Unaligned, EigStrDyn > typeEigenConstMapStrd;
 };
 
 typedef typename EigenTemplateTypes<CppAD::AD<double> >::typeMatrixXd MatrixXd_CppAD;

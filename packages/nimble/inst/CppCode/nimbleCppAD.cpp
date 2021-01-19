@@ -875,7 +875,9 @@ void setValues_AD_AD_taping(NimArr<1, CppAD::AD<double> > &v,
     // It is unclear whether we then need to use the output in a way that forces CppAD to keep it as part of the calculation graph.
     //   The concern is that otherwise CppAD might optimize it away by determining that nothing really depends on it.
     //   The following line is essentially a no-operation for this purpose (extraOutputDummyResult[0] will always be 0 in value).
-    v[0] += extraOutputDummyResult[0];
+    // We do this for all v[i] defensively, to reduce the change that the atomic step is optimized out of the model.
+    for(size_t i = 0; i < v.size(); ++i)
+      v[i] += extraOutputDummyResult[0];
   }
   setValues_AD_AD(v, MVA_AD); // record copying on the tape
 }

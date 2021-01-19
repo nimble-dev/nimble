@@ -534,6 +534,7 @@ void NIMBLE_ADCLASS::copyFromSEXP(SEXP S_nimList_) {
   UNPROTECT(9);
 }
 SEXP NIMBLE_ADCLASS::copyToSEXP() {
+  PROTECT(RObjectPointer);
   SEXP S__dot_xData;
   SEXP S_value;
   SEXP S_jacobian;
@@ -541,22 +542,23 @@ SEXP NIMBLE_ADCLASS::copyToSEXP() {
   SEXP S_thirdDerivs;
   if (!RCopiedFlag) {
     PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
-    SET_STRING_ELT(S__dot_xData, 0, Rf_mkChar(".xData"));
+    SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
     PROTECT(S_value = NimArr_2_SEXP<1>(value));
     PROTECT(S_jacobian = NimArr_2_SEXP<2>(jacobian));
     PROTECT(S_hessian = NimArr_2_SEXP<3>(hessian));
     PROTECT(S_thirdDerivs = NimArr_2_SEXP<4>(thirdDerivs));
-    Rf_defineVar(Rf_install("value"), S_value,
+    Rf_defineVar(PROTECT(Rf_install("value")), S_value,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
-    Rf_defineVar(Rf_install("jacobian"), S_jacobian,
+    Rf_defineVar(PROTECT(Rf_install("jacobian")), S_jacobian,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
-    Rf_defineVar(Rf_install("hessian"), S_hessian,
+    Rf_defineVar(PROTECT(Rf_install("hessian")), S_hessian,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
-    Rf_defineVar(Rf_install("thirdDerivs"), S_thirdDerivs,
+    Rf_defineVar(PROTECT(Rf_install("thirdDerivs")), S_thirdDerivs,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
     RCopiedFlag = true;
-    UNPROTECT(9);
+    UNPROTECT(14);
   }
+  UNPROTECT(1);
   return (RObjectPointer);
 }
 void NIMBLE_ADCLASS::createNewSEXP() {

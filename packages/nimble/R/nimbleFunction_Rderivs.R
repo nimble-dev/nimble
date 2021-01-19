@@ -602,7 +602,7 @@ nimDerivs_nf_numericwrt <- function(derivFxn,
   fxnArgs <- lapply(derivFxnCall_args, function(x) eval(x, envir = fxnEnv))
   names(fxnArgs) <- as.character(fA)
 
-  argSizes <- unlist(lapply(fxnArgs, dimOrLength))
+  argSizes <- unlist(lapply(fxnArgs, function(x) prod(dimOrLength(x))))
 
   flatStartIndices <- cumsum(c(1, argSizes[-length(argSizes)]))
   names(flatStartIndices) <- names(fxnArgs)
