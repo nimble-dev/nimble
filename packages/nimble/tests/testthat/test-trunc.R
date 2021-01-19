@@ -533,6 +533,9 @@ test_that("Test that truncation with discrete distribution gives correct values"
 sink(NULL)
 
 if(!generatingGoldFile) {
+    ## Not clear why "[1] TRUE" is showing up at start of trialResults (as of 2021-01)
+    if(trialResults[1] == "[1] TRUE")
+        trialResults <- trialResults[-1]
     trialResults <- readLines(tempFileName)
     correctResults <- readLines(system.file(file.path('tests', 'testthat', goldFileName), package = 'nimble'))
     compareFilesByLine(trialResults, correctResults)

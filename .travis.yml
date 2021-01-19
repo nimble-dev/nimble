@@ -54,6 +54,7 @@ install:
   # - pip freeze
   - R CMD build packages/nimble
   - R CMD INSTALL --install-tests packages/nimble
+  - travis_wait 40 mvn install  # as of 2021-01, test-models and test-mcmc timing out
 
 script:
   # - pip freeze
