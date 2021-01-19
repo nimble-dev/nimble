@@ -4,6 +4,135 @@ nimbleOptions(experimentalEnableDerivs = TRUE)
 ##nimbleOptions(showCompilerOutput = TRUE)
 context("Testing of derivatives for calculate() for nimbleModels")
 
+## check logic of results
+test_that('makeUpdateNodes works correctly', {
+    ## updateNodes should include all nodes that affect calculate(calcNodes) that are not in wrt,
+    ## including any relevant parent nodes not in either calcNodes or in wrt (including RHS-only nodes).
+    ## Will include stoch nodes that are in calcNodes but not wrt, but not det nodes that are in calcNodes.
+    code <- nimbleCode({
+        for(i in 1:n) {
+            y[i] ~ dnorm(mu[i], var = sigma2)
+            mu[i] ~ dnorm(mu0, tau)
+        }
+        sigma2 ~ dgamma(1.3, 0.3)
+        tau ~ dgamma(0.7, 0.5)
+    })
+    n <- 3
+    model <- nimbleModel(code, data = list(y = rnorm(n)), constants = list(n = n),
+                         inits = list(mu = rnorm(n), sigma2 = 2.1, tau = 1.7, mu0 = 0.8))
+
+    ## Various wrt and calcNodes cases; not exhaustive, but hopefully capturing most possibilities
+    
+    ## distinct wrt and calcNodes
+    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'tau'), calcNodes = c('mu','y'), model)
+    expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP",
+                                           model$expandNodeNames('mu')))
+    expect_identical(result$constantNodes, model$expandNodeNames('y'))
+
+    ## distinct wrt and calcNodes, where calcNodes includes a deterministic node
+    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'tau'), calcNodes = c('mu','y', "lifted_d1_over_sqrt_oPtau_cP"), model)
+    expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP",
+                                           model$expandNodeNames('mu')))
+    expect_identical(result$constantNodes, model$expandNodeNames('y'))
+
+    ## with option to include data nodes in updateNodes
+    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'tau'), calcNodes = c('mu','y'), model,
+                              dataAsConstantNodes = FALSE)
+    expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP",
+                                       model$expandNodeNames('mu'), model$expandNodeNames('y')))
+    expect_identical(result$constantNodes, character(0))
+
+    ## scalar calcNodes
+    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'tau'), calcNodes = c('mu[1]','y[1]'), model)
+    expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP", "mu[1]"))
+    expect_identical(result$constantNodes, "y[1]")
+
+    ## subset of a variable as calcNodes
+    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'tau'), calcNodes = c('mu[1:2]','y[1:2]'), model)
+    expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP", "mu[1]", "mu[2]"))
+    expect_identical(result$constantNodes, c("y[1]", "y[2]"))
+
+    ## wrt included in calcNodes
+    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('sigma2', 'mu0', 'mu','y'), model)
+    expect_identical(result$updateNodes, c("tau", "lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP",
+                                           model$expandNodeNames('mu')))
+    expect_identical(result$constantNodes, model$expandNodeNames('y'))
+
+    ## some overlap of wrt and calcNodes
+    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'tau', 'mu'), calcNodes = c('sigma2', 'mu0', 'mu','y'), model)
+    expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP"))
+    expect_identical(result$constantNodes, model$expandNodeNames('y'))
+
+    ## full overlap of wrt and calcNodes
+    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'mu'), calcNodes = c('sigma2', 'mu0', 'mu','y'), model)
+    expect_identical(result$updateNodes, c("tau", "lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP"))
+    expect_identical(result$constantNodes, model$expandNodeNames('y'))
+
+    ## wrt are intermediate nodes
+    result <- makeUpdateNodes(wrt = c('mu'), calcNodes = c('mu','y'), model)
+    expect_identical(result$updateNodes, c("sigma2", "tau", "mu0", "lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP"))
+    expect_identical(result$constantNodes, model$expandNodeNames('y'))
+
+    ## no data nodes in calcNodes
+    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'mu'), calcNodes = c('sigma2', 'mu0', 'mu'), model)
+    expect_identical(result$updateNodes, c("tau", "lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP"))
+    expect_identical(result$constantNodes, character(0))
+
+    code <- nimbleCode({
+        for(i in 1:n) {
+            y[i] ~ dnorm(mu[i], var = sigma2)
+        }
+        mu[1:n] ~ dmnorm(mu0[1:n], pr[1:n, 1:n])
+        sigma2 ~ dgamma(1.3, 0.3)
+    })
+    n <- 3
+    model <- nimbleModel(code, data = list(y = rnorm(n)), constants = list(n = n),
+                         inits = list(mu = rnorm(n), sigma2 = 2.1, tau = 1.7, mu0 = rnorm(n), pr = diag(n)))
+
+    prElems <- model$expandNodeNames('pr', returnScalarComponents = TRUE)
+    lftChElems <- model$expandNodeNames('lifted_chol_oPpr_oB1to3_comma_1to3_cB_cP', returnScalarComponents = TRUE)
+    ## TODO: update these after issue 257 addressed.
+    
+    ## why is mu0 included?  NCT issue 257
+    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('mu','y'), model)
+    expect_identical(result$updateNodes, c(prElems, "lifted_sqrt_oPsigma2_cP", lftChElems,
+                                       model$expandNodeNames('mu')))
+    expect_identical(result$constantNodes, model$expandNodeNames('y')))
+
+    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('mu','y'), model,
+                              dataAsConstantNodes = FALSE)
+    expect_identical(result$updateNodes, c(prElems, "lifted_sqrt_oPsigma2_cP", lftChElems,
+                                       model$expandNodeNames('mu'), model$expandNodeNames('y')))
+    expect_identical(result$constantNodes, character(0))
+
+    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('mu[1]','y[1]'), model)
+    expect_identical(result$updateNodes, c(prElems, "lifted_sqrt_oPsigma2_cP", lftChElems, 'mu[1]'))
+    expect_identical(result$constantNodes, "y[1]")
+
+    ## NCT issue 258: should include mu[3] presumably
+    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('mu[1:2]','y[1:2]'), model)
+    expect_identical(result$updateNodes, c(prElems, "lifted_sqrt_oPsigma2_cP", lftChElems, model$expandNodeNames('mu')))
+    expect_identical(result$constantNodes, c("y[1]", "y[2]"))
+
+    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('sigma2', 'mu0', 'mu','y'), model)
+    expect_identical(result$updateNodes, c(prElems, "lifted_sqrt_oPsigma2_cP", lftChElems,
+                                       model$expandNodeNames('mu')))
+    expect_identical(result$constantNodes, model$expandNodeNames('y')))
+
+    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'mu'), calcNodes = c('sigma2', 'mu0', 'mu','y'), model)
+    expect_identical(result$updateNodes, c(prElems, "lifted_sqrt_oPsigma2_cP", lftChElems))
+    expect_identical(result$constantNodes, model$expandNodeNames('y'))
+
+    result <- makeUpdateNodes(wrt = c('mu'), calcNodes = c('mu','y'), model)
+    expect_identical(result$updateNodes, c("sigma2", prElems, "lifted_sqrt_oPsigma2_cP", lftChElems))
+    expect_identical(result$constantNodes, model$expandNodeNames('y'))
+
+    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'mu'), calcNodes = c('sigma2', 'mu0', 'mu'), model)
+    expect_identical(result$updateNodes, c(prElems, lftChElems))
+    expect_identical(result$constantNodes, character(0))
+   
+}
+
 ## First set of tests are one's Nick developed
 
 ## Second set are those under development by Chris, which use the
@@ -173,8 +302,6 @@ test_that("Derivs of calculate function work for rats model", {
 
 ## Start of Chris' tests ##
 
-## NOTE: if don't set checkCompiledValuesIdentical to FALSE, then failures cause that not all 5 uses cases are run.
-
 ## basic model, with lifted nodes
 
 set.seed(1)
@@ -192,7 +319,6 @@ code <- nimbleCode({
     })
 model <- nimbleModel(code, inits = inits, data = data)
 test_ADModelCalculate(model, verbose = TRUE, name = 'basic model, lifted nodes')
-
 
 ## the first few of these mimic and may replace Nick's tests
 
@@ -260,7 +386,7 @@ log_mu_init <- rnorm(1)
 model <- nimbleModel(code, constants = list(n = n), data = list(y = rpois(n, 1)),
                      inits = list(mu0 = rnorm(1), sigma = runif(1), mu = exp(log_mu_init),
                                 log_mu = log_mu_init, a = runif(1), b = runif(1)))
-## Heisenbug: with verbose=F (the default), can get cLogProb12 equal but not identical to cLogProb_orig
+## Error in cLogProb and cVals values when run first time; no error when rebuild model and rerun.
 test_ADModelCalculate(model, name = 'stochastic link model')
 
 ## dexp and dt, which are provided by NIMBLE to allow expanded parameterizations
@@ -294,10 +420,8 @@ code <- nimbleCode({
 n <- 10
 model <- nimbleModel(code, constants = list(n = n), data = list(y = rpois(n, 1)),
                      inits = list(logmu = rnorm(n)))
-## Note cVals12[2] is not identical to cVals_orig[2] or cVals01[2], but is equal.
-## Not clear why.
 test_ADModelCalculate(model, name = 'deterministic vectorized model')
-test_ADModelCalculate(model, checkCompiledValuesIdentical = FALSE, name = 'deterministic vectorized model')
+## test_ADModelCalculate(model, checkCompiledValuesIdentical = FALSE, name = 'deterministic vectorized model')
 
 
 ## truncation
@@ -338,6 +462,7 @@ code <- nimbleCode({
     b ~ dunif(0,5 )
 })
 model <- nimbleModel(code, data = list(y = 1), inits = list(mu = 0.5,a=1,b=1))
+## compilation error
 test_ADModelCalculate(model, name = 'truncation with dbeta')
 
 
@@ -362,6 +487,7 @@ model$simulate()
 model$calculate()
 model$setData('y','w')
 ## Ok, except for one erroneous logProb (cLogProb12 is NaN);  NCT issue #248
+## issue with non-pos definiteness
 test_ADModelCalculate(model, name = 'complicated indexing')
 
 
@@ -724,6 +850,36 @@ model$setData(c('y1','yy')) # 'y2'
 ## (formerly) cVals12 not identical to cVals_orig, but is equal
 test_ADModelCalculate(model, name = 'various matrix functions')
 test_ADModelCalculate(model, checkCompiledValuesIdentical = FALSE, name = 'various matrix functions')
+
+## Various combinations of updateNodes, wrt, calcNodes
+
+code <- nimbleCode({
+    a ~ dgamma(1.1, 0.8)
+    b ~ dnorm(z, var = a)
+    z ~ dnorm(0, 1)
+})
+model <- nimbleModel(code, data = list(b = 1.2), inits = list(a = 1.3, z = 0.7))
+## calcNodes excludes det intermediates
+test_ADModelCalculate(model, wrt = 'a', calcNodes = c('a', 'b'), name = 'update nodes case 1a')
+model <- nimbleModel(code, data = list(b = 1.2), inits = list(a = 1.3, z = 0.7))
+## calcNodes includes det intermediates
+test_ADModelCalculate(model, wrt = 'a', calcNodes = c('a', 'b', 'lifted_sqrt_oPa_cP'), name = 'update nodes case 1b')
+
+code <- nimbleCode({
+    a ~ dgamma(1.1, 0.8)
+    for(i in 1:4) 
+        b[i] ~ dnorm(z[i], var = a)
+    z[1] ~ dnorm(0, 1)
+    z[2] ~ dnorm(0, 1)
+    z[3:4] ~ dmnorm(mu0[1:2], pr[1:2,1:2])        
+})
+model <- nimbleModel(code, data = list(b = rnorm(4)), inits = list(a = 1.3, z = runif(4), pr = diag(2), mu0 = rep(0, 2)))
+## calcNodes excludes det intermediates
+test_ADModelCalculate(model, wrt = 'a', calcNodes = c('a', 'b'), name = 'update nodes case 2a')
+model <- nimbleModel(code, data = list(b = rnorm(4)), inits = list(a = 1.3, z = runif(4), pr = diag(2), mu0 = rep(0, 2)))
+## calcNodes includes det intermediates
+test_ADModelCalculate(model, wrt = 'a', calcNodes = c('a', 'b', "lifted_sqrt_oPa_cP"), name = 'update nodes case 2b')
+
 
 
 ## Parameter transform system and full use of ddirch, dwish, dinvwish
