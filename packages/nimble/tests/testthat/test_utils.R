@@ -1377,13 +1377,11 @@ stripTestsPassedMessage <- function(lines) {
 compareFilesByLine <- function(trialResults, correctResults, main = "") {
     trialResults <- stripTestsPassedMessage(stripTestPlacementWarning(trialResults))
     correctResults <- stripTestPlacementWarning(correctResults)
-    test_that(paste0(main, ': same number of output lines'),
-          expect_equal(length(trialResults), length(correctResults)))
+    expect_equal(length(trialResults), length(correctResults))
     
     linesToTest <- min(length(trialResults), length(correctResults))
     mapply(function(lineno, trialLine, correctLine) {
-        test_that(paste0(main, ": output line #", lineno),
-                  expect_identical(trialLine, correctLine))
+        expect_identical(trialLine, correctLine)
     }, 1:linesToTest, trialResults, correctResults)
     invisible(NULL)
 }

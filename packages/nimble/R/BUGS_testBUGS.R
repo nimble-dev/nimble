@@ -13,7 +13,8 @@
 #' @param model (optional) one of (1) a character string giving the file name containing the BUGS model code, (2) an R function whose body is the BUGS model code, or (3) the output of \code{nimbleCode}. If a file name, the file can contain a 'var' block and 'data' block in the manner of the JAGS versions of the BUGS examples but should not contain references to other input data files nor a const block. The '.bug' or '.txt' extension can be excluded.
 #' @param data (optional) one of (1) character string giving the file name for an R file providing the input constants and data as R code [assigning individual objects or as a named list] or (2) a named list providing the input constants and data. If neither is provided, the function will look for a file named \code{example}-data including extensions .R, .r, or .txt.
 #' @param inits (optional) (1) character string giving the file name for an R file providing the initial values for parameters as R code [assigning individual objects or as a named list] or (2) a named list providing the values. If neither is provided, the function will look for a file named \code{example}-init or \code{example}-inits including extensions .R, .r, or .txt.
-#' @param useInits boolean indicating whether to test model with initial values provided via \code{inits}
+#' @param useInits boolean indicating whether to test model with initial values provided via \code{inits}.
+#' @param expectModelWarning boolean indicating whether \code{nimbleModel} is expected to produce a warning.
 #' @param debug logical indicating whether to put the user in a browser for debugging when \code{testBUGSmodel} calls \code{readBUGSmodel}.  Intended for developer use.
 #' @param verbose logical indicating whether to print additional logging information
 #' @author Christopher Paciorek
@@ -24,7 +25,7 @@
 #' \dontrun{
 #' testBUGSmodel('pump')
 #' }
-testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL, inits = NULL, useInits = TRUE, debug = FALSE, verbose = nimbleOptions('verbose')) {
+testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL, inits = NULL, useInits = TRUE, expectModelWarning = FALSE, debug = FALSE, verbose = nimbleOptions('verbose')) {
   if(requireNamespace('testthat', quietly = TRUE)) {
     if(!is.null(example) && !is.character(example))
       stop("testBUGSmodel: 'example' argument should be a character vector referring to an existing BUGS example or NULL if provided via the 'model' argument")
@@ -51,7 +52,11 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
     if(is.null(model))
       stop("testBUGSmodel: one of 'example' or 'model' must be provided")
 
-    Rmodel <- readBUGSmodel(model = model, data = data, inits = inits, dir = dir, useInits = useInits, debug = debug, check = FALSE, calculate = FALSE)
+    testthat::test_that(paste0(example, ": model building"), {
+        if(expectModelWarning) {
+            testthat::expect_warning(Rmodel <- readBUGSmodel(model = model, data = data, inits = inits, dir = dir, useInits = useInits, debug = debug, check = FALSE, calculate = FALSE))
+        } else testthat::expect_silent(Rmodel <- readBUGSmodel(model = model, data = data, inits = inits, dir = dir, useInits = useInits, debug = debug, check = FALSE, calculate = FALSE))
+    })
     ## setting check and calculate to FALSE because check() and calculate() in some cases (e.g., ice, kidney) causes initialization of values such that inits as passed in do not match values in R or C model and failure of test of whether initial values are maintained
 
     skip.file.path <- is.null(dir) || (!is.null(dir) && dir == "") ## previously we could have file.path(NULL, ...) and file.path("",...) cases.  Modifications from here down follow those in readBUGSmodel for Windows compatibility

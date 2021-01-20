@@ -1721,10 +1721,12 @@ test_that('cc_checkScalar operates correctly', {
 sink(NULL)
 
 if(!generatingGoldFile) {
-    trialResults <- readLines(tempFileName)
-    trialResults <- trialResults[grep('Error in x$.self$finalize() : attempt to apply non-function', trialResults, invert = TRUE, fixed = TRUE)]
-    correctResults <- readLines(system.file(file.path('tests', 'testthat', goldFileName), package = 'nimble'))
-    compareFilesByLine(trialResults, correctResults)
+    test_that("Log file matches gold file", {
+        trialResults <- readLines(tempFileName)
+        trialResults <- trialResults[grep('Error in x$.self$finalize() : attempt to apply non-function', trialResults, invert = TRUE, fixed = TRUE)]
+        correctResults <- readLines(system.file(file.path('tests', 'testthat', goldFileName), package = 'nimble'))
+        compareFilesByLine(trialResults, correctResults)
+    })
 }
 
 options(warn = RwarnLevel)

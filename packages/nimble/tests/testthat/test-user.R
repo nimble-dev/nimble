@@ -443,9 +443,11 @@ test_that("Test that non-scalar integer in user-defined distributions is trapped
 sink(NULL)
 
 if(!generatingGoldFile) {
-    trialResults <- readLines(tempFileName)
-    correctResults <- readLines(system.file(file.path('tests', 'testthat', goldFileName), package = 'nimble'))
-    compareFilesByLine(trialResults, correctResults)
+    test_that("Log file matches gold file", {
+        trialResults <- readLines(tempFileName)
+        correctResults <- readLines(system.file(file.path('tests', 'testthat', goldFileName), package = 'nimble'))
+        compareFilesByLine(trialResults, correctResults)
+    })
 }
 
 nimbleOptions(verbose = nimbleVerboseSetting)

@@ -21,7 +21,7 @@ outputFile <- if(generatingGoldFile) file.path(nimbleOptions('generateGoldFileFo
 sink_with_messages(outputFile)
 
 allModels <- c(# vol1
-    'blocker', 'bones', 'dyes', 'equiv', 'line', 'oxford', 'pump', 'rats',
+    'blocker', 'bones', 'dyes', 'equiv', 'line', 'pump', 'rats',
                                         # vol2
     'dugongs')
 
@@ -52,6 +52,8 @@ test_that('unnecessary data do not break model building', {
 
 out <- sapply(allModels, testBUGSmodel, useInits = TRUE)
 
+testBUGSmodel('oxford', useInits = TRUE, expectModelWarning = TRUE)
+
 ## special cases in vol1: 'epil', 'leuk', 'salm', 'seeds'
 
 ## Problem cases
@@ -63,23 +65,23 @@ out <- sapply(allModels, testBUGSmodel, useInits = TRUE)
 ## various cases where we need to refer to a differently-named .bug file:
 
 testBUGSmodel('epil', model = 'epil2.bug', inits = 'epil-inits.R',
-              data = 'epil-data.R', useInits = TRUE)
+              data = 'epil-data.R', useInits = TRUE, expectModelWarning = TRUE)
 testBUGSmodel('epil', model = 'epil3.bug', inits = 'epil-inits.R',
               data = 'epil-data.R', useInits = TRUE)
 testBUGSmodel('seeds', model = 'seedsuni.bug', inits = 'seeds-init.R',
-              data = 'seeds-data.R', useInits = FALSE)
+              data = 'seeds-data.R', useInits = FALSE, expectModelWarning = TRUE)
 testBUGSmodel('seeds', model = 'seedssig.bug', inits = 'seeds-init.R',
-              data = 'seeds-data.R', useInits = FALSE)
+              data = 'seeds-data.R', useInits = FALSE, expectModelWarning = TRUE)
 testBUGSmodel('birats', model = 'birats1.bug', inits = 'birats-inits.R',
-              data = 'birats-data.R', useInits = TRUE)
+              data = 'birats-data.R', useInits = TRUE, expectModelWarning = TRUE)
 testBUGSmodel('birats', model = 'birats3.bug', inits = 'birats-inits.R',
-              data = 'birats-data.R', useInits = TRUE)
+              data = 'birats-data.R', useInits = TRUE, expectModelWarning = TRUE)
 testBUGSmodel('ice', model = 'icear.bug', inits = 'ice-inits.R',
               data = 'ice-data.R', useInits = TRUE)
 testBUGSmodel('beetles', model = 'beetles-logit.bug', inits = 'beetles-inits.R',
               data = 'beetles-data.R', useInits = TRUE)
 testBUGSmodel('birats', model = 'birats2.bug', inits = 'birats-inits.R',
-              data = 'birats-data.R', useInits = TRUE)
+              data = 'birats-data.R', useInits = TRUE, expectModelWarning = TRUE)
 
 ## various cases where we need to modify the BUGS code, generally the indexing
 
@@ -91,7 +93,7 @@ system.in.dir(paste("cat leuk.bug >>", file.path(tempdir(), "leuk.bug")), dir = 
 ## need nimStep in data block as we no longer have step
 system.in.dir(paste("sed -i -e 's/step/nimStep/g'", file.path(tempdir(), "leuk.bug")))
 ##system(paste("sed -i -e 's/step/nimStep/g'", file.path(tempdir(), "leuk.bug")))
-testBUGSmodel('leuk', dir = "", model = file.path(tempdir(), "leuk.bug"), data = system.file('classic-bugs','vol1','leuk','leuk-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol1','leuk','leuk-init.R', package = 'nimble'),  useInits = TRUE)
+testBUGSmodel('leuk', dir = "", model = file.path(tempdir(), "leuk.bug"), data = system.file('classic-bugs','vol1','leuk','leuk-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol1','leuk','leuk-init.R', package = 'nimble'), useInits = TRUE, expectModelWarning = TRUE)
 
 ## salm: need dimensionality of logx
 writeLines(c("var","logx[doses];"), con = file.path(tempdir(), "salm.bug"))
@@ -113,11 +115,11 @@ testBUGSmodel('air', dir = "", model = file.path(tempdir(), "air.bug"), data = s
 ##  Code age was given as known but evaluates to a non-scalar.  This is probably ## not what you want.
 system.in.dir(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g' jaw-linear.bug > ", file.path(tempdir(), "jaw-linear.bug")), dir = system.file('classic-bugs','vol2','jaw', package = 'nimble')) ## alternative way to get size info in there
 ##system(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g'", system.file('classic-bugs','vol2','jaw','jaw-linear.bug', package = 'nimble'), ">", file.path(tempdir(), "jaw-linear.bug"))) ## alternative way to get size info in there
-testBUGSmodel('jaw', dir = "", model = file.path(tempdir(), "jaw-linear.bug"), inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), useInits = TRUE)
+testBUGSmodel('jaw', dir = "", model = file.path(tempdir(), "jaw-linear.bug"), inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), useInits = TRUE, expectModelWarning = TRUE)
 
 
 
-testBUGSmodel('dipper', dir = system.file('classic-bugs', 'other', 'dipper', package = 'nimble'), useInits = FALSE)
+testBUGSmodel('dipper', dir = system.file('classic-bugs', 'other', 'dipper', package = 'nimble'), useInits = FALSE, expectModelWarning = TRUE)
 
 ## various simple tests of multivariate nodes
 
@@ -534,7 +536,7 @@ test_that("test of using ragged arrays in a model:", {
     n <- c(2, 3)
     X <- matrix(1:6, nrow = 2)
     constants <- list(n = n, X = X)
-    m <- nimbleModel(mc, constants = constants)
+    expect_silent(m <- nimbleModel(mc, constants = constants))
 })
 
 test_that("warnings for multiply-defined model nodes:", {
@@ -843,13 +845,14 @@ test_that("dmvt usage", {
 
 sink(NULL)
 
-if(FALSE){  ## no warnings being generated in goldFile anymore (perhaps a change in testthat versions?)
-    if(!generatingGoldFile) {
+if(!generatingGoldFile) {
+    test_that("Log file matches gold file", {
         trialResults <- readLines(tempFileName)
         correctResults <- readLines(system.file(file.path('tests', 'testthat', goldFileName), package = 'nimble'))
         compareFilesByLine(trialResults, correctResults)
-    }
+    })
 }
+
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)

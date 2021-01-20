@@ -7,10 +7,6 @@ nimbleOptions(verbose = FALSE)
 
 context("Testing setData")
 
-test_that("insert failure to check", {
-    expect_equal(3, 4)
-    })
-
 model <- nimbleModel(
     nimbleCode({
         for(i in 1:5) {

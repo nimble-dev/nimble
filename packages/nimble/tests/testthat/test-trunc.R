@@ -97,7 +97,7 @@ writeLines(c("model {",
 inits <- list(mu = 2)
 data <- list(x = 2)
 testBUGSmodel(model = filename, dir = '',
-              data = data, inits = inits)
+              data = data, inits = inits, expectModelWarning = TRUE)
 
 # test of T() with stochastic truncation and expressions
 writeLines(c("model {",
@@ -533,12 +533,14 @@ test_that("Test that truncation with discrete distribution gives correct values"
 sink(NULL)
 
 if(!generatingGoldFile) {
-    ## Not clear why "[1] TRUE" is showing up at start of trialResults (as of 2021-01)
-    if(trialResults[1] == "[1] TRUE")
-        trialResults <- trialResults[-1]
-    trialResults <- readLines(tempFileName)
-    correctResults <- readLines(system.file(file.path('tests', 'testthat', goldFileName), package = 'nimble'))
-    compareFilesByLine(trialResults, correctResults)
+    test_that("Log file matches gold file", {
+        ## Not clear why "[1] TRUE" is showing up at start of trialResults (as of 2021-01)
+        if(trialResults[1] == "[1] TRUE")
+            trialResults <- trialResults[-1]
+            trialResults <- readLines(tempFileName)
+            correctResults <- readLines(system.file(file.path('tests', 'testthat', goldFileName), package = 'nimble'))
+            compareFilesByLine(trialResults, correctResults)
+    })
 }
 
 options(warn = RwarnLevel)

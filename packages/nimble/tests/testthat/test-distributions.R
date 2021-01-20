@@ -719,9 +719,11 @@ test_that("recycling behavior from R and within nimbleFunctions for non-R-native
 sink(NULL)
 
 if(!generatingGoldFile) {
-    trialResults <- readLines(tempFileName)
-    correctResults <- readLines(system.file(file.path('tests', 'testthat', goldFileName), package = 'nimble'))
-    compareFilesByLine(trialResults, correctResults)
+    test_that("Log file matches gold file", {
+        trialResults <- readLines(tempFileName)
+        correctResults <- readLines(system.file(file.path('tests', 'testthat', goldFileName), package = 'nimble'))
+        compareFilesByLine(trialResults, correctResults)
+    })
 }
 
 options(warn = RwarnLevel)
