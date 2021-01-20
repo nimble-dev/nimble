@@ -7,7 +7,8 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
 # These options are for development use at this point.
 .nimbleOptions <- as.environment(
     list(
-        skipskipADmatMultAtomic = FALSE, # If TRUE, do not use nimble's CppAD atomic class for %*%
+        skipADmatMultAtomic = FALSE, # If TRUE, do not use nimble's CppAD atomic class for %*%
+        skipADmatInverseAtomic = FALSE, # If TRUE, do not use nimble's CppAD atomic class for inverse
         useNewConfigureMCMC = TRUE,
         oldConjugacyChecking = FALSE,
         disallow_multivariate_argument_expressions = TRUE,

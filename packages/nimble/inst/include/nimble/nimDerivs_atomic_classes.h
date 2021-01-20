@@ -9,6 +9,7 @@
 #include <Rmath.h>
 
 #include "nimDerivs_atomic_matmult.h"
+#include "nimDerivs_atomic_matinverse.h"
 
 template<class T>
 class unary_atomic_class : public CppAD::atomic_three<T> {

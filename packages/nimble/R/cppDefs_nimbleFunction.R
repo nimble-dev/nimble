@@ -644,7 +644,8 @@ modifyForAD_handlers <- c(list(
     getDerivs_wrapper = 'modifyForAD_getDerivs_wrapper',
     AssignEigenMap = 'modifyForAD_AssignEigenMap',
     ADbreak = 'modifyForAD_ADbreak',
-    `*` = 'modifyForAD_matmult'),
+    `*` = 'modifyForAD_matmult',
+    eigInverse = 'modifyForAD_matinverse'),
     makeCallList(recyclingRuleOperatorsAD, 'modifyForAD_RecyclingRule'),
     makeCallList(c('EIGEN_FS', 'EIGEN_BS', 'EIGEN_SOLVE'),
                  'modifyForAD_prependNimDerivs'))
@@ -719,6 +720,12 @@ modifyForAD_matmult <- function(code, symTab, workEnv) {
     if(length(code$args)==2)  ## something is wrong if there are not 2 args
       if(!(isEigScalar(code$args[[1]]) | isEigScalar(code$args[[2]]))) ## are both non-scalar?
         code$name <- 'nimDerivs_matmult'
+  invisible(NULL)
+}
+
+modifyForAD_matinverse <- function(code, symTab, workEnv) {
+  if(!isTRUE(nimbleOptions("skipADmatInverseAtomic")))
+    code$name <- 'nimDerivs_matinverse'
   invisible(NULL)
 }
 

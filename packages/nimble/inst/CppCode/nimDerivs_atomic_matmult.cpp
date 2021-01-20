@@ -710,7 +710,8 @@ bool atomic_matmult_class::reverse(
 
 #endif
 
-
+// matmult atomic objects created by this factory are not
+// cleaned up until the library is unloaded.
 class atomic_matmult_factory {
 public:
   std::vector<atomic_matmult_class *> created_objects;
