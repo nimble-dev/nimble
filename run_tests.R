@@ -113,7 +113,7 @@ if (require(sys)) {
 # As of recent (>= 3.0.0?) testthat versions, use of inst/tests is deprecated
 # and testthat wants a more formal approach to setup and cleanup code for each test file,
 # so for now, we'll just run 'manually'.
-runTest <- function(test, logToFile = FALSE, runViaTestthat = FALSE, runRemote = TRUE) {
+runTest <- function(test, logToFile = FALSE, runViaTestthat = TRUE, runRemote = TRUE) {
     if (!logToFile) cat('--------------------------------------------------------------------------------\n')
     cat('TESTING', test, '\n')
     if(runRemote) {
