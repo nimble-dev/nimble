@@ -14,7 +14,7 @@
 #' @param data (optional) one of (1) character string giving the file name for an R file providing the input constants and data as R code [assigning individual objects or as a named list] or (2) a named list providing the input constants and data. If neither is provided, the function will look for a file named \code{example}-data including extensions .R, .r, or .txt.
 #' @param inits (optional) (1) character string giving the file name for an R file providing the initial values for parameters as R code [assigning individual objects or as a named list] or (2) a named list providing the values. If neither is provided, the function will look for a file named \code{example}-init or \code{example}-inits including extensions .R, .r, or .txt.
 #' @param useInits boolean indicating whether to test model with initial values provided via \code{inits}.
-#' @param expectModelWarning boolean indicating whether \code{nimbleModel} is expected to produce a warning.
+#' @param expectModelWarning boolean indicating whether \code{nimbleModel} is expected to produce a warning or character string giving part of expected warning.
 #' @param debug logical indicating whether to put the user in a browser for debugging when \code{testBUGSmodel} calls \code{readBUGSmodel}.  Intended for developer use.
 #' @param verbose logical indicating whether to print additional logging information
 #' @author Christopher Paciorek
@@ -53,8 +53,10 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
         if(is.null(model))
             stop("testBUGSmodel: one of 'example' or 'model' must be provided")
         
-        if(expectModelWarning) {
-            testthat::expect_warning(Rmodel <- readBUGSmodel(model = model, data = data, inits = inits, dir = dir, useInits = useInits, debug = debug, check = FALSE, calculate = FALSE))
+        if(is.character(expectModelWarning) || expectModelWarning) {
+            if(!is.character(expectModelWarning))
+                expectModelWarning <- NULL
+            testthat::expect_warning(Rmodel <- readBUGSmodel(model = model, data = data, inits = inits, dir = dir, useInits = useInits, debug = debug, check = FALSE, calculate = FALSE), expectModelWarning)
         } else Rmodel <- readBUGSmodel(model = model, data = data, inits = inits, dir = dir, useInits = useInits, debug = debug, check = FALSE, calculate = FALSE)
         ## setting check and calculate to FALSE because check() and calculate() in some cases (e.g., ice, kidney) causes initialization of values such that inits as passed in do not match values in R or C model and failure of test of whether initial values are maintained
         
