@@ -535,11 +535,11 @@ sink(NULL)
 if(!generatingGoldFile) {
     test_that("Log file matches gold file", {
         ## Not clear why "[1] TRUE" is showing up at start of trialResults (as of 2021-01)
-        if(trialResults[1] == "[1] TRUE")
+        trialResults <- readLines(tempFileName)
+        if(trialResults[1] == "[1] TRUE") 
             trialResults <- trialResults[-1]
-            trialResults <- readLines(tempFileName)
-            correctResults <- readLines(system.file(file.path('tests', 'testthat', goldFileName), package = 'nimble'))
-            compareFilesByLine(trialResults, correctResults)
+        correctResults <- readLines(system.file(file.path('tests', 'testthat', goldFileName), package = 'nimble'))
+        compareFilesByLine(trialResults, correctResults)
     })
 }
 
