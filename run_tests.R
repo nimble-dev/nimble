@@ -113,25 +113,17 @@ if (require(sys)) {
 # As of recent (>= 3.0.0?) testthat versions, use of inst/tests is deprecated
 # and testthat wants a more formal approach to setup and cleanup code for each test file,
 # so for now, we'll just run 'manually'.
-runTest <- function(test, logToFile = FALSE, runViaTestthat = TRUE, runRemote = TRUE) {
+runTest <- function(test, logToFile = FALSE, runViaTestthat = TRUE) {
     if (!logToFile) cat('--------------------------------------------------------------------------------\n')
     cat('TESTING', test, '\n')
-    if(runRemote) {
-        if (runViaTestthat) {
-            name <- gsub('test-(.*)\\.R', '\\1', test)
-            script <- paste0('library(methods);',
-                             'library(testthat);',
-                             'library(nimble);',
-                             'tryCatch(test_package("nimble", "^', name, '$",',
-                             '                      reporter = ', reporter, '),',
-                             '  error = function(e) quit(status = 1))')
-        } else {
-            script <- paste0('library(methods);',
-                             'library(testthat);',
-                             'library(nimble);',
-                             'tryCatch(source(system.file(file.path(\'tests\', \'testthat\', \'', test, '\'), package = \'nimble\')), ',
-                             '  error = function(e) quit(status = 1))')
-        }
+    if (runViaTestthat) {
+        name <- gsub('test-(.*)\\.R', '\\1', test)
+        script <- paste0('library(methods);',
+                         'library(testthat);',
+                         'library(nimble);',
+                         'tryCatch(test_package("nimble", "^', name, '$",',
+                         '                      reporter = ', reporter, '),',
+                         '  error = function(e) quit(status = 1))')
         command <- c(runner, '-e', custom_shQuote(script))
     } else command <- c(runner, file.path('packages', 'nimble', 'tests', 'testthat', test))
     Sys.setenv(MAKEFLAGS = '-j1')  # Work around broken job pipe when GNU make is run under mclapply.
