@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
 help_message <-
-"Run tests in nimble/inst/tests/ prioritized by duration.
+"Run tests in nimble/tests/testthat prioritized by duration.
 Usage:
   ./run_tests.R       [OPTIONS]   # Run the default set of tests.
   ./run_tests.R NAMES [OPTIONS]   # Run a custom set of tests, e.g. 'math'
