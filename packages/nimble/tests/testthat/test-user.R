@@ -364,8 +364,8 @@ test_that("Test that user-defined distributions without 'r' function doesn't cau
     code <- nimbleCode({
         v ~ dfoo()
     })
-    m <- nimbleModel(code)
-    cm <- compileNimble(m)
+    expect_message(m <- nimbleModel(code), "model building finished")
+    expect_message(cm <- compileNimble(m), "compilation finished")
 
     ## non-scalar density
     dfoo2 = nimbleFunction(
@@ -384,8 +384,8 @@ test_that("Test that user-defined distributions without 'r' function doesn't cau
     code <- nimbleCode({
         v[1:3] ~ dfoo2()
     })
-    m <- nimbleModel(code)
-    cm <- compileNimble(m)
+    expect_message(m <- nimbleModel(code), "model building finished")
+    expect_message(cm <- compileNimble(m), "compilation finished")
 })
 
 
