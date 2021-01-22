@@ -82,7 +82,7 @@ make test           # This runs tests in parallel.
 
 Add tests for every new feature.
 If your new feature is large, consider adding a new test file named
-`$REPO/packages/nimble/inst/tests/test-<my-new-feature>.R`.
+`$REPO/packages/nimble/tests/testthat/test-<my-new-feature>.R`.
 
 Add a regression test for every bug you fix.
 
@@ -133,7 +133,7 @@ This is especially important when you copy-and-modify to create tests, for examp
       expect_equal(fun(0), compileNimble(fun)(0))   # <-- No possibility of typo.
   })
 ```
-Note that `compileNimble()` requires all user-defined functions to exist in the global environment; use the [`temporarilyAssignInGlobalEnv()`](https://github.com/nimble-dev/nimble/blob/b4129f2/packages/nimble/inst/tests/test_utils.R#L22) function to do this cleanly from within a `test_that()` block, e.g.
+Note that `compileNimble()` requires all user-defined functions to exist in the global environment; use the [`temporarilyAssignInGlobalEnv()`](https://github.com/nimble-dev/nimble/blob/b4129f2/packages/nimble/tests/testthat/test_utils.R#L22) function to do this cleanly from within a `test_that()` block, e.g.
 ```diff
 + # GOOD Use temporarilyAssignInGlobalEnv() inside test_that().
   test_that('One RCfunction can use another', {
@@ -234,7 +234,7 @@ Note that if we would like an error to be triggered but it is not, this would ca
 
 ### Use `test_utils.R`
 
-See also the numerous testing tools in [`test_utils.R`](https://github.com/nimble-dev/nimble/blob/devel/packages/nimble/inst/tests/test_utils.R), including:
+See also the numerous testing tools in [`test_utils.R`](https://github.com/nimble-dev/nimble/blob/devel/packages/nimble/tests/testthat/test_utils.R), including:
 
 -   `system.in.dir` -
     Runs a command in a directory in a platform independent way.
@@ -248,7 +248,7 @@ and many undocumented test utilities.
 
 ### Using goldfiles and determining what output to include/suppress
 
-As seen in `test-mcmc.R` and others, we compare the printed output (particularly for MCMC summaries) with known results from previous testing to ensure that numeric values have not changed. Please follow the template in `test-mcmc.R`. Goldfiles should be saved in `inst/tests` and included in the repository and should be updated as needed, but only with care that any changes relative to older goldfiles are understood. 
+As seen in `test-mcmc.R` and others, we compare the printed output (particularly for MCMC summaries) with known results from previous testing to ensure that numeric values have not changed. Please follow the template in `test-mcmc.R`. Goldfiles should be saved in `tests/testthat` and included in the repository and should be updated as needed, but only with care that any changes relative to older goldfiles are understood. 
 
 We recommend including `options(warn=1)` so that warnings are printed out. However, note that it is difficult to ensure that warnings appear in the goldfiles and are able to be checked exactly against previous testing instantiations. In some cases we use `sink_with_messages` rather than `sink` to capture output from testing. This does not capture the `W` values printed out by testthat, but it does (e.g., in the case of `test-models.R`) capture other warning messages that one may want to check versus previous versions of the code.
 
@@ -256,7 +256,7 @@ We recommend turning verbosity and MCMC progress bars off during testing to avoi
 
 ### Run tests with `test_package`
 
-Run tests locally using e.g. `test_package('nimble', 'my-component')` to test `$REPO/packages/nimble/inst/tests/test-my-component.R`.
+Run tests locally using e.g. `test_package('nimble', 'my-component')` to test `$REPO/packages/nimble/tests/testthat/test-my-component.R`.
 Note that although can be using either `test_package()` or directly via `Rscript`, the `Rscript` method fails to detect some errors.
 
 ## Style
