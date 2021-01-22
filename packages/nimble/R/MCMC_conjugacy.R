@@ -992,13 +992,19 @@ conjugacyClass <- setRefClass(
                 for(contributionName in posteriorObject$neededContributionNames) {
                     if(!(contributionName %in% dependents[[distName]]$contributionNames))     next
                     contributionExpr <- dependents[[distName]]$contributionExprs[[contributionName]]
-                    if(distName == 'dmnorm') {
+                    if(distName == 'dmnorm' && prior == 'dmnorm') {
                         ## need to deal with [,1] in contribution_mean
                         if(contributionName == 'contribution_mean') tmpExpr <- contributionExpr[[2]][[2]] else tmpExpr <- contributionExpr
-                        if(currentLink %in%  c('identity', 'additive')) {
-                            tmpExpr[[2]] <- quote(prec)  ## hack, since 'coeff' won't exist
-                            tmpExpr[[6]] <- quote(0)
-                        } else tmpExpr[[6]] <- quote(1)
+                        if(nimbleOptions()$allowDynamicIndexing && doDependentScreen) {
+                            ## Will always have 'coeff' but may not need to use it
+                            if(currentLink %in% c('identity', 'additive')) 
+                                tmpExpr[[6]] <- quote(0) else tmpExpr[[6]] <- quote(1)
+                        } else {
+                            if(currentLink %in%  c('identity', 'additive')) {
+                                tmpExpr[[2]] <- quote(prec)  ## hack, since 'coeff' won't exist
+                                tmpExpr[[6]] <- quote(0)
+                            } else tmpExpr[[6]] <- quote(1)
+                        }
                         tmpExpr[[4]] <- cc_stripExpr(tmpExpr[[4]], offset = currentLink %in% c('identity','multiplicative'), coeff = FALSE)  # strip 'offset'
                         if(contributionName == 'contribution_mean') contributionExpr[[2]][[2]] <- tmpExpr else contributionExpr <- tmpExpr
                     } else contributionExpr <- cc_stripExpr(contributionExpr, offset = currentLink %in% c('identity','multiplicative','multiplicativeScalar'),

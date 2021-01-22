@@ -7806,7 +7806,25 @@ test_that("offset and coeff set up in conjugacy for BNP so that non-dependencies
     expect_identical(c('dep_dmnorm_identity_offset', 'dep_dmnorm_identity_coeff') %in%
                 ls(mcmc$samplerFunctions[[2]]$regular_sampler[[1]]), rep(TRUE, 2))
 
-    ## dwish case
+    code <- nimbleCode({
+        for(i in 1:2) {
+            mn[i, 1:3] <- A[1:3,1:3]%*%mu[xi[i], 1:3]
+            y[i, 1:3] ~ dmnorm(mn[i, 1:3], pr[1:3,1:3])
+            mu[i, 1:3] ~ dmnorm(z[1:3], pr[1:3,1:3])
+        }
+        xi[1:2] ~ dCRP(1, 2)
+    })
+    m <- nimbleModel(code, data = list (y = matrix(rnorm(6), 2)), 
+                     inits = list(A = diag(3), mu = matrix(rnorm(6),2), xi = rep(1,2), pr = diag(3)))
+    conf <- configureMCMC(m)
+    mcmc <- buildMCMC(conf)
+
+    expect_identical(mcmc$samplerFunctions[[2]]$regular_sampler[[1]]$N_dep_dmnorm_multiplicative, 2L)
+
+    expect_identical(c('dep_dmnorm_multiplicative_offset', 'dep_dmnorm_multiplicative_coeff') %in%
+                     ls(mcmc$samplerFunctions[[2]]$regular_sampler[[1]]), rep(TRUE, 2))
+    
+    ## dwish cases
     code <- nimbleCode({
         for(i in 1:2) {
             y[i, 1:3] ~ dmnorm(mu[1:3], pr[xi[i], 1:3,1:3])
@@ -7825,7 +7843,24 @@ test_that("offset and coeff set up in conjugacy for BNP so that non-dependencies
     expect_identical(c('dep_dmnorm_identity_offset', 'dep_dmnorm_identity_coeff') %in%
                 ls(mcmc$samplerFunctions[[2]]$regular_sampler[[1]]), c(FALSE, TRUE))
 
+    code <- nimbleCode({
+        for(i in 1:2) {
+            y[i, 1:3] ~ dmnorm(mu[1:3], pr0[i, 1:3, 1:3])
+            pr0[i, 1:3,1:3] <- theta * pr[xi[i], 1:3,1:3]
+            pr[i, 1:3,1:3] ~ dwish(R[1:3,1:3], 8)
+        }
+        xi[1:2] ~ dCRP(1, 2)
+    })
+    pr <- array(0, c(2, 3, 3)); pr[1,,] <- pr[2,,] <- diag(3)
+    m <- nimbleModel(code, data = list(y = matrix(rnorm(6),2)), 
+                     inits = list(xi = rep(1,2), pr = pr, R = diag(3)))
+    conf <- configureMCMC(m)
+    mcmc <- buildMCMC(conf)
 
+    expect_identical(mcmc$samplerFunctions[[2]]$regular_sampler[[1]]$N_dep_dmnorm_multiplicativeScalar, 2L)
+
+    expect_identical(c('dep_dmnorm_multiplicativeScalar_offset', 'dep_dmnorm_multiplicativeScalar_coeff') %in%
+                ls(mcmc$samplerFunctions[[2]]$regular_sampler[[1]]), c(FALSE, TRUE))
 })
 
 options(warn = RwarnLevel)
