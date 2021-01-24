@@ -75,7 +75,7 @@ test_that('makeUpdateNodes works correctly', {
 
     ## no data nodes in calcNodes
     result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'mu'), calcNodes = c('sigma2', 'mu0', 'mu'), model)
-    expect_identical(result$updateNodes, c("tau", "lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP"))
+    expect_identical(result$updateNodes, c("tau", "lifted_d1_over_sqrt_oPtau_cP"))
     expect_identical(result$constantNodes, character(0))
 
     code <- nimbleCode({
@@ -109,7 +109,7 @@ test_that('makeUpdateNodes works correctly', {
     expect_identical(result$updateNodes, c(prElems, "lifted_sqrt_oPsigma2_cP", lftChElems, 'mu[1]'))
     expect_identical(result$constantNodes, "y[1]")
 
-    ## NCT issue 258: should include mu[3] presumably
+    ## NCT issue 257: should include mu[3] presumably
     result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('mu[1:2]','y[1:2]'), model)
     expect_identical(result$updateNodes, c(prElems, "lifted_sqrt_oPsigma2_cP", lftChElems, model$expandNodeNames('mu')))
     expect_identical(result$constantNodes, c("y[1]", "y[2]"))
@@ -386,7 +386,6 @@ log_mu_init <- rnorm(1)
 model <- nimbleModel(code, constants = list(n = n), data = list(y = rpois(n, 1)),
                      inits = list(mu0 = rnorm(1), sigma = runif(1), mu = exp(log_mu_init),
                                 log_mu = log_mu_init, a = runif(1), b = runif(1)))
-## Error in cLogProb and cVals values when run first time; no error when rebuild model and rerun.
 test_ADModelCalculate(model, name = 'stochastic link model')
 
 ## dexp and dt, which are provided by NIMBLE to allow expanded parameterizations
@@ -582,7 +581,7 @@ code <- nimbleCode({
 n <- 5
 locs <- runif(n)
 dd <- fields::rdist(locs)
-model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, rho = rgamma(1, 1, 1),
+model <- nimbleModel(code, constants = list(n = n, dist = dd), inits = list(rho = rgamma(1, 1, 1),
                                                                  z = rep(0, n), pr = diag(n)))
 model$simulate()
 model$calculate()
@@ -611,8 +610,8 @@ code <- nimbleCode({
 n <- 5
 locs <- runif(n)
 dd <- fields::rdist(locs)
-model <- nimbleModel(code, constants = list(n = n),
-                     inits = list(dist = dd, rho = rgamma(1, 1, 1),
+model <- nimbleModel(code, constants = list(n = n, dist = dd),
+                     inits = list(rho = rgamma(1, 1, 1),
                                   z = rep(0, n), pr = diag(n)))
 model$simulate()
 model$calculate()
@@ -712,7 +711,7 @@ code <- nimbleCode({
 n <- 5
 locs <- runif(n)
 dd <- fields::rdist(locs)
-model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, nu = 15))
+model <- nimbleModel(code, constants = list(n = n, dist = dd), inits = list(nu = 15))
 model$simulate()
 model$calculate()
 model$setData(c('W1','W2','W3','W4','IW1','IW2','IW3','IW4'))
@@ -809,7 +808,7 @@ code <- nimbleCode({
 n <- 5
 locs <- runif(n)
 dd <- fields::rdist(locs)
-model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, rho = rgamma(1, 1, 1)))
+model <- nimbleModel(code, constants = list(n = n, dist = dd), inits = list(rho = rgamma(1, 1, 1)))
 model$simulate()
 model$calculate()
 model$setData('y')
@@ -840,8 +839,8 @@ code <- nimbleCode({
 n <- 5
 locs <- runif(n)
 dd <- fields::rdist(locs)
-model <- nimbleModel(code, constants = list(n = n, x = rnorm(n), z = rep(0, n), pr = diag(n)),
-                     inits = list(dist = dd, rho = rgamma(1, 1, 1), sigma2 = rgamma(1, 1, 1)),
+model <- nimbleModel(code, constants = list(n = n, x = rnorm(n), z = rep(0, n), pr = diag(n), dist = dd),
+                     inits = list(rho = rgamma(1, 1, 1), sigma2 = rgamma(1, 1, 1)),
                      data = list(y1 = rnorm(1), #  y2 = rnorm(1),
                                  yy = matrix(rnorm(n*3), 3, n)))
 model$simulate()
@@ -990,7 +989,7 @@ n <- 5
 locs <- runif(n)
 dd <- fields::rdist(locs)
 R <- crossprod(matrix(rnorm(n^2), n, n))
-model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, R = R, nu = 15, rho = rgamma(1, 1, 1),
+model <- nimbleModel(code, constants = list(n = n, dist = dd), inits = list(R = R, nu = 15, rho = rgamma(1, 1, 1),
                                                                  z = rep(0, n)))
 model$simulate()
 model$calculate()
@@ -1104,6 +1103,10 @@ model$calculate()
 ## rWrt, cWrt equal not identical to x
 test_ADModelCalculate(model, useParamTransform = TRUE, verbose = TRUE, name = 'salm', relTol = relTol_default, useFasterRderivs = TRUE)
 
+
+## Newer results:
+
+## epil: some serious problems on at least one test case
 
 ## Results as of 2020-12-23
 ## blocker: compiled 0th deriv equal not identical to cLogProb_orig for HMC/MAP partial
