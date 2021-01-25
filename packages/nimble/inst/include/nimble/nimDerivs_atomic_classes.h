@@ -12,6 +12,7 @@
 #include "nimDerivs_atomic_matinverse.h"
 #include "nimDerivs_atomic_backsolve.h"
 #include "nimDerivs_atomic_forwardsolve.h"
+#include "nimDerivs_atomic_cholesky.h"
 
 template<class T>
 class unary_atomic_class : public CppAD::atomic_three<T> {

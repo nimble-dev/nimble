@@ -154,6 +154,7 @@ class nimbleTimerClass_ {
    }
 
 #define EIGEN_CHOL(x)       (x).template selfadjointView<Eigen::Upper>().llt().matrixU()
+#define nimDerivs_EIGEN_CHOL_no_atomic(x)       (x).template selfadjointView<Eigen::Upper>().llt().matrixU()
 //#define EIGEN_SOLVE(x,y)    (x).lu().solve(y)
 //#define EIGEN_FS(x,y)       (x).triangularView<Eigen::Lower>().solve(y)
 //#define EIGEN_BS(x,y)       (x).triangularView<Eigen::Upper>().solve(y)

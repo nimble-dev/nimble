@@ -647,7 +647,7 @@ modifyForAD_handlers <- c(list(
     `*` = 'modifyForAD_matmult',
     eigInverse = 'modifyForAD_matinverse'),
     makeCallList(recyclingRuleOperatorsAD, 'modifyForAD_RecyclingRule'),
-    makeCallList(c('EIGEN_FS', 'EIGEN_BS', 'EIGEN_SOLVE'),
+    makeCallList(c('EIGEN_FS', 'EIGEN_BS', 'EIGEN_SOLVE', 'EIGEN_CHOL'),
                  'modifyForAD_prependNimDerivs'))
 
 exprClasses_modifyForAD <- function(code, symTab,
@@ -793,7 +793,10 @@ modifyForAD_prependNimDerivs <- function(code, symTab, workEnv) {
   atomic <- TRUE
   if(origName == 'EIGEN_FS' | origName == 'EIGEN_BS')
     if(isTRUE(nimbleOptions("skipADsolveAtomic")))
-      atomic <- FALSE
+        atomic <- FALSE
+  if(origName == "EIGEN_CHOL")
+    if(isTRUE(nimbleOptions("skipADcholAtomic")))
+        atomic <- FALSE
   if(atomic)
     code$name <- paste0("nimDerivs_", origName)
   else
