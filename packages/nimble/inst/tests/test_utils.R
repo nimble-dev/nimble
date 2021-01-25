@@ -1298,6 +1298,67 @@ derivsNimbleFunction <- nimbleFunction(
   }  ## don't need enableDerivs if call nimDerivs directly, but would if just have model$calc in nf
 )
 
+## nf for double-taping
+derivsNimbleFunctionMeta <- nimbleFunction(
+  setup = function(model, calcNodes, wrt) {
+    innerWrtVec <- c(.1, .2) ## awkward that this doesn't work smoothly in derivsRun
+    allUpdateNodes <- makeUpdateNodes(wrt, calcNodes, model)
+    updateNodes <- allUpdateNodes$updateNodes
+    constantNodes <- allUpdateNodes$constantNodes
+  },
+  run = function(x = double(1)) {
+    values(model, wrt) <<- x
+    ans <- model$calculate(calcNodes)
+    return(ans)
+    returnType(double())
+  },
+  methods = list(
+    ## inner first-order deriv
+    derivs1Run = function(x = double(1),
+                         reset = logical(0, default = FALSE)) {
+        ans <- nimDerivs(run(x), wrt = innerWrtVec, order = 1, reset = reset,
+                         updateNodes = updateNodes, constantNodes = constantNodes, model = model)
+      return(ans$jacobian[1,])
+      returnType(double(1))
+    },
+    ## inner second-order deriv
+    derivs2Run = function(x = double(1),
+                         reset = logical(0, default = FALSE)) {
+        ans <- nimDerivs(run(x), wrt = innerWrtVec, order = 2, reset = reset,
+                         updateNodes = updateNodes, constantNodes = constantNodes, model = model)
+        ## not clear why can't do ans$hessian[,,1] with double(2) returnType
+      return(ans$hessian)
+      returnType(double(3))
+    },
+    ## outer arbitrary-order deriv calling inner first order
+    metaDerivs1Run = function(x = double(1),
+                             order = double(1),
+                             reset = logical(0, default = FALSE)) {
+      wrtVec <- 1:length(x)
+      innerWrtVec <<- wrtVec
+      ans <- nimDerivs(derivs1Run(x, reset), wrt = wrtVec, order = order, reset = reset,
+                       updateNodes = updateNodes, constantNodes = constantNodes, model = model)
+      return(ans)
+      returnType(ADNimbleList())
+    }, 
+    ## outer arbitrary-order deriv calling inner second order
+    metaDerivs2Run = function(x = double(1),
+                             order = double(1),
+                             reset = logical(0, default = FALSE)) {
+      wrtVec <- 1:length(x)
+      innerWrtVec <<- wrtVec
+      ans <- nimDerivs(derivs2Run(x, reset), wrt = wrtVec, order = order, reset = reset,
+                       updateNodes = updateNodes, constantNodes = constantNodes, model = model)
+      return(ans)
+      returnType(ADNimbleList())
+    }
+  ),
+  enableDerivs = list(run = list(),
+                      derivs1Run = list(),
+                      derivs2Run = list())
+)
+
+
 derivsNimbleFunctionParamTransform <- nimbleFunction(
     setup = function(model, calcNodes, wrt) {
         wrtNodesAsScalars <- model$expandNodeNames(wrt, returnScalarComponents = TRUE)
@@ -1393,7 +1454,7 @@ test_ADModelCalculate_nick <- function(model, name = NULL, calcNodeNames = NULL,
 ## unless user provides 'wrt' and 'calcNodes'.
 test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNodes = NULL, wrt = NULL,
                                   relTol = c(1e-15, 1e-8, 1e-3), useFasterRderivs = FALSE, useParamTransform = FALSE,
-                                  checkCompiledValuesIdentical = TRUE,
+                                  checkDoubleTape = TRUE, checkCompiledValuesIdentical = TRUE,
                                   seed = 1, verbose = FALSE, debug = FALSE){
     if(!is.null(seed))
         set.seed(seed)
@@ -1419,7 +1480,8 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         xNew <- runif(length(tmp))
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt,
                                            savedMV = mv, relTol = relTol,
-                                       useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
+                                           useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
+                                           checkDoubleTape = checkDoubleTape,
                                        checkCompiledValuesIdentical = checkCompiledValuesIdentical,
                                        verbose = verbose, debug = debug))
         ## max. lik. use case
@@ -1442,6 +1504,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt,
                                            savedMV =mv, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
+                                       checkDoubleTape = checkDoubleTape,
                                        checkCompiledValuesIdentical = checkCompiledValuesIdentical,
                                        verbose = verbose, debug = debug))
 
@@ -1463,6 +1526,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt,
                                            savedMV = mv, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
+                                       checkDoubleTape = checkDoubleTape,
                                        checkCompiledValuesIdentical = checkCompiledValuesIdentical,
                                        verbose = verbose, debug = debug))
 
@@ -1487,6 +1551,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt,
                                            savedMV = mv, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
+                                       checkDoubleTape = checkDoubleTape,
                                        checkCompiledValuesIdentical = checkCompiledValuesIdentical,
                                        verbose = verbose, debug = debug))
 
@@ -1507,6 +1572,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt,
                                            savedMV = mv, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
+                                       checkDoubleTape = checkDoubleTape,
                                        checkCompiledValuesIdentical = checkCompiledValuesIdentical,
                                        verbose = verbose, debug = debug))
     } else {
@@ -1522,6 +1588,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         xNew <- runif(length(tmp))
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
+                                       checkDoubleTape = checkDoubleTape,
                                        checkCompiledValuesIdentical = checkCompiledValuesIdentical,
                                        verbose = verbose, debug = debug))
     }
@@ -1533,7 +1600,8 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
 test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL, xNew = NULL,
                                            calcNodes = NULL, wrt = NULL, savedMV = NULL, 
                                            relTol = c(1e-15, 1e-8, 1e-3), useFasterRderivs = FALSE,
-                                           useParamTransform = FALSE, checkCompiledValuesIdentical = TRUE,
+                                           useParamTransform = FALSE, checkDoubleTape = TRUE,
+                                           checkCompiledValuesIdentical = TRUE,
                                            verbose = FALSE, debug = FALSE){
 
     test_that(paste0("Derivatives of calculate for model ", name), {
@@ -1576,6 +1644,11 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
         
         cDerivs <- compileNimble(rDerivs, project = model)
 
+        if(checkDoubleTape) {
+            rDerivsMeta <- derivsNimbleFunctionMeta(model, calcNodes = calcNodes, wrt = wrt)
+            cDerivsMeta <- compileNimble(rDerivsMeta, project = model)
+        }
+        
         if(useFasterRderivs) {
             ## Set up a nf so R derivs use a model calculate that is done fully in compiled code (cModel$calculate loops over nodes in R)
             if(useParamTransform) {
@@ -1738,6 +1811,40 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             cVals02 <- values(cModel, otherNodes)
             cLogProb02 <- cModel$getLogProb(calcNodes)
             cWrt02 <- values(cModel, wrt)
+
+            if(checkDoubleTape) {
+                ## Note that because inner deriv is order 1 or 2, don't expect model to be updated.
+                rOutput1d <- rDerivsMeta$metaDerivs1Run(x = x, order = 0)
+                rVals1d <- values(model, otherNodes)
+                rLogProb1d <- model$getLogProb(calcNodes)
+                rWrt1d <- values(model, wrt)
+                 
+                rOutput2d <- rDerivsMeta$metaDerivs2Run(x = x, order = 0)
+                rVals2d <- values(model, otherNodes)
+                rLogProb2d <- model$getLogProb(calcNodes)
+                rWrt2d <- values(model, wrt)
+
+                rOutput2d11 <- rDerivsMeta$metaDerivs1Run(x = x, order = 1)
+                rVals2d11 <- values(model, otherNodes)
+                rLogProb2d11 <- model$getLogProb(calcNodes)
+                rWrt2d11 <- values(model, wrt)
+
+                cOutput1d <- cDerivsMeta$metaDerivs1Run(x = x, order = 0)
+                cVals1d <- values(cModel, otherNodes)
+                cLogProb1d <- cModel$getLogProb(calcNodes)
+                cWrt1d <- values(cModel, wrt)
+                
+                cOutput2d <- cDerivsMeta$metaDerivs2Run(x = x, order = 0)
+                cVals2d <- values(cModel, otherNodes)
+                cLogProb2d <- cModel$getLogProb(calcNodes)
+                cWrt2d <- values(cModel, wrt)
+
+                cOutput2d11 <- cDerivsMeta$metaDerivs1Run(x = x, order = 1)
+                cVals2d11 <- values(cModel, otherNodes)
+                cLogProb2d11 <- cModel$getLogProb(calcNodes)
+                cWrt2d11 <- values(cModel, wrt)
+
+            }
             
             ## Check results ##
 
@@ -1769,6 +1876,29 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             expect_gte(length(cOutput012$hessian), 1)
             expect_gte(length(cOutput02$hessian), 1)
 
+            if(checkDoubleTape) {
+                expect_gte(length(rOutput1d$value), 1)
+                expect_identical(length(rOutput1d$jacobian), 0L)
+                expect_identical(length(rOutput1d$hessian), 0L)
+                expect_gte(length(cOutput1d$value), 1)
+                expect_identical(length(cOutput1d$jacobian), 0L)
+                expect_identical(length(cOutput1d$hessian), 0L)
+
+                expect_gte(length(rOutput2d$value), 1)
+                expect_identical(length(rOutput2d$jacobian), 0L)
+                expect_identical(length(rOutput2d$hessian), 0L)
+                expect_gte(length(cOutput2d$value), 1)
+                expect_identical(length(cOutput2d$jacobian), 0L)
+                expect_identical(length(cOutput2d$hessian), 0L)
+
+                expect_identical(length(rOutput2d11$value), 0L)
+                expect_gte(length(rOutput2d11$jacobian), 1)
+                expect_identical(length(rOutput2d11$hessian), 0L)
+                expect_identical(length(cOutput2d11$value), 0L)
+                expect_gte(length(cOutput2d11$jacobian), 1)
+                expect_identical(length(cOutput2d11$hessian), 0L)
+            }
+            
             ## 0th order 'derivative'
             expect_identical(rOutput01$value, rLogProb_new)
             expect_identical(rOutput012$value, rLogProb_new)
@@ -1792,7 +1922,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             expect_equal(sum(is.na(cOutput012$value)), 0, info = "NAs found in compiled 0th derivative")
             expect_equal(sum(is.na(rOutput02$value)), 0, info = "NAs found in uncompiled 0th derivative")
             expect_equal(sum(is.na(cOutput02$value)), 0, info = "NAs found in compiled 0th derivative")
-
+            
             ## 1st derivative
             expect_equal(rOutput01$jacobian, cOutput01$jacobian, tolerance = relTol[2])
             expect_equal(sum(is.na(rOutput01$jacobian)), 0, info = "NAs found in uncompiled 1st derivative")
@@ -1812,6 +1942,15 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             
             expect_identical(cOutput12$jacobian, cOutput012$jacobian)
 
+            if(checkDoubleTape) {
+                expect_equal(rOutput1d$value, cOutput1d$value, tolerance = relTol[2])
+                expect_equal(sum(is.na(rOutput1d$value)), 0, info = "NAs found in uncompiled double-taped 1st derivative")
+                expect_equal(sum(is.na(cOutput1d$value)), 0, info = "NAs found in compiled double-taped 1st derivative")
+
+                ## explicit comparison to single-taped result
+                expect_identical(cOutput1d$value, cOutput012$jacobian)
+            }
+
             ## 2nd derivative
             expect_equal(rOutput12$hessian, cOutput12$hessian, tolerance = relTol[3])
             expect_equal(sum(is.na(rOutput12$hessian)), 0, info = "NAs found in uncompiled 2nd derivative")
@@ -1827,14 +1966,40 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
 
             expect_identical(cOutput12$hessian, cOutput012$hessian)
             expect_identical(cOutput02$hessian, cOutput012$hessian)
-            
-            ## Model state: wrt values should be equal to `x`.
+
+
+            if(checkDoubleTape) {
+                expect_equal(rOutput2d$value, cOutput2d$value, tolerance = relTol[3])
+                expect_equal(sum(is.na(rOutput2d$value)), 0, info = "NAs found in uncompiled double-taped 2nd derivative")
+                expect_equal(sum(is.na(cOutput2d$value)), 0, info = "NAs found in compiled double-taped 2nd derivative")
+
+                expect_equal(rOutput2d11$jacobian, cOutput2d11$jacobian, tolerance = relTol[2])
+                expect_equal(sum(is.na(rOutput2d11$jacobian)), 0, info = "NAs found in uncompiled double-taped 2nd derivative")
+                expect_equal(sum(is.na(cOutput2d11$jacobian)), 0, info = "NAs found in compiled double-taped 2nd derivative")
+
+                ## explicit comparison to single-taped result
+                expect_identical(cOutput2d$value, cOutput012$hessian)
+                expect_identical(cOutput2d11$jacobian, cOutput012$hessian)
+            }
+
+            ## TODO: work on this - wrt values should equal original wrt values if paramTransform, order !=0 or doubleTape
+            ## because setting of wrt in model is done within nimDerivs call, so should obey our rules about when model state is altered.
+            ## Model state: wrt values should be equal to `x`. (not correct always -- CJP 2021-01-23)
             expect_identical(rWrt01, x)
             expect_identical(rWrt12, x)
             expect_identical(rWrt012, x)
             expect_identical(cWrt01, x)
             expect_identical(cWrt12, x)
             expect_identical(cWrt012, x)
+
+            if(checkDoubleTape) {
+                expect_identical(rWrt1d, x)
+                expect_identical(rWrt2d, x)
+                expect_identical(rWrt2d11, x)
+                expect_identical(cWrt1d, x)
+                expect_identical(cWrt2d, x)
+                expect_identical(cWrt2d11, x)
+            }
 
             ## Also, should we take otherNodes and break into those that are in calcNodes and those not?
             ## Those in not in calcNodes should never be changed. So maybe nothing to check.
@@ -1855,6 +2020,15 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 expect_identical(rLogProb12, rLogProb_orig)
                 expect_identical(rVals12, rVals_orig)
             }
+
+            if(checkDoubleTape) {
+                expect_identical(rLogProb1d, rLogProb_orig)
+                expect_identical(rLogProb2d, rLogProb_orig)
+                expect_identical(rLogProb2d11, rLogProb_orig)
+                expect_identical(rVals1d, rVals_orig)
+                expect_identical(rVals2d, rVals_orig)
+                expect_identical(rVals2d11, rVals_orig)
+            }
             
             ## Not clear if next check should be expect_identical (in many cases they are identical);
             ## Check with PdV whether values from taped model could get into the compiled model.        
@@ -1874,6 +2048,15 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             } else {
                 expect_fun(cLogProb12, cLogProb_orig)
                 expect_fun(cVals12, cVals_orig)
+            }
+
+            if(checkDoubleTape) {
+                expect_fun(cLogProb1d, cLogProb_orig)
+                expect_fun(cVals1d, cVals_orig)
+                expect_fun(cLogProb2d, cLogProb_orig)
+                expect_fun(cVals2d, cVals_orig)
+                expect_fun(cLogProb2d11, cLogProb_orig)
+                expect_fun(cVals2d11, cVals_orig)
             }
         }
     })
