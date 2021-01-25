@@ -789,7 +789,15 @@ modifyForAD_AssignEigenMap <- function(code, symTab, workEnv) {
 }
 
 modifyForAD_prependNimDerivs <- function(code, symTab, workEnv) {
-  code$name <- paste0("nimDerivs_", code$name)
+  origName <- code$name
+  atomic <- TRUE
+  if(origName == 'EIGEN_FS' | origName == 'EIGEN_BS')
+    if(isTRUE(nimbleOptions("skipADsolveAtomic")))
+      atomic <- FALSE
+  if(atomic)
+    code$name <- paste0("nimDerivs_", origName)
+  else
+    code$name <- paste0("nimDerivs_", origName, '_no_atomic')
   invisible(NULL)
 }
 

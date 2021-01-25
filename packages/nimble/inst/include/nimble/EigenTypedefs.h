@@ -225,7 +225,7 @@ MatrixXd EIGEN_FS(const MatrixBase<derived1> &x, const MatrixBase<derived2> &y) 
 }
 
 template<class derived1, class derived2>
-MatrixXd_CppAD nimDerivs_EIGEN_FS(const MatrixBase<derived1> &x, const MatrixBase<derived2> &y) {
+MatrixXd_CppAD nimDerivs_EIGEN_FS_no_atomic(const MatrixBase<derived1> &x, const MatrixBase<derived2> &y) {
   MatrixXd_CppAD ycopy = y; // in case y was a map, which it will always be from nimble
   MatrixXd_CppAD ans = x.template triangularView<Eigen::Lower>().solve(ycopy);
   return(ans);
@@ -239,7 +239,7 @@ MatrixXd EIGEN_BS(const MatrixBase<derived1> &x, const MatrixBase<derived2> &y) 
 }
 
 template<class derived1, class derived2>
-MatrixXd_CppAD nimDerivs_EIGEN_BS(const MatrixBase<derived1> &x, const MatrixBase<derived2> &y) {
+MatrixXd_CppAD nimDerivs_EIGEN_BS_no_atomic(const MatrixBase<derived1> &x, const MatrixBase<derived2> &y) {
   MatrixXd_CppAD ycopy = y; // in case y was a map, which it will always be from nimble
   MatrixXd_CppAD ans = x.template triangularView<Eigen::Upper>().solve(ycopy);
   return(ans);

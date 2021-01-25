@@ -10,6 +10,8 @@
 
 #include "nimDerivs_atomic_matmult.h"
 #include "nimDerivs_atomic_matinverse.h"
+#include "nimDerivs_atomic_backsolve.h"
+#include "nimDerivs_atomic_forwardsolve.h"
 
 template<class T>
 class unary_atomic_class : public CppAD::atomic_three<T> {
