@@ -165,21 +165,59 @@ bool atomic_cholesky_class::forward(
     Ymap = Xmap.template selfadjointView<Eigen::Upper>().llt().matrixU();
   }
   if(order_low <= 1 & order_up >= 1) {
-    // printf("In forward >1\n");
+    //  printf("In forward >1\n");
     EigenMap dYmap(&taylor_y[1], n, n, EigStrDyn(nrow*n, nrow ) );
     EigenConstMap dXmap(&taylor_x[1], n, n, EigStrDyn(nrow*n, nrow));
-      
+
+    // std::cout<<"Ymap"<<std::endl;
+    // for(int i = 0; i < n; ++i) {
+    //   for(int j = 0; j < i; ++j) std::cout<<"\t";
+    //   for(int j = i; j < n; ++j) std::cout<<Ymap(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+    
+    // std::cout<<"dXmap"<<std::endl;
+    // for(int i = 0; i < n; ++i) {
+    //   for(int j = 0; j < n; ++j) std::cout<<dXmap(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+
     // U is Y
     // Sigma is X.
     // Y = chol(X)
     // dX^T should be used as dXmap.selfAdjointView to get the symmetry, but that doesn't seem to be supported as a solve argument.
     Eigen::MatrixXd tempMat = dXmap.template selfadjointView<Eigen::Upper>(); //dSigma
+
+    // std::cout<<"tempMat"<<std::endl;
+    // for(int i = 0; i < n; ++i) {
+    //   for(int j = 0; j < n; ++j) std::cout<<tempMat(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+
     Eigen::MatrixXd UinvT_dSigma_Uinv = 
       Ymap.transpose().triangularView<Eigen::Lower>().solve(
 							    (Ymap.transpose().triangularView<Eigen::Lower>().solve(tempMat)).transpose()
 							    ).triangularView<Eigen::Upper>();
+    // std::cout<<"UinvT_dSigma_Uinv"<<std::endl;
+    // for(int i = 0; i < n; ++i) {
+    //   for(int j = 0; j < n; ++j) std::cout<<UinvT_dSigma_Uinv(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
     HalfDiag(UinvT_dSigma_Uinv);
-    dYmap = UinvT_dSigma_Uinv.triangularView<Eigen::Upper>() * Ymap;
+    // std::cout<<"UinvT_dSigma_Uinv"<<std::endl;
+    // for(int i = 0; i < n; ++i) {
+    //   for(int j = 0; j < n; ++j) std::cout<<UinvT_dSigma_Uinv(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+    
+    dYmap = UinvT_dSigma_Uinv * Ymap.triangularView<Eigen::Upper>(); // other elements of Ymap might be nans
+    // std::cout<<"dYmap"<<std::endl;
+    // for(int i = 0; i < n; ++i) {
+    //   for(int j = 0; j < i; ++j) std::cout<<"\t";
+    //   for(int j = i; j < n; ++j) std::cout<<dYmap(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+
   }
   //  printf("done cholesky forward\n");
 
@@ -225,7 +263,7 @@ bool atomic_cholesky_class::forward(
     // 						      (Ymap.transpose().triangularView<Eigen::Lower>().solve(tempMat)).transpose()
     // 						      ).triangularView<Eigen::Upper>();
     HalfDiag(UinvT_dSigma_Uinv);
-    dYmap = nimDerivs_matmult(UinvT_dSigma_Uinv.triangularView<Eigen::Upper>(), Ymap);
+    dYmap = nimDerivs_matmult(UinvT_dSigma_Uinv, Ymap.triangularView<Eigen::Upper>());
   }
   //  printf("done cholesky forward\n");
   return true;
@@ -240,15 +278,28 @@ bool atomic_cholesky_class::reverse(
 				    CppAD::vector< double >&                     partial_x   ,
 				    const CppAD::vector< double >&               partial_y   ) {
   //reverse m_ode
-  //    printf("In reverse\n");
+  //  printf("In reverse\n");
   int nrow = order_up + 1;
   int n = static_cast<int>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
     
   EigenConstMap Ymap(&taylor_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
   EigenConstMap Yadjoint_map(&partial_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
   EigenMap Xadjoint_map(&partial_x[0], n, n, EigStrDyn(nrow*n, nrow) );
+    // std::cout<<"Y"<<std::endl;
+    // for(int i = 0; i < n; ++i) {
+    //   for(int j = 0; j < n; ++j) std::cout<<Ymap(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+
+    // std::cout<<"Yadjoint"<<std::endl;
+    // for(int i = 0; i < n; ++i) {
+    //   for(int j = 0; j < n; ++j) std::cout<<Yadjoint_map(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
   if(order_up >= 0) {
-      
+
+
+    
     // Yadjoint_map is how final quantity changes w.r.t elements of Y.
     // By definition we treat it as upper triangular.
     // Eigen doesn't seem to support matrix multiplication of two triangular views.
@@ -257,11 +308,23 @@ bool atomic_cholesky_class::reverse(
     //      Eigen::MatrixXd Yadjoint_upper = Yadjoint_map.triangularView<Eigen::Upper>();
     Eigen::MatrixXd Yadjoint_UT = (Yadjoint_map * Ymap.transpose().template triangularView<Eigen::Lower>()).template triangularView<Eigen::Upper>();
     HalfDiag(Yadjoint_UT);
+    // std::cout<<"Yadjoint_UT"<<std::endl;
+    // for(int i = 0; i < n; ++i) {
+    //   for(int j = 0; j < n; ++j) std::cout<<Yadjoint_UT(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
     Eigen::MatrixXd Uinv_PhiStuff_UinvT = Ymap.template triangularView<Eigen::Upper>().solve(
 											     Ymap.template triangularView<Eigen::Upper>().solve( Yadjoint_UT.transpose() ).transpose()
 											     );
     // Resulting adjoint is how final quantity changes w.r.t. elements of Sigma (i.e. X, i.e. covariance matrix)
     // This should be only upper triangular
+
+    // std::cout<<"YUinv_PhiStuff_UinvT"<<std::endl;
+    // for(int i = 0; i < n; ++i) {
+    //   for(int j = 0; j < n; ++j) std::cout<<Uinv_PhiStuff_UinvT(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+
     Xadjoint_map = Uinv_PhiStuff_UinvT.template triangularView<Eigen::Upper>();
     Xadjoint_map += Uinv_PhiStuff_UinvT.transpose().template triangularView<Eigen::StrictlyUpper>();      
     //Xadjoint_map = Uinv_PhiStuff_UinvT +  Uinv_PhiStuff_UinvT.transpose();
@@ -270,25 +333,68 @@ bool atomic_cholesky_class::reverse(
     //upper_HalfDiag(Xadjoint_map);
   }
   if(order_up >= 1) {
+    //    std::cout<<"entering second order reverse"<<std::endl;
+    
     EigenConstMap Ydot_map(&taylor_y[1], n, n, EigStrDyn(nrow*n, nrow ) );
 
     EigenConstMap Ydot_adjoint_map(&partial_y[1], n, n, EigStrDyn(nrow*n, nrow ) );
+
+    // std::cout<<"Ydot"<<std::endl;
+    // for(int i = 0; i < n; ++i) {
+    //   for(int j = 0; j < n; ++j) std::cout<<Ydot_map(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+
+    // std::cout<<"Ydot_adjoint"<<std::endl;
+    // for(int i = 0; i < n; ++i) {
+    //   for(int j = 0; j < n; ++j) std::cout<<Ydot_adjoint_map(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+
     Eigen::MatrixXd P = (Ydot_adjoint_map * Ymap.transpose().template triangularView<Eigen::Lower>()).template triangularView<Eigen::Upper>();
     HalfDiag(P);
+
+    // std::cout<<"P"<<std::endl;
+    // for(int i = 0; i < n; ++i) {
+    //   for(int j = 0; j < n; ++j) std::cout<<P(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+
+
     Eigen::MatrixXd Uinv_P_UinvT = Ymap.template triangularView<Eigen::Upper>().solve(
 										      Ymap.template triangularView<Eigen::Upper>().solve( P.transpose() ).transpose()
 										      );
+
+    // std::cout<<"Uinv_P_UinvT"<<std::endl;
+    // for(int i = 0; i < n; ++i) {
+    //   for(int j = 0; j < n; ++j) std::cout<< Uinv_P_UinvT(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+
     EigenMap Xdot_adjoint_map(&partial_x[1], n, n, EigStrDyn(nrow*n, nrow) );
     Xdot_adjoint_map = Uinv_P_UinvT.template triangularView<Eigen::Upper>();
     Xdot_adjoint_map += Uinv_P_UinvT.transpose().template triangularView<Eigen::StrictlyUpper>();      
       
     Eigen::MatrixXd R = (Ydot_map * Ymap.template triangularView<Eigen::Upper>().solve( P + P.transpose() ) ).template triangularView<Eigen::Upper>();
     HalfDiag(R);
+
+    // std::cout<<"R"<<std::endl;
+    // for(int i = 0; i < n; ++i) {
+    //   for(int j = 0; j < n; ++j) std::cout<< R(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+    
     Eigen::MatrixXd Xadjoint_term = Ymap.template triangularView<Eigen::Upper>().solve(
 										       Ymap.template triangularView<Eigen::Upper>().solve(R.transpose() ).transpose()
 										       );
-    Xadjoint_map += Xadjoint_term.template triangularView<Eigen::Upper>();
-    Xadjoint_map += Xadjoint_term.transpose().template triangularView<Eigen::StrictlyUpper>(); 
+    // std::cout<<"Xadjoint_term"<<std::endl;
+    // for(int i = 0; i < n; ++i) {
+    //   for(int j = 0; j < n; ++j) std::cout<< Xadjoint_term(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+
+    Xadjoint_map -= Xadjoint_term.template triangularView<Eigen::Upper>();
+    Xadjoint_map -= Xadjoint_term.transpose().template triangularView<Eigen::StrictlyUpper>(); 
   }
   if(order_up >= 2) {
     printf("Unsupported reverse order requested\n");
@@ -296,7 +402,6 @@ bool atomic_cholesky_class::reverse(
   }
   return true;
 }
-
 
 bool atomic_cholesky_class::reverse(
 				    const CppAD::vector<CppAD::AD<double> >&               parameter_x ,
@@ -352,8 +457,8 @@ bool atomic_cholesky_class::reverse(
     // MatrixXd_CppAD Xadjoint_term = Ymap.template triangularView<Eigen::Upper>().solve(
     // 								Ymap.template triangularView<Eigen::Upper>().solve(R.transpose() ).transpose()
     // 								);
-    Xadjoint_map += Xadjoint_term.template triangularView<Eigen::Upper>();
-    Xadjoint_map += Xadjoint_term.transpose().template triangularView<Eigen::StrictlyUpper>(); 
+    Xadjoint_map -= Xadjoint_term.template triangularView<Eigen::Upper>();
+    Xadjoint_map -= Xadjoint_term.transpose().template triangularView<Eigen::StrictlyUpper>(); 
   }
   if(order_up >= 2) {
     printf("Unsupported reverse order requested\n");
