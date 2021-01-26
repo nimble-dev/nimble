@@ -588,7 +588,7 @@ conjugacyClass <- setRefClass(
                                        DECLARE_SIZE_COEFF  = makeDeclareSizeField(as.name(paste0('N_dep_', distLinkName)), as.name(paste0('dep_', distLinkName, '_nodeSizeMax')), quote(d),                                          targetCoeffNdim))
                     if(currentLink == 'additive') 
                         functionBody$addCode(
-                            DEP_OFFSET_VAR2  <- array(0, dim = DECLARE_SIZE_COEFF),
+                            DEP_OFFSET_VAR2  <- array(0, dim = DECLARE_SIZE_OFFSET),
                             inputList) 
                     if(currentLink %in% c('multiplicative', 'multiplicativeScalar')) 
                         functionBody$addCode(
@@ -596,7 +596,7 @@ conjugacyClass <- setRefClass(
                             inputList) 
                     if(currentLink == 'linear' || (nimbleOptions()$allowDynamicIndexing && doDependentScreen))
                         functionBody$addCode({
-                            DEP_OFFSET_VAR2  <- array(0, dim = DECLARE_SIZE_COEFF)
+                            DEP_OFFSET_VAR2  <- array(0, dim = DECLARE_SIZE_OFFSET)
                             DEP_COEFF_VAR2  <- array(0, dim = DECLARE_SIZE_COEFF)
                         }, inputList) 
                     targetCoeffNdim <- targetCoeffNdimSave

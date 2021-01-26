@@ -1015,8 +1015,8 @@ test_that("Test computations (prior predictive and posterior) and sampler assign
   data = list(y=y)
   inits = list(xi = 1:5, mu=matrix(rbeta(10, 1, 1), ncol=2, nrow=5))
   m = nimbleModel(code, data=data, inits = inits)
-  conf = configureMCMC(m, monitors = c('xi','mu'))
-  mcmc = buildMCMC(conf)
+  mConf = configureMCMC(m, monitors = c('xi','mu'))
+  mcmc = buildMCMC(mConf)
   
   # sampler assignment:
   crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
@@ -1057,8 +1057,8 @@ test_that("Test computations (prior predictive and posterior) and sampler assign
   data = list(y=y)
   inits = list(xi = 1:5, mu=matrix(rbeta(10, 1, 1), ncol=2, nrow=5))
   m = nimbleModel(code, data=data, inits = inits)
-  conf = configureMCMC(m, monitors = c('xi','mu'))
-  mcmc = buildMCMC(conf)
+  mConf = configureMCMC(m, monitors = c('xi','mu'))
+  mcmc = buildMCMC(mConf)
   
   # sampler assignment:
   crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
@@ -1100,8 +1100,8 @@ test_that("Test computations (prior predictive and posterior) and sampler assign
   data = list(y=y)
   inits = list(xi = 1:5, mu=matrix(rbeta(10, 1, 1), ncol=2, nrow=5))
   m = nimbleModel(code, data=data, inits= inits)
-  conf = configureMCMC(m, monitors = c('xi','mu'))
-  mcmc = buildMCMC(conf)
+  mConf = configureMCMC(m, monitors = c('xi','mu'))
+  mcmc = buildMCMC(mConf)
   
   # sampler assignment:
   crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
@@ -1145,8 +1145,8 @@ test_that("Test computations (prior predictive and posterior) and sampler assign
   inits = list(xi = 1:5, mu=matrix(rgamma(10, 1, 5), ncol=2, nrow=5))
   m = nimbleModel(code, data=data, inits= inits)
   cm<-compileNimble(m)
-  conf = configureMCMC(m, monitors=c('mu', 'xi'))
-  mcmc = buildMCMC(conf)
+  mConf = configureMCMC(m, monitors=c('mu', 'xi'))
+  mcmc = buildMCMC(mConf)
   
   # sampler assignment:
   crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
@@ -1188,8 +1188,8 @@ test_that("Test computations (prior predictive and posterior) and sampler assign
   data = list(y=y)
   inits = list(xi = 1:5, mu=matrix(rgamma(10, 1, 1), ncol=2, nrow=5))
   m = nimbleModel(code, data=data, inits= inits)
-  conf = configureMCMC(m, monitors = c('xi','mu'))
-  mcmc = buildMCMC(conf)
+  mConf = configureMCMC(m, monitors = c('xi','mu'))
+  mcmc = buildMCMC(mConf)
   
   # sampler assignment:
   crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
@@ -1230,8 +1230,8 @@ test_that("Test computations (prior predictive and posterior) and sampler assign
   data = list(y = y)
   inits = list(xi = 1:5, mu=matrix(rgamma(10, 1, 5), ncol=2, nrow=5))
   m = nimbleModel(code, data=data, inits= inits)
-  conf = configureMCMC(m, monitors = c('xi','mu'))
-  mcmc = buildMCMC(conf)
+  mConf = configureMCMC(m, monitors = c('xi','mu'))
+  mcmc = buildMCMC(mConf)
   
   # sampler assignment:
   crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
@@ -1272,8 +1272,8 @@ test_that("Test computations (prior predictive and posterior) and sampler assign
   data = list(y = y)
   inits = list(xi = 1:5, mu=matrix(rgamma(10, 1, 5), ncol=2, nrow=5))
   m = nimbleModel(code, data=data, inits= inits)
-  conf = configureMCMC(m, monitors=list('xi', 'mu'))
-  mcmc = buildMCMC(conf)
+  mConf = configureMCMC(m, monitors=list('xi', 'mu'))
+  mcmc = buildMCMC(mConf)
   
   # sampler assignment:
   crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
@@ -1317,8 +1317,8 @@ test_that("Test computations (prior predictive and posterior) and sampler assign
   data = list(y = y)
   inits = list(xi = 1:5, mu=matrix(rgamma(10, 1, 5), ncol=2, nrow=5))
   m = nimbleModel(code, data=data, inits= inits)
-  conf = configureMCMC(m, monitors = list('xi', 'mu'))
-  mcmc = buildMCMC(conf)
+  mConf = configureMCMC(m, monitors = list('xi', 'mu'))
+  mcmc = buildMCMC(mConf)
   
   # sampler assignment:
   crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
