@@ -152,6 +152,22 @@ bool atomic_backsolve_class::for_type(
       type_y[i + j*n1] = item_type;
     }
   }
+  //  std::cout<<"forward type analysis"<<std::endl;
+  // std::cout<<"type_x (A parts)"<<std::endl;
+  //   for(int i = 0; i < n1; ++i) {
+  //     for(int j = 0; j < n1; ++j) std::cout<< type_x[i + j*n1]<<"\t";
+  //     std::cout<<std::endl;
+  //   }
+  //   std::cout<<"type_x (B parts)"<<std::endl;
+  //   for(int i = 0; i < n1; ++i) {
+  //     for(int j = 0; j < n2; ++j) std::cout<< type_x[n1sq + i + j*n1]<<"\t";
+  //     std::cout<<std::endl;
+  //   }
+  //   std::cout<<"type_y"<<std::endl;
+  //   for(int i = 0; i < n1; ++i) {
+  //     for(int j = 0; j < n2; ++j) std::cout<< type_y[i + j*n1]<<"\t";
+  //     std::cout<<std::endl;
+  //   }
 
   return true;
 }
@@ -209,6 +225,22 @@ bool atomic_backsolve_class::rev_depend(
       depend_x[i + j * n1] = false;
     }    
   }
+  // std::cout<<"reverse depend analysis"<<std::endl;
+  //   std::cout<<"y_depend"<<std::endl;
+  //   for(int i = 0; i < n1; ++i) {
+  //     for(int j = 0; j < n2; ++j) std::cout<< depend_y[i + j*n1]<<"\t";
+  //     std::cout<<std::endl;
+  //   }
+  //   std::cout<<"x_depend (A parts)"<<std::endl;
+  //   for(int i = 0; i < n1; ++i) {
+  //     for(int j = 0; j < n1; ++j) std::cout<< depend_x[i + j*n1]<<"\t";
+  //     std::cout<<std::endl;
+  //   }
+  //   std::cout<<"x_depend (B parts)"<<std::endl;
+  //   for(int i = 0; i < n1; ++i) {
+  //     for(int j = 0; j < n2; ++j) std::cout<< depend_x[n1sq + i * j*n1]<<"\t";
+  //     std::cout<<std::endl;
+  //   }
   return true;
 }
 
@@ -248,7 +280,14 @@ bool atomic_backsolve_class::forward(
     EigenConstMap dA_map(&taylor_x[1], n1, n1, EigStrDyn(nrow*n1, nrow) );
     EigenConstMap dB_map(&taylor_x[1 + n1sq*nrow], n1, n2, EigStrDyn(nrow*n1, nrow ) );
     EigenMap dY_map(&taylor_y[1], n1, n2, EigStrDyn(nrow*n1, nrow ) );
-    dY_map = Amap.template triangularView<Eigen::Upper>().solve(dB_map - dA_map * Ymap).eval();// This .eval() is necessary and I don't understand why.  Normally that would be for aliasing, but there should be no over-lapping points here.  There are inter-woven maps, and that's weird but should work.
+    dY_map = Amap.template triangularView<Eigen::Upper>().solve(dB_map - dA_map.template triangularView<Eigen::Upper>() * Ymap).eval();// This .eval() is necessary and I don't understand why.  Normally that would be for aliasing, but there should be no over-lapping points here.  There are inter-woven maps, and that's weird but should work.
+
+    // std::cout<<"dY"<<std::endl;
+    // for(int i = 0; i < n1; ++i) {
+    //   for(int j = 0; j < n1; ++j) std::cout<< dY_map(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+
   }
   return true;
 }
@@ -290,7 +329,7 @@ bool atomic_backsolve_class::forward(
     metaEigenConstMap dB_map(&taylor_x[1 + n1sq*nrow], n1, n2, EigStrDyn(nrow*n1, nrow ) );
     metaEigenMap dY_map(&taylor_y[1], n1, n2, EigStrDyn(nrow*n1, nrow ) );
 
-    dY_map = nimDerivs_EIGEN_BS(Amap, dB_map - nimDerivs_matmult(dA_map, Ymap));
+    dY_map = nimDerivs_EIGEN_BS(Amap, dB_map - nimDerivs_matmult(dA_map.template triangularView<Eigen::Upper>(), Ymap));
     //    dY_map = Amap.template triangularView<Eigen::Upper>().solve(dB_map - dA_map * Ymap).eval();// This .eval() is necessary and I don't understand why.  Normally that would be for aliasing, but there should be no over-lapping points here.  There are inter-woven maps, and that's weird but should work.
   }
   return true;
@@ -307,6 +346,7 @@ bool atomic_backsolve_class::reverse(
 {
   //reverse mode
   int nrow = order_up + 1;
+  //  std::cout<<"entering reverse----------------------------------"<<std::endl;
   //std::cout<<"nrow = "<<nrow<<std::endl;
   int n = taylor_x.size()/nrow;
   int m = taylor_y.size() / nrow;
@@ -327,8 +367,32 @@ bool atomic_backsolve_class::reverse(
     if(order_up == 0) { // otherwise this gets included below
       Aadjoint_map = (-Badjoint_map * Ymap.transpose()).template triangularView<Eigen::Upper>();
     }
+    // std::cout<<"Y"<<std::endl;
+    // for(int i = 0; i < n1; ++i) {
+    //   for(int j = 0; j < n2; ++j) std::cout<< Ymap(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+
+    // std::cout<<"Yadjoint"<<std::endl;
+    // for(int i = 0; i < n1; ++i) {
+    //   for(int j = 0; j < n2; ++j) std::cout<< Yadjoint_map(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+    // std::cout<<"Aadjoint"<<std::endl;
+    // for(int i = 0; i < n1; ++i) {
+    //   for(int j = 0; j < n1; ++j) std::cout<< Aadjoint_map(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+
+    // std::cout<<"Badjoint"<<std::endl;
+    // for(int i = 0; i < n1; ++i) {
+    //   for(int j = 0; j < n2; ++j) std::cout<< Badjoint_map(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+
   }
   if(order_up >= 1) {
+    //    std::cout<<"------ starting 2nd order----"<<std::endl;
     EigenConstMap Adot_map(&taylor_x[1], n1, n1, EigStrDyn(nrow*n1, nrow) );
     EigenConstMap Ydot_adjoint_map(&partial_y[1], n1, n2, EigStrDyn(nrow*n1, nrow ) );
     EigenConstMap Ydot_map(&taylor_y[1], n1, n2, EigStrDyn(nrow*n1, nrow ) );
@@ -336,17 +400,75 @@ bool atomic_backsolve_class::reverse(
     EigenMap Bdot_adjoint_map(&partial_x[1 + n1sq*nrow], n1, n2, EigStrDyn(nrow*n1, nrow ) );
     
 
+    // std::cout<<"Adot"<<std::endl;
+    // for(int i = 0; i < n1; ++i) {
+    //   for(int j = 0; j < n1; ++j) std::cout<< Adot_map(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+
+    // std::cout<<"Ydot_adjoint"<<std::endl;
+    // for(int i = 0; i < n1; ++i) {
+    //   for(int j = 0; j < n2; ++j) std::cout<< Ydot_adjoint_map(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+
+    // std::cout<<"Ydot"<<std::endl;
+    // for(int i = 0; i < n1; ++i) {
+    //   for(int j = 0; j < n2; ++j) std::cout<< Ydot_map(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+    
+    // std::cout<<"Adot_adjoint"<<std::endl;
+    // for(int i = 0; i < n1; ++i) {
+    //   for(int j = 0; j < n1; ++j) std::cout<< Adot_adjoint_map(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+
+    // std::cout<<"Bdot_adjoint"<<std::endl;
+    // for(int i = 0; i < n1; ++i) {
+    //   for(int j = 0; j < n2; ++j) std::cout<< Bdot_adjoint_map(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+
+    Eigen::MatrixXd Adot_stuff = Adot_map.transpose().template triangularView<Eigen::Lower>(); // doesn't work inside solve
+
     /* Note: A^-1 Z A^-1 = solve(A, solve(A^T, Z^T)^T) */
       
-    /* Badjoint = A^-T * Yadjoint - (A^-1 Adot A^-1)^T  Ydot_adjoint */      
-    Badjoint_map -= Amap.template triangularView<Eigen::Upper>().solve( Amap.transpose().template triangularView<Eigen::Lower>().solve(Adot_map.transpose()).transpose() ).transpose() * Ydot_adjoint_map;
+    /* Badjoint = A^-T * Yadjoint - (A^-1 Adot A^-1)^T  Ydot_adjoint */
+    Badjoint_map -= Amap.template triangularView<Eigen::Upper>().solve( Amap.transpose().template triangularView<Eigen::Lower>().solve(Adot_stuff).transpose() ).transpose() * Ydot_adjoint_map;
+    // std::cout<<"Badjoint"<<std::endl;
+    // for(int i = 0; i < n1; ++i) {
+    //   for(int j = 0; j < n2; ++j) std::cout<< Badjoint_map(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
     /* Bdot_adjoint = A^-T Ydot_adjoint */
     Bdot_adjoint_map = Amap.transpose().template triangularView<Eigen::Lower>().solve(Ydot_adjoint_map).eval(); // This eval is necessary.  I am not clear when evals are necessary after solves or not.  
+    // std::cout<<"Bdot_adjoint"<<std::endl;
+    // for(int i = 0; i < n1; ++i) {
+    //   for(int j = 0; j < n2; ++j) std::cout<< Bdot_adjoint_map(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
     /* Aadjoint = -Badjoint * Y^T  - (A^-T Ydot_adjoint Ydot^T)= -Badjoint * Y^T  - ( Bdot_adjoint Ydot^T) , including both Badjoint terms*/
     Aadjoint_map = (-Badjoint_map * Ymap.transpose()).template triangularView<Eigen::Upper>();
+    // std::cout<<"Aadjoint"<<std::endl;
+    // for(int i = 0; i < n1; ++i) {
+    //   for(int j = 0; j < n1; ++j) std::cout<< Aadjoint_map(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
     Aadjoint_map -= (Bdot_adjoint_map * Ydot_map.transpose()).template triangularView<Eigen::Upper>();  
+    // std::cout<<"Aadjoint"<<std::endl;
+    // for(int i = 0; i < n1; ++i) {
+    //   for(int j = 0; j < n1; ++j) std::cout<< Aadjoint_map(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
     /* Adot_adjoint = -Bdot_adjoint Y^T */
     Adot_adjoint_map = (-Bdot_adjoint_map * Ymap.transpose()).template triangularView<Eigen::Upper>();
+    // std::cout<<"Adot_adjoint"<<std::endl;
+    // for(int i = 0; i < n1; ++i) {
+    //   for(int j = 0; j < n1; ++j) std::cout<< Adot_adjoint_map(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+
   }
   if(order_up >= 2) {
     printf("Unsupported reverse order requested\n");
@@ -399,9 +521,12 @@ bool atomic_backsolve_class::reverse(
       
     /* Badjoint = A^-T * Yadjoint - (A^-1 Adot A^-1)^T  Ydot_adjoint */      
 
+    MatrixXd_CppAD Adot_stuff = Adot_map.transpose().template triangularView<Eigen::Lower>(); // doesn't work inside solve
+
+    
     Badjoint_map -= nimDerivs_matmult( nimDerivs_EIGEN_BS( Amap,
-							    nimDerivs_EIGEN_FS(Amap.transpose(), Adot_map.transpose()).transpose() ).transpose() ,
-				      Ydot_adjoint_map);
+							    nimDerivs_EIGEN_FS(Amap.transpose(), Adot_stuff).transpose() ).transpose() ,
+				       Ydot_adjoint_map);
 
     //    Badjoint_map -= Amap.template triangularView<Eigen::Upper>().solve( Amap.transpose().template triangularView<Eigen::Lower>().solve(Adot_map.transpose()).transpose() ).transpose() * Ydot_adjoint_map;
     /* Bdot_adjoint = A^-T Ydot_adjoint */
