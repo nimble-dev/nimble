@@ -364,8 +364,10 @@ test_that("Test that user-defined distributions without 'r' function doesn't cau
     code <- nimbleCode({
         v ~ dfoo()
     })
+    ## Can't use expect_message as message doesn't appear when run Travis for some reason.
     m <- nimbleModel(code)
     cm <- compileNimble(m)
+    expect_output(print(m), "Rmodel object")
 
     ## non-scalar density
     dfoo2 = nimbleFunction(
