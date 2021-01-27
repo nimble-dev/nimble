@@ -220,7 +220,7 @@ test_that("dinvgamma-dinvgamma conjugacy with dependency using rate", {
                     inits = list(theta = theta, a = a, c = c, alpha = alpha, beta = beta))
     conf <- configureMCMC(m)
     samplers <- conf$getSamplers()
-    expect_identical(samplers[[1]]$name, 'conjugate_dinvgamma_dinvgamma',
+    expect_identical(samplers[[1]]$name, 'conjugate_dinvgamma_dinvgamma_multiplicative',
                      info = "conjugacy not detected")
 
     mcmc <- buildMCMC(conf)
@@ -256,7 +256,7 @@ test_that("dgamma-dinvgamma conjugacy with dependency using rate", {
                     inits = list(theta = theta, a = a, c = c, alpha = alpha, beta = beta))
     conf <- configureMCMC(m)
     samplers <- conf$getSamplers()
-    expect_identical(samplers[[1]]$name, 'conjugate_dgamma_dinvgamma',
+    expect_identical(samplers[[1]]$name, 'conjugate_dgamma_dinvgamma_multiplicative',
                      info = "conjugacy not detected")
 
     mcmc <- buildMCMC(conf)
@@ -404,7 +404,7 @@ test_that("dinvwish-dmnorm conjugacy", {
     m = nimbleModel(code, data = data, inits = list(nu = nu, Omega = trueCov, mu = mu, S = S),
                     constants = constants)
     conf <- configureMCMC(m)
-    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dinvwish_dmnorm',
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dinvwish_dmnorm_identity',
                      info = "conjugacy not detected")
 })
 
@@ -449,7 +449,7 @@ test_that("dflat and dhalfflat usage", {
     csmp <- c(as.matrix(cmcmc$mvSamples)[,'mu'])
     
     
-    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dflat_dnorm', info = "did not detect conjugacy")
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dflat_dnorm_identity', info = "did not detect conjugacy")
     expect_identical(rsmp, csmp[1:10], "R and compiled samples don't match")
     expect_equal(mean(csmp), mean(m$y), tol = 0.001, info = "posterior mean for mu not correct")
     expect_equal(sd(csmp), 1/sqrt(n), tol = 0.002, info = "posterior sd for mu not correct")
@@ -466,7 +466,7 @@ test_that("dflat and dhalfflat usage", {
     rsmp <- c(as.matrix(mcmc$mvSamples)[,'sigma'])
     csmp <- c(as.matrix(cmcmc$mvSamples)[,'sigma'])
     
-    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dhalfflat_dnorm', info = "did not detect conjugacy")
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dhalfflat_dnorm_identity', info = "did not detect conjugacy")
     expect_identical(rsmp, csmp[1:10], info = "R and compiled samples don't match")
     expect_equal(mean(csmp^2), var(m$y), tol = 0.03, info = "posterior mean for sigma not correct")
     
