@@ -2,7 +2,7 @@
 #include <nimble/nimDerivs_atomic_backsolve.h>
 
 /* 
-forward solve relations a like backsolve relations, with forward and back swapped where needed.
+forward solve relations are like backsolve relations, with forward and back swapped where needed.
 */
 
 atomic_forwardsolve_class::atomic_forwardsolve_class(const std::string& name) : CppAD::atomic_three<double>(name) {};
