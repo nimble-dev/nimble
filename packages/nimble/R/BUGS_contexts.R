@@ -70,7 +70,7 @@ genIndexVarValues_recurse <- function(singleContexts, constantsEnvCopy) {
     if(length(singleContexts) == 0)   return(list(list()))
     
     indexExpr <- singleContexts[[1]]$indexVarExpr
-    indexName <- as.character(indexExpr)
+    indexName <- format(indexExpr, scientific = FALSE)
     rangeExpr <- singleContexts[[1]]$indexRangeExpr
     
     ## this changes the behaviour foe expnding looping ranges (L:U),

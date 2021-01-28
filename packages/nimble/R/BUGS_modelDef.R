@@ -129,6 +129,9 @@ modelDefClass <- setRefClass('modelDefClass',
 ##     further, nameMashupFromExpr(expr) in nimbleBUGS_utils.R throws an error if expr contains a ':'
 ##
 modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, data, userEnv, debug = FALSE) {
+    scipen <- options("scipen")[[1]]
+    options(scipen = 1000000)
+    on.exit(options(scipen = scipen))
     if(debug) browser()
     code <- codeProcessIfThenElse(code, constants, userEnv) ## evaluate definition-time if-then-else
     if(nimbleOptions("enableModelMacros")) code <- codeProcessModelMacros(code)
@@ -1538,7 +1541,7 @@ makeVertexNamesFromIndexArray2 <- function(indArr, minInd = 1, varName) {
         scal <- all[3,]==0           ## which rows are for scalar elements
         seps[scal] <- ''             ## set the sep for scalars to ''
         seps[all[4,]==0] <- '%.s%'    ## for rows that are not contiguous, use i %.s% j. Any actual call to %.s% results in an error.
-        maxStrs <- as.character(all[2,]) ## maximums
+        maxStrs <- format(all[2,], scientific = FALSE) ## maximums
         maxStrs[scal] <- ''              ## clear maximums for scalars 
         paste0(all[1,], seps, maxStrs)   ## paste minimum-separator-maximum
     })
@@ -3084,17 +3087,17 @@ parseEvalNumericManyList <- function(x, env, ignoreNotFound = FALSE) {
     }
 }
 
-parseEvalCharacter <- function(x, env){
-    ans <- eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)
-    as.character(ans)
-}
+## parseEvalCharacter <- function(x, env){
+##     ans <- eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)
+##     as.character(ans)
+## }
 
-parseEvalCharacterMany <- function(x, env){
-    if(length(x) > 1) {
-        return(as.character(eval(parse(text = paste0('c(', paste0(x, collapse=','),')'), keep.source = FALSE)[[1]], envir = env)))
-    } else 
-        as.character(eval(parse(text = x, keep.source = FALSE)[[1]], envir = env))
-}
+## parseEvalCharacterMany <- function(x, env){
+##     if(length(x) > 1) {
+##         return(as.character(eval(parse(text = paste0('c(', paste0(x, collapse=','),')'), keep.source = FALSE)[[1]], envir = env)))
+##     } else 
+##         as.character(eval(parse(text = x, keep.source = FALSE)[[1]], envir = env))
+## }
 
 getDependencyPaths <- function(nodeID, maps, nodeIDrow = NULL) {
     newNodes <- maps$edgesFrom2To[[nodeID]]

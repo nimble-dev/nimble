@@ -1,0 +1,62 @@
+checking whether the C++ compiler works... yes
+checking for C++ compiler default output file name... a.out
+checking for suffix of executables... 
+checking whether we are cross compiling... no
+checking for suffix of object files... o
+checking whether we are using the GNU C++ compiler... yes
+checking whether clang++ -mmacosx-version-min=10.13 -std=gnu++11 accepts -g... yes
+working on eigen
+checking how to run the C++ preprocessor... clang++ -mmacosx-version-min=10.13 -std=gnu++11 -E
+checking for grep that handles long lines and -e... /usr/bin/grep
+checking for egrep... /usr/bin/grep -E
+checking for ANSI C header files... yes
+checking for sys/types.h... yes
+checking for sys/stat.h... yes
+checking for stdlib.h... yes
+checking for string.h... yes
+checking for memory.h... yes
+checking for strings.h... yes
+checking for inttypes.h... yes
+checking for stdint.h... yes
+checking for unistd.h... yes
+checking Eigen/Dense usability... no
+checking Eigen/Dense presence... no
+checking for Eigen/Dense... no
+Using the version of Eigen provided with NIMBLE
+ENABLE_LIB=false
+configure: creating ./config.status
+config.status: creating inst/make/Makevars
+config.status: creating inst/make/Makevars_lib
+config.status: creating R/config.R
+config.status: creating src/Makevars
+removing debugging flags
+/Library/Frameworks/R.framework/Resources/bin/Rscript --vanilla ./customizeMakeconf.R
+Building libnimble.a
+clang++ -mmacosx-version-min=10.13 -std=gnu++11 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -DR_NO_REMAP -I"../include"  -I/usr/local/include   -fPIC  -Wall  -O2  -c RcppUtils.cpp -o RcppUtils.o
+clang++ -mmacosx-version-min=10.13 -std=gnu++11 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -DR_NO_REMAP -I"../include"  -I/usr/local/include   -fPIC  -Wall  -O2  -c EigenTypedefs.cpp -o EigenTypedefs.o
+clang++ -mmacosx-version-min=10.13 -std=gnu++11 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -DR_NO_REMAP -I"../include"  -I/usr/local/include   -fPIC  -Wall  -O2  -c eigenUsingClasses.cpp -o eigenUsingClasses.o
+clang++ -mmacosx-version-min=10.13 -std=gnu++11 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -DR_NO_REMAP -I"../include"  -I/usr/local/include   -fPIC  -Wall  -O2  -c RcppNimbleUtils.cpp -o RcppNimbleUtils.o
+clang++ -mmacosx-version-min=10.13 -std=gnu++11 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -DR_NO_REMAP -I"../include"  -I/usr/local/include   -fPIC  -Wall  -O2  -c Utils.cpp -o Utils.o
+clang++ -mmacosx-version-min=10.13 -std=gnu++11 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -DR_NO_REMAP -I"../include"  -I/usr/local/include   -fPIC  -Wall  -O2  -c NamedObjects.cpp -o NamedObjects.o
+clang++ -mmacosx-version-min=10.13 -std=gnu++11 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -DR_NO_REMAP -I"../include"  -I/usr/local/include   -fPIC  -Wall  -O2  -c ModelClassUtils.cpp -o ModelClassUtils.o
+clang++ -mmacosx-version-min=10.13 -std=gnu++11 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -DR_NO_REMAP -I"../include"  -I/usr/local/include   -fPIC  -Wall  -O2  -c accessorClasses.cpp -o accessorClasses.o
+clang++ -mmacosx-version-min=10.13 -std=gnu++11 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -DR_NO_REMAP -I"../include"  -I/usr/local/include   -fPIC  -Wall  -O2  -c dists.cpp -o dists.o
+clang++ -mmacosx-version-min=10.13 -std=gnu++11 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -DR_NO_REMAP -I"../include"  -I/usr/local/include   -fPIC  -Wall  -O2  -c nimDists.cpp -o nimDists.o
+clang++ -mmacosx-version-min=10.13 -std=gnu++11 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -DR_NO_REMAP -I"../include"  -I/usr/local/include   -fPIC  -Wall  -O2  -c dllFinalizer.cpp -o dllFinalizer.o
+clang++ -mmacosx-version-min=10.13 -std=gnu++11 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -DR_NO_REMAP -I"../include"  -I/usr/local/include   -fPIC  -Wall  -O2  -c nimbleGraph.cpp -o nimbleGraph.o
+clang++ -mmacosx-version-min=10.13 -std=gnu++11 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -DR_NO_REMAP -I"../include"  -I/usr/local/include   -fPIC  -Wall  -O2  -c smartPtrs.cpp -o smartPtrs.o
+clang++ -mmacosx-version-min=10.13 -std=gnu++11 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -DR_NO_REMAP -I"../include"  -I/usr/local/include   -fPIC  -Wall  -O2  -c predefinedNimbleLists.cpp -o predefinedNimbleLists.o
+clang++ -mmacosx-version-min=10.13 -std=gnu++11 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -DR_NO_REMAP -I"../include"  -I/usr/local/include   -fPIC  -Wall  -O2  -c nimOptim.cpp -o nimOptim.o
+echo "Making nimble libnimble.a"
+Making nimble libnimble.a
+echo "RcppUtils.o EigenTypedefs.o eigenUsingClasses.o RcppNimbleUtils.o Utils.o NamedObjects.o ModelClassUtils.o accessorClasses.o dists.o nimDists.o dllFinalizer.o nimbleGraph.o smartPtrs.o predefinedNimbleLists.o nimOptim.o"
+RcppUtils.o EigenTypedefs.o eigenUsingClasses.o RcppNimbleUtils.o Utils.o NamedObjects.o ModelClassUtils.o accessorClasses.o dists.o nimDists.o dllFinalizer.o nimbleGraph.o smartPtrs.o predefinedNimbleLists.o nimOptim.o
+ar rcs libnimble.a RcppUtils.o EigenTypedefs.o eigenUsingClasses.o RcppNimbleUtils.o Utils.o NamedObjects.o ModelClassUtils.o accessorClasses.o dists.o nimDists.o dllFinalizer.o nimbleGraph.o smartPtrs.o predefinedNimbleLists.o nimOptim.o
+rm RcppUtils.o EigenTypedefs.o eigenUsingClasses.o RcppNimbleUtils.o Utils.o NamedObjects.o ModelClassUtils.o accessorClasses.o dists.o nimDists.o dllFinalizer.o nimbleGraph.o smartPtrs.o predefinedNimbleLists.o nimOptim.o
+rm -f Makeconf
+clang++ -mmacosx-version-min=10.13 -std=gnu++11 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -DR_NO_REMAP -I../inst/include    -I/usr/local/include   -fPIC  -Wall -g -O2  -c RcppUtils.cpp -o RcppUtils.o
+clang++ -mmacosx-version-min=10.13 -std=gnu++11 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -DR_NO_REMAP -I../inst/include    -I/usr/local/include   -fPIC  -Wall -g -O2  -c dists.cpp -o dists.o
+clang++ -mmacosx-version-min=10.13 -std=gnu++11 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -DR_NO_REMAP -I../inst/include    -I/usr/local/include   -fPIC  -Wall -g -O2  -c eigenUsingClasses.cpp -o eigenUsingClasses.o
+clang++ -mmacosx-version-min=10.13 -std=gnu++11 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -DR_NO_REMAP -I../inst/include    -I/usr/local/include   -fPIC  -Wall -g -O2  -c nimble.cpp -o nimble.o
+clang++ -mmacosx-version-min=10.13 -std=gnu++11 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -DR_NO_REMAP -I../inst/include    -I/usr/local/include   -fPIC  -Wall -g -O2  -c nimbleGraph.cpp -o nimbleGraph.o
+clang++ -mmacosx-version-min=10.13 -std=gnu++11 -dynamiclib -Wl,-headerpad_max_install_names -undefined dynamic_lookup -single_module -multiply_defined suppress -L/Library/Frameworks/R.framework/Resources/lib -L/usr/local/lib -o nimble.so RcppUtils.o dists.o eigenUsingClasses.o nimble.o nimbleGraph.o -L/Library/Frameworks/R.framework/Resources/lib -lRlapack -L/Library/Frameworks/R.framework/Resources/lib -lRblas -F/Library/Frameworks/R.framework/.. -framework R -Wl,-framework -Wl,CoreFoundation

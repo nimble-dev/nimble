@@ -11,6 +11,9 @@ nl_expandNodeNames <- function(nodeNames, symtab, env) {
 
 ## Expands variables into their fully indexed form, e.g., 'y' is expanded to 'y[1:10]', using information in the symbolTable
 nl_addIndicesToVariables <- function(nodeNames, symtab) {
+    scipen <- options("scipen")[[1]]
+    options(scipen = 1000000)
+    on.exit(options(scipen = scipen))
     for(i in seq_along(nodeNames)) {
         nodeName <- nodeNames[i]
         varName <- nl_getVarNameFromNodeName(nodeName)
@@ -28,9 +31,12 @@ nl_addIndicesToVariables <- function(nodeNames, symtab) {
 
 ## This is the same as nl_ExpandNodeIndex, except it takes a nodeExpr instead of a node char string
 nl_expandNodeIndexExpr <- function(nodeExpr, env = parent.frame()) {
+    scipen <- options("scipen")[[1]]
+    options(scipen = 1000000)
+    on.exit(options(scipen = scipen))
     if(length(nodeExpr)==1)  if(is.name(nodeExpr)) return(as.character(nodeExpr)) else stop('node expression with only one element, but not a variable name')
     indexExprs <- nodeExpr[-c(1,2)]
-    indexStrs <- lapply(indexExprs, function(ind) as.character(eval(ind, envir=env)))
+    indexStrs <- lapply(indexExprs, function(ind) format(eval(ind, envir=env), scientific = FALSE))
     numInd <- length(indexStrs)
     indexStrsCombined <- indexStrs[[numInd]]
     if(numInd > 1) for(i in seq(numInd-1, 1, by = -1)) {
@@ -47,10 +53,13 @@ nl_vectorizedExpandNodeIndexExprs <- function(nodeExprs, env = parent.frame()) {
 
 ## Expands the indexing of a single node name string, e.g., 'x[1:3]' is expanded to c('x[1]', 'x[2]', 'x[3]')
 nl_expandNodeIndex <- function(node, env = parent.frame()) {
+    scipen <- options("scipen")[[1]]
+    options(scipen = 1000000)
+    on.exit(options(scipen = scipen))
     nodeExpr <- parse(text=node, keep.source = FALSE)[[1]]
     if(length(nodeExpr)==1)  if(is.name(nodeExpr)) return(as.character(nodeExpr)) else stop('node expression with only one element, but not a variable name')
     indexExprs <- nodeExpr[-c(1,2)]
-    indexStrs <- lapply(indexExprs, function(ind) as.character(eval(ind, envir=env)))
+    indexStrs <- lapply(indexExprs, function(ind) format(eval(ind, envir=env), scientific = FALSE))
     numInd <- length(indexStrs)
     indexStrsCombined <- indexStrs[[numInd]]
     if(numInd > 1) for(i in seq(numInd-1, 1, by = -1)) {
@@ -154,6 +163,9 @@ nl_getVarNameFromNodeName <- function(nodeName)    gsub('\\[.*', '', nodeName)
 #}
 
 expandMVNames <- function(mv, varNames){
+        scipen <- options("scipen")[[1]]
+        options(scipen = 1000000)
+        on.exit(options(scipen = scipen))
 	sizeList = mv$sizes
 #	varNames = names(sizeList)
 	nodeNames = NA

@@ -358,7 +358,7 @@ makeIndexNamePieces <- function(indexCode) {
                 if(is.numeric(indexCode))
                     indexCode
                 else
-                    as.character(indexCode))
+                    format(indexCode, scientific = FALSE))
         ## It is easiest to have indexNamePieces be NA when
         ## dynamically indexed rather than retaining the indexing
         ## code.
@@ -371,7 +371,7 @@ makeIndexNamePieces <- function(indexCode) {
                 if(is.numeric(indexCode))
                     indexCode
                 else
-                    as.character(indexCode))
+                    format(indexCode, scientific = FALSE))
     ## Diagnostic for messed up indexing here
     if(as.character(indexCode[[1]] != ':'))
         stop(paste0("Error processing model: something is wrong with the index ",
@@ -384,11 +384,11 @@ makeIndexNamePieces <- function(indexCode) {
         if(is.numeric(p1))
             p1
         else
-            as.character(p1),
+            format(p1, scientific = FALSE),
         if(is.numeric(p2))
             p2
         else
-            as.character(p2))
+            format(p2, scientific = FALSE))
     ## e.g. makeIndexNamePieces(quote(i))
     ##      makeIndexNamePieces(quote(i:100))
 }
@@ -889,7 +889,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                     stop("R function '", funName,"' does not exist.")
                 unreplaceable <-
                     sapply(contents[!contentsReplaceable],
-                           function(x) as.character(x$code)
+                           function(x) format(x$code, scientific = FALSE)
                            )
                 stop("R function '",
                      funName,
