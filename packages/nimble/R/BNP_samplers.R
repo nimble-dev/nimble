@@ -2080,7 +2080,7 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo, n, gammaDist = '
                sum(sapply(conjugacy_dnorm, '[[', 'type') == 'conjugate_dnorm') == length(exampleNodes1) &&
                sum(sapply(conjugacy_dinvgamma, '[[', 'type') == paste0('conjugate_', gammaDist)) == length(exampleNodes2) &&
                all(sapply(seq_along(conjugacy_dinvgamma), function(idx)
-                   sum(conjugacy_dinvgamma[[idx]]$control$dep_dnorm == exampleNodes1[idx]) == 1)))
+                   sum(conjugacy_dinvgamma[[idx]]$control$dep_dnorm_multiplicative == exampleNodes1[idx]) == 1)))
                 conjugate <- TRUE
         }
         if(conjugate) {
@@ -2174,7 +2174,7 @@ checkNormalInvWishartConjugacy <- function(model, clusterVarInfo, n, wishartDist
                sum(sapply(conjugacy_dmnorm, '[[', 'type') == 'conjugate_dmnorm') == length(exampleNodes1) &&
                sum(sapply(conjugacy_dinvwish, '[[', 'type') == paste0('conjugate_', wishartDist)) == length(exampleNodes2) &&
                all(sapply(seq_along(conjugacy_dinvwish), function(idx)
-                   sum(conjugacy_dinvwish[[idx]]$control$dep_dmnorm == exampleNodes1[idx]) == 1)))
+                   sum(conjugacy_dinvwish[[idx]]$control$dep_dmnorm_multiplicativeScalar == exampleNodes1[idx]) == 1)))
                 conjugate <- TRUE
         }
         if(conjugate) {  

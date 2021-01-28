@@ -436,7 +436,7 @@ test_that('Weibull-gamma conjugacy setup', {
                      constants = list(depShape = depShape, shape = shape, rate = rate))
     conf <- configureMCMC(m)
     samplers <- conf$getSamplers()
-    expect_identical(samplers[[1]]$name, 'conjugate_dgamma_dweib',
+    expect_identical(samplers[[1]]$name, 'conjugate_dgamma_dweib_multiplicative',
                                    info = "dweibull-dgamma conjugacy with dependency using lambda not detected")
     mcmc <- buildMCMC(conf)
     comp <- compileNimble(m, mcmc)
@@ -855,7 +855,8 @@ test_that('conjugate Wishart setup with scaling', {
 
     m <- nimbleModel(code, data = data[1],constants=data[2:5],inits = list(Omega = OmegaTrueMean, tau = tau))
     conf <- configureMCMC(m)
-    expect_equal(conf$getSamplers()[[1]]$name, "conjugate_dwish_dmnorm", info = "conjugate dmnorm-dwish with scaling not detected")
+    expect_equal(conf$getSamplers()[[1]]$name, "conjugate_dwish_dmnorm_multiplicativeScalar",
+                 info = "conjugate dmnorm-dwish with scaling not detected")
     
     test_mcmc(model = code, name = 'conjugate Wishart, scaled', data = data, seed = 0, numItsC = 1000, inits = list(Omega = OmegaTrueMean, tau = tau),
               results = list(mean = list(Omega = OmegaTrueMean ),
@@ -1429,7 +1430,7 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     inits <- list(b0 = 1, beta = rnorm(constants$p))
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
-    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm_linear',
                                    info = "conjugacy with inprod not detected")
 
     code <- nimbleCode({
@@ -1444,7 +1445,7 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
                  X = matrix(rnorm(constants$n * constants$p), constants$n))
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
-    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm_linear',
                                    info = "conjugacy with inprod not detected")
 
 
@@ -1463,7 +1464,7 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     })
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
-    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm_linear',
                                    info = "conjugacy with sum not detected")
 
 
@@ -1534,7 +1535,7 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     })
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
-    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm_linear',
                                    info = "conjugacy with matrix multiplication not detected")
     mcmc <- buildMCMC(conf)
     cm <- compileNimble(m)
@@ -1567,7 +1568,7 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     inits <- list(b0 = 1, beta = rnorm(constants$p))
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
-    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm_linear',
                                    info = "conjugacy with inprod not detected")
    
     code <- nimbleCode({
@@ -1586,7 +1587,7 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     inits <- list(b0 = 1, beta = rnorm(constants$p))
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
-    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm_linear',
                                    info = "conjugacy with inprod not detected")
 
     code <- nimbleCode({
@@ -1603,7 +1604,7 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     inits <- list(b0 = 1, beta = rnorm(constants$p))
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
-    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm_linear',
                      info = "conjugacy with inprod not detected")
 
    code <- nimbleCode({
@@ -1719,16 +1720,16 @@ test_that('cc_checkScalar operates correctly', {
 })
 
 test_that('cc_stripExpr operates correctly', {
-    expr <- 'coeff * (log(value)-offset) * taulog'
-    expect_identical(cc_stripExpr(parse(text = 'coeff^2 * tau')[[1]], TRUE, TRUE),
-                 'tau')
-    expect_identical(cc_stripExpr(parse(text = expr)[[1]], TRUE, TRUE),
+    expr <- 'coeff * (log(value) - offset) * taulog'
+    expect_identical(deparse(cc_stripExpr(parse(text = 'coeff^2 * tau')[[1]], TRUE, TRUE)),
+                 '1 * tau')
+    expect_identical(deparse(cc_stripExpr(parse(text = expr)[[1]], TRUE, TRUE)),
                  '(log(value)) * taulog')
-    expect_identical(cc_stripExpr(parse(text = expr)[[1]], TRUE, FALSE),
+    expect_identical(deparse(cc_stripExpr(parse(text = expr)[[1]], TRUE, FALSE)),
                  'coeff * (log(value)) * taulog')
-    expect_identical(cc_stripExpr(parse(text = expr)[[1]], FALSE, TRUE),
-                 '(log(value)-offset) * taulog')
-    expect_identical(cc_stripExpr(parse(text = expr)[[1]], FALSE, FALSE),
+    expect_identical(deparse(cc_stripExpr(parse(text = expr)[[1]], FALSE, TRUE)),
+                 '(log(value) - offset) * taulog')
+    expect_identical(deparse(cc_stripExpr(parse(text = expr)[[1]], FALSE, FALSE)),
                  expr)
 })
 

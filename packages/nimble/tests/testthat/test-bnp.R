@@ -332,7 +332,6 @@ test_that("Test computations (prior predictive and posterior) and sampler assign
   y[4:5, ] <- rnorm(2*2, -10, 1)
   data <- list(y=y)
   model <- nimbleModel(code, data=data, inits=inits,  dimensions=list(mu=c(5,2)), calculate=TRUE)
-  cmodel<-compileNimble(model)
   mConf <- configureMCMC(model, monitors = c('xi','mu'))  
   mcmc <- buildMCMC(mConf)
   
@@ -395,7 +394,6 @@ test_that("Test computations (prior predictive and posterior) and sampler assign
                       data = list(y = y),
                       inits = list(xi = 1:5, mu=mu), 
                       constants=list(mu0 =mu0, Cov0 = Cov0, Sigma0 = Sigma0))
-  cmodel <- compileNimble(model)
   conf <- configureMCMC(model, monitors=c('xi', 'mu'))
   mcmc <- buildMCMC(conf)
   
@@ -452,7 +450,6 @@ test_that("Test computations (prior predictive and posterior) and sampler assign
   y[4:5, ] <- rnorm(2*2, -10, 1)
   data <- list(y=y)
   model <- nimbleModel(code, data=data, inits=inits,  dimensions=list(mu=c(5,2)), calculate=TRUE)
-  cmodel<-compileNimble(model)
   mConf <- configureMCMC(model, monitors = c('xi','s2'))  
   mcmc <- buildMCMC(mConf)
   
@@ -516,7 +513,6 @@ test_that("Test computations (prior predictive and posterior) and sampler assign
   inits = list(xi = 1:5, mu = mu, Sigma = Sigma)
   Consts <- list(v0 = rpois(2, 5), R0 =  R0)
   model = nimbleModel(code, data=data, inits=inits, constants = Consts)
-  cmodel<-compileNimble(model)
   mConf = configureMCMC(model, monitors = c('xi', 'Sigma'))
   mcmc = buildMCMC(mConf)
   
@@ -590,7 +586,6 @@ test_that("Test computations (prior predictive and posterior) and sampler assign
   inits = list(xi = 1:5, mu = mu, Sigma = Sigma)
   Consts <- list(v0 = rpois(2, 5), R0 =  R0)
   model = nimbleModel(code, data=data, inits=inits, constants = Consts)
-  cmodel<-compileNimble(model)
   mConf = configureMCMC(model, monitors = c('xi', 'Sigma'))
   mcmc = buildMCMC(mConf)
   
@@ -649,7 +644,6 @@ test_that("Test computations (prior predictive and posterior) and sampler assign
   data = list(y = y)
   inits = list(xi = 1:5, mu=matrix(rnorm(5*2), ncol=2, nrow=5), s2=matrix(rinvgamma(5*2, 2, 1), ncol=2, nrow=5))
   model = nimbleModel(code, data=data, inits=inits)
-  cmodel<-compileNimble(model)
   mConf = configureMCMC(model, monitors = c('xi','mu', 's2'))
   mcmc = buildMCMC(mConf)
   
@@ -717,7 +711,6 @@ test_that("Test computations (prior predictive and posterior) and sampler assign
   data = list(y = y)
   inits = list(xi = 1:5, mu=matrix(rnorm(5*2), ncol=2, nrow=5), s2=matrix(rgamma(5*2, 1, 2), ncol=2, nrow=5))
   model = nimbleModel(code, data=data, inits=inits)
-  cmodel<-compileNimble(model)
   mConf = configureMCMC(model, monitors = c('xi','mu', 's2'))
   mcmc = buildMCMC(mConf)
   
@@ -805,7 +798,6 @@ test_that("Test computations (prior predictive and posterior) and sampler assign
                  k0 = rgamma(2, 1, 1),
                  R0 =  R0)
   model = nimbleModel(code, data=data, inits=inits, constants = Consts)
-  cmodel<-compileNimble(model)
   mConf = configureMCMC(model, monitors = c('xi','mu', 'Sigma'))
   mcmc = buildMCMC(mConf)
   
@@ -899,7 +891,6 @@ test_that("Test computations (prior predictive and posterior) and sampler assign
                  k0 = rgamma(2, 1, 1),
                  R0 =  R0)
   model = nimbleModel(code, data=data, inits=inits, constants = Consts)
-  cmodel<-compileNimble(model)
   mConf = configureMCMC(model, monitors = c('xi','mu', 'Sigma'))
   mcmc = buildMCMC(mConf)
   
@@ -970,7 +961,6 @@ test_that("Test computations (prior predictive and posterior) and sampler assign
   y <- matrix(rnorm(5*2, 10, 1), ncol=2, nrow=5)
   data <- list(y=y)
   model <- nimbleModel(code, data=data, inits=inits,  dimensions=list(mu=c(5,2)), calculate=TRUE)
-  cmodel<-compileNimble(model)
   mConf <- configureMCMC(model, monitors = c('xi','s2'))  
   mcmc <- buildMCMC(mConf)
   
