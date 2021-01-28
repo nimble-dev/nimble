@@ -1,32 +1,32 @@
 
 
-## adds explicit indexing to variables (using symtab), then expands indexing present on any variables
-nl_expandNodeNames <- function(nodeNames, symtab, env) {
-    nodeNames <- nl_addIndicesToVariables(nodeNames, symtab)
-    nodeNames <- unlist(lapply(nodeNames, function(node) if(is.indexed(node)) nl_expandNodeIndex(node, env) else node))
-    if(is.null(nodeNames))   return(character(0))
-    return(nodeNames)
-}
+## ## adds explicit indexing to variables (using symtab), then expands indexing present on any variables
+## nl_expandNodeNames <- function(nodeNames, symtab, env) {
+##     nodeNames <- nl_addIndicesToVariables(nodeNames, symtab)
+##     nodeNames <- unlist(lapply(nodeNames, function(node) if(is.indexed(node)) nl_expandNodeIndex(node, env) else node))
+##     if(is.null(nodeNames))   return(character(0))
+##     return(nodeNames)
+## }
 
 
-## Expands variables into their fully indexed form, e.g., 'y' is expanded to 'y[1:10]', using information in the symbolTable
-nl_addIndicesToVariables <- function(nodeNames, symtab) {
-    scipen <- options("scipen")[[1]]
-    options(scipen = 1000000)
-    on.exit(options(scipen = scipen))
-    for(i in seq_along(nodeNames)) {
-        nodeName <- nodeNames[i]
-        varName <- nl_getVarNameFromNodeName(nodeName)
-        if(!(varName %in% symtab$getSymbolNames()))   stop('variable not in symbol table')
-        if(!is.indexed(nodeName) && (symtab$getSymbolField(varName, 'nDim') > 0)) {    ## nodeName has no indexing, and has dimension > 0
-            maxs <- symtab$getSymbolField(varName, 'size')
-            mins <- rep(1, length(maxs))
-            indexStuff <- paste(mins, maxs, sep=':', collapse = ', ')
-            nodeNames[i] <- paste0(varName, '[', indexStuff, ']')
-        }
-    }
-    return(nodeNames)
-}
+## ## Expands variables into their fully indexed form, e.g., 'y' is expanded to 'y[1:10]', using information in the symbolTable
+## nl_addIndicesToVariables <- function(nodeNames, symtab) {
+##     scipen <- options("scipen")[[1]]
+##     options(scipen = 1000000)
+##     on.exit(options(scipen = scipen))
+##     for(i in seq_along(nodeNames)) {
+##         nodeName <- nodeNames[i]
+##         varName <- nl_getVarNameFromNodeName(nodeName)
+##         if(!(varName %in% symtab$getSymbolNames()))   stop('variable not in symbol table')
+##         if(!is.indexed(nodeName) && (symtab$getSymbolField(varName, 'nDim') > 0)) {    ## nodeName has no indexing, and has dimension > 0
+##             maxs <- symtab$getSymbolField(varName, 'size')
+##             mins <- rep(1, length(maxs))
+##             indexStuff <- paste(mins, maxs, sep=':', collapse = ', ')
+##             nodeNames[i] <- paste0(varName, '[', indexStuff, ']')
+##         }
+##     }
+##     return(nodeNames)
+## }
 
 
 ## This is the same as nl_ExpandNodeIndex, except it takes a nodeExpr instead of a node char string
@@ -36,7 +36,7 @@ nl_expandNodeIndexExpr <- function(nodeExpr, env = parent.frame()) {
     on.exit(options(scipen = scipen))
     if(length(nodeExpr)==1)  if(is.name(nodeExpr)) return(as.character(nodeExpr)) else stop('node expression with only one element, but not a variable name')
     indexExprs <- nodeExpr[-c(1,2)]
-    indexStrs <- lapply(indexExprs, function(ind) format(eval(ind, envir=env), scientific = FALSE))
+    indexStrs <- lapply(indexExprs, function(ind) as.character(eval(ind, envir=env)))
     numInd <- length(indexStrs)
     indexStrsCombined <- indexStrs[[numInd]]
     if(numInd > 1) for(i in seq(numInd-1, 1, by = -1)) {
@@ -59,7 +59,7 @@ nl_expandNodeIndex <- function(node, env = parent.frame()) {
     nodeExpr <- parse(text=node, keep.source = FALSE)[[1]]
     if(length(nodeExpr)==1)  if(is.name(nodeExpr)) return(as.character(nodeExpr)) else stop('node expression with only one element, but not a variable name')
     indexExprs <- nodeExpr[-c(1,2)]
-    indexStrs <- lapply(indexExprs, function(ind) format(eval(ind, envir=env), scientific = FALSE))
+    indexStrs <- lapply(indexExprs, function(ind) as.character(eval(ind, envir=env)))
     numInd <- length(indexStrs)
     indexStrsCombined <- indexStrs[[numInd]]
     if(numInd > 1) for(i in seq(numInd-1, 1, by = -1)) {
