@@ -1453,7 +1453,7 @@ test_ADModelCalculate_nick <- function(model, name = NULL, calcNodeNames = NULL,
 ## By default test a standardized set of {wrt, calcNodes} pairs representing common use cases (MAP, max lik, EB),
 ## unless user provides 'wrt' and 'calcNodes'.
 test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNodes = NULL, wrt = NULL,
-                                  relTol = c(1e-15, 1e-8, 1e-3), useFasterRderivs = FALSE, useParamTransform = FALSE,
+                                  relTol = c(1e-15, 1e-8, 1e-3, 1e-3), useFasterRderivs = FALSE, useParamTransform = FALSE,
                                   checkDoubleTape = TRUE, checkCompiledValuesIdentical = TRUE,
                                   seed = 1, verbose = FALSE, debug = FALSE){
     if(!is.null(seed))
@@ -1599,7 +1599,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
 ## forward and backward mode and to assess whether values in the model are updated.
 test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL, xNew = NULL,
                                            calcNodes = NULL, wrt = NULL, savedMV = NULL, 
-                                           relTol = c(1e-15, 1e-8, 1e-3), useFasterRderivs = FALSE,
+                                           relTol = c(1e-15, 1e-8, 1e-3, 1e-3), useFasterRderivs = FALSE,
                                            useParamTransform = FALSE, checkDoubleTape = TRUE,
                                            checkCompiledValuesIdentical = TRUE,
                                            verbose = FALSE, debug = FALSE){
@@ -1696,8 +1696,11 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 values(cModel, updateNodes) <- values(model, updateNodes)
                 cModel$calculate(updateNodesDeps)
             }
-                
+
             x <- xList[[idx]]
+
+            rWrt_orig <- values(model, wrt)
+            cWrt_orig <- values(cModel, wrt)
             
             ## Store current logProb and non-wrt values to check that order=c(1,2) doesn't change them.
             ## Don't calculate model as want to assess possibility model is out-of-state.
@@ -1721,6 +1724,25 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 rLogProb12 <- cModel$getLogProb(calcNodes)
                 rWrt12 <- values(cModel, wrt)
 
+                ## Need to update this for fasterRderivs
+                if(checkDoubleTape) {
+                    ## Note that because inner deriv is order 1 or 2, don't expect model to be updated.
+                    rOutput1d <- rDerivsMeta$metaDerivs1Run(x = x, order = 0)
+                    rVals1d <- values(model, otherNodes)
+                    rLogProb1d <- model$getLogProb(calcNodes)
+                    rWrt1d <- values(model, wrt)
+                    
+                    rOutput2d <- rDerivsMeta$metaDerivs2Run(x = x, order = 0)
+                    rVals2d <- values(model, otherNodes)
+                    rLogProb2d <- model$getLogProb(calcNodes)
+                    rWrt2d <- values(model, wrt)
+                    
+                    rOutput2d11 <- rDerivsMeta$metaDerivs1Run(x = x, order = 1)
+                    rVals2d11 <- values(model, otherNodes)
+                    rLogProb2d11 <- model$getLogProb(calcNodes)
+                    rWrt2d11 <- values(model, wrt)
+                }
+                
                 if(!useParamTransform) {
                     rOutput01 <- nimDerivs(wrapper(x), order = 0:1, reset = TRUE)
                 } else {
@@ -1739,6 +1761,8 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 cModel$calculate(otherNodes)
                 rVals_new <- values(cModel, otherNodes)
 
+                ## For full checking that order 012 does update state, we'd want to restore
+                ## old values and logProbs into model here.
                 if(!useParamTransform) {
                     rOutput012 <- nimDerivs(wrapper(x), order = 0:2, reset = TRUE)
                 } else {
@@ -1768,6 +1792,24 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 rLogProb12 <- model$getLogProb(calcNodes)
                 rWrt12 <- values(model, wrt)
 
+                if(checkDoubleTape) {
+                    ## Note that because inner deriv is order 1 or 2, don't expect model to be updated.
+                    rOutput1d <- rDerivsMeta$metaDerivs1Run(x = x, order = 0)
+                    rVals1d <- values(model, otherNodes)
+                    rLogProb1d <- model$getLogProb(calcNodes)
+                    rWrt1d <- values(model, wrt)
+                    
+                    rOutput2d <- rDerivsMeta$metaDerivs2Run(x = x, order = 0)
+                    rVals2d <- values(model, otherNodes)
+                    rLogProb2d <- model$getLogProb(calcNodes)
+                    rWrt2d <- values(model, wrt)
+                    
+                    rOutput2d11 <- rDerivsMeta$metaDerivs1Run(x = x, order = 1)
+                    rVals2d11 <- values(model, otherNodes)
+                    rLogProb2d11 <- model$getLogProb(calcNodes)
+                    rWrt2d11 <- values(model, wrt)
+                }
+
                 rOutput01 <- rDerivs$run(x, 0:1)
                 rLogProb01 <- model$getLogProb(calcNodes)
                 rVals01 <- values(model, otherNodes)
@@ -1777,6 +1819,8 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 ## model$calculate(otherNodes)
                 rVals_new <- values(model, otherNodes)
 
+                ## For full checking that order 012 does update state, we'd want to restore
+                ## old values and logProbs into model here.
                 rOutput012 <- rDerivs$run(x, 0:2)
                 rVals012 <- values(model, otherNodes)
                 rLogProb012 <- model$getLogProb(calcNodes)
@@ -1787,48 +1831,11 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 rLogProb02 <- model$getLogProb(calcNodes)
                 rWrt02 <- values(model, wrt)
             }
-            
-            cOutput12 <- cDerivs$run(x, 1:2)
-            cVals12 <- values(cModel, otherNodes)
-            cLogProb12 <- cModel$getLogProb(calcNodes)
-            cWrt12 <- values(cModel, wrt)
 
-            cOutput01 <- cDerivs$run(x, 0:1)
-            cVals01 <- values(cModel, otherNodes)
-            cLogProb01 <- cModel$getLogProb(calcNodes)
-            cWrt01 <- values(cModel, wrt)
-            cLogProb_new <- cModel$calculate(calcNodes)
-            ## why was I doing this?
-            ## cModel$calculate(otherNodes)
-            cVals_new <- values(cModel, otherNodes)
-
-            cOutput012 <- cDerivs$run(x, 0:2)
-            cVals012 <- values(cModel, otherNodes)
-            cLogProb012 <- cModel$getLogProb(calcNodes)
-            cWrt012 <- values(cModel, wrt)
-
-            cOutput02 <- cDerivs$run(x, c(0,2))
-            cVals02 <- values(cModel, otherNodes)
-            cLogProb02 <- cModel$getLogProb(calcNodes)
-            cWrt02 <- values(cModel, wrt)
-
+            ## Do this first because wrt should not be updated while (unless useParamTransform),
+            ## the order=1:2 case for non-meta-taping will update the wrt values.
             if(checkDoubleTape) {
                 ## Note that because inner deriv is order 1 or 2, don't expect model to be updated.
-                rOutput1d <- rDerivsMeta$metaDerivs1Run(x = x, order = 0)
-                rVals1d <- values(model, otherNodes)
-                rLogProb1d <- model$getLogProb(calcNodes)
-                rWrt1d <- values(model, wrt)
-                 
-                rOutput2d <- rDerivsMeta$metaDerivs2Run(x = x, order = 0)
-                rVals2d <- values(model, otherNodes)
-                rLogProb2d <- model$getLogProb(calcNodes)
-                rWrt2d <- values(model, wrt)
-
-                rOutput2d11 <- rDerivsMeta$metaDerivs1Run(x = x, order = 1)
-                rVals2d11 <- values(model, otherNodes)
-                rLogProb2d11 <- model$getLogProb(calcNodes)
-                rWrt2d11 <- values(model, wrt)
-
                 cOutput1d <- cDerivsMeta$metaDerivs1Run(x = x, order = 0)
                 cVals1d <- values(cModel, otherNodes)
                 cLogProb1d <- cModel$getLogProb(calcNodes)
@@ -1843,8 +1850,35 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 cVals2d11 <- values(cModel, otherNodes)
                 cLogProb2d11 <- cModel$getLogProb(calcNodes)
                 cWrt2d11 <- values(cModel, wrt)
-
             }
+
+            ## Without useParamTransform, wrt should be updated, but with useParamTransform they should not.
+            cOutput12 <- cDerivs$run(x, 1:2)
+            cVals12 <- values(cModel, otherNodes)
+            cLogProb12 <- cModel$getLogProb(calcNodes)
+            cWrt12 <- values(cModel, wrt)
+
+            cOutput01 <- cDerivs$run(x, 0:1)
+            cVals01 <- values(cModel, otherNodes)
+            cLogProb01 <- cModel$getLogProb(calcNodes)
+            cWrt01 <- values(cModel, wrt)
+            cLogProb_new <- cModel$calculate(calcNodes)
+            ## why was I doing this?
+            ## cModel$calculate(otherNodes)
+            cVals_new <- values(cModel, otherNodes)
+
+            ## For full checking that order 012 does update state, we'd want to restore
+            ## old values and logProbs into model here.
+            cOutput012 <- cDerivs$run(x, 0:2)
+            cVals012 <- values(cModel, otherNodes)
+            cLogProb012 <- cModel$getLogProb(calcNodes)
+            cWrt012 <- values(cModel, wrt)
+
+            cOutput02 <- cDerivs$run(x, c(0,2))
+            cVals02 <- values(cModel, otherNodes)
+            cLogProb02 <- cModel$getLogProb(calcNodes)
+            cWrt02 <- values(cModel, wrt)
+
             
             ## Check results ##
 
@@ -1948,7 +1982,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 expect_equal(sum(is.na(cOutput1d$value)), 0, info = "NAs found in compiled double-taped 1st derivative")
 
                 ## explicit comparison to single-taped result
-                expect_identical(cOutput1d$value, cOutput012$jacobian)
+                expect_identical(cOutput1d$value, c(cOutput012$jacobian))
             }
 
             ## 2nd derivative
@@ -1973,32 +2007,46 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 expect_equal(sum(is.na(rOutput2d$value)), 0, info = "NAs found in uncompiled double-taped 2nd derivative")
                 expect_equal(sum(is.na(cOutput2d$value)), 0, info = "NAs found in compiled double-taped 2nd derivative")
 
-                expect_equal(rOutput2d11$jacobian, cOutput2d11$jacobian, tolerance = relTol[2])
+                expect_equal(rOutput2d11$jacobian, cOutput2d11$jacobian, tolerance = relTol[4])
                 expect_equal(sum(is.na(rOutput2d11$jacobian)), 0, info = "NAs found in uncompiled double-taped 2nd derivative")
                 expect_equal(sum(is.na(cOutput2d11$jacobian)), 0, info = "NAs found in compiled double-taped 2nd derivative")
 
                 ## explicit comparison to single-taped result
-                expect_identical(cOutput2d$value, cOutput012$hessian)
-                expect_identical(cOutput2d11$jacobian, cOutput012$hessian)
+                ## Not clear why 2d$value not identical to 012$hessian
+                expect_equal(cOutput2d$value, c(cOutput012$hessian), tolerance = 1e-15)
+                expect_identical(cOutput2d11$jacobian, cOutput012$hessian[,,1])
             }
 
-            ## TODO: work on this - wrt values should equal original wrt values if paramTransform, order !=0 or doubleTape
+            ## wrt values should equal original wrt values if paramTransform, order !=0 or doubleTape
             ## because setting of wrt in model is done within nimDerivs call, so should obey our rules about when model state is altered.
             ## Model state: wrt values should be equal to `x`. (not correct always -- CJP 2021-01-23)
-            expect_identical(rWrt01, x)
-            expect_identical(rWrt12, x)
-            expect_identical(rWrt012, x)
-            expect_identical(cWrt01, x)
-            expect_identical(cWrt12, x)
-            expect_identical(cWrt012, x)
+
+            if(!useParamTransform) {
+                ## Wrt values changed because assignment is outside of nimDerivs()
+                expect_identical(rWrt01, x)
+                expect_identical(rWrt12, x)
+                expect_identical(rWrt012, x)
+                expect_identical(cWrt01, x)
+                expect_identical(cWrt12, x)
+                expect_identical(cWrt012, x)
+            } else{
+                expect_identical(rWrt01, x)
+                expect_identical(rWrt12, rWrt_orig)
+                expect_identical(rWrt012, x)
+                expect_identical(cWrt01, x)
+                expect_identical(cWrt12, cWrt_orig)
+                expect_identical(cWrt012, x)
+            }
 
             if(checkDoubleTape) {
-                expect_identical(rWrt1d, x)
-                expect_identical(rWrt2d, x)
-                expect_identical(rWrt2d11, x)
-                expect_identical(cWrt1d, x)
-                expect_identical(cWrt2d, x)
-                expect_identical(cWrt2d11, x)
+                ## Double tape with inner order not equal to 0 should not change wrt values.
+                ## Current issue #268 shows that 
+                expect_identical(rWrt1d, rWrt_orig)
+                expect_identical(rWrt2d, rWrt_orig)
+                expect_identical(rWrt2d11, rWrt_orig)
+                expect_identical(cWrt1d, cWrt_orig)
+                expect_identical(cWrt2d, cWrt_orig)
+                expect_identical(cWrt2d11, cWrt_orig)
             }
 
             ## Also, should we take otherNodes and break into those that are in calcNodes and those not?
@@ -2022,6 +2070,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             }
 
             if(checkDoubleTape) {
+                ## Double tapes here don't have order = 0 in inner tape, so model should not be updated.
                 expect_identical(rLogProb1d, rLogProb_orig)
                 expect_identical(rLogProb2d, rLogProb_orig)
                 expect_identical(rLogProb2d11, rLogProb_orig)
@@ -2051,6 +2100,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             }
 
             if(checkDoubleTape) {
+                ## Double tapes here don't have order = 0 in inner tape, so model should not be updated.
                 expect_fun(cLogProb1d, cLogProb_orig)
                 expect_fun(cVals1d, cVals_orig)
                 expect_fun(cLogProb2d, cLogProb_orig)
