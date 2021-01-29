@@ -81,7 +81,7 @@ class atomic_extraOutputObject : public CppAD::atomic_three<double> {
 			  CppAD::vector<bool>&                depend_x    ,
 			  const CppAD::vector<bool>&          depend_y
 			  ) {
-    depend_x[0] = true;
+    for(int i = 0; i < depend_x.size(); ++i) depend_x[i] = true;
     return true;
   }
 
