@@ -7530,7 +7530,7 @@ test_that("Testing wrapper sampler that avoids sampling empty clusters", {
     samplers <- conf$getSamplers()
     expect_identical(samplers[[2]]$name, 'CRP_cluster_wrapper',
                      info = "cluster wrapper sampler not set")
-    expect_identical(samplers[[2]]$control$wrapped_type, 'conjugate_dnorm_dnorm_dynamicDeps',
+    expect_identical(samplers[[2]]$control$wrapped_type, 'conjugate_dnorm_dnorm_identity_dynamicDeps',
                      info = "cluster wrapper sampler not conjugate")
     cm <- compileNimble(m)
     mcmc <- buildMCMC(conf)

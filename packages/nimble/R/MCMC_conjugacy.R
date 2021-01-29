@@ -974,7 +974,7 @@ conjugacyClass <- setRefClass(
                 names(subList) <- depParamsAvailable
                 
                 subList$value  <- makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_values')), getDimension(distName), indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr)
-                if(currentLink %in% c('additive', 'linear'))
+                if(currentLink %in% c('additive', 'linear', 'stickbreaking'))
                     subList$offset <- makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_offset')), targetNdim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr)
                 if(currentLink %in% c('multiplicative', 'multiplicativeScalar', 'linear') || (nimbleOptions()$allowDynamicIndexing && doDependentScreen))
                     subList$coeff  <- makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_coeff')),  targetCoeffNdim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = quote(d))

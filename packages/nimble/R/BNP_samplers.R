@@ -1450,7 +1450,9 @@ sampler_CRP <- nimbleFunction(
       sampler <- switch(conjugacyResult,
                         conjugate_dnorm_dnorm_identity = 'CRP_conjugate_dnorm_dnorm',
                         conjugate_dmnorm_dmnorm_identity = 'CRP_conjugate_dmnorm_dmnorm',
-                        conjugate_dnorm_dnorm_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity',
+                        conjugate_dnorm_dnorm_additive_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity',
+                        conjugate_dnorm_dnorm_multiplicative_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity',
+                        conjugate_dnorm_dnorm_linear_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity',
                         conjugate_dinvgamma_dnorm_identity = 'CRP_conjugate_dinvgamma_dnorm',
                         conjugate_dinvwish_dmnorm_identity = 'CRP_conjugate_dinvwish_dmnorm',
                         conjugate_dwish_dmnorm_identity = 'CRP_conjugate_dwish_dmnorm',
@@ -2080,6 +2082,7 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo, n, gammaDist = '
                sum(sapply(conjugacy_dnorm, '[[', 'type') == 'conjugate_dnorm') == length(exampleNodes1) &&
                sum(sapply(conjugacy_dinvgamma, '[[', 'type') == paste0('conjugate_', gammaDist)) == length(exampleNodes2) &&
                all(sapply(seq_along(conjugacy_dinvgamma), function(idx)
+                   sum(conjugacy_dinvgamma[[idx]]$control$dep_dnorm_identity == exampleNodes1[idx]) + 
                    sum(conjugacy_dinvgamma[[idx]]$control$dep_dnorm_multiplicative == exampleNodes1[idx]) == 1)))
                 conjugate <- TRUE
         }
@@ -2174,6 +2177,7 @@ checkNormalInvWishartConjugacy <- function(model, clusterVarInfo, n, wishartDist
                sum(sapply(conjugacy_dmnorm, '[[', 'type') == 'conjugate_dmnorm') == length(exampleNodes1) &&
                sum(sapply(conjugacy_dinvwish, '[[', 'type') == paste0('conjugate_', wishartDist)) == length(exampleNodes2) &&
                all(sapply(seq_along(conjugacy_dinvwish), function(idx)
+                   sum(conjugacy_dinvwish[[idx]]$control$dep_dmnorm_identity == exampleNodes1[idx]) +
                    sum(conjugacy_dinvwish[[idx]]$control$dep_dmnorm_multiplicativeScalar == exampleNodes1[idx]) == 1)))
                 conjugate <- TRUE
         }
