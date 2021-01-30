@@ -129,8 +129,8 @@ bool atomic_forwardsolve_class::rev_depend(
       depend_x[i + j * n1] = false;
     }    
   }
-  for(int i = n1-1; i > i_last_true_any_col; --i) {
-    for(int j = 0; j < n1; ++j) {
+  for(int i = n1-1; i > i_last_true_any_col; --i) { // all other rows
+    for(int j = 0; j < n1; ++j) {                   // all cols
       depend_x[i + j * n1] = false;
     }
   }
@@ -174,7 +174,7 @@ bool atomic_forwardsolve_class::forward(
     EigenConstMap dB_map(&taylor_x[1 + n1sq*nrow], n1, n2, EigStrDyn(nrow*n1, nrow ) );
     EigenMap dY_map(&taylor_y[1], n1, n2, EigStrDyn(nrow*n1, nrow ) );
       
-    dY_map = Amap.template triangularView<Eigen::Lower>().solve(dB_map - dA_map * Ymap).eval();// This .eval() is necessary and I don't understand why.  Normally that would be for aliasing, but there should be no over-lapping points here.  There are inter-woven maps, and that's weird but should work.
+    dY_map = Amap.template triangularView<Eigen::Lower>().solve(dB_map - dA_map.template triangularView<Eigen::Lower>() * Ymap).eval();// This .eval() is necessary and I don't understand why.  Normally that would be for aliasing, but there should be no over-lapping points here.  There are inter-woven maps, and that's weird but should work.
   }
   return true;
 }
@@ -216,7 +216,7 @@ bool atomic_forwardsolve_class::forward(
     metaEigenConstMap dB_map(&taylor_x[1 + n1sq*nrow], n1, n2, EigStrDyn(nrow*n1, nrow ) );
     metaEigenMap dY_map(&taylor_y[1], n1, n2, EigStrDyn(nrow*n1, nrow ) );
 
-    dY_map = nimDerivs_EIGEN_FS(Amap, dB_map - nimDerivs_matmult(dA_map, Ymap));
+    dY_map = nimDerivs_EIGEN_FS(Amap, dB_map - nimDerivs_matmult(dA_map.template triangularView<Eigen::Lower>(), Ymap));
     //    dY_map = Amap.template triangularView<Eigen::Upper>().solve(dB_map - dA_map * Ymap).eval();// This .eval() is necessary and I don't understand why.  Normally that would be for aliasing, but there should be no over-lapping points here.  There are inter-woven maps, and that's weird but should work.
   }
   return true;
@@ -250,7 +250,9 @@ bool atomic_forwardsolve_class::reverse(
     EigenConstMap Yadjoint_map(&partial_y[0], n1, n2, EigStrDyn(nrow*n1, nrow ) );
       
     Badjoint_map = Amap.transpose().template triangularView<Eigen::Upper>().solve(Yadjoint_map);
-    if(order_up == 0) Aadjoint_map = (-Badjoint_map * Ymap.transpose()).template triangularView<Eigen::Lower>(); // otherwise this gets included below
+    if(order_up == 0) { // otherwise this gets included below
+      Aadjoint_map = (-Badjoint_map * Ymap.transpose()).template triangularView<Eigen::Lower>(); 
+    }
   }
   if(order_up >= 1) {
     EigenConstMap Adot_map(&taylor_x[1], n1, n1, EigStrDyn(nrow*n1, nrow) );
@@ -259,11 +261,12 @@ bool atomic_forwardsolve_class::reverse(
     EigenMap Adot_adjoint_map(&partial_x[1], n1, n1, EigStrDyn(nrow*n1, nrow) );
     EigenMap Bdot_adjoint_map(&partial_x[1 + n1sq*nrow], n1, n2, EigStrDyn(nrow*n1, nrow ) );
     
-
+    Eigen::MatrixXd Adot_stuff = Adot_map.transpose().template triangularView<Eigen::Upper>(); // doesn't work inside solve
+    
     /* Note: A^-1 Z A^-1 = solve(A, solve(A^T, Z^T)^T) */
       
     /* Badjoint = A^-T * Yadjoint - (A^-1 Adot A^-1)^T  Ydot_adjoint */      
-    Badjoint_map -= Amap.template triangularView<Eigen::Lower>().solve( Amap.transpose().template triangularView<Eigen::Upper>().solve(Adot_map.transpose()).transpose() ).transpose() * Ydot_adjoint_map;
+    Badjoint_map -= Amap.template triangularView<Eigen::Lower>().solve( Amap.transpose().template triangularView<Eigen::Upper>().solve(Adot_stuff).transpose() ).transpose() * Ydot_adjoint_map;
     /* Bdot_adjoint = A^-T Ydot_adjoint */
     Bdot_adjoint_map = Amap.transpose().template triangularView<Eigen::Upper>().solve(Ydot_adjoint_map).eval(); // This eval is necessary.  I am not clear when evals are necessary after solves or not.  
     /* Aadjoint = -Badjoint * Y^T  - (A^-T Ydot_adjoint Ydot^T)= -Badjoint * Y^T  - ( Bdot_adjoint Ydot^T) , including both Badjoint terms*/
@@ -322,8 +325,10 @@ bool atomic_forwardsolve_class::reverse(
       
     /* Badjoint = A^-T * Yadjoint - (A^-1 Adot A^-1)^T  Ydot_adjoint */      
 
+    MatrixXd_CppAD Adot_stuff = Adot_map.transpose().template triangularView<Eigen::Upper>(); // doesn't work inside solve
+    
     Badjoint_map -= nimDerivs_matmult( nimDerivs_EIGEN_FS( Amap,
-							    nimDerivs_EIGEN_BS(Amap.transpose(), Adot_map.transpose()).transpose() ).transpose() ,
+							    nimDerivs_EIGEN_BS(Amap.transpose(), Adot_stuff).transpose() ).transpose() ,
 				      Ydot_adjoint_map);
 
     //    Badjoint_map -= Amap.template triangularView<Eigen::Upper>().solve( Amap.transpose().template triangularView<Eigen::Lower>().solve(Adot_map.transpose()).transpose() ).transpose() * Ydot_adjoint_map;
@@ -364,7 +369,7 @@ void atomic_forwardsolve(const MatrixXd_CppAD &A,
 }
 
 MatrixXd_CppAD nimDerivs_EIGEN_FS(const MatrixXd_CppAD &A,
-				      const MatrixXd_CppAD &B) {
+				  const MatrixXd_CppAD &B) {
   MatrixXd_CppAD ans;
   atomic_forwardsolve(A, B, ans);
   return ans;
