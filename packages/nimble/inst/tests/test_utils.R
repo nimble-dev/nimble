@@ -1365,25 +1365,21 @@ derivsNimbleFunctionParamTransform <- nimbleFunction(
         my_parameterTransform <- parameterTransform(model, wrtNodesAsScalars)
         d <- my_parameterTransform$getTransformedLength()
         nimDerivs_wrt <- 1:d
-        makeUpdateNodes_return <- makeUpdateNodes(wrt, calcNodes, model)
-        nimDerivs_updateNodes   <- makeUpdateNodes_return$updateNodes
-        nimDerivs_constantNodes <- makeUpdateNodes_return$constantNodes
+        allUpdateNodes <- makeUpdateNodes(wrt, calcNodes, model)
+        updateNodes   <- allUpdateNodes$updateNodes
+        constantNodes <- allUpdateNodes$constantNodes
     },
     run = function(x = double(1),
                    order = double(1)) {
-        transformed_x <- transform(x)
+        transformed_x <- my_parameterTransform$transform(x)  # transform(x)
         ans <- nimDerivs(inverseTransformStoreCalculate(transformed_x), order = order, wrt = nimDerivs_wrt,
-                         model = model, updateNodes = nimDerivs_updateNodes,
-                         constantNodes = nimDerivs_constantNodes, reset = FALSE)
+                         model = model, updateNodes = updateNodes,
+                         constantNodes = constantNodes, reset = FALSE)
 
         return(ans)
         returnType(ADNimbleList())
     },
     methods = list(
-        transform = function(x = double(1)) {
-            returnType(double(1))
-            return(my_parameterTransform$transform(x))
-        }, 
         inverseTransformStoreCalculate = function(transformed_x = double(1)) {
             values(model, wrt) <<- my_parameterTransform$inverseTransform(transformed_x)
             lp <- model$calculate(calcNodes)
@@ -1392,6 +1388,69 @@ derivsNimbleFunctionParamTransform <- nimbleFunction(
         }
     ), enableDerivs = 'inverseTransformStoreCalculate'
 )
+
+
+derivsNimbleFunctionParamTransformMeta <- nimbleFunction(
+    setup = function(model, calcNodes, wrt) {
+        wrtNodesAsScalars <- model$expandNodeNames(wrt, returnScalarComponents = TRUE)
+        my_parameterTransform <- parameterTransform(model, wrtNodesAsScalars)
+        d <- my_parameterTransform$getTransformedLength()
+        d2 <- max(d, 2)
+        nimDerivs_wrt <- 1:d
+        innerWrtVec <- c(.1, .2) ## awkward that this doesn't work smoothly in derivsRun
+        allUpdateNodes <- makeUpdateNodes(wrt, calcNodes, model)
+        updateNodes   <- allUpdateNodes$updateNodes
+        constantNodes <- allUpdateNodes$constantNodes
+    },
+    ## formerly inverseTransformStoreCalculate
+    run = function(transformed_x = double(1)) {
+            values(model, wrt) <<- my_parameterTransform$inverseTransform(transformed_x)
+            lp <- model$calculate(calcNodes)
+            returnType(double())
+            return(lp)
+    },
+    methods = list(
+        derivs1Run = function(transformed_x = double(1),
+                              reset = logical(0, default = FALSE)) {
+            ans <- nimDerivs(run(transformed_x), wrt = nimDerivs_wrt, order = 1, reset = reset,
+                             updateNodes = updateNodes, constantNodes = constantNodes, model = model)
+            return(ans$jacobian[1,])
+            returnType(double(1))
+        },
+        derivs2Run = function(transformed_x = double(1),
+                              reset = logical(0, default = FALSE)) {
+            ans <- nimDerivs(run(transformed_x), wrt = nimDerivs_wrt, order = 2, reset = reset,
+                         updateNodes = updateNodes, constantNodes = constantNodes, model = model)
+            ## not clear why can't do ans$hessian[,,1] with double(2) returnType
+            return(ans$hessian)
+            returnType(double(3))
+        },
+        metaDerivs1Run = function(x = double(1),
+                                  order = double(1),
+                                  reset = logical(0, default = FALSE)) {
+            transformed_x <- my_parameterTransform$transform(x)
+            ans <- nimDerivs(derivs1Run(transformed_x, reset), wrt = nimDerivs_wrt, order = order, reset = reset,
+                             updateNodes = updateNodes, constantNodes = constantNodes, model = model)
+            return(ans)
+            returnType(ADNimbleList())
+        }, 
+        ## outer arbitrary-order deriv calling inner second order
+        metaDerivs2Run = function(x = double(1),
+                                  order = double(1),
+                                  reset = logical(0, default = FALSE)) {
+            transformed_x <- my_parameterTransform$transform(x)
+            ans <- nimDerivs(derivs2Run(transformed_x, reset), wrt = nimDerivs_wrt, order = order, reset = reset,
+                             updateNodes = updateNodes, constantNodes = constantNodes, model = model)
+            return(ans)
+            returnType(ADNimbleList())
+        }       
+    ),
+    enableDerivs = list(run = list(),
+                        derivs1Run = list(),
+                        derivs2Run = list())
+)
+
+
 
 
 ## For use with R-based derivative of compiled model calculate when useFasterRderivs is TRUE.
@@ -1641,12 +1700,15 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
         if(useParamTransform) {
             rDerivs <- derivsNimbleFunctionParamTransform(model, calcNodes = calcNodes, wrt = wrt)
         } else rDerivs <- derivsNimbleFunction(model, calcNodes = calcNodes, wrt = wrt)
-        
-        cDerivs <- compileNimble(rDerivs, project = model)
+
+        ## Seem to need resetFunctions because of use of my_parameterTransform twice in paramTransform case.
+        cDerivs <- compileNimble(rDerivs, project = model, resetFunctions = TRUE)
 
         if(checkDoubleTape) {
-            rDerivsMeta <- derivsNimbleFunctionMeta(model, calcNodes = calcNodes, wrt = wrt)
-            cDerivsMeta <- compileNimble(rDerivsMeta, project = model)
+            if(useParamTransform) {
+                rDerivsMeta <- derivsNimbleFunctionParamTransformMeta(model, calcNodes = calcNodes, wrt = wrt)
+            } else rDerivsMeta <- derivsNimbleFunctionMeta(model, calcNodes = calcNodes, wrt = wrt)
+            cDerivsMeta <- compileNimble(rDerivsMeta, project = model, resetFunctions = TRUE)
         }
         
         if(useFasterRderivs) {
@@ -2014,6 +2076,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 ## explicit comparison to single-taped result
                 ## Not clear why 2d$value not identical to 012$hessian
                 expect_equal(cOutput2d$value, c(cOutput012$hessian), tolerance = 1e-15)
+                if(length(cOutput2d11$jacobian) == 1) cOutput2d11$jacobian <- c(cOutput2d11$jacobian)
                 expect_identical(cOutput2d11$jacobian, cOutput012$hessian[,,1])
             }
 
@@ -2029,9 +2092,9 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 expect_identical(cWrt01, x)
                 expect_identical(cWrt12, x)
                 expect_identical(cWrt012, x)
-            } else{
+            } else {
                 expect_identical(rWrt01, x)
-                expect_identical(rWrt12, rWrt_orig)
+                expect_identical(rWrt12, rWrt_orig)  # issue #268
                 expect_identical(rWrt012, x)
                 expect_identical(cWrt01, x)
                 expect_identical(cWrt12, cWrt_orig)
@@ -2091,13 +2154,17 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             expect_fun(cVals012, cVals_new)
             expect_fun(cLogProb02, cLogProb_new) 
             expect_fun(cVals02, cVals_new)
-            if(useFasterRderivs || useParamTransform) {
-                expect_fun(cLogProb12, cLogProb_new)
-                expect_fun(cVals12, cVals_new)
-            } else {
-                expect_fun(cLogProb12, cLogProb_orig)
-                expect_fun(cVals12, cVals_orig)
-            }
+
+            expect_fun(cLogProb12, cLogProb_orig)
+            expect_fun(cVals12, cVals_orig)
+            ## both of these wrap the assignment and calculate within nimDerivs so order != 0 should not change model state
+            ## if(useFasterRderivs || useParamTransform) {
+            ##     expect_fun(cLogProb12, cLogProb_new)
+            ##     expect_fun(cVals12, cVals_new)
+            ## } else {
+            ##     expect_fun(cLogProb12, cLogProb_orig)
+            ##     expect_fun(cVals12, cVals_orig)
+            ## }
 
             if(checkDoubleTape) {
                 ## Double tapes here don't have order = 0 in inner tape, so model should not be updated.
