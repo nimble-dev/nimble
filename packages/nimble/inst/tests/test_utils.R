@@ -1395,9 +1395,7 @@ derivsNimbleFunctionParamTransformMeta <- nimbleFunction(
         wrtNodesAsScalars <- model$expandNodeNames(wrt, returnScalarComponents = TRUE)
         my_parameterTransform <- parameterTransform(model, wrtNodesAsScalars)
         d <- my_parameterTransform$getTransformedLength()
-        d2 <- max(d, 2)
         nimDerivs_wrt <- 1:d
-        innerWrtVec <- c(.1, .2) ## awkward that this doesn't work smoothly in derivsRun
         allUpdateNodes <- makeUpdateNodes(wrt, calcNodes, model)
         updateNodes   <- allUpdateNodes$updateNodes
         constantNodes <- allUpdateNodes$constantNodes
