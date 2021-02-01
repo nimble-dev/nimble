@@ -42,13 +42,17 @@
 							   Rf_install(varName)))); \
   }
 
-#define COPY_VALUE_MAP_ACCESSORS_FROM_NODE_NAMES(varName) \
+#define COPY_VALUE_MAP_ACCESSORS_FROM_NODE_NAMES(varName, derivsEnabled)	\
   { \
   std::string svarName(varName); \
+  std::string svarName_AD_(svarName + "_AD_"); \
   populateValueMapAccessorsFromNodeNames_copyFromRobject(getObjectPtr(svarName), \
 							 PROTECT(Rf_findVarInFrame(S_xData, \
-										   Rf_install(varName)))); \
-                    }
+										   Rf_install(varName))), \
+							 derivsEnabled, \
+							 getObjectPtr(svarName_AD_) \
+							 );		\
+  }
 
 #define COPY_NODE_FXN_VECTOR_FROM_R_OBJECT(varName) \
   { \

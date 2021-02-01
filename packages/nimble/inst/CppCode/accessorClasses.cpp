@@ -1265,7 +1265,9 @@ void populateValueMapAccessorsFromNodeNames_internal(ManyVariablesMapAccessorBas
 }
 
 void populateValueMapAccessorsFromNodeNames_copyFromRobject(void *VvaluesAccessor,
-							    SEXP Sargs) {
+							    SEXP Sargs,
+							    bool derivsEnabled,
+							    void *VvaluesAccessor_AD) {
   //  _nimble_global_output<<"In new copy system\n";
   //  nimble_print_to_R(_nimble_global_output);
   ManyVariablesMapAccessorBase* valuesAccessor = static_cast<ManyVariablesMapAccessorBase*>(VvaluesAccessor);
@@ -1277,6 +1279,19 @@ void populateValueMapAccessorsFromNodeNames_copyFromRobject(void *VvaluesAccesso
 						  SnodeNames,
 						  SsizesAndNdims,
 						  SModelOrModelValuesPtr);
+
+  if(derivsEnabled) {
+    if(VvaluesAccessor_AD) {
+      ManyVariablesMapAccessorBase* valuesAccessor_AD = static_cast<ManyVariablesMapAccessorBase*>(VvaluesAccessor_AD);
+      SEXP SModelOrModelValuesPtr_AD;
+      PROTECT(SModelOrModelValuesPtr_AD = VECTOR_ELT(Sargs, 3));
+      populateValueMapAccessorsFromNodeNames_internal(valuesAccessor_AD,
+						      SnodeNames,
+						      SsizesAndNdims,
+						      SModelOrModelValuesPtr_AD);
+      UNPROTECT(1);
+    }
+  }
   UNPROTECT(3);
 }
 

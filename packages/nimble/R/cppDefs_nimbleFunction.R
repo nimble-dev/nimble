@@ -972,7 +972,8 @@ makeSingleCopyCall <- function(varName, cppCopyType) {
                cppLiteral(paste0("COPY_NODE_FXN_VECTOR_DERIVS_FROM_R_OBJECT(\"", varName, "\");"))
            },
            'modelVarAccess' = {
-               cppLiteral(paste0("COPY_VALUE_MAP_ACCESSORS_FROM_NODE_NAMES(\"", varName, "\");"))
+               cppLiteral(paste0("COPY_VALUE_MAP_ACCESSORS_FROM_NODE_NAMES(\"", varName, "\"",
+                                 if(isTRUE(nimbleOptions('experimentalEnableDerivs'))) ", 1" else ", 0", ");"))
            },
            
            NULL)

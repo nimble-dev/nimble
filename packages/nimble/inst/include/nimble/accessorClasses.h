@@ -711,7 +711,9 @@ void populateValueMapAccessorsFromNodeNames_internal(ManyVariablesMapAccessorBas
 						     SEXP SsizesAndNdims,
 						     SEXP SModelOrModelValuesPtr);
 void populateValueMapAccessorsFromNodeNames_copyFromRobject(void *VvaluesAccessor,
-							    SEXP Sargs);
+							    SEXP Sargs,
+							    bool derivsEnabled, // redundant (next arg will be 0 if !derivsEnabled) but clear
+							    void *VvaluesAccessor_AD);
 extern "C" {
   SEXP resizeManyModelVarAccessor(SEXP manyModelVarPtr, SEXP size);
   SEXP resizeManyModelValuesAccessor(SEXP manyModelValuesPtr, SEXP size);	 
