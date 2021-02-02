@@ -1,6 +1,8 @@
 #ifndef _NIMDERIVS_TMB__
 #define _NIMDERIVS_TMB__
 
+#define _USE_ATOMICS_IN_DMNORM // remove this line to turn off atomics in dmnorm
+
 // Some of the following is extracted from TMB.hpp.
 // We don't need all of what that includes, so we have
 // extracted pieces that allow the subset of TMB that we
@@ -87,20 +89,27 @@ Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, Nim
     xCopy(i, 0) = x[i] - mean[i];
 
   Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
-  std::cout<<"Baking in prec_param = "<<prec_param<<" in dmnorm."<<std::endl;
+  //  std::cout<<"Baking in prec_param = "<<prec_param<<" in dmnorm."<<std::endl;
+#ifdef _USE_ATOMICS_IN_DMNORM
+  if(CppAD::Value(prec_param) == 1) {
+    xCopy = nimDerivs_matmult(mapChol.template triangularView<Eigen::Upper>(), xCopy);
+  } else {
+    xCopy = nimDerivs_EIGEN_FS(mapChol.transpose(), xCopy);
+  }
+#else
   if(CppAD::Value(prec_param) == 1) {
     xCopy = mapChol.template triangularView<Eigen::Upper>()*xCopy;
   } else {
-    xCopy = mapChol.template triangularView<Eigen::Upper>().transpose().solve(xCopy);
+    xCopy = mapChol.transpose().template triangularView<Eigen::Upper>().solve(xCopy);
   }
-
+#endif
   /* xCopy = CppAD::CondExpEq(prec_param, Type(1), */
   /*                          mapChol.template triangularView<Eigen::Upper>()*xCopy, */
   /*                          mapChol.template triangularView<Eigen::Upper>().transpose().solve(xCopy) ); */
   // Note that with solve(), transpose of U appears slightly less costly than if input 'chol' were L,
   // presumably because of column-major order interacting well with the solve.
   xCopy = xCopy.array()*xCopy.array();
-  dens += -Type(0.5)*xCopy.sum();
+  dens += -Type(0.5)*(xCopy.sum());
   dens = CppAD::CondExpEq(give_log, Type(1), dens, exp(dens));
   return(dens);
 }
@@ -122,18 +131,26 @@ Type nimDerivs_nimArr_dmnorm_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &
     xCopy(i, 0) = x[i] - mean[i];
 
   Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
-  std::cout<<"Baking in prec_param = "<<prec_param<<" in dmnorm."<<std::endl;
+  //  std::cout<<"Baking in prec_param = "<<prec_param<<" in dmnorm."<<std::endl;
+#ifdef _USE_ATOMICS_IN_DMNORM
+  if(CppAD::Value(prec_param) == 1) {
+    xCopy = nimDerivs_matmult(mapChol.template triangularView<Eigen::Upper>(), xCopy);
+  } else {
+    xCopy = nimDerivs_EIGEN_FS(mapChol.transpose(), xCopy);
+  }
+#else
   if(CppAD::Value(prec_param) == 1) {
     xCopy = mapChol.template triangularView<Eigen::Upper>()*xCopy;
   } else {
     xCopy = mapChol.template triangularView<Eigen::Upper>().transpose().solve(xCopy);
   }
+#endif
   /*  */
   /* xCopy = CppAD::CondExpEq(prec_param, Type(1), */
   /*                          mapChol.template triangularView<Eigen::Upper>()*xCopy, */
   /*                          mapChol.template triangularView<Eigen::Upper>().transpose().solve(xCopy)); */
   xCopy = xCopy.array()*xCopy.array();
-  dens += -Type(0.5)*xCopy.sum();
+  dens += -Type(0.5)*(xCopy.sum());
   if(!give_log){
     dens = exp(dens);
   }
