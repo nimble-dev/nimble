@@ -1673,6 +1673,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             cModel <- eval(quote(model$CobjectInterface))
             nimCopy(savedMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
         }
+        tmpMV <- modelValues(model)
 
         if(is.null(wrt)) wrt <- calcNodes
         wrt <- model$expandNodeNames(wrt, unique = FALSE)
@@ -1715,7 +1716,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 ## Need wrapper so that we are calling nimDerivs on a function call and not a nf method
                 wrapper <- function(x) {
                     cDerivs$inverseTransformStoreCalculate(x)
-                }                
+                }
             } else {
                 rCalcNodes <- calcNodesForDerivs(model, calcNodes = calcNodes, wrt = wrt)  
                 cCalcNodes <- compileNimble(rCalcNodes, project = model)
@@ -1725,6 +1726,16 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 ## Need wrapper so that we are calling nimDerivs on a function call and not a nf method
                 wrapper <- function(x) {
                     cCalcNodes$run(x)
+                }
+            }
+            if(checkDoubleTape) {
+                wrapperMeta1 <- function(x) {
+                    ans <- nimDerivs(wrapper(x), order = 1)
+                    return(ans$jacobian[1, ])
+                }
+                wrapperMeta2 <- function(x) {
+                    ans <- nimDerivs(wrapper(x), order = 2)
+                    return(ans$hessian)
                 }
             }
         }
@@ -1771,80 +1782,71 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             rVals_orig <- values(model, otherNodes)
             cVals_orig <- values(cModel, otherNodes)
 
+            nimCopy(cModel, tmpMV, nodes, nodes, row = 1, logProb = TRUE)
+            
             if(useFasterRderivs) {
                 
                 rVals_orig <- cVals_orig
-                if(!useParamTransform) {
-                    rOutput12 <- nimDerivs(wrapper(x), order = 1:2, reset = TRUE)
-                } else {
-                    transformed_x <- cDerivs$transform(x)
-                    rOutput12 <- nimDerivs(wrapper(transformed_x), order = 1:2, reset = TRUE)
-                }
+
+                inputx <- x
+                if(useParamTransform)
+                    inputx <- rDerivs$my_parameterTransform$transform(x)
+
+                rOutput12 <- nimDerivs(wrapper(inputx), order = 1:2)
                 rVals12 <- values(cModel, otherNodes)
                 rLogProb12 <- cModel$getLogProb(calcNodes)
                 rWrt12 <- values(cModel, wrt)
-
-                ## Need to update this for fasterRderivs
-                if(checkDoubleTape) {
-                    ## Note that because inner deriv is order 1 or 2, don't expect model to be updated.
-                    rOutput1d <- rDerivsMeta$metaDerivs1Run(x = x, order = 0)
-                    rVals1d <- values(model, otherNodes)
-                    rLogProb1d <- model$getLogProb(calcNodes)
-                    rWrt1d <- values(model, wrt)
-                    
-                    rOutput2d <- rDerivsMeta$metaDerivs2Run(x = x, order = 0)
-                    rVals2d <- values(model, otherNodes)
-                    rLogProb2d <- model$getLogProb(calcNodes)
-                    rWrt2d <- values(model, wrt)
-                    
-                    rOutput2d11 <- rDerivsMeta$metaDerivs1Run(x = x, order = 1)
-                    rVals2d11 <- values(model, otherNodes)
-                    rLogProb2d11 <- model$getLogProb(calcNodes)
-                    rWrt2d11 <- values(model, wrt)
-                }
                 
-                if(!useParamTransform) {
-                    rOutput01 <- nimDerivs(wrapper(x), order = 0:1, reset = TRUE)
-                } else {
-                    transformed_x <- cDerivs$transform(x)
-                    rOutput01 <- nimDerivs(wrapper(transformed_x), order = 0:1, reset = TRUE)
-                }
+                nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+                rOutput01 <- nimDerivs(wrapper(inputx), order = 0:1)
                 rLogProb01 <- cModel$getLogProb(calcNodes)
                 rVals01 <- values(cModel, otherNodes)
                 rWrt01 <- values(cModel, wrt)
-                if(!useParamTransform) {
-                    rLogProb_new <- wrapper(x)
-                } else {
-                    transformed_x <- cDerivs$transform(x)
-                    rLogProb_new <- wrapper(transformed_x)
-                }
-                cModel$calculate(otherNodes)
-                rVals_new <- values(cModel, otherNodes)
 
-                ## For full checking that order 012 does update state, we'd want to restore
-                ## old values and logProbs into model here.
-                if(!useParamTransform) {
-                    rOutput012 <- nimDerivs(wrapper(x), order = 0:2, reset = TRUE)
-                } else {
-                    transformed_x <- cDerivs$transform(x)
-                    rOutput012 <- nimDerivs(wrapper(transformed_x), order = 0:2, reset = TRUE)
-                }
+                nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+                rOutput012 <- nimDerivs(wrapper(inputx), order = 0:2)
                 rVals012 <- values(cModel, otherNodes)
                 rLogProb012 <- cModel$getLogProb(calcNodes)
                 rWrt012 <- values(cModel, wrt)
 
-                if(!useParamTransform) {
-                    rOutput02 <- nimDerivs(wrapper(x), order = c(0,2), reset = TRUE)
-                } else {
-                    transformed_x <- cDerivs$transform(x)
-                    rOutput02 <- nimDerivs(wrapper(transformed_x), order = c(0,2), reset = TRUE)
-                }
+                nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+                rOutput02 <- nimDerivs(wrapper(inputx), order = c(0,2))
                 rVals02 <- values(cModel, otherNodes)
                 rLogProb02 <- cModel$getLogProb(calcNodes)
                 rWrt02 <- values(cModel, wrt)
 
+                if(checkDoubleTape) {
+                    ## Note that because inner deriv is order 1 or 2, don't expect model to be updated,
+                    ## so need to do this before 01, 012 cases below.
+                    nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+                    rOutput1d <- nimDerivs(wrapperMeta1(inputx), order = 0)
+                    rVals1d <- values(model, otherNodes)
+                    rLogProb1d <- model$getLogProb(calcNodes)
+                    rWrt1d <- values(model, wrt)
+                    
+                    nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+                    rOutput2d <- nimDerivs(wrapperMeta2(inputx), order = 0)
+                    rVals2d <- values(model, otherNodes)
+                    rLogProb2d <- model$getLogProb(calcNodes)
+                    rWrt2d <- values(model, wrt)
+
+                    nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+                    rOutput2d11 <- nimDerivs(wrapperMeta1(inputx), order = 1)
+                    rVals2d11 <- values(model, otherNodes)
+                    rLogProb2d11 <- model$getLogProb(calcNodes)
+                    rWrt2d11 <- values(model, wrt)
+                }
+
+                if(!useParamTransform) {
+                    rLogProb_new <- wrapper(x)
+                } else {
+                    transformed_x <- rDerivs$my_parameterTransform$transform(x)
+                    rLogProb_new <- wrapper(transformed_x)
+                }
+                rVals_new <- values(cModel, otherNodes)
+
                 ## now reset cModel for use in compiled derivs
-                nimCopy(savedMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+                nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
 
             } else {
                 rOutput12 <- rDerivs$run(x, 1:2)
@@ -1852,65 +1854,50 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 rLogProb12 <- model$getLogProb(calcNodes)
                 rWrt12 <- values(model, wrt)
 
+                nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
+                rOutput01 <- rDerivs$run(x, 0:1)
+                rLogProb01 <- model$getLogProb(calcNodes)
+                rVals01 <- values(model, otherNodes)
+                rWrt01 <- values(model, wrt)
+
+                nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
+                rOutput012 <- rDerivs$run(x, 0:2)
+                rVals012 <- values(model, otherNodes)
+                rLogProb012 <- model$getLogProb(calcNodes)
+                rWrt012 <- values(model, wrt)
+
+                nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
+                rOutput02 <- rDerivs$run(x, c(0,2))
+                rVals02 <- values(model, otherNodes)
+                rLogProb02 <- model$getLogProb(calcNodes)
+                rWrt02 <- values(model, wrt)
+
                 if(checkDoubleTape) {
                     ## Note that because inner deriv is order 1 or 2, don't expect model to be updated.
+                    nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
                     rOutput1d <- rDerivsMeta$metaDerivs1Run(x = x, order = 0)
                     rVals1d <- values(model, otherNodes)
                     rLogProb1d <- model$getLogProb(calcNodes)
                     rWrt1d <- values(model, wrt)
                     
+                    nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
                     rOutput2d <- rDerivsMeta$metaDerivs2Run(x = x, order = 0)
                     rVals2d <- values(model, otherNodes)
                     rLogProb2d <- model$getLogProb(calcNodes)
                     rWrt2d <- values(model, wrt)
                     
+                    nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
                     rOutput2d11 <- rDerivsMeta$metaDerivs1Run(x = x, order = 1)
                     rVals2d11 <- values(model, otherNodes)
                     rLogProb2d11 <- model$getLogProb(calcNodes)
                     rWrt2d11 <- values(model, wrt)
                 }
 
-                rOutput01 <- rDerivs$run(x, 0:1)
-                rLogProb01 <- model$getLogProb(calcNodes)
-                rVals01 <- values(model, otherNodes)
-                rWrt01 <- values(model, wrt)
+                values(model, wrt) <- x
                 rLogProb_new <- model$calculate(calcNodes)
-                ## why was I doing this?
-                ## model$calculate(otherNodes)
                 rVals_new <- values(model, otherNodes)
-
-                ## For full checking that order 012 does update state, we'd want to restore
-                ## old values and logProbs into model here.
-                rOutput012 <- rDerivs$run(x, 0:2)
-                rVals012 <- values(model, otherNodes)
-                rLogProb012 <- model$getLogProb(calcNodes)
-                rWrt012 <- values(model, wrt)
-
-                rOutput02 <- rDerivs$run(x, c(0,2))
-                rVals02 <- values(model, otherNodes)
-                rLogProb02 <- model$getLogProb(calcNodes)
-                rWrt02 <- values(model, wrt)
             }
 
-            ## Do this first because wrt should not be updated while (unless useParamTransform),
-            ## the order=1:2 case for non-meta-taping will update the wrt values.
-            if(checkDoubleTape) {
-                ## Note that because inner deriv is order 1 or 2, don't expect model to be updated.
-                cOutput1d <- cDerivsMeta$metaDerivs1Run(x = x, order = 0)
-                cVals1d <- values(cModel, otherNodes)
-                cLogProb1d <- cModel$getLogProb(calcNodes)
-                cWrt1d <- values(cModel, wrt)
-                
-                cOutput2d <- cDerivsMeta$metaDerivs2Run(x = x, order = 0)
-                cVals2d <- values(cModel, otherNodes)
-                cLogProb2d <- cModel$getLogProb(calcNodes)
-                cWrt2d <- values(cModel, wrt)
-
-                cOutput2d11 <- cDerivsMeta$metaDerivs1Run(x = x, order = 1)
-                cVals2d11 <- values(cModel, otherNodes)
-                cLogProb2d11 <- cModel$getLogProb(calcNodes)
-                cWrt2d11 <- values(cModel, wrt)
-            }
 
             ## Without useParamTransform, wrt should be updated, but with useParamTransform they should not.
             cOutput12 <- cDerivs$run(x, 1:2)
@@ -1918,27 +1905,49 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             cLogProb12 <- cModel$getLogProb(calcNodes)
             cWrt12 <- values(cModel, wrt)
 
+            nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
             cOutput01 <- cDerivs$run(x, 0:1)
             cVals01 <- values(cModel, otherNodes)
             cLogProb01 <- cModel$getLogProb(calcNodes)
             cWrt01 <- values(cModel, wrt)
-            cLogProb_new <- cModel$calculate(calcNodes)
-            ## why was I doing this?
-            ## cModel$calculate(otherNodes)
-            cVals_new <- values(cModel, otherNodes)
 
-            ## For full checking that order 012 does update state, we'd want to restore
-            ## old values and logProbs into model here.
+            nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
             cOutput012 <- cDerivs$run(x, 0:2)
             cVals012 <- values(cModel, otherNodes)
             cLogProb012 <- cModel$getLogProb(calcNodes)
             cWrt012 <- values(cModel, wrt)
 
+            nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
             cOutput02 <- cDerivs$run(x, c(0,2))
             cVals02 <- values(cModel, otherNodes)
             cLogProb02 <- cModel$getLogProb(calcNodes)
             cWrt02 <- values(cModel, wrt)
 
+            ## the order=1:2 case for non-meta-taping will update the wrt values.
+            if(checkDoubleTape) {
+                ## Note that because inner deriv is order 1 or 2, don't expect model to be updated.
+                nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+                cOutput1d <- cDerivsMeta$metaDerivs1Run(x = x, order = 0)
+                cVals1d <- values(cModel, otherNodes)
+                cLogProb1d <- cModel$getLogProb(calcNodes)
+                cWrt1d <- values(cModel, wrt)
+                
+                nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+                cOutput2d <- cDerivsMeta$metaDerivs2Run(x = x, order = 0)
+                cVals2d <- values(cModel, otherNodes)
+                cLogProb2d <- cModel$getLogProb(calcNodes)
+                cWrt2d <- values(cModel, wrt)
+
+                nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+                cOutput2d11 <- cDerivsMeta$metaDerivs1Run(x = x, order = 1)
+                cVals2d11 <- values(cModel, otherNodes)
+                cLogProb2d11 <- cModel$getLogProb(calcNodes)
+                cWrt2d11 <- values(cModel, wrt)
+            }
+
+            values(cModel, wrt) <- x
+            cLogProb_new <- cModel$calculate(calcNodes)
+            cVals_new <- values(cModel, otherNodes)
             
             ## Check results ##
 
