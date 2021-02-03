@@ -202,3 +202,4 @@ withNimbleOptions <- function(options, expr) {
     nimbleOptions(options)
     return(expr)
 }
+
