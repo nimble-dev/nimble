@@ -133,6 +133,15 @@ SEXP C_getDependencies(SEXP SgraphExtPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstr
   return(vectorInt_2_SEXP(ans, 1)); // add 1 index for R
 }
 
+SEXP C_getParents(SEXP SgraphExtPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstream) {
+  nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
+  vector<int> nodes = SEXP_2_vectorInt(Snodes, -1); // subtract 1 index for C
+  vector<int> omit = SEXP_2_vectorInt(Somit, -1);
+  bool downstream = SEXP_2_bool(Sdownstream);
+  vector<int> ans = graphPtr->getParents(nodes, omit, downstream);
+  return(vectorInt_2_SEXP(ans, 1)); // add 1 index for R
+}
+
 SEXP C_getDependencyPathCountOneNode(SEXP SgraphExtPtr, SEXP Snode) {
   nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
   int node = SEXP_2_int(Snode, 0, -1); // subtract 1 index for C
@@ -463,6 +472,312 @@ void nimbleGraph::getDependenciesOneNode(vector<int> &deps,
 #ifdef _DEBUG_GETDEPS
   PRINTF("      Done iterating through %i children of node %i\n", numChildren, CgraphID);
 #endif
+}
+
+/**************/
+/* getParents */
+/**************/
+
+// #define _DEBUG_GETPARENTS
+
+vector<int> nimbleGraph::getParents(const vector<int> &Cnodes, const vector<int> &Comit, bool upstream) {
+  // This is very much like getDependencies, but by default it does *not* include input nodes in output.
+    // assume on entry that touched = false on all nodes
+  // Cnodes and Comit are C-indices (meaning they start at 0)
+  int n = Comit.size();
+  int i;
+  vector<int> ans;
+  vector<int> tempAns; // This will store LHSinferred nodes, which need to be tracked during recursion but not returned
+  // touch omit nodes
+  for(i = 0; i < n; i++) {
+    graphNodeVec[ Comit[i] ]->touched = true;
+  }
+  n = Cnodes.size();
+  graphNode *thisGraphNode;
+  int thisGraphNodeID;
+  vector<int>::const_iterator omitFinder;
+#ifdef _DEBUG_GETPARENTS
+  std::cout<<"debugging getParents with n = "<<n<<std::endl;
+#endif
+  for(i = 0; i < n; i++) {
+    thisGraphNodeID = Cnodes[i];
+#ifdef _DEBUG_GETPARENTS
+    std::cout<<"working on input node C-ID = "<<thisGraphNodeID<<std::endl;
+#endif
+    omitFinder = std::find(Comit.begin(), Comit.end(), thisGraphNodeID);
+    if(omitFinder != Comit.end()) continue; // it was in omits
+    thisGraphNode = graphNodeVec[ thisGraphNodeID ];
+    if(!thisGraphNode->touched) { // It is not a parent of another input node
+#ifdef _DEBUG_GETPARENTS
+      std::cout<<"not touched"<<std::endl;
+#endif
+      if(thisGraphNode->type != LHSINFERRED) { // It is not a LHSinferred (split) node
+#ifdef _DEBUG_GETPARENTS
+      std::cout<<"not LHSinferred"<<std::endl;
+#endif
+	//      ans.push_back(thisGraphNodeID);
+	tempAns.push_back(thisGraphNodeID);
+	thisGraphNode->touched = true;
+      } else { // It is a LHSinferred node, so behave as if its full declared node was input
+#ifdef _DEBUG_GETPARENTS
+      std::cout<<"LHSinferred"<<std::endl;
+#endif
+	graphNode* nodeFunctionNode = thisGraphNode->nodeFunctionNode;
+	if(!nodeFunctionNode->touched) {
+	  int nodeFunctionNodeID = nodeFunctionNode->CgraphID;
+	  //ans.push_back(nodeFunctionNodeID);
+	  tempAns.push_back(nodeFunctionNodeID);
+	  nodeFunctionNode->touched = true;
+	  getParentsOneNode(ans, tempAns, nodeFunctionNodeID, upstream, 1, false);
+	  // This imitates getDependencies, but I am not clear if both this and the next call would both be needed
+	}
+      }
+      getParentsOneNode(ans, tempAns, thisGraphNodeID, upstream, 1);
+    } else { // This is a parent of another input node
+#ifdef _DEBUG_GETPARENTS
+      std::cout<<"touched"<<std::endl;
+#endif
+      if((thisGraphNode->type == STOCH) & !upstream) {
+	/* In this case the input node was already touched, so it is a parent */
+	/* of something earlier on the input list.  But since it was on the input list */
+	/* we still need to get its parents.  But if upstream is TRUE (==1), then */
+	/* its dependencies will have already been pursued so we don't need to */
+	getParentsOneNode(ans, tempAns, thisGraphNodeID, upstream, 1);
+      }
+    }
+  }
+  // untouch nodes and omit
+  n = Comit.size();
+  for(i = 0; i < n; i++) {
+    graphNodeVec[ Comit[i] ]->touched = false;
+  }
+  /* The purpose of storing tempAns (LHSINFERRED IDs) was so the touched flags could be cleared here: */
+  n = tempAns.size();
+  for(i = 0; i < n; i++) {
+    graphNodeVec[ tempAns[i] ]->touched = false;
+  }
+  n = ans.size();
+  for(i = 0; i < n; i++) {
+    graphNodeVec[ ans[i] ]->touched = false;
+  }
+  std::sort(ans.begin(), ans.end());
+  return(ans);
+}
+
+void nimbleGraph::getParentsOneNode(vector<int> &deps,
+				    vector<int> &tempDeps, /* LHSinferred */
+				    int CgraphID,
+				    bool upstream,
+				    unsigned int recursionDepth,
+				    bool followLHSinferred) {
+  if(recursionDepth > graphNodeVec.size()) {
+    PRINTF("ERROR: getDependencies has recursed too far.  Something must be wrong.\n");
+    return;
+  }
+  graphNode *thisGraphNode = graphNodeVec[CgraphID];
+  int numParents = thisGraphNode->parents.size();
+  int i(0);
+  graphNode *thisParentNode;
+  int thisParentCgraphID;
+#ifdef _DEBUG_GETPARENTS
+  std::cout<<"working on "<< numParents<<" parents"<<std::endl;
+#endif
+  for(; i < numParents; i++) {
+    thisParentNode = thisGraphNode->parents[i];
+    if(thisParentNode->touched) continue;
+    if(!followLHSinferred) { // I don't think this is relevant in the parent case (only the child case) but it shouldn't hurt
+      if(thisParentNode->type == LHSINFERRED) continue;
+    }
+    thisParentCgraphID = thisParentNode->CgraphID;
+#ifdef _DEBUG_GETPARENTS
+  std::cout<<"working on parent node C-ID "<< thisParentCgraphID<<std::endl;
+#endif
+    if(thisParentNode->type == LHSINFERRED)
+      tempDeps.push_back(thisParentNode->CgraphID);
+    else
+      deps.push_back(thisParentNode->CgraphID); 
+    thisParentNode->touched = true;
+    if(upstream | (thisParentNode->type != STOCH)) {
+      getParentsOneNode(deps, tempDeps, thisParentCgraphID, upstream, recursionDepth + 1);
+    }
+  }
+}
+
+/**********************************/
+/* getConditionallyIndependentSets*/
+/**********************************/
+
+SEXP C_getConditionallyIndependentSets(SEXP SgraphExtPtr,
+				       SEXP Snodes,
+				       SEXP SgivenNodes,
+				       SEXP Somit,
+				       SEXP SstartUp,
+				       SEXP SstartDown) {
+  nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
+  vector<int> nodes = SEXP_2_vectorInt(Snodes, -1); // subtract 1 index for C
+  vector<int> givenNodes = SEXP_2_vectorInt(SgivenNodes, -1); 
+  vector<int> omit = SEXP_2_vectorInt(Somit, -1);
+  bool startUp = SEXP_2_bool(SstartUp);
+  bool startDown = SEXP_2_bool(SstartDown);
+  vector<vector<int> > result = graphPtr->getAllCondIndSets(nodes, givenNodes, omit, startUp, startDown);
+  SEXP Sresult = PROTECT(Rf_allocVector(VECSXP, result.size() ) );
+  for(int i = 0; i < result.size(); ++i) {
+    SET_VECTOR_ELT(Sresult, i, PROTECT(vectorInt_2_SEXP(result[i], 1)));
+  }
+  UNPROTECT(1 + result.size());
+  return(Sresult); // add 1 index for R
+}
+
+vector<vector<int> > nimbleGraph::getAllCondIndSets(const vector<int> &Cnodes,
+						    const vector<int> &CgivenNodes,
+						    const vector<int> &Comit,
+						    bool startUp,
+						    bool startDown) {
+  vector<vector<int> > results;
+  if(!Cnodes.size()) return results;
+  
+  // Make isGivenVec.
+  vector<bool> isGivenVec(numNodes, false);
+  for(int i = 0; i < CgivenNodes.size(); ++i) {
+    isGivenVec[ CgivenNodes[i] ] = true;
+  }
+  
+  // Touch Comit for use by all iterations
+  for(int i = 0; i < Comit.size(); i++) {
+    graphNodeVec[ Comit[i] ]->touched = true;
+  }
+
+  // Get first seed node
+  int iCurrentInputNode = 0;
+  vector<int> inputNodes(1);
+  do {
+    int inputNodeID = Cnodes[iCurrentInputNode];
+    inputNodes[0] = inputNodeID;
+    // get conditionally independent set for that node
+    results.push_back(getCondIndSet(inputNodes, isGivenVec, Comit, startUp, startDown));
+    // Find next available seed node not already in a set
+    bool done(false);
+    while(!done) {
+      ++iCurrentInputNode;
+      done = iCurrentInputNode >= Cnodes.size();
+      if(!done) done = !(graphNodeVec[ Cnodes[iCurrentInputNode] ]->touched);
+    };
+  } while ( iCurrentInputNode < Cnodes.size() );
+
+  // untouch the entire graph
+  // the book-keeping of touched nodes across multiple cond. ind. sets
+  // would be potentially more burdensome than simply untouching everything.
+  for(int i = 0; i < numNodes; i++) {
+    graphNodeVec[ i ]->touched = false;
+  }
+
+  // return all sets
+  return results;
+}
+
+vector<int> nimbleGraph::getCondIndSet(const vector<int> &Cnodes,
+				       const vector<bool>  &isGivenVec,
+				       const vector<int> &Comit,
+				       bool startUp,
+				       bool startDown) {
+  // Cnodes are C (0-based) indices for stochastic nodes to seed the search
+  // for a conditionally independent set.  It makes most sense for this to be
+  // a single node.  If it is multiple nodes, and if they are really in different
+  // sets, the result will be a union of their sets.
+  //
+  // Comit are C indices for nodes to skip in searching.
+  //
+  // isGivenVec is the length of the graph.  An element is true if we shouldn't traverse through it.
+  // That means if looking up, stop recursing up but do look down, and
+  // if looking down, stop recursing down but do look up.
+  // As initially envisioned, isGivenVec would be true for top nodes and data nodes,
+  // resulting in conditionally independent sets of latent nodes.
+  //
+  // Cnodes should include only stochastic nodes.  This should be checked
+  // prior to entry to this function.  If it doesn't, reasonable results
+  // should still be returned.
+  //
+  // startUp and startDown say whether recursion should start up and/or start down
+  // If Cnodes are latent nodes, then startUp and startDown should both be true.
+  // If e.g. Cnodes give data nodes, then startUp should be true and startDown false.
+  //
+  // In this algo, LHSINFERRED nodes can be treated like any others.
+  int i;
+  vector<int> ans;
+  // omit nodes were already touched
+  int n = Cnodes.size();
+  graphNode *thisGraphNode;
+  int thisGraphNodeID;
+  vector<int>::const_iterator omitFinder;
+  for(i = 0; i < n; i++) {
+    thisGraphNodeID = Cnodes[i];
+    omitFinder = std::find(Comit.begin(), Comit.end(), thisGraphNodeID);
+    if(omitFinder != Comit.end()) continue; // it was in omits
+    thisGraphNode = graphNodeVec[ thisGraphNodeID ];
+    if(!thisGraphNode->touched) { // It has not been found starting from another input node
+      bool isGiven = isGivenVec[thisGraphNodeID];
+      if(thisGraphNode->type == STOCH && (!isGiven))
+	ans.push_back(thisGraphNodeID);
+      thisGraphNode->touched = true;
+      expandCondIndSet(ans, thisGraphNodeID, startUp, startDown, isGivenVec, 1);
+    }
+  }
+  /* The purpose of storing tempAns  was so the touched flags could be cleared here: */
+  std::sort(ans.begin(), ans.end());
+  return(ans);
+}
+
+void nimbleGraph::expandCondIndSet(vector<int> &deps,
+				   int CgraphID,
+				   bool goUp,
+				   bool goDown,
+				   const vector<bool> &isGivenVec,
+				   unsigned int recursionDepth) {
+  // We don't need a tempDeps in this algo b/c we untouch the entire graph when done.
+  graphNode *thisGraphNode = graphNodeVec[CgraphID];
+  for(int dir = 0; dir < 2; ++dir) { // 0 for down, 1 for up
+    bool goingDown = dir == 0;
+    if(goingDown && (!goDown)) continue;
+    if((!goingDown) && (!goUp)) continue;
+    int numRelatives;
+    graphNode *thisRelNode;
+    int thisRelCgraphID;
+    if(goingDown)
+      numRelatives = thisGraphNode->numChildren;
+    else
+      numRelatives = thisGraphNode->parents.size();
+    int i(0);
+    for(; i < numRelatives; i++) {
+      if(goingDown)
+	thisRelNode = thisGraphNode->children[i];
+      else
+	thisRelNode = thisGraphNode->parents[i];
+      
+      if(thisRelNode->touched) continue; // If it's already been handled, continue
+
+      thisRelCgraphID = thisRelNode->CgraphID;
+      bool isGiven = isGivenVec[thisRelCgraphID]; 
+      if(thisRelNode->type == STOCH && (!isGiven)) // Record latent stochastic nodes for results
+	deps.push_back(thisRelNode->CgraphID);
+      
+      thisRelNode->touched = true;
+
+      // If we're looking down, we always want to recurse up.
+      // If we're looking up, we always fully stop at a given node.
+      // If we're looking down, we recurse down if the isn't given.
+      // The whole recursion ends when every parent and child was already touched (processed).
+      // Note that other parent nodes of a given node found going down (a data node) need inclusion,
+      // but other child nodes of a given node found going up (a top node) do not need inclusion.
+      bool recurseUp = goingDown || ( (!goingDown) && (!isGiven) );
+      bool recurseDown = !isGiven;
+      
+      if(recurseUp || recurseDown) {
+	expandCondIndSet(deps, thisRelCgraphID,
+			 recurseUp, recurseDown,
+			 isGivenVec, recursionDepth + 1);
+      }
+    }
+  }
 }
 
 /**********************/

@@ -35,6 +35,13 @@ nimbleGraphClass <- setRefClass(
             }
             .Call(C_getDependencies, graphExtPtr, nodes, omit, downstream)
         },
+        getParents = function(nodeIDs, omitIDs = integer(), upstream = FALSE) {
+            message('set arg options')
+           .Call(nimble:::C_getParents, graphExtPtr, nodeIDs, omitIDs, upstream)
+        },
+        getConditionallyIndependentSets = function(nodeIDs) {
+            NULL
+        },
         getDependencyPathCountOneNode = function(node) {
             if(length(node) > 1)
                 stop("getDependencyPathCountOneNode: argument 'node' should provide a single node.")

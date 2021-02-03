@@ -1410,6 +1410,10 @@ whyInvalid <- function(value) {
 ## FIXME: this is a temporary function (used in BNP sampler setup and WAIC checking)
 ## until we bring this into the full model API
 getParentNodes <- function(nodes, model, returnType = 'names', stochOnly = FALSE) {
+  if(isTRUE(nimbleOptions("use_C_getParents"))) {
+    ans <- getParentNodesC(nodes, model, returnType = 'names', stochOnly)
+    return(ans)
+  }
     ## adapted from BUGS_modelDef creation of edgesFrom2To
     getParentNodesCore <- function(nodes, model, returnType = 'names', stochOnly = FALSE) {
         nodeIDs <- model$expandNodeNames(nodes, returnType = "ids")
@@ -1432,6 +1436,133 @@ getParentNodes <- function(nodes, model, returnType = 'names', stochOnly = FALSE
     edgesTo2From <- split(maps$edgesFrom, fedgesTo)
 
     getParentNodesCore(nodes, model, returnType, stochOnly)
+}
+
+getParentNodesC <-  function(nodes, model, returnType = 'names', stochOnly = FALSE) {
+    omitIDs <- integer()
+    upstream <- FALSE
+    returnScalarComponents  <-  FALSE
+    if(inherits(nodes, 'character')) {
+        elementIDs <- model$modelDef$nodeName2GraphIDs(nodes, FALSE)
+        nodeIDs <- unique(model$modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
+                          FALSE,
+                          FALSE,
+                          NA)}
+    parentIDs <- model$modelDef$maps$nimbleGraph$getParents(nodeIDs, omitIDs, upstream )
+    if(stochOnly) parentIDs <- parentIDs[model$modelDef$maps$types[parentIDs] == 'stoch']
+    if(returnType == 'ids'){
+        if(returnScalarComponents) print("nimble development warning: calling getParentNodes with returnType = ids and returnScalarComponents may not be meaningful.")
+        return(depIDs)
+    }
+    if(returnType == 'names') {
+        if(returnScalarComponents)
+            return(model$modelDef$maps$elementNames[parentIDs])
+        retVal <- model$modelDef$maps$nodeNames[parentIDs]
+        return(retVal)
+    }
+}
+
+# This function determines conditionally independent sets of nodes.
+# model: a nimble model
+# nodes: the starting nodes from which conditionally independent sets should be expanded. Default: all latent stochastic nodes.
+# givenNodes: nodes that are considered given for conditional independence. Default: All top nodes (parameters) and all data nodes.
+# omit: All nodes that should be omitted.  TBD whether this is a desired feature or just clutter.
+# type: Should conditionally independent sets be expanded by searching up through parents ("fromBottom"), down through children ("fromTop") or both.  If nodes are latent states, use "both" (default).
+# stochOnly: Should the returned node sets include only stochastic nodes? Default: TRUE
+# returnType: 'names' or 'ids'
+# returnScalarComponents: Break non-scalar nodes into scalar components or not?
+#
+# example: getConditionallyIndependentSets(model)
+getConditionallyIndependentSets <- function(model,
+                                            nodes,
+                                            givenNodes,
+                                            omit = integer(),
+                                            type = c("both", "fromTop", "fromBottom"),
+                                            stochOnly = TRUE,
+                                            returnType = 'names',
+                                            returnScalarComponents = FALSE) {
+  # message('What should we do about posterior predictive nodes?')
+  # I think sets of trailing (posterior predictive) nodes will not be of interest.
+  # Should default behavior exclude them?
+  type <- match.arg(type)
+  if(missing(nodes)) { # default to latent nodes
+    nodeIDs <- model$getNodeNames(latentOnly = TRUE, stochOnly = TRUE, returnType = 'ids')
+  } else {
+    if(is.character(nodes))
+      nodeIDs <- model$expandNodeNames(nodes, returnType = 'ids')
+  }
+  if(missing(givenNodes)) { # default to top nodes and data nodes. need to be deliberate about end nodes
+    givenNodeIDs <- c(model$getNodeNames(topOnly = TRUE, returnType = 'ids'),
+                      model$getNodeNames(dataOnly = TRUE, returnType = 'ids'))
+  } else {
+    if(is.character(givenNodes))
+      giveNodeIDs <- model$expandNodeNames(givenNodes, returnType = 'ids')
+  }
+  startUp <- startDown <- TRUE
+  if(type == "fromTop") startUp <- FALSE
+  if(type == "fromBottom") startDown <- FALSE
+  result <- .Call(nimble:::C_getConditionallyIndependentSets,
+                  model$modelDef$maps$nimbleGraph$graphExtPtr,
+                  nodeIDs,
+                  givenNodeIDs,
+                  omit,
+                  startUp,
+                  startDown)
+  if(returnType == 'ids' && returnScalarComponents)
+    message("nimble development warning: calling getConditionallyIndependentSets with returnType = ids and returnScalarComponents may not be meaningful.")
+  result <- lapply(result,
+                   function(IDs) {
+                     if(stochOnly) IDs <- IDs[model$modelDef$maps$types[IDs] == 'stoch']
+                     if(returnType == 'ids') IDs
+                     if(returnType == 'names') {
+                       if(returnScalarComponents)
+                         model$modelDef$maps$elementNames[IDs]
+                       else
+                         model$modelDef$maps$nodeNames[IDs]
+                     }
+                   })
+  result
+}
+
+# testConditionallyIndependentSets checks whether a set of nodes are conditionally independent
+# model: a nimble model
+# sets: a list of node names or IDs
+# intialize: should the model be forced into full initialization by full simulation (except data) and calculation?
+#
+# This works as follows:
+#    For each focal set sets[[i]]:
+#         Determine the logProb from calculating dependencies of sets[[i]] (which includes sets[[i]], data that depends on it, and deterministic nodes in between)
+#         Simulate dependencies of all other sets to change their values.
+#         Re-determine the logProb from calculating dependencies of sets[[i]]
+#         If sets[[i]] is really conditionally independent of other sets, its logProb should be unchanged by having simulated with all other sets.
+#
+# Example: testConditionallyIndependentSets(model, getConditionallyIndependentSets(model), TRUE)
+testConditionallyIndependentSets <- function(model, sets, initialize = TRUE) {
+  if(initialize) { # would be better to use our initializeModel method, but I am doing a quick-and-dirty version here:
+    model$simulate()
+    model$calculate()
+  }
+  # sets is a list of stochastic (and optionally deterministic) nodes.
+  # This function checks that the nodes in each element are conditionally independent of the others.
+  # We check this by simulating all but one set and checking that the logProb of the one set hasn't changed.
+  # We do that for each set.
+  ok <- TRUE
+  # Nodes for calculation/simulation for each set.
+  calcNodeSets <- lapply(sets, function(x) model$getDependencies(x))
+  for(i in seq_along(sets)) { # i is the set being currently checked
+    prevLogProb <- model$calculate(calcNodeSets[[i]]) ## find the logProb for set i
+    for(j in seq_along(sets)) {           # Simulate all other sets (with dependencies)
+      if(i != j) {
+        model$simulate(calcNodeSets[[j]]) # This assumes the bottom nodes of sets are data, which won't be simulated.
+      }
+    }
+    newLogProb <- model$calculate(calcNodeSets[[i]]) # find the logProb for set i again
+    if(prevLogProb != newLogProb) {                  # if it has changed, that set is not conditionally independent all the others
+      message(paste0("Problem: Set ", i, " is not conditionally independent."))
+      ok <- FALSE
+    }
+  }
+  ok
 }
 
 #' Information on initial values in a nimbleModel
