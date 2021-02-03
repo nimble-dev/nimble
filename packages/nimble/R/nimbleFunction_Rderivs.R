@@ -668,28 +668,31 @@ nimDerivs_nf <- function(nimFxn = NA, order = nimC(0,1,2),
 
   ## Initialize information for restoring model when needed
   e <- environment(derivFxn)
-  ## Detect if a model is involved
-  isModel <- sapply(names(e), function(x) is.model(e[[x]]))
-  if(any(isModel)) {
-      if(!exists('restoreInfo', e)) {
-          ## First nimDerivs call: save model state and initialize derivative status.
-          e$restoreInfo <- new.env()
-          wh <- which(isModel)
-          if(length(wh) != 1) stop("nimDerivs_nf: unexpectedly found no or multiple models.")
-          e$restoreInfo$model <- e[[names(e)[wh]]]
-          e$restoreInfo$currentDepth <- 1
-          e$restoreInfo$deepestDepth <- 1
-          vars <- e$restoreInfo$model$getVarNames(includeLogProb = TRUE)
-          e$restoreInfo$values <- list()
-          length(e$restoreInfo$values) <- length(vars)
-          for(v in seq_along(vars)) 
-              e$restoreInfo$values[[v]] <- e$restoreInfo$model[[vars[v]]]
-          names(e$restoreInfo$values) <- vars
-      } else {
-          ## We are in nested calls to nimDerivs.
-          e$restoreInfo$currentDepth <- e$restoreInfo$currentDepth + 1
-          if(e$restoreInfo$deepestDepth < e$restoreInfo$currentDepth)
-              e$restoreInfo$deepestDepth <- e$restoreInfo$currentDepth
+  ## Check if differentiating a method of a nf
+  if(is(derivFxn, 'refMethodDef') && is.nf(e$.self)) {
+      ## Detect if a model is involved
+      isModel <- sapply(names(e), function(x) is.model(e[[x]]))
+      if(any(isModel)) {
+          if(!exists('restoreInfo', e)) {
+              ## First nimDerivs call: save model state and initialize derivative status.
+              e$restoreInfo <- new.env()
+              wh <- which(isModel)
+              if(length(wh) != 1) stop("nimDerivs_nf: unexpectedly found no or multiple models.")
+              e$restoreInfo$model <- e[[names(e)[wh]]]
+              e$restoreInfo$currentDepth <- 1
+              e$restoreInfo$deepestDepth <- 1
+              vars <- e$restoreInfo$model$getVarNames(includeLogProb = TRUE)
+              e$restoreInfo$values <- list()
+              length(e$restoreInfo$values) <- length(vars)
+              for(v in seq_along(vars)) 
+                  e$restoreInfo$values[[v]] <- e$restoreInfo$model[[vars[v]]]
+              names(e$restoreInfo$values) <- vars
+          } else {
+              ## We are in nested calls to nimDerivs.
+              e$restoreInfo$currentDepth <- e$restoreInfo$currentDepth + 1
+              if(e$restoreInfo$deepestDepth < e$restoreInfo$currentDepth)
+                  e$restoreInfo$deepestDepth <- e$restoreInfo$currentDepth
+          }
       }
   }
   
@@ -717,7 +720,7 @@ nimDerivs_nf <- function(nimFxn = NA, order = nimC(0,1,2),
   }
 
   ## Restore model state if appropriate and update restoration info
-  if(exists('restoreInfo', e)) {
+  if(is(derivFxn, 'refMethodDef') && is.nf(e$.self) && exists('restoreInfo', e)) {
       ## Restore model state if double-taping or not asking for order 0 in single tape.
       ## Per NCT issue 256, compiled double-taping with inner tape = 0 does not update model,
       ## so mimicing that here.
@@ -733,7 +736,7 @@ nimDerivs_nf <- function(nimFxn = NA, order = nimC(0,1,2),
       } else {
           e$restoreInfo$currentDepth <- e$restoreInfo$currentDepth - 1
       }
-  } else warning("No restoration info found.")
+  } 
   
   ans
 }
