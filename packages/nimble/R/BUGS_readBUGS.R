@@ -372,10 +372,9 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
       source(initsFile, inits)
       inits <- as.list(inits)
     }
-  } else {
-    inits <- NULL
-  }
-  if(!(is.null(inits) || is.list(inits)))
+  } else inits <- NULL
+  if(is.null(inits)) inits <- list()  
+  if(!is.list(inits))
     stop("readBUGSmodel: invalid input for 'inits'.")
 
   # process var info

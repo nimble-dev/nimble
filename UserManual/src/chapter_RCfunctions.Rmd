@@ -284,7 +284,7 @@ datatype for the `control` parameter, whereas R's `optim` uses a simple R
 `list`. To define the `control` parameter, create a default value with
 the `nimOptimDefaultControl` function, and set any desired fields. For
 example usage, see the unit tests in
-[tests/test-optim.R](https://github.com/nimble-dev/nimble/blob/master/packages/nimble/inst/tests/test-optim.R).
+[tests/test-optim.R](https://github.com/nimble-dev/nimble/blob/master/packages/nimble/tests/testthat/test-optim.R).
 
 ### 'nim' synonyms for some functions {#sec:altern-keyw-some}
 

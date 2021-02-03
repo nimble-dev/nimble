@@ -1406,7 +1406,7 @@ sampler_CRP <- nimbleFunction(
         stop('sampler_CRP: In a model with multiple cluster parameters, the number of those parameters must all be the same.\n')
     min_nTilde <- nTilde[1]
     if(min_nTilde < n)
-      warning('sampler_CRP: The number of clusters based on the cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if it ever proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.\n')
+      warning('sampler_CRP: The number of clusters based on the cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if it ever proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.\n', call. = FALSE)
     
     ## Determine if concentration parameter is fixed or random (code similar to the one in sampleDPmeasure function).
     ## This is used in truncated case to tell user if model is proper or not.
@@ -1516,7 +1516,7 @@ sampler_CRP <- nimbleFunction(
             stop("sampler_CRP: cluster parameters must be independent across clusters.")
         if(!identical(sort(deps), sort(dataNodes)))
             warning("sampler_CRP: dependencies of cluster parameters include unexpected nodes: ",
-                    paste0(deps[!deps %in% dataNodes], collapse = ', '))
+                    paste0(deps[!deps %in% dataNodes], collapse = ', '), call. = FALSE)
     }
     
     identityLink <- TRUE
@@ -1838,7 +1838,7 @@ findClusterNodes <- function(model, target) {
             if(sum(all.vars(subExpr[[k]]) %in% modelVars)) { ## cases like mu[xi[i],eta[j]]
                 ## We are adding support for this case.
                 ## warning("findClusterNodes: multiple indexing variables in '", deparse(subExpr),
-                ##          "'. NIMBLE's CRP MCMC sampling not designed for this situation.")
+                ##          "'. NIMBLE's CRP MCMC sampling not designed for this situation.", call. = FALSE)
                 multipleStochIndexes[varIdx] <- TRUE
             }                
             k <- k+1
