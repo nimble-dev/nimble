@@ -2087,9 +2087,8 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 expect_identical(cOutput2d11$jacobian, cOutput012$hessian[,,1])
             }
 
-            ## wrt values should equal original wrt values if paramTransform, order !=0 or doubleTape
+            ## wrt values should equal original wrt values if order !=0 or doubleTape
             ## because setting of wrt in model is done within nimDerivs call, so should obey our rules about when model state is altered.
-            ## Model state: wrt values should be equal to `x`. (not correct always -- CJP 2021-01-23)
 
             if(!useParamTransform) {
                 ## Wrt values changed because assignment is outside of nimDerivs()
@@ -2101,7 +2100,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 expect_identical(cWrt012, x)
             } else {
                 expect_identical(rWrt01, x)
-                expect_identical(rWrt12, rWrt_orig)  # issue #268
+                expect_identical(rWrt12, rWrt_orig)  
                 expect_identical(rWrt012, x)
                 expect_identical(cWrt01, x)
                 expect_identical(cWrt12, cWrt_orig)
@@ -2109,8 +2108,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             }
 
             if(checkDoubleTape) {
-                ## Double tape with inner order not equal to 0 should not change wrt values.
-                ## Current issue #268 shows that 
+                ## Double tape wshould not change wrt values.
                 expect_identical(rWrt1d, rWrt_orig)
                 expect_identical(rWrt2d, rWrt_orig)
                 expect_identical(rWrt2d11, rWrt_orig)
@@ -2123,21 +2121,14 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             ## Those in not in calcNodes should never be changed. So maybe nothing to check.
             
             ## model state - when order 0 is included, logProb and determistic nodes should be updated; otherwise not
-            ## However, useFasterRderivs and useParamTransform, model$calculate is called in the method whose deriv
-            ## is taken, so even when order 0 is not included, expect updated values.
             expect_identical(rLogProb01, rLogProb_new)
             expect_identical(rVals01, rVals_new)
             expect_identical(rLogProb012, rLogProb_new)
             expect_identical(rVals012, rVals_new)
             expect_identical(rLogProb02, rLogProb_new)
             expect_identical(rVals02, rVals_new)
-            if(useFasterRderivs || useParamTransform) {
-                expect_identical(rLogProb12, rLogProb_new)
-                expect_identical(rVals12, rVals_new)
-            } else {
-                expect_identical(rLogProb12, rLogProb_orig)
-                expect_identical(rVals12, rVals_orig)
-            }
+            expect_identical(rLogProb12, rLogProb_orig)
+            expect_identical(rVals12, rVals_orig)
 
             if(checkDoubleTape) {
                 ## Double tapes here don't have order = 0 in inner tape, so model should not be updated.
@@ -2164,14 +2155,6 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
 
             expect_fun(cLogProb12, cLogProb_orig)
             expect_fun(cVals12, cVals_orig)
-            ## both of these wrap the assignment and calculate within nimDerivs so order != 0 should not change model state
-            ## if(useFasterRderivs || useParamTransform) {
-            ##     expect_fun(cLogProb12, cLogProb_new)
-            ##     expect_fun(cVals12, cVals_new)
-            ## } else {
-            ##     expect_fun(cLogProb12, cLogProb_orig)
-            ##     expect_fun(cVals12, cVals_orig)
-            ## }
 
             if(checkDoubleTape) {
                 ## Double tapes here don't have order = 0 in inner tape, so model should not be updated.
