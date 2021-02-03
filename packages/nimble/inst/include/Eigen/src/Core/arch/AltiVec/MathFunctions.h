@@ -16,8 +16,6 @@
 #ifndef EIGEN_MATH_FUNCTIONS_ALTIVEC_H
 #define EIGEN_MATH_FUNCTIONS_ALTIVEC_H
 
-#include <stdint.h>
-
 namespace Eigen {
 
 namespace internal {
@@ -240,8 +238,8 @@ static inline Packet2l ConvertToPacket2l(const Packet2d& x) {
 #else
   double tmp[2];
   memcpy(tmp, &x, sizeof(tmp));
-  Packet2l l = { static_cast<int64_t>(tmp[0]),
-                 static_cast<int64_t>(tmp[1]) };
+  Packet2l l = { static_cast<long long>(tmp[0]),
+                 static_cast<long long>(tmp[1]) };
   return l;
 #endif
 }

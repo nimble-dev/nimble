@@ -131,7 +131,7 @@ DenseBase<Derived>::NullaryExpr(Index rows, Index cols, const CustomNullaryOp& f
   */
 template<typename Derived>
 template<typename CustomNullaryOp>
-EIGEN_STRONG_INLINE const CwiseNullaryOp<CustomNullaryOp, typename DenseBase<Derived>::PlainObject>
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const CwiseNullaryOp<CustomNullaryOp, typename DenseBase<Derived>::PlainObject>
 DenseBase<Derived>::NullaryExpr(Index size, const CustomNullaryOp& func)
 {
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
@@ -170,7 +170,7 @@ DenseBase<Derived>::NullaryExpr(const CustomNullaryOp& func)
   * \sa class CwiseNullaryOp
   */
 template<typename Derived>
-EIGEN_STRONG_INLINE const typename DenseBase<Derived>::ConstantReturnType
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const typename DenseBase<Derived>::ConstantReturnType
 DenseBase<Derived>::Constant(Index rows, Index cols, const Scalar& value)
 {
   return DenseBase<Derived>::NullaryExpr(rows, cols, internal::scalar_constant_op<Scalar>(value));
@@ -860,6 +860,42 @@ EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const typename MatrixBase<Derived>::BasisR
 template<typename Derived>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const typename MatrixBase<Derived>::BasisReturnType MatrixBase<Derived>::UnitW()
 { return Derived::Unit(3); }
+
+/** \brief Set the coefficients of \c *this to the i-th unit (basis) vector
+  *
+  * \param i index of the unique coefficient to be set to 1
+  *
+  * \only_for_vectors
+  *
+  * \sa MatrixBase::setIdentity(), class CwiseNullaryOp, MatrixBase::Unit(Index,Index)
+  */
+template<typename Derived>
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& MatrixBase<Derived>::setUnit(Index i)
+{
+  EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived);
+  eigen_assert(i<size());
+  derived().setZero();
+  derived().coeffRef(i) = Scalar(1);
+  return derived();
+}
+
+/** \brief Resizes to the given \a newSize, and writes the i-th unit (basis) vector into *this.
+  *
+  * \param newSize the new size of the vector
+  * \param i index of the unique coefficient to be set to 1
+  *
+  * \only_for_vectors
+  *
+  * \sa MatrixBase::setIdentity(), class CwiseNullaryOp, MatrixBase::Unit(Index,Index)
+  */
+template<typename Derived>
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& MatrixBase<Derived>::setUnit(Index newSize, Index i)
+{
+  EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived);
+  eigen_assert(i<newSize);
+  derived().resize(newSize);
+  return setUnit(i);
+}
 
 } // end namespace Eigen
 
