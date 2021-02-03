@@ -1720,6 +1720,91 @@ test_that('cc_checkScalar operates correctly', {
 
 })
 
+test_that('MCMC assigned posterior_predictive_branch sampler correctly', {
+    expect_true(nimbleOptions('MCMCjointlySamplePredictiveBranches'))
+    code <- nimbleCode({
+        tau ~ dgamma(0.1, 0.1)
+        x[1] ~ dnorm(0, tau)
+        for(t in 1:N) { y[t] ~ dnorm(2*x[t], 1) }
+        for(t in 2:N) { x[t] ~ dnorm(x[t-1], tau) }
+    })
+    N <-  10
+    constants <- list(N = N)
+    inits <- list(tau = 1)
+    ##
+    y <- 1:N
+    data <- list(y = y)
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    conf <- configureMCMC(Rmodel, print = FALSE)
+    expect_true(all(sapply(conf$getSamplers(), function(x) x$name) == c('conjugate_dgamma_dnorm', rep('conjugate_dnorm_dnorm', 10))))
+    y <- c(1, 2, 3, NA, 5, 6, 7, 8, NA, NA)
+    data <- list(y = y)
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    conf <- configureMCMC(Rmodel, print = FALSE)
+    expect_true(all(sapply(conf$getSamplers(), function(x) x$name) ==
+                    c('conjugate_dgamma_dnorm',
+                      rep('conjugate_dnorm_dnorm', 5),
+                      'posterior_predictive',
+                      rep('conjugate_dnorm_dnorm', 3),
+                      'posterior_predictive_branch')))
+    y <- c(1:(N/2), rep(NA, N/2))
+    data <- list(y = y)
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    conf <- configureMCMC(Rmodel, print = FALSE)
+    expect_true(all(sapply(conf$getSamplers(), function(x) x$name) ==
+                    c('conjugate_dgamma_dnorm',
+                      rep('conjugate_dnorm_dnorm', 5),
+                      'posterior_predictive_branch')))
+    y <- rep(NA, N)
+    data <- list(y = y)
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    conf <- configureMCMC(Rmodel, print = FALSE)
+    expect_true(all(sapply(conf$getSamplers(), function(x) x$name) ==
+                    'posterior_predictive_branch'))
+    y <- c(NA, NA, NA, NA, 4, NA, NA, NA, NA, NA)
+    data <- list(y = y)
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    conf <- configureMCMC(Rmodel, print = FALSE)
+    expect_true(all(sapply(conf$getSamplers(), function(x) x$name) ==
+                    c('conjugate_dgamma_dnorm',
+                      rep('conjugate_dnorm_dnorm', 2),
+                      'posterior_predictive',
+                      'conjugate_dnorm_dnorm',
+                      'posterior_predictive',
+                      'conjugate_dnorm_dnorm',
+                      'posterior_predictive',
+                      'conjugate_dnorm_dnorm',
+                      'posterior_predictive',
+                      'posterior_predictive_branch')))
+    ##
+    code <- nimbleCode({
+        a ~ dnorm(0, 1)
+        y ~ dnorm(a, 1)
+        b[1] ~ dnorm(a, 1)
+        b[2] ~ dnorm(a, 1)
+        c ~ dnorm(b[1] + b[2], 1)
+    })
+    Rmodel <- nimbleModel(code)
+    conf <- configureMCMC(Rmodel, print = FALSE)
+    expect_true(sapply(conf$getSamplers(), function(x) x$name) == 'posterior_predictive_branch')
+    Rmodel <- nimbleModel(code, data = list(y = 1))
+    conf <- configureMCMC(Rmodel, print = FALSE)
+    expect_true(all(sapply(conf$getSamplers(), function(x) x$name) ==
+                    c('conjugate_dnorm_dnorm',
+                      rep('posterior_predictive_branch', 2))))
+    Rmodel <- nimbleModel(code, data = list(y = 1))
+    conf <- configureMCMC(Rmodel, nodes = c('a', 'b[1]', 'c'), print = FALSE)
+    expect_true(all(sapply(conf$getSamplers(), function(x) x$name) ==
+                    c('conjugate_dnorm_dnorm',
+                      rep('posterior_predictive_branch', 1))))
+    Rmodel <- nimbleModel(code, data = list(y = 1))
+    conf <- configureMCMC(Rmodel, nodes = c('a', 'b[1]', 'b[2]'), print = FALSE)
+    expect_true(all(sapply(conf$getSamplers(), function(x) x$name) ==
+                    c('conjugate_dnorm_dnorm',
+                      rep('conjugate_dnorm_dnorm', 2))))
+})
+
+
 sink(NULL)
 
 if(!generatingGoldFile) {
