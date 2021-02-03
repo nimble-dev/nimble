@@ -185,7 +185,9 @@ print: A logical argument specifying whether to print the montiors and samplers.
             } else {
                 ## determine node branch points of any trailing model branches of entirely non-data nodes.
                 ## call these posterior predictive branch nodes - they'll get a posterior_predictive_branch sampler.
+                ## convert to node IDs:
                 nodeIDs <- model$expandNodeNames(nodes, returnType = 'ids')
+                nodeIDsOrig <- nodeIDs
                 posteriorPredictiveBranchNodes <- character()
                 anyPPnodes <- any(model$isEndNode(model$getNodeNames(stochOnly = TRUE, includeData = FALSE)))
                 ## DT: decided I didn't like this additional output message below;
@@ -195,37 +197,34 @@ print: A logical argument specifying whether to print the montiors and samplers.
                 ##}
                 if(getNimbleOption('MCMCjointlySamplePredictiveBranches') & anyPPnodes) {
                     stochNonDataIDs <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE, returnType = 'ids')
+                    ## all potential (candidate) posterior predictive branch nodes:
                     candidateNodeIDs <- stochNonDataIDs[!model$isEndNode(stochNonDataIDs)]
                     dataNodeIDs <- model$getNodeNames(dataOnly = TRUE, returnType = 'ids')
                     dataNodeParentIDs <- model$expandNodeNames(getParentNodes(dataNodeIDs, model, stochOnly = TRUE), returnType = 'ids')
+                    ## remove from candidate nodes all direct parents of data nodes:
                     candidateNodeIDs <- setdiff(candidateNodeIDs, dataNodeParentIDs)
                     nCandidate <- length(candidateNodeIDs)
                     nextCandInd <- 1
                     posteriorPredictiveBranchNodeIDs <- numeric()
                     while(nextCandInd <= nCandidate) {
                         thisCandNodeID <- as.numeric(candidateNodeIDs[nextCandInd])
+                        ## skip candidate nodes that have any downstream data nodes:
                         if(length(model$getDependencies(thisCandNodeID, dataOnly = TRUE, downstream = TRUE, returnType = 'ids')) > 0) {
-                            nextCandInd <- nextCandInd + 1
-                            next
-                        }
+                            nextCandInd <- nextCandInd + 1;   next }
+                        ## skip candidate nodes for which the entire resulting branch wasn't going to be sampled:
+                        if(!all(model$getDependencies(thisCandNodeID, stochOnly = TRUE, downstream = TRUE, returnType = 'ids') %in% nodeIDsOrig)) {
+                            nextCandInd <- nextCandInd + 1;   next }
+                        ## found a posterior predictive branch node:
                         posteriorPredictiveBranchNodeIDs <- c(posteriorPredictiveBranchNodeIDs, thisCandNodeID)
+                        ## remove stochastic nodes which are within this branch from the nodeIDs to be assigned samplers:
+                        nodeIDs <- setdiff(nodeIDs, model$getDependencies(thisCandNodeID, self = FALSE, stochOnly = TRUE, downstream = TRUE, returnType = 'ids'))
+                        ## update candidateNodeIDs, removing downstream stochastic dependencies of this branch node from the candidate set:
                         if(nextCandInd > 1)   candidateNodeIDs <- candidateNodeIDs[-(1:(nextCandInd-1))]
                         candidateNodeIDs <- setdiff(candidateNodeIDs, model$getDependencies(thisCandNodeID, stochOnly = TRUE, downstream = TRUE, returnType = 'ids'))
                         nCandidate <- length(candidateNodeIDs)
                         nextCandInd <- 1
                     }
-                    indToKeep <- rep(TRUE, length(posteriorPredictiveBranchNodeIDs))
-                    for(i in seq_along(posteriorPredictiveBranchNodeIDs)) {
-                        nID <- posteriorPredictiveBranchNodeIDs[i]
-                        if(length(model$getDependencies(nID, dataOnly = TRUE, downstream = TRUE, returnType = 'ids')) > 0) stop('something went wrong in configureMCMC, finding posterior predictive branch nodes')
-                        ## if all nodes in the posterior predictive branch were going to be sampled:
-                        if(!all(model$getDependencies(nID, stochOnly = TRUE, downstream = TRUE, returnType = 'ids') %in% nodeIDs))   indToKeep[i] <- FALSE
-                    }
-                    posteriorPredictiveBranchNodeIDs <- posteriorPredictiveBranchNodeIDs[indToKeep]
-                    for(i in seq_along(posteriorPredictiveBranchNodeIDs)) {
-                        nID <- posteriorPredictiveBranchNodeIDs[i]
-                        nodeIDs <- setdiff(nodeIDs, model$getDependencies(nID, self = FALSE, stochOnly = TRUE, downstream = TRUE, returnType = 'ids'))
-                    }
+                    ## convert back to node names:
                     nodes <- model$modelDef$maps$nodeNames[nodeIDs]
                     posteriorPredictiveBranchNodes <- model$modelDef$maps$nodeNames[posteriorPredictiveBranchNodeIDs]
                 }
