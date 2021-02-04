@@ -1820,21 +1820,21 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                     ## so need to do this before 01, 012 cases below.
                     nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
                     rOutput1d <- nimDerivs(wrapperMeta1(inputx), order = 0)
-                    rVals1d <- values(model, otherNodes)
-                    rLogProb1d <- model$getLogProb(calcNodes)
-                    rWrt1d <- values(model, wrt)
+                    rVals1d <- values(cModel, otherNodes)
+                    rLogProb1d <- cModel$getLogProb(calcNodes)
+                    rWrt1d <- values(cModel, wrt)
                     
                     nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
                     rOutput2d <- nimDerivs(wrapperMeta2(inputx), order = 0)
-                    rVals2d <- values(model, otherNodes)
-                    rLogProb2d <- model$getLogProb(calcNodes)
-                    rWrt2d <- values(model, wrt)
+                    rVals2d <- values(cModel, otherNodes)
+                    rLogProb2d <- cModel$getLogProb(calcNodes)
+                    rWrt2d <- values(cModel, wrt)
 
                     nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
                     rOutput2d11 <- nimDerivs(wrapperMeta1(inputx), order = 1)
-                    rVals2d11 <- values(model, otherNodes)
-                    rLogProb2d11 <- model$getLogProb(calcNodes)
-                    rWrt2d11 <- values(model, wrt)
+                    rVals2d11 <- values(cModel, otherNodes)
+                    rLogProb2d11 <- cModel$getLogProb(calcNodes)
+                    rWrt2d11 <- values(cModel, wrt)
                 }
 
                 if(!useParamTransform) {
@@ -2110,10 +2110,17 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             }
 
             if(checkDoubleTape) {
-                ## Double tape wshould not change wrt values.
-                expect_identical(rWrt1d, rWrt_orig)
-                expect_identical(rWrt2d, rWrt_orig)
-                expect_identical(rWrt2d11, rWrt_orig)
+                ## Double tape should not change wrt values, 
+                ## fasterRderivs takes deriv of a function, so nimDerivs will not restore values.
+                if(useFasterRderivs) {
+                    expect_identical(rWrt1d, x)
+                    expect_identical(rWrt2d, x)
+                    expect_identical(rWrt2d11, x)
+                } else {
+                    expect_identical(rWrt1d, rWrt_orig)
+                    expect_identical(rWrt2d, rWrt_orig)
+                    expect_identical(rWrt2d11, rWrt_orig)
+                }
                 expect_identical(cWrt1d, cWrt_orig)
                 expect_identical(cWrt2d, cWrt_orig)
                 expect_identical(cWrt2d11, cWrt_orig)
@@ -2140,12 +2147,21 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             
             if(checkDoubleTape) {
                 ## Double tapes here don't have order = 0 in inner tape, so model should not be updated.
-                expect_identical(rLogProb1d, rLogProb_orig)
-                expect_identical(rLogProb2d, rLogProb_orig)
-                expect_identical(rLogProb2d11, rLogProb_orig)
-                expect_identical(rVals1d, rVals_orig)
-                expect_identical(rVals2d, rVals_orig)
-                expect_identical(rVals2d11, rVals_orig)
+                if(useFasterRderivs) { ## fasterRderivs takes deriv of a function, so nimDerivs will not restore values.
+                    expect_identical(rLogProb1d, rLogProb_new)
+                    expect_identical(rLogProb2d, rLogProb_new)
+                    expect_identical(rLogProb2d11, rLogProb_new)
+                    expect_identical(rVals1d, rVals_new)
+                    expect_identical(rVals2d, rVals_new)
+                    expect_identical(rVals2d11, rVals_new)
+                } else {
+                    expect_identical(rLogProb1d, rLogProb_orig)
+                    expect_identical(rLogProb2d, rLogProb_orig)
+                    expect_identical(rLogProb2d11, rLogProb_orig)
+                    expect_identical(rVals1d, rVals_orig)
+                    expect_identical(rVals2d, rVals_orig)
+                    expect_identical(rVals2d11, rVals_orig)
+                }
             }
             
             ## Not clear if next check should be expect_identical (in many cases they are identical);
