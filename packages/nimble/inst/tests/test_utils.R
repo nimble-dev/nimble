@@ -2100,7 +2100,9 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 expect_identical(cWrt012, x)
             } else {
                 expect_identical(rWrt01, x)
-                expect_identical(rWrt12, rWrt_orig)  
+                if(!useFasterRderivs) {
+                    expect_identical(rWrt12, rWrt_orig)
+                } else expect_identical(rWrt12, x)
                 expect_identical(rWrt012, x)
                 expect_identical(cWrt01, x)
                 expect_identical(cWrt12, cWrt_orig)
@@ -2127,9 +2129,15 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             expect_identical(rVals012, rVals_new)
             expect_identical(rLogProb02, rLogProb_new)
             expect_identical(rVals02, rVals_new)
-            expect_identical(rLogProb12, rLogProb_orig)
-            expect_identical(rVals12, rVals_orig)
-
+            ## fasterRderivs takes deriv of a function, so nimDerivs will not restore values.
+            if(!useFasterRderivs) {
+                expect_identical(rLogProb12, rLogProb_orig)
+                expect_identical(rVals12, rVals_orig)
+            } else {
+                expect_identical(rLogProb12, rLogProb_new)
+	        expect_identical(rVals12, rVals_new)
+            }
+            
             if(checkDoubleTape) {
                 ## Double tapes here don't have order = 0 in inner tape, so model should not be updated.
                 expect_identical(rLogProb1d, rLogProb_orig)
