@@ -675,10 +675,10 @@ nimDerivs_nf <- function(nimFxn = NA, order = nimC(0,1,2),
       if(any(isModel)) {
           if(!exists('restoreInfo', e)) {
               ## First nimDerivs call: save model state and initialize derivative status.
+              modelElement <- names(e)[which(isModel)]
               e$restoreInfo <- new.env()
-              wh <- which(isModel)
-              if(length(wh) != 1) stop("nimDerivs_nf: unexpectedly found no or multiple models.")
-              e$restoreInfo$model <- e[[names(e)[wh]]]
+              if(length(modelElement) != 1) stop("nimDerivs_nf: unexpectedly found no or multiple models.")
+              e$restoreInfo$model <- e[[modelElement]]
               e$restoreInfo$currentDepth <- 1
               e$restoreInfo$deepestDepth <- 1
               vars <- e$restoreInfo$model$getVarNames(includeLogProb = TRUE)
