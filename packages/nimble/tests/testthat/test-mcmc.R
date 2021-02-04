@@ -1721,6 +1721,8 @@ test_that('cc_checkScalar operates correctly', {
 })
 
 test_that('MCMC assigned posterior_predictive_branch sampler correctly', {
+    nimblePPBranchSamplerSettingTemp <- getNimbleOption('MCMCjointlySamplePredictiveBranches')
+    nimbleOptions(MCMCjointlySamplePredictiveBranches = TRUE)
     expect_true(nimbleOptions('MCMCjointlySamplePredictiveBranches'))
     code <- nimbleCode({
         tau ~ dgamma(0.1, 0.1)
@@ -1802,6 +1804,7 @@ test_that('MCMC assigned posterior_predictive_branch sampler correctly', {
     expect_true(all(sapply(conf$getSamplers(), function(x) x$name) ==
                     c('conjugate_dnorm_dnorm',
                       rep('conjugate_dnorm_dnorm', 2))))
+    nimbleOptions(MCMCjointlySamplePredictiveBranches = nimblePPBranchSamplerSettingTemp)
 })
 
 
