@@ -208,19 +208,23 @@ print: A logical argument specifying whether to print the montiors and samplers.
                     posteriorPredictiveBranchNodeIDs <- numeric()
                     while(nextCandInd <= nCandidate) {
                         thisCandNodeID <- as.numeric(candidateNodeIDs[nextCandInd])
+                        stochDownstreamNoSelfIDs <- model$getDependencies(thisCandNodeID, self = FALSE, stochOnly = TRUE, downstream = TRUE, returnType = 'ids')
                         ## skip candidate nodes that have any downstream data nodes:
-                        if(length(model$getDependencies(thisCandNodeID, dataOnly = TRUE, downstream = TRUE, returnType = 'ids')) > 0) {
-                            nextCandInd <- nextCandInd + 1;   next }
+                        #####if(length(model$getDependencies(thisCandNodeID, dataOnly = TRUE, downstream = TRUE, returnType = 'ids')) > 0) {
+                        if(length(intersect(stochDownstreamNoSelfIDs, dataNodeIDs)) > 0)   { nextCandInd <- nextCandInd + 1;   next }
                         ## skip candidate nodes for which the entire resulting branch wasn't going to be sampled:
-                        if(!all(model$getDependencies(thisCandNodeID, stochOnly = TRUE, downstream = TRUE, returnType = 'ids') %in% nodeIDsOrig)) {
-                            nextCandInd <- nextCandInd + 1;   next }
+                        #####if(!all(model$getDependencies(thisCandNodeID, stochOnly = TRUE, downstream = TRUE, returnType = 'ids') %in% nodeIDsOrig)) {
+                        if(!all(c(thisCandNodeID, stochDownstreamNoSelfIDs) %in% nodeIDsOrig))   { nextCandInd <- nextCandInd + 1;   next }
                         ## found a posterior predictive branch node:
                         posteriorPredictiveBranchNodeIDs <- c(posteriorPredictiveBranchNodeIDs, thisCandNodeID)
                         ## remove stochastic nodes which are within this branch from the nodeIDs to be assigned samplers:
-                        nodeIDs <- setdiff(nodeIDs, model$getDependencies(thisCandNodeID, self = FALSE, stochOnly = TRUE, downstream = TRUE, returnType = 'ids'))
+                        #####nodeIDs <- setdiff(nodeIDs, model$getDependencies(thisCandNodeID, self = FALSE, stochOnly = TRUE, downstream = TRUE, returnType = 'ids'))
+                        nodeIDs <- setdiff(nodeIDs, stochDownstreamNoSelfIDs)
                         ## update candidateNodeIDs, removing downstream stochastic dependencies of this branch node from the candidate set:
-                        if(nextCandInd > 1)   candidateNodeIDs <- candidateNodeIDs[-(1:(nextCandInd-1))]
-                        candidateNodeIDs <- setdiff(candidateNodeIDs, model$getDependencies(thisCandNodeID, stochOnly = TRUE, downstream = TRUE, returnType = 'ids'))
+                        #####if(nextCandInd > 1)   candidateNodeIDs <- candidateNodeIDs[-(1:(nextCandInd-1))]
+                        #####candidateNodeIDs <- setdiff(candidateNodeIDs, model$getDependencies(thisCandNodeID, stochOnly = TRUE, downstream = TRUE, returnType = 'ids'))
+                        candidateNodeIDs <- candidateNodeIDs[-(1:nextCandInd)]
+                        candidateNodeIDs <- setdiff(candidateNodeIDs, stochDownstreamNoSelfIDs)
                         nCandidate <- length(candidateNodeIDs)
                         nextCandInd <- 1
                     }
