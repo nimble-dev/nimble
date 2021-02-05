@@ -92,9 +92,11 @@ nimbleOrRfunctionNames <- c('[',
                             paste0(c('d','r','q','p'), 't'),
                             paste0(c('d','r','q','p'), 'exp'),
                             'nimC', 'nimRep', 'nimSeq', 'diag',
+                            'nimNumeric','nimMatrix','nimArray',
                             'length')
 
-functionsThatShouldNeverBeReplacedInBUGScode <- c(':','nimC','nimRep','nimSeq', 'diag')
+functionsThatShouldNeverBeReplacedInBUGScode <- c(':','nimC','nimRep','nimSeq', 'diag',
+                                                  'nimNumeric', 'nimMatrix', 'nimArray')
 
 #' BUGSdeclClass contains the information extracted from one BUGS declaration
 BUGSdeclClass <- setRefClass(
