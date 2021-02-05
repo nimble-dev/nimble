@@ -1018,7 +1018,7 @@ sampler_HMC_BASE <- nimbleFunctionVirtual(
         getMaxTreeDepth         = function() { returnType(double()) },
         getNumDivergences       = function() { returnType(double()) },
         getNumTimesMaxTreeDepth = function() { returnType(double()) },
-        setNwarmup              = function(x = double()) { }
+        setNwarmup              = function(MCMCniter = double(), MCMCchain = double()) { }
     )
 )
 
