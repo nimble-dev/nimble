@@ -11,9 +11,7 @@
 #ifndef EIGEN_META_H
 #define EIGEN_META_H
 
-#include <stdint.h>
-
-#if defined(__CUDA_ARCH__)
+#if defined(EIGEN_CUDA_ARCH)
 #include <cfloat>
 #include <math_constants.h>
 #endif
@@ -99,17 +97,22 @@ template<> struct is_arithmetic<unsigned int>  { enum { value = true }; };
 template<> struct is_arithmetic<signed long>   { enum { value = true }; };
 template<> struct is_arithmetic<unsigned long> { enum { value = true }; };
 
-template<typename T> struct is_integral        { enum { value = false }; };
-template<> struct is_integral<bool>            { enum { value = true }; };
-template<> struct is_integral<char>            { enum { value = true }; };
-template<> struct is_integral<signed char>     { enum { value = true }; };
-template<> struct is_integral<unsigned char>   { enum { value = true }; };
-template<> struct is_integral<signed short>    { enum { value = true }; };
-template<> struct is_integral<unsigned short>  { enum { value = true }; };
-template<> struct is_integral<signed int>      { enum { value = true }; };
-template<> struct is_integral<unsigned int>    { enum { value = true }; };
-template<> struct is_integral<signed long>     { enum { value = true }; };
-template<> struct is_integral<unsigned long>   { enum { value = true }; };
+#if EIGEN_HAS_CXX11
+using std::is_integral;
+#else
+template<typename T> struct is_integral               { enum { value = false }; };
+template<> struct is_integral<bool>                   { enum { value = true }; };
+template<> struct is_integral<char>                   { enum { value = true }; };
+template<> struct is_integral<signed char>            { enum { value = true }; };
+template<> struct is_integral<unsigned char>          { enum { value = true }; };
+template<> struct is_integral<signed short>           { enum { value = true }; };
+template<> struct is_integral<unsigned short>         { enum { value = true }; };
+template<> struct is_integral<signed int>             { enum { value = true }; };
+template<> struct is_integral<unsigned int>           { enum { value = true }; };
+template<> struct is_integral<signed long>            { enum { value = true }; };
+template<> struct is_integral<unsigned long>          { enum { value = true }; };
+#endif
+
 
 template <typename T> struct add_const { typedef const T type; };
 template <typename T> struct add_const<T&> { typedef T& type; };
@@ -166,7 +169,7 @@ template<bool Condition, typename T=void> struct enable_if;
 template<typename T> struct enable_if<true,T>
 { typedef T type; };
 
-#if defined(__CUDA_ARCH__)
+#if defined(EIGEN_CUDA_ARCH)
 #if !defined(__FLT_EPSILON__)
 #define __FLT_EPSILON__ FLT_EPSILON
 #define __DBL_EPSILON__ DBL_EPSILON
@@ -245,23 +248,23 @@ template<> struct numeric_limits<unsigned long>
   EIGEN_DEVICE_FUNC
   static unsigned long (min)() { return 0; }
 };
-template<> struct numeric_limits<int64_t>
+template<> struct numeric_limits<long long>
 {
   EIGEN_DEVICE_FUNC
-  static int64_t epsilon() { return 0; }
+  static long long epsilon() { return 0; }
   EIGEN_DEVICE_FUNC
-  static int64_t (max)() { return LLONG_MAX; }
+  static long long (max)() { return LLONG_MAX; }
   EIGEN_DEVICE_FUNC
-  static int64_t (min)() { return LLONG_MIN; }
+  static long long (min)() { return LLONG_MIN; }
 };
-template<> struct numeric_limits<uint64_t>
+template<> struct numeric_limits<unsigned long long>
 {
   EIGEN_DEVICE_FUNC
-  static uint64_t epsilon() { return 0; }
+  static unsigned long long epsilon() { return 0; }
   EIGEN_DEVICE_FUNC
-  static uint64_t (max)() { return ULLONG_MAX; }
+  static unsigned long long (max)() { return ULLONG_MAX; }
   EIGEN_DEVICE_FUNC
-  static uint64_t (min)() { return 0; }
+  static unsigned long long (min)() { return 0; }
 };
 
 }
@@ -279,6 +282,59 @@ protected:
   EIGEN_DEVICE_FUNC noncopyable() {}
   EIGEN_DEVICE_FUNC ~noncopyable() {}
 };
+
+/** \internal
+  * Provides access to the number of elements in the object of as a compile-time constant expression.
+  * It "returns" Eigen::Dynamic if the size cannot be resolved at compile-time (default).
+  *
+  * Similar to std::tuple_size, but more general.
+  *
+  * It currently supports:
+  *  - any types T defining T::SizeAtCompileTime
+  *  - plain C arrays as T[N]
+  *  - std::array (c++11)
+  *  - some internal types such as SingleRange and AllRange
+  *
+  * The second template parameter eases SFINAE-based specializations.
+  */
+template<typename T, typename EnableIf = void> struct array_size {
+  enum { value = Dynamic };
+};
+
+template<typename T> struct array_size<T,typename internal::enable_if<((T::SizeAtCompileTime&0)==0)>::type> {
+  enum { value = T::SizeAtCompileTime };
+};
+
+template<typename T, int N> struct array_size<const T (&)[N]> {
+  enum { value = N };
+};
+template<typename T, int N> struct array_size<T (&)[N]> {
+  enum { value = N };
+};
+
+#if EIGEN_HAS_CXX11
+template<typename T, std::size_t N> struct array_size<const std::array<T,N> > {
+  enum { value = N };
+};
+template<typename T, std::size_t N> struct array_size<std::array<T,N> > {
+  enum { value = N };
+};
+#endif
+
+/** \internal
+  * Analogue of the std::size free function.
+  * It returns the size of the container or view \a x of type \c T
+  *
+  * It currently supports:
+  *  - any types T defining a member T::size() const
+  *  - plain C arrays as T[N]
+  *
+  */
+template<typename T>
+Index size(const T& x) { return x.size(); }
+
+template<typename T,std::size_t N>
+Index size(const T (&) [N]) { return N; }
 
 /** \internal
   * Convenient struct to get the result type of a unary or binary functor.
@@ -377,10 +433,10 @@ struct meta_no  { char a[2]; };
 template <typename T>
 struct has_ReturnType
 {
-  template <typename C> static meta_yes testFunctor(typename C::ReturnType const *);
-  template <typename C> static meta_no testFunctor(...);
+  template <typename C> static meta_yes testFunctor(C const *, typename C::ReturnType const * = 0);
+  template <typename C> static meta_no  testFunctor(...);
 
-  enum { value = sizeof(testFunctor<T>(0)) == sizeof(meta_yes) };
+  enum { value = sizeof(testFunctor<T>(static_cast<T*>(0))) == sizeof(meta_yes) };
 };
 
 template<typename T> const T* return_ptr();
@@ -467,13 +523,13 @@ template<typename T, typename U> struct scalar_product_traits
 
 namespace numext {
   
-#if defined(__CUDA_ARCH__)
+#if defined(EIGEN_CUDA_ARCH)
 template<typename T> EIGEN_DEVICE_FUNC   void swap(T &a, T &b) { T tmp = b; b = a; a = tmp; }
 #else
 template<typename T> EIGEN_STRONG_INLINE void swap(T &a, T &b) { std::swap(a,b); }
 #endif
 
-#if defined(__CUDA_ARCH__)
+#if defined(EIGEN_CUDA_ARCH)
 using internal::device::numeric_limits;
 #else
 using std::numeric_limits;

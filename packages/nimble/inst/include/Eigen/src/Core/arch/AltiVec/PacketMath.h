@@ -10,8 +10,6 @@
 #ifndef EIGEN_PACKET_MATH_ALTIVEC_H
 #define EIGEN_PACKET_MATH_ALTIVEC_H
 
-#include <stdint.h>
-
 namespace Eigen {
 
 namespace internal {
@@ -756,8 +754,8 @@ template<> EIGEN_STRONG_INLINE Packet4f pblend(const Selector<4>& ifPacket, cons
 //---------- double ----------
 #ifdef __VSX__
 typedef __vector double              Packet2d;
-typedef __vector uint64_t  Packet2ul;
-typedef __vector int64_t           Packet2l;
+typedef __vector unsigned long long  Packet2ul;
+typedef __vector long long           Packet2l;
 #if EIGEN_COMP_CLANG
 typedef Packet2ul                    Packet2bl;
 #else
