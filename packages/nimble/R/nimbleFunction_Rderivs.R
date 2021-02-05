@@ -32,6 +32,10 @@ nimDerivs_dummy <- nimbleFunction(
 #' all arguments to \code{nimFxn}.
 #' @param silent a logical argument that determines whether warnings will be
 #' displayed.
+#' @param model (optional) for derivatives of a nimbleFunction that involves model
+#' calculations, the uncompiled model that is used. This is needed in order
+#' to be able to correctly restore values into the model when \code{order} does not
+#' include 0 (or in all cases when double-taping).
 #' @details Derivatives for uncompiled nimbleFunctions are calculated using the
 #' \code{numDeriv} package.  If this package is not installed, an error will
 #' be issued.  Derivatives for matrix valued arguments will be returned in 
@@ -52,7 +56,7 @@ nimDerivs_dummy <- nimbleFunction(
 nimDerivs <- function(nimFxn = NA,
                       order = nimC(0,1,2),
                       dropArgs = NA,
-                      wrt = NULL, calcNodes = NULL, ...){ ## ... absorbs compile-only params
+                      wrt = NULL, calcNodes = NULL, model = NULL, ...){ ## ... absorbs compile-only params
   fxnEnv <- parent.frame()
   fxnCall <- match.call()
   if(is.null(fxnCall[['order']])) fxnCall[['order']] <- order
@@ -100,7 +104,7 @@ nimDerivs <- function(nimFxn = NA,
   } else {
       if(model_calcNodes_case) {
           ans <- nimDerivs_calcNodes( order = order, wrt = wrt, derivFxnCall = derivFxnCall, fxnEnv = fxnEnv, model = cModel, nodes = calcNodes)
-      } else ans <- nimDerivs_nf( order = order, wrt = wrt, derivFxnCall = derivFxnCall, fxnEnv = fxnEnv )
+      } else ans <- nimDerivs_nf( order = order, wrt = wrt, derivFxnCall = derivFxnCall, fxnEnv = fxnEnv, model = model )
   }
   ans
 }
@@ -652,7 +656,7 @@ nimDerivs_nf_numericwrt <- function(derivFxn,
 }
 
 nimDerivs_nf <- function(nimFxn = NA, order = nimC(0,1,2),
-                         wrt = NULL, derivFxnCall = NULL, fxnEnv = parent.frame()){
+                         wrt = NULL, derivFxnCall = NULL, fxnEnv = parent.frame(), model = NULL){
   fxnCall <- match.call()
   ## This may be called directly (for testing) or from nimDerivs (typically).
   ## In the former case, we get derivFxnCall from the nimFxn argument.
@@ -667,33 +671,32 @@ nimDerivs_nf <- function(nimFxn = NA, order = nimC(0,1,2),
   derivFxn <- eval(derivFxnCall[[1]], envir = fxnEnv)
 
   ## Initialize information for restoring model when needed
-  e <- environment(derivFxn)
-  ## Check if differentiating a method of a nf
-  if(is(derivFxn, 'refMethodDef') && is.nf(e$.self)) {
-      ## Detect if a model is involved
-      isModel <- sapply(names(e), function(x) is.model(e[[x]]))
-      if(any(isModel)) {
-          if(!exists('restoreInfo', e)) {
-              ## First nimDerivs call: save model state and initialize derivative status.
-              modelElement <- names(e)[which(isModel)]
-              e$restoreInfo <- new.env()
-              if(length(modelElement) != 1) stop("nimDerivs_nf: unexpectedly found no or multiple models.")
-              e$restoreInfo$model <- e[[modelElement]]
-              e$restoreInfo$currentDepth <- 1
-              e$restoreInfo$deepestDepth <- 1
-              vars <- e$restoreInfo$model$getVarNames(includeLogProb = TRUE)
-              e$restoreInfo$values <- list()
-              length(e$restoreInfo$values) <- length(vars)
-              for(v in seq_along(vars)) 
-                  e$restoreInfo$values[[v]] <- e$restoreInfo$model[[vars[v]]]
-              names(e$restoreInfo$values) <- vars
-          } else {
-              ## We are in nested calls to nimDerivs.
-              e$restoreInfo$currentDepth <- e$restoreInfo$currentDepth + 1
-              if(e$restoreInfo$deepestDepth < e$restoreInfo$currentDepth)
-                  e$restoreInfo$deepestDepth <- e$restoreInfo$currentDepth
-          }
+  if(!is.null(model)) {
+      e <- environment(derivFxn)
+      if(!exists('restoreInfo', e)) {
+          ## First nimDerivs call: save model state and initialize derivative status.
+          e$restoreInfo <- new.env()
+          e$restoreInfo$currentDepth <- 1
+          e$restoreInfo$deepestDepth <- 1
+          vars <- model$getVarNames(includeLogProb = TRUE)
+          e$restoreInfo$values <- list()
+          length(e$restoreInfo$values) <- length(vars)
+          for(v in seq_along(vars)) 
+              e$restoreInfo$values[[v]] <- model[[vars[v]]]
+          names(e$restoreInfo$values) <- vars
+      } else {
+          ## We are in nested calls to nimDerivs.
+          e$restoreInfo$currentDepth <- e$restoreInfo$currentDepth + 1
+          if(e$restoreInfo$deepestDepth < e$restoreInfo$currentDepth)
+              e$restoreInfo$deepestDepth <- e$restoreInfo$currentDepth
       }
+  } else { # partial check for whether there is a model in the nimbleFunction
+      if(is(derivFxn, 'refMethodDef') && is.nf(e$.self)) 
+          isModel <- sapply(names(e), function(x) is.model(e[[x]]))
+      if(any(isModel)) {
+          modelElement <- names(e)[which(isModel)]
+          warning("nimDerivs_nf: detected a model, ", paste(modelElement, collapse = ','), ", associated with the nimbleFunction whose method is being differentiated. If model calculations are done in the method being differentiated, the 'model' argument to 'nimDerivs' should be included to ensure correct restoration of values in the model.")
+      }    
   }
   
   ## standardize the derivFxnCall arguments
@@ -720,14 +723,14 @@ nimDerivs_nf <- function(nimFxn = NA, order = nimC(0,1,2),
   }
 
   ## Restore model state if appropriate and update restoration info
-  if(is(derivFxn, 'refMethodDef') && is.nf(e$.self) && exists('restoreInfo', e)) {
+  if(!is.null(model) && exists('restoreInfo', e)) {
       ## Restore model state if double-taping or not asking for order 0 in single tape.
       ## Per NCT issue 256, compiled double-taping with inner tape = 0 does not update model,
       ## so mimicing that here.
       if(e$restoreInfo$currentDepth > 1 || e$restoreInfo$deepestDepth > 1 || !0 %in% order) {
           for(v in seq_along(e$restoreInfo$values)) {
               nm <- names(e$restoreInfo$values)[v]
-              e$restoreInfo$model[[nm]] <- e$restoreInfo$values[[nm]]
+              model[[nm]] <- e$restoreInfo$values[[nm]]
           }
       }
       
