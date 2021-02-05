@@ -1792,25 +1792,25 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 if(useParamTransform)
                     inputx <- rDerivs$my_parameterTransform$transform(x)
 
-                rOutput12 <- nimDerivs(wrapper(inputx), order = 1:2)
+                rOutput12 <- nimDerivs(wrapper(inputx), order = 1:2, model = model)
                 rVals12 <- values(cModel, otherNodes)
                 rLogProb12 <- cModel$getLogProb(calcNodes)
                 rWrt12 <- values(cModel, wrt)
                 
                 nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
-                rOutput01 <- nimDerivs(wrapper(inputx), order = 0:1)
+                rOutput01 <- nimDerivs(wrapper(inputx), order = 0:1, model = model)
                 rLogProb01 <- cModel$getLogProb(calcNodes)
                 rVals01 <- values(cModel, otherNodes)
                 rWrt01 <- values(cModel, wrt)
 
                 nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
-                rOutput012 <- nimDerivs(wrapper(inputx), order = 0:2)
+                rOutput012 <- nimDerivs(wrapper(inputx), order = 0:2, model = model)
                 rVals012 <- values(cModel, otherNodes)
                 rLogProb012 <- cModel$getLogProb(calcNodes)
                 rWrt012 <- values(cModel, wrt)
 
                 nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
-                rOutput02 <- nimDerivs(wrapper(inputx), order = c(0,2))
+                rOutput02 <- nimDerivs(wrapper(inputx), order = c(0,2), model = model)
                 rVals02 <- values(cModel, otherNodes)
                 rLogProb02 <- cModel$getLogProb(calcNodes)
                 rWrt02 <- values(cModel, wrt)
@@ -1819,22 +1819,22 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                     ## Note that because inner deriv is order 1 or 2, don't expect model to be updated,
                     ## so need to do this before 01, 012 cases below.
                     nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
-                    rOutput1d <- nimDerivs(wrapperMeta1(inputx), order = 0)
-                    rVals1d <- values(model, otherNodes)
-                    rLogProb1d <- model$getLogProb(calcNodes)
-                    rWrt1d <- values(model, wrt)
+                    rOutput1d <- nimDerivs(wrapperMeta1(inputx), order = 0, model = model)
+                    rVals1d <- values(cModel, otherNodes)
+                    rLogProb1d <- cModel$getLogProb(calcNodes)
+                    rWrt1d <- values(cModel, wrt)
                     
                     nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
-                    rOutput2d <- nimDerivs(wrapperMeta2(inputx), order = 0)
-                    rVals2d <- values(model, otherNodes)
-                    rLogProb2d <- model$getLogProb(calcNodes)
-                    rWrt2d <- values(model, wrt)
+                    rOutput2d <- nimDerivs(wrapperMeta2(inputx), order = 0, model = model)
+                    rVals2d <- values(cModel, otherNodes)
+                    rLogProb2d <- cModel$getLogProb(calcNodes)
+                    rWrt2d <- values(cModel, wrt)
 
                     nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
-                    rOutput2d11 <- nimDerivs(wrapperMeta1(inputx), order = 1)
-                    rVals2d11 <- values(model, otherNodes)
-                    rLogProb2d11 <- model$getLogProb(calcNodes)
-                    rWrt2d11 <- values(model, wrt)
+                    rOutput2d11 <- nimDerivs(wrapperMeta1(inputx), order = 1, model = model)
+                    rVals2d11 <- values(cModel, otherNodes)
+                    rLogProb2d11 <- cModel$getLogProb(calcNodes)
+                    rWrt2d11 <- values(cModel, wrt)
                 }
 
                 if(!useParamTransform) {
@@ -2087,9 +2087,8 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 expect_identical(cOutput2d11$jacobian, cOutput012$hessian[,,1])
             }
 
-            ## wrt values should equal original wrt values if paramTransform, order !=0 or doubleTape
+            ## wrt values should equal original wrt values if order !=0 or doubleTape
             ## because setting of wrt in model is done within nimDerivs call, so should obey our rules about when model state is altered.
-            ## Model state: wrt values should be equal to `x`. (not correct always -- CJP 2021-01-23)
 
             if(!useParamTransform) {
                 ## Wrt values changed because assignment is outside of nimDerivs()
@@ -2101,7 +2100,9 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 expect_identical(cWrt012, x)
             } else {
                 expect_identical(rWrt01, x)
-                expect_identical(rWrt12, rWrt_orig)  # issue #268
+      ##          if(!useFasterRderivs) {
+                    expect_identical(rWrt12, rWrt_orig)
+      ##          } else expect_identical(rWrt12, x)
                 expect_identical(rWrt012, x)
                 expect_identical(cWrt01, x)
                 expect_identical(cWrt12, cWrt_orig)
@@ -2109,11 +2110,17 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             }
 
             if(checkDoubleTape) {
-                ## Double tape with inner order not equal to 0 should not change wrt values.
-                ## Current issue #268 shows that 
-                expect_identical(rWrt1d, rWrt_orig)
-                expect_identical(rWrt2d, rWrt_orig)
-                expect_identical(rWrt2d11, rWrt_orig)
+                ## Double tape should not change wrt values, 
+                ## fasterRderivs takes deriv of a function, so nimDerivs will not restore values.
+##                if(useFasterRderivs) {
+##                  expect_identical(rWrt1d, x)
+##                    expect_identical(rWrt2d, x)
+##                    expect_identical(rWrt2d11, x)
+##                } else {
+                    expect_identical(rWrt1d, rWrt_orig)
+                    expect_identical(rWrt2d, rWrt_orig)
+                    expect_identical(rWrt2d11, rWrt_orig)
+##                }
                 expect_identical(cWrt1d, cWrt_orig)
                 expect_identical(cWrt2d, cWrt_orig)
                 expect_identical(cWrt2d11, cWrt_orig)
@@ -2123,30 +2130,38 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             ## Those in not in calcNodes should never be changed. So maybe nothing to check.
             
             ## model state - when order 0 is included, logProb and determistic nodes should be updated; otherwise not
-            ## However, useFasterRderivs and useParamTransform, model$calculate is called in the method whose deriv
-            ## is taken, so even when order 0 is not included, expect updated values.
             expect_identical(rLogProb01, rLogProb_new)
             expect_identical(rVals01, rVals_new)
             expect_identical(rLogProb012, rLogProb_new)
             expect_identical(rVals012, rVals_new)
             expect_identical(rLogProb02, rLogProb_new)
             expect_identical(rVals02, rVals_new)
-            if(useFasterRderivs || useParamTransform) {
-                expect_identical(rLogProb12, rLogProb_new)
-                expect_identical(rVals12, rVals_new)
-            } else {
+            ## fasterRderivs takes deriv of a function, so nimDerivs will not restore values.
+##            if(!useFasterRderivs) {
                 expect_identical(rLogProb12, rLogProb_orig)
                 expect_identical(rVals12, rVals_orig)
-            }
-
+##            } else {
+##                expect_identical(rLogProb12, rLogProb_new)
+##	        expect_identical(rVals12, rVals_new)
+##            }
+            
             if(checkDoubleTape) {
                 ## Double tapes here don't have order = 0 in inner tape, so model should not be updated.
-                expect_identical(rLogProb1d, rLogProb_orig)
-                expect_identical(rLogProb2d, rLogProb_orig)
-                expect_identical(rLogProb2d11, rLogProb_orig)
-                expect_identical(rVals1d, rVals_orig)
-                expect_identical(rVals2d, rVals_orig)
-                expect_identical(rVals2d11, rVals_orig)
+                if(useFasterRderivs) { ## fasterRderivs takes deriv of a function, so nimDerivs will not restore values.
+                    expect_identical(rLogProb1d, rLogProb_new)
+                    expect_identical(rLogProb2d, rLogProb_new)
+                    expect_identical(rLogProb2d11, rLogProb_new)
+                    expect_identical(rVals1d, rVals_new)
+                    expect_identical(rVals2d, rVals_new)
+                    expect_identical(rVals2d11, rVals_new)
+                } else {
+                    expect_identical(rLogProb1d, rLogProb_orig)
+                    expect_identical(rLogProb2d, rLogProb_orig)
+                    expect_identical(rLogProb2d11, rLogProb_orig)
+                    expect_identical(rVals1d, rVals_orig)
+                    expect_identical(rVals2d, rVals_orig)
+                    expect_identical(rVals2d11, rVals_orig)
+                }
             }
             
             ## Not clear if next check should be expect_identical (in many cases they are identical);
@@ -2164,14 +2179,6 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
 
             expect_fun(cLogProb12, cLogProb_orig)
             expect_fun(cVals12, cVals_orig)
-            ## both of these wrap the assignment and calculate within nimDerivs so order != 0 should not change model state
-            ## if(useFasterRderivs || useParamTransform) {
-            ##     expect_fun(cLogProb12, cLogProb_new)
-            ##     expect_fun(cVals12, cVals_new)
-            ## } else {
-            ##     expect_fun(cLogProb12, cLogProb_orig)
-            ##     expect_fun(cVals12, cVals_orig)
-            ## }
 
             if(checkDoubleTape) {
                 ## Double tapes here don't have order = 0 in inner tape, so model should not be updated.
