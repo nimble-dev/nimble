@@ -1411,8 +1411,8 @@ whyInvalid <- function(value) {
 ## until we bring this into the full model API
 getParentNodes <- function(nodes, model, returnType = 'names', stochOnly = FALSE) {
   if(isTRUE(nimbleOptions("use_C_getParents"))) {
-    ans <- getParentNodesC(nodes, model, returnType = 'names', stochOnly)
-    return(ans)
+    ansC <- getParentNodesC(nodes, model, returnType = 'names', stochOnly)
+#    return(ans)
   }
     ## adapted from BUGS_modelDef creation of edgesFrom2To
     getParentNodesCore <- function(nodes, model, returnType = 'names', stochOnly = FALSE) {
@@ -1435,7 +1435,19 @@ getParentNodes <- function(nodes, model, returnType = 'names', stochOnly = FALSE
     fedgesTo <- factor(maps$edgesTo, levels = edgesLevels) ## setting levels ensures blanks inserted into the splits correctly
     edgesTo2From <- split(maps$edgesFrom, fedgesTo)
 
-    getParentNodesCore(nodes, model, returnType, stochOnly)
+  ans <- getParentNodesCore(nodes, model, returnType, stochOnly)
+  if(isTRUE(nimbleOptions("use_C_getParents"))) {
+    sortedAns <- model$topologicallySortNodes(ans)
+    if(!identical(ansC, sortedAns)) {
+      Cextra <- setdiff(ansC, sortedAns)
+      Rextra <- setdiff(sortedAns, ansC)
+      msg <- paste0("getParentNodesC found extras:", paste0(Cextra, collapse = ','),
+                    "getParentNodes (R) found extras:", paste0(Rextra, collapse = ',')   )
+      message(msg)
+      stop(msg)
+    }
+  }
+  ans
 }
 
 getParentNodesC <-  function(nodes, model, returnType = 'names', stochOnly = FALSE) {
