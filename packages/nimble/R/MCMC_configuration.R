@@ -229,8 +229,10 @@ print: A logical argument specifying whether to print the montiors and samplers.
                         nextCandInd <- 1
                     }
                     ## convert back to node names:
-                    nodes <- model$modelDef$maps$nodeNames[nodeIDs]
-                    posteriorPredictiveBranchNodes <- model$modelDef$maps$nodeNames[posteriorPredictiveBranchNodeIDs]
+                    #####nodes <- model$modelDef$maps$nodeNames[nodeIDs]
+                    nodes <- model$expandNodeNamesFromGraphIDs(nodeIDs)
+                    #####posteriorPredictiveBranchNodes <- model$modelDef$maps$nodeNames[posteriorPredictiveBranchNodeIDs]
+                    posteriorPredictiveBranchNodes <- model$expandNodeNamesFromGraphIDs(posteriorPredictiveBranchNodeIDs)
                 }
                 isEndNode <-  model$isEndNode(nodeIDs) ## isEndNode can be modified later to avoid adding names when input is IDs
                 if(useConjugacy) conjugacyResultsAll <- nimble:::conjugacyRelationshipsObject$checkConjugacy(model, nodeIDs) ## Later, this can go through model$checkConjugacy if we make it check whether nodes are already nodeIDs.  To isolate changes, I am doing it directly here.
