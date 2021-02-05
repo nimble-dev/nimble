@@ -174,15 +174,7 @@ buildMCMC <- nimbleFunction(
         if(reset) {
             samplerTimes <<- numeric(length(samplerFunctions) + 1)       ## default inititialization to zero
             for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$reset()
-            if(length(samplerFunctionsHMC) > 0) {
-                for(i in seq_along(samplerFunctionsHMC)) {
-                    nwarmup <- samplerFunctionsHMC[[i]]$getNwarmup()
-                    if(nwarmup == -1) { nwarmup <- round(min(niter/2, 1000))
-                                        samplerFunctionsHMC[[i]]$setNwarmup(nwarmup) }
-                    if(chain <= 1) { print('HMC sampler is using ', nwarmup, ' warmup iterations')
-                                     if(nwarmup < 50) print('A minimum of 50 warmup iterations is recommended') }
-                }
-            }
+            if(length(samplerFunctionsHMC)) > 0)    for(i in seq_along(samplerFunctionsHMC))   samplerFunctionsHMC[[i]]$setNwarmup(niter, chain)
             mvSamples_copyRow  <- 0
             mvSamples2_copyRow <- 0
         } else {

@@ -1015,7 +1015,6 @@ sampler_HMC_BASE <- nimbleFunctionVirtual(
     contains = sampler_BASE,
     methods = list(
         reset = function() { },
-        getNwarmup              = function() { returnType(double()) },
         getMaxTreeDepth         = function() { returnType(double()) },
         getNumDivergences       = function() { returnType(double()) },
         getNumTimesMaxTreeDepth = function() { returnType(double()) },
@@ -1233,11 +1232,17 @@ sampler_HMC <- nimbleFunction(
                 return(btNL1)
             }
         },
-        getNwarmup              = function() { returnType(double());   return(nwarmup)              },
         getMaxTreeDepth         = function() { returnType(double());   return(maxTreeDepth)         },
         getNumDivergences       = function() { returnType(double());   return(numDivergences)       },
         getNumTimesMaxTreeDepth = function() { returnType(double());   return(numTimesMaxTreeDepth) },
-        setNwarmup              = function(x = double()) { nwarmup <<- x },
+        setNwarmup = function(MCMCniter = double(), MCMCchain = double()) {
+            if(nwarmup == -1)   nwarmup <<- min( round(MCMCniter/2), 1000 )
+            if(MCMCchain == 1) {
+                cat('HMC sampler is using ', nwarmup, ' warmup iterations\n')
+                if(nwarmup <  40) stop('HMC sampler requires a minimum of 40 warmup iterations for warmup routine')
+                if(nwarmup < 200) cat('A minimum of 200 HMC warmup iterations is recommended\n')
+            }
+        },
         reset = function() {
             timesRan       <<- 0
             epsilon        <<- 0
