@@ -323,6 +323,7 @@ test_ADModelCalculate(model, verbose = TRUE, name = 'basic model, lifted nodes')
 ## the first few of these mimic and may replace Nick's tests
 
 ## basic state space model
+set.seed(1) 
 code <- nimbleCode({
     x0 ~ dnorm(0,1)
     x[1] ~ dnorm(x0, 1)
@@ -336,7 +337,9 @@ data <- list(y = rnorm(3))
 model <- nimbleModel(code, data = data)
 model$simulate()
 model$calculate()
-test_ADModelCalculate(model, name = 'basic state space') 
+test_ADModelCalculate(model, verbose = TRUE, name = 'basic state space') 
+## with SOME random seeds, R and C 2d11 jacobian only match to only 1-2 digits with new updateNode values
+## presumably just stochasticity in that the Hessian tolerance is .001
 
 ## basic tricky indexing
 code <- nimbleCode({
