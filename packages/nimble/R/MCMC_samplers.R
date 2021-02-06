@@ -1018,7 +1018,7 @@ sampler_HMC_BASE <- nimbleFunctionVirtual(
         getMaxTreeDepth         = function() { returnType(double()) },
         getNumDivergences       = function() { returnType(double()) },
         getNumTimesMaxTreeDepth = function() { returnType(double()) },
-        setNwarmup              = function(MCMCniter = double(), MCMCchain = double()) { }
+        setWarmup               = function(MCMCniter = double(), MCMCchain = double(), verbose = logical()) { }
     )
 )
 
@@ -1032,6 +1032,7 @@ sampler_HMC <- nimbleFunction(
         printTimesRan  <- if(!is.null(control$printTimesRan))  control$printTimesRan  else FALSE
         printEpsilon   <- if(!is.null(control$printEpsilon))   control$printEpsilon   else FALSE
         printJ         <- if(!is.null(control$printJ))         control$printJ         else FALSE
+        printM         <- if(!is.null(control$printM))         control$printM         else FALSE
         messages       <- if(!is.null(control$messages))       control$messages       else TRUE
         warnings       <- if(!is.null(control$warnings))       control$warnings       else 5
         initialEpsilon <- if(!is.null(control$initialEpsilon)) control$initialEpsilon else 0
@@ -1065,6 +1066,7 @@ sampler_HMC <- nimbleFunction(
         log2 <- log(2)
         warningsOrig <- warnings
         nwarmupOrig <- nwarmup
+        warmupIntervals <- rep(0,7)   ## initialize as a length=7 vector
         if(length(M) == 1) { if(M == -1) M <- rep(1, d2) else M <- c(M, 1) }
         sqrtM <- sqrt(M)
         numDivergences <- 0
@@ -1082,7 +1084,7 @@ sampler_HMC <- nimbleFunction(
     run = function() {
         ## No-U-Turm Sampler with Dual Averaging, Algorithm 6 from Hoffman and Gelman (2014)
         if(timesRan == 0) {
-            if(nwarmup == -1) stop('nwarmup was not set correctly')
+            if(nwarmup == -1) stop('HMC nwarmup was not set correctly')
             ## reduce all pre-allocated vectors to correct size (d)
             q <<- q[1:d];   qL <<- qL[1:d];   qR <<- qR[1:d];   qDiff <<- qDiff[1:d];   qNew <<- qNew[1:d]
             p <<- p[1:d];   pL <<- pL[1:d];   pR <<- pR[1:d];   p2 <<- p2[1:d];           p3 <<- p3[1:d]
@@ -1094,6 +1096,7 @@ sampler_HMC <- nimbleFunction(
         timesRan <<- timesRan + 1
         if(printTimesRan) print('============ times ran = ', timesRan)
         if(printEpsilon)  print('epsilon = ', epsilon)
+        if(printM)        { print('M:'); print(M) }
         q <<- my_parameterTransform$transform(values(model, targetNodes))
         drawMomentumValues()    ## draws values for p
         qpLogH <- logH(q, p)
@@ -1121,12 +1124,7 @@ sampler_HMC <- nimbleFunction(
         inverseTransformStoreCalculate(qNew)
         nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
         if(timesRan <= nwarmup) {
-            Hbar <<- (1 - 1/(timesRan+t0)) * Hbar + 1/(timesRan+t0) * (delta - btNL$a/btNL$na)
-            logEpsilon <- mu - sqrt(timesRan)/gamma * Hbar
-            epsilon <<- exp(logEpsilon)
-            timesRanToNegativeKappa <- timesRan^(-kappa)
-            logEpsilonBar <<- timesRanToNegativeKappa * logEpsilon + (1 - timesRanToNegativeKappa) * logEpsilonBar
-            if(timesRan == nwarmup)   epsilon <<- exp(logEpsilonBar)
+            adaptEpsilon(btNL$a, btNL$na)
         }
         if(warnings > 0) if(is.nan(epsilon)) { print('HMC sampler value of epsilon is NaN, with timesRan = ', timesRan); warnings <<- warnings - 1 }
     },
@@ -1198,6 +1196,14 @@ sampler_HMC <- nimbleFunction(
             }
             values(model, calcNodes) <<- savedCalcNodeValues
         },
+        adaptEpsilon = function(a = double(), na = double()) {
+            Hbar <<- (1 - 1/(timesRan+t0)) * Hbar + 1/(timesRan+t0) * (delta - a/na)
+            logEpsilon <- mu - sqrt(timesRan)/gamma * Hbar
+            epsilon <<- exp(logEpsilon)
+            timesRanToNegativeKappa <- timesRan^(-kappa)
+            logEpsilonBar <<- timesRanToNegativeKappa * logEpsilon + (1 - timesRanToNegativeKappa) * logEpsilonBar
+            if(timesRan == nwarmup)   epsilon <<- exp(logEpsilonBar)
+        },
         buildtree = function(qArg = double(1), pArg = double(1), logu = double(), v = double(), j = double(), eps = double(), logH0 = double(), first = double()) {
             ## Algorithm 6 (second half) from Hoffman and Gelman (2014)
             returnType(btNLDef())
@@ -1235,13 +1241,19 @@ sampler_HMC <- nimbleFunction(
         getMaxTreeDepth         = function() { returnType(double());   return(maxTreeDepth)         },
         getNumDivergences       = function() { returnType(double());   return(numDivergences)       },
         getNumTimesMaxTreeDepth = function() { returnType(double());   return(numTimesMaxTreeDepth) },
-        setNwarmup = function(MCMCniter = double(), MCMCchain = double()) {
-            if(nwarmup == -1)   nwarmup <<- min( round(MCMCniter/2), 1000 )
+        setWarmup = function(MCMCniter = double(), MCMCchain = double(), verbose = logical()) {
+            if(nwarmup == -1)   nwarmup <<- min( floor(MCMCniter/2), 1000 )
             if(MCMCchain == 1) {
-                cat('HMC sampler is using ', nwarmup, ' warmup iterations\n')
+                if(verbose)       print('HMC sampler is using ', nwarmup, ' warmup iterations')
                 if(nwarmup <  40) stop('HMC sampler requires a minimum of 40 warmup iterations for warmup routine')
-                if(nwarmup < 200) cat('A minimum of 200 HMC warmup iterations is recommended\n')
+                if(nwarmup < 200) print('A minimum of 200 warmup iterations is recommended for HMC sampler')
             }
+            ## https://mc-stan.org/docs/2_23/reference-manual/hmc-algorithm-parameters.html#adaptation.figure
+            ## https://discourse.mc-stan.org/t/new-adaptive-warmup-proposal-looking-for-feedback/12039
+            ## https://colcarroll.github.io/hmc_tuning_talk/
+            warmupBaseInterval <- floor(nwarmup/40)                             ## stan: 25
+            if(warmupBaseInterval < 1)   stop('HMC warmupBaseInterval not set correctly')
+            warmupIntervals <<- warmupBaseInterval * c(3, 1, 2, 4, 8, 20, 2)    ## stan: 75 | 25 | 50 | 100 | 200 | 500 | 50
         },
         reset = function() {
             timesRan       <<- 0

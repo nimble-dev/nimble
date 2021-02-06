@@ -137,6 +137,7 @@ buildMCMC <- nimbleFunction(
         samplerTimes <- c(0,0) ## establish as a vector
         progressBarLength <- 52  ## multiples of 4 only
         progressBarDefaultSetting <- getNimbleOption('MCMCprogressBar')
+        nimbleVerboseOption <- getNimbleOption('verbose')
         ## WAIC setup:
         dataNodes <- model$getNodeNames(dataOnly = TRUE)
         dataNodeLength <- length(dataNodes)
@@ -174,7 +175,7 @@ buildMCMC <- nimbleFunction(
         if(reset) {
             samplerTimes <<- numeric(length(samplerFunctions) + 1)       ## default inititialization to zero
             for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$reset()
-            if(length(samplerFunctionsHMC) > 0)    for(i in seq_along(samplerFunctionsHMC))   samplerFunctionsHMC[[i]]$setNwarmup(niter, chain)
+            if(length(samplerFunctionsHMC) > 0)   for(i in seq_along(samplerFunctionsHMC))   samplerFunctionsHMC[[i]]$setWarmup(niter, chain, nimbleVerboseOption)
             mvSamples_copyRow  <- 0
             mvSamples2_copyRow <- 0
         } else {
@@ -238,15 +239,13 @@ buildMCMC <- nimbleFunction(
             }
         }
         if(progressBar) print('|')
-        if(length(samplerFunctionsHMC) > 0) {
+        if((length(samplerFunctionsHMC) > 0) & nimbleVerboseOption) {
             for(i in seq_along(samplerFunctionsHMC)) {
                 maxTreeDepth <- samplerFunctionsHMC[[i]]$getMaxTreeDepth()
                 numDivergences <- samplerFunctionsHMC[[i]]$getNumDivergences()
                 numTimesMaxTreeDepth <- samplerFunctionsHMC[[i]]$getNumTimesMaxTreeDepth()
                 if(numDivergences == 1) print('HMC sampler encountered ', numDivergences, ' divergent path')
                 if(numDivergences  > 1) print('HMC sampler encountered ', numDivergences, ' divergent paths')
-                ##if(numTimesMaxTreeDepth == 1) print('HMC sampler reached the maximum search tree depth (', maxTreeDepth, ') ', numTimesMaxTreeDepth, ' time')
-                ##if(numTimesMaxTreeDepth  > 1) print('HMC sampler reached the maximum search tree depth (', maxTreeDepth, ') ', numTimesMaxTreeDepth, ' times')
                 if(numTimesMaxTreeDepth == 1) print('HMC sampler reached the maximum search tree depth ', numTimesMaxTreeDepth, ' time')
                 if(numTimesMaxTreeDepth  > 1) print('HMC sampler reached the maximum search tree depth ', numTimesMaxTreeDepth, ' times')
             }
