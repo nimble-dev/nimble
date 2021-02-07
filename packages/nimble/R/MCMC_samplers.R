@@ -1018,7 +1018,7 @@ sampler_HMC_BASE <- nimbleFunctionVirtual(
         getMaxTreeDepth         = function() { returnType(double()) },
         getNumDivergences       = function() { returnType(double()) },
         getNumTimesMaxTreeDepth = function() { returnType(double()) },
-        setWarmup               = function(MCMCniter = double(), MCMCchain = double(), verbose = logical()) { }
+        initializeWarmup        = function(MCMCniter = double(), MCMCchain = double(), verbose = logical()) { }
     )
 )
 
@@ -1066,7 +1066,8 @@ sampler_HMC <- nimbleFunction(
         log2 <- log(2)
         warningsOrig <- warnings
         nwarmupOrig <- nwarmup
-        warmupIntervals <- rep(0,7)   ## initialize as a length=7 vector
+        warmupIntervals <- rep(0,7)            ## length 7 vector
+        warmupSamples <- array(0, c(2,d2))     ## 2xd array
         if(length(M) == 1) { if(M == -1) M <- rep(1, d2) else M <- c(M, 1) }
         sqrtM <- sqrt(M)
         numDivergences <- 0
@@ -1123,10 +1124,7 @@ sampler_HMC <- nimbleFunction(
         }
         inverseTransformStoreCalculate(qNew)
         nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-        if(timesRan <= nwarmup) {
-            adaptEpsilon(btNL$a, btNL$na)
-        }
-        if(warnings > 0) if(is.nan(epsilon)) { print('HMC sampler value of epsilon is NaN, with timesRan = ', timesRan); warnings <<- warnings - 1 }
+        if(timesRan <= nwarmup)   adaptiveProcedure(btNL$a, btNL$na)
     },
     methods = list(
         drawMomentumValues = function() {
@@ -1196,13 +1194,14 @@ sampler_HMC <- nimbleFunction(
             }
             values(model, calcNodes) <<- savedCalcNodeValues
         },
-        adaptEpsilon = function(a = double(), na = double()) {
+        adaptiveProcedure = function(a = double(), na = double()) {
             Hbar <<- (1 - 1/(timesRan+t0)) * Hbar + 1/(timesRan+t0) * (delta - a/na)
             logEpsilon <- mu - sqrt(timesRan)/gamma * Hbar
             epsilon <<- exp(logEpsilon)
             timesRanToNegativeKappa <- timesRan^(-kappa)
             logEpsilonBar <<- timesRanToNegativeKappa * logEpsilon + (1 - timesRanToNegativeKappa) * logEpsilonBar
             if(timesRan == nwarmup)   epsilon <<- exp(logEpsilonBar)
+            if(warnings > 0) if(is.nan(epsilon)) { print('HMC sampler value of epsilon is NaN, with timesRan = ', timesRan); warnings <<- warnings - 1 }
         },
         buildtree = function(qArg = double(1), pArg = double(1), logu = double(), v = double(), j = double(), eps = double(), logH0 = double(), first = double()) {
             ## Algorithm 6 (second half) from Hoffman and Gelman (2014)
@@ -1241,7 +1240,7 @@ sampler_HMC <- nimbleFunction(
         getMaxTreeDepth         = function() { returnType(double());   return(maxTreeDepth)         },
         getNumDivergences       = function() { returnType(double());   return(numDivergences)       },
         getNumTimesMaxTreeDepth = function() { returnType(double());   return(numTimesMaxTreeDepth) },
-        setWarmup = function(MCMCniter = double(), MCMCchain = double(), verbose = logical()) {
+        initializeWarmup = function(MCMCniter = double(), MCMCchain = double(), verbose = logical()) {
             if(nwarmup == -1)   nwarmup <<- min( floor(MCMCniter/2), 1000 )
             if(MCMCchain == 1) {
                 if(verbose)       print('HMC sampler is using ', nwarmup, ' warmup iterations')
@@ -1254,6 +1253,7 @@ sampler_HMC <- nimbleFunction(
             warmupBaseInterval <- floor(nwarmup/40)                             ## stan: 25
             if(warmupBaseInterval < 1)   stop('HMC warmupBaseInterval not set correctly')
             warmupIntervals <<- warmupBaseInterval * c(3, 1, 2, 4, 8, 20, 2)    ## stan: 75 | 25 | 50 | 100 | 200 | 500 | 50
+            setSize(warmupSamples, 20*warmupBaseInterval, d)
         },
         reset = function() {
             timesRan       <<- 0

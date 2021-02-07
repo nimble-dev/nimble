@@ -175,7 +175,7 @@ buildMCMC <- nimbleFunction(
         if(reset) {
             samplerTimes <<- numeric(length(samplerFunctions) + 1)       ## default inititialization to zero
             for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$reset()
-            if(length(samplerFunctionsHMC) > 0)   for(i in seq_along(samplerFunctionsHMC))   samplerFunctionsHMC[[i]]$setWarmup(niter, chain, nimbleVerboseOption)
+            if(length(samplerFunctionsHMC) > 0)   for(i in seq_along(samplerFunctionsHMC))   samplerFunctionsHMC[[i]]$initializeWarmup(niter, chain, nimbleVerboseOption)
             mvSamples_copyRow  <- 0
             mvSamples2_copyRow <- 0
         } else {
