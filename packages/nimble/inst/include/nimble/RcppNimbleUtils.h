@@ -50,7 +50,7 @@
 							 PROTECT(Rf_findVarInFrame(S_xData, \
 										   Rf_install(varName))), \
 							 derivsEnabled, \
-							 getObjectPtr(svarName_AD_) \
+							 getObjectPtr(svarName_AD_, false) \
 							 );		\
   }
 
