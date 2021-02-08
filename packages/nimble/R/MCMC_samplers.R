@@ -1014,11 +1014,11 @@ sampler_langevin <- nimbleFunction(
 sampler_HMC_BASE <- nimbleFunctionVirtual(
     contains = sampler_BASE,
     methods = list(
-        reset = function() { },
+        initializeWarmup        = function(MCMCniter = double(), MCMCchain = double()) { },
         getMaxTreeDepth         = function() { returnType(double()) },
         getNumDivergences       = function() { returnType(double()) },
         getNumTimesMaxTreeDepth = function() { returnType(double()) },
-        initializeWarmup        = function(MCMCniter = double(), MCMCchain = double(), verbose = logical()) { }
+        reset                   = function() { }
     )
 )
 
@@ -1066,12 +1066,17 @@ sampler_HMC <- nimbleFunction(
         log2 <- log(2)
         warningsOrig <- warnings
         nwarmupOrig <- nwarmup
-        warmupIntervals <- rep(0,7)            ## length 7 vector
+        warmupIntervalLengths <- rep(0,7)            ## length 7 vector
+        warmupIntervalsAdaptM <- rep(0,7)            ## length 7 vector
+        warmupIntervalNumber <- 0
+        warmupIntervalCount <- 0
         warmupSamples <- array(0, c(2,d2))     ## 2xd array
         if(length(M) == 1) { if(M == -1) M <- rep(1, d2) else M <- c(M, 1) }
+        Morig <- M
         sqrtM <- sqrt(M)
         numDivergences <- 0
         numTimesMaxTreeDepth <- 0
+        nimbleVerboseOption <- getNimbleOption('verbose')
         ## nested function and function list definitions
         qpNLDef <- nimbleList(q  = double(1), p  = double(1))
         btNLDef <- nimbleList(q1 = double(1), p1 = double(1), q2 = double(1), p2 = double(1), q3 = double(1), n = double(), s = double(), a = double(), na = double())
@@ -1083,13 +1088,14 @@ sampler_HMC <- nimbleFunction(
         if(d  > 1) if(length(M) != d) stop('length of HMC sampler M must match length of HMC target nodes')
     },
     run = function() {
-        ## No-U-Turm Sampler with Dual Averaging, Algorithm 6 from Hoffman and Gelman (2014)
+        ## No-U-Turn Sampler with Dual Averaging, Algorithm 6 from Hoffman and Gelman (2014)
         if(timesRan == 0) {
             if(nwarmup == -1) stop('HMC nwarmup was not set correctly')
             ## reduce all pre-allocated vectors to correct size (d)
             q <<- q[1:d];   qL <<- qL[1:d];   qR <<- qR[1:d];   qDiff <<- qDiff[1:d];   qNew <<- qNew[1:d]
             p <<- p[1:d];   pL <<- pL[1:d];   pR <<- pR[1:d];   p2 <<- p2[1:d];           p3 <<- p3[1:d]
             grad <<- grad[1:d];   gradFirst <<- gradFirst[1:d];   gradSaveL <<- gradSaveL[1:d];   gradSaveR <<- gradSaveR[1:d]
+            M <<- M[1:d];         sqrtM <<- sqrtM[1:d]
             if(initialEpsilon == 0) { initializeEpsilon()                 ## no initialEpsilon value was provided
                                   } else { epsilon <<- initialEpsilon }   ## user provided initialEpsilon
             mu <<- log(10*epsilon)
@@ -1195,6 +1201,8 @@ sampler_HMC <- nimbleFunction(
             values(model, calcNodes) <<- savedCalcNodeValues
         },
         adaptiveProcedure = function(a = double(), na = double()) {
+            ## adapt epsilon:
+            ## this is the "Dual Averaging" part of Algorithm 6 from Hoffman and Gelman (2014)
             Hbar <<- (1 - 1/(timesRan+t0)) * Hbar + 1/(timesRan+t0) * (delta - a/na)
             logEpsilon <- mu - sqrt(timesRan)/gamma * Hbar
             epsilon <<- exp(logEpsilon)
@@ -1202,6 +1210,20 @@ sampler_HMC <- nimbleFunction(
             logEpsilonBar <<- timesRanToNegativeKappa * logEpsilon + (1 - timesRanToNegativeKappa) * logEpsilonBar
             if(timesRan == nwarmup)   epsilon <<- exp(logEpsilonBar)
             if(warnings > 0) if(is.nan(epsilon)) { print('HMC sampler value of epsilon is NaN, with timesRan = ', timesRan); warnings <<- warnings - 1 }
+            ## adapt M:
+            if(warmupIntervalNumber < 8) {
+                warmupIntervalCount <<- warmupIntervalCount + 1
+                if(warmupIntervalCount > warmupIntervalLengths[warmupIntervalNumber]) stop('something went wrong in HMC warmup book-keeping')
+                if(warmupIntervalsAdaptM[warmupIntervalNumber] == 1)   warmupSamples[warmupIntervalCount, 1:d] <<- qNew
+                if(warmupIntervalCount == warmupIntervalLengths[warmupIntervalNumber]) {
+                    if(warmupIntervalsAdaptM[warmupIntervalNumber] == 1) {
+                        for(i in 1:d)   M[i] <<- var(warmupSamples[1:warmupIntervalCount, i])
+                        sqrtM <<- sqrt(M)
+                    }
+                    warmupIntervalCount <<- 0
+                    warmupIntervalNumber <<- warmupIntervalNumber + 1
+                }
+            }
         },
         buildtree = function(qArg = double(1), pArg = double(1), logu = double(), v = double(), j = double(), eps = double(), logH0 = double(), first = double()) {
             ## Algorithm 6 (second half) from Hoffman and Gelman (2014)
@@ -1237,13 +1259,10 @@ sampler_HMC <- nimbleFunction(
                 return(btNL1)
             }
         },
-        getMaxTreeDepth         = function() { returnType(double());   return(maxTreeDepth)         },
-        getNumDivergences       = function() { returnType(double());   return(numDivergences)       },
-        getNumTimesMaxTreeDepth = function() { returnType(double());   return(numTimesMaxTreeDepth) },
-        initializeWarmup = function(MCMCniter = double(), MCMCchain = double(), verbose = logical()) {
+        initializeWarmup = function(MCMCniter = double(), MCMCchain = double()) {
             if(nwarmup == -1)   nwarmup <<- min( floor(MCMCniter/2), 1000 )
             if(MCMCchain == 1) {
-                if(verbose)       print('HMC sampler is using ', nwarmup, ' warmup iterations')
+                if(nimbleVerboseOption) print('HMC sampler is using ', nwarmup, ' warmup iterations')
                 if(nwarmup <  40) stop('HMC sampler requires a minimum of 40 warmup iterations for warmup routine')
                 if(nwarmup < 200) print('A minimum of 200 warmup iterations is recommended for HMC sampler')
             }
@@ -1252,9 +1271,13 @@ sampler_HMC <- nimbleFunction(
             ## https://colcarroll.github.io/hmc_tuning_talk/
             warmupBaseInterval <- floor(nwarmup/40)                             ## stan: 25
             if(warmupBaseInterval < 1)   stop('HMC warmupBaseInterval not set correctly')
-            warmupIntervals <<- warmupBaseInterval * c(3, 1, 2, 4, 8, 20, 2)    ## stan: 75 | 25 | 50 | 100 | 200 | 500 | 50
+            warmupIntervalLengths <<- warmupBaseInterval * c(3, 1, 2, 4, 8, 20, 2)    ## stan: 75 | 25 | 50 | 100 | 200 | 500 | 50
+            warmupIntervalsAdaptM <<- c(0, 1, 1, 1, 1, 1, 0)
             setSize(warmupSamples, 20*warmupBaseInterval, d)
         },
+        getMaxTreeDepth         = function() { returnType(double());   return(maxTreeDepth)         },
+        getNumDivergences       = function() { returnType(double());   return(numDivergences)       },
+        getNumTimesMaxTreeDepth = function() { returnType(double());   return(numTimesMaxTreeDepth) },
         reset = function() {
             timesRan       <<- 0
             epsilon        <<- 0
@@ -1265,6 +1288,10 @@ sampler_HMC <- nimbleFunction(
             numTimesMaxTreeDepth <<- 0
             warnings       <<- warningsOrig
             nwarmup        <<- nwarmupOrig
+            M     <<- Morig
+            sqrtM <<- sqrt(M)
+            warmupIntervalNumber <<- 1
+            warmupIntervalCount  <<- 0
         }
     ),
     enableDerivs = 'inverseTransformStoreCalculate'
