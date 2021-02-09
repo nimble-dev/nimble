@@ -671,8 +671,9 @@ nimDerivs_nf <- function(nimFxn = NA, order = nimC(0,1,2),
   derivFxn <- eval(derivFxnCall[[1]], envir = fxnEnv)
 
   ## Initialize information for restoring model when needed
-  if(!is.null(model)) {
-      e <- environment(derivFxn)
+  e <- environment(derivFxn)
+  ## There might be no model in the inner nimDerivs call, so need to check for e$restoreInfo.
+  if(!is.null(model) || exists('restoreInfo', e)) {
       if(!exists('restoreInfo', e)) {
           ## First nimDerivs call: save model state and initialize derivative status.
           e$restoreInfo <- new.env()
@@ -724,11 +725,12 @@ nimDerivs_nf <- function(nimFxn = NA, order = nimC(0,1,2),
   }
 
   ## Restore model state if appropriate and update restoration info
-  if(!is.null(model) && exists('restoreInfo', e)) {
+  if(exists('restoreInfo', e)) {
       ## Restore model state if double-taping or not asking for order 0 in single tape.
       ## Per NCT issue 256, compiled double-taping with inner tape = 0 does not update model,
       ## so mimicing that here.
-      if(e$restoreInfo$currentDepth > 1 || e$restoreInfo$deepestDepth > 1 || !0 %in% order) {
+      ## It's possible no model was provided to the nested nimDerivs call.
+      if(!is.null(model) && (e$restoreInfo$currentDepth > 1 || e$restoreInfo$deepestDepth > 1 || !0 %in% order)) {
           for(v in seq_along(e$restoreInfo$values)) {
               nm <- names(e$restoreInfo$values)[v]
               model[[nm]] <- e$restoreInfo$values[[nm]]
