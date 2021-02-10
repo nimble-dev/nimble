@@ -429,7 +429,7 @@ test_that("Test that MCMC with truncation avoids conjugate samplers", {
         mu3 ~ dnorm(theta, 1)
     })
     
-    m <- nimbleModel(code, data = list(y = 1), inits = list(mu2 = 1))
+    m <- nimbleModel(code, data = list(y = 1, y2 = 1, y3 = 1), inits = list(mu2 = 1))
     conf <- configureMCMC(m)
 
 expect_identical(conf$getSamplers('mu1')[[1]]$name, 'RW', info = "incorrectly assigning conjugate sampler for mu1")

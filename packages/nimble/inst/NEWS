@@ -6,6 +6,8 @@ USER LEVEL CHANGES
 
 -- `samplesSummary` function (and also `runMCMC(..., summary = TRUE)`) was made to be robust against non-valid values in posterior samples array (PR #1075).
 
+-- Addition of a new `posterior_predictive_branch` MCMC sampler, which is automatically assigned to trailing dependency node networks of entirely non-data nodes (jointly posterior predictive branches).  This sampler simulates jointly from the predictive distribtion of these posterior predictive node branches, and is designed to improve MCMC mixing of the branch, and consequently of the entire model.
+
 BUG FIXES
 
 -- Fix `makeParamInfo` when there is only one declID involved to address a bug affecting usage of `getParam`. This bug was introduced in version 0.10.0 when reducing memory use of `getParam` (PR #1016). This fixes incorrect behavior of conjugate samplers (because of incorrect inputs from `getParam`) under certain model structures, in particular state-space style models (PR #1080). 
