@@ -128,6 +128,7 @@ SEXP C_getDependencies(SEXP SgraphExtPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstr
   nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
   vector<int> nodes = SEXP_2_vectorInt(Snodes, -1); // subtract 1 index for C
   vector<int> omit = SEXP_2_vectorInt(Somit, -1);
+  std::sort(omit.begin(), omit.end());
   bool downstream = SEXP_2_bool(Sdownstream);
   vector<int> ans = graphPtr->getDependencies(nodes, omit, downstream);
   return(vectorInt_2_SEXP(ans, 1)); // add 1 index for R
@@ -137,6 +138,7 @@ SEXP C_getParents(SEXP SgraphExtPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstream) 
   nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
   vector<int> nodes = SEXP_2_vectorInt(Snodes, -1); // subtract 1 index for C
   vector<int> omit = SEXP_2_vectorInt(Somit, -1);
+  std::sort(omit.begin(), omit.end());
   bool downstream = SEXP_2_bool(Sdownstream);
   vector<int> ans = graphPtr->getParents(nodes, omit, downstream);
   return(vectorInt_2_SEXP(ans, 1)); // add 1 index for R
@@ -355,7 +357,7 @@ vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector
   n = Cnodes.size();
   graphNode *thisGraphNode;
   int thisGraphNodeID;
-  vector<int>::const_iterator omitFinder; 
+  //  vector<int>::const_iterator omitFinder; 
   for(i = 0; i < n; i++) {
     thisGraphNodeID = Cnodes[i];
 
@@ -363,8 +365,9 @@ vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector
     // the touching of all Comit nodes still blocks them in the recursion
     // but for the input nodes, we need to check if they are in Comit because
     // being touched could also occur from another input node
-    omitFinder = std::find(Comit.begin(), Comit.end(), thisGraphNodeID);
-    if(omitFinder != Comit.end()) continue; // it was in omits
+    if(std::binary_search(Comit.begin(), Comit.end(), thisGraphNodeID)) continue;
+    //    omitFinder = std::find(Comit.begin(), Comit.end(), thisGraphNodeID);
+    //   if(omitFinder != Comit.end()) continue; // it was in omits
     
     thisGraphNode = graphNodeVec[ thisGraphNodeID ];
 #ifdef _DEBUG_GETDEPS
@@ -495,7 +498,7 @@ vector<int> nimbleGraph::getParents(const vector<int> &Cnodes, const vector<int>
   n = Cnodes.size();
   graphNode *thisGraphNode;
   int thisGraphNodeID;
-  vector<int>::const_iterator omitFinder;
+  //  vector<int>::const_iterator omitFinder;
 #ifdef _DEBUG_GETPARENTS
   std::cout<<"debugging getParents with n = "<<n<<std::endl;
 #endif
@@ -504,8 +507,9 @@ vector<int> nimbleGraph::getParents(const vector<int> &Cnodes, const vector<int>
 #ifdef _DEBUG_GETPARENTS
     std::cout<<"working on input node C-ID = "<<thisGraphNodeID<<std::endl;
 #endif
-    omitFinder = std::find(Comit.begin(), Comit.end(), thisGraphNodeID);
-    if(omitFinder != Comit.end()) continue; // it was in omits
+    if(std::binary_search(Comit.begin(), Comit.end(), thisGraphNodeID)) continue;
+    //   omitFinder = std::find(Comit.begin(), Comit.end(), thisGraphNodeID);
+    //    if(omitFinder != Comit.end()) continue; // it was in omits
     thisGraphNode = graphNodeVec[ thisGraphNodeID ];
     if(!thisGraphNode->touched) { // It is not a parent of another input node
 #ifdef _DEBUG_GETPARENTS
@@ -513,14 +517,14 @@ vector<int> nimbleGraph::getParents(const vector<int> &Cnodes, const vector<int>
 #endif
       if(thisGraphNode->type != LHSINFERRED) { // It is not a LHSinferred (split) node
 #ifdef _DEBUG_GETPARENTS
-      std::cout<<"not LHSinferred"<<std::endl;
+	std::cout<<"not LHSinferred"<<std::endl;
 #endif
-	//      ans.push_back(thisGraphNodeID);
-	tempAns.push_back(thisGraphNodeID);
-	thisGraphNode->touched = true;
+	//      ans.push_back(thisGraphNodeID); // This algorithm does not return its input nodes.
+	// tempAns.push_back(thisGraphNodeID);  // We do *not* touch and record this node because
+	// thisGraphNode->touched = true;       // if it is a parent of another input node, it should be included and traced.
       } else { // It is a LHSinferred node, so behave as if its full declared node was input
 #ifdef _DEBUG_GETPARENTS
-      std::cout<<"LHSinferred"<<std::endl;
+	std::cout<<"LHSinferred"<<std::endl;
 #endif
 	graphNode* nodeFunctionNode = thisGraphNode->nodeFunctionNode;
 	if(!nodeFunctionNode->touched) {
@@ -617,9 +621,20 @@ SEXP C_getConditionallyIndependentSets(SEXP SgraphExtPtr,
   vector<int> nodes = SEXP_2_vectorInt(Snodes, -1); // subtract 1 index for C
   vector<int> givenNodes = SEXP_2_vectorInt(SgivenNodes, -1); 
   vector<int> omit = SEXP_2_vectorInt(Somit, -1);
+  std::sort(omit.begin(), omit.end());
   bool startUp = SEXP_2_bool(SstartUp);
   bool startDown = SEXP_2_bool(SstartDown);
   vector<vector<int> > result = graphPtr->getAllCondIndSets(nodes, givenNodes, omit, startUp, startDown);
+  /* sort sets by find node in each set. */
+  /* I'm not sure when this would matter, but at least for testing purposes */ 
+  /* it is helpful to establish a canonical order of results. */
+  vector<int> firstIDs();
+  for(int i = 0; i < result.size(); ++i) {
+    if(result[i].size() > 0) 
+      firstIDs.push_back(result[i][0]);
+  }
+  
+  
   SEXP Sresult = PROTECT(Rf_allocVector(VECSXP, result.size() ) );
   for(int i = 0; i < result.size(); ++i) {
     SET_VECTOR_ELT(Sresult, i, PROTECT(vectorInt_2_SEXP(result[i], 1)));
@@ -708,11 +723,12 @@ vector<int> nimbleGraph::getCondIndSet(const vector<int> &Cnodes,
   int n = Cnodes.size();
   graphNode *thisGraphNode;
   int thisGraphNodeID;
-  vector<int>::const_iterator omitFinder;
+  //  vector<int>::const_iterator omitFinder;
   for(i = 0; i < n; i++) {
     thisGraphNodeID = Cnodes[i];
-    omitFinder = std::find(Comit.begin(), Comit.end(), thisGraphNodeID);
-    if(omitFinder != Comit.end()) continue; // it was in omits
+    if(std::binary_search(Comit.begin(), Comit.end(), thisGraphNodeID)) continue;
+    //    omitFinder = std::find(Comit.begin(), Comit.end(), thisGraphNodeID);
+    //    if(omitFinder != Comit.end()) continue; // it was in omits
     thisGraphNode = graphNodeVec[ thisGraphNodeID ];
     if(!thisGraphNode->touched) { // It has not been found starting from another input node
       bool isGiven = isGivenVec[thisGraphNodeID];
