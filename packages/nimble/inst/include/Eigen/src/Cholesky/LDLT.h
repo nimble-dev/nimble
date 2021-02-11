@@ -248,7 +248,7 @@ template<typename _MatrixType, int _UpLo> class LDLT
     /** \brief Reports whether previous computation was successful.
       *
       * \returns \c Success if computation was succesful,
-      *          \c NumericalIssue if the matrix.appears to be negative.
+      *          \c NumericalIssue if the factorization failed because of a zero pivot.
       */
     ComputationInfo info() const
     {
@@ -258,7 +258,6 @@ template<typename _MatrixType, int _UpLo> class LDLT
 
     #ifndef EIGEN_PARSED_BY_DOXYGEN
     template<typename RhsType, typename DstType>
-    EIGEN_DEVICE_FUNC
     void _solve_impl(const RhsType &rhs, DstType &dst) const;
     #endif
 
@@ -376,6 +375,8 @@ template<> struct ldlt_inplace<Lower>
 
       if((rs>0) && pivot_is_valid)
         A21 /= realAkk;
+      else if(rs>0)
+        ret = ret && (A21.array()==Scalar(0)).all();
 
       if(found_zero_pivot && pivot_is_valid) ret = false; // factorization failed
       else if(!pivot_is_valid) found_zero_pivot = true;
