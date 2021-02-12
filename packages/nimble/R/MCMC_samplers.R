@@ -1134,12 +1134,16 @@ sampler_HMC <- nimbleFunction(
     },
     methods = list(
         drawMomentumValues = function() {
-            ## M holds the diagonal elements of the diagonal mass matrix (aka the metric), which is
-            ## the covariance matrix used for drawing p, we let M approximate the precision matrix of q.
+            ## M holds the diagonal elements of the diagonal mass matrix (aka the metric), which is:
+            ## - the covariance matrix used for drawing p,
+            ## - used in the calculation of kinetic energy K(p), and
+            ## - used in the middle step of the leapfrog update.
+            ## We let M approximate the precision matrix of q.
             for(i in 1:d)   p[i] <<- rnorm(1, 0, sqrtM[i])
         },
         logH = function(qArg = double(1), pArg = double(1)) {
-            lp <- inverseTransformStoreCalculate(qArg) - sum(pArg^2)/2 + my_parameterTransform$logDetJacobian(qArg)
+            ## see comments in drawMomentumValues method
+            lp <- inverseTransformStoreCalculate(qArg) - sum(pArg^2/M)/2 + my_parameterTransform$logDetJacobian(qArg)
             returnType(double())
             return(lp)
         },
@@ -1164,7 +1168,7 @@ sampler_HMC <- nimbleFunction(
                                   if(v == -1) grad <<- gradSaveL
                                   if(v ==  2) grad <<- gradSaveL }
             p2 <<- pArg + eps/2 * grad
-            q2 <-  qArg + eps   * p2
+            q2 <-  qArg + eps   * p2/M          ## see comments in drawMomentumValues method
             gradFirst <<- grad
             gradient(q2)                        ## member data 'grad' is set in gradient() method
             p3 <<- p2   + eps/2 * grad
@@ -1217,7 +1221,8 @@ sampler_HMC <- nimbleFunction(
                 if(warmupIntervalsAdaptM[warmupIntervalNumber] == 1)   warmupSamples[warmupIntervalCount, 1:d] <<- qNew
                 if(warmupIntervalCount == warmupIntervalLengths[warmupIntervalNumber]) {
                     if(warmupIntervalsAdaptM[warmupIntervalNumber] == 1) {
-                        for(i in 1:d)   M[i] <<- var(warmupSamples[1:warmupIntervalCount, i])
+                        ## see comments in drawMomentumValues method
+                        for(i in 1:d)   M[i] <<- 1 / var(warmupSamples[1:warmupIntervalCount, i])
                         sqrtM <<- sqrt(M)
                     }
                     warmupIntervalCount <<- 0
