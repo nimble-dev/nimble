@@ -1677,13 +1677,15 @@ getConditionallyIndependentSets <- function(model,
                       model$getNodeNames(dataOnly = TRUE, returnType = 'ids'))
   } else {
     if(is.character(givenNodes))
-      giveNodeIDs <- model$expandNodeNames(givenNodes, returnType = 'ids')
+        givenNodeIDs <- model$expandNodeNames(givenNodes, returnType = 'ids')
+    else if(is.numeric(givenNodes))
+        givenNodeIDs <- givenNodes
   }
   if(inherits(omit, 'character')) {
     # This mimcs getDependencies.  I think it allows omit to include split nodes, whereas getNodeNames would not.
     # It would not make sense for nodes or givenNode to include split nodes.
-    elementIDs <- modelDef$nodeName2GraphIDs(omit, FALSE)
-    omitIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
+    elementIDs <- model$modelDef$nodeName2GraphIDs(omit, FALSE)
+    omitIDs <- unique(model$modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
                       FALSE,
                       FALSE,
                       NA)

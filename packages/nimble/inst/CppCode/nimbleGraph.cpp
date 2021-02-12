@@ -628,18 +628,33 @@ SEXP C_getConditionallyIndependentSets(SEXP SgraphExtPtr,
   /* sort sets by find node in each set. */
   /* I'm not sure when this would matter, but at least for testing purposes */ 
   /* it is helpful to establish a canonical order of results. */
-  vector<int> firstIDs();
+  struct comp {
+    /* compare first elements of results vectors */
+    /* empty vectors if they occur go last.*/
+    const vector<vector<int> > &result;
+    comp(const vector<vector<int> > &result_) : result(result_) {};
+    bool operator() (int i,int j) {
+      if(result[j].size() == 0) return(i); // second or both empty 
+      if(result[i].size() == 0) return(j); // first empty, second non-empty
+      return(result[i][0] < result[j][0]);
+    }
+  };
+  vector<int> sort_order(result.size());
+  int numEmpty(0);
   for(int i = 0; i < result.size(); ++i) {
-    if(result[i].size() > 0) 
-      firstIDs.push_back(result[i][0]);
+    sort_order[i] = i; // sort_order will be 0:number of results-1
+    if(result[i].size()==0) ++numEmpty;
   }
+  // this will put sort_order as sorting indices of first elements of result vectors
+  std::sort(sort_order.begin(), sort_order.end(), comp(result));
   
-  
-  SEXP Sresult = PROTECT(Rf_allocVector(VECSXP, result.size() ) );
+  SEXP Sresult = PROTECT(Rf_allocVector(VECSXP, result.size() - numEmpty ) );
   for(int i = 0; i < result.size(); ++i) {
-    SET_VECTOR_ELT(Sresult, i, PROTECT(vectorInt_2_SEXP(result[i], 1)));
+    if(result[sort_order[i] ].size() > 0) {
+      SET_VECTOR_ELT(Sresult, i, PROTECT(vectorInt_2_SEXP(result[sort_order[i] ], 1)));
+    }
   }
-  UNPROTECT(1 + result.size());
+  UNPROTECT(1 + result.size() - numEmpty);
   return(Sresult); // add 1 index for R
 }
 
