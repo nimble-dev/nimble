@@ -29,11 +29,35 @@ nimbleGraphClass <- setRefClass(
             for(i in list(nodes, omit)) {
                 if(length(i) > 0) {
                     if(any(abs(i - round(i)) > 0.1)) {
-                        stop('caught something wrong on input to setGraph', call. = FALSE)
+                        stop('caught something wrong on input to getDependencies', call. = FALSE)
                     }
                 }
             }
             .Call(C_getDependencies, graphExtPtr, nodes, omit, downstream)
+        },
+        getParents = function(nodes, omit = integer(), upstream = FALSE) {
+          # nodes and omit must be IDs
+          for(i in list(nodes, omit)) {
+            if(length(i) > 0) {
+              if(any(abs(i - round(i)) > 0.1)) {
+                stop('caught something wrong on input to getParents', call. = FALSE)
+              }
+            }
+          }
+          .Call(C_getParents, graphExtPtr, nodes, omit, upstream)
+        },
+        getConditionallyIndependentSets = function(nodeIDs,
+                                                   givenNodeIDs,
+                                                   omitIDs = integer(),
+                                                   startUp = TRUE,
+                                                   startDown = TRUE) {
+          .Call(nimble:::C_getConditionallyIndependentSets,
+                graphExtPtr,
+                nodeIDs,
+                givenNodeIDs,
+                omitIDs,
+                startUp,
+                startDown)
         },
         getDependencyPathCountOneNode = function(node) {
             if(length(node) > 1)
