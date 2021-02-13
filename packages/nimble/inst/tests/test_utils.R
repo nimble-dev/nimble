@@ -1510,6 +1510,7 @@ test_ADModelCalculate_nick <- function(model, name = NULL, calcNodeNames = NULL,
 ## By default test a standardized set of {wrt, calcNodes} pairs representing common use cases (MAP, max lik, EB),
 ## unless user provides 'wrt' and 'calcNodes'.
 test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNodes = NULL, wrt = NULL,
+                                  excludeUpdateNodes = NULL,
                                   relTol = c(1e-15, 1e-8, 1e-3, 1e-3), useFasterRderivs = FALSE, useParamTransform = FALSE,
                                   checkDoubleTape = TRUE, checkCompiledValuesIdentical = TRUE,
                                   seed = 1, verbose = FALSE, debug = FALSE){
@@ -1535,7 +1536,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
             x <- runif(length(tmp))
         } 
         xNew <- runif(length(tmp))
-        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt,
+        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, excludeUpdateNodes = excludeUpdateNodes,
                                            savedMV = mv, relTol = relTol,
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
@@ -1558,7 +1559,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
             xNew <- runif(length(tmp))
         } 
         xNew <- runif(length(tmp))
-        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt,
+        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, excludeUpdateNodes = excludeUpdateNodes,
                                            savedMV =mv, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                        checkDoubleTape = checkDoubleTape,
@@ -1580,7 +1581,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
             x <- runif(length(tmp))
         } 
         xNew <- runif(length(tmp))
-        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt,
+        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, excludeUpdateNodes = excludeUpdateNodes,
                                            savedMV = mv, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                        checkDoubleTape = checkDoubleTape,
@@ -1605,7 +1606,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
             x <- runif(length(tmp))
         } 
         xNew <- runif(length(tmp))
-        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt,
+        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, excludeUpdateNodes = excludeUpdateNodes,
                                            savedMV = mv, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                        checkDoubleTape = checkDoubleTape,
@@ -1626,7 +1627,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
             x <- runif(length(tmp))
         } 
         xNew <- runif(length(tmp))
-        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt,
+        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, excludeUpdateNodes = excludeUpdateNodes,
                                            savedMV = mv, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                        checkDoubleTape = checkDoubleTape,
@@ -1643,7 +1644,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
             x <- runif(length(tmp))
         } 
         xNew <- runif(length(tmp))
-        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, relTol = relTol,
+        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, excludeUpdateNodes = excludeUpdateNodes, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                        checkDoubleTape = checkDoubleTape,
                                        checkCompiledValuesIdentical = checkCompiledValuesIdentical,
@@ -1655,7 +1656,8 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
 ## This does the core assessment, by default running with various sets of order values to be able to assess
 ## forward and backward mode and to assess whether values in the model are updated.
 test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL, xNew = NULL,
-                                           calcNodes = NULL, wrt = NULL, savedMV = NULL, 
+                                           calcNodes = NULL, wrt = NULL,
+                                           excludeUpdateNodes = NULL, savedMV = NULL, 
                                            relTol = c(1e-15, 1e-8, 1e-3, 1e-3), useFasterRderivs = FALSE,
                                            useParamTransform = FALSE, checkDoubleTape = TRUE,
                                            checkCompiledValuesIdentical = TRUE,
@@ -1689,6 +1691,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
         ## Manipulations so can set random matrices to be positive definite.
         ## Only needed for updateNodes, not wrt, because for wrt we'll need param transform anyway.
         updateNodesAsNodes <- model$expandNodeNames(updateNodes)
+        updateNodesAsNodes <- updateNodesAsNodes[!updateNodesAsNodes %in% model$expandNodeNames(excludeUpdateNodes)]
         checkSquareMatrix <- function(node) {
             val <- model[[node]]
             d <- dim(val)
@@ -1758,7 +1761,14 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             if(idx == 3) {
                 ## Also modify updateNodes to make sure nothing has been incorrectly baked in.
                 if(verbose && length(updateNodes)) cat(paste0("Using updateNodes: ", paste0(updateNodes, collapse = ', '), "\n"))
-                values(model, updateNodes) <- runif(length(updateNodes))
+                updateNodesSim <- updateNodes
+                if(!is.null(excludeUpdateNodes)) {
+                    ## Try to be safe as updateNodes are generally specified as scalar components
+                    excludeUpdateNodesFull <- c(model$expandNodeNames(excludeUpdateNodes),
+                                                model$expandNodeNames(excludeUpdateNodes, returnScalarComponents = TRUE))
+                    updateNodesSim <- updateNodesSim[!updateNodesSim %in% excludeUpdateNodesFull]
+                }
+                values(model, updateNodesSim) <- runif(length(updateNodesSim))
                 ## Make sure updateNodes are positive definite if square matrices.
                 for(nodeIdx in seq_along(updateNodesAsNodes)) 
                     if(updateNodesMat[nodeIdx])

@@ -493,10 +493,19 @@ model$simulate()
 model$calculate()
 model$setData('y','w')
 test_ADModelCalculate(model, name = 'complicated indexing')
-## ISSUE: EB compiled/uncompiled 2d11 double tape not matching in newUpdateNodes
-## issue seems to be compiled double tape being incorrect
-## EB compiled/uncompiled 01,12,012 jacobian not satisfying tolerance
-## R and C 0th order not satisfying 1x10-11 tolerance for 01,02,012
+## occasional rOutput2d11 values way off (e.g., first value in EB, idx =3 is -243 (or -251)
+## when correct value is 1.27 or -1.91
+## compiled/uncompiled 01, 012, 02 values out of tolerance in various cases
+## compiled/uncompiled jacobian out of tolerance in some cases and
+## one of them seemingly wrong in at least one case
+## compiled/uncompiled 01, 12, 012 jacobian out of tolerance
+## compiled/uncompiled 1d value out of tolerance in one case
+
+## x[1,2:5] is in wrt and also in updateNodes (x[1,2],x[1,3],x[1,4]); is that cause of the problem? see issue # 273
+
+## if use pracma::jacobian:
+## unc/compiled 01,012,02 values out of tolerance in various cases
+## unc/compiled 012, 12 jacobian out of tolerance in one case
 
 ## using different subsets of a matrix
 code <- nimbleCode({
@@ -525,17 +534,12 @@ code <- nimbleCode({
 n <- 5
 locs <- runif(n)
 dd <- fields::rdist(locs)
-model <- nimbleModel(code, constants = list(n = n, dist = dd), inits = list(rho = rgamma(1, 1, 1),
-                                                                 z = rep(0, n), pr = diag(n)))
+model <- nimbleModel(code, constants = list(n = n),
+                     inits = list(dist = dd, rho = rgamma(1, 1, 1), z = rep(0, n), pr = diag(n)))
 model$simulate()
 model$calculate()
 model$setData('y')
-test_ADModelCalculate(model, name = 'dmnorm with vectorized covariance matrix')
-## in HMC/AD, updateNodes case; get NaN in compiled hessian (12, 2d11, 02, 012) now that dist is constant, but 2d hessian is fine
-## correct that updateNodes includes things in calcNodes?
-
-## HERE
-## TODO: change dd to constants so don't have non-pos def
+test_ADModelCalculate(model, excludeUpdateNodes = 'dist', name = 'dmnorm with vectorized covariance matrix')
 
 ## vectorized covariance matrix, chol param
 code <- nimbleCode({
@@ -557,12 +561,11 @@ model <- nimbleModel(code, constants = list(n = n),
 model$simulate()
 model$calculate()
 model$setData('y')
-## (sometimes get) cLogProb12 equal but not identical to cLogProb_orig 
-test_ADModelCalculate(model, name = 'dmnorm with vectorized covariance matrix, chol param')
-## cVals12 equal but not identical to cVals_orig
-test_ADModelCalculate(model, verbose = TRUE, name = 'dmnorm with vectorized covariance matrix, chol param')
-test_ADModelCalculate(model, checkCompiledValuesIdentical = FALSE,
+## cOutput2d and cOutput012 hessian out of tolerance in a couple cases
+## rOutput 01, 012, 02 values out of tolerance with compiled counterparts in one use case
+test_ADModelCalculate(model, excludeUpdateNodes = 'dist',
                       name = 'dmnorm with vectorized covariance matrix, chol param')
+
 
 ## MVN with various parameterizations and user-defined functions
 
@@ -592,14 +595,12 @@ code <- nimbleCode({
 n <- 5
 locs <- runif(n)
 dd <- fields::rdist(locs)
-model <- nimbleModel(code, constants = list(n = n, dist = dd), inits = list(rho = rgamma(1, 1, 1),
-                                                                 z = rep(0, n), pr = diag(n)))
+model <- nimbleModel(code, constants = list(n = n),
+                     inits = list(rho = rgamma(1, 1, 1), dist = dd, z = rep(0, n), pr = diag(n)))
 model$simulate()
 model$calculate()
 model$setData('y')
-## cLogProb12 equal but not identical to cLogProb_orig 
-test_ADModelCalculate(model, name = 'dnorm with user-defined fxn for covariance with loops')
-test_ADModelCalculate(model, checkCompiledValuesIdentical = FALSE,
+test_ADModelCalculate(model, excludeUpdateNodes = 'dist',
                       name = 'dnorm with user-defined fxn for covariance with loops')
 
 
@@ -621,13 +622,17 @@ code <- nimbleCode({
 n <- 5
 locs <- runif(n)
 dd <- fields::rdist(locs)
-model <- nimbleModel(code, constants = list(n = n, dist = dd),
-                     inits = list(rho = rgamma(1, 1, 1),
+model <- nimbleModel(code, constants = list(n = n),
+                     inits = list(dist = dd, rho = rgamma(1, 1, 1),
                                   z = rep(0, n), pr = diag(n)))
 model$simulate()
 model$calculate()
 model$setData('y')
-test_ADModelCalculate(model, name = 'dmnorm with user-defined vectorized fxn')
+## compiled 2d, 012 hessians out of tolerance in several cases
+## compiled and uncompiled 01, 012, 02 value out of tolerance in a couple cases
+test_ADModelCalculate(model, excludeUpdateNodes = 'dist',
+                      name = 'dmnorm with user-defined vectorized fxn')
+
 
 ## other dmnorm parameterizations
 code <- nimbleCode({
@@ -654,8 +659,9 @@ model$simulate()
 model$calculate()
 model$setData('y')
 ## (not seeing anymore) Heisenbug: cLogProb12 equal but not identical to cLogProb_orig if verbose = FALSE (default)
-test_ADModelCalculate(model, name = 'various dmnorm parameterizations')
-
+## compiled/uncompiled 2d11 out of tolerance in a couple cases
+## compiled/uncompiled 012, 02, 01, 02 values out of tolerance in some cases
+testt_ADModelCalculate(model, name = 'various dmnorm parameterizations')
 
 ## various dmvt parameterizations
 
@@ -684,9 +690,12 @@ model <- nimbleModel(code, constants = list(n = n),
 model$simulate()
 model$calculate()
 model$setData('y')
-## cLogProb12 equal but not identical to cLogProb_orig
+## uncompiled/compiled 2d11 hessian out of tolerance in some cases 
+## unc/com 01,012,02 value out of tolerance in some cases
+## compiled 2d, 012 hessian out of tolerance
+## comp/unc 01, 12, 012, 1d jacobian out of tolerance
 test_ADModelCalculate(model, name = 'various dmvt parameterizations')
-test_ADModelCalculate(model, checkCompiledValuesIdentical = FALSE, name = 'various dmvt parameterizations')
+
 
 ## dirichlet as likelihood so not differentiating wrt something with constraint.
 code <- nimbleCode({
@@ -696,10 +705,8 @@ code <- nimbleCode({
 })
 k <- 4
 model <- nimbleModel(code, constants = list(k = k), data = list(p = c(.2, .4, .15, .25)), inits = list(alpha = runif(4)))
-## cLogProb12 equal but not identical to cLogProb_orig
+## Passes 2021-02-11
 test_ADModelCalculate(model, name = 'Dirichlet likelihood')
-test_ADModelCalculate(model, checkCompiledValuesIdentical = FALSE, name = 'Dirichlet likelihood')
-
 
 ## dwish and dinvwish so long as not differentiating w.r.t. the random variable (since it has constraints)
 ## Note that nu must exceed n and can't be set to runif(0,1) via test_ADModelCalculate.
@@ -707,31 +714,32 @@ code <- nimbleCode({
     R[1:n,1:n] <- sigma2 * exp(-dist[1:n, 1:n] / rho)
     US[1:n,1:n] <- chol(inverse(R[1:n,1:n]))
     UR[1:n,1:n] <- chol(R[1:n,1:n])
-    W1[1:n, 1:n] ~ dwish(R[1:n, 1:n], nu)
-    W2[1:n, 1:n] ~ dwish(S = R[1:n, 1:n], df = nu)
-    W3[1:n, 1:n] ~ dwish(cholesky = UR[1:n,1:n], df = nu, scale_param = 0)
-    W4[1:n, 1:n] ~ dwish(cholesky = US[1:n,1:n], df = nu, scale_param = 1)
-    IW1[1:n, 1:n] ~ dinvwish(R[1:n, 1:n], nu)
-    IW2[1:n, 1:n] ~ dinvwish(R = R[1:n, 1:n], df = nu)
-    IW3[1:n, 1:n] ~ dinvwish(cholesky = UR[1:n,1:n], df = nu, scale_param = 0)
-    IW4[1:n, 1:n] ~ dinvwish(cholesky = US[1:n,1:n], df = nu, scale_param = 1)
+    W1[1:n, 1:n] ~ dwish(R[1:n, 1:n], nu + n)
+    W2[1:n, 1:n] ~ dwish(S = R[1:n, 1:n], df = nu + n)
+    W3[1:n, 1:n] ~ dwish(cholesky = UR[1:n,1:n], df = nu + n, scale_param = 0)
+    W4[1:n, 1:n] ~ dwish(cholesky = US[1:n,1:n], df = nu + n, scale_param = 1)
+    IW1[1:n, 1:n] ~ dinvwish(R[1:n, 1:n], nu + n)
+    IW2[1:n, 1:n] ~ dinvwish(R = R[1:n, 1:n], df = nu + n)
+    IW3[1:n, 1:n] ~ dinvwish(cholesky = UR[1:n,1:n], df = nu + n, scale_param = 0)
+    IW4[1:n, 1:n] ~ dinvwish(cholesky = US[1:n,1:n], df = nu + n, scale_param = 1)
     rho ~ dgamma(2, 3)
     sigma2 ~ dgamma(2, 3)
-    nu ~ dunif(n, 50)
+    nu ~ dgamma(2, 3)
 })
 n <- 5
 locs <- runif(n)
 dd <- fields::rdist(locs)
-model <- nimbleModel(code, constants = list(n = n, dist = dd), inits = list(nu = 15))
+model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, nu = 5))
 model$simulate()
 model$calculate()
 model$setData(c('W1','W2','W3','W4','IW1','IW2','IW3','IW4'))
 
-## cVals12 not identical to cVals_orig
-## cLogProb12 equal but not identical to cLogProb_orig
-## (formerly) greater than tolerance gap between uncompiled and compiled 0th deriv
-test_ADModelCalculate(model, verbose = TRUE, name = 'dwish, dinvwish')
-test_ADModelCalculate(model, checkCompiledValuesIdentical = FALSE, name = 'dwish, dinvwish')
+## NCT issue 274
+nimbleOptions(skipADmatInverseAtomic = TRUE)
+## 2d, 012 comp hessian out of tolerance in some cases
+
+test_ADModelCalculate(model, excludeUpdateNodes = 'dist', verbose = TRUE, name = 'dwish, dinvwish')
+
 
 
 ## simple user-defined distribution
@@ -750,9 +758,7 @@ code <- nimbleCode({
 })
 
 model <- nimbleModel(code, data = list(y = rgamma(1,1,1)), inits = list(rho = rgamma(1, 1, 1)))
-## Note cLogProb12 equal but not identical to cLogProg_orig
 test_ADModelCalculate(model, name = 'simple user-defined distribution')
-test_ADModelCalculate(model, checkCompiledValuesIdentical = FALSE, name = 'simple user-defined distribution')
 
 
 ## vectorized powers cause problems, issue #253
@@ -857,9 +863,9 @@ model <- nimbleModel(code, constants = list(n = n, x = rnorm(n), z = rep(0, n), 
 model$simulate()
 model$calculate()
 model$setData(c('y1','yy')) # 'y2'
-## (formerly) cVals12 not identical to cVals_orig, but is equal
-test_ADModelCalculate(model, name = 'various matrix functions')
-test_ADModelCalculate(model, checkCompiledValuesIdentical = FALSE, name = 'various matrix functions')
+## unc/comp 01,012,02 value exceeds tolerance in places
+## compiled 2d, 012 hessian exceeds tolderance in places
+test_ADModelCalculate(model, excludeUpdateNodes = 'dist', name = 'various matrix functions')
 
 ## Various combinations of updateNodes, wrt, calcNodes
 
@@ -891,9 +897,7 @@ model <- nimbleModel(code, data = list(b = rnorm(4)), inits = list(a = 1.3, z = 
 test_ADModelCalculate(model, wrt = 'a', calcNodes = c('a', 'b', "lifted_sqrt_oPa_cP"), name = 'update nodes case 2b')
 
 
-
 ## Parameter transform system and full use of ddirch, dwish, dinvwish
-## Try also with dgamma, dinvgamma (do with var in dnorm so include lifted)
 
 ## basic variance component
 set.seed(1)
@@ -903,8 +907,8 @@ code <- nimbleCode({
     mu ~ dnorm(0, 1)
 })
 model <- nimbleModel(code, data = list(y = rnorm(1)), inits = list(sigma = rgamma(1, 1, 1), mu = rnorm(1)))
-## compiled value (0th deriv), logProb equal but not identical to _new
-## compiled 2d11 hessian equal not identical to 012 hessian
+## compiled values and logProb equal not identical (ENI) to cLogProb_new
+## compiled 2d11, 012 hessian ENI
 test_ADModelCalculate(model, useParamTransform = TRUE, name = 'basic param transform')
 
 
@@ -915,10 +919,9 @@ code <- nimbleCode({
     mu ~ dnorm(0, 1)
 })
 model <- nimbleModel(code, data = list(y = rnorm(1)), inits = list(sigma2 = rgamma(1, 1, 1), mu = rnorm(1)))
-## compiled 0th derivative equal but not identical to logProb 
-## cLogProb01 and cLogProb12 equal but not identical to cLogProb_{new,orig} 
+## compiled values and logProb equal not identical (ENI) to cLogProb_new
+## compiled 2d11, 012 hessian ENI
 test_ADModelCalculate(model, useParamTransform = TRUE, name = 'basic param transform, with lifted')
-test_ADModelCalculate(model, useParamTransform = TRUE, checkCompiledValuesIdentical = FALSE, name = 'basic param transform, with lifted')
 
 ## now check if model is out-of-state
 set.seed(1)
@@ -927,14 +930,35 @@ code <- nimbleCode({
     sigma <- sqrt(sigma2)
     sigma2 ~ dinvgamma(1.3, 0.7)
 })
+
 model <- nimbleModel(code, data = list(y = rnorm(1)), inits = list(sigma2 = 2))
 model$sigma <- 1
 model$calculate('y')
 model$logProb_y
-## fails due to issue #256
+## no issues
 test_ADModelCalculate(model)
+
+model <- nimbleModel(code, data = list(y = rnorm(1)), inits = list(sigma2 = 2))
+model$sigma <- 1
+model$calculate('y')
+model$logProb_y
+## compiled values and logProb equal not identical (ENI) to cLogProb_new
+## compiled 2d11, 012 hessian ENI
 test_ADModelCalculate(model, useParamTransform = TRUE)
+
+model <- nimbleModel(code, data = list(y = rnorm(1)), inits = list(sigma2 = 2))
+model$sigma <- 1
+model$calculate('y')
+model$logProb_y
 test_ADModelCalculate(model, useFasterRderivs = TRUE)
+
+model <- nimbleModel(code, data = list(y = rnorm(1)), inits = list(sigma2 = 2))
+model$sigma <- 1
+model$calculate('y')
+model$logProb_y
+## compiled values and logProb equal not identical (ENI) to cLogProb_new
+## compiled 2d11, 012 hessian ENI
+test_ADModelCalculate(model, useFasterRderivs = TRUE, useParamTransform = TRUE)
 
 ## Dirichlet
 code <- nimbleCode({
@@ -946,12 +970,13 @@ code <- nimbleCode({
 n <- 30
 k <- 4
 model <- nimbleModel(code, constants = list(k = k, n = n), data = list(y = rmulti(1, n, rep(1/k, k))), inits = list(p = c(.2, .4, .15, .25), alpha = runif(4)))
-## compiled 0th derivative equal but not identical to logProb 
-## cLogProb01 and cLogProb12 equal but not identical to cLogProb_{new,orig} 
-## rWrt, cWrt equal to x but not identical in x[7]
-test_ADModelCalculate(model, useParamTransform = TRUE, name = 'Dirichlet paramTransform')
-test_ADModelCalculate(model, useParamTransform = TRUE, checkCompiledValuesIdentical = FALSE, name = 'Dirichlet paramTransform')
-
+## OLD: compiled 0th derivative equal but not identical to logProb 
+## OLD: cLogProb01 and cLogProb12 equal but not identical to cLogProb_{new,orig} 
+## OLD: rWrt, cWrt equal to x but not identical in x[7]
+## various NaN values in idx=3 - seemingly because p[1],..,p[4] in updateNodes
+test_ADModelCalculate(model, excludeUpdateNodes = 'p', useParamTransform = TRUE, name = 'Dirichlet paramTransform')
+## ISSUE: simulating into update nodes that have transforms is an issue
+## issue with update of 'x' too?
 
 code <- nimbleCode({
     Sigma1[1:n,1:n] <- exp(-dist[1:n,1:n]/rho)
@@ -998,7 +1023,8 @@ n <- 5
 locs <- runif(n)
 dd <- fields::rdist(locs)
 R <- crossprod(matrix(rnorm(n^2), n, n))
-model <- nimbleModel(code, constants = list(n = n, dist = dd), inits = list(R = R, nu = 15, rho = rgamma(1, 1, 1),
+model <- nimbleModel(code, constants = list(n = n),
+                     inits = list(dist = dd, R = R, nu = 15, rho = rgamma(1, 1, 1),
                                                                  z = rep(0, n)))
 model$simulate()
 model$calculate()
@@ -1008,11 +1034,9 @@ model$setData('y')
 ## cVals01, cVals12, cLogProb01 and cLogProb12 equal but not identical to cVals_{new,orig}, cLogProb_{new,orig}
 ## rLogProb12, rVals12 equal not identical to rLogProb_orig, rVals_orig
 ## rWrt, cWrt equal to x but not identical for a few values
-test_ADModelCalculate(model, useParamTransform = TRUE, useFasterRderivs = TRUE, name = 'various multivariate dists')
-test_ADModelCalculate(model, useParamTransform = TRUE, checkCompiledValuesIdentical = FALSE, useFasterRderivs = TRUE, name = 'various multivariate dists')
-
-## quite slow
-test_ADModelCalculate(model, useParamTransform = TRUE, name = 'various multivariate dists')
+test_ADModelCalculate(model, excludeUpdateNodes = 'dist',
+                      useParamTransform = TRUE, useFasterRderivs = TRUE, name = 'various multivariate dists')
+## all sorts of issues, including nonposdef
 
 
 ## loop through BUGS models
