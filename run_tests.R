@@ -41,10 +41,6 @@ if (length(grep('^-', argv, invert = TRUE))) {
 
     # Avoid running these omitlisted tests, since they take too long.
     omitlist <- c(
-        'test-Math2.R',
-        'test-Mcmc2.R',
-        'test-Mcmc3.R',
-        'test-Filtering2.R',
         'test-benchmark-building-steps.R')
     # Avoid running these tests since they test experimental features.
     omitlist <- c(
