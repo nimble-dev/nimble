@@ -69,6 +69,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         MCMCmultivariateNodesAsScalars = FALSE,
         MCMCmonitorAllSampledNodes = FALSE,
         MCMCuseConjugacy = TRUE,
+        MCMCjointlySamplePredictiveBranches = TRUE,
         MCMCenableWAIC = FALSE
         
         ## default settings for MCMC samplers
@@ -206,3 +207,4 @@ withNimbleOptions <- function(options, expr) {
     nimbleOptions(options)
     return(expr)
 }
+

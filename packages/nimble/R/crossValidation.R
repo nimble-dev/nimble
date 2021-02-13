@@ -31,7 +31,7 @@ calcCrossVal <- function(i,
   message(paste("dropping data fold", i))
   model <- conf$model
   leaveOutNames <- model$expandNodeNames(foldFunction(i))
-  currentDataNames <- model$getNodeNames(dataOnly = T)
+  currentDataNames <- model$getNodeNames(dataOnly = TRUE)
   currentDataNames <- currentDataNames[!(currentDataNames %in% leaveOutNames)]
   saveData <- values(model, leaveOutNames)
   if(!silent) newModel <- model$newModel(check = FALSE, replicate = TRUE)

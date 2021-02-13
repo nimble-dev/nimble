@@ -53,7 +53,7 @@ install:
   - ./install_requirements.R
   # - pip freeze
   - R CMD build packages/nimble
-  - R CMD INSTALL packages/nimble
+  - R CMD INSTALL --install-tests packages/nimble
 
 script:
   # - pip freeze

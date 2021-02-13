@@ -74,12 +74,6 @@ Now in a separate branch: vX.Y-Z-cran, do this:
 
 before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in (it will pass R CMD check with "# $(FLIBS)" presumably because they are doing some sort of grep, but that is not kosher of course)
 
-(note that given R CMD check now errors if this is not addressed, we've changed this so this change is now already in devel)
-before release to CRAN make sure we disable Eigen pragmas that suppress warnings that CRAN dislikes:
-line 102 of packages/nimble/inst/include/Eigen/src/Core/arch/SSE/Complex.h
-lines 44,51 of  packages/nimble/inst/include/Eigen/src/Core/util/DisableStupidWarnings.h
-see also commit fedb31ee21fd892f782b97a4b2d71482b954a9fd
-
 test cross-machine on Macs and on Windows
 
 can test using rhub (from within packages/nimble):
