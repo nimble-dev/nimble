@@ -844,29 +844,29 @@ getConditionallyIndependentSets = function( nodes,
 '
 Get a list of conditionally independent sets of nodes in a nimble model.
 
-Conditionally independent sets of nodes are typically groups of latent states whose joint probability (density) will not change even if any other non-fixed node is changed.  Default fixed nodes are data nodes and parameter nodes (with no parent nodes), but this can be controlled.
+Conditionally independent sets of nodes are typically groups of latent states whose joint conditional probability (density) will not change even if any other non-fixed node is changed.  Default fixed nodes are data nodes and parameter nodes (with no parent nodes), but this can be controlled.
 
 model: A nimble model object (uncompiled or compiled).
 
-nodes: A vector of node names or their graph IDs that are the starting nodes from which conditionally independent sets of nodes should be found.  If omitted, the default will be all latent nodes, defined as stochastic nodes that are not data and have at least one stochastic parent node (possible with determinstic nodes in between).  Note that this will omit latent states that have no hyperparameters.  An example is the first latent state in some state-space (time-series) models, which is sometimes declared with known prior.  Seetype because it relates to the interpretation of nodes.
+nodes: A vector of node names or their graph IDs that are the starting nodes from which conditionally independent sets of nodes should be found.  If omitted, the default will be all latent nodes, defined as stochastic nodes that are not data and have at least one stochastic parent node (possible with deterministic nodes in between).  Note that this will omit latent states that have no hyperparameters.  An example is the first latent state in some state-space (time-series) models, which is sometimes declared with known prior.  See type because it relates to the interpretation of nodes.
 
 givenNodes: A vector of node names or their graph IDs that should be considered as fixed and hence can be conditioned on.  If omitted, the default will be all data nodes and all parameter nodes, the latter defined as nodes with no stochastic parent nodes (skipping over deterministic parent nodes).
 
 omit: A vector of node names or their graph IDs that should be omitted and should block further graph exploration. 
 
-type: Type of graph exploration (upstream through parent nodes, downstream through dependent nodes, or both).  For "\"both\"", the input nodes are interpreted as latent states, from which both downstream and upstream exploration should be done to find nodes in the same set (nodes that are not conditionally independent from each other).  For ""\fromTop\"", the input nodes are interpreted as parameters, so graph exploration begins from the  top (input) downstream.  For "\"fromBottom\"", the input nodes are interpreted and data nodes, so graph exploration begins from the bottom (input) upstream.
+type: Type of graph exploration (upstream through parent nodes, downstream through dependent nodes, or both).  For "\"both\"", the input nodes are interpreted as latent states, from which both downstream and upstream exploration should be done to find nodes in the same set (nodes that are not conditionally independent from each other).  For "\"fromTop\"", the input nodes are interpreted as parameters, so graph exploration begins from the  top (input) downstream.  For "\"fromBottom\"", the input nodes are interpreted and data nodes, so graph exploration begins from the bottom (input) upstream.
 
-stochOnly: Logcal for whether only stochastic nodes should be returned (default = TRUE).  If FALSE, both deterministic and stochastic nodes are returned.
+stochOnly: Logical for whether only stochastic nodes should be returned (default = TRUE).  If FALSE, both deterministic and stochastic nodes are returned.
 
 returnType: Either "\"names\"" for returned nodes to be node names or "\"ids\"" for returned nodes to be graph IDs.
 
 returnScalarComponents: If FALSE (default), multivariate nodes are returned as full names (e.g. "\"x[1:3]\"").  If TRUE, they are returned as scalar elements (e.g. "\"x[1]"\",  "\"x[2]"\",  "\"x[3]"\").
 
-Details: This function returns sets of conditionally independent nodes.  Mutliple input nodes might be in the same set or different sets, and other nodes (not in codes) will be included.
+Details: This function returns sets of conditionally independent nodes.  Multiple input nodes might be in the same set or different sets, and other nodes (not in codes) will be included.
 
 There is a non-exported function `nimble:::testConditionallyIndependentSets(model, sets, initialize = TRUE)}` that tests whether the conditional independence of sets is valid.  It should be the case that `nimble:::testConditionallyIndependentSets(model, getConditionallyIndependentSets(model), initialize = TRUE)` returns `TRUE`.
 
-Return value: List of nodes that are in conditionally independent sets.  With each set, nodes are returned in topologically sorted order.  The sets themselves are returned in topologically sorted order of their first nodes.
+Return value: List of nodes that are in conditionally independent sets.  Within each set, nodes are returned in topologically sorted order.  The sets themselves are returned in topologically sorted order of their first nodes.
 '
   type <- match.arg(type)
   nimble:::getConditionallyIndependentSets(.self, nodes, givenNodes, omit, type,
