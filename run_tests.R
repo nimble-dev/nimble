@@ -162,3 +162,8 @@ if (optionParallel) {
         runTest(test)
     }
 }
+
+if(testBatch == 4) { ## currently quickest to run
+    download.file('https://github.com/nimble-dev/nimbleSMC/blob/devel/run_tests.R')
+    system("./run_tests.R")
+}
