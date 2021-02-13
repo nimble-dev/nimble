@@ -337,15 +337,6 @@ template<typename NimArrOutput, typename DerivedBool>
     if(nextBool) ans.push_back(i + 1); // That 1 makes it one-based indexing, which will then be adjusted back to zero-based when used for indexing something else
   }
   assignVectorToNimArr<NimArrOutput, std::vector<int> >(output, ans);
-  /* if(output.isMap()) { */
-  /*   if(output.size() != ans.size()) { */
-  /*     std::cout<<"Error: mismatched sizes in assignment from which()\n"; */
-  /*     return; */
-  /*   } */
-  /* } else { */
-  /*   output.setSize(ans.size(), false, false); // would need same scalar types before trying memcpy. */
-  /* } */
-  /* for(int i = 0; i < ans.size(); i++) output[i] = ans[i]; */
   return;
 }
 

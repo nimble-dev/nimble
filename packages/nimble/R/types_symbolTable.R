@@ -97,35 +97,6 @@ argType2symbolInternal <- function(AT, neededTypes, name = character()) {
       }
     }
     return(symbolUnknown(name = name, argType = AT))
-    ## if(is.list(neededTypes)){
-    ##     ##  isANeededType <- unlist(lapply(neededTypes, function(x) return(type == x$name)))
-    ##     isANeededType <- unlist(lapply(neededTypes, `[[`, 'name')) == type
-    ##     if(any(isANeededType == 1)){
-    ##         listST <- neededTypes[[which(isANeededType == 1)[1]]]$copy(shallow  = TRUE)
-    ##         listST$name <- name
-    ##         return(listST)
-    ##     } 
-    ## }
-    ## if(name == "return"){
-    ##     possibleTypeName <- deparse(AT[[1]])
-    ##     className <- NULL
-    ##     if(exists(possibleTypeName, envir = globalenv())) {
-    ##       possibleNLgenerator <- get(possibleTypeName, envir = globalenv())
-    ##       if(is.nlGenerator(possibleNLgenerator)) {
-    ##           className <- nl.getListDef(possibleNLgenerator)$className
-    ##       }
-    ##     }
-    ##     if(!is.null(className)){
-    ##         isANeededType <- (className == names(neededTypes))
-    ##         if(any(isANeededType)){
-    ##             listST <- neededTypes[[which(isANeededType)[1]]]$copy(shallow = TRUE)
-    ##         } else {
-    ##             listST <- recurseGetListST(className, neededTypes)
-    ##         }
-    ##     listST$name <- name
-    ##     return(listST)
-    ##     }
-    ## }
 }
 
 resolveOneUnknownType <- function(unknownSym, neededTypes = NULL, nimbleProject) {
@@ -178,10 +149,8 @@ resolveOneUnknownType <- function(unknownSym, neededTypes = NULL, nimbleProject)
                 nlp <- nimbleProject$compileNimbleList(nlGen, initialTypeInferenceOnly = TRUE)
                 className <- nl.getListDef(nlGen)$className 
                 newSym <- symbolNimbleList(name = name, nlProc = nlp)
-                ##    newNeededTypes[[className]] <<- newSym  ## if returnType is a NLG, this will ensure that it can be found in argType2symbol()
                 newNeededType[[className]] <- newSym
                 returnSym <- symbolNimbleList(name = name, nlProc = nlp)
-##                symTab$addSymbol(lireturnSymstST, allowReplace = TRUE)
                 return(list(returnSym, newNeededType))
             }
         } else {
@@ -360,9 +329,6 @@ symbolSEXP <- setRefClass(
 symbolString <- setRefClass(
     Class = "symbolString",
     contains = "symbolBasic", ## inheriting from symbolBasic instead of symbolBase make initSizes work smoothly
-    ## fields   = list(
-    ##     nDim  = 'ANY',
-    ##     size = 'ANY'), 
     methods = list(
         show = function() writeLines(paste('symbolString', name)),
         genCppVar = function(...) {

@@ -48,52 +48,14 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
 
         showCompilerOutput = FALSE,
 
-        ## uses the 'new' system for dynamically generated conjugate samplers (DT, March 2016),
-        ## rather than the older 'static' system.
-        ## update May 2016: old (non-dynamic) system is no longer supported -DT
-        ##useDynamicConjugacy = TRUE,
-
-
-        ## samplerAssignmentRules system deprecated Nov 2020 -DT
-        ## samplerAssignmentRules object that controls the default sampler assignments by configureMCMC.
-        ## value is set to samplerAssignmentRules() (the defaults) in MCMC_configuration.R
         MCMCprogressBar = TRUE,
-        ##MCMCuseSamplerAssignmentRules = FALSE,
         MCMCsaveHistory = FALSE,
-        ##MCMCdefaultSamplerAssignmentRules = NULL,
         MCMCmultivariateNodesAsScalars = FALSE,
         MCMCmonitorAllSampledNodes = FALSE,
         MCMCuseConjugacy = TRUE,
         MCMCjointlySamplePredictiveBranches = TRUE,
         MCMCenableWAIC = FALSE
         
-        ## default settings for MCMC samplers
-        ## control list defaults for MCMC samplers are
-        ## now part of the sampler functions (setup code).
-        ## -DT July 2017
-        ##MCMCcontrolDefaultList = list(
-        ##    log = FALSE,
-        ##    reflective = FALSE,
-        ##    adaptive = TRUE,
-        ##    adaptScaleOnly = FALSE,
-        ##    adaptInterval = 200,
-        ##    scale = 1,
-        ##    propCov = 'identity',
-        ##    sliceWidth = 1,
-        ##    sliceMaxSteps = 100,
-        ##    sliceAdaptFactorMaxIter = 15000,  ##factorBurnIn = 15000,
-        ##    sliceAdaptFactorInterval = 1000,  ##factorAdaptInterval = 1000,
-        ##    sliceAdaptWidthMaxIter = 512,     ##sliceBurnIn = 512,
-        ##    sliceAdaptWidthTolerance = 0.1,
-        ##    scaleAdaptInterval = 200,
-        ##    sliceWidths = 'oneVec',
-        ##    pfNparticles = 1000,
-        ##    pfResample = FALSE,
-        ##    pfOptimizeNparticles = FALSE,
-        ##    pfType = 'bootstrap',
-        ##    pfLookahead = 'simulate',
-        ##    carUseConjugacy = TRUE
-        ##)
     )
 )
 

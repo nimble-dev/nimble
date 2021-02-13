@@ -92,13 +92,6 @@ nimbleModel <- function(code,
         is.numeric(x) || is.logical(x) ||
             (is.data.frame(x) && all(sapply(x, 'is.numeric'))) })))
         stop("BUGSmodel: elements of 'data' must be numeric")
-    ## constantLengths <- unlist(lapply(constants, length))
-    ## if(any(constantLengths > 1)) {
-    ##     iLong <- which(constantLengths > 1)
-    ##     message(paste0('Constant(s) ', paste0(names(constants)[iLong], sep=" ", collapse = " "), ' are non-scalar and will be handled as inits.'))
-    ##     inits <- c(inits, constants[iLong])
-    ##     constants[iLong] <- NULL
-    ## }
     md <- modelDefClass$new(name = name)
     if(nimbleOptions('verbose')) message("defining model...")
     md$setupModel(code=code, constants=constants, dimensions=dimensions, inits = inits, data = data, userEnv = userEnv, debug=debug)
@@ -393,14 +386,9 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
   }
   if(is.null(data)) {
       possibleNames <- paste0(modelName, c("-data.R", "-data.txt", "data"))
-          ## c(
-          ##              file.path(dir, paste0(modelName, "-data.R")),
-          ##              file.path(dir, paste0(modelName, "-data.txt")),
-          ##              file.path(dir, paste0(modelName, "-data")))
     if(!Sys.info()['sysname'] %in% c("Darwin", "Windows")) # UNIX-like is case-sensitive
         possibleNames <- c(possibleNames,
                            paste0(modelName, "-data.r"))
-##                         file.path(dir, paste0(modelName, "-data.r")))
       if(!skip.file.path) possibleNames <- normalizePath(file.path(dir, possibleNames), winslash = "\\", mustWork=FALSE)
       fileExistence <- file.exists(possibleNames)
       if(sum(fileExistence) > 1)

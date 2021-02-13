@@ -340,8 +340,6 @@ modelDefClass$methods(assignDimensions = function(dimensions, initsList, dataLis
     # we'll try to be smart about this: check for duplicate names in constants and dimensions, and make sure they agree
     for(i in seq_along(constantsList)) {
         constName <- names(constantsList)[i]
-        ## constDim <- if(is.null(dim(constantsList[[i]]))) length(constantsList[[i]]) else dim(constantsList[[i]])
-#       constDim <- nimbleInternalFunctions$dimOrLength(constantsList[[i]], scalarize = TRUE)
         constDim <- nimbleInternalFunctions$dimOrLength(constantsList[[i]], scalarize = FALSE)  # don't scalarize as want to preserve dims as provided by user, e.g. for 1x1 matrices
         if(length(constDim) == 1 && constDim == 1)
             constDim <- numeric(0)  # but for 1-length vectors treat as scalars as that is how handled in system
@@ -714,12 +712,6 @@ modelDefClass$methods(checkMultivarExpr = function() {
         ##     stop(paste0("dist (", dist,") != BUGSdecl$distributionName (",BUGSdecl$distributionName,")"))
         types <- nimble:::distributions[[dist]]$types
         if(is.null(types)) next
-        ## tmp <- strsplit(types, " = ")
-        ## nms <- sapply(tmp, `[[`, 1)
-        # originally was only checking for expr in multivar dist:
-        ## if('value' %in% nms) next
-        ## distDim <- parse(text = tmp[[which(nms == 'value')]])[[2]][[2]]
-        ## if(distDim < 1) next
         if(length(BUGSdecl$valueExpr) > 1) {
             for(k in 2:length(BUGSdecl$valueExpr)) {
                 paramName <- names(BUGSdecl$valueExpr)[k]
@@ -819,10 +811,8 @@ modelDefClass$methods(reparameterizeDists = function() {
             if(!reqdArgName %in% names(distRule$exprs[[matchedAlt]]))
               stop('Error: could not find ', reqdArgName, ' in alternative parameterization number ', matchedAlt, ' for: ', deparse(valueExpr), '.')
             transformedParameterPT <- distRule$exprs[[matchedAlt]][[reqdArgName]]
-            ## fixing issue of pathological-case model variable names, e.g.,
+            ## handles pathological-case model variable names, e.g.,
             ## y ~ dnorm(0, tau = sd)
-            ## DT, Feb 2016.
-            ##for(nm in c(nonReqdArgs, distRule$reqdArgs))
             namesToSubstitute <- intersect(c(nonReqdArgs, distRule$reqdArgs), all.vars(transformedParameterPT))
             for(nm in namesToSubstitute) {
               ## loop thru possible non-canonical parameters in the expression for the canonical parameter
@@ -1304,7 +1294,6 @@ nm_seq_noDecrease <- function(a, b) {
 }
 
 expandContextAndReplacements <- function(allReplacements, allReplacementNameExprs, context, constantsEnv) {
-##    browser()
     ## allReplacements is a list like
     ## list(i = i, i_plus_1 = i+1, mean_x_1to5 = mean(x[1:5]))
     ## context is a BUGScontextClass object
@@ -2091,10 +2080,6 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
                 IDassignCode <- insertSubIndexExpr(targetExprWithMins, quote(iAns))
                 BUGSdecl$replacementsEnv[['logProbIDs']] <- newLogProbIDs
                 forCode <- substitute( for(iAns in 1:OUTPUTSIZE) ASSIGNCODE <- logProbIDs[iAns], list(OUTPUTSIZE = BUGSdecl$outputSize, ASSIGNCODE = IDassignCode) )
-##                BUGSdecl$replacementsEnv[[lhsVar]] <- vars2LogProbID[[lhsVar]]
-##                eval(forCode, envir = BUGSdecl$replacementsEnv)
-##                vars2LogProbID[[lhsVar]] <- BUGSdecl$replacementsEnv[[lhsVar]]
-##                rm(list = c(lhsVar, 'logProbIDs'), envir = BUGSdecl$replacementsEnv)
 
                 BUGSdecl$replacementsEnv[['logProbIDs']] <- newLogProbNames
                 BUGSdecl$replacementsEnv[[lhsVar]] <- vars2LogProbName[[lhsVar]]
@@ -2103,7 +2088,6 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
                 rm(list = c(lhsVar, 'logProbIDs'), envir = BUGSdecl$replacementsEnv)
             } else {
                 ## If no replacementsEnv was set up, then there were no index variables (only numerics)
-##                eval(substitute(A <- B, list(A = targetExprWithMins, B = newLogProbIDs)), envir = vars2LogProbID)
                 eval(substitute(A <- B, list(A = targetExprWithMins, B = newLogProbNames)), envir = vars2LogProbName)
             }
         } else { ## nDim == 0
@@ -2463,8 +2447,6 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     if(debug) browser()
 
     maps$vars2LogProbName <<- vars2LogProbName
-##    maps$vars2LogProbID <<- vars2LogProbID
-##    maps$logProbIDs_2_LogProbName <<- logProbNames
 
     graphID_2_logProbName <- paste0("logProb_", gsub(":[0123456789]+", "", maps$graphID_2_nodeName))
     graphID_2_logProbName[ maps$types != "stoch"] <- NA
@@ -2474,7 +2456,6 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$edgesTo <<- oldGraphID_2_newGraphID[edgesTo]
     maps$edgesParentExprID <<- edgesParentExprID
     edgesLevels <- if(length(maps$vertexID_2_nodeID) > 0) 1:length(maps$vertexID_2_nodeID) else numeric(0)
-    ##edgesLevels <- if(length(maps$edgesFrom) > 0) 1:max(max(maps$edgesFrom), max(maps$edgesTo)) else numeric(0)
     fedgesFrom <- factor(maps$edgesFrom, levels = edgesLevels) ## setting levels ensures blanks inserted into the splits correctly
     maps$edgesFrom2To <<- split(maps$edgesTo, fedgesFrom)
     maps$edgesFrom2ParentExprID <<- split(maps$edgesParentExprID, fedgesFrom)
@@ -2482,8 +2463,6 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
 
     maps$nimbleGraph <<- nimbleGraphClass()
     maps$nimbleGraph$setGraph(maps$edgesFrom, maps$edgesTo, maps$edgesParentExprID, maps$vertexID_2_nodeID, maps$types, maps$graphID_2_nodeName, length(maps$graphID_2_nodeName))
-##    maps$nodeName_2_graphID <<- list2env( nodeName2GraphIDs(maps$nodeNames) )
-##    maps$nodeName_2_logProbName <<- list2env( nodeName2LogProbName(maps$nodeNames) )
 
     ## A new need for new node function system:
     graphID_2_unrolledIndicesMatrixRow <- rep(-1L, (length(maps$graphIDs)))
@@ -2710,13 +2689,6 @@ modelDefClass$methods(genUnknownIndexDeclarations = function() {
                     BUGSdeclClassObject$setIndexVariableExprs(contexts[[declInfo[[i]]$contextID]]$indexVarExprs)
                     BUGSdeclClassObject$genSymbolicParentNodes(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames,
                                                               contextID = declInfo[[i]]$contextID)
-                    ##                    BUGSdeclClassObject$genReplacementsAndCodeReplaced(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames)
-                    ##                    BUGSdeclClassObject$genReplacedTargetValueAndParentInfo(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames)
-                    ## insert info that is usually done in genNodeInfo3; passing through genNodeInfo3 would be complicated as that operates by context
-                    ##BUGSdeclClassObject$unrolledIndicesMatrix <- declInfo[[i]]$unrolledIndicesMatrix
-                    ##BUGSdeclClassObject$replacementsEnv <- declInfo[[i]]$replacementsEnv
-                                        #BUGSdeclClassObject$outputSize <- 1 # not sure if needed
-                    ##BUGSdeclClassObject$numUnrolledNodes <- 1 # might be more, but I think the only relevant distinction in terms of how this is used is 0 vs. 1
                     BUGSdeclClassObject$type <- "unknownIndex"
                     declInfo[[length(declInfo)+1]] <<- BUGSdeclClassObject
                 }
@@ -2939,14 +2911,6 @@ modelDefClass$methods(nodeName2LogProbName = function(nodeName){
 
     return(output)
 })
-
-## modelDefClass$methods(nodeName2LogProbID = function(nodeName){ ## used only in cppInterfaces_models
-##     ## I think this will only work if nodeName is already ensured to be a node function name
-## 	if(length(nodeName) == 0)
-## 		return(NULL)
-## 	output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2LogProbID, USE.NAMES = FALSE) ) ) 
-## 	return(output[!is.na(output)])
-## })
 
 parseEvalNumeric <- function(x, env){
     ans <- eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)

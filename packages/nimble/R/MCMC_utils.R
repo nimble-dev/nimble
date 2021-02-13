@@ -206,10 +206,6 @@ calcAdaptationFactor <- nimbleFunction(
     )
 )
 
-
-
-
-
 # for now export this as R<3.1.2 give warnings if don't
 
 #' Class \code{codeBlockClass}
@@ -317,32 +313,6 @@ extractControlElement <- function(controlList, elementName, defaultValue, error)
     }
 }
 
-
-## obselete, since control defaults were moved to sampler function setup code
-## -DT July 2017
-##mcmc_findControlListNamesInCode <- function(code) {
-##    if(is.function(code))     return(mcmc_findControlListNamesInCode(body(code)))
-##    if(is.name(code) || is.numeric(code) || is.logical(code) || is.character(code) || is.pairlist(code))     return(character())
-##    if(is.call(code)) {
-##        if(code[[1]] == '$' && code[[2]] == 'control') {
-##            if(is.name(code[[3]])) { return(as.character(code[[3]]))
-##            } else                 { warning(paste0('having trouble processing control list elements: ', deparse(code)))
-##                                     return(character()) }
-##        }
-##        if(code[[1]] == '[[' && code[[2]] == 'control') {
-##            if(is.character(code[[3]])) { return(as.character(code[[3]]))
-##            } else                 { warning(paste0('having trouble processing control list elements: ', deparse(code)))
-##                                     return(character()) }
-##        }
-##        ## code is some call, other than $ or [[
-##        return(unique(unlist(lapply(code, mcmc_findControlListNamesInCode))))
-##    }
-##    browser()
-##    stop('not sure how to handle this code expression')
-##}
-
-
-
 #' @export
 samplesSummary <- function(samples, round) {
     summary <- try(cbind(
@@ -434,42 +404,6 @@ mcmc_checkWAICmonitors <- function(model, monitors, dataNodes) {
     }
     message('Monitored nodes are valid for WAIC')
 }
-
-
-## formerly used in conf$printSamplers(byType = TRUE)
-## to compress scalar index ranges of variables.
-## deprecated Nov 2019.
-##mcmc_compressIndexRanges <- function(nums) {
-##    nums <- sort(unique(nums))
-##    rangeStartInd <- c(1, which(diff(nums) != 1) + 1)
-##    ranges <- vector('list', length(rangeStartInd))
-##    for(i in seq_along(rangeStartInd)) {
-##        startInd <- rangeStartInd[i]
-##        if(i == length(rangeStartInd)) {
-##            if(rangeStartInd[i] == length(nums)) {
-##                ranges[[i]] <- nums[startInd]
-##            } else {
-##                ranges[[i]] <- substitute(START:END, list(START = as.numeric(nums[startInd]),
-##                                                          END = as.numeric(nums[length(nums)])))
-##            }
-##        } else {
-##            if(startInd+1 < rangeStartInd[i+1]) {
-##                ranges[[i]] <- substitute(START:END, list(START = as.numeric(nums[startInd]),
-##                                                          END = as.numeric(nums[rangeStartInd[i+1]-1])))
-##            } else ranges[[i]] <- nums[startInd]
-##        }
-##    }
-##    return(ranges)
-##}
-##
-##
-##mcmc_getIndexNumberFromNodeNames <- function(nodeNames, indNumber) {
-##    (nodeInsideBrackets <- gsub('^[[:alpha:]]+\\[(.+)\\]$', '\\1', nodeNames))
-##    splitList <- strsplit(nodeInsideBrackets, ',')
-##    if(length(splitList[[1]]) < indNumber) stop('in mcmc_getIndexNumberFromNodeNames: indNumber exceeds node dimension', call. = FALSE)
-##    indices <- as.numeric(sapply(splitList, function(el) el[indNumber]))
-##    return(indices)
-##}
 
 
 

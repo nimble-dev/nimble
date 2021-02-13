@@ -10,7 +10,6 @@ mapsClass <- setRefClass(
         notStoch = 'ANY',
         
         ## vectors of nodeNames, representing different subsets of 'types'
-
         nodeNamesLHSall = 'ANY',                 ## names of all nodes with node functions, i.e. all node names *except* RHSonly nodes
         nodeNamesRHSonly = 'ANY',                ## names of all nodes appearing on RHS only
         elementNames = 'ANY',
@@ -37,7 +36,6 @@ mapsClass <- setRefClass(
         vars2LogProbName =			'ANY',
 ##        vars2LogProbID = 			'ANY',
         
-        ##logProbIDs_2_LogProbName =	'ANY',
         ## positions vectors of nodeNames (top, latent, end)
         isEndNode_byGID = 'ANY',
 
@@ -72,13 +70,11 @@ assignLogProbName <- function(nodeInfo, nodeName2LogProbMap){
 
 mapsClass$methods(setPositions3 = function(graph) { ## graph not actually used any more!
     ## new version to work with XXX3 system from modelDefClass
-
     ## determine who has any stochastic dependents (descendents)
 
     boolAnyStochDep <- nimbleGraph$anyStochDependencies()
-
     boolAnyStochParent <- nimbleGraph$anyStochParents()
-        
+
     ## end nodes have no stochastic dependents
     ## top nodes have no stochastic ancestor
     ## latent nodes have a stochastic descendent and ancestor
@@ -91,7 +87,6 @@ mapsClass$methods(setPositions3 = function(graph) { ## graph not actually used a
     isEndNode_byGID[end_IDs] <<- TRUE
 
     NULL
-    
 })
 
 

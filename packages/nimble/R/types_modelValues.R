@@ -236,7 +236,7 @@ makeCustomModelValuesClass <- function(symTab, className, vars, types, sizes, mo
                 }	
                 else if(nrow < rows){
                     for(vN in varNames){
-                        dims = nimbleInternalFunctions$dimOrLength(.self[[vN]][[1]])	#nimDim(.self[[vN]][[1]])
+                        dims = nimbleInternalFunctions$dimOrLength(.self[[vN]][[1]])
                         if(length(dims) == 0) dims = 1
                         for(i in (nrow+1):rows){
                             .self[[vN]][[i]] <- array(NA, dim = dims)

@@ -7,7 +7,6 @@ calc_asympVar = nimbleFunction(
     calc_E_llk <- calc_E_llk_gen(model, fixedNodes = fixedNodes, sampledNodes = sampledNodes, burnIn = 0, mvSample = mvBlock)
   },
   run = function(nsamps = integer(0), theta = double(1), oldTheta = double(1)){
-    ##declare(svals, double(1, numReps))
     svals <- numeric(numReps, init=FALSE)
     l <- ceiling(min(1000, (nsamps - burnIn)/20)) #length of each block, ensures it's not too big
     q <- (nsamps - burnIn) - l + 1 #total number of blocks available to sample from

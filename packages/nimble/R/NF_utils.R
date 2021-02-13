@@ -208,7 +208,3 @@ identityMatrix <- nimbleFunction(
         returnType(double(2))
         return(arr)
     })
-
-
-
-
