@@ -164,6 +164,7 @@ if (optionParallel) {
 }
 
 if(testBatch == 4) { ## currently quickest to run
-    download.file('https://github.com/nimble-dev/nimbleSMC/blob/devel/run_tests.R')
-    system("./run_tests.R")
+    download.file('https://github.com/nimble-dev/nimbleSMC/blob/devel/run_tests.R',
+                  'run_test_smc.R')
+    system("chmod guo+x run_tests_smcs.R; ./run_tests_smc.R")
 }
