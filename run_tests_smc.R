@@ -1,3 +1,4 @@
+#!/usr/bin/env Rscript
 
 help_message <-
 "Run tests in nimbleSMC/tests/testthat
@@ -21,20 +22,10 @@ if ('-h' %in% argv || '--help' %in% argv) {
     quit()
 }
 
-# Determine which tests to run.
-if (length(grep('^-', argv, invert = TRUE))) {
-    # Run only tests specified on commmand line.
-    allTests <- paste0('test-', argv[!grepl('^-', argv)], '.R')
-} else {
-    # Run a default set of tests.
-    allTests <- list.files('packages/nimbleSMC/tests/testthat')
-    allTests <- allTests[grepl('test-.*\\.R', allTests)]
-}
-
 # Parallelize tests by splitting them up into batches.
 # We use the Best Fit Decreasing heuristic to approximatly solve this 1-D bin packing problem.
 
-cat('PLANNING TO TEST', allTests, sep = '\n  ')
+cat('PLANNING TO TEST ALL SMC TESTS', sep = '\n  ')
 if (optionDryRun) quit()
 
 # Run under /usr/bin/time -v if possible, to gather timing information.
@@ -57,21 +48,20 @@ if (require(sys)) {
 }
 
 # Run each test in a separate process to avoid dll garbage overload.
-runTest <- function(test, logToFile = FALSE, runViaTestthat = TRUE) {
+runTests <- function(logToFile = FALSE, runViaTestthat = TRUE) {
     if (!logToFile) cat('--------------------------------------------------------------------------------\n')
-    cat('TESTING', test, '\n')
+    cat('TESTING ALL TESTS', '\n')
     if (runViaTestthat) {
-        name <- gsub('test-(.*)\\.R', '\\1', test)
         script <- paste0('library(methods);',
                          'library(testthat);',
                          'library(nimble);',
                          'library(nimbleSMC);',
-                         'tryCatch(test_dir("packages/nimbleSMC/tests/testthat", "^', name, '$",',
+                         'tryCatch(test_package("nimbleSMC", ',
                          '                      reporter = ', reporter, '),',
                          '  error = function(e) quit(status = 1))')
         command <- c(runner, '-e', custom_shQuote(script))
     } else {
-        command <- c(runner, file.path('packages', 'nimbleSMC', 'testthat', 'tests', test))
+        stop("Not set up to run outside of testthat")
     }
     Sys.setenv(MAKEFLAGS = '-j1')  # Work around broken job pipe when GNU make is run under mclapply.
     if (logToFile) {
@@ -80,19 +70,16 @@ runTest <- function(test, logToFile = FALSE, runViaTestthat = TRUE) {
         stderr.log <- file.path(logDir, paste0('test-', name, '.stderr'))
         stdout.log <- file.path(logDir, paste0('test-', name, '.stdout'))
         if (custom_system2(command[1], tail(command, -1), stderr.log, stdout.log)) {
-            cat('\x1b[31mFAILED\x1b[0m', test, 'See', stderr.log, stdout.log, '\n')
+            cat('\x1b[31mFAILED\x1b[0m', ' See', stderr.log, stdout.log, '\n')
             return(TRUE)
         }
     } else {
         if (custom_system2(command[1], tail(command, -1))) {
-            stop(paste('\x1b[31mFAILED\x1b[0m', test))
+            stop(paste('\x1b[31mFAILED\x1b[0m'))
         }
     }
-    cat('\x1b[32mPASSED\x1b[0m', test, '\n')
+    cat('\x1b[32mPASSED\x1b[0m', '\n')
     return(FALSE)
 }
 
-
-for (test in allTests) {
-  runTest(test)
-}
+runTests()
