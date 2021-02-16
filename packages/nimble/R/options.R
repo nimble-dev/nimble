@@ -7,10 +7,11 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
 # These options are for development use at this point.
 .nimbleOptions <- as.environment(
     list(
-        skipADcholAtomic = FALSE,
-        skipADsolveAtomic = FALSE,
-        skipADmatMultAtomic = FALSE, # If TRUE, do not use nimble's CppAD atomic class for %*%
-        skipADmatInverseAtomic = FALSE, # If TRUE, do not use nimble's CppAD atomic class for inverse
+        skipADcholAtomic = TRUE,
+        skipADsolveAtomic = TRUE,
+        skipADmatMultAtomic = TRUE, # If TRUE, do not use nimble's CppAD atomic class for %*%
+        skipADmatInverseAtomic = TRUE, # If TRUE, do not use nimble's CppAD atomic class for inverse
+        use_C_getParents = FALSE,
         useNewConfigureMCMC = TRUE,
         oldConjugacyChecking = FALSE,
         disallow_multivariate_argument_expressions = TRUE,
@@ -69,6 +70,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         MCMCmultivariateNodesAsScalars = FALSE,
         MCMCmonitorAllSampledNodes = FALSE,
         MCMCuseConjugacy = TRUE,
+        MCMCjointlySamplePredictiveBranches = TRUE,
         MCMCenableWAIC = FALSE
         
         ## default settings for MCMC samplers
@@ -206,3 +208,4 @@ withNimbleOptions <- function(options, expr) {
     nimbleOptions(options)
     return(expr)
 }
+

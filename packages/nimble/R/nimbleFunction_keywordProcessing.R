@@ -2067,6 +2067,20 @@ makeUpdateNodes <- function(wrtNodes,
                        dataAsConstantNodes)
 }
 
+getImmediateParentNodes <- function(nodes, model) { 
+  ## adapted from BUGS_modelDef creation of edgesFrom2To
+  maps <- model$modelDef$maps
+  maxNodeID <- length(maps$vertexID_2_nodeID) ## should be same as length(maps$nodeNames)
+  
+  edgesLevels <- if(maxNodeID > 0) 1:maxNodeID else numeric(0)
+  fedgesTo <- factor(maps$edgesTo, levels = edgesLevels) ## setting levels ensures blanks inserted into the splits correctly
+  edgesTo2From <<- split(maps$edgesFrom, fedgesTo)
+  nodeIDs <- model$expandNodeNames(nodes, returnType = "ids")
+  fromIDs <- sort(unique(unlist(edgesTo2From[nodeIDs])))
+  fromNodes <- maps$graphID_2_nodeName[fromIDs]
+  fromNodes
+}
+
 makeUpdateNodes_impl <- function(wrtNodes,
                                  calcNodes,
                                  model,
@@ -2075,7 +2089,8 @@ makeUpdateNodes_impl <- function(wrtNodes,
   nonWrtCalcNodeNames <- model$expandNodeNames(nonWrtCalcNodes, returnScalarComponents = TRUE)
   nonWrtStochCalcNodeNames <- nonWrtCalcNodeNames[ model$isStoch(nonWrtCalcNodeNames) ]  
   ## Some duplication of work in expandNodeNames
-  parentNodes <- getParentNodes(calcNodes, model)
+  parentNodes <- getImmediateParentNodes(calcNodes, model)
+  parentNodes <- model$expandNodeNames(parentNodes, returnScalarComponents = TRUE)
   neededParentNodes <- setdiff(parentNodes, c(wrtNodes, nonWrtCalcNodeNames))
   extraInputNodes <- model$expandNodeNames(c(neededParentNodes,
                                              nonWrtStochCalcNodeNames),
