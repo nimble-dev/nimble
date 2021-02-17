@@ -83,3 +83,10 @@ runTests <- function(logToFile = FALSE, runViaTestthat = TRUE) {
 }
 
 runTests()
+
+print("here")
+testthat::test_package('nimbleSMC', reporter='summary')
+dir=system.file(file.path('tests', 'testthat'), package = 'nimbleSMC')
+print(dir)
+print(list.files(dir))
+print('done')
