@@ -54,7 +54,7 @@ install:
   # - pip freeze
   - R CMD build packages/nimble
   - R CMD INSTALL --install-tests packages/nimble
-  - ./install_nimble_related.R
+  - ./install_nimble_related.R >> nr.log
 
 
 script:

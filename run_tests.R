@@ -167,6 +167,8 @@ if(testBatch == 4) { ## currently quickest to run
     library(nimble)
     library(nimbleSMC)
     print('starting')
+    print(system('ls'))
+    system('cat nr.log')
     print(searchpaths())
     print(system('ls /home/travis/R/Library/nimbleSMC'))
     print(system('ls /home/travis/R/Library/nimbleSMC/tests'))
