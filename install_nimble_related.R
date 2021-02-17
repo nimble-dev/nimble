@@ -3,7 +3,7 @@
 requirements <- c(
     'nimbleSMC'
 )     
-
+#
 for (package in requirements) {
  #   if (!suppressPackageStartupMessages(require(package,
 #                                                character.only = TRUE))) {
