@@ -6,7 +6,7 @@ requirements <- c(
 
 for (package in requirements) {
  #   if (!suppressPackageStartupMessages(require(package,
-                                                character.only = TRUE))) {
+#                                                character.only = TRUE))) {
  #       install.packages(package, repos = 'http://cran.us.r-project.org', INSTALL_opts = '--install-tests', verbose = TRUE, quiet = FALSE)
  #   }
 }
