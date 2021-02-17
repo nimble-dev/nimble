@@ -1639,7 +1639,8 @@ template<typename Index, typename DerivedInput>
   int dim1, dim2, totalLength, inputLength, inputRows;
   bool init; // would be a bit silly to call with init = FALSE, but it is allowed to simplify code generation
   bool recycle;
-  typedef double result_type;
+  //  typedef double result_type;
+  typedef typename DerivedInput::Scalar result_type;
  newMatrixClass(const DerivedInput &inputIn, bool initIn, bool recycleIn, int rowsIn, int colsIn) :
   input(inputIn),
     init(initIn),
