@@ -166,6 +166,7 @@ if (optionParallel) {
 if(testBatch == 4) { ## currently quickest to run
     library(nimble)
     library(nimbleSMC)
+    print('starting')
     print(searchpaths())
     print(system.file(file.path('tests', 'testthat'), package = 'nimbleSMC'))
     print(system.file(package = 'nimbleSMC'))
