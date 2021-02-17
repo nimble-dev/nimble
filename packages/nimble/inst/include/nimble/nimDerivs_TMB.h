@@ -1038,4 +1038,6 @@ MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dweibull, CppAD::AD<double>)
 MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dt_nonstandard, CppAD::AD<double>) // broken
 MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dt, CppAD::AD<double>) // broken
 
+#define nimDerivs_nimNewMatrixD newMatrix_impl<MatrixXd_CppAD>::newMatrix
+
 #endif

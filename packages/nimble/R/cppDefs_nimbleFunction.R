@@ -647,7 +647,7 @@ modifyForAD_handlers <- c(list(
     `*` = 'modifyForAD_matmult',
     eigInverse = 'modifyForAD_matinverse'),
     makeCallList(recyclingRuleOperatorsAD, 'modifyForAD_RecyclingRule'),
-    makeCallList(c('EIGEN_FS', 'EIGEN_BS', 'EIGEN_SOLVE', 'EIGEN_CHOL'),
+    makeCallList(c('EIGEN_FS', 'EIGEN_BS', 'EIGEN_SOLVE', 'EIGEN_CHOL', 'nimNewMatrixD'),
                  'modifyForAD_prependNimDerivs'))
 
 exprClasses_modifyForAD <- function(code, symTab,
@@ -872,10 +872,15 @@ modifyForAD_getSetValues <- function(code, symTab, workEnv) {
   already_AD_name <- grepl("_AD_$", accessorName) ## _AD_ is at the end. I'm not sure it would ever already be there, so this is defensive.
   if(!already_AD_name) {
     classSymTab <- symTab$getParentST()$getParentST()
-    newSymbol <- classSymTab$getSymbolObject(accessorName)$copy()
-    newSymbol$name <- paste0(newSymbol$name, '_AD_')
-    classSymTab$addSymbol(newSymbol)
-    code$args[[2]]$name <- newSymbol$name
+    newSymbolName <- paste0(accessorName, '_AD_')
+    if(!classSymTab$symbolExists(newSymbolName)) {
+      newSymbol <- classSymTab$getSymbolObject(accessorName)$copy()
+      if(newSymbol$name != accessorName)
+        warning("Something is wrong with internal processing of names in managing use of values() for nimDerivs.")
+      newSymbol$name <- newSymbolName
+      classSymTab$addSymbol(newSymbol)
+    }
+    code$args[[2]]$name <- newSymbolName
   }
   thirdArg <- RparseTree2ExprClasses(as.name(accessorName))
   setArg(code, 3, thirdArg)
