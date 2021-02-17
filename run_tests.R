@@ -159,10 +159,18 @@ if (optionParallel) {
     }
 } else {
     for (test in allTests) {
-        runTest(test)
+   #     runTest(test)
     }
 }
 
 if(testBatch == 4) { ## currently quickest to run
+    library(nimble)
+    library(nimbleSMC)
+    print(searchpaths())
+    print(system.file(file.path('tests', 'testthat'), package = 'nimbleSMC'))
+    print(system.file(package = 'nimbleSMC'))
+    print(system.file(file.path('tests', 'testthat'), package = 'nimble'))
+    print(system.file(package = 'nimble'))
+    print('starting run_tests_smc')
     system("./run_tests_smc.R")
 }
