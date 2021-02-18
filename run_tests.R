@@ -165,7 +165,7 @@ if (optionParallel) {
 
 if(testBatch == 4) { ## currently quickest to run
     library(nimble)
-    print(system('ls /home/travis/R/Library')
+    print(system('ls -l /home/travis/R/Library'))
     library(nimbleSMC)
     print('starting')
     print(system('ls'))
