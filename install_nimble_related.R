@@ -5,8 +5,9 @@ requirements <- c(
 )     
 
 for (package in requirements) {
-    if (!suppressPackageStartupMessages(require(package,
-                                                character.only = TRUE))) {
-        install.packages(package, repos = 'http://cran.us.r-project.org', INSTALL_opts = '--install-tests')
+    if (suppressPackageStartupMessages(require(package,
+                                               character.only = TRUE))) {
+        remove.packages(package)  ## need to make sure install tests so this will force re-installation
     }
+    install.packages(package, repos = 'http://cran.us.r-project.org', INSTALL_opts = '--install-tests')
 }

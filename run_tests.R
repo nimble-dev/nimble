@@ -164,20 +164,5 @@ if (optionParallel) {
 }
 
 if(testBatch == 4) { ## currently quickest to run
-    library(nimble)
-    print(system('ls -l /home/travis/R/Library'))
-    library(nimbleSMC)
-    print('starting')
-    print(system('ls'))
-    system('cat nr.log')
-    print(searchpaths())
-    print(system('ls /home/travis/R/Library/nimbleSMC'))
-    print(system('ls /home/travis/R/Library/nimbleSMC/tests'))
-    print(system('ls /home/travis/R/Library/nimbleSMC/tests/testthat'))
-    print(system.file(file.path('tests', 'testthat'), package = 'nimbleSMC'))
-    print(system.file(package = 'nimbleSMC'))
-    print(system.file(file.path('tests', 'testthat'), package = 'nimble'))
-    print(system.file(package = 'nimble'))
-    print('starting run_tests_smc')
     system("./run_tests_smc.R")
 }
