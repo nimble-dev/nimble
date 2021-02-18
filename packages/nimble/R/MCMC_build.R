@@ -43,7 +43,7 @@
 #' 
 #' After the MCMC has been run, calling the \code{calculateWAIC()} method of the MCMC object will return the WAIC for the model, calculated using the posterior samples from the MCMC run.
 #' 
-#' \code{calculateWAIC()} accepts a single arugment:
+#' \code{calculateWAIC()} accepts a single argument:
 #'
 #' \code{nburnin}: The number of pre-thinning MCMC samples to remove from the beginning of the posterior samples for WAIC calculation (default = 0). These samples are discarded in addition to any burn-in specified when running the MCMC.
 #' 
@@ -77,6 +77,27 @@
 #' data context), one would need to use a multivariate distribution for the
 #' observations in each group (potentially by writing a user-defined distribution).
 #' 
+#' The options below are to use the online WAIC 
+#' 
+#' The option \code{disableWAIC} will disable the online calculation 
+#' of any WAIC, by default this is false, therefore if no arguments are supplied
+#' online conditional independent WAIC is performed. 
+#' 
+#' \code{getWAIC} takes in no arguments and is wholly tied to the MCMC process 
+#' outlined earlier. 
+#'
+#' \code{groupingWAIC}: A list of which element is a character vector of nodes
+#' to specified for that particular group. NIMBLE will then compute joint 
+#' values of the PPD based on these groupings
+#' 
+#' \code{marginalWAIC}: A vector of nodes to integrate out when computing WAIC, 
+#' in order to use a marginal likelihood.
+#' 
+#' \code{mWAICMC}: Monte Carlo iterations for marginalizing (default is 1000)
+#' 
+#' \code{thinWAIC}: Boolean for specifying whether to do WAIC calculations
+#' only on thinned samples (default is FALSE)
+#' 
 #' @examples
 #' \dontrun{
 #' code <- nimbleCode({
@@ -98,7 +119,7 @@
 #'
 #' @seealso \code{\link{configureMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}
 #' 
-#' @author Daniel Turek
+#' @author Daniel Turek & me UwU
 #' 
 #' @references 
 #' Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation and widely applicable information criterion in singular learning theory. \emph{Journal of Machine Learning Research} 11: 3571-3594.
@@ -110,8 +131,8 @@
 buildMCMC <- nimbleFunction(
     name = 'MCMC',
     setup = function(conf, ...) {
-    	if(inherits(conf, 'modelBaseClass'))   conf <- configureMCMC(conf, ...)
-    	else if(!inherits(conf, 'MCMCconf')) stop('conf must either be a nimbleModel or a MCMCconf object (created by configureMCMC(...) )')
+        if(inherits(conf, 'modelBaseClass'))   conf <- configureMCMC(conf, ...)
+        else if(!inherits(conf, 'MCMCconf')) stop('conf must either be a nimbleModel or a MCMCconf object (created by configureMCMC(...) )')
         dotdotdotArgs <- list(...)
         enableWAICargument <- if(!is.null(dotdotdotArgs$enableWAIC)) dotdotdotArgs$enableWAIC else nimbleOptions('MCMCenableWAIC')    ## accept enableWAIC argument regardless
         model <- conf$model
@@ -133,8 +154,54 @@ buildMCMC <- nimbleFunction(
         progressBarLength <- 52  ## multiples of 4 only
         progressBarDefaultSetting <- getNimbleOption('MCMCprogressBar')
         ## WAIC setup:
+        ## thin WAIC 
+        thWAIC <- if(!is.null(dotdotdotArgs$thinWAIC)) dotdotdotArgs$thinWAIC else FALSE
+        ##disable WAIC option
+        
+        ## for grouping
         dataNodes <- model$getNodeNames(dataOnly = TRUE)
         dataNodeLength <- length(dataNodes)
+        if(!is.null(dotdotdotArgs$groupingWAIC)){
+            useGroupsWAIC <- TRUE
+            groupNodesWAIC <- unlist(dotdotdotArgs$groupingWAIC)
+            groupNodesWAIC <- model$expandNodeNames(groupNodesWAIC)
+            groupIndicesWAIC <- sapply(dotdotdotArgs$groupingWAIC,
+                                       function(x) length(model$expandNodeNames(x)),USE.NAMES = FALSE)
+        } else{
+            useGroupsWAIC <- FALSE
+            groupNodesWAIC <- dataNodes
+            groupIndicesWAIC <- rep(1,dataNodeLength)
+        }
+        ## for mWAIC
+        if(!is.null(dotdotdotArgs$marginalWAIC)){
+            latNodes <- model$expandNodeNames(dotdotdotArgs$marginalWAIC)
+            mWAIC <- TRUE
+            if (!is.null(dotdotdotArgs$mWAICMC)){
+                mMCits <- dotdotdotArgs$mWAICMC
+            }else{
+                mMCits <- 1000
+            }
+        } else {
+            mWAIC <- FALSE
+            mMCits <- 1
+        }
+        dataNodeLengthWAIC <- length(groupIndicesWAIC)
+        ## lppd stores
+        lppdSumMax <- rep(0, dataNodeLengthWAIC)
+        lppdCurSum <- rep(0, dataNodeLengthWAIC)
+        # pwaic stores
+        sspWAIC <- rep(0, dataNodeLengthWAIC)
+        varCount <- 0
+        meanpWAIC <- rep(0, dataNodeLengthWAIC)
+        delta1pWAIC <- rep(0, dataNodeLengthWAIC)
+        delta2pWAIC <- rep(0, dataNodeLengthWAIC)
+        ## mWAIC stores
+        margSumMax <- rep(0, dataNodeLengthWAIC)
+        margCurSum <- rep(0, dataNodeLengthWAIC)
+        logProbVec <- rep(0, dataNodeLengthWAIC)
+        logAvgProb <-0
+        pWAIC <- 0
+        WAIC <- 0
         sampledNodes <- model$getVarNames(includeLogProb = FALSE, nodes = monitors)
         sampledNodes <- sampledNodes[sampledNodes %in% model$getVarNames(includeLogProb = FALSE)]
         paramDeps <- model$getDependencies(sampledNodes, self = FALSE, downstream = TRUE)
@@ -143,9 +210,13 @@ buildMCMC <- nimbleFunction(
         if(enableWAIC) {
             if(dataNodeLength == 0)   stop('WAIC cannot be calculated, as no data nodes were detected in the model.')
             mcmc_checkWAICmonitors_conditional(model = model, monitors = sampledNodes, dataNodes = dataNodes)
+            if (mWAIC){
+                latNodes <- model$expandNodeNames(latNodes)
+                paramDeps <- unique(c(paramDeps,latNodes))
+            }
         }
     },
-
+    
     run = function(
         niter                 = integer(),
         reset                 = logical(default = TRUE),
@@ -223,6 +294,21 @@ buildMCMC <- nimbleFunction(
                     mvSamples2_copyRow <- mvSamples2_copyRow + 1
                     nimCopy(from = model, to = mvSamples2, row = mvSamples2_copyRow, nodes = monitors2)
                 }
+                if(enableWAIC) {
+                    if (!thWAIC) {
+                        updateWAICStats()
+                        if(mWAIC) {
+                            ## reset the nodes if we simulated
+                            nimCopy(from = mvSaved, to = model, row= 1, nodes = paramDeps, logProb = TRUE)
+                        }
+                    } else if (sampleNumber %% thinToUseVec[1] == 0){ 
+                        updateWAICStats()
+                        if(mWAIC) {
+                            ## reset the nodes if we simulated
+                            nimCopy(from = mvSaved, to = model, row= 1, nodes = paramDeps, logProb = TRUE)
+                        }
+                    }
+                }
             }
             if(progressBar & (iter == progressBarNextFloor)) {
                 cat('-')
@@ -231,6 +317,7 @@ buildMCMC <- nimbleFunction(
             }
         }
         if(progressBar) print('|')
+        finalizeWAIC()
         returnType(void())
     },
     methods = list(
@@ -239,7 +326,7 @@ buildMCMC <- nimbleFunction(
             return(samplerTimes[1:(length(samplerTimes)-1)])
         },
         calculateWAIC = function(nburnin = integer(default = 0),
-            burnIn = integer(default = 0)) {
+                                 burnIn = integer(default = 0)) {
             if(!enableWAIC) {
                 print('Error: must set enableWAIC = TRUE in buildMCMC. See help(buildMCMC) for additional information.')
                 return(NaN)
@@ -279,6 +366,79 @@ buildMCMC <- nimbleFunction(
             if(is.nan(WAIC)) print('WAIC was calculated as NaN.  You may need to add monitors to model latent states, in order for a valid WAIC calculation.')
             returnType(double())
             return(WAIC)
+        },
+        
+        updateWAICStats = function() {
+            varCount <<- varCount + 1
+            for (w in 1:mMCits) {
+                if(mWAIC) {
+                    model$simulate(paramDeps)
+                }
+                model$calculate(groupNodesWAIC)
+                ## get the correct logProbs
+                for (j in 1:dataNodeLengthWAIC) {
+                    if (!useGroupsWAIC) {
+                        logProbMarg <- model$getLogProb(groupNodesWAIC[j]) 
+                    } else if (j == 1) {
+                        logProbMarg <-
+                            model$getLogProb(groupNodesWAIC[1:groupIndicesWAIC[1]])
+                    }else {
+                        logProbMarg <-
+                            model$getLogProb(groupNodesWAIC[(sum(groupIndicesWAIC[1:(j - 1)]) + 1):sum(groupIndicesWAIC[1:j])])
+                    }
+                    ## online logSumExp for marginalization
+                    if (w == 1) {
+                        margSumMax[j] <<- logProbMarg
+                        margCurSum[j] <<- 1
+                    } else if (logProbMarg > margSumMax[j]) {
+                        newMax <- logProbMarg - margSumMax[j]
+                        margSumMax[j] <<-
+                            margSumMax[j] + newMax
+                        margCurSum[j] <<-
+                            margCurSum[j] * exp(-newMax) + 1
+                    } else {
+                        margCurSum[j] <<-
+                            margCurSum[j] + exp(logProbMarg - margSumMax[j])
+                    }
+                }
+            }
+            logProbVec <<-
+                margSumMax + log(margCurSum) - log(mMCits)
+            ## update the lppd and pWAIC online 
+            for (j in 1:dataNodeLengthWAIC) {
+                logPredProbs <- logProbVec[j]
+                # lppd
+                if (varCount == 1) {
+                    lppdSumMax[j] <<- logPredProbs
+                    lppdCurSum[j] <<- 1
+                } else if (logPredProbs > lppdSumMax[j]) {
+                    newMax <- logPredProbs - lppdSumMax[j]
+                    lppdSumMax[j] <<- lppdSumMax[j] + newMax
+                    lppdCurSum[j] <<- lppdCurSum[j] * exp(-newMax) + 1
+                } else {
+                    lppdCurSum[j] <<- lppdCurSum[j] + exp(logPredProbs - lppdSumMax[j])
+                }
+                ## pWAI
+                delta1pWAIC[j] <<- logPredProbs - meanpWAIC[j]
+                meanpWAIC[j] <<- meanpWAIC[j] + delta1pWAIC[j] / varCount
+                delta2pWAIC[j] <<- logPredProbs - meanpWAIC[j]
+                sspWAIC[j] <<- sspWAIC[j] + delta1pWAIC[j] * delta2pWAIC[j]
+            }
+        },
+        finalizeWAIC = function() {
+            lppd1 <- sum(lppdSumMax + log(lppdCurSum))
+            logAvgProb <<- lppd1 - dataNodeLengthWAIC * log(varCount)
+            pWAIC <<- sum(sspWAIC / (varCount - 1))
+            WAIC <<- -2 * (logAvgProb - pWAIC)
+        },
+        getWAIC = function() {
+            returnType(double(1))
+            if(!enableWAIC) {
+                print('Error: must set enableWAIC = TRUE in buildMCMC. See help(buildMCMC) for additional information.')
+                return(NaN)
+            }else {
+                WAICvec <- c(WAIC,logAvgProb,pWAIC)
+                return(WAICvec)
+            }
         })
 )
-
