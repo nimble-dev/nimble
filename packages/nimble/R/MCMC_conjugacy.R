@@ -1526,7 +1526,7 @@ compareConjugacyLists <- function(C1, C2) {
 
 createDynamicConjugateSamplerName <- function(prior, dependentCounts, dynamicallyIndexed = FALSE) {
     ##depString <- paste0(dependentCounts, names(dependentCounts), collapse='_')  ## including the numbers of dependents
-    depString <- paste0(names(dependentCounts), collapse='_')                     ## without the numbers of each type of dependent node
+    depString <- paste0(sort(names(dependentCounts)), collapse='_')                     ## without the numbers of each type of dependent node
     paste0('sampler_conjugate_', prior, '_', depString, ifelse(dynamicallyIndexed, '_dynamicDeps', ''))
 }
 
