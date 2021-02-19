@@ -110,9 +110,6 @@ if (require(sys)) {
 }
 
 # Run each test in a separate process to avoid dll garbage overload.
-# As of recent (>= 3.0.0?) testthat versions, use of inst/tests is deprecated
-# and testthat wants a more formal approach to setup and cleanup code for each test file,
-# so for now, we'll just run 'manually'.
 runTest <- function(test, logToFile = FALSE, runViaTestthat = TRUE) {
     if (!logToFile) cat('--------------------------------------------------------------------------------\n')
     cat('TESTING', test, '\n')
@@ -145,6 +142,39 @@ runTest <- function(test, logToFile = FALSE, runViaTestthat = TRUE) {
     return(FALSE)
 }
 
+runTestSMC <- function(logToFile = FALSE, runViaTestthat = TRUE) {
+    if (!logToFile) cat('--------------------------------------------------------------------------------\n')
+    cat('TESTING ALL SMC TESTS', '\n')
+    if (runViaTestthat) {
+        script <- paste0('library(methods);',
+                         'library(testthat);',
+                         'library(nimble);',
+                         'library(nimbleSMC);',
+                         'tryCatch(test_package("nimbleSMC", ',
+                         '                      reporter = ', reporter, '),',
+                         '  error = function(e) quit(status = 1))')
+        command <- c(runner, '-e', custom_shQuote(script))
+    } else  command <- c(runner, system.file(file.path('tests', 'testthat', 'test-filtering.R'), package = 'nimbleSMC'))
+    Sys.setenv(MAKEFLAGS = '-j1')  # Work around broken job pipe when GNU make is run under mclapply.
+    if (logToFile) {
+        logDir <- 'log'
+        dir.create(logDir, recursive = TRUE, showWarnings = FALSE)
+        stderr.log <- file.path(logDir, paste0('test-', name, '.stderr'))
+        stdout.log <- file.path(logDir, paste0('test-', name, '.stdout'))
+        if (custom_system2(command[1], tail(command, -1), stderr.log, stdout.log)) {
+            cat('\x1b[31mFAILED\x1b[0m', ' See', stderr.log, stdout.log, '\n')
+            return(TRUE)
+        }
+    } else {
+        if (custom_system2(command[1], tail(command, -1))) {
+            stop(paste('\x1b[31mFAILED\x1b[0m'))
+        }
+    }
+    cat('\x1b[32mPASSED\x1b[0m', '\n')
+    return(FALSE)
+}
+
+
 if (optionParallel) {
     if (!require(parallel)) stop('Missing parallel package, required for --parallel')
     cores <- detectCores()
@@ -163,6 +193,6 @@ if (optionParallel) {
     }
 }
 
-if(testBatch == 4) { ## currently quickest to run
-    system("./run_tests_smc.R")
+if(testBatch == 3) { ## currently quickest to run so do SMC testing here
+    runTestSMC()
 }
