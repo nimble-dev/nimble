@@ -1308,7 +1308,7 @@ derivsNimbleFunction <- nimbleFunction(
 ## nf for double-taping
 derivsNimbleFunctionMeta <- nimbleFunction(
   setup = function(model, calcNodes, wrt) {
-    innerWrtVec <- c(.1, .2) ## awkward that this doesn't work smoothly in derivsRun
+    innerWrtVec <- seq_along(model$expandNodeNames(wrt, returnScalarComponents = TRUE))
     allUpdateNodes <- makeUpdateNodes(wrt, calcNodes, model)
     updateNodes <- allUpdateNodes$updateNodes
     constantNodes <- allUpdateNodes$constantNodes
@@ -1342,7 +1342,7 @@ derivsNimbleFunctionMeta <- nimbleFunction(
                              order = double(1),
                              reset = logical(0, default = FALSE)) {
       wrtVec <- 1:length(x)
-      innerWrtVec <<- wrtVec
+      if(length(wrtVec) != length(innerWrtVec)) stop("inner and outer wrt mismatch")  
       ans <- nimDerivs(derivs1Run(x, reset), wrt = wrtVec, order = order, reset = reset,
                        updateNodes = updateNodes, constantNodes = constantNodes, model = model)
       return(ans)
@@ -1353,7 +1353,7 @@ derivsNimbleFunctionMeta <- nimbleFunction(
                              order = double(1),
                              reset = logical(0, default = FALSE)) {
       wrtVec <- 1:length(x)
-      innerWrtVec <<- wrtVec
+      if(length(wrtVec) != length(innerWrtVec)) stop("inner and outer wrt mismatch")  
       ans <- nimDerivs(derivs2Run(x, reset), wrt = wrtVec, order = order, reset = reset,
                        updateNodes = updateNodes, constantNodes = constantNodes, model = model)
       return(ans)
@@ -1417,6 +1417,7 @@ derivsNimbleFunctionParamTransformMeta <- nimbleFunction(
     methods = list(
         derivs1Run = function(transformed_x = double(1),
                               reset = logical(0, default = FALSE)) {
+            if(length(transformed_x) != length(nimDerivs_wrt)) stop("mismatch of x and wrtVec")
             ans <- nimDerivs(run(transformed_x), wrt = nimDerivs_wrt, order = 1, reset = reset,
                              updateNodes = updateNodes, constantNodes = constantNodes, model = model)
             return(ans$jacobian[1,])
@@ -1424,6 +1425,7 @@ derivsNimbleFunctionParamTransformMeta <- nimbleFunction(
         },
         derivs2Run = function(transformed_x = double(1),
                               reset = logical(0, default = FALSE)) {
+            if(length(transformed_x) != length(nimDerivs_wrt)) stop("mismatch of x and wrtVec")
             ans <- nimDerivs(run(transformed_x), wrt = nimDerivs_wrt, order = 2, reset = reset,
                          updateNodes = updateNodes, constantNodes = constantNodes, model = model)
             ## not clear why can't do ans$hessian[,,1] with double(2) returnType
@@ -1434,6 +1436,7 @@ derivsNimbleFunctionParamTransformMeta <- nimbleFunction(
                                   order = double(1),
                                   reset = logical(0, default = FALSE)) {
             transformed_x <- my_parameterTransform$transform(x)
+            if(length(transformed_x) != length(nimDerivs_wrt)) stop("mismatch of x and wrtVec")
             ans <- nimDerivs(derivs1Run(transformed_x, reset), wrt = nimDerivs_wrt, order = order, reset = reset,
                              updateNodes = updateNodes, constantNodes = constantNodes, model = model)
             return(ans)
@@ -1444,6 +1447,7 @@ derivsNimbleFunctionParamTransformMeta <- nimbleFunction(
                                   order = double(1),
                                   reset = logical(0, default = FALSE)) {
             transformed_x <- my_parameterTransform$transform(x)
+            if(length(transformed_x) != length(nimDerivs_wrt)) stop("mismatch of x and wrtVec")
             ans <- nimDerivs(derivs2Run(transformed_x, reset), wrt = nimDerivs_wrt, order = order, reset = reset,
                              updateNodes = updateNodes, constantNodes = constantNodes, model = model)
             return(ans)
