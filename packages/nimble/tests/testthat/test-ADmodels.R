@@ -493,15 +493,9 @@ model$simulate()
 model$calculate()
 model$setData('y','w')
 test_ADModelCalculate(model, name = 'complicated indexing')
-## occasional rOutput2d11 values way off (e.g., first value in EB, idx =3 is -243 (or -251)
-## when correct value is 1.27 or -1.91
 ## compiled/uncompiled 01, 012, 02 values out of tolerance in various cases
-## compiled/uncompiled jacobian out of tolerance in some cases and
-## one of them seemingly wrong in at least one case
-## compiled/uncompiled 01, 12, 012 jacobian out of tolerance
-## compiled/uncompiled 1d value out of tolerance in one case
-
-## x[1,2:5] is in wrt and also in updateNodes (x[1,2],x[1,3],x[1,4]); is that cause of the problem? see issue # 273
+## comp/unc 2d11 hessian out of tolerance
+## occasional rOutput2d11 values way off (e.g., first value in EB, idx =3 is -243 (or -251) (see issue 275 to reproduce)
 
 ## if use pracma::jacobian:
 ## unc/compiled 01,012,02 values out of tolerance in various cases
@@ -661,7 +655,7 @@ model$setData('y')
 ## (not seeing anymore) Heisenbug: cLogProb12 equal but not identical to cLogProb_orig if verbose = FALSE (default)
 ## compiled/uncompiled 2d11 out of tolerance in a couple cases
 ## compiled/uncompiled 012, 02, 01, 02 values out of tolerance in some cases
-testt_ADModelCalculate(model, name = 'various dmnorm parameterizations')
+test_ADModelCalculate(model, name = 'various dmnorm parameterizations')
 
 ## various dmvt parameterizations
 
@@ -970,13 +964,20 @@ code <- nimbleCode({
 n <- 30
 k <- 4
 model <- nimbleModel(code, constants = list(k = k, n = n), data = list(y = rmulti(1, n, rep(1/k, k))), inits = list(p = c(.2, .4, .15, .25), alpha = runif(4)))
-## OLD: compiled 0th derivative equal but not identical to logProb 
-## OLD: cLogProb01 and cLogProb12 equal but not identical to cLogProb_{new,orig} 
-## OLD: rWrt, cWrt equal to x but not identical in x[7]
-## various NaN values in idx=3 - seemingly because p[1],..,p[4] in updateNodes
-test_ADModelCalculate(model, excludeUpdateNodes = 'p', useParamTransform = TRUE, name = 'Dirichlet paramTransform')
-## ISSUE: simulating into update nodes that have transforms is an issue
-## issue with update of 'x' too?
+## compiled 01,012,02 value ENI cLogProb_new
+## compiled 1d, 012 jac ENI
+## comp/unc 2d11 hessian out of tolerance
+## compiled 2d11, 012 hessian ENI
+## various wrt, vals, logProbs ENI
+## various other ENI, out of tolerances
+## ISSUE: ML partial: compiled wrt and x quite different
+## cWrt01,012 having values be restored in ML partial wrt=alpha[1,2]
+## see issue 277 - it occurs regardless of using full alpha or partial alpha
+test_ADModelCalculate(model, x = 'prior', useParamTransform = TRUE, excludeUpdateNodes = 'p',
+                      name = 'Dirichlet paramTransform', seed = 2)
+## seed = 1 (default) produces p[1]=2e-6 in new x and that causes -Inf in 0th order deriv and NaN in jac/hessian
+
+
 
 code <- nimbleCode({
     Sigma1[1:n,1:n] <- exp(-dist[1:n,1:n]/rho)
@@ -1029,14 +1030,40 @@ model <- nimbleModel(code, constants = list(n = n),
 model$simulate()
 model$calculate()
 model$setData('y')
-## compiled 0th derivative equal but not identical to logProb
-## also, compiled and uncompiled 0th deriv a bit outside specified tolerance
-## cVals01, cVals12, cLogProb01 and cLogProb12 equal but not identical to cVals_{new,orig}, cLogProb_{new,orig}
-## rLogProb12, rVals12 equal not identical to rLogProb_orig, rVals_orig
-## rWrt, cWrt equal to x but not identical for a few values
-test_ADModelCalculate(model, excludeUpdateNodes = 'dist',
-                      useParamTransform = TRUE, useFasterRderivs = TRUE, name = 'various multivariate dists')
-## all sorts of issues, including nonposdef
+## unc/comp big diffs in Hessian presumably because of single-tape compiled error - see issue 279, possibly issue 278
+## compiled value,logProb ENI to cLogProb_new, cVals_new
+## at some point noticed comp hessians not symmetric for single-taped in idx=2, for HMC/MAP (not sure about other cases); this might just be consequence of issue 279
+## non-pos def in HMC partial idx=1
+## NAs for ML partial
+## unc/comp big diffs in Hessians for EB for case 3
+
+
+nimbleOptions(skipADmatInverseAtomic = TRUE)
+test_ADModelCalculate(model, excludeUpdateNodes = 'dist', x = 'prior',
+                      useParamTransform = TRUE, useFasterRderivs = TRUE,
+                      verbose = TRUE,
+                      name = 'various multivariate dists')
+
+
+## TMP
+covFunLoop <- nimbleFunction(
+    run = function(dist = double(2), rho = double(0)) {
+        n = dim(dist)[1]
+        out = nimMatrix(nrow = n, ncol = n)
+        ## i <- 1L; j <- 1L  ## NCT 130 work-around
+        for(i in 1:n)
+            for(j in 1:n)
+                out[i,j] <- exp(-dist[i,j]/rho)
+        returnType(double(2))
+        return(out)
+    }, enableDerivs = list(run = list(noDeriv_vars = c('i','j'))))
+    # enableDerivs = TRUE) # if use NCT 130 work-around
+covFunVec <- nimbleFunction(
+    run = function(dist = double(2), rho = double(0)) {
+        out <- exp(-dist/rho)
+        returnType(double(2))
+        return(out)
+    }, enableDerivs = TRUE)
 
 
 ## loop through BUGS models
@@ -1137,7 +1164,15 @@ model$calculate()
 test_ADModelCalculate(model, useParamTransform = TRUE, verbose = TRUE, name = 'salm', relTol = relTol_default, useFasterRderivs = TRUE)
 
 
-## Newer results:
+## Feb 2021 results:
+
+
+## epil2: 2d11 uncompiled hessian out of tolerance with compiled
+
+## blocker: uncomp 2d11  hessian way off for one component in various cases - possibly issue 275
+## various compiled value, 1d jacobian, 2d11 hessian ENI to compiled logProb, 
+
+## Dec 2020 results:
 
 ## epil: some serious problems on at least one test case
 

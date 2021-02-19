@@ -1537,12 +1537,16 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         tmp <- values(model, wrt)
         ## Hopefully values in (0,1) will always be legitimate for our test models.
-        if(initsHandling == 'given') {
+        if(initsHandling %in% c('given','prior')) {
             x <- tmp
         } else if(initsHandling == 'random') {
             x <- runif(length(tmp))
         } 
-        xNew <- runif(length(tmp))
+        if(initsHandling == 'prior') {
+            model$simulate(wrt)
+            xNew <- values(model, wrt)
+            nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
+        } else xNew <- runif(length(tmp))
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, excludeUpdateNodes = excludeUpdateNodes,
                                            savedMV = mv, relTol = relTol,
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
@@ -1558,14 +1562,16 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         calcNodes <- calcNodes[!calcNodes %in% c(topNodes, latentNodes)]  # should be data + deterministic
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE) # will include hyps if present, but derivs wrt those should be zero
         tmp <- values(model, wrt)
-        if(initsHandling == 'given') {
+        if(initsHandling %in% c('given','prior')) {
             x <- tmp
-            xNew <- runif(length(tmp))
         } else if(initsHandling == 'random') {
             x <- runif(length(tmp))
-            xNew <- runif(length(tmp))
         } 
-        xNew <- runif(length(tmp))
+        if(initsHandling == 'prior') {
+            model$simulate(wrt)
+            xNew <- values(model, wrt)
+            nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
+        } else xNew <- runif(length(tmp))
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, excludeUpdateNodes = excludeUpdateNodes,
                                            savedMV =mv, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
@@ -1578,16 +1584,24 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         calcNodes <- model$getNodeNames()
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
-        wrt <- sample(wrt, round(length(wrt)/2), replace = FALSE)
-        if(!length(wrt))
-            wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
+        wrtIdx <- sample(seq_along(wrt), round(length(wrt)/2), replace = FALSE)
+        ## sample full wrt in case there are constraints built in, then subset wrt
+        if(!length(wrtIdx))
+            wrtIdx <- seq_along(wrt)
         tmp <- values(model, wrt)
-        if(initsHandling == 'given') {
+        if(initsHandling %in% c('given','prior')) {
             x <- tmp
         } else if(initsHandling == 'random') {
             x <- runif(length(tmp))
         } 
-        xNew <- runif(length(tmp))
+        if(initsHandling == 'prior') {
+            model$simulate(wrt)
+            xNew <- values(model, wrt)
+            nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
+        } else xNew <- runif(length(tmp))
+        x <- x[wrtIdx]
+        xNew <- xNew[wrtIdx]
+        wrt <- wrt[wrtIdx]
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, excludeUpdateNodes = excludeUpdateNodes,
                                            savedMV = mv, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
@@ -1603,16 +1617,24 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         latentNodes <- model$getNodeNames(latentOnly = TRUE, stochOnly = TRUE, includeData = FALSE)
         calcNodes <- calcNodes[!calcNodes %in% c(topNodes, latentNodes)]  # should be data + deterministic
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
-        wrt <- sample(wrt, round(length(wrt)/2), replace = FALSE)
-        if(!length(wrt))
-            wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
+        wrtIdx <- sample(seq_along(wrt), round(length(wrt)/2), replace = FALSE)
+        ## sample full wrt in case there are constraints built in, then subset wrt
+        if(!length(wrtIdx))
+            wrtIdx <- seq_along(wrt)
         tmp <- values(model, wrt)
-        if(initsHandling == 'given') {
+        if(initsHandling %in% c('given','prior')) {
             x <- tmp
         } else if(initsHandling == 'random') {
             x <- runif(length(tmp))
         } 
-        xNew <- runif(length(tmp))
+        if(initsHandling == 'prior') {
+            model$simulate(wrt)
+            xNew <- values(model, wrt)
+            nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
+        } else xNew <- runif(length(tmp))
+        x <- x[wrtIdx]
+        xNew <- xNew[wrtIdx]
+        wrt <- wrt[wrtIdx]
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, excludeUpdateNodes = excludeUpdateNodes,
                                            savedMV = mv, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
@@ -1628,12 +1650,16 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         calcNodes <- calcNodes[!calcNodes %in% topNodes]  # EB doesn't use hyperpriors
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         tmp <- values(model, wrt)
-        if(initsHandling == 'given') {
+        if(initsHandling %in% c('given','prior')) {
             x <- tmp
         } else if(initsHandling == 'random') {
             x <- runif(length(tmp))
         } 
-        xNew <- runif(length(tmp))
+        if(initsHandling == 'prior') {
+            model$simulate(wrt)
+            xNew <- values(model, wrt)
+            nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
+        } else xNew <- runif(length(tmp))
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, excludeUpdateNodes = excludeUpdateNodes,
                                            savedMV = mv, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
@@ -1645,12 +1671,16 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         if(is.null(wrt)) wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         ## Apply test to user-provided sets of nodes
         tmp <- values(model, wrt)
-        if(initsHandling == 'given') {
+        if(initsHandling %in% c('given','prior')) {
             x <- tmp
         } else if(initsHandling == 'random') {
             x <- runif(length(tmp))
         } 
-        xNew <- runif(length(tmp))
+        if(initsHandling == 'prior') {
+            model$simulate(wrt)
+            xNew <- values(model, wrt)
+            nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
+        } else xNew <- runif(length(tmp))
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, excludeUpdateNodes = excludeUpdateNodes, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                        checkDoubleTape = checkDoubleTape,
