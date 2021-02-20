@@ -983,7 +983,7 @@ sampler_langevin <- nimbleFunction(
         timesRan <- 0
         timesAdapted <- 0
         ## checks
-        if(!nimbleOptions('experimentalEnableDerivs')) stop('must enable NIMBLE derivates, set nimbleOptions(experimentalEnableDerivs = TRUE)')
+        if(!nimbleOptions('experimentalEnableDerivs')) stop('must enable NIMBLE derivatives, set nimbleOptions(experimentalEnableDerivs = TRUE)')
         if(any(model$isDiscrete(targetAsScalar)))      stop(paste0('langevin sampler can only operate on continuous-valued nodes:', paste0(targetAsScalar[model$isDiscrete(targetAsScalar)], collapse=', ')))
     },
     run = function() {
