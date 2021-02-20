@@ -1842,7 +1842,7 @@ test_that("realized conjugacy links are working", {
     conf <- configureMCMC(m)
     mcmc <- buildMCMC(conf)
 
-    expect_identical(conf$getSamplers()[[1]]$name, "conjugate_dmnorm_dmnorm_additive_dmnorm_identity_dmnorm_linear_dnorm_multiplicative")
+    expect_identical(conf$getSamplers()[[1]]$name, "conjugate_dmnorm_dmnorm_additive_dmnorm_identity_dmnorm_linear_dmnorm_multiplicative")
     expect_identical(mcmc$samplerFunctions[[1]]$N_dep_dmnorm_identity, 2L)
     expect_identical(mcmc$samplerFunctions[[1]]$N_dep_dmnorm_additive, 2L)
     expect_identical(mcmc$samplerFunctions[[1]]$N_dep_dmnorm_multiplicative, 2L)
