@@ -25,6 +25,7 @@ sink_with_messages(outputFile)
 
 nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
 nimbleOptions(MCMCprogressBar = FALSE)
+
 ## tests of classic BUGS examples
 
 test_mcmc('blocker', numItsC = 1000, resampleData = TRUE)
