@@ -1448,26 +1448,28 @@ sampler_CRP <- nimbleFunction(
       sampler <- 'CRP_nonconjugate'
     } else 
       sampler <- switch(conjugacyResult,
-                        conjugate_dnorm_dnorm = 'CRP_conjugate_dnorm_dnorm',
-                        conjugate_dmnorm_dmnorm = 'CRP_conjugate_dmnorm_dmnorm',
-                        conjugate_dnorm_dnorm_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity',
-                        conjugate_dinvgamma_dnorm = 'CRP_conjugate_dinvgamma_dnorm',
-                        conjugate_dinvwish_dmnorm = 'CRP_conjugate_dinvwish_dmnorm',
-                        conjugate_dwish_dmnorm = 'CRP_conjugate_dwish_dmnorm',
+                        conjugate_dnorm_dnorm_identity = 'CRP_conjugate_dnorm_dnorm',
+                        conjugate_dmnorm_dmnorm_identity = 'CRP_conjugate_dmnorm_dmnorm',
+                        conjugate_dnorm_dnorm_additive_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity',
+                        conjugate_dnorm_dnorm_multiplicative_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity',
+                        conjugate_dnorm_dnorm_linear_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity',
+                        conjugate_dinvgamma_dnorm_identity = 'CRP_conjugate_dinvgamma_dnorm',
+                        conjugate_dinvwish_dmnorm_identity = 'CRP_conjugate_dinvwish_dmnorm',
+                        conjugate_dwish_dmnorm_identity = 'CRP_conjugate_dwish_dmnorm',
                         conjugate_dnorm_invgamma_dnorm = 'CRP_conjugate_dnorm_invgamma_dnorm',
                         conjugate_dnorm_gamma_dnorm = 'CRP_conjugate_dnorm_gamma_dnorm',
                         conjugate_dmnorm_invwish_dmnorm = 'CRP_conjugate_dmnorm_invwish_dmnorm',
                         conjugate_dmnorm_wish_dmnorm = 'CRP_conjugate_dmnorm_wish_dmnorm',
-                        conjugate_dbeta_dbern  = 'CRP_conjugate_dbeta_dbern',
-                        conjugate_dbeta_dbin = 'CRP_conjugate_dbeta_dbin',
-                        conjugate_dbeta_dnegbin = 'CRP_conjugate_dbeta_dnegbin',
-                        conjugate_dgamma_dpois = 'CRP_conjugate_dgamma_dpois',
-                        conjugate_dgamma_dexp = 'CRP_conjugate_dgamma_dexp',
-                        conjugate_dgamma_dgamma = 'CRP_conjugate_dgamma_dgamma',
-                        conjugate_dgamma_dnorm = 'CRP_conjugate_dgamma_dnorm',
-                        conjugate_dgamma_dweib = 'CRP_conjugate_dgamma_dweib',
-                        conjugate_dgamma_dinvgamma = 'CRP_conjugate_dgamma_dinvgamma',
-                        conjugate_ddirch_dmulti = 'CRP_conjugate_ddirch_dmulti',
+                        conjugate_dbeta_dbern_identity  = 'CRP_conjugate_dbeta_dbern',
+                        conjugate_dbeta_dbin_identity = 'CRP_conjugate_dbeta_dbin',
+                        conjugate_dbeta_dnegbin_identity = 'CRP_conjugate_dbeta_dnegbin',
+                        conjugate_dgamma_dpois_identity = 'CRP_conjugate_dgamma_dpois',
+                        conjugate_dgamma_dexp_identity = 'CRP_conjugate_dgamma_dexp',
+                        conjugate_dgamma_dgamma_identity = 'CRP_conjugate_dgamma_dgamma',
+                        conjugate_dgamma_dnorm_identity = 'CRP_conjugate_dgamma_dnorm',
+                        conjugate_dgamma_dweib_identity = 'CRP_conjugate_dgamma_dweib',
+                        conjugate_dgamma_dinvgamma_identity = 'CRP_conjugate_dgamma_dinvgamma',
+                        conjugate_ddirch_dmulti_identity = 'CRP_conjugate_ddirch_dmulti',
                         'CRP_nonconjugate')  ## default if we don't have sampler set up for a conjugacy
 
 
@@ -2080,7 +2082,8 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo, n, gammaDist = '
                sum(sapply(conjugacy_dnorm, '[[', 'type') == 'conjugate_dnorm') == length(exampleNodes1) &&
                sum(sapply(conjugacy_dinvgamma, '[[', 'type') == paste0('conjugate_', gammaDist)) == length(exampleNodes2) &&
                all(sapply(seq_along(conjugacy_dinvgamma), function(idx)
-                   sum(conjugacy_dinvgamma[[idx]]$control$dep_dnorm == exampleNodes1[idx]) == 1)))
+                   sum(conjugacy_dinvgamma[[idx]]$control$dep_dnorm_identity == exampleNodes1[idx]) + 
+                   sum(conjugacy_dinvgamma[[idx]]$control$dep_dnorm_multiplicative == exampleNodes1[idx]) == 1)))
                 conjugate <- TRUE
         }
         if(conjugate) {
@@ -2174,7 +2177,8 @@ checkNormalInvWishartConjugacy <- function(model, clusterVarInfo, n, wishartDist
                sum(sapply(conjugacy_dmnorm, '[[', 'type') == 'conjugate_dmnorm') == length(exampleNodes1) &&
                sum(sapply(conjugacy_dinvwish, '[[', 'type') == paste0('conjugate_', wishartDist)) == length(exampleNodes2) &&
                all(sapply(seq_along(conjugacy_dinvwish), function(idx)
-                   sum(conjugacy_dinvwish[[idx]]$control$dep_dmnorm == exampleNodes1[idx]) == 1)))
+                   sum(conjugacy_dinvwish[[idx]]$control$dep_dmnorm_identity == exampleNodes1[idx]) +
+                   sum(conjugacy_dinvwish[[idx]]$control$dep_dmnorm_multiplicativeScalar == exampleNodes1[idx]) == 1)))
                 conjugate <- TRUE
         }
         if(conjugate) {  
