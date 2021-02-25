@@ -162,7 +162,8 @@ template<typename DerivedIndex, typename DerivedSource>
  public:
   const DerivedSource &src;
   int dim1, dim2;
-  typedef double result_type;
+  //  typedef double result_type;
+  typedef typename Eigen::internal::traits<DerivedSource>::Scalar result_type;
  diagonalClass(const DerivedSource &s) : src(s) {
     dim1 = nimble_size_impl<DerivedSource>::getDiagRows(src);
     dim2 = nimble_size_impl<DerivedSource>::getDiagCols(src);
@@ -213,13 +214,13 @@ struct diagonal_impl {
 
 
 //concatenation c()
-template<typename Index, typename Derived1>
+template<typename Index, typename Derived1, typename result_type = double>
 class concatenate1Class {
   /* We need this for something like c(2) or c(2,2).  It also converts from scalar to vector nicely. */
  public:
   const Derived1 &Arg1;
   int size1, totalLength;
-  typedef double result_type;
+  //  typedef double result_type;
  concatenate1Class(const Derived1 &A1) : Arg1(A1) {
     size1 = nimble_size_impl<Derived1>::getSize(Arg1);
     totalLength = size1;
@@ -239,13 +240,14 @@ class concatenate1Class {
 };
 
 
-template<typename Index, typename Derived1, typename Derived2>
+template<typename Index, typename Derived1, typename Derived2, typename result_type = double>
 class concatenateClass {
  public:
   const Derived1 &Arg1;
   const Derived2 &Arg2;
   int size1, size2, totalLength;
-  typedef double result_type;
+ // double is default for simplicity.  nimDerivs version will use CppAD::AD<double>
+  //  typedef double result_type;
  concatenateClass(const Derived1 &A1, const Derived2 &A2) : Arg1(A1), Arg2(A2) {
     size1 = nimble_size_impl<Derived1>::getSize(Arg1);
     size2 = nimble_size_impl<Derived2>::getSize(Arg2);
@@ -268,14 +270,14 @@ class concatenateClass {
   }
 };
 
-template<typename Index, typename Derived1, typename Derived2, typename Derived3>
+template<typename Index, typename Derived1, typename Derived2, typename Derived3, typename result_type = double>
 class concatenate3Class {
  public:
   const Derived1 &Arg1;
   const Derived2 &Arg2;
   const Derived3 &Arg3;
   int size1, size2, size3, size12, totalLength;
-  typedef double result_type;
+ //  typedef double result_type;
  concatenate3Class(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3) : Arg1(A1), Arg2(A2), Arg3(A3) {
     size1 = nimble_size_impl<Derived1>::getSize(Arg1);
     size2 = nimble_size_impl<Derived2>::getSize(Arg2);
@@ -303,7 +305,7 @@ class concatenate3Class {
   }
 };
 
-template<typename Index, typename Derived1, typename Derived2, typename Derived3, typename Derived4>
+template<typename Index, typename Derived1, typename Derived2, typename Derived3, typename Derived4, typename result_type = double>
 class concatenate4Class {
  public:
   const Derived1 &Arg1;
@@ -311,7 +313,7 @@ class concatenate4Class {
   const Derived3 &Arg3;
   const Derived4 &Arg4;
   int size1, size2, size3, size4, size12, size123, totalLength;
-  typedef double result_type;
+ //  typedef double result_type;
  concatenate4Class(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3, const Derived4 &A4) : Arg1(A1), Arg2(A2), Arg3(A3), Arg4(A4) {
     size1 = nimble_size_impl<Derived1>::getSize(Arg1);
     size2 = nimble_size_impl<Derived2>::getSize(Arg2);
@@ -347,14 +349,14 @@ class concatenate4Class {
 
 namespace Eigen{
   namespace internal{
-    template<typename Index, typename Derived1, typename Derived2>
+    template<typename Index, typename Derived1, typename Derived2, typename result_type>
     // 3 options for linear_access:
       //1. turn it off: struct functor_has_linear_access<gConcatenateClass<Derived1, Derived2> > { enum { ret = 0 }; }; 
       //2. turn it on: (and let it be resolved by nimble_eigen_coeff_impl>:
-      struct functor_has_linear_access<concatenateClass<Index, Derived1, Derived2> > { enum { ret = 1}; }; 
+      struct functor_has_linear_access<concatenateClass<Index, Derived1, Derived2, result_type> > { enum { ret = 1}; }; 
       //3. Set it once according to arguments: (problem here is that if it is off for this expression, that may make expressions using this one forbidden from using linear access, which is a bit harsh: struct functor_has_linear_access<gConcatenateClass<Derived1, Derived2> > { enum { ret = traits<Derived1>::Flags & traits<Derived2>::Flags & LinearAccessBit }; };
-    template<typename Index, typename Derived1, typename Derived2>
-      struct functor_traits<concatenateClass<Index, Derived1, Derived2> >
+    template<typename Index, typename Derived1, typename Derived2, typename result_type>
+      struct functor_traits<concatenateClass<Index, Derived1, Derived2, result_type> >
       {
 	enum
 	{
@@ -364,46 +366,45 @@ namespace Eigen{
 	};
       };
 
-    template<typename Index, typename Derived1>
-      struct functor_has_linear_access<concatenate1Class<Index, Derived1> > { enum { ret = 1}; }; 
-    template<typename Index, typename Derived1>
-      struct functor_traits<concatenate1Class<Index, Derived1> > { enum { Cost = 10, PacketAccess = false, IsRepeatable = true }; };
+    template<typename Index, typename Derived1, typename result_type>
+      struct functor_has_linear_access<concatenate1Class<Index, Derived1, result_type> > { enum { ret = 1}; }; 
+    template<typename Index, typename Derived1, typename result_type>
+      struct functor_traits<concatenate1Class<Index, Derived1, result_type> > { enum { Cost = 10, PacketAccess = false, IsRepeatable = true }; };
 
-    template<typename Index, typename Derived1, typename Derived2, typename Derived3>
-      struct functor_has_linear_access<concatenate3Class<Index, Derived1, Derived2, Derived3> > { enum { ret = 1}; }; 
-    template<typename Index, typename Derived1, typename Derived2, typename Derived3>
-      struct functor_traits<concatenate3Class<Index, Derived1, Derived2, Derived3> > { enum { Cost = 10, PacketAccess = false, IsRepeatable = true }; };
+    template<typename Index, typename Derived1, typename Derived2, typename Derived3, typename result_type>
+      struct functor_has_linear_access<concatenate3Class<Index, Derived1, Derived2, Derived3, result_type> > { enum { ret = 1}; }; 
+    template<typename Index, typename Derived1, typename Derived2, typename Derived3, typename result_type>
+      struct functor_traits<concatenate3Class<Index, Derived1, Derived2, Derived3, result_type> > { enum { Cost = 10, PacketAccess = false, IsRepeatable = true }; };
 
-    template<typename Index, typename Derived1, typename Derived2, typename Derived3, typename Derived4>
-      struct functor_has_linear_access<concatenate4Class<Index, Derived1, Derived2, Derived3, Derived4> > { enum { ret = 1}; }; 
-    template<typename Index, typename Derived1, typename Derived2, typename Derived3, typename Derived4>
-      struct functor_traits<concatenate4Class<Index, Derived1, Derived2, Derived3, Derived4> > { enum { Cost = 10, PacketAccess = false, IsRepeatable = true }; };
-
+    template<typename Index, typename Derived1, typename Derived2, typename Derived3, typename Derived4, typename result_type>
+      struct functor_has_linear_access<concatenate4Class<Index, Derived1, Derived2, Derived3, Derived4, result_type> > { enum { ret = 1}; }; 
+    template<typename Index, typename Derived1, typename Derived2, typename Derived3, typename Derived4, typename result_type>
+      struct functor_traits<concatenate4Class<Index, Derived1, Derived2, Derived3, Derived4, result_type> > { enum { Cost = 10, PacketAccess = false, IsRepeatable = true }; };
   }
 }
 
-template<typename returnDerived>
+template<typename returnDerived, typename return_scalar = double>
 struct concatenate_impl {
   typedef Eigen::Index Index;
   template<typename Derived1, typename Derived2>
-    static CwiseNullaryOp<concatenateClass<Index, Derived1, Derived2>, returnDerived > concatenate(const Derived1 &A1, const Derived2 &A2) {
-    concatenateClass<Index, Derived1, Derived2> c(A1, A2);
-    return(CwiseNullaryOp<concatenateClass<Index, Derived1, Derived2>, returnDerived >(c.totalLength, 1, c));
+    static CwiseNullaryOp<concatenateClass<Index, Derived1, Derived2, return_scalar>, returnDerived > concatenate(const Derived1 &A1, const Derived2 &A2) {
+    concatenateClass<Index, Derived1, Derived2, return_scalar> c(A1, A2);
+    return(CwiseNullaryOp<concatenateClass<Index, Derived1, Derived2, return_scalar>, returnDerived >(c.totalLength, 1, c));
   }
   template<typename Derived1>
-    static CwiseNullaryOp<concatenate1Class<Index, Derived1>, returnDerived > concatenate(const Derived1 &A1) {
-    concatenate1Class<Index, Derived1> c(A1);
-    return(CwiseNullaryOp<concatenate1Class<Index, Derived1>, returnDerived >(c.totalLength, 1, c));
+    static CwiseNullaryOp<concatenate1Class<Index, Derived1, return_scalar>, returnDerived > concatenate(const Derived1 &A1) {
+    concatenate1Class<Index, Derived1, return_scalar> c(A1);
+    return(CwiseNullaryOp<concatenate1Class<Index, Derived1, return_scalar>, returnDerived >(c.totalLength, 1, c));
   }
   template<typename Derived1, typename Derived2, typename Derived3>
-    static CwiseNullaryOp<concatenate3Class<Index, Derived1, Derived2, Derived3>, returnDerived > concatenate(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3) {
-    concatenate3Class<Index, Derived1, Derived2, Derived3> c(A1, A2, A3);
-    return(CwiseNullaryOp<concatenate3Class<Index, Derived1, Derived2, Derived3>, returnDerived >(c.totalLength, 1, c));
+    static CwiseNullaryOp<concatenate3Class<Index, Derived1, Derived2, Derived3, return_scalar>, returnDerived > concatenate(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3) {
+    concatenate3Class<Index, Derived1, Derived2, Derived3, return_scalar> c(A1, A2, A3);
+    return(CwiseNullaryOp<concatenate3Class<Index, Derived1, Derived2, Derived3, return_scalar>, returnDerived >(c.totalLength, 1, c));
   }
   template<typename Derived1, typename Derived2, typename Derived3, typename Derived4>
-    static CwiseNullaryOp<concatenate4Class<Index, Derived1, Derived2, Derived3, Derived4>, returnDerived > concatenate(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3, const Derived4 &A4) {
-    concatenate4Class<Index, Derived1, Derived2, Derived3, Derived4> c(A1, A2, A3, A4);
-    return(CwiseNullaryOp<concatenate4Class<Index, Derived1, Derived2, Derived3, Derived4>, returnDerived >(c.totalLength, 1, c));
+    static CwiseNullaryOp<concatenate4Class<Index, Derived1, Derived2, Derived3, Derived4, return_scalar>, returnDerived > concatenate(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3, const Derived4 &A4) {
+    concatenate4Class<Index, Derived1, Derived2, Derived3, Derived4, return_scalar> c(A1, A2, A3, A4);
+    return(CwiseNullaryOp<concatenate4Class<Index, Derived1, Derived2, Derived3, Derived4, return_scalar>, returnDerived >(c.totalLength, 1, c));
   }
 };
 
@@ -763,14 +764,14 @@ template <typename DerivedTarget, typename DerivedIndex1, typename DerivedIndex2
   
 // nonseqIndexed
 
-template<typename IndexObj, typename DerivedObj, typename DerivedI1, typename DerivedI2>
+template<typename IndexObj, typename DerivedObj, typename DerivedI1, typename DerivedI2, typename result_type = double>
 class nonseqIndexedClass {
  public:
   const DerivedObj &obj;
   const DerivedI1 &index1;
   const DerivedI2 &index2;
   int dim1, dim2;
-  typedef double result_type;
+ //  typedef double result_type;
  nonseqIndexedClass(const DerivedObj &s, const DerivedI1 &i1, const DerivedI2 &i2) :
   obj(s),
     index1(i1),
@@ -783,15 +784,15 @@ class nonseqIndexedClass {
   {
     //std::cout<<"IN 1\n";
     std::div_t divRes = div(static_cast<int>(i), dim1);
-    return obj.coeff(nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI1>::nimbleUseLinearAccess), result_type, DerivedI1, IndexObj >::getCoeff(index1, divRes.rem) - 1,
-		     nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI2>::nimbleUseLinearAccess), result_type, DerivedI2, IndexObj >::getCoeff(index2, divRes.quot) - 1); // This type of the index argument is confusing.  What is being passed is a type from std::div_t, which ought to be castable to any Eigen Index type I hope.
+    return obj.coeff(nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI1>::nimbleUseLinearAccess), int, DerivedI1, IndexObj >::getCoeff(index1, divRes.rem) - 1,
+		     nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI2>::nimbleUseLinearAccess), int, DerivedI2, IndexObj >::getCoeff(index2, divRes.quot) - 1); // This type of the index argument is confusing.  What is being passed is a type from std::div_t, which ought to be castable to any Eigen Index type I hope.
     //index1(divRes.rem)-1, index2(floor(divRes.quot))-1);
   }
   result_type operator()(IndexObj i, IndexObj j) const
   {
     //std::cout<<"IN 2\n";
-    return obj.coeff(nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI1>::nimbleUseLinearAccess), result_type, DerivedI1, IndexObj >::getCoeff(index1, i) - 1,
-		     nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI2>::nimbleUseLinearAccess), result_type, DerivedI2, IndexObj >::getCoeff(index2, j) - 1);
+    return obj.coeff(nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI1>::nimbleUseLinearAccess), int, DerivedI1, IndexObj >::getCoeff(index1, i) - 1,
+		     nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI2>::nimbleUseLinearAccess), int, DerivedI2, IndexObj >::getCoeff(index2, j) - 1);
 
     //return obj.coeff(index1(i)-1,
     //		     index2(j)-1);
@@ -800,20 +801,20 @@ class nonseqIndexedClass {
 
 namespace Eigen{
   namespace internal{
-    template<typename IndexObj, typename DerivedObj, typename Derived1, typename Derived2>
-      struct functor_has_linear_access<nonseqIndexedClass<IndexObj, DerivedObj, Derived1, Derived2> > { enum { ret = 1}; }; 
-    template<typename IndexObj, typename DerivedObj, typename Derived1, typename Derived2>
-      struct functor_traits<nonseqIndexedClass<IndexObj, DerivedObj, Derived1, Derived2> > { enum {Cost = 10, PacketAccess = false, IsRepeatable = true }; }; 
+    template<typename IndexObj, typename DerivedObj, typename Derived1, typename Derived2, typename result_type>
+      struct functor_has_linear_access<nonseqIndexedClass<IndexObj, DerivedObj, Derived1, Derived2, result_type> > { enum { ret = 1}; }; 
+    template<typename IndexObj, typename DerivedObj, typename Derived1, typename Derived2, typename result_type>
+      struct functor_traits<nonseqIndexedClass<IndexObj, DerivedObj, Derived1, Derived2, result_type> > { enum {Cost = 10, PacketAccess = false, IsRepeatable = true }; }; 
   }
 }
 
-template<typename returnDerived>
+template<typename returnDerived, typename result_type = double>
 struct nonseqIndexed_impl {
   typedef Eigen::Index IndexReturn;
   template<typename DerivedObj, typename DerivedI1, typename DerivedI2>
-    static CwiseNullaryOp<nonseqIndexedClass<IndexReturn, DerivedObj, DerivedI1, DerivedI2 >, returnDerived > nonseqIndexed(const DerivedObj &s, const DerivedI1 &i1, const DerivedI2 &i2) {
-    nonseqIndexedClass<IndexReturn, DerivedObj, DerivedI1, DerivedI2 > nonseqIndexedObj(s, i1, i2);
-    return(CwiseNullaryOp<nonseqIndexedClass<IndexReturn, DerivedObj, DerivedI1, DerivedI2 >, returnDerived >(nonseqIndexedObj.dim1, nonseqIndexedObj.dim2, nonseqIndexedObj));
+    static CwiseNullaryOp<nonseqIndexedClass<IndexReturn, DerivedObj, DerivedI1, DerivedI2, result_type >, returnDerived > nonseqIndexed(const DerivedObj &s, const DerivedI1 &i1, const DerivedI2 &i2) {
+    nonseqIndexedClass<IndexReturn, DerivedObj, DerivedI1, DerivedI2, result_type > nonseqIndexedObj(s, i1, i2);
+    return(CwiseNullaryOp<nonseqIndexedClass<IndexReturn, DerivedObj, DerivedI1, DerivedI2, result_type >, returnDerived >(nonseqIndexedObj.dim1, nonseqIndexedObj.dim2, nonseqIndexedObj));
   }
 };
 

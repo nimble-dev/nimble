@@ -1007,11 +1007,16 @@ struct nimble_eigen_traits<CppAD::AD<double> > {
 template<>
 struct nimble_size_impl<CppAD::AD<double> > {
   static unsigned int getSize(const CppAD::AD<double> &arg) {return 1;}
+  static unsigned int getRows(const CppAD::AD<double> &arg) {return 1;}
+  static unsigned int getCols(const CppAD::AD<double> &arg) {return 1;}
+  //  static unsigned int getDiagRows(const CppAD::AD<double> &arg) {return floor(arg);}
+  //  static unsigned int getDiagCols(const CppAD::AD<double> &arg) {return floor(arg);}
 };
 
 template<typename result_type, typename Index>
 struct nimble_eigen_coeff_impl<true, result_type, CppAD::AD<double>, Index> {
-  static result_type getCoeff(const CppAD::AD<double> Arg, Index i) {return Arg;}
+  static result_type getCoeff(const CppAD::AD<double> &Arg, Index i) {return Arg;}
+  //  static result_type getDiagCoeff(const CppAD::AD<double> &Arg, Index i) {return 1.0;}
 };
 
 template<typename result_type, typename Index>
@@ -1039,5 +1044,8 @@ MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dt_nonstandard, CppAD::AD<double>) 
 MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dt, CppAD::AD<double>) // broken
 
 #define nimDerivs_nimNewMatrixD newMatrix_impl<MatrixXd_CppAD>::newMatrix
+#define nimDerivs_nimDiagonalD diagonal_impl<MatrixXd_CppAD>::diagonal
+#define nimDerivs_nimCd concatenate_impl<MatrixXd_CppAD, CppAD::AD<double> >::concatenate
+#define nimDerivs_nimNonseqIndexedd nonseqIndexed_impl<MatrixXd_CppAD, CppAD::AD<double> >::nonseqIndexed
 
 #endif

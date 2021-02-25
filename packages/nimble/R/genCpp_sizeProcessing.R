@@ -597,16 +597,20 @@ sizeConcatenate <- function(code, symTab, typeEnv) { ## This is two argument ver
             iInput <- iInput + thisLength
             if(thisType == 'integer') thisType <- 'int'
             if(thisType == 'logical') thisType <- 'bool'
-            ## MAKE_FIXED_VECTOR("ConcatenateInterm_2", "ConcatenateInterm_1", numArgs, values, type) goes through a customized output generator
+            ## MAKE_FIXED_VECTOR("ConcatenateInterm_2", "ConcatenateInterm_1", numArgs, values, type, allowAD) goes through a customized output generator
             ##  to create something like
             ##    double ConcatenateIterm_1[] = {contents1, contents2}
             ##    std::vector<double> ConcatenateInterm_2(ConcatenateInterm_1, ConcatenateInterm_1 + length)
             ##  so there is one intermediate whose only purpose is to achieve initialization by value and a second intermediate copied from the first.
             ##     The second intermediate can later be used in the templated nimCd/nimCi/nimCb
-            ## 
-            newAssert <- substitute(MAKE_FIXED_VECTOR(newTempVecName, newTempFixedName, thisLength, valuesExpr, thisType),
+            ##
+            ## allowAD flags whether double should be changed to CppAD::AD<double> for _AD_ versions
+            newAssert <- substitute(MAKE_FIXED_VECTOR(newTempVecName, newTempFixedName, thisLength, valuesExpr, thisType, allowAD),
                                     list(newTempVecName = newTempVecName, newTempFixedName = newTempFixedName,
-                                         thisLength = as.numeric(thisLength), valuesExpr = valuesExpr, thisType = thisType))
+                                         thisLength = as.numeric(thisLength),
+                                         valuesExpr = valuesExpr,
+                                         thisType = thisType,
+                                         allowAD = !isTRUE(typeEnv$.avoidAD)))
             newAssert <- as.call(newAssert)
             asserts <- c(asserts, list(newAssert))
             newArgs[[iOutput]] <- newExpr
@@ -1200,6 +1204,8 @@ sizeNimDerivs <- function(code, symTab, typeEnv){
 
   ## next section is adapted from sizeNimbleListReturningFunction
   ## skip first argument, which is the call for which derivatives are requested.
+  typeEnv$.avoidAD <- TRUE # tells sizeConcatenate to protect lifted vectors from AD. Also tells sizeInsertIntermediate to tag intermediates as non-AD
+  on.exit({typeEnv$.avoidAD <- NULL})
   asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, rep(TRUE, length(code$args)-1)))
   code$type <- 'nimbleList'
   nlGen <- nimbleListReturningFunctionList[[code$name]]$nlGen
@@ -1228,7 +1234,16 @@ sizeNimDerivs <- function(code, symTab, typeEnv){
     if(!code$args[['order']]$isName) {
       iOrder <- which(names(code$args) == 'order')
       if(length(iOrder) != 1) stop("problem working on order argument to nimDerivs")
-      asserts <- c(asserts, sizeInsertIntermediate(code, iOrder, symTab, typeEnv) )
+      newAssert <- sizeInsertIntermediate(code, iOrder, symTab, typeEnv)
+      for(iNewA in seq_along(newAssert)) {
+          if(inherits(newAssert[[iNewA]], "exprClass")) {
+              if(is.null(newAssert[[iNewA]]$aux))
+                  newAssert[[iNewA]]$aux <- list()
+              newAssert[[iNewA]]$aux$.avoidAD <- TRUE
+          }
+      }
+      asserts <- c(asserts, newAssert)
+      ## asserts <- c(asserts, sizeInsertIntermediate(code, iOrder, symTab, typeEnv) )
     }
   }
   
@@ -1873,6 +1888,9 @@ sizeInsertIntermediate <- function(code, argID, symTab, typeEnv, forceAssign = F
         newArgExpr$nDim <- newExpr$args[[1]]$nDim
     }
     setArg(code, argID, newArgExpr)
+    if( isTRUE(typeEnv$.avoidAD) ) {
+        typeEnv$.new_noDeriv_vars <- c(typeEnv$.new_noDeriv_vars, newName)
+    }
     return(ans) ## This is to be inserted in a list of asserts, even though it is really core code, not just an a test or assertion
 }
 
