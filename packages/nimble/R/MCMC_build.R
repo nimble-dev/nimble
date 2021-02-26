@@ -81,8 +81,7 @@
 #' 
 #' The option \code{disableOnlWAIC} will disable the online calculation 
 #' of any WAIC, by default this is false, therefore if no arguments are supplied
-#' and \code{enableWAIC} is activated then online WAIC calculation is performed.
-#' 
+#' and \code{enableWAIC} is activated then online WAIC calculation is performed. 
 #' 
 #' \code{getWAIC} takes in no arguments and is wholly tied to the MCMC process 
 #' outlined earlier. 
@@ -154,6 +153,7 @@ buildMCMC <- nimbleFunction(
         samplerTimes <- c(0,0) ## establish as a vector
         progressBarLength <- 52  ## multiples of 4 only
         progressBarDefaultSetting <- getNimbleOption('MCMCprogressBar')
+        
         ## WAIC setup:
         ## disable online 
         noOnline <- if(!is.null(dotdotdotArgs$disableOnlWAIC)) dotdotdotArgs$disableOnlWAIC else FALSE
@@ -385,30 +385,25 @@ buildMCMC <- nimbleFunction(
                     } else if (j == 1) {
                         logProbMarg <-
                             model$getLogProb(groupNodesWAIC[1:groupIndicesWAIC[1]])
-                    }else {
+                    } else {
                         logProbMarg <-
                             model$getLogProb(groupNodesWAIC[(sum(groupIndicesWAIC[1:(j - 1)]) + 1):sum(groupIndicesWAIC[1:j])])
                     }
-                    ## online logSumExp for marginalization
+                    ## online logSumExp for marginalization, averaging over MC samples
                     if (w == 1) {
                         margSumMax[j] <<- logProbMarg
                         margCurSum[j] <<- 1
                     } else if (logProbMarg > margSumMax[j]) {
                         newMax <- logProbMarg - margSumMax[j]
-                        margSumMax[j] <<-
-                            margSumMax[j] + newMax
-                        margCurSum[j] <<-
-                            margCurSum[j] * exp(-newMax) + 1
-                    } else {
-                        margCurSum[j] <<-
-                            margCurSum[j] + exp(logProbMarg - margSumMax[j])
-                    }
+                        margSumMax[j] <<- margSumMax[j] + newMax
+                        margCurSum[j] <<- margCurSum[j] * exp(-newMax) + 1
+                    } else margCurSum[j] <<- margCurSum[j] + exp(logProbMarg - margSumMax[j])
                 }
             }
-            logProbVec <<-
-                margSumMax + log(margCurSum) - log(mMCits)
+            logProbVec <<- margSumMax + log(margCurSum) - log(mMCits)
             ## update the lppd and pWAIC online 
             for (j in 1:dataNodeLengthWAIC) {
+                ## online logSumExp for averaging over MCMC samples
                 logPredProbs <- logProbVec[j]
                 # lppd
                 if (varCount == 1) {
@@ -421,7 +416,7 @@ buildMCMC <- nimbleFunction(
                 } else {
                     lppdCurSum[j] <<- lppdCurSum[j] + exp(logPredProbs - lppdSumMax[j])
                 }
-                ## pWAI
+                ## pWAIC
                 delta1pWAIC[j] <<- logPredProbs - meanpWAIC[j]
                 meanpWAIC[j] <<- meanpWAIC[j] + delta1pWAIC[j] / varCount
                 delta2pWAIC[j] <<- logPredProbs - meanpWAIC[j]
@@ -437,10 +432,10 @@ buildMCMC <- nimbleFunction(
         getWAIC = function() {
             returnType(double(1))
             if(!enableWAIC) {
-                print('Error: must set enableWAIC = TRUE in buildMCMC. See help(buildMCMC) for additional information.')
-                return(NaN)
-            }else {
-                WAICvec <- c(WAIC,logAvgProb,pWAIC)
+                message('Error: One must set `enableWAIC = TRUE` in `configureMCMC` or `buildMCMC` in order to calculate WAIC. See `help(buildMCMC)` for additional information.')
+                return(NA)
+            } else {
+                WAICvec <- c(WAIC, logAvgProb, pWAIC)
                 return(WAICvec)
             }
         })
