@@ -322,7 +322,8 @@ RCfunProcessing <- setRefClass(
             compileInfo$typeEnv[['.ensureNimbleBlocks']] <<- FALSE ## will be TRUE for LHS recursion after RHS sees rmnorm and other vector dist "r" calls.
             compileInfo$typeEnv[['.allowFunctionAsArgument']] <<- FALSE ## will be TRUE when recursing on optim. See sizeOptim.
             compileInfo$typeEnv[['.nimbleProject']] <<- nimbleProject
-
+            compileInfo$typeEnv[['.new_noDeriv_vars']] <<- character()
+            
             passedArgNames <-
                 as.list(compileInfo$origLocalSymTab$getSymbolNames()) 
             names(passedArgNames) <-
