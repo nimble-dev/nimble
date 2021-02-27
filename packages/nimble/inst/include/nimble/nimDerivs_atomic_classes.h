@@ -29,7 +29,18 @@ class unary_atomic_class : public CppAD::atomic_three<T> {
       const CppAD::vector<double>&               parameter_x ,
       const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
       CppAD::vector<CppAD::ad_type_enum>&        type_y      )
-  { 
+  {
+    //    std::cout<<"in for_type\n";
+    type_y[0] = type_x[0];
+    return true;
+  }
+  // Not sure this is ever needed.
+  virtual bool for_type(
+			const CppAD::vector<CppAD::AD<double> >&               parameter_x ,
+      const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
+      CppAD::vector<CppAD::ad_type_enum>&        type_y      )
+  {
+    //    std::cout<<"in meta for_type\n";
     type_y[0] = type_x[0];
     return true;
   }
@@ -40,6 +51,18 @@ class unary_atomic_class : public CppAD::atomic_three<T> {
 			  CppAD::vector<bool>&                depend_x    ,
 			  const CppAD::vector<bool>&          depend_y
 			  ) {
+    //  std::cout<<"in rev_depend\n";
+    depend_x[0] = depend_y[0];
+    return true;
+  }
+  // Not sure this is ever needed
+  virtual bool rev_depend(
+			  const CppAD::vector<CppAD::AD<double> >&          parameter_x ,
+			  const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
+			  CppAD::vector<bool>&                depend_x    ,
+			  const CppAD::vector<bool>&          depend_y
+			  ) {
+    //    std::cout<<"in meta rev_depend\n";
     depend_x[0] = depend_y[0];
     return true;
   }
@@ -49,9 +72,11 @@ class atomic_lgamma_class : public unary_atomic_class<double> {
   public:
   // From atomic_three_get_started
   atomic_lgamma_class(const std::string& name, int baseOrder_);
+  atomic_lgamma_class(const std::string& name, int baseOrder_, bool verbose_);
 
 private:
     int baseOrder;
+    bool verbose;
   virtual bool forward(
       const CppAD::vector<double>&               parameter_x  ,
       const CppAD::vector<CppAD::ad_type_enum>&  type_x       ,
@@ -223,7 +248,42 @@ private:
 };
 
 template<class T>
-T nimDerivs_lgammafn(T x, int baseOrder) {
+T nimDerivs_lgammafn_verbose(T x, int baseOrder ) {
+  static atomic_lgamma_class static_atomic_lgamma0("nimDerivs_lgamma", 0, true);
+  static atomic_lgamma_class static_atomic_lgamma1("nimDerivs_lgamma", 1, true);
+  static atomic_lgamma_class static_atomic_lgamma2("nimDerivs_lgamma", 2, true);
+  static atomic_lgamma_class static_atomic_lgamma3("nimDerivs_lgamma", 3, true);
+  static atomic_lgamma_class static_atomic_lgamma4("nimDerivs_lgamma", 4, true);
+  CppAD::vector<T> in(1);
+  CppAD::vector<T> out(1);
+  in[0] = x;
+  switch(baseOrder) {
+  case 0:
+    static_atomic_lgamma0(in, out);
+    break;
+  case 1:
+    static_atomic_lgamma1(in, out);
+    break;
+  case 2:
+    static_atomic_lgamma2(in, out);
+    break;
+  case 3:
+    static_atomic_lgamma3(in, out);
+    break;
+  case 4:
+    static_atomic_lgamma4(in, out);
+    break;
+  default:
+    std::cout<<"Error: attempting lgamma derivative beyond order 4."<<std::endl;
+  }
+  return out[0];
+}
+
+template<class T>
+T nimDerivs_lgammafn(T x, int baseOrder, bool verbose = FALSE) {
+  if(verbose) {
+    return nimDerivs_lgammafn_verbose(x, baseOrder);
+  }
   static atomic_lgamma_class static_atomic_lgamma0("nimDerivs_lgamma", 0);
   static atomic_lgamma_class static_atomic_lgamma1("nimDerivs_lgamma", 1);
   static atomic_lgamma_class static_atomic_lgamma2("nimDerivs_lgamma", 2);
@@ -257,6 +317,11 @@ T nimDerivs_lgammafn(T x, int baseOrder) {
 template<class T>
 T nimDerivs_lgammafn(T x) {
   return nimDerivs_lgammafn<T>(x, 0); // simply putting a default value of 0 above leads to failure in std::ptr_fun<CppAD::AD<double>, CppAD::AD<double>>(nimDerivs_lgammafn) in Eigen-style vectorization
+}
+
+template<class T>
+T nimDerivs_lgammafn_verbose(T x) {
+  return nimDerivs_lgammafn_verbose<T>(x, 0);
 }
 
 template<class T>

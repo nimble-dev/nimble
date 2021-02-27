@@ -645,9 +645,11 @@ modifyForAD_handlers <- c(list(
     AssignEigenMap = 'modifyForAD_AssignEigenMap',
     ADbreak = 'modifyForAD_ADbreak',
     `*` = 'modifyForAD_matmult',
-    eigInverse = 'modifyForAD_matinverse'),
+    eigInverse = 'modifyForAD_matinverse',
+    MAKE_FIXED_VECTOR = 'modifyForAD_MAKE_FIXED_VECTOR'),
     makeCallList(recyclingRuleOperatorsAD, 'modifyForAD_RecyclingRule'),
-    makeCallList(c('EIGEN_FS', 'EIGEN_BS', 'EIGEN_SOLVE', 'EIGEN_CHOL'),
+    makeCallList(c('EIGEN_FS', 'EIGEN_BS', 'EIGEN_SOLVE', 'EIGEN_CHOL', 'nimNewMatrixD', 'nimCd',
+                   'nimDiagonalD', 'nimNonseqIndexedd'),
                  'modifyForAD_prependNimDerivs'))
 
 exprClasses_modifyForAD <- function(code, symTab,
@@ -710,6 +712,18 @@ exprClasses_modifyForAD <- function(code, symTab,
   invisible(NULL)
 }
 
+recurse_modifyForAD <- function(code, symTab, workEnv) {
+  if(is.list(code$aux))
+    if(isTRUE(code$aux$.avoidAD))
+      return(invisible(NULL))
+  for(i in seq_along(code$args)) {
+    if(inherits(code$args[[i]], 'exprClass')) {
+      exprClasses_modifyForAD(code$args[[i]], symTab, workEnv)
+    }
+  }
+  invisible(NULL)
+}
+
 modifyForAD_issueWarning <- function(code, symTab, workEnv) {
   warning(paste0("Operator ", code$name, " can cause problems (potentially crashes) from AD."), call.=FALSE)
   invisible(NULL)
@@ -727,6 +741,17 @@ modifyForAD_matinverse <- function(code, symTab, workEnv) {
   if(!isTRUE(nimbleOptions("skipADmatInverseAtomic")))
     code$name <- 'nimDerivs_matinverse'
   invisible(NULL)
+}
+
+modifyForAD_MAKE_FIXED_VECTOR <- function(code, symTab, workEnv) {
+  if(length(code$args) >= 5) {
+    go <- if(length(code$args) >= 6)
+            isTRUE(code$args[[6]])
+    else TRUE
+    if(go)
+      if(identical(code$args[[5]], "double"))
+        code$args[[5]] <- "CppAD::AD<double>"
+  }
 }
 
 modifyForAD_ADbreak <- function(code, symTab, workEnv) {
@@ -761,30 +786,38 @@ modifyForAD_AssignEigenMap <- function(code, symTab, workEnv) {
   ## And Eigen requires same-type operations, I believe, because we manually cast when necessary among
   ## basic types, but we do not cast between AD and non-AD types.
 
-  ## varName <- EigMapName
-  ## varName <- sub("^Eig_", "", varName) ## Remove leading "Eig_"
-  ## varName <- sub("Strided_[[:digit:]]+$", "", varName) ## Remove trailing "_Interm_[count]"
-  ## varSym <- symTab$getSymbolObject(varName, inherits = TRUE)
-  ## if(is.null(varSym))
-  ##   stop(paste0("Unable to find variable ", varName, " while attempting to modify the following line for AD: ", nimDeparse(code)))
-  ## baseType <- varSym$baseType
-  ## if(baseType != "NimArr")
-  ##   stop(paste0("Problem with ", varName, " while attempting to modify the following line for AD: ", nimDeparse(code)))
-  ## scalarType <- varSym$templateArgs[[2]]
+  ## However, we try this for cases where it succeeds.  Notably it is useful for the results of
+  ## lifting "order = nimC(0, 1)" from nimDerivs, for example.
+  ## The pieces created from that are now protected from AD modification.
 
-##  if(scalarType == "TYPE_") {
-  EigMapSym <- symTab$getSymbolObject(EigMapName)
-  EigMapSym_baseType <- EigMapSym$baseType
-  if(EigMapSym_baseType == "EigenMapStrd") {
-    EigMapSym$baseType <- "EigenMapStrd_TYPE_"
-    #MatrixXd_label <- code$args[[3]]
-    code$args[[3]]$name <- "MatrixXd_TYPE_"
+  go <- TRUE
+  varSym <- NULL
+  ## We try to look for the relevant base symbol.  If we can't find it, by default we do the AD modification
+  # unpack the getPtr step, which might have an offset added via "+"
+  ptrExpr <- code$args[[2]]
+  if(ptrExpr$name == "+")
+    ptrExpr <- ptrExpr$args[[1]]
+  if(ptrExpr$name == "getPtr") {
+    varName <- ptrExpr$args[[1]]$name
+    varSym <- symTab$getSymbolObject(varName, inherits = TRUE)
   }
-  if(EigMapSym_baseType == "Map") {
-    EigMapSym$templateArgs[[1]] <- "MatrixXd_TYPE_"
-    code$args[[3]]$name <- "MatrixXd_TYPE_"
+  if(!is.null(varSym)) {
+    scalarType <- varSym$templateArgs[[2]]
+    go <- identical(scalarType, "TYPE_")
   }
-##  }
+  if(go) {
+    EigMapSym <- symTab$getSymbolObject(EigMapName)
+    EigMapSym_baseType <- EigMapSym$baseType
+    if(EigMapSym_baseType == "EigenMapStrd") {
+      EigMapSym$baseType <- "EigenMapStrd_TYPE_"
+      #MatrixXd_label <- code$args[[3]]
+      code$args[[3]]$name <- "MatrixXd_TYPE_"
+    }
+    if(EigMapSym_baseType == "Map") {
+      EigMapSym$templateArgs[[1]] <- "MatrixXd_TYPE_"
+      code$args[[3]]$name <- "MatrixXd_TYPE_"
+    }
+  }
   invisible(NULL)
 }
 
@@ -855,15 +888,6 @@ modifyForAD_recordable <- function(code, symTab, workEnv) {
   invisible(NULL)
 }
 
-recurse_modifyForAD <- function(code, symTab, workEnv) {
-  for(i in seq_along(code$args)) {
-    if(inherits(code$args[[i]], 'exprClass')) {
-      exprClasses_modifyForAD(code$args[[i]], symTab, workEnv)
-    }
-  }
-  invisible(NULL)
-}
-
 modifyForAD_getSetValues <- function(code, symTab, workEnv) {
   if(code$name == 'setValues') {
     code$name <- 'setValues_AD_AD_taping'
@@ -872,10 +896,15 @@ modifyForAD_getSetValues <- function(code, symTab, workEnv) {
   already_AD_name <- grepl("_AD_$", accessorName) ## _AD_ is at the end. I'm not sure it would ever already be there, so this is defensive.
   if(!already_AD_name) {
     classSymTab <- symTab$getParentST()$getParentST()
-    newSymbol <- classSymTab$getSymbolObject(accessorName)$copy()
-    newSymbol$name <- paste0(newSymbol$name, '_AD_')
-    classSymTab$addSymbol(newSymbol)
-    code$args[[2]]$name <- newSymbol$name
+    newSymbolName <- paste0(accessorName, '_AD_')
+    if(!classSymTab$symbolExists(newSymbolName)) {
+      newSymbol <- classSymTab$getSymbolObject(accessorName)$copy()
+      if(newSymbol$name != accessorName)
+        warning("Something is wrong with internal processing of names in managing use of values() for nimDerivs.")
+      newSymbol$name <- newSymbolName
+      classSymTab$addSymbol(newSymbol)
+    }
+    code$args[[2]]$name <- newSymbolName
   }
   thirdArg <- RparseTree2ExprClasses(as.name(accessorName))
   setArg(code, 3, thirdArg)

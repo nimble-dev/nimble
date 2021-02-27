@@ -144,7 +144,7 @@ nfProcessing <- setRefClass('nfProcessing',
                 ## could clear RCfunProc[[i]]$neededRCtypes, but instead will prevent them from being used at compilation
             }
         },
-        collect_nimDerivsCalculate_info = function() {
+        collect_nimDerivs_info = function() {
             newEnableDerivs <- list()
             for(i in seq_along(RCfunProcs)) {
                 ADinfoNames <- RCfunProcs[[i]]$compileInfo$typeEnv[['ADinfoNames_calculate']]
@@ -153,16 +153,24 @@ nfProcessing <- setRefClass('nfProcessing',
                     if(is.character(methodName)) ## not sure when it wouldn't be; this is defensive
                         newEnableDerivs[[ methodName ]] <- list(calculate = TRUE)
                 }
-                ## ADinfoNames <- RCfunProcs[[i]]$compileInfo$typeEnv[['ADinfoNames']]
-                ## if(!is.null(ADinfoNames)) {
-                ##     for(ADinfoName in ADinfoNames) {
-                ##         setupSymTab$addSymbol(symbolADinfo(name = ADinfoName))
-                ##     }
-                ## }
             }
             if(length(newEnableDerivs)) {
                 environment(nfGenerator)$enableDerivs <<- c(newEnableDerivs,
                                                             environment(nfGenerator)$enableDerivs)
+            }
+            for(i in seq_along(RCfunProcs)) {
+                new_noDeriv_vars <- RCfunProcs[[i]]$compileInfo$typeEnv[['.new_noDeriv_vars']]
+                if(length(new_noDeriv_vars) > 0) {
+                    thisFunName <- names(RCfunProcs)[i]
+                    thisEnableDerivs <- environment(nfGenerator)$enableDerivs[[thisFunName]]
+                    if(!is.null(thisEnableDerivs)) {
+                        if(is.null(thisEnableDerivs$noDeriv_vars))
+                            thisEnableDerivs$noDeriv_vars <- character()
+                        thisEnableDerivs$noDeriv_vars <- unique(c(thisEnableDerivs$noDeriv_vars,
+                                                                  new_noDeriv_vars))
+                        environment(nfGenerator)$enableDerivs[[thisFunName]] <<- thisEnableDerivs
+                    }
+                }
             }
         },
         addBaseClassTypes = function() {
@@ -229,7 +237,7 @@ nfProcessing <- setRefClass('nfProcessing',
             collectRCfunNeededTypes()
 
             if(isTRUE(nimbleOptions('experimentalEnableDerivs'))) {
-                collect_nimDerivsCalculate_info()
+                collect_nimDerivs_info()
             }
             
             if(debug) {
