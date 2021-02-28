@@ -79,7 +79,7 @@
 #' 
 #' The options below are to use the online WAIC 
 #' 
-#' The option \code{disableOnlWAIC} will disable the online calculation 
+#' The option \code{disableOnlineWAIC} will disable the online calculation 
 #' of any WAIC, by default this is false, therefore if no arguments are supplied
 #' and \code{enableWAIC} is activated then online WAIC calculation is performed. 
 #' 
@@ -93,7 +93,7 @@
 #' \code{marginalWAIC}: A vector of nodes to integrate out when computing WAIC, 
 #' in order to use a marginal likelihood.
 #' 
-#' \code{mWAICMC}: Monte Carlo iterations for marginalizing (default is 1000)
+#' \code{mWAICnIts}: Monte Carlo iterations for marginalizing (default is 1000)
 #' 
 #' \code{thinWAIC}: Boolean for specifying whether to do WAIC calculations
 #' only on thinned samples (default is FALSE)
@@ -156,9 +156,9 @@ buildMCMC <- nimbleFunction(
         
         ## WAIC setup:
         ## disable online 
-        noOnline <- if(!is.null(dotdotdotArgs$disableOnlWAIC)) dotdotdotArgs$disableOnlWAIC else FALSE
+        onlineWAIC <- if(!is.null(dotdotdotArgs$disableOnlineWAIC)) dotdotdotArgs$disableOnlineWAIC else FALSE
         ## thin WAIC 
-        thWAIC <- if(!is.null(dotdotdotArgs$thinWAIC)) dotdotdotArgs$thinWAIC else FALSE
+        thinWAIC <- if(!is.null(dotdotdotArgs$thinWAIC)) dotdotdotArgs$thinWAIC else FALSE
         ## for grouping
         dataNodes <- model$getNodeNames(dataOnly = TRUE)
         dataNodeLength <- length(dataNodes)
@@ -171,6 +171,7 @@ buildMCMC <- nimbleFunction(
             }
             groupIndicesWAIC <- sapply(dotdotdotArgs$groupingWAIC,
                                        function(x) length(model$expandNodeNames(x)), USE.NAMES = FALSE)
+            groupIndicesWAIC <- cumsum(groupIndicesWAIC)
         } else{
             useGroupsWAIC <- FALSE
             groupNodesWAIC <- dataNodes
@@ -179,16 +180,15 @@ buildMCMC <- nimbleFunction(
         ## for mWAIC
         if(!is.null(dotdotdotArgs$marginalWAIC)){
             mWAIC <- TRUE
-            latNodes <- model$expandNodeNames(dotdotdotArgs$marginalWAIC)
-            latNodes <- model$getDependencies(latNodes, self = TRUE, downstream = TRUE)
-            if (!is.null(dotdotdotArgs$mWAICMC)){
-                mMCits <- dotdotdotArgs$mWAICMC
+            latentNodes <- model$getDependencies(dotdotdotArgs$marginalWAIC, self = TRUE, downstream = TRUE)
+            if (!is.null(dotdotdotArgs$mWAICnIts)){
+                mMCits <- dotdotdotArgs$mWAICnIts
             }else{
                 mMCits <- 1000
             }
         } else {
             mWAIC <- FALSE
-            latNodes <- dataNodes
+            latentNodes <- dataNodes
             mMCits <- 1
         }
         dataNodeLengthWAIC <- length(groupIndicesWAIC)
@@ -208,6 +208,8 @@ buildMCMC <- nimbleFunction(
         logAvgProb <-0
         pWAIC <- 0
         WAIC <- 0
+        ## return WAIC list
+        WAICList <- nimbleList(WAIC = double(0), lppd = double(0), pWAIC = double(0))
         ## below is all from old WAIC method
         sampledNodes <- model$getVarNames(includeLogProb = FALSE, nodes = monitors)
         sampledNodes <- sampledNodes[sampledNodes %in% model$getVarNames(includeLogProb = FALSE)]
@@ -297,19 +299,11 @@ buildMCMC <- nimbleFunction(
                     mvSamples2_copyRow <- mvSamples2_copyRow + 1
                     nimCopy(from = model, to = mvSamples2, row = mvSamples2_copyRow, nodes = monitors2)
                 }
-                if(enableWAIC & !noOnline) {
-                    if (!thWAIC) {
+                if(enableWAIC & !onlineWAIC) {
+                    if (!thinWAIC) {
                         updateWAICStats()
-                        if(mWAIC) {
-                            ## reset the nodes if we simulated
-                            nimCopy(from = mvSaved, to = model, row= 1, nodes = latNodes, logProb = TRUE)
-                        }
                     } else if (sampleNumber %% thinToUseVec[1] == 0){ 
                         updateWAICStats()
-                        if(mWAIC) {
-                            ## reset the nodes if we simulated
-                            nimCopy(from = mvSaved, to = model, row= 1, nodes = latNodes, logProb = TRUE)
-                        }
                     }
                 }
             }
@@ -320,7 +314,6 @@ buildMCMC <- nimbleFunction(
             }
         }
         if(progressBar) print('|')
-        finalizeWAIC()
         returnType(void())
     },
     methods = list(
@@ -375,7 +368,7 @@ buildMCMC <- nimbleFunction(
             varCount <<- varCount + 1
             for (w in 1:mMCits) {
                 if(mWAIC) {
-                    model$simulate(latNodes)
+                    model$simulate(latentNodes)
                 }
                 model$calculate(groupNodesWAIC)
                 ## get the correct logProbs
@@ -387,7 +380,7 @@ buildMCMC <- nimbleFunction(
                             model$getLogProb(groupNodesWAIC[1:groupIndicesWAIC[1]])
                     } else {
                         logProbMarg <-
-                            model$getLogProb(groupNodesWAIC[(sum(groupIndicesWAIC[1:(j - 1)]) + 1):sum(groupIndicesWAIC[1:j])])
+                            model$getLogProb(groupNodesWAIC[(groupIndicesWAIC[(j - 1)] + 1):groupIndicesWAIC[j]])
                     }
                     ## online logSumExp for marginalization, averaging over MC samples
                     if (w == 1) {
@@ -416,11 +409,16 @@ buildMCMC <- nimbleFunction(
                 } else {
                     lppdCurSum[j] <<- lppdCurSum[j] + exp(logPredProbs - lppdSumMax[j])
                 }
-                ## pWAIC
+                ## Welford's algorithm for pWAIC
                 delta1pWAIC[j] <<- logPredProbs - meanpWAIC[j]
                 meanpWAIC[j] <<- meanpWAIC[j] + delta1pWAIC[j] / varCount
                 delta2pWAIC[j] <<- logPredProbs - meanpWAIC[j]
                 sspWAIC[j] <<- sspWAIC[j] + delta1pWAIC[j] * delta2pWAIC[j]
+            }
+            ## return the nodes to current proper state
+            if(mWAIC) {
+                ## reset the nodes if we simulated
+                nimCopy(from = mvSaved, to = model, row= 1, nodes = latentNodes, logProb = TRUE)
             }
         },
         finalizeWAIC = function() {
@@ -430,13 +428,15 @@ buildMCMC <- nimbleFunction(
             WAIC <<- -2 * (logAvgProb - pWAIC)
         },
         getWAIC = function() {
-            returnType(double(1))
+            returnType(WAICList())
             if(!enableWAIC) {
-                message('Error: One must set `enableWAIC = TRUE` in `configureMCMC` or `buildMCMC` in order to calculate WAIC. See `help(buildMCMC)` for additional information.')
-                return(NA)
+                WAICListFinal <- WAICList$new(WAIC = NA, lppd = NA, pWAIC = NA)
+                print('Error: One must set `enableWAIC = TRUE` in `configureMCMC` or `buildMCMC` in order to calculate WAIC. See `help(buildMCMC)` for additional information.')
+                return(WAICListFinal)
             } else {
-                WAICvec <- c(WAIC, logAvgProb, pWAIC)
-                return(WAICvec)
+                finalizeWAIC()
+                WAICListFinal <- WAICList$new(WAIC = WAIC, lppd = logAvgProb, pWAIC = pWAIC)
+                return(WAICListFinal)
             }
         })
 )
