@@ -426,6 +426,11 @@ buildMCMC <- nimbleFunction(
             logAvgProb <<- lppd1 - dataNodeLengthWAIC * log(varCount)
             pWAIC <<- sum(sspWAIC / (varCount - 1))
             WAIC <<- -2 * (logAvgProb - pWAIC)
+            ## check for large pWAIC values
+            badpWAIC <- sum(((sspWAIC / (varCount -1))>0.4))
+            if (badpWAIC>0) {
+                print("There are pWAIC values that are greater than 0.4, WAIC estimate may be unstable" )
+            }
         },
         getWAIC = function() {
             returnType(WAICList())
