@@ -1,7 +1,7 @@
 # ifndef CPPAD_UTILITY_SPARSE_RC_HPP
 # define CPPAD_UTILITY_SPARSE_RC_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-17 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -34,7 +34,9 @@ $codei%sparse_rc<%SizeVector%>  %empty%
 %$$
 $codei%sparse_rc<%SizeVector%>  %pattern%(%nr%, %nc%, %nnz%)
 %$$
-$icode%target% = %pattern%
+$icode%pattern% = %other%
+%$$
+$icode%pattern%.swap(%other%)
 %$$
 $icode%resize%(%nr%, %nc%, %nnz%)
 %$$
@@ -59,6 +61,8 @@ $head SizeVector$$
 We use $icode SizeVector$$ to denote $cref SimpleVector$$ class
 $cref/with elements of type/SimpleVector/Elements of Specified Type/$$
 $code size_t$$.
+In addition, $icode SimpleVector$$ must support the $code swap$$ operation
+between two of its vectors.
 
 $head empty$$
 This is an empty sparsity pattern. To be specific,
@@ -72,14 +76,23 @@ This object is used to hold a sparsity pattern for a matrix.
 The sparsity $icode pattern$$ is $code const$$
 except during its constructor, $code resize$$, and $code set$$.
 
-$head target$$
-The target of the assignment statement must have prototype
+$head other$$
+The $icode other$$ variable has prototype
 $codei%
-    sparse_rc<%SizeVector%>  %target%
+    sparse_rc<%SizeVector%>  %other%
 %$$
-After this assignment statement, $icode target$$ is an independent copy
+
+$subhead Assignment$$
+After the assignment statement, $icode other$$ is an independent copy
 of $icode pattern$$; i.e. it has all the same values as $icode pattern$$
-and changes to $icode target$$ do not affect $icode pattern$$.
+and changes to $icode other$$ do not affect $icode pattern$$.
+A move semantics version of the assignment operator is defined; e.g.,
+it is used when $icode other$$ in the assignment syntax
+is a function return value.
+
+$subhead swap$$
+After the swap operation $icode other$$ ($icode pattern$$) is equivalent
+to $icode pattern$$ ($icode other$$) before the operation.
 
 $head nr$$
 This argument has prototype
@@ -227,6 +240,14 @@ public:
     sparse_rc(void)
     : nr_(0), nc_(0), nnz_(0)
     { }
+    /// move semantics constructor
+    /// (none of the default constructor values are used by destructor)
+    sparse_rc(sparse_rc&& other)
+    {   swap(other); }
+    /// destructor
+    ~sparse_rc(void)
+    { }
+    /// move semantics assignment
     /// sizing constructor
     /// Eigen vector is ambiguous for row_(0), col_(0) so use default ctor
     sparse_rc(size_t nr, size_t nc, size_t nnz)
@@ -244,16 +265,27 @@ public:
     col_(other.col_)
     { }
     /// assignment
-    void operator=(const sparse_rc& pattern)
-    {   nr_  = pattern.nr_;
-        nc_  = pattern.nc_;
-        nnz_ = pattern.nnz_;
+    void operator=(const sparse_rc& other)
+    {   nr_  = other.nr_;
+        nc_  = other.nc_;
+        nnz_ = other.nnz_;
         // simple vector assignment requires vectors to have same size
         row_.resize(nnz_);
         col_.resize(nnz_);
-        row_ = pattern.row_;
-        col_ = pattern.col_;
+        row_ = other.row_;
+        col_ = other.col_;
     }
+    /// swap
+    void swap(sparse_rc& other)
+    {   std::swap( nr_ , other.nr_ );
+        std::swap( nc_ , other.nc_ );
+        std::swap( nnz_ , other.nnz_ );
+        //
+        row_.swap( other.row_ );
+        col_.swap( other.col_ );
+    }
+    void operator=(sparse_rc&& other)
+    {   swap(other); }
     /// resize
     void resize(size_t nr, size_t nc, size_t nnz)
     {   nr_ = nr;

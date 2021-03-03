@@ -1,7 +1,7 @@
 # ifndef CPPAD_LOCAL_PLAY_PLAYER_HPP
 # define CPPAD_LOCAL_PLAY_PLAYER_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-21 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -117,14 +117,10 @@ public:
     num_var_load_rec_(0)  ,
     num_var_vecad_rec_(0)
     { }
-    // =================================================================
-    /// copy constructor (needed for base2ad)
-    player(const player& play)
-    {   // 2DO: want to use move semantics here because it is a temporary
-        // in base2ad case.
-        *this = play;
-    }
-
+    // move semantics constructor
+    // (none of the default constructor values matter to the destructor)
+    player(player& play)
+    {   swap(play);  }
     // =================================================================
     /// destructor
     ~player(void)
@@ -524,32 +520,6 @@ public:
         all_par_vec_        = play.all_par_vec_;
     }
     // ===============================================================
-    // move semantics version of assignment operator
-    void operator=(player&& play)
-    {
-        // size_t objects
-        num_dynamic_ind_    = play.num_dynamic_ind_;
-        num_var_rec_        = play.num_var_rec_;
-        num_var_load_rec_   = play.num_var_load_rec_;
-        num_var_vecad_rec_  = play.num_var_vecad_rec_;
-        //
-        // pod_vectors
-        op_vec_.swap(            play.op_vec_);
-        arg_vec_.swap(           play.arg_vec_);
-        text_vec_.swap(          play.text_vec_);
-        all_var_vecad_ind_.swap( play.all_var_vecad_ind_);
-        dyn_par_is_.swap(        play.dyn_par_is_);
-        dyn_ind2par_ind_.swap(   play.dyn_ind2par_ind_);
-        dyn_par_op_.swap(        play.dyn_par_op_);
-        dyn_par_arg_.swap(       play.dyn_par_arg_);
-        op2arg_vec_.swap(        play.op2arg_vec_);
-        op2var_vec_.swap(        play.op2var_vec_);
-        var2op_vec_.swap(        play.var2op_vec_);
-        //
-        // pod_maybe_vectors
-        all_par_vec_.swap(       play.all_par_vec_);
-    }
-    // ===============================================================
     /// Create a player< AD<Base> > from this player<Base>
     player< AD<Base> > base2ad(void) const
     {   player< AD<Base> > play;
@@ -606,6 +576,9 @@ public:
         // pod_maybe_vectors
         all_par_vec_.swap(    other.all_par_vec_);
     }
+    // move semantics assignment
+    void operator=(player&& play)
+    {   swap(play); }
     // =================================================================
     /// Enable use of const_subgraph_iterator and member functions that begin
     // with random_(no work if already setup).
@@ -763,7 +736,7 @@ public:
 
     /// A measure of amount of memory used to store
     /// the operation sequence, just lengths, not capacities.
-    /// In user api as f.size_op_seq(); see the file seq_property.omh.
+    /// In user api as f.size_op_seq(); see the file fun_property.omh.
     size_t size_op_seq(void) const
     {   // check assumptions made by ad_fun<Base>::size_op_seq()
         CPPAD_ASSERT_UNKNOWN( op_vec_.size() == num_op_rec() );
@@ -783,7 +756,7 @@ public:
         ;
     }
     /// A measure of amount of memory used for random access routine
-    /// In user api as f.size_random(); see the file seq_property.omh.
+    /// In user api as f.size_random(); see the file fun_property.omh.
     size_t size_random(void) const
     {
 # ifndef NDEBUG

@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_ABS_NORMAL_FUN_HPP
 # define CPPAD_CORE_ABS_NORMAL_FUN_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-21 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -565,7 +565,14 @@ void ADFun<Base,RecBase>::abs_normal_fun(ADFun& g, ADFun& a) const
             case DivpvOp:
             case PowpvOp:
             case ZmulpvOp:
-            CPPAD_ASSERT_NARG_NRES(op, 2, 1);
+# ifndef NDEBUG
+            if( op == PowpvOp )
+            {   CPPAD_ASSERT_NARG_NRES(op, 2, 3);
+            }
+            else
+            {   CPPAD_ASSERT_NARG_NRES(op, 2, 1);
+            }
+# endif
             CPPAD_ASSERT_UNKNOWN( size_t( f2g_var[ arg[1] ] ) < num_var );
             new_arg[0] = arg[0]; // parameter
             new_arg[1] = f2g_var[ arg[1] ];
@@ -578,8 +585,16 @@ void ADFun<Base,RecBase>::abs_normal_fun(ADFun& g, ADFun& a) const
             case SubvvOp:
             case MulvvOp:
             case DivvvOp:
+            case PowvvOp:
             case ZmulvvOp:
-            CPPAD_ASSERT_NARG_NRES(op, 2, 1);
+# ifndef NDEBUG
+            if( op == PowvvOp )
+            {   CPPAD_ASSERT_NARG_NRES(op, 2, 3);
+            }
+            else
+            {   CPPAD_ASSERT_NARG_NRES(op, 2, 1);
+            }
+# endif
             CPPAD_ASSERT_UNKNOWN( size_t( f2g_var[ arg[0] ] ) < num_var );
             CPPAD_ASSERT_UNKNOWN( size_t( f2g_var[ arg[1] ] ) < num_var );
             new_arg[0] = f2g_var[ arg[0] ];

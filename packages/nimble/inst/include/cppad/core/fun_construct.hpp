@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_FUN_CONSTRUCT_HPP
 # define CPPAD_CORE_FUN_CONSTRUCT_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-21 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -34,10 +34,12 @@ $section Construct an ADFun Object and Stop Recording$$
 $head Syntax$$
 $codei%ADFun<%Base%> %f%(%x%, %y%);
 %$$
-$codei%ADFun<%Base%> %g%
+$codei%ADFun<%Base%> %f%
 %$$
-$icode%g% = %f%$$
-
+$icode%f%.swap(%g%)
+%$$
+$icode%f% = %g
+%$$
 
 $head Purpose$$
 The $codei%ADFun<%Base%>%$$ object $icode f$$
@@ -92,7 +94,7 @@ $codei%AD<%Base%>%$$ object with no corresponding operation sequence; i.e.,
 $codei%
     %g%.size_var()
 %$$
-returns the value zero (see $cref/size_var/seq_property/size_var/$$).
+returns the value zero (see $cref/size_var/fun_property/size_var/$$).
 
 $head Sequence Constructor$$
 The sequence constructor
@@ -141,6 +143,12 @@ $codei%
 where $icode f$$ is an $codei%ADFun<%Base%>%$$ object.
 Use its $cref/default constructor/FunConstruct/Default Constructor/$$ instead
 and its assignment operator.
+
+$head swap$$
+The swap operation $code%f%.swap(%g%)%$$ exchanges the contents of
+the two $codei%ADFun<%Base%>%$$ functions; i.e.,
+$icode f$$ ($icode g$$) before the swap is identical to
+$icode g$$ ($icode f$$) after the swap.
 
 $head Assignment Operator$$
 The $codei%ADFun<%Base%>%$$ assignment operation
@@ -248,7 +256,6 @@ template <class Base, class RecBase>
 ADFun<Base,RecBase>::ADFun(void) :
 function_name_(""),
 exceed_collision_limit_(false),
-base2ad_return_value_(false),
 has_been_optimized_(false),
 check_for_nan_(true) ,
 compare_change_count_(0),
@@ -259,34 +266,17 @@ cap_order_taylor_(0),
 num_direction_taylor_(0),
 num_var_tape_(0)
 { }
-
-/*!
-ADFun copy constructor
-
-This is only alowed for a base2ad return value and is required
-by some compilers to support the following syntax:
-\verbatim
-    ADFun< AD<Base>, Base > af;
-    af = f.base2ad();
-\endverbatim
-
-*/
+//
+// move semantics version of constructor
+// (none of the defualt constructor values matter to the destructor)
 template <class Base, class RecBase>
-ADFun<Base,RecBase>::ADFun(const ADFun& g)
-{   if( g.base2ad_return_value_ )
-        *this = g;
-    else
-    {   CppAD::ErrorHandler::Call(
-            true,
-            __LINE__,
-            __FILE__,
-            "ADFun(const ADFun& g)",
-            "Attempting to use the ADFun<Base> copy constructor.\n"
-            "Perhaps you are passing an ADFun<Base> object "
-            "by value instead of by reference."
-        );
-    }
-}
+ADFun<Base,RecBase>::ADFun(ADFun&& f)
+{   swap(f); }
+//
+// destructor
+template <class Base, class RecBase>
+ADFun<Base,RecBase>::~ADFun(void)
+{ }
 /*!
 ADFun assignment operator
 
@@ -316,7 +306,6 @@ void ADFun<Base,RecBase>::operator=(const ADFun& f)
     //
     // bool objects
     exceed_collision_limit_    = f.exceed_collision_limit_;
-    base2ad_return_value_      = false;
     has_been_optimized_        = f.has_been_optimized_;
     check_for_nan_             = f.check_for_nan_;
     //
@@ -352,27 +341,26 @@ void ADFun<Base,RecBase>::operator=(const ADFun& f)
     // sparse_list
     for_jac_sparse_set_        = f.for_jac_sparse_set_;
 }
-/// Move semantics version of assignment operator
+/// swap
 template <class Base, class RecBase>
-void ADFun<Base,RecBase>::operator=(ADFun&& f)
+void ADFun<Base,RecBase>::swap(ADFun& f)
 {
     // string objects
     function_name_.swap( f.function_name_ );
     //
     // bool objects
-    exceed_collision_limit_    = f.exceed_collision_limit_;
-    base2ad_return_value_      = false; // f might be, but this is not
-    has_been_optimized_        = f.has_been_optimized_;
-    check_for_nan_             = f.check_for_nan_;
+    std::swap( exceed_collision_limit_    , f.exceed_collision_limit_);
+    std::swap( has_been_optimized_        , f.has_been_optimized_);
+    std::swap( check_for_nan_             , f.check_for_nan_);
     //
     // size_t objects
-    compare_change_count_      = f.compare_change_count_;
-    compare_change_number_     = f.compare_change_number_;
-    compare_change_op_index_   = f.compare_change_op_index_;
-    num_order_taylor_          = f.num_order_taylor_;
-    cap_order_taylor_          = f.cap_order_taylor_;
-    num_direction_taylor_      = f.num_direction_taylor_;
-    num_var_tape_              = f.num_var_tape_;
+    std::swap( compare_change_count_      , f.compare_change_count_);
+    std::swap( compare_change_number_     , f.compare_change_number_);
+    std::swap( compare_change_op_index_   , f.compare_change_op_index_);
+    std::swap( num_order_taylor_          , f.num_order_taylor_);
+    std::swap( cap_order_taylor_          , f.cap_order_taylor_);
+    std::swap( num_direction_taylor_      , f.num_direction_taylor_);
+    std::swap( num_var_tape_              , f.num_var_tape_);
     //
     // pod_vector objects
     ind_taddr_.swap(      f.ind_taddr_);
@@ -394,6 +382,11 @@ void ADFun<Base,RecBase>::operator=(ADFun&& f)
     // sparse_list
     for_jac_sparse_set_.swap( f.for_jac_sparse_set_);
 }
+/// Move semantics version of constructor and assignment
+template <class Base, class RecBase>
+void ADFun<Base,RecBase>::operator=(ADFun&& f)
+{   swap(f); }
+
 
 /*!
 ADFun constructor from an operation sequence.

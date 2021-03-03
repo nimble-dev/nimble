@@ -450,7 +450,6 @@ void nimbleFunctionCppADbase::getDerivs_meta(nimbleCppADinfoClass &ADinfo,
   //  std::cout<<" after making inner tape\n";
   //  std::cout<<"tape_id and handle:"<< CppAD::AD<double>::get_tape_id_nimble()<<" "<< CppAD::AD<double>::get_tape_handle_nimble()<<"\n";
   //  std::cout<<"atomic info:"<<CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage()<<"\n";
-
   getDerivs_internal< CppAD::AD<double>,
 		      CppAD::ADFun< CppAD::AD<double>, double >,
 		      NIMBLE_ADCLASS_META>(ADinfo.independentVars_meta,
