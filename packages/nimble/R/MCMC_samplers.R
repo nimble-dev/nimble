@@ -1246,14 +1246,20 @@ sampler_HMC <- nimbleFunction(
                 if(warmupIntervalCount == warmupIntervalLengths[warmupIntervalNumber]) {
                     if(warmupIntervalsAdaptM[warmupIntervalNumber] == 1) {
                         ## see comments in drawMomentumValues method
-                        ##for(i in 1:d)   M[i] <<- 1 / var(warmupSamples[1:warmupIntervalCount, i])    ## without regularization
-                        for(i in 1:d)     warmupSamples[, i] <- warmupSamples[, i] - mean(warmupSamples[, i])
-                        warmupSamplesCov <- (t(warmupSamples) %*% warmupSamples) / (warmupIntervalCount-1)
                         ## use regularized estimation of empirical covariance (identical to Stan):
                         ## https://github.com/stan-dev/stan/blob/develop/src/stan/mcmc/covar_adaptation.hpp
                         ## SigmaRegularized = [ N / (N + 5) ] * Sigma_raw + 0.001 * [ 5 / (N + 5) ] * I
-                        warmupCovRegularized <- (warmupIntervalCount/(warmupIntervalCount+5))*warmupCovRegularized + 0.001*(5/(warmupIntervalCount+5))*diag(d)
-                        for(i in 1:d)   M[i] <<- 1 / warmupCovRegularized[i,i]
+                        ## only estimating diagonal elements:
+                        for(i in 1:d) {
+                            v <- var(warmupSamples[1:warmupIntervalCount, i])
+                            vReg <- (warmupIntervalCount/(warmupIntervalCount+5))*v + 0.001*(5/(warmupIntervalCount+5))
+                            M[i] <<- 1/vReg
+                        }
+                        ## estimating full empirical covariance:
+                        ##for(i in 1:d)     warmupSamples[, i] <- warmupSamples[, i] - mean(warmupSamples[, i])
+                        ##warmupSamplesCov <- (t(warmupSamples) %*% warmupSamples) / (warmupIntervalCount-1)
+                        ##warmupCovRegularized <- (warmupIntervalCount/(warmupIntervalCount+5))*warmupSamplesCov + 0.001*(5/(warmupIntervalCount+5))*diag(d)
+                        ##for(i in 1:d)   M[i] <<- 1 / warmupCovRegularized[i,i]
                         sqrtM <<- sqrt(M)
                     }
                     warmupIntervalCount <<- 0
