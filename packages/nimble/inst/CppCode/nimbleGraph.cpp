@@ -134,13 +134,14 @@ SEXP C_getDependencies(SEXP SgraphExtPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstr
   return(vectorInt_2_SEXP(ans, 1)); // add 1 index for R
 }
 
-SEXP C_getParents(SEXP SgraphExtPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstream) {
+SEXP C_getParents(SEXP SgraphExtPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstream, SEXP SoneStep) {
   nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
   vector<int> nodes = SEXP_2_vectorInt(Snodes, -1); // subtract 1 index for C
   vector<int> omit = SEXP_2_vectorInt(Somit, -1);
   std::sort(omit.begin(), omit.end());
   bool downstream = SEXP_2_bool(Sdownstream);
-  vector<int> ans = graphPtr->getParents(nodes, omit, downstream);
+  bool oneStep = SEXP_2_bool(SoneStep);
+  vector<int> ans = graphPtr->getParents(nodes, omit, downstream, oneStep);
   return(vectorInt_2_SEXP(ans, 1)); // add 1 index for R
 }
 
@@ -483,7 +484,8 @@ void nimbleGraph::getDependenciesOneNode(vector<int> &deps,
 
 // #define _DEBUG_GETPARENTS
 
-vector<int> nimbleGraph::getParents(const vector<int> &Cnodes, const vector<int> &Comit, bool upstream) {
+vector<int> nimbleGraph::getParents(const vector<int> &Cnodes, const vector<int> &Comit,
+				    bool upstream, bool oneStep) {
   // This is very much like getDependencies, but by default it does *not* include input nodes in output.
     // assume on entry that touched = false on all nodes
   // Cnodes and Comit are C-indices (meaning they start at 0)
@@ -532,20 +534,21 @@ vector<int> nimbleGraph::getParents(const vector<int> &Cnodes, const vector<int>
 	  //ans.push_back(nodeFunctionNodeID);
 	  tempAns.push_back(nodeFunctionNodeID);
 	  nodeFunctionNode->touched = true;
-	  getParentsOneNode(ans, tempAns, nodeFunctionNodeID, upstream, 1, false);
+	  getParentsOneNode(ans, tempAns, nodeFunctionNodeID, upstream, 1, !oneStep, false);
 	  // This imitates getDependencies, but I am not clear if both this and the next call would both be needed
 	}
       }
-      getParentsOneNode(ans, tempAns, thisGraphNodeID, upstream, 1);
+      getParentsOneNode(ans, tempAns, thisGraphNodeID, upstream, 1, !oneStep, true);
     } else { // This is a parent of another input node
 #ifdef _DEBUG_GETPARENTS
       std::cout<<"touched"<<std::endl;
 #endif
-      if((thisGraphNode->type == STOCH) & !upstream) {
+      if(((thisGraphNode->type == STOCH) && !upstream) || oneStep) {
 	/* In this case the input node was already touched, so it is a parent */
 	/* of something earlier on the input list.  But since it was on the input list */
 	/* we still need to get its parents.  But if upstream is TRUE (==1), then */
-	/* its dependencies will have already been pursued so we don't need to */
+	/* its parents will have already been pursued so we don't need to. */
+	/* Alternatively, if oneStep is true, then its parents will not have been pursued, so they need to be. */
 	getParentsOneNode(ans, tempAns, thisGraphNodeID, upstream, 1);
       }
     }
@@ -573,6 +576,7 @@ void nimbleGraph::getParentsOneNode(vector<int> &deps,
 				    int CgraphID,
 				    bool upstream,
 				    unsigned int recursionDepth,
+				    bool recurse,
 				    bool followLHSinferred) {
   if(recursionDepth > graphNodeVec.size()) {
     PRINTF("ERROR: getDependencies has recursed too far.  Something must be wrong.\n");
@@ -583,6 +587,7 @@ void nimbleGraph::getParentsOneNode(vector<int> &deps,
   int i(0);
   graphNode *thisParentNode;
   int thisParentCgraphID;
+  bool lhsi;
 #ifdef _DEBUG_GETPARENTS
   std::cout<<"working on "<< numParents<<" parents"<<std::endl;
 #endif
@@ -596,13 +601,15 @@ void nimbleGraph::getParentsOneNode(vector<int> &deps,
 #ifdef _DEBUG_GETPARENTS
   std::cout<<"working on parent node C-ID "<< thisParentCgraphID<<std::endl;
 #endif
-    if(thisParentNode->type == LHSINFERRED)
+  if((lhsi = (thisParentNode->type == LHSINFERRED)))
       tempDeps.push_back(thisParentNode->CgraphID);
     else
       deps.push_back(thisParentNode->CgraphID); 
     thisParentNode->touched = true;
-    if(upstream | (thisParentNode->type != STOCH)) {
-      getParentsOneNode(deps, tempDeps, thisParentCgraphID, upstream, recursionDepth + 1);
+    if(recurse || lhsi) { // left-hand-side-inferred over-rides recurse == false because lhsi nodes are "invisible"
+      if(upstream | (thisParentNode->type != STOCH)) {
+	getParentsOneNode(deps, tempDeps, thisParentCgraphID, upstream, recursionDepth + 1, recurse);
+      }
     }
   }
 }
@@ -625,7 +632,7 @@ SEXP C_getConditionallyIndependentSets(SEXP SgraphExtPtr,
   bool startUp = SEXP_2_bool(SstartUp);
   bool startDown = SEXP_2_bool(SstartDown);
   vector<vector<int> > result = graphPtr->getAllCondIndSets(nodes, givenNodes, omit, startUp, startDown);
-  /* sort sets by find node in each set. */
+  /* sort sets by first node in each set. */
   /* I'm not sure when this would matter, but at least for testing purposes */ 
   /* it is helpful to establish a canonical order of results. */
   struct comp {
@@ -634,8 +641,8 @@ SEXP C_getConditionallyIndependentSets(SEXP SgraphExtPtr,
     const vector<vector<int> > &result;
     comp(const vector<vector<int> > &result_) : result(result_) {};
     bool operator() (int i,int j) {
-      if(result[j].size() == 0) return(i); // second or both empty 
-      if(result[i].size() == 0) return(j); // first empty, second non-empty
+      if(result[j].size() == 0) return(true);  // second or both empty: treat as first < second 
+      if(result[i].size() == 0) return(false); // first empty, second non-empty, treat as second >= first
       return(result[i][0] < result[j][0]);
     }
   };

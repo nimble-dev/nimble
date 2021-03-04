@@ -705,20 +705,20 @@ Details: This provides a fairly raw representation of the graph (model) structur
                                   getDependencyPathCountOneNode = function(node) {
                                       if(length(node) > 1)
                                           stop("getDependencyPathCountOneNode: argument 'node' should provide a single node.")
-                                      if(inherits(node, 'character')) {
+                                      if(is.character(node)) {
                                           node <- modelDef$nodeName2GraphIDs(node)
                                       }
-                                      if(!inherits(node, 'numeric'))
+                                      if(!is.numeric(node))
                                           stop("getDependencyPathCountOneNode: argument 'node' should be a character node name or a numeric node ID.")
                                       modelDef$maps$nimbleGraph$getDependencyPathCountOneNode(node = node)
                                   },
 getDependencyPaths = function(node) {
     if(length(node) > 1)
         stop("getDependencyPaths: argument 'node' should provide a single node.")
-    if(inherits(node, 'character')) {
+    if(is.character(node)) {
         node <- modelDef$nodeName2GraphIDs(node)
     }
-    if(!inherits(node, 'numeric'))
+    if(!is.numeric(node))
         stop("getDependencyPaths: argument 'node' should be a character node name or a numeric node ID.")
     modelDef$maps$nimbleGraph$getDependencyPaths(node = node)
 },
@@ -754,12 +754,13 @@ Details: This provides a fairly raw representation of the graph (model) structur
 },
 
 getParents = function(nodes, omit = character(), self = FALSE,
-                      determOnly = FALSE, stochOnly = TRUE,
+                      determOnly = FALSE, stochOnly = FALSE,
                       includeData = TRUE, dataOnly = FALSE,
                       includeRHSonly = FALSE, upstream = FALSE,
+                      oneStep = FALSE,
                       returnType = 'names', returnScalarComponents = FALSE) {
-'
-Returns a character vector of the nodes on which the input nodes depend, sorted topologically according to the model graph, stopping by default at stochastic nodes and returning by default only stochstic nodes.  In the genealogical metaphor for a graphical model, this function returns the "parents" of the input nodes. In the river network metaphor, it returns upstream nodes.  By default, the returned nodes omit the input nodes, include only stochastic nodes, and stop at stochastic nodes.  Aditional input arguments provide flexibility in the values returned.
+  '
+ Returns a character vector of the nodes on which the input nodes depend, sorted topologically according to the model graph, stopping by default at stochastic nodes and returning by default only stochstic nodes.  In the genealogical metaphor for a graphical model, this function returns the "parents" of the input nodes. In the river network metaphor, it returns upstream nodes.  By default, the returned nodes omit the input nodes, include only stochastic nodes, and stop at stochastic nodes.  Aditional input arguments provide flexibility in the values returned.
 
 Arguments:
 
@@ -787,27 +788,29 @@ returnScalarComponenets: Logical argument specifying whether multivariate nodes 
 
 Details: The upward search for dependent nodes propagates through deterministic nodes, but by default will halt at the first level of stochastic nodes encountered.  Use getParentsList for a list of one-step parent nodes of each node in the model.
 '
-  if(inherits(nodes, 'character')) {
+  if(is.character(nodes)) {
     elementIDs <- modelDef$nodeName2GraphIDs(nodes, FALSE)
     nodeIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
                       FALSE,
                       FALSE,
                       NA)
   }
-  else if(inherits(nodes, 'numeric'))
+  else if(is.numeric(nodes))
     nodeIDs <- nodes
-  if(inherits(omit, 'character')) {
+  if(is.character(omit)) {
     elementIDs <- modelDef$nodeName2GraphIDs(omit, FALSE)
     omitIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
                       FALSE,
                       FALSE,
                       NA)
   }
-  else if(inherits(omit, 'numeric'))
-    omitIDs <- omit  
+  else if(is.numeric(omit))
+    omitIDs <- omit
+
   parentIDs <- modelDef$maps$nimbleGraph$getParents(nodes = nodeIDs,
                                                     omit = if(is.null(omitIDs)) integer() else omitIDs,
-                                                    upstream = upstream)
+                                                    upstream = upstream,
+                                                    oneStep = oneStep)
   if(self)	{ # The C++ call does *not* return self nodes
     nodeFunIDs <- unique(modelDef$maps$vertexID_2_nodeID[ nodeIDs ])
     parentIDs <- sort(c(parentIDs, nodeFunIDs))
@@ -834,14 +837,14 @@ Details: The upward search for dependent nodes propagates through deterministic 
   if(!(returnType %in% c('ids', 'names')))
     stop('instead getDependencies, improper returnType chosen')
 },
-getConditionallyIndependentSets = function( nodes,
-                                            givenNodes,
-                                            omit = integer(),
-                                            type = c("both", "fromTop", "fromBottom"),
-                                            stochOnly = TRUE,
-                                            returnType = 'names',
+getConditionallyIndependentSets = function(nodes,
+                                           givenNodes,
+                                           omit = integer(),
+                                           inputType = c("latent", "param", "data"),
+                                           stochOnly = TRUE,
+                                           returnType = 'names',
                                            returnScalarComponents = FALSE) {
-'
+  '
 Get a list of conditionally independent sets of nodes in a nimble model.
 
 Conditionally independent sets of nodes are typically groups of latent states whose joint conditional probability (density) will not change even if any other non-fixed node is changed.  Default fixed nodes are data nodes and parameter nodes (with no parent nodes), but this can be controlled.
@@ -854,7 +857,7 @@ givenNodes: A vector of node names or their graph IDs that should be considered 
 
 omit: A vector of node names or their graph IDs that should be omitted and should block further graph exploration. 
 
-type: Type of graph exploration (upstream through parent nodes, downstream through dependent nodes, or both).  For "\"both\"", the input nodes are interpreted as latent states, from which both downstream and upstream exploration should be done to find nodes in the same set (nodes that are not conditionally independent from each other).  For "\"fromTop\"", the input nodes are interpreted as parameters, so graph exploration begins from the  top (input) downstream.  For "\"fromBottom\"", the input nodes are interpreted and data nodes, so graph exploration begins from the bottom (input) upstream.
+intputType: Type of input nodes provided in nodes argument.  For "\"latent\"", the input nodes are interpreted as latent states, from which both downstream and upstream exploration should be done to find nodes in the same set (nodes that are not conditionally independent from each other).  For "\"param\"", the input nodes are interpreted as parameters, so graph exploration begins from the  top (input) and proceeds downstream.  For "\"data\"", the input nodes are interpreted and data nodes, so graph exploration begins from the bottom (input) and proceeds upstream.
 
 stochOnly: Logical for whether only stochastic nodes should be returned (default = TRUE).  If FALSE, both deterministic and stochastic nodes are returned.
 
@@ -864,12 +867,14 @@ returnScalarComponents: If FALSE (default), multivariate nodes are returned as f
 
 Details: This function returns sets of conditionally independent nodes.  Multiple input nodes might be in the same set or different sets, and other nodes (not in codes) will be included.
 
+By default, deterministic dependencies of givenNodes are also counted as given nodes.  This is relevant only for parent nodes. This allows the givenNodes to include only stochastic nodes.  Say we have A -> B -> C -> D.  A and D are givenNodes.  C is a latent node.  B is a deterministic node.  By default, B is considered given.  Otherwise, other branches that depend on B would be grouped in the same output set as C, but this is usually not what is wanted.  Any use of the resulting output must ensure that B is calculated when necessary, as usual with nimble\'s model-generic programming.  To turn off this feature, set nimbleOptions(groupDetermWithGivenInCondIndSets = FALSE).
+
 There is a non-exported function `nimble:::testConditionallyIndependentSets(model, sets, initialize = TRUE)}` that tests whether the conditional independence of sets is valid.  It should be the case that `nimble:::testConditionallyIndependentSets(model, getConditionallyIndependentSets(model), initialize = TRUE)` returns `TRUE`.
 
 Return value: List of nodes that are in conditionally independent sets.  Within each set, nodes are returned in topologically sorted order.  The sets themselves are returned in topologically sorted order of their first nodes.
 '
-  type <- match.arg(type)
-  nimble:::getConditionallyIndependentSets(.self, nodes, givenNodes, omit, type,
+  inputType <- match.arg(inputType)
+  nimble:::getConditionallyIndependentSets(.self, nodes, givenNodes, omit, inputType,
                                   stochOnly, returnType, returnScalarComponents)
 },
                                   getDependencies = function(nodes, omit = character(), self = TRUE,
@@ -906,7 +911,7 @@ returnScalarComponenets: Logical argument specifying whether multivariate nodes 
 
 Details: The downward search for dependent nodes propagates through deterministic nodes, but by default will halt at the first level of stochastic nodes encountered.  Use getDependenciesList for a list of one-step dependent nodes of each node in the model.
 '
-                                      if(inherits(nodes, 'character')) {
+                                      if(is.character(nodes)) {
                                           ## elementIDs <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents)
                                           ## if(returnScalarComponents)
                                           ##    # nodeIDs <- .Internal(unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
@@ -924,10 +929,10 @@ Details: The downward search for dependent nodes propagates through deterministi
                                                             FALSE,
                                                             NA)
                                       }
-                                      else if(inherits(nodes, 'numeric'))
+                                      else if(is.numeric(nodes))
                                           nodeIDs <- nodes
 
-                                      if(inherits(omit, 'character')) { ## mimic above if it works
+                                      if(is.character(omit)) { ## mimic above if it works
                                       ##     elementIDs <- modelDef$nodeName2GraphIDs(omit, !returnScalarComponents)
                                       ##     if(returnScalarComponents)
                                       ##         omitIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],
@@ -942,7 +947,7 @@ Details: The downward search for dependent nodes propagates through deterministi
                                                             FALSE,
                                                             NA)
                                       }
-                                      else if(inherits(omit, 'numeric'))
+                                      else if(is.numeric(omit))
                                           omitIDs <- omit
 
 ## new C++ version
@@ -1628,7 +1633,7 @@ getParentNodesC <-  function(nodes, model, returnType = 'names', stochOnly = FAL
     omitIDs <- integer()
     upstream <- FALSE
     returnScalarComponents  <-  FALSE
-    if(inherits(nodes, 'character')) {
+    if(is.character(nodes)) {
         elementIDs <- model$modelDef$nodeName2GraphIDs(nodes, FALSE)
         nodeIDs <- unique(model$modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
                           FALSE,
@@ -1662,7 +1667,7 @@ getParentNodesC <-  function(nodes, model, returnType = 'names', stochOnly = FAL
 #'
 #' @param omit A vector of node names or their graph IDs that should be omitted and should block further graph exploration. 
 #'
-#' @param type Type of graph exploration (upstream through parent nodes, downstream through dependent nodes, or both).  For "\"both\"", the input \code{nodes} are interpreted as latent states, from which both downstream and upstream exploration should be done to find nodes in the same set (nodes that are \textit{not} conditionally independent from each other).  For ""\fromTop\"", the input \code{nodes} are interpreted as parameters, so graph exploration begins from the  top (input) downstream.  For "\"fromBottom\"", the input \code{nodes} are interpreted and data nodes, so graph exploration begins from the bottom (input) upstream.
+#' @param inputType The method of graph exploration depends on what the nodes argument represents.  For "\"latent\"", the input \code{nodes} are interpreted as latent states, from which both parent and descendent graph exploration should be done to find nodes in the same set (nodes that are \textit{not} conditionally independent from each other).  For ""\param\"", the input \code{nodes} are interpreted as parameters, so graph exploration begins from the  top (input) and explores descendents.  For "\"data\"", the input \code{nodes} are interpreted as data nodes, so graph exploration begins from the bottom (input) explores parent nodes.
 #' 
 #' @param stochOnly Logcal for whether only stochastic nodes should be returned (default = TRUE).  If FALSE, both deterministic and stochastic nodes are returned.
 #' 
@@ -1673,6 +1678,18 @@ getParentNodesC <-  function(nodes, model, returnType = 'names', stochOnly = FAL
 #' @author Perry de Valpine
 #'
 #' @details This function returns sets of conditionally independent nodes.  Mutliple input \code{nodes} might be in the same set or different sets, and other nodes (not in \code{nodes}) will be included.
+#'
+#' By default, deterministic dependencies of givenNodes are also
+#' counted as given nodes.  This is relevant only for parent nodes.
+#' This allows the givenNodes to include only stochastic nodes.  Say
+#' we have A -> B -> C -> D.  A and D are givenNodes.  C is a latent
+#' node.  B is a deterministic node.  By default, B is considered
+#' given.  Otherwise, other branches that depend on B would be grouped
+#' in the same output set as C, but this is usually what is wanted.
+#' Any use of the resulting output must ensure that B is calculated when
+#' necessary, as usual with nimble's model-generic programming.  To
+#' turn off this feature, set
+#' nimbleOptions(groupDetermWithGivenInCondIndSets = FALSE)
 #' 
 #' @return List of nodes that are in conditionally independent sets.  With each set, nodes are returned in topologically sorted order.  The sets themselves are returned in topologically sorted order of their first nodes.
 #'
@@ -1682,19 +1699,18 @@ getConditionallyIndependentSets <- function(model,
                                             nodes,
                                             givenNodes,
                                             omit = integer(),
-                                            type = c("both", "fromTop", "fromBottom"),
+                                            inputType = c("latent", "param", "data"),
                                             stochOnly = TRUE,
                                             returnType = 'names',
                                             returnScalarComponents = FALSE) {
-  # message('What should we do about posterior predictive nodes?')
-  # I think sets of trailing (posterior predictive) nodes will not be of interest.
-  # Should default behavior exclude them?
-  type <- match.arg(type)
+  inputType <- match.arg(inputType)
   if(missing(nodes)) { # default to latent nodes
     nodeIDs <- model$getNodeNames(latentOnly = TRUE, stochOnly = TRUE, returnType = 'ids')
   } else {
     if(is.character(nodes))
       nodeIDs <- model$expandNodeNames(nodes, returnType = 'ids')
+    else
+      nodeIDs <- nodes
   }
   if(missing(givenNodes)) { # default to top nodes and data nodes. need to be deliberate about end nodes
     givenNodeIDs <- c(model$getNodeNames(topOnly = TRUE, returnType = 'ids'),
@@ -1705,7 +1721,10 @@ getConditionallyIndependentSets <- function(model,
     else if(is.numeric(givenNodes))
         givenNodeIDs <- givenNodes
   }
-  if(inherits(omit, 'character')) {
+  if(isTRUE(nimbleOptions("groupDetermWithGivenInCondIndSets"))) {
+    givenNodeIDs <- unique(c(givenNodeIDs, model$getDependencies(givenNodeIDs, determOnly = TRUE, self = FALSE, returnType = 'ids')))
+  }
+  if(is.character(omit)) {
     # This mimcs getDependencies.  I think it allows omit to include split nodes, whereas getNodeNames would not.
     # It would not make sense for nodes or givenNode to include split nodes.
     elementIDs <- model$modelDef$nodeName2GraphIDs(omit, FALSE)
@@ -1718,8 +1737,8 @@ getConditionallyIndependentSets <- function(model,
     omitIDs <- omit
   
   startUp <- startDown <- TRUE
-  if(type == "fromTop") startUp <- FALSE
-  if(type == "fromBottom") startDown <- FALSE
+  if(inputType == "param") startUp <- FALSE
+  if(inputType == "data") startDown <- FALSE
   result <- model$modelDef$maps$nimbleGraph$getConditionallyIndependentSets(
     nodeIDs = nodeIDs,
     givenNodeIDs = givenNodeIDs,
