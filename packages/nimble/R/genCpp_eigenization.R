@@ -835,7 +835,7 @@ eigenizeName <- function(code, symTab, typeEnv, workEnv) {
     
     if(needStrides) {
         newArgs <- list()
-        newArgs[[1]] <- code$name
+        newArgs[[1]] <- as.name(code$name)
         newArgs[[2]] <- code$nDim ## not used but for completeness
         newArgs[[3]] <- quote(0) ## eigenizeNameStrided will insert getOffset(ptr)
         newArgs[[4]] <- code$sizeExprs
