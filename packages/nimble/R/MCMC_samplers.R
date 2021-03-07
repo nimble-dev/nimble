@@ -317,6 +317,12 @@ sampler_RW <- nimbleFunction(
                 return(numeric(1, 0))
             }
         },
+        ##getScaleHistoryExpanded = function() {                                                 ## scaleHistory
+        ##    scaleHistoryExpanded <- numeric(timesAdapted*adaptInterval, init=FALSE)            ## scaleHistory
+        ##    for(iTA in 1:timesAdapted)                                                         ## scaleHistory
+        ##        for(j in 1:adaptInterval)                                                      ## scaleHistory
+        ##            scaleHistoryExpanded[(iTA-1)*adaptInterval+j] <- scaleHistory[iTA]         ## scaleHistory
+        ##    returnType(double(1)); return(scaleHistoryExpanded) },                             ## scaleHistory
         reset = function() {
             scale <<- scaleOriginal
             timesRan      <<- 0
@@ -482,6 +488,18 @@ sampler_RW_block <- nimbleFunction(
             returnType(double(3))
             return(propCovHistory)
         },
+        ##getScaleHistoryExpanded = function() {                                                              ## scaleHistory
+        ##    scaleHistoryExpanded <- numeric(timesAdapted*adaptInterval, init=FALSE)                         ## scaleHistory
+        ##    for(iTA in 1:timesAdapted)                                                                      ## scaleHistory
+        ##        for(j in 1:adaptInterval)                                                                   ## scaleHistory
+        ##            scaleHistoryExpanded[(iTA-1)*adaptInterval+j] <- scaleHistory[iTA]                      ## scaleHistory
+        ##    returnType(double(1)); return(scaleHistoryExpanded) },                                          ## scaleHistory
+        ##getPropCovHistoryExpanded = function() {                                                            ## scaleHistory
+        ##    propCovHistoryExpanded <- array(dim=c(timesAdapted*adaptInterval,d,d), init=FALSE)              ## scaleHistory
+        ##    for(iTA in 1:timesAdapted)                                                                      ## scaleHistory
+        ##        for(j in 1:adaptInterval)                                                                   ## scaleHistory
+        ##            propCovHistoryExpanded[(iTA-1)*adaptInterval+j,1:d,1:d] <- propCovHistory[iTA,1:d,1:d]  ## scaleHistory
+        ##    returnType(double(3)); return(propCovHistoryExpanded) },                                        ## scaleHistory
         reset = function() {
             scale   <<- scaleOriginal
             propCov <<- propCovOriginal
