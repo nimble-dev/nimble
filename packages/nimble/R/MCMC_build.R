@@ -5,6 +5,8 @@
 #'
 #' @param conf An MCMC configuration object of class \code{MCMCconf} that specifies the model, samplers, monitors, and thinning intervals for the resulting MCMC function.  See \code{configureMCMC} for details of creating MCMC configuration objects.  Alternatively, \code{conf} may a NIMBLE model object, in which case an MCMC function corresponding to the default MCMC configuration for this model is returned.
 #' 
+#' @param conf A list of arguments for the online WAIC algorithm see the WAIC documentation below for valid inputs
+#' 
 #' @param ... Additional arguments to be passed to \code{configureMCMC} if \code{conf} is a NIMBLE model object
 #'
 #' @details
@@ -79,6 +81,9 @@
 #' 
 #' The options below are to use the online WAIC 
 #' 
+#' All of these should be supplied within the list \code{specsWAIC}, and if this 
+#' list is non empty then \code{enableWAIC} is set to TRUE by default. 
+#' 
 #' The option \code{disableOnlineWAIC} will disable the online calculation 
 #' of any WAIC, by default this is false, therefore if no arguments are supplied
 #' and \code{enableWAIC} is activated then online WAIC calculation is performed. 
@@ -97,6 +102,9 @@
 #' 
 #' \code{thinWAIC}: Boolean for specifying whether to do WAIC calculations
 #' only on thinned samples (default is FALSE)
+#' 
+#' \code{skipFinalizeWAIC}: Boolean for specifying whether the final WAIC 
+#' calculations should be delayed until the getWAIC call (default is FALSE)
 #' 
 #' @examples
 #' \dontrun{
@@ -130,11 +138,12 @@
 #' @export
 buildMCMC <- nimbleFunction(
     name = 'MCMC',
-    setup = function(conf, ...) {
+    setup = function(conf, specsWAIC = NULL,  ...) {
         if(inherits(conf, 'modelBaseClass'))   conf <- configureMCMC(conf, ...)
         else if(!inherits(conf, 'MCMCconf')) stop('conf must either be a nimbleModel or a MCMCconf object (created by configureMCMC(...) )')
         dotdotdotArgs <- list(...)
         enableWAICargument <- if(!is.null(dotdotdotArgs$enableWAIC)) dotdotdotArgs$enableWAIC else nimbleOptions('MCMCenableWAIC')    ## accept enableWAIC argument regardless
+        enableWAIC <- enableWAICargument || conf$enableWAIC   ## enableWAIC comes from MCMC configuration, or from argument to buildMCMC
         model <- conf$model
         my_initializeModel <- initializeModel(model)
         mvSaved <- modelValues(model)
@@ -155,21 +164,28 @@ buildMCMC <- nimbleFunction(
         progressBarDefaultSetting <- getNimbleOption('MCMCprogressBar')
         
         ## WAIC setup:
+        ## enable WAIC if the specsWAIC argument is non empty 
+        if (!is.null(specsWAIC)){
+            enableWAIC <- TRUE
+        }
         ## disable online 
-        onlineWAIC <- if(!is.null(dotdotdotArgs$disableOnlineWAIC)) dotdotdotArgs$disableOnlineWAIC else FALSE
+        onlineWAIC <- if(!is.null(specsWAIC$disableOnlineWAIC)) specsWAIC$disableOnlineWAIC else FALSE
+        ## flag for WAIC 
+        finalWAICCalculated <- FALSE
+        skipFinalizeWAIC <- if(!is.null(specsWAIC$skipFinalizeWAIC)) specsWAIC$skipFinalizeWAIC else FALSE
         ## thin WAIC 
-        thinWAIC <- if(!is.null(dotdotdotArgs$thinWAIC)) dotdotdotArgs$thinWAIC else FALSE
+        thinWAIC <- if(!is.null(specsWAIC$thinWAIC)) specsWAIC$thinWAIC else FALSE
         ## for grouping
         dataNodes <- model$getNodeNames(dataOnly = TRUE)
         dataNodeLength <- length(dataNodes)
-        if(!is.null(dotdotdotArgs$groupingWAIC)){
+        if(!is.null(specsWAIC$groupingWAIC)){
             useGroupsWAIC <- TRUE
-            groupNodesWAIC <- unlist(dotdotdotArgs$groupingWAIC)
+            groupNodesWAIC <- unlist(specsWAIC$groupingWAIC)
             groupNodesWAIC <- model$expandNodeNames(groupNodesWAIC)
             if (length(unique(groupNodesWAIC)) != dataNodeLength ) {
                 warning("Group nodes supplied do not contain all data nodes")
             }
-            groupIndicesWAIC <- sapply(dotdotdotArgs$groupingWAIC,
+            groupIndicesWAIC <- sapply(specsWAIC$groupingWAIC,
                                        function(x) length(model$expandNodeNames(x)), USE.NAMES = FALSE)
             groupIndicesWAIC <- cumsum(groupIndicesWAIC)
         } else{
@@ -178,11 +194,11 @@ buildMCMC <- nimbleFunction(
             groupIndicesWAIC <- rep(1,dataNodeLength)
         }
         ## for mWAIC
-        if(!is.null(dotdotdotArgs$marginalWAIC)){
+        if(!is.null(specsWAIC$marginalWAIC)){
             mWAIC <- TRUE
-            latentNodes <- model$getDependencies(dotdotdotArgs$marginalWAIC, self = TRUE, downstream = TRUE)
-            if (!is.null(dotdotdotArgs$mWAICnIts)){
-                mMCits <- dotdotdotArgs$mWAICnIts
+            latentNodes <- model$getDependencies(specsWAIC$marginalWAIC, self = TRUE, downstream = TRUE)
+            if (!is.null(specsWAIC$mWAICnIts)){
+                mMCits <- specsWAIC$mWAICnIts
             }else{
                 mMCits <- 1000
             }
@@ -215,7 +231,6 @@ buildMCMC <- nimbleFunction(
         sampledNodes <- sampledNodes[sampledNodes %in% model$getVarNames(includeLogProb = FALSE)]
         paramDeps <- model$getDependencies(sampledNodes, self = FALSE, downstream = TRUE)
         allVarsIncludingLogProbs <- model$getVarNames(includeLogProb = TRUE)
-        enableWAIC <- enableWAICargument || conf$enableWAIC   ## enableWAIC comes from MCMC configuration, or from argument to buildMCMC
         if(enableWAIC) {
             if(dataNodeLength == 0)   stop('WAIC cannot be calculated, as no data nodes were detected in the model.')
             mcmc_checkWAICmonitors_conditional(model = model, monitors = sampledNodes, dataNodes = dataNodes)
@@ -314,6 +329,10 @@ buildMCMC <- nimbleFunction(
             }
         }
         if(progressBar) print('|')
+        if (!finalWAICCalculated & !skipFinalizeWAIC) {
+            finalWAICCalculated <<- TRUE
+            finalizeWAIC()
+        }
         returnType(void())
     },
     methods = list(
@@ -426,11 +445,6 @@ buildMCMC <- nimbleFunction(
             logAvgProb <<- lppd1 - dataNodeLengthWAIC * log(varCount)
             pWAIC <<- sum(sspWAIC / (varCount - 1))
             WAIC <<- -2 * (logAvgProb - pWAIC)
-            ## check for large pWAIC values
-            badpWAIC <- sum(((sspWAIC / (varCount -1))>0.4))
-            if (badpWAIC>0) {
-                print("There are pWAIC values that are greater than 0.4, WAIC estimate may be unstable" )
-            }
         },
         getWAIC = function() {
             returnType(WAICList())
@@ -439,7 +453,14 @@ buildMCMC <- nimbleFunction(
                 print('Error: One must set `enableWAIC = TRUE` in `configureMCMC` or `buildMCMC` in order to calculate WAIC. See `help(buildMCMC)` for additional information.')
                 return(WAICListFinal)
             } else {
-                finalizeWAIC()
+                if (!finalWAICCalculated) {
+                    finalWAICCalculated <<- TRUE
+                    finalizeWAIC()
+                    badpWAIC <- sum(((sspWAIC / (varCount -1))>0.4))
+                    if (badpWAIC>0) {
+                        print("There are individual pWAIC values that are greater than 0.4, WAIC estimate may be unstable" )
+                    }
+                }
                 WAICListFinal <- WAICList$new(WAIC = WAIC, lppd = logAvgProb, pWAIC = pWAIC)
                 return(WAICListFinal)
             }
