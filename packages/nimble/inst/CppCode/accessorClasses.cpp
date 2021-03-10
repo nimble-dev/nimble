@@ -162,7 +162,7 @@ void initialize_AD_model_before_recording(NodeVectorClassNew_derivs *nodes) {
   if(!nodes) return;
   const vector<NodeInstruction> &instructions = nodes->getInstructions();
   if(instructions.size() == 0) {
-      printf("No nodes for initialize_AD_model_before_recording\n");
+      // printf("No nodes for initialize_AD_model_before_recording\n");
       return;
   }
   nodeFun* nodeFunInModelDLL = instructions[0].nodeFunPtr;

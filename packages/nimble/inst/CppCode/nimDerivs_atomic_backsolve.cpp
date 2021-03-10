@@ -553,14 +553,16 @@ void atomic_backsolve(const MatrixXd_CppAD &A,
   // Y = backsolve(A, B) = A^-1 B
   // A is n1-x-n1
   // B and Y are n1-x-n2
-  static atomic_backsolve_class atomic_backsolve("atomic_backsolve");
+  //  static atomic_backsolve_class atomic_backsolve("atomic_backsolve");
+  atomic_backsolve_class *atomic_backsolve;
   int n1 = A.rows();
   int n2 = B.cols();
   std::vector<CppAD::AD<double> > xVec(n1*n1 + n1*n2);
   mat2vec(A, xVec);
   mat2vec(B, xVec, n1*n1);
   std::vector<CppAD::AD<double> > yVec(n1*n2);
-  atomic_backsolve(xVec, yVec);
+  atomic_backsolve = new atomic_backsolve_class("atomic_backsolve");
+  (*atomic_backsolve)(xVec, yVec);
   Y.resize(n1, n2);
   vec2mat(yVec, Y);  
 }

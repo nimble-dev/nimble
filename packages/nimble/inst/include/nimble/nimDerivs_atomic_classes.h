@@ -284,35 +284,77 @@ T nimDerivs_lgammafn(T x, int baseOrder, bool verbose = FALSE) {
   if(verbose) {
     return nimDerivs_lgammafn_verbose(x, baseOrder);
   }
-  static atomic_lgamma_class static_atomic_lgamma0("nimDerivs_lgamma", 0);
-  static atomic_lgamma_class static_atomic_lgamma1("nimDerivs_lgamma", 1);
-  static atomic_lgamma_class static_atomic_lgamma2("nimDerivs_lgamma", 2);
-  static atomic_lgamma_class static_atomic_lgamma3("nimDerivs_lgamma", 3);
-  static atomic_lgamma_class static_atomic_lgamma4("nimDerivs_lgamma", 4);
+  atomic_lgamma_class *atomic_lgamma;
+  /* static atomic_lgamma_class static_atomic_lgamma0("nimDerivs_lgamma", 0); */
+  /* static atomic_lgamma_class static_atomic_lgamma1("nimDerivs_lgamma", 1); */
+  /* static atomic_lgamma_class static_atomic_lgamma2("nimDerivs_lgamma", 2); */
+  /* static atomic_lgamma_class static_atomic_lgamma3("nimDerivs_lgamma", 3); */
+  /* static atomic_lgamma_class static_atomic_lgamma4("nimDerivs_lgamma", 4); */
   CppAD::vector<T> in(1);
   CppAD::vector<T> out(1);
   in[0] = x;
   switch(baseOrder) {
   case 0:
-    static_atomic_lgamma0(in, out);
+    atomic_lgamma = new atomic_lgamma_class("nimDerivs_lgamma0", 0);
+    (*atomic_lgamma)(in, out);
     break;
   case 1:
-    static_atomic_lgamma1(in, out);
+    atomic_lgamma = new atomic_lgamma_class("nimDerivs_lgamma1", 1);
+    (*atomic_lgamma)(in, out);
     break;
   case 2:
-    static_atomic_lgamma2(in, out);
+    atomic_lgamma = new atomic_lgamma_class("nimDerivs_lgamma2", 2);
+    (*atomic_lgamma)(in, out);
     break;
   case 3:
-    static_atomic_lgamma3(in, out);
+    atomic_lgamma = new atomic_lgamma_class("nimDerivs_lgamma3", 3);
+    (*atomic_lgamma)(in, out);
     break;
   case 4:
-    static_atomic_lgamma4(in, out);
+    atomic_lgamma = new atomic_lgamma_class("nimDerivs_lgamma4", 4);
+    (*atomic_lgamma)(in, out);
     break;
   default:
     std::cout<<"Error: attempting lgamma derivative beyond order 4."<<std::endl;
   }
   return out[0];
 }
+
+/* template<class T> */
+/* T nimDerivs_lgammafn(T x, int baseOrder, bool verbose = FALSE) { */
+/*   if(verbose) { */
+/*     return nimDerivs_lgammafn_verbose(x, baseOrder); */
+/*   } */
+/*   static atomic_lgamma_class static_atomic_lgamma0("nimDerivs_lgamma", 0); */
+/*   static atomic_lgamma_class static_atomic_lgamma1("nimDerivs_lgamma", 1); */
+/*   static atomic_lgamma_class static_atomic_lgamma2("nimDerivs_lgamma", 2); */
+/*   static atomic_lgamma_class static_atomic_lgamma3("nimDerivs_lgamma", 3); */
+/*   static atomic_lgamma_class static_atomic_lgamma4("nimDerivs_lgamma", 4); */
+/*   CppAD::vector<T> in(1); */
+/*   CppAD::vector<T> out(1); */
+/*   in[0] = x; */
+/*   switch(baseOrder) { */
+/*   case 0: */
+/*     static_atomic_lgamma0(in, out); */
+/*     break; */
+/*   case 1: */
+/*     static_atomic_lgamma1(in, out); */
+/*     break; */
+/*   case 2: */
+/*     static_atomic_lgamma2(in, out); */
+/*     break; */
+/*   case 3: */
+/*     static_atomic_lgamma3(in, out); */
+/*     break; */
+/*   case 4: */
+/*     static_atomic_lgamma4(in, out); */
+/*     break; */
+/*   default: */
+/*     std::cout<<"Error: attempting lgamma derivative beyond order 4."<<std::endl; */
+/*   } */
+/*   return out[0]; */
+/* } */
+
 
 template<class T>
 T nimDerivs_lgammafn(T x) {
