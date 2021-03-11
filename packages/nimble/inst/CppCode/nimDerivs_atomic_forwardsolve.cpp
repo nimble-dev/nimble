@@ -249,7 +249,7 @@ bool atomic_forwardsolve_class::reverse(
     /* 							 n1, n2, EigStrDyn(nrow*n1, nrow ) ); */
     EigenConstMap Yadjoint_map(&partial_y[0], n1, n2, EigStrDyn(nrow*n1, nrow ) );
       
-    Badjoint_map = Amap.transpose().template triangularView<Eigen::Upper>().solve(Yadjoint_map);
+    Badjoint_map = Amap.transpose().template triangularView<Eigen::Upper>().solve(Yadjoint_map).eval();
     if(order_up == 0) { // otherwise this gets included below
       Aadjoint_map = (-Badjoint_map * Ymap.transpose()).template triangularView<Eigen::Lower>(); 
     }
@@ -266,7 +266,7 @@ bool atomic_forwardsolve_class::reverse(
     /* Note: A^-1 Z A^-1 = solve(A, solve(A^T, Z^T)^T) */
       
     /* Badjoint = A^-T * Yadjoint - (A^-1 Adot A^-1)^T  Ydot_adjoint */      
-    Badjoint_map -= Amap.template triangularView<Eigen::Lower>().solve( Amap.transpose().template triangularView<Eigen::Upper>().solve(Adot_stuff).transpose() ).transpose() * Ydot_adjoint_map;
+    Badjoint_map -= Amap.template triangularView<Eigen::Lower>().solve( Amap.transpose().template triangularView<Eigen::Upper>().solve(Adot_stuff).eval().transpose() ).eval().transpose() * Ydot_adjoint_map;
     /* Bdot_adjoint = A^-T Ydot_adjoint */
     Bdot_adjoint_map = Amap.transpose().template triangularView<Eigen::Upper>().solve(Ydot_adjoint_map).eval(); // This eval is necessary.  I am not clear when evals are necessary after solves or not.  
     /* Aadjoint = -Badjoint * Y^T  - (A^-T Ydot_adjoint Ydot^T)= -Badjoint * Y^T  - ( Bdot_adjoint Ydot^T) , including both Badjoint terms*/
@@ -275,6 +275,7 @@ bool atomic_forwardsolve_class::reverse(
     /* Adot_adjoint = -Bdot_adjoint Y^T */
     Adot_adjoint_map = (-Bdot_adjoint_map * Ymap.transpose()).template triangularView<Eigen::Lower>();
   }
+
   if(order_up >= 2) {
     printf("Unsupported reverse order requested\n");
     return false;

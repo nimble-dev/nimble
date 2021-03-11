@@ -363,7 +363,7 @@ bool atomic_backsolve_class::reverse(
     /* 							 n1, n2, EigStrDyn(nrow*n1, nrow ) ); */
     EigenConstMap Yadjoint_map(&partial_y[0], n1, n2, EigStrDyn(nrow*n1, nrow ) );
       
-    Badjoint_map = Amap.transpose().template triangularView<Eigen::Lower>().solve(Yadjoint_map);
+    Badjoint_map = Amap.transpose().template triangularView<Eigen::Lower>().solve(Yadjoint_map).eval();
     if(order_up == 0) { // otherwise this gets included below
       Aadjoint_map = (-Badjoint_map * Ymap.transpose()).template triangularView<Eigen::Upper>();
     }
@@ -435,7 +435,7 @@ bool atomic_backsolve_class::reverse(
     /* Note: A^-1 Z A^-1 = solve(A, solve(A^T, Z^T)^T) */
       
     /* Badjoint = A^-T * Yadjoint - (A^-1 Adot A^-1)^T  Ydot_adjoint */
-    Badjoint_map -= Amap.template triangularView<Eigen::Upper>().solve( Amap.transpose().template triangularView<Eigen::Lower>().solve(Adot_stuff).transpose() ).transpose() * Ydot_adjoint_map;
+    Badjoint_map -= Amap.template triangularView<Eigen::Upper>().solve( Amap.transpose().template triangularView<Eigen::Lower>().solve(Adot_stuff).eval().transpose() ).eval().transpose() * Ydot_adjoint_map;
     // std::cout<<"Badjoint"<<std::endl;
     // for(int i = 0; i < n1; ++i) {
     //   for(int j = 0; j < n2; ++j) std::cout<< Badjoint_map(i, j)<<"\t";
