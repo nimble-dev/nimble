@@ -732,7 +732,7 @@ atomic_matmult_factory global_matmult_factory;
 void atomic_matmult(const MatrixXd_CppAD &x1,
 		    const MatrixXd_CppAD &x2,
 		    MatrixXd_CppAD &y) {
-  atomic_matmult_class * atomic_matmult = global_matmult_factory.create();
+  atomic_matmult_class * atomic_matmult = global_matmult_factory.create();  
   int n1 = x1.rows(); // may not be general to all Eigen types
   int n2 = x1.cols();
   int n3 = x2.cols();

@@ -813,6 +813,7 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
 
     if(!metaTape) {
       copyToDoublesLines <- quote(blank())
+      updateRecordingInfolLines <- quote(blank())
       callForTapingNames <- TF$args$getSymbolNames()
     } else {
       copyToDoublesLines <- list()
@@ -837,7 +838,8 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
             callForTapingNames <- c(callForTapingNames, thisName)
           }
         }
-        copyToDoublesLines <- do.call("call", c(list("{"), copyToDoublesLines))
+      copyToDoublesLines <- do.call("call", c(list("{"), copyToDoublesLines))
+      updateRecordingInfolLines  <- cppLiteral("if(ADinfo.nodeFunPtrSet()) recordingInfo_.ADinfoPtr()->set_nodeFunPtr(ADinfo.nodeFunPtr());")
     }
 
     if(!isNode) {
@@ -1014,6 +1016,7 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
     
   allRcode <- do.call('call', c(list('{'),
                                 list(recordIfNeededCode),
+                                list(updateRecordingInfolLines),
                                 calcTotalLengthCode,
                                 list(setSizeLine),
 ##                                list(assignTapePtrCode),

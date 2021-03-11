@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_ATOMIC_THREE_REVERSE_HPP
 # define CPPAD_CORE_ATOMIC_THREE_REVERSE_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-21 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -30,13 +30,12 @@ $spell
     af
     aparameter
     enum
-$$
-
-$section Atomic Function Reverse Mode$$
-$spell
+    azmul
     ataylor
     apartial
 $$
+
+$section Atomic Function Reverse Mode$$
 
 $head Base$$
 This syntax is used by $icode%f%.Reverse%$$ where $icode f$$ has prototype
@@ -141,7 +140,6 @@ The specifications for $icode ataylor_x$$ is the same as for $icode taylor_x$$
 
 $head taylor_y$$
 The size of $icode taylor_y$$ is $codei%(%q%+1)*%m%$$.
-Upon return,
 For $latex i = 0 , \ldots , m-1$$ and $latex k = 0 , \ldots , q$$,
 we use the Taylor coefficient notation
 $latex \[
@@ -246,6 +244,18 @@ see $cref base_identical$$.
 This can be used,
 in a similar way to $cref/need_y/atomic_three_forward/need_y/$$,
 to avoid unnecessary operations.
+
+$subhead azmul$$
+An $cref/optimized/optimize/$$ function will use zero
+for values in $icode taylor_x$$ and $icode taylor_y$$ that are
+not necessary in the current context.
+If you divide by these values when computing
+$latex ( \partial F_i^k / \partial x_j^\ell )$$ you could get an nan
+if the corresponding value in $icode partial_y$$ is zero.
+To be careful, if you do divide by
+$icode taylor_x$$ or $icode taylor_y$$, use $cref azmul$$
+for to avoid zero over zero calculations.
+
 
 $head apartial_x$$
 The specifications for $icode apartial_x$$ is the same as for

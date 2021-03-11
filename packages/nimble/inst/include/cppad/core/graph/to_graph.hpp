@@ -2,7 +2,7 @@
 # define CPPAD_CORE_GRAPH_TO_GRAPH_HPP
 
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-21 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -34,6 +34,7 @@ $section Create a C++ AD Graph Corresponding to an ADFun Object$$
 
 $head Syntax$$
 $codei%
+    cpp_graph %graph_obj%
     ADFun<%Base%> %fun%
     %fun%.to_graph(%graph_obj%)
 %$$
@@ -73,13 +74,6 @@ void CppAD::ADFun<Base,RecBase>::to_graph(
 {   using local::pod_vector;
     using local::opcode_t;
     using namespace CppAD::graph;
-    // --------------------------------------------------------------------
-    if( local::graph::op_name2enum.size() == 0 )
-    {   CPPAD_ASSERT_KNOWN( ! thread_alloc::in_parallel() ,
-            "call to set_operator_info in parallel mode"
-        );
-        local::graph::set_operator_info();
-    }
     //
 # ifndef NDEBUG
 # endif

@@ -23,7 +23,9 @@ bool atomic_lgamma_class::forward(
      CppAD::vector<double>&                     taylor_y     )
 {
   if(verbose) {
-    std::cout<<"lgamma forward baseOrder = "<<baseOrder<<" "<<order_low<<" "<<order_up<<" "<<taylor_x[0]<<" "<<type_x[0]<<" "<<need_y<<std::endl;
+    std::cout<<"lgamma forward baseOrder = "<<baseOrder<<" low="<<order_low<<" up="<<order_up<<" tx[0]="<<taylor_x[0]<<" type_x[0]="<<type_x[0]<<" need_y="<<need_y<<std::endl;
+    std::cout<<"tape_id and handle:"<< CppAD::AD<double>::get_tape_id_nimble()<<" "<< CppAD::AD<double>::get_tape_handle_nimble()<<"\n";
+    std::cout<<"atomic info:"<<CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage()<<"\n";
   }
   if(order_low <= 0 & order_up >= 0) {
     if(baseOrder == 0)
@@ -64,7 +66,9 @@ bool atomic_lgamma_class::reverse(
      const CppAD::vector<double>&               partial_y   )
 {
   if(verbose) {
-    std::cout<<"lgamma reverse baseOrder = "<<baseOrder<<" "<<order_up<<" "<<taylor_x[0]<<" "<<taylor_y[0]<<" "<<partial_y[0]<<" "<<type_x[0]<<std::endl;
+    std::cout<<"lgamma reverse baseOrder = "<<baseOrder<<" up="<<order_up<<" tx[0]="<<taylor_x[0]<<" ty[0]="<<taylor_y[0]<<" py[0]="<<partial_y[0]<<" type_x[0]="<<type_x[0]<<std::endl;
+    std::cout<<"tape_id and handle:"<< CppAD::AD<double>::get_tape_id_nimble()<<" "<< CppAD::AD<double>::get_tape_handle_nimble()<<"\n";
+    std::cout<<"atomic info:"<<CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage()<<"\n";
   }
   // std::cout<<"lgamma reverse baseOrder = "<<baseOrder<<std::endl;
   // std::cout<<"reverse "<<order_up<<" "<<taylor_x[0]<<" "<<partial_y[0]<<std::endl;
@@ -95,10 +99,10 @@ bool atomic_lgamma_class::forward(
      CppAD::vector< CppAD::AD<double> >&                     taylor_y     )
 {
   if(verbose) {
-    std::cout<<"lgamma meta-forward baseOrder = "<<baseOrder<<" "<<order_low<<" "<<order_up<<" "<<CppAD::Value(taylor_x[0])<<" "<<type_x[0]<<" "<<need_y<<std::endl;
+    std::cout<<"lgamma meta-forward baseOrder = "<<baseOrder<<" low="<<order_low<<" up="<<order_up<<" tx[0]="<<CppAD::Value(taylor_x[0])<<" type_x[0]="<<type_x[0]<<" need_y="<<need_y<<std::endl;
+    std::cout<<"tape_id and handle:"<< CppAD::AD<double>::get_tape_id_nimble()<<" "<< CppAD::AD<double>::get_tape_handle_nimble()<<"\n";
+    std::cout<<"atomic info:"<<CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage()<<"\n";
   }
-  // std::cout<<"tape_id and handle:"<< CppAD::AD<double>::get_tape_id_nimble()<<" "<< CppAD::AD<double>::get_tape_handle_nimble()<<"\n";
-  // std::cout<<"atomic info:"<<CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage()<<"\n";
      if(order_low <= 0 & order_up >= 0) {
        taylor_y[0] = nimDerivs_lgammafn(taylor_x[0], baseOrder, verbose); // This puts it in the new tape being recorded
 	  if(verbose) {
@@ -136,7 +140,9 @@ bool atomic_lgamma_class::reverse(
      const CppAD::vector< CppAD::AD<double> >&               partial_y   ) 
 {
   if(verbose) {
-    std::cout<<"lgamma meta-reverse baseOrder = "<<baseOrder<<" "<<order_up<<" "<<taylor_x[0]<<" "<<taylor_y[0]<<" "<<partial_y[0]<<" "<<type_x[0]<<std::endl;
+    std::cout<<"lgamma meta-reverse baseOrder = "<<baseOrder<<" up="<<order_up<<" tx[0]="<<taylor_x[0]<<" ty[0]="<<taylor_y[0]<<" py[0]="<<partial_y[0]<<" type_x[0]="<<type_x[0]<<std::endl;
+    std::cout<<"tape_id and handle:"<< CppAD::AD<double>::get_tape_id_nimble()<<" "<< CppAD::AD<double>::get_tape_handle_nimble()<<"\n";
+    std::cout<<"atomic info:"<<CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage()<<"\n";
   }
 
   partial_x[0] = CppAD::AD<double>(0);

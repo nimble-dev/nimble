@@ -469,12 +469,14 @@ bool atomic_cholesky_class::reverse(
 
 void atomic_cholesky(const MatrixXd_CppAD &x, // This (non-template) type forces any incoming expression to be evaluated
 		     MatrixXd_CppAD &y) {
-  static atomic_cholesky_class atomic_cholesky("atomic_cholesky"); // this has no state information so the same object can be used for all cases
+  //  static atomic_cholesky_class atomic_cholesky("atomic_cholesky"); // this has no state information so the same object can be used for all cases
+  atomic_cholesky_class *atomic_cholesky; // Need to do it this way for multiple compilation units
   int n = x.rows();
   std::vector<CppAD::AD<double> > xVec(n*n);
   mat2vec(x, xVec);
   std::vector<CppAD::AD<double> > yVec(n*n);
-  atomic_cholesky(xVec, yVec);
+  atomic_cholesky = new atomic_cholesky_class("atomic_cholesky");
+  (*atomic_cholesky)(xVec, yVec);
   y.resize(n, n);
   vec2mat(yVec, y);
 }

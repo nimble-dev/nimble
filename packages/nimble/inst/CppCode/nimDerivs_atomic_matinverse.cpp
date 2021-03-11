@@ -227,12 +227,14 @@ bool atomic_matinverse_class::reverse(
 
 void atomic_matinverse(const MatrixXd_CppAD &x, // This (non-template) type forces any incoming expression to be evaluated
 			 MatrixXd_CppAD &y) {
-  static atomic_matinverse_class atomic_matinverse("atomic_matinverse"); // this has no state information so the same object can be used for all cases
+  // static atomic_matinverse_class atomic_matinverse("atomic_matinverse"); // this has no state information so the same object can be used for all cases
+  atomic_matinverse_class *atomic_matinverse;
   int n = x.rows();
   std::vector<CppAD::AD<double> > xVec(n*n);
   mat2vec(x, xVec);
   std::vector<CppAD::AD<double> > yVec(n*n);
-  atomic_matinverse(xVec, yVec);
+  atomic_matinverse = new atomic_matinverse_class("atomic_matinverse");
+  (*atomic_matinverse)(xVec, yVec);
   y.resize(n, n);
   vec2mat(yVec, y);  
 }

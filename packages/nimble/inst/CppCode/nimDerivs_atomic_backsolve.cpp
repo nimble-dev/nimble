@@ -363,7 +363,7 @@ bool atomic_backsolve_class::reverse(
     /* 							 n1, n2, EigStrDyn(nrow*n1, nrow ) ); */
     EigenConstMap Yadjoint_map(&partial_y[0], n1, n2, EigStrDyn(nrow*n1, nrow ) );
       
-    Badjoint_map = Amap.transpose().template triangularView<Eigen::Lower>().solve(Yadjoint_map);
+    Badjoint_map = Amap.transpose().template triangularView<Eigen::Lower>().solve(Yadjoint_map).eval();
     if(order_up == 0) { // otherwise this gets included below
       Aadjoint_map = (-Badjoint_map * Ymap.transpose()).template triangularView<Eigen::Upper>();
     }
@@ -435,7 +435,7 @@ bool atomic_backsolve_class::reverse(
     /* Note: A^-1 Z A^-1 = solve(A, solve(A^T, Z^T)^T) */
       
     /* Badjoint = A^-T * Yadjoint - (A^-1 Adot A^-1)^T  Ydot_adjoint */
-    Badjoint_map -= Amap.template triangularView<Eigen::Upper>().solve( Amap.transpose().template triangularView<Eigen::Lower>().solve(Adot_stuff).transpose() ).transpose() * Ydot_adjoint_map;
+    Badjoint_map -= Amap.template triangularView<Eigen::Upper>().solve( Amap.transpose().template triangularView<Eigen::Lower>().solve(Adot_stuff).eval().transpose() ).eval().transpose() * Ydot_adjoint_map;
     // std::cout<<"Badjoint"<<std::endl;
     // for(int i = 0; i < n1; ++i) {
     //   for(int j = 0; j < n2; ++j) std::cout<< Badjoint_map(i, j)<<"\t";
@@ -553,14 +553,16 @@ void atomic_backsolve(const MatrixXd_CppAD &A,
   // Y = backsolve(A, B) = A^-1 B
   // A is n1-x-n1
   // B and Y are n1-x-n2
-  static atomic_backsolve_class atomic_backsolve("atomic_backsolve");
+  //  static atomic_backsolve_class atomic_backsolve("atomic_backsolve");
+  atomic_backsolve_class *atomic_backsolve;
   int n1 = A.rows();
   int n2 = B.cols();
   std::vector<CppAD::AD<double> > xVec(n1*n1 + n1*n2);
   mat2vec(A, xVec);
   mat2vec(B, xVec, n1*n1);
   std::vector<CppAD::AD<double> > yVec(n1*n2);
-  atomic_backsolve(xVec, yVec);
+  atomic_backsolve = new atomic_backsolve_class("atomic_backsolve");
+  (*atomic_backsolve)(xVec, yVec);
   Y.resize(n1, n2);
   vec2mat(yVec, Y);  
 }

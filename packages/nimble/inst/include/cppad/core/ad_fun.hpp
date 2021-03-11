@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_AD_FUN_HPP
 # define CPPAD_CORE_AD_FUN_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-21 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -39,7 +39,7 @@ The $code ADFun$$ object can then be used to calculate function values,
 derivative values, and other values related to the corresponding function.
 
 $childtable%
-    omh/adfun.omh%
+    include/cppad/core/ad_fun.omh%
     include/cppad/core/optimize.hpp%
     include/cppad/core/fun_check.hpp%
     include/cppad/core/check_for_nan.hpp
@@ -80,10 +80,6 @@ private:
 
     /// Did the previous optimzation exceed the collision limit
     bool exceed_collision_limit_;
-
-    /// Is this function obejct a base2ad return value
-    /// (special becasue some compliers need copy constructor in this case)
-    bool base2ad_return_value_;
 
     /// Has this ADFun object been optmized
     bool has_been_optimized_;
@@ -126,9 +122,6 @@ private:
     /// which dependent variables are actually parameters
     local::pod_vector<bool> dep_parameter_;
 
-    /// results of the forward mode calculations
-    local::pod_vector_maybe<Base> taylor_;
-
     /// which operations can be conditionally skipped
     /// Set during forward pass of order zero
     local::pod_vector<bool> cskip_op_;
@@ -137,8 +130,19 @@ private:
     /// (if zero, the operation corresponds to a parameter).
     local::pod_vector<addr_t> load_op2var_;
 
+    /// results of the forward mode calculations
+    local::pod_vector_maybe<Base> taylor_;
+
+    /// used for subgraph reverse mode calculations.
+    /// Declared here to avoid reallocation for each call to subgraph_reverse.
+    /// Not in subgraph_info_ because it depends on Base.
+    local::pod_vector_maybe<Base> subgraph_partial_;
+
     /// the operation sequence corresponding to this object
     local::player<Base> play_;
+
+    /// subgraph information for this object
+    local::subgraph::subgraph_info subgraph_info_;
 
     /// Packed results of the forward mode Jacobian sparsity calculations.
     /// for_jac_sparse_pack_.n_set() != 0  implies other sparsity results
@@ -149,13 +153,6 @@ private:
     /// for_jac_sparse_set_.n_set() != 0  implies for_sparse_pack_ is empty.
     local::sparse::list_setvec for_jac_sparse_set_;
 
-    /// subgraph information for this object
-    local::subgraph::subgraph_info subgraph_info_;
-
-    /// used for subgraph reverse mode calculations.
-    /// Declared here to avoid reallocation for each call to subgraph_reverse.
-    /// Not in subgraph_info_ because it depends on Base.
-    local::pod_vector_maybe<Base> subgraph_partial_;
 
     // ------------------------------------------------------------
     // Private member functions
@@ -297,12 +294,19 @@ public:
     ADFun(void);
 
     /// copy constructor
-    ADFun(const ADFun& g);
+    ADFun(const ADFun& g) = delete;
 
     // assignment operator
     // (doxygen in cppad/core/fun_construct.hpp)
     void operator=(const ADFun& f);
-    // assignment operator with move semantics
+
+    // swap
+    void swap(ADFun& f);
+
+    // move semenatics copy
+    ADFun(ADFun&& f);
+
+    // move semantics assignment
     void operator=(ADFun&& f);
 
     // create from Json or C++ AD graph
@@ -327,8 +331,7 @@ public:
     ADFun(const ADvector &x, const ADvector &y);
 
     /// destructor
-    ~ADFun(void)
-    { }
+    ~ADFun(void);
 
     /// set check_for_nan
     void check_for_nan(bool value);
@@ -661,6 +664,12 @@ public:
     /// number of dependent variables
     size_t Range(void) const
     {   return dep_taddr_.size(); }
+
+    /// set and get function name
+    void function_name_set(const std::string& function_name)
+    {   function_name_ = function_name; }
+    std::string function_name_get(void)
+    {   return function_name_; }
 
     /// is variable a parameter
     bool Parameter(size_t i)

@@ -766,6 +766,8 @@ class set_CppAD_tape_info_for_model {
  private:
   nodeFun *nodeFunInModelDLL;
   bool not_empty;
+  CppAD::tape_id_t saved_tape_id;
+  CppAD::local::ADTape<double>* saved_tape_handle;
 };
 CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
 					 bool includeExtraOutputStep,

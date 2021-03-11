@@ -45,7 +45,7 @@ $section Preprocessor Symbols Set By CMake Command$$
 $head CPPAD_COMPILER_HAS_CONVERSION_WARN$$
 is the compiler a variant of g++ and has conversion warnings
 $srccode%hpp% */
-# define CPPAD_COMPILER_HAS_CONVERSION_WARN 1
+# define CPPAD_COMPILER_HAS_CONVERSION_WARN 0
 /* %$$
 
 $head CPPAD_DISABLE_SOME_MICROSOFT_COMPILER_WARNINGS$$
@@ -77,7 +77,7 @@ $srccode%hpp% */
 $head CPPAD_PACKAGE_STRING$$
 cppad-yyyymmdd as a C string where yyyy is year, mm is month, and dd is day.
 $srccode%hpp% */
-# define CPPAD_PACKAGE_STRING "cppad-20201211"
+# define CPPAD_PACKAGE_STRING "cppad-20210225"
 /* %$$
 
 $head CPPAD_HAS_ADOLC$$

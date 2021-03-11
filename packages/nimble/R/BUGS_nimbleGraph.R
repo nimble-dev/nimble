@@ -35,7 +35,7 @@ nimbleGraphClass <- setRefClass(
             }
             .Call(C_getDependencies, graphExtPtr, nodes, omit, downstream)
         },
-        getParents = function(nodes, omit = integer(), upstream = FALSE) {
+        getParents = function(nodes, omit = integer(), upstream = FALSE, oneStep = FALSE) {
           # nodes and omit must be IDs
           for(i in list(nodes, omit)) {
             if(length(i) > 0) {
@@ -44,7 +44,7 @@ nimbleGraphClass <- setRefClass(
               }
             }
           }
-          .Call(C_getParents, graphExtPtr, nodes, omit, upstream)
+          .Call(C_getParents, graphExtPtr, nodes, omit, upstream, oneStep)
         },
         getConditionallyIndependentSets = function(nodeIDs,
                                                    givenNodeIDs,

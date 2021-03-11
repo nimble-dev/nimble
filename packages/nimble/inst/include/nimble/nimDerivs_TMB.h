@@ -89,7 +89,7 @@ Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, Nim
     xCopy(i, 0) = x[i] - mean[i];
 
   Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
-  //  std::cout<<"Baking in prec_param = "<<prec_param<<" in dmnorm."<<std::endl;
+  //  std::cout<<"Baking in prec_param = "<<CppAD::Value(prec_param)<<" in dmnorm."<<std::endl;
 #ifdef _USE_ATOMICS_IN_DMNORM
   if(CppAD::Value(prec_param) == 1) {
     xCopy = nimDerivs_matmult(mapChol.template triangularView<Eigen::Upper>(), xCopy);
@@ -100,7 +100,7 @@ Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, Nim
   if(CppAD::Value(prec_param) == 1) {
     xCopy = mapChol.template triangularView<Eigen::Upper>()*xCopy;
   } else {
-    xCopy = mapChol.transpose().template triangularView<Eigen::Upper>().solve(xCopy);
+    xCopy = mapChol.transpose().template triangularView<Eigen::Lower>().solve(xCopy);
   }
 #endif
   /* xCopy = CppAD::CondExpEq(prec_param, Type(1), */
@@ -131,7 +131,8 @@ Type nimDerivs_nimArr_dmnorm_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &
     xCopy(i, 0) = x[i] - mean[i];
 
   Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
-  //  std::cout<<"Baking in prec_param = "<<prec_param<<" in dmnorm."<<std::endl;
+  
+  //  std::cout<<"Baking in prec_param = "<<CppAD::Value(prec_param)<<" in dmnorm."<<std::endl;
 #ifdef _USE_ATOMICS_IN_DMNORM
   if(CppAD::Value(prec_param) == 1) {
     xCopy = nimDerivs_matmult(mapChol.template triangularView<Eigen::Upper>(), xCopy);
@@ -142,7 +143,8 @@ Type nimDerivs_nimArr_dmnorm_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &
   if(CppAD::Value(prec_param) == 1) {
     xCopy = mapChol.template triangularView<Eigen::Upper>()*xCopy;
   } else {
-    xCopy = mapChol.template triangularView<Eigen::Upper>().transpose().solve(xCopy);
+    xCopy = mapChol.transpose().template triangularView<Eigen::Lower>().solve(xCopy);
+    //    xCopy = mapChol.template triangularView<Eigen::Upper>().transpose().solve(xCopy);
   }
 #endif
   /*  */
@@ -1043,8 +1045,8 @@ MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dweibull, CppAD::AD<double>)
 MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dt_nonstandard, CppAD::AD<double>) // broken
 MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dt, CppAD::AD<double>) // broken
 
-#define nimDerivs_nimNewMatrixD newMatrix_impl<MatrixXd_CppAD>::newMatrix
-#define nimDerivs_nimDiagonalD diagonal_impl<MatrixXd_CppAD>::diagonal
+#define nimDerivs_nimNewMatrixD newMatrix_impl<MatrixXd_CppAD, CppAD::AD<double> >::newMatrix
+#define nimDerivs_nimDiagonalD diagonal_impl<MatrixXd_CppAD, CppAD::AD<double> >::diagonal
 #define nimDerivs_nimCd concatenate_impl<MatrixXd_CppAD, CppAD::AD<double> >::concatenate
 #define nimDerivs_nimNonseqIndexedd nonseqIndexed_impl<MatrixXd_CppAD, CppAD::AD<double> >::nonseqIndexed
 

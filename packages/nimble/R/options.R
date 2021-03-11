@@ -12,6 +12,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         skipADsolveAtomic = TRUE,
         skipADmatMultAtomic = TRUE, # If TRUE, do not use nimble's CppAD atomic class for %*%
         skipADmatInverseAtomic = TRUE, # If TRUE, do not use nimble's CppAD atomic class for inverse
+        groupDetermWithGivenInCondIndSets = TRUE, # used in getConditionallyIndependentSets
         use_C_getParents = FALSE,
         useNewConfigureMCMC = TRUE,
         oldConjugacyChecking = FALSE,

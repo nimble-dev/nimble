@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_POW_HPP
 # define CPPAD_CORE_POW_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-21 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -37,13 +37,31 @@ Determines the value of the power function which is defined by
 $latex \[
     {\rm pow} (x, y) = x^y
 \] $$
-This version of the $code pow$$ function may use
+
+$subhead If y is a Variable$$
+If $icode y$$ is a variable,
+the $code pow$$ function may use
 logarithms and exponentiation to compute derivatives.
 This will not work if $icode x$$ is less than or equal zero.
+
+$subhead If y is a Parameter$$
+If $icode y$$ is a parameter, a different method is used to
+compute the derivatives; see $cref pow_forward$$.
+In the special case where $icode x$$ is zero,
+zero is returned as the derivative.
+This is correct when $icode y$$ minus the order of the derivative
+is greater than zero.
+If $icode y$$ minus the order of the derivative is zero,
+then $icode y$$ is an integer.
+If $icode y$$ minus the order of the derivative is less than zero,
+the actual derivative is infinite.
+
+$subhead If y is an Integer$$
 If the value of $icode y$$ is an integer,
-the $cref pow_int$$ function is used to compute this value
+the $cref pow_int$$ function can be used to compute this value
 using only multiplication (and division if $icode y$$ is negative).
-(This will work even if $icode x$$ is less than or equal zero.)
+This will work even if $icode x$$ is less than or equal zero.
+
 
 $head x$$
 The argument $icode x$$ has one of the following prototypes
@@ -79,10 +97,11 @@ $cref/operation sequence/glossary/Operation/Sequence/$$.
 $head Example$$
 $children%
     example/general/pow.cpp
+    %example/general/pow_nan.cpp
 %$$
-The file
-$cref pow.cpp$$
-is an examples and tests of this function.
+The files
+$cref pow.cpp$$ and $cref pow_nan.cpp$$
+are examples tests of this function.
 
 $end
 -------------------------------------------------------------------------------
@@ -145,7 +164,7 @@ pow(const AD<Base>& x, const AD<Base>& y)
         }
         else
         {   // result = variable^parameter
-            CPPAD_ASSERT_UNKNOWN( local::NumRes(local::PowvpOp) == 3 );
+            CPPAD_ASSERT_UNKNOWN( local::NumRes(local::PowvpOp) == 1 );
             CPPAD_ASSERT_UNKNOWN( local::NumArg(local::PowvpOp) == 2 );
 
             // put operand addresses in tape
