@@ -801,9 +801,11 @@ modifyForAD_AssignEigenMap <- function(code, symTab, workEnv) {
     varName <- ptrExpr$args[[1]]$name
     varSym <- symTab$getSymbolObject(varName, inherits = TRUE)
   }
-  if(!is.null(varSym)) {
-    scalarType <- varSym$templateArgs[[2]]
-    go <- identical(scalarType, "TYPE_")
+  if(!isTRUE(workEnv$.inModel)) {
+      if(!is.null(varSym)) {
+          scalarType <- varSym$templateArgs[[2]]
+          go <- identical(scalarType, "TYPE_")
+      }
   }
   if(go) {
     EigMapSym <- symTab$getSymbolObject(EigMapName)
@@ -961,6 +963,7 @@ updateADproxyModelMethods <- function(.self) {
         thisDef$code$typeDefs <- ADtypeDefs
         workEnv <- new.env()
         workEnv$RsymTab <- thisDef$RCfunProc$compileInfo$newLocalSymTab
+        workEnv$.inModel <- TRUE
         exprClasses_modifyForAD(thisDef$code$code, thisDef$code$objectDefs, workEnv)
     }
     classST <- .self$objectDefs

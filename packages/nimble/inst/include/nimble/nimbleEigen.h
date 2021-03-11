@@ -157,13 +157,12 @@ template<typename result_type, typename Index, typename V>
 #include "nimbleEigenNimArr.h"
 // diagonal, cases diag(scalar) and diag(vector) to create something behaving like a matrix
 
-template<typename DerivedIndex, typename DerivedSource>
+template<typename DerivedIndex, typename DerivedSource, typename result_type = double>
   class diagonalClass {
  public:
   const DerivedSource &src;
   int dim1, dim2;
   //  typedef double result_type;
-  typedef typename Eigen::internal::traits<DerivedSource>::Scalar result_type;
  diagonalClass(const DerivedSource &s) : src(s) {
     dim1 = nimble_size_impl<DerivedSource>::getDiagRows(src);
     dim2 = nimble_size_impl<DerivedSource>::getDiagCols(src);
@@ -191,20 +190,20 @@ template<typename DerivedIndex, typename DerivedSource>
 
 namespace Eigen{
   namespace internal{
-    template<typename DerivedIndex, typename DerivedSource>
-      struct functor_has_linear_access<diagonalClass<DerivedIndex, DerivedSource> > { enum { ret = 1}; }; 
-    template<typename DerivedIndex, typename DerivedSource>
-      struct functor_traits<diagonalClass<DerivedIndex, DerivedSource> > { enum {Cost = 10, PacketAccess = false, IsRepeatable = true }; }; 
+    template<typename DerivedIndex, typename DerivedSource, typename result_type>
+      struct functor_has_linear_access<diagonalClass<DerivedIndex, DerivedSource, result_type> > { enum { ret = 1}; }; 
+    template<typename DerivedIndex, typename DerivedSource, typename result_type>
+      struct functor_traits<diagonalClass<DerivedIndex, DerivedSource, result_type> > { enum {Cost = 10, PacketAccess = false, IsRepeatable = true }; }; 
   }
 }
 
-template<typename returnDerived>
+template<typename returnDerived, typename return_scalar = double>
 struct diagonal_impl {
   typedef Eigen::Index IndexReturn;
   template<typename DerivedSource>
-  static CwiseNullaryOp<diagonalClass<IndexReturn, DerivedSource >, returnDerived > diagonal(const DerivedSource &s) {
-    diagonalClass<IndexReturn, DerivedSource > obj(s);
-    return(CwiseNullaryOp<diagonalClass<IndexReturn, DerivedSource >, returnDerived >(obj.dim1, obj.dim2, obj));
+  static CwiseNullaryOp<diagonalClass<IndexReturn, DerivedSource, return_scalar >, returnDerived > diagonal(const DerivedSource &s) {
+    diagonalClass<IndexReturn, DerivedSource, return_scalar > obj(s);
+    return(CwiseNullaryOp<diagonalClass<IndexReturn, DerivedSource, return_scalar >, returnDerived >(obj.dim1, obj.dim2, obj));
   }
 };
 
@@ -1633,7 +1632,7 @@ MAKE_RECYCLING_RULE_CLASS2_1scalar(bessel_k, double)
 // can write as.numeric here
 // as.matrix may be basically the same as matrix
 
-template<typename Index, typename DerivedInput>
+template<typename Index, typename DerivedInput, typename result_type = double>
   class newMatrixClass {
  public:
   const DerivedInput &input;
@@ -1641,7 +1640,6 @@ template<typename Index, typename DerivedInput>
   bool init; // would be a bit silly to call with init = FALSE, but it is allowed to simplify code generation
   bool recycle;
   //  typedef double result_type;
-  typedef typename DerivedInput::Scalar result_type;
  newMatrixClass(const DerivedInput &inputIn, bool initIn, bool recycleIn, int rowsIn, int colsIn) :
   input(inputIn),
     init(initIn),
@@ -1696,20 +1694,20 @@ template<typename Index, typename DerivedInput>
 
 namespace Eigen{
   namespace internal{
-    template<typename IndexObj, typename DerivedObj>
-      struct functor_has_linear_access<newMatrixClass<IndexObj, DerivedObj> > { enum { ret = 1}; }; 
-    template<typename IndexObj, typename DerivedObj>
-      struct functor_traits<newMatrixClass<IndexObj, DerivedObj> > { enum {Cost = 10, PacketAccess = false, IsRepeatable = true }; }; 
+    template<typename IndexObj, typename DerivedObj, typename result_type>
+      struct functor_has_linear_access<newMatrixClass<IndexObj, DerivedObj, result_type> > { enum { ret = 1}; }; 
+    template<typename IndexObj, typename DerivedObj, typename result_type>
+      struct functor_traits<newMatrixClass<IndexObj, DerivedObj, result_type> > { enum {Cost = 10, PacketAccess = false, IsRepeatable = true }; }; 
   }
 }
 
-template<typename returnDerived>
+template<typename returnDerived, typename result_type = double>
 struct newMatrix_impl {
   typedef Eigen::Index IndexReturn;
   template<typename DerivedObj>
-  static CwiseNullaryOp<newMatrixClass<IndexReturn, DerivedObj >, returnDerived > newMatrix(const DerivedObj &s, bool initIn, bool recycle, int nRowIn, int nColIn) {
-    newMatrixClass<IndexReturn, DerivedObj > obj(s, initIn, recycle, nRowIn, nColIn);
-    return(CwiseNullaryOp<newMatrixClass<IndexReturn, DerivedObj >, returnDerived >(obj.dim1, obj.dim2, obj));
+  static CwiseNullaryOp<newMatrixClass<IndexReturn, DerivedObj, result_type >, returnDerived > newMatrix(const DerivedObj &s, bool initIn, bool recycle, int nRowIn, int nColIn) {
+    newMatrixClass<IndexReturn, DerivedObj, result_type > obj(s, initIn, recycle, nRowIn, nColIn);
+    return(CwiseNullaryOp<newMatrixClass<IndexReturn, DerivedObj, result_type >, returnDerived >(obj.dim1, obj.dim2, obj));
   }
 };
 

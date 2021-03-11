@@ -124,6 +124,7 @@ Collate:
     initializeModel.R
     parameterTransform.R
     CAR.R
+    Laplace.R
     MCMC_utils.R
     MCMC_configuration.R
     MCMC_build.R
