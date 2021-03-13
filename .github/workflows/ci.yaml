@@ -20,7 +20,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: ./packages
+        working-directory: ../packages/nimble
 
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
 
@@ -37,7 +37,6 @@ jobs:
       R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
       RSPM: ${{ matrix.config.rspm }}
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      working-directory: ./packages
 
     steps:
       - uses: actions/checkout@v2
