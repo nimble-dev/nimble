@@ -18,6 +18,10 @@ jobs:
   CI:
     runs-on: ${{ matrix.config.os }}
 
+    defaults:
+      run:
+        working-directory: ./packages
+
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
 
     strategy:
