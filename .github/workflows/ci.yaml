@@ -18,9 +18,9 @@ jobs:
   CI:
     runs-on: ${{ matrix.config.os }}
 
-    defaults:
-      run:
-        working-directory: ./packages/nimble
+#    defaults:
+#      run:
+#        working-directory: ./packages/nimble
 
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
 
@@ -46,6 +46,11 @@ jobs:
           r-version: ${{ matrix.config.r }}
 
       - uses: r-lib/actions/setup-pandoc@v1
+
+      - name: checkstuff
+        run: |
+          pwd
+          ls
 
       - name: Query dependencies
         run: |
