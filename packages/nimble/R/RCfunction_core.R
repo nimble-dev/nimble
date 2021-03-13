@@ -160,6 +160,30 @@ nfMethodRC <- setRefClass(
         getReturnType    = function() { return(returnType) })
 )
 
+## Helper function that walks an exprClass tree and finds methods based on positioning wrt dollar signs
+findMethodsInExprClass <- function(expr) {
+    if(is(expr, 'exprClass')) {
+        if(expr$isAssign) {
+            return(findMethodsInExprClass(expr$args[[2]]))
+        } else {
+            if(expr$isCall) {
+                if(expr$name == '$') {
+                    ## Next check ensures that RHS of $ is a call and not a field
+                    ## Check for whether it is first arg of chainedCall prevents finding
+                    ## 'foo' in m$cc(m$foo) as a method.
+                    if(!is.null(expr$caller) && expr$caller$name == 'chainedCall' &&
+                       identical(expr, expr$caller$args[[1]]))
+                        tmp <- expr$args[[2]]$name else tmp <- NULL
+                    return(c(tmp, findMethodsInExprClass(expr$args[[1]])))
+                } else {
+                    return(unlist(lapply(expr$args, findMethodsInExprClass)))
+                }
+            } 
+        }
+    } 
+    return(NULL)
+}
+
 nf_checkDSLcode <- function(code, methodNames, setupVarNames) {
     validCalls <- c(names(sizeCalls),
                     otherDSLcalls,
@@ -170,33 +194,12 @@ nf_checkDSLcode <- function(code, methodNames, setupVarNames) {
     calls <- setdiff(all.names(code),
                      all.vars(code))
     
-    ## Find cases of x$y() and x[]$y() and x[[]]$y().
-    ##
-    ## (This also unnecessarily finds x$y, x[]$y, x[[]]$y.)
-    ##
-    ## This step relies on all.names returning symbols from parse tree
-    ## in particular order
-    names <- all.names(code)
-    dollarsLhs <- dollarsRhs <- NULL
-    dollars <- which(names == "$")
-    if(length(dollars)) {
-        dollarsLhs <- dollars+1
-        dollarsRhs <- dollars+2
-        dollarsRhs[names[dollarsLhs] %in% c('[', '[[')] <-
-            dollarsRhs[names[dollarsLhs] %in% c('[', '[[')] + 1 # account for index
-        while(sum(names[dollarsLhs] %in% c('[', '[['))) {
-            ## bracket appears between $ and the lhs,rhs of the $
-            dollarsRhs[names[dollarsLhs] %in% c('[', '[[')] <-
-                dollarsRhs[names[dollarsLhs] %in% c('[', '[[')] + 1
-            dollarsLhs[names[dollarsLhs] %in% c('[', '[[')] <-
-                dollarsLhs[names[dollarsLhs] %in% c('[', '[[')] + 1
-        }
-        dollarsLhs <- unique(names[dollarsLhs[dollarsLhs <= length(names)]])
-        dollarsRhs <- unique(names[dollarsRhs[dollarsRhs <= length(names)]])
-    } 
+    ## Find the 'y' in cases of x$y() and x[]$y() and x[[]]$y().
+
+    nfMethods <- findMethodsInExprClass(RparseTree2ExprClasses(code))
     
     ## don't check RHS of $ to ensure it is a valid nf method because no current way to easily find the methods of nf's defined in setup code
-    nonDSLcalls <- calls[!(calls %in% c(validCalls, dollarsRhs))]
+    nonDSLcalls <- calls[!(calls %in% c(validCalls, nfMethods))]
     if(length(nonDSLcalls)) {
         objInR <- sapply(nonDSLcalls, exists)
         nonDSLnonR <- nonDSLcalls[!objInR]
