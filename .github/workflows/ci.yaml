@@ -43,11 +43,6 @@ jobs:
 
       - uses: r-lib/actions/setup-pandoc@v1
 
-      - name: checkstuff
-        run: |
-          pwd
-          ls
-
       - name: Query dependencies
         run: |
           install.packages('remotes')
@@ -79,8 +74,8 @@ jobs:
       - name: Install nimble (Windows)
         if: runner.os == 'Windows'
         run: |
-          R CMD build packages\nimble  # Is this needed? Is purpose of this to see if 'build' induces an error?
-          R CMD INSTALL --install-tests packages\nimble
+          R CMD build packages\\nimble  # Is this needed? Is purpose of this to see if 'build' induces an error?
+          R CMD INSTALL --install-tests packages\\nimble
 
       - name: Install nimble
         if: runner.os != 'Windows'
