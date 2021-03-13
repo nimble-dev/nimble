@@ -18,10 +18,6 @@ jobs:
   CI:
     runs-on: ${{ matrix.config.os }}
 
-#    defaults:
-#      run:
-#        working-directory: ./packages/nimble
-
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
 
     strategy:
@@ -80,7 +76,12 @@ jobs:
         run: |
           ./install_requirements.R
 
-      - name: Check
+      - name: Install nimble
+        run: |
+          R CMD build packages/nimble  # Is this needed? Is purpose of this to see if 'build' induces an error?
+          R CMD INSTALL --install-tests packages/nimble
+
+      - name: Run tests
         env:
           NIMBLE_TEST_BATCH: 1
         run: |
