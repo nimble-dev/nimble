@@ -20,7 +20,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: ../packages/nimble
+        working-directory: ./packages/nimble
 
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
 
