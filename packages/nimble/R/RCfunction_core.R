@@ -78,9 +78,11 @@ nfMethodRC <- setRefClass(
             if(code[[1]] != '{')
                 code <<- substitute({CODE}, list(CODE=code))
             ## check all code except nimble package nimbleFunctions
-            if(check && "package:nimble" %in% search()) 
-                nf_checkDSLcode(code, methodNames, setupVarNames)
             generateArgs()
+
+            if(check && "package:nimble" %in% search()) 
+                nf_checkDSLcode(code, methodNames, setupVarNames, names(arguments))
+
             generateTemplate() ## used for argument matching
             removeAndSetReturnType(check = check)
             ## Includes for .h and .cpp files when making external calls:
@@ -184,7 +186,7 @@ findMethodsInExprClass <- function(expr) {
     return(NULL)
 }
 
-nf_checkDSLcode <- function(code, methodNames, setupVarNames) {
+nf_checkDSLcode <- function(code, methodNames, setupVarNames, args) {
     validCalls <- c(names(sizeCalls),
                     otherDSLcalls,
                     names(specificCallReplacements),
@@ -192,7 +194,7 @@ nf_checkDSLcode <- function(code, methodNames, setupVarNames) {
                     methodNames,
                     setupVarNames)
     calls <- setdiff(all.names(code),
-                     all.vars(code))
+                     c(all.vars(code), args))
     
     ## Find the 'y' in cases of x$y() and x[]$y() and x[[]]$y().
 
