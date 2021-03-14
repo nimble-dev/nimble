@@ -88,7 +88,7 @@ jobs:
           NIMBLE_TEST_BATCH: 1
         run: |
           source('run_tests.R')           # Windows doesn't like running via ./run_tests.R
-        shell: Rsript {0}
+        shell: Rscript {0}
 
       - name: Upload check results
         if: failure()
