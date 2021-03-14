@@ -69,7 +69,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          ./install_requirements.R
+          source('install_requirements.R')
         shell: Rscript {0}
 
       - name: Install nimble (Windows)
