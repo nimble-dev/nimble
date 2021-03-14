@@ -69,7 +69,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          source('install_requirements.R')
+          source('install_requirements.R')  # Windows doesn't like running via ./install_requirements.R
         shell: Rscript {0}
 
       - name: Install nimble (Windows)
@@ -87,7 +87,8 @@ jobs:
         env:
           NIMBLE_TEST_BATCH: 1
         run: |
-          ./run_tests.R
+          source('run_tests.R')           # Windows doesn't like running via ./run_tests.R
+        shell: Rsript {0}
 
       - name: Upload check results
         if: failure()
