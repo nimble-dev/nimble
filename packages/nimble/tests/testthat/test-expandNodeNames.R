@@ -7,10 +7,6 @@ nimbleOptions(verbose = FALSE)
 
 context("Testing of expandNodeNames")
 
-test_that("fake failure",{
-    expect_identical(3, 7)
-    })
-
 test_that("expandNodeNames works for various cases, including going beyond extent of variable", {
     
    code <- nimbleCode({

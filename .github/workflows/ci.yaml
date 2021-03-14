@@ -74,7 +74,7 @@ jobs:
       - name: Install nimble (Windows)
         if: runner.os == 'Windows'
         run: |
-          R CMD INSTALL --install-tests packages\\nimble
+          RCMD INSTALL --install-tests packages\\nimble
 
       - name: Install nimble
         if: runner.os != 'Windows'
