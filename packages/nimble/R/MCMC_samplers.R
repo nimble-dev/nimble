@@ -316,7 +316,7 @@ sampler_RW <- nimbleFunction(
                 print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC")
                 return(numeric(1, 0))
             }
-        },          
+        },
         ##getScaleHistoryExpanded = function() {                                                 ## scaleHistory
         ##    scaleHistoryExpanded <- numeric(timesAdapted*adaptInterval, init=FALSE)            ## scaleHistory
         ##    for(iTA in 1:timesAdapted)                                                         ## scaleHistory

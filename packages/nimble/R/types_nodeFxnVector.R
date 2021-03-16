@@ -11,7 +11,6 @@ nodeFunctionVector <-
              sortUnique = TRUE,
              errorContext = "")
 {
-    ##        model <<- model
     if(length(nodeNames) == 0) {
         gids <- numeric(0)
         indexingInfo <- list(declIDs = integer(), rowIndices = integer())

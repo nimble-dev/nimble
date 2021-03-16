@@ -194,8 +194,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                         }
                         assign('nimbleProject', NULL, envir = RCfunInfos[[i]]$nfMethodRCobj)
                         thisName <- RCfunInfos[[i]]$nfMethodRCobj$uniqueName
-                        ##if(!is.null(cppProjects[[thisName]])) cppProjects[[thisName]] <<- NULL
-                        ##RCfunInfos[[i]] <<- NULL
                         rm(list = i, envir = RCfunInfos)
                     }
                 }
@@ -209,7 +207,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                             if(exists('name', envir = thisRCO, inherits = FALSE)) {
                                 thisname <- thisRCO$name
                                 rm(list = thisname, envir = nimbleFunctions)
-                                ##nimbleFunctions[[ thisname ]] <<- NULL
                                 rm('name', envir = thisRCO)
                             }
                             thisRCO[['nimbleProject']] <- NULL
@@ -225,7 +222,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                             }
                         }
                         nfCompInfos[[i]] <<- NULL
-                        ## cppProjects[[i]] <<- NULL
                     }
                 }
             }
@@ -266,7 +262,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                 } 
                 model$nimbleProject <- .self
                 models[[ model$name ]] <<- model
-                ##modelCppInterfaces[[ model$name ]] <<- new.env()	#list(NULL)
             }
         },
         addNimbleFunctionMulti = function(funList, fromModel = FALSE, generatorFunNames = NULL) {
@@ -280,7 +275,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      unlist(lapply(funList, function(x) environment(x$.generatorFunction)$name), use.names = FALSE)
                                  else
                                      generatorFunNames
-            generatorName2Indices <- split(seq_along(funList), allGeneratorNames) ##uniqueGeneratorNamesIndices <- which(!duplicated(allGeneratorNames))
+            generatorName2Indices <- split(seq_along(funList), allGeneratorNames)
             for(i in seq_along(generatorName2Indices)) { ##genID in uniqueGeneratorNameIndices) {
                 genID <- generatorName2Indices[[i]][1]
                 generatorName <- names(generatorName2Indices)[i] ##allGeneratorNames[genID]
@@ -385,8 +380,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
             }
           }
           if(!nestedList)   nimbleLists[[ nl$name ]] <<- nl
-          # nlCompInfos[[generatorName]]$addRinstance(nl)
-          
+                   
           if(!exists('Cname', envir = nl, inherits = FALSE)) {
             assign('Cname', Rname2CppName(nl$name), envir = nl)
           }
@@ -537,11 +531,9 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
             cppProjects[[ modelDefName ]] <<- cppProj
             ## genModelValuesCppClass will back to the project to add its mv class
             mvc <- modelCpp$genModelValuesCppClass()
-            ##if(is.null(filename)) filename <- paste0(projectName, '_', modelDefName)
             cppProj$addClass(mvc, filename = filename)
             cppProj$addClass(modelCpp, modelDefName, filename)
             ##if compileNodes
-            ##nfFileName <- paste0(projectName, '_', Rname2CppName(modelDefName),'_nfCode')
             for(i in names(modelCpp$nodeFuns)) {
                 cppProj$addClass(modelCpp$nodeFuns[[i]], filename = nfFileName)
             }
@@ -643,13 +635,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
             for(iNestedNL in seq_along(nestedListGens)) {
                 compileNimbleList(nestedListGens[[iNestedNL]], initialTypeInferenceOnly = TRUE, alreadyAdded = TRUE)
             }
-            ## for(iNestedNl in seq_along(nlList[[1]]$nestedListGenList)){
-            ##   ## create cppInfo for any nested list classes 
-            ##   compileNimbleList(nlList[[1]][[names(nlList[[1]]$nestedListGenList)[iNestedNl]]], initialTypeInferenceOnly = TRUE, alreadyAdded = TRUE)
-            ## }
             cppClass <- buildNimbleListCompilationInfo(nlList, initialTypeInferenceOnly = initialTypeInferenceOnly)
-            
-
             
             if(initialTypeInferenceOnly || returnCppClass) return(cppClass)
             message('Remaining compileNimbleList is not yet adapted')
@@ -872,14 +858,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                 ans <- nfCppDef$buildCallable(nf, dll = dll, asTopLevel = asTopLevel)
                 ok <- !is.null(ans)
             }
-            ## ok <- TRUE
-            ## if(asTopLevel) {
-            ##     if(is.null(nfCppDef$Rgenerator)) ok <- FALSE
-            ##     else ans <- nfCppDef$Rgenerator(nf, dll = dll, project = .self)
-            ## } else {
-            ##     if(is.null(nfCppDef$CmultiInterface)) ok <- FALSE
-            ##     else ans <- nfCppDef$CmultiInterface$addInstance(nf, dll = dll)
-            ## }
             if(!ok) stop("Oops, there is something in this compilation job that doesn\'t fit together.  This can happen in some cases if you are trying to compile new pieces into an exising project.  If that is the situation, please try including \"resetFunctions = TRUE\" as an argument to compileNimble.  Alternatively please try rebuilding the project from the beginning with more pieces in the same call to compileNimble.  For example, if you are compiling multiple algorithms for the same model in multiple calls to compileNimble, try compiling them all with one call.", call. = FALSE) 
 
             ans
@@ -911,7 +889,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
             uniqueGeneratorNames <- unique(allGeneratorNames)
             if(initialTypeInferenceOnly || returnCppClass) {
                 ans <- list()
-                if(initialTypeInferenceOnly) oldKnownGeneratorNames <- ls(nfCompInfos)	#names(nfCompInfos)
+                if(initialTypeInferenceOnly) oldKnownGeneratorNames <- ls(nfCompInfos)
             } else ans <- vector('list', length(funList))
             for(uGN in uniqueGeneratorNames) {
                 thisBool <- allGeneratorNames == uGN
@@ -928,7 +906,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                     else ## they should all be new in this case anyway
                         ans[[ uGN ]] <- thisAns
                 } else {
-                    ans[thisBool] <- thisAns ##if(is.list(thisAns)) thisAns else list(thisAns)
+                    ans[thisBool] <- thisAns 
                 }
             }
             ans

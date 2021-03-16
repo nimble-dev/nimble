@@ -156,7 +156,6 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                            cppCopyTypes <- makeNimbleFxnCppCopyTypes(nimCompProc$getSymbolTable(), objectDefs$getSymbolNames())
                                            copyFromRobjectDefs <- makeCopyFromRobjectDef(className = nfProc$name, cppCopyTypes)
                                            functionDefs[['copyFromRobject']] <<- copyFromRobjectDefs$copyFromRobjectDef
-                                          ## SEXPmemberInterfaceFuns[['copyFromRobject']] <<- copyFromRobjectDefs$copyFromRobjectInterfaceDef
                                        },
                                        buildAll = function(where = where) {
                                            makeCppNames()
