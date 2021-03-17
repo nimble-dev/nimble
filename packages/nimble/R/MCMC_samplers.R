@@ -1177,13 +1177,14 @@ sampler_HMC <- nimbleFunction(
             returnType(double())
             return(lp)
         },
-        gradient = function(qArg = double(1)) {
+        gradient_aux = function(qArg = double(1)) {
             derivsOutput <- nimDerivs(inverseTransformStoreCalculate(qArg), order = 1, wrt = nimDerivs_wrt, model = model, updateNodes = nimDerivs_updateNodes, constantNodes = nimDerivs_constantNodes)
-            grad <<- derivsOutput$jacobian[1, 1:d]
-            ###print('=========================================')
-            ###print('qArg:');   print(qArg)
-            ###print('grad:');   print(grad)
-            ###print('=========================================')
+            returnType(double(1))
+            return(derivsOutput$jacobian[1, 1:d])
+        },
+        gradient = function(qArg = double(1)) {
+            derivsOutput <- nimDerivs(gradient_aux(qArg), order = 0, wrt = nimDerivs_wrt, model = model, updateNodes = nimDerivs_updateNodes, constantNodes = nimDerivs_constantNodes)
+            grad <<- derivsOutput$value
         },
         leapfrog = function(qArg = double(1), pArg = double(1), eps = double(), first = double(), v = double()) {
             ## Algorithm 1 from Hoffman and Gelman (2014)
@@ -1336,7 +1337,10 @@ sampler_HMC <- nimbleFunction(
             warmupIntervalCount  <<- 0
         }
     ),
-    enableDerivs = 'inverseTransformStoreCalculate'
+    enableDerivs = list(
+        inverseTransformStoreCalculate = list(),
+        gradient_aux = list()
+    )
 )
 
 
