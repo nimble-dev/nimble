@@ -1,8 +1,12 @@
 source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 nimbleOptions(experimentalEnableDerivs = TRUE)
 
+warning("All atomics currently off as result of NCT issue 274")
+
 ##nimbleOptions(showCompilerOutput = TRUE)
 context("Testing of derivatives for calculate() for nimbleModels")
+
+
 
 ## check logic of results
 test_that('makeUpdateNodes works correctly', {
@@ -729,10 +733,12 @@ model$calculate()
 model$setData(c('W1','W2','W3','W4','IW1','IW2','IW3','IW4'))
 
 ## NCT issue 274
+warning("NCT issue 274 is still live, so avoiding matrix inverse atomic")
 nimbleOptions(skipADmatInverseAtomic = TRUE)
 ## 2d, 012 comp hessian out of tolerance in some cases
 
 test_ADModelCalculate(model, excludeUpdateNodes = 'dist', verbose = TRUE, name = 'dwish, dinvwish')
+nimbleOptions(skipADmatInverseAtomic = FALSE)
 
 
 
@@ -973,6 +979,7 @@ model <- nimbleModel(code, constants = list(k = k, n = n), data = list(y = rmult
 ## ISSUE: ML partial: compiled wrt and x quite different
 ## cWrt01,012 having values be restored in ML partial wrt=alpha[1,2]
 ## see issue 277 - it occurs regardless of using full alpha or partial alpha
+## per PdV this seems like a corner case we may not fix
 test_ADModelCalculate(model, x = 'prior', useParamTransform = TRUE, excludeUpdateNodes = 'p',
                       name = 'Dirichlet paramTransform', seed = 2)
 ## seed = 1 (default) produces p[1]=2e-6 in new x and that causes -Inf in 0th order deriv and NaN in jac/hessian
@@ -1030,12 +1037,15 @@ model <- nimbleModel(code, constants = list(n = n),
 model$simulate()
 model$calculate()
 model$setData('y')
-## unc/comp big diffs in Hessian presumably because of single-tape compiled error - see issue 279, possibly issue 278
-## compiled value,logProb ENI to cLogProb_new, cVals_new
-## at some point noticed comp hessians not symmetric for single-taped in idx=2, for HMC/MAP (not sure about other cases); this might just be consequence of issue 279
-## non-pos def in HMC partial idx=1
-## NAs for ML partial
-## unc/comp big diffs in Hessians for EB for case 3
+## compiled value,logProb,wrt ENI to cLogProb_new, cVals_new
+## comp/unc 2d11 hessian out of tolerance
+## ISSUE: non-pos def in HMC partial idx=1
+## ISSUE: ML/partial has some NA values in idx=3
+## ISSUE: incorrect lengths in ML/partial
+## EB: cOutput2d / cOutput012 hessians out of tolerance but quite close
+
+## OLD: unc/comp big diffs in Hessian presumably because of single-tape compiled error - see issue 279, possibly issue 278
+## OLD: at some point noticed comp hessians not symmetric for single-taped in idx=2, for HMC/MAP (not sure about other cases); this might just be consequence of issue 279
 
 
 nimbleOptions(skipADmatInverseAtomic = TRUE)
@@ -1043,6 +1053,7 @@ test_ADModelCalculate(model, excludeUpdateNodes = 'dist', x = 'prior',
                       useParamTransform = TRUE, useFasterRderivs = TRUE,
                       verbose = TRUE,
                       name = 'various multivariate dists')
+nimbleOptions(skipADmatInverseAtomic = FALSE)
 
 
 ## TMP
