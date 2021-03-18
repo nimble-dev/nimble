@@ -1282,13 +1282,14 @@ sampler_HMC <- nimbleFunction(
             returnType(double())
             return(lp)
         },
-        gradient = function(qArg = double(1)) {
+        gradient_aux = function(qArg = double(1)) {
             derivsOutput <- nimDerivs(inverseTransformStoreCalculate(qArg), order = 1, wrt = nimDerivs_wrt, model = model, updateNodes = nimDerivs_updateNodes, constantNodes = nimDerivs_constantNodes)
-            grad <<- derivsOutput$jacobian[1, 1:d]
-            ###print('=========================================')
-            ###print('qArg:');   print(qArg)
-            ###print('grad:');   print(grad)
-            ###print('=========================================')
+            returnType(double(1))
+            return(derivsOutput$jacobian[1, 1:d])
+        },
+        gradient = function(qArg = double(1)) {
+            derivsOutput <- nimDerivs(gradient_aux(qArg), order = 0, wrt = nimDerivs_wrt, model = model, updateNodes = nimDerivs_updateNodes, constantNodes = nimDerivs_constantNodes)
+            grad <<- derivsOutput$value
         },
         leapfrog = function(qArg = double(1), pArg = double(1), eps = double(), first = double(), v = double()) {
             ## Algorithm 1 from Hoffman and Gelman (2014)
@@ -1410,8 +1411,9 @@ sampler_HMC <- nimbleFunction(
             if(nwarmup == -1)   nwarmup <<- min( floor(MCMCniter/2), 1000 )
             if(MCMCchain == 1) {
                 if(nimbleVerboseOption) print('HMC sampler is using ', nwarmup, ' warmup iterations')
-                if(nwarmup <  40) stop('HMC sampler requires a minimum of 40 warmup iterations for warmup routine')
+                if(nwarmup <  80) stop('HMC sampler requires a minimum of 80 warmup iterations')
                 if(nwarmup < 200) print('A minimum of 200 warmup iterations is recommended for HMC sampler')
+                if(nwarmup < MCMCnite) print('Warning: Running fewer MCMC iterations than number of HMC warmup iterations')
             }
             ## https://mc-stan.org/docs/2_23/reference-manual/hmc-algorithm-parameters.html#adaptation.figure
             ## https://discourse.mc-stan.org/t/new-adaptive-warmup-proposal-looking-for-feedback/12039
@@ -1435,13 +1437,16 @@ sampler_HMC <- nimbleFunction(
             numTimesMaxTreeDepth <<- 0
             warnings       <<- warningsOrig
             nwarmup        <<- nwarmupOrig
-            M     <<- Morig
-            sqrtM <<- sqrt(M)
+            M              <<- Morig
+            sqrtM          <<- sqrt(M)
             warmupIntervalNumber <<- 1
             warmupIntervalCount  <<- 0
         }
     ),
-    enableDerivs = 'inverseTransformStoreCalculate'
+    enableDerivs = list(
+        inverseTransformStoreCalculate = list(),
+        gradient_aux = list()
+    )
 )
 
 
