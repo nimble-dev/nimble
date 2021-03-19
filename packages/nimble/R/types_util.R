@@ -143,19 +143,8 @@ nl_removeNodeNamesNotInSymbolTable <- function(nodeNames, st) {
 
 nl_getVarNameFromNodeName <- function(nodeName)    gsub('\\[.*', '', nodeName)
 
-#nimDim <- function(object){
-#	rDim = dim(object)
-#	if(is.null(rDim) ) {
-#		if(is.vector(object) ) 
-#			return(length(object) ) 
-#		stop('dim called on object ', as.character(substitute(object) ), ' for which dim is undefined')
-#	}
-#	return(dim(object) ) 
-#}
-
 expandMVNames <- function(mv, varNames){
 	sizeList = mv$sizes
-#	varNames = names(sizeList)
 	nodeNames = NA
 	nodeIndex = 0 
 	for(i in seq_along(varNames) ){

@@ -365,11 +365,6 @@ nodes: An optional character vector supplying a subset of nodes for which to ext
                                       }
                                       ## "includeData" argument to getVarNames (with default = TRUE)
                                       ## was removed by consensus, March 2017.
-                                      ## no uses of it anywhere in codebase, plus it errors out.
-                                      ##if(!includeData) {
-                                      ##    allData <- unlist(lapply(mget(ans, envir = tm$isDataEnv, inherits = FALSE, ifnotfound = TRUE), all))
-                                      ##    ans <- ans[!allData]
-                                      ##}
     	                              return(ans)
                                   },
 
@@ -497,19 +492,6 @@ unique: should names be the unique names or should original ordering of nodes (a
                                       if(length(nodes) == 0) return(if(returnType=='names') character() else numeric())
                                       graphID <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents, unique = unique, ignoreNotFound = TRUE)
                                       expandNodeNamesFromGraphIDs(graphID, returnScalarComponents, returnType, sort)
-                                      ## if(sort)
-                                      ##     graphID <- sort(graphID)
-                                      ## if(returnType == 'names'){
-                                      ##     if(returnScalarComponents) nodeNames <- modelDef$maps$elementNames[graphID] ## these are really elementIDs
-                                      ##     else nodeNames <- modelDef$maps$graphID_2_nodeName[graphID]
-                                      ##     return(nodeNames)
-                                      ## }
-                                      ## if(returnType == 'ids'){
-                                      ##     if(returnScalarComponents) print("NIMBLE development warning: returning IDs of scalar components may not be meaningful.  Checking to see if we ever see this message.")
-                                      ##     return(graphID)
-                                      ## }
-                                      ## if(!(returnType %in% c('ids','names')))
-                                      ## 	stop('instead expandNodeNames, imporper returnType chosen')
                                   },
 
                                   topologicallySortNodes = function(nodes, returnType = 'names') {
@@ -524,7 +506,7 @@ returnType: character vector indicating return type. Choices are "names" or "ids
 
 Details: This function merely reorders its input argument.  This may be inportany prior to calls such as simulate(model, nodes) or calculate(model, nodes), to enforce that the operation is performed in topological order.
 '
-                                      nodeIDs <- expandNodeNames(nodes, returnType = 'ids')			#modelDef$maps$nodeName_2_graphID[nodes]
+                                      nodeIDs <- expandNodeNames(nodes, returnType = 'ids')
                                       nodeIDs <- sort(nodeIDs)
                                       nodeNames <- expandNodeNames(nodeIDs, returnType = returnType)
                                       return(nodeNames)
@@ -914,17 +896,7 @@ returnScalarComponenets: Logical argument specifying whether multivariate nodes 
 Details: The downward search for dependent nodes propagates through deterministic nodes, but by default will halt at the first level of stochastic nodes encountered.  Use getDependenciesList for a list of one-step dependent nodes of each node in the model.
 '
                                       if(is.character(nodes)) {
-                                          ## elementIDs <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents)
-                                          ## if(returnScalarComponents)
-                                          ##    # nodeIDs <- .Internal(unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
-                                          ##     nodeIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
-                                          ##                          FALSE,
-                                          ##                          FALSE,
-                                          ##                          NA)
-                                          ## else
-                                          ##     nodeIDs <- elementIDs
-
-                                          ## experimental: always start from scalar components
+                                          ## always start from scalar components
                                           elementIDs <- modelDef$nodeName2GraphIDs(nodes, FALSE)
                                           nodeIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
                                                             FALSE,
@@ -934,15 +906,7 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       else if(is.numeric(nodes))
                                           nodeIDs <- nodes
 
-                                      if(is.character(omit)) { ## mimic above if it works
-                                      ##     elementIDs <- modelDef$nodeName2GraphIDs(omit, !returnScalarComponents)
-                                      ##     if(returnScalarComponents)
-                                      ##         omitIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],
-                                      ##                              FALSE,
-                                      ##                              FALSE,
-                                      ##                              NA)
-                                      ##     else
-                                      ##         omitIDs <- elementIDs
+                                      if(is.character(omit)) { ## mimic above
                                           elementIDs <- modelDef$nodeName2GraphIDs(omit, FALSE)
                                           omitIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
                                                             FALSE,
@@ -951,17 +915,14 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       }
                                       else if(is.numeric(omit))
                                           omitIDs <- omit
-
-## new C++ version
+## Go into C++
  depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(is.null(omitIDs)) integer() else omitIDs, downstream = downstream)
-
-## ## Uncomment these lines to catch discrepancies between the old and new systems.
+## ## Uncomment these lines to catch discrepancies between the C++ and R systems.
 ## depIDs <- nimble:::gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(all = TRUE), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
 ## if(!identical(as.numeric(depIDsOld), as.numeric(depIDs))) {
 ##     cat('caught a discrepancy for depIDs')
 ##     browser()
 ## }
-
                                       if(!includeRHSonly) depIDs <- depIDs[modelDef$maps$types[depIDs] != 'RHSonly']
                                       if(determOnly)	depIDs <- depIDs[modelDef$maps$types[depIDs] == 'determ']
                                       if(stochOnly)	depIDs <- depIDs[modelDef$maps$types[depIDs] == 'stoch']
@@ -1030,16 +991,6 @@ inits: A named list.  The names of list elements must correspond to model variab
                                           } else  .self[[names(inits)[i]]] <- inits[[i]]
                                       }
                                   },
-
-
-                                  ## original (older) version of checkConjugacy(), deprecated
-                                  ## DT, Nov. 2016
-                                  ##checkConjugacy = function(nodeVector) {
-                                  ##    if(missing(nodeVector))
-                                  ##        nodeVector <- getNodeNames(stochOnly=TRUE, includeData=FALSE)
-                                  ##    nodeVector <- expandNodeNames(nodeVector)
-                                  ##    nimble:::conjugacyRelationshipsObject$checkConjugacy(.self, nodeVector)
-                                  ##},
                                   checkConjugacy = function(nodeVector, restrictLink = NULL) {
                                       '
 Determines whether or not the input nodes appear in conjugate relationships
@@ -1064,9 +1015,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                               declInfo <- .self$modelDef$declInfo[[j]]
                                               nn <- length(declInfo$nodeFunctionNames)
                                               nfn <- declInfo$nodeFunctionNames[nn]
-                                              ## NEWNODEFXNS
                                               nf <- .self$nodeFunctions[[j]]
-                                              #context <- as.list(declInfo$unrolledIndicesMatrix[nrow(declInfo$unrolledIndicesMatrix), ])
 
                                               if(declInfo$type == 'determ') {
                                                   # check LHS and RHS are same size/dim
@@ -1206,7 +1155,6 @@ Checks for errors in model specification and for missing values that prevent use
                                               if(!nimble:::isValid(.self[[v]]) || !nimble:::isValid(getLogProb(setdiff(expandNodeNames(v), modelDef$maps$nodeNamesRHSonly))))
                                                   varsToCheck <- c(varsToCheck, v)
                                           badVars <- list(na=character(), nan=character(), inf=character())
-                                      ##nns <- getNodeNames(includeRHSonly = TRUE)
                                           nns <- expandNodeNames(varsToCheck)
                                           nns <- topologicallySortNodes(nns)   ## should be unnecessary; just in case
                                           for(nn in nns) {
@@ -1465,8 +1413,6 @@ RMakeCustomModelClass <- function(vars, className, isDataVars, modelDef, where =
                 callSuper(modelDef = inputList$modelDef, ...)
                 setupDefaultMV()
                 init_isDataEnv()
-                # setData(modelDef$constantsList, warnAboutMissingNames = FALSE)
-                # removed given new handling of lumped data and constants
             }
         ), where = where),
                     list(FIELDS = makeBUGSclassFields(varnames, vars)
