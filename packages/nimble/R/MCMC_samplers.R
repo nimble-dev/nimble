@@ -724,8 +724,8 @@ sampler_ess <- nimbleFunction(
         ##target_nodeFunctionList <- nimbleFunctionList(node_stoch_dmnorm)
         ##target_nodeFunctionList[[1]] <- model$nodeFunctions[[target]]
         ## checks
-        if(length(target) > 1)                          stop('elliptical slice sampler only applies to one target node')
-        if(model$getDistribution(target) != 'dmnorm')   stop('elliptical slice sampler only applies to multivariate normal distributions')
+        if(!model$getDistribution(target) %in% c('dnorm', 'dmnorm'))
+            stop('elliptical slice sampler only applies to multivariate normal distributions')
     },
     run = function() {
         u <- getLogProb(model, calcNodesNoSelf) - rexp(1, 1)
