@@ -1,5 +1,7 @@
 #include <nimble/nimbleCppAD.h>
 
+#define USE_CPPAD_OPTIMIZE_FOR_MODEL_TAPES // comment this out to turn off atomics for nimDerivs(model$calculate(...),...)
+
 void copy_CppADdouble_to_double(CppAD::AD<double> *first, CppAD::AD<double> *last, double *output) {
   CppAD::AD<double> *orig;
   double *result = output;
@@ -594,7 +596,9 @@ CppAD::ADFun<double>* calculate_recordTape(NodeVectorClassNew_derivs &NV,
   ansTape->Dependent(independentVars, dependentVars);
   //  std::cout<<"about to call optimize"<<std::endl;
   //  std::cout<<"tape handle address = "<< CppAD::AD<double>::get_handle_address_nimble() <<std::endl;
+#ifdef USE_CPPAD_OPTIMIZE_FOR_MODEL_TAPES
   ansTape->optimize(); //("no_compare_op") makes almost no difference;
+#endif
   // std::cout<<"done with optimize"<<std::endl;
   return ansTape;
 }
@@ -700,7 +704,9 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
       ADinfo.ADtape = new CppAD::ADFun<double>;
 
       ADinfo.ADtape->Dependent(dependentVars);
+#ifdef USE_CPPAD_OPTIMIZE_FOR_MODEL_TAPES
       ADinfo.ADtape->optimize();
+#endif
       delete firstTape;
     }
   }

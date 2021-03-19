@@ -108,16 +108,18 @@ bool atomic_matinverse_class::forward(
 				      const CppAD::vector<double>&               taylor_x     ,
 				      CppAD::vector<double>&                     taylor_y     ) {
   //forward mode
-  // printf("In matinverse forward\n");
+  //  printf("In matinverse forward\n");
   int nrow = order_up + 1;
   // std::cout<<"nrow = "<<nrow<<std::endl;
     
   int n = static_cast<int>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
   EigenConstMap Xmap(&taylor_x[0], n, n, EigStrDyn(nrow*n, nrow) );
   EigenMap Ymap(&taylor_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
+  // std::cout<<"Xmap\n"<<Xmap<<std::endl;
   if(order_low <= 0 & order_up >= 0) { // value
     // We could compile different cases depending on need for strides or not.  
-    Ymap = Xmap.inverse();      
+    Ymap = Xmap.inverse();
+    // std::cout<<"Ymap\n"<<Ymap<<std::endl;
   }
   if(order_low <= 1 & order_up >= 1) {
     // printf("In forward >1\n");
@@ -167,15 +169,26 @@ bool atomic_matinverse_class::reverse(
 				      const CppAD::vector<double>&               partial_y   )
 {
   //reverse mode
-  // printf("In matinverse reverse\n");
+  //  printf("In matinverse reverse\n");
   int nrow = order_up + 1;
   int n = static_cast<int>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
 
   EigenConstMap Ymap(&taylor_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
+  // std::cout<<"Ymap\n"<<Ymap<<std::endl;
+
+  EigenConstMap Xmap(&taylor_x[0], n, n, EigStrDyn(nrow*n, nrow) );
+  // std::cout<<"Xmap\n"<<Xmap<<std::endl;
+  // Eigen::MatrixXd Y = Xmap.inverse();
+  // std::cout<<"Y (recomputed) \n"<<Y<<std::endl;
+  
   EigenMap Xadjoint_map(&partial_x[0], n, n, EigStrDyn(nrow*n, nrow) );
   if(order_up >= 0) {
     EigenConstMap Yadjoint_map(&partial_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
+    // std::cout<<"Yadjoint_map\n"<<Yadjoint_map<<std::endl;
+    // Xadjoint_map = -Y.transpose() * Yadjoint_map *  Y.transpose();
+    // std::cout<<"Xadjoint_map (from the recomputed Y)\n"<<Xadjoint_map<<std::endl;
     Xadjoint_map = -Ymap.transpose() * Yadjoint_map *  Ymap.transpose();
+    // std::cout<<"Xadjoint_map (as is)\n"<<Xadjoint_map<<std::endl;
   }
 
   if(order_up >= 1) {
