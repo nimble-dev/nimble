@@ -757,10 +757,10 @@ getParents = function(nodes, omit = character(), self = FALSE,
                       determOnly = FALSE, stochOnly = FALSE,
                       includeData = TRUE, dataOnly = FALSE,
                       includeRHSonly = FALSE, upstream = FALSE,
-                      oneStep = FALSE,
+                      immediateOnly = FALSE,
                       returnType = 'names', returnScalarComponents = FALSE) {
   '
- Returns a character vector of the nodes on which the input nodes depend, sorted topologically according to the model graph, stopping by default at stochastic nodes and returning by default only stochstic nodes.  In the genealogical metaphor for a graphical model, this function returns the "parents" of the input nodes. In the river network metaphor, it returns upstream nodes.  By default, the returned nodes omit the input nodes, include only stochastic nodes, and stop at stochastic nodes.  Aditional input arguments provide flexibility in the values returned.
+ Returns a character vector of the nodes on which the input nodes depend, sorted topologically according to the model graph, by default recursing and stopping at stochastic parent nodes.  In the genealogical metaphor for a graphical model, this function returns the "parents" of the input nodes. In the river network metaphor, it returns upstream nodes.  By default, the returned nodes omit the input nodes, include only stochastic nodes, and stop at stochastic nodes.  Aditional input arguments provide flexibility in the values returned.
 
 Arguments:
 
@@ -781,6 +781,8 @@ dataOnly: Logical argument specifying whether to return only \'data\' nodes.  De
 includeRHSonly: Logical argument specifying whether to include right-hand-side-only nodes (model nodes which never appear on the left-hand-side of ~ or <- in the model code).  These nodes are neither stochastic nor deterministic, but instead function as variable inputs to the model.  Default is FALSE.
 
 upstream: Logical argument specifying whether the upward search through the hierarchical model structure should continue beyond the first and subsequent stochastic nodes encountered, hence returning all nodes upstream of the input nodes.  Default is FALSE.
+
+immediateOnly: Logical argument specifying whether only the immediate parent nodes should be returned, even if they are deterministic.  If FALSE, getParents recurses and stops at stochastic nodes.  Default is FALSE.
 
 returnType: Character argument specifying type of object returned. Options are \'names\' (returns character vector) and \'ids\' (returns numeric graph IDs for model).
 
@@ -810,7 +812,7 @@ Details: The upward search for dependent nodes propagates through deterministic 
   parentIDs <- modelDef$maps$nimbleGraph$getParents(nodes = nodeIDs,
                                                     omit = if(is.null(omitIDs)) integer() else omitIDs,
                                                     upstream = upstream,
-                                                    oneStep = oneStep)
+                                                    immediateOnly = immediateOnly)
   if(self)	{ # The C++ call does *not* return self nodes
     nodeFunIDs <- unique(modelDef$maps$vertexID_2_nodeID[ nodeIDs ])
     parentIDs <- sort(c(parentIDs, nodeFunIDs))
