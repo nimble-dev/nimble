@@ -720,20 +720,25 @@ sampler_ess <- nimbleFunction(
         calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         ## numeric value generation
         Pi <- pi
+        d <- length(model$expandNodeNames(target, returnScalarComponents = TRUE))
+        d2 <- max(d, 2)
+        target_mean <- f <- nu <- numeric(d2)
         ## checks
         if(length(target) > 1)                                           stop('elliptical slice sampler only applies to one target node')
         if(!(model$getDistribution(target) %in% c('dnorm', 'dmnorm')))   stop('elliptical slice sampler only applies to normal distributions')
     },
     run = function() {
         u <- getLogProb(model, calcNodesNoSelf) - rexp(1, 1)
-        target_mean <- model$getParam(target, 'mean')
-        f <- model[[target]] - target_mean
+        ##target_mean[1:d] <<- model$getParam(target, 'mean')  ## this should work
+        temp <- model$getParam(target, 'mean')                 ## workaround
+        target_mean[1:d] <<- temp                              ## workaround
+        f[1:d] <<- values(model, target) - target_mean[1:d]
         simulate(model, target)
-        nu <- model[[target]] - target_mean
+        nu[1:d] <<- values(model, target) - target_mean[1:d]
         theta <- runif(1, 0, 2*Pi)
         theta_min <- theta - 2*Pi
         theta_max <- theta
-        model[[target]] <<- f*cos(theta) + nu*sin(theta) + target_mean
+        values(model, target) <<- f[1:d]*cos(theta) + nu[1:d]*sin(theta) + target_mean[1:d]
         lp <- calculate(model, calcNodesNoSelf)
         numContractions <- 0
         while((is.nan(lp) | lp < u) & theta_max - theta_min > eps & numContractions < maxContractions) {   # must be is.nan()
@@ -742,7 +747,7 @@ sampler_ess <- nimbleFunction(
             ## theta interval contracts to zero
             if(theta < 0)   theta_min <- theta   else   theta_max <- theta
             theta <- runif(1, theta_min, theta_max)
-            model[[target]] <<- f*cos(theta) + nu*sin(theta) + target_mean
+            values(model, target) <<- f[1:d]*cos(theta) + nu[1:d]*sin(theta) + target_mean[1:d]
             lp <- calculate(model, calcNodesNoSelf)
             numContractions <- numContractions + 1
         }
