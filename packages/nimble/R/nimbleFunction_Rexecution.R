@@ -691,10 +691,10 @@ values <- function(model, nodes, accessorIndex){
 #' 
 #' @param from		Either a NIMBLE model or modelValues object
 #' @param to		Either a NIMBLE model or modelValues object
-#' @param nodes		The nodes of object \code{from} which will be copied from
-#' @param nodesTo	The nodes of object \code{to} which will be copied to. If \code{nodesTo == NA}, will automatically be set to \code{nodes}
-#' @param row		If \code{from} is a modelValues, the row which will be copied from
-#' @param rowTo		If \code{to} is a modelValues, the row which will be copied to. If \code{rowTo == NA}, will automatically be set to \code{row}
+#' @param nodes		Vector of one or more node names of object \code{from} that will be copied from
+#' @param nodesTo	Vector of one or more node names of object \code{to} that will be copied to. If \code{nodesTo} is \code{NULL}, will automatically be set to \code{nodes}
+#' @param row		If \code{from} is a modelValues, the row that will be copied from
+#' @param rowTo		If \code{to} is a modelValues, the row which will be copied to. If \code{rowTo} is \code{NA}, will automatically be set to \code{row}
 #' @param logProb	A logical value indicating whether the log probabilities of the given nodes should also be copied (i.e. if \code{nodes = 'x'}
 #' and \code{logProb = TRUE}, then both \code{'x'} and \code{'logProb_x'} will be copied)
 #' @param logProbOnly   A logical value indicating whether only the log probabilities of the given nodes should be copied (i.e. if \code{nodes = 'x'}
@@ -706,7 +706,7 @@ values <- function(model, nodes, accessorIndex){
 #' @export
 #' @details
 #'
-#' See the User Manual for more details
+#' This function copies values from one or more nodes (possibly including log probabilities for nodes) between models and modelValues objects. For modelValues objects, the row must be specified. This function allows one to conveniently copy multiple nodes, avoiding having to write a loop. 
 #'
 #' @examples
 #'	# Building model and modelValues object
