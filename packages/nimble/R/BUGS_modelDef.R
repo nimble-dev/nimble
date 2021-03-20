@@ -205,7 +205,7 @@ codeProcessIfThenElse <- function(code, constants, envir = parent.frame()) {
             if(evaluatedCondition) return(codeProcessIfThenElse(code[[3]], constants, envir))
             else {
                 if(length(code) == 4) return(codeProcessIfThenElse(code[[4]], constants, envir))
-                else return(NULL)
+                else return(quote({}))
             }
         } else
             return(code)
