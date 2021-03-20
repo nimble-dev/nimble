@@ -720,16 +720,13 @@ sampler_ess <- nimbleFunction(
         calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         ## numeric value generation
         Pi <- pi
-        ## nested function and function list definitions
-        ##target_nodeFunctionList <- nimbleFunctionList(node_stoch_dmnorm)
-        ##target_nodeFunctionList[[1]] <- model$nodeFunctions[[target]]
         ## checks
-        if(!model$getDistribution(target) %in% c('dnorm', 'dmnorm'))
-            stop('elliptical slice sampler only applies to multivariate normal distributions')
+        if(length(target) > 1)                                           stop('elliptical slice sampler only applies to one target node')
+        if(!(model$getDistribution(target) %in% c('dnorm', 'dmnorm')))   stop('elliptical slice sampler only applies to normal distributions')
     },
     run = function() {
         u <- getLogProb(model, calcNodesNoSelf) - rexp(1, 1)
-        target_mean <- model$getParam(target, 'mean') ##target_nodeFunctionList[[1]]$get_mean()
+        target_mean <- model$getParam(target, 'mean')
         f <- model[[target]] - target_mean
         simulate(model, target)
         nu <- model[[target]] - target_mean
