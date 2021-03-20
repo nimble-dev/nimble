@@ -493,6 +493,10 @@ checkUserDefinedDistribution <- function(code, userEnv) {
         
 
 replaceDistributionAliases <- function(code) {
+    if(length(code) < 3)
+        stop("Invalid model declaration: ", deparse(code), ".")
+    if(!is.call(code[[3]]))
+        stop("Invalid model declaration: ", deparse(code), " must call a density function.")
     dist <- as.character(code[[3]][[1]])
     trunc <- FALSE
     if(dist %in% c("T", "I")) {
