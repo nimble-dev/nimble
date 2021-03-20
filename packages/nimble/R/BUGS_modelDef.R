@@ -2424,18 +2424,22 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$nodeNamesLHSall <<- nodeNamesLHSall
     maps$nodeNamesRHSonly <<- maps$graphID_2_nodeName[maps$types == 'RHSonly'] ##nodeNamesRHSonly
     maps$nodeNames <<- maps$graphID_2_nodeName
-
-    if(any(duplicated(maps$nodeNames[!unknownIndexNodes[newGraphID_2_oldGraphID]]))) {  ## x[k[i],block[i]] can lead to duplicated nodeNames for unknownIndex declarations; this should be ok, though there is inefficiency in having a vertex in the graph for each element of second index instead of collapsing into one vertex per unique value.
-        stop(
-            paste0("There are multiple definitions for nodes:",
-                   paste(maps$nodeNames[duplicated(maps$nodeNames[!unknownIndexNodes[newGraphID_2_oldGraphID]])],
-                         collapse = ','), "\n",
-                   "If your model has macros or if-then-else blocks\n",
-                   "you can inspect the processed model code by doing\n",
-                   "nimbleOptions(stop_after_processing_model_code = TRUE)\n",
-                   "before calling nimbleModel.\n"
-                   ),
+    dups <- duplicated(maps$nodeNames[!unknownIndexNodes[newGraphID_2_oldGraphID]])
+    if(any(dups)) {
+        ## x[k[i],block[i]] can lead to duplicated nodeNames for unknownIndex declarations; this should be ok, though there is inefficiency in having a vertex in the graph for each element of second index instead of collapsing into one vertex per unique value.
+        stop("There are multiple definitions for node(s): ", 
+                   paste(maps$nodeNames[dups], collapse = ','), ".\n",
+                   ## "If your model has macros or if-then-else blocks\n",
+                   ## "you can inspect the processed model code by doing\n",
+                   ## "nimbleOptions(stop_after_processing_model_code = TRUE)\n",
+                   ## "before calling nimbleModel.\n"
             call. = FALSE)
+    }
+    LHSelements <- lapply(maps$nodeNamesLHSall, .self$nodeName2GraphIDs)
+    dups <- duplicated(unlist(LHSelements))
+    if(any(dups)) {
+        index <- rep(seq_along(LHSelements), time = sapply(LHSelements, length))
+        stop("Definition of node(s): ", paste(maps$nodeNamesLHSall[index[dups]], collapse = ','), " overlaps with other node definitions.\n", call. = FALSE)
     }
     if(debug) browser()
     
