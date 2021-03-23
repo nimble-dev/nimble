@@ -2425,7 +2425,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$nodeNamesRHSonly <<- maps$graphID_2_nodeName[maps$types == 'RHSonly'] ##nodeNamesRHSonly
     maps$nodeNames <<- maps$graphID_2_nodeName
 
-    if(nimbleOptions('checkDuplicateNodeDefinitions') {
+    if(nimbleOptions('checkDuplicateNodeDefinitions')) {
         dups <- duplicated(maps$nodeNames[!unknownIndexNodes[newGraphID_2_oldGraphID]])
         if(any(dups)) {
             ## x[k[i],block[i]] can lead to duplicated nodeNames for unknownIndex declarations; this should be ok, though there is inefficiency in having a vertex in the graph for each element of second index instead of collapsing into one vertex per unique value.
