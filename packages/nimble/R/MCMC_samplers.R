@@ -705,6 +705,39 @@ sampler_slice <- nimbleFunction(
 ####################################################################
 
 
+essNFList_virtual <- nimbleFunctionVirtual(
+    name = 'essNFList_virtual',
+    run = function() { returnType(double(1)) }
+)
+
+essNF_univariate <- nimbleFunction(
+    name = 'essNF_univariate',
+    contains = essNFList_virtual,
+    setup = function(model, node) {
+        if(!(model$getDistribution(node) == 'dnorm'))   stop('something went wrong')
+        mean <- numeric(2)
+    },
+    run = function() {
+        setSize(mean, 1)
+        mean[1] <<- model$getParam(node, 'mean')
+        returnType(double(1))
+        return(mean)
+    }
+)
+
+essNF_multivariate <- nimbleFunction(
+    name = 'essNF_multivariate',
+    contains = essNFList_virtual,
+    setup = function(model, node) {
+        if(!(model$getDistribution(node) == 'dmnorm'))   stop('something went wrong')
+    },
+    run = function() {
+        mean <- model$getParam(node, 'mean')
+        returnType(double(1))
+        return(mean)
+    }
+)
+
 #' @rdname samplers
 #' @export
 sampler_ess <- nimbleFunction(
@@ -723,15 +756,17 @@ sampler_ess <- nimbleFunction(
         d <- length(model$expandNodeNames(target, returnScalarComponents = TRUE))
         d2 <- max(d, 2)
         target_mean <- f <- nu <- numeric(d2)
+        ## nested function and function list definitions
+        essNFList <- nimbleFunctionList(essNFList_virtual)
+        if(model$getDistribution(target) == 'dnorm')    essNFList[[1]] <- essNF_univariate(model, target)
+        if(model$getDistribution(target) == 'dmnorm')   essNFList[[1]] <- essNF_multivariate(model, target)
         ## checks
         if(length(target) > 1)                                           stop('elliptical slice sampler only applies to one target node')
         if(!(model$getDistribution(target) %in% c('dnorm', 'dmnorm')))   stop('elliptical slice sampler only applies to normal distributions')
     },
     run = function() {
         u <- getLogProb(model, calcNodesNoSelf) - rexp(1, 1)
-        ##target_mean[1:d] <<- model$getParam(target, 'mean')  ## this should work
-        temp <- model$getParam(target, 'mean')                 ## workaround
-        target_mean[1:d] <<- temp                              ## workaround
+        target_mean[1:d] <<- essNFList[[1]]$run()
         f[1:d] <<- values(model, target) - target_mean[1:d]
         simulate(model, target)
         nu[1:d] <<- values(model, target) - target_mean[1:d]
