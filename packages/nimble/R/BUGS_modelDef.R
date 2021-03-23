@@ -2430,7 +2430,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         if(any(dups)) {
             ## x[k[i],block[i]] can lead to duplicated nodeNames for unknownIndex declarations; this should be ok, though there is inefficiency in having a vertex in the graph for each element of second index instead of collapsing into one vertex per unique value.
             stop("There are multiple definitions for node(s): ", 
-                 paste(maps$nodeNames[dups], collapse = ','), ".\n",
+                 paste(maps$nodeNames[dups], collapse = ','), ".",
                  ## "If your model has macros or if-then-else blocks\n",
                  ## "you can inspect the processed model code by doing\n",
                  ## "nimbleOptions(stop_after_processing_model_code = TRUE)\n",
@@ -2441,7 +2441,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         dups <- duplicated(unlist(LHSelements))
         if(any(dups)) {
             index <- rep(seq_along(LHSelements), time = sapply(LHSelements, length))
-            stop("Definition of node(s): ", paste(maps$nodeNamesLHSall[index[dups]], collapse = ','), " overlaps with other node definitions.\n", call. = FALSE)
+            stop("Definition of node(s): ", paste(maps$nodeNamesLHSall[index[dups]], collapse = ','), " overlaps with other node definitions.", call. = FALSE)
         }
     }
     
