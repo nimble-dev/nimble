@@ -1065,7 +1065,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                               sizes[[nms[k]]] <- nimble::nimbleInternalFunctions$dimOrLength(e)
                                                               if(prod(sizes[[nms[[k]]]]) == 1) sizes[[nms[[k]]]] <- numeric()
                                                           } else sizes[[nms[[k]]]] <- NA # when have param with dim > 2
-                                                      } else warning(paste0("Unable to calculate parameter '", nms[k], "'; this may simply reflect that there are missing values in model variables."))
+                                                      } else warning(paste0("Unable to calculate parameter '", nms[k], "' for distribution ", dist, " for node '", nfn, "'; this may simply reflect that there are missing values in model variables."))
                                                   }
                                         # check dimensions based on varInfo
                                                   if(length(declInfo$targetExprReplaced) > 1) {

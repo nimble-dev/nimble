@@ -40,6 +40,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         clearNimbleFunctionsAfterCompiling = FALSE,
         checkModel = FALSE,
         checkNimbleFunction = TRUE,
+        checkDuplicateNodeDefinitions = TRUE,
         verbose = TRUE,
         verboseErrors = FALSE,
 
