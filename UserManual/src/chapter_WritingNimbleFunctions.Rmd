@@ -549,7 +549,7 @@ my_RW <- nimbleFunction(
         # store proposal into model
         model[[target]] <<- proposal                    
         # proposal model logProb
-        model_lp_proposed <- calculate(model, calcNodes)
+        model_lp_proposed <- model$calculate(calcNodes)
         
         # log-Metropolis-Hastings ratio
         log_MH_ratio <- model_lp_proposed - model_lp_initial

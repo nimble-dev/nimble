@@ -244,7 +244,7 @@ defaultParamInfo <- function() {
 #' @export
 #' @details For example, suppose node 'x[1:5]' follows a multivariate
 #' normal distribution (dmnorm) in a model declared by BUGS code.
-#' getParam(model, 'x[1:5]', 'mean') would return the current value of
+#' model$getParam('x[1:5]', 'mean') would return the current value of
 #' the mean parameter (which may be determined from other nodes).  The
 #' parameter requested does not have to be part of the
 #' parameterization used to declare the node.  Rather, it can be any
