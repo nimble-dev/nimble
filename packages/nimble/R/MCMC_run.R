@@ -115,6 +115,7 @@ runMCMC <- function(mcmc,
     samplesList  <- vector('list', nchains); names(samplesList)  <- paste0('chain', 1:nchains)
     samplesList2 <- vector('list', nchains); names(samplesList2) <- paste0('chain', 1:nchains)
     samplesReturnList <- samplesReturnList2 <- vector('list', nchains)
+    names(samplesReturnList) <- names(samplesReturnList2) <- paste0('chain', 1:nchains)
     thinToUseVec <- c(0, 0)
     thinToUseVec[1] <- if(!missing(thin))  thin  else mcmc$thinFromConfVec[1]
     thinToUseVec[2] <- if(!missing(thin2)) thin2 else mcmc$thinFromConfVec[2]
