@@ -231,7 +231,7 @@ defaultParamInfo <- function() {
 
 #' Get value of a parameter of a stochastic node in a model
 #'
-#' Part of the NIMBLE language
+#' Get the value of a parameter for any single stochastic node in a model.
 #'
 #' @param model A NIMBLE model object
 #'
@@ -242,7 +242,10 @@ defaultParamInfo <- function() {
 #' @param nodeFunctionIndex For internal NIMBLE use only
 #'
 #' @export
-#' @details For example, suppose node 'x[1:5]' follows a multivariate
+#' @details
+#' Standard usage is as a method of a model, in the form \code{model$getParam(node, param)}, but the usage as a simple function with the model as the first argument as above is also allowed.
+#'
+#' For example, suppose node 'x[1:5]' follows a multivariate
 #' normal distribution (dmnorm) in a model declared by BUGS code.
 #' model$getParam('x[1:5]', 'mean') would return the current value of
 #' the mean parameter (which may be determined from other nodes).  The
@@ -323,7 +326,7 @@ makeBoundInfo <- function(model, nodes, bound) {
 
 #' Get value of bound of a stochastic node in a model
 #'
-#' Part of the NIMBLE language
+#' Get the value of the lower or upper bound for a single stochastic node in a model.
 #'
 #' @param model A NIMBLE model object
 #'
@@ -334,7 +337,10 @@ makeBoundInfo <- function(model, nodes, bound) {
 #' @param nodeFunctionIndex For internal NIMBLE use only
 #'
 #' @export
-#' @details For nodes that do not involve truncation of the distribution
+#' @details
+#' Standard usage is as a method of a model, in the form \code{model$getBound(node, bound)}, but the usage as a simple function with the model as the first argument as above is also allowed.
+#'
+#' For nodes that do not involve truncation of the distribution
 #' this will return the lower or upper bound of the distribution, which
 #' may be a constant or for a limited number of distributions a parameter
 #' or functional of a parameter (at the moment in NIMBLE, the only case
@@ -428,6 +434,8 @@ rCalcDiffNodes <- function(model, nfv){
 #' @param includeData  A logical argument specifying whether \code{data} nodes should be simulated into (only relevant for \code{\link{simulate}})
 #' @author NIMBLE development team
 #' @details
+#' Standard usage is as a method of a model, in the form \code{model$calculate(nodes)}, but the usage as a simple function with the model as the first argument as above is also allowed.
+#' 
 #' These functions expands the nodes and then process them in the model in the order provided.  Expanding nodes means turning 'y[1:2]' into c('y[1]','y[2]') if y is a vector of scalar nodes.
 #' Calculation is defined for a stochastic node as executing the log probability (density) calculation and for a deterministic node as calculating whatever function was provided on the right-hand side of the model declaration.
 #'
