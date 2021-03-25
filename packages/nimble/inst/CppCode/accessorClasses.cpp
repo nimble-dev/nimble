@@ -80,8 +80,7 @@ set_CppAD_tape_info_for_model::set_CppAD_tape_info_for_model(NodeVectorClassNew_
   not_empty  = instructions.size() > 0;
   if(not_empty) {
     nodeFunInModelDLL = instructions[0].nodeFunPtr;
-    saved_tape_id = CppAD::AD<double>::get_tape_id_nimble();
-    saved_tape_handle = CppAD::AD<double>::get_tape_handle_nimble();
+    nodeFunInModelDLL->get_tape_ptr_from_nodeFun(saved_tape_id, saved_tape_handle);
     nodeFunInModelDLL->set_tape_ptr_from_nodeFun(tape_id, tape_handle_, false);
   }
 }
@@ -97,11 +96,9 @@ void set_CppAD_tape_info_for_model::set_from_nodeFunPtr(nodeFun *nodeFun_,
 							CppAD::local::ADTape<double>* tape_handle_) {
   not_empty = true;
   nodeFunInModelDLL = nodeFun_;
-  saved_tape_id = CppAD::AD<double>::get_tape_id_nimble();
-  saved_tape_handle = CppAD::AD<double>::get_tape_handle_nimble();
+  nodeFunInModelDLL->get_tape_ptr_from_nodeFun(saved_tape_id, saved_tape_handle);
   nodeFunInModelDLL->set_tape_ptr_from_nodeFun(tape_id, tape_handle_, false);
 }
-
 
 set_CppAD_tape_info_for_model::~set_CppAD_tape_info_for_model() {
   if(not_empty) {

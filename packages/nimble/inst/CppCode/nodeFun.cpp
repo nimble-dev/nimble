@@ -56,6 +56,13 @@ void nodeFun::set_tape_ptr_from_nodeFun(CppAD::tape_id_t tape_id,
   CppAD::AD<double>::set_tape_info_nimble(tape_id, tape_handle_, recover);
 }
 
+void nodeFun::get_tape_ptr_from_nodeFun(CppAD::tape_id_t &tape_id,
+					CppAD::local::ADTape<double>* &tape_handle_) {
+  tape_id = CppAD::AD<double>::get_tape_id_nimble();
+  tape_handle_ = CppAD::AD<double>::get_tape_handle_nimble();
+}
+
+
 void nodeFun::setup_extraOutput_step(NodeVectorClassNew_derivs &NV,
 				     CppAD::AD<double> &logProb,
 				     nimbleCppADinfoClass* ADinfoPtr) {

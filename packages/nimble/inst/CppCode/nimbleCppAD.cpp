@@ -414,6 +414,7 @@ void getDerivs_internal(vector<BASE> &independentVars,
 void nimbleFunctionCppADbase::getDerivs_meta(nimbleCppADinfoClass &ADinfo,
 					     const NimArr<1, double> &derivOrders,
 					     const NimArr<1, double> &wrtVector,
+					     const nimbleCppADrecordingInfoClass &nimRecInfo,
 					     nimSmartPtr<NIMBLE_ADCLASS_META> &ansList) {
   //  std::cout<<"Entering getDerivs_meta"<<std::endl;
   // std::cout<<"ADinfo is at :"<< &ADinfo <<"\n";
@@ -438,10 +439,10 @@ void nimbleFunctionCppADbase::getDerivs_meta(nimbleCppADinfoClass &ADinfo,
     //    std::cout<<"tape_id and handle:"<< CppAD::AD<double>::get_tape_id_nimble()<<" "<< CppAD::AD<double>::get_tape_handle_nimble()<<"\n";
     //    std::cout<<"atomic info:"<<CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage()<<"\n";
     my_tape_info_RAII_.set_from_nodeFunPtr(ADinfo.nodeFunPtr(),
-					   CppAD::AD<double>::get_tape_id_nimble(),
-					   CppAD::AD<double>::get_tape_handle_nimble());
+					   nimRecInfo.tape_id_cp(), //CppAD::AD<double>::get_tape_id_nimble(),
+					   nimRecInfo.tape_handle_cp());//CppAD::AD<double>::get_tape_handle_nimble());
     set_CppAD_atomic_info_for_model(ADinfo.nodeFunPtr(),
-				    CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage());
+				    nimRecInfo.atomic_vec_ptr_cp());
     //    std::cout<<"done setting nodeFunPtr\n";
   }
 
