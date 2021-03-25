@@ -216,13 +216,13 @@ as.list.modelValuesBaseClass <- function(x, varNames, iterationAsLastIndex = FAL
   results <- list()
   for(v in varNames) {
     samples <- x[[v]]
-    dims <- dimOrLength(samples[[1]])
+    dims <- dimOrLength(samples[[1]], scalarize = TRUE)
     matrixVersion <- do.call("c", lapply(samples, as.numeric))
     ansDims <- c(dims, nrows)
     results[[v]] <- array(matrixVersion, dim = ansDims)
     if(!iterationAsLastIndex) {
       nDim <- length(ansDims)
-      results[[v]] <- aperm(results[[v]], c(nDim, 1:(nDim-1)))
+      if(nDim > 1)   results[[v]] <- aperm(results[[v]], c(nDim, 1:(nDim-1)))
     }
   }
   results
@@ -235,13 +235,13 @@ as.list.CmodelValues <- function(x, varNames, iterationAsLastIndex = FALSE, ...)
   results <- list()
   for(v in varNames) {
     samples <- x[[v]]
-    dims <- dimOrLength(samples[[1]])
+    dims <- dimOrLength(samples[[1]], scalarize = TRUE)
     matrixVersion <- do.call("c", lapply(samples, as.numeric))
     ansDims <- c(dims, nrows)
     results[[v]] <- array(matrixVersion, dim = ansDims)
     if(!iterationAsLastIndex) {
       nDim <- length(ansDims)
-      results[[v]] <- aperm(results[[v]], c(nDim, 1:(nDim-1)))
+      if(nDim > 1)   results[[v]] <- aperm(results[[v]], c(nDim, 1:(nDim-1)))
     }
   }
   results

@@ -1,4 +1,9 @@
-                            CHANGES IN VERSION 0.10.1 (Novembere 2020)
+USER LEVEL CHANGES
+
+-- Add `samplesAsList` option to `runMCMC` and `nimbleMCMC`, which allows returning posterior MCMC samples in the form of an R list object, where each named list element corresponds to a variable being monitored, matching the dimensions of the monitored variable.
+
+
+                            CHANGES IN VERSION 0.10.1 (November 2020)
                             
 USER LEVEL CHANGES
 
