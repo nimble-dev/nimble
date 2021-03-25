@@ -2997,8 +2997,10 @@ parseEvalNumericMany <- function(x, env, ignoreNotFound = FALSE) {
             allVars <- all.vars(parsedx)
             allVars <- allVars[allVars != parsedx[[2]]]
             if(length(allVars))
-                stop("parseEvalNumericMany: a variable was found in the indexing in ", x, ".")
+                stop("parseEvalNumericMany: a variable was found in the indexing in '", x, "'.")
         }
+        if(length(parsedx) > 1 && parsedx[[1]] == '[[')
+            stop("parseEvalNumericMany: use of '[[' found in node name in '", x, "'. Please use single brackets.")
     }
     if(ignoreNotFound) {  ## Return NA when not found.
         if(length(x) > 1) {
@@ -3038,8 +3040,10 @@ parseEvalNumericManyList <- function(x, env, ignoreNotFound = FALSE) {
             allVars <- all.vars(parsedx)
             allVars <- allVars[allVars != parsedx[[2]]]
             if(length(allVars))
-                stop("parseEvalNumericManyList: a variable was found in the indexing in ", x, ".")
+                stop("parseEvalNumericManyList: a variable was found in the indexing in '", x, "'.")
         }
+        if(length(parsedx) > 1 && parsedx[[1]] == '[[')
+	    stop("parseEvalNumericMany: use of '[[' found in node name in '", x, "'. Please use single brackets.")
     }
     if(ignoreNotFound) {  ## Return NA when not found.
        output <- try(eval(.Call(makeParsedVarList, x), envir = env), silent = TRUE)
