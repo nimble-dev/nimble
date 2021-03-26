@@ -112,10 +112,8 @@ runMCMC <- function(mcmc,
     model <- if(is.Cnf(mcmc)) mcmc$Robject$model$CobjectInterface else mcmc$model
     if(!is.model(model)) stop('something went wrong')
     hasMonitors2 <- length(if(is.Cnf(mcmc)) mcmc$Robject$monitors2 else mcmc$monitors2) > 0
-    samplesList  <- vector('list', nchains); names(samplesList)  <- paste0('chain', 1:nchains)
-    samplesList2 <- vector('list', nchains); names(samplesList2) <- paste0('chain', 1:nchains)
-    samplesReturnList <- samplesReturnList2 <- vector('list', nchains)
-    names(samplesReturnList) <- names(samplesReturnList2) <- paste0('chain', 1:nchains)
+    samplesList <- samplesList2 <- vector('list', nchains)
+    names(samplesList) <- names(samplesList2) <- paste0('chain', 1:nchains)
     thinToUseVec <- c(0, 0)
     thinToUseVec[1] <- if(!missing(thin))  thin  else mcmc$thinFromConfVec[1]
     thinToUseVec[2] <- if(!missing(thin2)) thin2 else mcmc$thinFromConfVec[2]
@@ -124,7 +122,6 @@ runMCMC <- function(mcmc,
     ##samplerExecutionOrderToUse <- if(!missing(samplerExecutionOrder)) samplerExecutionOrder else mcmc$samplerExecutionOrderFromConfPlusTwoZeros[mcmc$samplerExecutionOrderFromConfPlusTwoZeros>0]
     for(i in 1:nchains) {
         if(nimbleOptions('verbose')) message('running chain ', i, '...')
-        ##if(setSeed) set.seed(i)
         if(is.numeric(setSeed)) {
             if(length(setSeed) == 1) {
                 set.seed(setSeed)
@@ -142,8 +139,6 @@ runMCMC <- function(mcmc,
         mcmc$run(niter, nburnin = nburnin, thin = thinToUseVec[1], thin2 = thinToUseVec[2], progressBar = progressBar) #, samplerExecutionOrder = samplerExecutionOrderToUse)
         samplesList[[i]] <- as.matrix(mcmc$mvSamples)
         if(hasMonitors2)   samplesList2[[i]] <- as.matrix(mcmc$mvSamples2)
-        if(samplesAsList) { samplesReturnList[[i]] <- as.list(mcmc$mvSamples)
-                            if(hasMonitors2)   samplesReturnList2[[i]] <- as.list(mcmc$mvSamples2) }
     }
     if(WAIC) {
         if(nchains > 1) {
@@ -164,8 +159,6 @@ runMCMC <- function(mcmc,
     if(nchains == 1) {
         samplesList <- samplesList[[1]]                       ## returns matrix when nchains = 1
         if(hasMonitors2)   samplesList2 <- samplesList2[[1]]  ## returns matrix when nchains = 1
-        if(samplesAsList) { samplesReturnList <- samplesReturnList[[1]]
-                            if(hasMonitors2)   samplesReturnList2 <- samplesReturnList2[[1]] }
     }
     if(summary) {
         if(nchains == 1) {
@@ -173,7 +166,7 @@ runMCMC <- function(mcmc,
             if(hasMonitors2)   summaryObject <- rbind(summaryObject, samplesSummary(samplesList2))   ## combine summaries
         } else {
             summaryObject <- lapply(samplesList, samplesSummary)
-            names(summaryObject) <- paste0('chain', 1:nchains)
+            ############ XXXXXXXXXXXXXxnames(summaryObject) <- chainNames
             summaryObject$all.chains <- samplesSummary(do.call('rbind', samplesList))
             if(hasMonitors2) {
                 summaryObject2 <- lapply(samplesList2, samplesSummary)
@@ -183,8 +176,25 @@ runMCMC <- function(mcmc,
         }
     }
     retList <- list()
-    if(samples) { retList$samples <- if(samplesAsList) samplesReturnList else samplesList
-                  if(hasMonitors2)   retList$samples2 <- if(samplesAsList) samplesReturnList2 else samplesList2 }
+    if(samples) {
+        if(!samplesAsList) {
+            retList$samples <- samplesList
+            if(hasMonitors2) retList$samples2 <- samplesList2
+        } else {
+            mvSamples <- mcmc$mvSamples
+            if(nchains == 1) {
+                matrix2mv(samplesList, mvSamples)
+                samplesList <- as.list(mvSamples)
+                gc()
+            } else {
+                for(i in seq_along(samplesList)) {
+                    matrix2mv(samplesList[[i]], mvSamples)
+                    samplesList[[i]] <- as.list(mvSamples)
+                    gc()
+                }
+            }
+        }
+    }
     if(summary)   retList$summary <- summaryObject
     if(WAIC)      retList$WAIC    <- WAICvalue
     if(length(retList) == 1) retList <- retList[[1]]
