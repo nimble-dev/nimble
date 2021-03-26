@@ -103,8 +103,7 @@
 #' \code{thinWAIC}: Boolean for specifying whether to do WAIC calculations
 #' only on thinned samples (default is FALSE)
 #' 
-#' \code{skipFinalizeWAIC}: Boolean for specifying whether the final WAIC 
-#' calculations should be delayed until the getWAIC call (default is FALSE)
+#' 
 #' 
 #' @examples
 #' \dontrun{
@@ -170,9 +169,6 @@ buildMCMC <- nimbleFunction(
         }
         ## disable online 
         onlineWAIC <- if(!is.null(specsWAIC$disableOnlineWAIC)) specsWAIC$disableOnlineWAIC else FALSE
-        ## flag for WAIC 
-        finalWAICCalculated <- FALSE
-        skipFinalizeWAIC <- if(!is.null(specsWAIC$skipFinalizeWAIC)) specsWAIC$skipFinalizeWAIC else FALSE
         ## thin WAIC 
         thinWAIC <- if(!is.null(specsWAIC$thinWAIC)) specsWAIC$thinWAIC else FALSE
         ## for grouping
@@ -208,24 +204,51 @@ buildMCMC <- nimbleFunction(
             mMCits <- 1
         }
         dataNodeLengthWAIC <- length(groupIndicesWAIC)
+        ## here to check if the group length is 1 we cannot have a length 1 vector
+        if (length(groupIndicesWAIC==1)) {
+            groupIndicesWAIC <- c(groupIndicesWAIC,0)
+        }
+        ## mWAIC variance checks
+        ## A vector for checking the mWAIC is converging
+        if(!is.null(specsWAIC$mWAICVarCheck)) {
+            mWAICsplits <- specsWAIC$mWAICVarCheck
+            varCheckItsWAIC <- seq(from = 1, to = mMCits, by = floor(mMCits/mWAICsplits) )
+            lengthVarCheck <- length(varCheckItsWAIC)
+            mWAICiterations <- c(varCheckItsWAIC, mMCits)
+        }else if(mWAIC) {
+            mWAICsplits <- 5
+            varCheckItsWAIC <- floor(quantile(1:mMCits, names = FALSE))[c(2,3,4)]
+            lengthVarCheck <- length(varCheckItsWAIC)
+            mWAICiterations <- c(varCheckItsWAIC, mMCits)
+        }else {
+            mWAICsplits <- 0
+            varCheckItsWAIC <- rep(0,3)
+            lengthVarCheck <- 0
+            mWAICiterations <- 0
+        }
+        ## A matrix to store the different values of mWAIC values
+        mWAIClogprobmat <- matrix(0, nrow = (lengthVarCheck + 1), ncol = dataNodeLengthWAIC )
+        ## the logProbVec we work with
+        logProbVec <- rep(0, (dataNodeLengthWAIC + 1))
         ## lppd stores
-        lppdSumMax <- rep(0, dataNodeLengthWAIC)
-        lppdCurSum <- rep(0, dataNodeLengthWAIC)
+        lppdSumMaxmat <-  matrix(0, nrow = (lengthVarCheck + 1), ncol = dataNodeLengthWAIC )
+        lppdCurSummat <-  matrix(0, nrow = (lengthVarCheck + 1), ncol = dataNodeLengthWAIC )
         # pwaic stores
-        sspWAIC <- rep(0, dataNodeLengthWAIC)
+        sspWAICmat <- matrix(0, nrow = (lengthVarCheck + 1), ncol = dataNodeLengthWAIC )
         varCount <- 0
-        meanpWAIC <- rep(0, dataNodeLengthWAIC)
-        delta1pWAIC <- rep(0, dataNodeLengthWAIC)
-        delta2pWAIC <- rep(0, dataNodeLengthWAIC)
+        meanpWAICmat <- matrix(0, nrow = (lengthVarCheck + 1), ncol = dataNodeLengthWAIC )
+        delta1pWAICmat <- matrix(0, nrow = (lengthVarCheck + 1), ncol = dataNodeLengthWAIC )
+        delta2pWAICmat <- matrix(0, nrow = (lengthVarCheck + 1), ncol = dataNodeLengthWAIC )
         ## mWAIC stores
-        margSumMax <- rep(0, dataNodeLengthWAIC)
-        margCurSum <- rep(0, dataNodeLengthWAIC)
-        logProbVec <- rep(0, dataNodeLengthWAIC)
-        logAvgProb <-0
-        pWAIC <- 0
-        WAIC <- 0
+        ## we put the +1 in here to fix the length 1 vector issue
+        margSumMax <- rep(0, (dataNodeLengthWAIC + 1))
+        margCurSum <- rep(0, (dataNodeLengthWAIC + 1))
+        ## final WAIC outputs
+        logAvgProb <- rep(0, (lengthVarCheck + 2))
+        pWAIC <- rep(0, (lengthVarCheck + 2))
+        WAIC <- rep(0, (lengthVarCheck + 2))
         ## return WAIC list
-        WAICList <- nimbleList(WAIC = double(0), lppd = double(0), pWAIC = double(0))
+        WAICList <- nimbleList(mWAICits = double(1), WAIC = double(1), lppd = double(1), pWAIC = double(1))
         ## below is all from old WAIC method
         sampledNodes <- model$getVarNames(includeLogProb = FALSE, nodes = monitors)
         sampledNodes <- sampledNodes[sampledNodes %in% model$getVarNames(includeLogProb = FALSE)]
@@ -329,10 +352,6 @@ buildMCMC <- nimbleFunction(
             }
         }
         if(progressBar) print('|')
-        if (!finalWAICCalculated & !skipFinalizeWAIC) {
-            finalWAICCalculated <<- TRUE
-            finalizeWAIC()
-        }
         returnType(void())
     },
     methods = list(
@@ -358,8 +377,8 @@ buildMCMC <- nimbleFunction(
                 return(-Inf)
             }
             logPredProbs <- matrix(nrow = numMCMCSamples, ncol = dataNodeLength)
-            logAvgProb <- 0
-            pWAIC <- 0
+            logAvgProbCalc <- 0
+            pWAICCalc <- 0
             currentVals <- values(model, allVarsIncludingLogProbs)
             
             for(i in 1:numMCMCSamples) {
@@ -372,18 +391,18 @@ buildMCMC <- nimbleFunction(
             for(j in 1:dataNodeLength) {
                 maxLogPred <- max(logPredProbs[,j])
                 thisDataLogAvgProb <- maxLogPred + log(mean(exp(logPredProbs[,j] - maxLogPred)))
-                logAvgProb <- logAvgProb + thisDataLogAvgProb
+                logAvgProbCalc <- logAvgProbCalc + thisDataLogAvgProb
                 pointLogPredVar <- var(logPredProbs[,j])
-                pWAIC <- pWAIC + pointLogPredVar
+                pWAICCalc <- pWAICCalc + pointLogPredVar
             }
-            WAIC <- -2*(logAvgProb - pWAIC)
+            WAICCalc <- -2*(logAvgProbCalc - pWAICCalc)
             values(model, allVarsIncludingLogProbs) <<- currentVals
-            if(is.nan(WAIC)) print('WAIC was calculated as NaN.  You may need to add monitors to model latent states, in order for a valid WAIC calculation.')
+            if(is.nan(WAICCalc)) print('WAIC was calculated as NaN.  You may need to add monitors to model latent states, in order for a valid WAIC calculation.')
             returnType(double())
-            return(WAIC)
+            return(WAICCalc)
         },
-        
         updateWAICStats = function() {
+            ticker <- 0
             varCount <<- varCount + 1
             for (w in 1:mMCits) {
                 if(mWAIC) {
@@ -410,29 +429,40 @@ buildMCMC <- nimbleFunction(
                         margSumMax[j] <<- margSumMax[j] + newMax
                         margCurSum[j] <<- margCurSum[j] * exp(-newMax) + 1
                     } else margCurSum[j] <<- margCurSum[j] + exp(logProbMarg - margSumMax[j])
+                    
+                }
+                ## the variance of mWAIC 
+                if(mWAIC & (any(w == varCheckItsWAIC))){
+                    ticker <- ticker +1
+                    index <- ticker
+                    mWAIClogprobmat[index , ] <<- (margSumMax + log(margCurSum) - log(w))[1:dataNodeLengthWAIC]
                 }
             }
-            logProbVec <<- margSumMax + log(margCurSum) - log(mMCits)
+            logProbVec <<- (margSumMax + log(margCurSum) - log(mMCits))[1:dataNodeLengthWAIC]
+            mWAIClogprobmat[(lengthVarCheck + 1), ] <<- logProbVec
             ## update the lppd and pWAIC online 
-            for (j in 1:dataNodeLengthWAIC) {
-                ## online logSumExp for averaging over MCMC samples
-                logPredProbs <- logProbVec[j]
-                # lppd
-                if (varCount == 1) {
-                    lppdSumMax[j] <<- logPredProbs
-                    lppdCurSum[j] <<- 1
-                } else if (logPredProbs > lppdSumMax[j]) {
-                    newMax <- logPredProbs - lppdSumMax[j]
-                    lppdSumMax[j] <<- lppdSumMax[j] + newMax
-                    lppdCurSum[j] <<- lppdCurSum[j] * exp(-newMax) + 1
-                } else {
-                    lppdCurSum[j] <<- lppdCurSum[j] + exp(logPredProbs - lppdSumMax[j])
+            for (i in 1:(lengthVarCheck + 1)){
+                for (j in 1:dataNodeLengthWAIC) {
+                    ## online logSumExp for averaging over MCMC samples
+                    #logPredProbs <- logProbVec[j]
+                    logPredProbs <- mWAIClogprobmat[i,j]
+                    ## lppd
+                    if (varCount == 1) {
+                        lppdSumMaxmat[i,j] <<- logPredProbs
+                        lppdCurSummat[i,j] <<- 1
+                    } else if (logPredProbs > lppdSumMaxmat[i,j]) {
+                        newMax <- logPredProbs - lppdSumMaxmat[i,j]
+                        lppdSumMaxmat[i,j] <<- lppdSumMaxmat[i,j] + newMax
+                        lppdCurSummat[i,j] <<- lppdCurSummat[i,j] * exp(-newMax) + 1
+                    } else {
+                        lppdCurSummat[i,j] <<- lppdCurSummat[i,j] + exp(logPredProbs - lppdSumMaxmat[i,j])
+                    }
+                    ## Welford's algorithm for pWAIC
+                    delta1pWAICmat[i,j] <<- logPredProbs - meanpWAICmat[i,j]
+                    meanpWAICmat[i,j] <<- meanpWAICmat[i,j] + delta1pWAICmat[i,j] / varCount
+                    delta2pWAICmat[i,j] <<- logPredProbs - meanpWAICmat[i,j]
+                    sspWAICmat[i,j] <<- sspWAICmat[i,j] + delta1pWAICmat[i,j] * delta2pWAICmat[i,j]
                 }
-                ## Welford's algorithm for pWAIC
-                delta1pWAIC[j] <<- logPredProbs - meanpWAIC[j]
-                meanpWAIC[j] <<- meanpWAIC[j] + delta1pWAIC[j] / varCount
-                delta2pWAIC[j] <<- logPredProbs - meanpWAIC[j]
-                sspWAIC[j] <<- sspWAIC[j] + delta1pWAIC[j] * delta2pWAIC[j]
             }
             ## return the nodes to current proper state
             if(mWAIC) {
@@ -440,28 +470,31 @@ buildMCMC <- nimbleFunction(
                 nimCopy(from = mvSaved, to = model, row= 1, nodes = latentNodes, logProb = TRUE)
             }
         },
-        finalizeWAIC = function() {
-            lppd1 <- sum(lppdSumMax + log(lppdCurSum))
-            logAvgProb <<- lppd1 - dataNodeLengthWAIC * log(varCount)
-            pWAIC <<- sum(sspWAIC / (varCount - 1))
-            WAIC <<- -2 * (logAvgProb - pWAIC)
+        finalizeWAIC = function(j = integer(0)) {
+            lppd1 <- sum(lppdSumMaxmat[j,] + log(lppdCurSummat[j,]))
+            logAvgProb[j] <<- lppd1 - dataNodeLengthWAIC * log(varCount)
+            pWAIC[j] <<- sum(sspWAICmat[j,] / (varCount - 1))
+            WAIC[j] <<- -2 * (logAvgProb[j] - pWAIC[j])
         },
         getWAIC = function() {
             returnType(WAICList())
             if(!enableWAIC) {
-                WAICListFinal <- WAICList$new(WAIC = NA, lppd = NA, pWAIC = NA)
+                outs <- rep(NA, (lengthVarCheck + 1))
+                WAICListFinal <- WAICList$new(mWAICits = outs,WAIC = outs, lppd = outs, pWAIC = outs)
                 print('Error: One must set `enableWAIC = TRUE` in `configureMCMC` or `buildMCMC` in order to calculate WAIC. See `help(buildMCMC)` for additional information.')
                 return(WAICListFinal)
             } else {
-                if (!finalWAICCalculated) {
-                    finalWAICCalculated <<- TRUE
-                    finalizeWAIC()
-                    badpWAIC <- sum(((sspWAIC / (varCount -1))>0.4))
-                    if (badpWAIC>0) {
-                        print("There are individual pWAIC values that are greater than 0.4, WAIC estimate may be unstable" )
-                    }
+                for (i in 1:(lengthVarCheck + 1)){
+                    finalizeWAIC(i) 
                 }
-                WAICListFinal <- WAICList$new(WAIC = WAIC, lppd = logAvgProb, pWAIC = pWAIC)
+                badpWAIC <- sum(((sspWAICmat[(lengthVarCheck + 1),] / (varCount -1))>0.4))
+                if (badpWAIC>0) {
+                    print("There are individual pWAIC values that are greater than 0.4, WAIC estimate may be unstable" )
+                }
+                WAIC <<- WAIC[1:(lengthVarCheck+1)]
+                logAvgProb <<- logAvgProb[1:(lengthVarCheck+1)]
+                pWAIC <<- pWAIC[1:(lengthVarCheck+1)]
+                WAICListFinal <- WAICList$new(mWAICits = mWAICiterations,WAIC = WAIC, lppd = logAvgProb, pWAIC = pWAIC)
                 return(WAICListFinal)
             }
         })
