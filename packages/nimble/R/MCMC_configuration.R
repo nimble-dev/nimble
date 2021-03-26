@@ -533,6 +533,8 @@ For internal use only
 '
             newSamplerInd <- length(samplerConfs) + 1
             samplerConfs[[newSamplerInd]] <<- samplerConf(name=thisSamplerName, samplerFunction=samplerFunction, target=targetOne, control=thisControlList, model=model)
+            if(!length(samplerConfs[[newSamplerInd]]$targetAsScalar))
+                stop("Cannot assign sampler to non-existent node: '", targetOne, "'.") 
             samplerExecutionOrder <<- c(samplerExecutionOrder, newSamplerInd)
             if(print) printSamplers(newSamplerInd)
         },
