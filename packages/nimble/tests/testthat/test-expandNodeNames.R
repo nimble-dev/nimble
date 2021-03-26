@@ -43,8 +43,12 @@ test_that("expandNodeNames works for various cases, including going beyond exten
                 c("theta[1, 3]","theta[2, 3]","theta[3, 3]","theta[3, 1]","theta[3, 2]","theta[3, 3]"))
                                   
    ## indexing with a variable
-   expect_error(m$expandNodeNames("theta[a]"), "variable was found in the indexing")
+   expect_error(m$expandNodeNames("mu[a]"), "variable was found in the indexing")
+   expect_error(m$expandNodeNames("mu[[a]]"), "variable was found in the indexing")
 
+   ## double bracket indexing is allowed but non-standard
+   expect_identical(m$expandNodeNames("mu[[2]]"), "mu[2]")
+   
    ## multivariate node
    expect_equal(m$expandNodeNames("p[1:4]"), "p[1:4]")
    expect_equal(m$expandNodeNames("p[1:2]"), "p[1:4]")

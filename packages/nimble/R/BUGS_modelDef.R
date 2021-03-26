@@ -2993,14 +2993,12 @@ parseEvalNumericMany <- function(x, env, ignoreNotFound = FALSE) {
     ## avoid evaluating variables in index expr, such as "y[idx]".
     if(nimbleOptions('checkForIndexVariablesInNodeNames')) {
         parsedx <- parse(text = x)[[1]]
-        if(length(parsedx) > 1 && parsedx[[1]] == '[') {
+        if(length(parsedx) > 1 && parsedx[[1]] %in% c('[', '[[')) {
             allVars <- all.vars(parsedx)
             allVars <- allVars[allVars != parsedx[[2]]]
             if(length(allVars))
                 stop("parseEvalNumericMany: a variable was found in the indexing in '", x, "'.")
         }
-        if(length(parsedx) > 1 && parsedx[[1]] == '[[')
-            stop("parseEvalNumericMany: use of '[[' found in node name in '", x, "'. Please use single brackets.")
     }
     if(ignoreNotFound) {  ## Return NA when not found.
         if(length(x) > 1) {
