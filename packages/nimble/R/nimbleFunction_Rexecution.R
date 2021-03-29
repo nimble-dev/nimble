@@ -263,6 +263,8 @@ getParam <- function(model, node, param, nodeFunctionIndex) {
     } else {
         ## not already converted; this is regular execution
         if(length(node) != 1) stop(paste0("getParam only works for one node at a time, but ", length(node), " were provided."))
+        tmp <- model$expandNodeNames(node)
+        if(length(tmp) != 1) stop(paste0("getParam only works for one node at a time, but ", node, " includes multiple nodes."))
         ## makeParamInfo, called by nodeFunctionVector, will check on length of param
         ## nodeFunctionIndex should never be used.
         nfv <- nodeFunctionVector(model, node)
