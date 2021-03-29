@@ -643,11 +643,11 @@ conjugacyClass <- setRefClass(
         genRunFunction = function(dependentCounts, doDependentScreen = FALSE) {
             functionBody <- codeBlockClass()
 
-            ## only if we're verifying conjugate posterior distributions: get initial targetValue, and modelLogProb -- getLogProb(model, calcNodes)
+            ## only if we're verifying conjugate posterior distributions: get initial targetValue, and modelLogProb -- model$getLogProb(calcNodes)
 
             if(getNimbleOption('verifyConjugatePosteriors')) {
                 functionBody$addCode({
-                    modelLogProb0 <- getLogProb(model, calcNodes)
+                    modelLogProb0 <- model$getLogProb(calcNodes)
                     origTargetValue <- model[[target]]
                 })
             }
@@ -660,13 +660,13 @@ conjugacyClass <- setRefClass(
             functionBody$addCode({
                 newTargetValue <- RPOSTERIORCALL
                 model[[target]] <<- newTargetValue
-                calculate(model, calcNodes)
+                model$calculate(calcNodes)
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
             }, list(RPOSTERIORCALL = posteriorObject$rCallExpr))
             ## only if we're verifying conjugate posterior distributions: figure out if conjugate posterior distribution is correct
             if(nimbleOptions()$verifyConjugatePosteriors) {
                 functionBody$addCode({
-                    modelLogProb1 <- getLogProb(model, calcNodes)
+                    modelLogProb1 <- model$getLogProb(calcNodes)
                     posteriorLogDensity0 <- DPOSTERIORCALL_ORIG
                     posteriorLogDensity1 <- DPOSTERIORCALL_NEW
                     posteriorVerification <- modelLogProb0 - posteriorLogDensity0 - modelLogProb1 + posteriorLogDensity1
@@ -848,7 +848,7 @@ conjugacyClass <- setRefClass(
                                unitVector[sizeIndex] <- 1
                                model[[target]] <<- unitVector
                                unitVector[sizeIndex] <- 0
-                               calculate(model, calcNodesDeterm)
+                               model$calculate(calcNodesDeterm)
                            })
                            
                            for(iDepCount in seq_along(dependentCounts)) {
@@ -889,7 +889,7 @@ conjugacyClass <- setRefClass(
                        if(any(allCurrentLinks == 'multiplicativeScalar') || (nimbleOptions()$allowDynamicIndexing && doDependentScreen)) {
                            functionBody$addCode({
                                model[[target]] <<- diag(d)
-                               calculate(model, calcNodesDeterm)
+                               model$calculate(calcNodesDeterm)
                            })
                            
                            ## Use _COEFF_VAR to store value; we need this for stoch indexing case
@@ -916,7 +916,7 @@ conjugacyClass <- setRefClass(
                                ## Can't use zeros matrix as Cholesky fails; this is solely to determine if
                                ## potential dependency is not a dependency of target (due to stochastic indexing).
                                model[[target]] <<- 2*diag(d)  
-                               calculate(model, calcNodesDeterm)
+                               model$calculate(calcNodesDeterm)
                            })
                            
                            for(iDepCount in seq_along(dependentCounts)) {

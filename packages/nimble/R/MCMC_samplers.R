@@ -30,8 +30,8 @@ sampler_posterior_predictive <- nimbleFunction(
         calcNodes <- model$getDependencies(target)
     },
     run = function() {
-        simulate(model, target)
-        calculate(model, calcNodes)
+        model$simulate(target)
+        model$calculate(calcNodes)
         nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
     },
     methods = list(
@@ -55,7 +55,7 @@ sampler_posterior_predictive_branch <- nimbleFunction(
         calcNodes <- model$getDependencies(target, downstream = TRUE)
     },
     run = function() {
-        simulate(model, calcNodes)
+        model$simulate(calcNodes)
         nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
     },
     methods = list(
@@ -87,13 +87,13 @@ sampler_binary <- nimbleFunction(
         if(!model$isBinary(target))     stop('can only use binary sampler on discrete 0/1 (binary) nodes')
     },
     run = function() {
-        currentLogProb <- getLogProb(model, calcNodes)
+        currentLogProb <- model$getLogProb(calcNodes)
         model[[target]] <<- 1 - model[[target]]
-        otherLogProbPrior <- calculate(model, target)
+        otherLogProbPrior <- model$calculate(target)
         if(otherLogProbPrior == -Inf) {
             otherLogProb <- otherLogProbPrior
         } else {
-            otherLogProb <- otherLogProbPrior + calculate(model, calcNodesNoSelf)
+            otherLogProb <- otherLogProbPrior + model$calculate(calcNodesNoSelf)
         }
         acceptanceProb <- 1/(exp(currentLogProb - otherLogProb) + 1)
         jump <- (!is.nan(acceptanceProb)) & (runif(1,0,1) < acceptanceProb)
@@ -141,18 +141,18 @@ sampler_categorical <- nimbleFunction(
     },
     run = function() {
         currentValue <- model[[target]]
-        logProbs[currentValue] <<- getLogProb(model, calcNodes)
+        logProbs[currentValue] <<- model$getLogProb(calcNodes)
         for(i in 1:k) {
             if(i != currentValue) {
                 model[[target]] <<- i
-                logProbPrior <- calculate(model, target)
+                logProbPrior <- model$calculate(target)
                 if(logProbPrior == -Inf) {
                     logProbs[i] <<- -Inf
                 } else {
                     if(is.nan(logProbPrior)) {
                         logProbs[i] <<- -Inf
                     } else {
-                        logProbs[i] <<- logProbPrior + calculate(model, calcNodesNoSelf)
+                        logProbs[i] <<- logProbPrior + model$calculate(calcNodesNoSelf)
                         if(is.nan(logProbs[i])) logProbs[i] <<- -Inf
                     }
                 }
@@ -163,7 +163,7 @@ sampler_categorical <- nimbleFunction(
         newValue <- rcat(1, probs)   ## rcat normalizes the probabilitiess internally
         if(newValue != currentValue) {
             model[[target]] <<- newValue
-            calculate(model, calcNodes)
+            model$calculate(calcNodes)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelfDeterm, logProb = FALSE)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelfStoch, logProbOnly = TRUE)
@@ -238,7 +238,7 @@ sampler_RW <- nimbleFunction(
             }
         }
         model[[target]] <<- propValue
-        logMHR <- calculateDiff(model, target)
+        logMHR <- model$calculateDiff(target)
         if(logMHR == -Inf) {
             nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
             ## Drawing a random number is needed during first testing
@@ -251,7 +251,7 @@ sampler_RW <- nimbleFunction(
             ## and uncomment the following:
             jump <- FALSE
         } else {
-            logMHR <- logMHR + calculateDiff(model, calcNodesNoSelf) + propLogScale
+            logMHR <- logMHR + model$calculateDiff(calcNodesNoSelf) + propLogScale
             jump <- decide(logMHR)
             if(jump) {
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
@@ -402,7 +402,7 @@ sampler_RW_block <- nimbleFunction(
             propValueVector <- generateProposalVector()
             ##lpMHR <- my_setAndCalculateDiff$run(propValueVector)
             values(model, targetNodesAsScalar) <<- propValueVector
-            lpD <- calculateDiff(model, calcNodesProposalStage)
+            lpD <- model$calculateDiff(calcNodesProposalStage)
             if(lpD == -Inf) {
                 nimCopy(from = mvSaved, to = model,   row = 1, nodes = calcNodesProposalStage, logProb = TRUE)
             ## Drawing a random number is needed during first testing
@@ -416,7 +416,7 @@ sampler_RW_block <- nimbleFunction(
             jump <- FALSE
             } else {
                 ##jump <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
-                lpD <- lpD + calculateDiff(model, calcNodesDepStage)
+                lpD <- lpD + model$calculateDiff(calcNodesDepStage)
                 jump <- decide(lpD)
                 if(jump) {
                     nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesProposalStage, logProb = TRUE)
@@ -547,11 +547,11 @@ sampler_RW_llFunction <- nimbleFunction(
     },
     run = function() {
         modelLP0 <- llFunction$run()
-        if(!includesTarget)     modelLP0 <- modelLP0 + getLogProb(model, target)
+        if(!includesTarget)     modelLP0 <- modelLP0 + model$getLogProb(target)
         propValue <- rnorm(1, mean = model[[target]], sd = scale)
         my_setAndCalculateOne$run(propValue)
         modelLP1 <- llFunction$run()
-        if(!includesTarget)     modelLP1 <- modelLP1 + getLogProb(model, target)
+        if(!includesTarget)     modelLP1 <- modelLP1 + model$getLogProb(target)
         jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
         if(adaptive) {
             targetRWSamplerFunction$adaptiveProcedure(jump)
@@ -606,7 +606,7 @@ sampler_slice <- nimbleFunction(
         if(length(targetAsScalar) > 1)     stop('cannot use slice sampler on more than one target node')
     },
     run = function() {
-        u <- getLogProb(model, calcNodes) - rexp(1, 1)    # generate (log)-auxiliary variable: exp(u) ~ uniform(0, exp(lp))
+        u <- model$getLogProb(calcNodes) - rexp(1, 1)    # generate (log)-auxiliary variable: exp(u) ~ uniform(0, exp(lp))
         x0 <- model[[target]]    # create random interval (L,R), of width 'width', around current value of target
         L <- x0 - runif(1, 0, 1) * width
         R <- L + width
@@ -655,9 +655,9 @@ sampler_slice <- nimbleFunction(
         setAndCalculateTarget = function(value = double()) {
             if(discrete)     value <- floor(value)
             model[[target]] <<- value
-            lp <- calculate(model, target)
+            lp <- model$calculate(target)
             if(lp == -Inf) return(-Inf) 
-            lp <- lp + calculate(model, calcNodesNoSelf)
+            lp <- lp + model$calculate(calcNodesNoSelf)
             returnType(double())
             return(lp)
         },
@@ -705,6 +705,39 @@ sampler_slice <- nimbleFunction(
 ####################################################################
 
 
+essNFList_virtual <- nimbleFunctionVirtual(
+    name = 'essNFList_virtual',
+    run = function() { returnType(double(1)) }
+)
+
+essNF_univariate <- nimbleFunction(
+    name = 'essNF_univariate',
+    contains = essNFList_virtual,
+    setup = function(model, node) {
+        if(!(model$getDistribution(node) == 'dnorm'))   stop('something went wrong')
+        mean <- numeric(2)
+    },
+    run = function() {
+        setSize(mean, 1)
+        mean[1] <<- model$getParam(node, 'mean')
+        returnType(double(1))
+        return(mean)
+    }
+)
+
+essNF_multivariate <- nimbleFunction(
+    name = 'essNF_multivariate',
+    contains = essNFList_virtual,
+    setup = function(model, node) {
+        if(!(model$getDistribution(node) == 'dmnorm'))   stop('something went wrong')
+    },
+    run = function() {
+        mean <- model$getParam(node, 'mean')
+        returnType(double(1))
+        return(mean)
+    }
+)
+
 #' @rdname samplers
 #' @export
 sampler_ess <- nimbleFunction(
@@ -720,24 +753,28 @@ sampler_ess <- nimbleFunction(
         calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         ## numeric value generation
         Pi <- pi
+        d <- length(model$expandNodeNames(target, returnScalarComponents = TRUE))
+        d2 <- max(d, 2)
+        target_mean <- f <- nu <- numeric(d2)
         ## nested function and function list definitions
-        ##target_nodeFunctionList <- nimbleFunctionList(node_stoch_dmnorm)
-        ##target_nodeFunctionList[[1]] <- model$nodeFunctions[[target]]
+        essNFList <- nimbleFunctionList(essNFList_virtual)
+        if(model$getDistribution(target) == 'dnorm')    essNFList[[1]] <- essNF_univariate(model, target)
+        if(model$getDistribution(target) == 'dmnorm')   essNFList[[1]] <- essNF_multivariate(model, target)
         ## checks
-        if(length(target) > 1)                          stop('elliptical slice sampler only applies to one target node')
-        if(model$getDistribution(target) != 'dmnorm')   stop('elliptical slice sampler only applies to multivariate normal distributions')
+        if(length(target) > 1)                                           stop('elliptical slice sampler only applies to one target node')
+        if(!(model$getDistribution(target) %in% c('dnorm', 'dmnorm')))   stop('elliptical slice sampler only applies to normal distributions')
     },
     run = function() {
-        u <- getLogProb(model, calcNodesNoSelf) - rexp(1, 1)
-        target_mean <- model$getParam(target, 'mean') ##target_nodeFunctionList[[1]]$get_mean()
-        f <- model[[target]] - target_mean
-        simulate(model, target)
-        nu <- model[[target]] - target_mean
+        u <- model$getLogProb(calcNodesNoSelf) - rexp(1, 1)
+        target_mean[1:d] <<- essNFList[[1]]$run()
+        f[1:d] <<- values(model, target) - target_mean[1:d]
+        model$simulate(target)
+        nu[1:d] <<- values(model, target) - target_mean[1:d]
         theta <- runif(1, 0, 2*Pi)
         theta_min <- theta - 2*Pi
         theta_max <- theta
-        model[[target]] <<- f*cos(theta) + nu*sin(theta) + target_mean
-        lp <- calculate(model, calcNodesNoSelf)
+        values(model, target) <<- f[1:d]*cos(theta) + nu[1:d]*sin(theta) + target_mean[1:d]
+        lp <- model$calculate(calcNodesNoSelf)
         numContractions <- 0
         while((is.nan(lp) | lp < u) & theta_max - theta_min > eps & numContractions < maxContractions) {   # must be is.nan()
             ## The checks for theta_max - theta_min small and max number of contractions are
@@ -745,8 +782,8 @@ sampler_ess <- nimbleFunction(
             ## theta interval contracts to zero
             if(theta < 0)   theta_min <- theta   else   theta_max <- theta
             theta <- runif(1, theta_min, theta_max)
-            model[[target]] <<- f*cos(theta) + nu*sin(theta) + target_mean
-            lp <- calculate(model, calcNodesNoSelf)
+            values(model, target) <<- f[1:d]*cos(theta) + nu[1:d]*sin(theta) + target_mean[1:d]
+            lp <- model$calculate(calcNodesNoSelf)
             numContractions <- numContractions + 1
         }
         if(theta_max - theta_min <= eps | numContractions == maxContractions) {
@@ -826,7 +863,7 @@ sampler_AF_slice <- nimbleFunction(
         for(i in 1:d) {
             eigenVec <- gammaMatrix[, i]
             width <- widthVec[i]
-            u <- getLogProb(model, calcNodes) - rexp(1, 1)   # generate (log)-auxiliary variable: exp(u) ~ uniform(0, exp(lp))
+            u <- model$getLogProb(calcNodes) - rexp(1, 1)   # generate (log)-auxiliary variable: exp(u) ~ uniform(0, exp(lp))
             x0 <- values(model, target)                      # create random interval (L,R), of width 'width', around current value of target
             Lbound <- -1.0 * runif(1, 0, 1) * width
             Rbound <- Lbound + width
@@ -1016,7 +1053,7 @@ sampler_crossLevel <- nimbleFunction(
         ##my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)   ## old syntax: missing target argument
     },
     run = function() {
-        modelLP0 <- getLogProb(model, calcNodes)
+        modelLP0 <- model$getLogProb(calcNodes)
         propLP0 <- 0
         for(iSF in seq_along(lowConjugateGetLogDensityFunctions))  { propLP0 <- propLP0 + lowConjugateGetLogDensityFunctions[[iSF]]$run() }
         propValueVector <- topRWblockSamplerFunction$generateProposalVector()
@@ -1037,7 +1074,7 @@ sampler_crossLevel <- nimbleFunction(
         else {
             for(iSF in seq_along(lowConjugateSamplerFunctions))
                 lowConjugateSamplerFunctions[[iSF]]$run()
-            modelLP1 <- calculate(model, calcNodes)
+            modelLP1 <- model$calculate(calcNodes)
             propLP1 <- 0
             for(iSF in seq_along(lowConjugateGetLogDensityFunctions))
                 propLP1 <- propLP1 + lowConjugateGetLogDensityFunctions[[iSF]]$run()
@@ -1112,11 +1149,11 @@ sampler_RW_llFunction_block <- nimbleFunction(
     },
     run = function() {
         modelLP0 <- llFunction$run()
-        if(!includesTarget)     modelLP0 <- modelLP0 + getLogProb(model, target)
+        if(!includesTarget)     modelLP0 <- modelLP0 + model$getLogProb(target)
         propValueVector <- generateProposalVector()
         my_setAndCalculate$run(propValueVector)
         modelLP1 <- llFunction$run()
-        if(!includesTarget)     modelLP1 <- modelLP1 + getLogProb(model, target)
+        if(!includesTarget)     modelLP1 <- modelLP1 + model$getLogProb(target)
         jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
         if(adaptive)     adaptiveProcedure(jump)
     },
@@ -1337,7 +1374,7 @@ sampler_RW_dirichlet <- nimbleFunction(
                 thetaVecProp <- thetaVec
                 thetaVecProp[i] <- propValue
                 values(model, target) <<- thetaVecProp / sum(thetaVecProp)
-                logMHR <- alphaVec[i]*propLogScale + currentValue - propValue + calculateDiff(model, calcNodesNoSelf)
+                logMHR <- alphaVec[i]*propLogScale + currentValue - propValue + model$calculateDiff(calcNodesNoSelf)
                 jump <- decide(logMHR)
             } else jump <- FALSE
             if(adaptive & jump)   timesAcceptedVec[i] <<- timesAcceptedVec[i] + 1
@@ -1458,7 +1495,7 @@ sampler_RW_wishart <- nimbleFunction(
         ## matrix multiply to get proposal value (matrix)
         model[[target]] <<- t(propValue_chol) %*% propValue_chol
         ## decide and jump
-        logMHR <- calculateDiff(model, calcNodes)
+        logMHR <- model$calculateDiff(calcNodes)
         deltaDiag <- thetaVec_prop[1:d]-thetaVec[1:d]
         for(i in 1:d)   logMHR <- logMHR + (d+2-i)*deltaDiag[i]  ## took me quite a while to derive this
         jump <- decide(logMHR)

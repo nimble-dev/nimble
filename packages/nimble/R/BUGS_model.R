@@ -504,7 +504,7 @@ nodes: A character vector of node or variable names, which is to be topologicall
 
 returnType: character vector indicating return type. Choices are "names" or "ids"
 
-Details: This function merely reorders its input argument.  This may be inportany prior to calls such as simulate(model, nodes) or calculate(model, nodes), to enforce that the operation is performed in topological order.
+Details: This function merely reorders its input argument.  This may be important prior to calls such as model$simulate(nodes) or model$calculate(nodes), to enforce that the operation is performed in topological order.
 '
                                       nodeIDs <- expandNodeNames(nodes, returnType = 'ids')
                                       nodeIDs <- sort(nodeIDs)

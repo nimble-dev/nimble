@@ -110,7 +110,7 @@ setAndCalculateOne <- nimbleFunction(
     },
     run = function(targetValue = double()) {
         model[[targetNode]] <<- targetValue
-        lp <- calculate(model, calcNodes)
+        lp <- model$calculate(calcNodes)
         returnType(double())
         return(lp)
     }
@@ -153,7 +153,7 @@ setAndCalculate <- nimbleFunction(
     },
     run = function(targetValues = double(1)) {
         values(model, targetNodesAsScalar) <<- targetValues
-        lp <- calculate(model, calcNodes)
+        lp <- model$calculate(calcNodes)
         returnType(double())
         return(lp)
     }
@@ -169,7 +169,7 @@ setAndCalculateDiff <- nimbleFunction(
     },
     run = function(targetValues = double(1)) {
         values(model, targetNodesAsScalar) <<- targetValues
-        lpD <- calculateDiff(model, calcNodes)
+        lpD <- model$calculateDiff(calcNodes)
         returnType(double())
         return(lpD)
     }
