@@ -765,16 +765,16 @@ sampler_ess <- nimbleFunction(
         if(!(model$getDistribution(target) %in% c('dnorm', 'dmnorm')))   stop('elliptical slice sampler only applies to normal distributions')
     },
     run = function() {
-        u <- getLogProb(model, calcNodesNoSelf) - rexp(1, 1)
+        u <- model$getLogProb(calcNodesNoSelf) - rexp(1, 1)
         target_mean[1:d] <<- essNFList[[1]]$run()
         f[1:d] <<- values(model, target) - target_mean[1:d]
-        simulate(model, target)
+        model$simulate(target)
         nu[1:d] <<- values(model, target) - target_mean[1:d]
         theta <- runif(1, 0, 2*Pi)
         theta_min <- theta - 2*Pi
         theta_max <- theta
         values(model, target) <<- f[1:d]*cos(theta) + nu[1:d]*sin(theta) + target_mean[1:d]
-        lp <- calculate(model, calcNodesNoSelf)
+        lp <- model$calculate(calcNodesNoSelf)
         numContractions <- 0
         while((is.nan(lp) | lp < u) & theta_max - theta_min > eps & numContractions < maxContractions) {   # must be is.nan()
             ## The checks for theta_max - theta_min small and max number of contractions are
@@ -783,7 +783,7 @@ sampler_ess <- nimbleFunction(
             if(theta < 0)   theta_min <- theta   else   theta_max <- theta
             theta <- runif(1, theta_min, theta_max)
             values(model, target) <<- f[1:d]*cos(theta) + nu[1:d]*sin(theta) + target_mean[1:d]
-            lp <- calculate(model, calcNodesNoSelf)
+            lp <- model$calculate(calcNodesNoSelf)
             numContractions <- numContractions + 1
         }
         if(theta_max - theta_min <= eps | numContractions == maxContractions) {
