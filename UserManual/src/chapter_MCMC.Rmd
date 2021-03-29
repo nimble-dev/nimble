@@ -596,6 +596,17 @@ cmcmc$samplerFunctions[[idx]]$getAcceptanceHistory()
 cmcmc$samplerFunctions[[idx]]getPropCovHistory   ## only for RW_block
 ```
 
+Note that modifying elements of the control list may greatly
+     affect the performance of the `RW_block` sampler. In particular, the sampler
+     can take a long time to find a good proposal covariance when the
+     elements being sampled are not on the same scale. We recommend
+     providing an informed value for ‘propCov’ in this case (possibly
+     simply a diagonal matrix that approximates the relative scales),
+     as well as possibly providing a value of ‘scale’ that errs on the
+     side of being too small. You may also consider decreasing
+     ‘adaptFactorExponent’ and/or ‘adaptInterval’, as doing so has
+     greatly improved performance in some cases.
+
 ## Extracting MCMC samples {#sec:extracting-samples}
 
 After executing the MCMC, the output samples can be extracted as follows:

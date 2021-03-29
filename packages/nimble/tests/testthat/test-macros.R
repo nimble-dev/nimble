@@ -375,7 +375,7 @@ test_that('duplicate variables from macro expansion error-trapped correctly',
             flat_normal_priors(mu, beta, gamma)
             mu ~ dexp(4)
         }
-        )), "There are multiple definitions for nodes:mu")
+        )), "There are multiple definitions for node\\(s\\): mu.")
 })
 
 test_that('duplicate nested indices from macro expansion error-trapped correctly',

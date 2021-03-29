@@ -129,6 +129,9 @@ modelDefClass <- setRefClass('modelDefClass',
 ##     further, nameMashupFromExpr(expr) in nimbleBUGS_utils.R throws an error if expr contains a ':'
 ##
 modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, data, userEnv, debug = FALSE) {
+    scipen <- options("scipen")[[1]]
+    options(scipen = 1000000)
+    on.exit(options(scipen = scipen))
     if(debug) browser()
     code <- codeProcessIfThenElse(code, constants, userEnv) ## evaluate definition-time if-then-else
     if(nimbleOptions("enableModelMacros")) code <- codeProcessModelMacros(code)
@@ -205,7 +208,7 @@ codeProcessIfThenElse <- function(code, constants, envir = parent.frame()) {
             if(evaluatedCondition) return(codeProcessIfThenElse(code[[3]], constants, envir))
             else {
                 if(length(code) == 4) return(codeProcessIfThenElse(code[[4]], constants, envir))
-                else return(NULL)
+                else return(quote({}))
             }
         } else
             return(code)
@@ -493,6 +496,10 @@ checkUserDefinedDistribution <- function(code, userEnv) {
         
 
 replaceDistributionAliases <- function(code) {
+    if(length(code) < 3)
+        stop("Invalid model declaration: ", deparse(code), ".")
+    if(!is.call(code[[3]]))
+        stop("Invalid model declaration: ", deparse(code), " must call a density function.")
     dist <- as.character(code[[3]][[1]])
     trunc <- FALSE
     if(dist %in% c("T", "I")) {
@@ -1527,7 +1534,7 @@ makeVertexNamesFromIndexArray2 <- function(indArr, minInd = 1, varName) {
         scal <- all[3,]==0           ## which rows are for scalar elements
         seps[scal] <- ''             ## set the sep for scalars to ''
         seps[all[4,]==0] <- '%.s%'    ## for rows that are not contiguous, use i %.s% j. Any actual call to %.s% results in an error.
-        maxStrs <- as.character(all[2,]) ## maximums
+        maxStrs <- format(all[2,], scientific = FALSE) ## maximums
         maxStrs[scal] <- ''              ## clear maximums for scalars 
         paste0(all[1,], seps, maxStrs)   ## paste minimum-separator-maximum
     })
@@ -2418,18 +2425,26 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$nodeNamesRHSonly <<- maps$graphID_2_nodeName[maps$types == 'RHSonly'] ##nodeNamesRHSonly
     maps$nodeNames <<- maps$graphID_2_nodeName
 
-    if(any(duplicated(maps$nodeNames[!unknownIndexNodes[newGraphID_2_oldGraphID]]))) {  ## x[k[i],block[i]] can lead to duplicated nodeNames for unknownIndex declarations; this should be ok, though there is inefficiency in having a vertex in the graph for each element of second index instead of collapsing into one vertex per unique value.
-        stop(
-            paste0("There are multiple definitions for nodes:",
-                   paste(maps$nodeNames[duplicated(maps$nodeNames[!unknownIndexNodes[newGraphID_2_oldGraphID]])],
-                         collapse = ','), "\n",
-                   "If your model has macros or if-then-else blocks\n",
-                   "you can inspect the processed model code by doing\n",
-                   "nimbleOptions(stop_after_processing_model_code = TRUE)\n",
-                   "before calling nimbleModel.\n"
-                   ),
-            call. = FALSE)
+    if(nimbleOptions('checkDuplicateNodeDefinitions')) {
+        dups <- duplicated(maps$nodeNames[!unknownIndexNodes[newGraphID_2_oldGraphID]])
+        if(any(dups)) {
+            ## x[k[i],block[i]] can lead to duplicated nodeNames for unknownIndex declarations; this should be ok, though there is inefficiency in having a vertex in the graph for each element of second index instead of collapsing into one vertex per unique value.
+            stop("There are multiple definitions for node(s): ", 
+                 paste(maps$nodeNames[dups], collapse = ','), ".",
+                 ## "If your model has macros or if-then-else blocks\n",
+                 ## "you can inspect the processed model code by doing\n",
+                 ## "nimbleOptions(stop_after_processing_model_code = TRUE)\n",
+                 ## "before calling nimbleModel.\n"
+                 call. = FALSE)
+        }
+        LHSelements <- lapply(maps$nodeNamesLHSall, .self$nodeName2GraphIDs)
+        dups <- duplicated(unlist(LHSelements))
+        if(any(dups)) {
+            index <- rep(seq_along(LHSelements), time = sapply(LHSelements, length))
+            stop("Definition of node(s): ", paste(maps$nodeNamesLHSall[index[dups]], collapse = ','), " overlaps with other node definitions.", call. = FALSE)
+        }
     }
+    
     if(debug) browser()
     
     newVertexID_2_nodeID <- vertexID_2_nodeID [ newGraphID_2_oldGraphID ]
@@ -3048,17 +3063,17 @@ parseEvalNumericManyList <- function(x, env, ignoreNotFound = FALSE) {
     }
 }
 
-parseEvalCharacter <- function(x, env){
-    ans <- eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)
-    as.character(ans)
-}
+## parseEvalCharacter <- function(x, env){
+##     ans <- eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)
+##     as.character(ans)
+## }
 
-parseEvalCharacterMany <- function(x, env){
-    if(length(x) > 1) {
-        return(as.character(eval(parse(text = paste0('c(', paste0(x, collapse=','),')'), keep.source = FALSE)[[1]], envir = env)))
-    } else 
-        as.character(eval(parse(text = x, keep.source = FALSE)[[1]], envir = env))
-}
+## parseEvalCharacterMany <- function(x, env){
+##     if(length(x) > 1) {
+##         return(as.character(eval(parse(text = paste0('c(', paste0(x, collapse=','),')'), keep.source = FALSE)[[1]], envir = env)))
+##     } else 
+##         as.character(eval(parse(text = x, keep.source = FALSE)[[1]], envir = env))
+## }
 
 getDependencyPaths <- function(nodeID, maps, nodeIDrow = NULL) {
     newNodes <- maps$edgesFrom2To[[nodeID]]

@@ -7,6 +7,8 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
 # These options are for development use at this point.
 .nimbleOptions <- as.environment(
     list(
+        groupDetermWithGivenInCondIndSets = TRUE, # used in getConditionallyIndependentSets
+        use_C_getParents = FALSE,
         useNewConfigureMCMC = TRUE,
         oldConjugacyChecking = FALSE,
         disallow_multivariate_argument_expressions = TRUE,
@@ -38,6 +40,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         clearNimbleFunctionsAfterCompiling = FALSE,
         checkModel = FALSE,
         checkNimbleFunction = TRUE,
+        checkDuplicateNodeDefinitions = TRUE,
         verbose = TRUE,
         verboseErrors = FALSE,
 

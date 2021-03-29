@@ -272,9 +272,13 @@ checkDistributionFunctions <- function(distributionInput, userEnv) {
               stop(paste0("checkDistributionFunctions: density function for ", densityName,
                           " has invalid or missing returnType, which must be 'double(0)' (or equivalently 'double()')."))
     } else nofun <- TRUE
-    if(nofun)
-        stop(paste0("checkDistributionFunctions: density function for ", densityName,
+    if(nofun) {
+        if(densityName %in% c('+','-','*','/','%%','%*%','[','[[','$','^','|','||','&','&&',':','<','<=','>','>=','!=','==')) {
+            stop(paste0("checkDistributionFunctions: expression '", densityName,
+                        "' found where a density function is expected. Did you mistakenly use `~` instead of `<-`?"))
+        } else stop(paste0("checkDistributionFunctions: density function for ", densityName,
                     " is not available.  It must be a nimbleFunction (with no setup code)."))
+    }
     if(!exists(simulateName, where = userEnv) || !is.rcf(get(simulateName, pos = userEnv))) {
         cat(paste0("Warning: random generation function for ", densityName,
                     " is not available. NIMBLE is generating a placeholder function, ", simulateName, ", that will invoke an error if an algorithm needs to simulate from this distribution. Some algorithms (such as random-walk Metropolis MCMC sampling) will work without the ability to simulate from the distribution.  If simulation is needed, provide a nimbleFunction (with no setup code) to do it.\n"))
