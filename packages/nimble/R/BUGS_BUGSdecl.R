@@ -810,7 +810,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                             sapply(contentsCode,
                                    detectNonscalarIndex))
                            )
-                            stop("getSymbolicParentNodesRecurse: only scalar random indices are allowed; vector random indexing found in ",
+                            stop("getSymbolicParentNodesRecurse: only scalar indices are allowed; vector random indexing found in ",
                                  deparse(code))
                         indexedVariable <- deparse(code[[2]])
                         dynamicIndexParent <-
