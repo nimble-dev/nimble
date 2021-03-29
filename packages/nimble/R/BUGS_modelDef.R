@@ -3000,10 +3000,15 @@ handleOutOfBounds <- function(x, env) {
 
 parseEvalNumericMany <- function(x, env, ignoreNotFound = FALSE) {
     ## avoid evaluating variables in index expr, such as "y[idx]".
-    allVars <- all.vars(parse(text = x))
-    nonLocalVars <- !allVars %in% ls(env)
-    if(any(nonLocalVars))
-        stop("parseEvalNumericMany: a variable was found in the indexing in ", x, ".")
+    if(nimbleOptions('checkForIndexVariablesInNodeNames')) {
+        parsedx <- parse(text = x)[[1]]
+        if(length(parsedx) > 1 && deparse(parsedx[[1]]) %in% c('[', '[[')) {
+            allVars <- all.vars(parsedx)
+            allVars <- allVars[allVars != parsedx[[2]]]
+            if(length(allVars))
+                stop("parseEvalNumericMany: a variable was found in the indexing in '", x, "'.")
+        }
+    }
     if(ignoreNotFound) {  ## Return NA when not found.
         if(length(x) > 1) {
             ## First try to do as vectorized call.
@@ -3036,10 +3041,15 @@ parseEvalNumericMany <- function(x, env, ignoreNotFound = FALSE) {
 
 parseEvalNumericManyList <- function(x, env, ignoreNotFound = FALSE) {
     ## avoid evaluating variables in index expr, such as "y[idx]".
-    allVars <- all.vars(parse(text = x))
-    nonLocalVars <- !allVars %in% ls(env)
-    if(any(nonLocalVars))
-        stop("parseEvalNumericMany: a variable was found in the indexing in ", x, ".")
+    if(nimbleOptions('checkForIndexVariablesInNodeNames')) {
+        parsedx <- parse(text = x)[[1]]
+        if(length(parsedx) > 1 && deparse(parsedx[[1]]) %in% c('[', '[[')) {
+            allVars <- all.vars(parsedx)
+            allVars <- allVars[allVars != parsedx[[2]]]
+            if(length(allVars))
+                stop("parseEvalNumericManyList: a variable was found in the indexing in '", x, "'.")
+        }
+    }
     if(ignoreNotFound) {  ## Return NA when not found.
        output <- try(eval(.Call(makeParsedVarList, x), envir = env), silent = TRUE)
         if(!is(output, 'try-error'))
