@@ -705,6 +705,39 @@ sampler_slice <- nimbleFunction(
 ####################################################################
 
 
+essNFList_virtual <- nimbleFunctionVirtual(
+    name = 'essNFList_virtual',
+    run = function() { returnType(double(1)) }
+)
+
+essNF_univariate <- nimbleFunction(
+    name = 'essNF_univariate',
+    contains = essNFList_virtual,
+    setup = function(model, node) {
+        if(!(model$getDistribution(node) == 'dnorm'))   stop('something went wrong')
+        mean <- numeric(2)
+    },
+    run = function() {
+        setSize(mean, 1)
+        mean[1] <<- model$getParam(node, 'mean')
+        returnType(double(1))
+        return(mean)
+    }
+)
+
+essNF_multivariate <- nimbleFunction(
+    name = 'essNF_multivariate',
+    contains = essNFList_virtual,
+    setup = function(model, node) {
+        if(!(model$getDistribution(node) == 'dmnorm'))   stop('something went wrong')
+    },
+    run = function() {
+        mean <- model$getParam(node, 'mean')
+        returnType(double(1))
+        return(mean)
+    }
+)
+
 #' @rdname samplers
 #' @export
 sampler_ess <- nimbleFunction(
@@ -720,23 +753,27 @@ sampler_ess <- nimbleFunction(
         calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         ## numeric value generation
         Pi <- pi
+        d <- length(model$expandNodeNames(target, returnScalarComponents = TRUE))
+        d2 <- max(d, 2)
+        target_mean <- f <- nu <- numeric(d2)
         ## nested function and function list definitions
-        ##target_nodeFunctionList <- nimbleFunctionList(node_stoch_dmnorm)
-        ##target_nodeFunctionList[[1]] <- model$nodeFunctions[[target]]
+        essNFList <- nimbleFunctionList(essNFList_virtual)
+        if(model$getDistribution(target) == 'dnorm')    essNFList[[1]] <- essNF_univariate(model, target)
+        if(model$getDistribution(target) == 'dmnorm')   essNFList[[1]] <- essNF_multivariate(model, target)
         ## checks
-        if(length(target) > 1)                          stop('elliptical slice sampler only applies to one target node')
-        if(model$getDistribution(target) != 'dmnorm')   stop('elliptical slice sampler only applies to multivariate normal distributions')
+        if(length(target) > 1)                                           stop('elliptical slice sampler only applies to one target node')
+        if(!(model$getDistribution(target) %in% c('dnorm', 'dmnorm')))   stop('elliptical slice sampler only applies to normal distributions')
     },
     run = function() {
         u <- model$getLogProb(calcNodesNoSelf) - rexp(1, 1)
-        target_mean <- model$getParam(target, 'mean') ##target_nodeFunctionList[[1]]$get_mean()
-        f <- model[[target]] - target_mean
+        target_mean[1:d] <<- essNFList[[1]]$run()
+        f[1:d] <<- values(model, target) - target_mean[1:d]
         model$simulate(target)
-        nu <- model[[target]] - target_mean
+        nu[1:d] <<- values(model, target) - target_mean[1:d]
         theta <- runif(1, 0, 2*Pi)
         theta_min <- theta - 2*Pi
         theta_max <- theta
-        model[[target]] <<- f*cos(theta) + nu*sin(theta) + target_mean
+        values(model, target) <<- f[1:d]*cos(theta) + nu[1:d]*sin(theta) + target_mean[1:d]
         lp <- model$calculate(calcNodesNoSelf)
         numContractions <- 0
         while((is.nan(lp) | lp < u) & theta_max - theta_min > eps & numContractions < maxContractions) {   # must be is.nan()
@@ -745,7 +782,7 @@ sampler_ess <- nimbleFunction(
             ## theta interval contracts to zero
             if(theta < 0)   theta_min <- theta   else   theta_max <- theta
             theta <- runif(1, theta_min, theta_max)
-            model[[target]] <<- f*cos(theta) + nu*sin(theta) + target_mean
+            values(model, target) <<- f[1:d]*cos(theta) + nu[1:d]*sin(theta) + target_mean[1:d]
             lp <- model$calculate(calcNodesNoSelf)
             numContractions <- numContractions + 1
         }
