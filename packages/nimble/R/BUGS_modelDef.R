@@ -376,18 +376,19 @@ modelDefClass$methods(assignDimensions = function(dimensions, initsList, dataLis
     # main use case here is when user provides RHS only variable as data
     for(i in seq_along(dataList)) {
         dataName <- names(dataList)[i]
-        dataDim <- nimbleInternalFunctions$dimOrLength(dataList[[i]], scalarize = FALSE)  # don't scalarize as want to preserve dims as provided by user, e.g. for 1x1 matrices
-        if(!(length(dataDim) == 1 && dataDim == 1)) {  # i.e., non-scalar data; 1-length vectors treated as scalars and not passed along as dimension info to avoid conflicts between scalars and one-length vectors/matrices/arrays in various places
-            if(dataName %in% names(dL)) {
-                if(!identical(as.numeric(dL[[dataName]]), as.numeric(dataDim))) {
-                    warning('inconsistent dimensions between data and dimensions arguments: ', dataName, '; ignoring dimensions in data.')
+        if(!is.null(dataName) && dataName != '') {
+            dataDim <- nimbleInternalFunctions$dimOrLength(dataList[[i]], scalarize = FALSE)  # don't scalarize as want to preserve dims as provided by user, e.g. for 1x1 matrices
+            if(!(length(dataDim) == 1 && dataDim == 1)) {  # i.e., non-scalar data; 1-length vectors treated as scalars and not passed along as dimension info to avoid conflicts between scalars and one-length vectors/matrices/arrays in various places
+                if(dataName %in% names(dL)) {
+                    if(!identical(as.numeric(dL[[dataName]]), as.numeric(dataDim))) {
+                        warning('inconsistent dimensions between data and dimensions arguments: ', dataName, '; ignoring dimensions in data.')
+                    }
+                } else {
+                    dL[[dataName]] <- dataDim
                 }
-            } else {
-                dL[[dataName]] <- dataDim
             }
         }
     }
-    
     dimensionsList <<- dL
 })
 
@@ -2830,6 +2831,14 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
                     warning("newModel: Conflict between 'data' and 'inits' for ", varName, "; using values from 'data'.\n")
                 inits[[varName]][dataVars] <- data[[varName]][dataVars]
             }
+        }
+    }
+    if(length(inits)) {
+        unnamed <- which(names(inits) == "")
+        if(length(unnamed) || is.null(names(inits))) {
+            warning("One or more unnamed elements found in inits.")
+            if(length(unnamed))
+                inits <- inits[-unnamed] else inits <- list()
         }
     }
     nonVarIndices <- !names(inits) %in% model$getVarNames()

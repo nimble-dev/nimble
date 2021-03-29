@@ -575,7 +575,8 @@ Details: If a provided value (or the current value in the model when only a name
                                                }
                                            }
                                            names(data) <- dataNames
-
+                                           if(any(names(data) == ""))
+                                               warning("setData: one or more elements of 'data' is unnamed.")
                                       origData <<- data
                                       ## argument is a named list of data values.
                                       ## all nodes specified (except with NA) are set to that value, and have isDataEnv$VAR set to TRUE
@@ -596,9 +597,9 @@ Details: If a provided value (or the current value in the model when only a name
                                               if(warnAboutMissingNames
                                                  & nimble::nimbleOptions("verbose")) {
                                                   if(varName == '') {
-                                                      warning('unnamed element provided to setData')
+                                                      warning('setData: unnamed element provided to setData.')
                                                   } else 
-                                                      warning('data not used in model: ',
+                                                      warning('setData: data not used in model: ',
                                                               varName)
                                               }
                                               ## Removing unnecessary
@@ -973,7 +974,6 @@ inits: A named list.  The names of list elements must correspond to model variab
                                       }
 
                                       origInits <<- inits
-
                                       for(i in seq_along(inits)) {
                                           if(names(inits)[i] == '') {
                                               warning(paste0('setInits: element ', i, ' of inits list is not named; skipping this element'))
