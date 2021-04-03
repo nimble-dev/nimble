@@ -181,6 +181,7 @@ class nimbleCppADrecordingInfoClass {
   std::vector<CppAD::local::atomic_index_info>* atomic_vec_ptr_;
  public:
   bool& recording() {return recording_;}
+  bool recording_cp() const {return recording_;}
   CppAD::tape_id_t& tape_id() {return tape_id_;}
   CppAD::local::ADTape<double>* &tape_handle() {return tape_handle_;}
   CppAD::tape_id_t tape_id_cp() const {return tape_id_;}

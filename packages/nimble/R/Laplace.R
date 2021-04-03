@@ -207,7 +207,7 @@ nimOneLaplace1D <- nimbleFunction(
       ## control <- get_optim_control()
       optimControl <- nimOptimDefaultControl()
       optimControl$fnscale <- -1
-      optimControl$maxit <- 5000
+      optimControl$maxit <- 100 # 5000
       optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik, method = "CG", control = optimControl)
       ## Need to consider the case where optim does not converge
       if(optRes$convergence != 0) {
@@ -689,9 +689,18 @@ nimOneLaplace <- nimbleFunction(
     
     ## The following is used to ensure the one_time_fixes are run when needed.
     one_time_fixes_done <- FALSE
+    num_times <- 11
+    times <- rep(0, num_times)
+    num_inner_times <- 1000
+    i_inner_time <- 1
+    inner_logLik_times <- rep(0, num_inner_times)
   },
   run = function(){},
   methods = list(
+    get_times = function() {return(times); returnType(double(1))},
+    reset_times = function() {times <<- rep(0, num_times)},
+    add_time = function(t = double(), i = integer()) {times[i] <<- times[i] + t},
+    
     fix_one_vec = function(x = double(1)) {
       if(length(x) == 2) {
         if(x[2] == -1) {
@@ -749,10 +758,13 @@ nimOneLaplace <- nimbleFunction(
     ## WZ: it seems that the double-taping derivative methods sometimes give incorrect results.
     ## Currently derivative methods without double taping are used below.
     gr_inner_logLik = function(reTransform = double(1)) {
+      t10 <- run.time( {
       ans <- derivs(gr_inner_logLik_internal(reTransform), wrt = reTrans_indices_inner,
                     order = 0, model = model,
                     updateNodes   = inner_updateNodes,
                     constantNodes = inner_updateNodes)
+      })
+      add_time(t10, 10)
       return(ans$value)
       returnType(double(1))
     },
@@ -772,8 +784,28 @@ nimOneLaplace <- nimbleFunction(
       values(model, paramNodes) <<- p
       ## Random effects values from the model
       reInitTrans <- get_reInitTrans()
+      
+      # If optim can't get a value from initial parameters (random effects),
+      # it will error out and we don't have a good way to catch it.
+      # This might be possible via but I am not sure how.  It is thrown from a direct error() call in the optim C++ functions.
+      # Hence we check the initial parameters (random effects) and return -Inf manually.
+      # Note that what could be happening is the (actual) parameters from the outer optimization
+      # could be invalid, which would mean that no values of initial parameters (random effects)
+      # here in the inner optimization will be valid.  The outer optim can handle an Inf and search other parameter values,
+      # but we need the inner optimization to exit gracefully if it can't do anything.
+      fn_init <- inner_logLik(reInitTrans)
+##      print("in max_inner_logLik\n")
+      if((fn_init == Inf) | (fn_init == -Inf) | (is.nan(fn_init)) | (is.na(fn_init))) {
+##        print("init params failed\n")
+        optRes <- optimResultNimbleList$new()
+        optRes$par <- reInitTrans
+        optRes$value <- -Inf
+        optRes$convergence <- -1
+        return(optRes)
+      }
+
       ## control <- get_optim_control()
-       optimControl <- nimOptimDefaultControl()
+      optimControl <- nimOptimDefaultControl()
       optimControl$fnscale <- -1
       optimControl$maxit <- 5000
       optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik,
@@ -789,6 +821,7 @@ nimOneLaplace <- nimbleFunction(
       values(model, paramNodes) <<- p
       ## Random effects values from the model
       reInitTrans <- get_reInitTrans()
+
       ## control <- get_optim_control()
       optimControl <- nimOptimDefaultControl()
       optimControl$fnscale <- -1
@@ -804,7 +837,17 @@ nimOneLaplace <- nimbleFunction(
     },
     ## These two update methods for max_inner_logLik use the same member data caches
     update_max_inner_logLik = function(p = double(1)) {
-      optRes <- max_inner_logLik(p)
+      t9 <- run.time( {
+        optRes <- max_inner_logLik(p)
+      })
+      add_time(t9, 9)
+
+      inner_logLik_times[i_inner_time] <<- t9
+      if(i_inner_time == length(inner_logLik_times)) {
+        inner_logLik_times <<- c(inner_logLik_times, rep(0, 1000))
+      }
+      i_inner_time <<- i_inner_time + 1
+      
       max_inner_logLik_saved_par <<- optRes$par
       max_inner_logLik_saved_value <<- optRes$value
       max_inner_logLik_previous_p <<- p
@@ -1105,9 +1148,18 @@ nimOneLaplace <- nimbleFunction(
       reTransform <- max_inner_logLik_saved_par
       maxValue <- max_inner_logLik_saved_value        
 
-      logdetNegHessian <- logdetNegHess(p, reTransform)
+      if(maxValue == -Inf) return(-Inf) # This would mean inner optimization failed
+
+      # time 1
+      t1 <- run.time( {
+        logdetNegHessian <- logdetNegHess(p, reTransform)
+      })
+      add_time(t1, 1)
       ## Laplace approximation
-      ans <- maxValue - 0.5 * logdetNegHessian + 0.5 * nreTrans * log(2*pi)
+      t2 <- run.time( {
+        ans <- maxValue - 0.5 * logdetNegHessian + 0.5 * nreTrans * log(2*pi)
+      })
+      add_time(t2, 2)
       ## if(record_intermediates_for_checking) {
       ##   Lap_logdetNegHess_s <<- logdetNegHessian
       ##   Lap_opt_val_s <<- maxValue
@@ -1137,11 +1189,26 @@ nimOneLaplace <- nimbleFunction(
       }
       reTransform <- max_inner_logLik_saved_par
 
-      negHessian <- negHess(p, reTransform)
-      invNegHessian <- inverse(negHessian)
-      grlogdetNegHesswrtp <- gr_logdetNegHess_wrt_p(p, reTransform)
-      grlogdetNegHesswrtre <- gr_logdetNegHess_wrt_re(p, reTransform)
-      hesslogLikwrtpre <- hess_joint_logLik_wrt_p_wrt_re(p, reTransform)
+      t3 <- run.time( {
+        negHessian <- negHess(p, reTransform)
+      })
+      add_time(t3, 3)
+      t4 <- run.time( {
+        invNegHessian <- inverse(negHessian)
+      })
+      add_time(t4, 4)
+      t5 <- run.time( {
+        grlogdetNegHesswrtp <- gr_logdetNegHess_wrt_p(p, reTransform)
+      })
+      add_time(t5, 5)
+      t6 <- run.time( {
+        grlogdetNegHesswrtre <- gr_logdetNegHess_wrt_re(p, reTransform)
+      })
+      add_time(t6, 6)
+      t7 <- run.time( {
+        hesslogLikwrtpre <- hess_joint_logLik_wrt_p_wrt_re(p, reTransform)
+      })
+      add_time(t7, 7)
       ## if(record_intermediates_for_checking) {
       ##   gr_Lap_negHessian_s <<- negHessian
       ##   gr_Lap_grlogdetNegHesswrtp_s <<- grlogdetNegHesswrtp
@@ -1149,8 +1216,12 @@ nimOneLaplace <- nimbleFunction(
       ##   gr_Lap_hesslogLikwrtpre_s <<- hesslogLikwrtpre
       ##   gr_Lap_gr_joint_logLik_wrt_p_s <<- gr_joint_logLik_wrt_p(p, reTransform)
       ## }
+      t8 <- run.time({
       ans <- gr_joint_logLik_wrt_p(p, reTransform) - 
         0.5 * (grlogdetNegHesswrtp + (grlogdetNegHesswrtre %*% invNegHessian) %*% t(hesslogLikwrtpre))
+      })
+      add_time(t8, 8)
+      
       return(ans[1,])
       returnType(double(1))
     },
@@ -1371,19 +1442,19 @@ buildLaplace <- nimbleFunction(
       if(num_reSets == 0)
         stop("There was a problem determining conditionally independent sets for this model.")
       for(i in seq_along(reSets)) {
-        # Work with one conditionally independent set of latent states
+        ## Work with one conditionally independent set of latent states
         these_reNodes <- reSets[[i]]
-        # Find the paramNodes that are parents of these latent states
-        these_reParents <- model$getParents(these_reNodes)
-        these_paramNodes <- intersect(paramNodes, these_reParents)
-        # Find the calcNodes that are descendents of these latent states
-        these_reDeps <- model$getDependencies(these_reNodes)
-        these_calcNodes <- intersect(calcNodes, these_reDeps)
+        ## find paramNodes and calcNodes for this set of reNodes
+        these_reDeps <- model$getDependencies(these_reNodes) ## candidate calcNodes via reNodes
+        these_calcNodes <- intersect(calcNodes, these_reDeps) ## definite calcNodes
+
+        ## paramNodes are the same for all laplace_nfl elements.
+        ## In the future this could be customized.
         if(length(model$expandNodeNames(these_reNodes, returnScalarComponents = TRUE)) > 1) {
-          laplace_nfl[[i]] <- nimOneLaplace(model, these_paramNodes,
+          laplace_nfl[[i]] <- nimOneLaplace(model, paramNodes,
                                             these_reNodes, these_calcNodes)
         } else {
-          laplace_nfl[[i]] <- nimOneLaplace1D(model, these_paramNodes,
+          laplace_nfl[[i]] <- nimOneLaplace1D(model, paramNodes,
                                               these_reNodes, these_calcNodes)
         }
       }
@@ -1416,6 +1487,7 @@ buildLaplace <- nimbleFunction(
       one_time_fixes_done <<- TRUE
     },
     Laplace = function(p = double(1)) {
+      ans <- -Inf
       if(methodID == 1)
         ans <- Laplace1(p)
       else if(methodID == 2)
@@ -1505,6 +1577,7 @@ buildLaplace <- nimbleFunction(
     p_transformed_Laplace2 = function(pTransform = double(1)) {
       p <- paramsTransformation$inverseTransform(pTransform)
       ans <- Laplace2(p)
+      if(is.nan(ans)) ans <- -Inf
       return(ans)
       returnType(double())
     },

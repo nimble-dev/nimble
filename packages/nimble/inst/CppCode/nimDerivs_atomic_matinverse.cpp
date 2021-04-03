@@ -110,8 +110,10 @@ bool atomic_matinverse_class::forward(
   //forward mode
   // printf("In matinverse forward\n");
   int nrow = order_up + 1;
-  //  std::cout<<"in matinverse forward with order_low = "<<order_low<<" and order_up = "<<order_up<<std::endl;
-    
+  //  std::cout<<"in matinverse forward "<<this<<" with order_low = "<<order_low<<" and order_up = "<<order_up<<std::endl;
+  //  std::cout<<"tape_id and handle:"<< CppAD::AD<double>::get_tape_id_nimble()<<" "<< CppAD::AD<double>::get_tape_handle_nimble()<<"\n";
+  //  std::cout<<"atomic info:"<<CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage()<<"\n";
+
   int n = static_cast<int>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
   EigenConstMap Xmap(&taylor_x[0], n, n, EigStrDyn(nrow*n, nrow) );
   //  std::cout<<"Xmap inputted for forward 0\n"<<Xmap<<std::endl;
@@ -123,7 +125,6 @@ bool atomic_matinverse_class::forward(
     Ymap = Xmap.inverse().eval(); // This eval is necessary if nrow > 1
     // std::cout<<"Ymap calculated for forward 0\n"<<Ymap<<std::endl;
     double_cache.set_cache( 0, 0, order_up, taylor_x, taylor_y );
-    
   }
   if(order_low <= 1 & order_up >= 1) {
     // printf("In forward >1\n");
@@ -163,7 +164,10 @@ bool atomic_matinverse_class::forward(
 				      const CppAD::vector<CppAD::AD<double> >&    taylor_x     ,
 				      CppAD::vector<CppAD::AD<double> >&          taylor_y     ) {
   //forward mode
-  // printf("In matinverse meta-forward\n");
+  // std::cout<<"In matinverse meta-forward "<< this <<" "<<order_low<<" "<<order_up<<std::endl;
+  //  std::cout<<"tape_id and handle:"<< CppAD::AD<double>::get_tape_id_nimble()<<" "<< CppAD::AD<double>::get_tape_handle_nimble()<<"\n";
+  //  std::cout<<"atomic info:"<<CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage()<<"\n";
+  
   int nrow = order_up + 1;
   // std::cout<<"nrow = "<<nrow<<std::endl;
     
@@ -176,7 +180,7 @@ bool atomic_matinverse_class::forward(
     CppADdouble_cache.set_cache( 0, 0, order_up, taylor_x, taylor_y );
   }
   if(order_low <= 1 & order_up >= 1) {
-    // printf("In forward >1\n");
+    //    printf("In forward >1\n");
     CppADdouble_cache.check_and_set_cache(this,
 					  parameter_x,
 					  type_x,
@@ -259,7 +263,7 @@ bool atomic_matinverse_class::reverse(
 				      const CppAD::vector<CppAD::AD<double> >&               partial_y   )
 {
   //reverse mode
-  // printf("In matinverse reverse\n");
+  //  std::cout<<"In matinverse meta-reverse "<<order_up<<std::endl;
   int nrow = order_up + 1;
   int n = static_cast<int>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
 

@@ -102,7 +102,7 @@ void set_CppAD_tape_info_for_model::set_from_nodeFunPtr(nodeFun *nodeFun_,
 
 set_CppAD_tape_info_for_model::~set_CppAD_tape_info_for_model() {
   if(not_empty) {
-    //   nodeFunInModelDLL->set_tape_ptr_from_nodeFun(saved_tape_id, saved_tape_handle, true);
+    nodeFunInModelDLL->set_tape_ptr_from_nodeFun(saved_tape_id, saved_tape_handle, true); // This was an attempt at self-cleanup.  It does not seem necessary but is worth keeping in mind.
   }
 }
 

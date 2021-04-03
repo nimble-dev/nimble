@@ -832,6 +832,7 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
       copyToDoublesLines <- quote(blank())
       updateRecordingInfolLines <- quote(blank())
       callForTapingNames <- TF$args$getSymbolNames()
+      updateRecordingInfoTapeInfoLines <- quote(blank())
     } else {
       copyToDoublesLines <- list()
       callForTapingNames <- character()
@@ -857,11 +858,14 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
         }
       copyToDoublesLines <- do.call("call", c(list("{"), copyToDoublesLines))
       updateRecordingInfolLines  <- cppLiteral("if(ADinfo.nodeFunPtrSet()) recordingInfo_.ADinfoPtr()->set_nodeFunPtr(ADinfo.nodeFunPtr());")
+      updateRecordingInfoTapeInfoLines <- cppLiteral(paste0("recordingInfo_.tape_id()=CppAD::AD<double>::get_tape_id_nimble();\n",
+                                                            "recordingInfo_.tape_handle()=CppAD::AD<double>::get_tape_handle_nimble();\n",
+                                                            "recordingInfo_.atomic_vec_ptr() = CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage();"))
     }
 
     if(!isNode) {
       if(metaTape)
-        TF$args$addSymbol(cppVarFull(baseType = "nimbleCppADrecordingInfoClass", name = "recordingInfo_"))
+        TF$args$addSymbol(cppVarFull(baseType = "nimbleCppADrecordingInfoClass", name = "recordingInfo_", ref = TRUE))
       TF$args$addSymbol(cppVar(baseType = "bool", name = "RESET_"))
       TF$args$addSymbol(cppVar(baseType = "nimbleCppADinfoClass", ref = TRUE, name = "ADinfo"))
     }
@@ -882,10 +886,12 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
         cppLiteral("if(ADinfo.ADtape) delete ADinfo.ADtape;")
         COPYTODOUBLESLINES
         memberData(ADinfo, ADtape) <- RUNCALLFORTAPING
+        UPDATERECORDINGINFOTAPEINFOLINES
       },
       list(IFRECORDCONDITION = if_record_condition,
            RUNCALLFORTAPING = runCallForTapingCode,
-           COPYTODOUBLESLINES = copyToDoublesLines))
+           COPYTODOUBLESLINES = copyToDoublesLines,
+           UPDATERECORDINGINFOTAPEINFOLINES = updateRecordingInfoTapeInfoLines))
     ## recordIfNeededCode <- substitute(
     ##   if(!myADtapePtrs_[FUNINDEX]) {
     ##     COPYTODOUBLESLINES

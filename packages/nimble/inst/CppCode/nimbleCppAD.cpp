@@ -190,6 +190,7 @@ void update_dynamicVars(nimbleCppADinfoClass &ADinfo) {
 
 void update_dynamicVars_meta(nimbleCppADinfoClass &ADinfo) {
   if(!ADinfo.updaterNV()) return;
+  // std::cout<<"in update_dynamicVars_meta"<<std::endl;
   // copy from model --> dynamicVars and call new_dynamic
   NodeVectorClassNew_derivs &NV = *(ADinfo.updaterNV());
   int length_extraInput = NV.model_AD_extraInput_accessor.getTotalLength();
@@ -201,10 +202,9 @@ void update_dynamicVars_meta(nimbleCppADinfoClass &ADinfo) {
     std::copy( NimArrValuesAD.getPtr(),
 	       NimArrValuesAD.getPtr() + length_extraInput,
 	       ADinfo.dynamicVars_meta.begin());
-  }
+  }  
   // call to new_dynamic is inside getDerivs_meta after base2ad.
 }
-
 
 void update_dynamicVars_meta(NodeVectorClassNew_derivs &NV,
 			     nimbleCppADinfoClass &ADinfo) {
@@ -417,8 +417,10 @@ void nimbleFunctionCppADbase::getDerivs_meta(nimbleCppADinfoClass &ADinfo,
 					     const nimbleCppADrecordingInfoClass &nimRecInfo,
 					     nimSmartPtr<NIMBLE_ADCLASS_META> &ansList) {
   //  std::cout<<"Entering getDerivs_meta"<<std::endl;
-  // std::cout<<"ADinfo is at :"<< &ADinfo <<"\n";
+  //  std::cout<<"ADinfo is at :"<< &ADinfo <<"\n";
 
+  //  if(!nimRecInfo.recording_cp()) return;
+  
   bool orderIncludesZero(false);
   for(size_t i = 0; i < derivOrders.size(); ++ i) {orderIncludesZero |= (derivOrders[i] == 0);}
   // std::cout << "orderIncludesZero = " << orderIncludesZero << std::endl;
@@ -432,12 +434,11 @@ void nimbleFunctionCppADbase::getDerivs_meta(nimbleCppADinfoClass &ADinfo,
   // which might reside in the other compilation unit.  During double taping, an atomic
   // such as lgamma puts itself or other statics onto the new tape, and returns
   // CppAD::AD variables created in the other compilation unit.
-
   set_CppAD_tape_info_for_model my_tape_info_RAII_; // must be at function scope, not declared inside if(){}
   
   if(ADinfo.nodeFunPtrSet()) {
-    //    std::cout<<"tape_id and handle:"<< CppAD::AD<double>::get_tape_id_nimble()<<" "<< CppAD::AD<double>::get_tape_handle_nimble()<<"\n";
-    //    std::cout<<"atomic info:"<<CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage()<<"\n";
+    //    std::cout<<"tape_id and handle:"<<  nimRecInfo.tape_id_cp() <<" "<< nimRecInfo.tape_handle_cp() <<"\n";
+    //   std::cout<<"atomic info:"<<nimRecInfo.atomic_vec_ptr_cp()<<"\n";
     my_tape_info_RAII_.set_from_nodeFunPtr(ADinfo.nodeFunPtr(),
 					   nimRecInfo.tape_id_cp(), //CppAD::AD<double>::get_tape_id_nimble(),
 					   nimRecInfo.tape_handle_cp());//CppAD::AD<double>::get_tape_handle_nimble());

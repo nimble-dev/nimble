@@ -30,18 +30,31 @@ double NimOptimProblem::fn(int n, double* par, void* ex) {
     NimOptimProblem* problem = static_cast<NimOptimProblem*>(ex);
     problem->par_.setSize(n, false, false);
     std::copy(par, par + n, problem->par_.getPtr());
-    return problem->function() / problem->control_->fnscale;
+    // std::cout<<"fn ";
+    // int n5 = n > 5 ? 5 : n;
+    // for(int i = 0; i < n5; ++i) std::cout<<par[i]<<"\t"; 
+    double ans = problem->function() / problem->control_->fnscale;
+    // std::cout<<"ans = "<<ans<<"\t";
+    if(isnan(ans)) ans = std::numeric_limits<double>::infinity();
+    // std::cout<<"returning "<<ans<<std::endl;
+    return ans;
 }
 
 void NimOptimProblem::gr(int n, double* par, double* ans, void* ex) {
     NimOptimProblem* problem = static_cast<NimOptimProblem*>(ex);
     problem->par_.setSize(n, false, false);
     std::copy(par, par + n, problem->par_.getPtr());
+    // std::cout<<"gr ";
+    // int n5 = n > 5 ? 5 : n;
+    // for(int i = 0; i < n5; ++i) std::cout<<par[i]<<"\t"; 
     problem->ans_.setSize(n, false, false);
     problem->gradient();
     for (int i = 0; i < n; ++i) {
         ans[i] = problem->ans_[i] / problem->control_->fnscale;
     }
+    // std::cout<<"ans: ";
+    // for(int i = 0; i < n5; ++i) std::cout<<ans[i]<<"\t"; 
+    // std::cout<<std::endl;
 }
 
 nimSmartPtr<OptimControlNimbleList> nimOptimDefaultControl() {
