@@ -1968,7 +1968,7 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' @section crossLevel sampler:
 #'
-#' This sampler is constructed to perform simultaneous updates across two levels of stochastic dependence in the model structure.  This is possible when all stochastic descendents of node(s) at one level have conjugate relationships with their own stochastic descendents.  In this situation, a Metropolis-Hastings algorithm may be used, in which a multivariate normal proposal distribution is used for the higher-level nodes, and the corresponding proposals for the lower-level nodes undergo Gibbs (conjugate) sampling.  The joint proposal is either accepted or rejected for all nodes involved based upon the Metropolis-Hastings ratio.
+#' This sampler is constructed to perform simultaneous updates across two levels of stochastic dependence in the model structure.  This is possible when all stochastic descendents of node(s) at one level have conjugate relationships with their own stochastic descendents.  In this situation, a Metropolis-Hastings algorithm may be used, in which a multivariate normal proposal distribution is used for the higher-level nodes, and the corresponding proposals for the lower-level nodes undergo Gibbs (conjugate) sampling.  The joint proposal is either accepted or rejected for all nodes involved based upon the Metropolis-Hastings ratio. This sampler is a conjugate version of Scheme 3 in Knorr-Held and Rue (2002). It can also be seen as a Metropolis-based version of collapsed Gibbs sampling (in particular Sampler 3 of van Dyk and Park (2008)). 
 #'
 #' The requirement that all stochastic descendents of the target nodes must themselves have only conjugate descendents will be checked when the MCMC algorithm is built.  This sampler is useful when there is strong dependence across the levels of a model that causes problems with convergence or mixing.
 #'
@@ -2138,11 +2138,17 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' Andrieu, C., Doucet, A., and Holenstein, R. (2010). Particle Markov Chain Monte Carlo Methods. \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 72(3), 269-342.
 #'
+#' Escobar, M. D., and West, M. (1995). Bayesian density estimation and inference using mixtures. \emph{Journal of the American Statistical Association}, 90(430), 577-588.
+#'
+#' Knorr-Held, L. and Rue, H. (2003). On block updating in Markov random field models for disease mapping. \emph{Scandinavian Journal of Statistics}, 29, 597-614.
+#'
 #' Metropolis, N., Rosenbluth, A. W., Rosenbluth, M. N., Teller, A. H., and Teller, E. (1953). Equation of State Calculations by Fast Computing Machines. \emph{The Journal of Chemical Physics}, 21(6), 1087-1092.
 #'
-#' Neal, Radford M. (2003). Slice Sampling. \emph{The Annals of Statistics}, 31(3), 705-741.
-#'
 #' Murray, I., Prescott Adams, R., and MacKay, D. J. C. (2010). Elliptical Slice Sampling. \emph{arXiv e-prints}, arXiv:1001.0175.
+#'
+#' Neal, R. M. (2000). Markov chain sampling methods for Dirichlet process mixture models. \emph{Journal of Computational and Graphical Statistics}, 9(2), 249-265.
+#' 
+#' Neal, R. M. (2003). Slice Sampling. \emph{The Annals of Statistics}, 31(3), 705-741.
 #'
 #' Pitt, M.K. and Shephard, N. (1999). Filtering via simulation: Auxiliary particle filters. \emph{Journal of the American Statistical Association} 94(446), 590-599.
 #'
@@ -2151,10 +2157,8 @@ sampler_CAR_proper <- nimbleFunction(
 #' Shaby, B. and M. Wells (2011). \emph{Exploring an Adaptive Metropolis Algorithm}. 2011-14. Department of Statistics, Duke University.
 #'
 #' Tibbits, M. M.,  Groendyke, C.,  Haran, M., and Liechty, J. C. (2014).  Automated Factor Slice Sampling.  \emph{Journal of Computational and Graphical Statistics}, 23(2), 543-563.
-#' 
-#' Escobar, M. D., and West, M. (1995). Bayesian density estimation and inference using mixtures. \emph{Journal of the American Statistical Association}, 90(430), 577-588.
-#' 
-#' Neal, R. M. (2000). Markov chain sampling methods for Dirichlet process mixture models. \emph{Journal of Computational and Graphical Statistics}, 9(2), 249-265.
+#'
+#' van Dyk, D.A. and T. Park. (2008). Partially collapsed Gibbs Samplers. \emph{Journal of the American Statistical Association}, 103(482), 790-796.
 #' 
 NULL
 
