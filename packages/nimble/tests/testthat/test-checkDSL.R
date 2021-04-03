@@ -159,7 +159,7 @@ test10 <- nimbleFunction(
   run = function(){
     outList <- method1()
     returnType(testListDef())
-     return(outList)
+    return(outList)
   },
   methods = list(
     method1 = function(){
@@ -211,6 +211,7 @@ test12 <- nimbleFunction(
   )
   )))
 
+## Actually not any different than test7.
 test_that("Test of DSL check of valid nimbleFunction with call to undefined nimbleFunction", expect_warning(
 test13 <- nimbleFunction(
     setup = function(model, target) {
@@ -246,6 +247,65 @@ test14 <- nimbleFunction(
 }
 ))
 
+test_that("Test of DSL check of valid nimbleFunction with calls to undefined nimbleFunctions and list elements", {
+    nf_base= nimbleFunctionVirtual(
+        name = 'nfbase',
+        run = function() {returnType(double(0))},
+        methods = list(
+            foo = function() { }
+        )
+    )
+
+    nfextend = nimbleFunction(
+        contains = nf_base,
+        setup = function() {},
+        run = function() {
+            returnType(double(0))
+            return(3)
+        },
+        methods = list(
+            foo2 = function() {},
+            foo3 = function() {}
+        )
+    )
+
+    expect_silent(
+        nf_more <- nimbleFunction(
+            setup = function() {
+                fxns = nimbleFunctionList(nf_base)
+                fxns[[1]] <- nf_extend()
+            },
+            run = function() {
+                returnType(double(0))
+                fxns[[1]]$foo()
+                fxns[[1]]$foo2()
+                i <- 1
+                fxns[[i]]$foo3()
+                out = fxns[[1]]$run()
+                fxns[[i]]$foo4()
+                return(out)
+            }))
+})
+
+test_that("Test of detection of nf methods in findMethods", {
+    code <- quote({
+        m$cc1
+        m$cc2()
+        m$cc3(a)
+        m[[1]]$cc4
+        m[[i]]$cc5
+        m[[1]]$cc6()
+        m[[i]]$cc7()
+        m[[x+3]]$cc8
+        m[[x+3]]$cc9()
+        m[[1]]$cc10(mm$cc11)
+        m[[1]]$cc12(mm$cc13())
+        m[[mm$cc14]]$cc15()
+        m[[mm$cc16()]]$cc17()
+    })
+    expr <- RparseTree2ExprClasses(code)
+    expect_identical(findMethodsInExprClass(expr), c('cc2', 'cc3', 'cc6', 'cc7', 'cc9', 'cc10', 'cc12', 'cc13', 'cc15', 'cc17', 'cc16'))
+})
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
