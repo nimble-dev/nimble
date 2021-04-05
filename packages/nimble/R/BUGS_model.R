@@ -432,7 +432,10 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                           if(dataOnly)			validValues[!boolIsData] <- FALSE
                                       }
                                       if(topOnly)			validValues[-modelDef$maps$top_IDs] <- FALSE
-                                      if(latentOnly)			validValues[-modelDef$maps$latent_IDs] <- FALSE
+                                      if(latentOnly) {
+                                          if(!length(modelDef$maps$latent_IDs))  # no latents
+                                              validValues <- rep(FALSE, length(validValues)) else validValues[-modelDef$maps$latent_IDs] <- FALSE
+                                      }
                                       if(endOnly)				validValues[-modelDef$maps$end_IDs] <- FALSE
 
                                       ## Part of fix for Issue #340.
