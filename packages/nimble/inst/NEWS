@@ -1,12 +1,58 @@
-                            CHANGES IN VERSION 0.10.1 (Novembere 2020)
+                            CHANGES IN VERSION 0.11.0 (April 2021)
+
+USER LEVEL CHANGES
+
+-- Addition of a new `posterior_predictive_branch` MCMC sampler, which is automatically assigned to trailing dependency node networks of entirely non-data nodes (jointly posterior predictive branches).  This sampler simulates jointly from the predictive distribtion of these posterior predictive node branches, and is designed to improve MCMC mixing of the branch, and consequently of the entire model (PR #1086).
+
+-- Allow use of elliptical slice sampler for univariate nodes, which can be useful in multimodal problems (PR #1109).
+
+-- Add a `getParents` method to the model API, allowing one to determine parent nodes, analogous to use of `getDependencies` to determine child nodes (PR #1094).
+
+-- Add `getConditionallyIndependentSets` (not yet documented) to the model API, allowing one to determine nodes that are conditionally independent of each other given parent nodes (PR #1094).
+
+-- Improve efficiency of conjugate samplers by avoiding unneeded calculations when a conjugate relationship does not involve shifting or scaling (PR #1087).
+
+-- Allow use of `nimNumeric`, `nimMatrix`, `nimArray` in model code (PR #1096).
+
+-- Allow model definition using `if` without `else`, fixing a longstanding oversight (PR #1104).
+
+-- Improved warning when multiple nodes provided to `getParam` (PR #1118).
+
+-- Check during model building for unnamed elements of `data` and `inits` (PR #1117).
+
+-- Improved error trapping for variables used in defining node names (PR #1113).
+
+-- Improve error messages when reporting `getParam` cannot calculate a parameter when checking a model (PR #1112).
+
+-- Error trap cases where model nodes are defined in two different declarations, adding check for overlapping multivariate nodes (PR #1110).
+
+-- Improve error trapping of mis-formed stochastic declarations in models (PR #1106).
+
+BUG FIXES
+
+-- Fix a bug (issue #1091) causing incorrect node names when having more than 100,000 elements in a vector node or in a dimension of a multi-dimensional node (PR #1092).
+
+-- Fix `getNodeNames` to return no nodes when `latentOnly` is `TRUE` and model contains no latent nodes (PR #1116).
+
+-- Fix checking for unknown nimbleFunction methods and improve related error trapping (PRs #1107, #1105).
+
+DEVELOPER LEVEL CHANGES
+
+-- Update our testing code/infrastructure to use latest testthat API (PR #1090).
+
+-- Shift internal code to use `model$calculate(...)` style rather than `calculate(model, ...)` style for various node functions (PR #1114).
+
+-- Clean up commented out code (PR #1098) and remove unused test files (PR #1097).
+
+-- Update to a newer (but not latest) version of Eigen to suppress some compiler warnings (PR #1093).
+
+                            CHANGES IN VERSION 0.10.1 (November 2020)
                             
 USER LEVEL CHANGES
 
 -- Add `round` argument to `samplesSummary` (PR #1077).
 
 -- `samplesSummary` function (and also `runMCMC(..., summary = TRUE)`) was made to be robust against non-valid values in posterior samples array (PR #1075).
-
--- Addition of a new `posterior_predictive_branch` MCMC sampler, which is automatically assigned to trailing dependency node networks of entirely non-data nodes (jointly posterior predictive branches).  This sampler simulates jointly from the predictive distribtion of these posterior predictive node branches, and is designed to improve MCMC mixing of the branch, and consequently of the entire model.
 
 BUG FIXES
 
