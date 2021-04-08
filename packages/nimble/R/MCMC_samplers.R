@@ -1308,7 +1308,7 @@ sampler_HMC <- nimbleFunction(
                 if(nimbleVerboseOption) print('HMC sampler is using ', nwarmup, ' warmup iterations')
                 if(nwarmup <  80) stop('HMC sampler requires a minimum of 80 warmup iterations')
                 if(nwarmup < 200) print('A minimum of 200 warmup iterations is recommended for HMC sampler')
-                if(nwarmup < MCMCniter) print('Warning: Running fewer MCMC iterations than number of HMC warmup iterations')
+                if(nwarmup > MCMCniter) print('Warning: Running fewer MCMC iterations than number of HMC warmup iterations')
             }
             ## https://mc-stan.org/docs/2_23/reference-manual/hmc-algorithm-parameters.html#adaptation.figure
             ## https://discourse.mc-stan.org/t/new-adaptive-warmup-proposal-looking-for-feedback/12039
