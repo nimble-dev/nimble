@@ -8,25 +8,31 @@ USER LEVEL CHANGES
 
 -- Add a `getParents` method to the model API, allowing one to determine parent nodes, analogous to use of `getDependencies` to determine child nodes (PR #1094).
 
--- Add `getConditionallyIndependentSets` (not yet documented) to the model API, allowing one to determine nodes that are conditionally independent of each other given parent nodes (PR #1094).
+-- Add `getConditionallyIndependentSets` method (not yet documented) to the model API, allowing one to determine nodes that are conditionally independent of each other given parent nodes (PR #1094).
 
 -- Improve efficiency of conjugate samplers by avoiding unneeded calculations when a conjugate relationship does not involve shifting or scaling (PR #1087).
 
 -- Allow use of `nimNumeric`, `nimMatrix`, `nimArray` in model code (PR #1096).
 
+-- Add progress bar to `getSamplesDPmeasure` (NCT issue 110).
+
 -- Allow model definition using `if` without `else`, fixing a longstanding oversight (PR #1104).
 
--- Improved warning when multiple nodes provided to `getParam` (PR #1118).
+-- Improve warning when multiple nodes provided to `getParam` (PR #1118).
 
 -- Check during model building for unnamed elements of `data` and `inits` (PR #1117).
 
--- Improved error trapping for variables used in defining node names (PR #1113).
+-- Improve error trapping to prevent use of variables in defining node names, such as `getDependencies('y[idx]')` (PR #1113).
 
 -- Improve error messages when reporting `getParam` cannot calculate a parameter when checking a model (PR #1112).
 
 -- Error trap cases where model nodes are defined in two different declarations, adding check for overlapping multivariate nodes (PR #1110).
 
 -- Improve error trapping of mis-formed stochastic declarations in models (PR #1106).
+
+-- Increase maximum length of compiler output when using `compileNimble(..., showCompilerOutput = TRUE)` (NCT issue 205).
+
+-- Point to parallelization example on r-nimble.org in relevant places of manual.
 
 BUG FIXES
 
@@ -45,6 +51,7 @@ DEVELOPER LEVEL CHANGES
 -- Clean up commented out code (PR #1098) and remove unused test files (PR #1097).
 
 -- Update to a newer (but not latest) version of Eigen to suppress some compiler warnings (PR #1093).
+
 
                             CHANGES IN VERSION 0.10.1 (November 2020)
                             
