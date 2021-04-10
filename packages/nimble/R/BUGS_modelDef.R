@@ -1205,7 +1205,7 @@ modelDefClass$methods(genNodeInfo3 = function(debug = FALSE) {
         }
     }
 
-    ## There is a tricky disinction of cases that come out of previous step, from expandContextAndReplacements
+    ## There is a tricky distinction of cases that come out of previous step, from expandContextAndReplacements
     ## If there is a context with NO replacements (must mean that all non-for-loop lines have no replacements)
     ##      then expandContextAndReplacements returns NULL
     ## If there is a context with NO indices but >0 replacements, then a valid result comes back from expandContextAndReplacements

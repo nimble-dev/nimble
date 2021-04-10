@@ -84,38 +84,68 @@ keywords (e.g. nimStep for step) to
 
 avoid R ambiguity.}
 
+\item{\code{getConditionallyIndependentSets(nodes, givenNodes, omit = integer(),
+  inputType = c("latent", "param", "data"), stochOnly = TRUE,
+  returnType = "names", returnScalarComponents = FALSE)}}{Get a list of conditionally independent sets of nodes in a nimble model.
+
+Conditionally independent sets of nodes are typically groups of latent states whose joint conditional probability (density) will not change even if any other non-fixed node is changed.  Default fixed nodes are data nodes and parameter nodes (with no parent nodes), but this can be controlled.
+
+model: A nimble model object (uncompiled or compiled).
+
+nodes: A vector of node names or their graph IDs that are the starting nodes from which conditionally independent sets of nodes should be found.  If omitted, the default will be all latent nodes, defined as stochastic nodes that are not data and have at least one stochastic parent node (possible with deterministic nodes in between).  Note that this will omit latent states that have no hyperparameters.  An example is the first latent state in some state-space (time-series) models, which is sometimes declared with known prior.  See type because it relates to the interpretation of nodes.
+
+givenNodes: A vector of node names or their graph IDs that should be considered as fixed and hence can be conditioned on.  If omitted, the default will be all data nodes and all parameter nodes, the latter defined as nodes with no stochastic parent nodes (skipping over deterministic parent nodes).
+
+omit: A vector of node names or their graph IDs that should be omitted and should block further graph exploration. 
+
+intputType: Type of input nodes provided in nodes argument.  For ""latent"", the input nodes are interpreted as latent states, from which both downstream and upstream exploration should be done to find nodes in the same set (nodes that are not conditionally independent from each other).  For ""param"", the input nodes are interpreted as parameters, so graph exploration begins from the  top (input) and proceeds downstream.  For ""data"", the input nodes are interpreted and data nodes, so graph exploration begins from the bottom (input) and proceeds upstream.
+
+stochOnly: Logical for whether only stochastic nodes should be returned (default = TRUE).  If FALSE, both deterministic and stochastic nodes are returned.
+
+returnType: Either ""names"" for returned nodes to be node names or ""ids"" for returned nodes to be graph IDs.
+
+returnScalarComponents: If FALSE (default), multivariate nodes are returned as full names (e.g. ""x[1:3]"").  If TRUE, they are returned as scalar elements (e.g. ""x[1]"",  ""x[2]"",  ""x[3]"").
+
+Details: This function returns sets of conditionally independent nodes.  Multiple input nodes might be in the same set or different sets, and other nodes (not in codes) will be included.
+
+By default, deterministic dependencies of givenNodes are also counted as given nodes.  This is relevant only for parent nodes. This allows the givenNodes to include only stochastic nodes.  Say we have A -> B -> C -> D.  A and D are givenNodes.  C is a latent node.  B is a deterministic node.  By default, B is considered given.  Otherwise, other branches that depend on B would be grouped in the same output set as C, but this is usually not what is wanted.  Any use of the resulting output must ensure that B is calculated when necessary, as usual with nimble's model-generic programming.  To turn off this feature, set nimbleOptions(groupDetermWithGivenInCondIndSets = FALSE).
+
+There is a non-exported function `nimble:::testConditionallyIndependentSets(model, sets, initialize = TRUE)` that tests whether the conditional independence of sets is valid.  It should be the case that `nimble:::testConditionallyIndependentSets(model, getConditionallyIndependentSets(model), initialize = TRUE)` returns `TRUE`.
+
+Return value: List of nodes that are in conditionally independent sets.  Within each set, nodes are returned in topologically sorted order.  The sets themselves are returned in topologically sorted order of their first nodes.}
+
 \item{\code{getDependencies(nodes, omit = character(), self = TRUE,
   determOnly = FALSE, stochOnly = FALSE, includeData = TRUE,
   dataOnly = FALSE, includeRHSonly = FALSE, downstream = FALSE,
-  returnType = "names", returnScalarComponents = FALSE)}}{Returns a character vector of the nodes dependent upon the input argument nodes, sorted topologically according to the model graph.  Aditional input arguments provide flexibility in the values returned.
+  returnType = "names", returnScalarComponents = FALSE)}}{Returns a character vector of the nodes dependent upon the input argument nodes, sorted topologically according to the model graph. In the genealogical metaphor for a graphical model, this function returns the "children" of the input nodes.  In the river network metaphor, it returns downstream nodes. By default, the returned nodes include the input nodes, include both deterministic and stochastic nodes, and stop at stochastic nodes. Aditional input arguments provide flexibility in the values returned.
 
 Arguments:
 
 nodes: Character vector of node names, with index blocks allowed, and/or variable names, the dependents of which will be returned.
 
-omit: Character vector of node names, which will be omitted from the nodes returned.  In addition, dependent nodes subsequent to these omitted nodes will not be returned.  The omitted nodes argument serves to stop the downward search within the hierarchical model struture, and excludes the specified node.
+omit: Character vector of node names, which will be omitted from the nodes returned.  In addition, dependent nodes subsequent to these omitted nodes will not be returned.  The omitted nodes argument serves to stop the downward search within the hierarchical model structure, and excludes the specified node.
 
 self: Logical argument specifying whether to include the input argument nodes in the return vector of dependent nodes.  Default is TRUE.
 
 determOnly: Logical argument specifying whether to return only deterministic nodes.  Default is FALSE.
 
-stochOnly: Logical argument specifying whether to return only stochastic nodes.  Default is FALSE.
+stochOnly: Logical argument specifying whether to return only stochastic nodes.  Default is FALSE.  If both determOnly and stochOnly are TRUE, no nodes will be returned.
 
-includeData: Logical argument specifying whether to include 'data' nodes (set via the member method setData).  Default is TRUE.
+includeData: Logical argument specifying whether to include 'data' nodes (set via nimbleModel or the setData method).  Default is TRUE.
 
 dataOnly: Logical argument specifying whether to return only 'data' nodes.  Default is FALSE.
 
 includeRHSonly: Logical argument specifying whether to include right-hand-side-only nodes (model nodes which never appear on the left-hand-side of ~ or <- in the model code).  These nodes are neither stochastic nor deterministic, but instead function as variable inputs to the model.  Default is FALSE.
 
-downstream: Logical argument specifying whether the downward search through the model hierarchical structure should continue beyond the first and subsequent stochastic nodes encountered, hence returning all nodes downstream of the input nodes.  Default is FALSE.
+downstream: Logical argument specifying whether the downward search through the hierarchical model structure should continue beyond the first and subsequent stochastic nodes encountered, hence returning all nodes downstream of the input nodes.  Default is FALSE.
 
-returnType: Character argument specific type object returned. Options are 'names' (returns character vector) and 'ids' (returns numeric graph IDs for model)
+returnType: Character argument specifying type of object returned. Options are 'names' (returns character vector) and 'ids' (returns numeric graph IDs for model).
 
-returnScalar Componenets: Logical argument specifying whether multivariate nodes should return full node name (i.e. 'x[1:2]') or should break down into scalar componenets (i.e. 'x[1]' and 'x[2]')
+returnScalarComponenets: Logical argument specifying whether multivariate nodes should be returned as full node names (i.e. 'x[1:2]') or as scalar componenets (i.e. 'x[1]' and 'x[2]').
 
-Details: The downward search for dependent nodes propagates through deterministic nodes, but by default will halt at the first level of stochastic nodes encountered.}
+Details: The downward search for dependent nodes propagates through deterministic nodes, but by default will halt at the first level of stochastic nodes encountered.  Use getDependenciesList for a list of one-step dependent nodes of each node in the model.}
 
-\item{\code{getDependenciesList(returnNames = TRUE, sort = TRUE)}}{Returns a list of all neighbor relationships.  Each list element gives the one-step dependencies of one vertex, and the element name is the vertex label (integer ID or character node name)
+\item{\code{getDependenciesList(returnNames = TRUE, sort = TRUE)}}{Returns a list of all dependent neighbor relationships.  Each list element gives the one-step dependencies of one vertex, and the element name is the vertex label (integer ID or character node name)
 
 Arguments:
 
@@ -184,6 +214,49 @@ returnScalar Componenets: Logical argument specifying whether multivariate nodes
 Details: Multiple logical input arguments may be used simultaneously.  For example, model$getNodeNames(endOnly = TRUE, dataOnly = TRUE) will return all end-level nodes from the model which are designated as 'data'.}
 
 \item{\code{getParam(node, param)}}{See `help(getParam)`                                                                                                                                                                                                                               }
+
+\item{\code{getParents(nodes, omit = character(), self = FALSE, determOnly = FALSE,
+  stochOnly = FALSE, includeData = TRUE, dataOnly = FALSE,
+  includeRHSonly = FALSE, upstream = FALSE, immediateOnly = FALSE,
+  returnType = "names", returnScalarComponents = FALSE)}}{ Returns a character vector of the nodes on which the input nodes depend, sorted topologically according to the model graph, by default recursing and stopping at stochastic parent nodes.  In the genealogical metaphor for a graphical model, this function returns the "parents" of the input nodes. In the river network metaphor, it returns upstream nodes.  By default, the returned nodes omit the input nodes, include only stochastic nodes, and stop at stochastic nodes.  Aditional input arguments provide flexibility in the values returned.
+
+Arguments:
+
+nodes: Character vector of node names, with index blocks allowed, and/or variable names, the parents of which will be returned.
+
+omit: Character vector of node names, which will be omitted from the nodes returned.  In addition, parent nodes beyond these omitted nodes will not be returned.  The omitted nodes argument serves to stop the upward search through the hierarchical model structure, and excludes the specified node.
+
+self: Logical argument specifying whether to include the input argument nodes in the return vector of dependent nodes.  Default is FALSE.
+
+determOnly: Logical argument specifying whether to return only deterministic nodes.  Default is FALSE.
+
+stochOnly: Logical argument specifying whether to return only stochastic nodes.  Default is TRUE.  If both determOnly and stochOnly are TRUE, no nodes will be returned.
+
+includeData: Logical argument specifying whether to include 'data' nodes (set via nimbleModel or the setData method).  Default is TRUE.
+
+dataOnly: Logical argument specifying whether to return only 'data' nodes.  Default is FALSE.
+
+includeRHSonly: Logical argument specifying whether to include right-hand-side-only nodes (model nodes which never appear on the left-hand-side of ~ or <- in the model code).  These nodes are neither stochastic nor deterministic, but instead function as variable inputs to the model.  Default is FALSE.
+
+upstream: Logical argument specifying whether the upward search through the hierarchical model structure should continue beyond the first and subsequent stochastic nodes encountered, hence returning all nodes upstream of the input nodes.  Default is FALSE.
+
+immediateOnly: Logical argument specifying whether only the immediate parent nodes should be returned, even if they are deterministic.  If FALSE, getParents recurses and stops at stochastic nodes.  Default is FALSE.
+
+returnType: Character argument specifying type of object returned. Options are 'names' (returns character vector) and 'ids' (returns numeric graph IDs for model).
+
+returnScalarComponenets: Logical argument specifying whether multivariate nodes should be returned as full node names (i.e. 'x[1:2]') or as scalar componenets (i.e. 'x[1]' and 'x[2]').
+
+Details: The upward search for dependent nodes propagates through deterministic nodes, but by default will halt at the first level of stochastic nodes encountered.  Use getParentsList for a list of one-step parent nodes of each node in the model.}
+
+\item{\code{getParentsList(returnNames = TRUE, sort = TRUE)}}{Returns a list of all parent neighbor relationships.  Each list element gives the one-step parents of one vertex, and the element name is the vertex label (integer ID or character node name)
+
+Arguments:
+
+returnNames: If TRUE (default), list names and element contents are returns as character node names, e.g. 'x[1]'.  If FALSE, everything is returned using graph IDs, which are unique integer labels for each node.
+
+sort: If TRUE (default), each list element is returned in topologically sorted order.  If FALSE, they are returned in arbitrary order.
+
+Details: This provides a fairly raw representation of the graph (model) structure that may be useful for inspecting what NIMBLE has created from model code.}
 
 \item{\code{getVarNames(includeLogProb = FALSE, nodes)}}{Returns the names of all variables in a model, optionally including the logProb variables
 
@@ -313,7 +386,7 @@ nodes: A character vector of node or variable names, which is to be topologicall
 
 returnType: character vector indicating return type. Choices are "names" or "ids"
 
-Details: This function merely reorders its input argument.  This may be inportany prior to calls such as simulate(model, nodes) or calculate(model, nodes), to enforce that the operation is performed in topological order.}
+Details: This function merely reorders its input argument.  This may be important prior to calls such as model$simulate(nodes) or model$calculate(nodes), to enforce that the operation is performed in topological order.}
 }}
 \examples{
 code <- nimbleCode({

@@ -1,9 +1,9 @@
 Files: R/*
-Copyright: Copyright (C) 2014-2020 the NIMBLE authors.
+Copyright: Copyright (C) 2014-2021 the NIMBLE authors.
 License: BSD_3_clause
 
 Files: CppCode/* include/nimble/*
-Copyright: Copyright (C) 2014-2020 the NIMBLE authors, unless otherwise stated.
+Copyright: Copyright (C) 2014-2021 the NIMBLE authors, unless otherwise stated.
 License: GPL (>=2)
 
 Files: inst/include/Eigen/SparseLU inst/include/Eigen/src/SparseLU/SparseLU_SupernodalMatrix.h

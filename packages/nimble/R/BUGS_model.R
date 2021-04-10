@@ -857,7 +857,7 @@ Details: This function returns sets of conditionally independent nodes.  Multipl
 
 By default, deterministic dependencies of givenNodes are also counted as given nodes.  This is relevant only for parent nodes. This allows the givenNodes to include only stochastic nodes.  Say we have A -> B -> C -> D.  A and D are givenNodes.  C is a latent node.  B is a deterministic node.  By default, B is considered given.  Otherwise, other branches that depend on B would be grouped in the same output set as C, but this is usually not what is wanted.  Any use of the resulting output must ensure that B is calculated when necessary, as usual with nimble\'s model-generic programming.  To turn off this feature, set nimbleOptions(groupDetermWithGivenInCondIndSets = FALSE).
 
-There is a non-exported function `nimble:::testConditionallyIndependentSets(model, sets, initialize = TRUE)}` that tests whether the conditional independence of sets is valid.  It should be the case that `nimble:::testConditionallyIndependentSets(model, getConditionallyIndependentSets(model), initialize = TRUE)` returns `TRUE`.
+There is a non-exported function `nimble:::testConditionallyIndependentSets(model, sets, initialize = TRUE)` that tests whether the conditional independence of sets is valid.  It should be the case that `nimble:::testConditionallyIndependentSets(model, getConditionallyIndependentSets(model), initialize = TRUE)` returns `TRUE`.
 
 Return value: List of nodes that are in conditionally independent sets.  Within each set, nodes are returned in topologically sorted order.  The sets themselves are returned in topologically sorted order of their first nodes.
 '
@@ -1594,7 +1594,7 @@ getParentNodesC <-  function(nodes, model, returnType = 'names', stochOnly = FAL
 #'
 #' @param omit A vector of node names or their graph IDs that should be omitted and should block further graph exploration. 
 #'
-#' @param inputType The method of graph exploration depends on what the nodes argument represents.  For "\"latent\"", the input \code{nodes} are interpreted as latent states, from which both parent and descendent graph exploration should be done to find nodes in the same set (nodes that are \textit{not} conditionally independent from each other).  For ""\param\"", the input \code{nodes} are interpreted as parameters, so graph exploration begins from the  top (input) and explores descendents.  For "\"data\"", the input \code{nodes} are interpreted as data nodes, so graph exploration begins from the bottom (input) explores parent nodes.
+#' @param inputType The method of graph exploration depends on what the nodes argument represents.  For "\"latent\"", the input \code{nodes} are interpreted as latent states, from which both parent and descendent graph exploration should be done to find nodes in the same set (nodes that are NOT conditionally independent from each other).  For "\"param\"", the input \code{nodes} are interpreted as parameters, so graph exploration begins from the  top (input) and explores descendents.  For "\"data\"", the input \code{nodes} are interpreted as data nodes, so graph exploration begins from the bottom (input) explores parent nodes.
 #' 
 #' @param stochOnly Logcal for whether only stochastic nodes should be returned (default = TRUE).  If FALSE, both deterministic and stochastic nodes are returned.
 #' 
@@ -1604,7 +1604,7 @@ getParentNodesC <-  function(nodes, model, returnType = 'names', stochOnly = FAL
 #' 
 #' @author Perry de Valpine
 #'
-#' @details This function returns sets of conditionally independent nodes.  Mutliple input \code{nodes} might be in the same set or different sets, and other nodes (not in \code{nodes}) will be included.
+#' @details This function returns sets of conditionally independent nodes.  Multiple input \code{nodes} might be in the same set or different sets, and other nodes (not in \code{nodes}) will be included.
 #'
 #' By default, deterministic dependencies of givenNodes are also
 #' counted as given nodes.  This is relevant only for parent nodes.
@@ -1616,11 +1616,11 @@ getParentNodesC <-  function(nodes, model, returnType = 'names', stochOnly = FAL
 #' Any use of the resulting output must ensure that B is calculated when
 #' necessary, as usual with nimble's model-generic programming.  To
 #' turn off this feature, set
-#' nimbleOptions(groupDetermWithGivenInCondIndSets = FALSE)
+#' \code{nimbleOptions(groupDetermWithGivenInCondIndSets = FALSE)}.
 #' 
 #' @return List of nodes that are in conditionally independent sets.  With each set, nodes are returned in topologically sorted order.  The sets themselves are returned in topologically sorted order of their first nodes.
 #'
-#' @seealso There is a non-exported function `\code{nimble:::testConditionallyIndependentSets(model, sets, initialize = TRUE)}` that tests whether the conditional independence of sets is valid.  It should be the case that `\code{nimble:::testConditionallyIndependentSets(model, getConditionallyIndependentSets(model), initialize = TRUE)}` returns `TRUE`.
+#' @seealso There is a non-exported function \code{nimble:::testConditionallyIndependentSets(model, sets, initialize = TRUE)} that tests whether the conditional independence of sets is valid.  It should be the case that \code{nimble:::testConditionallyIndependentSets(model, getConditionallyIndependentSets(model), initialize = TRUE)} returns \code{TRUE}.
 #'
 getConditionallyIndependentSets <- function(model,
                                             nodes,
