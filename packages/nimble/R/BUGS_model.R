@@ -83,11 +83,7 @@ See `help(getBound)`
                                   },
                                   getCode = function() {
                                       '
-Return the code for a model after\n,
-processing if-then-else statements,\n
-expanding macros, and replacing some\n
-keywords (e.g. nimStep for step) to \n
-avoid R ambiguity.
+Return the code for a model after processing if-then-else statements, expanding macros, and replacing some keywords (e.g. nimStep for step) to avoid R ambiguity.
 '
                                       modelDef$BUGScode
                                   },
@@ -406,7 +402,7 @@ returnType: Character argument specific type object returned. Options are \'name
 
 returnScalar Componenets: Logical argument specifying whether multivariate nodes should return full node name (i.e. \'x[1:2]\') or should break down into scalar componenets (i.e. \'x[1]\' and \'x[2]\')
 
-Details: Multiple logical input arguments may be used simultaneously.  For example, model$getNodeNames(endOnly = TRUE, dataOnly = TRUE) will return all end-level nodes from the model which are designated as \'data\'.
+Details: Multiple logical input arguments may be used simultaneously.  For example, `model$getNodeNames(endOnly = TRUE, dataOnly = TRUE)` will return all end-level nodes from the model which are designated as \'data\'.
 '
                                       ## Part of fix for Issue #340:
                                       ## In previous versions, we started with validValues all TRUE
@@ -774,7 +770,7 @@ returnType: Character argument specifying type of object returned. Options are \
 
 returnScalarComponenets: Logical argument specifying whether multivariate nodes should be returned as full node names (i.e. \'x[1:2]\') or as scalar componenets (i.e. \'x[1]\' and \'x[2]\').
 
-Details: The upward search for dependent nodes propagates through deterministic nodes, but by default will halt at the first level of stochastic nodes encountered.  Use getParentsList for a list of one-step parent nodes of each node in the model.
+Details: The upward search for dependent nodes propagates through deterministic nodes, but by default will halt at the first level of stochastic nodes encountered.  Use \code{getParentsList} for a list of one-step parent nodes of each node in the model.
 '
   if(is.character(nodes)) {
     elementIDs <- modelDef$nodeName2GraphIDs(nodes, FALSE)
@@ -845,13 +841,13 @@ givenNodes: A vector of node names or their graph IDs that should be considered 
 
 omit: A vector of node names or their graph IDs that should be omitted and should block further graph exploration. 
 
-intputType: Type of input nodes provided in nodes argument.  For "\"latent\"", the input nodes are interpreted as latent states, from which both downstream and upstream exploration should be done to find nodes in the same set (nodes that are not conditionally independent from each other).  For "\"param\"", the input nodes are interpreted as parameters, so graph exploration begins from the  top (input) and proceeds downstream.  For "\"data\"", the input nodes are interpreted and data nodes, so graph exploration begins from the bottom (input) and proceeds upstream.
+intputType: Type of input nodes provided in nodes argument.  For \'latent\', the input nodes are interpreted as latent states, from which both downstream and upstream exploration should be done to find nodes in the same set (nodes that are not conditionally independent from each other).  For \'param\', the input nodes are interpreted as parameters, so graph exploration begins from the  top (input) and proceeds downstream.  For \'data\', the input nodes are interpreted and data nodes, so graph exploration begins from the bottom (input) and proceeds upstream.
 
 stochOnly: Logical for whether only stochastic nodes should be returned (default = TRUE).  If FALSE, both deterministic and stochastic nodes are returned.
 
-returnType: Either "\"names\"" for returned nodes to be node names or "\"ids\"" for returned nodes to be graph IDs.
+returnType: Either \'names\' for returned nodes to be node names or \'ids\' for returned nodes to be graph IDs.
 
-returnScalarComponents: If FALSE (default), multivariate nodes are returned as full names (e.g. "\"x[1:3]\"").  If TRUE, they are returned as scalar elements (e.g. "\"x[1]"\",  "\"x[2]"\",  "\"x[3]"\").
+returnScalarComponents: If FALSE (default), multivariate nodes are returned as full names (e.g. \'x[1:3]\').  If TRUE, they are returned as scalar elements (e.g. \'x[1]\',  \'x[2]\',  \'x[3]\').
 
 Details: This function returns sets of conditionally independent nodes.  Multiple input nodes might be in the same set or different sets, and other nodes (not in codes) will be included.
 
@@ -1594,13 +1590,13 @@ getParentNodesC <-  function(nodes, model, returnType = 'names', stochOnly = FAL
 #'
 #' @param omit A vector of node names or their graph IDs that should be omitted and should block further graph exploration. 
 #'
-#' @param inputType The method of graph exploration depends on what the nodes argument represents.  For "\"latent\"", the input \code{nodes} are interpreted as latent states, from which both parent and descendent graph exploration should be done to find nodes in the same set (nodes that are NOT conditionally independent from each other).  For "\"param\"", the input \code{nodes} are interpreted as parameters, so graph exploration begins from the  top (input) and explores descendents.  For "\"data\"", the input \code{nodes} are interpreted as data nodes, so graph exploration begins from the bottom (input) explores parent nodes.
+#' @param inputType The method of graph exploration depends on what the nodes argument represents.  For \'latent\', the input \code{nodes} are interpreted as latent states, from which both parent and descendent graph exploration should be done to find nodes in the same set (nodes that are NOT conditionally independent from each other).  For \'param\', the input \code{nodes} are interpreted as parameters, so graph exploration begins from the  top (input) and explores descendents.  For \'data\', the input \code{nodes} are interpreted as data nodes, so graph exploration begins from the bottom (input) explores parent nodes.
 #' 
 #' @param stochOnly Logcal for whether only stochastic nodes should be returned (default = TRUE).  If FALSE, both deterministic and stochastic nodes are returned.
 #' 
-#' @param returnType Either "\"names\"" for returned nodes to be node names or "\"ids\"" for returned nodes to be graph IDs.
+#' @param returnType Either \'names\' for returned nodes to be node names or \'ids\' for returned nodes to be graph IDs.
 #' 
-#' @param returnScalarComponents If FALSE (default), multivariate nodes are returned as full names (e.g. "\"x[1:3]\"").  If TRUE, they are returned as scalar elements (e.g. "\"x[1]"\",  "\"x[2]"\",  "\"x[3]"\").
+#' @param returnScalarComponents If FALSE (default), multivariate nodes are returned as full names (e.g. \'x[1:3]\').  If TRUE, they are returned as scalar elements (e.g. \'x[1]\',  \'x[2]\',  \'x[3]\').
 #' 
 #' @author Perry de Valpine
 #'
@@ -1729,12 +1725,12 @@ testConditionallyIndependentSets <- function(model, sets, initialize = TRUE) {
   ok
 }
 
-#' Information on initial values in a nimbleModel
+#' Information on initial values in a NIMBLE model
 #'
-#'  Having uninitialized nodes in a nimbleModel can potentially cause some algorithms to fail, and can lead to poor performance in others.  Here are some
-#'  general guidelines on  how non-intitialized variables can affect performance:
+#'  Having uninitialized nodes in a NIMBLE model can potentially cause some algorithms to fail and can lead to poor performance in others.  Here are some
+#'  general guidelines on how non-intitialized variables can affect performance:
 #'  \itemize{
-#'    \item MCMC will atuo-initialize, but will do so from the prior distribution.  This can cause slow convergence, especially in the case of diffuse priors.
+#'    \item MCMC will auto-initialize but will do so from the prior distribution.  This can cause slow convergence, especially in the case of diffuse priors.
 #'    \item Likewise, particle filtering methods will initialize top-level parameters from their prior distributions, which can lead to errors or poor performance in these methods.
 #' }
 #'
