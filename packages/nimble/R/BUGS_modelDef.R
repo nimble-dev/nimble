@@ -190,6 +190,9 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
 
 codeProcessIfThenElse <- function(code, constants, envir = parent.frame()) {
     codeLength <- length(code)
+    if(class(code) == "name")
+        stop("Incomplete declaration found: '", deparse(code), "'.")
+        
     if(code[[1]] == '{') {
         if(codeLength > 1) for(i in 2:codeLength) code[[i]] <- codeProcessIfThenElse(code[[i]], constants, envir)
         return(code)
@@ -198,22 +201,18 @@ codeProcessIfThenElse <- function(code, constants, envir = parent.frame()) {
         code[[4]] <- codeProcessIfThenElse(code[[4]], constants, envir)
         return(code)
     }
-    if(codeLength > 1)
-        if(code[[1]] == 'if') {
-            constantsEnv <- as.environment(constants)
-            parent.env(constantsEnv) <- envir
-            evaluatedCondition <- try(eval(code[[2]], constantsEnv))
-            if(inherits(evaluatedCondition, "try-error")) 
-                stop("Cannot evaluate condition of 'if' statement: ", deparse(code[[2]]), ".\nCondition must be able to be evaluated based on values in 'constants'.")
-            if(evaluatedCondition) return(codeProcessIfThenElse(code[[3]], constants, envir))
-            else {
-                if(length(code) == 4) return(codeProcessIfThenElse(code[[4]], constants, envir))
-                else return(quote({}))
-            }
-        } else
-            return(code)
-    else
-        return(code)
+    if(code[[1]] == 'if') {
+        constantsEnv <- as.environment(constants)
+        parent.env(constantsEnv) <- envir
+        evaluatedCondition <- try(eval(code[[2]], constantsEnv))
+        if(inherits(evaluatedCondition, "try-error")) 
+            stop("Cannot evaluate condition of 'if' statement: ", deparse(code[[2]]), ".\nCondition must be able to be evaluated based on values in 'constants'.")
+        if(evaluatedCondition) return(codeProcessIfThenElse(code[[3]], constants, envir))
+        else {
+            if(length(code) == 4) return(codeProcessIfThenElse(code[[4]], constants, envir))
+            else return(quote({}))
+        }
+    } else return(code)
 }
 
 ## This function recurses through a block of code and expands any submodels
