@@ -74,15 +74,7 @@ unique: should names be the unique names or should original ordering of nodes (a
 
 \item{\code{getBound(node, bound)}}{See `help(getBound)`                                                                                                                                                                                                                               }
 
-\item{\code{getCode()}}{Return the code for a model after
-,
-processing if-then-else statements,
-
-expanding macros, and replacing some
-
-keywords (e.g. nimStep for step) to 
-
-avoid R ambiguity.}
+\item{\code{getCode()}}{Return the code for a model after processing if-then-else statements, expanding macros, and replacing some keywords (e.g. nimStep for step) to avoid R ambiguity.}
 
 \item{\code{getConditionallyIndependentSets(nodes, givenNodes, omit = integer(),
   inputType = c("latent", "param", "data"), stochOnly = TRUE,
@@ -98,13 +90,13 @@ givenNodes: A vector of node names or their graph IDs that should be considered 
 
 omit: A vector of node names or their graph IDs that should be omitted and should block further graph exploration. 
 
-intputType: Type of input nodes provided in nodes argument.  For ""latent"", the input nodes are interpreted as latent states, from which both downstream and upstream exploration should be done to find nodes in the same set (nodes that are not conditionally independent from each other).  For ""param"", the input nodes are interpreted as parameters, so graph exploration begins from the  top (input) and proceeds downstream.  For ""data"", the input nodes are interpreted and data nodes, so graph exploration begins from the bottom (input) and proceeds upstream.
+intputType: Type of input nodes provided in nodes argument.  For 'latent', the input nodes are interpreted as latent states, from which both downstream and upstream exploration should be done to find nodes in the same set (nodes that are not conditionally independent from each other).  For 'param', the input nodes are interpreted as parameters, so graph exploration begins from the  top (input) and proceeds downstream.  For 'data', the input nodes are interpreted and data nodes, so graph exploration begins from the bottom (input) and proceeds upstream.
 
 stochOnly: Logical for whether only stochastic nodes should be returned (default = TRUE).  If FALSE, both deterministic and stochastic nodes are returned.
 
-returnType: Either ""names"" for returned nodes to be node names or ""ids"" for returned nodes to be graph IDs.
+returnType: Either 'names' for returned nodes to be node names or 'ids' for returned nodes to be graph IDs.
 
-returnScalarComponents: If FALSE (default), multivariate nodes are returned as full names (e.g. ""x[1:3]"").  If TRUE, they are returned as scalar elements (e.g. ""x[1]"",  ""x[2]"",  ""x[3]"").
+returnScalarComponents: If FALSE (default), multivariate nodes are returned as full names (e.g. 'x[1:3]').  If TRUE, they are returned as scalar elements (e.g. 'x[1]',  'x[2]',  'x[3]').
 
 Details: This function returns sets of conditionally independent nodes.  Multiple input nodes might be in the same set or different sets, and other nodes (not in codes) will be included.
 
@@ -211,7 +203,7 @@ returnType: Character argument specific type object returned. Options are 'names
 
 returnScalar Componenets: Logical argument specifying whether multivariate nodes should return full node name (i.e. 'x[1:2]') or should break down into scalar componenets (i.e. 'x[1]' and 'x[2]')
 
-Details: Multiple logical input arguments may be used simultaneously.  For example, model$getNodeNames(endOnly = TRUE, dataOnly = TRUE) will return all end-level nodes from the model which are designated as 'data'.}
+Details: Multiple logical input arguments may be used simultaneously.  For example, `model$getNodeNames(endOnly = TRUE, dataOnly = TRUE)` will return all end-level nodes from the model which are designated as 'data'.}
 
 \item{\code{getParam(node, param)}}{See `help(getParam)`                                                                                                                                                                                                                               }
 
