@@ -1,4 +1,5 @@
 #include <nimble/nimDerivs_atomic_cholesky.h>
+#include <nimble/nimDerivs_atomic_cache.h>
 
 template<typename T>
 void HalfDiag(T &Mat) { // There may be a pure Eigen way to do this.
@@ -136,10 +137,18 @@ bool atomic_cholesky_class::rev_depend(
       dep_cols[j] = this_dep;
       depend_x[i + j * n] = this_dep;
     }
+    // When treating input as upper-diagonal
     for( int j = 0; j < i; ++j) {
       depend_x[i + j*n] = false;
     }
   }
+
+  // When treating input as symmetric
+  // for(int i = 0; i < n; ++i) {
+  //   for( int j = 0; j < i; ++j) {
+  //     depend_x[i + j*n] = depend_x[j + i*n];
+  //   }
+  // }
   return true;
 }
 
@@ -152,22 +161,40 @@ bool atomic_cholesky_class::forward(
 				    const CppAD::vector<double>&               taylor_x     ,
 				    CppAD::vector<double>&                     taylor_y     ) {
   //forward mode
-  //  printf("In cholesky forward\n");
+  //  std::cout<<"In Cholesky forward "<<order_low<<" "<<order_up<<std::endl;
   int nrow = order_up + 1;
   int n = static_cast<int>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
   // populate cholesky into taylor_y
-  EigenMap Ymap(&taylor_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
   if(order_low <= 0 & order_up >= 0) {//value
     // Eigen::MatrixXd xMat(n, n);
     //     uppervec2mat(taylor_x, xMat, n, nrow); // Potential to use an Eigen map if only order is 0
     // Potential to avoid turning chol into a full matrix here, leaving it as an llt object.
+    EigenMap Ymap(&taylor_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
     EigenConstMap Xmap(&taylor_x[0], n, n, EigStrDyn(nrow*n, nrow) );
     Ymap = Xmap.template selfadjointView<Eigen::Upper>().llt().matrixU();
+    // std::cout<<"Ymap calculated in Forward 0"<<std::endl;
+    // for(int i = 0; i < n; ++i) {
+    //   for(int j = 0; j < i; ++j) std::cout<<"\t";
+    //   for(int j = i; j < n; ++j) std::cout<<Ymap(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
+    double_cache.set_cache( 0, 0, order_up, taylor_x, taylor_y );
   }
   if(order_low <= 1 & order_up >= 1) {
     //  printf("In forward >1\n");
+    double_cache.check_and_set_cache(this,
+				     parameter_x,
+				     type_x,
+				     0,
+				     order_up,
+				     taylor_x,
+				     taylor_y.size());
+    int cache_nrow = double_cache.nrow();
+    EigenMap Ymap(double_cache.taylor_y_ptr(), n, n, EigStrDyn(cache_nrow*n, cache_nrow ) );
+
     EigenMap dYmap(&taylor_y[1], n, n, EigStrDyn(nrow*n, nrow ) );
     EigenConstMap dXmap(&taylor_x[1], n, n, EigStrDyn(nrow*n, nrow));
+
 
     // std::cout<<"Ymap"<<std::endl;
     // for(int i = 0; i < n; ++i) {
@@ -196,8 +223,9 @@ bool atomic_cholesky_class::forward(
 
     Eigen::MatrixXd UinvT_dSigma_Uinv = 
       Ymap.transpose().triangularView<Eigen::Lower>().solve(
-							    (Ymap.transpose().triangularView<Eigen::Lower>().solve(tempMat)).transpose()
-							    ).triangularView<Eigen::Upper>();
+							    (Ymap.transpose().triangularView<Eigen::Lower>().solve(tempMat)).eval().transpose()
+							    ).eval().triangularView<Eigen::Upper>();
+    // The .eval()'s are very defensive.  In some cases with maps on LHS, Eigen does not seem to respect them.
     // std::cout<<"UinvT_dSigma_Uinv"<<std::endl;
     // for(int i = 0; i < n; ++i) {
     //   for(int j = 0; j < n; ++j) std::cout<<UinvT_dSigma_Uinv(i, j)<<"\t";
@@ -217,7 +245,7 @@ bool atomic_cholesky_class::forward(
     //   for(int j = i; j < n; ++j) std::cout<<dYmap(i, j)<<"\t";
     //   std::cout<<std::endl;
     // }
-
+    double_cache.set_cache( 1, 1, order_up, taylor_x, taylor_y );
   }
   //  printf("done cholesky forward\n");
 
@@ -237,16 +265,27 @@ bool atomic_cholesky_class::forward(
   int nrow = order_up + 1;
   int n = static_cast<int>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
   // populate cholesky into taylor_y
-  metaEigenMap Ymap(&taylor_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
   if(order_low <= 0 & order_up >= 0) {//value
     // Eigen::MatrixXd xMat(n, n);
     //     uppervec2mat(taylor_x, xMat, n, nrow); // Potential to use an Eigen map if only order is 0
     // Potential to avoid turning chol into a full matrix here, leaving it as an llt object.
+    metaEigenMap Ymap(&taylor_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
     metaEigenConstMap Xmap(&taylor_x[0], n, n, EigStrDyn(nrow*n, nrow) );
     Ymap = nimDerivs_EIGEN_CHOL(Xmap);
+    CppADdouble_cache.set_cache( 0, 0, order_up, taylor_x, taylor_y );
   }
   if(order_low <= 1 & order_up >= 1) {
     // printf("In forward >1\n");
+    CppADdouble_cache.check_and_set_cache(this,
+					  parameter_x,
+					  type_x,
+					  0,
+					  order_up,
+					  taylor_x,
+					  taylor_y.size());
+    int cache_nrow = CppADdouble_cache.nrow();
+    metaEigenMap Ymap(CppADdouble_cache.taylor_y_ptr(), n, n, EigStrDyn(cache_nrow*n, cache_nrow ) );
+
     metaEigenMap dYmap(&taylor_y[1], n, n, EigStrDyn(nrow*n, nrow ) );
     metaEigenConstMap dXmap(&taylor_x[1], n, n, EigStrDyn(nrow*n, nrow));
       
@@ -264,6 +303,8 @@ bool atomic_cholesky_class::forward(
     // 						      ).triangularView<Eigen::Upper>();
     HalfDiag(UinvT_dSigma_Uinv);
     dYmap = nimDerivs_matmult(UinvT_dSigma_Uinv, Ymap.triangularView<Eigen::Upper>());
+    CppADdouble_cache.set_cache( 1, 1, order_up, taylor_x, taylor_y );
+
   }
   //  printf("done cholesky forward\n");
   return true;
@@ -279,23 +320,33 @@ bool atomic_cholesky_class::reverse(
 				    const CppAD::vector< double >&               partial_y   ) {
   //reverse m_ode
   //  printf("In reverse\n");
+  //std::cout<<"In reverse "<<order_up<<std::endl;
   int nrow = order_up + 1;
   int n = static_cast<int>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
     
-  EigenConstMap Ymap(&taylor_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
+  double_cache.check_and_set_cache(this,
+				   parameter_x,
+				   type_x,
+				   order_up >= 1 ? 1 : 0, // only use cached values up to order 1
+				   order_up,
+				   taylor_x,
+				   taylor_y.size());
+  int cache_nrow = double_cache.nrow();
+  EigenConstMap Ymap(double_cache.taylor_y_ptr(), n, n, EigStrDyn(cache_nrow*n, cache_nrow ) );
+  
   EigenConstMap Yadjoint_map(&partial_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
   EigenMap Xadjoint_map(&partial_x[0], n, n, EigStrDyn(nrow*n, nrow) );
-    // std::cout<<"Y"<<std::endl;
-    // for(int i = 0; i < n; ++i) {
-    //   for(int j = 0; j < n; ++j) std::cout<<Ymap(i, j)<<"\t";
-    //   std::cout<<std::endl;
-    // }
+  // std::cout<<"Ymap input to reverse 1"<<std::endl;
+  // for(int i = 0; i < n; ++i) {
+  //   for(int j = 0; j < n; ++j) std::cout<<Ymap(i, j)<<"\t";
+  //   std::cout<<std::endl;
+  // }
 
-    // std::cout<<"Yadjoint"<<std::endl;
-    // for(int i = 0; i < n; ++i) {
-    //   for(int j = 0; j < n; ++j) std::cout<<Yadjoint_map(i, j)<<"\t";
-    //   std::cout<<std::endl;
-    // }
+  // std::cout<<"Yadjoint input to reverse 1"<<std::endl;
+  // for(int i = 0; i < n; ++i) {
+  //   for(int j = 0; j < n; ++j) std::cout<<Yadjoint_map(i, j)<<"\t";
+  //   std::cout<<std::endl;
+  // }
   if(order_up >= 0) {
 
 
@@ -314,8 +365,8 @@ bool atomic_cholesky_class::reverse(
     //   std::cout<<std::endl;
     // }
     Eigen::MatrixXd Uinv_PhiStuff_UinvT = Ymap.template triangularView<Eigen::Upper>().solve(
-											     Ymap.template triangularView<Eigen::Upper>().solve( Yadjoint_UT.transpose() ).transpose()
-											     );
+											     Ymap.template triangularView<Eigen::Upper>().solve( Yadjoint_UT.transpose() ).eval().transpose()
+											     ).eval();
     // Resulting adjoint is how final quantity changes w.r.t. elements of Sigma (i.e. X, i.e. covariance matrix)
     // This should be only upper triangular
 
@@ -331,12 +382,19 @@ bool atomic_cholesky_class::reverse(
     //    Xadjoint_map.diagonal() -= Uinv_PhiStuff_UinvT.diagonal();
     // cut diagonal in half and remove lower diagonal:
     //upper_HalfDiag(Xadjoint_map);
+
+    // std::cout<<"Xadjoint calculated in reverse 1"<<std::endl;
+    // for(int i = 0; i < n; ++i) {
+    //   for(int j = 0; j < n; ++j) std::cout<<Xadjoint_map(i, j)<<"\t";
+    //   std::cout<<std::endl;
+    // }
   }
   if(order_up >= 1) {
     //    std::cout<<"entering second order reverse"<<std::endl;
     
-    EigenConstMap Ydot_map(&taylor_y[1], n, n, EigStrDyn(nrow*n, nrow ) );
-
+    //    EigenConstMap Ydot_map(&taylor_y[1], n, n, EigStrDyn(nrow*n, nrow ) );
+    EigenConstMap Ydot_map(double_cache.taylor_y_ptr() + 1, n, n, EigStrDyn(cache_nrow*n, cache_nrow ) );
+  
     EigenConstMap Ydot_adjoint_map(&partial_y[1], n, n, EigStrDyn(nrow*n, nrow ) );
 
     // std::cout<<"Ydot"<<std::endl;
@@ -362,8 +420,8 @@ bool atomic_cholesky_class::reverse(
 
 
     Eigen::MatrixXd Uinv_P_UinvT = Ymap.template triangularView<Eigen::Upper>().solve(
-										      Ymap.template triangularView<Eigen::Upper>().solve( P.transpose() ).transpose()
-										      );
+										      Ymap.template triangularView<Eigen::Upper>().solve( P.transpose() ).eval().transpose()
+										      ).eval();
 
     // std::cout<<"Uinv_P_UinvT"<<std::endl;
     // for(int i = 0; i < n; ++i) {
@@ -375,7 +433,7 @@ bool atomic_cholesky_class::reverse(
     Xdot_adjoint_map = Uinv_P_UinvT.template triangularView<Eigen::Upper>();
     Xdot_adjoint_map += Uinv_P_UinvT.transpose().template triangularView<Eigen::StrictlyUpper>();      
       
-    Eigen::MatrixXd R = (Ydot_map * Ymap.template triangularView<Eigen::Upper>().solve( P + P.transpose() ) ).template triangularView<Eigen::Upper>();
+    Eigen::MatrixXd R = (Ydot_map * Ymap.template triangularView<Eigen::Upper>().solve( P + P.transpose() ) ).eval().template triangularView<Eigen::Upper>();
     HalfDiag(R);
 
     // std::cout<<"R"<<std::endl;
@@ -385,8 +443,8 @@ bool atomic_cholesky_class::reverse(
     // }
     
     Eigen::MatrixXd Xadjoint_term = Ymap.template triangularView<Eigen::Upper>().solve(
-										       Ymap.template triangularView<Eigen::Upper>().solve(R.transpose() ).transpose()
-										       );
+										       Ymap.template triangularView<Eigen::Upper>().solve(R.transpose() ).eval().transpose()
+										       ).eval();
     // std::cout<<"Xadjoint_term"<<std::endl;
     // for(int i = 0; i < n; ++i) {
     //   for(int j = 0; j < n; ++j) std::cout<< Xadjoint_term(i, j)<<"\t";
@@ -413,8 +471,19 @@ bool atomic_cholesky_class::reverse(
 				    const CppAD::vector<CppAD::AD<double> >&               partial_y   ) {
   int nrow = order_up + 1;
   int n = static_cast<int>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
-    
-  metaEigenConstMap Ymap(&taylor_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
+
+
+  CppADdouble_cache.check_and_set_cache(this,
+					parameter_x,
+					type_x,
+					order_up >= 1 ? 1 : 0, // only use cached values up to order 1
+					order_up,
+					taylor_x,
+					taylor_y.size());
+  //  metaEigenConstMap Ymap(&taylor_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
+  int cache_nrow = CppADdouble_cache.nrow();
+  metaEigenConstMap Ymap(CppADdouble_cache.taylor_y_ptr(), n, n, EigStrDyn(cache_nrow*n, cache_nrow ) );
+
   metaEigenConstMap Yadjoint_map(&partial_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
   metaEigenMap Xadjoint_map(&partial_x[0], n, n, EigStrDyn(nrow*n, nrow) );
   if(order_up >= 0) {
@@ -431,7 +500,8 @@ bool atomic_cholesky_class::reverse(
     Xadjoint_map += Uinv_PhiStuff_UinvT.transpose().template triangularView<Eigen::StrictlyUpper>();      
   }
   if(order_up >= 1) {
-    metaEigenConstMap Ydot_map(&taylor_y[1], n, n, EigStrDyn(nrow*n, nrow ) );
+    //    metaEigenConstMap Ydot_map(&taylor_y[1], n, n, EigStrDyn(nrow*n, nrow ) );
+    metaEigenConstMap Ydot_map(CppADdouble_cache.taylor_y_ptr() + 1, n, n, EigStrDyn(cache_nrow*n, cache_nrow ) );
 
     metaEigenConstMap Ydot_adjoint_map(&partial_y[1], n, n, EigStrDyn(nrow*n, nrow ) );
     MatrixXd_CppAD P = nimDerivs_matmult(Ydot_adjoint_map, Ymap.transpose().template triangularView<Eigen::Lower>()).template triangularView<Eigen::Upper>();

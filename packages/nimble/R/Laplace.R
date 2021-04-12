@@ -125,6 +125,7 @@ nimOneLaplace1D <- nimbleFunction(
     
     ## The following is used to ensure the one_time_fixes are run when needed.
     one_time_fixes_done <- FALSE
+    innerMethod <- "CG"
   },
   run = function(){},
   methods = list(
@@ -226,7 +227,7 @@ nimOneLaplace1D <- nimbleFunction(
       optimControl <- nimOptimDefaultControl()
       optimControl$fnscale <- -1
       optimControl$maxit <- 5000
-      optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik_internal, method = "CG", control = optimControl)
+      optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik_internal, method = innerMethod, control = optimControl)
       ## Need to consider the case where optim does not converge
       if(optRes$convergence != 0) {
         print("Warning: optim does not converge for the inner optimization of Laplace approximation")
@@ -694,6 +695,7 @@ nimOneLaplace <- nimbleFunction(
     num_inner_times <- 1000
     i_inner_time <- 1
     inner_logLik_times <- rep(0, num_inner_times)
+    innerMethod <- "BFGS"
   },
   run = function(){},
   methods = list(
@@ -809,7 +811,7 @@ nimOneLaplace <- nimbleFunction(
       optimControl$fnscale <- -1
       optimControl$maxit <- 5000
       optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik,
-                      method = "CG", control = optimControl)
+                      method = innerMethod, control = optimControl)
       ## Need to consider the case where optim does not converge
       if(optRes$convergence != 0) {
         print("Warning: optim does not converge for the inner optimization of Laplace approximation")
@@ -938,10 +940,32 @@ nimOneLaplace <- nimbleFunction(
                     order = 0, model = model,
                     updateNodes   = joint_updateNodes,
                     constantNodes = joint_constantNodes)
-      neghess <- matrix(ans$value, nrow = nre)
+      neghess <- matrix(ans$value, nrow = nreTrans)
       return(neghess)
       returnType(double(2))
     },
+    ## This was an experiment in double taping the second order.  It was very slow. 
+    ## negHess2_internal = function(p = double(1), reTransform = double(1)) {
+    ##   ans <- derivs(joint_logLik(p, reTransform), wrt = reTrans_indices,
+    ##                 order = 2, model = model,
+    ##                 updateNodes   = joint_updateNodes,
+    ##                 constantNodes = joint_constantNodes)
+    ##   neghess <- matrix(nrow = nreTrans, ncol = nreTrans)
+    ##   for(i in 1:nreTrans)
+    ##     for(j in 1:nreTrans)
+    ##       neghess[i, j] <- -ans$hessian[i, j, 1]
+    ##   return(neghess)
+    ##   returnType(double(2))
+    ## },
+    ## negHess2 = function(p = double(1), reTransform = double(1)) {
+    ##   ans <- derivs(negHess2_internal(p, reTransform), wrt = reTrans_indices,
+    ##                 order = 0, model = model,
+    ##                 updateNodes   = joint_updateNodes,
+    ##                 constantNodes = joint_constantNodes)
+    ##   neghess <- matrix(ans$value, nrow = nreTrans)
+    ##   return(neghess)
+    ##   returnType(double(2))
+    ## },
     ## Logdet negative Hessian
     logdetNegHess = function(p = double(1), reTransform = double(1)) {
       negHessian <- negHess(p, reTransform)
@@ -1253,6 +1277,7 @@ nimOneLaplace <- nimbleFunction(
                       gr_joint_logLik_wrt_re_internal   = list(),
                       hess_joint_logLik_wrt_p_wrt_re_internal = list(),
                       negHess_internal                  = list(),
+                      ## negHess2_internal                  = list(noDeriv_vars = c("i","j")),
                       gr_logdetNegHess_wrt_p_internal   = list(),
                       gr_logdetNegHess_wrt_re_internal  = list(),
                       joint_logLik_with_grad_and_hess = list(noDeriv_vars = c("i","j")),

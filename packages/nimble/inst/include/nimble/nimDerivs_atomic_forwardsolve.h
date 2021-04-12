@@ -8,6 +8,7 @@
 #include <Rmath.h>
 #include "nimDerivs_vecmat_utils.h"
 #include "nimDerivs_atomic_matmult.h"
+#include "nimDerivs_atomic_cache.h"
 
 void atomic_forwardsolve(const MatrixXd_CppAD &A,
 		      const MatrixXd_CppAD &B,
@@ -20,6 +21,11 @@ class atomic_forwardsolve_class :  public CppAD::atomic_three< double > {
  public:
   atomic_forwardsolve_class(const std::string& name);
  private:
+  friend class atomic_cache_class<double>;
+  friend class atomic_cache_class<CppAD::AD<double> >;
+  atomic_cache_class<double> double_cache;
+  atomic_cache_class< CppAD::AD<double> > CppADdouble_cache;
+
   typedef EigenTemplateTypes<double>::typeEigenConstMapStrd EigenConstMap;
   typedef EigenTemplateTypes<double>::typeEigenMapStrd EigenMap;
   typedef EigenTemplateTypes<CppAD::AD<double> >::typeEigenConstMapStrd metaEigenConstMap;

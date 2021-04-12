@@ -243,6 +243,7 @@ void atomic_cache_class<T>::check_and_set_cache(S *owner,
   }
 }
 
-
+// template class atomic_cache_class<double>;
+// template class atomic_cache_class<CppAD::AD<double> >;
 
 #endif

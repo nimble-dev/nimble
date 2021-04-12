@@ -1,5 +1,6 @@
 #include <nimble/nimDerivs_atomic_matinverse.h>
-#include "nimDerivs_atomic_cache.cpp"
+#include <nimble/nimDerivs_atomic_cache.h>
+
 /*
 Atomic class for matrix inverse.
 This benefits from TMB's implementation but is updated to CppAD's atomic_three system.
@@ -190,6 +191,7 @@ bool atomic_matinverse_class::forward(
 					  taylor_y.size());
     int cache_nrow = CppADdouble_cache.nrow();
     metaEigenMap Ymap(CppADdouble_cache.taylor_y_ptr(), n, n, EigStrDyn(cache_nrow*n, cache_nrow ) );
+
     metaEigenMap dYmap(&taylor_y[1], n, n, EigStrDyn(nrow*n, nrow ) );
     metaEigenConstMap dXmap(&taylor_x[1], n, n, EigStrDyn(nrow*n, nrow));
     dYmap = nimDerivs_matmult(-Ymap, nimDerivs_matmult( dXmap,  Ymap ) );

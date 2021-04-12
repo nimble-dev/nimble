@@ -10,6 +10,7 @@
 #include "nimDerivs_atomic_matmult.h"
 #include "nimDerivs_atomic_backsolve.h"
 #include "nimDerivs_atomic_forwardsolve.h"
+#include "nimDerivs_atomic_cache.h"
 
 void atomic_cholesky(const MatrixXd_CppAD &x,
 		       MatrixXd_CppAD &y);
@@ -18,8 +19,13 @@ MatrixXd_CppAD nimDerivs_EIGEN_CHOL(const MatrixXd_CppAD &x);
 
 class atomic_cholesky_class : public CppAD::atomic_three< double > {
  public:
- atomic_cholesky_class(const std::string& name);
+  atomic_cholesky_class(const std::string& name);
  private:
+  friend class atomic_cache_class<double>;
+  friend class atomic_cache_class<CppAD::AD<double> >;
+  atomic_cache_class<double> double_cache;
+  atomic_cache_class< CppAD::AD<double> > CppADdouble_cache;
+  
   typedef EigenTemplateTypes<double>::typeEigenConstMapStrd EigenConstMap;
   typedef EigenTemplateTypes<double>::typeEigenMapStrd EigenMap;
   typedef EigenTemplateTypes<CppAD::AD<double> >::typeEigenConstMapStrd metaEigenConstMap;
