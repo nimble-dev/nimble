@@ -1569,8 +1569,8 @@ getParentNodesC <-  function(nodes, model, returnType = 'names', stochOnly = FAL
     parentIDs <- model$modelDef$maps$nimbleGraph$getParents(nodeIDs, omitIDs, upstream )
     if(stochOnly) parentIDs <- parentIDs[model$modelDef$maps$types[parentIDs] == 'stoch']
     if(returnType == 'ids'){
-        if(returnScalarComponents) print("nimble development warning: calling getParentNodes with returnType = ids and returnScalarComponents may not be meaningful.")
-        return(depIDs)
+        if(returnScalarComponents) message("nimble development warning: calling getParentNodes with returnType = ids and returnScalarComponents may not be meaningful.")
+        return(parentIDs)
     }
     if(returnType == 'names') {
         if(returnScalarComponents)
