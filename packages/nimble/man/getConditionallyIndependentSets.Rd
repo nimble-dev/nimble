@@ -17,13 +17,13 @@ getConditionallyIndependentSets(model, nodes, givenNodes, omit = integer(),
 
 \item{omit}{A vector of node names or their graph IDs that should be omitted and should block further graph exploration.}
 
-\item{inputType}{The method of graph exploration depends on what the nodes argument represents.  For \'latent\', the input \code{nodes} are interpreted as latent states, from which both parent and descendent graph exploration should be done to find nodes in the same set (nodes that are NOT conditionally independent from each other).  For \'param\', the input \code{nodes} are interpreted as parameters, so graph exploration begins from the  top (input) and explores descendents.  For \'data\', the input \code{nodes} are interpreted as data nodes, so graph exploration begins from the bottom (input) explores parent nodes.}
+\item{inputType}{The method of graph exploration depends on what the nodes argument represents.  For \code{latent}, the input \code{nodes} are interpreted as latent states, from which both parent and descendent graph exploration should be done to find nodes in the same set (nodes that are NOT conditionally independent from each other).  For \code{param}, the input \code{nodes} are interpreted as parameters, so graph exploration begins from the  top (input) and explores descendents.  For \code{data}, the input \code{nodes} are interpreted as data nodes, so graph exploration begins from the bottom (input) explores parent nodes.}
 
 \item{stochOnly}{Logcal for whether only stochastic nodes should be returned (default = TRUE).  If FALSE, both deterministic and stochastic nodes are returned.}
 
-\item{returnType}{Either \'names\' for returned nodes to be node names or \'ids\' for returned nodes to be graph IDs.}
+\item{returnType}{Either \code{names} for returned nodes to be node names or \code{ids} for returned nodes to be graph IDs.}
 
-\item{returnScalarComponents}{If FALSE (default), multivariate nodes are returned as full names (e.g. \'x[1:3]\').  If TRUE, they are returned as scalar elements (e.g. \'x[1]\',  \'x[2]\',  \'x[3]\').}
+\item{returnScalarComponents}{If FALSE (default), multivariate nodes are returned as full names (e.g. \code{x[1:3]}).  If TRUE, they are returned as scalar elements (e.g. \code{x[1]},  \code{x[2]},  \code{x[3]}).}
 }
 \value{
 List of nodes that are in conditionally independent sets.  With each set, nodes are returned in topologically sorted order.  The sets themselves are returned in topologically sorted order of their first nodes.

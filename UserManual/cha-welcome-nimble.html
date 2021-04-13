@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<html lang="" xml:lang="">
 <head>
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title></title>
+  <title>Chapter 1 Welcome to NIMBLE | NimbleUserManual.utf8</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.12 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.19 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="" />
+  <meta property="og:title" content="Chapter 1 Welcome to NIMBLE | NimbleUserManual.utf8" />
   <meta property="og:type" content="book" />
   
   <meta property="og:image" content="nimble-icon.png" />
@@ -16,7 +16,7 @@
   <meta name="github-repo" content="nimble-dev/nimble" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="" />
+  <meta name="twitter:title" content="Chapter 1 Welcome to NIMBLE | NimbleUserManual.utf8" />
   
   <meta name="twitter:description" content="This is the NIMBLE User Manual." />
   <meta name="twitter:image" content="nimble-icon.png" />
@@ -30,7 +30,7 @@
   
   
 
-<link rel="next" href="cha-lightning-intro.html">
+<link rel="next" href="cha-lightning-intro.html"/>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -38,6 +38,9 @@
 <link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
 
 
 
@@ -48,41 +51,66 @@
 
 
 <style type="text/css">
-div.sourceCode { overflow-x: auto; }
-table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
-  margin: 0; padding: 0; vertical-align: baseline; border: none; }
-table.sourceCode { width: 100%; line-height: 100%; }
-td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
-td.sourceCode { padding-left: 5px; }
-code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
-code > span.dt { color: #902000; } /* DataType */
-code > span.dv { color: #40a070; } /* DecVal */
-code > span.bn { color: #40a070; } /* BaseN */
-code > span.fl { color: #40a070; } /* Float */
-code > span.ch { color: #4070a0; } /* Char */
-code > span.st { color: #4070a0; } /* String */
-code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
-code > span.ot { color: #007020; } /* Other */
-code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
-code > span.fu { color: #06287e; } /* Function */
-code > span.er { color: #ff0000; font-weight: bold; } /* Error */
-code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
-code > span.cn { color: #880000; } /* Constant */
-code > span.sc { color: #4070a0; } /* SpecialChar */
-code > span.vs { color: #4070a0; } /* VerbatimString */
-code > span.ss { color: #bb6688; } /* SpecialString */
-code > span.im { } /* Import */
-code > span.va { color: #19177c; } /* Variable */
-code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-code > span.op { color: #666666; } /* Operator */
-code > span.bu { } /* BuiltIn */
-code > span.ex { } /* Extension */
-code > span.pp { color: #bc7a00; } /* Preprocessor */
-code > span.at { color: #7d9029; } /* Attribute */
-code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
-code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+a.sourceLine { display: inline-block; line-height: 1.25; }
+a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
+a.sourceLine:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+a.sourceLine { text-indent: -1em; padding-left: 1em; }
+}
+pre.numberSource a.sourceLine
+  { position: relative; left: -4em; }
+pre.numberSource a.sourceLine::before
+  { content: attr(title);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; pointer-events: all; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {  }
+@media screen {
+a.sourceLine::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
 <link rel="stylesheet" href="style.css" type="text/css" />
@@ -100,7 +128,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.10.1</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.11.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -328,7 +356,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
-<li class="chapter" data-level="16" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i><b>16</b> References</a></li>
+<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
       </nav>
@@ -350,30 +378,75 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <!--bookdown:title:start-->
 <div id="cha:welcome-nimble" class="section level1">
 <h1><span class="header-section-number">Chapter 1</span> Welcome to NIMBLE</h1>
-<p>NIMBLE is a system for building and sharing analysis methods for statistical models from R, especially for hierarchical models and computationally-intensive methods. While NIMBLE is embedded in R, it goes beyond R by supporting separate programming of models and algorithms along with compilation for fast execution.</p>
-<p>As of version 0.10.1, NIMBLE has been around for a while and is reasonably stable, but we have a lot of plans to expand and improve it. The algorithm library provides MCMC with a lot of user control and ability to write new samplers easily. Other algorithms include particle filtering (sequential Monte Carlo) and Monte Carlo Expectation Maximization (MCEM).</p>
-<p>But NIMBLE is about much more than providing an algorithm library. It provides a language for writing model-generic algorithms. We hope you will program in NIMBLE and make an R package providing your method. Of course, NIMBLE is open source, so we also hope you’ll contribute to its development.</p>
-<p>Please join the mailing lists (see <a href="https://r-nimble.org/more/issues-and-groups">R-nimble.org/more/issues-and-groups</a>) and help improve NIMBLE by telling us what you want to do with it, what you like, and what could be better. We have a lot of ideas for how to improve it, but we want your help and ideas too. You can also follow and contribute to developer discussions on <a href="https://github.com/nimble-dev/nimble">our GitHub repository</a>.</p>
-<p>If you use NIMBLE in your work, please cite us, as this helps justify past and future funding for the development of NIMBLE. For more information, please call <code>citation('nimble')</code> in R.</p>
+<p>NIMBLE is a system for building and sharing analysis methods for
+statistical models from R, especially for hierarchical models and
+computationally-intensive methods. While NIMBLE is embedded in R, it
+goes beyond R by supporting separate programming of models and
+algorithms along with compilation for fast execution.</p>
+<p>As of version 0.11.0, NIMBLE has been around for a while and is reasonably
+stable, but we have a lot of plans to expand and improve it. The
+algorithm library provides MCMC with a lot of user control and ability
+to write new samplers easily. Other algorithms include particle
+filtering (sequential Monte Carlo) and Monte Carlo Expectation
+Maximization (MCEM).</p>
+<p>But NIMBLE is about much more than providing an algorithm library. It
+provides a language for writing model-generic algorithms. We hope you
+will program in NIMBLE and make an R package providing your method.
+Of course, NIMBLE is open source, so we also hope you’ll contribute to
+its development.</p>
+<p>Please join the mailing lists
+(see <a href="https://r-nimble.org/more/issues-and-groups">R-nimble.org/more/issues-and-groups</a>) and help improve NIMBLE by
+telling us what you want to do with it, what you like, and what could
+be better. We have a lot of ideas for how to improve it, but we want
+your help and ideas too. You can also follow and contribute to
+developer discussions on
+<a href="https://github.com/nimble-dev/nimble">our GitHub
+repository</a>.</p>
+<p>If you use NIMBLE in your work, please cite us, as this helps justify past and future funding
+for the development of NIMBLE. For more information, please call <code>citation('nimble')</code> in R.</p>
 <div id="sec:what-is-nimble" class="section level2">
 <h2><span class="header-section-number">1.1</span> What does NIMBLE do?</h2>
-<p>NIMBLE makes it easier to program statistical algorithms that will run efficiently and work on many different models from R.</p>
+<p>NIMBLE makes it easier to program statistical algorithms that will run
+efficiently and work on many different models from R.</p>
 <p>You can think of NIMBLE as comprising four pieces:</p>
 <ol style="list-style-type: decimal">
-<li>A system for writing statistical models flexibly, which is an extension of the BUGS language<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>.</li>
+<li>A system for writing statistical models flexibly, which is an
+extension of the BUGS language<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>.</li>
 <li>A library of algorithms such as MCMC.</li>
-<li>A language, called NIMBLE, embedded within and similar in style to R, for writing algorithms that operate on models written in BUGS.</li>
-<li>A compiler that generates C++ for your models and algorithms, compiles that C++, and lets you use it seamlessly from R without knowing anything about C++.</li>
+<li>A language, called NIMBLE, embedded within and similar in style
+to R, for writing algorithms that operate on models written in BUGS.</li>
+<li>A compiler that generates C++ for your models and algorithms,
+compiles that C++, and lets you use it seamlessly from R without
+knowing anything about C++.</li>
 </ol>
-<p>NIMBLE stands for Numerical Inference for statistical Models for Bayesian and Likelihood Estimation.</p>
-<p>Although NIMBLE was motivated by algorithms for hierarchical statistical models, it’s useful for other goals too. You could use it for simpler models. And since NIMBLE can automatically compile R-like functions into C++ that use the Eigen library for fast linear algebra, you can use it to program fast numerical functions without any model involved<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a>.</p>
-<p>One of the beauties of R is that many of the high-level analysis functions are themselves written in R, so it is easy to see their code and modify them. The same is true for NIMBLE: the algorithms are themselves written in the NIMBLE language.</p>
+<p>NIMBLE stands for Numerical Inference for statistical Models for
+Bayesian and Likelihood Estimation.</p>
+<p>Although NIMBLE was motivated by algorithms for hierarchical
+statistical models, it’s useful for other goals too. You could use it
+for simpler models. And since NIMBLE can automatically compile R-like
+functions into C++ that use the Eigen library for fast linear algebra,
+you can use it to program fast numerical functions without any model
+involved<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a>.</p>
+<p>One of the beauties of R is that many of the high-level analysis
+functions are themselves written in R, so it is easy to see their code and modify
+them. The same is true for NIMBLE: the algorithms are themselves
+written in the NIMBLE language.</p>
 </div>
 <div id="how-to-use-this-manual" class="section level2">
 <h2><span class="header-section-number">1.2</span> How to use this manual</h2>
 <p>We suggest everyone start with the Lightning Introduction in Chapter <a href="cha-lightning-intro.html#cha:lightning-intro">2</a>.</p>
-<p>Then, if you want to jump into using NIMBLE’s algorithms without learning about NIMBLE’s programming system, go to Part II to learn how to build your model and Part III to learn how to apply NIMBLE’s built-in algorithms to your model.</p>
-<p>If you want to learn about NIMBLE programming (nimbleFunctions), go to Part IV. This teaches how to program user-defined function or distributions to use in BUGS code, compile your R code for faster operations, and write algorithms with NIMBLE. These algorithms could be specific algorithms for your particular model (such as a user-defined MCMC sampler for a parameter in your model) or general algorithms you can distribute to others. In fact the algorithms provided as part of NIMBLE and described in Part III are written as nimbleFunctions.</p>
+<p>Then, if you want to jump into using NIMBLE’s algorithms without learning
+about NIMBLE’s programming system, go to Part II to
+learn how to build your model and Part III to learn
+how to apply NIMBLE’s built-in algorithms to your model.</p>
+<p>If you want to learn about NIMBLE programming (nimbleFunctions), go to Part IV. This teaches how to program user-defined
+function or distributions to use in BUGS code, compile your R code for
+faster operations, and write algorithms with NIMBLE. These algorithms
+could be specific algorithms for your particular model (such as a
+user-defined MCMC sampler for a parameter in your model) or general
+algorithms you can distribute to others. In fact the algorithms
+provided as part of NIMBLE and described in Part III
+are written as nimbleFunctions.</p>
 
 <!--- % See http://yihui.name/knitr/demo/child/ for documentation on the parent/child document system of knitr -->
 </div>
@@ -381,8 +454,14 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <div class="footnotes">
 <hr />
 <ol start="1">
-<li id="fn1"><p>See Chapter <a href="cha-writing-models.html#cha:writing-models">5</a> for information about NIMBLE’s version of BUGS.<a href="cha-welcome-nimble.html#fnref1">↩</a></p></li>
-<li id="fn2"><p>The packages <a href="http://www.rcpp.org/">Rcpp</a> and RcppEigen provide different ways of connecting C++, the Eigen library and R. In those packages you program directly in C++, while in NIMBLE you program in R in a nimbleFunction and the NIMBLE compiler turns it into C++.<a href="cha-welcome-nimble.html#fnref2">↩</a></p></li>
+<li id="fn1"><p>See Chapter
+<a href="cha-writing-models.html#cha:writing-models">5</a> for information about NIMBLE’s version of
+BUGS.<a href="cha-welcome-nimble.html#fnref1" class="footnote-back">↩</a></p></li>
+<li id="fn2"><p>The packages <a href="http://www.rcpp.org/">Rcpp</a> and
+RcppEigen provide different ways of connecting C++, the Eigen
+library and R. In those packages you program directly in C++, while
+in NIMBLE you program in R in a nimbleFunction and the NIMBLE compiler
+turns it into C++.<a href="cha-welcome-nimble.html#fnref2" class="footnote-back">↩</a></p></li>
 </ol>
 </div>
             </section>
@@ -396,11 +475,13 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
 <script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
 <script>
 gitbook.require(["gitbook"], function(gitbook) {
 gitbook.start({
@@ -408,12 +489,11 @@ gitbook.start({
 "github": false,
 "facebook": true,
 "twitter": true,
-"google": false,
 "linkedin": false,
 "weibo": false,
 "instapaper": false,
 "vk": false,
-"all": ["facebook", "google", "twitter", "linkedin", "weibo", "instapaper"]
+"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
 },
 "fontsettings": {
 "theme": "white",
@@ -425,6 +505,10 @@ gitbook.start({
 "text": null
 },
 "history": {
+"link": null,
+"text": null
+},
+"view": {
 "link": null,
 "text": null
 },
@@ -442,10 +526,11 @@ gitbook.start({
   (function () {
     var script = document.createElement("script");
     script.type = "text/javascript";
-    var src = "";
+    var src = "true";
     if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
-    if (location.protocol !== "file:" && /^https?:/.test(src))
-      src = src.replace(/^https?:/, '');
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
     script.src = src;
     document.getElementsByTagName("head")[0].appendChild(script);
   })();

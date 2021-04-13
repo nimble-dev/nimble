@@ -4,11 +4,11 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Chapter 9 Spatial models | NimbleUserManual.utf8</title>
+  <title>References | NimbleUserManual.utf8</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
   <meta name="generator" content="bookdown 0.19 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="Chapter 9 Spatial models | NimbleUserManual.utf8" />
+  <meta property="og:title" content="References | NimbleUserManual.utf8" />
   <meta property="og:type" content="book" />
   
   <meta property="og:image" content="nimble-icon.png" />
@@ -16,7 +16,7 @@
   <meta name="github-repo" content="nimble-dev/nimble" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Chapter 9 Spatial models | NimbleUserManual.utf8" />
+  <meta name="twitter:title" content="References | NimbleUserManual.utf8" />
   
   <meta name="twitter:description" content="This is the NIMBLE User Manual." />
   <meta name="twitter:image" content="nimble-icon.png" />
@@ -29,8 +29,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
-<link rel="prev" href="cha-algos-provided.html"/>
-<link rel="next" href="cha-bnp.html"/>
+<link rel="prev" href="cha-progr-with-models.html"/>
+
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -374,206 +374,160 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="cha:spatial" class="section level1">
-<h1><span class="header-section-number">Chapter 9</span> Spatial models</h1>
-<p>NIMBLE supports two variations of conditional autoregressive (CAR) model
-structures: the improper intrinsic Gaussian CAR (ICAR) model, and
-a proper Gaussian CAR model. This includes distributions to represent these
-spatially-dependent model structures in a BUGS model,
-as well as specialized MCMC samplers for these distributions.</p>
-<div id="intrinsic-gaussian-car-model-dcar_normal" class="section level2">
-<h2><span class="header-section-number">9.1</span> Intrinsic Gaussian CAR model: <em>dcar_normal</em></h2>
-<p>The intrinsic Gaussian conditional autoregressive (ICAR) model used to model dependence of block-level values (e.g., spatial areas or temporal blocks) is implemented in NIMBLE as the <code>dcar_normal</code>
-distribution. Additional details for using this distribution are available using <code>help('CAR-Normal')</code>.</p>
-<p>ICAR models are improper priors for random fields (e.g., temporal or spatial processes). The prior is a joint prior across a collection of latent process values. For more technical details on CAR models, including higher-order CAR models, please see <span class="citation">Rue and Held (<a href="references.html#ref-Rue_Held_2005">2005</a>)</span>, <span class="citation">Banerjee, Carlin, and Gelfand (<a href="references.html#ref-Banerjee_etal_2015">2015</a>)</span>, and <span class="citation">Paciorek (<a href="references.html#ref-Paciorek_2009">2009</a>)</span>. Since the distribution is improper it should not be used as the distribution for data values, but rather to specify a prior for an unknown process. As discussed in the references above, the distribution can be seen to be a proper density in a reduced dimension subspace; thus the impropriety only holds on one or more linear combinations of the latent process values.</p>
-<p>In addition to our focus here on CAR modeling for spatial data, the ICAR model can also be used in other contexts, such as for temporal data in a discrete time context.</p>
-<div id="specification-and-density" class="section level3">
-<h3><span class="header-section-number">9.1.1</span> Specification and density</h3>
-<p>NIMBLE uses the same parameterization as WinBUGS / GeoBUGS for the <code>dcar_normal</code> distribution, providing
-compatibility with existing WinBUGS code. NIMBLE also provides the WinBUGS name <code>car.normal</code> as an alias.</p>
-<div id="specification" class="section level4">
-<h4><span class="header-section-number">9.1.1.1</span> Specification</h4>
-<p>The <code>dcar_normal</code> distribution is specified for a set of <code>N</code> spatially dependent regions as:</p>
-<p><code>x[1:N] ~ dcar_normal(adj, weights, num, tau, c, zero_mean)</code></p>
-<p>The <code>adj</code>, <code>weights</code> and <code>num</code> parameters define the adjacency structure and associated weights of the spatially-dependent field. See <code>help('CAR-Normal')</code> for details of these parameters. When specifying a CAR distribution, these parameters must have constant values. They do not necessarily have to be specified as <code>constants</code> when creating a model object using <code>nimbleModel</code>, but they should be defined in a static way: as right-hand-side only variables with initial values provided as <code>constants</code>, <code>data</code> or <code>inits</code>, or using fixed numerical deterministic declarations. Each of these two approaches for specifying values are shown in the example.</p>
-<p>The adjacency structure defined by <code>adj</code> and the associated <code>weights</code> must be symmetric. That is, if region <span class="math inline">\(i\)</span> is neighbor of region <span class="math inline">\(j\)</span>, then region <span class="math inline">\(j\)</span> must also be a neighbor of region <span class="math inline">\(i\)</span>. Further, the weights associated with these reciprocating relationships must be equal. NIMBLE performs a check of these symmetries and will issue an error message if asymmetry is detected.</p>
-<p>The scalar precision <code>tau</code> may be treated as an unknown model parameter and itself assigned a prior distribution. Care should be taken in selecting a prior distribution for <code>tau</code>, and WinBUGS suggests that users be prepared to carry out a sensitivity analysis for this choice.</p>
-<p>When specifying a higher-order CAR process, the number of constraints <code>c</code> can be explicitly provided in the model specification. This would be the case, for example, when specifying a thin-plate spline (second-order) CAR model, for which <code>c</code> should be 2 for a one-dimensional process and 3 for a two-dimensional (e.g., spatial) process, as discussed in <span class="citation">Rue and Held (<a href="references.html#ref-Rue_Held_2005">2005</a>)</span> and <span class="citation">Paciorek (<a href="references.html#ref-Paciorek_2009">2009</a>)</span>. If <code>c</code> is omitted, NIMBLE will calculate <code>c</code> as the number of disjoint groups of regions in the adjacency structure, which implicitly assumes a first-order CAR process for each group.</p>
-<p>By default there is no zero-mean constraint imposed on the CAR process, and thus the mean is implicit within the CAR process values, with an implicit improper flat prior on the mean. To avoid non-identifiability, one should not include an additional parameter for the mean (e.g., do not include an intercept term in a simple CAR model with first-order neighborhood structure). When there are disjoint groups of regions and the constraint is not imposed, there is an implicit distinct improper flat prior on the mean for each group, and it would not make sense to impose the constraint since the constraint holds across all regions. Similarly, if one sets up a neighborhood structure for higher-order CAR models, it would not make sense to impose the zero-mean constraint as that would account for only one of the eigenvalues that are zero. Imposing this constraint (by specifying the parameter <code>zero_mean = 1</code>) allows users to model the process mean separately, and hence a separate intercept term should be included in the model.</p>
-<p>NIMBLE provides a convenience function <code>as.carAdjacency</code> for converting other representations of the adjacency information into the required <code>adj</code>, <code>weights</code>, <code>num</code> format. This function can convert:</p>
-<ul>
-<li>A symmetric adjacency matrix of weights (with diagonal elements equal to zero), using <code>as.carAdjacency(weightMatrix)</code></li>
-<li>Two length-<code>N</code> lists with numeric vector elements giving the neighboring indices and associated weights for each region, using <code>as.carAdjacency(neighborList, weightList)</code></li>
-</ul>
-<p>These conversions should be done in R, and the resulting <code>adj</code>, <code>weights</code>, <code>num</code> vectors can be passed as <code>constants</code> into <code>nimbleModel</code>.</p>
-</div>
-<div id="density" class="section level4">
-<h4><span class="header-section-number">9.1.1.2</span> Density</h4>
-<p>For process values <span class="math inline">\(x = (x_1, \ldots, x_N)\)</span> and precision <span class="math inline">\(\tau\)</span>, the improper CAR density is given as:</p>
-<p><span class="math display">\[p(x | \tau) \propto \tau^{(N-c)/2} \; e^{ -\tfrac{\tau}{2} \sum_{i\ne j} w_{ij} \, (x_i-x_j)^2 }\]</span></p>
-<p>where the summation over all <span class="math inline">\((i,j)\)</span> pairs, with the weight between regions <span class="math inline">\(i\)</span> and <span class="math inline">\(j\)</span> given by <span class="math inline">\(w_{ij}\)</span>, is equivalent to summing over all pairs for which region <span class="math inline">\(i\)</span> is a neighbor of region <span class="math inline">\(j\)</span>. Note that the value of <span class="math inline">\(c\)</span> modifies the power to which the precision is raised, accounting for the impropriety of the density based on the number of zero eigenvalues in the implicit precision matrix for <span class="math inline">\(x\)</span>.</p>
-<p>For the purposes of MCMC sampling the individual CAR process values, the resulting conditional prior of region <span class="math inline">\(i\)</span> is:</p>
-<p><span class="math display">\[p(x_i | x_{-i}, \tau) \sim \text{N} \left( \tfrac{1}{w_{i+}} \textstyle\sum_{j \in \mathcal{N}_i } w_{ij} \, x_j,  \; w_{i+} \tau \right)\]</span></p>
-<p>where <span class="math inline">\(x_{-i}\)</span> represents all elements of <span class="math inline">\(x\)</span> except <span class="math inline">\(x_{i}\)</span>, the neighborhood <span class="math inline">\(\mathcal{N}_i\)</span> of region <span class="math inline">\(i\)</span> is the set of all <span class="math inline">\(j\)</span> for which region <span class="math inline">\(j\)</span> is a neighbor of region <span class="math inline">\(i\)</span>, <span class="math inline">\(w_{i+} = \sum_{j \in \mathcal{N}_i} w_{ij}\)</span>, and the Normal distribution is parameterized in terms of precision.</p>
-</div>
-</div>
-<div id="example" class="section level3">
-<h3><span class="header-section-number">9.1.2</span> Example</h3>
-<p>Here we provide an example model using the intrinsic Gaussian <code>dcar_normal</code> distribution. The CAR process values are used in a spatially-dependent Poisson regression.</p>
-<p>To mimic the behavior of WinBUGS, we specify <code>zero_mean = 1</code> to enforce a zero-mean constraint on the CAR process, and therefore include a separate intercept term <code>alpha</code> in the model. Note that we do not necessarily recommend imposing this constraint, per the discussion earlier in this chapter.</p>
-<div class="sourceCode" id="cb209"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb209-1" title="1">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
-<a class="sourceLine" id="cb209-2" title="2">    alpha <span class="op">~</span><span class="st"> </span><span class="kw">dflat</span>()</a>
-<a class="sourceLine" id="cb209-3" title="3">    beta <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)</a>
-<a class="sourceLine" id="cb209-4" title="4">    tau <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)</a>
-<a class="sourceLine" id="cb209-5" title="5">    s[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dcar_normal</span>(adj[<span class="dv">1</span><span class="op">:</span>L], weights[<span class="dv">1</span><span class="op">:</span>L], num[<span class="dv">1</span><span class="op">:</span>N], tau, <span class="dt">zero_mean =</span> <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb209-6" title="6">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {</a>
-<a class="sourceLine" id="cb209-7" title="7">        <span class="kw">log</span>(lambda[i]) &lt;-<span class="st"> </span>alpha <span class="op">+</span><span class="st"> </span>beta<span class="op">*</span>x[i] <span class="op">+</span><span class="st"> </span>s[i]</a>
-<a class="sourceLine" id="cb209-8" title="8">        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dpois</span>(lambda[i])</a>
-<a class="sourceLine" id="cb209-9" title="9">    }</a>
-<a class="sourceLine" id="cb209-10" title="10">})</a>
-<a class="sourceLine" id="cb209-11" title="11"></a>
-<a class="sourceLine" id="cb209-12" title="12">L &lt;-<span class="st"> </span><span class="dv">8</span></a>
-<a class="sourceLine" id="cb209-13" title="13">constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">4</span>, <span class="dt">L =</span> L, <span class="dt">num =</span> <span class="kw">c</span>(<span class="dv">3</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">1</span>), <span class="dt">weights =</span> <span class="kw">rep</span>(<span class="dv">1</span>, L),</a>
-<a class="sourceLine" id="cb209-14" title="14">                  <span class="dt">adj =</span> <span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">1</span>), <span class="dt">x =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">8</span>))</a>
-<a class="sourceLine" id="cb209-15" title="15">data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">c</span>(<span class="dv">6</span>, <span class="dv">9</span>, <span class="dv">7</span>, <span class="dv">12</span>))</a>
-<a class="sourceLine" id="cb209-16" title="16">inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">alpha =</span> <span class="dv">0</span>, <span class="dt">beta =</span> <span class="dv">0</span>, <span class="dt">tau =</span> <span class="dv">1</span>, <span class="dt">s =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>))</a>
-<a class="sourceLine" id="cb209-17" title="17">Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</a></code></pre></div>
-<p>The resulting model may be carried through to MCMC sampling.
-NIMBLE will assign a specialized sampler to the update the elements of the CAR process.
-See Chapter <a href="cha-mcmc.html#cha:mcmc">7</a> for information about NIMBLE’s MCMC engine, and Section
-<a href="cha-spatial.html#sec:spatial-mcmc-sampling-car">9.3</a> for details on MCMC sampling of the CAR processes.</p>
-</div>
-</div>
-<div id="proper-gaussian-car-model-dcar_proper" class="section level2">
-<h2><span class="header-section-number">9.2</span> Proper Gaussian CAR model: <em>dcar_proper</em></h2>
-<p>The proper Gaussian conditional autoregressive model used to model dependence of block-level values (e.g., spatial areas or temporal blocks) is implemented in NIMBLE as the <code>dcar_proper</code>
-distribution. Additional details of using this distribution are available using <code>help('CAR-Proper')</code>.</p>
-<p>Proper CAR models are proper priors for random fields (e.g., temporal or spatial processes).
-The prior is a joint prior across a collection of latent process values. For more technical
-details on proper CAR models please see <span class="citation">Banerjee, Carlin, and Gelfand (<a href="references.html#ref-Banerjee_etal_2015">2015</a>)</span>, including considerations of why the improper CAR model may be preferred.</p>
-<p>In addition to our focus here on CAR modeling for spatial data, the proper CAR model can also be used in other contexts, such as for temporal data in a discrete time context.</p>
-<div id="specification-and-density-1" class="section level3">
-<h3><span class="header-section-number">9.2.1</span> Specification and density</h3>
-<p>NIMBLE uses the same parameterization as WinBUGS / GeoBUGS for the <code>dcar_proper</code> distribution, providing
-compatibility with existing WinBUGS code. NIMBLE also provides the WinBUGS name <code>car.proper</code> as an alias.</p>
-<div id="specification-1" class="section level4">
-<h4><span class="header-section-number">9.2.1.1</span> Specification</h4>
-<p>The <code>dcar_proper</code> distribution is specified for a set of <code>N</code> spatially dependent regions as:</p>
-<p><code>x[1:N] ~ dcar_proper(mu, C, adj, num, M, tau, gamma)</code></p>
-<p>There is no option of a zero-mean constraint for proper CAR process, and instead the mean for each region is specified by the <code>mu</code> parameter. The elements of <code>mu</code> can be assigned fixed values or may be specified using one common, or multiple, prior distributions.</p>
-<p>The <code>C</code>, <code>adj</code>, <code>num</code> and <code>M</code> parameters define the adjacency structure, normalized weights, and conditional variances of the spatially-dependent field. See <code>help('CAR-Proper')</code> for details of these parameters. When specifying a CAR distribution, these parameters must have constant values. They do not necessarily have to be specified as <code>constants</code> when creating a model object using <code>nimbleModel</code>, but they should be defined in a static way: as right-hand-side only variables with initial values provided as <code>constants</code>, <code>data</code> or <code>inits</code>, or using fixed numerical deterministic declarations.</p>
-<p>The adjacency structure defined by <code>adj</code> must be symmetric. That is, if region <span class="math inline">\(i\)</span> is neighbor of region <span class="math inline">\(j\)</span>, then region <span class="math inline">\(j\)</span> must also be a neighbor of region <span class="math inline">\(i\)</span>. In addition, the normalized weights specified in <code>C</code> must satisfy a symmetry constraint jointly with the conditional variances given in <code>M</code>. This constraint requires that <span class="math inline">\(M^{-1}C\)</span> is symmetric, where <span class="math inline">\(M\)</span> is a diagonal matrix of conditional variances and <span class="math inline">\(C\)</span> is the normalized (each row sums to one) weight matrix. Equivalently, this implies that <span class="math inline">\(C_{ij}M_{jj} = C_{ji}M_{ii}\)</span> for all pairs of neighboring regions <span class="math inline">\(i\)</span> and <span class="math inline">\(j\)</span>. NIMBLE performs a check of these symmetries and will issue an error message if asymmetry is detected.</p>
-<p>Two options are available to simplify the process of constructing the <code>C</code> and <code>M</code> arguments; both options are demonstrated in the example. First, these arguments may be omitted from the <code>dcar_proper</code> specification. In this case, values of <code>C</code> and <code>M</code> will be generated that correspond to all weights being equal to one, or equivalently, a symmetric weight matrix containing only zeros and ones. Note that <code>C</code> and <code>M</code> should either <em>both</em> be provided, or <em>both</em> be omitted from the specification.</p>
-<p>Second, a convenience function <code>as.carCM</code> is provided to generate the <code>C</code> and <code>M</code> arguments corresponding to a specified set of symmetric unnormalized weights. If <code>weights</code> contains the non-zero weights corresponding to an unnormalized weight matrix (<code>weights</code> is precisely the argument that can be used in the <code>dcar_normal</code> specification), then a list containing <code>C</code> and <code>M</code> can be generated using <code>as.carCM(adj, weights, num)</code>. In this case, the resulting <code>C</code> contains the row-normalized weights, and the resulting <code>M</code> is a vector of the inverse row-sums of the unnormalized weight matrix.<br />
-<!--- Generating `C` to satisfy this symmetry constraint can be tedious.  NIMBLE provides a convenience function `CAR_calcC` to generate a suitable value of `C`.  Specifically, the values of the weights matrix are selected as $C_{ij} = \sqrt{\tfrac{M_{ii}}{M_{jj}}}$, which is easily seen to satisfy the constraint on `C` and `M`.  This choice is not unique, and it does impose a particular selection of the weight matrix.  The advantage of this approach is not needing to generate `C` yourself.  This approach to generating `C` is shown in the example. --></p>
-<!--- The `M` parameter, giving a vector of conditional variances of each region, may be omitted from the `dcar_proper` declaration *if* the `C` parameter is provided in row-normalized form.  In this case, the $i^\text{th}$ element of `M` will be calculated as $1/n_i$, where $n_i$ is the number of neighbors of region $i$.  This choice will satisfy the symmetry constraint on `C` and `M`, and also induces the bounds on `gamma` to be $[-1, 1]$.  Note, when omitting `M`, the remaining `tau` and `gamma` parameters should be provided as named arguments. -->
-<p>The scalar precision <code>tau</code> may be treated as an unknown model parameter and itself assigned a prior distribution. Care should be taken in selecting a prior distribution for <code>tau</code>, and WinBUGS suggests that users be prepared to carry out a sensitivity analysis for this choice.</p>
-<p>An appropriate value of the <code>gamma</code> parameter ensures the propriety of the <code>dcar_proper</code> distribution. The value of <code>gamma</code> must lie between fixed bounds, which are given by the reciprocals of the largest and smallest eigenvalues of <span class="math inline">\(M^{-1/2}CM^{1/2}\)</span>. These bounds can be calculated using the function <code>carBounds</code> or separately using the functions <code>carMinBound</code> and <code>carMaxBound</code>. For compatibility with WinBUGS, NIMBLE provides <code>min.bound</code> and <code>max.bound</code> as aliases for <code>carMinBound</code> and <code>carMaxBound</code>. Rather than selecting a fixed value of <code>gamma</code> within these bounds, it is recommended that <code>gamma</code> be assigned a uniform prior distribution over the region of permissible values.</p>
-<p>Note that when <code>C</code> and <code>M</code> are omitted from the <code>dcar_proper</code> specification (and hence all weights are taken as one), or <code>C</code> and <code>M</code> are calculated from a symmetric weight matrix using the utility function <code>as.carCM</code>, then the bounds on <code>gamma</code> are necessarily <span class="math inline">\((-1, 1)\)</span>. In this case, <code>gamma</code> can simply be assigned a prior over that region. This approach is shown in both examples.</p>
-</div>
-<div id="density-1" class="section level4">
-<h4><span class="header-section-number">9.2.1.2</span> Density</h4>
-<p>The proper CAR density is given as:</p>
-<p><span class="math display">\[p(x | \mu, C, M, \tau, \gamma) \sim \text{MVN} \left( \mu, \; \tfrac{1}{\tau} (I-\gamma C)^{-1} M \right)\]</span></p>
-<p>where the multivariate normal distribution is parameterized in terms of covariance.</p>
-<p>For the purposes of MCMC sampling the individual CAR process values, the resulting conditional prior of region <span class="math inline">\(i\)</span> is:</p>
-<p><span class="math display">\[p(x_i | x_{-i}, \mu, C, M, \tau, \gamma) \sim \text{N} \left( \mu_i + \textstyle\sum_{j \in \mathcal{N}_i } \gamma \, C_{ij} \, (x_j - \mu_i),  \; \tfrac{M_{ii}}{\tau} \right)\]</span></p>
-<p>where <span class="math inline">\(x_{-i}\)</span> represents all elements of <span class="math inline">\(x\)</span> except <span class="math inline">\(x_{i}\)</span>, the neighborhood <span class="math inline">\(\mathcal{N}_i\)</span> of region <span class="math inline">\(i\)</span> is the set of all <span class="math inline">\(j\)</span> for which region <span class="math inline">\(j\)</span> is a neighbor of region <span class="math inline">\(i\)</span>, and the Normal distribution is parameterized in terms of variance.</p>
-</div>
-</div>
-<div id="example-1" class="section level3">
-<h3><span class="header-section-number">9.2.2</span> Example</h3>
-<p>We provide two example models using the proper Gaussian <code>dcar_proper</code> distribution. In both, the CAR process values are used in a spatially-dependent logistic regression to model binary presence/absence data. In the first example, the <code>C</code> and <code>M</code> parameters are omitted, which uses weights equal to one for all neighbor relationships. In the second example, symmetric unnormalized weights are specified, and <code>as.carCM</code> is used to construct the <code>C</code> and <code>M</code> parameters to the <code>dcar_proper</code> distribution.</p>
-<div class="sourceCode" id="cb210"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb210-1" title="1"><span class="co"># omitting C and M sets all non-zero weights to one</span></a>
-<a class="sourceLine" id="cb210-2" title="2">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
-<a class="sourceLine" id="cb210-3" title="3">    mu0 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)</a>
-<a class="sourceLine" id="cb210-4" title="4">    tau <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)</a>
-<a class="sourceLine" id="cb210-5" title="5">    gamma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb210-6" title="6">    s[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dcar_proper</span>(mu[<span class="dv">1</span><span class="op">:</span>N], <span class="dt">adj=</span>adj[<span class="dv">1</span><span class="op">:</span>L], <span class="dt">num=</span>num[<span class="dv">1</span><span class="op">:</span>N], <span class="dt">tau=</span>tau, </a>
-<a class="sourceLine" id="cb210-7" title="7">                         <span class="dt">gamma=</span>gamma)</a>
-<a class="sourceLine" id="cb210-8" title="8">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {</a>
-<a class="sourceLine" id="cb210-9" title="9">        mu[i] &lt;-<span class="st"> </span>mu0</a>
-<a class="sourceLine" id="cb210-10" title="10">        <span class="kw">logit</span>(p[i]) &lt;-<span class="st"> </span>s[i]</a>
-<a class="sourceLine" id="cb210-11" title="11">        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dbern</span>(p[i])</a>
-<a class="sourceLine" id="cb210-12" title="12">    }</a>
-<a class="sourceLine" id="cb210-13" title="13">})</a>
-<a class="sourceLine" id="cb210-14" title="14"></a>
-<a class="sourceLine" id="cb210-15" title="15">adj &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">2</span>, <span class="dv">4</span>, <span class="dv">3</span>)</a>
-<a class="sourceLine" id="cb210-16" title="16">num &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb210-17" title="17">constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">adj =</span> adj, <span class="dt">num =</span> num, <span class="dt">N =</span> <span class="dv">4</span>, <span class="dt">L =</span> <span class="dv">6</span>)</a>
-<a class="sourceLine" id="cb210-18" title="18">data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>))</a>
-<a class="sourceLine" id="cb210-19" title="19">inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">mu0 =</span> <span class="dv">0</span>, <span class="dt">tau =</span> <span class="dv">1</span>, <span class="dt">gamma =</span> <span class="dv">0</span>, <span class="dt">s =</span> <span class="kw">rep</span>(<span class="dv">0</span>, <span class="dv">4</span>))</a>
-<a class="sourceLine" id="cb210-20" title="20">Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</a>
-<a class="sourceLine" id="cb210-21" title="21"></a>
-<a class="sourceLine" id="cb210-22" title="22"><span class="co"># specify symmetric unnormalized weights, use as.carCM to generate C and M</span></a>
-<a class="sourceLine" id="cb210-23" title="23">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
-<a class="sourceLine" id="cb210-24" title="24">    mu0 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)</a>
-<a class="sourceLine" id="cb210-25" title="25">    tau <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)</a>
-<a class="sourceLine" id="cb210-26" title="26">    gamma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb210-27" title="27">    s[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dcar_proper</span>(mu[<span class="dv">1</span><span class="op">:</span>N], C[<span class="dv">1</span><span class="op">:</span>L], adj[<span class="dv">1</span><span class="op">:</span>L], num[<span class="dv">1</span><span class="op">:</span>N], M[<span class="dv">1</span><span class="op">:</span>N], tau, </a>
-<a class="sourceLine" id="cb210-28" title="28">                         gamma)</a>
-<a class="sourceLine" id="cb210-29" title="29">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {</a>
-<a class="sourceLine" id="cb210-30" title="30">        mu[i] &lt;-<span class="st"> </span>mu0</a>
-<a class="sourceLine" id="cb210-31" title="31">        <span class="kw">logit</span>(p[i]) &lt;-<span class="st"> </span>s[i]</a>
-<a class="sourceLine" id="cb210-32" title="32">        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dbern</span>(p[i])</a>
-<a class="sourceLine" id="cb210-33" title="33">    }</a>
-<a class="sourceLine" id="cb210-34" title="34">})</a>
-<a class="sourceLine" id="cb210-35" title="35"></a>
-<a class="sourceLine" id="cb210-36" title="36">weights &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">4</span>)</a>
-<a class="sourceLine" id="cb210-37" title="37">CM &lt;-<span class="st"> </span><span class="kw">as.carCM</span>(adj, weights, num)</a>
-<a class="sourceLine" id="cb210-38" title="38">constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">C =</span> CM<span class="op">$</span>C, <span class="dt">adj =</span> adj, <span class="dt">num =</span> num, <span class="dt">M =</span> CM<span class="op">$</span>M, <span class="dt">N =</span> <span class="dv">4</span>, <span class="dt">L =</span> <span class="dv">6</span>)</a>
-<a class="sourceLine" id="cb210-39" title="39">Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</a></code></pre></div>
-<p>Each of the resulting models may be carried through to MCMC sampling.
-NIMBLE will assign a specialized sampler to update the elements of the CAR process.
-See Chapter <a href="cha-mcmc.html#cha:mcmc">7</a> for information about NIMBLE’s MCMC engine, and Section
-<a href="cha-spatial.html#sec:spatial-mcmc-sampling-car">9.3</a> for details on MCMC sampling of the CAR processes.</p>
-</div>
-</div>
-<div id="sec:spatial-mcmc-sampling-car" class="section level2">
-<h2><span class="header-section-number">9.3</span> MCMC Sampling of CAR models</h2>
-<p>NIMBLE’s MCMC engine provides specialized samplers for the <code>dcar_normal</code> and <code>dcar_proper</code> distributions. These samplers perform sequential univariate updates on the components of the CAR process. Internally, each sampler assigns one of three specialized univariate samplers to each component, based on inspection of the model structure:</p>
-<ol style="list-style-type: decimal">
-<li>A conjugate sampler in the case of conjugate Normal dependencies.</li>
-<li>A random walk Metropolis-Hastings sampler in the case of non-conjugate dependencies.</li>
-<li>A posterior predictive sampler in the case of no dependencies.</li>
-</ol>
-<p>Note that these univariate CAR samplers are not the same as NIMBLE’s standard <code>conjugate</code>, <code>RW</code>, and <code>posterior_predictive</code> samplers, but rather specialized versions for operating on a CAR distribution. Details of these assignments are strictly internal to the CAR samplers.</p>
-<p>In future versions of NIMBLE we expect to provide block samplers that update the entire CAR process as a single sample. This may provide improved MCMC performance by accounting for dependence between elements, particularly when conjugacy is available.</p>
-<div id="initial-values" class="section level3">
-<h3><span class="header-section-number">9.3.1</span> Initial values</h3>
-<p>Valid initial values should be provided for all elements of the process specified by a CAR structure before running an MCMC. This ensures that the conditional prior distribution is well-defined for each region. A simple and safe choice of initial values is setting all components of the process equal to zero, as is done in the preceding CAR examples.</p>
-<p>For compatibility with WinBUGS, NIMBLE also allows an initial value of <code>NA</code> to be provided for regions with zero neighbors. This particular initialization is required in WinBUGS, so this allows users to make use of existing WinBUGS code.</p>
-</div>
-<div id="zero-neighbor-regions" class="section level3">
-<h3><span class="header-section-number">9.3.2</span> Zero-neighbor regions</h3>
-<p>Regions with zero neighbors (defined by a 0 appearing in the <code>num</code> parameter) are a special case for both the <code>dcar_normal</code> and <code>dcar_proper</code> distribution. The corresponding neighborhood <span class="math inline">\(\mathcal{N}\)</span> of such a region contains no elements, and hence the conditional prior is improper and uninformative, tantamount to a <code>dflat</code> prior distribution. Thus, the conditional posterior distribution of those regions is entirely determined by the dependent nodes, if any. Sampling of these zero-neighbor regions proceeds as:</p>
-<ol style="list-style-type: decimal">
-<li>In the conjugate case, sampling proceeds according to the conjugate posterior.</li>
-<li>In the non-conjugate case, sampling proceeds using random walk Metropolis-Hastings, where the posterior is determined entirely by the dependencies.</li>
-<li>In the case of no dependents, the posterior is entirely undefined. Here, no changes will be made to the process value, and it will remain equal to its initial value throughout. By virtue of having no neighbors, this region does not contribute to the density evaluation of the subsuming <code>dcar_normal</code> node nor to the conditional prior of any other regions, hence its value (even <code>NA</code>) is of no consequence.</li>
-</ol>
-<p>This behavior is different from that of WinBUGS, where the value of zero-neighbor regions of <code>car.normal</code> nodes is set to and fixed at zero.
-<!--- Regions with zero neighbors of a `dcar_proper` distribution, in contrast, have a well-defined conditional prior, undergo sampling the same as regions with neighbors, and do contribute to the density evaluation of the subsuming `dcar_proper` node. --></p>
-</div>
-<div id="zero-mean-constraint" class="section level3">
-<h3><span class="header-section-number">9.3.3</span> Zero-mean constraint</h3>
-<p>A zero-mean constraint is available for the intrinsic Gaussian <code>dcar_normal</code> distribution. This constraint on the ICAR process values is imposed during MCMC sampling, if the argument <code>zero_mean = 1</code>, mimicking the behavior of WinBUGS. Following the univariate updates on each component, the mean is subtracted away from all process values, resulting in a zero-mean process.</p>
-<p>Note that this is <em>not</em> equivalent to sampling under the constraint that the mean is zero (see p. 36 of <span class="citation">Rue and Held (<a href="references.html#ref-Rue_Held_2005">2005</a>)</span>) so should be treated as an ad hoc approach and employed with caution.</p>
+<div id="references" class="section level1 unnumbered">
+<h1>References</h1>
 
-<!--- % See http://yihui.name/knitr/demo/child/ for documentation on the parent/child document system of knitr -->
-<!---  
-% Rscript -e "library(knitr);  knit2pdf('includesSpatialOnly.Rnw')"; open -a "Google Chrome" includesSpatialOnly.pdf (I'm not sure what to do here...)
--->
+<div id="refs" class="references">
+<div id="ref-Andrieu_Doucet_Holenstein_2010">
+<p>Andrieu, Christophe, Arnaud Doucet, and Roman Holenstein. 2010. “Particle Markov Chain Monte Carlo Methods.” <em>Journal of the Royal Statistical Society: Series B (Statistical Methodology)</em> 72 (3): 269–342. <a href="https://doi.org/10.1111/j.1467-9868.2009.00736.x">https://doi.org/10.1111/j.1467-9868.2009.00736.x</a>.</p>
+</div>
+<div id="ref-Ariyo_etal_2019">
+<p>Ariyo, Oludare, Adrian Quintero, Johanna Muñoz, Geert Verbeke, and Emmanuel Lesaffre. 2020. “Bayesian Model Selection in Linear Mixed Models for Longitudinal Data.” <em>Journal of Applied Statistics</em> 47 (5): 890–913. <a href="https://doi.org/10.1080/02664763.2019.1657814">https://doi.org/10.1080/02664763.2019.1657814</a>.</p>
+</div>
+<div id="ref-Banerjee_etal_2015">
+<p>Banerjee, S., B.P. Carlin, and A.E. Gelfand. 2015. <em>Hierarchical Modeling and Analysis for Spatial Data</em>. 2nd ed. Boca Raton: Chapman &amp; Hall.</p>
+</div>
+<div id="ref-blackwell_mcqueen_73">
+<p>Blackwell, D, and J MacQueen. 1973. “Ferguson Distributions via Pólya Urn Schemes.” <em>The Annals of Statistics</em> 1: 353–55.</p>
+</div>
+<div id="ref-escobar_94">
+<p>Escobar, M D. 1994. “Estimating normal means with a Dirichlet process prior.” <em>Journal of the American Statistical Association</em> 89: 268–77.</p>
+</div>
+<div id="ref-escobar_west_95">
+<p>Escobar, M D, and M West. 1995. “Bayesian density estimation and inference using mixtures.” <em>Journal of the American Statistical Association</em> 90: 577–88.</p>
+</div>
+<div id="ref-ferguson_73">
+<p>Ferguson, T S. 1973. “A Bayesian Analysis of Some Nonparametric Problems.” <em>Annals of Statistics</em> 1: 209–30.</p>
+</div>
+<div id="ref-ferguson_74">
+<p>———. 1974. “Prior Distribution on the Spaces of Probability Measures.” <em>Annals of Statistics</em> 2: 615–29.</p>
+</div>
+<div id="ref-gelfand_2002">
+<p>Gelfand, Alan E, and Athanasios Kottas. 2002. “A Computational Approach for Full Nonparametric Bayesian Inference Under Dirichlet Process Mixture Models.” <em>Journal of Computational and Graphical Statistics</em> 11 (2): 289–305.</p>
+</div>
+<div id="ref-Gelman_etal_2014">
+<p>Gelman, A., J. Hwang, and A. Vehtari. 2014. “Understanding Predictive Information Criteria for Bayesian Model.” <em>Statistics and Computing</em> 24 (6): 997–1016.</p>
+</div>
+<div id="ref-George_Makov_Smith_1993">
+<p>George, E.I., U.E. Makov, and A.F.M. Smith. 1993. “Conjugate Likelihood Distributions.” <em>Scandinavian Journal of Statistics</em> 20 (2): 147–56.</p>
+</div>
+<div id="ref-Green_1995">
+<p>Green, Peter J. 1995. “Reversible Jump Markov Chain Monte Carlo Computation and Bayesian Model Determination.” <em>Biometrika</em> 82 (4): 711–32.</p>
+</div>
+<div id="ref-ishwaran_2001">
+<p>Ishwaran, Hemant, and Lancelot F James. 2001. “Gibbs Sampling Methods for Stick-Breaking Priors.” <em>Journal of the American Statistical Association</em> 96 (453): 161–73.</p>
+</div>
+<div id="ref-ishwaran_james_2002">
+<p>Ishwaran, H, and L F James. 2002. “Approximate Dirichlet Process Computing in Finite Normal Mixtures: Smoothing and Prior Information.” <em>Journal of Computational and Graphical Statistics</em> 11: 508–32.</p>
+</div>
+<div id="ref-lo_84">
+<p>Lo, A Y. 1984. “On a Class of Bayesian Nonparametric Estimates I: Density Estimates.” <em>The Annals of Statistics</em> 12: 351–57.</p>
+</div>
+<div id="ref-Lunn_Spiegelhalter_Thomas_Best_2009">
+<p>Lunn, David, David Spiegelhalter, Andrew Thomas, and Nicky Best. 2009. “The BUGS Project: Evolution, Critique and Future Directions.” <em>Statistics in Medicine</em> 28 (25): 3049–67. <a href="https://doi.org/10.1002/sim.3680">https://doi.org/10.1002/sim.3680</a>.</p>
+</div>
+<div id="ref-neal_2000">
+<p>Neal, R. 2000. “Markov chain sampling methods for Dirichlet process mixture models.” <em>Journal of Computational and Graphical Statistics</em> 9: 249–65.</p>
+</div>
+<div id="ref-Neal2003">
+<p>Neal, Radford M. 2003. “Slice Sampling.” <em>The Annals of Statistics</em> 31 (3): 705–41.</p>
+</div>
+<div id="ref-Paciorek_2009">
+<p>Paciorek, C.J. 2009. “Understanding Intrinsic Gaussian Markov Random Field Spatial Models, Including Intrinsic Conditional Autoregressive Models.” University of California, Berkeley. <a href="http://www.stat.berkeley.edu/~paciorek/research/techVignettes/techVignette5.pdf">http://www.stat.berkeley.edu/~paciorek/research/techVignettes/techVignette5.pdf</a>.</p>
+</div>
+<div id="ref-Roberts_Sahu_1997">
+<p>Roberts, G. O., and S. K. Sahu. 1997. “Updating Schemes, Correlation Structure, Blocking and Parameterization for the Gibbs Sampler.” <em>Journal of the Royal Statistical Society: Series B (Statistical Methodology)</em> 59 (2): 291–317. <a href="https://doi.org/10.1111/1467-9868.00070">https://doi.org/10.1111/1467-9868.00070</a>.</p>
+</div>
+<div id="ref-Rue_Held_2005">
+<p>Rue, H., and L. Held. 2005. <em>Gaussian Markov Random Fields: Theory and Applications</em>. Boca Raton: Chapman &amp; Hall.</p>
+</div>
+<div id="ref-sethuraman_94">
+<p>Sethuraman, J. 1994. “A Constructive Definition of Dirichlet Prior.” <em>Statistica Sinica</em> 2: 639–50.</p>
+</div>
+<div id="ref-Watanabe_2010">
+<p>Watanabe, Sumio. 2010. “Asymptotic Equivalence of Bayes Cross Validation and Widely Applicable Information Criterion in Singular Learning Theory.” <em>Journal of Machine Learning Research</em> 11 (Dec): 3571–94.</p>
 </div>
 </div>
 </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             </section>
 
           </div>
         </div>
       </div>
-<a href="cha-algos-provided.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
-<a href="cha-bnp.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+<a href="cha-progr-with-models.html" class="navigation navigation-prev navigation-unique" aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>

@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<html lang="" xml:lang="">
 <head>
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title></title>
+  <title>Chapter 6 Building and using models | NimbleUserManual.utf8</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.12 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.19 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="" />
+  <meta property="og:title" content="Chapter 6 Building and using models | NimbleUserManual.utf8" />
   <meta property="og:type" content="book" />
   
   <meta property="og:image" content="nimble-icon.png" />
@@ -16,7 +16,7 @@
   <meta name="github-repo" content="nimble-dev/nimble" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="" />
+  <meta name="twitter:title" content="Chapter 6 Building and using models | NimbleUserManual.utf8" />
   
   <meta name="twitter:description" content="This is the NIMBLE User Manual." />
   <meta name="twitter:image" content="nimble-icon.png" />
@@ -29,8 +29,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
-<link rel="prev" href="cha-writing-models.html">
-<link rel="next" href="cha-mcmc.html">
+<link rel="prev" href="cha-writing-models.html"/>
+<link rel="next" href="cha-mcmc.html"/>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -38,6 +38,9 @@
 <link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
 
 
 
@@ -48,41 +51,66 @@
 
 
 <style type="text/css">
-div.sourceCode { overflow-x: auto; }
-table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
-  margin: 0; padding: 0; vertical-align: baseline; border: none; }
-table.sourceCode { width: 100%; line-height: 100%; }
-td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
-td.sourceCode { padding-left: 5px; }
-code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
-code > span.dt { color: #902000; } /* DataType */
-code > span.dv { color: #40a070; } /* DecVal */
-code > span.bn { color: #40a070; } /* BaseN */
-code > span.fl { color: #40a070; } /* Float */
-code > span.ch { color: #4070a0; } /* Char */
-code > span.st { color: #4070a0; } /* String */
-code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
-code > span.ot { color: #007020; } /* Other */
-code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
-code > span.fu { color: #06287e; } /* Function */
-code > span.er { color: #ff0000; font-weight: bold; } /* Error */
-code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
-code > span.cn { color: #880000; } /* Constant */
-code > span.sc { color: #4070a0; } /* SpecialChar */
-code > span.vs { color: #4070a0; } /* VerbatimString */
-code > span.ss { color: #bb6688; } /* SpecialString */
-code > span.im { } /* Import */
-code > span.va { color: #19177c; } /* Variable */
-code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-code > span.op { color: #666666; } /* Operator */
-code > span.bu { } /* BuiltIn */
-code > span.ex { } /* Extension */
-code > span.pp { color: #bc7a00; } /* Preprocessor */
-code > span.at { color: #7d9029; } /* Attribute */
-code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
-code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+a.sourceLine { display: inline-block; line-height: 1.25; }
+a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
+a.sourceLine:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+a.sourceLine { text-indent: -1em; padding-left: 1em; }
+}
+pre.numberSource a.sourceLine
+  { position: relative; left: -4em; }
+pre.numberSource a.sourceLine::before
+  { content: attr(title);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; pointer-events: all; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {  }
+@media screen {
+a.sourceLine::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
 <link rel="stylesheet" href="style.css" type="text/css" />
@@ -100,7 +128,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.10.1</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.11.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -328,7 +356,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
-<li class="chapter" data-level="16" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i><b>16</b> References</a></li>
+<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
       </nav>
@@ -348,231 +376,346 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
             <section class="normal" id="section-">
 <div id="cha:building-models" class="section level1">
 <h1><span class="header-section-number">Chapter 6</span> Building and using models</h1>
-<p>This chapter explains how to build and manipulate model objects starting from BUGS code.</p>
+<p>This chapter explains how to build and manipulate model objects
+starting from BUGS code.</p>
 <div id="creating-model-objects" class="section level2">
 <h2><span class="header-section-number">6.1</span> Creating model objects</h2>
-<p>NIMBLE provides two functions for creating model objects: <code>nimbleModel</code> and <code>readBUGSmodel</code>. The first, <code>nimbleModel</code>, is more general and was illustrated in Chapter <a href="cha-lightning-intro.html#cha:lightning-intro">2</a>. The second, <code>readBUGSmodel</code> provides compatibility with BUGS file formats for models, variables, data, and initial values for MCMC.</p>
+<p>NIMBLE provides two functions for creating model objects:
+<code>nimbleModel</code> and <code>readBUGSmodel</code>. The first, <code>nimbleModel</code>,
+is more general and was illustrated in Chapter <a href="cha-lightning-intro.html#cha:lightning-intro">2</a>. The
+second, <code>readBUGSmodel</code> provides compatibility with BUGS file
+formats for models, variables, data, and initial values for MCMC.</p>
 <p>In addition one can create new model objects from existing model objects.</p>
 <div id="using-nimblemodel-to-create-a-model" class="section level3">
 <h3><span class="header-section-number">6.1.1</span> Using <em>nimbleModel</em> to create a model</h3>
-<p><code>nimbleModel</code> processes BUGS code to determine all the nodes, variables, and their relationships in a model. Any constants must be provided at this step. Data and initial values can optionally be provided. BUGS code passed to <code>nimbleModel</code> must go through <code>nimbleCode</code>.</p>
+<p><code>nimbleModel</code> processes BUGS code to determine all the nodes,
+variables, and their relationships in a model. Any constants must be
+provided at this step. Data and initial values can optionally be
+provided. BUGS code passed to <code>nimbleModel</code> must go through
+<code>nimbleCode</code>.</p>
 <p>We look again at the pump example from the introduction:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpCode &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({ 
-  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N){
-      theta[i] <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(alpha,beta);
-      lambda[i] &lt;-<span class="st"> </span>theta[i]<span class="op">*</span>t[i];
-      x[i] <span class="op">~</span><span class="st"> </span><span class="kw">dpois</span>(lambda[i])
-  }
-  alpha <span class="op">~</span><span class="st"> </span><span class="kw">dexp</span>(<span class="fl">1.0</span>);
-  beta <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.1</span>,<span class="fl">1.0</span>);
-})
-
-pumpConsts &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">10</span>,
-               <span class="dt">t =</span> <span class="kw">c</span>(<span class="fl">94.3</span>, <span class="fl">15.7</span>, <span class="fl">62.9</span>, <span class="dv">126</span>, <span class="fl">5.24</span>,
-                 <span class="fl">31.4</span>, <span class="fl">1.05</span>, <span class="fl">1.05</span>, <span class="fl">2.1</span>, <span class="fl">10.5</span>))
-
-pumpData &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">x =</span> <span class="kw">c</span>(<span class="dv">5</span>, <span class="dv">1</span>, <span class="dv">5</span>, <span class="dv">14</span>, <span class="dv">3</span>, <span class="dv">19</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">4</span>, <span class="dv">22</span>))
-
-pumpInits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">alpha =</span> <span class="dv">1</span>, <span class="dt">beta =</span> <span class="dv">1</span>,
-              <span class="dt">theta =</span> <span class="kw">rep</span>(<span class="fl">0.1</span>, pumpConsts<span class="op">$</span>N))
-
-pump &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(<span class="dt">code =</span> pumpCode, <span class="dt">name =</span> <span class="st">&quot;pump&quot;</span>, <span class="dt">constants =</span> pumpConsts,
-                    <span class="dt">data =</span> pumpData, <span class="dt">inits =</span> pumpInits)</code></pre></div>
+<div class="sourceCode" id="cb88"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb88-1" title="1">pumpCode &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({ </a>
+<a class="sourceLine" id="cb88-2" title="2">  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N){</a>
+<a class="sourceLine" id="cb88-3" title="3">      theta[i] <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(alpha,beta);</a>
+<a class="sourceLine" id="cb88-4" title="4">      lambda[i] &lt;-<span class="st"> </span>theta[i]<span class="op">*</span>t[i];</a>
+<a class="sourceLine" id="cb88-5" title="5">      x[i] <span class="op">~</span><span class="st"> </span><span class="kw">dpois</span>(lambda[i])</a>
+<a class="sourceLine" id="cb88-6" title="6">  }</a>
+<a class="sourceLine" id="cb88-7" title="7">  alpha <span class="op">~</span><span class="st"> </span><span class="kw">dexp</span>(<span class="fl">1.0</span>);</a>
+<a class="sourceLine" id="cb88-8" title="8">  beta <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.1</span>,<span class="fl">1.0</span>);</a>
+<a class="sourceLine" id="cb88-9" title="9">})</a>
+<a class="sourceLine" id="cb88-10" title="10"></a>
+<a class="sourceLine" id="cb88-11" title="11">pumpConsts &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">10</span>,</a>
+<a class="sourceLine" id="cb88-12" title="12">               <span class="dt">t =</span> <span class="kw">c</span>(<span class="fl">94.3</span>, <span class="fl">15.7</span>, <span class="fl">62.9</span>, <span class="dv">126</span>, <span class="fl">5.24</span>,</a>
+<a class="sourceLine" id="cb88-13" title="13">                 <span class="fl">31.4</span>, <span class="fl">1.05</span>, <span class="fl">1.05</span>, <span class="fl">2.1</span>, <span class="fl">10.5</span>))</a>
+<a class="sourceLine" id="cb88-14" title="14"></a>
+<a class="sourceLine" id="cb88-15" title="15">pumpData &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">x =</span> <span class="kw">c</span>(<span class="dv">5</span>, <span class="dv">1</span>, <span class="dv">5</span>, <span class="dv">14</span>, <span class="dv">3</span>, <span class="dv">19</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">4</span>, <span class="dv">22</span>))</a>
+<a class="sourceLine" id="cb88-16" title="16"></a>
+<a class="sourceLine" id="cb88-17" title="17">pumpInits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">alpha =</span> <span class="dv">1</span>, <span class="dt">beta =</span> <span class="dv">1</span>,</a>
+<a class="sourceLine" id="cb88-18" title="18">              <span class="dt">theta =</span> <span class="kw">rep</span>(<span class="fl">0.1</span>, pumpConsts<span class="op">$</span>N))</a>
+<a class="sourceLine" id="cb88-19" title="19"></a>
+<a class="sourceLine" id="cb88-20" title="20">pump &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(<span class="dt">code =</span> pumpCode, <span class="dt">name =</span> <span class="st">&quot;pump&quot;</span>, <span class="dt">constants =</span> pumpConsts,</a>
+<a class="sourceLine" id="cb88-21" title="21">                    <span class="dt">data =</span> pumpData, <span class="dt">inits =</span> pumpInits)</a></code></pre></div>
 <div id="sec:data-constants" class="section level4">
 <h4><span class="header-section-number">6.1.1.1</span> Data and constants</h4>
 <p>NIMBLE makes a distinction between data and constants:</p>
 <ul>
-<li><em>Constants</em> can never be changed and must be provided when a model is defined. For example, a vector of known index values, such as for block indices, helps define the model graph itself and must be provided as constants. Variables used in the index ranges of for-loops must also be provided as constants.</li>
-<li><em>Data</em> is a label for the role a node plays in the model. Nodes marked as data will by default be protected from any functions that would simulate over their values (see <code>simulate</code> in Chapter <a href="cha-using-models.html#cha:using-models">13</a>), but it is possible to over-ride that default or to change their values by direct assignment. This allows an algorithm to be applied to many data sets in the same model without re-creating the model each time. It also allows simulation of data in a model.<br />
+<li><em>Constants</em> can never be changed and must be provided when a
+model is defined. For example, a vector of known index values, such
+as for block indices, helps define the model graph itself and must
+be provided as constants. Variables used in the index ranges of
+for-loops must also be provided as constants.</li>
+<li><em>Data</em> is a label for the role a node plays in the model.
+Nodes marked as data will by default be protected from any functions
+that would simulate over their values (see <code>simulate</code> in Chapter
+<a href="cha-using-models.html#cha:using-models">13</a>), but it is possible to over-ride
+that default or to change their values by direct assignment. This
+allows an algorithm to be applied to many data sets in the same
+model without re-creating the model each time. It also allows
+simulation of data in a model.<br />
 <!---  TODO: I don't think this statement is true (i.e., setData()): 
-  % Data must be provided when an --> <!--- instance of a model is created from the model definition, although 
+  % Data must be provided when an -->
+<!--- instance of a model is created from the model definition, although 
   % they can also be provided earlier when a model is defined. --></li>
 </ul>
-<p>WinBUGS, OpenBUGS and JAGS do not allow data values to be changed or different nodes to be labeled as data without starting from the beginning again. Hence they do not distinguish between constants and data.</p>
-<p>For compatibility with BUGS and JAGS, NIMBLE allows both to be provided in the <code>constants</code> argument to <code>nimbleModel</code>, in which case NIMBLE handles values for stochastic nodes as data and everything else as constants.</p>
-<p>Values for nodes that appear only on the right-hand side of BUGS declarations (e.g., covariates/predictors) can be provided as constants or as data or initial values. There is no real difference between providing as data or initial values and the values can be added after building a model via <code>setInits</code> or <code>setData</code>.</p>
+<p>WinBUGS, OpenBUGS and JAGS do not allow data values to be changed or
+different nodes to be labeled as data without starting from the
+beginning again. Hence they do not distinguish between constants and
+data.</p>
+<p>For compatibility with BUGS and JAGS, NIMBLE allows both to be
+provided in the <code>constants</code> argument to <code>nimbleModel</code>, in
+which case NIMBLE handles values for stochastic nodes as data and
+everything else as constants.</p>
+<p>Values for nodes that appear only on the right-hand side of BUGS
+declarations (e.g., covariates/predictors) can be provided as constants or as data or initial values. There is no real difference between providing as data or initial values and the values can be added after building a model via <code>setInits</code> or <code>setData</code>.</p>
 </div>
 <div id="providing-or-changing-data-and-initial-values-for-an-existing-model" class="section level4">
 <h4><span class="header-section-number">6.1.1.2</span> Providing (or changing) data and initial values for an existing model</h4>
-<p>Whereas constants must be provided during the call to <code>nimbleModel</code>, data and initial values can be provided later via the model member functions <code>setData</code> and <code>setInits</code>. For example, if <code>pumpData</code> is a named list of data values (as above), then <code>pump$setData(pumpData)</code> sets the named variables to the values in the list.</p>
-<p><code>setData</code> does two things: it sets the values of the data nodes, and it flags those nodes as containing data. nimbleFunction programmers can then use that information to control whether an algorithm should over-write data or not. For example, NIMBLE’s <code>simulate</code> functions by default do not overwrite data values but can be told to do so. Values of data variables can be replaced, and the indication of which nodes should be treated as data can be reset by using the <code>resetData</code> method, e.g. <code>pump$resetData()</code>.</p>
-<p>To change data values without any modification of which nodes are flagged as containing data, simply use R’s usual assignment syntax to assign values in a compiled (or, more rarely, an uncompiled) model, e.g.,</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cModel<span class="op">$</span>y &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="fl">1.5</span>, <span class="fl">2.5</span>, <span class="fl">1.7</span>)</code></pre></div>
-<p>This can be useful for running an MCMC with a different dataset of the same size (and of course the same pattern of missingness, if any) without having to rebuild and recompile the MCMC, such as in a simulation study. It is possible to change the data values in a compiled model using <code>setData</code>, but we don’t recommend doing this because <code>setData</code> won’t modify which nodes are flagged as containing data in the already-constructed MCMC, thereby potentially introducing confusion.</p>
+<p>Whereas constants must be provided during the call to
+<code>nimbleModel</code>, data and initial values can be provided later via
+the model member functions <code>setData</code> and <code>setInits</code>. For
+example, if <code>pumpData</code> is a named list of data values (as above),
+then <code>pump$setData(pumpData)</code> sets the named variables to the
+values in the list.</p>
+<p><code>setData</code> does two things: it sets the values of the data nodes,
+and it flags those nodes as containing data. nimbleFunction
+programmers can then use that information to control whether an
+algorithm should over-write data or not. For example, NIMBLE’s
+<code>simulate</code> functions by default do not overwrite data values but
+can be told to do so. Values of data variables can be replaced, and
+the indication of which nodes should be treated as data can be reset
+by using the <code>resetData</code> method, e.g. <code>pump$resetData()</code>.</p>
+<p>To change data values without any modification of which nodes are
+flagged as containing data, simply use R’s usual assignment syntax
+to assign values in a compiled (or, more rarely, an uncompiled) model, e.g.,</p>
+<div class="sourceCode" id="cb89"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb89-1" title="1">cModel<span class="op">$</span>y &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="fl">1.5</span>, <span class="fl">2.5</span>, <span class="fl">1.7</span>)</a></code></pre></div>
+<p>This can be useful for running an MCMC with a different dataset of the same size
+(and of course the same pattern of missingness, if any) without
+having to rebuild and recompile the MCMC, such as in a simulation study.
+It is possible to change the data values in a compiled model using <code>setData</code>,
+but we don’t recommend doing this because <code>setData</code> won’t modify which nodes are flagged
+as containing data in the already-constructed MCMC, thereby potentially introducing confusion.</p>
 </div>
 <div id="missing-data-values" class="section level4">
 <h4><span class="header-section-number">6.1.1.3</span> Missing data values</h4>
-<p>Sometimes one needs a model variable to have a mix of data and non-data, often due to missing data values. In NIMBLE, when data values are provided, any nodes with <code>NA</code> values will <em>not</em> be labeled as data. A node following a multivariate distribution must be either entirely observed or entirely missing.</p>
-<p>Here’s an example of running an MCMC on the <em>pump</em> model, with two of the observations taken to be missing. Some of the steps in this example are documented more below. NIMBLE’s default MCMC configuration will treat the missing values as unknowns to be sampled, as can be seen in the MCMC output here.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpMiss &lt;-<span class="st"> </span>pump<span class="op">$</span><span class="kw">newModel</span>()
-pumpMiss<span class="op">$</span><span class="kw">resetData</span>()
-pumpDataNew &lt;-<span class="st"> </span>pumpData
-pumpDataNew<span class="op">$</span>x[<span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">3</span>)] &lt;-<span class="st"> </span><span class="ot">NA</span>
-pumpMiss<span class="op">$</span><span class="kw">setData</span>(pumpDataNew)
-
-pumpMissConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(pumpMiss)</code></pre></div>
+<p>Sometimes one needs a model variable to have a mix of data and
+non-data, often due to missing data values. In NIMBLE, when data
+values are provided, any nodes with <code>NA</code> values will <em>not</em> be
+labeled as data. A node following a multivariate distribution must be either entirely observed or entirely missing.</p>
+<p>Here’s an example of running an MCMC on the <em>pump</em> model, with two
+of the observations taken to be missing. Some of the steps in this
+example are documented more below. NIMBLE’s default MCMC
+configuration will treat the missing values as unknowns to be sampled,
+as can be seen in the MCMC output here.</p>
+<div class="sourceCode" id="cb90"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb90-1" title="1">pumpMiss &lt;-<span class="st"> </span>pump<span class="op">$</span><span class="kw">newModel</span>()</a>
+<a class="sourceLine" id="cb90-2" title="2">pumpMiss<span class="op">$</span><span class="kw">resetData</span>()</a>
+<a class="sourceLine" id="cb90-3" title="3">pumpDataNew &lt;-<span class="st"> </span>pumpData</a>
+<a class="sourceLine" id="cb90-4" title="4">pumpDataNew<span class="op">$</span>x[<span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">3</span>)] &lt;-<span class="st"> </span><span class="ot">NA</span></a>
+<a class="sourceLine" id="cb90-5" title="5">pumpMiss<span class="op">$</span><span class="kw">setData</span>(pumpDataNew)</a>
+<a class="sourceLine" id="cb90-6" title="6"></a>
+<a class="sourceLine" id="cb90-7" title="7">pumpMissConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(pumpMiss)</a></code></pre></div>
 <pre><code>## ===== Monitors =====
 ## thin = 1: alpha, beta
 ## ===== Samplers =====
 ## RW sampler (1)
 ##   - alpha
-## posterior_predictive sampler (2)
-##   - x[]  (2 elements)
-## conjugate sampler (11)
+## posterior_predictive_branch sampler (2)
+##   - theta[]  (2 elements)
+## conjugate sampler (9)
 ##   - beta
-##   - theta[]  (10 elements)</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpMissConf<span class="op">$</span><span class="kw">addMonitors</span>(<span class="st">&#39;x&#39;</span>, <span class="st">&#39;alpha&#39;</span>, <span class="st">&#39;beta&#39;</span>, <span class="st">&#39;theta&#39;</span>)</code></pre></div>
+##   - theta[]  (8 elements)</code></pre>
+<div class="sourceCode" id="cb92"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb92-1" title="1">pumpMissConf<span class="op">$</span><span class="kw">addMonitors</span>(<span class="st">&#39;x&#39;</span>, <span class="st">&#39;alpha&#39;</span>, <span class="st">&#39;beta&#39;</span>, <span class="st">&#39;theta&#39;</span>)</a></code></pre></div>
 <pre><code>## thin = 1: alpha, beta, x, theta</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpMissMCMC &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(pumpMissConf)
-Cobj &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(pumpMiss, pumpMissMCMC)
-
-niter &lt;-<span class="st"> </span><span class="dv">10</span>
-<span class="kw">set.seed</span>(<span class="dv">0</span>)
-Cobj<span class="op">$</span>pumpMissMCMC<span class="op">$</span><span class="kw">run</span>(niter)</code></pre></div>
+<div class="sourceCode" id="cb94"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb94-1" title="1">pumpMissMCMC &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(pumpMissConf)</a>
+<a class="sourceLine" id="cb94-2" title="2">Cobj &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(pumpMiss, pumpMissMCMC)</a>
+<a class="sourceLine" id="cb94-3" title="3"></a>
+<a class="sourceLine" id="cb94-4" title="4">niter &lt;-<span class="st"> </span><span class="dv">10</span></a>
+<a class="sourceLine" id="cb94-5" title="5"><span class="kw">set.seed</span>(<span class="dv">0</span>)</a>
+<a class="sourceLine" id="cb94-6" title="6">Cobj<span class="op">$</span>pumpMissMCMC<span class="op">$</span><span class="kw">run</span>(niter)</a></code></pre></div>
 <pre><code>## NULL</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">samples &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(Cobj<span class="op">$</span>pumpMissMCMC<span class="op">$</span>mvSamples)
-
-samples[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>, <span class="dv">13</span><span class="op">:</span><span class="dv">17</span>]</code></pre></div>
+<div class="sourceCode" id="cb96"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb96-1" title="1">samples &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(Cobj<span class="op">$</span>pumpMissMCMC<span class="op">$</span>mvSamples)</a>
+<a class="sourceLine" id="cb96-2" title="2"></a>
+<a class="sourceLine" id="cb96-3" title="3">samples[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>, <span class="dv">13</span><span class="op">:</span><span class="dv">17</span>]</a></code></pre></div>
 <pre><code>##      x[1] x[2] x[3] x[4] x[5]
-## [1,]   17    1    2   14    3
-## [2,]   11    1    4   14    3
-## [3,]   14    1    9   14    3
-## [4,]   11    1   24   14    3
-## [5,]    9    1   29   14    3</code></pre>
-<p>Missing values may also occur in explanatory/predictor variables. Values for such variables should be passed in via the <code>data</code> argument to <code>nimbleModel</code>, with <code>NA</code> for the missing values. In some contexts, one would want to specify distributions for such explanatory variables, for example so that an MCMC would impute the missing values.</p>
+## [1,]   22    1   16   14    3
+## [2,]   19    1   38   14    3
+## [3,]   42    1    4   14    3
+## [4,]   36    1   28   14    3
+## [5,]   13    1   39   14    3</code></pre>
+<p>Missing values may also occur in explanatory/predictor variables. Values for
+such variables should be passed in via the <code>data</code> argument to
+<code>nimbleModel</code>, with <code>NA</code> for the missing values. In some
+contexts, one would want to specify distributions for such explanatory
+variables, for example so that an MCMC would impute the missing values.</p>
 </div>
 <div id="sec:defin-altern-models" class="section level4">
 <h4><span class="header-section-number">6.1.1.4</span> Defining alternative models with the same code</h4>
-<p>Avoiding code duplication is a basic principle of good programming. In NIMBLE, one can use definition-time if-then-else statements to create different models from the same code. As a simple example, say we have a linear regression model and want to consider including or omitting <code>x[2]</code> as an explanatory variable:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">regressionCode &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-    intercept <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
-    slope1 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
-    <span class="cf">if</span>(includeX2) {
-        slope2 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
-        <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) 
-            predictedY[i] &lt;-<span class="st"> </span>intercept <span class="op">+</span><span class="st"> </span>slope1 <span class="op">*</span><span class="st"> </span>x1[i] <span class="op">+</span><span class="st"> </span>slope2 <span class="op">*</span><span class="st"> </span>x2[i]
-    } <span class="cf">else</span> {
-        <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) predictedY[i] &lt;-<span class="st"> </span>intercept <span class="op">+</span><span class="st"> </span>slope1 <span class="op">*</span><span class="st"> </span>x1[i]
-    }
-    sigmaY <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)
-    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) Y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(predictedY[i], sigmaY)
-})
-
-includeX2 &lt;-<span class="st"> </span><span class="ot">FALSE</span>
-modelWithoutX2 &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(regressionCode, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">30</span>), 
-                              <span class="dt">check=</span><span class="ot">FALSE</span>)
-modelWithoutX2<span class="op">$</span><span class="kw">getVarNames</span>()</code></pre></div>
+<p>Avoiding code duplication is a basic principle of good programming. In
+NIMBLE, one can use definition-time if-then-else statements to create
+different models from the same code. As a simple example, say we have
+a linear regression model and want to consider including or omitting
+<code>x[2]</code> as an explanatory variable:</p>
+<div class="sourceCode" id="cb98"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb98-1" title="1">regressionCode &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb98-2" title="2">    intercept <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)</a>
+<a class="sourceLine" id="cb98-3" title="3">    slope1 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)</a>
+<a class="sourceLine" id="cb98-4" title="4">    <span class="cf">if</span>(includeX2) {</a>
+<a class="sourceLine" id="cb98-5" title="5">        slope2 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)</a>
+<a class="sourceLine" id="cb98-6" title="6">        <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) </a>
+<a class="sourceLine" id="cb98-7" title="7">            predictedY[i] &lt;-<span class="st"> </span>intercept <span class="op">+</span><span class="st"> </span>slope1 <span class="op">*</span><span class="st"> </span>x1[i] <span class="op">+</span><span class="st"> </span>slope2 <span class="op">*</span><span class="st"> </span>x2[i]</a>
+<a class="sourceLine" id="cb98-8" title="8">    } <span class="cf">else</span> {</a>
+<a class="sourceLine" id="cb98-9" title="9">        <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) predictedY[i] &lt;-<span class="st"> </span>intercept <span class="op">+</span><span class="st"> </span>slope1 <span class="op">*</span><span class="st"> </span>x1[i]</a>
+<a class="sourceLine" id="cb98-10" title="10">    }</a>
+<a class="sourceLine" id="cb98-11" title="11">    sigmaY <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)</a>
+<a class="sourceLine" id="cb98-12" title="12">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) Y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(predictedY[i], sigmaY)</a>
+<a class="sourceLine" id="cb98-13" title="13">})</a>
+<a class="sourceLine" id="cb98-14" title="14"></a>
+<a class="sourceLine" id="cb98-15" title="15">includeX2 &lt;-<span class="st"> </span><span class="ot">FALSE</span></a>
+<a class="sourceLine" id="cb98-16" title="16">modelWithoutX2 &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(regressionCode, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">30</span>), </a>
+<a class="sourceLine" id="cb98-17" title="17">                              <span class="dt">check=</span><span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb98-18" title="18">modelWithoutX2<span class="op">$</span><span class="kw">getVarNames</span>()</a></code></pre></div>
 <pre><code>## [1] &quot;intercept&quot;                       &quot;slope1&quot;                         
 ## [3] &quot;predictedY&quot;                      &quot;sigmaY&quot;                         
 ## [5] &quot;lifted_d1_over_sqrt_oPsigmaY_cP&quot; &quot;Y&quot;                              
 ## [7] &quot;x1&quot;</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">includeX2 &lt;-<span class="st"> </span><span class="ot">TRUE</span>
-modelWithX2 &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(regressionCode, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">30</span>), 
-                           <span class="dt">check =</span> <span class="ot">FALSE</span>)
-modelWithX2<span class="op">$</span><span class="kw">getVarNames</span>()</code></pre></div>
+<div class="sourceCode" id="cb100"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb100-1" title="1">includeX2 &lt;-<span class="st"> </span><span class="ot">TRUE</span></a>
+<a class="sourceLine" id="cb100-2" title="2">modelWithX2 &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(regressionCode, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">30</span>), </a>
+<a class="sourceLine" id="cb100-3" title="3">                           <span class="dt">check =</span> <span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb100-4" title="4">modelWithX2<span class="op">$</span><span class="kw">getVarNames</span>()</a></code></pre></div>
 <pre><code>## [1] &quot;intercept&quot;                       &quot;slope1&quot;                         
 ## [3] &quot;slope2&quot;                          &quot;predictedY&quot;                     
 ## [5] &quot;sigmaY&quot;                          &quot;lifted_d1_over_sqrt_oPsigmaY_cP&quot;
 ## [7] &quot;Y&quot;                               &quot;x1&quot;                             
 ## [9] &quot;x2&quot;</code></pre>
-<p>Whereas the <em>constants</em> are a property of the <em>model definition</em> – since they may help determine the model structure itself – <em>data</em> nodes can be different in different copies of the model generated from the same <em>model definition</em>. The <code>setData</code> and <code>setInits</code> described above can be used for each copy of the model.</p>
+<p>Whereas the <em>constants</em> are a property of the <em>model definition</em>
+– since they may help determine the model structure itself –
+<em>data</em> nodes can be different in different copies of the model
+generated from the same <em>model definition</em>. The <code>setData</code> and
+<code>setInits</code> described above can be used for each copy of the model.</p>
 </div>
 <div id="sec:provide-dimensions" class="section level4">
 <h4><span class="header-section-number">6.1.1.5</span> Providing dimensions via <em>nimbleModel</em></h4>
-<p><code>nimbleModel</code> can usually determine the dimensions of every variable from the declarations in the BUGS code. However, it is possible to use a multivariate object only with empty indices (e.g. <code>x[,]</code>), in which case the dimensions must be provided as an argument to <code>nimbleModel</code>.</p>
-<p>Here’s an example with multivariate nodes. The first provides indices, so no <code>dimensions</code> argument is needed, while the second omits the indices and provides a <code>dimensions</code> argument instead.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-  y[<span class="dv">1</span><span class="op">:</span>K] <span class="op">~</span><span class="st"> </span><span class="kw">dmulti</span>(p[<span class="dv">1</span><span class="op">:</span>K], n)
-  p[<span class="dv">1</span><span class="op">:</span>K] <span class="op">~</span><span class="st"> </span><span class="kw">ddirch</span>(alpha[<span class="dv">1</span><span class="op">:</span>K])
-  <span class="kw">log</span>(alpha[<span class="dv">1</span><span class="op">:</span>K]) <span class="op">~</span><span class="st"> </span><span class="kw">dmnorm</span>(alpha0[<span class="dv">1</span><span class="op">:</span>K], R[<span class="dv">1</span><span class="op">:</span>K, <span class="dv">1</span><span class="op">:</span>K])
-})
-
-K &lt;-<span class="st"> </span><span class="dv">5</span>
-model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">n =</span> <span class="dv">3</span>, <span class="dt">K =</span> K,
-                          <span class="dt">alpha0 =</span> <span class="kw">rep</span>(<span class="dv">0</span>, K), <span class="dt">R =</span> <span class="kw">diag</span>(K)),
-                     <span class="dt">check =</span> <span class="ot">FALSE</span>)
-
-codeAlt &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-  y[] <span class="op">~</span><span class="st"> </span><span class="kw">dmulti</span>(p[], n)
-  p[] <span class="op">~</span><span class="st"> </span><span class="kw">ddirch</span>(alpha[])
-  <span class="kw">log</span>(alpha[]) <span class="op">~</span><span class="st"> </span><span class="kw">dmnorm</span>(alpha0[], R[ , ])
-})
-
-model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(codeAlt, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">n =</span> <span class="dv">3</span>, <span class="dt">K =</span> K, <span class="dt">alpha0 =</span> <span class="kw">rep</span>(<span class="dv">0</span>, K),
-                                               <span class="dt">R =</span> <span class="kw">diag</span>(K)),
-                              <span class="dt">dimensions =</span> <span class="kw">list</span>(<span class="dt">y =</span> K, <span class="dt">p =</span> K, <span class="dt">alpha =</span> K),
-                              <span class="dt">check =</span> <span class="ot">FALSE</span>)</code></pre></div>
+<p><code>nimbleModel</code> can usually determine the dimensions of every
+variable from the declarations in the BUGS code. However, it is
+possible to use a multivariate object only with empty indices
+(e.g. <code>x[,]</code>), in which case the dimensions must be provided as an
+argument to <code>nimbleModel</code>.</p>
+<p>Here’s an example with multivariate nodes. The first provides indices, so
+no <code>dimensions</code> argument is needed, while the second omits the
+indices and provides a <code>dimensions</code> argument instead.</p>
+<div class="sourceCode" id="cb102"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb102-1" title="1">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb102-2" title="2">  y[<span class="dv">1</span><span class="op">:</span>K] <span class="op">~</span><span class="st"> </span><span class="kw">dmulti</span>(p[<span class="dv">1</span><span class="op">:</span>K], n)</a>
+<a class="sourceLine" id="cb102-3" title="3">  p[<span class="dv">1</span><span class="op">:</span>K] <span class="op">~</span><span class="st"> </span><span class="kw">ddirch</span>(alpha[<span class="dv">1</span><span class="op">:</span>K])</a>
+<a class="sourceLine" id="cb102-4" title="4">  <span class="kw">log</span>(alpha[<span class="dv">1</span><span class="op">:</span>K]) <span class="op">~</span><span class="st"> </span><span class="kw">dmnorm</span>(alpha0[<span class="dv">1</span><span class="op">:</span>K], R[<span class="dv">1</span><span class="op">:</span>K, <span class="dv">1</span><span class="op">:</span>K])</a>
+<a class="sourceLine" id="cb102-5" title="5">})</a>
+<a class="sourceLine" id="cb102-6" title="6"></a>
+<a class="sourceLine" id="cb102-7" title="7">K &lt;-<span class="st"> </span><span class="dv">5</span></a>
+<a class="sourceLine" id="cb102-8" title="8">model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">n =</span> <span class="dv">3</span>, <span class="dt">K =</span> K,</a>
+<a class="sourceLine" id="cb102-9" title="9">                          <span class="dt">alpha0 =</span> <span class="kw">rep</span>(<span class="dv">0</span>, K), <span class="dt">R =</span> <span class="kw">diag</span>(K)),</a>
+<a class="sourceLine" id="cb102-10" title="10">                     <span class="dt">check =</span> <span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb102-11" title="11"></a>
+<a class="sourceLine" id="cb102-12" title="12">codeAlt &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb102-13" title="13">  y[] <span class="op">~</span><span class="st"> </span><span class="kw">dmulti</span>(p[], n)</a>
+<a class="sourceLine" id="cb102-14" title="14">  p[] <span class="op">~</span><span class="st"> </span><span class="kw">ddirch</span>(alpha[])</a>
+<a class="sourceLine" id="cb102-15" title="15">  <span class="kw">log</span>(alpha[]) <span class="op">~</span><span class="st"> </span><span class="kw">dmnorm</span>(alpha0[], R[ , ])</a>
+<a class="sourceLine" id="cb102-16" title="16">})</a>
+<a class="sourceLine" id="cb102-17" title="17"></a>
+<a class="sourceLine" id="cb102-18" title="18">model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(codeAlt, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">n =</span> <span class="dv">3</span>, <span class="dt">K =</span> K, <span class="dt">alpha0 =</span> <span class="kw">rep</span>(<span class="dv">0</span>, K),</a>
+<a class="sourceLine" id="cb102-19" title="19">                                               <span class="dt">R =</span> <span class="kw">diag</span>(K)),</a>
+<a class="sourceLine" id="cb102-20" title="20">                              <span class="dt">dimensions =</span> <span class="kw">list</span>(<span class="dt">y =</span> K, <span class="dt">p =</span> K, <span class="dt">alpha =</span> K),</a>
+<a class="sourceLine" id="cb102-21" title="21">                              <span class="dt">check =</span> <span class="ot">FALSE</span>)</a></code></pre></div>
 <p>In that example, since <code>alpha0</code> and <code>R</code> are provided as constants, we don’t need to specify their dimensions.</p>
 </div>
 </div>
 <div id="sec:readBUGSmodel" class="section level3">
 <h3><span class="header-section-number">6.1.2</span> Creating a model from standard BUGS and JAGS input files</h3>
-<p>Users with BUGS and JAGS experience may have files set up in standard formats for use in BUGS and JAGS. <code>readBUGSmodel</code> can read in the model, data/constant values and initial values in those formats. It can also take information directly from R objects somewhat more flexibly than <code>nimbleModel</code>, specifically allowing inputs set up similarly to those for BUGS and JAGS. In either case, after processing the inputs, it calls <code>nimbleModel</code>. Note that unlike BUGS and JAGS, only a single set of initial values can be specified in creating a model. Please see <code>help(readBUGSmodel)</code> for argument details.</p>
+<p>Users with BUGS and JAGS experience may have files set up in standard
+formats for use in BUGS and JAGS. <code>readBUGSmodel</code> can
+read in the model, data/constant values and initial values in those
+formats. It can also take information directly from R objects
+somewhat more flexibly than <code>nimbleModel</code>, specifically allowing
+inputs set up similarly to those for BUGS and JAGS.
+In either case, after processing the inputs, it calls <code>nimbleModel</code>.
+Note that unlike BUGS and JAGS, only a single set of initial values can be
+specified in creating a model. Please see <code>help(readBUGSmodel)</code> for argument details.</p>
 <p>As an example of using <code>readBUGSmodel</code>, let’s create a model for the <em>pump</em> example from BUGS.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpDir &lt;-<span class="st"> </span><span class="kw">system.file</span>(<span class="st">&#39;classic-bugs&#39;</span>, <span class="st">&#39;vol1&#39;</span>, <span class="st">&#39;pump&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;nimble&#39;</span>)
-pumpModel &lt;-<span class="st"> </span><span class="kw">readBUGSmodel</span>(<span class="st">&#39;pump.bug&#39;</span>, <span class="dt">data =</span> <span class="st">&#39;pump-data.R&#39;</span>, 
-                           <span class="dt">inits =</span> <span class="st">&#39;pump-init.R&#39;</span>, <span class="dt">dir =</span> pumpDir)</code></pre></div>
+<div class="sourceCode" id="cb103"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb103-1" title="1">pumpDir &lt;-<span class="st"> </span><span class="kw">system.file</span>(<span class="st">&#39;classic-bugs&#39;</span>, <span class="st">&#39;vol1&#39;</span>, <span class="st">&#39;pump&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;nimble&#39;</span>)</a>
+<a class="sourceLine" id="cb103-2" title="2">pumpModel &lt;-<span class="st"> </span><span class="kw">readBUGSmodel</span>(<span class="st">&#39;pump.bug&#39;</span>, <span class="dt">data =</span> <span class="st">&#39;pump-data.R&#39;</span>, </a>
+<a class="sourceLine" id="cb103-3" title="3">                           <span class="dt">inits =</span> <span class="st">&#39;pump-init.R&#39;</span>, <span class="dt">dir =</span> pumpDir)</a></code></pre></div>
 <pre><code>## Detected x as data within &#39;constants&#39;.</code></pre>
-<p>Note that <code>readBUGSmodel</code> allows one to include <code>var</code> and <code>data</code> blocks in the model file as in some of the BUGS examples (such as <code>inhaler</code>). The <code>data</code> block pre-computes constant and data values. Also note that if <code>data</code> and <code>inits</code> are provided as files, the files should contain R code that creates objects analogous to what would populate the list if a list were provided instead. Please see the JAGS manual examples or the <code>classic_bugs</code> directory in the NIMBLE package for example syntax. <!---  PdV - at some point I think there was discussion of code that would appear in a 'data' block being put in the model code directly, but I think this could lead to variable on the LHS twice with <- and ~, so I think I'm not understanding what we want to allow in code defining a model 
-% I have no recollection of that idea.  Doesn't sound safe. -Perry --> NIMBLE by and large does not need the information given in a <code>var</code> block but occasionally this is used to determine dimensionality, such as in the case of syntax like <code>xbar &lt;- mean(x[])</code> where <code>x</code> is a variable that appears only on the right-hand side of BUGS expressions.</p>
-<p>Note that NIMBLE does not handle formatting such as in some of the original BUGS examples in which data was indicated with syntax such as <code>data x in 'x.txt'</code>.</p>
+<p>Note that <code>readBUGSmodel</code> allows one to include <code>var</code> and <code>data</code> blocks in the model file as in some of the BUGS examples (such as <code>inhaler</code>). The <code>data</code> block pre-computes constant and data values. Also note that if <code>data</code> and <code>inits</code> are provided
+as files, the files should contain R code that creates objects
+analogous to what would populate the list if a list were provided
+instead. Please see the JAGS manual examples or the
+<code>classic_bugs</code> directory in the NIMBLE package for example
+syntax.
+<!---  PdV - at some point I think there was discussion of code that would appear in a 'data' block being put in the model code directly, but I think this could lead to variable on the LHS twice with <- and ~, so I think I'm not understanding what we want to allow in code defining a model 
+% I have no recollection of that idea.  Doesn't sound safe. -Perry -->
+NIMBLE by and large does not need the information given in a <code>var</code>
+block but occasionally this is used to determine dimensionality, such
+as in the case of syntax like <code>xbar &lt;- mean(x[])</code> where <code>x</code> is a variable that appears only on the right-hand side of BUGS expressions.</p>
+<p>Note that NIMBLE does not handle formatting such as in some of the
+original BUGS examples in which data was indicated with syntax such as
+<code>data x in 'x.txt'</code>.</p>
 </div>
 <div id="sub:multiple-instances" class="section level3">
 <h3><span class="header-section-number">6.1.3</span> Making multiple instances from the same model definition</h3>
-<p>Sometimes it is useful to have more than one copy of the same model. For example, an algorithm (i.e., nimbleFunction) such as an MCMC will be bound to a particular model before it is run. A user could build multiple algorithms to use the same model instance, or they may want each algorithm to have its own instance of the model.</p>
+<p>Sometimes it is useful to have more than one copy of the same model.
+For example, an algorithm (i.e., nimbleFunction) such as an MCMC will be
+bound to a particular model before it is run. A user could build multiple algorithms
+to use the same model instance, or they may want each algorithm to
+have its own instance of the model.</p>
 <p>There are two ways to create new instances of a model, shown in this example:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">simpleCode &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) x[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)
-})
-
-<span class="co"># Return the model definition only, not a built model</span>
-simpleModelDefinition &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(simpleCode, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">10</span>),
-                                     <span class="dt">returnDef =</span> <span class="ot">TRUE</span>, <span class="dt">check =</span> <span class="ot">FALSE</span>)
-<span class="co"># Make one instance of the model</span>
-simpleModelCopy1 &lt;-<span class="st"> </span>simpleModelDefinition<span class="op">$</span><span class="kw">newModel</span>(<span class="dt">check =</span> <span class="ot">FALSE</span>)
-<span class="co"># Make another instance from the same definition</span>
-simpleModelCopy2 &lt;-<span class="st"> </span>simpleModelDefinition<span class="op">$</span><span class="kw">newModel</span>(<span class="dt">check =</span> <span class="ot">FALSE</span>)
-<span class="co"># Ask simpleModelCopy2 for another copy of itself</span>
-simpleModelCopy3 &lt;-<span class="st"> </span>simpleModelCopy2<span class="op">$</span><span class="kw">newModel</span>(<span class="dt">check =</span> <span class="ot">FALSE</span>)</code></pre></div>
-<p>Each copy of the model can have different nodes flagged as data and different values in any nodes. They cannot have different values of <code>N</code> because that is a constant; it must be a constant because it helps define the model.</p>
+<div class="sourceCode" id="cb105"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb105-1" title="1">simpleCode &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb105-2" title="2">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) x[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb105-3" title="3">})</a>
+<a class="sourceLine" id="cb105-4" title="4"></a>
+<a class="sourceLine" id="cb105-5" title="5"><span class="co"># Return the model definition only, not a built model</span></a>
+<a class="sourceLine" id="cb105-6" title="6">simpleModelDefinition &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(simpleCode, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">10</span>),</a>
+<a class="sourceLine" id="cb105-7" title="7">                                     <span class="dt">returnDef =</span> <span class="ot">TRUE</span>, <span class="dt">check =</span> <span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb105-8" title="8"><span class="co"># Make one instance of the model</span></a>
+<a class="sourceLine" id="cb105-9" title="9">simpleModelCopy1 &lt;-<span class="st"> </span>simpleModelDefinition<span class="op">$</span><span class="kw">newModel</span>(<span class="dt">check =</span> <span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb105-10" title="10"><span class="co"># Make another instance from the same definition</span></a>
+<a class="sourceLine" id="cb105-11" title="11">simpleModelCopy2 &lt;-<span class="st"> </span>simpleModelDefinition<span class="op">$</span><span class="kw">newModel</span>(<span class="dt">check =</span> <span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb105-12" title="12"><span class="co"># Ask simpleModelCopy2 for another copy of itself</span></a>
+<a class="sourceLine" id="cb105-13" title="13">simpleModelCopy3 &lt;-<span class="st"> </span>simpleModelCopy2<span class="op">$</span><span class="kw">newModel</span>(<span class="dt">check =</span> <span class="ot">FALSE</span>)</a></code></pre></div>
+<p>Each copy of the model can have different nodes flagged as data and
+different values in any nodes. They cannot have different values of
+<code>N</code> because that is a constant; it must be a constant because
+it helps define the model.</p>
 </div>
 </div>
 <div id="sec:nodes-and-variables" class="section level2">
 <h2><span class="header-section-number">6.2</span> NIMBLE models are objects you can query and manipulate</h2>
-<p>NIMBLE models are objects that can be modified and manipulated from R. In this section we introduce some basic ways to use a model object. Chapter <a href="cha-using-models.html#cha:using-models">13</a> covers more topics for writing algorithms that use models.</p>
+<p>NIMBLE models are objects that can be modified and manipulated from R.
+In this section we introduce some basic ways to use a model object.
+Chapter <a href="cha-using-models.html#cha:using-models">13</a> covers more topics for writing
+algorithms that use models.</p>
 <div id="sec:what-are-nodes-and-variables" class="section level3">
 <h3><span class="header-section-number">6.2.1</span> What are variables and nodes?</h3>
-<p>This section discusses some basic concepts and terminology to be able to speak about NIMBLE models clearly.</p>
-<p>Suppose we have created a model from the following BUGS code. <!---  This chunk can be modified to jut remove the nimbleModel call. --></p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mc &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-    a <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.001</span>)
-    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">5</span>) {
-        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(a, <span class="dt">sd =</span> <span class="fl">0.1</span>)
-        <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">3</span>)
-            z[i,j] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(y[i], tau)
-    }
-    tau <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">20</span>)
-    y.squared[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>] &lt;-<span class="st"> </span>y[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>]<span class="op">^</span><span class="dv">2</span>
-})
-
-model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(mc, <span class="dt">data =</span> <span class="kw">list</span>(<span class="dt">z =</span> <span class="kw">matrix</span>(<span class="kw">rnorm</span>(<span class="dv">15</span>), <span class="dt">nrow =</span> <span class="dv">5</span>)))</code></pre></div>
+<p>This section discusses some basic concepts and terminology to
+be able to speak about NIMBLE models clearly.</p>
+<p>Suppose we have created a model from the following BUGS code.
+<!---  This chunk can be modified to jut remove the nimbleModel call. --></p>
+<div class="sourceCode" id="cb106"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb106-1" title="1">mc &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb106-2" title="2">    a <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.001</span>)</a>
+<a class="sourceLine" id="cb106-3" title="3">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">5</span>) {</a>
+<a class="sourceLine" id="cb106-4" title="4">        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(a, <span class="dt">sd =</span> <span class="fl">0.1</span>)</a>
+<a class="sourceLine" id="cb106-5" title="5">        <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">3</span>)</a>
+<a class="sourceLine" id="cb106-6" title="6">            z[i,j] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(y[i], tau)</a>
+<a class="sourceLine" id="cb106-7" title="7">    }</a>
+<a class="sourceLine" id="cb106-8" title="8">    tau <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">20</span>)</a>
+<a class="sourceLine" id="cb106-9" title="9">    y.squared[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>] &lt;-<span class="st"> </span>y[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>]<span class="op">^</span><span class="dv">2</span></a>
+<a class="sourceLine" id="cb106-10" title="10">})</a>
+<a class="sourceLine" id="cb106-11" title="11"></a>
+<a class="sourceLine" id="cb106-12" title="12">model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(mc, <span class="dt">data =</span> <span class="kw">list</span>(<span class="dt">z =</span> <span class="kw">matrix</span>(<span class="kw">rnorm</span>(<span class="dv">15</span>), <span class="dt">nrow =</span> <span class="dv">5</span>)))</a></code></pre></div>
 <p>In NIMBLE terminology:</p>
 <ul>
-<li>The <em>variables</em> of this model are <code>a</code>, <code>y</code>, <code>z</code>, and <code>y.squared</code>.</li>
-<li>The <em>nodes</em> of this model are <code>a</code>, <code>y[1]</code> <span class="math inline">\(,\ldots,\)</span> <code>y[5]</code>, <code>z[1,1]</code> <span class="math inline">\(,\ldots,\)</span> <code>z[5, 3]</code>, and <code>y.squared[1:5]</code>. In graph terminology, nodes are vertices in the model graph.</li>
-<li>The <em>node functions</em> of this model are <code>a ~ dnorm(0, 0.001)</code>, <code>y[i] ~ dnorm(a, 0.1)</code>, <code>z[i,j] ~ dnorm(y[i], sd = 0.1)</code>, and <code>y.squared[1:5] &lt;- y[1:5]^2</code>. Each node’s calculations are handled by a node function. Sometimes the distinction between nodes and node functions is important, but when it is not important we may refer to both simply as <em>nodes</em>.<br />
+<li>The <em>variables</em> of this model are <code>a</code>, <code>y</code>, <code>z</code>,
+and <code>y.squared</code>.</li>
+<li>The <em>nodes</em> of this model are <code>a</code>, <code>y[1]</code> <span class="math inline">\(,\ldots,\)</span>
+<code>y[5]</code>, <code>z[1,1]</code> <span class="math inline">\(,\ldots,\)</span> <code>z[5, 3]</code>, and
+<code>y.squared[1:5]</code>. In graph terminology, nodes are vertices in
+the model graph.</li>
+<li>The <em>node functions</em> of this model are
+<code>a ~ dnorm(0, 0.001)</code>, <code>y[i] ~ dnorm(a, 0.1)</code>,
+<code>z[i,j] ~ dnorm(y[i], sd = 0.1)</code>, and
+<code>y.squared[1:5] &lt;- y[1:5]^2</code>. Each node’s calculations are
+handled by a node function. Sometimes the distinction between
+nodes and node functions is important, but when it is not important
+we may refer to both simply as <em>nodes</em>.<br />
 </li>
-<li>The <em>scalar elements</em> of this model include all the scalar nodes as well as the scalar elements <code>y.squared[1]</code> <span class="math inline">\(,\ldots,\)</span> <code>y.squared[5]</code> of the multivariate node <code>y.squared[1:5]</code>.</li>
+<li>The <em>scalar elements</em> of this model include all the scalar
+nodes as well as the scalar elements <code>y.squared[1]</code> <span class="math inline">\(,\ldots,\)</span>
+<code>y.squared[5]</code> of the multivariate node <code>y.squared[1:5]</code>.</li>
 </ul>
 </div>
 <div id="determining-the-nodes-and-variables-in-a-model" class="section level3">
 <h3><span class="header-section-number">6.2.2</span> Determining the nodes and variables in a model</h3>
 <p>One can determine the variables in a model using <code>getVarNames</code> and the nodes in a model using <code>getNodeNames</code>. Optional arguments to <code>getNodeNames</code> allow you to select only certain types of nodes, as discussed in Section <a href="cha-using-models.html#sec:get-nodes">13.1.1</a> and in the R help for <code>getNodeNames</code>.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model<span class="op">$</span><span class="kw">getVarNames</span>()</code></pre></div>
+<div class="sourceCode" id="cb107"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb107-1" title="1">model<span class="op">$</span><span class="kw">getVarNames</span>()</a></code></pre></div>
 <pre><code>## [1] &quot;a&quot;                            &quot;y&quot;                           
 ## [3] &quot;lifted_d1_over_sqrt_oPtau_cP&quot; &quot;z&quot;                           
 ## [5] &quot;tau&quot;                          &quot;y.squared&quot;</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model<span class="op">$</span><span class="kw">getNodeNames</span>()</code></pre></div>
+<div class="sourceCode" id="cb109"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb109-1" title="1">model<span class="op">$</span><span class="kw">getNodeNames</span>()</a></code></pre></div>
 <pre><code>##  [1] &quot;a&quot;                            &quot;tau&quot;                         
 ##  [3] &quot;y[1]&quot;                         &quot;y[2]&quot;                        
 ##  [5] &quot;y[3]&quot;                         &quot;y[4]&quot;                        
@@ -585,74 +728,98 @@ model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(mc, <spa
 ## [19] &quot;z[4, 1]&quot;                      &quot;z[4, 2]&quot;                     
 ## [21] &quot;z[4, 3]&quot;                      &quot;z[5, 1]&quot;                     
 ## [23] &quot;z[5, 2]&quot;                      &quot;z[5, 3]&quot;</code></pre>
-<p>Note that some of the nodes may be ‘lifted’ nodes introduced by NIMBLE (Section <a href="cha-using-models.html#sec:introduced-nodes">13.1.2</a>). In this case <code>lifted_d1_over_sqrt_oPtau_cP</code> (this is a node for the standard deviation of the <code>z</code> nodes using NIMBLE’s canonical parameterization of the normal distribution) is the only lifted node in the model.</p>
+<p>Note that some of the nodes may be ‘lifted’ nodes introduced by
+NIMBLE (Section <a href="cha-using-models.html#sec:introduced-nodes">13.1.2</a>). In this case <code>lifted_d1_over_sqrt_oPtau_cP</code> (this is a node for the standard deviation of the <code>z</code> nodes using NIMBLE’s canonical parameterization of the normal distribution) is the only lifted node in the model.</p>
 <p>To determine the dependencies of one or more nodes in the model, you can use <code>getDependencies</code> as discussed in Section <a href="cha-using-models.html#sec:cdgetdependencies">13.1.3</a>.</p>
 </div>
 <div id="sec:accessing-nodes" class="section level3">
 <h3><span class="header-section-number">6.2.3</span> Accessing nodes</h3>
-<p>Model variables can be accessed and set just as in R using <code>$</code> and <code>[[ ]]</code>. For example</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model<span class="op">$</span>a &lt;-<span class="st"> </span><span class="dv">5</span>
-model<span class="op">$</span>a</code></pre></div>
+<p>Model variables can be accessed and set just as in R using <code>$</code> and
+<code>[[ ]]</code>. For example</p>
+<div class="sourceCode" id="cb111"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb111-1" title="1">model<span class="op">$</span>a &lt;-<span class="st"> </span><span class="dv">5</span></a>
+<a class="sourceLine" id="cb111-2" title="2">model<span class="op">$</span>a</a></code></pre></div>
 <pre><code>## [1] 5</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model[[<span class="st">&quot;a&quot;</span>]]</code></pre></div>
+<div class="sourceCode" id="cb113"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb113-1" title="1">model[[<span class="st">&quot;a&quot;</span>]]</a></code></pre></div>
 <pre><code>## [1] 5</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model<span class="op">$</span>y[<span class="dv">2</span><span class="op">:</span><span class="dv">4</span>] &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">3</span>)
-model<span class="op">$</span>y</code></pre></div>
-<pre><code>## [1]         NA -0.9261095 -0.1771040  0.4020118         NA</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model[[<span class="st">&quot;y&quot;</span>]][<span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">5</span>)] &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">2</span>)
-model<span class="op">$</span>y</code></pre></div>
-<pre><code>## [1] -0.7317482 -0.9261095 -0.1771040  0.4020118  0.8303732</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model<span class="op">$</span>z[<span class="dv">1</span>,]</code></pre></div>
-<pre><code>## [1] -0.3340008  1.2079084  0.5210227</code></pre>
-<p>While nodes that are part of a variable can be accessed as above, each node also has its own name that can be used to access it directly. For example, <code>y[2]</code> has the name ‘y[2]’ and can be accessed by that name as follows:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model[[<span class="st">&quot;y[2]&quot;</span>]]</code></pre></div>
-<pre><code>## [1] -0.9261095</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model[[<span class="st">&quot;y[2]&quot;</span>]] &lt;-<span class="st"> </span><span class="dv">-5</span>
-model<span class="op">$</span>y</code></pre></div>
-<pre><code>## [1] -0.7317482 -5.0000000 -0.1771040  0.4020118  0.8303732</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model[[<span class="st">&quot;z[2, 3]&quot;</span>]]</code></pre></div>
-<pre><code>## [1] -0.1587546</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model[[<span class="st">&quot;z[2:4, 1:2]&quot;</span>]][<span class="dv">1</span>, <span class="dv">2</span>]</code></pre></div>
-<pre><code>## [1] -1.231323</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model<span class="op">$</span>z[<span class="dv">2</span>, <span class="dv">2</span>]</code></pre></div>
-<pre><code>## [1] -1.231323</code></pre>
-<p>Notice that node names can include index blocks, such as <code>model[[&quot;z[2:4, 1:2]&quot;]]</code>, and these are not strictly required to correspond to actual nodes. Such blocks can be subsequently sub-indexed in the regular R manner, such as <code>model[[&quot;z[2:4, 1:2]&quot;]][1, 2]</code>.</p>
+<div class="sourceCode" id="cb115"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb115-1" title="1">model<span class="op">$</span>y[<span class="dv">2</span><span class="op">:</span><span class="dv">4</span>] &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">3</span>)</a>
+<a class="sourceLine" id="cb115-2" title="2">model<span class="op">$</span>y</a></code></pre></div>
+<pre><code>## [1]        NA -1.047984  1.441158 -1.015847        NA</code></pre>
+<div class="sourceCode" id="cb117"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb117-1" title="1">model[[<span class="st">&quot;y&quot;</span>]][<span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">5</span>)] &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">2</span>)</a>
+<a class="sourceLine" id="cb117-2" title="2">model<span class="op">$</span>y</a></code></pre></div>
+<pre><code>## [1]  0.4119747 -1.0479844  1.4411577 -1.0158475 -0.3810761</code></pre>
+<div class="sourceCode" id="cb119"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb119-1" title="1">model<span class="op">$</span>z[<span class="dv">1</span>,]</a></code></pre></div>
+<pre><code>## [1] -1.2313234 -0.1587546 -0.1771040</code></pre>
+<p>While nodes that are part of a variable can be accessed as above, each
+node also has its own name that can be used to access it directly. For
+example, <code>y[2]</code> has the name ‘y[2]’ and can be accessed by that
+name as follows:</p>
+<div class="sourceCode" id="cb121"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb121-1" title="1">model[[<span class="st">&quot;y[2]&quot;</span>]]</a></code></pre></div>
+<pre><code>## [1] -1.047984</code></pre>
+<div class="sourceCode" id="cb123"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb123-1" title="1">model[[<span class="st">&quot;y[2]&quot;</span>]] &lt;-<span class="st"> </span><span class="dv">-5</span></a>
+<a class="sourceLine" id="cb123-2" title="2">model<span class="op">$</span>y</a></code></pre></div>
+<pre><code>## [1]  0.4119747 -5.0000000  1.4411577 -1.0158475 -0.3810761</code></pre>
+<div class="sourceCode" id="cb125"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb125-1" title="1">model[[<span class="st">&quot;z[2, 3]&quot;</span>]]</a></code></pre></div>
+<pre><code>## [1] 0.4020118</code></pre>
+<div class="sourceCode" id="cb127"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb127-1" title="1">model[[<span class="st">&quot;z[2:4, 1:2]&quot;</span>]][<span class="dv">1</span>, <span class="dv">2</span>]</a></code></pre></div>
+<pre><code>## [1] 1.464587</code></pre>
+<div class="sourceCode" id="cb129"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb129-1" title="1">model<span class="op">$</span>z[<span class="dv">2</span>, <span class="dv">2</span>]</a></code></pre></div>
+<pre><code>## [1] 1.464587</code></pre>
+<p>Notice that node names can include index blocks, such as
+<code>model[["z[2:4, 1:2]"]]</code>, and these are not strictly required to
+correspond to actual nodes. Such blocks can be subsequently
+sub-indexed in the regular R manner, such as <code>model[["z[2:4, 1:2]"]][1, 2]</code>.</p>
 </div>
 <div id="sec:how-nodes-are" class="section level3">
 <h3><span class="header-section-number">6.2.4</span> How nodes are named</h3>
-<p>Every node has a name that is a character string including its indices, with a space after every comma. For example, <code>X[1, 2, 3]</code> has the name ‘X[1, 2, 3]’. Nodes following multivariate distributions have names that include their index blocks. For example, a multivariate node for <code>X[6:10, 3]</code> has the name ‘X[6:10, 3]’.</p>
-<p>The definitive source for node names in a model is <code>getNodeNames</code>, described previously.</p>
-<p>In the event you need to ensure that a name is formatted correctly, you can use the <code>expandNodeNames</code> method. For example, to get the spaces correctly inserted into ‘X[1,1:5]’:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">multiVarCode &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-    X[<span class="dv">1</span>, <span class="dv">1</span><span class="op">:</span><span class="dv">5</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dmnorm</span>(mu[], cov[,])
-    X[<span class="dv">6</span><span class="op">:</span><span class="dv">10</span>, <span class="dv">3</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dmnorm</span>(mu[], cov[,])
-})
-
-multiVarModel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(multiVarCode, <span class="dt">dimensions =</span>
-                   <span class="kw">list</span>(<span class="dt">mu =</span> <span class="dv">5</span>, <span class="dt">cov =</span> <span class="kw">c</span>(<span class="dv">5</span>,<span class="dv">5</span>)), <span class="dt">calculate =</span> <span class="ot">FALSE</span>)
-
-multiVarModel<span class="op">$</span><span class="kw">expandNodeNames</span>(<span class="st">&quot;X[1,1:5]&quot;</span>)</code></pre></div>
+<p>Every node has a name that is a character string including its
+indices, with a space after every comma. For example, <code>X[1, 2, 3]</code>
+has the name ‘X[1, 2, 3]’. Nodes following multivariate
+distributions have names that include their index blocks. For
+example, a multivariate node for <code>X[6:10, 3]</code> has the name ‘X[6:10, 3]’.</p>
+<p>The definitive source for node names in a model is
+<code>getNodeNames</code>, described previously.</p>
+<p>In the event you need to ensure that a name is formatted correctly,
+you can use the <code>expandNodeNames</code> method. For
+example, to get the spaces correctly inserted into ‘X[1,1:5]’:</p>
+<div class="sourceCode" id="cb131"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb131-1" title="1">multiVarCode &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb131-2" title="2">    X[<span class="dv">1</span>, <span class="dv">1</span><span class="op">:</span><span class="dv">5</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dmnorm</span>(mu[], cov[,])</a>
+<a class="sourceLine" id="cb131-3" title="3">    X[<span class="dv">6</span><span class="op">:</span><span class="dv">10</span>, <span class="dv">3</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dmnorm</span>(mu[], cov[,])</a>
+<a class="sourceLine" id="cb131-4" title="4">})</a>
+<a class="sourceLine" id="cb131-5" title="5"></a>
+<a class="sourceLine" id="cb131-6" title="6">multiVarModel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(multiVarCode, <span class="dt">dimensions =</span></a>
+<a class="sourceLine" id="cb131-7" title="7">                   <span class="kw">list</span>(<span class="dt">mu =</span> <span class="dv">5</span>, <span class="dt">cov =</span> <span class="kw">c</span>(<span class="dv">5</span>,<span class="dv">5</span>)), <span class="dt">calculate =</span> <span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb131-8" title="8"></a>
+<a class="sourceLine" id="cb131-9" title="9">multiVarModel<span class="op">$</span><span class="kw">expandNodeNames</span>(<span class="st">&quot;X[1,1:5]&quot;</span>)</a></code></pre></div>
 <pre><code>## [1] &quot;X[1, 1:5]&quot;</code></pre>
-<p>Alternatively, for those inclined to R’s less commonly used features, a nice trick is to use its <code>parse</code> and <code>deparse</code> functions.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">deparse</span>(<span class="kw">parse</span>(<span class="dt">text =</span> <span class="st">&quot;X[1,1:5]&quot;</span>, <span class="dt">keep.source =</span> <span class="ot">FALSE</span>)[[<span class="dv">1</span>]])</code></pre></div>
+<p>Alternatively, for those inclined to R’s less commonly used features, a nice trick is
+to use its <code>parse</code> and <code>deparse</code> functions.</p>
+<div class="sourceCode" id="cb133"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb133-1" title="1"><span class="kw">deparse</span>(<span class="kw">parse</span>(<span class="dt">text =</span> <span class="st">&quot;X[1,1:5]&quot;</span>, <span class="dt">keep.source =</span> <span class="ot">FALSE</span>)[[<span class="dv">1</span>]])</a></code></pre></div>
 <pre><code>## [1] &quot;X[1, 1:5]&quot;</code></pre>
 <p>The <code>keep.source = FALSE</code> makes <code>parse</code> more efficient.</p>
 </div>
 <div id="sec:why-use-node" class="section level3">
 <h3><span class="header-section-number">6.2.5</span> Why use node names?</h3>
-<p>Syntax like <code>model[[&quot;z[2, 3]&quot;]]</code> may seem strange at first, because the natural habit of an R user would be <code>model[[&quot;z&quot;]][2,3]</code>. To see its utility, consider the example of writing the nimbleFunction given in Section <a href="cha-lightning-intro.html#sec:creating-your-own">2.8</a>. By giving every scalar node a name, even if it is part of a multivariate variable, one can write functions in R or NIMBLE that access any single node by a name, regardless of the dimensionality of the variable in which it is embedded. This is particularly useful for NIMBLE, which resolves how to access a particular node during the compilation process.</p>
+<p>Syntax like <code>model[["z[2, 3]"]]</code> may seem strange at first, because
+the natural habit of an R user would be <code>model[["z"]][2,3]</code>. To see
+its utility, consider the example of writing the nimbleFunction given in
+Section <a href="cha-lightning-intro.html#sec:creating-your-own">2.8</a>. By giving every scalar node a name, even
+if it is part of a multivariate variable, one can write functions in R
+or NIMBLE that access any single node by a name, regardless of the
+dimensionality of the variable in which it is embedded. This is particularly
+useful for NIMBLE, which resolves how to access a particular node
+during the compilation process.</p>
 </div>
 <div id="sec:cdisdata" class="section level3">
 <h3><span class="header-section-number">6.2.6</span> Checking if a node holds data</h3>
-<p>Finally, you can query whether a node is flagged as data using the <code>isData</code> method applied to one or more nodes or nodes within variables:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model<span class="op">$</span><span class="kw">isData</span>(<span class="st">&#39;z[1]&#39;</span>)</code></pre></div>
+<p>Finally, you can query whether a node is flagged as data using the
+<code>isData</code> method applied to one or more nodes or nodes within variables:</p>
+<div class="sourceCode" id="cb135"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb135-1" title="1">model<span class="op">$</span><span class="kw">isData</span>(<span class="st">&#39;z[1]&#39;</span>)</a></code></pre></div>
 <pre><code>## [1] TRUE</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model<span class="op">$</span><span class="kw">isData</span>(<span class="kw">c</span>(<span class="st">&#39;z[1]&#39;</span>, <span class="st">&#39;z[2]&#39;</span>, <span class="st">&#39;a&#39;</span>))</code></pre></div>
+<div class="sourceCode" id="cb137"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb137-1" title="1">model<span class="op">$</span><span class="kw">isData</span>(<span class="kw">c</span>(<span class="st">&#39;z[1]&#39;</span>, <span class="st">&#39;z[2]&#39;</span>, <span class="st">&#39;a&#39;</span>))</a></code></pre></div>
 <pre><code>## [1]  TRUE  TRUE FALSE</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model<span class="op">$</span><span class="kw">isData</span>(<span class="st">&#39;z&#39;</span>)</code></pre></div>
-<pre><code>##  [1] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
-## [15] TRUE</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model<span class="op">$</span><span class="kw">isData</span>(<span class="st">&#39;z[1:3, 1]&#39;</span>)</code></pre></div>
+<div class="sourceCode" id="cb139"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb139-1" title="1">model<span class="op">$</span><span class="kw">isData</span>(<span class="st">&#39;z&#39;</span>)</a></code></pre></div>
+<pre><code>##  [1] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE</code></pre>
+<div class="sourceCode" id="cb141"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb141-1" title="1">model<span class="op">$</span><span class="kw">isData</span>(<span class="st">&#39;z[1:3, 1]&#39;</span>)</a></code></pre></div>
 <pre><code>## [1] TRUE TRUE TRUE</code></pre>
 </div>
 </div>
@@ -660,6 +827,7 @@ multiVarModel<span class="op">$</span><span class="kw">expandNodeNames</span>(<s
 <h2><span class="header-section-number">6.3</span> Using models in parallel</h2>
 <p>NIMBLE uses Reference Classes and R6 classes for models and algorithms. Objects of these classes are passed by reference and copies of such objects are simply new variable names that reference the same underlying object.</p>
 <p>Thus to run an algorithm in parallel on a given model, one must create multiple copies of the model and algorithm, and compiled versions of these, by calling <code>nimbleModel</code>, <code>buildMCMC</code>, <code>compileNimble</code>, etc. once for each copy. In other words all such calls should be within the parallelized block of code.</p>
+<p>For a worked example in the context of MCMC, please see <a href="https://r-nimble.org/nimbleExamples/parallelizing_NIMBLE.html">the parallelization example on our webpage</a>.</p>
 
 </div>
 </div>
@@ -677,11 +845,13 @@ multiVarModel<span class="op">$</span><span class="kw">expandNodeNames</span>(<s
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
 <script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
 <script>
 gitbook.require(["gitbook"], function(gitbook) {
 gitbook.start({
@@ -689,12 +859,11 @@ gitbook.start({
 "github": false,
 "facebook": true,
 "twitter": true,
-"google": false,
 "linkedin": false,
 "weibo": false,
 "instapaper": false,
 "vk": false,
-"all": ["facebook", "google", "twitter", "linkedin", "weibo", "instapaper"]
+"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
 },
 "fontsettings": {
 "theme": "white",
@@ -706,6 +875,10 @@ gitbook.start({
 "text": null
 },
 "history": {
+"link": null,
+"text": null
+},
+"view": {
 "link": null,
 "text": null
 },
@@ -723,10 +896,11 @@ gitbook.start({
   (function () {
     var script = document.createElement("script");
     script.type = "text/javascript";
-    var src = "";
+    var src = "true";
     if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
-    if (location.protocol !== "file:" && /^https?:/.test(src))
-      src = src.replace(/^https?:/, '');
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
     script.src = src;
     document.getElementsByTagName("head")[0].appendChild(script);
   })();

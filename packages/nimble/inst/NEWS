@@ -2,7 +2,7 @@
 
 USER LEVEL CHANGES
 
--- Addition of a new `posterior_predictive_branch` MCMC sampler, which is
+-- Add new `posterior_predictive_branch` MCMC sampler, which is
    automatically assigned to trailing dependency node networks of entirely
    non-data nodes (jointly posterior predictive branches).  This sampler
    simulates jointly from the predictive distribtion of these posterior
