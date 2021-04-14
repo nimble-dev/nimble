@@ -1592,7 +1592,7 @@ getParentNodesC <-  function(nodes, model, returnType = 'names', stochOnly = FAL
 #'
 #' @param inputType The method of graph exploration depends on what the nodes argument represents.  For \code{latent}, the input \code{nodes} are interpreted as latent states, from which both parent and descendent graph exploration should be done to find nodes in the same set (nodes that are NOT conditionally independent from each other).  For \code{param}, the input \code{nodes} are interpreted as parameters, so graph exploration begins from the  top (input) and explores descendents.  For \code{data}, the input \code{nodes} are interpreted as data nodes, so graph exploration begins from the bottom (input) explores parent nodes.
 #' 
-#' @param stochOnly Logcal for whether only stochastic nodes should be returned (default = TRUE).  If FALSE, both deterministic and stochastic nodes are returned.
+#' @param stochOnly Logical for whether only stochastic nodes should be returned (default = TRUE).  If FALSE, both deterministic and stochastic nodes are returned.
 #' 
 #' @param returnType Either \code{names} for returned nodes to be node names or \code{ids} for returned nodes to be graph IDs.
 #' 
