@@ -190,7 +190,7 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
 
 codeProcessIfThenElse <- function(code, constants, envir = parent.frame()) {
     codeLength <- length(code)
-    if(class(code) == "name")
+    if(is.name(code))
         stop("Incomplete declaration found: '", deparse(code), "'.")
         
     if(code[[1]] == '{') {
@@ -464,7 +464,7 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
             BUGScontextClassObject$setup(singleContexts = singleContexts)
             contexts[[nextContextID]] <<- BUGScontextClassObject
             if(length(code[[i]][[4]])==1) {
-                stop(paste0('Error, not sure what to do with ', deparse(code[[i]])))
+                stop('Error, not sure what to do with ', deparse(code[[i]]), ".")
             }
             recurseCode <- if(code[[i]][[4]][[1]] == '{') {
                 code[[i]][[4]]
