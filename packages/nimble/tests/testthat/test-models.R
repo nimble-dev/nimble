@@ -822,7 +822,8 @@ test_that("error produced when variable used in index", {
     })
     m <- nimbleModel(code)
     idx <- 1
-    expect_error(m$expandNodeNames("y[idx]"), "parseEvalNumericMany: a variable was found")
+    ## Check introduced in v0.10.1 disabled because not robust; see NCT issue 293
+    expect_failure(expect_error(m$expandNodeNames("y[idx]"), "parseEvalNumericMany: a variable was found"))
 })
 
 test_that("dmvt usage", {
