@@ -35,8 +35,9 @@ USER LEVEL CHANGES
 -- Check during model building for unnamed elements of `data` and `inits`
    (PR #1117).
 
--- Improve error trapping to prevent use of variables in defining node names,
-   such as `getDependencies('y[idx]')` (PR #1113).
+-- Remove error trapping to prevent use of variables in defining node names,
+   such as `getDependencies('y[idx]')` as this is hard to check robustly and
+   efficiently (PR #1122).
 
 -- Improve error messages when reporting `getParam` cannot calculate a parameter
    when checking a model (PR #1112).
