@@ -689,13 +689,15 @@ exprClasses_modifyForAD <- function(code, symTab,
         set_model_tape_info_line <- RparseTree2ExprClasses(cppLiteral(
             paste0("set_CppAD_tape_info_for_model my_tape_info_RAII_(",
                    workEnv[['nodeFxnVector_name']],
-                   ", TYPE_::get_tape_id_nimble(), TYPE_::get_tape_handle_nimble());")))
+                   ", recordingInfo_.tape_id(), recordingInfo_.tape_handle());")))
+                  ## ", TYPE_::get_tape_id_nimble(), TYPE_::get_tape_handle_nimble());")))
         
 
             set_atomic_info_line <- RparseTree2ExprClasses(cppLiteral(
                 paste0("set_CppAD_atomic_info_for_model(",
                        workEnv[['nodeFxnVector_name']],
-                       ", CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage());")))
+                       ", recordingInfo_.atomic_vec_ptr());")))
+                      ## ", CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage());")))
 
         ## This inserts a single line at the beginning by
         ## creating a new `{` block.
@@ -849,6 +851,9 @@ modifyForAD_getDerivs_wrapper <- function(code, symTab, workEnv) {
   arg1 <- code$args[[1]]
   arg1$name <- paste0(arg1$name, "_AD2_")
   code$name <- "getDerivs_wrapper_meta"
+  nArgs <- length(code$args)
+  newExpr <- RparseTree2ExprClasses(quote(recordingInfo_))
+  setArg(code, nArgs + 1, newExpr)
   invisible(NULL)
 }
 

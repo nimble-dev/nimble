@@ -207,6 +207,8 @@ class nodeFun : public NamedObjects {
   // useADreconfigure functions (version "2")
   void initialize_AD_model_before_recording(NodeVectorClassNew_derivs &NV);
   virtual void set_atomic_info_from_nodeFun(std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+  virtual void get_tape_ptr_from_nodeFun(CppAD::tape_id_t &tape_id,
+					 CppAD::local::ADTape<double>* &tape_handle_);
   virtual void set_tape_ptr_from_nodeFun(CppAD::tape_id_t tape_id,
 					 CppAD::local::ADTape<double>* tape_handle_,
 					 bool recover);

@@ -1,5 +1,7 @@
 #include <nimble/nimbleCppAD.h>
 
+#define USE_CPPAD_OPTIMIZE_FOR_MODEL_TAPES // comment this out to turn off atomics for nimDerivs(model$calculate(...),...)
+
 void copy_CppADdouble_to_double(CppAD::AD<double> *first, CppAD::AD<double> *last, double *output) {
   CppAD::AD<double> *orig;
   double *result = output;
@@ -188,6 +190,7 @@ void update_dynamicVars(nimbleCppADinfoClass &ADinfo) {
 
 void update_dynamicVars_meta(nimbleCppADinfoClass &ADinfo) {
   if(!ADinfo.updaterNV()) return;
+  // std::cout<<"in update_dynamicVars_meta"<<std::endl;
   // copy from model --> dynamicVars and call new_dynamic
   NodeVectorClassNew_derivs &NV = *(ADinfo.updaterNV());
   int length_extraInput = NV.model_AD_extraInput_accessor.getTotalLength();
@@ -199,10 +202,9 @@ void update_dynamicVars_meta(nimbleCppADinfoClass &ADinfo) {
     std::copy( NimArrValuesAD.getPtr(),
 	       NimArrValuesAD.getPtr() + length_extraInput,
 	       ADinfo.dynamicVars_meta.begin());
-  }
+  }  
   // call to new_dynamic is inside getDerivs_meta after base2ad.
 }
-
 
 void update_dynamicVars_meta(NodeVectorClassNew_derivs &NV,
 			     nimbleCppADinfoClass &ADinfo) {
@@ -412,10 +414,13 @@ void getDerivs_internal(vector<BASE> &independentVars,
 void nimbleFunctionCppADbase::getDerivs_meta(nimbleCppADinfoClass &ADinfo,
 					     const NimArr<1, double> &derivOrders,
 					     const NimArr<1, double> &wrtVector,
+					     const nimbleCppADrecordingInfoClass &nimRecInfo,
 					     nimSmartPtr<NIMBLE_ADCLASS_META> &ansList) {
   //  std::cout<<"Entering getDerivs_meta"<<std::endl;
-  // std::cout<<"ADinfo is at :"<< &ADinfo <<"\n";
+  //  std::cout<<"ADinfo is at :"<< &ADinfo <<"\n";
 
+  //  if(!nimRecInfo.recording_cp()) return;
+  
   bool orderIncludesZero(false);
   for(size_t i = 0; i < derivOrders.size(); ++ i) {orderIncludesZero |= (derivOrders[i] == 0);}
   // std::cout << "orderIncludesZero = " << orderIncludesZero << std::endl;
@@ -429,17 +434,16 @@ void nimbleFunctionCppADbase::getDerivs_meta(nimbleCppADinfoClass &ADinfo,
   // which might reside in the other compilation unit.  During double taping, an atomic
   // such as lgamma puts itself or other statics onto the new tape, and returns
   // CppAD::AD variables created in the other compilation unit.
-
   set_CppAD_tape_info_for_model my_tape_info_RAII_; // must be at function scope, not declared inside if(){}
   
   if(ADinfo.nodeFunPtrSet()) {
-    //    std::cout<<"tape_id and handle:"<< CppAD::AD<double>::get_tape_id_nimble()<<" "<< CppAD::AD<double>::get_tape_handle_nimble()<<"\n";
-    //    std::cout<<"atomic info:"<<CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage()<<"\n";
+    //    std::cout<<"tape_id and handle:"<<  nimRecInfo.tape_id_cp() <<" "<< nimRecInfo.tape_handle_cp() <<"\n";
+    //   std::cout<<"atomic info:"<<nimRecInfo.atomic_vec_ptr_cp()<<"\n";
     my_tape_info_RAII_.set_from_nodeFunPtr(ADinfo.nodeFunPtr(),
-					   CppAD::AD<double>::get_tape_id_nimble(),
-					   CppAD::AD<double>::get_tape_handle_nimble());
+					   nimRecInfo.tape_id_cp(), //CppAD::AD<double>::get_tape_id_nimble(),
+					   nimRecInfo.tape_handle_cp());//CppAD::AD<double>::get_tape_handle_nimble());
     set_CppAD_atomic_info_for_model(ADinfo.nodeFunPtr(),
-				    CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage());
+				    nimRecInfo.atomic_vec_ptr_cp());
     //    std::cout<<"done setting nodeFunPtr\n";
   }
 
@@ -554,47 +558,50 @@ CppAD::ADFun<double>* calculate_recordTape(NodeVectorClassNew_derivs &NV,
   // std::cout<<"Before independent: tape handle address = "<< CppAD::AD<double>::get_handle_address_nimble() <<std::endl;
   CppAD::Independent(independentVars, abort_op_index, record_compare, dynamicVars);
   //  std::cout<<"After independent: tape handle address = "<< CppAD::AD<double>::get_handle_address_nimble() <<std::endl;
-  set_CppAD_tape_info_for_model my_tape_info_RAII_(NV,
-						   CppAD::AD<double>::get_tape_id_nimble(),
-						   CppAD::AD<double>::get_tape_handle_nimble());
-  set_CppAD_atomic_info_for_model(NV, CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage());
-
-  // 7. [deleted]
-  // 8. [deleted]
-
-  // 9. Copy all wrtNodes AD objects from independentVars -> model_AD.
-  if(length_extraInput > 0) {
-    NimArrValues_AD.setSize(length_extraInput);    
-    std::copy(dynamicVars.begin(),
-	      dynamicVars.begin() + length_extraInput,
-	      NimArrValues_AD.getPtr());
-    setValues_AD_AD(NimArrValues_AD, NV.model_AD_extraInput_accessor);
-  }
-  if(length_wrt > 0) {
-    NimArrValues_AD.setSize(length_wrt);
-    std::copy(independentVars.begin(),
-	      independentVars.begin() + length_wrt,
-	      NimArrValues_AD.getPtr());
-    setValues_AD_AD(NimArrValues_AD, NV.model_AD_wrt_accessor);
-  }
-  
-  // 10. call calculate.  This also sets up the extraOutput step
-  nimbleCppADrecordingInfoClass recordingInfo(true, &ADinfo);
-  CppAD::AD<double> logProb = calculate_ADproxyModel(NV,
-						     includeExtraOutputs, // if true, model will be updated from tape.
-						     recordingInfo);
-  dependentVars[0] = logProb;
-  // 13. Finish taping, AND
-  // 14. Call tape->optimize()
-  // make it locally to get the right globals during recording and playback
-  // DO NOT USE THE CONSTRUCTOR VERSION BECAUSE IT ALWAYS DOES .Forward(0)
-  // INSTEAD MAKE THE BLANK OBJECT AND USE .Dependent(...)
-  // TRY USING CppAD's vector type
+  {
+    set_CppAD_tape_info_for_model my_tape_info_RAII_(NV,
+						     CppAD::AD<double>::get_tape_id_nimble(),
+						     CppAD::AD<double>::get_tape_handle_nimble());
+    set_CppAD_atomic_info_for_model(NV, CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage());
+    
+    // 7. [deleted]
+    // 8. [deleted]
+    
+    // 9. Copy all wrtNodes AD objects from independentVars -> model_AD.
+    if(length_extraInput > 0) {
+      NimArrValues_AD.setSize(length_extraInput);    
+      std::copy(dynamicVars.begin(),
+		dynamicVars.begin() + length_extraInput,
+		NimArrValues_AD.getPtr());
+      setValues_AD_AD(NimArrValues_AD, NV.model_AD_extraInput_accessor);
+    }
+    if(length_wrt > 0) {
+      NimArrValues_AD.setSize(length_wrt);
+      std::copy(independentVars.begin(),
+		independentVars.begin() + length_wrt,
+		NimArrValues_AD.getPtr());
+      setValues_AD_AD(NimArrValues_AD, NV.model_AD_wrt_accessor);
+    }
+    // 10. call calculate.  This also sets up the extraOutput step
+    nimbleCppADrecordingInfoClass recordingInfo(true, &ADinfo);
+    CppAD::AD<double> logProb = calculate_ADproxyModel(NV,
+						       includeExtraOutputs, // if true, model will be updated from tape.
+						       recordingInfo);
+    dependentVars[0] = logProb;
+    // 13. Finish taping, AND
+    // 14. Call tape->optimize()
+    // make it locally to get the right globals during recording and playback
+    // DO NOT USE THE CONSTRUCTOR VERSION BECAUSE IT ALWAYS DOES .Forward(0)
+    // INSTEAD MAKE THE BLANK OBJECT AND USE .Dependent(...)
+    // TRY USING CppAD's vector type
+  } // These {} ensure that the destructor for the my_tape_info_RAII_ is called before Dependent, which is necessary in some cases (depending on libnimble.a vs libnimble.so)
   CppAD::ADFun<double>* ansTape = new CppAD::ADFun<double>;
   ansTape->Dependent(independentVars, dependentVars);
   //  std::cout<<"about to call optimize"<<std::endl;
   //  std::cout<<"tape handle address = "<< CppAD::AD<double>::get_handle_address_nimble() <<std::endl;
+#ifdef USE_CPPAD_OPTIMIZE_FOR_MODEL_TAPES
   ansTape->optimize(); //("no_compare_op") makes almost no difference;
+#endif
   // std::cout<<"done with optimize"<<std::endl;
   return ansTape;
 }
@@ -662,45 +669,48 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
       // start recording new (second) tape
       CppAD::Independent(independentVars, abort_op_index, record_compare, dynamicVars);
       // Trick CppAD statics to work across nimble compilation units
-      set_CppAD_tape_info_for_model my_tape_info_RAII_(nodes,
-						       CppAD::AD<double>::get_tape_id_nimble(),
-						       CppAD::AD<double>::get_tape_handle_nimble());
-      set_CppAD_atomic_info_for_model(nodes, CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage());
-      // Set up inputs to first tape (recorded in second tape)
-      ADinfo.independentVars_meta.resize(length_wrt);
-      ADinfo.dynamicVars_meta.resize(length_extraInput);
-      if(length_extraInput > 0) {
-	for(int iii = 0; iii < length_extraInput; ++iii)
-	  ADinfo.dynamicVars_meta[iii] = dynamicVars[iii]; // std::copy does not seem to work for CppAD recording
-	// std::copy(dynamicVars.begin(),
-	// 	  dynamicVars.end(),
-	// 	  ADinfo.dynamicVars_meta.begin());
-      }
-      for(int iii = 0; iii < length_wrt; ++iii)
-	ADinfo.independentVars_meta[iii] = independentVars[iii];
-      // std::copy(independentVars.begin(),
-      // 		independentVars.end(),
-      // 		ADinfo.independentVars_meta.begin());      
-      
-      NimArr<1, double> derivOrders_meta;
-      derivOrders_meta.setSize(1);
-      derivOrders_meta[0] = 1;
-      // std::cout<<ADinfo.dynamicVars_meta.size()<<std::endl;
-      innerTape.new_dynamic(ADinfo.dynamicVars_meta);
-
-      getDerivs_internal< CppAD::AD<double>,
-			  CppAD::ADFun< CppAD::AD<double>, double >,
-			  NIMBLE_ADCLASS_META>(ADinfo.independentVars_meta,
-					       &innerTape,
-					       derivOrders_meta,
-					       wrtVector,
-					       ansList_meta);
-      for(size_t iii = 0; iii < length_wrt; ++iii)
-	dependentVars[iii] = ansList_meta->jacobian[iii];
-      ADinfo.ADtape = new CppAD::ADFun<double>;
-
+      {
+	set_CppAD_tape_info_for_model my_tape_info_RAII_(nodes,
+							 CppAD::AD<double>::get_tape_id_nimble(),
+							 CppAD::AD<double>::get_tape_handle_nimble());
+	set_CppAD_atomic_info_for_model(nodes, CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage());
+	// Set up inputs to first tape (recorded in second tape)
+	ADinfo.independentVars_meta.resize(length_wrt);
+	ADinfo.dynamicVars_meta.resize(length_extraInput);
+	if(length_extraInput > 0) {
+	  for(int iii = 0; iii < length_extraInput; ++iii)
+	    ADinfo.dynamicVars_meta[iii] = dynamicVars[iii]; // std::copy does not seem to work for CppAD recording
+	  // std::copy(dynamicVars.begin(),
+	  // 	  dynamicVars.end(),
+	  // 	  ADinfo.dynamicVars_meta.begin());
+	}
+	for(int iii = 0; iii < length_wrt; ++iii)
+	  ADinfo.independentVars_meta[iii] = independentVars[iii];
+	// std::copy(independentVars.begin(),
+	// 		independentVars.end(),
+	// 		ADinfo.independentVars_meta.begin());      
+	
+	NimArr<1, double> derivOrders_meta;
+	derivOrders_meta.setSize(1);
+	derivOrders_meta[0] = 1;
+	// std::cout<<ADinfo.dynamicVars_meta.size()<<std::endl;
+	innerTape.new_dynamic(ADinfo.dynamicVars_meta);
+	
+	getDerivs_internal< CppAD::AD<double>,
+			    CppAD::ADFun< CppAD::AD<double>, double >,
+			    NIMBLE_ADCLASS_META>(ADinfo.independentVars_meta,
+						 &innerTape,
+						 derivOrders_meta,
+						 wrtVector,
+						 ansList_meta);
+	for(size_t iii = 0; iii < length_wrt; ++iii)
+	  dependentVars[iii] = ansList_meta->jacobian[iii];
+	ADinfo.ADtape = new CppAD::ADFun<double>;
+      } // These {} ensure the RAII object's destructor is called before Dependent, which is important on OS's (linux) with libnimble.so instead of libnimble.a
       ADinfo.ADtape->Dependent(dependentVars);
+#ifdef USE_CPPAD_OPTIMIZE_FOR_MODEL_TAPES
       ADinfo.ADtape->optimize();
+#endif
       delete firstTape;
     }
   }

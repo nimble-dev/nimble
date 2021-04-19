@@ -1,4 +1,5 @@
 #include <nimble/nimDerivs_atomic_matinverse.h>
+#include <nimble/nimDerivs_atomic_cache.h>
 
 /*
 Atomic class for matrix inverse.
@@ -110,20 +111,47 @@ bool atomic_matinverse_class::forward(
   //forward mode
   // printf("In matinverse forward\n");
   int nrow = order_up + 1;
-  // std::cout<<"nrow = "<<nrow<<std::endl;
-    
+  //  std::cout<<"in matinverse forward "<<this<<" with order_low = "<<order_low<<" and order_up = "<<order_up<<std::endl;
+  //  std::cout<<"tape_id and handle:"<< CppAD::AD<double>::get_tape_id_nimble()<<" "<< CppAD::AD<double>::get_tape_handle_nimble()<<"\n";
+  //  std::cout<<"atomic info:"<<CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage()<<"\n";
+
   int n = static_cast<int>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
   EigenConstMap Xmap(&taylor_x[0], n, n, EigStrDyn(nrow*n, nrow) );
-  EigenMap Ymap(&taylor_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
+  //  std::cout<<"Xmap inputted for forward 0\n"<<Xmap<<std::endl;
+  
+  // std::cout<<"Xmap\n"<<Xmap<<std::endl;
   if(order_low <= 0 & order_up >= 0) { // value
     // We could compile different cases depending on need for strides or not.  
-    Ymap = Xmap.inverse();      
+    EigenMap Ymap(&taylor_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
+    Ymap = Xmap.inverse().eval(); // This eval is necessary if nrow > 1
+    // std::cout<<"Ymap calculated for forward 0\n"<<Ymap<<std::endl;
+    double_cache.set_cache( 0, 0, order_up, taylor_x, taylor_y );
   }
   if(order_low <= 1 & order_up >= 1) {
     // printf("In forward >1\n");
+    double_cache.check_and_set_cache(this,
+				     parameter_x,
+				     type_x,
+				     0,
+				     order_up,
+				     taylor_x,
+				     taylor_y.size());
+    int cache_nrow = double_cache.nrow();
+    EigenMap Ymap(double_cache.taylor_y_ptr(), n, n, EigStrDyn(cache_nrow*n, cache_nrow ) );
+
+    //    std::cout<<"cached Ymap "<<Ymap<<std::endl;
+    //    std::cout<<"cache_nrow = "<<cache_nrow<<" n = "<<n<<std::endl;
+    //    double_cache.show_taylor_y();
+
+    //    std::cout<<"taylor Y in cache "<<std::endl;
+    //double_cache.show_taylor_y();
+    
+    // EigenMap Ymap(&taylor_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
+    // std::cout<<"inputted Ymap "<<Ymap<<std::endl;
     EigenMap dYmap(&taylor_y[1], n, n, EigStrDyn(nrow*n, nrow ) );
     EigenConstMap dXmap(&taylor_x[1], n, n, EigStrDyn(nrow*n, nrow));
     dYmap = -Ymap * dXmap * Ymap;
+    // double_cache.set_cache( 1, 1, order_up, taylor_x, taylor_y ); // This would be the right way to store 1st order, but 1st order is not used by any reverse mode orders, so it is not needed.
   }
   return true;
 }
@@ -137,22 +165,37 @@ bool atomic_matinverse_class::forward(
 				      const CppAD::vector<CppAD::AD<double> >&    taylor_x     ,
 				      CppAD::vector<CppAD::AD<double> >&          taylor_y     ) {
   //forward mode
-  // printf("In matinverse meta-forward\n");
+  // std::cout<<"In matinverse meta-forward "<< this <<" "<<order_low<<" "<<order_up<<std::endl;
+  //  std::cout<<"tape_id and handle:"<< CppAD::AD<double>::get_tape_id_nimble()<<" "<< CppAD::AD<double>::get_tape_handle_nimble()<<"\n";
+  //  std::cout<<"atomic info:"<<CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage()<<"\n";
+  
   int nrow = order_up + 1;
   // std::cout<<"nrow = "<<nrow<<std::endl;
     
   int n = static_cast<int>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
   metaEigenConstMap Xmap(&taylor_x[0], n, n, EigStrDyn(nrow*n, nrow) );
-  metaEigenMap Ymap(&taylor_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
   if(order_low <= 0 & order_up >= 0) { // value
     // We could compile different cases depending on need for strides or not.  
+    metaEigenMap Ymap(&taylor_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
     Ymap = nimDerivs_matinverse(Xmap);
+    CppADdouble_cache.set_cache( 0, 0, order_up, taylor_x, taylor_y );
   }
   if(order_low <= 1 & order_up >= 1) {
-    // printf("In forward >1\n");
+    //    printf("In forward >1\n");
+    CppADdouble_cache.check_and_set_cache(this,
+					  parameter_x,
+					  type_x,
+					  0,
+					  order_up,
+					  taylor_x,
+					  taylor_y.size());
+    int cache_nrow = CppADdouble_cache.nrow();
+    metaEigenMap Ymap(CppADdouble_cache.taylor_y_ptr(), n, n, EigStrDyn(cache_nrow*n, cache_nrow ) );
+
     metaEigenMap dYmap(&taylor_y[1], n, n, EigStrDyn(nrow*n, nrow ) );
     metaEigenConstMap dXmap(&taylor_x[1], n, n, EigStrDyn(nrow*n, nrow));
     dYmap = nimDerivs_matmult(-Ymap, nimDerivs_matmult( dXmap,  Ymap ) );
+    // CppADdouble_cache.set_cache( 1, 1, order_up, taylor_x, taylor_y ); // This would be the right way to store 1st order, but 1st order is not used by any reverse mode orders, so it is not needed.
   }
   return true;
 }
@@ -167,15 +210,36 @@ bool atomic_matinverse_class::reverse(
 				      const CppAD::vector<double>&               partial_y   )
 {
   //reverse mode
-  // printf("In matinverse reverse\n");
+  //  printf("In matinverse reverse\n");
+  //  std::cout<<"In matinverse reverse"<<std::endl;
   int nrow = order_up + 1;
   int n = static_cast<int>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
 
-  EigenConstMap Ymap(&taylor_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
+  double_cache.check_and_set_cache(this,
+				   parameter_x,
+				   type_x,
+				   0, // only use cached values up to order 0
+				   order_up,
+				   taylor_x,
+				   taylor_y.size());
+  int cache_nrow = double_cache.nrow();  
+  //  std::cout<<"cache_nrow = "<<cache_nrow<<std::endl;
+  EigenConstMap Ymap(double_cache.taylor_y_ptr(), n, n, EigStrDyn(cache_nrow*n, cache_nrow ) );
+  //  std::cout<<"Ymap\n"<<Ymap<<std::endl;
+
+  EigenConstMap Xmap(&taylor_x[0], n, n, EigStrDyn(nrow*n, nrow) );
+  // std::cout<<"Xmap\n"<<Xmap<<std::endl;
+  // Eigen::MatrixXd Y = Xmap.inverse();
+  // std::cout<<"Y (recomputed) \n"<<Y<<std::endl;
+  
   EigenMap Xadjoint_map(&partial_x[0], n, n, EigStrDyn(nrow*n, nrow) );
   if(order_up >= 0) {
     EigenConstMap Yadjoint_map(&partial_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
+    // std::cout<<"Yadjoint_map\n"<<Yadjoint_map<<std::endl;
+    // Xadjoint_map = -Y.transpose() * Yadjoint_map *  Y.transpose();
+    // std::cout<<"Xadjoint_map (from the recomputed Y)\n"<<Xadjoint_map<<std::endl;
     Xadjoint_map = -Ymap.transpose() * Yadjoint_map *  Ymap.transpose();
+    // std::cout<<"Xadjoint_map (as is)\n"<<Xadjoint_map<<std::endl;
   }
 
   if(order_up >= 1) {
@@ -201,11 +265,19 @@ bool atomic_matinverse_class::reverse(
 				      const CppAD::vector<CppAD::AD<double> >&               partial_y   )
 {
   //reverse mode
-  // printf("In matinverse reverse\n");
+  //  std::cout<<"In matinverse meta-reverse "<<order_up<<std::endl;
   int nrow = order_up + 1;
   int n = static_cast<int>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
 
-  metaEigenConstMap Ymap(&taylor_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
+  CppADdouble_cache.check_and_set_cache(this,
+					parameter_x,
+					type_x,
+					0, // only use cached values up to order 0
+					order_up,
+					taylor_x,
+					taylor_y.size());
+  int cache_nrow = CppADdouble_cache.nrow();
+  metaEigenConstMap Ymap(CppADdouble_cache.taylor_y_ptr(), n, n, EigStrDyn(cache_nrow*n, cache_nrow ) );
   metaEigenMap Xadjoint_map(&partial_x[0], n, n, EigStrDyn(nrow*n, nrow) );
   if(order_up >= 0) {
     metaEigenConstMap Yadjoint_map(&partial_y[0], n, n, EigStrDyn(nrow*n, nrow ) );

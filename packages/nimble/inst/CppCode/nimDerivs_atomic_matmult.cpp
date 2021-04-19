@@ -1,5 +1,7 @@
 #include <nimble/nimDerivs_atomic_matmult.h>
 
+/* This atomic does not need caching because adjoints in reverse mode do not use Y or Ydot. */
+
 #ifdef USE_NEW_DYNAMIC
 atomic_matmult_class::atomic_matmult_class(const std::string& name) :
   CppAD::atomic_three<double>(name),

@@ -178,24 +178,44 @@ class nimbleCppADrecordingInfoClass {
   CppAD::tape_id_t tape_id_;
   CppAD::local::ADTape<double>* tape_handle_;
   nimbleCppADinfoClass *ADinfoPtr_;
+  std::vector<CppAD::local::atomic_index_info>* atomic_vec_ptr_;
  public:
   bool& recording() {return recording_;}
+  bool recording_cp() const {return recording_;}
   CppAD::tape_id_t& tape_id() {return tape_id_;}
   CppAD::local::ADTape<double>* &tape_handle() {return tape_handle_;}
+  CppAD::tape_id_t tape_id_cp() const {return tape_id_;}
+  CppAD::local::ADTape<double>* tape_handle_cp() const {return tape_handle_;}
+  std::vector<CppAD::local::atomic_index_info>* &atomic_vec_ptr() {return atomic_vec_ptr_;}
+  std::vector<CppAD::local::atomic_index_info>* atomic_vec_ptr_cp() const {return atomic_vec_ptr_;}
+
   nimbleCppADinfoClass* &ADinfoPtr() {return ADinfoPtr_;}
  nimbleCppADrecordingInfoClass(bool r_, CppAD::tape_id_t tid_, CppAD::local::ADTape<double>* th_) :
   recording_(r_),
     tape_id_(tid_),
-    tape_handle_(th_) {}
+    tape_handle_(th_),
+    ADinfoPtr_(0),
+    atomic_vec_ptr_(0) {}
  nimbleCppADrecordingInfoClass(CppAD::tape_id_t tid_, CppAD::local::ADTape<double>* th_, nimbleCppADinfoClass *ADinfoPtr) :
   recording_(false),
     tape_id_(tid_),
     tape_handle_(th_),
-    ADinfoPtr_(ADinfoPtr)
+    ADinfoPtr_(ADinfoPtr),
+    atomic_vec_ptr_(0)
+    {}
+ nimbleCppADrecordingInfoClass(CppAD::tape_id_t tid_, CppAD::local::ADTape<double>* th_, std::vector<CppAD::local::atomic_index_info>* avp_, nimbleCppADinfoClass *ADinfoPtr) :
+  recording_(false),
+    tape_id_(tid_),
+    tape_handle_(th_),
+    ADinfoPtr_(ADinfoPtr),
+    atomic_vec_ptr_(avp_)
     {}
  nimbleCppADrecordingInfoClass(bool r_,  nimbleCppADinfoClass *ADinfoPtr) :
   recording_(r_),
-    ADinfoPtr_(ADinfoPtr)
+    tape_id_(0),
+    tape_handle_(0),
+    ADinfoPtr_(ADinfoPtr),
+    atomic_vec_ptr_(0)
     {}
  nimbleCppADrecordingInfoClass() : recording_(false) {}
 };
@@ -234,13 +254,15 @@ public:
   void getDerivs_meta(nimbleCppADinfoClass &ADinfo,
 		      const NimArr<1, double> &derivOrders,
 		      const NimArr<1, double> &wrtVector,
+		      const nimbleCppADrecordingInfoClass &nimRecInfo,
 		      nimSmartPtr<NIMBLE_ADCLASS_META> &ansList);
   
   nimSmartPtr<NIMBLE_ADCLASS_META> getDerivs_wrapper_meta(nimbleCppADinfoClass &ADinfo,
 							  const NimArr<1, double> &derivOrders,
-							  const NimArr<1, double> &wrtVector){
+							  const NimArr<1, double> &wrtVector,
+							  const nimbleCppADrecordingInfoClass &nimRecInfo){
     nimSmartPtr<NIMBLE_ADCLASS_META> ansList = new NIMBLE_ADCLASS_META;
-    getDerivs_meta(ADinfo, derivOrders, wrtVector, ansList);
+    getDerivs_meta(ADinfo, derivOrders, wrtVector, nimRecInfo, ansList);
     return(ansList);
   }
 

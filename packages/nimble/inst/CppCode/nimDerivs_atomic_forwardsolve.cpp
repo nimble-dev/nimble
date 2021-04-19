@@ -1,5 +1,6 @@
 #include <nimble/nimDerivs_atomic_forwardsolve.h>
 #include <nimble/nimDerivs_atomic_backsolve.h>
+#include <nimble/nimDerivs_atomic_cache.h>
 
 /* 
 forward solve relations are like backsolve relations, with forward and back swapped where needed.
@@ -158,23 +159,35 @@ bool atomic_forwardsolve_class::forward(
   int n2 = m/n1;
   //std::cout<<"n = "<<n<<" m = "<<m<<" n1 = "<<n1<<" n2 = "<<n2<<std::endl;
 
-  EigenMap Ymap(&taylor_y[0], n1, n2, EigStrDyn(nrow*n1, nrow ) );
   EigenConstMap Amap(&taylor_x[0], n1, n1, EigStrDyn(nrow*n1, nrow) );
   if(order_low <= 0 & order_up >= 0) { // value
     //printf("In forward 0\n");
     // We could compile different cases depending on need for strides or not.
+    EigenMap Ymap(&taylor_y[0], n1, n2, EigStrDyn(nrow*n1, nrow ) );
     EigenConstMap Bmap(&taylor_x[0 + n1sq*nrow], n1, n2, EigStrDyn(nrow*n1, nrow ) );
     // There is some indication in nimble EigenTypeDefs.h that we need to force a copy of B
-    Ymap = Amap.template triangularView<Eigen::Lower>().solve(Bmap);      
+    Ymap = Amap.template triangularView<Eigen::Lower>().solve(Bmap);
+    double_cache.set_cache( 0, 0, order_up, taylor_x, taylor_y );
   }
   if(order_low <= 1 & order_up >= 1) {
     //printf("In forward >1\n");
     //      solve(A, dB - dA * Y)
+    double_cache.check_and_set_cache(this,
+				     parameter_x,
+				     type_x,
+				     0,
+				     order_up,
+				     taylor_x,
+				     taylor_y.size());
+    int cache_nrow = double_cache.nrow();
+    EigenMap Ymap(double_cache.taylor_y_ptr(), n1, n2, EigStrDyn(cache_nrow*n1, cache_nrow ) );
+
     EigenConstMap dA_map(&taylor_x[1], n1, n1, EigStrDyn(nrow*n1, nrow) );
     EigenConstMap dB_map(&taylor_x[1 + n1sq*nrow], n1, n2, EigStrDyn(nrow*n1, nrow ) );
     EigenMap dY_map(&taylor_y[1], n1, n2, EigStrDyn(nrow*n1, nrow ) );
       
     dY_map = Amap.template triangularView<Eigen::Lower>().solve(dB_map - dA_map.template triangularView<Eigen::Lower>() * Ymap).eval();// This .eval() is necessary and I don't understand why.  Normally that would be for aliasing, but there should be no over-lapping points here.  There are inter-woven maps, and that's weird but should work.
+    double_cache.set_cache( 1, 1, order_up, taylor_x, taylor_y );
   }
   return true;
 }
@@ -199,25 +212,37 @@ bool atomic_forwardsolve_class::forward(
   int n2 = m/n1;
   //std::cout<<"n = "<<n<<" m = "<<m<<" n1 = "<<n1<<" n2 = "<<n2<<std::endl;
 
-  metaEigenMap Ymap(&taylor_y[0], n1, n2, EigStrDyn(nrow*n1, nrow ) );
   metaEigenConstMap Amap(&taylor_x[0], n1, n1, EigStrDyn(nrow*n1, nrow) );
   if(order_low <= 0 & order_up >= 0) { // value
     //printf("In forward 0\n");
     // We could compile different cases depending on need for strides or not.
+    metaEigenMap Ymap(&taylor_y[0], n1, n2, EigStrDyn(nrow*n1, nrow ) );
     metaEigenConstMap Bmap(&taylor_x[0 + n1sq*nrow], n1, n2, EigStrDyn(nrow*n1, nrow ) );
     // There is some indication in nimble EigenTypeDefs.h that we need to force a copy of B
     Ymap = nimDerivs_EIGEN_FS(Amap, Bmap);
-    //    Ymap = Amap.template triangularView<Eigen::Upper>().solve(Bmap);      
+    //    Ymap = Amap.template triangularView<Eigen::Upper>().solve(Bmap);
+    CppADdouble_cache.set_cache( 0, 0, order_up, taylor_x, taylor_y );
   }
   if(order_low <= 1 & order_up >= 1) {
     //printf("In forward >1\n");
     //      solve(A, dB - dA * Y)
+    CppADdouble_cache.check_and_set_cache(this,
+					  parameter_x,
+					  type_x,
+					  0,
+					  order_up,
+					  taylor_x,
+					  taylor_y.size());
+    int cache_nrow = CppADdouble_cache.nrow();
+    metaEigenMap Ymap(CppADdouble_cache.taylor_y_ptr(), n1, n2, EigStrDyn(cache_nrow*n1, cache_nrow ) );
+    
     metaEigenConstMap dA_map(&taylor_x[1], n1, n1, EigStrDyn(nrow*n1, nrow) );
     metaEigenConstMap dB_map(&taylor_x[1 + n1sq*nrow], n1, n2, EigStrDyn(nrow*n1, nrow ) );
     metaEigenMap dY_map(&taylor_y[1], n1, n2, EigStrDyn(nrow*n1, nrow ) );
 
     dY_map = nimDerivs_EIGEN_FS(Amap, dB_map - nimDerivs_matmult(dA_map.template triangularView<Eigen::Lower>(), Ymap));
     //    dY_map = Amap.template triangularView<Eigen::Upper>().solve(dB_map - dA_map * Ymap).eval();// This .eval() is necessary and I don't understand why.  Normally that would be for aliasing, but there should be no over-lapping points here.  There are inter-woven maps, and that's weird but should work.
+    CppADdouble_cache.set_cache( 1, 1, order_up, taylor_x, taylor_y );
   }
   return true;
 }
@@ -239,11 +264,21 @@ bool atomic_forwardsolve_class::reverse(
   int n1sq = n-m;
   int n1 = sqrt( static_cast<double>(n1sq) );
   int n2 = m/n1;
-    
+
+  double_cache.check_and_set_cache(this,
+				   parameter_x,
+				   type_x,
+				   order_up >= 1 ? 1 : 0, // only use cached values up to order 1
+				   order_up,
+				   taylor_x,
+				   taylor_y.size());
+  int cache_nrow = double_cache.nrow();
+  EigenConstMap Ymap(double_cache.taylor_y_ptr(), n1, n2, EigStrDyn(cache_nrow*n1, cache_nrow ) );
+
   EigenConstMap Amap(&taylor_x[0], n1, n1, EigStrDyn(nrow*n1, nrow) );
   EigenMap Aadjoint_map(&partial_x[0], n1, n1, EigStrDyn(nrow*n1, nrow) );
   EigenMap Badjoint_map(&partial_x[0 + n1sq*nrow], n1, n2, EigStrDyn(nrow*n1, nrow ) );
-  EigenConstMap Ymap(&taylor_y[0], n1, n2, EigStrDyn(nrow*n1, nrow ) );
+  //  EigenConstMap Ymap(&taylor_y[0], n1, n2, EigStrDyn(nrow*n1, nrow ) );
   if(order_up >= 0) {
     /* EigenTemplateTypes<double>::typeEigenConstMapStrd Bmap(&taylor_x[0 + n1sq*nrow], */
     /* 							 n1, n2, EigStrDyn(nrow*n1, nrow ) ); */
@@ -257,7 +292,8 @@ bool atomic_forwardsolve_class::reverse(
   if(order_up >= 1) {
     EigenConstMap Adot_map(&taylor_x[1], n1, n1, EigStrDyn(nrow*n1, nrow) );
     EigenConstMap Ydot_adjoint_map(&partial_y[1], n1, n2, EigStrDyn(nrow*n1, nrow ) );
-    EigenConstMap Ydot_map(&taylor_y[1], n1, n2, EigStrDyn(nrow*n1, nrow ) );
+    EigenConstMap Ydot_map(double_cache.taylor_y_ptr() + 1, n1, n2, EigStrDyn(cache_nrow*n1, cache_nrow ) );
+    //    EigenConstMap Ydot_map(&taylor_y[1], n1, n2, EigStrDyn(nrow*n1, nrow ) );
     EigenMap Adot_adjoint_map(&partial_x[1], n1, n1, EigStrDyn(nrow*n1, nrow) );
     EigenMap Bdot_adjoint_map(&partial_x[1 + n1sq*nrow], n1, n2, EigStrDyn(nrow*n1, nrow ) );
     
@@ -300,11 +336,21 @@ bool atomic_forwardsolve_class::reverse(
   int n1sq = n-m;
   int n1 = sqrt( static_cast<double>(n1sq) );
   int n2 = m/n1;
-    
+
+  CppADdouble_cache.check_and_set_cache(this,
+					parameter_x,
+					type_x,
+					order_up >= 1 ? 1 : 0, // only use cached values up to order 1
+					order_up,
+					taylor_x,
+					taylor_y.size());
+  int cache_nrow = CppADdouble_cache.nrow();
+  metaEigenConstMap Ymap(CppADdouble_cache.taylor_y_ptr(), n1, n2, EigStrDyn(cache_nrow*n1, cache_nrow ) );
+
   metaEigenConstMap Amap(&taylor_x[0], n1, n1, EigStrDyn(nrow*n1, nrow) );
   metaEigenMap Aadjoint_map(&partial_x[0], n1, n1, EigStrDyn(nrow*n1, nrow) );
   metaEigenMap Badjoint_map(&partial_x[0 + n1sq*nrow], n1, n2, EigStrDyn(nrow*n1, nrow ) );
-  metaEigenConstMap Ymap(&taylor_y[0], n1, n2, EigStrDyn(nrow*n1, nrow ) );
+  //  metaEigenConstMap Ymap(&taylor_y[0], n1, n2, EigStrDyn(nrow*n1, nrow ) );
   if(order_up >= 0) {
     /* EigenTemplateTypes<double>::typeEigenConstMapStrd Bmap(&taylor_x[0 + n1sq*nrow], */
     /* 							 n1, n2, EigStrDyn(nrow*n1, nrow ) ); */
@@ -317,7 +363,9 @@ bool atomic_forwardsolve_class::reverse(
   if(order_up >= 1) {
     metaEigenConstMap Adot_map(&taylor_x[1], n1, n1, EigStrDyn(nrow*n1, nrow) );
     metaEigenConstMap Ydot_adjoint_map(&partial_y[1], n1, n2, EigStrDyn(nrow*n1, nrow ) );
-    metaEigenConstMap Ydot_map(&taylor_y[1], n1, n2, EigStrDyn(nrow*n1, nrow ) );
+
+    metaEigenConstMap Ydot_map(CppADdouble_cache.taylor_y_ptr() + 1, n1, n2, EigStrDyn(cache_nrow*n1, cache_nrow ) );
+    //metaEigenConstMap Ydot_map(&taylor_y[1], n1, n2, EigStrDyn(nrow*n1, nrow ) );
     metaEigenMap Adot_adjoint_map(&partial_x[1], n1, n1, EigStrDyn(nrow*n1, nrow) );
     metaEigenMap Bdot_adjoint_map(&partial_x[1 + n1sq*nrow], n1, n2, EigStrDyn(nrow*n1, nrow ) );
     

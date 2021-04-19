@@ -216,13 +216,24 @@ make_deriv_function <- function(origFun,
                           quote = TRUE
                           )
 
-  getDerivs_wrapper <- if(!meta) 'getDerivs_wrapper' else 'getDerivs_wrapper_meta'
-  getDerivsRcall <- substitute(returnList_ <- GETDERIVS_WRAPPER( INNERCALL,
-                                                                ARGZ_nimDerivsOrders_,
-                                                                ARGZ_wrtVector_ ),
-                               list(INNERCALL = innerRcall,
-                                    GETDERIVS_WRAPPER = as.name(getDerivs_wrapper)))
 
+  if(meta) {
+      getDerivs_wrapper <- 'getDerivs_wrapper_meta'
+      getDerivsRcall <- substitute(returnList_ <- GETDERIVS_WRAPPER( INNERCALL,
+                                                                    ARGZ_nimDerivsOrders_,
+                                                                    ARGZ_wrtVector_ ,
+                                                                    recordingInfo_),
+                                   list(INNERCALL = innerRcall,
+                                        GETDERIVS_WRAPPER = as.name(getDerivs_wrapper)))
+  } else {
+      getDerivs_wrapper <- 'getDerivs_wrapper'
+      getDerivsRcall <- substitute(returnList_ <- GETDERIVS_WRAPPER( INNERCALL,
+                                                                    ARGZ_nimDerivsOrders_,
+                                                                    ARGZ_wrtVector_ ),
+                                   list(INNERCALL = innerRcall,
+                                        GETDERIVS_WRAPPER = as.name(getDerivs_wrapper)))
+  }
+  
   ## 3. create return list
   returnCall <- cppLiteral("return(returnList_);")
 
@@ -523,10 +534,15 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
     localVars$addSymbol( CFT$returnType )
 
   recordingInfoSym <- cppVarFull(name = "recordingInfo_", baseType = "nimbleCppADrecordingInfoClass",
-                                 constructor = "(CppAD::AD<double>::get_tape_id_nimble(), CppAD::AD<double>::get_tape_handle_nimble(), &ADinfo)")
+                                  constructor = "(CppAD::AD<double>::get_tape_id_nimble(), CppAD::AD<double>::get_tape_handle_nimble(), CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage(), &ADinfo)")
+  ##recordingInfoSym <- cppVarFull(name = "recordingInfo_", baseType = "nimbleCppADrecordingInfoClass",
+  ##                               constructor = "(false, &ADinfo)")
   localVars$addSymbol(recordingInfoSym)
   setRecordingFalseLine <- cppLiteral("recordingInfo_.recording()=false;")
   setRecordingTrueLine <- cppLiteral("recordingInfo_.recording()=true;")
+  updateRecordingInfoLine <- cppLiteral(paste0("recordingInfo_.tape_id()=CppAD::AD<double>::get_tape_id_nimble();\n",
+                                               "recordingInfo_.tape_handle()=CppAD::AD<double>::get_tape_handle_nimble();\n",
+                                               "recordingInfo_.atomic_vec_ptr() = CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage();"))
   
     ## call CppAD::Independent(ADindependentVars)
     ## This starts CppADs taping system
@@ -698,6 +714,7 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
                                        tapingCallRCode,
                                        CppADindependentCode,
                                        setRecordingTrueLine,
+                                       updateRecordingInfoLine,
                                        copyDynamicVarsToModelCode), ## again for taping call to be sure
                                   copyIntoIndepVarCode, ## again for taping call to be sure.
                                   list(tapingCallRCode,
@@ -815,6 +832,7 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
       copyToDoublesLines <- quote(blank())
       updateRecordingInfolLines <- quote(blank())
       callForTapingNames <- TF$args$getSymbolNames()
+      updateRecordingInfoTapeInfoLines <- quote(blank())
     } else {
       copyToDoublesLines <- list()
       callForTapingNames <- character()
@@ -840,11 +858,14 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
         }
       copyToDoublesLines <- do.call("call", c(list("{"), copyToDoublesLines))
       updateRecordingInfolLines  <- cppLiteral("if(ADinfo.nodeFunPtrSet()) recordingInfo_.ADinfoPtr()->set_nodeFunPtr(ADinfo.nodeFunPtr());")
+      updateRecordingInfoTapeInfoLines <- cppLiteral(paste0("recordingInfo_.tape_id()=CppAD::AD<double>::get_tape_id_nimble();\n",
+                                                            "recordingInfo_.tape_handle()=CppAD::AD<double>::get_tape_handle_nimble();\n",
+                                                            "recordingInfo_.atomic_vec_ptr() = CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage();"))
     }
 
     if(!isNode) {
       if(metaTape)
-        TF$args$addSymbol(cppVarFull(baseType = "nimbleCppADrecordingInfoClass", name = "recordingInfo_"))
+        TF$args$addSymbol(cppVarFull(baseType = "nimbleCppADrecordingInfoClass", name = "recordingInfo_", ref = TRUE))
       TF$args$addSymbol(cppVar(baseType = "bool", name = "RESET_"))
       TF$args$addSymbol(cppVar(baseType = "nimbleCppADinfoClass", ref = TRUE, name = "ADinfo"))
     }
@@ -865,10 +886,12 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
         cppLiteral("if(ADinfo.ADtape) delete ADinfo.ADtape;")
         COPYTODOUBLESLINES
         memberData(ADinfo, ADtape) <- RUNCALLFORTAPING
+        UPDATERECORDINGINFOTAPEINFOLINES
       },
       list(IFRECORDCONDITION = if_record_condition,
            RUNCALLFORTAPING = runCallForTapingCode,
-           COPYTODOUBLESLINES = copyToDoublesLines))
+           COPYTODOUBLESLINES = copyToDoublesLines,
+           UPDATERECORDINGINFOTAPEINFOLINES = updateRecordingInfoTapeInfoLines))
     ## recordIfNeededCode <- substitute(
     ##   if(!myADtapePtrs_[FUNINDEX]) {
     ##     COPYTODOUBLESLINES
