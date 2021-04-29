@@ -528,7 +528,7 @@ model$simulate()
 model$calculate()
 model$setData('y1', 'y2')
 test_ADModelCalculate(model, name = 'different subsets of a matrix')
-## with atomics on, comp/unc 2d11 jacobian values out of tolerance
+## comp/unc values out of tolerance for HMC/MAP partial
 
 ## vectorized covariance matrix
 code <- nimbleCode({
@@ -547,6 +547,8 @@ model$simulate()
 model$calculate()
 model$setData('y')
 test_ADModelCalculate(model, excludeUpdateNodes = 'dist', name = 'dmnorm with vectorized covariance matrix')
+## comp 2d/012 hessian out of tolerance, comp/unc values out of tolerance for ML partial for non-atomics
+## with atomics, only one comp 2d/012 hessian out of tolerance
 
 ## vectorized covariance matrix, chol param
 code <- nimbleCode({
@@ -568,7 +570,6 @@ model <- nimbleModel(code, constants = list(n = n),
 model$simulate()
 model$calculate()
 model$setData('y')
-## cOutput2d and cOutput012 hessian out of tolerance in a couple cases
 ## rOutput 01, 012, 02 values out of tolerance with compiled counterparts in one use case
 test_ADModelCalculate(model, excludeUpdateNodes = 'dist',
                       name = 'dmnorm with vectorized covariance matrix, chol param')
@@ -609,7 +610,7 @@ model$calculate()
 model$setData('y')
 test_ADModelCalculate(model, excludeUpdateNodes = 'dist',
                       name = 'dnorm with user-defined fxn for covariance with loops')
-
+## 2d/012 hessian out of tolerance
 
 ## user-defined cov function vectorized
 
@@ -639,7 +640,7 @@ model$setData('y')
 ## compiled and uncompiled 01, 012, 02 value out of tolerance in a couple cases
 test_ADModelCalculate(model, excludeUpdateNodes = 'dist',
                       name = 'dmnorm with user-defined vectorized fxn')
-
+## 2d/012 hessian out of tolerance
 
 ## other dmnorm parameterizations
 code <- nimbleCode({
@@ -665,9 +666,7 @@ model <- nimbleModel(code, constants = list(n = n),
 model$simulate()
 model$calculate()
 model$setData('y')
-## (not seeing anymore) Heisenbug: cLogProb12 equal but not identical to cLogProb_orig if verbose = FALSE (default)
-## compiled/uncompiled 2d11 out of tolerance in a couple cases
-## compiled/uncompiled 012, 02, 01, 02 values out of tolerance in some cases
+## comp/unc value out of tolerance for EB
 test_ADModelCalculate(model, name = 'various dmnorm parameterizations')
 
 ## various dmvt parameterizations
@@ -699,8 +698,6 @@ model$calculate()
 model$setData('y')
 ## uncompiled/compiled 2d11 hessian out of tolerance in some cases 
 ## unc/com 01,012,02 value out of tolerance in some cases
-## compiled 2d, 012 hessian out of tolerance
-## comp/unc 01, 12, 012, 1d jacobian out of tolerance
 test_ADModelCalculate(model, name = 'various dmvt parameterizations')
 
 
@@ -712,7 +709,6 @@ code <- nimbleCode({
 })
 k <- 4
 model <- nimbleModel(code, constants = list(k = k), data = list(p = c(.2, .4, .15, .25)), inits = list(alpha = runif(4)))
-## Passes 2021-02-11
 test_ADModelCalculate(model, name = 'Dirichlet likelihood')
 
 ## dwish and dinvwish so long as not differentiating w.r.t. the random variable (since it has constraints)
@@ -741,14 +737,9 @@ model$simulate()
 model$calculate()
 model$setData(c('W1','W2','W3','W4','IW1','IW2','IW3','IW4'))
 
-## NCT issue 274
-warning("NCT issue 274 is still live, so avoiding matrix inverse atomic")
-nimbleOptions(skipADmatInverseAtomic = TRUE)
+## comp/unc values out of tolerance in some cases
 ## 2d, 012 comp hessian out of tolerance in some cases
-
 test_ADModelCalculate(model, excludeUpdateNodes = 'dist', verbose = TRUE, name = 'dwish, dinvwish')
-nimbleOptions(skipADmatInverseAtomic = FALSE)
-
 
 
 ## simple user-defined distribution
@@ -872,8 +863,10 @@ model <- nimbleModel(code, constants = list(n = n, x = rnorm(n), z = rep(0, n), 
 model$simulate()
 model$calculate()
 model$setData(c('y1','yy')) # 'y2'
-## unc/comp 01,012,02 value exceeds tolerance in places
-## compiled 2d, 012 hessian exceeds tolderance in places
+## unc/comp value exceeds tolerance
+## compiled 1d, 012 jacobian equal not identical (only for non-atomics)
+## compiled 2d, 012 hessian exceeds tolerance
+## compiled 2d11, 012 hessian equal not identical (only for non-atomics)
 test_ADModelCalculate(model, excludeUpdateNodes = 'dist', name = 'various matrix functions')
 
 ## Various combinations of updateNodes, wrt, calcNodes
@@ -979,6 +972,12 @@ code <- nimbleCode({
 n <- 30
 k <- 4
 model <- nimbleModel(code, constants = list(k = k, n = n), data = list(y = rmulti(1, n, rep(1/k, k))), inits = list(p = c(.2, .4, .15, .25), alpha = runif(4)))
+
+## unc/comp 2d11 jacobian out of tolerance
+## various vals, logProbs, wrt ENI
+
+
+
 ## compiled 01,012,02 value ENI cLogProb_new
 ## compiled 1d, 012 jac ENI
 ## comp/unc 2d11 hessian out of tolerance
@@ -1046,6 +1045,15 @@ model <- nimbleModel(code, constants = list(n = n),
 model$simulate()
 model$calculate()
 model$setData('y')
+
+## non-atomics has seg fault in HMC/MAP partial
+## *** caught segfault ***
+##address 0x55da1bd80ba0, cause 'memory not mapped'
+## Traceback:
+##  1: .Call("CALL_nfRefClass_R_GlobalEnv46_run", x, order, .basePtr)
+
+## atomics: 
+
 ## compiled value,logProb,wrt ENI to cLogProb_new, cVals_new
 ## comp/unc 2d11 hessian out of tolerance
 ## ISSUE: non-pos def in HMC partial idx=1
@@ -1057,12 +1065,10 @@ model$setData('y')
 ## OLD: at some point noticed comp hessians not symmetric for single-taped in idx=2, for HMC/MAP (not sure about other cases); this might just be consequence of issue 279
 
 
-nimbleOptions(skipADmatInverseAtomic = TRUE)
 test_ADModelCalculate(model, excludeUpdateNodes = 'dist', x = 'prior',
                       useParamTransform = TRUE, useFasterRderivs = TRUE,
                       verbose = TRUE,
                       name = 'various multivariate dists')
-nimbleOptions(skipADmatInverseAtomic = FALSE)
 
 
 ## TMP
