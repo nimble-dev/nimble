@@ -1205,6 +1205,7 @@ sampler_HMC <- nimbleFunction(
         sqrtM <- sqrt(M)
         numDivergences <- 0
         numTimesMaxTreeDepth <- 0
+        numGrads <- 0
         nimbleVerboseOption <- getNimbleOption('verbose')
         ## nested function and function list definitions
         qpNLDef <- nimbleList(q  = double(1), p  = double(1))
@@ -1288,6 +1289,7 @@ sampler_HMC <- nimbleFunction(
             return(derivsOutput$jacobian[1, 1:d])
         },
         gradient = function(qArg = double(1)) {
+            numGrads <<- numGrads + 1
             derivsOutput <- nimDerivs(gradient_aux(qArg), order = 0, wrt = nimDerivs_wrt, model = model, updateNodes = nimDerivs_updateNodes, constantNodes = nimDerivs_constantNodes)
             grad <<- derivsOutput$value
         },
