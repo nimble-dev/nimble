@@ -1413,7 +1413,7 @@ sampler_HMC <- nimbleFunction(
             if(nwarmup == -1)   nwarmup <<- min( floor(MCMCniter/2), 1000 )
             if(MCMCchain == 1) {
                 if(nimbleVerboseOption) print('HMC sampler is using ', nwarmup, ' warmup iterations')
-                if(nwarmup <  80) stop('HMC sampler requires a minimum of 80 warmup iterations')
+                if(nwarmup > 0 & nwarmup <  80) stop('HMC sampler requires a minimum of 80 warmup iterations')
                 if(nwarmup < 200) print('A minimum of 200 warmup iterations is recommended for HMC sampler')
                 if(nwarmup > MCMCniter) print('Warning: Running fewer MCMC iterations than number of HMC warmup iterations')
             }
@@ -1421,7 +1421,7 @@ sampler_HMC <- nimbleFunction(
             ## https://discourse.mc-stan.org/t/new-adaptive-warmup-proposal-looking-for-feedback/12039
             ## https://colcarroll.github.io/hmc_tuning_talk/
             warmupBaseInterval <- floor(nwarmup/40)                             ## stan: 25
-            if(warmupBaseInterval < 1)   stop('HMC warmupBaseInterval not set correctly')
+            if(nwarmup > 0 & warmupBaseInterval < 1)   stop('HMC warmupBaseInterval not set correctly')
             warmupIntervalLengths <<- warmupBaseInterval * c(3, 1, 2, 4, 8, 20, 2)    ## stan: 75 | 25 | 50 | 100 | 200 | 500 | 50
             warmupIntervalsAdaptM <<- c(0, 1, 1, 1, 1, 1, 0)
             setSize(warmupSamples, 20*warmupBaseInterval, d)
