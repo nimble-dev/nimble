@@ -103,7 +103,6 @@ test_that('makeUpdateNodes works correctly', {
     prElems <- model$expandNodeNames('pr', returnScalarComponents = TRUE)
     lftChElems <- model$expandNodeNames('lifted_chol_oPpr_oB1to3_comma_1to3_cB_cP', returnScalarComponents = TRUE)
 
-    ## HERE
     result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('mu','y'), model)
     expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", lftChElems,
                                        model$expandNodeNames('mu', returnScalarComponents = TRUE)))
@@ -507,7 +506,8 @@ model$setData('y','w')
 test_ADModelCalculate(model, name = 'complicated indexing')
 ## compiled/uncompiled 01, 012, 02 values out of tolerance in various cases
 ## comp/unc 2d11 hessian out of tolerance
-## occasional rOutput2d11 values way off (e.g., first value in EB, idx =3 is -243 (or -251) (see issue 275 to reproduce)
+## same types of issues but not exact same numerical results when using atomics
+## occasional rOutput2d11 values way off (e.g., first value in EB, idx =3 is -243 (or -251) (see issue 275 to reproduce) (not seeing as of 2021-04-29)
 
 ## if use pracma::jacobian:
 ## unc/compiled 01,012,02 values out of tolerance in various cases
@@ -528,6 +528,7 @@ model$simulate()
 model$calculate()
 model$setData('y1', 'y2')
 test_ADModelCalculate(model, name = 'different subsets of a matrix')
+## with atomics on, comp/unc 2d11 jacobian values out of tolerance
 
 ## vectorized covariance matrix
 code <- nimbleCode({

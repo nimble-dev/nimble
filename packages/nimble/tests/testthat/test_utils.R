@@ -1587,7 +1587,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         if(verbose) cat("======================\ntesting HMC/MAP partial\n----------------------\n")
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         calcNodes <- model$getNodeNames()
-        wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
+        wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE, returnScalarComponents = TRUE)
         wrtIdx <- sample(seq_along(wrt), round(length(wrt)/2), replace = FALSE)
         ## sample full wrt in case there are constraints built in, then subset wrt
         if(!length(wrtIdx))
@@ -1620,7 +1620,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         topNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
         latentNodes <- model$getNodeNames(latentOnly = TRUE, stochOnly = TRUE, includeData = FALSE)
         calcNodes <- calcNodes[!calcNodes %in% c(topNodes, latentNodes)]  # should be data + deterministic
-        wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
+        wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE, returnScalarComponents = TRUE)
         wrtIdx <- sample(seq_along(wrt), round(length(wrt)/2), replace = FALSE)
         ## sample full wrt in case there are constraints built in, then subset wrt
         if(!length(wrtIdx))
