@@ -1309,6 +1309,7 @@ derivsNimbleFunction <- nimbleFunction(
 derivsNimbleFunctionMeta <- nimbleFunction(
   setup = function(model, calcNodes, wrt) {
     innerWrtVec <- seq_along(model$expandNodeNames(wrt, returnScalarComponents = TRUE))
+    d <- length(innerWrtVec)  
     allUpdateNodes <- makeUpdateNodes(wrt, calcNodes, model)
     updateNodes <- allUpdateNodes$updateNodes
     constantNodes <- allUpdateNodes$constantNodes
@@ -1342,7 +1343,7 @@ derivsNimbleFunctionMeta <- nimbleFunction(
                              order = double(1),
                              reset = logical(0, default = FALSE)) {
       wrtVec <- 1:length(x)
-      if(length(wrtVec) != length(innerWrtVec)) stop("inner and outer wrt mismatch")  
+      if(length(wrtVec) != d) stop("inner and outer wrt mismatch")  
       ans <- nimDerivs(derivs1Run(x, reset), wrt = wrtVec, order = order, reset = reset,
                        updateNodes = updateNodes, constantNodes = constantNodes, model = model)
       return(ans)
@@ -1353,7 +1354,7 @@ derivsNimbleFunctionMeta <- nimbleFunction(
                              order = double(1),
                              reset = logical(0, default = FALSE)) {
       wrtVec <- 1:length(x)
-      if(length(wrtVec) != length(innerWrtVec)) stop("inner and outer wrt mismatch")  
+      if(length(wrtVec) != d) stop("inner and outer wrt mismatch")  
       ans <- nimDerivs(derivs2Run(x, reset), wrt = wrtVec, order = order, reset = reset,
                        updateNodes = updateNodes, constantNodes = constantNodes, model = model)
       return(ans)
@@ -1417,7 +1418,7 @@ derivsNimbleFunctionParamTransformMeta <- nimbleFunction(
     methods = list(
         derivs1Run = function(transformed_x = double(1),
                               reset = logical(0, default = FALSE)) {
-            if(length(transformed_x) != length(nimDerivs_wrt)) stop("mismatch of x and wrtVec")
+            if(length(transformed_x) != d) stop("mismatch of x and wrtVec")
             ans <- nimDerivs(run(transformed_x), wrt = nimDerivs_wrt, order = 1, reset = reset,
                              updateNodes = updateNodes, constantNodes = constantNodes, model = model)
             return(ans$jacobian[1,])
@@ -1425,7 +1426,7 @@ derivsNimbleFunctionParamTransformMeta <- nimbleFunction(
         },
         derivs2Run = function(transformed_x = double(1),
                               reset = logical(0, default = FALSE)) {
-            if(length(transformed_x) != length(nimDerivs_wrt)) stop("mismatch of x and wrtVec")
+            if(length(transformed_x) != d) stop("mismatch of x and wrtVec")
             ans <- nimDerivs(run(transformed_x), wrt = nimDerivs_wrt, order = 2, reset = reset,
                          updateNodes = updateNodes, constantNodes = constantNodes, model = model)
             ## not clear why can't do ans$hessian[,,1] with double(2) returnType
@@ -1436,7 +1437,7 @@ derivsNimbleFunctionParamTransformMeta <- nimbleFunction(
                                   order = double(1),
                                   reset = logical(0, default = FALSE)) {
             transformed_x <- my_parameterTransform$transform(x)
-            if(length(transformed_x) != length(nimDerivs_wrt)) stop("mismatch of x and wrtVec")
+            if(length(transformed_x) != d) stop("mismatch of x and wrtVec")
             ans <- nimDerivs(derivs1Run(transformed_x, reset), wrt = nimDerivs_wrt, order = order, reset = reset,
                              updateNodes = updateNodes, constantNodes = constantNodes, model = model)
             return(ans)
@@ -1447,7 +1448,7 @@ derivsNimbleFunctionParamTransformMeta <- nimbleFunction(
                                   order = double(1),
                                   reset = logical(0, default = FALSE)) {
             transformed_x <- my_parameterTransform$transform(x)
-            if(length(transformed_x) != length(nimDerivs_wrt)) stop("mismatch of x and wrtVec")
+            if(length(transformed_x) != d) stop("mismatch of x and wrtVec")
             ans <- nimDerivs(derivs2Run(transformed_x, reset), wrt = nimDerivs_wrt, order = order, reset = reset,
                              updateNodes = updateNodes, constantNodes = constantNodes, model = model)
             return(ans)
@@ -1601,12 +1602,15 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         if(initsHandling == 'prior') {
             model$simulate(wrt)
             xNew <- values(model, wrt)
-            nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         } else xNew <- runif(length(tmp))
-        x <- x[wrtIdx]
-        xNew <- xNew[wrtIdx]
-        wrt <- wrt[wrtIdx]
-        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, excludeUpdateNodes = excludeUpdateNodes,
+        wrtSub <- wrt[wrtIdx]
+        ## get correct subset of x, xNew
+        values(model, wrt) <- x
+        x <- values(model, wrtSub)
+        values(model, wrt) <- xNew
+        xNew <- values(model, wrtSub)
+        nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
+        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrtSub, excludeUpdateNodes = excludeUpdateNodes,
                                            savedMV = mv, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                        checkDoubleTape = checkDoubleTape,
@@ -1634,12 +1638,15 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         if(initsHandling == 'prior') {
             model$simulate(wrt)
             xNew <- values(model, wrt)
-            nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         } else xNew <- runif(length(tmp))
-        x <- x[wrtIdx]
-        xNew <- xNew[wrtIdx]
-        wrt <- wrt[wrtIdx]
-        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, excludeUpdateNodes = excludeUpdateNodes,
+        wrtSub <- wrt[wrtIdx]
+        ## get correct subset of x, xNew
+        values(model, wrt) <- x
+        x <- values(model, wrtSub)
+        values(model, wrt) <- xNew
+        xNew <- values(model, wrtSub)
+        nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
+        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrtSub, excludeUpdateNodes = excludeUpdateNodes,
                                            savedMV = mv, relTol = relTol,
                                        useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                        checkDoubleTape = checkDoubleTape,

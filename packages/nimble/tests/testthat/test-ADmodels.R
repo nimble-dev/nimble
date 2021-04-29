@@ -11,8 +11,9 @@ context("Testing of derivatives for calculate() for nimbleModels")
 ## check logic of results
 test_that('makeUpdateNodes works correctly', {
     ## updateNodes should include all nodes that affect calculate(calcNodes) that are not in wrt,
-    ## including any relevant parent nodes not in either calcNodes or in wrt (including RHS-only nodes).
+    ## including any immediate (either stoch or det) parent nodes not in either calcNodes or in wrt.
     ## Will include stoch nodes that are in calcNodes but not wrt, but not det nodes that are in calcNodes.
+    ## per PdV, RHS-only nodes should be (but are not yet) in constantNodes.
     code <- nimbleCode({
         for(i in 1:n) {
             y[i] ~ dnorm(mu[i], var = sigma2)
@@ -27,13 +28,14 @@ test_that('makeUpdateNodes works correctly', {
 
     ## Various wrt and calcNodes cases; not exhaustive, but hopefully capturing most possibilities
     
-    ## distinct wrt and calcNodes
+    ## distinct wrt and calcNodes: updateNodes should have 'mu' and determ parents not in calcNodes
     result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'tau'), calcNodes = c('mu','y'), model)
     expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP",
                                            model$expandNodeNames('mu')))
     expect_identical(result$constantNodes, model$expandNodeNames('y'))
 
     ## distinct wrt and calcNodes, where calcNodes includes a deterministic node
+    ## updateNodes should have 'mu' and determ parents not in calcNodes
     result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'tau'), calcNodes = c('mu','y', "lifted_d1_over_sqrt_oPtau_cP"), model)
     expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP",
                                            model$expandNodeNames('mu')))
@@ -56,30 +58,35 @@ test_that('makeUpdateNodes works correctly', {
     expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP", "mu[1]", "mu[2]"))
     expect_identical(result$constantNodes, c("y[1]", "y[2]"))
 
-    ## wrt included in calcNodes
+    ## a wrt node included in calcNodes
+    ## updateNodes should have the stoch calcNodes not in wrt, plus determ parents not in calcNodes
     result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('sigma2', 'mu0', 'mu','y'), model)
-    expect_identical(result$updateNodes, c("tau", "lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP",
+    expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP",
                                            model$expandNodeNames('mu')))
     expect_identical(result$constantNodes, model$expandNodeNames('y'))
 
     ## some overlap of wrt and calcNodes
+    ## updateNodes should have determ parents not in calcNodes
     result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'tau', 'mu'), calcNodes = c('sigma2', 'mu0', 'mu','y'), model)
     expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP"))
     expect_identical(result$constantNodes, model$expandNodeNames('y'))
 
     ## full overlap of wrt and calcNodes
+    ## updateNodes should have determ parents not in calcNodes
     result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'mu'), calcNodes = c('sigma2', 'mu0', 'mu','y'), model)
-    expect_identical(result$updateNodes, c("tau", "lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP"))
+    expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP"))
     expect_identical(result$constantNodes, model$expandNodeNames('y'))
 
     ## wrt are intermediate nodes
+    ## updateNodes should have determ and stoch parents not in calcNodes
     result <- makeUpdateNodes(wrt = c('mu'), calcNodes = c('mu','y'), model)
-    expect_identical(result$updateNodes, c("sigma2", "tau", "mu0", "lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP"))
+    expect_identical(result$updateNodes, c("mu0", "lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP"))
     expect_identical(result$constantNodes, model$expandNodeNames('y'))
 
     ## no data nodes in calcNodes
+    ## updateNodes should have determ parents not in calcNodes
     result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'mu'), calcNodes = c('sigma2', 'mu0', 'mu'), model)
-    expect_identical(result$updateNodes, c("tau", "lifted_d1_over_sqrt_oPtau_cP"))
+    expect_identical(result$updateNodes, c("lifted_d1_over_sqrt_oPtau_cP"))
     expect_identical(result$constantNodes, character(0))
 
     code <- nimbleCode({
@@ -91,26 +98,25 @@ test_that('makeUpdateNodes works correctly', {
     })
     n <- 3
     model <- nimbleModel(code, data = list(y = rnorm(n)), constants = list(n = n),
-                         inits = list(mu = rnorm(n), sigma2 = 2.1, tau = 1.7, mu0 = rnorm(n), pr = diag(n)))
+                         inits = list(mu = rnorm(n), sigma2 = 2.1, mu0 = rnorm(n), pr = diag(n)))
 
     prElems <- model$expandNodeNames('pr', returnScalarComponents = TRUE)
     lftChElems <- model$expandNodeNames('lifted_chol_oPpr_oB1to3_comma_1to3_cB_cP', returnScalarComponents = TRUE)
-    ## TODO: update these after issue 257 addressed.
-    
-    ## why is mu0 included?  NCT issue 257
+
     result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('mu','y'), model)
-    expect_identical(result$updateNodes, c(prElems, "lifted_sqrt_oPsigma2_cP", lftChElems,
-                                       model$expandNodeNames('mu')))
-    expect_identical(result$constantNodes, model$expandNodeNames('y')))
+    expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", lftChElems,
+                                       model$expandNodeNames('mu', returnScalarComponents = TRUE)))
+    expect_identical(result$constantNodes, model$expandNodeNames('y'))
 
     result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('mu','y'), model,
                               dataAsConstantNodes = FALSE)
-    expect_identical(result$updateNodes, c(prElems, "lifted_sqrt_oPsigma2_cP", lftChElems,
-                                       model$expandNodeNames('mu'), model$expandNodeNames('y')))
+    expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", lftChElems,
+                                           model$expandNodeNames('mu', returnScalarComponents = TRUE),
+                                           model$expandNodeNames('y')))
     expect_identical(result$constantNodes, character(0))
 
     result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('mu[1]','y[1]'), model)
-    expect_identical(result$updateNodes, c(prElems, "lifted_sqrt_oPsigma2_cP", lftChElems, 'mu[1]'))
+    expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", lftChElems, 'mu[1]'))
     expect_identical(result$constantNodes, "y[1]")
 
     ## NCT issue 257: should include mu[3] presumably
@@ -119,20 +125,21 @@ test_that('makeUpdateNodes works correctly', {
     expect_identical(result$constantNodes, c("y[1]", "y[2]"))
 
     result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('sigma2', 'mu0', 'mu','y'), model)
-    expect_identical(result$updateNodes, c(prElems, "lifted_sqrt_oPsigma2_cP", lftChElems,
-                                       model$expandNodeNames('mu')))
-    expect_identical(result$constantNodes, model$expandNodeNames('y')))
+    expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", lftChElems,
+                                       model$expandNodeNames('mu', returnScalarComponents = TRUE)))
+    expect_identical(result$constantNodes, model$expandNodeNames('y'))
 
     result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'mu'), calcNodes = c('sigma2', 'mu0', 'mu','y'), model)
-    expect_identical(result$updateNodes, c(prElems, "lifted_sqrt_oPsigma2_cP", lftChElems))
+    expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", lftChElems))
     expect_identical(result$constantNodes, model$expandNodeNames('y'))
 
     result <- makeUpdateNodes(wrt = c('mu'), calcNodes = c('mu','y'), model)
-    expect_identical(result$updateNodes, c("sigma2", prElems, "lifted_sqrt_oPsigma2_cP", lftChElems))
+    expect_identical(result$updateNodes, c(model$expandNodeNames('mu0', returnScalarComponents = TRUE),
+                                           "lifted_sqrt_oPsigma2_cP", lftChElems))
     expect_identical(result$constantNodes, model$expandNodeNames('y'))
 
     result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'mu'), calcNodes = c('sigma2', 'mu0', 'mu'), model)
-    expect_identical(result$updateNodes, c(prElems, lftChElems))
+    expect_identical(result$updateNodes, c(lftChElems))
     expect_identical(result$constantNodes, character(0))
    
 }
@@ -499,7 +506,8 @@ model$setData('y','w')
 test_ADModelCalculate(model, name = 'complicated indexing')
 ## compiled/uncompiled 01, 012, 02 values out of tolerance in various cases
 ## comp/unc 2d11 hessian out of tolerance
-## occasional rOutput2d11 values way off (e.g., first value in EB, idx =3 is -243 (or -251) (see issue 275 to reproduce)
+## same types of issues but not exact same numerical results when using atomics
+## occasional rOutput2d11 values way off (e.g., first value in EB, idx =3 is -243 (or -251) (see issue 275 to reproduce) (not seeing as of 2021-04-29)
 
 ## if use pracma::jacobian:
 ## unc/compiled 01,012,02 values out of tolerance in various cases
@@ -520,6 +528,7 @@ model$simulate()
 model$calculate()
 model$setData('y1', 'y2')
 test_ADModelCalculate(model, name = 'different subsets of a matrix')
+## comp/unc values out of tolerance for HMC/MAP partial
 
 ## vectorized covariance matrix
 code <- nimbleCode({
@@ -538,6 +547,8 @@ model$simulate()
 model$calculate()
 model$setData('y')
 test_ADModelCalculate(model, excludeUpdateNodes = 'dist', name = 'dmnorm with vectorized covariance matrix')
+## comp 2d/012 hessian out of tolerance, comp/unc values out of tolerance for ML partial for non-atomics
+## with atomics, only one comp 2d/012 hessian out of tolerance
 
 ## vectorized covariance matrix, chol param
 code <- nimbleCode({
@@ -559,7 +570,6 @@ model <- nimbleModel(code, constants = list(n = n),
 model$simulate()
 model$calculate()
 model$setData('y')
-## cOutput2d and cOutput012 hessian out of tolerance in a couple cases
 ## rOutput 01, 012, 02 values out of tolerance with compiled counterparts in one use case
 test_ADModelCalculate(model, excludeUpdateNodes = 'dist',
                       name = 'dmnorm with vectorized covariance matrix, chol param')
@@ -600,7 +610,7 @@ model$calculate()
 model$setData('y')
 test_ADModelCalculate(model, excludeUpdateNodes = 'dist',
                       name = 'dnorm with user-defined fxn for covariance with loops')
-
+## 2d/012 hessian out of tolerance
 
 ## user-defined cov function vectorized
 
@@ -630,7 +640,7 @@ model$setData('y')
 ## compiled and uncompiled 01, 012, 02 value out of tolerance in a couple cases
 test_ADModelCalculate(model, excludeUpdateNodes = 'dist',
                       name = 'dmnorm with user-defined vectorized fxn')
-
+## 2d/012 hessian out of tolerance
 
 ## other dmnorm parameterizations
 code <- nimbleCode({
@@ -656,9 +666,7 @@ model <- nimbleModel(code, constants = list(n = n),
 model$simulate()
 model$calculate()
 model$setData('y')
-## (not seeing anymore) Heisenbug: cLogProb12 equal but not identical to cLogProb_orig if verbose = FALSE (default)
-## compiled/uncompiled 2d11 out of tolerance in a couple cases
-## compiled/uncompiled 012, 02, 01, 02 values out of tolerance in some cases
+## comp/unc value out of tolerance for EB
 test_ADModelCalculate(model, name = 'various dmnorm parameterizations')
 
 ## various dmvt parameterizations
@@ -690,8 +698,6 @@ model$calculate()
 model$setData('y')
 ## uncompiled/compiled 2d11 hessian out of tolerance in some cases 
 ## unc/com 01,012,02 value out of tolerance in some cases
-## compiled 2d, 012 hessian out of tolerance
-## comp/unc 01, 12, 012, 1d jacobian out of tolerance
 test_ADModelCalculate(model, name = 'various dmvt parameterizations')
 
 
@@ -703,7 +709,6 @@ code <- nimbleCode({
 })
 k <- 4
 model <- nimbleModel(code, constants = list(k = k), data = list(p = c(.2, .4, .15, .25)), inits = list(alpha = runif(4)))
-## Passes 2021-02-11
 test_ADModelCalculate(model, name = 'Dirichlet likelihood')
 
 ## dwish and dinvwish so long as not differentiating w.r.t. the random variable (since it has constraints)
@@ -732,14 +737,9 @@ model$simulate()
 model$calculate()
 model$setData(c('W1','W2','W3','W4','IW1','IW2','IW3','IW4'))
 
-## NCT issue 274
-warning("NCT issue 274 is still live, so avoiding matrix inverse atomic")
-nimbleOptions(skipADmatInverseAtomic = TRUE)
+## comp/unc values out of tolerance in some cases
 ## 2d, 012 comp hessian out of tolerance in some cases
-
 test_ADModelCalculate(model, excludeUpdateNodes = 'dist', verbose = TRUE, name = 'dwish, dinvwish')
-nimbleOptions(skipADmatInverseAtomic = FALSE)
-
 
 
 ## simple user-defined distribution
@@ -863,8 +863,10 @@ model <- nimbleModel(code, constants = list(n = n, x = rnorm(n), z = rep(0, n), 
 model$simulate()
 model$calculate()
 model$setData(c('y1','yy')) # 'y2'
-## unc/comp 01,012,02 value exceeds tolerance in places
-## compiled 2d, 012 hessian exceeds tolderance in places
+## unc/comp value exceeds tolerance
+## compiled 1d, 012 jacobian equal not identical (only for non-atomics)
+## compiled 2d, 012 hessian exceeds tolerance
+## compiled 2d11, 012 hessian equal not identical (only for non-atomics)
 test_ADModelCalculate(model, excludeUpdateNodes = 'dist', name = 'various matrix functions')
 
 ## Various combinations of updateNodes, wrt, calcNodes
@@ -970,6 +972,12 @@ code <- nimbleCode({
 n <- 30
 k <- 4
 model <- nimbleModel(code, constants = list(k = k, n = n), data = list(y = rmulti(1, n, rep(1/k, k))), inits = list(p = c(.2, .4, .15, .25), alpha = runif(4)))
+
+## unc/comp 2d11 jacobian out of tolerance
+## various vals, logProbs, wrt ENI
+
+
+
 ## compiled 01,012,02 value ENI cLogProb_new
 ## compiled 1d, 012 jac ENI
 ## comp/unc 2d11 hessian out of tolerance
@@ -1037,6 +1045,15 @@ model <- nimbleModel(code, constants = list(n = n),
 model$simulate()
 model$calculate()
 model$setData('y')
+
+## non-atomics has seg fault in HMC/MAP partial
+## *** caught segfault ***
+##address 0x55da1bd80ba0, cause 'memory not mapped'
+## Traceback:
+##  1: .Call("CALL_nfRefClass_R_GlobalEnv46_run", x, order, .basePtr)
+
+## atomics: 
+
 ## compiled value,logProb,wrt ENI to cLogProb_new, cVals_new
 ## comp/unc 2d11 hessian out of tolerance
 ## ISSUE: non-pos def in HMC partial idx=1
@@ -1048,12 +1065,10 @@ model$setData('y')
 ## OLD: at some point noticed comp hessians not symmetric for single-taped in idx=2, for HMC/MAP (not sure about other cases); this might just be consequence of issue 279
 
 
-nimbleOptions(skipADmatInverseAtomic = TRUE)
 test_ADModelCalculate(model, excludeUpdateNodes = 'dist', x = 'prior',
                       useParamTransform = TRUE, useFasterRderivs = TRUE,
                       verbose = TRUE,
                       name = 'various multivariate dists')
-nimbleOptions(skipADmatInverseAtomic = FALSE)
 
 
 ## TMP

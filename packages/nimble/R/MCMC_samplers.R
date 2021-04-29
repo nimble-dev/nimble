@@ -1158,21 +1158,21 @@ sampler_HMC <- nimbleFunction(
     contains = sampler_HMC_BASE,     ## note: different contains for HMC sampler
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        printTimesRan  <- if(!is.null(control$printTimesRan))  control$printTimesRan  else FALSE
-        printEpsilon   <- if(!is.null(control$printEpsilon))   control$printEpsilon   else FALSE
-        printJ         <- if(!is.null(control$printJ))         control$printJ         else FALSE
-        printM         <- if(!is.null(control$printM))         control$printM         else FALSE
-        messages       <- if(!is.null(control$messages))       control$messages       else TRUE
-        warnings       <- if(!is.null(control$warnings))       control$warnings       else 5
-        initialEpsilon <- if(!is.null(control$initialEpsilon)) control$initialEpsilon else 0
-        gamma          <- if(!is.null(control$gamma))          control$gamma          else 0.05
-        t0             <- if(!is.null(control$t0))             control$t0             else 10
-        kappa          <- if(!is.null(control$kappa))          control$kappa          else 0.75
-        delta          <- if(!is.null(control$delta))          control$delta          else 0.65
-        deltaMax       <- if(!is.null(control$deltaMax))       control$deltaMax       else 1000
-        M              <- if(!is.null(control$M))              control$M              else -1
-        nwarmup        <- if(!is.null(control$nwarmup))        control$nwarmup        else -1
-        maxTreeDepth   <- if(!is.null(control$maxTreeDepth))   control$maxTreeDepth   else 10
+        printTimesRan  <- extractControlElement(control, 'printTimesRan',  FALSE)
+        printEpsilon   <- extractControlElement(control, 'printEpsilon',   FALSE)
+        printJ         <- extractControlElement(control, 'printJ',         FALSE)
+        printM         <- extractControlElement(control, 'printM',         FALSE)
+        messages       <- extractControlElement(control, 'messages',       TRUE)
+        warnings       <- extractControlElement(control, 'warnings',       5)
+        initialEpsilon <- extractControlElement(control, 'initialEpsilon', 0)
+        gamma          <- extractControlElement(control, 'gamma',          0.05)
+        t0             <- extractControlElement(control, 't0',             10)
+        kappa          <- extractControlElement(control, 'kappa',          0.75)
+        delta          <- extractControlElement(control, 'delta',          0.65)
+        deltaMax       <- extractControlElement(control, 'deltaMax',       1000)
+        M              <- extractControlElement(control, 'M',              -1)
+        nwarmup        <- extractControlElement(control, 'nwarmup',        -1)
+        maxTreeDepth   <- extractControlElement(control, 'maxTreeDepth',   10)
         ## node list generation
         targetNodes <- model$expandNodeNames(target)
         if(length(targetNodes) <= 0) stop('HMC sampler must operate on at least one node', call. = FALSE)
@@ -1199,7 +1199,7 @@ sampler_HMC <- nimbleFunction(
         warmupIntervalsAdaptM <- rep(0,7)            ## length 7 vector
         warmupIntervalNumber <- 0
         warmupIntervalCount <- 0
-        warmupSamples <- array(0, c(2,d2))     ## 2xd array
+        warmupSamples <- array(0, c(2,d2))           ## 2xd array
         if(length(M) == 1) { if(M == -1) M <- rep(1, d2) else M <- c(M, 1) }
         Morig <- M
         sqrtM <- sqrt(M)
