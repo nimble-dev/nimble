@@ -973,17 +973,12 @@ n <- 30
 k <- 4
 model <- nimbleModel(code, constants = list(k = k, n = n), data = list(y = rmulti(1, n, rep(1/k, k))), inits = list(p = c(.2, .4, .15, .25), alpha = runif(4)))
 
-## unc/comp 2d11 jacobian out of tolerance
 ## various vals, logProbs, wrt ENI
+## comp 2d11/012 hessian ENI
+## comp 1d/012 jacobian ENI
+## comp/uncom 2d11 jacobian out of tolerance (quite a bit)
 
-
-
-## compiled 01,012,02 value ENI cLogProb_new
-## compiled 1d, 012 jac ENI
-## comp/unc 2d11 hessian out of tolerance
-## compiled 2d11, 012 hessian ENI
-## various wrt, vals, logProbs ENI
-## various other ENI, out of tolerances
+## no longer seeing this issue as of 2021-04-29
 ## ISSUE: ML partial: compiled wrt and x quite different
 ## cWrt01,012 having values be restored in ML partial wrt=alpha[1,2]
 ## see issue 277 - it occurs regardless of using full alpha or partial alpha
@@ -1053,43 +1048,15 @@ model$setData('y')
 ##  1: .Call("CALL_nfRefClass_R_GlobalEnv46_run", x, order, .basePtr)
 
 ## atomics: 
-
-## compiled value,logProb,wrt ENI to cLogProb_new, cVals_new
-## comp/unc 2d11 hessian out of tolerance
-## ISSUE: non-pos def in HMC partial idx=1
-## ISSUE: ML/partial has some NA values in idx=3
-## ISSUE: incorrect lengths in ML/partial
-## EB: cOutput2d / cOutput012 hessians out of tolerance but quite close
-
-## OLD: unc/comp big diffs in Hessian presumably because of single-tape compiled error - see issue 279, possibly issue 278
-## OLD: at some point noticed comp hessians not symmetric for single-taped in idx=2, for HMC/MAP (not sure about other cases); this might just be consequence of issue 279
-
-
+## compvalues, logProb_new, wrt ENI
+## comp/unc values out of tolerance
+## comp jac/Hessians ENI
+## comp/unc 2d11 jacobian quite out of tolerance
+## comp/unc 2d/012 hessian out of tolerance 
 test_ADModelCalculate(model, excludeUpdateNodes = 'dist', x = 'prior',
                       useParamTransform = TRUE, useFasterRderivs = TRUE,
                       verbose = TRUE,
                       name = 'various multivariate dists')
-
-
-## TMP
-covFunLoop <- nimbleFunction(
-    run = function(dist = double(2), rho = double(0)) {
-        n = dim(dist)[1]
-        out = nimMatrix(nrow = n, ncol = n)
-        ## i <- 1L; j <- 1L  ## NCT 130 work-around
-        for(i in 1:n)
-            for(j in 1:n)
-                out[i,j] <- exp(-dist[i,j]/rho)
-        returnType(double(2))
-        return(out)
-    }, enableDerivs = list(run = list(noDeriv_vars = c('i','j'))))
-    # enableDerivs = TRUE) # if use NCT 130 work-around
-covFunVec <- nimbleFunction(
-    run = function(dist = double(2), rho = double(0)) {
-        out <- exp(-dist/rho)
-        returnType(double(2))
-        return(out)
-    }, enableDerivs = TRUE)
 
 
 ## loop through BUGS models
