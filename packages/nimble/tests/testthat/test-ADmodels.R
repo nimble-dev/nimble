@@ -1026,16 +1026,16 @@ code <- nimbleCode({
     mu5[1:n] ~ dmnorm(z[1:n], W5[1:n,1:n])
     mu6[1:n] ~ dmnorm(z[1:n], W6[1:n,1:n])
     rho ~ dgamma(2, 3)
-    nu ~ dunif(10, 20)
+    nu0 ~ dunif(0, 10)
+    nu <- 10 + nu0  ## hack to ensure big enough to ensure p.d. when simulating new updateNodes
 })
-
 
 n <- 5
 locs <- runif(n)
 dd <- fields::rdist(locs)
 R <- crossprod(matrix(rnorm(n^2), n, n))
 model <- nimbleModel(code, constants = list(n = n),
-                     inits = list(dist = dd, R = R, nu = 15, rho = rgamma(1, 1, 1),
+                     inits = list(dist = dd, R = R, nu0 = 5, rho = rgamma(1, 1, 1),
                                                                  z = rep(0, n)))
 model$simulate()
 model$calculate()
