@@ -1172,13 +1172,15 @@ sampler_HMC <- nimbleFunction(
         deltaMax       <- extractControlElement(control, 'deltaMax',       1000)
         M              <- extractControlElement(control, 'M',              -1)
         nwarmup        <- extractControlElement(control, 'nwarmup',        -1)
-        maxTreeDepth   <- extractControlElement(control, 'maxTreeDepth',   10)
+        maxTreeDepth   <- extractControlElement(control, 'maxTreeDepth',   9) # match Stan; formerly 10
         ## node list generation
         targetNodes <- model$expandNodeNames(target)
         if(length(targetNodes) <= 0) stop('HMC sampler must operate on at least one node', call. = FALSE)
         calcNodes <- model$getDependencies(targetNodes)
         originalTargetAsScalars <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         targetNodesAsScalars <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)
+
+        depthHistory <- c(0, 0)
         ## processing of bounds and transformations
         my_parameterTransform <- parameterTransform(model, targetNodesAsScalars)
         d <- my_parameterTransform$getTransformedLength()
@@ -1258,6 +1260,8 @@ sampler_HMC <- nimbleFunction(
             j <- j + 1
             checkInterrupt()
         }
+        depthHistory[length(depthHistory)-1] <<- j-1
+        setSize(depthHistory, length(depthHistory) + 1)
         inverseTransformStoreCalculate(qNew)
         nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
         if(timesRan <= nwarmup)   adaptiveProcedure(btNL$a, btNL$na)
