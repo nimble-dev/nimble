@@ -2017,7 +2017,6 @@ test_that('posterior_predictive_branch sampler updates node log-probs', {
     }
 }
 
-
 sink(NULL)
 
 if(!generatingGoldFile) {
