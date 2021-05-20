@@ -1984,6 +1984,39 @@ test_that('MCMC assigned posterior_predictive_branch sampler correctly', {
     nimbleOptions(MCMCjointlySamplePredictiveBranches = nimblePPBranchSamplerSettingTemp)
 })
 
+test_that('posterior_predictive_branch sampler updates node log-probs', {
+    code <- nimbleCode({
+        a ~ dnorm(0, 1)
+        y ~ dexp(a^2+1)
+        b ~ dnorm(a, 1)
+        c ~ dnorm(b, 1)
+    })
+    constants <- list()
+    data <- list(y = 3)
+    inits <- list(a = 0, b = 1, c = 1)
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    conf <- configureMCMC(Rmodel)
+    ##
+    expect_true(conf$getSamplers('a')[[1]]$name == 'RW')
+    expect_true(conf$getSamplers('b')[[1]]$name == 'posterior_predictive_branch')
+    ##
+    Rmcmc <- buildMCMC(conf)
+    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
+    Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
+    set.seed(0)
+    Rmcmc$run(10)
+    set.seed(0)
+    Cmcmc$run(10)
+    ##
+    for(node in Rmodel$getNodeNames(stochOnly = TRUE)) {
+        rLP <- Rmodel$getLogProb(node)
+        cLP <- Cmodel$getLogProb(node)
+        expect_equal(rLP, Rmodel$calculate(node))
+        expect_equal(cLP, Cmodel$calculate(node))
+        expect_equal(rLP, cLP)
+    }
+}
+
 
 sink(NULL)
 
