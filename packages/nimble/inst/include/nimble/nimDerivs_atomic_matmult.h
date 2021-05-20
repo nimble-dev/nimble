@@ -82,7 +82,9 @@ void atomic_matmult(const MatrixXd_CppAD &x1,
 		    const MatrixXd_CppAD &x2,
 		    MatrixXd_CppAD &y);
 
-//#define USE_NEW_DYNAMIC
+#define USE_NEW_DYNAMIC // Now required, for the matrix_category handling
+
+enum matrix_category {lower_diagonal, upper_diagonal, square_full, non_square, unknown};
 
 MatrixXd_CppAD nimDerivs_matmult(const MatrixXd_CppAD &x1,
 				 const MatrixXd_CppAD &x2);
@@ -90,7 +92,34 @@ MatrixXd_CppAD nimDerivs_matmult(const MatrixXd_CppAD &x1,
 class atomic_matmult_class :  public CppAD::atomic_three< double > {
  private:
   int n1_;
+  std::vector<double> X_stored;
+  std::vector<CppAD::AD<double> > X_AD_stored;
+  matrix_category X1cat_, X2cat_;
+  bool x1_is_constant_, x2_is_constant_;
+  
  public:
+  double * get_X_stored_ptr() {return &X_stored[0];}
+  CppAD::AD<double> * get_X_AD_stored_ptr() {return &X_AD_stored[0];}
+  matrix_category transpose_matrix_cat(const matrix_category &Xcat) const {
+    if(Xcat == lower_diagonal) return upper_diagonal;
+    if(Xcat == upper_diagonal) return lower_diagonal;
+    return Xcat;
+  };
+  void set_X_stored(const MatrixXd_CppAD &X);
+  matrix_category &X1cat() {return X1cat_;}
+  matrix_category &X2cat() {return X2cat_;}
+  matrix_category const &X1cat() const {return X1cat_;}
+  matrix_category const &X2cat() const {return X2cat_;}
+  matrix_category transpose_X1cat() {return transpose_matrix_cat(X1cat_);}
+  matrix_category transpose_X2cat() {return transpose_matrix_cat(X2cat_);}
+  matrix_category transpose_X1cat() const {return transpose_matrix_cat(X1cat_);}
+  matrix_category transpose_X2cat() const {return transpose_matrix_cat(X2cat_);}
+
+  bool &X1constant() {return x1_is_constant_;}
+  bool &X2constant() {return x2_is_constant_;}
+  bool const &X1constant() const {return x1_is_constant_;}
+  bool const &X2constant() const {return x2_is_constant_;}
+  
   atomic_matmult_class(const std::string& name);
   void set_n1(int n1__) {n1_ = n1__;}
   int get_n1() {return n1_;}

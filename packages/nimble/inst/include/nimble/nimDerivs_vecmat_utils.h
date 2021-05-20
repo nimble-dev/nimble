@@ -16,6 +16,17 @@ void mat2vec(const MT &m, VT &v, size_t offset = 0) {
   }
 }
 
+template<typename MT, typename VT>
+void mat2vec_v(const MT &m, VT &v, size_t offset = 0) {
+  size_t nrow = m.rows();
+  size_t ncol = m.cols();
+  for(size_t i=0; i < nrow; ++i) {
+    for(size_t j=0; j < ncol; ++j) {
+      v[i + j*nrow + offset] = CppAD::Value(m(i,j));
+    }
+  }
+}
+
 template<typename VT, typename MT>
 void vec2mat(const VT &v, MT &m, size_t offset = 0) {
   size_t nrow = m.rows();
