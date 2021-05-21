@@ -2015,7 +2015,7 @@ test_that('posterior_predictive_branch sampler updates node log-probs', {
         expect_equal(cLP, Cmodel$calculate(node))
         expect_equal(rLP, cLP)
     }
-}
+})
 
 sink(NULL)
 
