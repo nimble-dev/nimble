@@ -1985,6 +1985,9 @@ test_that('MCMC assigned posterior_predictive_branch sampler correctly', {
 })
 
 test_that('posterior_predictive_branch sampler updates node log-probs', {
+    nimblePPBranchSamplerSettingTemp <- getNimbleOption('MCMCjointlySamplePredictiveBranches')
+    nimbleOptions(MCMCjointlySamplePredictiveBranches = TRUE)
+    expect_true(nimbleOptions('MCMCjointlySamplePredictiveBranches'))
     code <- nimbleCode({
         a ~ dnorm(0, 1)
         y ~ dexp(a^2+1)
@@ -2015,6 +2018,7 @@ test_that('posterior_predictive_branch sampler updates node log-probs', {
         expect_equal(cLP, Cmodel$calculate(node))
         expect_equal(rLP, cLP)
     }
+    nimbleOptions(MCMCjointlySamplePredictiveBranches = nimblePPBranchSamplerSettingTemp)
 })
 
 sink(NULL)
