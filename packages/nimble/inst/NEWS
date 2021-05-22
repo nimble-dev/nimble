@@ -1,12 +1,14 @@
+                            CHANGES IN VERSION 0.11.1 (Max 2021)
+
 USER LEVEL CHANGES
+
+-- Add information about categorical sampler and univariate version of ESS
+   sampler to `help(samplers)`.
 
 BUG FIXES
 
 -- Fix to the `posterior_predictive_branch` MCMC sampler, to update
-   the log-probabilities of the sampled posterior predictive nodes.
-
-DEVELOPER LEVEL CHANGES
-
+   the log-probabilities of the sampled posterior predictive nodes (PR #1127).
 
                             CHANGES IN VERSION 0.11.0 (April 2021)
 

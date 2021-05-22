@@ -14,8 +14,8 @@ Description: A system for writing hierarchical statistical models largely
     'BUGS'/'JAGS' language for writing models, one can use 'NIMBLE' for writing
     arbitrary other kinds of model-generic algorithms as well. A full User Manual is
     available at <https://r-nimble.org>.
-Version: 0.12.0
-Date: 2021-04-16
+Version: 0.11.1
+Date: 2021-05-24
 Maintainer: Christopher Paciorek <paciorek@stat.berkeley.edu>
 Authors@R: c(
     person("Perry", "de Valpine", role = "aut"),
