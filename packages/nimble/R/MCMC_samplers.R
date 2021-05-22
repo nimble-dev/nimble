@@ -56,6 +56,7 @@ sampler_posterior_predictive_branch <- nimbleFunction(
     },
     run = function() {
         model$simulate(calcNodes)
+        model$calculate(calcNodes)
         nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
     },
     methods = list(
