@@ -128,7 +128,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.11.0</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.11.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -813,7 +813,7 @@ Named elements in the <code>control</code> argument will be used for all default
 <a class="sourceLine" id="cb164-5" title="5"><span class="co">## Now access the history information:</span></a>
 <a class="sourceLine" id="cb164-6" title="6">cmcmc<span class="op">$</span>samplerFunctions[[idx]]<span class="op">$</span><span class="kw">getScaleHistory</span>()</a>
 <a class="sourceLine" id="cb164-7" title="7">cmcmc<span class="op">$</span>samplerFunctions[[idx]]<span class="op">$</span><span class="kw">getAcceptanceHistory</span>()</a>
-<a class="sourceLine" id="cb164-8" title="8">cmcmc<span class="op">$</span>samplerFunctions[[idx]]getPropCovHistory   <span class="co">## only for RW_block</span></a></code></pre></div>
+<a class="sourceLine" id="cb164-8" title="8">cmcmc<span class="op">$</span>samplerFunctions[[idx]]<span class="op">$</span>getPropCovHistory   <span class="co">## only for RW_block</span></a></code></pre></div>
 <p>Note that modifying elements of the control list may greatly
 affect the performance of the <code>RW_block</code> sampler. In particular, the sampler
 can take a long time to find a good proposal covariance when the

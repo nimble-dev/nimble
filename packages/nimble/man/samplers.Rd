@@ -17,6 +17,8 @@
 \alias{RW_llFunction_block}
 \alias{RW_multinomial}
 \alias{RW_wishart}
+\alias{binary}
+\alias{categorical}
 \alias{crossLevel}
 \alias{posterior_predictive}
 \alias{posterior_predictive_branch}
@@ -120,6 +122,14 @@ The binary sampler performs Gibbs sampling for binary-valued (discrete 0/1) node
 The binary sampler accepts no control list arguments.
 }
 
+\section{categorical sampler}{
+
+
+The categorical sampler performs Gibbs sampling for a single node, which must follow a categorical (\code{dcat}) distribution.
+
+The categorical sampler accepts no control list arguments.
+}
+
 \section{RW sampler}{
 
 
@@ -190,7 +200,7 @@ The slice sampler accepts the following control list elements:
 \section{ess sampler}{
 
 
-The ess sampler performs elliptical slice sampling of a single node, which must follow a multivariate normal distribution (Murray, 2010).  The algorithm is an extension of slice sampling (Neal, 2003), generalized to the multivariate normal context.  An auxiliary variable is used to identify points on an ellipse (which passes through the current node value) as candidate samples, which are accepted contingent upon a likelihood evaluation at that point.  This algorithm requires no tuning parameters and therefore no period of adaptation, and may result in very efficient sampling from multivariate Gaussian distributions.
+The ess sampler performs elliptical slice sampling of a single node, which must follow either a univariate or multivariate normal distribution (Murray, 2010).  The algorithm is an extension of slice sampling (Neal, 2003), generalized to context of the Gaussian distribution.  An auxiliary variable is used to identify points on an ellipse (which passes through the current node value) as candidate samples, which are accepted contingent upon a likelihood evaluation at that point.  This algorithm requires no tuning parameters and therefore no period of adaptation, and may result in very efficient sampling from Gaussian distributions.
 
 The ess sampler accepts the following control list arguments.
 \itemize{
