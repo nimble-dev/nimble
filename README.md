@@ -82,7 +82,7 @@ NIMBLE. Journal of Computational and Graphical Statistics 26:403-413. [https://d
 
 In published work that uses NIMBLE, please also cite the package version:
 
-de Valpine, P., C. Paciorek, D. Turek, N. Michaud, C. Anderson-Bergman, F. Obermeyer, C. Wehrhahn Cortes, A. Rodriguez, D. Temple Lang, and S. Paganin. 2020. NIMBLE: MCMC, Particle Filtering, and Programmable Hierarchical Modeling.  doi: 10.5281/zenodo.1211190. R package version 0.10.1, https://cran.r-project.org/package=nimble.
+de Valpine, P., C. Paciorek, D. Turek, N. Michaud, C. Anderson-Bergman, F. Obermeyer, C. Wehrhahn Cortes, A. Rodriguez, D. Temple Lang, and S. Paganin. 2021. NIMBLE: MCMC, Particle Filtering, and Programmable Hierarchical Modeling.  doi: 10.5281/zenodo.1211190. R package version 0.11.1, https://cran.r-project.org/package=nimble.
 
 To help us track usage to justify funding support for NIMBLE, please include the DOI in the citation.
 
