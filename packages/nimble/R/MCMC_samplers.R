@@ -1958,7 +1958,7 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
             ##        lpMHR <- my_setAndCalculateDiff$run(propValueVector)
             cnt <- 1
             for(i in 2:d) {
-                model[[target]][1, i] <- tanh(yPropValueVector[cnt])
+                model[[target]][1, i] <<- tanh(yPropValueVector[cnt])
                 logMHR <- logMHR + 2*(log(cosh(y[cnt])) - log(cosh(yPropValueVector[cnt])))
                 cnt <- cnt+1
                 partialSums <- 1 - model[[target]][1, i]^2
