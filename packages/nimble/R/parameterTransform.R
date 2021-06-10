@@ -120,11 +120,11 @@ parameterTransform <- nimbleFunction(
                     transformType[i] <- 9L
                     dSq <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
                     d <- sqrt(dSq)
-                    dd <- d * (d-1) / 2  # number of transformed params
+                    p <- d * (d-1) / 2  # number of transformed params
                     transformData[i,NIND2] <- transformData[i,NIND1] + dSq - 1
-                    transformData[i,TIND2] <- transformData[i,TIND1] + dd - 1
+                    transformData[i,TIND2] <- transformData[i,TIND1] + p - 1
                     transformData[i,DATA1] <- d
-                    transformData[i,DATA2] <- dd
+                    transformData[i,DATA2] <- p
                     next }
                 stop(paste0('parameterTransform doesn\'t handle \'', dist, '\' distributions.'), call. = FALSE)
             }
@@ -177,13 +177,13 @@ parameterTransform <- nimbleFunction(
                               }
                           },
                           {                                        ## 9: LKJ
-                              d <- transformData[iNode,DATA1]
-                              dd <- transformData[iNode,DATA2]
-                              theseTransformed <- nimNumeric(dd)
-                              if(d > 1) {
+                              dd <- transformData[iNode,DATA1]
+                              pp <- transformData[iNode,DATA2]
+                              theseTransformed <- nimNumeric(pp)
+                              if(dd > 1) {
                                   cnt <- 1
                                   ## More efficient to calc partialSum at start of 'i' loop
-                                  for(j in 2:d) {
+                                  for(j in 2:dd) {
                                       theseTransformed[cnt] <- atanh(theseValues[1, j])
                                       cnt <- cnt + 1
                                       if(j > 2) {
@@ -246,15 +246,15 @@ parameterTransform <- nimbleFunction(
                               theseInvTransformed[dd] <- 1 - sum(theseInvTransformed[1:ddm1])
                           },
                           {                                            ## 9: LKJ
-                              d <- transformData[iNode,DATA1]
+                              dd <- transformData[iNode,DATA1]
                               ## Directly fill in the vectorized form of the U matrix
-                              theseInvTransformed <- nimNumeric(d*d, value = 0, init = TRUE)
+                              theseInvTransformed <- nimNumeric(dd*dd, value = 0, init = TRUE)
                               theseInvTransformed[1] <- 1
-                              if(d > 1) {
+                              if(dd > 1) {
                                   cntT <- 1
                                   ## Fill in j'th column
-                                  for(j in 2:d) {
-                                      cntI <- (j-1)*d + 1
+                                  for(j in 2:dd) {
+                                      cntI <- (j-1)*dd + 1
                                       theseInvTransformed[cntI] <- tanh(theseValues[cntT])
                                       partialSum <- 1 - theseInvTransformed[cntI]^2
                                       cntI <- cntI + 1
@@ -330,11 +330,11 @@ parameterTransform <- nimbleFunction(
                               }
                           },
                           {                                            ## 9: LKJ
-                              d <- transformData[iNode,DATA1]
+                              dd <- transformData[iNode,DATA1]
                               lpAdd <- 0
-                              if(d > 1) {
+                              if(dd > 1) {
                                   cntT <- 1
-                                  for(j in 2:d) {
+                                  for(j in 2:dd) {
                                       lpAdd <- lpAdd - 2*log(cosh(theseValues[cntT]))
                                       theseInvTransformed <- tanh(theseValues[cntT])
                                       partialSum <- 1 
