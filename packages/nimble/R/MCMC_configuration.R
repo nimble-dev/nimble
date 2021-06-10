@@ -307,7 +307,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
                         if(nodeDist == 'ddirch')              { addSampler(target = node, type = 'RW_dirichlet');          next }
                         if(nodeDist == 'dwish')               { addSampler(target = node, type = 'RW_wishart');            next }
                         if(nodeDist == 'dinvwish')            { addSampler(target = node, type = 'RW_wishart');            next }
-                        if(nodeDist == 'dlkj_corr_cholesky')  { addSampler(target = node, type = 'RW_lkj_corr_cholesky');  next }
+                        if(nodeDist == 'dlkj_corr_cholesky')  { addSampler(target = node, type = 'RW_block_lkj_corr_cholesky');  next }
                         if(nodeDist == 'dcar_normal')         { addSampler(target = node, type = 'CAR_normal');            next }
                         if(nodeDist == 'dcar_proper')         { addSampler(target = node, type = 'CAR_proper');            next }
                         if(nodeDist == 'dCRP')                {

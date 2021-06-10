@@ -1786,7 +1786,7 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
         ##
         z                   <- array(0, c(d, d))
         diag(z)             <- 1
-        partialSums         <- array(0, c(d, d))  # 1-x_{21}^2, 1-x_{31}^2, 1-x_{31}^2-x_{32}^2, ...
+        partialSums         <- array(0, c(d, d))  # 1-x_{13}^2, 1-x_{14}^2, 1-x_{14}^2-x_{24}^2, ...
         partialSums[1, ]   <- 1
         ## Temporary vectors for current row calculations:
         partialSumsProp     <- numeric(d)    
@@ -1817,7 +1817,7 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
                 yProp <- rnorm(1, yCurrent, scaleVec[cnt])
                 zProp <- tanh(yProp)
                 propValue[j] <<- zProp * sqrt(partialSumsProp[j])
-                ## Update remainder of row so that length of row is 1
+                ## Update remainder of column so that length of column is 1
                 for(jprime in (j+1):i) {
                     partialSumsProp[jprime] <<- partialSumsProp[jprime-1] - propValue[jprime-1]^2
                     propValue[jprime] <<- z[jprime, i] * sqrt(partialSumsProp[jprime])
@@ -1906,7 +1906,7 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
         if(!is.integer(finalTargetIndex) |
            length(finalTargetIndex) != 1 |
            is.na(finalTargetIndex[1]))
-            stop('Problem with target node in sampler_RW_block_lkj_corr_cholesky')
+           stop('Problem with target node in sampler_RW_block_lkj_corr_cholesky')
         calcNodesProposalStage <- calcNodes[1:finalTargetIndex]
         calcNodesDepStage <- calcNodes[-(1:finalTargetIndex)]
 #        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
@@ -1967,18 +1967,18 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
                         model[[target]][j, i] <<- tanh(yPropValueVector[cnt]) * sqrt(partialSums)
                         logMHR <- logMHR + 2*(log(cosh(y[cnt])) - log(cosh(yPropValueVector[cnt]))) +
                             0.5*log(partialSums)
-                        partialSums <- partialSums - model[[target]][j, i]^2
                         cnt <- cnt+1
+                        partialSums <- partialSums - model[[target]][j, i]^2
                     }
                 }
+                model[[target]][i, i] <<- sqrt(partialSums)
             }
-    
+            ## Adjust for determinant term from initial values
             logMHR <- logMHR - 0.5*logSum
 
-            values(model, targetNodesAsScalar) <<- propValueVector
             lpD <- calculateDiff(model, calcNodesProposalStage)
             if(lpD == -Inf) {
-                nimCopy(from = mvSaved, to = model,   row = 1, nodes = calcNodesProposalStage, logProb = TRUE)
+                nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesProposalStage, logProb = TRUE)
                 jump <- FALSE
             } else {
                 ##        jump <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
@@ -1999,14 +1999,14 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
             for(i in 3:d) {
                 y[cnt] <<- atanh(z[1, i])
                 cnt <- cnt+1
+                partialSums[2, i] <<- 1 - x[1, i]^2
                 for(j in 2:(i-1)) {
-                    logSum <<- log(partialSums[j-1 , i])
-                    partialSums[j, i] <<- partialSums[j-1, i] - x[j-1, i]^2
+                    logSum <<- log(partialSums[j, i])
                     z[j, i] <<- x[j, i] / sqrt(partialSums[j, i])
                     y[cnt] <<- atanh(z[j, i])
                     cnt <- cnt+1
+                    partialSums[j+1, i] <<- partialSums[j, i] - x[j, i]^2
                 }
-                partialSums[i, i] <<- partialSums[i-1, i] - x[i-1, i]^2
             }
         },
         generateProposalVector = function() {
@@ -2017,7 +2017,7 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
         adaptiveProcedure = function(jump = logical()) {
             timesRan <<- timesRan + 1
             if(jump)     timesAccepted <<- timesAccepted + 1
-            if(!adaptScaleOnly)     empirSamp[timesRan, 1:d] <<- values(model, target)
+            if(!adaptScaleOnly)     empirSamp[timesRan, 1:d] <<- y
             if(timesRan %% adaptInterval == 0) {
                 acceptanceRate <- timesAccepted / timesRan
                 timesAdapted <<- timesAdapted + 1
