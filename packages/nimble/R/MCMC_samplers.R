@@ -1940,10 +1940,10 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
         logSum              <- 0
         
         ## checks
-        if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
-        if(class(propCov[1,1]) != 'numeric')  stop('propCov matrix must be numeric\n')
-        if(!all(dim(propCov) == d))           stop('propCov matrix must have dimension ', d, 'x', d, '\n')
-        if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
+        if(!inherits(propCov))                 stop('propCov must be a matrix\n')
+        if(!inherits(propCov[1,1], 'numeric')) stop('propCov matrix must be numeric\n')
+        if(!all(dim(propCov) == d))            stop('propCov matrix must have dimension ', d, 'x', d, '\n')
+        if(!isSymmetric(propCov))              stop('propCov matrix must be symmetric')
 
         dist <- model$getDistribution(target)
         if(dist != 'dlkj_corr_cholesky') stop('RW_block_lkj_corr_cholesky sampler can only be used with the dlkj_corr_cholesky distribution.')
