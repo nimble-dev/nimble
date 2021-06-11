@@ -1825,10 +1825,9 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
                 model[[target]][j:i, i] <<- propValue[j:i] 
                 logMHR <- calculateDiff(model, calcNodesNoSelf) + calculateDiff(model, target)
                 ## Adjust MHR to account for non-symmetric proposal by adjusting prior to transformed scale.
-                logMHR <- logMHR + 2*(log(cosh(yCurrent)) - log(cosh(yProp)))
-                if(j < i-1) {
-                    logMHR <- logMHR + 0.5*sum(log(partialSumsProp[(j+1):(i-1)]) - log(partialSums[(j+1):(i-1), i]))
-                }
+                logMHR <- logMHR - 2*(log(cosh(yProp)) - log(cosh(yCurrent))) +
+                    0.5*(d-j-1)*(log(1-zProp^2) - log(1-z[j, i]^2))
+
                 jump <- decide(logMHR)
                 ## Avoid copying entire target matrix as we are modifying one column at a time.
                 if(jump) {
@@ -1960,14 +1959,15 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
             cnt <- 1
             for(i in 2:p) {
                 model[[target]][1, i] <<- tanh(yPropValueVector[cnt])
-                logMHR <- logMHR - 2*log(cosh(yPropValueVector[cnt]))
-                cnt <- cnt+1
                 partialSums <<- 1 - model[[target]][1, i]^2
+                logMHR <- logMHR - 2*log(cosh(yPropValueVector[cnt])) + 0.5*(p-2)*log(partialSums)
+                cnt <- cnt+1
                 if(i > 2) {
                     for(j in 2:(i-1)) {
-                        model[[target]][j, i] <<- tanh(yPropValueVector[cnt]) * sqrt(partialSums)
+                        tmp <- tanh(yPropValueVector[cnt])
+                        model[[target]][j, i] <<- tmp * sqrt(partialSums)
                         logMHR <- logMHR - 2*log(cosh(yPropValueVector[cnt])) +
-                            0.5*log(partialSums) # Fix this
+                            0.5*(p-j-1)*log(1-tmp^2)
                         cnt <- cnt+1
                         partialSums <<- partialSums - model[[target]][j, i]^2
                     }
