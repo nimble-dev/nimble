@@ -1960,14 +1960,14 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
             cnt <- 1
             for(i in 2:p) {
                 model[[target]][1, i] <<- tanh(yPropValueVector[cnt])
-                logMHR <- logMHR + 2*(log(cosh(y[cnt])) - log(cosh(yPropValueVector[cnt])))
+                logMHR <- logMHR - 2*log(cosh(yPropValueVector[cnt]))
                 cnt <- cnt+1
                 partialSums <<- 1 - model[[target]][1, i]^2
                 if(i > 2) {
                     for(j in 2:(i-1)) {
                         model[[target]][j, i] <<- tanh(yPropValueVector[cnt]) * sqrt(partialSums)
-                        logMHR <- logMHR + 2*(log(cosh(y[cnt])) - log(cosh(yPropValueVector[cnt]))) +
-                            0.5*log(partialSums)
+                        logMHR <- logMHR - 2*log(cosh(yPropValueVector[cnt])) +
+                            0.5*log(partialSums) # Fix this
                         cnt <- cnt+1
                         partialSums <<- partialSums - model[[target]][j, i]^2
                     }
@@ -1975,7 +1975,7 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
                 model[[target]][i, i] <<- sqrt(partialSums)
             }
             ## Adjust for determinant term from initial values
-            logMHR <- logMHR - 0.5*logSum
+            logMHR <- logMHR - logDet
 
             lpD <- calculateDiff(model, calcNodesProposalStage)
             if(lpD == -Inf) {
@@ -1995,16 +1995,18 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
         transform = function(x = double(2)) {
             z[1, 2:p] <<- x[1, 2:p]
             y[1] <<- atanh(z[1, 2])
+            logDet <<- -2*log(cosh(y[1])) + 0.5*(p-2)*sum(log(1-z[1, 2:p]^2))
             cnt <- 2
             partialSums[2, 2] <<- 1 - x[1, 2]^2
             for(i in 3:p) {
                 y[cnt] <<- atanh(z[1, i])
+                logDet <<- logDet - 2*log(cosh(y[cnt]))
                 cnt <- cnt+1
                 partialSums[2, i] <<- 1 - x[1, i]^2
                 for(j in 2:(i-1)) {
-                    logSum <<- log(partialSums[j, i])
                     z[j, i] <<- x[j, i] / sqrt(partialSums[j, i])
                     y[cnt] <<- atanh(z[j, i])
+                    logDet <<- logDet - 2*log(cosh(y[cnt])) + 0.5*(p-j-1)*log(1-z[j, i]^2)
                     cnt <- cnt+1
                     partialSums[j+1, i] <<- partialSums[j, i] - x[j, i]^2
                 }
