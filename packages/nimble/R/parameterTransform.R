@@ -180,17 +180,18 @@ parameterTransform <- nimbleFunction(
                               dd <- transformData[iNode,DATA1]
                               pp <- transformData[iNode,DATA2]
                               theseTransformed <- nimNumeric(pp)
+                              theseValuesMatrix <- nimArray(theseValues, dim = c(dd, dd))
                               if(dd > 1) {
                                   cnt <- 1
                                   ## More efficient to calc partialSum at start of 'i' loop
                                   for(j in 2:dd) {
-                                      theseTransformed[cnt] <- atanh(theseValues[1, j])
+                                      theseTransformed[cnt] <- atanh(theseValuesMatrix[1, j])
                                       cnt <- cnt + 1
                                       if(j > 2) {
                                           partialSum <- 1 
                                           for(i in 2:(j-1)) {
-                                              partialSum <- partialSum - theseValues[i-1, j]^2
-                                              theseTransformed[cnt] <- atahn(theseValues[i, j] / sqrt(partialSum))
+                                              partialSum <- partialSum - theseValuesMatrix[i-1, j]^2
+                                              theseTransformed[cnt] <- atanh(theseValuesMatrix[i, j] / sqrt(partialSum))
                                               cnt <- cnt + 1
                                           }
                                       }
@@ -261,7 +262,7 @@ parameterTransform <- nimbleFunction(
                                       cntT <- cntT + 1
                                       if(j > 2) {
                                           for(i in 2:(j-1)) {
-                                              theseInvTransformed[cntI] <- tahn(theseValues[cntT]) * sqrt(partialSum)
+                                              theseInvTransformed[cntI] <- tanh(theseValues[cntT]) * sqrt(partialSum)
                                               partialSum <- partialSum - theseInvTransformed[cntI]^2
                                               cntI <- cntI + 1
                                               cntT <- cntT + 1
@@ -343,7 +344,7 @@ parameterTransform <- nimbleFunction(
                                           for(i in 2:(j-1)) {
                                               partialSum <- partialSum - theseInvTransformed^2
                                               lpAdd <- lpAdd - 2*log(cosh(theseValues[cntT])) + 0.5*log(partialSum)
-                                              theseInvTransformed <- tahn(theseValues[cntT]) * sqrt(partialSum)
+                                              theseInvTransformed <- tanh(theseValues[cntT]) * sqrt(partialSum)
                                               cntT <- cntT + 1
                                           }
                                       }
