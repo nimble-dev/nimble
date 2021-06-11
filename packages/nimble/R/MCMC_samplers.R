@@ -1940,7 +1940,7 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
         logSum              <- 0
         
         ## checks
-        if(!inherits(propCov))                 stop('propCov must be a matrix\n')
+        if(!inherits(propCov, 'matrix'))       stop('propCov must be a matrix\n')
         if(!inherits(propCov[1,1], 'numeric')) stop('propCov matrix must be numeric\n')
         if(!all(dim(propCov) == d))            stop('propCov matrix must have dimension ', d, 'x', d, '\n')
         if(!isSymmetric(propCov))              stop('propCov matrix must be symmetric')
@@ -1953,22 +1953,23 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
     },
     run = function() {
         transform(model[[target]])  # compute z and partialSums
+        logMHR <- 0
         for(k in 1:tries) {
             yPropValueVector <- generateProposalVector()
             ##        lpMHR <- my_setAndCalculateDiff$run(propValueVector)
             cnt <- 1
-            for(i in 2:d) {
+            for(i in 2:p) {
                 model[[target]][1, i] <<- tanh(yPropValueVector[cnt])
                 logMHR <- logMHR + 2*(log(cosh(y[cnt])) - log(cosh(yPropValueVector[cnt])))
                 cnt <- cnt+1
-                partialSums <- 1 - model[[target]][1, i]^2
+                partialSums <<- 1 - model[[target]][1, i]^2
                 if(i > 2) {
                     for(j in 2:(i-1)) {
                         model[[target]][j, i] <<- tanh(yPropValueVector[cnt]) * sqrt(partialSums)
                         logMHR <- logMHR + 2*(log(cosh(y[cnt])) - log(cosh(yPropValueVector[cnt]))) +
                             0.5*log(partialSums)
                         cnt <- cnt+1
-                        partialSums <- partialSums - model[[target]][j, i]^2
+                        partialSums <<- partialSums - model[[target]][j, i]^2
                     }
                 }
                 model[[target]][i, i] <<- sqrt(partialSums)
@@ -1982,8 +1983,8 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
                 jump <- FALSE
             } else {
                 ##        jump <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
-                lpD <- lpD + calculateDiff(model, calcNodesDepStage)
-                jump <- decide(lpD)
+                logMHR <- logMHR + lpD + calculateDiff(model, calcNodesDepStage)
+                jump <- decide(logMHR)
                 if(jump) { nimCopy(from = model,   to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
                 } else   { nimCopy(from = mvSaved, to = model,   row = 1, nodes = calcNodes, logProb = TRUE) }
             }
@@ -1992,11 +1993,11 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
     },
     methods = list(
         transform = function(x = double(2)) {
-            z[1, 2:d] <<- x[1, 2:d]
+            z[1, 2:p] <<- x[1, 2:p]
             y[1] <<- atanh(z[1, 2])
             cnt <- 2
             partialSums[2, 2] <<- 1 - x[1, 2]^2
-            for(i in 3:d) {
+            for(i in 3:p) {
                 y[cnt] <<- atanh(z[1, i])
                 cnt <- cnt+1
                 partialSums[2, i] <<- 1 - x[1, i]^2
