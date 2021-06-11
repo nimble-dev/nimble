@@ -336,15 +336,15 @@ parameterTransform <- nimbleFunction(
                               if(dd > 1) {
                                   cntT <- 1
                                   for(j in 2:dd) {
-                                      lpAdd <- lpAdd - 2*log(cosh(theseValues[cntT]))
-                                      theseInvTransformed <- tanh(theseValues[cntT])
-                                      partialSum <- 1 
+                                      z <- tanh(theseValues[cntT])
+                                      lpAdd <- lpAdd - 2*log(cosh(theseValues[cntT])) +
+                                          0.5*(dd-2)*log(1-z^2)
                                       cntT <- cntT + 1
                                       if(j > 2) {
                                           for(i in 2:(j-1)) {
-                                              partialSum <- partialSum - theseInvTransformed^2
-                                              lpAdd <- lpAdd - 2*log(cosh(theseValues[cntT])) + 0.5*log(partialSum)
-                                              theseInvTransformed <- tanh(theseValues[cntT]) * sqrt(partialSum)
+                                              z <- tanh(theseValues[cntT])
+                                              lpAdd <- lpAdd - 2*log(cosh(theseValues[cntT])) +
+                                                  0.5*(dd-i-1)*log(1-z^2)
                                               cntT <- cntT + 1
                                           }
                                       }
