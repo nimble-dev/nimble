@@ -1784,11 +1784,11 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
         timesAdapted        <- 0
         optimalAR           <- 0.44
         ##
-        z                   <- array(0, c(d, d))
+        z                   <- array(0, c(d, d))  # canonical partial correlations
         diag(z)             <- 1
         partialSums         <- array(0, c(d, d))  # 1-x_{13}^2, 1-x_{14}^2, 1-x_{14}^2-x_{24}^2, ...
         partialSums[1, ]   <- 1
-        ## Temporary vectors for current row calculations:
+        ## Temporary vectors for current colum calculations
         partialSumsProp     <- numeric(d)    
         currentValue        <- numeric(d)
         propValue           <- numeric(d)
@@ -1805,9 +1805,9 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
         ## Individual univariate RW on the nTheta elements:
         ## advantage: probably better movement through space than with block update
         ## (plus note only column values of target matrix are recalculated for a given scalar update in a given column)
-        ## disadvantage: all downstream dependencies of entire matrix will be recalculated.
+        ## disadvantage: all downstream dependencies of entire matrix will be recalculated, so much slower than default block sampler
         cnt <- 0
-        for(i in 2:d) {
+        for(i in 2:d) {   # Iterate over columns
             currentValue <<- model[[target]][1:d, i]
             partialSumsProp <<- partialSums[, i]
             for(j in 1:(i-1)) {
@@ -1815,16 +1815,18 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
                 ## RW on unconstrained y
                 yCurrent <- atanh(z[j, i])
                 yProp <- rnorm(1, yCurrent, scaleVec[cnt])
-                zProp <- tanh(yProp)
-                propValue[j] <<- zProp * sqrt(partialSumsProp[j])
-                ## Update remainder of column so that length of column is 1
+                zProp <- tanh(yProp)   
+                propValue[j] <<- zProp * sqrt(partialSumsProp[j])  # proposed value of element of U
+                ## Update remainder of column of U so that length of column is 1
                 for(jprime in (j+1):i) {
                     partialSumsProp[jprime] <<- partialSumsProp[jprime-1] - propValue[jprime-1]^2
                     propValue[jprime] <<- z[jprime, i] * sqrt(partialSumsProp[jprime])
                 }
                 model[[target]][j:i, i] <<- propValue[j:i] 
                 logMHR <- calculateDiff(model, calcNodesNoSelf) + calculateDiff(model, target)
-                ## Adjust MHR to account for non-symmetric proposal by adjusting prior to transformed scale.
+                ## Adjust MHR to account for non-symmetric proposal by adjusting prior on X to transformed scale (i.e., y).
+                ## This follows Stan reference manual, which is based on eqn 11 of Lewandowski et al. 2009
+                ## cosh component is for dz/dy and other component is for dx/dz = dx/du * du/dz where 'x' is the corr matrix.
                 logMHR <- logMHR - 2*(log(cosh(yProp)) - log(cosh(yCurrent))) +
                     0.5*(d-j-1)*(log(1-zProp^2) - log(1-z[j, i]^2))
 
@@ -1859,6 +1861,7 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
     },
     methods = list(
         transform = function(x = double(2)) {
+            ## Calculate canonical partial correlations (z) and partial sums (remaining lengths of U columns)
             z[1, 2:d] <<- x[1, 2:d]
             partialSums[2, 2] <<- 1 - x[1, 2]^2
             for(i in 3:d) {
@@ -1908,7 +1911,7 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
            stop('Problem with target node in sampler_RW_block_lkj_corr_cholesky')
         calcNodesProposalStage <- calcNodes[1:finalTargetIndex]
         calcNodesDepStage <- calcNodes[-(1:finalTargetIndex)]
-#        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
+##        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         ## numeric value generation
         scaleOriginal <- scale
         timesRan      <- 0
@@ -1931,12 +1934,12 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
 ##        my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
         my_calcAdaptationFactor <- calcAdaptationFactor(d, adaptFactorExponent)
 
-        z                   <- array(0, c(p, p))
+        z                   <- array(0, c(p, p))  # canonical partial correlations
         diag(z)             <- 1
-        y                   <- numeric(d)
+        y                   <- numeric(d)         # unconstrained parameters; sampling occurs on this scale
         partialSums         <- array(0, c(p, p))  # 1-x_{21}^2, 1-x_{31}^2, 1-x_{31}^2-x_{32}^2, ...
         partialSums[1, ]    <- 1
-        logDetJac           <- 0
+        logDetJac           <- 0                  # for log of determinant of Jacobian for initial value
         
         ## checks
         if(!inherits(propCov, 'matrix'))       stop('propCov must be a matrix\n')
@@ -1960,12 +1963,17 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
             for(i in 2:p) {
                 model[[target]][1, i] <<- tanh(yPropValueVector[cnt])
                 partialSumsProp <<- 1 - model[[target]][1, i]^2
+                ## Adjust for prior for y using determinant of y to x transformation;
+                ## cosh term is from dz/dy and partialSumsProp terms is from dx/dz = dx/du * du/dz
+                ## See Stan ref manual, which is based on eqn 11 of Lewandowski et al. 2009
                 logMHR <- logMHR - 2*log(cosh(yPropValueVector[cnt])) + 0.5*(p-2)*log(partialSumsProp)
                 cnt <- cnt+1
                 if(i > 2) {
                     for(j in 2:(i-1)) {
-                        tmp <- tanh(yPropValueVector[cnt])
-                        model[[target]][j, i] <<- tmp * sqrt(partialSumsProp)
+                        ## Inverse transform from y to U
+                        tmp <- tanh(yPropValueVector[cnt])  # y to z
+                        model[[target]][j, i] <<- tmp * sqrt(partialSumsProp)  # z to U
+                        ## Adjust for prior for y using determinant of y to x transformation.
                         logMHR <- logMHR - 2*log(cosh(yPropValueVector[cnt])) +
                             0.5*(p-j-1)*log(1-tmp^2)
                         cnt <- cnt+1
@@ -1974,7 +1982,7 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
                 }
                 model[[target]][i, i] <<- sqrt(partialSumsProp)
             }
-            ## Adjust for determinant term from initial values
+            ## Adjust for log determinant term from initial values
             logMHR <- logMHR - logDetJac
 
             lpD <- calculateDiff(model, calcNodesProposalStage)
@@ -1985,14 +1993,21 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
                 ##        jump <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
                 logMHR <- logMHR + lpD + calculateDiff(model, calcNodesDepStage)
                 jump <- decide(logMHR)
-                if(jump) { nimCopy(from = model,   to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-                } else   { nimCopy(from = mvSaved, to = model,   row = 1, nodes = calcNodes, logProb = TRUE) }
+                if(jump) {
+                    nimCopy(from = model,   to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+                    y <<- yPropValueVector
+                } else {
+                    nimCopy(from = mvSaved, to = model,   row = 1, nodes = calcNodes, logProb = TRUE)
+                }
             }
             if(adaptive)     adaptiveProcedure(jump)
         }
     },
     methods = list(
         transform = function(x = double(2)) {
+            ## Compute canonical partial correlations (z), transformed parameters (y), and
+            ## remaining lengths of U columns (partialSums).
+            ## We don't actually need to save z or partialSums. 
             z[1, 2:p] <<- x[1, 2:p]
             y[1] <<- atanh(z[1, 2])
             logDetJac <<- -2*log(cosh(y[1])) + 0.5*(p-2)*sum(log(1-z[1, 2:p]^2))
