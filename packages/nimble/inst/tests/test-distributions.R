@@ -123,7 +123,7 @@ test_that("Test that mvt calculate and simulate are correct in nodeFunctions", {
 
 ## test use directly from R
 
-eta <- 3
+eta <- 3.3
 k <- 5
 
 test_that("dlkj_corr_cholesky calculates density correctly", {
@@ -149,7 +149,7 @@ test_that("dlkj_corr_cholesky calculates density correctly", {
     cnf <- compileNimble(nf)
     set.seed(1)
     expect_equal(cnf(eta, k), truth,
-                 info = paste0("incorrect dmvt value in compiled nimble function"))
+                 info = paste0("incorrect dlkj value in compiled nimble function"))
 })
 
 ## test use in model

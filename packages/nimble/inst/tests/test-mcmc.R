@@ -966,8 +966,142 @@ test_that('detect conjugacy when scaling Wishart, inverse Wishart cases', {
     expect_identical(length(m$checkConjugacy('Sigma')), 0L, 'Wishart case')
 })
 
-test_that('using RW_lkj_corr_cholesky', {
+
+test_that('using LKJ randomw walk samplers', {
     
+    R <- matrix(c(
+        1, 0.9, .3, -.5, .1,
+        0.9, 1, .15, -.3, .1,
+        .3, .15, 1, .3, .1,
+        -.5, -.3, .3, 1, .1,
+        .1,.1,.1,.1, 1)
+      , 5, 5)
+
+    U <- chol(R)
+
+    sds <- c(5,4, 3, 2, 1)
+
+    ## Remaining length of columns of U
+    PS <- matrix(0, 5, 5)
+    PS[1,] <- 1
+    PS[2, 2:5] <- 1-U[1, 2:5]^2
+    PS[3, 3] <- 1 - sum(U[1:2, 3]^2)
+    PS[3, 4] <- 1-U[1,4]^2-U[2,4]^2
+    PS[4,4] <- 1 - sum(U[1:3, 4]^2)
+    PS[3, 5] <- 1-U[1,5]^2-U[2,5]^2
+    PS[4, 5]<- 1-U[1,5]^2-U[2,5]^2-U[3,5]^2
+    PS[5, 5]<- 1 - sum(U[1:4, 5]^2)
+
+    ## Canonical partial correlations
+    Z <- diag(5)
+    Z[1,2:5] <- U[1, 2:5]
+    Z[2,3] <- U[2,3]/sqrt(PS[2,3])
+    Z[2,4] <- U[2,4]/sqrt(PS[2,4])
+    Z[3,4] <- U[3,4]/sqrt(PS[3,4])
+    Z[2,5] <- U[2,5]/sqrt(PS[2,5])
+    Z[3,5] <- U[3,5]/sqrt(PS[3,5])
+    Z[4,5] <- U[4,5]/sqrt(PS[4,5])
+
+    ## transformed parameter
+    yt <- atanh(Z)
+    diag(yt) <- 0
+    yt <- yt[yt!=0]
+
+    ## Log determinant of Jacobian of transformation from X to y via U and Z
+    logDetJac <- 0.5*(sum(3*log(1-Z[1,2:5]^2))+
+                   sum(2*log(1-Z[2,3:5]^2))+
+                   sum(log(1-Z[3,4:5]^2))) -2*sum(log(cosh(yt)))
+
+    
+    set.seed(1)
+    Sigma <- diag(sds)%*%R%*%diag(sds)
+
+    n <- 100
+    p <- 5
+    y <- t(t(chol(Sigma))%*%matrix(rnorm(p*n),p,n))
+
+    uppertri_mult_diag <- nimbleFunction(
+        run = function(mat = double(2), vec = double(1)) {
+            returnType(double(2))
+            p <- length(vec)
+            out <- matrix(nrow = p, ncol = p, init = FALSE)
+            for(i in 1:p)
+                out[ , i] <- mat[ , i] * vec[i]
+            return(out)
+        })
+
+    thin <- 10
+    
+    code <- nimbleCode({
+        for(i in 1:n)
+            y[i, 1:p] ~ dmnorm(mu[1:p], cholesky = U[1:p, 1:p], prec_param = 0)
+        U[1:p,1:p] <- uppertri_mult_diag(Ustar[1:p, 1:p], sds[1:p])
+        Ustar[1:p,1:p] ~ dlkj_corr_cholesky(1.3, p)
+    })
+    m <- nimbleModel(code, constants = list(n = n, p = p, mu = rep(0, p)),
+                     data = list(y = y), inits = list(sds = sds, Ustar = U))
+    cm <- compileNimble(m)
+
+    conf <- configureMCMC(m, nodes = NULL, thin = thin)
+    conf$addSampler('Ustar', 'RW_block_lkj_corr_cholesky',
+                    control = list(adaptInterval = 50, adaptFactorExponent = .25, scale = 0.1))
+    mcmc <- buildMCMC(conf)
+    cmcmc <- compileNimble(mcmc, project = m)
+
+    mcmc$samplerFunctions[[1]]$transform(m$Ustar)
+    expect_identical(mcmc$samplerFunctions[[1]]$y, yt)
+    expect_identical(mcmc$samplerFunctions[[1]]$partialSums, PS)
+    expect_identical(mcmc$samplerFunctions[[1]]$z, Z)
+    expect_identical(mcmc$samplerFunctions[[1]]$logDetJac, logDetJac)
+
+    mcmc$samplerFunctions[[1]]$transform(m$Ustar)
+    expect_identical(mcmc$samplerFunctions[[1]]$y, yt)
+    expect_identical(mcmc$samplerFunctions[[1]]$partialSums, PS)
+    expect_identical(mcmc$samplerFunctions[[1]]$z, Z)
+    expect_identical(mcmc$samplerFunctions[[1]]$logDetJac, logDetJac)
+
+    nIts <- 50000
+    out <- runMCMC(cmcmc, 50000)
+    outSigma <- matrix(0, nrow(out), p*p)
+    for(i in 1:nrow(outSigma))
+        outSigma[i,] <- t(matrix(out[i,], p, p)) %*% matrix(out[i,],p,p)
+                
+    conf <- configureMCMC(m, nodes = NULL, thin = 10)
+    conf$addSampler('Ustar', 'RW_lkj_corr_cholesky', control = list(scale = .1))
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc,project = m)
+    out2 <- runMCMC(cmcmc, nIts)
+
+    for(i in 1:nrow(outSigma2))
+        outSigma2[i,] <- t(matrix(out2[i,], p, p)) %*% matrix(out2[i,],p,p)
+    
+    ## Compare sampler output to Stan results (see code in paciorek's lkj_testing.R file)
+    stan_means <- c(1.00000000, 0.87580832, 0.41032781 -0.56213296, 0.09006483, 0.87580832
+                    1.00000000, 0.18682787 -0.33699708, 0.12656145, 0.41032781, 0.18682787
+                    1.00000000, 0.11984278, 0.10919301 -0.56213296 -0.33699708, 0.11984278
+                    1.00000000, 0.10392069, 0.09006483, 0.12656145, 0.10919301, 0.10392069
+                    1.00000000)
+    stan_sds <- c(0.000000e+00, 1.789045e-02, 6.244945e-02, 5.393811e-02, 7.928870e-02
+                  1.789045e-02, 0.000000e+00, 8.376820e-02, 7.448420e-02, 8.411652e-02
+                  6.244945e-02, 8.376820e-02, 8.600611e-17, 8.132228e-02, 9.242809e-02
+                  5.393811e-02, 7.448420e-02, 8.132228e-02, 8.711701e-17, 8.605078e-02
+                  7.928870e-02, 8.411652e-02, 9.242809e-02, 8.605078e-02, 1.227811e-16)
+
+    nim_means_block <- apply(outSigma[1001:nrow(out), ], 2, mean)
+    nim_sds_block <- apply(outSigma[1001:nrow(out), ], 2, sd)
+    nim_means_uni <- apply(outSigma2[1001:nrow(out), ], 2, mean)
+    nim_sds_uni <- apply(outSigma2[1001:nrow(out), ], 2, sd)
+
+    cols <- matrix(1:(p*p), p, p)
+    cols <- cols[upper.tri(cols)]
+
+    expect_equal(stan_means[cols], nim_means_block[cols], tolerance = 0.03)
+    expect_equal(stan_means[cols], nim_means_uni[cols], tolerance = 0.03)
+    expect_equal(stan_sds[cols], nim_sds_block[cols], tolerance = 0.005)
+    expect_equal(stan_sds[cols], nim_sds_uni[cols], tolerance = 0.005)
+    
+    ## Compare sampler output to truth
     code <- nimbleCode({
         for(i in 1:n) {
             y[i, 1:J] ~ dmnorm(mu[1:J], cov = R[1:J, 1:J])
@@ -978,7 +1112,8 @@ test_that('using RW_lkj_corr_cholesky', {
     J <- 5
     n <- 2000
     set.seed(1)
-    mat <- rlkj_corr_cholesky(1, 1, J)
+    eta <- 1.3
+    mat <- rlkj_corr_cholesky(1, eta, J)
     y <- t(t(mat) %*% matrix(rnorm(n*J), J, n))
     m <- nimbleModel(code, data = list(y = y), constants = list(n = n, J = J),
                      inits = list(eta = 1, mu = rep(0, J), U = diag(J)))
@@ -986,88 +1121,26 @@ test_that('using RW_lkj_corr_cholesky', {
     set.seed(1)
     conf <- configureMCMC(m)
     samplers <- conf$getSamplers()
-    expect_equal(samplers[[1]]$name, 'RW_lkj_corr_cholesky')
+    expect_equal(samplers[[1]]$name, 'RW_block_lkj_corr_cholesky')
     mcmc <- buildMCMC(conf)
     cm <- compileNimble(m)
     cmcmc <- compileNimble(mcmc, project = m)
-    samples <- runMCMC(cmcmc, niter = 1500, nburnin = 500)
+    samples <- runMCMC(cmcmc, niter = 2500, nburnin = 500)
+    postMean <- colMeans(samples)
+    names(postMean) <- NULL
+    expect_equal(postMean, c(mat), tolerance = 0.05, info = "RW_block_lkj posterior not close to truth")
+
+    set.seed(1)
+    conf <- configureMCMC(m, nodes = NULL)
+    conf$addSampler('U', 'RW_lkj_corr_cholesky')
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc, project = m)
+    samples <- runMCMC(cmcmc, niter = 2500, nburnin = 500)
     postMean <- colMeans(samples)
     names(postMean) <- NULL
     expect_equal(postMean, c(mat), tolerance = 0.05, info = "RW_lkj posterior not close to truth")
-    
-    ## Implement sampler inefficiently but with clear(er) matrix calculations and compare to uncompiled MCMC.
-    ## Also note partialSums and z are transposed relative to U.
-    set.seed(1)
-    cm$eta <- 1.3
-    cm$simulate('U')
-    cm$calculate()
-    saveU <- cm$U
-    
-    set.seed(1)
-    conf <- configureMCMC(m)
-    conf$removeSamplers('U')
-    ## Use scale s.t. some but not all proposals are accepted.
-    conf$addSampler('U[1:5, 1:5]', 'RW_lkj_corr_cholesky', control = list(scale = 0.01))
-    mcmc <- buildMCMC(conf)
-    cmcmc <- compileNimble(mcmc, project = m, resetFunctions = TRUE)
-    cmcmc$run(2)
-    smp <- as.matrix(cmcmc$mvSamples)
-    
-    set.seed(1)
-    calcNodesNoSelf <- m$getDependencies('U', self = FALSE)
-    m$eta <- cm$eta
-    m$U <- saveU
-    m$calculate()
-    d <- J
-    for(it in 1:2) {
-        x <- m$U
-        z <- matrix(0, d, d)
-        z[2:d, 1] <- x[1, 2:d]
-        partialSums <- matrix(0, d, d)
-        partialSums[, 1] <- 1
-        partialSums[2,2] <- 1-x[1,2]^2
-        for(i in 3:d) {
-            for(j in 2:(i-1)) {
-                partialSums[i, j] <- partialSums[i, j-1] - x[j-1, i]^2
-                z[i, j] <- x[j, i] / sqrt(partialSums[i, j])
-            }
-            partialSums[i, i] <- partialSums[i, i-1] - x[i-1, i]^2
-        }
-        diag(z) <- 1
-        cnt <- 0
-        for(i in 2:d) {
-            currentValue <- m$U[1:d, i]
-            propValue <- currentValue
-            partialSumsProp <- partialSums 
-            for(j in 1:(i-1)) {
-                cnt <- cnt + 1
-                yCurrent <- atanh(z[i, j])
-                yProp <- rnorm(1, yCurrent, 0.01)  
-                zProp <- tanh(yProp)
-                propValue[j] <- zProp * sqrt(partialSumsProp[i,j])
-                for(jprime in (j+1):i) {
-                    partialSumsProp[i,jprime] <- partialSumsProp[i,jprime-1] - propValue[jprime-1]^2
-                    propValue[jprime] <- z[i, jprime] * sqrt(partialSumsProp[i,jprime])
-                }
-                m$U[j:i, i] <- propValue[j:i] 
-                logMHR <- calculateDiff(m, calcNodesNoSelf) + calculateDiff(m, 'U')
-                logMHR <- logMHR + 2*(log(cosh(yCurrent)) - log(cosh(yProp)))
-                logMHR <- logMHR + 0.5*(sum(log(partialSumsProp[i, 1:(i-1)]) - log(partialSums[i, 1:(i-1) ]), na.rm = TRUE))
-                jump <- decide(logMHR)
-                if(jump) {
-                    partialSums <- partialSumsProp
-                    currentValue <- propValue
-                    m$calculate()  # shouldn't be needed but is a fall-back
-                    z[i, j] <- zProp # shouldn't be needed
-                } else {
-                    m$U[, i] <- currentValue
-                    m$calculate()   
-                    partialSumsProp <- partialSums 
-                }
-            }    
-        }
-    }
-    expect_identical(m$U, matrix(smp[2, ], J), "non-comparable manual MCMC and uncompiled MCMC for RW_lkj")
+
 })
 
 ## testing conjugate MVN updating with ragged dependencies;
