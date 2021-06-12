@@ -179,9 +179,82 @@ test_that('parameterTransform for dirichlet distribution', {
 })
 
 
+test_that('parameterTransform for lkj correlation matrices', {
+    ## Correlation matrix
+    R <- matrix(c(
+        1, 0.9, .3, -.5, .1,
+        0.9, 1, .15, -.3, .1,
+        .3, .15, 1, .3, .1,
+        -.5, -.3, .3, 1, .1,
+        .1,.1,.1,.1, 1)
+      , 5, 5)
 
+    U <- chol(R)
 
+    ## Partial sums of columns of U
+    PS <- matrix(0, 5, 5)
+    PS[1,] <- 1
+    PS[2, 2:5] <- 1-U[1, 2:5]^2
+    PS[3, 3] <- 1 - sum(U[1:2, 3]^2)
+    PS[3, 4] <- 1-U[1,4]^2-U[2,4]^2
+    PS[4,4] <- 1 - sum(U[1:3, 4]^2)
+    PS[3, 5] <- 1-U[1,5]^2-U[2,5]^2
+    PS[4, 5]<- 1-U[1,5]^2-U[2,5]^2-U[3,5]^2
+    PS[5, 5]<- 1 - sum(U[1:4, 5]^2)
+    ## Canonical partial correlations
+    Z <- diag(5)
+    Z[1,2:5] <- U[1, 2:5]
+    Z[2,3] <- U[2,3]/sqrt(PS[2,3])
+    Z[2,4] <- U[2,4]/sqrt(PS[2,4])
+    Z[3,4] <- U[3,4]/sqrt(PS[3,4])
+    Z[2,5] <- U[2,5]/sqrt(PS[2,5])
+    Z[3,5] <- U[3,5]/sqrt(PS[3,5])
+    Z[4,5] <- U[4,5]/sqrt(PS[4,5])
 
+    ## Unconstrained transformed parameters
+    yt <- atanh(Z)
+    diag(yt) <- 0
+    yt <- yt[yt!=0]
+
+    ## log of determinant of Jacobian per Stan Ref Manual (based on eq'n 11 of Lewandowski, Kurowicka and Joe 2009)
+    logDetJac <- 0.5*(sum(3*log(1-Z[1,2:5]^2))+
+                   sum(2*log(1-Z[2,3:5]^2))+
+                   sum(log(1-Z[3,4:5]^2))) -2*sum(log(cosh(yt)))
+
+    set.seed(1)
+    n <- 100
+    p <- 5
+    y <- t(t(chol(Sigma))%*%matrix(rnorm(p*n),p,n))
+    
+    code <- nimbleCode({
+        for(i in 1:n)
+            y[i, 1:p] ~ dmnorm(mu[1:p], cholesky = U[1:p, 1:p], prec_param = 0)
+        U[1:p,1:p] ~ dlkj_corr_cholesky(eta = 1.3, p)
+    })
+    m <- nimbleModel(code, constants = list(n = n, p = p, mu = rep(0, p)),
+                     data = list(y = y), inits = list(sigma = sds, U = U))
+    
+    pt <- parameterTransform(m, nodes = 'Ustar')
+    yt_from_pt <- pt$transform(m$Ustar)
+    U_from_pt  <- pt$inverseTransform(yt)
+    logDetJac_from_pt  <- pt$logDetJacobian(yt)
+
+    cm <- compileNimble(m)
+    cpt <- compileNimble(pt, project = m)
+    cyt_from_pt <- cpt$transform(m$Ustar)
+    cU_from_pt  <- cpt$inverseTransform(yt)
+    clogDetJac_from_pt  <- cpt$logDetJacobian(yt)
+
+    expect_identical(yt, yt_from_pt)
+    expect_identical(U, matrix(U_from_pt, p, p))
+    expect_identical(logDetJac, logDetJac_from_pt)
+    
+    expect_identical(yt, cyt_from_pt)
+    expect_identical(U, matrix(cU_from_pt, p, p))
+    expect_identical(logDetJac, clogDetJac_from_pt)
+
+})
+    
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
 

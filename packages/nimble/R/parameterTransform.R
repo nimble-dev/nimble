@@ -177,13 +177,15 @@ parameterTransform <- nimbleFunction(
                               }
                           },
                           {                                        ## 9: LKJ
-                              dd <- transformData[iNode,DATA1]
-                              pp <- transformData[iNode,DATA2]
+                              dd <- transformData[iNode,DATA1]  # nrow of matrix
+                              pp <- transformData[iNode,DATA2]  # number of transformed params
                               theseTransformed <- nimNumeric(pp)
-                              theseValuesMatrix <- nimArray(theseValues, dim = c(dd, dd))
+                              theseValuesMatrix <- nimArray(theseValues, dim = c(dd, dd))  # U in matrix form
                               if(dd > 1) {
                                   cnt <- 1
-                                  ## More efficient to calc partialSum at start of 'i' loop
+                                  ## Length of each column of U is 1.
+                                  ## We first produce the canonical partial correlations and then apply atanh()
+                                  ## to make the unconstrained parameters..
                                   for(j in 2:dd) {
                                       theseTransformed[cnt] <- atanh(theseValuesMatrix[1, j])
                                       cnt <- cnt + 1
@@ -191,6 +193,8 @@ parameterTransform <- nimbleFunction(
                                           partialSum <- 1 
                                           for(i in 2:(j-1)) {
                                               partialSum <- partialSum - theseValuesMatrix[i-1, j]^2
+                                              ## Transformed value is atanh of the proportion of the
+                                              ## remaining correlation (which is in 'partialSum').
                                               theseTransformed[cnt] <- atanh(theseValuesMatrix[i, j] / sqrt(partialSum))
                                               cnt <- cnt + 1
                                           }
@@ -256,19 +260,21 @@ parameterTransform <- nimbleFunction(
                                   ## Fill in j'th column
                                   for(j in 2:dd) {
                                       cntI <- (j-1)*dd + 1
+                                      ## Get elements of U by going from unconstrained to canonical partial correlations.
                                       theseInvTransformed[cntI] <- tanh(theseValues[cntT])
                                       partialSum <- 1 - theseInvTransformed[cntI]^2
                                       cntI <- cntI + 1
                                       cntT <- cntT + 1
                                       if(j > 2) {
                                           for(i in 2:(j-1)) {
+                                              ## Value of U based on 'normalizing' partial correlation such that length of column of U is 1.
                                               theseInvTransformed[cntI] <- tanh(theseValues[cntT]) * sqrt(partialSum)
                                               partialSum <- partialSum - theseInvTransformed[cntI]^2
                                               cntI <- cntI + 1
                                               cntT <- cntT + 1
                                           }
                                       }
-                                      theseInvTransformed[cntI] <- sqrt(partialSum)
+                                      theseInvTransformed[cntI] <- sqrt(partialSum)  # Column must sum to 1.
                                   }
                               }
                           })
