@@ -1936,7 +1936,7 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
         y                   <- numeric(d)
         partialSums         <- array(0, c(p, p))  # 1-x_{21}^2, 1-x_{31}^2, 1-x_{31}^2-x_{32}^2, ...
         partialSums[1, ]    <- 1
-        logSum              <- 0
+        logDetJac           <- 0
         
         ## checks
         if(!inherits(propCov, 'matrix'))       stop('propCov must be a matrix\n')
@@ -1959,23 +1959,23 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
             cnt <- 1
             for(i in 2:p) {
                 model[[target]][1, i] <<- tanh(yPropValueVector[cnt])
-                partialSums <<- 1 - model[[target]][1, i]^2
-                logMHR <- logMHR - 2*log(cosh(yPropValueVector[cnt])) + 0.5*(p-2)*log(partialSums)
+                partialSumsProp <<- 1 - model[[target]][1, i]^2
+                logMHR <- logMHR - 2*log(cosh(yPropValueVector[cnt])) + 0.5*(p-2)*log(partialSumsProp)
                 cnt <- cnt+1
                 if(i > 2) {
                     for(j in 2:(i-1)) {
                         tmp <- tanh(yPropValueVector[cnt])
-                        model[[target]][j, i] <<- tmp * sqrt(partialSums)
+                        model[[target]][j, i] <<- tmp * sqrt(partialSumsProp)
                         logMHR <- logMHR - 2*log(cosh(yPropValueVector[cnt])) +
                             0.5*(p-j-1)*log(1-tmp^2)
                         cnt <- cnt+1
-                        partialSums <<- partialSums - model[[target]][j, i]^2
+                        partialSumsProp <<- partialSumsProp - model[[target]][j, i]^2
                     }
                 }
-                model[[target]][i, i] <<- sqrt(partialSums)
+                model[[target]][i, i] <<- sqrt(partialSumsProp)
             }
             ## Adjust for determinant term from initial values
-            logMHR <- logMHR - logDet
+            logMHR <- logMHR - logDetJac
 
             lpD <- calculateDiff(model, calcNodesProposalStage)
             if(lpD == -Inf) {
@@ -1995,18 +1995,18 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
         transform = function(x = double(2)) {
             z[1, 2:p] <<- x[1, 2:p]
             y[1] <<- atanh(z[1, 2])
-            logDet <<- -2*log(cosh(y[1])) + 0.5*(p-2)*sum(log(1-z[1, 2:p]^2))
+            logDetJac <<- -2*log(cosh(y[1])) + 0.5*(p-2)*sum(log(1-z[1, 2:p]^2))
             cnt <- 2
             partialSums[2, 2] <<- 1 - x[1, 2]^2
             for(i in 3:p) {
                 y[cnt] <<- atanh(z[1, i])
-                logDet <<- logDet - 2*log(cosh(y[cnt]))
+                logDetJac <<- logDetJac - 2*log(cosh(y[cnt]))
                 cnt <- cnt+1
                 partialSums[2, i] <<- 1 - x[1, i]^2
                 for(j in 2:(i-1)) {
                     z[j, i] <<- x[j, i] / sqrt(partialSums[j, i])
                     y[cnt] <<- atanh(z[j, i])
-                    logDet <<- logDet - 2*log(cosh(y[cnt])) + 0.5*(p-j-1)*log(1-z[j, i]^2)
+                    logDetJac <<- logDetJac - 2*log(cosh(y[cnt])) + 0.5*(p-j-1)*log(1-z[j, i]^2)
                     cnt <- cnt+1
                     partialSums[j+1, i] <<- partialSums[j, i] - x[j, i]^2
                 }
