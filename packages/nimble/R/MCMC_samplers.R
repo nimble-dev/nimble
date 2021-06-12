@@ -1620,8 +1620,13 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
                 model[[target]][j:i, i] <<- propValue[j:i] 
                 logMHR <- calculateDiff(model, calcNodesNoSelf) + calculateDiff(model, target)
                 ## Adjust MHR to account for non-symmetric proposal by adjusting prior on X to transformed scale (i.e., y).
-                ## This follows Stan reference manual, which is based on eqn 11 of Lewandowski et al. 2009
                 ## cosh component is for dz/dy and other component is for dx/dz = dx/du * du/dz where 'x' is the corr matrix.
+                ## This follows Stan reference manual Section 10.9 (for version 2.27),
+                ## which is based on eqn 11 of Lewandowski et al. 2009.
+                ## There is an important subtlety here - the transformation is from y to X not y to U, so the Jacobian
+                ## needs the dx/du piece, which is not in Section 10.12 of the Stan reference manual.
+                ## This is because while we write the prior in terms of U in the model for computational efficiency,
+                ## it is really a prior on the correlation matrix X.
                 logMHR <- logMHR - 2*(log(cosh(yProp)) - log(cosh(yCurrent))) +
                     0.5*(d-j-1)*(log(1-zProp^2) - log(1-z[j, i]^2))
 
@@ -1760,7 +1765,11 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
                 partialSumsProp <<- 1 - model[[target]][1, i]^2
                 ## Adjust for prior for y using determinant of y to x transformation;
                 ## cosh term is from dz/dy and partialSumsProp terms is from dx/dz = dx/du * du/dz
-                ## See Stan ref manual, which is based on eqn 11 of Lewandowski et al. 2009
+                ## See Stan ref manual Section 10.9 (for Version 2.27), which is based on eqn 11 of Lewandowski et al. 2009.
+                ## There is an important subtlety here - the transformation is from y to X not y to U, so the Jacobian
+                ## needs the dx/du piece, which is not in Section 10.12 of the Stan reference manual.
+                ## This is because while we write the prior in terms of U in the model for computational efficiency,
+                ## it is really a prior on the correlation matrix X.
                 logMHR <- logMHR - 2*log(cosh(yPropValueVector[cnt])) + 0.5*(p-2)*log(partialSumsProp)
                 cnt <- cnt+1
                 if(i > 2) {
@@ -2399,9 +2408,25 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item scale. The initial value of the scalar multiplier for the multivariate normal Metropolis-Hastings proposal covariance.  If adaptive = FALSE, scale will never change. (default = 1)
 #' }
 #'
+#' @section RW_block_lkj_corr_cholesky sampler:
+#'
+#' This sampler is designed for sampling non-conjugate LKJ correlation Cholesky factor distributions. The sampler performs a blocked Metropolis-Hastings update following a transformation to an unconstrained scale (using the signed stickbreaking approach documented in Section 10.12 of the Stan Language Reference Manual, version 2.27). 
+#'
+#' The \code{RW_block_lkj_corr_cholesky} sampler accepts the following control list elements:
+#' \itemize{
+#' \item adaptive. A logical argument, specifying whether the sampler should adapt the scale (a coefficient for the entire proposal covariance matrix) and propCov (the multivariate normal proposal covariance matrix) throughout the course of MCMC execution.  If only the scale should undergo adaptation, this argument should be specified as TRUE. (default = TRUE)
+#' \item adaptScaleOnly. A logical argument, specifying whether adaption should be done only for scale (TRUE) or also for provCov (FALSE).  This argument is only relevant when adaptive = TRUE.  When adaptScaleOnly = FALSE, both scale and propCov undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When adaptScaleOnly = TRUE, only the proposal scale is adapted. (default = FALSE)
+#' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the RW_block sampler will perform its adaptation procedure, based on the past adaptInterval iterations. (default = 200)
+#' \item adaptFactorExponent. Exponent controling the rate of decay of the scale adaptation factor.  See Shaby and Wells, 2011, for details. (default = 0.8)
+#' \item scale. The initial value of the scalar multiplier for propCov.  If adaptive = FALSE, scale will never change. (default = 1)
+#' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the character string 'identity', in which case the identity matrix of the appropriate dimension will be used for the initial proposal covariance matrix. (default = 'identity')
+#' }
+#'
+#' This is the default sampler for the LKJ distribution. However, blocked samplers may perform poorly if the adaptation configuration is poorly chosen. See the comments in the RW_block section of this documentation.#'
+#'
 #' @section RW_lkj_corr_cholesky sampler:
 #'
-#' This sampler is designed for sampling non-conjugate LKJ correlation Cholesky factor distributions. The sampler performs individual Metropolis-Hastings updates following a transformation to an unconstrained scale (using the signed stickbreaking approach documented in Section 10.12 of the Stan Language Reference Manual, version 2.22).
+#' This sampler is designed for sampling non-conjugate LKJ correlation Cholesky factor distributions. The sampler performs individual Metropolis-Hastings updates following a transformation to an unconstrained scale (using the signed stickbreaking approach documented in Section 10.12 of the Stan Language Reference Manual, version 2.27). 
 #'
 #' The \code{RW_lkj_corr_cholesky} sampler accepts the following control list elements:
 #' \itemize{
@@ -2411,6 +2436,8 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item scale. The initial value of the scalar multiplier for the multivariate normal Metropolis-Hastings proposal covariance.  If adaptive = FALSE, scale will never change. (default = 1)
 #' }
 #'
+#' Note that this sampler is likely run much more slowly than the blocked sampler for the LKJ distribution, as updating each single element will generally incur the full cost of updating all dependencies of the entire matrix. 
+#' 
 #' @section CAR_normal sampler:
 #'
 #' The CAR_normal sampler operates uniquely on improper (intrinsic) Gaussian conditional autoregressive (CAR) nodes, those with a \code{dcar_normal} prior distribution.  It internally assigns one of three univariate samplers to each dimension of the target node: a posterior predictive, conjugate, or RW sampler; however these component samplers are specialized to operate on dimensions of a \code{dcar_normal} distribution.
