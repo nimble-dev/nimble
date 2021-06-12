@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<html lang="" xml:lang="">
 <head>
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title></title>
+  <title>Chapter 11 Writing simple nimbleFunctions | NimbleUserManual.utf8</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.12 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.19 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="" />
+  <meta property="og:title" content="Chapter 11 Writing simple nimbleFunctions | NimbleUserManual.utf8" />
   <meta property="og:type" content="book" />
   
   <meta property="og:image" content="nimble-icon.png" />
@@ -16,7 +16,7 @@
   <meta name="github-repo" content="nimble-dev/nimble" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="" />
+  <meta name="twitter:title" content="Chapter 11 Writing simple nimbleFunctions | NimbleUserManual.utf8" />
   
   <meta name="twitter:description" content="This is the NIMBLE User Manual." />
   <meta name="twitter:image" content="nimble-icon.png" />
@@ -29,8 +29,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
-<link rel="prev" href="overview.html">
-<link rel="next" href="cha-user-defined.html">
+<link rel="prev" href="overview.html"/>
+<link rel="next" href="cha-user-defined.html"/>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -38,6 +38,9 @@
 <link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
 
 
 
@@ -48,41 +51,66 @@
 
 
 <style type="text/css">
-div.sourceCode { overflow-x: auto; }
-table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
-  margin: 0; padding: 0; vertical-align: baseline; border: none; }
-table.sourceCode { width: 100%; line-height: 100%; }
-td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
-td.sourceCode { padding-left: 5px; }
-code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
-code > span.dt { color: #902000; } /* DataType */
-code > span.dv { color: #40a070; } /* DecVal */
-code > span.bn { color: #40a070; } /* BaseN */
-code > span.fl { color: #40a070; } /* Float */
-code > span.ch { color: #4070a0; } /* Char */
-code > span.st { color: #4070a0; } /* String */
-code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
-code > span.ot { color: #007020; } /* Other */
-code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
-code > span.fu { color: #06287e; } /* Function */
-code > span.er { color: #ff0000; font-weight: bold; } /* Error */
-code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
-code > span.cn { color: #880000; } /* Constant */
-code > span.sc { color: #4070a0; } /* SpecialChar */
-code > span.vs { color: #4070a0; } /* VerbatimString */
-code > span.ss { color: #bb6688; } /* SpecialString */
-code > span.im { } /* Import */
-code > span.va { color: #19177c; } /* Variable */
-code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-code > span.op { color: #666666; } /* Operator */
-code > span.bu { } /* BuiltIn */
-code > span.ex { } /* Extension */
-code > span.pp { color: #bc7a00; } /* Preprocessor */
-code > span.at { color: #7d9029; } /* Attribute */
-code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
-code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+a.sourceLine { display: inline-block; line-height: 1.25; }
+a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
+a.sourceLine:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+a.sourceLine { text-indent: -1em; padding-left: 1em; }
+}
+pre.numberSource a.sourceLine
+  { position: relative; left: -4em; }
+pre.numberSource a.sourceLine::before
+  { content: attr(title);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; pointer-events: all; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {  }
+@media screen {
+a.sourceLine::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
 <link rel="stylesheet" href="style.css" type="text/css" />
@@ -100,7 +128,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.9.0</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.11.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -232,6 +260,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="10.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:crp"><i class="fa fa-check"></i><b>10.2</b> Chinese Restaurant Process model</a><ul>
 <li class="chapter" data-level="10.2.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-density-2"><i class="fa fa-check"></i><b>10.2.1</b> Specification and density</a></li>
 <li class="chapter" data-level="10.2.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:excrp"><i class="fa fa-check"></i><b>10.2.2</b> Example</a></li>
+<li class="chapter" data-level="10.2.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:extensionscrp"><i class="fa fa-check"></i><b>10.2.3</b> Extensions</a></li>
 </ul></li>
 <li class="chapter" data-level="10.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:sb"><i class="fa fa-check"></i><b>10.3</b> Stick-breaking model</a><ul>
 <li class="chapter" data-level="10.3.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-function"><i class="fa fa-check"></i><b>10.3.1</b> Specification and function</a></li>
@@ -327,6 +356,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
+<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
       </nav>
@@ -348,39 +378,63 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <h1><span class="header-section-number">Chapter 11</span> Writing simple nimbleFunctions</h1>
 <div id="sec:RC-intro" class="section level2">
 <h2><span class="header-section-number">11.1</span> Introduction to simple nimbleFunctions</h2>
-<p><em>nimbleFunctions</em> are the heart of programming in NIMBLE. In this chapter, we introduce simple nimbleFunctions that contain only one function to be executed, in either compiled or uncompiled form, but no setup function or additional methods.</p>
-<p>Defining a simple nimbleFunction is like defining an R function: <code>nimbleFunction</code> returns a function that can be executed, and it can also be compiled. Simple nimbleFunctions are useful for doing math or the other kinds of processing available in NIMBLE when no model or modelValues is needed. These can be used for any purpose in R programming. They can also be used as new functions and distributions in NIMBLE’s extension of BUGS (Chapter <a href="cha-user-defined.html#cha:user-defined">12</a>).</p>
-<p>Here’s a basic example implementing the textbook calculation of least squares estimation of linear regression parameters<a href="#fn19" class="footnoteRef" id="fnref19"><sup>19</sup></a>:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">solveLeastSquares &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
-    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">X =</span> <span class="kw">double</span>(<span class="dv">2</span>), <span class="dt">y =</span> <span class="kw">double</span>(<span class="dv">1</span>)) { <span class="co"># type declarations</span>
-        ans &lt;-<span class="st"> </span><span class="kw">inverse</span>(<span class="kw">t</span>(X) <span class="op">%*%</span><span class="st"> </span>X) <span class="op">%*%</span><span class="st"> </span>(<span class="kw">t</span>(X) <span class="op">%*%</span><span class="st"> </span>y)
-        <span class="kw">return</span>(ans)
-        <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">2</span>))  <span class="co"># return type declaration</span>
-    } )
-
-X &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">rnorm</span>(<span class="dv">400</span>), <span class="dt">nrow =</span> <span class="dv">100</span>)
-y &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">100</span>)
-<span class="kw">solveLeastSquares</span>(X, y)</code></pre></div>
+<p><em>nimbleFunctions</em> are the heart of programming in NIMBLE. In this
+chapter, we introduce simple nimbleFunctions that contain only one
+function to be executed, in either compiled or uncompiled form, but no
+setup function or additional methods.</p>
+<p>Defining a simple nimbleFunction is like defining an R function:
+<code>nimbleFunction</code> returns a function that can be executed, and it
+can also be compiled. Simple nimbleFunctions are useful for doing math or the other
+kinds of processing available in NIMBLE when no model or modelValues
+is needed. These can be used for any purpose in R programming. They
+can also be used as new functions and distributions in NIMBLE’s
+extension of BUGS (Chapter <a href="cha-user-defined.html#cha:user-defined">12</a>).</p>
+<p>Here’s a basic example implementing the textbook calculation of
+least squares estimation of linear regression parameters<a href="#fn19" class="footnote-ref" id="fnref19"><sup>19</sup></a>:</p>
+<div class="sourceCode" id="cb215"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb215-1" title="1">solveLeastSquares &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
+<a class="sourceLine" id="cb215-2" title="2">    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">X =</span> <span class="kw">double</span>(<span class="dv">2</span>), <span class="dt">y =</span> <span class="kw">double</span>(<span class="dv">1</span>)) { <span class="co"># type declarations</span></a>
+<a class="sourceLine" id="cb215-3" title="3">        ans &lt;-<span class="st"> </span><span class="kw">inverse</span>(<span class="kw">t</span>(X) <span class="op">%*%</span><span class="st"> </span>X) <span class="op">%*%</span><span class="st"> </span>(<span class="kw">t</span>(X) <span class="op">%*%</span><span class="st"> </span>y)</a>
+<a class="sourceLine" id="cb215-4" title="4">        <span class="kw">return</span>(ans)</a>
+<a class="sourceLine" id="cb215-5" title="5">        <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">2</span>))  <span class="co"># return type declaration</span></a>
+<a class="sourceLine" id="cb215-6" title="6">    } )</a>
+<a class="sourceLine" id="cb215-7" title="7"></a>
+<a class="sourceLine" id="cb215-8" title="8">X &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">rnorm</span>(<span class="dv">400</span>), <span class="dt">nrow =</span> <span class="dv">100</span>)</a>
+<a class="sourceLine" id="cb215-9" title="9">y &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">100</span>)</a>
+<a class="sourceLine" id="cb215-10" title="10"><span class="kw">solveLeastSquares</span>(X, y)</a></code></pre></div>
 <pre><code>##              [,1]
 ## [1,]  0.088547575
 ## [2,]  0.002025635
 ## [3,] -0.090387283
 ## [4,] -0.072660391</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">CsolveLeastSquares &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(solveLeastSquares)
-<span class="kw">CsolveLeastSquares</span>(X, y)</code></pre></div>
+<div class="sourceCode" id="cb217"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb217-1" title="1">CsolveLeastSquares &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(solveLeastSquares)</a>
+<a class="sourceLine" id="cb217-2" title="2"><span class="kw">CsolveLeastSquares</span>(X, y)</a></code></pre></div>
 <pre><code>##              [,1]
 ## [1,]  0.088547575
 ## [2,]  0.002025635
 ## [3,] -0.090387283
 ## [4,] -0.072660391</code></pre>
-<p>In this example, we fit a linear model for 100 random response values (<code>y</code>) to four columns of randomly generated explanatory variables (<code>X</code>). We ran the nimbleFunction <code>solveLeastSquares</code> uncompiled, natively in R, allowing testing and debugging (Section <a href="cha-progr-with-models.html#sec:debugging">15.7</a>). Then we compiled it and showed that the compiled version does the same thing, but faster<a href="#fn20" class="footnoteRef" id="fnref20"><sup>20</sup></a>. NIMBLE’s compiler creates C++ that uses the Eigen (<a href="http://eigen.tuxfamily.org" class="uri">http://eigen.tuxfamily.org</a>) library for linear algebra.</p>
-<p>Notice that the actual NIMBLE code is written as an R function definition that is passed to <code>nimbleFunction</code> as the <code>run</code> argument. Hence we call it the <em>run</em> code. run code is written in the NIMBLE language. This is similar to a narrow subset of R with some additional features. Formally, we view it as a distinct language that encompasses what can be compiled from a nimbleFunction.</p>
+<p>In this example, we fit a linear model for 100 random response values (<code>y</code>) to four columns of
+randomly generated explanatory variables (<code>X</code>). We ran the
+nimbleFunction
+<code>solveLeastSquares</code> uncompiled,
+natively in R, allowing testing and debugging (Section <a href="cha-progr-with-models.html#sec:debugging">15.7</a>). Then we compiled it and showed that the compiled version does the same thing,
+but faster<a href="#fn20" class="footnote-ref" id="fnref20"><sup>20</sup></a>. NIMBLE’s compiler creates C++ that uses the Eigen (<a href="http://eigen.tuxfamily.org">http://eigen.tuxfamily.org</a>)
+library for linear algebra.</p>
+<p>Notice that the actual NIMBLE code is written as an R function
+definition that is passed to <code>nimbleFunction</code> as the <code>run</code>
+argument. Hence we call it the <em>run</em> code. run code is
+written in the NIMBLE language. This is similar to a narrow subset of
+R with some additional features. Formally, we view it as a distinct language
+that encompasses what can be compiled from a nimbleFunction.</p>
 <p>To write nimbleFunctions, you will need to learn:</p>
 <ul>
-<li>what R functions are supported for NIMBLE compilation and any ways they differ from their regular R counterparts;</li>
+<li>what R functions are supported for NIMBLE compilation and any
+ways they differ from their regular R counterparts;</li>
 <li>how NIMBLE handles types of variables;</li>
 <li>how to declare types of <code>nimbleFunction</code> arguments and return values;</li>
-<li>that compiled nimbleFunctions always pass arguments to each other by reference. <!---   1. how to use nimbleList data structures. --></li>
+<li>that compiled nimbleFunctions always pass arguments to each
+other by reference.
+<!---   1. how to use nimbleList data structures. --></li>
 </ul>
 <p>The next sections cover each of these topics in turn.</p>
 </div>
@@ -388,13 +442,16 @@ y &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1
 <h2><span class="header-section-number">11.2</span> R functions (or variants) implemented in NIMBLE</h2>
 <div id="finding-help-for-nimbles-versions-of-r-functions" class="section level3">
 <h3><span class="header-section-number">11.2.1</span> Finding help for NIMBLE’s versions of R functions</h3>
-<p>Often, R help pages are available for NIMBLE’s versions of R functions using the prefix ‘nim’ and capitalizing the next letter. For example, help on NIMBLE’s version of <code>numeric</code> can be found by <code>help(nimNumeric)</code>. In some cases help is found directly using the name of the function as it appears in R.</p>
+<p>Often, R help pages are available for NIMBLE’s versions of R functions
+using the prefix ‘nim’ and capitalizing the next letter. For
+example, help on NIMBLE’s version of <code>numeric</code> can be found by <code>help(nimNumeric)</code>. In some cases help is found directly using the name of the function as it appears in R.</p>
 </div>
 <div id="basic-operations" class="section level3">
 <h3><span class="header-section-number">11.2.2</span> Basic operations</h3>
-<p>Basic R operations supported for NIMBLE compilation are listed in Table <a href="cha-RCfunctions.html#tab:coreR">11.1</a>.</p>
+<p>Basic R operations supported for NIMBLE compilation are listed in
+Table <a href="cha-RCfunctions.html#tab:coreR">11.1</a>.</p>
 <table>
-<caption><span id="tab:coreR">Table 11.1: </span> Basic R manipulation functions in NIMBLE. To find help in R for NIMBLE’s version of a function, use the “nim” prefix and capitalize the next letter. E.g. <code>help(nimC)</code> for help with <code>c()</code>.</caption>
+<caption><span id="tab:coreR">Table 11.1: </span> Basic R manipulation functions in NIMBLE. For some of these functions, in addition to the usual use of <code>help()</code>, you can find help in R for NIMBLE’s version of a function by using the “nim” prefix and capitalizing the next letter. E.g. <code>help(nimC)</code> for help with <code>c()</code>.</caption>
 <thead>
 <tr class="header">
 <th align="left">Function</th>
@@ -412,7 +469,7 @@ y &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1
 </tr>
 <tr class="odd">
 <td align="left"><code>seq()</code> and ‘:’</td>
-<td align="left">Negative integer sequences from ‘:’, e.g. , <code>2:1</code> do not work.</td>
+<td align="left">Negative integer sequences from ‘:’, e.g. , <code>2:1</code> do not work.</td>
 </tr>
 <tr class="even">
 <td align="left"><code>which()</code></td>
@@ -452,7 +509,15 @@ y &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1
 </tr>
 <tr class="odd">
 <td align="left"><code>is.nan()</code></td>
-<td align="left"></td>
+<td align="left">Treats <code>NA</code> of type ‘double’ as being <code>NaN</code> and <code>NA</code> of type ‘logical’ as not being <code>NaN</code>.</td>
+</tr>
+<tr class="even">
+<td align="left"><code>any()</code></td>
+<td align="left">One argument only; NAs treated as FALSE.</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>all()</code></td>
+<td align="left">One argument only; NAs treated as FALSE.</td>
 </tr>
 <tr class="even">
 <td align="left"><code>numeric()</code></td>
@@ -493,31 +558,66 @@ y &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1
 <p>Next we cover some of these functions in more detail.</p>
 <div id="numeric-integer-logical-matrix-and-array" class="section level4">
 <h4><span class="header-section-number">11.2.2.1</span> <em>numeric</em>, <em>integer</em>, <em>logical</em>, <em>matrix</em> and <em>array</em></h4>
-<p><code>numeric</code>, <code>integer</code>, or <code>logical</code> will create a 1-dimensional vector of floating-point (or ‘double’ [precision]), integer, or logical values, respectively. The <code>length</code> argument specifies the vector length (default 0), and the <code>value</code> argument specifies the initial value either as a scalar (used for all vector elements, with default 0) or a vector. If a vector and its length is not equal to <code>length</code>, the remaining values will be zero, but we plan to implement R-style recycling in the next version of NIMBLE. The <code>init</code> argument specifies whether or not to initialize the elements in compiled code (default <code>TRUE</code>). If first use of the variable does not rely on initial values, using <code>init = FALSE</code> will yield slightly more efficient performance.</p>
-<p><code>matrix</code> creates a 2-dimensional matrix object of either floating-point (if <code>type = &quot;double&quot;</code>, the default), integer (if <code>type = &quot;integer&quot;</code>), or logical (if <code>type = &quot;logical&quot;</code>) values. As in R, <code>nrow</code> and <code>ncol</code> arguments specify the number of rows and columns, respectively. The <code>value</code> and <code>init</code> arguments are used in the same way as for <code>numeric</code>, <code>integer</code>, and <code>logical</code>.</p>
-<p><code>array</code> creates a vector or higher-dimensional object, depending on the <code>dim</code> argument, which takes a vector of sizes for each dimension. The <code>type</code>, <code>value</code> and <code>init</code> argument behave the same as for <code>matrix</code>.</p>
-<p>The best way to create an identity matrix is with <code>diag(n)</code>, which returns an <span class="math inline">\(n \times n\)</span> identity matrix. NIMBLE also provides a deprecated nimbleFunction <code>identityMatrix</code> that does the same thing.</p>
-<p>Examples of these functions, and the related function <span class="math inline">\(`setSize`\)</span> for changing the size of a numeric object, are given in Section <a href="cha-RCfunctions.html#sec:chang-sizes-exist">11.3.2.3</a>.</p>
+<p><code>numeric</code>, <code>integer</code>, or <code>logical</code> will create a 1-dimensional vector of
+floating-point (or ‘double’ [precision]), integer, or logical values, respectively. The <code>length</code> argument specifies the vector
+length (default 0), and the <code>value</code> argument specifies the initial
+value either as a scalar (used for all vector elements, with default
+0) or a vector. If a vector and its length is not equal to <code>length</code>, the remaining values will be zero, but we plan to implement R-style recycling in the next version of NIMBLE. The <code>init</code> argument specifies
+whether or not to initialize the elements in compiled code (default <code>TRUE</code>). If
+first use of the variable does not rely on initial values, using
+<code>init = FALSE</code> will yield slightly more efficient performance.</p>
+<p><code>matrix</code> creates a 2-dimensional matrix object of either floating-point (if
+<code>type = "double"</code>, the default), integer (if <code>type = "integer"</code>), or logical (if <code>type = "logical"</code>) values.
+As in R, <code>nrow</code> and <code>ncol</code> arguments specify the number of rows and columns, respectively.
+The <code>value</code> and <code>init</code> arguments are used in the same way as for
+<code>numeric</code>, <code>integer</code>, and <code>logical</code>.</p>
+<p><code>array</code> creates a vector or higher-dimensional object, depending
+on the <code>dim</code> argument, which takes a vector of sizes for each
+dimension. The <code>type</code>, <code>value</code> and <code>init</code> argument behave
+the same as for <code>matrix</code>.</p>
+<p>The best way to create an identity matrix is with <code>diag(n)</code>, which
+returns an <span class="math inline">\(n \times n\)</span> identity matrix. NIMBLE also provides a deprecated
+nimbleFunction <code>identityMatrix</code> that does the same thing.</p>
+<p>Examples of these functions, and the related function <span class="math inline">\(`setSize`\)</span>
+for changing the size of a numeric object, are given in Section <a href="cha-RCfunctions.html#sec:chang-sizes-exist">11.3.2.4</a>.</p>
 </div>
 <div id="sec:query-chang-sizes" class="section level4">
 <h4><span class="header-section-number">11.2.2.2</span> <em>length</em> and <em>dim</em></h4>
-<p><code>length</code> behaves like R’s <code>length</code> function. It returns the <em>entire</em> length of X. That means if <code>X</code> is multivariate, <code>length(X)</code> returns the product of the sizes of the dimensions. NIMBLE’s version of <code>dim</code>, which has synonym <code>nimDim</code>, behaves like R’s <code>dim</code> function for matrices or arrays and like R’s <code>length</code> function for vectors. In other words, regardless of whether the number of dimensions is 1 or more, it returns a vector of the sizes.</p>
+<p><code>length</code> behaves like R’s <code>length</code> function. It
+returns the <em>entire</em> length of X. That means if <code>X</code> is
+multivariate, <code>length(X)</code> returns the product of the sizes of
+the dimensions. NIMBLE’s version of <code>dim</code>, which has synonym <code>nimDim</code>, behaves like R’s
+<code>dim</code> function for matrices or arrays and like R’s
+<code>length</code> function for vectors. In other words, regardless of
+whether the number of dimensions is 1 or more, it returns a vector
+of the sizes.</p>
 </div>
 <div id="deprecated-creation-of-non-scalar-objects-using-declare" class="section level4">
 <h4><span class="header-section-number">11.2.2.3</span> Deprecated creation of non-scalar objects using <em>declare</em></h4>
-<p>Previous versions of NIMBLE provided a function <code>declare</code> for declaring variables. The more R-like functions <code>numeric</code>, <code>integer</code>, <code>logical</code>, <code>matrix</code> and <code>array</code> are intended to replace <code>declare</code>, but <code>declare</code> is still supported for backward compatibility. In a future version of NIMBLE, <code>declare</code> may be removed.</p>
+<p>Previous versions of NIMBLE provided a function <code>declare</code> for
+declaring variables. The more R-like functions <code>numeric</code>,
+<code>integer</code>, <code>logical</code>, <code>matrix</code> and <code>array</code> are intended to replace
+<code>declare</code>, but <code>declare</code> is still supported for backward
+compatibility. In a future version of NIMBLE, <code>declare</code> may be removed.</p>
 </div>
 </div>
 <div id="sec:basic-math-linear" class="section level3">
 <h3><span class="header-section-number">11.2.3</span> Math and linear algebra</h3>
-<p>Numeric scalar and matrix mathematical operations are listed in Tables @ref{tab:functions}-@ref{tab:functionsMatrix}.</p>
+<p>Numeric scalar and matrix mathematical operations are listed in Tables <a href="cha-RCfunctions.html#tab:functions2">11.2</a>-<a href="cha-RCfunctions.html#tab:functionsMatrix2">11.3</a>.</p>
 <!---
 would need to do some sed manipulation to be able to automate this cross-ref
 \@ref(tab:functions) and \@ref(tab:functionsMatrix).
 -->
-<p>As in R, many scalar operations in NIMBLE will work component-wise on vectors or higher dimensional objects. For example if B and C are vectors, <code>A   = B + C</code> will add them and create vector C by component-wise addition of B and C. In the current version of NIMBLE, component-wise operations generally only work for vectors and matrices, not arrays with more than two dimensions. The only exception is assignment: <code>A = B</code> will work up to NIMBLE’s current limit of four dimensions.</p>
+<p>As in R, many scalar operations in NIMBLE will work component-wise on vectors or
+higher dimensional objects. For example if B and C are vectors, <code>A   = B + C</code> will add them and create vector C by component-wise
+addition of B and C. In the current version of NIMBLE, component-wise operations
+generally only work for vectors and matrices, not arrays with more
+than two dimensions. The only exception is assignment: <code>A = B</code> will
+work up to NIMBLE’s current limit of four dimensions.</p>
 <table>
-<caption><span id="tab:functions">Table 5.4: </span> Functions operating on scalars, many of which can operate on each element (component-wise) of vectors and matrices. Status column indicates if the function is currently provided in NIMBLE. Vector input column indicates if the function can take a vector as an argument (i.e., if the function is vectorized).</caption>
+<caption><span id="tab:functions2">Table 11.2: </span> Functions operating on scalars, many of which can operate on each element (component-wise) of
+vectors and matrices. Status column indicates if the function is currently provided in NIMBLE. Vector input column
+indicates if the function can take a vector as an argument (i.e., if the function is vectorized).</caption>
 <thead>
 <tr class="header">
 <th align="left">Usage</th>
@@ -641,7 +741,7 @@ would need to do some sed manipulation to be able to automate this cross-ref
 <td>yes</td>
 </tr>
 <tr class="odd">
-<td align="left"><code>equals(x)</code></td>
+<td align="left"><code>equals(x, y)</code></td>
 <td align="left">equality of two scalars</td>
 <td align="left">1 if <span class="math inline">\(x==y\)</span>, 0 if <span class="math inline">\(x != y\)</span></td>
 <td>yes</td>
@@ -867,7 +967,8 @@ would need to do some sed manipulation to be able to automate this cross-ref
 </tbody>
 </table>
 <table>
-<caption><span id="tab:functionsMatrix">Table 5.5: </span> Functions operating on vectors and matrices. Status column indicates if the function is currently provided in NIMBLE.</caption>
+<caption><span id="tab:functionsMatrix2">Table 11.3: </span> Functions operating on vectors and matrices. Status column indicates if the function is currently
+provided in NIMBLE.</caption>
 <thead>
 <tr class="header">
 <th align="left">Usage</th>
@@ -1033,15 +1134,28 @@ would need to do some sed manipulation to be able to automate this cross-ref
 </div>
 <div id="sec:nimble-dist-funs" class="section level3">
 <h3><span class="header-section-number">11.2.4</span> Distribution functions</h3>
-<p>Distribution ‘d’, ‘r’, ‘p’, and ‘q’ functions can all be used from nimbleFunctions (and in BUGS model code), but care is needed in the syntax, as follows.</p>
+<p>Distribution ‘d’, ‘r’, ‘p’, and ‘q’ functions can all be used
+from nimbleFunctions (and in BUGS model code), but care is needed in the syntax, as follows.</p>
 <ul>
-<li>Names of the distributions generally (but not always) match those of R, which sometimes differ from BUGS. See the list below.</li>
+<li>Names of the distributions generally (but not always) match those of R, which
+sometimes differ from BUGS. See the list below.</li>
 <li>Supported parameterizations are also indicated in the list below.</li>
-<li>For multivariate distributions (multivariate normal, Dirichlet, and Wishart), ‘r’ functions only return one random draw at a time, and the first argument must always be 1.</li>
-<li>R’s recycling rule (re-use of an argument as needed to accommodate longer values of other arguments) is generally followed, but the returned object is always a scalar or a vector, not a matrix or array.</li>
+<li>For multivariate distributions (multivariate normal, Dirichlet, and Wishart), ‘r’ functions only return one random
+draw at a time, and the first argument must always be 1.</li>
+<li>R’s recycling rule (re-use of an argument as needed to accommodate
+longer values of other arguments) is generally followed, but the
+returned object is always a scalar or a vector, not a matrix or
+array.</li>
 </ul>
-<p>As in R (and nimbleFunctions), arguments are matched by order or by name (if given). Standard arguments to distribution functions in R (<code>log</code>, <code>log.p</code>, <code>lower.tail</code>) can be used and have the same defaults. User-defined distributions for BUGS (Chapter <a href="cha-user-defined.html#cha:user-defined">12</a>) can also be used from nimbleFunctions.</p>
-<p>For standard distributions, we rely on R’s regular help pages (e.g., <code>help(dgamma)</code>. For distributions unique to NIMBLE (e.g., <code>dexp_nimble</code>, <code>ddirch</code>), we provide help pages.</p>
+<p>As in R (and nimbleFunctions), arguments are matched by order or by name
+(if given). Standard arguments to distribution functions in R
+(<code>log</code>, <code>log.p</code>, <code>lower.tail</code>) can be used and have the same
+defaults. User-defined distributions for BUGS (Chapter
+<a href="cha-user-defined.html#cha:user-defined">12</a>) can also be used from
+nimbleFunctions.</p>
+<p>For standard distributions, we rely on R’s regular help pages
+(e.g., <code>help(dgamma)</code>. For distributions unique to NIMBLE
+(e.g., <code>dexp_nimble</code>, <code>ddirch</code>), we provide help pages.</p>
 <p>Supported distributions, listed by their ‘d’ function, include:</p>
 <ul>
 <li><code>dbinom(x, size, prob, log)</code></li>
@@ -1073,30 +1187,69 @@ would need to do some sed manipulation to be able to automate this cross-ref
 <li><code>dmvt_chol(x, mu, cholesky, df, prec_param, log)</code></li>
 <li><code>dwish_chol(x, cholesky, df, scale_param, log)</code></li>
 </ul>
-<p>In the last three, <code>cholesky</code> stands for Cholesky decomposition of the relevant matrix; <code>prec_param</code> is a logical indicating whether the Cholesky is of a precision matrix (TRUE) or covariance matrix (FALSE)<a href="#fn21" class="footnoteRef" id="fnref21"><sup>21</sup></a>; and <code>scale_param</code> is a logical indicating whether the Cholesky is of a scale matrix (TRUE) or an inverse scale matrix (FALSE).</p>
+<p>In the last three, <code>cholesky</code> stands for Cholesky decomposition of the relevant matrix;
+<code>prec_param</code> is a logical indicating whether the Cholesky is of a
+precision matrix (TRUE) or covariance matrix (FALSE)<a href="#fn21" class="footnote-ref" id="fnref21"><sup>21</sup></a>; and <code>scale_param</code> is a logical indicating whether the Cholesky is of a scale matrix (TRUE) or an inverse scale matrix (FALSE).</p>
 </div>
 <div id="sec:basic-flow-control" class="section level3">
 <h3><span class="header-section-number">11.2.5</span> Flow control: <em>if-then-else</em>, <em>for</em>, <em>while</em>, and <em>stop</em></h3>
-<p>These basic flow-control structures use the same syntax as in R. However, <code>for</code>-loops are limited to sequential integer indexing. For example, <code>for(i in 2:5) {...}</code> works as it does in R. Decreasing index sequences are not allowed. Unlike in R, <code>if</code> is not itself a function that returns a value.</p>
-<p>We plan to include more flexible <code>for</code>-loops in the future, but for now we’ve included just one additional useful feature: <code>for(i in seq_along(NFL))</code> will work as in R, where <code>NFL</code> is a <code>nimbleFunctionList</code>. This is described in Section <a href="cha-progr-with-models.html#sec:virt-nimbl-nimbl">15.4.8</a>.</p>
-<p><code>stop</code>, or equivalently <code>nimStop</code>, throws control to R’s error-handling system and can take a character argument that will be displayed in an error message.</p>
+<p>These basic flow-control structures use the same syntax as in R.
+However, <code>for</code>-loops are limited to sequential integer
+indexing. For example, <code>for(i in 2:5) {...}</code> works as it does
+in R. Decreasing index sequences are not allowed. Unlike in R,
+<code>if</code> is not itself a function that returns a value.</p>
+<p>We plan to include more flexible <code>for</code>-loops in the future, but for
+now we’ve included just one additional useful feature: <code>for(i in seq_along(NFL))</code> will work as in R, where <code>NFL</code> is a
+<code>nimbleFunctionList</code>. This is described in Section <a href="cha-progr-with-models.html#sec:virt-nimbl-nimbl">15.4.8</a>.</p>
+<p><code>stop</code>, or equivalently <code>nimStop</code>, throws
+control to R’s error-handling system and can take a character
+argument that will be displayed in an error message.</p>
 </div>
 <div id="sec:print" class="section level3">
 <h3><span class="header-section-number">11.2.6</span> <em>print</em> and <em>cat</em></h3>
-<p><code>print</code>, or equivalently <code>nimPrint</code>, prints an arbitrary set of outputs in order and adds a newline character at the end. <code>cat</code> or <code>nimCat</code> is identical, except without a newline at the end.</p>
+<p><code>print</code>, or equivalently
+<code>nimPrint</code>, prints an arbitrary set of outputs in order and adds a
+newline character at the end. <code>cat</code> or <code>nimCat</code> is identical,
+except without a newline at the end.</p>
 </div>
 <div id="sec:check-user-interr" class="section level3">
 <h3><span class="header-section-number">11.2.7</span> Checking for user interrupts: <em>checkInterrupt</em></h3>
-<p>When you write algorithms that will run for a long time in C++, you may want to explicitly check whether a user has tried to interrupt the execution (i.e., by pressing Control-C). Simply include <code>checkInterrupt</code> in run code at places where a check should be done. If there has been an interrupt waiting to be handled, the process will stop and return control to R.</p>
+<p>When you write algorithms that will run for a long time in C++, you
+may want to explicitly check whether a user has tried to interrupt the
+execution (i.e., by pressing Control-C). Simply include
+<code>checkInterrupt</code> in run code at places where a check should
+be done. If there has been an
+interrupt waiting to be handled, the process will stop and return control to R.</p>
 </div>
 <div id="optimization-optim-and-nimoptim" class="section level3">
 <h3><span class="header-section-number">11.2.8</span> Optimization: <em>optim</em> and <em>nimOptim</em></h3>
-<p>NIMBLE provides a <code>nimOptim</code> function that partially implement’s R’s <code>optim</code> function with some minor differences. <code>nimOptim</code> supports optimization methods ‘Nelder-Mead’, ‘BFGS’, ‘CG’, ‘L-BFGS-B’, but does not support methods ‘SANN’ and ‘Brent’. NIMBLE’s <code>nimOptim</code> supports gradients using user-provided functions if available or finite differences otherwise, but it does not currently support Hessian computations. Currently <code>nimOptim</code> does not support extra parameters to the function being optimized (via <code>\dots</code>), but a work-around is to create a new <code>nimbleFunction</code> that binds those fixed parameters. Finally, <code>nimOptim</code> requires a <code>nimbleList</code> datatype for the <code>control</code> parameter, whereas R’s <code>optim</code> uses a simple R <code>list</code>. To define the <code>control</code> parameter, create a default value with the <code>nimOptimDefaultControl</code> function, and set any desired fields. For example usage, see the unit tests in <a href="https://github.com/nimble-dev/nimble/blob/master/packages/nimble/inst/tests/test-optim.R">tests/test-optim.R</a>.</p>
+<p>NIMBLE provides a <code>nimOptim</code> function that partially implement’s R’s
+<code>optim</code> function with some minor differences. <code>nimOptim</code> supports
+optimization methods ‘Nelder-Mead’, ‘BFGS’, ‘CG’, ‘L-BFGS-B’, but does
+not support methods ‘SANN’ and ‘Brent’. NIMBLE’s <code>nimOptim</code> supports
+gradients using user-provided functions if available or finite differences
+otherwise, but it does not currently support Hessian computations. Currently
+<code>nimOptim</code> does not support extra parameters to the function being optimized
+(via <code>\dots</code>), but a work-around is to create a new <code>nimbleFunction</code> that
+binds those fixed parameters. Finally, <code>nimOptim</code> requires a <code>nimbleList</code>
+datatype for the <code>control</code> parameter, whereas R’s <code>optim</code> uses a simple R
+<code>list</code>. To define the <code>control</code> parameter, create a default value with
+the <code>nimOptimDefaultControl</code> function, and set any desired fields. For
+example usage, see the unit tests in
+<a href="https://github.com/nimble-dev/nimble/blob/master/packages/nimble/tests/testthat/test-optim.R">tests/test-optim.R</a>.</p>
 </div>
 <div id="sec:altern-keyw-some" class="section level3">
 <h3><span class="header-section-number">11.2.9</span> ‘nim’ synonyms for some functions</h3>
-<p>NIMBLE uses some keywords, such as <code>dim</code> and <code>print</code>, in ways similar but not identical to R. In addition, there are some keywords in NIMBLE that have the same names as R functions with quite different functionality. For example, <code>step</code> is part of the BUGS language, but it is also an R function for stepwise model selection. And <code>equals</code> is part of the BUGS language but is also used in the <code>testthat</code> package, which we use in testing NIMBLE.</p>
-<p>NIMBLE tries to avoid conflicts by replacing some keywords immediately upon creating a nimbleFunction. These replacements include</p>
+<p>NIMBLE uses some keywords, such as <code>dim</code> and <code>print</code>, in ways
+similar but not identical to R. In addition, there are some keywords
+in NIMBLE that have the same names as R functions with quite different functionality.
+For example, <code>step</code> is part of the BUGS language, but it is also an
+R function for stepwise model selection. And <code>equals</code> is part of
+the BUGS language but is also used in the <code>testthat</code> package, which
+we use in testing NIMBLE.</p>
+<p>NIMBLE tries to avoid conflicts by replacing
+some keywords immediately upon creating a nimbleFunction. These
+replacements include</p>
 <ul>
 <li><code>c</code> <span class="math inline">\(\rightarrow\)</span> <code>nimC</code></li>
 <li><code>copy</code> <span class="math inline">\(\rightarrow\)</span> <code>nimCopy</code></li>
@@ -1113,131 +1266,255 @@ would need to do some sed manipulation to be able to automate this cross-ref
 <li><code>numeric, integer, logical</code> <span class="math inline">\(\rightarrow\)</span> <code>nimNumeric, nimInteger, nimLogical</code></li>
 <li><code>matrix, array</code> <span class="math inline">\(\rightarrow\)</span> <code>nimMatrix, nimArray</code></li>
 </ul>
-<p>This system gives programmers the choice between using the keywords like <code>nimPrint</code> directly, to avoid confusion in their own code about which ‘print’ is being used, or to use the more intuitive keywords like <code>print</code> but remember that they are not the same as R’s functions.</p>
+<p>This system gives programmers the choice between using the keywords like
+<code>nimPrint</code> directly, to avoid confusion in their own code about
+which ‘print’ is being used, or to use the more intuitive keywords
+like <code>print</code> but remember that they are not the same as R’s functions.</p>
 </div>
 </div>
 <div id="sec:how-nimble-handles" class="section level2">
 <h2><span class="header-section-number">11.3</span> How NIMBLE handles types of variables</h2>
-<p>Variables in the NIMBLE language are statically typed. Once a variable is used for one type, it can’t subsequently be used for a different type. This rule facilitates NIMBLE’s compilation to C++. The NIMBLE compiler often determines types automatically, but sometimes the programmer needs to explicitly provide them.</p>
-<p>The elemental types supported by NIMBLE include <em>double</em> (floating-point), <em>integer</em>, <em>logical</em>, and <em>character</em>. The <em>type</em> of a numeric or logical object refers to the number of dimensions and the elemental type of the elements. Hence if <code>x</code> is created as a double matrix, it can only be used subsequently for a double matrix. The size of each dimension is not part of its type and thus can be changed. Up to four dimensions are supported for double, integer, and logical. Only vectors (one dimension) are supported for character. Unlike R, NIMBLE supports true scalars, which have 0 dimensions.</p>
+<p>Variables in the NIMBLE language are statically typed. Once a variable
+is used for one type, it can’t subsequently be used for a different
+type. This rule facilitates NIMBLE’s compilation to C++. The NIMBLE
+compiler often determines types automatically, but sometimes the
+programmer needs to explicitly provide them.</p>
+<p>The elemental types supported by NIMBLE include <em>double</em>
+(floating-point), <em>integer</em>, <em>logical</em>, and <em>character</em>. The <em>type</em> of
+a numeric or logical object refers to the number
+of dimensions and the elemental type of the elements. Hence if <code>x</code>
+is created as a double matrix, it can only be used subsequently for a double
+matrix. The size of each dimension is not part of its type and thus
+can be changed. Up to four
+dimensions are supported for double, integer, and logical. Only
+vectors (one dimension) are supported for character. Unlike R, NIMBLE supports true
+scalars, which have 0 dimensions.</p>
 <div id="sec:nimbleList-RCFuns" class="section level3">
 <h3><span class="header-section-number">11.3.1</span> nimbleList data structures</h3>
-<p>A <code>nimbleList</code> is a data structure that can contain arbitrary other NIMBLE objects, including other <code>nimbleList</code>s. Like other NIMBLE types, nimbleLists are strongly typed: each <code>nimbleList</code> is created from a configuration that declares what types of objects it will hold. <code>nimbleList</code>s are covered in Chapter <a href="cha-data-structures.html#sec:nimbleLists">14.2</a>.</p>
+<p>A <code>nimbleList</code> is a data structure that can contain arbitrary other NIMBLE objects, including other <code>nimbleList</code>s.
+Like other NIMBLE types, nimbleLists are strongly typed: each <code>nimbleList</code> is created from a configuration that
+declares what types of objects it will hold. <code>nimbleList</code>s are covered in Chapter <a href="cha-data-structures.html#sec:nimbleLists">14.2</a>.</p>
 </div>
 <div id="sec:how-types-work" class="section level3">
 <h3><span class="header-section-number">11.3.2</span> How numeric types work</h3>
-<p>R’s dynamic types support easy programming because one type can sometimes be transformed to another type automatically when an expression is evaluated. NIMBLE’s static types makes it stricter than R.</p>
+<p>R’s dynamic types support easy programming because one type can sometimes
+be transformed to another type automatically when an expression is
+evaluated. NIMBLE’s static types makes it stricter than R.</p>
 <div id="sec:when-nimble-can" class="section level4">
 <h4><span class="header-section-number">11.3.2.1</span> When NIMBLE can automatically set a numeric type</h4>
-<p>When a variable is first created by assignment, its type is determined automatically by that assignment. For example, if <code>x</code> has not appeared before, then</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">x &lt;-<span class="st"> </span>A <span class="op">%*%</span><span class="st"> </span>B <span class="co"># assume A and B are double matrices or vectors</span></code></pre></div>
-<p>will create <code>x</code> to be a double matrix of the correct size (determined during execution).</p>
+<p>When a variable is first created by assignment, its type is determined
+automatically by that assignment. For example, if <code>x</code> has not appeared before, then</p>
+<div class="sourceCode" id="cb219"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb219-1" title="1">x &lt;-<span class="st"> </span>A <span class="op">%*%</span><span class="st"> </span>B <span class="co"># assume A and B are double matrices or vectors</span></a></code></pre></div>
+<p>will create <code>x</code> to be a double matrix of the correct size
+(determined during execution).</p>
 <div id="avoid-changing-types-of-a-variable-within-a-nimblefunction" class="section level5">
 <h5><span class="header-section-number">11.3.2.1.1</span> Avoid changing types of a variable within a nimbleFunction</h5>
 <p>Because NIMBLE is statically typed, you cannot use the same variable name for two objects of different types (including objects of different dimensions).</p>
-<p>Suppose we have (implicitly) created <code>x</code> as a double matrix. If <code>x</code> is used subsequently, it can only be used as a double matrix. This is true even if it is assigned a new value, which will again set its size automatically but cannot change its type.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">x &lt;-<span class="st"> </span>A <span class="op">%*%</span><span class="st"> </span>B <span class="co"># assume A and B are double matrices or vectors</span>
-x &lt;-<span class="st"> </span><span class="kw">nimMatrix</span>(<span class="dv">0</span>, <span class="dt">nrow =</span> <span class="dv">5</span>, <span class="dt">ncol =</span> <span class="dv">2</span>)  <span class="co"># OK: &#39;x&#39; is still a double matrix</span>
-x &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">10</span>)  <span class="co"># NOT OK: &#39;x&#39; is a double vector</span></code></pre></div>
+<p>Suppose we have (implicitly) created <code>x</code> as a double matrix.
+If <code>x</code> is used subsequently, it can
+only be used as a double matrix. This is true even if it is assigned a
+new value, which will again set its size automatically but cannot
+change its type.</p>
+<div class="sourceCode" id="cb220"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb220-1" title="1">x &lt;-<span class="st"> </span>A <span class="op">%*%</span><span class="st"> </span>B <span class="co"># assume A and B are double matrices or vectors</span></a>
+<a class="sourceLine" id="cb220-2" title="2">x &lt;-<span class="st"> </span><span class="kw">nimMatrix</span>(<span class="dv">0</span>, <span class="dt">nrow =</span> <span class="dv">5</span>, <span class="dt">ncol =</span> <span class="dv">2</span>)  <span class="co"># OK: &#39;x&#39; is still a double matrix</span></a>
+<a class="sourceLine" id="cb220-3" title="3">x &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">10</span>)  <span class="co"># NOT OK: &#39;x&#39; is a double vector</span></a></code></pre></div>
 </div>
 </div>
 <div id="sec:when-numeric-object" class="section level4">
 <h4><span class="header-section-number">11.3.2.2</span> When a numeric object needs to be created before being used</h4>
-<p>If the contents of a variable are to be populated by assignment into some indices in steps, the variable must be created first. Further, it must be large enough for its eventual contents; it will not be automatically resized if assignments are made beyond its current size. For example, in the following code, <code>x</code> must be created before being filled with contents for specific indices.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">x &lt;-<span class="st"> </span><span class="kw">numeric</span>(<span class="dv">10</span>)
-
-<span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">10</span>) 
-   x[i] &lt;-<span class="st"> </span><span class="kw">foo</span>(y[i]) </code></pre></div>
+<p>If the contents of a variable are to be populated by assignment into
+some indices in steps, the variable must be created first. Further,
+it must be large enough for its eventual contents; it will not be automatically
+resized if assignments are made beyond its current size. For example,
+in the following code, <code>x</code> must be created before being filled with
+contents for specific indices.</p>
+<div class="sourceCode" id="cb221"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb221-1" title="1">x &lt;-<span class="st"> </span><span class="kw">numeric</span>(<span class="dv">10</span>)</a>
+<a class="sourceLine" id="cb221-2" title="2"></a>
+<a class="sourceLine" id="cb221-3" title="3"><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">10</span>) </a>
+<a class="sourceLine" id="cb221-4" title="4">   x[i] &lt;-<span class="st"> </span><span class="kw">foo</span>(y[i]) </a></code></pre></div>
+</div>
+<div id="how-nimble-handles-na" class="section level4">
+<h4><span class="header-section-number">11.3.2.3</span> How NIMBLE handles <code>NA</code></h4>
+<p>NIMBLE supports use of <code>NA</code> with some caveats. In the compiled version of a nimbleFunction:</p>
+<ul>
+<li><code>NA</code> values in a logical scalar or vector will not work;</li>
+<li>Assigning <code>NA</code> to a new variable will make that variable have type double (in R, this would be a logical!);</li>
+<li>Non-trivial use of <code>NA</code> in integer variables may fail by having the value become a large (negative) number;</li>
+<li>Use of <code>NA</code> in doubles should generally work.</li>
+</ul>
+<p>These issues arise because NIMBLE uses R’s encoding of NA values in C(++) but uses native compiled math and type-casting in C++, which do not always preserve R’s NA encodings. In summary, NA should generally work for doubles and should be used cautiously (i.e. after you test that what you need to work actually works) for integers. For some needs, NaN is a suitable alternative to NA.</p>
 </div>
 <div id="sec:chang-sizes-exist" class="section level4">
-<h4><span class="header-section-number">11.3.2.3</span> Changing the sizes of existing objects: <em>setSize</em></h4>
-<p><code>setSize</code> changes the size of an object, preserving its contents in column-major order.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Example of creating and resizing a floating-point vector</span>
-<span class="co"># myNumericVector will be of length 10, with all elements initialized to 2 </span>
-myNumericVector &lt;-<span class="st"> </span><span class="kw">numeric</span>(<span class="dv">10</span>, <span class="dt">value =</span> <span class="dv">2</span>) 
-<span class="co"># resize this numeric vector to be length 20; last 10 elements will be 0</span>
-<span class="kw">setSize</span>(myNumericVector, <span class="dv">20</span>)</code></pre></div>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Example of creating a 1-by-10 matrix with values 1:10 and resizing it</span>
-myMatrix &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>, <span class="dt">nrow =</span> <span class="dv">1</span>, <span class="dt">ncol =</span> <span class="dv">10</span>) 
-<span class="co"># resize this matrix to be a 10-by-10 matrix</span>
-<span class="kw">setSize</span>(myMatrix, <span class="kw">c</span>(<span class="dv">10</span>, <span class="dv">10</span>))
-<span class="co"># The first column will have the 1:10</span></code></pre></div>
+<h4><span class="header-section-number">11.3.2.4</span> Changing the sizes of existing objects: <em>setSize</em></h4>
+<p><code>setSize</code> changes the size of an object, preserving its contents in
+column-major order.</p>
+<div class="sourceCode" id="cb222"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb222-1" title="1"><span class="co"># Example of creating and resizing a floating-point vector</span></a>
+<a class="sourceLine" id="cb222-2" title="2"><span class="co"># myNumericVector will be of length 10, with all elements initialized to 2 </span></a>
+<a class="sourceLine" id="cb222-3" title="3">myNumericVector &lt;-<span class="st"> </span><span class="kw">numeric</span>(<span class="dv">10</span>, <span class="dt">value =</span> <span class="dv">2</span>) </a>
+<a class="sourceLine" id="cb222-4" title="4"><span class="co"># resize this numeric vector to be length 20; last 10 elements will be 0</span></a>
+<a class="sourceLine" id="cb222-5" title="5"><span class="kw">setSize</span>(myNumericVector, <span class="dv">20</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb223"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb223-1" title="1"><span class="co"># Example of creating a 1-by-10 matrix with values 1:10 and resizing it</span></a>
+<a class="sourceLine" id="cb223-2" title="2">myMatrix &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>, <span class="dt">nrow =</span> <span class="dv">1</span>, <span class="dt">ncol =</span> <span class="dv">10</span>) </a>
+<a class="sourceLine" id="cb223-3" title="3"><span class="co"># resize this matrix to be a 10-by-10 matrix</span></a>
+<a class="sourceLine" id="cb223-4" title="4"><span class="kw">setSize</span>(myMatrix, <span class="kw">c</span>(<span class="dv">10</span>, <span class="dv">10</span>))</a>
+<a class="sourceLine" id="cb223-5" title="5"><span class="co"># The first column will have the 1:10</span></a></code></pre></div>
 </div>
 <div id="sec:conf-betw-scal" class="section level4">
-<h4><span class="header-section-number">11.3.2.4</span> Confusions between scalars and length-one vectors</h4>
-<p>In R, there is no such thing is a true scalar; scalars can always be treated as vectors of length one. NIMBLE allows true scalars, which can create confusions. For example, consider the following code:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">myfun &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
-    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">i =</span> <span class="kw">integer</span>()) { <span class="co"># i is an integer scalar</span>
-        randomValues &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">10</span>)   <span class="co"># double vector</span>
-        a &lt;-<span class="st"> </span>randomValues[i]        <span class="co"># double scalar</span>
-        b &lt;-<span class="st"> </span>randomValues[i<span class="op">:</span>i]      <span class="co"># double vector</span>
-        d &lt;-<span class="st"> </span>a <span class="op">+</span><span class="st"> </span>b                  <span class="co"># double vector</span>
-        f &lt;-<span class="st"> </span><span class="kw">c</span>(i)                   <span class="co"># integer vector</span>
-    })</code></pre></div>
-<p>In the line that creates <code>b</code>, the index range <code>i:i</code> is not evaluated until run time. Even though <code>i:i</code> will always evaluate to simpy <code>i</code>, the compiler does not determine that. Since there is a vector index range provided, the result of <code>randomValues[i:i]</code> is determined to be a vector. The following line then creates <code>d</code> as a vector, because a vector plus a scalar returns a vector. Another way to create a vector from a scalar is to use <code>c</code>, as illustrated in the last line.</p>
+<h4><span class="header-section-number">11.3.2.5</span> Confusions between scalars and length-one vectors</h4>
+<p>In R, there is no such thing is a true scalar; scalars can always be
+treated as vectors of length one. NIMBLE allows true scalars, which
+can create confusions. For example, consider the following code:</p>
+<div class="sourceCode" id="cb224"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb224-1" title="1">myfun &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
+<a class="sourceLine" id="cb224-2" title="2">    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">i =</span> <span class="kw">integer</span>()) { <span class="co"># i is an integer scalar</span></a>
+<a class="sourceLine" id="cb224-3" title="3">        randomValues &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">10</span>)   <span class="co"># double vector</span></a>
+<a class="sourceLine" id="cb224-4" title="4">        a &lt;-<span class="st"> </span>randomValues[i]        <span class="co"># double scalar</span></a>
+<a class="sourceLine" id="cb224-5" title="5">        b &lt;-<span class="st"> </span>randomValues[i<span class="op">:</span>i]      <span class="co"># double vector</span></a>
+<a class="sourceLine" id="cb224-6" title="6">        d &lt;-<span class="st"> </span>a <span class="op">+</span><span class="st"> </span>b                  <span class="co"># double vector</span></a>
+<a class="sourceLine" id="cb224-7" title="7">        f &lt;-<span class="st"> </span><span class="kw">c</span>(i)                   <span class="co"># integer vector</span></a>
+<a class="sourceLine" id="cb224-8" title="8">    })</a></code></pre></div>
+<p>In the line that creates <code>b</code>, the index range <code>i:i</code> is not
+evaluated until run time. Even though <code>i:i</code> will always evaluate
+to simpy <code>i</code>, the compiler does not determine that. Since there is
+a vector index range provided, the result of <code>randomValues[i:i]</code> is
+determined to be a vector. The following line then creates <code>d</code> as
+a vector, because a vector plus a scalar returns a vector. Another
+way to create a vector from a scalar is to use <code>c</code>, as
+illustrated in the last line.</p>
 </div>
 <div id="sec:conf-betw-scal2" class="section level4">
-<h4><span class="header-section-number">11.3.2.5</span> Confusions between vectors and one-column or one-row matrices</h4>
+<h4><span class="header-section-number">11.3.2.6</span> Confusions between vectors and one-column or one-row matrices</h4>
 <p>Consider the following code:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">myfun &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
-    <span class="dt">run =</span> <span class="cf">function</span>() { 
-        A &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dt">value =</span> <span class="kw">rnorm</span>(<span class="dv">9</span>), <span class="dt">nrow =</span> <span class="dv">3</span>)
-        B &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">3</span>)
-        Cmatrix &lt;-<span class="st"> </span>A <span class="op">%*%</span><span class="st"> </span>B                <span class="co"># double matrix, one column</span>
-        Cvector &lt;-<span class="st"> </span>(A <span class="op">%*%</span><span class="st"> </span>B)[,<span class="dv">1</span>]          <span class="co"># double vector</span>
-        Cmatrix &lt;-<span class="st"> </span>(A <span class="op">%*%</span><span class="st"> </span>B)[,<span class="dv">1</span>]          <span class="co"># error, vector assigned to matrix</span>
-        Cmatrix[,<span class="dv">1</span>] &lt;-<span class="st"> </span>(A <span class="op">%*%</span><span class="st"> </span>B)[,<span class="dv">1</span>]      <span class="co"># ok, if Cmatrix is large enough</span>
-    })</code></pre></div>
-<p>This creates a matrix <code>A</code>, a vector <code>B</code>, and matrix-multiplies them. The vector <code>B</code> is automatically treated as a one-column matrix in matrix algebra computations. The result of matrix multiplication is always a matrix, but a programmer may expect a vector, since they know the result will have one column. To make it a vector, simply extract the first column. More information about such handling is provided in the next section.</p>
+<div class="sourceCode" id="cb225"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb225-1" title="1">myfun &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
+<a class="sourceLine" id="cb225-2" title="2">    <span class="dt">run =</span> <span class="cf">function</span>() { </a>
+<a class="sourceLine" id="cb225-3" title="3">        A &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dt">value =</span> <span class="kw">rnorm</span>(<span class="dv">9</span>), <span class="dt">nrow =</span> <span class="dv">3</span>)</a>
+<a class="sourceLine" id="cb225-4" title="4">        B &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">3</span>)</a>
+<a class="sourceLine" id="cb225-5" title="5">        Cmatrix &lt;-<span class="st"> </span>A <span class="op">%*%</span><span class="st"> </span>B                <span class="co"># double matrix, one column</span></a>
+<a class="sourceLine" id="cb225-6" title="6">        Cvector &lt;-<span class="st"> </span>(A <span class="op">%*%</span><span class="st"> </span>B)[,<span class="dv">1</span>]          <span class="co"># double vector</span></a>
+<a class="sourceLine" id="cb225-7" title="7">        Cmatrix &lt;-<span class="st"> </span>(A <span class="op">%*%</span><span class="st"> </span>B)[,<span class="dv">1</span>]          <span class="co"># error, vector assigned to matrix</span></a>
+<a class="sourceLine" id="cb225-8" title="8">        Cmatrix[,<span class="dv">1</span>] &lt;-<span class="st"> </span>(A <span class="op">%*%</span><span class="st"> </span>B)[,<span class="dv">1</span>]      <span class="co"># ok, if Cmatrix is large enough</span></a>
+<a class="sourceLine" id="cb225-9" title="9">    })</a></code></pre></div>
+<p>This creates a matrix <code>A</code>, a vector <code>B</code>, and matrix-multiplies
+them. The vector <code>B</code> is automatically treated as a one-column
+matrix in matrix algebra computations. The result of matrix multiplication is always a matrix, but
+a programmer may expect a vector, since they know the result will have
+one column. To make it a vector, simply extract the first column.
+More information about such handling is provided in the next section.</p>
 </div>
 <div id="sec:manag-dimens-sizes" class="section level4">
-<h4><span class="header-section-number">11.3.2.6</span> Understanding dimensions and sizes from linear algebra</h4>
-<p>As much as possible, NIMBLE behaves like R when determining types and sizes returned from linear algebra expressions, but in some cases this is not possible because R uses run-time information while NIMBLE must determine dimensions at compile time. For example, when matrix multiplying a matrix by a vector, R treats the vector as a one-column matrix unless treating it as a one-row matrix is the only way to make the expression valid, as determined at run time. NIMBLE usually must assume during compilation that it should be a one-column matrix, unless it can determine not just the number of dimensions but the actual sizes during compilation. When needed <code>asRow</code> and <code>asCol</code> can control how a vector will be treated as a matrix.</p>
+<h4><span class="header-section-number">11.3.2.7</span> Understanding dimensions and sizes from linear algebra</h4>
+<p>As much as possible, NIMBLE behaves like R when determining types and
+sizes returned from linear algebra expressions, but in some cases this
+is not possible because R uses run-time information while NIMBLE must
+determine dimensions at compile time. For example, when matrix
+multiplying a matrix by a vector, R treats the vector as a one-column
+matrix unless treating it as a one-row matrix is the only way to make
+the expression valid, as determined at run time. NIMBLE usually must assume during compilation
+that it should be a one-column matrix, unless it can determine not
+just the number of dimensions but the actual sizes during
+compilation. When needed <code>asRow</code> and <code>asCol</code> can control how a
+vector will be treated as a matrix.</p>
 <p>Here is a guide to such issues. Suppose <code>v1</code> and <code>v2</code> are vectors, and <code>M1</code> is a matrix. Then</p>
 <ul>
-<li><code>v1 + M1</code> generates a compilation error unless one dimension of <code>M1</code> is known at compile-time to be 1. If so, then <code>v1</code> is promoted to a 1-row or 1-column matrix to conform with <code>M1</code>, and the result is a matrix of the same sizes. This behavior occurs for all component-wise binary functions.</li>
-<li><code>v1 %*% M1</code> defaults to promoting <code>v1</code> to a 1-row matrix, unless it is known at compile-time that <code>M1</code> has 1 row, in which case <code>v1</code> is promoted to a 1-column matrix.</li>
-<li><code>M1 %*% v1</code> defaults to promoting <code>v1</code> to a 1-column matrix, unless it is known at compile time that <code>M1</code> has 1 column, in which case <code>v1</code> is promoted to a 1-row matrix.</li>
-<li><code>v1 %*% v2</code> promotes <code>v1</code> to a 1-row matrix and <code>v2</code> to a 1-column matrix, so the returned values is a 1x1 matrix with the inner product of <code>v1</code> and <code>v2</code>. If you want the inner product as a scalar, use <code>inprod(v1, v2)</code>.</li>
-<li><code>asRow(v1)</code> explicitly promotes <code>v1</code> to a 1-row matrix. Therefore <code>v1 %*% asRow(v2)</code> gives the outer product of <code>v1</code> and <code>v2</code>.</li>
+<li><code>v1 + M1</code> generates a compilation error unless one dimension of
+<code>M1</code> is known at compile-time to be 1. If so, then <code>v1</code> is promoted to a
+1-row or 1-column matrix to conform with <code>M1</code>, and the result is a
+matrix of the same sizes. This behavior occurs for
+all component-wise binary functions.</li>
+<li><code>v1 %*% M1</code> defaults to promoting <code>v1</code> to a 1-row matrix,
+unless it is known at compile-time that <code>M1</code> has 1 row, in which case
+<code>v1</code> is promoted to a 1-column matrix.</li>
+<li><code>M1 %*% v1</code> defaults to promoting <code>v1</code> to a 1-column matrix,
+unless it is known at compile time that <code>M1</code> has 1 column, in which case
+<code>v1</code> is promoted to a 1-row matrix.</li>
+<li><code>v1 %*% v2</code> promotes <code>v1</code> to a 1-row matrix and <code>v2</code> to a
+1-column matrix, so the returned values is a 1x1 matrix with the inner
+product of <code>v1</code> and <code>v2</code>. If you want the inner product as a scalar, use
+<code>inprod(v1, v2)</code>.</li>
+<li><code>asRow(v1)</code> explicitly promotes <code>v1</code> to a 1-row matrix.
+Therefore <code>v1 %*% asRow(v2)</code> gives the outer product of
+<code>v1</code> and <code>v2</code>.</li>
 <li><code>asCol(v1)</code> explicitly promotes <code>v1</code> to a 1-column matrix.<br />
 </li>
-<li>The default promotion for a vector is to a 1-column matrix. Therefore, <code>v1 %*% t(v2)</code> is equivalent to <code>v1 %*% asRow(v2)</code> .</li>
-<li>When indexing, dimensions with scalar indices will be dropped. For example, <code>M1[1,]</code> and <code>M1[,1]</code> are both vectors. If you do not want this behavior, use <code>drop=FALSE</code> just as in R. For example, <code>M1[1,,drop=FALSE]</code> is a matrix.</li>
-<li>The left-hand side of an assignment can use indexing, but if so it must already be correctly sized for the result. For example, <code>Y[5:10, 20:30] &lt;- x</code> will not work – and could crash your R session with a segmentation fault – if Y is not already at least 10x30 in size. This can be done by <code>setSize(Y, c(10, 30))</code>. See Section <a href="cha-RCfunctions.html#sec:chang-sizes-exist">11.3.2.3</a> for more details. Note that non-indexed assignment to <code>Y</code>, such as <code>Y &lt;- x</code>, will automatically set <code>Y</code> to the necessary size.</li>
+<li>The default promotion for a vector is to a 1-column matrix.
+Therefore, <code>v1 %*% t(v2)</code> is equivalent to <code>v1 %*% asRow(v2)</code> .</li>
+<li>When indexing, dimensions with scalar indices will be dropped.
+For example, <code>M1[1,]</code> and <code>M1[,1]</code> are both vectors. If you
+do not want this behavior, use <code>drop=FALSE</code> just as in R. For
+example, <code>M1[1,,drop=FALSE]</code> is a matrix.</li>
+<li>The left-hand side of an assignment can use indexing, but if so
+it must already be correctly sized for the result. For example,
+<code>Y[5:10, 20:30] &lt;- x</code> will not work – and could crash
+your R session with a segmentation fault – if Y is not
+already at least 10x30 in size. This can be done by <code>setSize(Y, c(10, 30))</code>. See Section <a href="cha-RCfunctions.html#sec:chang-sizes-exist">11.3.2.4</a> for more details. Note that non-indexed assignment to <code>Y</code>, such as <code>Y &lt;- x</code>, will automatically set <code>Y</code> to the necessary size.</li>
 </ul>
-<p>Here are some examples to illustrate the above points, assuming <code>M2</code> is a square matrix.</p>
+<p>Here are some examples to illustrate the above points, assuming <code>M2</code> is
+a square matrix.</p>
 <ul>
-<li><code>Y &lt;- v1 + M2 %*% v2</code> will return a 1-column matrix. If Y is created by this statement, it will be a 2-dimensional variable. If Y already exists, it must already be 2-dimesional, and it will be automatically re-sized for the result.</li>
-<li><code>Y &lt;- v1 + (M2 %*% v2)[,1]</code> will return a vector. Y will either be created as a vector or must already exist as a vector and will be re-sized for the result.</li>
+<li><code>Y &lt;- v1 + M2 %*% v2</code> will
+return a 1-column matrix. If Y is created by this statement, it
+will be a 2-dimensional variable. If Y already exists, it must
+already be 2-dimesional, and it will be automatically re-sized for
+the result.</li>
+<li><code>Y &lt;- v1 + (M2 %*% v2)[,1]</code> will return a vector. Y
+will either be created as a vector or must already exist as a vector
+and will be re-sized for the result.</li>
 </ul>
 </div>
 <div id="sec:size-warn-potent" class="section level4">
-<h4><span class="header-section-number">11.3.2.7</span> Size warnings and the potential for crashes</h4>
-<p>For matrix algebra, NIMBLE cannot ensure perfect behavior because sizes are not known until run time. Therefore, it is possible for you to write code that will crash your R session. In Version 0.9.0, NIMBLE attempts to issue a warning if sizes are not compatible, but it does not halt execution. Therefore, if you execute <code>A &lt;- M1 %*% M2</code>, and <code>M1</code> and <code>M2</code> are not compatible for matrix multiplication, NIMBLE will output a warning that the number of rows of <code>M1</code> does not match the number of columns of <code>M2</code>. After that warning the statement will be executed and may result in a crash. Another easy way to write code that will crash is to do things like <code>Y[5:10, 20:30] &lt;- x</code> without ensuring Y is at least 10x30. In the future we hope to prevent crashes, but in Version 0.9.0 we limit ourselves to trying to provide useful information.</p>
+<h4><span class="header-section-number">11.3.2.8</span> Size warnings and the potential for crashes</h4>
+<p>For matrix algebra, NIMBLE cannot ensure perfect behavior because
+sizes are not known until run time. Therefore, it is possible for you
+to write code that will crash your R session. In Version 0.11.1, NIMBLE
+attempts to issue a warning if sizes are not compatible, but it does not
+halt execution. Therefore, if you execute <code>A &lt;- M1 %*% M2</code>, and <code>M1</code> and <code>M2</code> are not compatible for matrix multiplication,
+NIMBLE will output a warning that the number of rows of <code>M1</code> does not
+match the number of columns of <code>M2</code>. After that warning the statement
+will be executed and may result in a crash. Another easy way to write
+code that will crash is to do things like <code>Y[5:10, 20:30] &lt;- x</code> without ensuring Y is at least 10x30. In the future we hope to
+prevent crashes, but in Version 0.11.1 we limit ourselves to trying to provide
+useful information.</p>
 </div>
 </div>
 </div>
 <div id="sec:decl-argum-return" class="section level2">
 <h2><span class="header-section-number">11.4</span> Declaring argument and return types</h2>
-<p>NIMBLE requires that types of arguments and the type of the return value be explicitly declared.</p>
-<p>As illustrated in the example in Section <a href="cha-RCfunctions.html#sec:RC-intro">11.1</a>, the syntax for a type declaration is:</p>
+<p>NIMBLE requires that types of arguments and the type of the return value be
+explicitly declared.</p>
+<p>As illustrated in the example in Section <a href="cha-RCfunctions.html#sec:RC-intro">11.1</a>, the
+syntax for a type declaration is:</p>
 <p><code>type(nDim, sizes)</code></p>
-<p>where <code>type</code> is <code>double</code>, <code>integer</code>, <code>logical</code> or <code>character</code>. (In more general nimbleFunction programming, a type can also be a nimbleList type, discussed in Section <a href="cha-data-structures.html#sec:nimbleLists">14.2</a>.)</p>
+<p>where <code>type</code> is <code>double</code>, <code>integer</code>, <code>logical</code> or <code>character</code>.
+(In more general nimbleFunction programming, a type can also be a
+nimbleList type, discussed in Section <a href="cha-data-structures.html#sec:nimbleLists">14.2</a>.)</p>
 <p>For example <code>run = function(x = double(1)) { ...</code>} sets the single argument of the run function to be a vector of numeric values of unknown size.</p>
-<p>For <code>type(nDim, sizes)</code>, <code>nDim</code> is the number of dimensions, with 0 indicating scalar and omission of <code>nDim</code> defaulting to a scalar. <code>sizes</code> is an optional vector of fixed, known sizes.<br />
-For example, <code>double(2, c(4, 5))</code> declares a <span class="math inline">\(4 \times 5\)</span> matrix. If sizes are omitted, they will be set either by assignment or by <code>setSize</code>.</p>
-<p>In the case of scalar arguments only, a default value can be provided. For example, to provide 1.2 as a default:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">myfun &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
-    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">x =</span> <span class="kw">double</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="fl">1.2</span>)) {
-})</code></pre></div>
-<p>Functions with return values must have their return type explicitly declared using <code>returnType</code>, which can occur anywhere in the run code. For example <code>returnType(integer(2))</code> declares the return type to be a matrix of integers. A return type of <code>void()</code> means there is no return value, which is the default if no <code>returnType</code> statement is included.</p>
+<p>For <code>type(nDim, sizes)</code>, <code>nDim</code> is the number of dimensions, with 0 indicating scalar and omission of <code>nDim</code> defaulting to a scalar.
+<code>sizes</code> is an optional vector of fixed, known sizes.<br />
+For example, <code>double(2, c(4, 5))</code> declares a <span class="math inline">\(4 \times 5\)</span> matrix. If sizes
+are omitted, they will be set either by assignment or by <code>setSize</code>.</p>
+<p>In the case of scalar arguments only, a default value can be
+provided. For example, to provide 1.2 as a default:</p>
+<div class="sourceCode" id="cb226"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb226-1" title="1">myfun &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
+<a class="sourceLine" id="cb226-2" title="2">    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">x =</span> <span class="kw">double</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="fl">1.2</span>)) {</a>
+<a class="sourceLine" id="cb226-3" title="3">})</a></code></pre></div>
+<p>Functions with return values must have their return type explicitly declared using <code>returnType</code>, which can occur anywhere in the run code. For example <code>returnType(integer(2))</code> declares the return type to be a matrix of integers. A return type of <code>void()</code> means there is
+no return value, which is the default if no <code>returnType</code> statement
+is included.</p>
+<p>Note that because all values in models are stored as doubles and because of some limitations in NIMBLE’s automatic casting, non-scalar return values of user-defined distributions must be doubles.</p>
 </div>
 <div id="sec:comp-nimbl-pass" class="section level2">
 <h2><span class="header-section-number">11.5</span> Compiled nimbleFunctions pass arguments by reference</h2>
-<p>Uncompiled nimbleFunctions pass arguments like R does, by copy. If <code>x</code> is passed as an argument to function <code>foo</code>, and <code>foo</code> modifies <code>x</code> internally, it is modifying its copy of <code>x</code>, not the original <code>x</code> that was passed to it.</p>
-<p>Compiled nimbleFunctions pass arguments to other compiled nimbleFunctions by reference (or pointer). This is very different. Now if <code>foo</code> modifies <code>x</code> internally, it is modifying the same <code>x</code> that was passed to it. This allows much faster execution but is obviously a fundamentally different behavior.</p>
-<p>Uncompiled execution of nimbleFunctions is primarily intended for debugging. However, debugging of how nimbleFunctions interact via arguments requires testing the compiled versions.</p>
+<p>Uncompiled nimbleFunctions pass arguments like R does, by copy. If
+<code>x</code> is passed as an argument to function <code>foo</code>, and <code>foo</code>
+modifies <code>x</code> internally, it is modifying its copy of <code>x</code>, not
+the original <code>x</code> that was passed to it.</p>
+<p>Compiled nimbleFunctions pass arguments to other compiled
+nimbleFunctions by reference (or pointer). This is very different.
+Now if <code>foo</code> modifies <code>x</code> internally, it is modifying the same
+<code>x</code> that was passed to it. This allows much faster execution but
+is obviously a fundamentally different behavior.</p>
+<p>Uncompiled execution of nimbleFunctions is primarily intended for
+debugging. However, debugging of how nimbleFunctions interact via
+arguments requires testing the compiled versions.</p>
 </div>
 <div id="sec:calling-external-code" class="section level2">
 <h2><span class="header-section-number">11.6</span> Calling external compiled code</h2>
@@ -1252,9 +1529,14 @@ For example, <code>double(2, c(4, 5))</code> declares a <span class="math inline
 <div class="footnotes">
 <hr />
 <ol start="19">
-<li id="fn19"><p>Of course, in general, explicitly calculating the inverse is not the recommended numerical recipe for least squares.<a href="cha-RCfunctions.html#fnref19">↩</a></p></li>
-<li id="fn20"><p>On the machine this is being written on, the compiled version runs a few times faster than the uncompiled version. However we refrain from formal speed tests.<a href="cha-RCfunctions.html#fnref20">↩</a></p></li>
-<li id="fn21"><p>For the multivariate t, these are more properly termed the ‘inverse scale’ and ‘scale’ matrices<a href="cha-RCfunctions.html#fnref21">↩</a></p></li>
+<li id="fn19"><p>Of course, in general, explicitly
+calculating the inverse is not the recommended numerical recipe for
+least squares.<a href="cha-RCfunctions.html#fnref19" class="footnote-back">↩</a></p></li>
+<li id="fn20"><p>On the machine this is
+being written on, the compiled version runs a few times faster than
+the uncompiled version. However we refrain from formal speed
+tests.<a href="cha-RCfunctions.html#fnref20" class="footnote-back">↩</a></p></li>
+<li id="fn21"><p>For the multivariate t, these are more properly termed the ‘inverse scale’ and ‘scale’ matrices<a href="cha-RCfunctions.html#fnref21" class="footnote-back">↩</a></p></li>
 </ol>
 </div>
             </section>
@@ -1268,11 +1550,13 @@ For example, <code>double(2, c(4, 5))</code> declares a <span class="math inline
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
 <script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
 <script>
 gitbook.require(["gitbook"], function(gitbook) {
 gitbook.start({
@@ -1280,12 +1564,11 @@ gitbook.start({
 "github": false,
 "facebook": true,
 "twitter": true,
-"google": false,
 "linkedin": false,
 "weibo": false,
 "instapaper": false,
 "vk": false,
-"all": ["facebook", "google", "twitter", "linkedin", "weibo", "instapaper"]
+"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
 },
 "fontsettings": {
 "theme": "white",
@@ -1297,6 +1580,10 @@ gitbook.start({
 "text": null
 },
 "history": {
+"link": null,
+"text": null
+},
+"view": {
 "link": null,
 "text": null
 },
@@ -1314,10 +1601,11 @@ gitbook.start({
   (function () {
     var script = document.createElement("script");
     script.type = "text/javascript";
-    var src = "";
+    var src = "true";
     if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
-    if (location.protocol !== "file:" && /^https?:/.test(src))
-      src = src.replace(/^https?:/, '');
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
     script.src = src;
     document.getElementsByTagName("head")[0].appendChild(script);
   })();

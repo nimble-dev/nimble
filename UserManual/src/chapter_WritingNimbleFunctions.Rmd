@@ -549,7 +549,7 @@ my_RW <- nimbleFunction(
         # store proposal into model
         model[[target]] <<- proposal                    
         # proposal model logProb
-        model_lp_proposed <- calculate(model, calcNodes)
+        model_lp_proposed <- model$calculate(calcNodes)
         
         # log-Metropolis-Hastings ratio
         log_MH_ratio <- model_lp_proposed - model_lp_initial
@@ -606,10 +606,14 @@ stochastic nodes, as this is precisely what is required for
 calculating the Metropolis-Hastings acceptance probability.  These
 probability calculations are done using `model$calculate(calcNodes)`.
 
-In the `run` function, the `mvSaved` modelValues object is kept up-to-date with
-the current state of the model, depending on whether the proposed
-changed was accepted.  This is done using the `copy` function, to copy values between the model and `mvSaved` objects.
-        
+The purpose of the `mvSaved` modelValues object is to store the state of the model, including both node values and log probability values, as it exists before any changes are made by the sampler. This allows restoration of the state when a proposal is rejected, as can be seen in the example above. When a proposal is accepted, one should copy from the model into the `mvSaved` object. NIMBLE's MCMC engine expects that `mvSaved` contains an up-to-date copy of model values and logProb values at the end of the run code of a sampler.
+
+Note that NIMBLE generally expects the user-defined sampler to be defined in the global environment.
+If you define it in a function (which would generally be the case if you are using it in the context of parallelization), one approach would be to assign the user-defined sampler to the global environment in your function:
+
+```{r, eval=FALSE}
+assign('sampler_yourSampler', sampler_yourSampler, envir = .GlobalEnv)
+```
         
         
 ## Copying nimbleFunctions (and NIMBLE models)

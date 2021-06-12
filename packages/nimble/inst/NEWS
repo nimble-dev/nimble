@@ -1,68 +1,383 @@
+                            CHANGES IN VERSION 0.11.1 (May 2021)
+
+USER LEVEL CHANGES
+
+-- Add information about categorical sampler and univariate version of ESS
+   sampler to `help(samplers)`.
+
+BUG FIXES
+
+-- Fix to the `posterior_predictive_branch` MCMC sampler, to update
+   the log-probabilities of the sampled posterior predictive nodes (PR #1127).
+
+                            CHANGES IN VERSION 0.11.0 (April 2021)
+
+USER LEVEL CHANGES
+
+-- Add new `posterior_predictive_branch` MCMC sampler, which is
+   automatically assigned to trailing dependency node networks of entirely
+   non-data nodes (jointly posterior predictive branches).  This sampler
+   simulates jointly from the predictive distribtion of these posterior
+   predictive node branches, and is designed to improve MCMC mixing of the
+   branch, and consequently of the entire model (PR #1086).
+
+-- Allow use of elliptical slice sampler for univariate nodes, which can be
+   useful in multimodal problems (PR #1109).
+
+-- Add a `getParents` method to the model API, allowing one to determine parent
+   nodes, analogous to use of `getDependencies` to determine child nodes
+   (PR #1094).
+
+-- Add `getConditionallyIndependentSets` method (not yet documented) to the model
+   API, allowing one to determine nodes that are conditionally independent of
+   each other given parent nodes (PR #1094).
+
+-- Improve efficiency of conjugate samplers by avoiding unneeded calculations
+   when a conjugate relationship does not involve shifting or scaling (PR #1087).
+
+-- Allow use of `nimNumeric`, `nimMatrix`, `nimArray` in model code (PR #1096).
+
+-- Add progress bar to `getSamplesDPmeasure` (NCT issue 110).
+
+-- Allow model definition using `if` without `else`, fixing a longstanding
+   oversight (PR #1104).
+
+-- Improve warning when multiple nodes provided to `getParam` (PR #1118).
+
+-- Check during model building for unnamed elements of `data` and `inits`
+   (PR #1117).
+
+-- Remove error trapping to prevent use of variables in defining node names,
+   such as `getDependencies('y[idx]')` as this is hard to check robustly and
+   efficiently (PR #1122).
+
+-- Improve error messages when reporting `getParam` cannot calculate a parameter
+   when checking a model (PR #1112).
+
+-- Error trap cases where model nodes are defined in two different declarations,
+   adding check for overlapping multivariate nodes (PR #1110).
+
+-- Improve error trapping of mis-formed stochastic declarations in models
+   (PR #1106).
+
+-- Increase maximum length of compiler output when using
+   `compileNimble(..., showCompilerOutput = TRUE)` (NCT issue 205).
+
+-- Point to parallelization example on r-nimble.org in relevant places of manual.
+
+BUG FIXES
+
+-- Fix a bug (issue #1091) causing incorrect node names when having more than
+   100,000 elements in a vector node or in a dimension of a multi-dimensional
+   node (PR #1092).
+
+-- Fix `getNodeNames` to return no nodes when `latentOnly` is `TRUE` and model
+   contains no latent nodes (PR #1116).
+
+-- Fix checking for unknown nimbleFunction methods and improve related error
+   trapping (PRs #1107, #1105).
+
+DEVELOPER LEVEL CHANGES
+
+-- Update our testing code/infrastructure to use latest testthat API (PR #1090).
+
+-- Shift internal code to use `model$calculate(...)` style rather than
+   `calculate(model, ...)` style for various node functions (PR #1114).
+
+-- Clean up commented out code (PR #1098) and remove unused test files
+   (PR #1097).
+
+-- Update to a newer (but not latest) version of Eigen to suppress some compiler
+   warnings (PR #1093).
+
+
+                            CHANGES IN VERSION 0.10.1 (November 2020)
+                            
+USER LEVEL CHANGES
+
+-- Add `round` argument to `samplesSummary` (PR #1077).
+
+-- `samplesSummary` function (and also `runMCMC(..., summary = TRUE)`) was made
+   to be robust against non-valid values in posterior samples array (PR #1075).
+
+BUG FIXES
+
+-- Fix `makeParamInfo` when there is only one declID involved to address a bug
+   affecting usage of `getParam`. This bug was introduced in version 0.10.0 when
+   reducing memory use of `getParam` (PR #1016). This fixes incorrect behavior
+   of conjugate samplers (because of incorrect inputs from `getParam`) under
+   certain model structures, in particular state-space style models (PR #1080). 
+
+-- Prevent usage of marginal version of WAIC (i.e., when not monitoring all
+   direct stochastic parents of data nodes); use of marginal version of WAIC in
+   previous versions gave incorrect results (PR #1083).
+
+DEVELOPER LEVEL CHANGES
+
+-- Deprecate `samplerAssignmnentRules` system (PR #1078).
+
+-- Deprecate `autoBlock` MCMC option (PR #1079).
+
+                            CHANGES IN VERSION 0.10.0 (October 2020)
+
+USER LEVEL CHANGES
+
+-- Greatly extend BNP functionality with the CRP (Chinese restaurant process)
+   distribution by allowing multiple observations to be grouped together (e.g.,
+   for longitudinal or time series data) without requiring they be specified
+   as a multivariate node (PR #1033).
+
+-- Add a variety of conjugate cases to BNP conjugate samplers (PR #1033).
+
+-- Greatly improve efficiency of model and MCMC building and configuration for
+   BNP-based models with CRP components (PR #1033).
+
+-- Move all sequential Monte Carlo (SMC; aka particle filtering) methods to
+   new package `nimbleSMC`, including various particle-filter-based MCMC
+   samplers.
+
+-- Prevent use of variables in indexes of nodes, such as `y[idx]`, which was
+   incorrectly being evaluated based on R scoping rules (PR #1064).
+
+-- Allow use of `logdet` in model code (Issue #1018).
+
+-- New `resetMV` argument available to `mcmc$run` method. In combination
+   with `reset = FALSE`, specifying `resetMV = TRUE` will continue the current
+   run of the MCMC, but discard any previously-collected samples
+   (PR #1051; thanks to 'DJRP').
+
+-- New methods `setMonitors` and `setMonitors2` added for MCMC configuration
+   objects.  These methods replace the current set of monitors (or monitors2)
+   with the specified variables (PR #1061).
+
+-- Add `as.list` method for modelValues objects (PR #1060).
+
+-- Update `getSamplesDPmeasure` function to improve efficiency and reduce
+   output size; output is now a list of matrices (PR #1059).
+
+-- Add `dimensions` argument to `nimbleMCMC` (PR #1058).
+
+-- Add method `getWidthHistory` to slice sampler to retrieve sampling history
+   information (PR #1057; thanks to 'rpatin').
+
+-- Various improvements to the manual. 
+
+BUG FIXES
+
+-- Fix a bug in k-fold cross-validation routine (`runCrossValidate`), where
+   the merging of MCMC sampler configurations was done incorrectly and causing
+   incorrect results (PR #1068).
+
+-- Fix bug giving incorrect `dwish` density when using non-default S
+   parameterization (PR #1017).
+
+-- Fix incorrect NaN eigenvalues in singular normalized adjacency matrices
+   under `dcar_normal` (PR #1019).
+
+-- Update all MCMC sampler functions to use a new syntax for control list
+   element extraction, which prevents a possible bug caused by R's partial
+   matching of list names (PR #1065).
+
+-- Define auto-generated simulation ('r') functions for user-defined
+   distributions in the global environment to avoid scoping issues (PR #1063).
+
+-- Update user-defined distribution processing so user-defined distributions
+   can be defined inside functions (PR #1063).
+
+-- Fix bug preventing use of `dirName` argument to `compileNimble` (PR #1062).
+
+-- Fix a bug preventing model building when there are overly long names of
+   model variables resulting from long deterministic expressions in model code
+   (PR #1069).
+
+-- Fix `buildMCEM` so it works with a compiled model as argument (PR #1028).
+
+-- Fix `dmvt` so default unnamed parameters work (PR #1027).
+
+-- Fix error in model building in corner case where
+   `makeVertexNamesFromIndexArray2` made a simplifying assumption to conclude
+   a block of nodes was contiguous (PR #1026).
+
+-- Fix bug in `nimbleRcall` causing run-time warnings when `returnType` is void
+   (PR #1013). 
+
+DEVELOPER LEVEL CHANGES
+
+-- Improve efficiency of `getParam` implementation, which improves speed for
+   MCMC compilation (PR #1016). 
+
+-- Improve MCMC sampling efficiency by not copying data nodes, only data node
+   logProbs, during sampler execution for various samplers (PR #1040).
+
+-- Update Travis testing to use R 4.0.
+
+-- Remove `GID_map` internal to modelValues (PR #1032).
+
+-- Remove deprecated function `getLoadingNamespace` and (deprecated) use of
+   `where=getLoadingNamespace`. Also improve handling of environments set up
+   by `nimbleFunction` to make it easier to write packages depending on NIMBLE
+   (PRs #1029, 1011).
+
+-- Force intermediates of index range expressions to be of type 'int' for use
+   in AD (PR #1024).
+
+
+
+                            CHANGES IN VERSION 0.9.1 (May 2020)
+
+USER LEVEL CHANGES
+
+-- Switched from use of `system` to `system2` to avoid problems with installation
+   under R 4.0 on Windows (PR #1003).
+
+-- Modify various adaptive MCMC samplers so the exponent controlling the scale
+   decay of the adaptation is adjustable by user (rather than hard-coded at 0.8
+   (PR #981).
+
+-- Allow `pmin` and `pmax` to be used in models (PR #982).
+
+-- Add documentation for `is.na`,`is.nan`,`any`,`all` (PR #988)
+
+-- Add system option `MCMCuseConugacy` to control whether conjugate samplers are
+   used (PR #998).
+
+-- Adds checks for `niter`, `nburnin` in the `mcmc$run` method (PR #980).
+
+-- Modify print handling in `addSampler` and `configureMCMC` (PRs #986, 989).
+
+-- Improve handling of NA values in `dCRP` to avoid error messages when building
+   models (PR #994).
+
+-- Avoid monitoring top-level data nodes in models (PR #1006).
+
+BUG FIXES
+
+-- Modify MCMC `autoBlock` routine to only group Wishart, Inverse-Wishart, and
+   Dirichlet nodes with themselves, to avoid violating the constraints of those
+   nodes (PR #999).
+
+-- Fix incorrect error message from `warnRHSonlyDynIdx` when variable appears
+   multiple times on right-hand side of a model expression (PR #997).
+
+-- Fix `checkDistributionFunctions` to respect default `nDim=0` when extracting
+   first argument, to avoid error when dimension not specified in user-defined
+   distributions (PR #992).
+
+-- Fix `print` option of `addSampler` (PR #986).
+
+-- Improve handling of cases where indexing goes beyond extent of variable in
+   `expandNodeNames` and related queries of model structure (PR #977).
+
+DEVELOPER LEVEL CHANGES
+
+-- Use `inherits` rather than testing for equality of `class(object)` (PR #988).
+
                             CHANGES IN VERSION 0.9.0 (December 2019)
 
 USER LEVEL CHANGES
 
--- Added iterated filtering 2 (IF2) algorithm for estimating parameters by maximum likelihood in models for which SMC algorithms (particle filters) can be used. 
+-- Added iterated filtering 2 (IF2) algorithm for estimating parameters by
+   maximum likelihood in models for which SMC algorithms (particle filters)
+   can be used. 
 
--- Added dmnorm-dmnorm conjugacy for BNP mixture models using the dCRP distribution (PR #936).
+-- Added dmnorm-dmnorm conjugacy for BNP mixture models using the dCRP
+   distribution (PR #936).
 
--- Added detection of normal-inverse-gamma conjugacy in BNP mixture models using the dCRP distribution in the case when intermediate nodes are present (PR #944).
+-- Added detection of normal-inverse-gamma conjugacy in BNP mixture models using
+   the dCRP distribution in the case when intermediate nodes are present
+   (PR #944).
 
--- Cleaned up handling of linear predictors in regression-style models to avoid an incorrect warning when indexing the result of matrix multiplication (PR #929).
+-- Cleaned up handling of linear predictors in regression-style models to avoid
+   an incorrect warning when indexing the result of matrix multiplication
+   (PR #929).
 
--- Modified handling of NAs in model nodes under truncation or dynamic indexing to avoid printing warnings when calculating the uncompiled model (PR #920).
+-- Modified handling of NAs in model nodes under truncation or dynamic indexing
+   to avoid printing warnings when calculating the uncompiled model (PR #920).
 
 -- Improved speed of 'configureMCMC' (PR #972 and PR #974).
 
--- Added the scalarComponents argument to addSampler method of MCMC configuration objects, which enables adding independent univariate samplers to all scalar componets of a specified target node or variable.
+-- Added the scalarComponents argument to addSampler method of MCMC configuration
+   objects, which enables adding independent univariate samplers to all scalar
+   components of a specified target node or variable.
 
--- removeSamplers, setSamplers, and printSamplers methods of MCMC configuration object now also accept node names (or sampler indices) through the "..." argument.
+-- removeSamplers, setSamplers, and printSamplers methods of MCMC configuration
+   object now also accept node names (or sampler indices) through the "..."
+   argument.
 
--- Fixed a corner case of pathological behavior in the reflection version of the RW sampler when there are both lower and upper bounds and the posterior is poorly informed, in which case the proposal scale could grow to be very large (PR #948).
+-- Fixed a corner case of pathological behavior in the reflection version of the
+   RW sampler when there are both lower and upper bounds and the posterior is
+   poorly informed, in which case the proposal scale could grow to be very large
+   (PR #948).
 
--- Improved output from printSamplers, including indicating if conjugacy is actually used in BNP mixture models using the dCRP distribution.
+-- Improved output from printSamplers, including indicating if conjugacy is
+   actually used in BNP mixture models using the dCRP distribution.
 
--- Added a warning when user specifies a model with non-dynamic indexes specified in 'data' or 'inits' rather than the more computationally-efficient placement in 'constants' (PR #963).
+-- Added a warning when user specifies a model with non-dynamic indexes specified
+   in 'data' or 'inits' rather than the more computationally-efficient placement
+   in 'constants' (PR #963).
 
 -- Added a warning when 'inits' argument to nimbleModel is not a list.
 
--- Modified file path handling in Windows that should work on more file-system configurations (PR #957).
+-- Modified file path handling in Windows that should work on more file-system
+   configurations (PR #957).
 
--- Added tip for dealing with installation problems and added information on how to properly parallelize nimble functionality to the user manual.
+-- Added tip for dealing with installation problems and added information on how
+   to properly parallelize nimble functionality to the user manual.
 
 BUG FIXES
 
--- Remove 'pfResample' option (not the default) for particle MCMC (PMCMC) samplers as resampling is not justified by the theory of PMCMC samplers.
+-- Remove 'pfResample' option (not the default) for particle MCMC (PMCMC)
+   samplers as resampling is not justified by the theory of PMCMC samplers.
 
--- Fixed bug concerning incorrect dependency tracking that affected particle filtering for models with deterministic nodes between multiple latent states of the same time step.
+-- Fixed bug concerning incorrect dependency tracking that affected particle
+   filtering for models with deterministic nodes between multiple latent states
+   of the same time step.
 
--- Fixed bug concerning tracking re-weighting and resampling in auxiliary particle filter in the default 'saveAll=FALSE' case.
+-- Fixed bug concerning tracking re-weighting and resampling in auxiliary
+   particle filter in the default 'saveAll=FALSE' case.
 
--- Modified bootstrap filter to always resample in last time step (even if 'threshold' control argument is less than 1) so that 'mvEWsamples' can always be considered equally-weighted.
+-- Modified bootstrap filter to always resample in last time step (even if
+   'threshold' control argument is less than 1) so that 'mvEWsamples' can always
+   be considered equally-weighted.
 
--- Modified auxiliary particle filter to omit multiplication by p(x_t+1 | x_t) in look-ahead. This now follows Pitt and Shephard (1999).
+-- Modified auxiliary particle filter to omit multiplication by p(x_t+1 | x_t)
+   in look-ahead. This now follows Pitt and Shephard (1999).
 
--- Fixed incorrect handling of rate parameter in ddexp distribution for nimbleFunctions and direct use from R that was causing rate to be ignored and default scale value to be used. Use of rate parameter in ddexp in models was not affected by this issue (PR #950).
+-- Fixed incorrect handling of rate parameter in ddexp distribution for
+   nimbleFunctions and direct use from R that was causing rate to be ignored and
+   default scale value to be used. Use of rate parameter in ddexp in models was
+   not affected by this issue (PR #950).
 
--- Fixed bug causing incorrect sampling in BNP mixture models with beta-binomial or beta-negative-binomial conjugacy (PR #922).
+-- Fixed bug causing incorrect sampling in BNP mixture models with beta-binomial
+   or beta-negative-binomial conjugacy (PR #922).
 
--- Fixed bug that prevented recycling rule for distributions ddexp, dexp_nimble, dt_nonstandard, and dinvgamma (and their 'p' and 'q' versions) when one or more parameter vectors were longer than the primary argument (PR #954).
+-- Fixed bug that prevented recycling rule for distributions ddexp, dexp_nimble,
+   dt_nonstandard, and dinvgamma (and their 'p' and 'q' versions) when one or
+   more parameter vectors were longer than the primary argument (PR #954).
 
--- Fixed bug preventing recycling rule for distributions dt and dt_nonstandard (PR #956).
+-- Fixed bug preventing recycling rule for distributions dt and dt_nonstandard
+   (PR #956).
 
--- Fixed bug in MCMC crossLevel sampler affecting models with non-identity link functions, so that underlying conjugate sampler functions no longer modify the target node value (PR #925).
+-- Fixed bug in MCMC crossLevel sampler affecting models with non-identity link
+   functions, so that underlying conjugate sampler functions no longer modify the
+   target node value (PR #925).
 
--- Fixed a bug in corner case of MCMC conjugacy checking system, when linear scale of target node is identically equal to zero.
+-- Fixed a bug in corner case of MCMC conjugacy checking system, when linear
+   scale of target node is identically equal to zero.
 
--- Fixed a bug in corner case of MCMC conjugacy checking for BNP models - removing conjugacy detection in normal-inverse-gamma case where the data (i.e., dependent node) variance is scaled.
+-- Fixed a bug in corner case of MCMC conjugacy checking for BNP models -
+   removing conjugacy detection in normal-inverse-gamma case where the data
+   (i.e., dependent node) variance is scaled.
 
--- Fixed a bug preventing use of 'data' as the name of a data node in the model (PR #946).
+-- Fixed a bug preventing use of 'data' as the name of a data node in the model
+   (PR #946).
 
 -- Fixed a bug preventing use of 'nimbleModel' via 'do.call' (PR #969).
 
 -- Fixed missing export of 'any_na' and 'any_nan' for use in nimbleFunctions.
 
--- Fixed conjugacy checking to detect conjugacy in more complicated cases involving linear predictors (PR #958).
+-- Fixed conjugacy checking to detect conjugacy in more complicated cases
+   involving linear predictors (PR #958).
 
 DEVELOPER LEVEL CHANGES
 
@@ -70,10 +385,13 @@ DEVELOPER LEVEL CHANGES
 
 -- Match int and unsigned int to silence Windows compiler warnings (PR #914).
 
--- Modified some naming involved in reversible jump MCMC for variable selection. Added error trapping if the node being considered has a multivariate prior (PR #964).
+-- Modified some naming involved in reversible jump MCMC for variable selection.
+   Added error trapping if the node being considered has a multivariate prior
+   (PR #964).
 
 
                             CHANGES IN VERSION 0.8.0 (June 2019)
+
 USER LEVEL CHANGES
 
 -- Added reversible jump MCMC for variable selection via configureRJ().

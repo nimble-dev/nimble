@@ -8,9 +8,9 @@
 #' @export
 #' @aliases calcNodes getLogProbNodes
 #' @details
-#' These are basic nimbleFunctions that take a model and set of nodes and return a function that will call \code{calculate}, \code{simulate}, or \code{getLogProb} on those nodes.  Each is equivalent to a direct call from R, but in nimbleFunction form they can be be compiled and can be put into a nimbleFunctionList.  For example, \code{myCalc <- calcNodes(model, nodes); ans <- myCalc()} is equivalent to \code{ans <- calculate(model, nodes)}, but one can also do \code{CmyCalc <- compileNimble(myCalc)} to get a faster version.
+#' These are basic nimbleFunctions that take a model and set of nodes and return a function that will call \code{calculate}, \code{simulate}, or \code{getLogProb} on those nodes.  Each is equivalent to a direct call from R, but in nimbleFunction form they can be be compiled and can be put into a nimbleFunctionList.  For example, \code{myCalc <- calcNodes(model, nodes); ans <- myCalc()} is equivalent to \code{ans <- model$calculate(nodes)}, but one can also do \code{CmyCalc <- compileNimble(myCalc)} to get a faster version.
 #'
-#' In nimbleFunctions, for only one set of nodes, it is equivalent or slightly better to simply use \code{calculate(model, nodes)} in the run-time code.  The compiler will process the model-nodes combination in the same way as would occur by creating a specialized \code{calcNodes} in the setup code.  However, if there are multiple sets of nodes, one can do the following:
+#' In nimbleFunctions, for only one set of nodes, it is equivalent or slightly better to simply use \code{model$calculate(nodes)} in the run-time code.  The compiler will process the model-nodes combination in the same way as would occur by creating a specialized \code{calcNodes} in the setup code.  However, if there are multiple sets of nodes, one can do the following:
 #'
 #' Setup code: \code{myCalcs <- nimbleFunctionList(calcNodes); myCalcs[[1]] <- calcNodes(model, nodes[[1]]); myCalcs[[2]] <- calcNodes[[2]]}
 #'
@@ -27,9 +27,8 @@ simNodes <- nimbleFunction(
         }
     },
     run = function(){
-        simulate(model, nodes)
-    },
-    where = getLoadingNamespace())
+        model$simulate(nodes)
+    })
 
 #' @rdname simNodes
 #' @export
@@ -42,11 +41,10 @@ calcNodes <- nimbleFunction(
                     depNodes <- model$getDependencies(nodes)
 	},
 	run = function(){
-            ans <- calculate(model, depNodes)
+            ans <- model$calculate(depNodes)
             return(ans)
             returnType(double())
-	},	
-    where = getLoadingNamespace())
+	})	
 
 #' @rdname simNodes
 #' @export
@@ -59,13 +57,10 @@ getLogProbNodes <- nimbleFunction(
                     depNodes <- model$getDependencies(nodes)
 	},
 	run = function(){
-            ans <- getLogProb(model, depNodes)
+            ans <- model$getLogProb(depNodes)
             return(ans)
             returnType(double())
-	},
-	where = getLoadingNamespace()	
-)
-
+	})
 
 #' Basic nimbleFunctions for using a NIMBLE model with sets of stored values
 #'
@@ -137,12 +132,10 @@ simNodesMV <- nimbleFunction(
     run = function(m = integer(0)){
         resize(mv, m)
         for(i in 1:m){
-            simulate(model, nodes)
+            model$simulate(nodes)
             nimCopy(from = model, to = mv, nodes = nodes, row = i)
         } 
-    },
-    where = getLoadingNamespace())
-
+    })
 
 #' @rdname simNodesMV
 #' @export
@@ -160,15 +153,13 @@ calcNodesMV <- nimbleFunction(
 		setSize(logPvec, m)
 		for(i in 1:m){
 			nimCopy(from = mv, to = model, nodes = nodes, row = i)
-			logPvec[i] <<- calculate(model, depNodes)	
+			logPvec[i] <<- model$calculate(depNodes)	
 			if(saveLP)
 				nimCopy(from = model, to = mv, nodes = depNodes, rowTo = i, logProb = TRUE)
 		}
 	returnType(double(1))
 	return(logPvec)
-	},	
-where = getLoadingNamespace())
-
+	})
 
 #' @rdname simNodesMV
 #' @export
@@ -186,15 +177,11 @@ getLogProbNodesMV <- nimbleFunction(
 		setSize(logPvec, m)
 		for(i in 1:m){
 			nimCopy(from = mv, to = model, nodes = depNodes, row = i, logProb = TRUE)
-			logPvec[i] <<- getLogProb(model, depNodes)	
+			logPvec[i] <<- model$getLogProb(depNodes)	
 		}
 	returnType(double(1))
 	return(logPvec)
-	},
-	where = getLoadingNamespace()	
-)
-
-
+	})
 
 #' Create an Identity matrix (Deprecated)
 #'
@@ -220,9 +207,4 @@ identityMatrix <- nimbleFunction(
         for(i in 1:d)                   arr[i, i] <- 1
         returnType(double(2))
         return(arr)
-    },  where = getLoadingNamespace()
-)
-
-
-
-
+    })

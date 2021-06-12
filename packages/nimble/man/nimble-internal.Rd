@@ -21,6 +21,7 @@
 \alias{is.Cnf}
 \alias{is.Rmodel}
 \alias{is.model}
+\alias{nf_preProcessMemberDataObject}
 \alias{samplesSummary}
 \alias{calc_dmnormConjugacyContributions}
 \alias{calc_dmnormAltParams}
@@ -35,6 +36,8 @@
 \alias{singleModelValuesAccess}
 \alias{getNimbleProject}
 \alias{cc_getNodesInExpr}
+\alias{calcAdaptationFactor}
+\alias{is.nfGenerator}
 \alias{nimbleInternalFunctions}
 \alias{nimbleUserNamespace}
 \description{

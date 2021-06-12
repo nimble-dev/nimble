@@ -20,18 +20,61 @@ compareMCMCs <- function(...)
 MCMCsuite <- function(...)
     cat("This function now resides in a separate package. Please see https://github.com/nimble-dev/compareMCMCs.\n")
 
-## This is used in conjugacy definition for ddirch, to calculate 'contribution'
-## terms from dcat dependents.
-calc_dcatConjugacyContributions <- nimbleFunction(
-    name = 'calc_dcatConjugacyContributions',
-    run = function(ncat = double(0), value = double(0)) {
-        ans <- numeric(ncat)
-        ans[value] <- 1
-        return(ans)
-        returnType(double(1))
-    }
-)
 
+#' Placeholder for buildAuxiliaryFilter
+#'
+#' This function has been moved to the `nimbleSMC` package
+#'
+#' @param ... arguments
+#'
+#' @export
+#'
+buildAuxiliaryFilter <- function(...)
+    cat("NIMBLE's sequential Monte Carlo functionality, including this function, now resides in the 'nimbleSMC' package.\n")
+
+#' Placeholder for buildBootstrapFilter
+#'
+#' This function has been moved to the `nimbleSMC` package
+#'
+#' @param ... arguments
+#'
+#' @export
+#'
+buildBootstrapFilter <- function(...)
+    cat("NIMBLE's sequential Monte Carlo functionality, including this function, now resides in the 'nimbleSMC' package.\n")
+
+#' Placeholder for buildEnsembleKF
+#'
+#' This function has been moved to the `nimbleSMC` package
+#'
+#' @param ... arguments
+#'
+#' @export
+#'
+buildEnsembleKF <- function(...)
+    cat("NIMBLE's sequential Monte Carlo functionality, including this function, now resides in the 'nimbleSMC' package.\n")
+
+#' Placeholder for buildIteratedFilter2
+#'
+#' This function has been moved to the `nimbleSMC` package
+#'
+#' @param ... arguments
+#'
+#' @export
+#'
+buildIteratedFilter2 <- function(...)
+    cat("NIMBLE's sequential Monte Carlo functionality, including this function, now resides in the 'nimbleSMC' package.\n")
+
+#' Placeholder for buildLiuWestFilter
+#'
+#' This function has been moved to the `nimbleSMC` package
+#'
+#' @param ... arguments
+#'
+#' @export
+#'
+buildLiuWestFilter <- function(...)
+    cat("NIMBLE's sequential Monte Carlo functionality, including this function, now resides in the 'nimbleSMC' package.\n")
 
 ## used in altParams for dmnorm
 ## this needs to be sourced after nimbleFunction() is defined, so can't be done in distributions_inputList.R
@@ -52,29 +95,31 @@ calc_dmnormAltParams <- nimbleFunction(
     }
 )
 
+## This is used in conjugacy definition for ddirch, to calculate 'contribution'
+## terms from dcat dependents.
+calc_dcatConjugacyContributions <- nimbleFunction(
+    name = 'calc_dcatConjugacyContributions',
+    run = function(ncat = double(0), value = double(0)) {
+        ans <- numeric(ncat)
+        ans[value] <- 1
+        return(ans)
+        returnType(double(1))
+    }
+)
 
 ## used in conjugacy definition for dmnorm, to calculate 'contribution' terms;
-## avoids unnecessary matrix multiplications, when 'coeff' is identity matrix
+## formerly avoided unnecessary matrix multiplications, when 'coeff' is identity matrix by numerical computation
+## now we do via code processing to determine the realized link
 calc_dmnormConjugacyContributions <- nimbleFunction(
     name = 'calc_dmnormConjugacyContributions',
-    run = function(coeff = double(2), prec = double(2), vec = double(1), order = double()) {
-        if(dim(coeff)[1] == dim(coeff)[2]) {
-            d <- dim(coeff)[1]
-            total <- 0
-            for(i in 1:d) {
-                for(j in 1:d) {
-                    if(i == j) { total <- total + abs(coeff[i,j] - 1)
-                             } else     { total <- total + abs(coeff[i,j])     }
-                }
-            }
-            if(total < d * 1E-15) {
-                if(order == 1) ans <- prec %*% asCol(vec)
-                if(order == 2) ans <- prec
-                return(ans)
-            }
+    run = function(coeff = double(2), prec = double(2), vec = double(1), order = double(), use_coeff = double()) {
+        if(use_coeff == 0) {  ## identity, additive
+            if(order == 1) ans <- prec %*% asCol(vec)
+            if(order == 2) ans <- prec
+        } else {
+            if(order == 1) ans <- t(coeff) %*% (prec %*% asCol(vec))
+            if(order == 2) ans <- t(coeff) %*% prec %*% coeff
         }
-        if(order == 1) ans <- t(coeff) %*% (prec %*% asCol(vec))
-        if(order == 2) ans <- t(coeff) %*% prec %*% coeff
         return(ans)
         returnType(double(2))
     }

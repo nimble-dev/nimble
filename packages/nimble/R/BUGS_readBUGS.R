@@ -92,13 +92,6 @@ nimbleModel <- function(code,
         is.numeric(x) || is.logical(x) ||
             (is.data.frame(x) && all(sapply(x, 'is.numeric'))) })))
         stop("BUGSmodel: elements of 'data' must be numeric")
-    ## constantLengths <- unlist(lapply(constants, length))
-    ## if(any(constantLengths > 1)) {
-    ##     iLong <- which(constantLengths > 1)
-    ##     message(paste0('Constant(s) ', paste0(names(constants)[iLong], sep=" ", collapse = " "), ' are non-scalar and will be handled as inits.'))
-    ##     inits <- c(inits, constants[iLong])
-    ##     constants[iLong] <- NULL
-    ## }
     md <- modelDefClass$new(name = name)
     if(nimbleOptions('verbose')) message("defining model...")
     md$setupModel(code=code, constants=constants, dimensions=dimensions, inits = inits, data = data, userEnv = userEnv, debug=debug)
@@ -266,7 +259,7 @@ processNonParseableCode <- function(text) {
 #'
 #' @return returns a NIMBLE BUGS R model
 #'
-#' @details Note that \code{readBUGSmodel} should handle most common ways of providing information on a model as used in BUGS and JAGS but does not handle input model files that refer to additional files containing data. Please see the BUGS examples provided with NIMBLE in the \code{classic-bugs} directory of the installed NIMBLE package or JAGS (\url{http://sourceforge.net/projects/mcmc-jags/files/Examples/}) for examples of supported formats. Also, \code{readBUGSmodel} takes both constants and data via the 'data' argument, unlike \code{\link{nimbleModel}}, in which these are distinguished. The reason for allowing both to be given via 'data' is for backwards compatibility with the BUGS examples, in which constants and data are not distinguished.
+#' @details Note that \code{readBUGSmodel} should handle most common ways of providing information on a model as used in BUGS and JAGS but does not handle input model files that refer to additional files containing data. Please see the BUGS examples provided with NIMBLE in the \code{classic-bugs} directory of the installed NIMBLE package or JAGS (\url{https://sourceforge.net/projects/mcmc-jags/files/Examples/}) for examples of supported formats. Also, \code{readBUGSmodel} takes both constants and data via the 'data' argument, unlike \code{\link{nimbleModel}}, in which these are distinguished. The reason for allowing both to be given via 'data' is for backwards compatibility with the BUGS examples, in which constants and data are not distinguished.
 #'
 #' @seealso \code{\link{nimbleModel}}
 #' 
@@ -334,7 +327,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
       # note that split lines that are parseable are dealt with by parse()
   }
 
-  if(! class(model) == "{")
+  if(!inherits(model, "{"))
     stop("readBUGSmodel: cannot process 'model' input.")
 
   # process initial values
@@ -372,10 +365,9 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
       source(initsFile, inits)
       inits <- as.list(inits)
     }
-  } else {
-    inits <- NULL
-  }
-  if(!(is.null(inits) || is.list(inits)))
+  } else inits <- NULL
+  if(is.null(inits)) inits <- list()  
+  if(!is.list(inits))
     stop("readBUGSmodel: invalid input for 'inits'.")
 
   # process var info
@@ -394,14 +386,9 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
   }
   if(is.null(data)) {
       possibleNames <- paste0(modelName, c("-data.R", "-data.txt", "data"))
-          ## c(
-          ##              file.path(dir, paste0(modelName, "-data.R")),
-          ##              file.path(dir, paste0(modelName, "-data.txt")),
-          ##              file.path(dir, paste0(modelName, "-data")))
     if(!Sys.info()['sysname'] %in% c("Darwin", "Windows")) # UNIX-like is case-sensitive
         possibleNames <- c(possibleNames,
                            paste0(modelName, "-data.r"))
-##                         file.path(dir, paste0(modelName, "-data.r")))
       if(!skip.file.path) possibleNames <- normalizePath(file.path(dir, possibleNames), winslash = "\\", mustWork=FALSE)
       fileExistence <- file.exists(possibleNames)
       if(sum(fileExistence) > 1)

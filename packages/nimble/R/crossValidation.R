@@ -31,7 +31,7 @@ calcCrossVal <- function(i,
   message(paste("dropping data fold", i))
   model <- conf$model
   leaveOutNames <- model$expandNodeNames(foldFunction(i))
-  currentDataNames <- model$getNodeNames(dataOnly = T)
+  currentDataNames <- model$getNodeNames(dataOnly = TRUE)
   currentDataNames <- currentDataNames[!(currentDataNames %in% leaveOutNames)]
   saveData <- values(model, leaveOutNames)
   if(!silent) newModel <- model$newModel(check = FALSE, replicate = TRUE)
@@ -54,9 +54,14 @@ calcCrossVal <- function(i,
     leaveOutNames <- paramNames
     predLoss <- TRUE
   }
-  if(!silent) modelMCMCConf <- configureMCMC(newModel, nodes = leaveOutNames, monitors = leaveOutNames)
-  else modelMCMCConf <- suppressMessages(configureMCMC(newModel, nodes = leaveOutNames, monitors = leaveOutNames))
-  if(!predLoss) modelMCMCConf$samplerConfs <- c(conf$samplerConfs,modelMCMCConf$samplerConfs)
+  if(!silent) modelMCMCConf <- configureMCMC(newModel, nodes = leaveOutNames, monitors = leaveOutNames, print = silent)
+  else modelMCMCConf <- suppressMessages(configureMCMC(newModel, nodes = leaveOutNames, monitors = leaveOutNames, print = silent))
+  if(!predLoss) {
+      for(i in seq_along(modelMCMCConf$samplerConfs)) {
+          sConf <- modelMCMCConf$samplerConfs[[i]]
+          conf$addSampler(target=sConf$target, type=sConf$samplerFunction, control=sConf$control, silent=TRUE)
+      }
+  }
   if(!silent){
     modelMCMC <- buildMCMC(modelMCMCConf)
     C.modelMCMC <- compileNimble(modelMCMC,

@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<html lang="" xml:lang="">
 <head>
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title></title>
+  <title>Chapter 4 Installing NIMBLE | NimbleUserManual.utf8</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.12 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.19 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="" />
+  <meta property="og:title" content="Chapter 4 Installing NIMBLE | NimbleUserManual.utf8" />
   <meta property="og:type" content="book" />
   
   <meta property="og:image" content="nimble-icon.png" />
@@ -16,7 +16,7 @@
   <meta name="github-repo" content="nimble-dev/nimble" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="" />
+  <meta name="twitter:title" content="Chapter 4 Installing NIMBLE | NimbleUserManual.utf8" />
   
   <meta name="twitter:description" content="This is the NIMBLE User Manual." />
   <meta name="twitter:image" content="nimble-icon.png" />
@@ -29,8 +29,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
-<link rel="prev" href="cha-more-introduction.html">
-<link rel="next" href="cha-writing-models.html">
+<link rel="prev" href="cha-more-introduction.html"/>
+<link rel="next" href="cha-writing-models.html"/>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -38,6 +38,9 @@
 <link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
 
 
 
@@ -48,41 +51,66 @@
 
 
 <style type="text/css">
-div.sourceCode { overflow-x: auto; }
-table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
-  margin: 0; padding: 0; vertical-align: baseline; border: none; }
-table.sourceCode { width: 100%; line-height: 100%; }
-td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
-td.sourceCode { padding-left: 5px; }
-code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
-code > span.dt { color: #902000; } /* DataType */
-code > span.dv { color: #40a070; } /* DecVal */
-code > span.bn { color: #40a070; } /* BaseN */
-code > span.fl { color: #40a070; } /* Float */
-code > span.ch { color: #4070a0; } /* Char */
-code > span.st { color: #4070a0; } /* String */
-code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
-code > span.ot { color: #007020; } /* Other */
-code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
-code > span.fu { color: #06287e; } /* Function */
-code > span.er { color: #ff0000; font-weight: bold; } /* Error */
-code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
-code > span.cn { color: #880000; } /* Constant */
-code > span.sc { color: #4070a0; } /* SpecialChar */
-code > span.vs { color: #4070a0; } /* VerbatimString */
-code > span.ss { color: #bb6688; } /* SpecialString */
-code > span.im { } /* Import */
-code > span.va { color: #19177c; } /* Variable */
-code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-code > span.op { color: #666666; } /* Operator */
-code > span.bu { } /* BuiltIn */
-code > span.ex { } /* Extension */
-code > span.pp { color: #bc7a00; } /* Preprocessor */
-code > span.at { color: #7d9029; } /* Attribute */
-code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
-code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+a.sourceLine { display: inline-block; line-height: 1.25; }
+a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
+a.sourceLine:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+a.sourceLine { text-indent: -1em; padding-left: 1em; }
+}
+pre.numberSource a.sourceLine
+  { position: relative; left: -4em; }
+pre.numberSource a.sourceLine::before
+  { content: attr(title);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; pointer-events: all; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {  }
+@media screen {
+a.sourceLine::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
 <link rel="stylesheet" href="style.css" type="text/css" />
@@ -100,7 +128,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.9.0</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.11.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -232,6 +260,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="10.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:crp"><i class="fa fa-check"></i><b>10.2</b> Chinese Restaurant Process model</a><ul>
 <li class="chapter" data-level="10.2.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-density-2"><i class="fa fa-check"></i><b>10.2.1</b> Specification and density</a></li>
 <li class="chapter" data-level="10.2.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:excrp"><i class="fa fa-check"></i><b>10.2.2</b> Example</a></li>
+<li class="chapter" data-level="10.2.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:extensionscrp"><i class="fa fa-check"></i><b>10.2.3</b> Extensions</a></li>
 </ul></li>
 <li class="chapter" data-level="10.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:sb"><i class="fa fa-check"></i><b>10.3</b> Stick-breaking model</a><ul>
 <li class="chapter" data-level="10.3.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-function"><i class="fa fa-check"></i><b>10.3.1</b> Specification and function</a></li>
@@ -327,6 +356,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
+<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
       </nav>
@@ -353,96 +383,174 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ol style="list-style-type: decimal">
 <li><a href="https://www.cran.r-project.org">R</a>, of course.</li>
 <li>The <a href="https://www.cran.r-project.org/web/packages/igraph/index.html">igraph</a>, <a href="https://www.cran.r-project.org/web/packages/coda/index.html">coda</a> and <a href="https://www.cran.r-project.org/web/packages/R6/index.html">R6</a> R packages.</li>
-<li>A working C++ compiler that NIMBLE can use from R on your system. There are standard open-source C++ compilers that the R community has already made easy to install. See Section <a href="cha-installing-nimble.html#sec:compiler">4.2</a> for instructions. You don’t need to know anything about C++ to use NIMBLE. This must be done before installing NIMBLE.</li>
+<li>A working C++ compiler that NIMBLE can use from R on your system. There are
+standard open-source C++ compilers that the R community has already
+made easy to install. See Section <a href="cha-installing-nimble.html#sec:compiler">4.2</a> for
+instructions. You don’t need to know anything about C++ to use
+NIMBLE. This must be done before installing NIMBLE.</li>
 </ol>
 <p>NIMBLE also uses a couple of C++ libraries that you don’t need to install, as they will already be on your system or are provided by NIMBLE.</p>
 <ol style="list-style-type: decimal">
-<li>The <a href="https://eigen.tuxfamily.org">Eigen</a> C++ library for linear algebra. This comes with NIMBLE, or you can use your own copy.</li>
-<li>The BLAS and LAPACK numerical libraries. These come with R, but see Section <a href="cha-installing-nimble.html#sec:blas">4.5.3</a> for how to use a faster version of the BLAS.</li>
+<li>The <a href="https://eigen.tuxfamily.org">Eigen</a> C++ library
+for linear algebra. This comes with NIMBLE, or you can use your own copy.</li>
+<li>The BLAS and LAPACK numerical libraries. These come with
+R, but see Section <a href="cha-installing-nimble.html#sec:blas">4.5.3</a> for how to use a faster version of the BLAS.</li>
 </ol>
-<p>Most fairly recent versions of these requirements should work. <!---  [look into giving more detailed version requirements] --></p>
+<p>Most fairly recent versions of these requirements should work.
+<!---  [look into giving more detailed version requirements] --></p>
 </div>
 <div id="sec:compiler" class="section level2">
 <h2><span class="header-section-number">4.2</span> Installing a C++ compiler for NIMBLE to use</h2>
-<p>NIMBLE needs a C++ compiler and the standard utility <em>make</em> in order to generate and compile C++ for models and algorithms.<a href="#fn8" class="footnoteRef" id="fnref8"><sup>8</sup></a></p>
+<p>NIMBLE needs a C++ compiler and the standard utility <em>make</em> in
+order to generate and compile C++ for models and algorithms.<a href="#fn8" class="footnote-ref" id="fnref8"><sup>8</sup></a></p>
 <div id="macos" class="section level3">
 <h3><span class="header-section-number">4.2.1</span> MacOS</h3>
-<p>On MacOS, you should install <em>Xcode</em>. The command-line tools, which are available as a smaller installation, should be sufficient. This is freely available from the <a href="https://developer.apple.com/xcode/downloads/">Apple developer site</a> and the <a href="https://itunes.apple.com/us/app/xcode/id497799835?ls=1&amp;mt=12">App Store</a>. <!---  Perry asked if App Store link is stable - Chris checked and it seems fine for now (and is the top hit on a Google search ... --></p>
+<p>On MacOS, you should install <em>Xcode</em>. The command-line tools, which are
+available as a smaller installation, should be sufficient. This is freely available from the
+<a href="https://developer.apple.com/xcode/downloads/">Apple developer
+site</a> and the
+<a href="https://itunes.apple.com/us/app/xcode/id497799835?ls=1&amp;mt=12">App Store</a>.
+<!---  Perry asked if App Store link is stable - Chris checked and it seems fine for now (and is the top hit on a Google search ... --></p>
 <p>In the somewhat unlikely event you want to install from the source package rather than the CRAN binary package, the easiest approach is to use the source package provided at <a href="https://R-nimble.org">R-nimble.org</a>. If you do want to install from the source package provided by CRAN, you’ll need to install <a href="https://r.research.att.com/libs/gfortran-4.8.2-darwin13.tar.bz2">this gfortran package</a>.</p>
 </div>
 <div id="linux" class="section level3">
 <h3><span class="header-section-number">4.2.2</span> Linux</h3>
-<p>On Linux, you can install the GNU compiler suite (<em>gcc</em>/<em>g++</em>). You can use the package manager to install pre-built binaries. On Ubuntu, the following command will install or update <em>make</em>, <em>gcc</em> and <em>libc</em>.</p>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="fu">sudo</span> apt-get install build-essential</code></pre></div>
+<p>On Linux, you can install the GNU compiler suite (<em>gcc</em>/<em>g++</em>).
+You can use the package manager to install pre-built binaries.
+On Ubuntu, the following command will install or update <em>make</em>, <em>gcc</em> and <em>libc</em>.</p>
+<div class="sourceCode" id="cb72"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb72-1" title="1"><span class="fu">sudo</span> apt-get install build-essential</a></code></pre></div>
 </div>
 <div id="windows" class="section level3">
 <h3><span class="header-section-number">4.2.3</span> Windows</h3>
-<p>On Windows, you should download and install <code>Rtools.exe</code> available from <a href="https://cran.r-project.org/bin/windows/Rtools/" class="uri">https://cran.r-project.org/bin/windows/Rtools/</a>. Select the appropriate executable corresponding to your version of R (and follow the urge to update your version of R if you notice it is not the most recent). This installer leads you through several ‘pages’. We think you can accept the defaults with one exception: check the PATH checkbox (page 5) so that the installer will add the location of the C++ compiler and related tools to your system’s PATH, ensuring that R can find them. After you click ‘Next’, you will get a page with a window for customizing the new PATH variable. You shouldn’t need to do anything there, so you can simply click ‘Next’ again.</p>
-<p>The checkbox for the ‘R 2.15+ toolchain’ (page 4) must be checked (in order to have <em>gcc</em>/<em>g++</em>, <em>make</em>, etc. installed). This should be checked by default.</p>
+<p>On Windows, you should download and install <code>Rtools.exe</code>
+available from <a href="https://cran.r-project.org/bin/windows/Rtools/">https://cran.r-project.org/bin/windows/Rtools/</a>.
+Select the appropriate executable corresponding to your version of R
+(and follow the urge to update your version of R if you notice it
+is not the most recent).</p>
+<p>Important: You must set the path so that the installer will add the
+location of the C++ compiler and related tools to your system’s PATH variable,
+ensuring that R can find them. For R version 4.0 or greater (Rtools40)
+be sure to follow the instructions in the section <a href="https://cran.r-project.org/bin/windows/Rtools#putting-rtools-on-the-path">Putting Rtools on the PATH</a>.
+For R version 3.6.3 or lesser (i.e., using Rtools35.exe) make sure to check the box labelled
+“Add rtools to system PATH” (page 5 of the installation pages) (it should be checked by default).
+After you click ‘Next’, you will get
+a page with a window for customizing the new PATH variable. You
+shouldn’t need to do anything there, so you can simply click ‘Next’
+again.</p>
 </div>
 </div>
 <div id="installing-the-nimble-package" class="section level2">
 <h2><span class="header-section-number">4.3</span> Installing the NIMBLE package</h2>
-<p>Since NIMBLE is an R package, you can install it in the usual way, via <code>install.packages(&quot;nimble&quot;)</code> in R or using the <code>R CMD INSTALL</code> method if you download the package source directly.</p>
+<p>Since NIMBLE is an R package, you can install it in the usual way, via
+<code>install.packages("nimble")</code> in R or using the <code>R CMD INSTALL</code>
+method if you download the package source directly.</p>
 <p>NIMBLE can also be obtained from the <a href="https://r-nimble.org">NIMBLE website</a>. To install from our website, please see our <a href="https://r-nimble.org/download">Download page</a> for the specific invocation of <code>install.packages</code>.</p>
 </div>
 <div id="troubleshooting-installation-problems" class="section level2">
 <h2><span class="header-section-number">4.4</span> Troubleshooting installation problems</h2>
-<p>We have tested the installation on the three commonly used platforms – MacOS, Linux, Windows<a href="#fn9" class="footnoteRef" id="fnref9"><sup>9</sup></a>. We don’t anticipate problems with installation, but we want to hear about any and help resolve them.</p>
+<p>We have tested the installation on the three commonly used platforms
+– MacOS, Linux, Windows<a href="#fn9" class="footnote-ref" id="fnref9"><sup>9</sup></a>. We don’t anticipate problems with installation,
+but we want to hear about any and help resolve them.</p>
 <p>The following are some troubleshooting tips that have helped users in some situations.</p>
 <p>For Windows:</p>
 <ul>
-<li>Be sure to check box to set <code>PATH</code> when installing Rtools.exe. Alternatively, one can set the <code>PATH</code> manually using syntax similar to this (after changing <code>C:\\Rtools\\bin;C:\\Rtools\\mingw_64\\bin</code> to be appropriate for your system):</li>
+<li>Be sure you have set <code>PATH</code> when installing Rtools (see instructions above in the Windows installation section). Alternatively, one can set the <code>PATH</code> manually using syntax similar to this (after changing <code>C:\\Rtools\\bin;C:\\Rtools\\mingw_64\\bin</code> to be appropriate for your system):</li>
 </ul>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">path &lt;-<span class="st"> </span><span class="kw">Sys.getenv</span>(<span class="st">&#39;PATH&#39;</span>)
-newPath &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;C:</span><span class="ch">\\</span><span class="st">Rtools</span><span class="ch">\\</span><span class="st">bin;C:</span><span class="ch">\\</span><span class="st">Rtools</span><span class="ch">\\</span><span class="st">mingw_64</span><span class="ch">\\</span><span class="st">bin;&quot;</span>,
-                 path, <span class="dt">sep =</span> <span class="st">&quot;&quot;</span>)
-<span class="kw">Sys.setenv</span>(<span class="dt">PATH =</span> newPath) </code></pre></div>
+<div class="sourceCode" id="cb73"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb73-1" title="1">path &lt;-<span class="st"> </span><span class="kw">Sys.getenv</span>(<span class="st">&#39;PATH&#39;</span>)</a>
+<a class="sourceLine" id="cb73-2" title="2">newPath &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;C:</span><span class="ch">\\</span><span class="st">Rtools</span><span class="ch">\\</span><span class="st">bin;C:</span><span class="ch">\\</span><span class="st">Rtools</span><span class="ch">\\</span><span class="st">mingw_64</span><span class="ch">\\</span><span class="st">bin;&quot;</span>,</a>
+<a class="sourceLine" id="cb73-3" title="3">                 path, <span class="dt">sep =</span> <span class="st">&quot;&quot;</span>)</a>
+<a class="sourceLine" id="cb73-4" title="4"><span class="kw">Sys.setenv</span>(<span class="dt">PATH =</span> newPath) </a></code></pre></div>
 <ul>
 <li>Be sure the <code>Rtools.exe</code> version matches the R version.</li>
 <li>Try re-installing <code>Rtools</code> followed by re-installing NIMBLE.</li>
+<li>If you’re using Rtools40, make sure you are using a newer version or RStudio (at least 1.2.5042).</li>
 <li>If there are filesystem or permissions issues, it is possible to install NIMBLE in a local directory using the <code>lib</code> argument to <code>install.packages</code>.</li>
-<li>In the past we’ve heard reports from Windows users of problems when their filesystem involved a space in a directory name in the path to <code>RHOME</code>. We’ve also heard reports from Windows users of problems when R is installed on a network drive. We think both of these issues have been resolved.</li>
+<li>In the past we’ve heard reports from Windows users of problems when their filesystem involved a space in a directory name in the path to <code>RHOME</code>. We think this problem has been resolved.</li>
+<li>We’ve also heard reports from Windows users of problems when R is installed on a network drive. A work-around is to install locally in a directory on a drive physically on the machine.</li>
 </ul>
 <p>For MacOS:</p>
 <ul>
 <li>Newly installed Xcode/command line tools may need to be started once manually to provide a one-time permission before they will work from NIMBLE.</li>
+<li>Upgrading your MacOS version may result in an error while installing or using NIMBLE. Please try running the following in the Terminal to reinstall Xcode/command line tools:</li>
+</ul>
+<div class="sourceCode" id="cb74"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb74-1" title="1"><span class="ex">xcode-select</span> --install</a></code></pre></div>
+<ul>
 <li>If multiple C++ compilers are present on a system, be sure the <code>PATH</code> will find the right one.</li>
 </ul>
 <p>All operating systems:</p>
 <ul>
 <li>If problems arise from generating and compiling C++ files from the default location in R’s <code>tempdir()</code>, one can use the <code>dirName</code> argument to <code>compileNimble</code> to put such files elsewhere, such as in a local working directory.</li>
 </ul>
-<p>If those suggestions don’t help, please post about installation problems to the <a href="https://groups.google.com/forum/#!forum/nimble-users">nimble-users Google group</a> or email <a href="mailto:nimble.stats@gmail.com">nimble.stats@gmail.com</a>.</p>
+<p>If those suggestions don’t help, please post about installation problems to the <a href="https://groups.google.com/forum/#!forum/nimble-users">nimble-users Google group</a> or
+email <a href="mailto:nimble.stats@gmail.com">nimble.stats@gmail.com</a>.</p>
 </div>
 <div id="customizing-your-installation" class="section level2">
 <h2><span class="header-section-number">4.5</span> Customizing your installation</h2>
-<p>For most installations, you can ignore low-level details. However, there are some options that some users may want to utilize.</p>
+<p>For most installations, you can ignore low-level details.
+However, there are some options that some users may want to utilize.</p>
 <div id="using-your-own-copy-of-eigen" class="section level3">
 <h3><span class="header-section-number">4.5.1</span> Using your own copy of Eigen</h3>
 <!--- ### Finding the Eigen Header Files -->
-<p>NIMBLE uses the Eigen C++ template library for linear algebra. Version 3.2.1 of Eigen is included in the NIMBLE package and that version will be used unless the package’s configuration script finds another version on the machine. This works well, and the following is only relevant if you want to use a different (e.g., newer) version.</p>
-<p>The configuration script looks in the standard include directories, e.g. <code>/usr/include</code> and <code>/usr/local/include</code> for the header file <code>Eigen/Dense</code>. You can specify a particular location in either of two ways:</p>
+<p>NIMBLE uses the Eigen C++ template library for linear algebra. Version 3.2.1
+of Eigen is included in the NIMBLE package and that version will be
+used unless the package’s configuration script finds another version
+on the machine. This works well, and the following is only relevant
+if you want to use a different (e.g., newer) version.</p>
+<p>The configuration script looks in the standard include directories,
+e.g. <code>/usr/include</code> and <code>/usr/local/include</code> for the header file <code>Eigen/Dense</code>.
+You can specify a particular location in either of two ways:</p>
 <ol style="list-style-type: decimal">
 <li>Set the environment variable <code>EIGEN_DIR</code> before installing the R package, for example: <code>export EIGEN_DIR=/usr/include/eigen3</code> in the bash shell.</li>
-<li>Use <code>R CMD INSTALL --configure-args='--with-eigen=/path/to/eigen' nimble_VERSION.tar.gz</code> or <code>install.packages(&quot;nimble&quot;, configure.args = &quot;--with-eigen=/path/to/eigen&quot;)</code></li>
+<li>Use
+<code>R CMD INSTALL --configure-args='--with-eigen=/path/to/eigen' nimble_VERSION.tar.gz</code>
+or
+<code>install.packages("nimble", configure.args = "--with-eigen=/path/to/eigen")</code></li>
 </ol>
-<p>In these cases, the directory should be the full path to the directory that contains the Eigen directory, e.g., <code>/usr/include/eigen3</code>. It is not the full path to the Eigen directory itself, i.e., NOT <code>/usr/include/eigen3/Eigen</code>.</p>
+<p>In these cases, the directory should be the full path to the directory that
+contains the Eigen directory, e.g., <code>/usr/include/eigen3</code>. It is not the full path to the Eigen
+directory itself, i.e., NOT <code>/usr/include/eigen3/Eigen</code>.</p>
 </div>
 <div id="using-libnimble" class="section level3">
 <h3><span class="header-section-number">4.5.2</span> Using libnimble</h3>
-<p>NIMBLE generates specialized C++ code for user-specified models and nimbleFunctions. This code uses some NIMBLE C++ library classes and functions. By default, on Linux the library code is compiled once as a linkable library - <em>libnimble.so</em>. This single instance of the library is then linked with the code for each generated model. In contrast, the default for Windows and MacOS is to compile the library code as a static library - <em>libnimble.a</em> - that is compiled into each model’s and each algorithm’s own dynamically loadable library (DLL). This does repeat the same code across models and so occupies more memory. There may be a marginal speed advantage. If one would like to enable the linkable library in place of the static library (do this only on MacOS and other UNIX variants and not on Windows), one can install the source package with the configuration argument <code>--enable-dylib</code> set to true. First obtain the NIMBLE source package (which will have the extension <code>.tar.gz</code> from <a href="https://r-nimble.org/download">our website</a> and then install as follows, replacing <code>VERSION</code> with the appropriate version number:</p>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">R</span> CMD INSTALL --configure-args=<span class="st">&#39;--enable-dylib=true&#39;</span> nimble_VERSION.tar.gz</code></pre></div>
+<p>NIMBLE generates specialized C++ code for user-specified models and nimbleFunctions.
+This code uses some NIMBLE C++ library classes and functions.
+By default, on Linux the library code is compiled once as a linkable
+library - <em>libnimble.so</em>. This single instance of the library is then linked
+with the code for each generated model. In contrast, the default for Windows and MacOS
+is to compile the library code as a static library - <em>libnimble.a</em> - that is compiled into each model’s and each algorithm’s own dynamically loadable library (DLL). This does repeat the same code across models and so occupies more memory. There may be a marginal speed advantage.
+If one would like to enable the linkable library in place of the static library (do this only on MacOS and other UNIX variants and not on Windows), one can install the source package with the configuration argument <code>--enable-dylib</code> set to true. First obtain the NIMBLE source package (which will have the extension <code>.tar.gz</code> from <a href="https://r-nimble.org/download">our website</a> and then install as follows, replacing <code>VERSION</code> with the appropriate version number:</p>
+<div class="sourceCode" id="cb75"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb75-1" title="1"><span class="ex">R</span> CMD INSTALL --configure-args=<span class="st">&#39;--enable-dylib=true&#39;</span> nimble_VERSION.tar.gz</a></code></pre></div>
 </div>
 <div id="sec:blas" class="section level3">
 <h3><span class="header-section-number">4.5.3</span> BLAS and LAPACK</h3>
-<p>NIMBLE also uses BLAS and LAPACK for some of its linear algebra (in particular calculating density values and generating random samples from multivariate distributions). NIMBLE will use the same BLAS and LAPACK installed on your system that R uses. Note that a fast (and where appropriate, threaded) BLAS can greatly increase the speed of linear algebra calculations. See Section A.3.1 of the <a href="https://cran.r-project.org/doc/manuals/r-release/R-admin.html">R Installation and Administration manual</a> available on CRAN for more details on providing a fast BLAS for your R installation.</p>
+<p>NIMBLE also uses BLAS and LAPACK for some of its linear algebra (in
+particular calculating density values and generating random samples
+from multivariate distributions). NIMBLE will use the same BLAS and
+LAPACK installed on your system that R uses. Note that a fast (and
+where appropriate, threaded) BLAS can greatly increase the speed of
+linear algebra calculations. See Section A.3.1 of the <a href="https://cran.r-project.org/doc/manuals/r-release/R-admin.html">R Installation and Administration manual</a> available on CRAN for more details on providing a fast BLAS for your R installation.</p>
 </div>
 <div id="customizing-compilation-of-the-nimble-generated-c" class="section level3">
 <h3><span class="header-section-number">4.5.4</span> Customizing compilation of the NIMBLE-generated C++</h3>
-<p>For each model or nimbleFunction, NIMBLE can generate and compile C++. To compile generated C++, NIMBLE makes system calls starting with <code>R CMD SHLIB</code> and therefore uses the regular R configuration in <code>${R_HOME}/etc/${R_ARCH}/Makeconf</code>. NIMBLE places a <code>Makevars</code> file in the directory in which the code is generated, and <code>R CMD SHLIB</code> uses this file as usual.</p>
-<p>In all but specialized cases, the general compilation mechanism will suffice. However, one can customize this. One can specify the location of an alternative <code>Makevars</code> (or <code>Makevars.win</code>) file to use. Such an alternative file should define the variables <code>PKG_CPPFLAGS</code> and <code>PKG_LIBS</code>. These should contain, respectively, the pre-processor flag to locate the NIMBLE include directory, and the necessary libraries to link against (and their location as necessary), e.g., <em>Rlapack</em> and <em>Rblas</em> on Windows, and <em>libnimble</em>. Advanced users can also change their default compilers by editing the <em>Makevars</em> file, see Section 1.2.1 of the <a href="https://cran.r-project.org/doc/manuals/r-release/R-exts.html">Writing R Extensions manual</a> available on CRAN.</p>
-<p>Use of this file allows users to specify additional compilation and linking flags. See the Writing R Extensions manual for more details of how this can be used and what it can contain.</p>
+<p>For each model or nimbleFunction, NIMBLE can generate and compile C++.
+To compile generated C++, NIMBLE makes system calls starting with
+<code>R CMD SHLIB</code> and therefore uses the regular R configuration in
+<code>${R_HOME}/etc/${R_ARCH}/Makeconf</code>. NIMBLE places a
+<code>Makevars</code> file in the directory in which the code is generated,
+and <code>R CMD SHLIB</code> uses this file as usual.</p>
+<p>In all but specialized cases, the general compilation mechanism will
+suffice. However, one can customize this. One can specify the
+location of an alternative <code>Makevars</code> (or <code>Makevars.win</code>)
+file to use. Such an alternative file should define the variables <code>PKG_CPPFLAGS</code> and
+<code>PKG_LIBS</code>. These should contain, respectively, the pre-processor flag
+to locate the NIMBLE include directory, and the necessary
+libraries to link against (and their location as necessary),
+e.g., <em>Rlapack</em> and <em>Rblas</em> on Windows, and <em>libnimble</em>.
+Advanced users can also change their default compilers by editing the
+<em>Makevars</em> file, see Section 1.2.1 of the <a href="https://cran.r-project.org/doc/manuals/r-release/R-exts.html">Writing R Extensions manual</a> available on CRAN.</p>
+<p>Use of this file allows users to specify additional compilation and
+linking flags. See the Writing R Extensions manual for more details
+of how this can be used and what it can contain.</p>
 
 <!--- % See http://yihui.name/knitr/demo/child/ for documentation on the parent/child document system of knitr -->
 </div>
@@ -454,8 +562,12 @@ newPath &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class=
 <div class="footnotes">
 <hr />
 <ol start="8">
-<li id="fn8"><p>This differs from most packages, which might need a C++ compiler only when the package is built. If you normally install R packages using <code>install.packages</code> on Windows or MacOS, the package arrives already built to your system.<a href="cha-installing-nimble.html#fnref8">↩</a></p></li>
-<li id="fn9"><p>We’ve tested NIMBLE on Windows 7, 8 and 10.<a href="cha-installing-nimble.html#fnref9">↩</a></p></li>
+<li id="fn8"><p>This differs from most packages, which might need a C++ compiler
+only when the package is built. If you normally install R packages using
+<code>install.packages</code> on Windows or MacOS, the package arrives
+already built to your system.<a href="cha-installing-nimble.html#fnref8" class="footnote-back">↩</a></p></li>
+<li id="fn9"><p>We’ve tested NIMBLE on Windows 7, 8
+and 10.<a href="cha-installing-nimble.html#fnref9" class="footnote-back">↩</a></p></li>
 </ol>
 </div>
             </section>
@@ -469,11 +581,13 @@ newPath &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class=
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
 <script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
 <script>
 gitbook.require(["gitbook"], function(gitbook) {
 gitbook.start({
@@ -481,12 +595,11 @@ gitbook.start({
 "github": false,
 "facebook": true,
 "twitter": true,
-"google": false,
 "linkedin": false,
 "weibo": false,
 "instapaper": false,
 "vk": false,
-"all": ["facebook", "google", "twitter", "linkedin", "weibo", "instapaper"]
+"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
 },
 "fontsettings": {
 "theme": "white",
@@ -498,6 +611,10 @@ gitbook.start({
 "text": null
 },
 "history": {
+"link": null,
+"text": null
+},
+"view": {
 "link": null,
 "text": null
 },
@@ -515,10 +632,11 @@ gitbook.start({
   (function () {
     var script = document.createElement("script");
     script.type = "text/javascript";
-    var src = "";
+    var src = "true";
     if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
-    if (location.protocol !== "file:" && /^https?:/.test(src))
-      src = src.replace(/^https?:/, '');
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
     script.src = src;
     document.getElementsByTagName("head")[0].appendChild(script);
   })();

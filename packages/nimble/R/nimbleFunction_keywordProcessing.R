@@ -28,23 +28,6 @@ setupCodeTemplateClass <- setRefClass('setupCodeTemplateClass',
 
 
 ### KEYWORD INFO OBJECTS
-
-#		Current objects:
-#		d_gamma_keywordInfo
-#		pq_gamma_keywordInfo
-#		rgamma_keywordInfo
-#		d_dist_keywordInfo
-#		qp_dist_keywordInfo
-#		values_keywordInfo
-#		calculate_keywordInfo
-#		simulate_keywordInfo
-#		getLogProb_keywordInfo
-#		nimCopy_keywordInfo
-#		doubleBracket_keywordInfo
-#		dollarSign_keywordInfo
-#		singleBracket_keywordInfo
-		
-		
 		
 d_gamma_keywordInfo <- keywordInfoClass(
     keyword = 'dgamma',
@@ -132,7 +115,7 @@ values_keywordInfo <- keywordInfoClass(
       if(isCodeArgBlank(code, 'model'))
       	stop('model argument missing from values call, with no accessor argument supplied')
       
-      accessArgList <- list(model = code$model, nodes = code$nodes, logProb = FALSE)
+      accessArgList <- list(model = code$model, nodes = code$nodes, logProb = FALSE, logProbOnly = FALSE)
 
       useAccessorVectorByIndex <- FALSE
       if(hasBracket(accessArgList$nodes)) { 
@@ -185,7 +168,7 @@ getParam_keywordInfo <- keywordInfoClass(
 
         if(isCodeArgBlank(code, 'param'))
             stop("'param' argument missing from 'getParam', with no accessor argument supplied")
-        paramInfo_ArgList <- list(model = code$model, node = nodeFunVec_ArgList$nodes, param = code$param) ## use nodeFunVec_ArgList$nodes instead of code$node because nodeFunVec_ArgList$nodes may have been updated if code$nodes has a run-time index.  In that case the paramID will be vector
+        paramInfo_ArgList <- list(model = code$model, node = nodeFunVec_ArgList$nodes, param = code$param, hasIndex = useNodeFunctionVectorByIndex) ## use nodeFunVec_ArgList$nodes instead of code$node because nodeFunVec_ArgList$nodes may have been updated if code$nodes has a run-time index.  In that case the paramID will be vector
         paramInfoName <- paramInfo_SetupTemplate$makeName(paramInfo_ArgList)
         paramIDname <- paramInfo_SetupTemplate$makeOtherNames(paramInfoName, paramInfo_ArgList)
 
@@ -467,13 +450,13 @@ nimCopy_keywordInfo <- keywordInfoClass(
 				
 		if(from_ArgList$class == 'symbolModel'){
                     isMVfrom <- 0 
-                    accessFrom_ArgList <- list(model = code$from, nodes = from_ArgList$nodes, logProb = code$logProb)
+                    accessFrom_ArgList <- list(model = code$from, nodes = from_ArgList$nodes, logProb = code$logProb, logProbOnly = code$logProbOnly)
                     accessFrom_name <- modelVariableAccessorVector_setupCodeTemplate$makeName(accessFrom_ArgList)
                     addNecessarySetupCode(accessFrom_name, accessFrom_ArgList, modelVariableAccessorVector_setupCodeTemplate, nfProc)
 		}
 		else if(from_ArgList$class == 'symbolModelValues'){
                     isMVfrom <- 1
-                    accessFrom_ArgList <- list(modelValues = code$from, nodes = from_ArgList$nodes, logProb = code$logProb, row = from_ArgList$row)
+                    accessFrom_ArgList <- list(modelValues = code$from, nodes = from_ArgList$nodes, logProb = code$logProb, logProbOnly = code$logProbOnly, row = from_ArgList$row)
                     accessFrom_name <- modelValuesAccessorVector_setupCodeTemplate$makeName(accessFrom_ArgList)
                     addNecessarySetupCode(accessFrom_name, accessFrom_ArgList, modelValuesAccessorVector_setupCodeTemplate, nfProc)
 		}
@@ -484,13 +467,13 @@ nimCopy_keywordInfo <- keywordInfoClass(
         
 		if(to_ArgList$class == 'symbolModel'){
                     isMVto <- 0
-                    accessTo_ArgList <- list(model = code$to, nodes = to_ArgList$nodes, logProb = code$logProb)
+                    accessTo_ArgList <- list(model = code$to, nodes = to_ArgList$nodes, logProb = code$logProb, logProbOnly = code$logProbOnly)
                     accessTo_name <- modelVariableAccessorVector_setupCodeTemplate$makeName(accessTo_ArgList)
                     addNecessarySetupCode(accessTo_name, accessTo_ArgList, modelVariableAccessorVector_setupCodeTemplate, nfProc)
 		}
 		else if(to_ArgList$class == 'symbolModelValues'){
                     isMVto <- 1
-                    accessTo_ArgList <- list(modelValues = code$to, nodes = to_ArgList$nodes, logProb = code$logProb, row = to_ArgList$row)
+                    accessTo_ArgList <- list(modelValues = code$to, nodes = to_ArgList$nodes, logProb = code$logProb, logProbOnly = code$logProbOnly, row = to_ArgList$row)
                     accessTo_name <- modelValuesAccessorVector_setupCodeTemplate$makeName(accessTo_ArgList)
                     addNecessarySetupCode(accessTo_name, accessTo_ArgList, modelValuesAccessorVector_setupCodeTemplate, nfProc)
 		}
@@ -840,7 +823,7 @@ matchFunctions[['calculate']] <- calculate
 matchFunctions[['calculateDiff']] <- calculateDiff
 matchFunctions[['simulate']] <- simulate
 matchFunctions[['getLogProb']] <- getLogProb
-matchFunctions[['nimCopy']] <- function(from, to, nodes, nodesTo, row, rowTo, logProb = FALSE){}
+matchFunctions[['nimCopy']] <- function(from, to, nodes, nodesTo, row, rowTo, logProb = FALSE, logProbOnly = FALSE){}
 matchFunctions[['double']] <- function(nDim, dim, default, ...){}
 matchFunctions[['int']] <- function(nDim, dim, default, ...){}
 matchFunctions[['nimOptim']] <- nimOptim
@@ -1014,13 +997,14 @@ length_char_SetupTemplate <- setupCodeTemplateClass(
 
 modelVariableAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are model, nodes and logProb
-    makeName = function(argList) {Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'access_logProb', deparse(argList$logProb), sep = '_'))},
-    codeTemplate = quote( ACCESSNAME <- nimble:::modelVariableAccessorVector(MODEL, NODES, logProb = LOGPROB) ),
+    makeName = function(argList) {Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'access_logProb', deparse(argList$logProb),'LPO', deparse(argList$logProbOnly), sep = '_'))},
+    codeTemplate = quote( ACCESSNAME <- nimble:::modelVariableAccessorVector(MODEL, NODES, logProb = LOGPROB, logProbOnly = LOGPROBONLY) ),
     makeCodeSubList = function(resultName, argList) {
         list(ACCESSNAME = as.name(resultName),
              MODEL = argList$model,
              NODES = argList$nodes,
-             LOGPROB = argList$logProb)
+             LOGPROB = argList$logProb,
+             LOGPROBONLY = argList$logProbOnly)
     })
 
 copierVector_setupCodeTemplate <- setupCodeTemplateClass(
@@ -1038,13 +1022,14 @@ copierVector_setupCodeTemplate <- setupCodeTemplateClass(
 modelValuesAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are model, nodes and logProb
 
-    makeName = function(argList) {Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'access_logProb', deparse(argList$logProb), deparse(argList$row), sep = '_'))},
-    codeTemplate = quote( ACCESSNAME <- nimble:::modelValuesAccessorVector(MODEL, NODES, logProb = LOGPROB) ),
+    makeName = function(argList) {Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'access_logProb', deparse(argList$logProb), 'LPO', deparse(argList$logProbOnly), deparse(argList$row), sep = '_'))},
+    codeTemplate = quote( ACCESSNAME <- nimble:::modelValuesAccessorVector(MODEL, NODES, logProb = LOGPROB, logProbOnly = LOGPROBONLY) ),
 	makeCodeSubList = function(resultName, argList) {
         list(ACCESSNAME = as.name(resultName),
              MODEL = argList$model,
              NODES = argList$nodes,
-             LOGPROB = argList$logProb)
+             LOGPROB = argList$logProb,
+             LOGPROBONLY = argList$logProbOnly)
     })
 
 nodeFunctionVector_SetupTemplate <- setupCodeTemplateClass(
@@ -1067,15 +1052,17 @@ paramInfo_SetupTemplate <- setupCodeTemplateClass(
     makeName = function(argList){Rname2CppName(paste(deparse(argList$model), deparse(argList$node), deparse(argList$param), 'paramInfo', sep='_'))},
     makeOtherNames = function(name,argList) {Rname2CppName(paste0(name,'_ID'))},
     codeTemplate = quote({
-        PARAMINFONAME <- makeParamInfo(MODEL, NODE, PARAM)
+        PARAMINFONAME <- nimble:::makeParamInfo(model = MODEL, nodes = NODE, param = PARAM, vector = HASINDEX )
         PARAMIDNAME <- PARAMINFONAME$paramID
+        PARAMINFONAME$paramID <- NULL
        }),
     makeCodeSubList = function(resultName, argList){
         list(PARAMINFONAME = as.name(resultName),
              PARAMIDNAME = as.name(paste0(resultName,'_ID')),
              MODEL = argList$model,
              NODE = argList$node,
-             PARAM = argList$param)
+             PARAM = argList$param,
+             HASINDEX = argList$hasIndex)
     })
 
 boundInfo_SetupTemplate <- setupCodeTemplateClass(
@@ -1083,8 +1070,9 @@ boundInfo_SetupTemplate <- setupCodeTemplateClass(
     makeName = function(argList){Rname2CppName(paste(deparse(argList$model), deparse(argList$node), deparse(argList$bound), 'boundInfo', sep='_'))},
     makeOtherNames = function(name,argList) {Rname2CppName(paste0(name,'_ID'))},
     codeTemplate = quote({
-        BOUNDINFONAME <- makeBoundInfo(MODEL, NODE, BOUND)
+        BOUNDINFONAME <- nimble:::makeBoundInfo(MODEL, NODE, BOUND)
         BOUNDIDNAME <- BOUNDINFONAME$boundID
+        BOUNDINFONAME$boundID <- NULL
        }),
     makeCodeSubList = function(resultName, argList){
         list(BOUNDINFONAME = as.name(resultName),
@@ -1153,7 +1141,7 @@ singleModelIndexAccess_SetupTemplate <- setupCodeTemplateClass(
 	makeName = code2Name_fromArgList,
 	
 	codeTemplate = quote({
-		VARANDINDICES <- nimbleInternalFunctions$getVarAndIndices(NODEVARNAME)
+		VARANDINDICES <- nimble:::nimbleInternalFunctions$getVarAndIndices(NODEVARNAME)
 		NEWVARNAME <- as.character(VARANDINDICES$varName)
 		MFLATINDEX <- nimble:::varAndIndices2flatIndex(VARANDINDICES, MODELVAREXPR$getVarInfo(NEWVARNAME))
 		VARACCESSOR <- nimble:::singleVarAccess(MODELVAREXPR, NEWVARNAME, useSingleIndex = TRUE)
@@ -1178,7 +1166,7 @@ map_SetupTemplate <- setupCodeTemplateClass(
 		return(output)
 	},
 	codeTemplate = quote({
-		VARANDINDICES <- nimbleInternalFunctions$getVarAndIndices(NODEVARNAME)
+		VARANDINDICES <- nimble:::nimbleInternalFunctions$getVarAndIndices(NODEVARNAME)
 		NEWVARNAME <- as.character(VARANDINDICES$varName)
                 map_SetupTemplate_vi <- MODEL$getVarInfo(NEWVARNAME)
 		map_SetupTemplate_mapParts <- nimble:::varAndIndices2mapParts(VARANDINDICES, map_SetupTemplate_vi$maxs, map_SetupTemplate_vi$nDim)
@@ -1203,7 +1191,7 @@ singleModelValuesAccessor_SetupTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are modelValues, var, row, code
 	makeName = code2Name_fromArgList,
 	codeTemplate = quote({
-		MVACCESS <- singleModelValuesAccess(MODELVALUES, VAR)
+		MVACCESS <- nimble:::singleModelValuesAccess(MODELVALUES, VAR)
 	}),
 	makeCodeSubList = function(resultName, argList){
 		list(MVACCESS = as.name(resultName),
@@ -1440,7 +1428,7 @@ matchKeywordCode <- function(code, nfProc){
         modCallName <- callName
         if(nfProc$setupSymTab$symbolExists(modCallName)) {
             symObj <- nfProc$setupSymTab$getSymbolObject(modCallName)
-            if(class(symObj) == "symbolMemberFunction") {
+            if(inherits(symObj, "symbolMemberFunction")) {
                 thisRCfunProc <- nfProc$RCfunProcs[[modCallName]]
                 if(is.null(thisRCfunProc)) stop(paste0("Cannot handle this expression (looks like a member function but something is wrong): ", deparse(code)), call. = FALSE)
                 thisFunctionMatch <- thisRCfunProc$RCfun$template

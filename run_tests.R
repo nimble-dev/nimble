@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
 help_message <-
-"Run tests in nimble/inst/tests/ prioritized by duration.
+"Run tests in nimble/tests/testthat prioritized by duration.
 Usage:
   ./run_tests.R       [OPTIONS]   # Run the default set of tests.
   ./run_tests.R NAMES [OPTIONS]   # Run a custom set of tests, e.g. 'math'
@@ -36,24 +36,20 @@ if (length(grep('^-', argv, invert = TRUE))) {
     allTests <- paste0('test-', argv[!grepl('^-', argv)], '.R')
 } else {
     # Run a default set of tests.
-    allTests <- list.files('packages/nimble/inst/tests')
+    allTests <- list.files('packages/nimble/tests/testthat')
     allTests <- allTests[grepl('test-.*\\.R', allTests)]
 
-    # Avoid running these blacklisted tests, since they take too long.
-    blacklist <- c(
-        'test-Math2.R',
-        'test-Mcmc2.R',
-        'test-Mcmc3.R',
-        'test-Filtering2.R',
+    # Avoid running these omitlisted tests, since they take too long.
+    omitlist <- c(
         'test-benchmark-building-steps.R')
     # Avoid running these tests since they test experimental features.
-    blacklist <- c(
-        blacklist,
+    omitlist <- c(
+        omitlist,
         'test-ADfunctions.R',
         'test-ADmodels.R')
         ## 'test-benchmarks.R')  # some issue with version conflicts causing tensorflow to fail on Travis with errors such as 'nimble-tensorflow_11_20_18_17_45.so: undefined symbol: TF_DeleteImportGraphDefOptions'
-    cat('SKIPPING', blacklist, sep = '\n  ')
-    allTests <- setdiff(allTests, blacklist)
+    cat('SKIPPING', omitlist, sep = '\n  ')
+    allTests <- setdiff(allTests, omitlist)
 }
 
 # Sort tests by duration, running the shortest tests first.
@@ -110,6 +106,9 @@ if (require(sys)) {
 }
 
 # Run each test in a separate process to avoid dll garbage overload.
+# As of recent (>= 3.0.0?) testthat versions, use of inst/tests is deprecated
+# and testthat wants a more formal approach to setup and cleanup code for each test file,
+# so for now, we'll just run 'manually'.
 runTest <- function(test, logToFile = FALSE, runViaTestthat = TRUE) {
     if (!logToFile) cat('--------------------------------------------------------------------------------\n')
     cat('TESTING', test, '\n')
@@ -122,9 +121,7 @@ runTest <- function(test, logToFile = FALSE, runViaTestthat = TRUE) {
                          '                      reporter = ', reporter, '),',
                          '  error = function(e) quit(status = 1))')
         command <- c(runner, '-e', custom_shQuote(script))
-    } else {
-        command <- c(runner, file.path('packages', 'nimble', 'inst', 'tests', test))
-    }
+    } else command <- c(runner, file.path('packages', 'nimble', 'tests', 'testthat', test))
     Sys.setenv(MAKEFLAGS = '-j1')  # Work around broken job pipe when GNU make is run under mclapply.
     if (logToFile) {
         logDir <- '/tmp/log/nimble'

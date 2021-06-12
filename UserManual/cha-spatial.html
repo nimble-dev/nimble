@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<html lang="" xml:lang="">
 <head>
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title></title>
+  <title>Chapter 9 Spatial models | NimbleUserManual.utf8</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.12 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.19 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="" />
+  <meta property="og:title" content="Chapter 9 Spatial models | NimbleUserManual.utf8" />
   <meta property="og:type" content="book" />
   
   <meta property="og:image" content="nimble-icon.png" />
@@ -16,7 +16,7 @@
   <meta name="github-repo" content="nimble-dev/nimble" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="" />
+  <meta name="twitter:title" content="Chapter 9 Spatial models | NimbleUserManual.utf8" />
   
   <meta name="twitter:description" content="This is the NIMBLE User Manual." />
   <meta name="twitter:image" content="nimble-icon.png" />
@@ -29,8 +29,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
-<link rel="prev" href="cha-algos-provided.html">
-<link rel="next" href="cha-bnp.html">
+<link rel="prev" href="cha-algos-provided.html"/>
+<link rel="next" href="cha-bnp.html"/>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -38,6 +38,9 @@
 <link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
 
 
 
@@ -48,41 +51,66 @@
 
 
 <style type="text/css">
-div.sourceCode { overflow-x: auto; }
-table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
-  margin: 0; padding: 0; vertical-align: baseline; border: none; }
-table.sourceCode { width: 100%; line-height: 100%; }
-td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
-td.sourceCode { padding-left: 5px; }
-code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
-code > span.dt { color: #902000; } /* DataType */
-code > span.dv { color: #40a070; } /* DecVal */
-code > span.bn { color: #40a070; } /* BaseN */
-code > span.fl { color: #40a070; } /* Float */
-code > span.ch { color: #4070a0; } /* Char */
-code > span.st { color: #4070a0; } /* String */
-code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
-code > span.ot { color: #007020; } /* Other */
-code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
-code > span.fu { color: #06287e; } /* Function */
-code > span.er { color: #ff0000; font-weight: bold; } /* Error */
-code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
-code > span.cn { color: #880000; } /* Constant */
-code > span.sc { color: #4070a0; } /* SpecialChar */
-code > span.vs { color: #4070a0; } /* VerbatimString */
-code > span.ss { color: #bb6688; } /* SpecialString */
-code > span.im { } /* Import */
-code > span.va { color: #19177c; } /* Variable */
-code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-code > span.op { color: #666666; } /* Operator */
-code > span.bu { } /* BuiltIn */
-code > span.ex { } /* Extension */
-code > span.pp { color: #bc7a00; } /* Preprocessor */
-code > span.at { color: #7d9029; } /* Attribute */
-code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
-code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+a.sourceLine { display: inline-block; line-height: 1.25; }
+a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
+a.sourceLine:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+a.sourceLine { text-indent: -1em; padding-left: 1em; }
+}
+pre.numberSource a.sourceLine
+  { position: relative; left: -4em; }
+pre.numberSource a.sourceLine::before
+  { content: attr(title);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; pointer-events: all; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {  }
+@media screen {
+a.sourceLine::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
 <link rel="stylesheet" href="style.css" type="text/css" />
@@ -100,7 +128,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.9.0</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.11.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -232,6 +260,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="10.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:crp"><i class="fa fa-check"></i><b>10.2</b> Chinese Restaurant Process model</a><ul>
 <li class="chapter" data-level="10.2.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-density-2"><i class="fa fa-check"></i><b>10.2.1</b> Specification and density</a></li>
 <li class="chapter" data-level="10.2.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:excrp"><i class="fa fa-check"></i><b>10.2.2</b> Example</a></li>
+<li class="chapter" data-level="10.2.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:extensionscrp"><i class="fa fa-check"></i><b>10.2.3</b> Extensions</a></li>
 </ul></li>
 <li class="chapter" data-level="10.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:sb"><i class="fa fa-check"></i><b>10.3</b> Stick-breaking model</a><ul>
 <li class="chapter" data-level="10.3.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-function"><i class="fa fa-check"></i><b>10.3.1</b> Specification and function</a></li>
@@ -327,6 +356,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
+<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
       </nav>
@@ -346,15 +376,21 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
             <section class="normal" id="section-">
 <div id="cha:spatial" class="section level1">
 <h1><span class="header-section-number">Chapter 9</span> Spatial models</h1>
-<p>NIMBLE supports two variations of conditional autoregressive (CAR) model structures: the improper intrinsic Gaussian CAR (ICAR) model, and a proper Gaussian CAR model. This includes distributions to represent these spatially-dependent model structures in a BUGS model, as well as specialized MCMC samplers for these distributions.</p>
+<p>NIMBLE supports two variations of conditional autoregressive (CAR) model
+structures: the improper intrinsic Gaussian CAR (ICAR) model, and
+a proper Gaussian CAR model. This includes distributions to represent these
+spatially-dependent model structures in a BUGS model,
+as well as specialized MCMC samplers for these distributions.</p>
 <div id="intrinsic-gaussian-car-model-dcar_normal" class="section level2">
 <h2><span class="header-section-number">9.1</span> Intrinsic Gaussian CAR model: <em>dcar_normal</em></h2>
-<p>The intrinsic Gaussian conditional autoregressive (ICAR) model used to model dependence of block-level values (e.g., spatial areas or temporal blocks) is implemented in NIMBLE as the <code>dcar_normal</code> distribution. Additional details for using this distribution are available using <code>help('CAR-Normal')</code>.</p>
-<p>ICAR models are improper priors for random fields (e.g., temporal or spatial processes). The prior is a joint prior across a collection of latent process values. For more technical details on CAR models, including higher-order CAR models, please see <span class="citation">Rue and Held (<a href="#ref-Rue_Held_2005">2005</a>)</span>, <span class="citation">Banerjee, Carlin, and Gelfand (<a href="#ref-Banerjee_etal_2015">2015</a>)</span>, and <span class="citation">Paciorek (<a href="#ref-Paciorek_2009">2009</a>)</span>. Since the distribution is improper it should not be used as the distribution for data values, but rather to specify a prior for an unknown process. As discussed in the references above, the distribution can be seen to be a proper density in a reduced dimension subspace; thus the impropriety only holds on one or more linear combinations of the latent process values.</p>
+<p>The intrinsic Gaussian conditional autoregressive (ICAR) model used to model dependence of block-level values (e.g., spatial areas or temporal blocks) is implemented in NIMBLE as the <code>dcar_normal</code>
+distribution. Additional details for using this distribution are available using <code>help('CAR-Normal')</code>.</p>
+<p>ICAR models are improper priors for random fields (e.g., temporal or spatial processes). The prior is a joint prior across a collection of latent process values. For more technical details on CAR models, including higher-order CAR models, please see <span class="citation">Rue and Held (<a href="references.html#ref-Rue_Held_2005">2005</a>)</span>, <span class="citation">Banerjee, Carlin, and Gelfand (<a href="references.html#ref-Banerjee_etal_2015">2015</a>)</span>, and <span class="citation">Paciorek (<a href="references.html#ref-Paciorek_2009">2009</a>)</span>. Since the distribution is improper it should not be used as the distribution for data values, but rather to specify a prior for an unknown process. As discussed in the references above, the distribution can be seen to be a proper density in a reduced dimension subspace; thus the impropriety only holds on one or more linear combinations of the latent process values.</p>
 <p>In addition to our focus here on CAR modeling for spatial data, the ICAR model can also be used in other contexts, such as for temporal data in a discrete time context.</p>
 <div id="specification-and-density" class="section level3">
 <h3><span class="header-section-number">9.1.1</span> Specification and density</h3>
-<p>NIMBLE uses the same parameterization as WinBUGS / GeoBUGS for the <code>dcar_normal</code> distribution, providing compatibility with existing WinBUGS code. NIMBLE also provides the WinBUGS name <code>car.normal</code> as an alias.</p>
+<p>NIMBLE uses the same parameterization as WinBUGS / GeoBUGS for the <code>dcar_normal</code> distribution, providing
+compatibility with existing WinBUGS code. NIMBLE also provides the WinBUGS name <code>car.normal</code> as an alias.</p>
 <div id="specification" class="section level4">
 <h4><span class="header-section-number">9.1.1.1</span> Specification</h4>
 <p>The <code>dcar_normal</code> distribution is specified for a set of <code>N</code> spatially dependent regions as:</p>
@@ -362,7 +398,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <p>The <code>adj</code>, <code>weights</code> and <code>num</code> parameters define the adjacency structure and associated weights of the spatially-dependent field. See <code>help('CAR-Normal')</code> for details of these parameters. When specifying a CAR distribution, these parameters must have constant values. They do not necessarily have to be specified as <code>constants</code> when creating a model object using <code>nimbleModel</code>, but they should be defined in a static way: as right-hand-side only variables with initial values provided as <code>constants</code>, <code>data</code> or <code>inits</code>, or using fixed numerical deterministic declarations. Each of these two approaches for specifying values are shown in the example.</p>
 <p>The adjacency structure defined by <code>adj</code> and the associated <code>weights</code> must be symmetric. That is, if region <span class="math inline">\(i\)</span> is neighbor of region <span class="math inline">\(j\)</span>, then region <span class="math inline">\(j\)</span> must also be a neighbor of region <span class="math inline">\(i\)</span>. Further, the weights associated with these reciprocating relationships must be equal. NIMBLE performs a check of these symmetries and will issue an error message if asymmetry is detected.</p>
 <p>The scalar precision <code>tau</code> may be treated as an unknown model parameter and itself assigned a prior distribution. Care should be taken in selecting a prior distribution for <code>tau</code>, and WinBUGS suggests that users be prepared to carry out a sensitivity analysis for this choice.</p>
-<p>When specifying a higher-order CAR process, the number of constraints <code>c</code> can be explicitly provided in the model specification. This would be the case, for example, when specifying a thin-plate spline (second-order) CAR model, for which <code>c</code> should be 2 for a one-dimensional process and 3 for a two-dimensional (e.g., spatial) process, as discussed in <span class="citation">Rue and Held (<a href="#ref-Rue_Held_2005">2005</a>)</span> and <span class="citation">Paciorek (<a href="#ref-Paciorek_2009">2009</a>)</span>. If <code>c</code> is omitted, NIMBLE will calculate <code>c</code> as the number of disjoint groups of regions in the adjacency structure, which implicitly assumes a first-order CAR process for each group.</p>
+<p>When specifying a higher-order CAR process, the number of constraints <code>c</code> can be explicitly provided in the model specification. This would be the case, for example, when specifying a thin-plate spline (second-order) CAR model, for which <code>c</code> should be 2 for a one-dimensional process and 3 for a two-dimensional (e.g., spatial) process, as discussed in <span class="citation">Rue and Held (<a href="references.html#ref-Rue_Held_2005">2005</a>)</span> and <span class="citation">Paciorek (<a href="references.html#ref-Paciorek_2009">2009</a>)</span>. If <code>c</code> is omitted, NIMBLE will calculate <code>c</code> as the number of disjoint groups of regions in the adjacency structure, which implicitly assumes a first-order CAR process for each group.</p>
 <p>By default there is no zero-mean constraint imposed on the CAR process, and thus the mean is implicit within the CAR process values, with an implicit improper flat prior on the mean. To avoid non-identifiability, one should not include an additional parameter for the mean (e.g., do not include an intercept term in a simple CAR model with first-order neighborhood structure). When there are disjoint groups of regions and the constraint is not imposed, there is an implicit distinct improper flat prior on the mean for each group, and it would not make sense to impose the constraint since the constraint holds across all regions. Similarly, if one sets up a neighborhood structure for higher-order CAR models, it would not make sense to impose the zero-mean constraint as that would account for only one of the eigenvalues that are zero. Imposing this constraint (by specifying the parameter <code>zero_mean = 1</code>) allows users to model the process mean separately, and hence a separate intercept term should be included in the model.</p>
 <p>NIMBLE provides a convenience function <code>as.carAdjacency</code> for converting other representations of the adjacency information into the required <code>adj</code>, <code>weights</code>, <code>num</code> format. This function can convert:</p>
 <ul>
@@ -385,35 +421,41 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <h3><span class="header-section-number">9.1.2</span> Example</h3>
 <p>Here we provide an example model using the intrinsic Gaussian <code>dcar_normal</code> distribution. The CAR process values are used in a spatially-dependent Poisson regression.</p>
 <p>To mimic the behavior of WinBUGS, we specify <code>zero_mean = 1</code> to enforce a zero-mean constraint on the CAR process, and therefore include a separate intercept term <code>alpha</code> in the model. Note that we do not necessarily recommend imposing this constraint, per the discussion earlier in this chapter.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-    alpha <span class="op">~</span><span class="st"> </span><span class="kw">dflat</span>()
-    beta <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)
-    tau <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)
-    <span class="cf">for</span>(k <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>L)
-        weights[k] &lt;-<span class="st"> </span><span class="dv">1</span>
-    s[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dcar_normal</span>(adj[<span class="dv">1</span><span class="op">:</span>L], weights[<span class="dv">1</span><span class="op">:</span>L], num[<span class="dv">1</span><span class="op">:</span>N], tau, <span class="dt">zero_mean =</span> <span class="dv">1</span>)
-    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {
-        <span class="kw">log</span>(lambda[i]) &lt;-<span class="st"> </span>alpha <span class="op">+</span><span class="st"> </span>beta<span class="op">*</span>x[i] <span class="op">+</span><span class="st"> </span>s[i]
-        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dpois</span>(lambda[i])
-    }
-})
-
-constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">4</span>, <span class="dt">L =</span> <span class="dv">8</span>, <span class="dt">num =</span> <span class="kw">c</span>(<span class="dv">3</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">1</span>),
-                  <span class="dt">adj =</span> <span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">1</span>), <span class="dt">x =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">8</span>))
-data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">c</span>(<span class="dv">6</span>, <span class="dv">9</span>, <span class="dv">7</span>, <span class="dv">12</span>))
-inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">alpha =</span> <span class="dv">0</span>, <span class="dt">beta =</span> <span class="dv">0</span>, <span class="dt">tau =</span> <span class="dv">1</span>, <span class="dt">s =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>))
-Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</code></pre></div>
-<p>The resulting model may be carried through to MCMC sampling. NIMBLE will assign a specialized sampler to the update the elements of the CAR process. See Chapter <a href="cha-mcmc.html#cha:mcmc">7</a> for information about NIMBLE’s MCMC engine, and Section <a href="cha-spatial.html#sec:spatial-mcmc-sampling-car">9.3</a> for details on MCMC sampling of the CAR processes.</p>
+<div class="sourceCode" id="cb209"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb209-1" title="1">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb209-2" title="2">    alpha <span class="op">~</span><span class="st"> </span><span class="kw">dflat</span>()</a>
+<a class="sourceLine" id="cb209-3" title="3">    beta <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)</a>
+<a class="sourceLine" id="cb209-4" title="4">    tau <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)</a>
+<a class="sourceLine" id="cb209-5" title="5">    s[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dcar_normal</span>(adj[<span class="dv">1</span><span class="op">:</span>L], weights[<span class="dv">1</span><span class="op">:</span>L], num[<span class="dv">1</span><span class="op">:</span>N], tau, <span class="dt">zero_mean =</span> <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb209-6" title="6">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {</a>
+<a class="sourceLine" id="cb209-7" title="7">        <span class="kw">log</span>(lambda[i]) &lt;-<span class="st"> </span>alpha <span class="op">+</span><span class="st"> </span>beta<span class="op">*</span>x[i] <span class="op">+</span><span class="st"> </span>s[i]</a>
+<a class="sourceLine" id="cb209-8" title="8">        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dpois</span>(lambda[i])</a>
+<a class="sourceLine" id="cb209-9" title="9">    }</a>
+<a class="sourceLine" id="cb209-10" title="10">})</a>
+<a class="sourceLine" id="cb209-11" title="11"></a>
+<a class="sourceLine" id="cb209-12" title="12">L &lt;-<span class="st"> </span><span class="dv">8</span></a>
+<a class="sourceLine" id="cb209-13" title="13">constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">4</span>, <span class="dt">L =</span> L, <span class="dt">num =</span> <span class="kw">c</span>(<span class="dv">3</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">1</span>), <span class="dt">weights =</span> <span class="kw">rep</span>(<span class="dv">1</span>, L),</a>
+<a class="sourceLine" id="cb209-14" title="14">                  <span class="dt">adj =</span> <span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">1</span>), <span class="dt">x =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">8</span>))</a>
+<a class="sourceLine" id="cb209-15" title="15">data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">c</span>(<span class="dv">6</span>, <span class="dv">9</span>, <span class="dv">7</span>, <span class="dv">12</span>))</a>
+<a class="sourceLine" id="cb209-16" title="16">inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">alpha =</span> <span class="dv">0</span>, <span class="dt">beta =</span> <span class="dv">0</span>, <span class="dt">tau =</span> <span class="dv">1</span>, <span class="dt">s =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>))</a>
+<a class="sourceLine" id="cb209-17" title="17">Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</a></code></pre></div>
+<p>The resulting model may be carried through to MCMC sampling.
+NIMBLE will assign a specialized sampler to the update the elements of the CAR process.
+See Chapter <a href="cha-mcmc.html#cha:mcmc">7</a> for information about NIMBLE’s MCMC engine, and Section
+<a href="cha-spatial.html#sec:spatial-mcmc-sampling-car">9.3</a> for details on MCMC sampling of the CAR processes.</p>
 </div>
 </div>
 <div id="proper-gaussian-car-model-dcar_proper" class="section level2">
 <h2><span class="header-section-number">9.2</span> Proper Gaussian CAR model: <em>dcar_proper</em></h2>
-<p>The proper Gaussian conditional autoregressive model used to model dependence of block-level values (e.g., spatial areas or temporal blocks) is implemented in NIMBLE as the <code>dcar_proper</code> distribution. Additional details of using this distribution are available using <code>help('CAR-Proper')</code>.</p>
-<p>Proper CAR models are proper priors for random fields (e.g., temporal or spatial processes). The prior is a joint prior across a collection of latent process values. For more technical details on proper CAR models please see <span class="citation">Banerjee, Carlin, and Gelfand (<a href="#ref-Banerjee_etal_2015">2015</a>)</span>, including considerations of why the improper CAR model may be preferred.</p>
+<p>The proper Gaussian conditional autoregressive model used to model dependence of block-level values (e.g., spatial areas or temporal blocks) is implemented in NIMBLE as the <code>dcar_proper</code>
+distribution. Additional details of using this distribution are available using <code>help('CAR-Proper')</code>.</p>
+<p>Proper CAR models are proper priors for random fields (e.g., temporal or spatial processes).
+The prior is a joint prior across a collection of latent process values. For more technical
+details on proper CAR models please see <span class="citation">Banerjee, Carlin, and Gelfand (<a href="references.html#ref-Banerjee_etal_2015">2015</a>)</span>, including considerations of why the improper CAR model may be preferred.</p>
 <p>In addition to our focus here on CAR modeling for spatial data, the proper CAR model can also be used in other contexts, such as for temporal data in a discrete time context.</p>
 <div id="specification-and-density-1" class="section level3">
 <h3><span class="header-section-number">9.2.1</span> Specification and density</h3>
-<p>NIMBLE uses the same parameterization as WinBUGS / GeoBUGS for the <code>dcar_proper</code> distribution, providing compatibility with existing WinBUGS code. NIMBLE also provides the WinBUGS name <code>car.proper</code> as an alias.</p>
+<p>NIMBLE uses the same parameterization as WinBUGS / GeoBUGS for the <code>dcar_proper</code> distribution, providing
+compatibility with existing WinBUGS code. NIMBLE also provides the WinBUGS name <code>car.proper</code> as an alias.</p>
 <div id="specification-1" class="section level4">
 <h4><span class="header-section-number">9.2.1.1</span> Specification</h4>
 <p>The <code>dcar_proper</code> distribution is specified for a set of <code>N</code> spatially dependent regions as:</p>
@@ -442,46 +484,49 @@ Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, c
 <div id="example-1" class="section level3">
 <h3><span class="header-section-number">9.2.2</span> Example</h3>
 <p>We provide two example models using the proper Gaussian <code>dcar_proper</code> distribution. In both, the CAR process values are used in a spatially-dependent logistic regression to model binary presence/absence data. In the first example, the <code>C</code> and <code>M</code> parameters are omitted, which uses weights equal to one for all neighbor relationships. In the second example, symmetric unnormalized weights are specified, and <code>as.carCM</code> is used to construct the <code>C</code> and <code>M</code> parameters to the <code>dcar_proper</code> distribution.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># omitting C and M sets all non-zero weights to one</span>
-code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-    mu0 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)
-    tau <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)
-    gamma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)
-    s[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dcar_proper</span>(mu[<span class="dv">1</span><span class="op">:</span>N], <span class="dt">adj=</span>adj[<span class="dv">1</span><span class="op">:</span>L], <span class="dt">num=</span>num[<span class="dv">1</span><span class="op">:</span>N], <span class="dt">tau=</span>tau, 
-                         <span class="dt">gamma=</span>gamma)
-    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {
-        mu[i] &lt;-<span class="st"> </span>mu0
-        <span class="kw">logit</span>(p[i]) &lt;-<span class="st"> </span>s[i]
-        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dbern</span>(p[i])
-    }
-})
-
-adj &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">2</span>, <span class="dv">4</span>, <span class="dv">3</span>)
-num &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">1</span>)
-constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">adj =</span> adj, <span class="dt">num =</span> num, <span class="dt">N =</span> <span class="dv">4</span>, <span class="dt">L =</span> <span class="dv">6</span>)
-data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>))
-inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">mu0 =</span> <span class="dv">0</span>, <span class="dt">tau =</span> <span class="dv">1</span>, <span class="dt">gamma =</span> <span class="dv">0</span>, <span class="dt">s =</span> <span class="kw">rep</span>(<span class="dv">0</span>, <span class="dv">4</span>))
-Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)
-
-<span class="co"># specify symmetric unnormalized weights, use as.carCM to generate C and M</span>
-code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-    mu0 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)
-    tau <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)
-    gamma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)
-    s[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dcar_proper</span>(mu[<span class="dv">1</span><span class="op">:</span>N], C[<span class="dv">1</span><span class="op">:</span>L], adj[<span class="dv">1</span><span class="op">:</span>L], num[<span class="dv">1</span><span class="op">:</span>N], M[<span class="dv">1</span><span class="op">:</span>N], tau, 
-                         gamma)
-    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {
-        mu[i] &lt;-<span class="st"> </span>mu0
-        <span class="kw">logit</span>(p[i]) &lt;-<span class="st"> </span>s[i]
-        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dbern</span>(p[i])
-    }
-})
-
-weights &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">4</span>)
-CM &lt;-<span class="st"> </span><span class="kw">as.carCM</span>(adj, weights, num)
-constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">C =</span> CM<span class="op">$</span>C, <span class="dt">adj =</span> adj, <span class="dt">num =</span> num, <span class="dt">M =</span> CM<span class="op">$</span>M, <span class="dt">N =</span> <span class="dv">4</span>, <span class="dt">L =</span> <span class="dv">6</span>)
-Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</code></pre></div>
-<p>Each of the resulting models may be carried through to MCMC sampling. NIMBLE will assign a specialized sampler to update the elements of the CAR process. See Chapter <a href="cha-mcmc.html#cha:mcmc">7</a> for information about NIMBLE’s MCMC engine, and Section <a href="cha-spatial.html#sec:spatial-mcmc-sampling-car">9.3</a> for details on MCMC sampling of the CAR processes.</p>
+<div class="sourceCode" id="cb210"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb210-1" title="1"><span class="co"># omitting C and M sets all non-zero weights to one</span></a>
+<a class="sourceLine" id="cb210-2" title="2">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb210-3" title="3">    mu0 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)</a>
+<a class="sourceLine" id="cb210-4" title="4">    tau <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)</a>
+<a class="sourceLine" id="cb210-5" title="5">    gamma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb210-6" title="6">    s[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dcar_proper</span>(mu[<span class="dv">1</span><span class="op">:</span>N], <span class="dt">adj=</span>adj[<span class="dv">1</span><span class="op">:</span>L], <span class="dt">num=</span>num[<span class="dv">1</span><span class="op">:</span>N], <span class="dt">tau=</span>tau, </a>
+<a class="sourceLine" id="cb210-7" title="7">                         <span class="dt">gamma=</span>gamma)</a>
+<a class="sourceLine" id="cb210-8" title="8">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {</a>
+<a class="sourceLine" id="cb210-9" title="9">        mu[i] &lt;-<span class="st"> </span>mu0</a>
+<a class="sourceLine" id="cb210-10" title="10">        <span class="kw">logit</span>(p[i]) &lt;-<span class="st"> </span>s[i]</a>
+<a class="sourceLine" id="cb210-11" title="11">        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dbern</span>(p[i])</a>
+<a class="sourceLine" id="cb210-12" title="12">    }</a>
+<a class="sourceLine" id="cb210-13" title="13">})</a>
+<a class="sourceLine" id="cb210-14" title="14"></a>
+<a class="sourceLine" id="cb210-15" title="15">adj &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">2</span>, <span class="dv">4</span>, <span class="dv">3</span>)</a>
+<a class="sourceLine" id="cb210-16" title="16">num &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb210-17" title="17">constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">adj =</span> adj, <span class="dt">num =</span> num, <span class="dt">N =</span> <span class="dv">4</span>, <span class="dt">L =</span> <span class="dv">6</span>)</a>
+<a class="sourceLine" id="cb210-18" title="18">data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>))</a>
+<a class="sourceLine" id="cb210-19" title="19">inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">mu0 =</span> <span class="dv">0</span>, <span class="dt">tau =</span> <span class="dv">1</span>, <span class="dt">gamma =</span> <span class="dv">0</span>, <span class="dt">s =</span> <span class="kw">rep</span>(<span class="dv">0</span>, <span class="dv">4</span>))</a>
+<a class="sourceLine" id="cb210-20" title="20">Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</a>
+<a class="sourceLine" id="cb210-21" title="21"></a>
+<a class="sourceLine" id="cb210-22" title="22"><span class="co"># specify symmetric unnormalized weights, use as.carCM to generate C and M</span></a>
+<a class="sourceLine" id="cb210-23" title="23">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb210-24" title="24">    mu0 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)</a>
+<a class="sourceLine" id="cb210-25" title="25">    tau <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)</a>
+<a class="sourceLine" id="cb210-26" title="26">    gamma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb210-27" title="27">    s[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dcar_proper</span>(mu[<span class="dv">1</span><span class="op">:</span>N], C[<span class="dv">1</span><span class="op">:</span>L], adj[<span class="dv">1</span><span class="op">:</span>L], num[<span class="dv">1</span><span class="op">:</span>N], M[<span class="dv">1</span><span class="op">:</span>N], tau, </a>
+<a class="sourceLine" id="cb210-28" title="28">                         gamma)</a>
+<a class="sourceLine" id="cb210-29" title="29">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {</a>
+<a class="sourceLine" id="cb210-30" title="30">        mu[i] &lt;-<span class="st"> </span>mu0</a>
+<a class="sourceLine" id="cb210-31" title="31">        <span class="kw">logit</span>(p[i]) &lt;-<span class="st"> </span>s[i]</a>
+<a class="sourceLine" id="cb210-32" title="32">        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dbern</span>(p[i])</a>
+<a class="sourceLine" id="cb210-33" title="33">    }</a>
+<a class="sourceLine" id="cb210-34" title="34">})</a>
+<a class="sourceLine" id="cb210-35" title="35"></a>
+<a class="sourceLine" id="cb210-36" title="36">weights &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">4</span>)</a>
+<a class="sourceLine" id="cb210-37" title="37">CM &lt;-<span class="st"> </span><span class="kw">as.carCM</span>(adj, weights, num)</a>
+<a class="sourceLine" id="cb210-38" title="38">constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">C =</span> CM<span class="op">$</span>C, <span class="dt">adj =</span> adj, <span class="dt">num =</span> num, <span class="dt">M =</span> CM<span class="op">$</span>M, <span class="dt">N =</span> <span class="dv">4</span>, <span class="dt">L =</span> <span class="dv">6</span>)</a>
+<a class="sourceLine" id="cb210-39" title="39">Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</a></code></pre></div>
+<p>Each of the resulting models may be carried through to MCMC sampling.
+NIMBLE will assign a specialized sampler to update the elements of the CAR process.
+See Chapter <a href="cha-mcmc.html#cha:mcmc">7</a> for information about NIMBLE’s MCMC engine, and Section
+<a href="cha-spatial.html#sec:spatial-mcmc-sampling-car">9.3</a> for details on MCMC sampling of the CAR processes.</p>
 </div>
 </div>
 <div id="sec:spatial-mcmc-sampling-car" class="section level2">
@@ -507,30 +552,19 @@ Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, c
 <li>In the non-conjugate case, sampling proceeds using random walk Metropolis-Hastings, where the posterior is determined entirely by the dependencies.</li>
 <li>In the case of no dependents, the posterior is entirely undefined. Here, no changes will be made to the process value, and it will remain equal to its initial value throughout. By virtue of having no neighbors, this region does not contribute to the density evaluation of the subsuming <code>dcar_normal</code> node nor to the conditional prior of any other regions, hence its value (even <code>NA</code>) is of no consequence.</li>
 </ol>
-<p>This behavior is different from that of WinBUGS, where the value of zero-neighbor regions of <code>car.normal</code> nodes is set to and fixed at zero. <!--- Regions with zero neighbors of a `dcar_proper` distribution, in contrast, have a well-defined conditional prior, undergo sampling the same as regions with neighbors, and do contribute to the density evaluation of the subsuming `dcar_proper` node. --></p>
+<p>This behavior is different from that of WinBUGS, where the value of zero-neighbor regions of <code>car.normal</code> nodes is set to and fixed at zero.
+<!--- Regions with zero neighbors of a `dcar_proper` distribution, in contrast, have a well-defined conditional prior, undergo sampling the same as regions with neighbors, and do contribute to the density evaluation of the subsuming `dcar_proper` node. --></p>
 </div>
 <div id="zero-mean-constraint" class="section level3">
 <h3><span class="header-section-number">9.3.3</span> Zero-mean constraint</h3>
 <p>A zero-mean constraint is available for the intrinsic Gaussian <code>dcar_normal</code> distribution. This constraint on the ICAR process values is imposed during MCMC sampling, if the argument <code>zero_mean = 1</code>, mimicking the behavior of WinBUGS. Following the univariate updates on each component, the mean is subtracted away from all process values, resulting in a zero-mean process.</p>
-<p>Note that this is <em>not</em> equivalent to sampling under the constraint that the mean is zero (see p. 36 of <span class="citation">Rue and Held (<a href="#ref-Rue_Held_2005">2005</a>)</span>) so should be treated as an ad hoc approach and employed with caution.</p>
+<p>Note that this is <em>not</em> equivalent to sampling under the constraint that the mean is zero (see p. 36 of <span class="citation">Rue and Held (<a href="references.html#ref-Rue_Held_2005">2005</a>)</span>) so should be treated as an ad hoc approach and employed with caution.</p>
 
 <!--- % See http://yihui.name/knitr/demo/child/ for documentation on the parent/child document system of knitr -->
 <!---  
 % Rscript -e "library(knitr);  knit2pdf('includesSpatialOnly.Rnw')"; open -a "Google Chrome" includesSpatialOnly.pdf (I'm not sure what to do here...)
 -->
 </div>
-</div>
-</div>
-<h3>References</h3>
-<div id="refs" class="references">
-<div id="ref-Banerjee_etal_2015">
-<p>Banerjee, S., B.P. Carlin, and A.E. Gelfand. 2015. <em>Hierarchical Modeling and Analysis for Spatial Data</em>. 2nd ed. Boca Raton: Chapman &amp; Hall.</p>
-</div>
-<div id="ref-Paciorek_2009">
-<p>Paciorek, C.J. 2009. “Understanding Intrinsic Gaussian Markov Random Field Spatial Models, Including Intrinsic Conditional Autoregressive Models.” University of California, Berkeley. <a href="http://www.stat.berkeley.edu/~paciorek/research/techVignettes/techVignette5.pdf" class="uri">http://www.stat.berkeley.edu/~paciorek/research/techVignettes/techVignette5.pdf</a>.</p>
-</div>
-<div id="ref-Rue_Held_2005">
-<p>Rue, H., and L. Held. 2005. <em>Gaussian Markov Random Fields: Theory and Applications</em>. Boca Raton: Chapman &amp; Hall.</p>
 </div>
 </div>
             </section>
@@ -544,11 +578,13 @@ Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, c
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
 <script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
 <script>
 gitbook.require(["gitbook"], function(gitbook) {
 gitbook.start({
@@ -556,12 +592,11 @@ gitbook.start({
 "github": false,
 "facebook": true,
 "twitter": true,
-"google": false,
 "linkedin": false,
 "weibo": false,
 "instapaper": false,
 "vk": false,
-"all": ["facebook", "google", "twitter", "linkedin", "weibo", "instapaper"]
+"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
 },
 "fontsettings": {
 "theme": "white",
@@ -573,6 +608,10 @@ gitbook.start({
 "text": null
 },
 "history": {
+"link": null,
+"text": null
+},
+"view": {
 "link": null,
 "text": null
 },
@@ -590,10 +629,11 @@ gitbook.start({
   (function () {
     var script = document.createElement("script");
     script.type = "text/javascript";
-    var src = "";
+    var src = "true";
     if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
-    if (location.protocol !== "file:" && /^https?:/.test(src))
-      src = src.replace(/^https?:/, '');
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
     script.src = src;
     document.getElementsByTagName("head")[0].appendChild(script);
   })();

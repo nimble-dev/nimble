@@ -80,7 +80,7 @@ generated.  These include:
 ### Determining dependencies in a model {#sec:cdgetdependencies}
 
 Next we'll see how to determine the node dependencies (or
-'descendants') in a model. There are a variety of arguments to `getDependencies` that
+'descendants' or child nodes) in a model. There are a variety of arguments to `getDependencies` that
 allow one to specify whether to include the node itself, whether to
 include deterministic or stochastic or data dependents, etc. By
 default `getDependencies` returns descendants up to the next
@@ -89,7 +89,12 @@ needed to calculate a Metropolis-Hastings acceptance probability in
 MCMC, for example.
 
 ```{r, getDependencies}
-``` 
+```
+
+In addition, one can determine parent nodes using `getParents`.
+
+```{r, getParents}
+```
 
 ## Accessing information about nodes and variables {#sec:nodeInfo}
 
@@ -141,9 +146,7 @@ help for `getDistributionInfo`.
 ### Getting distribution parameter values for a node {#sec:getParam}
 
 The function `getParam` provides access to values of the parameters
-of a node's distribution.  `getParam` can be
-used as  global function taking a model as the first argument, or it
-can be used as a model member function.  The next two arguments must
+of a node's distribution. The two arguments must
 be the name of one (stochastic) node and the name of a parameter for the
 distribution followed by that node.  The parameter does not have to be
 one of the parameters used when the node was declared.  Alternative
@@ -158,9 +161,8 @@ gammaModel <- nimbleModel(
         a ~ dlnorm(0, 1)
         x ~ dgamma(shape = 2, scale = a)
     }), data = list(x = 2.4), inits = list(a = 1.2))
-getParam(gammaModel, 'x', 'scale')
-getParam(gammaModel, 'x', 'rate')
-gammaModel$getParam('x','rate')
+gammaModel$getParam('x', 'scale')
+gammaModel$getParam('x', 'rate')
 ``` 
 
 `getParam` is part of the NIMBLE language, so it can be used in run code of nimbleFunctions.

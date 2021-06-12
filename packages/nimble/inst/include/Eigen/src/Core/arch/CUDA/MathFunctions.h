@@ -17,7 +17,7 @@ namespace internal {
 // Make sure this is only available when targeting a GPU: we don't want to
 // introduce conflicts between these packet_traits definitions and the ones
 // we'll use on the host side (SSE, AVX, ...)
-#if defined(__CUDACC__) && defined(EIGEN_USE_GPU)
+#if defined(EIGEN_CUDACC) && defined(EIGEN_USE_GPU)
 template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
 float4 plog<float4>(const float4& a)
 {
@@ -54,6 +54,18 @@ double2 pexp<double2>(const double2& a)
 {
   using ::exp;
   return make_double2(exp(a.x), exp(a.y));
+}
+
+template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+float4 pexpm1<float4>(const float4& a)
+{
+  return make_float4(expm1f(a.x), expm1f(a.y), expm1f(a.z), expm1f(a.w));
+}
+
+template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+double2 pexpm1<double2>(const double2& a)
+{
+  return make_double2(expm1(a.x), expm1(a.y));
 }
 
 template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE

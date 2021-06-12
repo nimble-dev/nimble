@@ -64,8 +64,6 @@ initializeModel <- nimbleFunction(
         graphIDs <- graphIDs[!bool]
         rm(allNodes)
         rm(allTypes)
-#        LHSnodes <- model$getNodeNames()
-#        nodeTypes <- model$getNodeType(LHSnodes)
         bool <- nodeTypes == "stoch"
         typeCode <- c(ifelse(nodeTypes == "determ", 1,
                       ifelse(bool, 2,
@@ -95,8 +93,6 @@ initializeModel <- nimbleFunction(
                 }
             }
         }
-        ## removed trailing full model$calculate() -DT Feb. 2019
-        ##model$calculate(LHSnodes)
     },
     methods = list(
         initialize_deterministic = function(i = integer()) {
@@ -140,8 +136,7 @@ initializeModel <- nimbleFunction(
                 }
             }
         }
-    ),
-    where = getLoadingNamespace()
+    )
 )
 
 nodeInit_virtual <- nimbleFunctionVirtual()
@@ -153,58 +148,6 @@ checkRHSonlyInit <- nimbleFunction(
     run = function() {
         vals <- values(model, nodes)
         if(any_na(vals) | any_nan(vals)) print('warning: value in right-hand-side-only variable is NA or NaN, in variable: ', variable)
-    },    where = getLoadingNamespace()
+    }
 )
-
-## determNodeInit <- nimbleFunction(
-##     name = 'determNodeInit',
-##     contains = nodeInit_virtual,
-##     setup = function(model, node, silent) {},
-##     run = function() {
-##         nodeValue <- values(model, node)
-##         if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) calculate(model, node)
-##         nodeValue <- values(model, node)
-##         if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) print('warning: value of deterministic node ',node,': value is NA or NaN even after trying to calculate.')
-##     },    where = getLoadingNamespace()
-## )
-
-## stochDataNodeInit <- nimbleFunction(
-##     name = 'stochDataNodeInit',
-##     contains = nodeInit_virtual,
-##     setup = function(model, node, silent) {},
-##     run = function() {
-##         nodeValue <- values(model, node)
-##         if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) print('warning: value of data node ',node,': value is NA or NaN.')
-##         lp <- calculate(model, node)
-##         if(is.na(lp) | is.nan(lp)) print('warning: logProb of data node ', node, ': logProb is NA or NaN.')
-##         if(!(is.na(lp) | is.nan(lp))) {
-##             if(lp == -Inf) {
-##                 if(!silent) print('warning: logProb of data node ', node, ': logProb is -Inf.')
-##             } else if(lp < -1e12) {
-##                 if(!silent) print('warning: logProb of data node ', node, ': logProb less than -1e12.')
-##             }
-##         }
-##     },    where = getLoadingNamespace()
-## )
-
-## stochNonDataNodeInit <- nimbleFunction(
-##     name = 'stochNonDataNodeInit',
-##     contains = nodeInit_virtual,
-##     setup = function(model, node, silent) {},
-##     run = function() {
-##         nodeValue <- values(model, node)
-##         if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) simulate(model, node)
-##         nodeValue <- values(model, node)
-##         if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) print('warning: value of stochastic node ',node,': value is NA or NaN even after trying to simulate.')
-##         lp <- calculate(model, node)
-##         if(is.na(lp) | is.nan(lp)) print('warning: problem initializing stochastic node ', node, ': logProb is NA or NaN.')
-##         if(!(is.na(lp) | is.nan(lp))) {
-##             if(lp == -Inf) {
-##                 if(!silent) print('warning: problem initializing stochastic node ', node, ': logProb is -Inf.')
-##             } else if(lp < -1e12) {
-##                 if(!silent) print('warning: problem initializing stochastic node ', node, ': logProb less than -1e12.')
-##             }
-##         }
-##     },    where = getLoadingNamespace()
-## )
 

@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<html lang="" xml:lang="">
 <head>
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title></title>
+  <title>Chapter 5 Writing models in NIMBLE’s dialect of BUGS | NimbleUserManual.utf8</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.12 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.19 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="" />
+  <meta property="og:title" content="Chapter 5 Writing models in NIMBLE’s dialect of BUGS | NimbleUserManual.utf8" />
   <meta property="og:type" content="book" />
   
   <meta property="og:image" content="nimble-icon.png" />
@@ -16,7 +16,7 @@
   <meta name="github-repo" content="nimble-dev/nimble" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="" />
+  <meta name="twitter:title" content="Chapter 5 Writing models in NIMBLE’s dialect of BUGS | NimbleUserManual.utf8" />
   
   <meta name="twitter:description" content="This is the NIMBLE User Manual." />
   <meta name="twitter:image" content="nimble-icon.png" />
@@ -29,8 +29,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
-<link rel="prev" href="cha-installing-nimble.html">
-<link rel="next" href="cha-building-models.html">
+<link rel="prev" href="cha-installing-nimble.html"/>
+<link rel="next" href="cha-building-models.html"/>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -38,6 +38,9 @@
 <link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
 
 
 
@@ -48,41 +51,66 @@
 
 
 <style type="text/css">
-div.sourceCode { overflow-x: auto; }
-table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
-  margin: 0; padding: 0; vertical-align: baseline; border: none; }
-table.sourceCode { width: 100%; line-height: 100%; }
-td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
-td.sourceCode { padding-left: 5px; }
-code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
-code > span.dt { color: #902000; } /* DataType */
-code > span.dv { color: #40a070; } /* DecVal */
-code > span.bn { color: #40a070; } /* BaseN */
-code > span.fl { color: #40a070; } /* Float */
-code > span.ch { color: #4070a0; } /* Char */
-code > span.st { color: #4070a0; } /* String */
-code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
-code > span.ot { color: #007020; } /* Other */
-code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
-code > span.fu { color: #06287e; } /* Function */
-code > span.er { color: #ff0000; font-weight: bold; } /* Error */
-code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
-code > span.cn { color: #880000; } /* Constant */
-code > span.sc { color: #4070a0; } /* SpecialChar */
-code > span.vs { color: #4070a0; } /* VerbatimString */
-code > span.ss { color: #bb6688; } /* SpecialString */
-code > span.im { } /* Import */
-code > span.va { color: #19177c; } /* Variable */
-code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-code > span.op { color: #666666; } /* Operator */
-code > span.bu { } /* BuiltIn */
-code > span.ex { } /* Extension */
-code > span.pp { color: #bc7a00; } /* Preprocessor */
-code > span.at { color: #7d9029; } /* Attribute */
-code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
-code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+a.sourceLine { display: inline-block; line-height: 1.25; }
+a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
+a.sourceLine:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+a.sourceLine { text-indent: -1em; padding-left: 1em; }
+}
+pre.numberSource a.sourceLine
+  { position: relative; left: -4em; }
+pre.numberSource a.sourceLine::before
+  { content: attr(title);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; pointer-events: all; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {  }
+@media screen {
+a.sourceLine::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
 <link rel="stylesheet" href="style.css" type="text/css" />
@@ -100,7 +128,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.9.0</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.11.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -232,6 +260,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="10.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:crp"><i class="fa fa-check"></i><b>10.2</b> Chinese Restaurant Process model</a><ul>
 <li class="chapter" data-level="10.2.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-density-2"><i class="fa fa-check"></i><b>10.2.1</b> Specification and density</a></li>
 <li class="chapter" data-level="10.2.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:excrp"><i class="fa fa-check"></i><b>10.2.2</b> Example</a></li>
+<li class="chapter" data-level="10.2.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:extensionscrp"><i class="fa fa-check"></i><b>10.2.3</b> Extensions</a></li>
 </ul></li>
 <li class="chapter" data-level="10.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:sb"><i class="fa fa-check"></i><b>10.3</b> Stick-breaking model</a><ul>
 <li class="chapter" data-level="10.3.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-function"><i class="fa fa-check"></i><b>10.3.1</b> Specification and function</a></li>
@@ -327,6 +356,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
+<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
       </nav>
@@ -346,20 +376,31 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
             <section class="normal" id="section-">
 <div id="cha:writing-models" class="section level1">
 <h1><span class="header-section-number">Chapter 5</span> Writing models in NIMBLE’s dialect of BUGS</h1>
-<p>Models in NIMBLE are written using a variation on the BUGS language. From BUGS code, NIMBLE creates a model object. This chapter describes NIMBLE’s version of BUGS. The next chapter explains how to build and manipulate model objects. <!---  With NIMBLE you can also define your own distributions and functions for use in BUGS code; discussion of this functionality is deferred to Chapter \@ref(cha:user-defined) as it requires the use of nimbleFunctions.  --></p>
+<p>Models in NIMBLE are written using a variation on the BUGS language.
+From BUGS code, NIMBLE creates a model object. This chapter
+describes NIMBLE’s version of BUGS. The next chapter explains how to
+build and manipulate model objects.
+<!---  With NIMBLE you can also define your own distributions and functions for use in BUGS code; discussion of this functionality is deferred to Chapter \@ref(cha:user-defined) as it requires the use of nimbleFunctions.  --></p>
 <div id="sec:supp-feat-bugs" class="section level2">
 <h2><span class="header-section-number">5.1</span> Comparison to BUGS dialects supported by WinBUGS, OpenBUGS and JAGS</h2>
-<p>Many users will come to NIMBLE with some familiarity with WinBUGS, OpenBUGS, or JAGS, so we start by summarizing how NIMBLE is similar to and different from those before documenting NIMBLE’s version of BUGS more completely. In general, NIMBLE aims to be compatible with the original BUGS language and also JAGS’ version. However, at this point, there are some features not supported by NIMBLE, and there are some extensions that are planned but not implemented.</p>
+<p>Many users will come to NIMBLE with some familiarity with WinBUGS,
+OpenBUGS, or JAGS, so we start by summarizing how NIMBLE is similar to
+and different from those before documenting NIMBLE’s version of BUGS
+more completely. In general, NIMBLE aims to be compatible with the
+original BUGS language and also JAGS’ version. However, at this
+point, there are some features not supported by NIMBLE, and there are
+some extensions that are planned but not implemented.</p>
 <div id="supported-features-of-bugs-and-jags" class="section level3">
 <h3><span class="header-section-number">5.1.1</span> Supported features of BUGS and JAGS</h3>
 <ol style="list-style-type: decimal">
-<li>Stochastic and deterministic<a href="#fn10" class="footnoteRef" id="fnref10"><sup>10</sup></a> node declarations.</li>
+<li>Stochastic and deterministic<a href="#fn10" class="footnote-ref" id="fnref10"><sup>10</sup></a> node declarations.</li>
 <li>Most univariate and multivariate distributions.</li>
 <li>Link functions.</li>
 <li>Most mathematical functions.</li>
 <li>‘for’ loops for iterative declarations.</li>
 <li>Arrays of nodes up to 4 dimensions.</li>
-<li>Truncation and censoring as in JAGS using the <code>T()</code> notation and <code>dinterval</code>.</li>
+<li>Truncation and censoring as in JAGS using the <code>T()</code>
+notation and <code>dinterval</code>.</li>
 </ol>
 </div>
 <div id="sec:extensions-bugs" class="section level3">
@@ -369,12 +410,14 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li>User-defined functions and distributions – written as nimbleFunctions – can be used in model code. See Chapter <a href="cha-user-defined.html#cha:user-defined">12</a>.</li>
 <li>Multiple parameterizations for distributions, similar to those in R, can be used.</li>
 <li>Named parameters for distributions and functions, similar to R function calls, can be used.</li>
-<li>Linear algebra, including for vectorized calculations of simple algebra, can be used in deterministic declarations.</li>
-<li>Distribution parameters can be expressions, as in JAGS but not in WinBUGS. Caveat: parameters to <em>multivariate</em> distributions (e.g., <code>dmnorm</code>) cannot be expressions (but an expression can be defined in a separate deterministic expression and the resulting variable then used). <!--- still true. -Perry --></li>
+<li>Linear algebra, including for vectorized
+calculations of simple algebra, can be used in deterministic declarations.</li>
+<li>Distribution parameters can be expressions, as in JAGS but not in WinBUGS. Caveat: parameters to <em>multivariate</em>
+distributions (e.g., <code>dmnorm</code>) cannot be expressions (but an expression can be defined in a separate deterministic expression and the resulting variable then used). <!--- still true. -Perry --></li>
 <li>Alternative models can be defined from the same model code by using if-then-else statements that are evaluated when the model is defined.</li>
 <li>More flexible indexing of vector nodes within larger variables is allowed. For example one can place a multivariate normal vector arbitrarily within a higher-dimensional object, not just in the last index.</li>
 <li>More general constraints can be declared using <code>dconstraint</code>, which extends the concept of JAGS’ <code>dinterval</code>.</li>
-<li>Link functions can be used in stochastic, as well as deterministic, declarations.<a href="#fn11" class="footnoteRef" id="fnref11"><sup>11</sup></a></li>
+<li>Link functions can be used in stochastic, as well as deterministic, declarations.<a href="#fn11" class="footnote-ref" id="fnref11"><sup>11</sup></a></li>
 <li>Data values can be reset, and which parts of a model are flagged as data can be changed, allowing one model to be used for different data sets without rebuilding the model each time.</li>
 <li>As of Version 0.6-6 we now support stochastic/dynamic indexes. More specifically in earlier versions all indexes needed to be constants. Now indexes can be other nodes or functions of other nodes. For a given dimension of a node being indexed, if the index is not constant, it must be a scalar value. So expressions such as <code>mu[k[i], 3]</code> or <code>mu[k[i], 1:3]</code> or <code>mu[k[i], j[i]]</code> are allowed, but not <code>mu[k[i]:(k[i]+1)]</code>. Nested dynamic indexes such as <code>mu[k[j[i]]]</code> are also allowed.</li>
 </ol>
@@ -383,144 +426,196 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <h3><span class="header-section-number">5.1.3</span> Not-yet-supported features of BUGS and JAGS</h3>
 <p>In this release, the following are not supported.</p>
 <ol style="list-style-type: decimal">
-<li>The appearance of the same node on the left-hand side of both a <code>&lt;-</code> and a <span class="math inline">\(\sim\)</span> declaration (used in WinBUGS for data assignment for the value of a stochastic node).</li>
-<li>Multivariate nodes must appear with brackets, even if they are empty. E.g., <code>x</code> cannot be multivariate but <code>x[]</code> or <code>x[2:5]</code> can be.</li>
-<li>NIMBLE generally determines the dimensionality and sizes of variables from the BUGS code. However, when a variable appears with blank indices, such as in <code>x.sum &lt;- sum(x[])</code>, and if the dimensions of the variable are not clearly defined in other declarations, NIMBLE currently requires that the dimensions of x be provided when the model object is created (via <code>nimbleModel</code>).</li>
+<li>The appearance of the same node on the left-hand side of both a
+<code>&lt;-</code> and a <span class="math inline">\(\sim\)</span> declaration (used in WinBUGS for data
+assignment for the value of a stochastic node).</li>
+<li>Multivariate nodes must appear with brackets, even if they are
+empty. E.g., <code>x</code> cannot be multivariate but <code>x[]</code> or
+<code>x[2:5]</code> can be.</li>
+<li>NIMBLE generally determines the dimensionality and
+sizes of variables from the BUGS code. However, when a variable
+appears with blank indices, such as in <code>x.sum &lt;- sum(x[])</code>,
+and if the dimensions of the variable are not clearly defined in
+other declarations, NIMBLE currently requires that the dimensions of
+x be provided when the model object is created (via <code>nimbleModel</code>).</li>
 </ol>
 </div>
 </div>
 <div id="writing-models" class="section level2">
 <h2><span class="header-section-number">5.2</span> Writing models</h2>
-<p>Here we introduce NIMBLE’s version of BUGS. The WinBUGS, OpenBUGS and JAGS manuals are also useful resources for writing BUGS models, including many examples.</p>
+<p>Here we introduce NIMBLE’s version of BUGS. The WinBUGS, OpenBUGS and
+JAGS manuals are also useful resources for writing BUGS models,
+including many examples.</p>
 <div id="declaring-stochastic-and-deterministic-nodes" class="section level3">
 <h3><span class="header-section-number">5.2.1</span> Declaring stochastic and deterministic nodes</h3>
-<p>BUGS is a declarative language for graphical (or hierarchical) models. Most programming languages are imperative, which means a series of commands will be executed in the order they are written. A declarative language like BUGS is more like building a machine before using it. Each line declares that a component should be plugged into the machine, but it doesn’t matter in what order they are declared as long as all the right components are plugged in by the end of the code.</p>
-<p>The machine in this case is a graphical model<a href="#fn12" class="footnoteRef" id="fnref12"><sup>12</sup></a>. A <em>node</em> (sometimes called a <em>vertex</em>) holds one value, which may be a scalar or a vector. <em>Edges</em> define the relationships between nodes. A huge variety of statistical models can be thought of as graphs.</p>
+<p>BUGS is a declarative language for graphical (or hierarchical) models.
+Most programming languages are imperative, which means a series of
+commands will be executed in the order they are written. A
+declarative language like BUGS is more like building a machine before
+using it. Each line declares that a component should be plugged into
+the machine, but it doesn’t matter in what order they are declared as
+long as all the right components are plugged in by the end of the code.</p>
+<p>The machine in this case is a graphical model<a href="#fn12" class="footnote-ref" id="fnref12"><sup>12</sup></a>. A <em>node</em> (sometimes called
+a <em>vertex</em>) holds one value, which may be a scalar or a vector.
+<em>Edges</em> define the relationships between nodes. A huge variety
+of statistical models can be thought of as graphs.</p>
 <p>Here is the code to define and create a simple linear regression model with four observations.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(nimble)
-mc &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-    intercept <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
-    slope <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
-    sigma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)
-    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">4</span>) {
-        predicted.y[i] &lt;-<span class="st"> </span>intercept <span class="op">+</span><span class="st"> </span>slope <span class="op">*</span><span class="st"> </span>x[i]
-        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(predicted.y[i], <span class="dt">sd =</span> sigma)
-    }
-})
-
-model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(mc, <span class="dt">data =</span> <span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">rnorm</span>(<span class="dv">4</span>)))
-
-<span class="kw">library</span>(igraph)
-
-layout &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dt">ncol =</span> <span class="dv">2</span>, <span class="dt">byrow =</span> <span class="ot">TRUE</span>,
-   <span class="co"># These seem to be rescaled to fit in the plot area,</span>
-   <span class="co"># so I&#39;ll just use 0-100 as the scale</span>
-                 <span class="dt">data =</span> <span class="kw">c</span>(<span class="dv">33</span>, <span class="dv">100</span>,
-                          <span class="dv">66</span>, <span class="dv">100</span>,
-                          <span class="dv">50</span>, <span class="dv">0</span>, <span class="co"># first three are parameters</span>
-                          <span class="dv">15</span>, <span class="dv">50</span>, <span class="dv">35</span>, <span class="dv">50</span>, <span class="dv">55</span>, <span class="dv">50</span>, <span class="dv">75</span>, <span class="dv">50</span>, <span class="co"># x&#39;s</span>
-                          <span class="dv">20</span>, <span class="dv">75</span>, <span class="dv">40</span>, <span class="dv">75</span>, <span class="dv">60</span>, <span class="dv">75</span>, <span class="dv">80</span>, <span class="dv">75</span>, <span class="co"># predicted.y&#39;s</span>
-                          <span class="dv">25</span>, <span class="dv">25</span>, <span class="dv">45</span>, <span class="dv">25</span>, <span class="dv">65</span>, <span class="dv">25</span>, <span class="dv">85</span>, <span class="dv">25</span>) <span class="co"># y&#39;s</span>
-                 )
-
-sizes &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">45</span>, <span class="dv">30</span>, <span class="dv">30</span>,
-           <span class="kw">rep</span>(<span class="dv">20</span>, <span class="dv">4</span>),
-           <span class="kw">rep</span>(<span class="dv">50</span>, <span class="dv">4</span>),
-           <span class="kw">rep</span>(<span class="dv">20</span>, <span class="dv">4</span>))
-
-edge.color &lt;-<span class="st"> &quot;black&quot;</span>
-    <span class="co"># c(</span>
-    <span class="co"># rep(&quot;green&quot;, 8),</span>
-    <span class="co"># rep(&quot;red&quot;, 4),</span>
-    <span class="co"># rep(&quot;blue&quot;, 4),</span>
-    <span class="co"># rep(&quot;purple&quot;, 4))</span>
-stoch.color &lt;-<span class="st"> &quot;deepskyblue2&quot;</span>
-det.color &lt;-<span class="st"> &quot;orchid3&quot;</span>
-rhs.color &lt;-<span class="st"> &quot;gray73&quot;</span>
-fill.color &lt;-<span class="st"> </span><span class="kw">c</span>(
-    <span class="kw">rep</span>(stoch.color, <span class="dv">3</span>),
-    <span class="kw">rep</span>(rhs.color, <span class="dv">4</span>),
-    <span class="kw">rep</span>(det.color, <span class="dv">4</span>),
-    <span class="kw">rep</span>(stoch.color, <span class="dv">4</span>)
-)
-
-
-<span class="kw">plot</span>(model<span class="op">$</span>graph, <span class="dt">vertex.shape =</span> <span class="st">&quot;crectangle&quot;</span>,
-     <span class="dt">vertex.size =</span> sizes,
-     <span class="dt">vertex.size2 =</span> <span class="dv">20</span>,
-     <span class="dt">layout =</span> layout,
-     <span class="dt">vertex.label.cex =</span> <span class="fl">3.0</span>,
-     <span class="dt">vertex.color =</span> fill.color,
-     <span class="dt">edge.width =</span> <span class="dv">3</span>,
-     <span class="dt">asp =</span> <span class="fl">0.5</span>,
-     <span class="dt">edge.color =</span> edge.color)</code></pre></div>
+<div class="sourceCode" id="cb76"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb76-1" title="1"><span class="kw">library</span>(nimble)</a>
+<a class="sourceLine" id="cb76-2" title="2">mc &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb76-3" title="3">    intercept <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)</a>
+<a class="sourceLine" id="cb76-4" title="4">    slope <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)</a>
+<a class="sourceLine" id="cb76-5" title="5">    sigma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)</a>
+<a class="sourceLine" id="cb76-6" title="6">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">4</span>) {</a>
+<a class="sourceLine" id="cb76-7" title="7">        predicted.y[i] &lt;-<span class="st"> </span>intercept <span class="op">+</span><span class="st"> </span>slope <span class="op">*</span><span class="st"> </span>x[i]</a>
+<a class="sourceLine" id="cb76-8" title="8">        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(predicted.y[i], <span class="dt">sd =</span> sigma)</a>
+<a class="sourceLine" id="cb76-9" title="9">    }</a>
+<a class="sourceLine" id="cb76-10" title="10">})</a>
+<a class="sourceLine" id="cb76-11" title="11"></a>
+<a class="sourceLine" id="cb76-12" title="12">model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(mc, <span class="dt">data =</span> <span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">rnorm</span>(<span class="dv">4</span>)))</a>
+<a class="sourceLine" id="cb76-13" title="13"></a>
+<a class="sourceLine" id="cb76-14" title="14"><span class="kw">library</span>(igraph)</a>
+<a class="sourceLine" id="cb76-15" title="15"></a>
+<a class="sourceLine" id="cb76-16" title="16">layout &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dt">ncol =</span> <span class="dv">2</span>, <span class="dt">byrow =</span> <span class="ot">TRUE</span>,</a>
+<a class="sourceLine" id="cb76-17" title="17">   <span class="co"># These seem to be rescaled to fit in the plot area,</span></a>
+<a class="sourceLine" id="cb76-18" title="18">   <span class="co"># so I&#39;ll just use 0-100 as the scale</span></a>
+<a class="sourceLine" id="cb76-19" title="19">                 <span class="dt">data =</span> <span class="kw">c</span>(<span class="dv">33</span>, <span class="dv">100</span>,</a>
+<a class="sourceLine" id="cb76-20" title="20">                          <span class="dv">66</span>, <span class="dv">100</span>,</a>
+<a class="sourceLine" id="cb76-21" title="21">                          <span class="dv">50</span>, <span class="dv">0</span>, <span class="co"># first three are parameters</span></a>
+<a class="sourceLine" id="cb76-22" title="22">                          <span class="dv">15</span>, <span class="dv">50</span>, <span class="dv">35</span>, <span class="dv">50</span>, <span class="dv">55</span>, <span class="dv">50</span>, <span class="dv">75</span>, <span class="dv">50</span>, <span class="co"># x&#39;s</span></a>
+<a class="sourceLine" id="cb76-23" title="23">                          <span class="dv">20</span>, <span class="dv">75</span>, <span class="dv">40</span>, <span class="dv">75</span>, <span class="dv">60</span>, <span class="dv">75</span>, <span class="dv">80</span>, <span class="dv">75</span>, <span class="co"># predicted.y&#39;s</span></a>
+<a class="sourceLine" id="cb76-24" title="24">                          <span class="dv">25</span>, <span class="dv">25</span>, <span class="dv">45</span>, <span class="dv">25</span>, <span class="dv">65</span>, <span class="dv">25</span>, <span class="dv">85</span>, <span class="dv">25</span>) <span class="co"># y&#39;s</span></a>
+<a class="sourceLine" id="cb76-25" title="25">                 )</a>
+<a class="sourceLine" id="cb76-26" title="26"></a>
+<a class="sourceLine" id="cb76-27" title="27">sizes &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">45</span>, <span class="dv">30</span>, <span class="dv">30</span>,</a>
+<a class="sourceLine" id="cb76-28" title="28">           <span class="kw">rep</span>(<span class="dv">20</span>, <span class="dv">4</span>),</a>
+<a class="sourceLine" id="cb76-29" title="29">           <span class="kw">rep</span>(<span class="dv">50</span>, <span class="dv">4</span>),</a>
+<a class="sourceLine" id="cb76-30" title="30">           <span class="kw">rep</span>(<span class="dv">20</span>, <span class="dv">4</span>))</a>
+<a class="sourceLine" id="cb76-31" title="31"></a>
+<a class="sourceLine" id="cb76-32" title="32">edge.color &lt;-<span class="st"> &quot;black&quot;</span></a>
+<a class="sourceLine" id="cb76-33" title="33">    <span class="co"># c(</span></a>
+<a class="sourceLine" id="cb76-34" title="34">    <span class="co"># rep(&quot;green&quot;, 8),</span></a>
+<a class="sourceLine" id="cb76-35" title="35">    <span class="co"># rep(&quot;red&quot;, 4),</span></a>
+<a class="sourceLine" id="cb76-36" title="36">    <span class="co"># rep(&quot;blue&quot;, 4),</span></a>
+<a class="sourceLine" id="cb76-37" title="37">    <span class="co"># rep(&quot;purple&quot;, 4))</span></a>
+<a class="sourceLine" id="cb76-38" title="38">stoch.color &lt;-<span class="st"> &quot;deepskyblue2&quot;</span></a>
+<a class="sourceLine" id="cb76-39" title="39">det.color &lt;-<span class="st"> &quot;orchid3&quot;</span></a>
+<a class="sourceLine" id="cb76-40" title="40">rhs.color &lt;-<span class="st"> &quot;gray73&quot;</span></a>
+<a class="sourceLine" id="cb76-41" title="41">fill.color &lt;-<span class="st"> </span><span class="kw">c</span>(</a>
+<a class="sourceLine" id="cb76-42" title="42">    <span class="kw">rep</span>(stoch.color, <span class="dv">3</span>),</a>
+<a class="sourceLine" id="cb76-43" title="43">    <span class="kw">rep</span>(rhs.color, <span class="dv">4</span>),</a>
+<a class="sourceLine" id="cb76-44" title="44">    <span class="kw">rep</span>(det.color, <span class="dv">4</span>),</a>
+<a class="sourceLine" id="cb76-45" title="45">    <span class="kw">rep</span>(stoch.color, <span class="dv">4</span>)</a>
+<a class="sourceLine" id="cb76-46" title="46">)</a>
+<a class="sourceLine" id="cb76-47" title="47"></a>
+<a class="sourceLine" id="cb76-48" title="48"></a>
+<a class="sourceLine" id="cb76-49" title="49"><span class="kw">plot</span>(model<span class="op">$</span>graph, <span class="dt">vertex.shape =</span> <span class="st">&quot;crectangle&quot;</span>,</a>
+<a class="sourceLine" id="cb76-50" title="50">     <span class="dt">vertex.size =</span> sizes,</a>
+<a class="sourceLine" id="cb76-51" title="51">     <span class="dt">vertex.size2 =</span> <span class="dv">20</span>,</a>
+<a class="sourceLine" id="cb76-52" title="52">     <span class="dt">layout =</span> layout,</a>
+<a class="sourceLine" id="cb76-53" title="53">     <span class="dt">vertex.label.cex =</span> <span class="fl">3.0</span>,</a>
+<a class="sourceLine" id="cb76-54" title="54">     <span class="dt">vertex.color =</span> fill.color,</a>
+<a class="sourceLine" id="cb76-55" title="55">     <span class="dt">edge.width =</span> <span class="dv">3</span>,</a>
+<a class="sourceLine" id="cb76-56" title="56">     <span class="dt">asp =</span> <span class="fl">0.5</span>,</a>
+<a class="sourceLine" id="cb76-57" title="57">     <span class="dt">edge.color =</span> edge.color)</a></code></pre></div>
 <div class="figure"><span id="fig:linearRegressionGraph"></span>
 <img src="NimbleUserManual_files/figure-html/linearRegressionGraph-1.png" alt="Graph of a linear regression model" width="1920" />
 <p class="caption">
 Figure 5.1: Graph of a linear regression model
 </p>
 </div>
-<p>The graph representing the model is shown in Figure <a href="cha-writing-models.html#fig:linearRegressionGraph">5.1</a>. Each observation, <code>y[i]</code>, is a node whose edges say that it follows a normal distribution depending on a predicted value, <code>predicted.y[i]</code>, and standard deviation, <code>sigma</code>, which are each nodes. Each predicted value is a node whose edges say how it is calculated from <code>slope</code>, <code>intercept</code>, and one value of an explanatory variable, <code>x[i]</code>, which are each nodes.</p>
+<p>The graph representing the model is
+shown in Figure <a href="cha-writing-models.html#fig:linearRegressionGraph">5.1</a>. Each observation,
+<code>y[i]</code>, is a node whose edges say that it follows a normal
+distribution depending on a predicted value, <code>predicted.y[i]</code>, and
+standard deviation, <code>sigma</code>, which are each nodes. Each predicted
+value is a node whose edges say how it is calculated from <code>slope</code>,
+<code>intercept</code>, and one value of an explanatory variable, <code>x[i]</code>,
+which are each nodes.</p>
 <p>This graph is created from the following BUGS code:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">{
-    intercept <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
-    slope <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
-    sigma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)
-    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">4</span>) {
-        predicted.y[i] &lt;-<span class="st"> </span>intercept <span class="op">+</span><span class="st"> </span>slope <span class="op">*</span><span class="st"> </span>x[i]
-        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(predicted.y[i], <span class="dt">sd =</span> sigma)
-    }
-}</code></pre></div>
-<p>In this code, stochastic relationships are declared with ‘<span class="math inline">\(\sim\)</span>’ and deterministic relationships are declared with ‘<code>&lt;-</code>’. For example, each <code>y[i]</code> follows a normal distribution with mean <code>predicted.y[i]</code> and standard deviation <code>sigma</code>. Each <code>predicted.y[i]</code> is the result of <code>intercept + slope * x[i]</code>. The for-loop yields the equivalent of writing four lines of code, each with a different value of <code>i</code>. It does not matter in what order the nodes are declared. Imagine that each line of code draws part of Figure <a href="cha-writing-models.html#fig:linearRegressionGraph">5.1</a>, and all that matters is that the everything gets drawn in the end. Available distributions, default and alternative parameterizations, and functions are listed in Section <a href="cha-writing-models.html#subsec:dists-and-functions">5.2.4</a>.</p>
+<div class="sourceCode" id="cb77"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb77-1" title="1">{</a>
+<a class="sourceLine" id="cb77-2" title="2">    intercept <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)</a>
+<a class="sourceLine" id="cb77-3" title="3">    slope <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)</a>
+<a class="sourceLine" id="cb77-4" title="4">    sigma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)</a>
+<a class="sourceLine" id="cb77-5" title="5">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">4</span>) {</a>
+<a class="sourceLine" id="cb77-6" title="6">        predicted.y[i] &lt;-<span class="st"> </span>intercept <span class="op">+</span><span class="st"> </span>slope <span class="op">*</span><span class="st"> </span>x[i]</a>
+<a class="sourceLine" id="cb77-7" title="7">        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(predicted.y[i], <span class="dt">sd =</span> sigma)</a>
+<a class="sourceLine" id="cb77-8" title="8">    }</a>
+<a class="sourceLine" id="cb77-9" title="9">}</a></code></pre></div>
+<p>In this code, stochastic relationships are declared with ‘<span class="math inline">\(\sim\)</span>’
+and deterministic relationships are declared with ‘<code>&lt;-</code>’. For
+example, each <code>y[i]</code> follows a normal distribution with mean
+<code>predicted.y[i]</code> and standard deviation
+<code>sigma</code>. Each
+<code>predicted.y[i]</code> is the result of <code>intercept + slope * x[i]</code>.
+The for-loop yields the equivalent of writing four lines of code, each
+with a different value of <code>i</code>. It does not matter in what order
+the nodes are declared. Imagine that each line of code draws part of
+Figure <a href="cha-writing-models.html#fig:linearRegressionGraph">5.1</a>, and all that matters is that
+the everything gets drawn in the end. Available distributions, default and alternative
+parameterizations, and functions are listed in Section <a href="cha-writing-models.html#subsec:dists-and-functions">5.2.4</a>.</p>
 <p>An equivalent graph can be created by this BUGS code:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">{
-    intercept <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
-    slope <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
-    sigma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)
-    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">4</span>) {
-        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(intercept <span class="op">+</span><span class="st"> </span>slope <span class="op">*</span><span class="st"> </span>x[i], <span class="dt">sd =</span> sigma)
-    }
-}</code></pre></div>
-<p>In this case, the <code>predicted.y[i]</code> nodes in Figure <a href="cha-writing-models.html#fig:linearRegressionGraph">5.1</a> will be created automatically by NIMBLE and will have a different name, generated by NIMBLE.</p>
+<div class="sourceCode" id="cb78"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb78-1" title="1">{</a>
+<a class="sourceLine" id="cb78-2" title="2">    intercept <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)</a>
+<a class="sourceLine" id="cb78-3" title="3">    slope <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)</a>
+<a class="sourceLine" id="cb78-4" title="4">    sigma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)</a>
+<a class="sourceLine" id="cb78-5" title="5">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">4</span>) {</a>
+<a class="sourceLine" id="cb78-6" title="6">        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(intercept <span class="op">+</span><span class="st"> </span>slope <span class="op">*</span><span class="st"> </span>x[i], <span class="dt">sd =</span> sigma)</a>
+<a class="sourceLine" id="cb78-7" title="7">    }</a>
+<a class="sourceLine" id="cb78-8" title="8">}</a></code></pre></div>
+<p>In this case, the <code>predicted.y[i]</code> nodes in Figure
+<a href="cha-writing-models.html#fig:linearRegressionGraph">5.1</a> will be created automatically by
+NIMBLE and will have a different name, generated by NIMBLE.</p>
 </div>
 <div id="sec:more-kinds-bugs" class="section level3">
 <h3><span class="header-section-number">5.2.2</span> More kinds of BUGS declarations</h3>
-<p>Here are some examples of valid lines of BUGS code. This code does not describe a sensible or complete model, and it includes some arbitrary indices (e.g. <code>mvx[8:10, i]</code>) to illustrate flexibility. Instead the purpose of each line is to illustrate a feature of NIMBLE’s version of BUGS.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">{
-    <span class="co"># 1. normal distribution with BUGS parameter order</span>
-    x <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(a <span class="op">+</span><span class="st"> </span>b <span class="op">*</span><span class="st"> </span>c, tau) 
-    <span class="co"># 2. normal distribution with a named parameter</span>
-    y <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(a <span class="op">+</span><span class="st"> </span>b <span class="op">*</span><span class="st"> </span>c, <span class="dt">sd =</span> sigma) 
-    <span class="co"># 3. For-loop and nested indexing</span>
-    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {
-        <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>M[i]) {
-            z[i,j] <span class="op">~</span><span class="st"> </span><span class="kw">dexp</span>(r[ blockID[i] ]) 
-        }
-    }
-    <span class="co"># 4. multivariate distribution with arbitrary indexing</span>
-    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">3</span>) 
-        mvx[<span class="dv">8</span><span class="op">:</span><span class="dv">10</span>, i] <span class="op">~</span><span class="st"> </span><span class="kw">dmnorm</span>(mvMean[<span class="dv">3</span><span class="op">:</span><span class="dv">5</span>], <span class="dt">cov =</span> mvCov[<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>, <span class="dv">1</span><span class="op">:</span><span class="dv">3</span>, i])
-    <span class="co"># 5. User-provided distribution</span>
-    w <span class="op">~</span><span class="st"> </span><span class="kw">dMyDistribution</span>(<span class="dt">hello =</span> x, <span class="dt">world =</span> y) 
-    <span class="co"># 6. Simple deterministic node</span>
-    d1 &lt;-<span class="st"> </span>a <span class="op">+</span><span class="st"> </span>b
-    <span class="co"># 7. Vector deterministic node with matrix multiplication</span>
-    d2[] &lt;-<span class="st"> </span>A[ , ] <span class="op">%*%</span><span class="st"> </span>mvMean[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>] 
-    <span class="co"># 8. Deterministic node with user-provided function</span>
-    d3 &lt;-<span class="st"> </span><span class="kw">foo</span>(x, <span class="dt">hooray =</span> y) 
-}</code></pre></div>
+<p>Here are some examples of valid lines of BUGS code. This code does
+not describe a sensible or complete model, and it includes some
+arbitrary indices (e.g. <code>mvx[8:10, i]</code>) to illustrate flexibility.
+Instead the purpose of each line is to illustrate a feature of
+NIMBLE’s version of BUGS.</p>
+<div class="sourceCode" id="cb79"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb79-1" title="1">{</a>
+<a class="sourceLine" id="cb79-2" title="2">    <span class="co"># 1. normal distribution with BUGS parameter order</span></a>
+<a class="sourceLine" id="cb79-3" title="3">    x <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(a <span class="op">+</span><span class="st"> </span>b <span class="op">*</span><span class="st"> </span>c, tau) </a>
+<a class="sourceLine" id="cb79-4" title="4">    <span class="co"># 2. normal distribution with a named parameter</span></a>
+<a class="sourceLine" id="cb79-5" title="5">    y <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(a <span class="op">+</span><span class="st"> </span>b <span class="op">*</span><span class="st"> </span>c, <span class="dt">sd =</span> sigma) </a>
+<a class="sourceLine" id="cb79-6" title="6">    <span class="co"># 3. For-loop and nested indexing</span></a>
+<a class="sourceLine" id="cb79-7" title="7">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {</a>
+<a class="sourceLine" id="cb79-8" title="8">        <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>M[i]) {</a>
+<a class="sourceLine" id="cb79-9" title="9">            z[i,j] <span class="op">~</span><span class="st"> </span><span class="kw">dexp</span>(r[ blockID[i] ]) </a>
+<a class="sourceLine" id="cb79-10" title="10">        }</a>
+<a class="sourceLine" id="cb79-11" title="11">    }</a>
+<a class="sourceLine" id="cb79-12" title="12">    <span class="co"># 4. multivariate distribution with arbitrary indexing</span></a>
+<a class="sourceLine" id="cb79-13" title="13">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">3</span>) </a>
+<a class="sourceLine" id="cb79-14" title="14">        mvx[<span class="dv">8</span><span class="op">:</span><span class="dv">10</span>, i] <span class="op">~</span><span class="st"> </span><span class="kw">dmnorm</span>(mvMean[<span class="dv">3</span><span class="op">:</span><span class="dv">5</span>], <span class="dt">cov =</span> mvCov[<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>, <span class="dv">1</span><span class="op">:</span><span class="dv">3</span>, i])</a>
+<a class="sourceLine" id="cb79-15" title="15">    <span class="co"># 5. User-provided distribution</span></a>
+<a class="sourceLine" id="cb79-16" title="16">    w <span class="op">~</span><span class="st"> </span><span class="kw">dMyDistribution</span>(<span class="dt">hello =</span> x, <span class="dt">world =</span> y) </a>
+<a class="sourceLine" id="cb79-17" title="17">    <span class="co"># 6. Simple deterministic node</span></a>
+<a class="sourceLine" id="cb79-18" title="18">    d1 &lt;-<span class="st"> </span>a <span class="op">+</span><span class="st"> </span>b</a>
+<a class="sourceLine" id="cb79-19" title="19">    <span class="co"># 7. Vector deterministic node with matrix multiplication</span></a>
+<a class="sourceLine" id="cb79-20" title="20">    d2[] &lt;-<span class="st"> </span>A[ , ] <span class="op">%*%</span><span class="st"> </span>mvMean[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>] </a>
+<a class="sourceLine" id="cb79-21" title="21">    <span class="co"># 8. Deterministic node with user-provided function</span></a>
+<a class="sourceLine" id="cb79-22" title="22">    d3 &lt;-<span class="st"> </span><span class="kw">foo</span>(x, <span class="dt">hooray =</span> y) </a>
+<a class="sourceLine" id="cb79-23" title="23">}</a></code></pre></div>
 <p>When a variable appears only on the right-hand side, it can be provided via <code>constants</code> (in which case it can never be changed) or via <code>data</code> or <code>inits</code>, as discussed in Chapter <a href="cha-building-models.html#cha:building-models">6</a>.</p>
 <p>Notes on the comment-numbered lines are:</p>
 <ol style="list-style-type: decimal">
 <li><code>x</code> follows a normal distribution with mean <code>a + b*c</code> and precision <code>tau</code> (default BUGS second parameter for <code>dnorm</code>).</li>
 <li><code>y</code> follows a normal distribution with the same mean as <code>x</code> but a named standard deviation parameter instead of a precision parameter (sd = 1/sqrt(precision)).</li>
-<li><code>z[i, j]</code> follows an exponential distribution with parameter <code>r[ blockID[i] ]</code>. This shows how for-loops can be used for indexing of variables containing multiple nodes. Variables that define for-loop indices (<code>N</code> and <code>M</code>) must also be provided as constants.<br />
+<li><code>z[i, j]</code> follows an exponential distribution with parameter
+<code>r[ blockID[i] ]</code>. This shows how for-loops can be used for indexing of variables containing
+multiple nodes. Variables that define for-loop indices (<code>N</code> and <code>M</code>) must also be provided as constants.<br />
 </li>
-<li>The arbitrary block <code>mvx[8:10, i]</code> follows a multivariate normal distribution, with a named covariance matrix instead of BUGS’ default of a precision matrix. As in R, curly braces for for-loop contents are only needed if there is more than one line.</li>
+<li>The arbitrary block <code>mvx[8:10, i]</code> follows a multivariate
+normal distribution, with a named covariance matrix instead of BUGS’
+default of a precision matrix. As in R, curly braces for for-loop
+contents are only needed if there is more than one line.</li>
 <li><code>w</code> follows a user-defined distribution. See Chapter <a href="cha-user-defined.html#cha:user-defined">12</a>.</li>
-<li><code>d1</code> is a scalar deterministic node that, when calculated, will be set to <code>a + b</code>.</li>
-<li><code>d2</code> is a vector deterministic node using matrix multiplication in R’s syntax.</li>
-<li><code>d3</code> is a deterministic node using a user-provided function. See Chapter <a href="cha-user-defined.html#cha:user-defined">12</a>.</li>
+<li><code>d1</code> is a scalar deterministic node that, when calculated, will be
+set to <code>a + b</code>.</li>
+<li><code>d2</code> is a vector deterministic node using matrix
+multiplication in R’s syntax.</li>
+<li><code>d3</code> is a deterministic node using a user-provided
+function. See Chapter <a href="cha-user-defined.html#cha:user-defined">12</a>.</li>
 </ol>
 <div id="sec:indexing" class="section level4">
 <h4><span class="header-section-number">5.2.2.1</span> More about indexing</h4>
@@ -536,31 +631,54 @@ Figure 5.1: Graph of a linear regression model
 <li><code>x[k[j[i]]]</code> # nested dynamic indexes</li>
 <li><code>x[k[i], 1:3]</code> # nested indexing of rows or columns</li>
 </ul>
-<p>NIMBLE does not allow multivariate nodes to be used without square brackets, which is an incompatibility with JAGS. Therefore a statement like <code>xbar &lt;- mean(x)</code> in JAGS must be converted to <code>xbar &lt;- mean(x[])</code> (if <code>x</code> is a vector) or <code>xbar &lt;-  mean(x[,])</code> (if <code>x</code> is a matrix) for NIMBLE<a href="#fn13" class="footnoteRef" id="fnref13"><sup>13</sup></a>. Section <a href="cha-building-models.html#sec:provide-dimensions">6.1.1.5</a> discusses how to provide NIMBLE with dimensions of <code>x</code> when needed.</p>
-<p>Generally NIMBLE supports R-like linear algebra expressions and attempts to follow the same rules as R about dimensions (although in some cases this is not possible). For example, <code>x[1:3] %*% y[1:3]</code> converts <code>x[1:3]</code> into a row vector and thus computes the inner product, which is returned as a <span class="math inline">\(1 \times 1\)</span> matrix (use <code>inprod</code> to get it as a scalar, which it typically easier). Like in R, a scalar index will result in dropping a dimension unless the argument <code>drop=FALSE</code> is provided. For example, <code>mymatrix[i, 1:3]</code> will be a vector of length 3, but <code>mymatrix[i, 1:3, drop=FALSE]</code> will be a <span class="math inline">\(1 \times 3\)</span> matrix. More about indexing and dimensions is discussed in Section <a href="cha-RCfunctions.html#sec:manag-dimens-sizes">11.3.2.6</a>.</p>
+<p>NIMBLE does not allow multivariate nodes to be used without
+square brackets, which is an incompatibility with JAGS. Therefore a statement like <code>xbar &lt;- mean(x)</code> in JAGS must be converted to
+<code>xbar &lt;- mean(x[])</code> (if <code>x</code> is a vector) or <code>xbar &lt;-  mean(x[,])</code> (if <code>x</code> is a matrix) for NIMBLE<a href="#fn13" class="footnote-ref" id="fnref13"><sup>13</sup></a>. Section <a href="cha-building-models.html#sec:provide-dimensions">6.1.1.5</a> discusses how to provide NIMBLE with dimensions of <code>x</code> when needed.</p>
+<p>Generally NIMBLE supports R-like linear algebra expressions and attempts to follow the same rules as R about
+dimensions (although in some cases this is not possible). For
+example, <code>x[1:3] %*% y[1:3]</code> converts <code>x[1:3]</code> into a row
+vector and thus computes the inner product, which is returned as a <span class="math inline">\(1 \times 1\)</span> matrix (use <code>inprod</code> to get it as a scalar, which it typically easier). Like in R,
+a scalar index will result in dropping a dimension unless the argument
+<code>drop=FALSE</code> is provided. For example, <code>mymatrix[i, 1:3]</code> will
+be a vector of length 3, but <code>mymatrix[i, 1:3, drop=FALSE]</code> will be
+a <span class="math inline">\(1 \times 3\)</span> matrix. More about indexing and dimensions is
+discussed in Section <a href="cha-RCfunctions.html#sec:manag-dimens-sizes">11.3.2.7</a>.</p>
 </div>
 </div>
 <div id="subsec:vectorized-versus-scalar-declarations" class="section level3">
 <h3><span class="header-section-number">5.2.3</span> Vectorized versus scalar declarations</h3>
-<p>Suppose you need nodes <code>logY[i]</code> that should be the log of the corresponding <code>Y[i]</code>, say for <code>i</code> from 1 to 10. Conventionally this would be created with a for loop:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">{
-    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">10</span>) {
-        logY[i] &lt;-<span class="st"> </span><span class="kw">log</span>(Y[i])
-    }
-}</code></pre></div>
-<p>Since NIMBLE supports R-like algebraic expressions, an alternative in NIMBLE’s dialect of BUGS is to use a vectorized declaration like this:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">{
-    logY[<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>] &lt;-<span class="st"> </span><span class="kw">log</span>(Y[<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>])
-}</code></pre></div>
-<p>There is an important difference between the models that are created by the above two methods. The first creates 10 scalar nodes, <code>logY[1]</code> <span class="math inline">\(,\ldots,\)</span> <code>logY[10]</code>. The second creates one vector node, <code>logY[1:10]</code>. If each <code>logY[i]</code> is used separately by an algorithm, it may be more efficient computationally if they are declared as scalars. If they are all used together, it will often make sense to declare them as a vector.</p>
+<p>Suppose you need nodes <code>logY[i]</code> that should be the log of the
+corresponding <code>Y[i]</code>, say for <code>i</code> from 1 to 10. Conventionally
+this would be created with a for loop:</p>
+<div class="sourceCode" id="cb80"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb80-1" title="1">{</a>
+<a class="sourceLine" id="cb80-2" title="2">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">10</span>) {</a>
+<a class="sourceLine" id="cb80-3" title="3">        logY[i] &lt;-<span class="st"> </span><span class="kw">log</span>(Y[i])</a>
+<a class="sourceLine" id="cb80-4" title="4">    }</a>
+<a class="sourceLine" id="cb80-5" title="5">}</a></code></pre></div>
+<p>Since NIMBLE supports R-like algebraic expressions, an alternative in
+NIMBLE’s dialect of BUGS is to use a vectorized declaration like this:</p>
+<div class="sourceCode" id="cb81"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb81-1" title="1">{</a>
+<a class="sourceLine" id="cb81-2" title="2">    logY[<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>] &lt;-<span class="st"> </span><span class="kw">log</span>(Y[<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>])</a>
+<a class="sourceLine" id="cb81-3" title="3">}</a></code></pre></div>
+<p>There is an important difference between the models that are created by the
+above two methods. The first creates 10 scalar nodes, <code>logY[1]</code>
+<span class="math inline">\(,\ldots,\)</span> <code>logY[10]</code>. The second creates one vector node,
+<code>logY[1:10]</code>. If each <code>logY[i]</code> is used separately by an algorithm, it may be more efficient computationally if they are declared as scalars. If they are all used together,
+it will often make sense to declare them as a vector.</p>
 </div>
 <div id="subsec:dists-and-functions" class="section level3">
 <h3><span class="header-section-number">5.2.4</span> Available distributions</h3>
 <div id="subsec:distributions" class="section level4">
 <h4><span class="header-section-number">5.2.4.1</span> Distributions</h4>
-<p>NIMBLE supports most of the distributions allowed in BUGS and JAGS. Table <a href="cha-writing-models.html#tab:distributions">5.1</a> lists the distributions that are currently supported, with their default parameterizations, which match those of BUGS<a href="#fn14" class="footnoteRef" id="fnref14"><sup>14</sup></a>. NIMBLE also allows one to use alternative parameterizations for a variety of distributions as described next. See Section <a href="cha-user-defined.html#sec:user-distributions">12.2</a> to learn how to write new distributions using nimbleFunctions.</p>
+<p>NIMBLE supports most of the distributions allowed in BUGS and
+JAGS. Table <a href="cha-writing-models.html#tab:distributions">5.1</a> lists the distributions that are
+currently supported, with their default parameterizations, which match
+those of BUGS<a href="#fn14" class="footnote-ref" id="fnref14"><sup>14</sup></a>. NIMBLE also allows one to use alternative
+parameterizations for a variety of distributions as described next.
+See Section <a href="cha-user-defined.html#sec:user-distributions">12.2</a> to learn how to write new distributions using nimbleFunctions.</p>
 <table>
-<caption><span id="tab:distributions">Table 5.1: </span> Distributions with their default order of parameters. The value of the random variable is denoted by <span class="math inline">\(x\)</span>.</caption>
+<caption><span id="tab:distributions">Table 5.1: </span> Distributions with their default order of parameters. The value of the random variable
+is denoted by <span class="math inline">\(x\)</span>.</caption>
 <thead>
 <tr class="header">
 <th align="left">Name</th>
@@ -925,21 +1043,50 @@ Figure 5.1: Graph of a linear regression model
 </table>
 <div id="improper-distributions" class="section level5">
 <h5><span class="header-section-number">5.2.4.1.1</span> Improper distributions</h5>
-<p>Note that <code>dcar_normal</code>, <code>dflat</code> and <code>dhalfflat</code> specify improper prior distributions and should only be used when the posterior distribution of the model is known to be proper. Also for these distributions, the density function returns the unnormalized density and the simulation function returns <code>NaN</code> so these distributions are not appropriate for algorithms that need to simulate from the prior or require proper (normalized) densities.</p>
+<p>Note that <code>dcar_normal</code>, <code>dflat</code> and <code>dhalfflat</code> specify improper prior distributions
+and should only be used when the posterior distribution of the model is known to be proper.
+Also for these distributions, the density function returns the unnormalized density
+and the simulation function returns <code>NaN</code> so these distributions
+are not appropriate for algorithms that need to simulate from the
+prior or require proper (normalized) densities.</p>
 </div>
 </div>
 <div id="subsec:alternative-params" class="section level4">
 <h4><span class="header-section-number">5.2.4.2</span> Alternative parameterizations for distributions</h4>
-<p>NIMBLE allows one to specify distributions in model code using a variety of parameterizations, including the BUGS parameterizations. Available parameterizations are listed in Table <a href="cha-writing-models.html#tab:parameterizations">5.2</a>. To understand how NIMBLE handles alternative parameterizations, it is useful to distinguish three cases, using the <code>gamma</code> distribution as an example:</p>
+<p>NIMBLE allows one to specify distributions in model code using a
+variety of parameterizations, including the BUGS
+parameterizations. Available parameterizations are listed in Table <a href="cha-writing-models.html#tab:parameterizations">5.2</a>.
+To understand how NIMBLE handles alternative parameterizations, it is
+useful to distinguish three cases, using the <code>gamma</code> distribution
+as an example:</p>
 <ol style="list-style-type: decimal">
-<li>A <em>canonical</em> parameterization is used directly for computations<a href="#fn15" class="footnoteRef" id="fnref15"><sup>15</sup></a>. For <code>gamma</code>, this is (shape, scale).<br />
+<li>A <em>canonical</em> parameterization is used directly for
+computations<a href="#fn15" class="footnote-ref" id="fnref15"><sup>15</sup></a>. For
+<code>gamma</code>, this is (shape, scale).<br />
 </li>
-<li>The BUGS parameterization is the one defined in the original BUGS language. In general this is the parameterization for which conjugate MCMC samplers can be executed most efficiently. For <code>dgamma</code>, this is (shape, rate).</li>
-<li>An <em>alternative</em> parameterization is one that must be converted into the <em>canonical</em> parameterization. For <code>dgamma</code>, NIMBLE provides both (shape, rate) and (mean, sd) parameterization and creates nodes to calculate (shape, scale) from either (shape, rate) or (mean, sd). In the case of <code>dgamma</code>, the BUGS parameterization is also an <em>alternative</em> parameterization.</li>
+<li>The BUGS parameterization is the one defined in the
+original BUGS language. In general this is the parameterization for which conjugate MCMC samplers can be executed most efficiently. For <code>dgamma</code>, this is (shape, rate).</li>
+<li>An <em>alternative</em> parameterization is one that must be
+converted into the <em>canonical</em> parameterization. For <code>dgamma</code>,
+NIMBLE provides both (shape, rate) and (mean, sd) parameterization
+and creates nodes to calculate (shape, scale) from either (shape,
+rate) or (mean, sd). In the case of <code>dgamma</code>, the BUGS
+parameterization is also an <em>alternative</em> parameterization.</li>
 </ol>
-<p>Since NIMBLE provides compatibility with existing BUGS and JAGS code, the order of parameters places the BUGS parameterization first. For example, the order of parameters for <code>dgamma</code> is <code>dgamma(shape, rate, scale, mean, sd)</code>. Like R, if parameter names are not given, they are taken in order, so that (shape, rate) is the default. This happens to match R’s order of parameters, but it need not. If names are given, they can be given in any order. NIMBLE knows that rate is an alternative to scale and that (mean, sd) are an alternative to (shape, scale or rate).</p>
+<p>Since NIMBLE provides compatibility with existing BUGS and JAGS
+code, the order of parameters places the BUGS parameterization
+first. For example, the order of parameters for <code>dgamma</code> is <code>dgamma(shape, rate, scale, mean, sd)</code>. Like R, if
+parameter names are not given, they are taken in order, so that (shape,
+rate) is the default. This happens to match R’s order of parameters,
+but it need not. If names are given, they can be given in any
+order. NIMBLE knows that rate is an alternative to scale and that
+(mean, sd) are an alternative to (shape, scale or rate).</p>
 <table>
-<caption><span id="tab:parameterizations">Table 5.2: </span> Distribution parameterizations allowed in NIMBLE. The first column indicates the supported parameterizations for distributions given in Table <a href="cha-writing-models.html#tab:distributions">5.1</a>. The second column indicates the relationship to the <em>canonical</em> parameterization used in NIMBLE.</caption>
+<caption><span id="tab:parameterizations">Table 5.2: </span> Distribution parameterizations allowed in NIMBLE. The first column
+indicates the supported parameterizations for
+distributions given in Table <a href="cha-writing-models.html#tab:distributions">5.1</a>. The second
+column indicates the
+relationship to the <em>canonical</em> parameterization used in NIMBLE.</caption>
 <thead>
 <tr class="header">
 <th align="left">Parameterization</th>
@@ -1189,7 +1336,12 @@ Figure 5.1: Graph of a linear regression model
 </tr>
 </tbody>
 </table>
-<p>Note that for multivariate normal, multivariate t, Wishart, and Inverse Wishart, the canonical parameterization uses the Cholesky decomposition of one of the precision/inverse scale or covariance/scale matrix. For example, for the multivariate normal, if <code>prec_param=TRUE</code>, the <code>cholesky</code> argument is treated as the Cholesky decomposition of a precision matrix. Otherwise it is treated as the Cholesky decomposition of a covariance matrix. <!---  In some cases it may be more efficient to use that parameterization 
+<p>Note that for multivariate normal, multivariate t, Wishart, and Inverse Wishart, the canonical
+parameterization uses the Cholesky decomposition of one of the
+precision/inverse scale or covariance/scale matrix. For example, for the multivariate normal, if <code>prec_param=TRUE</code>, the <code>cholesky</code> argument is treated as the Cholesky
+decomposition of a precision matrix. Otherwise it is treated as the
+Cholesky decomposition of a covariance matrix.
+<!---  In some cases it may be more efficient to use that parameterization 
 directly.  % PdV removed this because it is obtuse: In what cases?
 Doesn't lifting of the cholesky computation take care of inefficiency? 
 % What does "use that parameterization directly" mean, when there is
@@ -1248,21 +1400,41 @@ no meaning of "indirect" use of a parameterization?   --></p>
 </tbody>
 </table>
 <!--- TODO: WHAT IS THE STATUS OF THE NEXT STATEMENT?: I've added inverse gamma in 0.6-4 and will do inverse wishart in 0.6-5. Hopefully will get to some others as well soon-ish - CJP. -->
-<p>We plan to, but do not currently, include the following distributions as part of core NIMBLE: beta-binomial, Dirichlet-multinomial, F, Pareto, or forms of the multivariate t other than the standard one provided. <!---  [F is easy to add as it has R functions] --></p>
+<p>We plan to, but do not currently, include the following distributions as part of core NIMBLE: beta-binomial, Dirichlet-multinomial, F, Pareto, or forms of the multivariate t other than the standard one provided.
+<!---  [F is easy to add as it has R functions] --></p>
 </div>
 </div>
 <div id="subsec:BUGS-lang-fxns" class="section level3">
 <h3><span class="header-section-number">5.2.5</span> Available BUGS language functions</h3>
-<p>Tables <a href="cha-writing-models.html#tab:functions">5.4</a>-<a href="cha-writing-models.html#tab:functionsMatrix">5.5</a> show the available operators and functions. <!---  These are also available for `nimbleFunction` programming (see Chapter \@ref(cha:progr-with-models)).  In fact, BUGS model nodes are implemented as `nimbleFunction`s that are custom-generated from BUGS declarations, so it would be more correct to say that functions and operators available for `nimbleFunction`s are also available for the model declarations. --> Support for more general R expressions is covered in Chapter <a href="cha-RCfunctions.html#cha:RCfunctions">11</a> about programming with nimbleFunctions.</p>
-<p>For the most part NIMBLE supports the functions used in BUGS and JAGS, with exceptions indicated in the table. Additional functions provided by NIMBLE are also listed. Note that we provide distribution functions for use in calculations, namely the ‘p’, ‘q’, and ‘d’ functions. See Section <a href="cha-RCfunctions.html#sec:nimble-dist-funs">11.2.4</a> for details on the syntax for using distribution functions as functions in deterministic calculations, as only some parameterizations are allowed and the names of some distributions differ from those used to define stochastic nodes in a model. <!---  TODO: CJP moved this material to Chap 9 - that's where it is most relevant  
-% so I thought it best to go into the caveats there --> <!--- Currently 'r' functions only return one random 
-%draw at a time, and the first argument must always be 1.  For --> <!--- multivariate distribution functions the `prec_param` or 
-%`scale_param` argument must be provided, indicating when a --> <!--- covariance or precision matrix has been given.  In a future release we 
-%will provide a variety of distribution functions, including density, --> <!--- cumulative distribution and quantile functions, using the same syntax 
-%as `dnorm`, `pnorm`, `qnorm`.  We will also extend the --> <!--- alternative parameterizations with named parameters to 
+<p>Tables <a href="cha-writing-models.html#tab:functions">5.4</a>-<a href="cha-writing-models.html#tab:functionsMatrix">5.5</a> show the available operators and functions.
+<!---\@ref(tab:functions)-\@ref(tab:functionsMatrix) 
+Hard-coding these as not clear how to have tables here and in Chapter 11 use same source files but numbered distinctly
+-->
+<!---  These are also available for `nimbleFunction` programming (see Chapter \@ref(cha:progr-with-models)).  In fact, BUGS model nodes are implemented as `nimbleFunction`s that are custom-generated from BUGS declarations, so it would be more correct to say that functions and operators available for `nimbleFunction`s are also available for the model declarations. -->
+Support for more general R expressions
+is covered in Chapter <a href="cha-RCfunctions.html#cha:RCfunctions">11</a> about programming
+with nimbleFunctions.</p>
+<p>For the most part NIMBLE supports the functions used in BUGS and JAGS,
+with exceptions indicated in the table. Additional functions provided
+by NIMBLE are also listed. Note that we provide distribution functions
+for use in calculations, namely the ‘p’, ‘q’, and ‘d’ functions.
+See Section <a href="cha-RCfunctions.html#sec:nimble-dist-funs">11.2.4</a> for details on the syntax for using distribution functions as functions in deterministic calculations, as only some parameterizations are allowed and the names of some distributions differ from those used to define stochastic nodes in a model.
+<!---  TODO: CJP moved this material to Chap 9 - that's where it is most relevant  
+% so I thought it best to go into the caveats there -->
+<!--- Currently 'r' functions only return one random 
+%draw at a time, and the first argument must always be 1.  For -->
+<!--- multivariate distribution functions the `prec_param` or 
+%`scale_param` argument must be provided, indicating when a -->
+<!--- covariance or precision matrix has been given.  In a future release we 
+%will provide a variety of distribution functions, including density, -->
+<!--- cumulative distribution and quantile functions, using the same syntax 
+%as `dnorm`, `pnorm`, `qnorm`.  We will also extend the -->
+<!--- alternative parameterizations with named parameters to 
 %`nimbleFunctions`. --></p>
 <table>
-<caption><span id="tab:functions">Table 5.4: </span> Functions operating on scalars, many of which can operate on each element (component-wise) of vectors and matrices. Status column indicates if the function is currently provided in NIMBLE. Vector input column indicates if the function can take a vector as an argument (i.e., if the function is vectorized).</caption>
+<caption><span id="tab:functions">Table 5.4: </span> Functions operating on scalars, many of which can operate on each element (component-wise) of
+vectors and matrices. Status column indicates if the function is currently provided in NIMBLE. Vector input column
+indicates if the function can take a vector as an argument (i.e., if the function is vectorized).</caption>
 <thead>
 <tr class="header">
 <th align="left">Usage</th>
@@ -1386,7 +1558,7 @@ no meaning of "indirect" use of a parameterization?   --></p>
 <td>yes</td>
 </tr>
 <tr class="odd">
-<td align="left"><code>equals(x)</code></td>
+<td align="left"><code>equals(x, y)</code></td>
 <td align="left">equality of two scalars</td>
 <td align="left">1 if <span class="math inline">\(x==y\)</span>, 0 if <span class="math inline">\(x != y\)</span></td>
 <td>yes</td>
@@ -1612,7 +1784,8 @@ no meaning of "indirect" use of a parameterization?   --></p>
 </tbody>
 </table>
 <table>
-<caption><span id="tab:functionsMatrix">Table 5.5: </span> Functions operating on vectors and matrices. Status column indicates if the function is currently provided in NIMBLE.</caption>
+<caption><span id="tab:functionsMatrix">Table 5.5: </span> Functions operating on vectors and matrices. Status column indicates if the function is currently
+provided in NIMBLE.</caption>
 <thead>
 <tr class="header">
 <th align="left">Usage</th>
@@ -1817,8 +1990,16 @@ no meaning of "indirect" use of a parameterization?   --></p>
 </tr>
 </tbody>
 </table>
-<p>Link functions are specified as functions applied to a node on the left hand side of a BUGS expression. To handle link functions in deterministic declarations, NIMBLE converts the declaration into an equivalent inverse declaration. For example, <code>log(y) &lt;- x</code> is converted into <code>y &lt;- exp(x)</code>. In other words, the link function is just a simple variant for conceptual clarity.</p>
-<p>To handle link functions in a stochastic declaration, NIMBLE does some processing that inserts an additional node into the model. For example, the declaration <code>logit(p[i]) ~ dnorm(mu[i],1)</code>, is equivalent to the following two declarations:</p>
+<p>Link functions are specified as functions applied to a node on the
+left hand side of a BUGS expression. To handle link functions in
+deterministic declarations, NIMBLE converts the declaration into an
+equivalent inverse declaration. For example, <code>log(y) &lt;- x</code> is
+converted into <code>y &lt;- exp(x)</code>. In other words, the link function is
+just a simple variant for conceptual clarity.</p>
+<p>To handle link functions in a stochastic declaration, NIMBLE
+does some processing that inserts an additional node into the model.
+For example, the declaration <code>logit(p[i]) ~ dnorm(mu[i],1)</code>, is equivalent
+to the following two declarations:</p>
 <ul>
 <li><code>logit_p[i] ~ dnorm(mu[i], 1)</code>,</li>
 <li><code>p[i] &lt;- expit(logit_p[i])</code></li>
@@ -1834,49 +2015,73 @@ no meaning of "indirect" use of a parameterization?   --></p>
 <p>Either of the following forms,</p>
 <pre><code>x ~ dnorm(0, sd = 10) T(0, a)
 x ~ T(dnorm(0, sd = 10), 0, a)</code></pre>
-<p>declares that <code>x</code> follows a normal distribution between 0 and <code>a</code> (inclusive of 0 and <code>a</code>). Either boundary may be omitted or may be another node, such as <code>a</code> in this example. The first form is compatible with JAGS, but in NIMBLE it can only be used when reading code from a text file. When writing model code in R, the second version must be used.</p>
-<p>Truncation means the possible values of <code>x</code> are limited a priori, hence the probability density of <code>x</code> must be normalized<a href="#fn16" class="footnoteRef" id="fnref16"><sup>16</sup></a>. In this example it would be the normal probability density divided by its integral from 0 to <code>a</code>. Like JAGS, NIMBLE also provides <code>I</code> as a synonym for <code>T</code> to accommodate older BUGS code, but <code>T</code> is preferred because it disambiguates multiple usages of <code>I</code> in BUGS.</p>
+<p>declares that <code>x</code> follows a normal distribution between 0 and
+<code>a</code> (inclusive of 0 and <code>a</code>). Either boundary may be omitted or may be another node, such as <code>a</code> in this example. The first form is compatible with JAGS, but in NIMBLE it can only be used when reading code from a text file. When writing model code in R, the second version must be used.</p>
+<p>Truncation means the possible values of <code>x</code> are limited a priori, hence the probability density of <code>x</code> must be normalized<a href="#fn16" class="footnote-ref" id="fnref16"><sup>16</sup></a>. In this example it would be the normal probability density divided by its integral from 0 to <code>a</code>. Like JAGS, NIMBLE also provides <code>I</code> as a synonym for <code>T</code> to accommodate older BUGS code, but <code>T</code> is preferred because it disambiguates multiple usages of <code>I</code> in BUGS.</p>
 </div>
 <div id="censoring" class="section level4">
 <h4><span class="header-section-number">5.2.7.2</span> Censoring</h4>
 <p>Censoring refers to the situation where one datum gives the lower or upper bound on an unobserved random variable. This is common in survival analysis, when for an individual still surviving at the end of a study, the age of death is not known and hence is ‘censored’ (right-censoring). NIMBLE adopts JAGS syntax for censoring, as follows:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">censored[i] <span class="op">~</span><span class="st"> </span><span class="kw">dinterval</span>(t[i], c[i])
-t[i] <span class="op">~</span><span class="st"> </span><span class="kw">dweib</span>(r, mu[i])</code></pre></div>
-<p>In the case of right-censoring, <code>censored[i]</code> should be given as <code>data</code> with a value of 1 if <code>t[i]</code> is right-censored (<code>t[i] &gt; c[i]</code>) and 0 if it is observed. The data vector for <code>t</code> should have <code>NA</code> (indicating missing data) for any censored <code>t[i]</code> entries. (As a result, these nodes will be sampled in an MCMC.) The data vector for <code>c</code> should give the censoring times corresponding to censored entries and a value above the observed times for uncensored entries (e.g., <code>Inf</code>). Left-censored observations would be specified by setting <code>censored[i]</code> to 0 and <code>t[i]</code> to <code>NA</code>.</p>
+<div class="sourceCode" id="cb83"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb83-1" title="1">censored[i] <span class="op">~</span><span class="st"> </span><span class="kw">dinterval</span>(t[i], c[i])</a>
+<a class="sourceLine" id="cb83-2" title="2">t[i] <span class="op">~</span><span class="st"> </span><span class="kw">dweib</span>(r, mu[i])</a></code></pre></div>
+<p>In the case of right-censoring, <code>censored[i]</code> should be given as <code>data</code> with a value of 1 if
+<code>t[i]</code> is right-censored (<code>t[i] &gt; c[i]</code>) and 0 if it is
+observed. The data vector for <code>t</code> should have <code>NA</code> (indicating
+missing data) for any censored <code>t[i]</code> entries. (As a result, these
+nodes will be sampled in an MCMC.) The vector for <code>c</code> should
+give the censoring times corresponding to censored entries and a value
+above the observed times for uncensored entries (e.g., <code>Inf</code>). The values for <code>c</code>
+can be provided via <code>constants</code>, <code>inits</code>, or <code>data</code>. We recommend providing
+via <code>constants</code> for values that are fixed and via <code>inits</code> for values that are
+to be estimated or might be changed for some reason.</p>
+<p>Left-censored observations would be specified by setting <code>censored[i]</code> to 0
+and <code>t[i]</code> to <code>NA</code>.</p>
 <p>The <code>dinterval</code> is not really a distribution but rather a trick: in the above example when <code>censored[i] = 1</code> it gives a ‘probability’ of 1 if <code>t[i] &gt; c[i]</code> and 0 otherwise. This means that <code>t[i] &lt;= c[i]</code> is treated as impossible. More generally than simple right- or left-censoring, <code>censored[i] ~ dinterval(t[i], c[i, ])</code> is defined such that for a vector of increasing cutpoints, <code>c[i, ]</code>, <code>t[i]</code> is enforced to fall within the <code>censored[i]</code>-th cutpoint interval. This is done by setting data <code>censored[i]</code> as follows:</p>
 <p><code>censored[i] = 0</code> if <code>t[i]</code> &lt;= <code>c[i, 1]</code></p>
 <p><code>censored[i] = m</code> if <code>c[i, m] &lt; t[i]</code> &lt;= <code>c[i, m+1]</code> for <span class="math inline">\(1 \leq m \leq M\)</span></p>
 <p><code>censored[i] = M</code> if <code>c[i, M] &lt; t[i]</code></p>
 <p>(The <code>i</code> index is provided only for consistency with the previous example.) The most common uses of <code>dinterval</code> will be for left- and right-censored data, in which case <code>c[i,]</code> will be a single value (and typically given as simply <code>c[i]</code>), and for interval-censored data, in which case <code>c[i,]</code> will be a vector of two values.<br />
 <!---  TODO: Next line removed by CJP as I thought it was confusing: 
-% or `x[i] ~ dinterval(c[i], t[i])` with `x[i]` set to 1. --> <!---  WHY - our dinterval code treats the 2nd arg as possibly a vector - the above presumably works for scalars but I think it is clearer if we always use the first arg as the data value and the 2nd as the interval points --></p>
-<p>Nodes following a <code>dinterval</code> distribution should normally be set as <code>data</code> with known values. Otherwise, the node may be simulated during initialization in some algorithms (e.g., MCMC) and thereby establish a permanent, perhaps unintended, constraint.</p>
+% or `x[i] ~ dinterval(c[i], t[i])` with `x[i]` set to 1. -->
+<!---  WHY - our dinterval code treats the 2nd arg as possibly a vector - the above presumably works for scalars but I think it is clearer if we always use the first arg as the data value and the 2nd as the interval points --></p>
+<p>Nodes following a <code>dinterval</code> distribution should normally be set
+as <code>data</code> with known values. Otherwise, the node may be simulated during initialization in some algorithms (e.g., MCMC) and thereby establish a permanent, perhaps unintended, constraint.</p>
 <p>Censoring differs from truncation because censoring an observation involves bounds on a random variable that could have taken any value, while in truncation we know a priori that a datum could not have occurred outside the truncation range.</p>
 </div>
 <div id="constraints-and-ordering" class="section level4">
 <h4><span class="header-section-number">5.2.7.3</span> Constraints and ordering</h4>
 <p>NIMBLE provides a more general way to enforce constraints using <code>dconstraint(cond)</code>. For example, we could specify that the sum of <code>mu1</code> and <code>mu2</code> must be positive like this:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mu1 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) 
-mu2 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) 
-constraint_data <span class="op">~</span><span class="st"> </span><span class="kw">dconstraint</span>( mu1 <span class="op">+</span><span class="st"> </span>mu2 <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span> )</code></pre></div>
-<p>with <code>constraint_data</code> set (as <code>data</code>) to 1. This is equivalent to a half-normal distribution on the half-plane <span class="math inline">\(\mu_1 + \mu_2 &gt; 0\)</span>. Nodes following <code>dconstraint</code> should be provided as data for the same reason of avoiding unintended initialization described above for <code>dinterval</code>. <!--- If one simulates from the model using the `simulate` functions and the condition is not satisfied, then `const` will be 0 and the log probability of `const` (and therefore of the model as whole) will be $-\infty$. --></p>
-<p>Formally, <code>dconstraint(cond)</code> is a probability distribution on <span class="math inline">\(\left\{ 0, 1 \right\}\)</span> such that <span class="math inline">\(P(1) = 1\)</span> if <code>cond</code> is <code>TRUE</code> and <span class="math inline">\(P(0) = 1\)</span> if <code>cond</code> is <code>FALSE</code>. <!---  TODO: Chris thought this wording is confusing: 
+<div class="sourceCode" id="cb84"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb84-1" title="1">mu1 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) </a>
+<a class="sourceLine" id="cb84-2" title="2">mu2 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) </a>
+<a class="sourceLine" id="cb84-3" title="3">constraint_data <span class="op">~</span><span class="st"> </span><span class="kw">dconstraint</span>( mu1 <span class="op">+</span><span class="st"> </span>mu2 <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span> )</a></code></pre></div>
+<p>with <code>constraint_data</code> set (as <code>data</code>) to 1. This is
+equivalent to a half-normal distribution on the half-plane <span class="math inline">\(\mu_1 + \mu_2 &gt; 0\)</span>. Nodes following <code>dconstraint</code> should be provided as data for the same reason of avoiding unintended initialization described above for <code>dinterval</code>.
+<!--- If one simulates from the model using the `simulate` functions and the condition is not satisfied, then `const` will be 0 and the log probability of `const` (and therefore of the model as whole) will be $-\infty$. --></p>
+<p>Formally, <code>dconstraint(cond)</code> is a probability distribution on <span class="math inline">\(\left\{ 0, 1 \right\}\)</span> such that <span class="math inline">\(P(1) = 1\)</span> if <code>cond</code> is <code>TRUE</code> and <span class="math inline">\(P(0) = 1\)</span> if <code>cond</code> is <code>FALSE</code>.
+<!---  TODO: Chris thought this wording is confusing: 
 %Like `dinterval`, `dconstraint` results in distributions that are not normalized (e.g. for (`mu1`, `mu2`)), which makes most sense if the constraint is observed rather than established a priori. --></p>
-<p>Of course, in many cases, parameterizing the model so that the constraints are automatically respected may be a better strategy than using <code>dconstraint</code>. One should be cautious about constraints that would make it hard for an MCMC or optimization to move through the parameter space (such as equality constraints that involve two or more parameters). For such restrictive constraints, general purpose algorithms that are not tailored to the constraints may fail or be inefficient. If constraints are used, it will generally be wise to ensure the model is initialized with values that satisfy them.</p>
+<p>Of course, in many cases, parameterizing the model so that the
+constraints are automatically respected may be a better strategy than
+using <code>dconstraint</code>. One should be cautious about constraints that
+would make it hard for an MCMC or optimization to move through the
+parameter space (such as equality constraints that involve two or more
+parameters). For such restrictive constraints, general purpose
+algorithms that are not tailored to the constraints may fail or be inefficient. If constraints are used, it will generally be wise to ensure the model is initialized with values that satisfy them.</p>
 <div id="ordering" class="section level5">
 <h5><span class="header-section-number">5.2.7.3.1</span> Ordering</h5>
 <p>To specify an ordering of parameters, such as <span class="math inline">\(\alpha_1 &lt;= \alpha_2 &lt;= \alpha_3\)</span> one can use <code>dconstraint</code> as follows:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">constraint_data <span class="op">~</span><span class="st"> </span><span class="kw">dconstraint</span>( alpha1 <span class="op">&lt;=</span><span class="st"> </span>alpha2 <span class="op">&amp;</span><span class="st"> </span>alpha2 <span class="op">&lt;=</span><span class="st"> </span>alpha3 )</code></pre></div>
+<div class="sourceCode" id="cb85"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb85-1" title="1">constraint_data <span class="op">~</span><span class="st"> </span><span class="kw">dconstraint</span>( alpha1 <span class="op">&lt;=</span><span class="st"> </span>alpha2 <span class="op">&amp;</span><span class="st"> </span>alpha2 <span class="op">&lt;=</span><span class="st"> </span>alpha3 )</a></code></pre></div>
 <p>Note that unlike in BUGS, one cannot specify prior ordering using syntax such as</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">alpha[<span class="dv">1</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">I</span>(, alpha[<span class="dv">2</span>])
-alpha[<span class="dv">2</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">I</span>(alpha[<span class="dv">1</span>], alpha[<span class="dv">3</span>])
-alpha[<span class="dv">3</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">I</span>(alpha[<span class="dv">2</span>], )</code></pre></div>
-<p>as this does not represent a directed acyclic graph. <!---  TODO: CHRIS, WOULDN'T THIS WORK WITH `alpha[1] $\sim$ dnorm(0, 1)`?  DOES BUGS REALLY ALLOW THIS NON-DAG? 
+<div class="sourceCode" id="cb86"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb86-1" title="1">alpha[<span class="dv">1</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">I</span>(, alpha[<span class="dv">2</span>])</a>
+<a class="sourceLine" id="cb86-2" title="2">alpha[<span class="dv">2</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">I</span>(alpha[<span class="dv">1</span>], alpha[<span class="dv">3</span>])</a>
+<a class="sourceLine" id="cb86-3" title="3">alpha[<span class="dv">3</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">I</span>(alpha[<span class="dv">2</span>], )</a></code></pre></div>
+<p>as this does not represent a directed acyclic graph.
+<!---  TODO: CHRIS, WOULDN'T THIS WORK WITH `alpha[1] $\sim$ dnorm(0, 1)`?  DOES BUGS REALLY ALLOW THIS NON-DAG? 
 % PERRY, JAGS manual indicates the above is allowed in BUGS. Are you asking if it would work in NIMBLE with alpha1~dnorm(0,1) -- no because alpha2 still depends on alpha3 and vice versa --></p>
 <p>Also note that specifying prior ordering using <code>T(,)</code> can result in possibly unexpected results. For example:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">alpha1 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)
-alpha2 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">T</span>(alpha1, )
-alpha3 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">T</span>(alpha2, )</code></pre></div>
+<div class="sourceCode" id="cb87"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb87-1" title="1">alpha1 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb87-2" title="2">alpha2 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">T</span>(alpha1, )</a>
+<a class="sourceLine" id="cb87-3" title="3">alpha3 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">T</span>(alpha2, )</a></code></pre></div>
 <p>will enforce <code>alpha1</code> <span class="math inline">\(\le\)</span> <code>alpha2</code> <span class="math inline">\(\le\)</span> <code>alpha3</code>, but it does not treat the three parameters symmetrically. Instead it puts a marginal prior on <code>alpha1</code> that is standard normal and then constrains <code>alpha2</code> and <code>alpha3</code> to follow truncated normal distributions. This is not equivalent to a symmetric prior on the three <code>alpha</code>s that assigns zero probability density when values are not in order.</p>
 <p>NIMBLE does not support the JAGS <code>sort</code> syntax.</p>
 
@@ -1889,13 +2094,21 @@ alpha3 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm<
 <div class="footnotes">
 <hr />
 <ol start="10">
-<li id="fn10"><p>NIMBLE calls non-stochastic nodes ‘deterministic’, whereas BUGS calls them ‘logical’. NIMBLE uses ‘logical’ in the way R does, to refer to boolean (TRUE/FALSE) variables.<a href="cha-writing-models.html#fnref10">↩</a></p></li>
-<li id="fn11"><p>But beware of the possibility of needing to set values for ‘lifted’ nodes created by NIMBLE.<a href="cha-writing-models.html#fnref11">↩</a></p></li>
-<li id="fn12"><p>Technically, a <em>directed acyclic graph</em><a href="cha-writing-models.html#fnref12">↩</a></p></li>
-<li id="fn13"><p>In <code>nimbleFunctions</code>, as explained in later chapters, square brackets with blank indices are not necessary for multivariate objects.<a href="cha-writing-models.html#fnref13">↩</a></p></li>
-<li id="fn14"><p>Note that the same distributions are available for writing <code>nimbleFunction</code>s, but in that case the default parameterizations and function names match R’s when possible. Please see Section <a href="cha-RCfunctions.html#sec:nimble-dist-funs">11.2.4</a> for how to use distributions in <code>nimbleFunctions</code>.<a href="cha-writing-models.html#fnref14">↩</a></p></li>
-<li id="fn15"><p>Usually this is the parameterization in the <code>Rmath</code> header of R’s C implementation of distributions.<a href="cha-writing-models.html#fnref15">↩</a></p></li>
-<li id="fn16"><p>NIMBLE uses the CDF and inverse CDF (quantile) functions of a distribution to do this; in some cases if one uses truncation to include only the extreme tail of a distribution, numerical difficulties can arise.<a href="cha-writing-models.html#fnref16">↩</a></p></li>
+<li id="fn10"><p>NIMBLE calls non-stochastic nodes ‘deterministic’, whereas BUGS calls them ‘logical’. NIMBLE uses ‘logical’ in the way R does, to refer to boolean (TRUE/FALSE) variables.<a href="cha-writing-models.html#fnref10" class="footnote-back">↩</a></p></li>
+<li id="fn11"><p>But beware of the possibility of needing to set values for ‘lifted’ nodes created by NIMBLE.<a href="cha-writing-models.html#fnref11" class="footnote-back">↩</a></p></li>
+<li id="fn12"><p>Technically, a
+<em>directed acyclic graph</em><a href="cha-writing-models.html#fnref12" class="footnote-back">↩</a></p></li>
+<li id="fn13"><p>In <code>nimbleFunctions</code>, as
+explained in later chapters, square brackets with blank indices are
+not necessary for multivariate objects.<a href="cha-writing-models.html#fnref13" class="footnote-back">↩</a></p></li>
+<li id="fn14"><p>Note that the same distributions are available
+for writing <code>nimbleFunction</code>s, but in that case the default
+parameterizations and function names match R’s when possible. Please
+see Section <a href="cha-RCfunctions.html#sec:nimble-dist-funs">11.2.4</a> for how to use distributions
+in <code>nimbleFunctions</code>.<a href="cha-writing-models.html#fnref14" class="footnote-back">↩</a></p></li>
+<li id="fn15"><p>Usually this is the parameterization in the
+<code>Rmath</code> header of R’s C implementation of distributions.<a href="cha-writing-models.html#fnref15" class="footnote-back">↩</a></p></li>
+<li id="fn16"><p>NIMBLE uses the CDF and inverse CDF (quantile) functions of a distribution to do this; in some cases if one uses truncation to include only the extreme tail of a distribution, numerical difficulties can arise.<a href="cha-writing-models.html#fnref16" class="footnote-back">↩</a></p></li>
 </ol>
 </div>
             </section>
@@ -1909,11 +2122,13 @@ alpha3 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm<
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
 <script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
 <script>
 gitbook.require(["gitbook"], function(gitbook) {
 gitbook.start({
@@ -1921,12 +2136,11 @@ gitbook.start({
 "github": false,
 "facebook": true,
 "twitter": true,
-"google": false,
 "linkedin": false,
 "weibo": false,
 "instapaper": false,
 "vk": false,
-"all": ["facebook", "google", "twitter", "linkedin", "weibo", "instapaper"]
+"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
 },
 "fontsettings": {
 "theme": "white",
@@ -1938,6 +2152,10 @@ gitbook.start({
 "text": null
 },
 "history": {
+"link": null,
+"text": null
+},
+"view": {
 "link": null,
 "text": null
 },
@@ -1955,10 +2173,11 @@ gitbook.start({
   (function () {
     var script = document.createElement("script");
     script.type = "text/javascript";
-    var src = "";
+    var src = "true";
     if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
-    if (location.protocol !== "file:" && /^https?:/.test(src))
-      src = src.replace(/^https?:/, '');
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
     script.src = src;
     document.getElementsByTagName("head")[0].appendChild(script);
   })();

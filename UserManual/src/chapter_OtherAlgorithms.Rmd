@@ -3,6 +3,7 @@
 
 ```{r, echo=FALSE}
 require(nimble)
+require(nimbleSMC, quietly = TRUE, warn.conflicts = FALSE)
 ``` 
 
 # Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM {#cha:algos-provided}
@@ -10,6 +11,8 @@ require(nimble)
 The NIMBLE algorithm library is growing and currently includes a suite of sequential Monte Carlo (particle filtering) algorithms, particle MCMC for combining particle filters with MCMC, iterated filtering version 2 and Monte Carlo expectation maximization (MCEM) for maximum likelihood estimation, and k-fold cross-validation. 
  
 ## Particle filters / sequential Monte Carlo and iterated filtering
+
+As of Version 0.10.0 of NIMBLE, all of NIMBLE's sequential Monte Carlo/particle filtering functionality lives in the `nimbleSMC` package. Please load this package before trying to use these algorithms.
 
 ### Filtering algorithms
 
@@ -140,7 +143,7 @@ cENKF$run(parNum)
   
 ```{r, particle_Filter_Samples, eval=FALSE}
 # Equally-weighted samples (available from all filters)
-bootEWSamp <- as.matrix(cBootF$mvEWSamples)
+bootEWSamp <- as.matrix(cBootF$mvEWSamples) # alternative: as.list
 auxEWSamp <- as.matrix(cAuxF$mvEWSamples)
 LWFEWSamp <- as.matrix(cLWF$mvEWSamples)
 ENKFEWSamp <- as.matrix(cENKF$mvEWSamples)
@@ -384,7 +387,11 @@ pumpMCEM <- buildMCEM(model = pump,
 ```
 
   The first argument `buildMCEM`, `model`, is a NIMBLE model, which can be
-  either the uncompiled or compiled version. At the moment, the model provided cannot be part of another MCMC sampler.  The ascent-based MCEM algorithm has a number of control options:
+  either the uncompiled or compiled version. At the moment, the model provided cannot be part of another MCMC sampler.  
+
+Initial values for the parameters are taken to be the values in the model at the time `buildMCEM` is called, unless the values in the compiled model are changed before running the MCEM.
+
+The ascent-based MCEM algorithm has a number of control options:
  
  
   The `latentNodes` argument should indicate the nodes that will be

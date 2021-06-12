@@ -38,6 +38,8 @@ simulate returns NULL.
 calculate, calculateDiff, simulate, or get the current log probabilities (densities) of one or more nodes of a NIMBLE model and (for calculate and getLogProb) return the sum of their log probabilities (or densities).  Part of R and NIMBLE.
 }
 \details{
+Standard usage is as a method of a model, in the form \code{model$calculate(nodes)}, but the usage as a simple function with the model as the first argument as above is also allowed.
+
 These functions expands the nodes and then process them in the model in the order provided.  Expanding nodes means turning 'y[1:2]' into c('y[1]','y[2]') if y is a vector of scalar nodes.
 Calculation is defined for a stochastic node as executing the log probability (density) calculation and for a deterministic node as calculating whatever function was provided on the right-hand side of the model declaration.
 

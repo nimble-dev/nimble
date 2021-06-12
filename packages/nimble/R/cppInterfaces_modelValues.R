@@ -34,7 +34,6 @@ CmodelValues <- setRefClass(
         varNames = 'ANY',
         componentExtptrs = 'ANY',
         blankAns = 'ANY',
-        ##.nodePtrs_byGID = 'ANY',
         GID_map = 'ANY',
         symTab = 'ANY',
         initialized = 'ANY',
@@ -57,8 +56,7 @@ CmodelValues <- setRefClass(
             return(varNames[!grepl('logProb_', varNames)])
         },
         expandNodeNames = function (nodeNames, returnType = "names", flatIndices = TRUE)  {
-            return(GID_map$expandNodeNames(nodeNames = nodeNames, returnType = returnType, 
-                                           flatIndices = flatIndices))
+            stop('There was a call to expandNodeNames for a compiled modelValues object.\n  This is deprecated and should not have occurred.\n  Please contact nimble developers at the nimble-users google group or at nimble.stats@gmail.com to let them know this happened.  \n Thank you.')
         },
         finalizeInternal = function() {
             finalize()
@@ -81,7 +79,6 @@ CmodelValues <- setRefClass(
                 extptr <<- extptrlist[[1]]
                 namedObjectsPtr <<- extptrlist[[3]] ## order should come from the cppDef, but cheating here to get it right
                 eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, namedObjectsPtr, dll[['handle']], 'modelValues'))
-#                extptr <<- .Call(buildCall)
             }
             else{
                 extptr <<- existingPtr

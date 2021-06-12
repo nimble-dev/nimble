@@ -19,6 +19,8 @@
 #'
 #' \code{reset}: Boolean specifying whether to reset the internal MCMC sampling algorithms to their initial state (in terms of self-adapting tuning parameters), and begin recording posterior sample chains anew. Specifying \code{reset = FALSE} allows the MCMC algorithm to continue running from where it left off, appending additional posterior samples to the already existing sample chains. Generally, \code{reset = FALSE} should only be used when the MCMC has already been run (default = TRUE).
 #'
+#' \code{resetMV}: Boolean specifying whether to begin recording posterior sample chains anew. This argument is only considered when using \code{reset = FALSE}.  Specifying \code{reset = FALSE, resetMV = TRUE} allows the MCMC algorithm to continue running from where it left off, but without appending the new posterior samples to the already existing samples, i.e. all previously obtained samples will be erased. This option can help reduce memory usage during burn-in (default = FALSE).
+#'
 #' \code{nburnin}: Number of initial, pre-thinning, MCMC iterations to discard (default = 0).
 #'
 #' \code{time}: Boolean specifying whether to record runtimes of the individual internal MCMC samplers.  When \code{time = TRUE}, a vector of runtimes (measured in seconds) can be extracted from the MCMC using the method \code{mcmc$getTimes()} (default = FALSE).
@@ -26,10 +28,12 @@
 #' \code{progressBar}: Boolean specifying whether to display a progress bar during MCMC execution (default = TRUE).  The progress bar can be permanently disabled by setting the system option \code{nimbleOptions(MCMCprogressBar = FALSE)}.
 #'
 #' Samples corresponding to the \code{monitors} and \code{monitors2} from the MCMCconf are stored into the interval variables \code{mvSamples} and \code{mvSamples2}, respectively.
-#' These may be accessed and converted into R matrix objects via:
+#' These may be accessed and converted into R matrix or list objects via:
 #' \code{as.matrix(mcmc$mvSamples)}
+#' \code{as.list(mcmc$mvSamples)}
 #' \code{as.matrix(mcmc$mvSamples2)}
-#'
+#' \code{as.list(mcmc$mvSamples2)}
+#' 
 #' The uncompiled MCMC function may be compiled to a compiled MCMC object, taking care to compile in the same project as the R model object, using:
 #' \code{Cmcmc <- compileNimble(Rmcmc, project = Rmodel)}
 #'
@@ -52,28 +56,26 @@
 #' 
 #' The \code{calculateWAIC} method calculates the WAIC of the model that the
 #' MCMC was performed on. The WAIC (Watanabe, 2010) is calculated from
-#' Equations 5, 12, and 13 in Gelman et al. (2014) (i.e. using \emph{p}WAIC2).  The set
-#' of all stochastic nodes monitored by the MCMC object will be treated as
-#' \eqn{theta} for the purposes of Equation 5 from Gelman et al. (2014). 
-#' All non-monitored nodes downstream of the monitored nodes that are necessary
-#' to calculate \eqn{p(y|theta)} will be simulated from the posterior samples of 
-#' \eqn{theta}.  This allows customization of exactly what predictive 
-#' distribution \eqn{p(y|theta)} to use for calculations.  For more detail
-#' on the use of different predictive distributions, see Section 2.5 from Gelman et al.
-#' (2014). Note that by default only top-level stochastic nodes are monitored, but
-#' in many situations one would want to set monitors on all stochastic nodes so that
-#' all stochastic nodes are treated as \eqn{theta} for the WAIC calculation.
-#' 
-#' Note that there exist sets of monitored parameters that do not lead to valid
-#' WAIC calculations.  Specifically, for a valid WAIC calculation, every 
-#' node that a data node depends on must be either monitored, or be
-#' downstream from monitored nodes.  An easy way to ensure this is satisfied
-#' is to monitor all top-level parameters in a model (NIMBLE's default).  
-#' Another way to guarantee correctness is to monitor all nodes
-#' directly upstream from a data node. However, other combinations of monitored
-#' nodes are also valid.  If \code{enableWAIC = TRUE}, NIMBLE checks to see if
-#' the set of monitored nodes is valid, and returns an error if not.
-#' 
+#' Equations 5, 12, and 13 in Gelman et al. (2014) (i.e., using \emph{p}WAIC2).
+#'
+#' Note that there is not a unique value of WAIC for a model. The current version of
+#' NIMBLE only provides the conditional WAIC, namely the version of WAIC where all
+#' parameters directly involved in the likelihood are treated as \eqn{theta}
+#' for the purposes of Equation 5 from Gelman et al. (2014). As a result, the user
+#' must set the MCMC monitors (via the \code{monitors} argument) to include all stochastic
+#' nodes that are parents of any data nodes; by default the MCMC monitors are only
+#' the top-level nodes of the model. For more detail on the use of different predictive
+#' distributions, see Section 2.5 from Gelman et al. (2014) or Ariyo et al. (2019).
+
+#' Also note that WAIC relies on a partition of the observations, i.e., 'pointwise'
+#' prediction. In NIMBLE the sum over log pointwise predictive density values treats
+#' each data node as contributing a single value to the sum. When a data node is
+#' multivariate, that data node contributes a single value to the sum based on the
+#' joint density of the elements in the node. Note that if one wants the WAIC
+#' calculation to be based on the joint predictive density for each group of observations
+#' (e.g., grouping the observations from each person or unit in a longitudinal
+#' data context), one would need to use a multivariate distribution for the
+#' observations in each group (potentially by writing a user-defined distribution).
 #' 
 #' @examples
 #' \dontrun{
@@ -83,12 +85,13 @@
 #'     y ~ dnorm(x, 1)
 #' })
 #' Rmodel <- nimbleModel(code, data = list(y = 0))
-#' conf <- configureMCMC(Rmodel)
+#' conf <- configureMCMC(Rmodel, monitors = c('mu', 'x'))
 #' Rmcmc <- buildMCMC(conf, enableWAIC = TRUE)
 #' Cmodel <- compileNimble(Rmodel)
 #' Cmcmc <- compileNimble(Rmcmc, project=Rmodel)
 #' Cmcmc$run(10000)
 #' samples <- as.matrix(Cmcmc$mvSamples)
+#' samplesAsList <- as.list(Cmcmc$mvSamples)
 #' head(samples)
 #' WAIC <- Cmcmc$calculateWAIC(nburnin = 1000)
 #' }
@@ -101,6 +104,8 @@
 #' Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation and widely applicable information criterion in singular learning theory. \emph{Journal of Machine Learning Research} 11: 3571-3594.
 #' 
 #' Gelman, A., Hwang, J. and Vehtari, A. (2014). Understanding predictive information criteria for Bayesian models. \emph{Statistics and Computing} 24(6): 997-1016.
+#'
+#' Ariyo, O., Quintero, A., Munoz, J., Verbeke, G. and Lesaffre, E. (2019). Bayesian model selection in linear mixed models for longitudinal data. \emph{Journal of Applied Statistics} 47: 890-913.
 #' @export
 buildMCMC <- nimbleFunction(
     name = 'MCMC',
@@ -137,13 +142,14 @@ buildMCMC <- nimbleFunction(
         enableWAIC <- enableWAICargument || conf$enableWAIC   ## enableWAIC comes from MCMC configuration, or from argument to buildMCMC
         if(enableWAIC) {
             if(dataNodeLength == 0)   stop('WAIC cannot be calculated, as no data nodes were detected in the model.')
-            mcmc_checkWAICmonitors(model = model, monitors = sampledNodes, dataNodes = dataNodes)
+            mcmc_checkWAICmonitors_conditional(model = model, monitors = sampledNodes, dataNodes = dataNodes)
         }
     },
 
     run = function(
         niter                 = integer(),
         reset                 = logical(default = TRUE),
+        resetMV               = logical(default = FALSE), ## Allows resetting mvSamples when reset==FALSE
         time                  = logical(default = FALSE),
         progressBar           = logical(default = TRUE),
         ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
@@ -167,8 +173,13 @@ buildMCMC <- nimbleFunction(
         } else {
             if(nburnin != 0)   stop('cannot specify nburnin when using reset = FALSE.')
             if(dim(samplerTimes)[1] != length(samplerFunctions) + 1)   samplerTimes <<- numeric(length(samplerFunctions) + 1)   ## first run: default inititialization to zero
-            mvSamples_copyRow  <- getsize(mvSamples)
-            mvSamples2_copyRow <- getsize(mvSamples2)
+            if (resetMV) {
+                mvSamples_copyRow  <- 0
+                mvSamples2_copyRow <- 0                
+            } else {
+                mvSamples_copyRow  <- getsize(mvSamples)
+                mvSamples2_copyRow <- getsize(mvSamples2)
+            }
         }
         resize(mvSamples,  mvSamples_copyRow  + floor((niter-nburnin) / thinToUseVec[1]))
         resize(mvSamples2, mvSamples2_copyRow + floor((niter-nburnin) / thinToUseVec[2]))
@@ -268,7 +279,6 @@ buildMCMC <- nimbleFunction(
             if(is.nan(WAIC)) print('WAIC was calculated as NaN.  You may need to add monitors to model latent states, in order for a valid WAIC calculation.')
             returnType(double())
             return(WAIC)
-        }),
-    where = getLoadingNamespace()
+        })
 )
 

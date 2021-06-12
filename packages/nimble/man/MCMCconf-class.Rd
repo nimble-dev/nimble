@@ -15,6 +15,8 @@
 \alias{printSamplers}
 \alias{removeSamplers}
 \alias{resetMonitors}
+\alias{setMonitors}
+\alias{setMonitors2}
 \alias{setSamplerExecutionOrder}
 \alias{setSamplers}
 \alias{setThin}
@@ -75,7 +77,8 @@ Details: A single instance of the newly configured sampler is added to the end o
 
 Invisibly returns a list of the current sampler configurations, which are samplerConf reference class objects.}
 
-\item{\code{addSamplerOne(thisSamplerName, samplerFunction, targetOne, thisControlList)}}{For internal use only}
+\item{\code{addSamplerOne(thisSamplerName, samplerFunction, targetOne, thisControlList,
+  print)}}{For internal use only}
 
 \item{\code{getMonitors()}}{Returns a character vector of the current monitors
 
@@ -105,12 +108,13 @@ Arguments:
 
 ind: A numeric vector or character vector.  A numeric vector may be used to specify the indices of the samplerConf objects to return, or a character vector may be used to indicate a set of target nodes and/or variables, for which all samplers acting on these nodes will be returned. For example, getSamplers('x') will return all samplerConf objects whose target is model node 'x', or whose targets are contained (entirely or in part) in the model variable 'x'.  If omitted, then all samplerConf objects in this MCMC configuration object are returned.}
 
-\item{\code{initialize(model, nodes, control = list(), rules, monitors, thin = 1,
-  monitors2 = character(), thin2 = 1, useConjugacy = TRUE,
-  onlyRW = FALSE, onlySlice = FALSE,
+\item{\code{initialize(model, nodes, control = list(), monitors, thin = 1,
+  monitors2 = character(), thin2 = 1,
+  useConjugacy = getNimbleOption("MCMCuseConjugacy"), onlyRW = FALSE,
+  onlySlice = FALSE,
   multivariateNodesAsScalars = getNimbleOption("MCMCmultivariateNodesAsScalars"),
   enableWAIC = getNimbleOption("MCMCenableWAIC"),
-  warnNoSamplerAssigned = TRUE, print = FALSE, ...)}}{Creates a MCMC configuration for a given model.  The resulting object is suitable as an argument to buildMCMC.
+  warnNoSamplerAssigned = TRUE, print = TRUE, ...)}}{Creates a MCMC configuration for a given model.  The resulting object is suitable as an argument to buildMCMC.
 
 Arguments:
 
@@ -149,7 +153,7 @@ enableWAIC: A logical argument, specifying whether to enable WAIC calculations f
 
 warnNoSamplerAssigned: A logical argument specifying whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule. Default is TRUE.
 
-print: A logical argument specifying whether to print the ordered list of default samplers.  Default is FALSE.
+print: A logical argument specifying whether to print the montiors and samplers.  Default is TRUE.
 
 ...: Additional named control list elements for default samplers, or additional arguments to be passed to the autoBlock function when autoBlock = TRUE.}
 
@@ -202,6 +206,28 @@ Details: See the initialize() function
 Arguments:
 
 waic: A logical argument, indicating whether to enable WAIC calculations in the resulting MCMC algorithm (default TRUE).}
+
+\item{\code{setMonitors(..., ind = 1, print = TRUE)}}{Sets new variables to the list of monitors.
+
+Arguments:
+
+...: One or more character vectors of indexed nodes, or variables, which are to be monitored.  These replace the current monitors list.
+
+print: A logical argument specifying whether to print all current monitors (default TRUE).
+
+Details: See the initialize() function
+            }
+
+\item{\code{setMonitors2(..., print = TRUE)}}{Sets new variables to the list of monitors2.
+
+Arguments:
+
+...: One or more character vectors of indexed nodes, or variables, which are to be monitored.  These replace the current monitors2 list.
+
+print: A logical argument specifying whether to print all current monitors (default TRUE).
+
+Details: See the initialize() function
+            }
 
 \item{\code{setSampler(...)}}{Alias for setSamplers method}
 

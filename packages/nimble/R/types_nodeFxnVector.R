@@ -1,5 +1,5 @@
 ## CASE 1: nodeFunctionVector
-## simulate(model, nodes) becomes:
+## model$simulate(nodes) becomes:
 ## model_nodes <- nodeFunctionVector(model, nodes)
 ## simulate(model_nodes)
 ## model_nodes$getNodeFunctions() returns a list of the nfRefClassObjets underlying the nodeFunctions
@@ -11,7 +11,6 @@ nodeFunctionVector <-
              sortUnique = TRUE,
              errorContext = "")
 {
-    ##        model <<- model
     if(length(nodeNames) == 0) {
         gids <- numeric(0)
         indexingInfo <- list(declIDs = integer(), rowIndices = integer())
