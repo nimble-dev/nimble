@@ -1678,7 +1678,7 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
             timesAdapted     <<- 0
             timesAcceptedVec <<- numeric(nTheta, 0)
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 ############################################################################################
@@ -1915,7 +1915,7 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
             }
             my_calcAdaptationFactor$reset()
         }
-    ), where = getLoadingNamespace()
+    )
 )
 
 ####################################################################################################
