@@ -180,3 +180,13 @@ printErrors <- function(excludeWarnings = TRUE) {
         cat(errors, sep = "\n")
     } else cat("No error file found.")
 }
+
+safeDeparse <- function(expr, width.cutoff = 200L, nlines = 1, ...) {
+    out <- deparse(expr, width.cutoff = width.cutoff, nlines = nlines, ...)
+    if(nlines > 1 && length(out) > 1)
+        out <- paste0(out, collapse = '')
+    if(nchar(out) >= 200)
+        out <- paste0(out, "...")
+    return(out)
+}
+
