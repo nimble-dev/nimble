@@ -648,7 +648,7 @@ rmvt_chol <- function(n = 1, mu, cholesky, df, prec_param = TRUE) {
 #' @author Christopher Paciorek
 #' @details See Stan Development Team for mathematical details. 
 #' @return \code{dlkj_corr_cholesky} gives the density and \code{rlkj_corr_cholesky} generates random deviates.
-#' @references Stan Development Team. Stan Reference Functions, version 2.22.
+#' @references Stan Development Team. Stan Reference Functions, version 2.27.
 #' @seealso \link{Distributions} for other standard distributions
 #' 
 #' @examples

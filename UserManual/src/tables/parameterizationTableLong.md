@@ -24,6 +24,7 @@ relationship to the *canonical* parameterization used in NIMBLE.
   `dgamma(mean, sd)`        `dgamma(shape = mean^2/sd^2, scale = sd^2/mean)`
   `dinvgamma(shape, rate)`  canonical
   `dinvgamma(shape, scale)` `dgamma(shape, rate = 1 / scale)`
+  `dlkj_corr_cholesky(eta)` canonical
   `dlogis(location, scale)` canonical
   `dlogis(location, rate)`  `dlogis(location, scale = 1 / rate)`
   `dlnorm(meanlog, sdlog)`  canonical
