@@ -130,6 +130,7 @@ Collate:
     MCMC_conjugacy.R
     MCMC_autoBlock.R
     MCMC_RJ.R
+    MCMC_WAIC.R
     MCEM_build.R
     crossValidation.R
     BNP_distributions.R
