@@ -129,7 +129,7 @@ See Section \@ref(sec:nimbleMCMC) or `help(nimbleMCMC)` for more
 details about using `nimbleMCMC`.
 
 Note that the WAIC value varies depending on what quantities are treated
-as parameters; see Section \@ref(sec:WAIC) for more details.
+as parameters. See Section \@ref(sec:WAIC) or `help(waic)` for more details.
 
 ## Creating, compiling and running a basic MCMC configuration {#sec:creating-mcmc}
   

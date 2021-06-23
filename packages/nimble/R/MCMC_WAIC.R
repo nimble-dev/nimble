@@ -71,8 +71,8 @@ waicList <- nimbleList(
 #' density per group. Defaults to one data node per 'group'. See details.
 #'
 #' \code{convergenceSet}: Optional vector of numbers between 0 and 1 that specify a set of shorter Monte
-#' Carlo simulations for marginal WAIC calculations as fractions of the full Monte Carlo simulation that
-#' uses \code{nItsMarginal}. If not provided, NIMBLE will use 0.25, 0.50, and 0.75.
+#' Carlo simulations for marginal WAIC calculation as fractions of the full (\code{nItsMarginal})
+#' Monte Carlo simulation. If not provided, NIMBLE will use 0.25, 0.50, and 0.75.
 #' NIMBLE will report the WAIC, lppd, and pWAIC that would have been obtained for these smaller Monte
 #' Carlo simulations, allowing assessment of the number of Monte Carlo samples needed for stable calculation
 #' of WAIC.
@@ -90,7 +90,7 @@ waicList <- nimbleList(
 #' method of the MCMC object, use the \code{getWAIC} method of the MCMC object.
 #'
 #' The output of running WAIC (unless one sets \code{online = FALSE}) is a list containing the
-#' following elements:
+#' following components:
 #'
 #' \code{WAIC}: The computed WAIC, on the deviance scale. Smaller values are better when comparing
 #' WAIC for two models.

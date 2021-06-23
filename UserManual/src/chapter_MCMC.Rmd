@@ -33,7 +33,7 @@ The lengthier and more customizable approach to invoking the MCMC engine on a pa
   1. Use `buildMCMC` to build the MCMC object and its samplers either from the model (using default MCMC configuration) or from a customized MCMC configuration (Section \@ref(sec:build-compile-mcmc)).
   1. Compile the MCMC object (and the model), unless one is debugging and wishes to run the uncompiled MCMC.
   1. Run the MCMC and extract the samples (Sections \@ref(sec:runMCMC), \@ref(sec:executing-the-mcmc-algorithm) and \@ref(sec:extracting-samples)).
-  1. Optionally, calculate the WAIC using the posterior samples (Section \@ref(sec:WAIC)).
+  1. Optionally, calculate the WAIC (Section \@ref(sec:WAIC)).
 
 Prior to version 0.8.0, NIMBLE provided two additional functions, `MCMCsuite` and `compareMCMCs`, to facilitate comparison of multiple MCMC algorithms, either internal or external to NIMBLE.  Those capabilities have been redesigned and moved into a separate package called `compareMCMCs`.
 
@@ -84,7 +84,7 @@ The `nimbleMCMC` function provides control over the:
   - setting the random number seed;
   - returning posterior samples as a matrix or a `coda` `mcmc` object;
   - returning posterior summary statistics; and
-  - returning a WAIC value calculated using samples from all chains.
+  - returning a WAIC value calculated using post-burn-in samples from all chains.
 
 
 This entry point for using `nimbleMCMC` is the `code`, `constants`, `data`, and `inits` arguments that are used for building a NIMBLE model (see Chapters \@ref(cha:writing-models) and \@ref(cha:building-models)).  However, when using `nimbleMCMC`, the `inits` argument can also specify a list of lists of initial values that will be used for each MCMC chain, or a function that generates a list of initial values, which will be generated at the onset of each chain.  As an alternative entry point, a NIMBLE `model` object can also be supplied to `nimbleMCMC`, in which case this model will be used to build the MCMC algorithm.
@@ -430,7 +430,7 @@ The current lists of monitors and thinning intervals may be displayed using the 
 
 To record model log-probabilities from an MCMC, one can add monitors for *logProb* variables (which begin with the prefix `logProb_`) that correspond to variables with (any) stochastic nodes.   For example, to record and extract log-probabilities for the variables `alpha`, `sigma_mu`, and `Y`:
 ```{r, eval=FALSE}
-mcmcConf <- configureMCMC(Rmodel)
+mcmcConf <- configureMCMC(Rmodel, enableWAIC = TRUE)
 mcmcConf$addMonitors("logProb_alpha", "logProb_sigma_mu", "logProb_Y")
 Rmcmc <- buildMCMC(mcmcConf)
 Cmodel <- compileNimble(Rmodel)
@@ -448,12 +448,12 @@ The `samples` matrix will contain both MCMC samples and model log-probabilities.
 Once the MCMC configuration object has been created, and customized to one's liking, it may be used to build an MCMC function:
 
 ```{r, buildMCMC, eval=FALSE}
-Rmcmc <- buildMCMC(mcmcConf, enableWAIC = TRUE)
+Rmcmc <- buildMCMC(mcmcConf)
 ```
 
 `buildMCMC` is a nimbleFunction.  The returned object `Rmcmc` is an instance  of the nimbleFunction specific to configuration `mcmcConf` (and of course its associated model).  
 
-Note that if you would like to be able to calculate the WAIC of the model after the MCMC function has been run, you must set `enableWAIC = TRUE` as an argument to either `configureMCMC` or `buildMCMC`, or set `nimbleOptions(MCMCenableWAIC = TRUE)`, which will enable WAIC calculations for all subsequently built MCMC functions.  For more information on WAIC calculations, see Section \@ref(sec:WAIC) or `help(buildMCMC)` in R.
+Note that if you would like to be able to calculate the WAIC of the model, you must set `enableWAIC = TRUE` as an argument to either `configureMCMC` or  `buildMCMC` (when passing a model rather than an MCMC configuration to `buildMCMC`), or set `nimbleOptions(MCMCenableWAIC = TRUE)`, which will enable WAIC calculations for all subsequently built MCMC functions.  For more information on WAIC calculations, see Section \@ref(sec:WAIC) or `help(waic)` in R.
 
 When no customization is needed, one can skip `configureMCMC` and simply provide a model object to `buildMCMC`. The following two MCMC functions will be identical:
 
@@ -502,7 +502,7 @@ Once an MCMC algorithm has been created using `buildMCMC`, the function `runMCMC
   - Setting the random number seed;
   - Returning the posterior samples as a `coda` `mcmc` object;
   - Returning summary statistics calculated from each chains; and
-  - Returning a WAIC value calculated using (post-burn-in and thinned) samples from all chains.
+  - Returning a WAIC value calculated using (post-burn-in) samples from all chains.
 
 <!---  See `help(runMCMC)` for details of these arguments. -->
 
@@ -522,7 +522,7 @@ mcmc.out <- runMCMC(Cmcmc)
 mcmc.out <- runMCMC(Cmcmc, niter=10000, nburnin=1000, thin=10, nchains=3)
 
 # run three chains, returning posterior samples, summary statistics,
-# and the WAIC value for each chain
+# and the WAIC value
 mcmc.out <- runMCMC(Cmcmc, nchains = 3, summary = TRUE, WAIC = TRUE)
 
 # run two chains, and specify the initial values for each
@@ -626,21 +626,25 @@ Obtaining samples as matrices or lists is most common, but see Section \@ref(sec
 
 ## Calculating WAIC {#sec:WAIC}
 
-Once an MCMC algorithm has been run, as described in Section \@ref(sec:executing-the-mcmc-algorithm), the WAIC [@Watanabe_2010] can be calculated from the posterior samples produced by the MCMC algorithm.  Note that in order to calculate the WAIC value after running an MCMC algorithm, the argument `enableWAIC = TRUE` must have been supplied to `configureMCMC` or to `buildMCMC`, or the `enableWAIC` NIMBLE option must have been set to `TRUE`.
+The WAIC [@Watanabe_2010] can be calculated from the posterior samples produced during the MCMC algorithm.  Note that in order to calculate the WAIC value, the argument `enableWAIC = TRUE` must be supplied to `configureMCMC` or to `buildMCMC` (if `buildMCMC` is called with a model instead of an MCMC configuration), or the `enableWAIC` NIMBLE option must have been set to `TRUE`.
 
-The WAIC is calculated by calling the member method `mcmc$calculateWAIC` (see `help(buildMCMC)` in R for more details).  The `calculateWAIC` method has one required argument, `nburnin`, the number of initial samples to discard prior to WAIC calculation.  `nburnin` defaults to 0. This burn-in is done in addition to any burn-in specified when running the MCMC, and the burn-in is applied to the samples before any thinning specified when setting up or running the MCMC. 
+The WAIC is extracted by the member method `mcmc$getWAIC` (see `help(waic)` in R for more details) or is available as the `WAIC` element of the `runMCMC` or `nimbleMCMC` output list.
+
 
 ```{r, eval=FALSE}
-Cmcmc$calculateWAIC(nburnin = 100)
+Cmcmc$getWAIC()
 ```
 
 Note that there is not a unique value of WAIC for a model. WAIC is calculated from
-Equations 5, 12, and 13 in [@Gelman_etal_2014] (i.e., using \emph{p}WAIC2). The current version of NIMBLE only provides the conditional WAIC, namely the version of WAIC where all parameters directly involved in the likelihood are treated as
-$\theta$ for the purposes of Equation 5 from [@Gelman_etal_2014]. As a result, the user *must* set the MCMC monitors (via the `monitors` argument) to include all stochastic nodes that are parents of any data nodes; by default the MCMC monitors are only the top-level nodes of the model.
+Equations 5, 12, and 13 in [@Gelman_etal_2014] (i.e., using \emph{p}WAIC2).
 
-In some cases, one would want to calculate the marginal version of WAIC, integrating over latent variables, e.g., [@Ariyo_etal_2019]. NIMBLE does not currently provide this version of WAIC (although you could monitor the relevant nodes and carry out the calculations yourself based on the MCMC output).
+First, by default NIMBLE provides the conditional WAIC, namely the version of WAIC where all parameters directly involved in the likelihood are treated as $\theta$ for the purposes of Equation 5 from [@Gelman_etal_2014]. Users can request the marginal WAIC (see [@Ariyo_etal_2019]), namely the version of WAIC where latent variables are integrated over (i.e., using a marginal likelihood). This is done by providing the `waicControl` list with a `marginalizeNodes` element to `configureMCMC` or `buildMCMC` (when providing a model as the argument to `buildMCMC`). See `help(waic)` for more details.
 
-Also note that WAIC relies on a partition of the observations, i.e., 'pointwise' prediction. In NIMBLE the sum over log pointwise predictive density values treats each data node as contributing a single value to the sum. When a data node is multivariate, that data node contributes a single value to the sum based on the joint density of the elements in the node. Note that if one wants the WAIC calculation to be based on the joint likelihood for each group of observations (e.g., grouping the observations from each person or unit in a longitudinal data context), one would need to use a multivariate distribution for the observations in each group (potentially by writing a user-defined distribution).
+Second, WAIC relies on a partition of the observations, i.e., 'pointwise' prediction. By default, in NIMBLE the sum over log pointwise predictive density values treats each data node as contributing a single value to the sum. When a data node is multivariate, that data node contributes a single value to the sum based on the joint density of the elements in the node. If one wants to group data nodes such that the joint density within each group is used, one can provide the `waicControl` list with a `dataGroups` element to `configureMCMC` or `buildMCMC` (when providing a model as the argument to `buildMCMC`). See `help(waic)` for more details.
+
+Marginal WAIC requires using Monte Carlo simulation at each iteration of the MCMC to average over draws for the latent variables. To assess the stability of the marginal WAIC to the number of Monte Carlo iterations, one can examine how the WAIC changes with increasing iterations (up to the full number of iterations specified via the `nItsMarginal` element of the `waicControl` list) based on the `WAIC_partialMC`, `lppd_partialMC`, and `pWAIC_partialMC` elements of the WAIC output.
+
+For comparing WAIC between two models, [@Vehtari_etal_2017] discuss using the per-observation (or per-data group, more generally) contributions to the overall WAIC values to get an approximate standard error for the difference in WAIC between the models. These element-wise values can be extracted by passing `returnElements = TRUE` to `getWAIC`.
 
 ## k-fold cross-validation
 
