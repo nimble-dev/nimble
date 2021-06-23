@@ -628,7 +628,7 @@ Obtaining samples as matrices or lists is most common, but see Section \@ref(sec
 
 The WAIC [@Watanabe_2010] can be calculated from the posterior samples produced during the MCMC algorithm.  Note that in order to calculate the WAIC value, the argument `enableWAIC = TRUE` must be supplied to `configureMCMC` or to `buildMCMC` (if `buildMCMC` is called with a model instead of an MCMC configuration), or the `enableWAIC` NIMBLE option must have been set to `TRUE`.
 
-The WAIC is extracted by the member method `mcmc$getWAIC` (see `help(waic)` in R for more details) or is available as the `WAIC` element of the `runMCMC` or `nimbleMCMC` output list.
+The WAIC is extracted by the member method `mcmc$getWAIC` (see `help(waic)` in R for more details) or is available as the `WAIC` element of the `runMCMC` or `nimbleMCMC` output lists.
 
 
 ```{r, eval=FALSE}
@@ -636,7 +636,8 @@ Cmcmc$getWAIC()
 ```
 
 Note that there is not a unique value of WAIC for a model. WAIC is calculated from
-Equations 5, 12, and 13 in [@Gelman_etal_2014] (i.e., using \emph{p}WAIC2).
+Equations 5, 12, and 13 in [@Gelman_etal_2014] (i.e., using \emph{p}WAIC2). Therefore, NIMBLE provides
+user control over how WAIC is calculated in two ways.
 
 First, by default NIMBLE provides the conditional WAIC, namely the version of WAIC where all parameters directly involved in the likelihood are treated as $\theta$ for the purposes of Equation 5 from [@Gelman_etal_2014]. Users can request the marginal WAIC (see [@Ariyo_etal_2019]), namely the version of WAIC where latent variables are integrated over (i.e., using a marginal likelihood). This is done by providing the `waicControl` list with a `marginalizeNodes` element to `configureMCMC` or `buildMCMC` (when providing a model as the argument to `buildMCMC`). See `help(waic)` for more details.
 
@@ -644,7 +645,7 @@ Second, WAIC relies on a partition of the observations, i.e., 'pointwise' predic
 
 Marginal WAIC requires using Monte Carlo simulation at each iteration of the MCMC to average over draws for the latent variables. To assess the stability of the marginal WAIC to the number of Monte Carlo iterations, one can examine how the WAIC changes with increasing iterations (up to the full number of iterations specified via the `nItsMarginal` element of the `waicControl` list) based on the `WAIC_partialMC`, `lppd_partialMC`, and `pWAIC_partialMC` elements of the WAIC output.
 
-For comparing WAIC between two models, [@Vehtari_etal_2017] discuss using the per-observation (or per-data group, more generally) contributions to the overall WAIC values to get an approximate standard error for the difference in WAIC between the models. These element-wise values can be extracted by passing `returnElements = TRUE` to `getWAIC`.
+For comparing WAIC between two models, [@Vehtari_etal_2017] discuss using the per-observation (more generally, per-data group) contributions to the overall WAIC values to get an approximate standard error for the difference in WAIC between the models. These element-wise values can be extracted by passing `returnElements = TRUE` to `getWAIC`.
 
 ## k-fold cross-validation
 

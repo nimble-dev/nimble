@@ -1,6 +1,7 @@
 #' waicList definition
 #' 
-#' \code{waicList} definition for the \code{nimbleList} type returned by WAIC computation.
+#' \code{waicList} definition for the \code{nimbleList} type returned by WAIC
+#' computation.
 #' 
 #' @author NIMBLE development team
 #'
@@ -34,120 +35,135 @@ waicList <- nimbleList(
 
 #' Create a WAIC function
 #'
-#' Creates a nimbleFunction that implements an online WAIC algorithm, computed during the course of the MCMC iterations.
+#' Creates a nimbleFunction that implements an online WAIC algorithm, computed
+#' during the course of the MCMC iterations.
 #' 
-#' @param control A named list of inputs that control the behavior of the WAIC calculation. See `Details`.
+#' @param control A named list of inputs that control the behavior of the WAIC
+#' calculation. See `Details`.
 #'
 #' @aliases waic getWAIC calculateWAIC
 #' 
 #' @details
 #'
-#' Note that to use WAIC, one should set \code{enableWAIC = TRUE} when configuring or building an MCMC
-#' and set \code{WAIC = TRUE} when calling \code{nimbleMCMC} and optionally when calling \code{runMCMC}.
+#' Note that to use WAIC, one should set \code{enableWAIC = TRUE} when
+#' configuring or building an MCMC and set \code{WAIC = TRUE} when calling
+#' \code{nimbleMCMC} and optionally when calling \code{runMCMC}.
 #'
-#' By default, NIMBLE calculates WAIC using an online algorithm that updates required summary
-#' statistics at each post-burnin iteration of the MCMC. The ability to calculate WAIC post hoc
-#' after all MCMC sampling has been done has been retained for compatibility with versions of
-#' NIMBLE before 0.12.0. See below for details on the two different approaches.
+#' By default, NIMBLE calculates WAIC using an online algorithm that updates
+#' required summary statistics at each post-burnin iteration of the MCMC. The
+#' ability to calculate WAIC post hoc after all MCMC sampling has been done has
+#' been retained for compatibility with versions of NIMBLE before 0.12.0. See
+#' below for details on the two different approaches.
 #'
 #' @section \code{control} list
 #'
-#' The \code{control} argument is a list that can supply any of the following components:
+#' The \code{control} argument is a list that can supply any of the following
+#' components:
 #'
-#' \code{online}: Logical value indicating whether to calculate WAIC during the course
-#' of the MCMC. Default is \code{TRUE} and setting to \code{FALSE} is primarily for
-#' backwards compatibility to allow use of the old \code{calculateWAIC} method that
-#' calculates WAIC from monitored values after the MCMC finishes.
+#' \code{online}: Logical value indicating whether to calculate WAIC during the
+#' course of the MCMC. Default is \code{TRUE} and setting to \code{FALSE} is
+#' primarily for backwards compatibility to allow use of the old
+#' \code{calculateWAIC} method that calculates WAIC from monitored values after
+#' the MCMC finishes.
 #'
-#' \code{marginalizeNodes}: Optional set of nodes (presumably latent nodes) over which to
-#' marginalize to compute marginal WAIC (i.e., WAIC based on a marginal likelihood),
-#' rather than the default conditional WAIC (i.e., WAIC conditioning on all parent nodes of the
-#' data nodes). See details.
+#' \code{marginalizeNodes}: Optional set of nodes (presumably latent nodes)
+#' over which to marginalize to compute marginal WAIC (i.e., WAIC based on a
+#' marginal likelihood), rather than the default conditional WAIC (i.e., WAIC
+#' conditioning on all parent nodes of the data nodes). See details.
 #'
-#' \code{nItsMarginal}: Number of Monte Carlo iterations to use when marginalizing (default is 1000).
+#' \code{nItsMarginal}: Number of Monte Carlo iterations to use when
+#' marginalizing (default is 1000).
 #'
-#' \code{dataGroups}: Optional list specifying grouping of data nodes, one element per group.
-#' If provided, the predictive density values computed will be the joint density values, one joint
-#' density per group. Defaults to one data node per 'group'. See details.
+#' \code{dataGroups}: Optional list specifying grouping of data nodes,
+#' one element per group, with each list element containing the node names
+#' for the data nodes in that group. If provided, the predictive density values
+#' computed will be the joint density values, one joint density per group.
+#' Defaults to one data node per 'group'. See details.
 #'
-#' \code{convergenceSet}: Optional vector of numbers between 0 and 1 that specify a set of shorter Monte
-#' Carlo simulations for marginal WAIC calculation as fractions of the full (\code{nItsMarginal})
-#' Monte Carlo simulation. If not provided, NIMBLE will use 0.25, 0.50, and 0.75.
-#' NIMBLE will report the WAIC, lppd, and pWAIC that would have been obtained for these smaller Monte
-#' Carlo simulations, allowing assessment of the number of Monte Carlo samples needed for stable calculation
-#' of WAIC.
+#' \code{convergenceSet}: Optional vector of numbers between 0 and 1 that
+#' specify a set of shorter Monte Carlo simulations for marginal WAIC
+#' calculation as fractions of the full (\code{nItsMarginal}) Monte Carlo
+#' simulation. If not provided, NIMBLE will use 0.25, 0.50, and 0.75.
+#' NIMBLE will report the WAIC, lppd, and pWAIC that would have been obtained
+#' for these smaller Monte Carlo simulations, allowing assessment of the number
+#' of Monte Carlo samples needed for stable calculation of WAIC.
 #' 
 #' \code{thin}: Logical value for specifying whether to do WAIC calculations
-#' only on thinned samples (default is \code{FALSE}). Likely only useful for reducing computation
-#' when using marginal WAIC.
+#' only on thinned samples (default is \code{FALSE}). Likely only useful for
+#' reducing computation when using marginal WAIC.
 #'
 #' @section Extracting WAIC
 #'
-#' The calculated WAIC and related quantities can be obtained in various ways depending on how
-#' the MCMC is run. If using \code{nimbleMCMC} and setting \code{WAIC = TRUE}, see the \code{WAIC}
-#' component of the output list. If using \code{runMCMC} and setting \code{WAIC = TRUE}, either
-#' see the \code{WAIC} or use the \code{getWAIC} method of the MCMC object. If using the \code{run}
+#' The calculated WAIC and related quantities can be obtained in various ways
+#' depending on how the MCMC is run. If using \code{nimbleMCMC} and setting
+#' \code{WAIC = TRUE}, see the \code{WAIC} component of the output list. If using
+#' \code{runMCMC} and setting \code{WAIC = TRUE}, either see the \code{WAIC} or
+#' use the \code{getWAIC} method of the MCMC object. If using the \code{run}
 #' method of the MCMC object, use the \code{getWAIC} method of the MCMC object.
 #'
-#' The output of running WAIC (unless one sets \code{online = FALSE}) is a list containing the
-#' following components:
+#' The output of running WAIC (unless one sets \code{online = FALSE}) is a list
+#' containing the following components:
 #'
-#' \code{WAIC}: The computed WAIC, on the deviance scale. Smaller values are better when comparing
-#' WAIC for two models.
+#' \code{WAIC}: The computed WAIC, on the deviance scale. Smaller values are
+#' better when comparing WAIC for two models.
 #' 
 #' \code{lppd}: The log predictive density component of WAIC.
 #' 
-#' \code{pWAIC}: The pWAIC estimate of the effective number of parameters, computed
-#' using the \emph{p}WAIC2 method of Gelman et al. (2014).
+#' \code{pWAIC}: The pWAIC estimate of the effective number of parameters,
+#' computed using the \emph{p}WAIC2 method of Gelman et al. (2014).
 #' 
-#' \code{marginal}: Logical value indicating whether marginal (\code{TRUE}) or conditional
-#' \code{FALSE} WAIC was calculated.
+#' \code{marginal}: Logical value indicating whether marginal (\code{TRUE}) or
+#' conditional \code{FALSE} WAIC was calculated.
 #' 
-#' \code{nItsMarginal}: Number of Monte Carlo iterations used in computing marginal
-#' likelihoods if using marginal WAIC.
+#' \code{nItsMarginal}: Number of Monte Carlo iterations used in computing
+#' marginal likelihoods if using marginal WAIC.
 #' 
 #' \code{thin}: Whether WAIC was calculated based only on thinned samples.
 #' 
 #' \code{online}: Whether WAIC was calculated during MCMC sampling.
 #' 
-#' \code{WAIC_partialMC}, \code{lppd_partialMC}, \code{pWAIC_partialMC}: The computed
-#' marginal WAIC, lppd, and pWAIC based on fewer Monte Carlo simulations, for use in
-#' assessing the sensitivity of the WAIC calculation to the number of Monte Carlo iterations.
+#' \code{WAIC_partialMC}, \code{lppd_partialMC}, \code{pWAIC_partialMC}: The
+#' computed marginal WAIC, lppd, and pWAIC based on fewer Monte Carlo
+#' simulations, for use in assessing the sensitivity of the WAIC calculation
+#' to the number of Monte Carlo iterations.
 #'
-#' \code{nItsMarginal_partialMC}: Number of Monte Carlo iterations used for the values in
-#' \code{WAIC_partialMC}, \code{lppd_partialMC}, \code{pWAIC_partialMC}.
+#' \code{nItsMarginal_partialMC}: Number of Monte Carlo iterations used for the
+#' values in \code{WAIC_partialMC}, \code{lppd_partialMC}, \code{pWAIC_partialMC}.
 #' 
-#' \code{WAIC_elements}, \code{lppd_elements}, \code{pWAIC_elements}: Vectors of individual
-#' WAIC, lppd, and pWAIC values, one element per data node (or group of nodes in the case
-#' of specifying \code{dataGroups}). Of use in computing the standard error of the difference
-#' in WAIC between two models, following Vehtari et al. (2017).
+#' \code{WAIC_elements}, \code{lppd_elements}, \code{pWAIC_elements}: Vectors of
+#' individual WAIC, lppd, and pWAIC values, one element per data node (or group
+#' of nodes in the case of specifying \code{dataGroups}). Of use in computing
+#' the standard error of the difference in WAIC between two models, following
+#' Vehtari et al. (2017).
 #'
 #' @section Online WAIC
 #'
 #' As of version 0.12.0, NIMBLE provides enhanced WAIC functionality, with user
-#' control over whether to use conditional or marginal versions of WAIC and whether
-#' to group data nodes. In addition, users are no longer required to carefully choose
-#' MCMC monitors. WAIC by default is now calculated in an online manner (updating
-#' the required summary statistics at each MCMC iteration), using all post-burnin samples.
+#' control over whether to use conditional or marginal versions of WAIC and
+#' whether to group data nodes. In addition, users are no longer required to
+#' carefully choose MCMC monitors. WAIC by default is now calculated in an online
+#' manner (updating the required summary statistics at each MCMC iteration),
+#' using all post-burnin samples.
 #'
 #' The \code{calculateWAIC} method calculates the WAIC of the model that the
 #' MCMC was performed on using post-burnin MCMC samples.
 #' The WAIC (Watanabe, 2010) is calculated from
 #' Equations 5, 12, and 13 in Gelman et al. (2014) (i.e., using \emph{p}WAIC2).
 #'
-#' Note that there is not a unique value of WAIC for a model. 
-#' By default, WAIC is calculated conditional on the parent nodes of the data nodes,
-#' and the density values used are the individual density values of the data nodes.
-#' However, by modifying the \code{marginalizeNodes} and \code{dataGroups} elements of the
-#' control list, users can request a marginal WAIC (using a marginal likelihood that
-#' integrates over user-specified latent nodes) and/or a WAIC based on grouping observations
-#' (e.g., all observations in a cluster) to use joint density values.
+#' Note that there is not a unique value of WAIC for a model. By default, WAIC
+#' is calculated conditional on the parent nodes of the data nodes, and the
+#' density values used are the individual density values of the data nodes.
+#' However, by modifying the \code{marginalizeNodes} and \code{dataGroups}
+#' elements of the control list, users can request a marginal WAIC (using a
+#' marginal likelihood that integrates over user-specified latent nodes) and/or
+#' a WAIC based on grouping observations (e.g., all observations in a cluster)
+#' to use joint density values.
 #'
-#' For more detail on the use of different predictive distributions, see Section 2.5 from
-#' Gelman et al. (2014) or Ariyo et al. (2019).
+#' For more detail on the use of different predictive distributions, see Section
+#' 2.5 from Gelman et al. (2014) or Ariyo et al. (2019).
 #'
-#' Note that based on a limited set of simulation experiments in Hug and Paciorek (2021)
-#' we recommend users only use marginal WAIC if also using grouping. 
+#' Note that based on a limited set of simulation experiments in Hug and Paciorek
+#' (2021) we recommend users only use marginal WAIC if also using grouping. 
 #' 
 #' @section WAIC computed after MCMC sampling
 #'
@@ -161,40 +177,43 @@ waicList <- nimbleList(
 #' 
 #' \code{calculateWAIC()} accepts a single argument:
 #'
-#' \code{nburnin}: The number of pre-thinning MCMC samples to remove from the beginning
-#' of the posterior samples for WAIC calculation (default = 0). These samples are discarded
-#' in addition to any burn-in specified when running the MCMC.
+#' \code{nburnin}: The number of pre-thinning MCMC samples to remove from the
+#' beginning of the posterior samples for WAIC calculation (default = 0). These
+#' samples are discarded in addition to any burn-in specified when running the
+#' MCMC.
 #' 
 #' The \code{calculateWAIC} method can only be used if the \code{enableWAIC} 
-#' argument to \code{configureMCMC} or to \code{buildMCMC} is set to \code{TRUE}, or if the NIMBLE option
-#' \code{enableWAIC} is set to \code{TRUE}.  If a user attempts
-#' to call \code{calculateWAIC} without having set \code{enableWAIC = TRUE}
-#' (either in the call to \code{configureMCMC}, or \code{buildMCMC}, or as a NIMBLE option),
-#' an error will occur.  
+#' argument to \code{configureMCMC} or to \code{buildMCMC} is set to \code{TRUE},
+#' or if the NIMBLE option \code{enableWAIC} is set to \code{TRUE}.  If a user
+#' attempts to call \code{calculateWAIC} without having set
+#' \code{enableWAIC = TRUE} (either in the call to \code{configureMCMC}, or
+#' \code{buildMCMC}, or as a NIMBLE option), an error will occur.  
 #' 
 #' The \code{calculateWAIC} method calculates the WAIC of the model that the
 #' MCMC was performed on. The WAIC (Watanabe, 2010) is calculated from
 #' Equations 5, 12, and 13 in Gelman et al. (2014) (i.e., using \emph{p}WAIC2).
 #'
-#' Note that there is not a unique value of WAIC for a model. \code{calculateWAIC}
-#' only provides the conditional WAIC, namely the version of WAIC where all
-#' parameters directly involved in the likelihood are treated as \eqn{theta}
-#' for the purposes of Equation 5 from Gelman et al. (2014). As a result, the user
-#' must set the MCMC monitors (via the \code{monitors} argument) to include all stochastic
-#' nodes that are parents of any data nodes; by default the MCMC monitors are only
-#' the top-level nodes of the model. For more detail on the use of different predictive
-#' distributions, see Section 2.5 from Gelman et al. (2014) or Ariyo et al. (2019).
+#' Note that there is not a unique value of WAIC for a model.
+#' \code{calculateWAIC} only provides the conditional WAIC, namely the version
+#' of WAIC where all parameters directly involved in the likelihood are treated
+#' as \eqn{theta} for the purposes of Equation 5 from Gelman et al. (2014). As
+#' a result, the user must set the MCMC monitors (via the \code{monitors}
+#' argument) to include all stochastic nodes that are parents of any data nodes;
+#' by default the MCMC monitors are only the top-level nodes of the model. For
+#' more detail on the use of different predictive distributions, see Section 2.5
+#' from Gelman et al. (2014) or Ariyo et al. (2019).
 
-#' Also note that WAIC relies on a partition of the observations, i.e., 'pointwise'
-#' prediction. In \code{calculateWAIC} the sum over log pointwise predictive density
-#' values treats each data node as contributing a single value to the sum. When a data node is
-#' multivariate, that data node contributes a single value to the sum based on the
-#' joint density of the elements in the node. Note that if one wants the WAIC
-#' calculation via \code{calculateWAIC} to be based on the joint predictive density
-#' for each group of observations (e.g., grouping the observations from each person
-#' or unit in a longitudinal data context), one would need to use a multivariate
-#' distribution for the observations in each group (potentially by writing a
-#' user-defined distribution).
+#' Also note that WAIC relies on a partition of the observations, i.e.,
+#' 'pointwise' prediction. In \code{calculateWAIC} the sum over log pointwise
+#' predictive density values treats each data node as contributing a single
+#' value to the sum. When a data node is multivariate, that data node contributes
+#' a single value to the sum based on the joint density of the elements in the
+#' node. Note that if one wants the WAIC calculation via \code{calculateWAIC}
+#' to be based on the joint predictive density for each group of observations
+#' (e.g., grouping the observations from each person or unit in a longitudinal
+#' data context), one would need to use a multivariate distribution for the
+#' observations in each group (potentially by writing a user-defined
+#' distribution).
 #'
 #' For more control over and flexibility in how WAIC is calculated, see
 #' `Online WAIC` above.
@@ -202,13 +221,21 @@ waicList <- nimbleList(
 #' @author Joshua Hug and Christopher Paciorek
 #' 
 #' @references 
-#' Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation and widely applicable information criterion in singular learning theory. \emph{Journal of Machine Learning Research} 11: 3571-3594.
+#' Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation and
+#' widely applicable information criterion in singular learning theory.
+#' \emph{Journal of Machine Learning Research} 11: 3571-3594.
 #' 
-#' Gelman, A., Hwang, J. and Vehtari, A. (2014). Understanding predictive information criteria for Bayesian models. \emph{Statistics and Computing} 24(6): 997-1016.
+#' Gelman, A., Hwang, J. and Vehtari, A. (2014). Understanding predictive
+#' information criteria for Bayesian models.
+#' \emph{Statistics and Computing} 24(6): 997-1016.
 #'
-#' Ariyo, O., Quintero, A., Munoz, J., Verbeke, G. and Lesaffre, E. (2019). Bayesian model selection in linear mixed models for longitudinal data. \emph{Journal of Applied Statistics} 47: 890-913.
+#' Ariyo, O., Quintero, A., Munoz, J., Verbeke, G. and Lesaffre, E. (2019).
+#' Bayesian model selection in linear mixed models for longitudinal data.
+#' \emph{Journal of Applied Statistics} 47: 890-913.
 #'
-#' Vehtari, A., Gelman, A. and Gabry, J. (2017). Practical Bayesian model evaluation using leave-one-out cross-validation and WAIC. \emph{Statistics and Computing} 27: 1413-1432.
+#' Vehtari, A., Gelman, A. and Gabry, J. (2017). Practical Bayesian model
+#' evaluation using leave-one-out cross-validation and WAIC.
+#' \emph{Statistics and Computing} 27: 1413-1432.
 
 buildWAIC <- nimbleFunction(
     name = 'waicClass',
@@ -261,8 +288,9 @@ buildWAIC <- nimbleFunction(
         }
         
         
-        ## For mWAIC, we save relevant quantities for subsets of the full Monte Carlo sample
-        ## to allow informal checking that the Monte Carlo estimates are stable.
+        ## For mWAIC, we save relevant quantities for subsets of the full Monte
+        ## Carlo sample to allow informal checking that the Monte Carlo estimates
+        ## are stable.
         ## By default, we use 25%, 50%, and 75% of the total number of Monte Carlo samples.
         if(marginal) {
             if(!is.null(convergenceSet)) {
@@ -407,7 +435,8 @@ buildWAIC <- nimbleFunction(
             if(returnElements) {
                 ## Per-observations values useful for (manual) SE calculation when
                 ## contrasting WAIC for two models, per Vehtari et al. 2017 (Staistics and Computing)
-                output$lppd_elements <- lppdSumMaxMat[lengthConvCheck, ] + log(lppdCurSumMat[lengthConvCheck, ]) - log(mcmcIter)
+                output$lppd_elements <- lppdSumMaxMat[lengthConvCheck, ] +
+                    log(lppdCurSumMat[lengthConvCheck, ]) - log(mcmcIter)
                 output$pWAIC_elements <- sspWAICmat[lengthConvCheck, ] / (mcmcIter - 1)
                 output$WAIC_elements <- -2 * (output$lppd_elements - output$pWAIC_elements)
             }
