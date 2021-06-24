@@ -28,6 +28,7 @@ parameterTransform <- nimbleFunction(
         ## 6: multivariate {normal, t}
         ## 7: multivariate {wishart, inverse-wishart}
         ## 8: multivariate dirichlet
+        ## 9: LKJ 
         transformType <- as.integer(rep(NA, (nNodes+1)))  ## must be integer for nimSwitch, and also ensure as a vector
         ## transformData
         transformData <- array(NA, dim = c(nNodes, 6))
@@ -115,6 +116,16 @@ parameterTransform <- nimbleFunction(
                     transformData[i,TIND2] <- transformData[i,TIND1] + d - 2
                     transformData[i,DATA1] <- d
                     next }
+                if(dist == 'dlkj_corr_cholesky') {                ## 9: LKJ
+                    transformType[i] <- 9L
+                    dSq <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
+                    d <- sqrt(dSq)
+                    p <- d * (d-1) / 2  # number of transformed params
+                    transformData[i,NIND2] <- transformData[i,NIND1] + dSq - 1
+                    transformData[i,TIND2] <- transformData[i,TIND1] + p - 1
+                    transformData[i,DATA1] <- d
+                    transformData[i,DATA2] <- p
+                    next }
                 stop(paste0('parameterTransform doesn\'t handle \'', dist, '\' distributions.'), call. = FALSE)
             }
         }
@@ -132,7 +143,7 @@ parameterTransform <- nimbleFunction(
             for(iNode in 1:nNodes) {
                 theseValues <- nodeValuesFromModel[transformData[iNode,NIND1]:transformData[iNode,NIND2]]
                 thisType <- transformType[iNode]
-                nimSwitch(thisType, 1:8,
+                nimSwitch(thisType, 1:9,
                           theseTransformed <- theseValues,         ## 1: scalar unconstrained
                           theseTransformed <- log(theseValues),    ## 2: scalar semi-interval (0, Inf)
                           theseTransformed <- logit(theseValues),  ## 3: scalar interval-constrained (0, 1)
@@ -164,6 +175,32 @@ parameterTransform <- nimbleFunction(
                                       theseTransformed[j] <- logit( theseValues[j] / (1-runningSum) )
                                   }
                               }
+                          },
+                          {                                        ## 9: LKJ
+                              dd <- transformData[iNode,DATA1]  # nrow of matrix
+                              pp <- transformData[iNode,DATA2]  # number of transformed params
+                              theseTransformed <- nimNumeric(pp)
+                              theseValuesMatrix <- nimArray(theseValues, dim = c(dd, dd))  # U in matrix form
+                              if(dd > 1) {
+                                  cnt <- 1
+                                  ## Length of each column of U is 1.
+                                  ## We first produce the canonical partial correlations and then apply atanh()
+                                  ## to make the unconstrained parameters..
+                                  for(j in 2:dd) {
+                                      theseTransformed[cnt] <- atanh(theseValuesMatrix[1, j])
+                                      cnt <- cnt + 1
+                                      if(j > 2) {
+                                          partialSum <- 1 
+                                          for(i in 2:(j-1)) {
+                                              partialSum <- partialSum - theseValuesMatrix[i-1, j]^2
+                                              ## Transformed value is atanh of the proportion of the
+                                              ## remaining correlation (which is in 'partialSum').
+                                              theseTransformed[cnt] <- atanh(theseValuesMatrix[i, j] / sqrt(partialSum))
+                                              cnt <- cnt + 1
+                                          }
+                                      }
+                                  }
+                              }
                           })
                 transformed[transformData[iNode,TIND1]:transformData[iNode,TIND2]] <- theseTransformed
             }
@@ -179,7 +216,7 @@ parameterTransform <- nimbleFunction(
                 ind2 <- transformData[iNode,TIND2]
                 theseValues <- transformedValues[ind1:ind2]
                 thisType <- transformType[iNode]
-                nimSwitch(thisType, 1:8,
+                nimSwitch(thisType, 1:9,
                           theseInvTransformed <- theseValues,          ## 1: scalar unconstrained
                           theseInvTransformed <- exp(theseValues),     ## 2: scalar semi-interval (0, Inf)
                           theseInvTransformed <- ilogit(theseValues),  ## 3: scalar interval-constrained (0, 1)
@@ -212,6 +249,34 @@ parameterTransform <- nimbleFunction(
                                   }
                               }
                               theseInvTransformed[dd] <- 1 - sum(theseInvTransformed[1:ddm1])
+                          },
+                          {                                            ## 9: LKJ
+                              dd <- transformData[iNode,DATA1]
+                              ## Directly fill in the vectorized form of the U matrix
+                              theseInvTransformed <- nimNumeric(dd*dd, value = 0, init = TRUE)
+                              theseInvTransformed[1] <- 1
+                              if(dd > 1) {
+                                  cntT <- 1
+                                  ## Fill in j'th column
+                                  for(j in 2:dd) {
+                                      cntI <- (j-1)*dd + 1
+                                      ## Get elements of U by going from unconstrained to canonical partial correlations.
+                                      theseInvTransformed[cntI] <- tanh(theseValues[cntT])
+                                      partialSum <- 1 - theseInvTransformed[cntI]^2
+                                      cntI <- cntI + 1
+                                      cntT <- cntT + 1
+                                      if(j > 2) {
+                                          for(i in 2:(j-1)) {
+                                              ## Value of U based on 'normalizing' partial correlation such that length of column of U is 1.
+                                              theseInvTransformed[cntI] <- tanh(theseValues[cntT]) * sqrt(partialSum)
+                                              partialSum <- partialSum - theseInvTransformed[cntI]^2
+                                              cntI <- cntI + 1
+                                              cntT <- cntT + 1
+                                          }
+                                      }
+                                      theseInvTransformed[cntI] <- sqrt(partialSum)  # Column must sum to 1.
+                                  }
+                              }
                           })
                 ind1 <- transformData[iNode,NIND1]
                 ind2 <- transformData[iNode,NIND2]
@@ -228,7 +293,7 @@ parameterTransform <- nimbleFunction(
             for(iNode in 1:nNodes) {
                 theseValues <- transformedValues[transformData[iNode,TIND1]:transformData[iNode,TIND2]]
                 thisType <- transformType[iNode]
-                nimSwitch(thisType, 1:8,
+                nimSwitch(thisType, 1:9,
                           lpAdd <- 0,               ## 1: scalar unconstrained
                           lpAdd <- theseValues[1],  ## 2: scalar semi-interval (0, Inf)
                           {                         ## 3: scalar interval-constrained (0, 1)
@@ -268,6 +333,27 @@ parameterTransform <- nimbleFunction(
                                       runningSum <- runningSum + theseInvTransformed[i-1]
                                       x <- theseValues[i]
                                       lpAdd <- lpAdd + log(1-runningSum) - log(exp(x)+exp(-x)+2)   ## alternate: -2*log(1+exp(-x))-x)
+                                  }
+                              }
+                          },
+                          {                                            ## 9: LKJ
+                              dd <- transformData[iNode,DATA1]
+                              lpAdd <- 0
+                              if(dd > 1) {
+                                  cntT <- 1
+                                  for(j in 2:dd) {
+                                      lpAdd <- lpAdd - 2*log(cosh(theseValues[cntT]))
+                                      theseInvTransformed <- tanh(theseValues[cntT])
+                                      partialSum <- 1 
+                                      cntT <- cntT + 1
+                                      if(j > 2) {
+                                          for(i in 2:(j-1)) {
+                                              partialSum <- partialSum - theseInvTransformed^2
+                                              lpAdd <- lpAdd - 2*log(cosh(theseValues[cntT])) + 0.5*log(partialSum)
+                                              theseInvTransformed <- tanh(theseValues[cntT]) * sqrt(partialSum)
+                                              cntT <- cntT + 1
+                                          }
+                                      }
                                   }
                               }
                           })
