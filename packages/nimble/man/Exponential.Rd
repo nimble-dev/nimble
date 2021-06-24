@@ -3,20 +3,18 @@
 \name{Exponential}
 \alias{Exponential}
 \alias{dexp_nimble}
+\alias{rexp_nimble}
 \alias{pexp_nimble}
 \alias{qexp_nimble}
-\alias{rexp_nimble}
 \title{The Exponential Distribution}
 \usage{
 dexp_nimble(x, rate = 1/scale, scale = 1, log = FALSE)
 
 rexp_nimble(n = 1, rate = 1/scale, scale = 1)
 
-pexp_nimble(q, rate = 1/scale, scale = 1, lower.tail = TRUE,
-  log.p = FALSE)
+pexp_nimble(q, rate = 1/scale, scale = 1, lower.tail = TRUE, log.p = FALSE)
 
-qexp_nimble(p, rate = 1/scale, scale = 1, lower.tail = TRUE,
-  log.p = FALSE)
+qexp_nimble(p, rate = 1/scale, scale = 1, lower.tail = TRUE, log.p = FALSE)
 }
 \arguments{
 \item{x}{vector of values.}
@@ -58,13 +56,12 @@ the BUGS manual for mathematical details.
 x <- rexp_nimble(50, scale = 3)
 dexp_nimble(x, scale = 3)
 }
-\author{
-Christopher Paciorek
-}
 \references{
 Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
 }
 \seealso{
 \link{Distributions} for other standard distributions
 }
-
+\author{
+Christopher Paciorek
+}

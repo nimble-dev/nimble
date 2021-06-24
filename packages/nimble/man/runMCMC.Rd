@@ -4,10 +4,21 @@
 \alias{runMCMC}
 \title{Run one or more chains of an MCMC algorithm and return samples, summary and/or WAIC}
 \usage{
-runMCMC(mcmc, niter = 10000, nburnin = 0, thin, thin2, nchains = 1, inits,
-  setSeed = FALSE, progressBar = getNimbleOption("MCMCprogressBar"),
-  samples = TRUE, samplesAsCodaMCMC = FALSE, summary = FALSE,
-  WAIC = FALSE)
+runMCMC(
+  mcmc,
+  niter = 10000,
+  nburnin = 0,
+  thin,
+  thin2,
+  nchains = 1,
+  inits,
+  setSeed = FALSE,
+  progressBar = getNimbleOption("MCMCprogressBar"),
+  samples = TRUE,
+  samplesAsCodaMCMC = FALSE,
+  summary = FALSE,
+  WAIC = FALSE
+)
 }
 \arguments{
 \item{mcmc}{A NIMBLE MCMC algorithm.  See details.}
@@ -34,10 +45,10 @@ runMCMC(mcmc, niter = 10000, nburnin = 0, thin, thin2, nchains = 1, inits,
 
 \item{summary}{Logical argument.  When \code{TRUE}, summary statistics for the posterior samples of each parameter are also returned, for each MCMC chain.  This may be returned in addition to the posterior samples themselves.  Default value is \code{FALSE}.  See details.}
 
-\item{WAIC}{Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  Note that in order for the WAIC to be calculated, the \code{mcmc} object must have also been created with the argument `enableWAIC = TRUE`.  If multiple chains are run, then a single WAIC value is calculated using the posterior samples from all chains.  Default value is \code{FALSE}.  See details.}
+\item{WAIC}{Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  Note that in order for the WAIC to be calculated, the \code{mcmc} object must have also been created with the argument `enableWAIC = TRUE`.  If multiple chains are run, then a single WAIC value is calculated using the posterior samples from all chains.  Default value is \code{FALSE}.  See \code{help(waic)}.}
 }
 \value{
-A list is returned with named elements depending on the arguments passed to \code{nimbleMCMC}, unless this list contains only a single element, in which case only that element is returned.  These elements may include \code{samples}, \code{summary}, and \code{WAIC}, and when the MCMC is monitoring a second set of nodes using \code{monitors2}, also \code{samples2}.  When \code{nchains = 1}, posterior samples are returned as a single matrix, and summary statistics as a single matrix.  When \code{nchains > 1}, posterior samples are returned as a list of matrices, one matrix for each chain, and summary statistics are returned as a list containing \code{nchains+1} matrices: one matrix corresponding to each chain, and the final element providing a summary of all chains, combined.  If \code{samplesAsCodaMCMC} is \code{TRUE}, then posterior samples are provided as \code{coda} \code{mcmc} and \code{mcmc.list} objects.  When \code{WAIC} is \code{TRUE}, a single WAIC value is returned.
+A list is returned with named elements depending on the arguments passed to \code{nimbleMCMC}, unless this list contains only a single element, in which case only that element is returned.  These elements may include \code{samples}, \code{summary}, and \code{WAIC}, and when the MCMC is monitoring a second set of nodes using \code{monitors2}, also \code{samples2}.  When \code{nchains = 1}, posterior samples are returned as a single matrix, and summary statistics as a single matrix.  When \code{nchains > 1}, posterior samples are returned as a list of matrices, one matrix for each chain, and summary statistics are returned as a list containing \code{nchains+1} matrices: one matrix corresponding to each chain, and the final element providing a summary of all chains, combined.  If \code{samplesAsCodaMCMC} is \code{TRUE}, then posterior samples are provided as \code{coda} \code{mcmc} and \code{mcmc.list} objects.  When \code{WAIC} is \code{TRUE}, a WAIC summary object is returned.
 }
 \description{
 Takes as input an MCMC algorithm (ideally a compiled one for speed)
@@ -84,10 +95,9 @@ samplesList <- runMCMC(Cmcmc, niter = 10000, nchains = 3, inits = inits)
 }
 
 }
-\author{
-Daniel Turek
-}
 \seealso{
 \code{\link{configureMCMC}} \code{\link{buildMCMC}} \code{\link{nimbleMCMC}}
 }
-
+\author{
+Daniel Turek
+}

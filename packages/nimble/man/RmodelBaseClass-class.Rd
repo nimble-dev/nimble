@@ -2,8 +2,8 @@
 % Please edit documentation in R/BUGS_model.R
 \docType{class}
 \name{RmodelBaseClass-class}
-\alias{RmodelBaseClass}
 \alias{RmodelBaseClass-class}
+\alias{RmodelBaseClass}
 \title{Class \code{RmodelBaseClass}}
 \description{
 Classes used internally in NIMBLE and not expected to be called directly by users.

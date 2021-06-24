@@ -4,14 +4,26 @@
 \alias{configureMCMC}
 \title{Build the MCMCconf object for construction of an MCMC object}
 \usage{
-configureMCMC(model, nodes, control = list(), monitors, thin = 1,
-  monitors2 = character(), thin2 = 1,
-  useConjugacy = getNimbleOption("MCMCuseConjugacy"), onlyRW = FALSE,
+configureMCMC(
+  model,
+  nodes,
+  control = list(),
+  monitors,
+  thin = 1,
+  monitors2 = character(),
+  thin2 = 1,
+  useConjugacy = getNimbleOption("MCMCuseConjugacy"),
+  onlyRW = FALSE,
   onlySlice = FALSE,
   multivariateNodesAsScalars = getNimbleOption("MCMCmultivariateNodesAsScalars"),
   enableWAIC = getNimbleOption("MCMCenableWAIC"),
-  print = getNimbleOption("verbose"), autoBlock = FALSE, oldConf,
-  warnNoSamplerAssigned = TRUE, ...)
+  waicControl = list(),
+  print = getNimbleOption("verbose"),
+  autoBlock = FALSE,
+  oldConf,
+  warnNoSamplerAssigned = TRUE,
+  ...
+)
 }
 \arguments{
 \item{model}{A NIMBLE model object, created from \code{\link{nimbleModel}}}
@@ -48,6 +60,8 @@ The default value is an empty character vector, i.e. no values will be recorded.
 
 \item{enableWAIC}{A logical argument, specifying whether to enable WAIC calculations for the resulting MCMC algorithm.  Defaults to the value of \code{nimbleOptions('MCMCenableWAIC')}, which in turn defaults to FALSE.  Setting \code{nimbleOptions('enableWAIC' = TRUE)} will ensure that WAIC is enabled for all calls to \code{\link{configureMCMC}} and \code{\link{buildMCMC}}.}
 
+\item{waicControl}{A named list of inputs that control the behavior of the WAIC calculation. See \code{help(waic)}.}
+
 \item{print}{A logical argument, specifying whether to print the ordered list of default samplers.}
 
 \item{autoBlock}{A logical argument specifying whether to use an automated blocking procedure to determine blocks of model nodes for joint sampling.  If TRUE, an MCMC configuration object will be created and returned corresponding to the results of the automated parameter blocking.  Default value is FALSE.}
@@ -64,10 +78,9 @@ Creates a defaut MCMC configuration for a given model.
 \details{
 See \code{\link{MCMCconf}} for details on how to manipulate the \code{MCMCconf} object
 }
-\author{
-Daniel Turek
-}
 \seealso{
 \code{\link{buildMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}
 }
-
+\author{
+Daniel Turek
+}

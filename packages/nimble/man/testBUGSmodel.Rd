@@ -4,9 +4,17 @@
 \alias{testBUGSmodel}
 \title{Tests BUGS examples in the NIMBLE system}
 \usage{
-testBUGSmodel(example = NULL, dir = NULL, model = NULL, data = NULL,
-  inits = NULL, useInits = TRUE, debug = FALSE,
-  verbose = nimbleOptions("verbose"))
+testBUGSmodel(
+  example = NULL,
+  dir = NULL,
+  model = NULL,
+  data = NULL,
+  inits = NULL,
+  useInits = TRUE,
+  expectModelWarning = FALSE,
+  debug = FALSE,
+  verbose = nimbleOptions("verbose")
+)
 }
 \arguments{
 \item{example}{(optional) example character vector indicating name of BUGS example to test; can be null if \code{model} is provided}
@@ -19,7 +27,9 @@ testBUGSmodel(example = NULL, dir = NULL, model = NULL, data = NULL,
 
 \item{inits}{(optional) (1) character string giving the file name for an R file providing the initial values for parameters as R code [assigning individual objects or as a named list] or (2) a named list providing the values. If neither is provided, the function will look for a file named \code{example}-init or \code{example}-inits including extensions .R, .r, or .txt.}
 
-\item{useInits}{boolean indicating whether to test model with initial values provided via \code{inits}}
+\item{useInits}{boolean indicating whether to test model with initial values provided via \code{inits}.}
+
+\item{expectModelWarning}{boolean indicating whether \code{nimbleModel} is expected to produce a warning or character string giving part of expected warning.}
 
 \item{debug}{logical indicating whether to put the user in a browser for debugging when \code{testBUGSmodel} calls \code{readBUGSmodel}.  Intended for developer use.}
 
@@ -39,4 +49,3 @@ testBUGSmodel('pump')
 \author{
 Christopher Paciorek
 }
-

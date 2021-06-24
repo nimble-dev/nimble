@@ -28,4 +28,3 @@ cnf <- withNimbleOptions(list(showCompilerOutput = TRUE), {
 if (!(getNimbleOption('showCompilerOutput') == FALSE)) stop()
 }
 }
-

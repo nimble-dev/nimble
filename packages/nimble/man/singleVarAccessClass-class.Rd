@@ -2,8 +2,8 @@
 % Please edit documentation in R/nimbleFunction_compile.R
 \docType{class}
 \name{singleVarAccessClass-class}
-\alias{singleVarAccessClass}
 \alias{singleVarAccessClass-class}
+\alias{singleVarAccessClass}
 \title{Class \code{singleVarAccessClass}}
 \description{
 Classes used internally in NIMBLE and not expected to be called directly by users.

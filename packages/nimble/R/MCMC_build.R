@@ -51,15 +51,17 @@
 #'     y ~ dnorm(x, 1)
 #' })
 #' Rmodel <- nimbleModel(code, data = list(y = 0))
-#' conf <- configureMCMC(Rmodel, monitors = c('mu', 'x'))
-#' Rmcmc <- buildMCMC(conf, enableWAIC = TRUE)
+#' conf <- configureMCMC(Rmodel, monitors = c('mu', 'x'), enableWAIC = TRUE)
+#' Rmcmc <- buildMCMC(conf)
 #' Cmodel <- compileNimble(Rmodel)
 #' Cmcmc <- compileNimble(Rmcmc, project=Rmodel)
 #' Cmcmc$run(10000)
 #' samples <- as.matrix(Cmcmc$mvSamples)
 #' samplesAsList <- as.list(Cmcmc$mvSamples)
 #' head(samples)
-#' WAIC <- Cmcmc$calculateWAIC(nburnin = 1000)
+#' waicInfo <- Cmcmc$getWAIC()
+#' waicInfo$WAIC
+#' waicInfo$pWAIC
 #' }
 #'
 #' @seealso \code{\link{configureMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}
@@ -76,9 +78,13 @@
 buildMCMC <- nimbleFunction(
     name = 'MCMC',
     setup = function(conf, ...) {
+        dotdotdotArgNames <- names(list(...))
+        if(inherits(conf, 'MCMCconf') && ('enableWAIC' %in% dotdotdotArgNames || 'waicControl' %in% dotdotdotArgNames))
+            stop("buildMCMC: 'enableWAIC' and 'waicControl' can only be given as arguments when running 'buildMCMC' directly on a model object, not on an MCMC configuration object. Instead pass these argument(s) directly to 'configureMCMC'.") 
+        
         if(inherits(conf, 'modelBaseClass'))   conf <- configureMCMC(conf, ...)
         else if(!inherits(conf, 'MCMCconf')) stop('conf must either be a nimbleModel or a MCMCconf object (created by configureMCMC(...) )')
-        dotdotdotArgs <- list(...)
+
         enableWAIC <- conf$enableWAIC
         
         model <- conf$model
@@ -228,7 +234,7 @@ buildMCMC <- nimbleFunction(
         calculateWAIC = function(nburnin = integer(default = 0),
                                  burnIn = integer(default = 0)) {
             if(!enableWAIC) {
-                print('Error: must set enableWAIC = TRUE in \'configureMCMC\' or \'buildMCMC\'. See \'help(configureMCMC)\' for additional information.')
+                print('Error: One must set enableWAIC = TRUE in \'configureMCMC\' or \'buildMCMC\'. See \'help(configureMCMC)\' for additional information.')
                 return(NaN)
             }
             if(burnIn != 0) {

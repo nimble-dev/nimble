@@ -4,8 +4,15 @@
 \alias{modelValuesConf}
 \title{Create the confs for a custom NIMBLE modelValues object}
 \usage{
-modelValuesConf(symTab, className, vars, types, sizes, modelDef = NA,
-  where = globalenv())
+modelValuesConf(
+  symTab,
+  className,
+  vars,
+  types,
+  sizes,
+  modelDef = NA,
+  where = globalenv()
+)
 }
 \arguments{
 \item{symTab}{For internal use only}
@@ -40,4 +47,3 @@ custom_mv['y',]
 \author{
 Clifford Anderson-Bergman
 }
-

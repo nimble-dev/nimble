@@ -4,7 +4,9 @@
 \name{ModifiedRmmParseKeywords2}
 \alias{ModifiedRmmParseKeywords2}
 \title{[[' = 'outputCppArrayIndex2',}
-\format{An object of class \code{list} of length 40.}
+\format{
+An object of class \code{list} of length 40.
+}
 \usage{
 ModifiedRmmParseKeywords2
 }
@@ -12,4 +14,3 @@ ModifiedRmmParseKeywords2
 [[' = 'outputCppArrayIndex2',
 }
 \keyword{datasets}
-

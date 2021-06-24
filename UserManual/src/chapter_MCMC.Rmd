@@ -453,7 +453,7 @@ Rmcmc <- buildMCMC(mcmcConf)
 
 `buildMCMC` is a nimbleFunction.  The returned object `Rmcmc` is an instance  of the nimbleFunction specific to configuration `mcmcConf` (and of course its associated model).  
 
-Note that if you would like to be able to calculate the WAIC of the model, you must set `enableWAIC = TRUE` as an argument to either `configureMCMC` or  `buildMCMC` (when passing a model rather than an MCMC configuration to `buildMCMC`), or set `nimbleOptions(MCMCenableWAIC = TRUE)`, which will enable WAIC calculations for all subsequently built MCMC functions.  For more information on WAIC calculations, see Section \@ref(sec:WAIC) or `help(waic)` in R.
+Note that if you would like to be able to calculate the WAIC of the model, you must set `enableWAIC = TRUE` as an argument to either `configureMCMC` or  `buildMCMC`, or set `nimbleOptions(MCMCenableWAIC = TRUE)`, which will enable WAIC calculations for all subsequently built MCMC functions.  For more information on WAIC calculations, see Section \@ref(sec:WAIC) or `help(waic)` in R.
 
 When no customization is needed, one can skip `configureMCMC` and simply provide a model object to `buildMCMC`. The following two MCMC functions will be identical:
 
@@ -626,7 +626,7 @@ Obtaining samples as matrices or lists is most common, but see Section \@ref(sec
 
 ## Calculating WAIC {#sec:WAIC}
 
-The WAIC [@Watanabe_2010] can be calculated from the posterior samples produced during the MCMC algorithm.  Note that in order to calculate the WAIC value, the argument `enableWAIC = TRUE` must be supplied to `configureMCMC` or to `buildMCMC` (if `buildMCMC` is called with a model instead of an MCMC configuration), or the `enableWAIC` NIMBLE option must have been set to `TRUE`.
+The WAIC [@Watanabe_2010] can be calculated from the posterior samples produced during the MCMC algorithm.  Note that in order to calculate the WAIC value, the argument `enableWAIC = TRUE` must be supplied to `configureMCMC` or to `buildMCMC`, or the `enableWAIC` NIMBLE option must have been set to `TRUE`.
 
 The WAIC is extracted by the member method `mcmc$getWAIC` (see `help(waic)` in R for more details) or is available as the `WAIC` element of the `runMCMC` or `nimbleMCMC` output lists.
 

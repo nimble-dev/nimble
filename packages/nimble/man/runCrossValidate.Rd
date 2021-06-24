@@ -4,9 +4,17 @@
 \alias{runCrossValidate}
 \title{Perform k-fold cross-validation on a NIMBLE model fit by MCMC}
 \usage{
-runCrossValidate(MCMCconfiguration, k, foldFunction = "random",
-  lossFunction = "MSE", MCMCcontrol = list(), returnSamples = FALSE,
-  nCores = 1, nBootReps = 200, silent = FALSE)
+runCrossValidate(
+  MCMCconfiguration,
+  k,
+  foldFunction = "random",
+  lossFunction = "MSE",
+  MCMCcontrol = list(),
+  returnSamples = FALSE,
+  nCores = 1,
+  nBootReps = 200,
+  silent = FALSE
+)
 }
 \arguments{
 \item{MCMCconfiguration}{a NIMBLE MCMC configuration object, returned by a 
@@ -109,6 +117,7 @@ The \code{MCMCcontrol} argument is a list with the following elements:
   }
  }
 }
+
 \examples{
 \dontrun{
 
@@ -183,4 +192,3 @@ crossValOutput <- runCrossValidate(MCMCconfiguration = dyesMCMCconfiguration,
 \author{
 Nicholas Michaud and Lauren Ponisio
 }
-

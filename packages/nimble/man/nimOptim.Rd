@@ -4,8 +4,17 @@
 \alias{nimOptim}
 \title{Nimble wrapper around R's builtin \code{\link{optim}}.}
 \usage{
-nimOptim(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = -Inf,
-  upper = Inf, control = nimOptimDefaultControl(), hessian = FALSE)
+nimOptim(
+  par,
+  fn,
+  gr = "NULL",
+  ...,
+  method = "Nelder-Mead",
+  lower = -Inf,
+  upper = Inf,
+  control = nimOptimDefaultControl(),
+  hessian = FALSE
+)
 }
 \arguments{
 \item{par}{Initial values for the parameters to be optimized over.}
@@ -60,4 +69,3 @@ cOptimizer(method = 'BFGS', fnscale = -1)
 \seealso{
 \code{\link{optim}}
 }
-

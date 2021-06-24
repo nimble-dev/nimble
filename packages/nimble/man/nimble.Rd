@@ -3,9 +3,4 @@
 \docType{package}
 \name{nimble}
 \alias{nimble}
-\alias{nimble-package}
 \title{nimble}
-\description{
-nimble
-}
-

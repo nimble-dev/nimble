@@ -4,8 +4,14 @@
 \alias{nimbleExternalCall}
 \title{Create a nimbleFunction that wraps a call to external compiled code}
 \usage{
-nimbleExternalCall(prototype, returnType, Cfun, headerFile, oFile,
-  where = getNimbleFunctionEnvironment())
+nimbleExternalCall(
+  prototype,
+  returnType,
+  Cfun,
+  headerFile,
+  oFile,
+  where = getNimbleFunctionEnvironment()
+)
 }
 \arguments{
 \item{prototype}{Argument type information.  This can be provided as an R function using \code{nimbleFunction} type declarations or as a list of \code{nimbleType} objects.}
@@ -81,10 +87,9 @@ check = FALSE, calculate = FALSE)
 CdemoModel <- compileNimble(demoModel, showCompilerOutput = TRUE)
 }
 }
-\author{
-Perry de Valpine
-}
 \seealso{
 \code{\link{nimbleRcall}} for calling arbitrary R code from compiled \code{nimbleFunction}s.
 }
-
+\author{
+Perry de Valpine
+}

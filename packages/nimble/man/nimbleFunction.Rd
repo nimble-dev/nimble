@@ -4,10 +4,17 @@
 \alias{nimbleFunction}
 \title{create a nimbleFunction}
 \usage{
-nimbleFunction(setup = NULL, run = function() { }, methods = list(),
-  globalSetup = NULL, contains = NULL, enableDerivs = list(), name = NA,
+nimbleFunction(
+  setup = NULL,
+  run = function() { },
+  methods = list(),
+  globalSetup = NULL,
+  contains = NULL,
+  enableDerivs = list(),
+  name = NA,
   check = getNimbleOption("checkNimbleFunction"),
-  where = getNimbleFunctionEnvironment())
+  where = getNimbleFunctionEnvironment()
+)
 }
 \arguments{
 \item{setup}{An optional R function definition for setup processing.}
@@ -47,4 +54,3 @@ For more information about the \code{contains} argument, see the section on nimb
 \author{
 NIMBLE development team
 }
-
