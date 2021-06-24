@@ -292,7 +292,51 @@ prior or require proper (normalized) densities.
 
 ##### LKJ distribution for correlation matrices
 
-NIMBLE provides the LKJ distribution for correlation matrices. 
+NIMBLE provides the LKJ distribution via `dlkj_corr_cholesky`
+for correlation matrices, discussed in Section 24 of [@Stan_Fun_2021] and based on
+[@Lewandowski_etal_2009]. This distribution has various advantages (both from a modeling perspective and an
+MCMC fitting perspective) over other prior distributions for correlation
+or covariance matrices such as the inverse Wishart distribution.
+
+For computational efficiency, the distribution is on the Cholesky factor
+of the correlation matrix rather than the correlation matrix itself. As a result using this distribution
+in a model involves a bit of care, including efficiently creating a covariance matrix from the
+correlation matrix and a set of standard deviations.
+
+Here is some example code illustrating how to use the distribution in a model.
+
+```{r, lkj}
+code <- nimbleCode({
+    Ustar[1:p,1:p] ~ dlkj_corr_cholesky(1.3, p)
+    U[1:p,1:p] <- uppertri_mult_diag(Ustar[1:p, 1:p], sds[1:p])
+    for(i in 1:n)  
+        y[i, 1:p] ~ dmnorm(mu[1:p], cholesky = U[1:p, 1:p], prec_param = 0)
+})
+```
+
+Note that we need to take the upper triangular Cholesky factor (`Ustar`)
+and convert it to the Cholesky factor of a covariance matrix (`U`), based on a vector of
+standard deviations (`sds`), and use that directly in the parameterization of
+`dmnorm` that directly (and therefore efficiently) uses the Cholesky of the covariance.
+
+Other approaches are possible but unless care is taken are likely to be less
+computationally efficient than the template above.
+
+The template uses a user-defined nimbleFunction to efficiently combine the
+Cholesky of the correlation matrix with a vector of standard deviations to produce the
+Cholesky of the covariance matrix. That function is given here:
+
+```{r, lkj-helper}
+uppertri_mult_diag <- nimbleFunction(
+    run = function(mat = double(2), vec = double(1)) {
+        returnType(double(2))
+        p <- length(vec)
+        out <- matrix(nrow = p, ncol = p, init = FALSE)
+        for(i in 1:p)
+            out[ , i] <- mat[ , i] * vec[i]
+        return(out)
+    })
+```
 
 #### Alternative parameterizations for distributions {#subsec:alternative-params}
 
