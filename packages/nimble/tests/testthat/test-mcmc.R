@@ -1025,6 +1025,8 @@ test_that('detect conjugacy when scaling Wishart, inverse Wishart cases', {
 
 
 test_that('using LKJ randomw walk samplers', {
+    opt <- nimbleOptions('buildInterfacesForCompiledNestedNimbleFunctions')
+    nimbleOptions('buildInterfacesForCompiledNestedNimbleFunctions') <- TRUE
     
     R <- matrix(c(
         1, 0.9, .3, -.5, .1,
@@ -1064,11 +1066,9 @@ test_that('using LKJ randomw walk samplers', {
     diag(yt) <- 0
     yt <- yt[yt!=0]
 
-    ## Log determinant of Jacobian of transformation from X to y via U and Z
-    logDetJac <- 0.5*(sum(3*log(1-Z[1,2:5]^2))+
-                   sum(2*log(1-Z[2,3:5]^2))+
-                   sum(log(1-Z[3,4:5]^2))) -2*sum(log(cosh(yt)))
-
+    ## Log determinant of Jacobian of transformation from U to y via Z
+    logDetJac <- 0.5*(log(PS[2,3])+log(PS[2,4])+log(PS[3,4])+log(PS[2,5]) +
+                      log(PS[3,5]) + log(PS[4,5])) - 2*sum(log(cosh(yt)))
     
     set.seed(1)
     Sigma <- diag(sds)%*%R%*%diag(sds)
@@ -1107,15 +1107,15 @@ test_that('using LKJ randomw walk samplers', {
 
     mcmc$samplerFunctions[[1]]$transform(m$Ustar)
     expect_identical(mcmc$samplerFunctions[[1]]$y, yt)
-    expect_identical(mcmc$samplerFunctions[[1]]$partialSums, PS)
+    expect_equal(mcmc$samplerFunctions[[1]]$partialSums, PS)  # not sure why off by double precision f.p. error
     expect_identical(mcmc$samplerFunctions[[1]]$z, Z)
     expect_identical(mcmc$samplerFunctions[[1]]$logDetJac, logDetJac)
 
-    mcmc$samplerFunctions[[1]]$transform(m$Ustar)
-    expect_identical(mcmc$samplerFunctions[[1]]$y, yt)
-    expect_identical(mcmc$samplerFunctions[[1]]$partialSums, PS)
-    expect_identical(mcmc$samplerFunctions[[1]]$z, Z)
-    expect_identical(mcmc$samplerFunctions[[1]]$logDetJac, logDetJac)
+    cmcmc$samplerFunctions[[1]]$transform(m$Ustar)
+    expect_identical(cmcmc$samplerFunctions[[1]]$y, yt)
+    expect_equal(cmcmc$samplerFunctions[[1]]$partialSums, PS)
+    expect_identical(cmcmc$samplerFunctions[[1]]$z, Z)
+    expect_identical(cmcmc$samplerFunctions[[1]]$logDetJac, logDetJac)
 
     nIts <- 50000
     out <- runMCMC(cmcmc, 50000)
@@ -1128,21 +1128,30 @@ test_that('using LKJ randomw walk samplers', {
     mcmc <- buildMCMC(conf)
     cm <- compileNimble(m)
     cmcmc <- compileNimble(mcmc,project = m)
-    out2 <- runMCMC(cmcmc, nIts)
 
+    mcmc$samplerFunctions[[1]]$transform(m$Ustar)
+    expect_equal(mcmc$samplerFunctions[[1]]$partialSums, PS)
+    expect_identical(mcmc$samplerFunctions[[1]]$z, Z)
+
+    cmcmc$samplerFunctions[[1]]$transform(m$Ustar)
+    expect_equal(cmcmc$samplerFunctions[[1]]$partialSums, PS)
+    expect_identical(cmcmc$samplerFunctions[[1]]$z, Z)
+
+    out2 <- runMCMC(cmcmc, nIts)
+    outSigma2 <- matrix(0, nrow(out), p*p)
     for(i in 1:nrow(outSigma2))
         outSigma2[i,] <- t(matrix(out2[i,], p, p)) %*% matrix(out2[i,],p,p)
     
     ## Compare sampler output to Stan results (see code in paciorek's lkj_testing.R file)
-    stan_means <- c(1.00000000, 0.87580832, 0.41032781 -0.56213296, 0.09006483, 0.87580832
-                    1.00000000, 0.18682787 -0.33699708, 0.12656145, 0.41032781, 0.18682787
-                    1.00000000, 0.11984278, 0.10919301 -0.56213296 -0.33699708, 0.11984278
-                    1.00000000, 0.10392069, 0.09006483, 0.12656145, 0.10919301, 0.10392069
+    stan_means <- c(1.00000000, 0.87580832, 0.41032781, -0.56213296, 0.09006483, 0.87580832,
+                    1.00000000, 0.18682787, -0.33699708, 0.12656145, 0.41032781, 0.18682787,
+                    1.00000000, 0.11984278, 0.10919301, -0.56213296, -0.33699708, 0.11984278,
+                    1.00000000, 0.10392069, 0.09006483, 0.12656145, 0.10919301, 0.10392069,
                     1.00000000)
-    stan_sds <- c(0.000000e+00, 1.789045e-02, 6.244945e-02, 5.393811e-02, 7.928870e-02
-                  1.789045e-02, 0.000000e+00, 8.376820e-02, 7.448420e-02, 8.411652e-02
-                  6.244945e-02, 8.376820e-02, 8.600611e-17, 8.132228e-02, 9.242809e-02
-                  5.393811e-02, 7.448420e-02, 8.132228e-02, 8.711701e-17, 8.605078e-02
+    stan_sds <- c(0.000000e+00, 1.789045e-02, 6.244945e-02, 5.393811e-02, 7.928870e-02,
+                  1.789045e-02, 0.000000e+00, 8.376820e-02, 7.448420e-02, 8.411652e-02,
+                  6.244945e-02, 8.376820e-02, 8.600611e-17, 8.132228e-02, 9.242809e-02,
+                  5.393811e-02, 7.448420e-02, 8.132228e-02, 8.711701e-17, 8.605078e-02,
                   7.928870e-02, 8.411652e-02, 9.242809e-02, 8.605078e-02, 1.227811e-16)
 
     nim_means_block <- apply(outSigma[1001:nrow(out), ], 2, mean)
@@ -1153,12 +1162,12 @@ test_that('using LKJ randomw walk samplers', {
     cols <- matrix(1:(p*p), p, p)
     cols <- cols[upper.tri(cols)]
 
-    expect_equal(stan_means[cols], nim_means_block[cols], tolerance = 0.03)
-    expect_equal(stan_means[cols], nim_means_uni[cols], tolerance = 0.03)
+    expect_equal(stan_means[cols], nim_means_block[cols], tolerance = 0.005)
+    expect_equal(stan_means[cols], nim_means_uni[cols], tolerance = 0.005)
     expect_equal(stan_sds[cols], nim_sds_block[cols], tolerance = 0.005)
     expect_equal(stan_sds[cols], nim_sds_uni[cols], tolerance = 0.005)
     
-    ## Compare sampler output to truth
+    ## Compare sampler output to truth for another (simple) model.
     code <- nimbleCode({
         for(i in 1:n) {
             y[i, 1:J] ~ dmnorm(mu[1:J], cov = R[1:J, 1:J])
@@ -1185,7 +1194,7 @@ test_that('using LKJ randomw walk samplers', {
     samples <- runMCMC(cmcmc, niter = 2500, nburnin = 500)
     postMean <- colMeans(samples)
     names(postMean) <- NULL
-    expect_equal(postMean, c(mat), tolerance = 0.05, info = "RW_block_lkj posterior not close to truth")
+    expect_equal(postMean, c(mat), tolerance = 0.07, info = "RW_block_lkj posterior not close to truth")
 
     set.seed(1)
     conf <- configureMCMC(m, nodes = NULL)
@@ -1196,8 +1205,9 @@ test_that('using LKJ randomw walk samplers', {
     samples <- runMCMC(cmcmc, niter = 2500, nburnin = 500)
     postMean <- colMeans(samples)
     names(postMean) <- NULL
-    expect_equal(postMean, c(mat), tolerance = 0.05, info = "RW_lkj posterior not close to truth")
+    expect_equal(postMean, c(mat), tolerance = 0.07, info = "RW_lkj posterior not close to truth")
 
+    nimbleOptions('buildInterfacesForCompiledNestedNimbleFunctions') <- opt
 })
 
 ## testing conjugate MVN updating with ragged dependencies;

@@ -1627,7 +1627,7 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
                 ## This is because dlkj_corr_cholesky is written directly in terms of a density on U and that density
                 ## already accounts for the Jacobian in going from Sigma to U.
                 logMHR <- logMHR - 2*(log(cosh(yProp)) - log(cosh(yCurrent))) 
-                if(j < i-1) {
+                if(j < i-1) 
                     logMHR <- logMHR + 0.5*sum(log(partialSumsProp[(j+1):(i-1)]) - log(partialSums[(j+1):(i-1), i]))
  
                 jump <- decide(logMHR)
@@ -1767,7 +1767,7 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
                 ## cosh component is for dz/dy and other component is for du/dz  where 'u' is the corr matrix.
                 ## This follows Stan reference manual Section 10.12 (for version 2.27).
                 ## There is an important subtlety here - the transformation is from y to U not y to Sigma, so the Jacobian
-                ## omits the dSigma/dU, which is in Section 10.9 of the Stan reference manual.
+                ## omits the dSigma/dU (which is in Section 10.9 of the Stan reference manual).
                 ## This is because dlkj_corr_cholesky is written directly in terms of a density on U and that density
                 ## already accounts for the Jacobian in going from Sigma to U.
                 logMHR <- logMHR - 2*log(cosh(yPropValueVector[cnt])) 
