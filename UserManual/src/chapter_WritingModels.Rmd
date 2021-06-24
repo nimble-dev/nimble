@@ -290,6 +290,10 @@ and the simulation function returns `NaN` so these distributions
 are not appropriate for algorithms that need to simulate from the
 prior or require proper (normalized) densities.
 
+##### LKJ distribution for correlation matrices
+
+NIMBLE provides the LKJ distribution for correlation matrices. 
+
 #### Alternative parameterizations for distributions {#subsec:alternative-params}
 
 NIMBLE allows one to specify distributions in model code using a
