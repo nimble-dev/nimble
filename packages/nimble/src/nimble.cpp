@@ -37,6 +37,8 @@ R_CallMethodDef CallEntries[] = {
  FUN(C_rinterval, 3),
  FUN(C_dmvt_chol, 6),
  FUN(C_rmvt_chol, 4),
+ FUN(C_dlkj_corr_cholesky, 4),
+ FUN(C_rlkj_corr_cholesky, 2),
  FUN(C_dexp_nimble, 3),
  FUN(C_rexp_nimble, 2),
  FUN(C_pexp_nimble, 4),

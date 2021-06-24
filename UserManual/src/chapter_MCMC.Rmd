@@ -174,7 +174,8 @@ The default sampler assigned to a stochastic node is determined by the following
   1. If the node has a conjugate relationship between its prior distribution and the distributions of its stochastic dependents, a `conjugate` (`Gibbs') sampler is assigned.
   1. If the node follows a multinomial distribution, then a `RW_multinomial` sampler is assigned.  This is a discrete random-walk sampler in the space of multinomial outcomes.
   1. If a node follows a Dirichlet distribution, then a `RW_dirichlet` sampler is assigned.  This is a random walk sampler in the space of the simplex defined by the Dirichlet.
-  1. If the node follows any other  multivariate distribution, then a `RW_block` sampler is assigned for all elements.  This is a Metropolis-Hastings adaptive random-walk sampler with a multivariate normal proposal [@Roberts_Sahu_1997].
+  1. If a node follows an LKJ correlation distribution, then a `RW_block_lkj_corr_cholesky` sampler is assigned. This is a block random walk sampler in a transformed space where the transformation uses the signed stickbreaking approach described in Section 10.12 of [@Stan_2021].
+  1. If the node follows any other multivariate distribution, then a `RW_block` sampler is assigned for all elements.  This is a Metropolis-Hastings adaptive random-walk sampler with a multivariate normal proposal [@Roberts_Sahu_1997].
   1. If the node is binary-valued (strictly taking values 0 or 1), then a `binary` sampler is assigned.  This sampler calculates the conditional probability for both possible node values and draws the new node value from the conditional distribution, in effect making a Gibbs sampler.
   1. If the node is otherwise discrete-valued, then a `slice` sampler is assigned [@Neal2003].
   1. If none of the above criteria are satisfied, then a `RW` sampler is assigned.  This is a Metropolis-Hastings adaptive random-walk sampler with a univariate normal proposal distribution.
