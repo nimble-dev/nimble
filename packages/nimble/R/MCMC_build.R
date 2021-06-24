@@ -66,7 +66,7 @@
 #'
 #' @seealso \code{\link{configureMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}
 #' 
-#' @author Daniel Turek & me UwU
+#' @author Daniel Turek
 #' 
 #' @references 
 #' Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation and widely applicable information criterion in singular learning theory. \emph{Journal of Machine Learning Research} 11: 3571-3594.
