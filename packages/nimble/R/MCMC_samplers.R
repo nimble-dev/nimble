@@ -1619,17 +1619,17 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
                 }
                 model[[target]][j:i, i] <<- propValue[j:i] 
                 logMHR <- calculateDiff(model, calcNodesNoSelf) + calculateDiff(model, target)
-                ## Adjust MHR to account for non-symmetric proposal by adjusting prior on X to transformed scale (i.e., y).
-                ## cosh component is for dz/dy and other component is for dx/dz = dx/du * du/dz where 'x' is the corr matrix.
-                ## This follows Stan reference manual Section 10.9 (for version 2.27),
-                ## which is based on eqn 11 of Lewandowski et al. 2009.
-                ## There is an important subtlety here - the transformation is from y to X not y to U, so the Jacobian
-                ## needs the dx/du piece, which is not in Section 10.12 of the Stan reference manual.
-                ## This is because while we write the prior in terms of U in the model for computational efficiency,
-                ## it is really a prior on the correlation matrix X.
-                logMHR <- logMHR - 2*(log(cosh(yProp)) - log(cosh(yCurrent))) +
-                    0.5*(d-j-1)*(log(1-zProp^2) - log(1-z[j, i]^2))
-
+                ## Adjust MHR to account for non-symmetric proposal by adjusting prior on U to transformed scale (i.e., y).
+                ## cosh component is for dz/dy and other component is for du/dz  where 'u' is the corr matrix.
+                ## This follows Stan reference manual Section 10.12 (for version 2.27).
+                ## There is an important subtlety here - the transformation is from y to U not y to Sigma, so the Jacobian
+                ## omits the dSigma/dU, which is in Section 10.9 of the Stan reference manual.
+                ## This is because dlkj_corr_cholesky is written directly in terms of a density on U and that density
+                ## already accounts for the Jacobian in going from Sigma to U.
+                logMHR <- logMHR - 2*(log(cosh(yProp)) - log(cosh(yCurrent))) 
+                if(j < i-1) {
+                    logMHR <- logMHR + 0.5*sum(log(partialSumsProp[(j+1):(i-1)]) - log(partialSums[(j+1):(i-1), i]))
+ 
                 jump <- decide(logMHR)
                 ## Avoid copying entire target matrix as we are modifying one column at a time.
                 if(jump) {
@@ -1762,26 +1762,25 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
             cnt <- 1
             for(i in 2:p) {
                 model[[target]][1, i] <<- tanh(yPropValueVector[cnt])
-                partialSumsProp <<- 1 - model[[target]][1, i]^2
-                ## Adjust for prior for y using determinant of y to x transformation;
-                ## cosh term is from dz/dy and partialSumsProp terms is from dx/dz = dx/du * du/dz
-                ## See Stan ref manual Section 10.9 (for Version 2.27), which is based on eqn 11 of Lewandowski et al. 2009.
-                ## There is an important subtlety here - the transformation is from y to X not y to U, so the Jacobian
-                ## needs the dx/du piece, which is not in Section 10.12 of the Stan reference manual.
-                ## This is because while we write the prior in terms of U in the model for computational efficiency,
-                ## it is really a prior on the correlation matrix X.
-                logMHR <- logMHR - 2*log(cosh(yPropValueVector[cnt])) + 0.5*(p-2)*log(partialSumsProp)
+                partialSumsProp <- 1 - model[[target]][1, i]^2
+                ## Adjust MHR to account for non-symmetric proposal by adjusting prior on U to transformed scale (i.e., y).
+                ## cosh component is for dz/dy and other component is for du/dz  where 'u' is the corr matrix.
+                ## This follows Stan reference manual Section 10.12 (for version 2.27).
+                ## There is an important subtlety here - the transformation is from y to U not y to Sigma, so the Jacobian
+                ## omits the dSigma/dU, which is in Section 10.9 of the Stan reference manual.
+                ## This is because dlkj_corr_cholesky is written directly in terms of a density on U and that density
+                ## already accounts for the Jacobian in going from Sigma to U.
+                logMHR <- logMHR - 2*log(cosh(yPropValueVector[cnt])) 
                 cnt <- cnt+1
                 if(i > 2) {
                     for(j in 2:(i-1)) {
                         ## Inverse transform from y to U
-                        tmp <- tanh(yPropValueVector[cnt])  # y to z
-                        model[[target]][j, i] <<- tmp * sqrt(partialSumsProp)  # z to U
+                        model[[target]][j, i] <<- tanh(yPropValueVector[cnt]) * sqrt(partialSumsProp) 
                         ## Adjust for prior for y using determinant of y to x transformation.
                         logMHR <- logMHR - 2*log(cosh(yPropValueVector[cnt])) +
-                            0.5*(p-j-1)*log(1-tmp^2)
+                            0.5*log(partialSumsProp)
                         cnt <- cnt+1
-                        partialSumsProp <<- partialSumsProp - model[[target]][j, i]^2
+                        partialSumsProp <- partialSumsProp - model[[target]][j, i]^2
                     }
                 }
                 model[[target]][i, i] <<- sqrt(partialSumsProp)
@@ -1811,10 +1810,9 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
         transform = function(x = double(2)) {
             ## Compute canonical partial correlations (z), transformed parameters (y), and
             ## remaining lengths of U columns (partialSums).
-            ## We don't actually need to save z or partialSums. 
             z[1, 2:p] <<- x[1, 2:p]
             y[1] <<- atanh(z[1, 2])
-            logDetJac <<- -2*log(cosh(y[1])) + 0.5*(p-2)*sum(log(1-z[1, 2:p]^2))
+            logDetJac <<- -2*log(cosh(y[1]))
             cnt <- 2
             partialSums[2, 2] <<- 1 - x[1, 2]^2
             for(i in 3:p) {
@@ -1825,7 +1823,7 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
                 for(j in 2:(i-1)) {
                     z[j, i] <<- x[j, i] / sqrt(partialSums[j, i])
                     y[cnt] <<- atanh(z[j, i])
-                    logDetJac <<- logDetJac - 2*log(cosh(y[cnt])) + 0.5*(p-j-1)*log(1-z[j, i]^2)
+                    logDetJac <<- logDetJac - 2*log(cosh(y[cnt])) + 0.5*log(partialSums[j, i]) 
                     cnt <- cnt+1
                     partialSums[j+1, i] <<- partialSums[j, i] - x[j, i]^2
                 }
