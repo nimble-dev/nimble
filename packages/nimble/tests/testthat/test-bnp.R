@@ -6104,7 +6104,8 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   expect_error(mcmc <- buildMCMC(conf), "sampler_CRP: Only the variables being clustered")
 
   ## too many xi values
-  ## This error should be trapped more cleanly.
+  ## As of issue 1128/PR 1137, this error is now trapped based on non-constant number of deps
+  ## rather than a more obscure former error.
   code <- nimbleCode({
       for(i in 1:n) {
           for(j in 1:J) {
@@ -6126,7 +6127,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
                 thetaTilde = matrix(rnorm(J*n), n, J))
   model <- nimbleModel(code, data = data, constants = constants, inits = inits)
   expect_silent(conf <- configureMCMC(model, print = FALSE))
-  expect_error(mcmc <- buildMCMC(conf), "replacement has length zero")
+  expect_error(mcmc <- buildMCMC(conf), "number of stochastic dependents is not constant")
 
   ## too few xi values
   code <- nimbleCode({
