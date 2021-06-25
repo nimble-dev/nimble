@@ -1445,6 +1445,8 @@ sampler_CRP <- nimbleFunction(
     ## needs to be legitimate nodes because run code sets up calculate even if if() would never cause it to be used
     for(i in seq_len(n)) { # dataNodes are always needed so only create them before creating  intermNodes
       stochDeps <- model$getDependencies(targetElements[i], stochOnly = TRUE, self = FALSE)
+      if(length(stochDeps) != nObsPerClusID)
+        stop("sampler_CRP: The number of stochastic dependents is not constant across the cluster IDs (the elements of '", targetVar, '"). NIMBLE's CRP sampling is not set up to handle this case.")
       dataNodes[((i-1)*nObsPerClusID + 1) : (i*nObsPerClusID)] <- stochDeps
     }
     nIntermClusNodesPerClusID <- length(model$getDependencies(targetElements[1], determOnly = TRUE))  #nInterm
@@ -1452,7 +1454,9 @@ sampler_CRP <- nimbleFunction(
     if(nIntermClusNodesPerClusID > 0) {
       intermNodes <- rep(as.character(NA), nIntermClusNodesPerClusID * n)
       for(i in seq_len(n)) {
-        detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
+          detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
+          if(length(detDeps) != nIntermClusNodesPerClusID)
+              stop("sampler_CRP: The number of deterministic dependents is not constant across the cluster IDs (the elements of '", targetVar, '"). NIMBLE's CRP sampling is not set up to handle this case.")
         intermNodes[((i-1)*nIntermClusNodesPerClusID+1):(i*nIntermClusNodesPerClusID)] <- detDeps
       }
     }
@@ -1648,7 +1652,7 @@ sampler_CRP <- nimbleFunction(
         iprob <- 1
         for(j in 1:k) {
           if( xiCounts[xiUniques[j]] >= 1 ) { 
-            model[[target]][i] <<- xiUniques[j] # <<-
+            model[[target]][i] <<- xiUniques[j] 
             if(nIntermClusNodesPerClusID > 0) {
               model$calculate(intermNodes[((i-1)*nIntermClusNodesPerClusID+1):(i*nIntermClusNodesPerClusID)]) 
             }
