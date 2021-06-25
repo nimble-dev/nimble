@@ -636,7 +636,7 @@ Cmcmc$getWAIC()
 ```
 
 Note that there is not a unique value of WAIC for a model. WAIC is calculated from
-Equations 5, 12, and 13 in [@Gelman_etal_2014] (i.e., using \emph{p}WAIC2). Therefore, NIMBLE provides
+Equations 5, 12, and 13 in [@Gelman_etal_2014] (i.e., using \emph{p}WAIC2), as discussed in detail in [@Hug_Paciorek_2021]. Therefore, NIMBLE provides
 user control over how WAIC is calculated in two ways.
 
 First, by default NIMBLE provides the conditional WAIC, namely the version of WAIC where all parameters directly involved in the likelihood are treated as $\theta$ for the purposes of Equation 5 from [@Gelman_etal_2014]. Users can request the marginal WAIC (see [@Ariyo_etal_2019]), namely the version of WAIC where latent variables are integrated over (i.e., using a marginal likelihood). This is done by providing the `waicControl` list with a `marginalizeNodes` element to `configureMCMC` or `buildMCMC` (when providing a model as the argument to `buildMCMC`). See `help(waic)` for more details.

@@ -468,6 +468,9 @@ buildWAIC <- nimbleFunction(
 #' evaluation using leave-one-out cross-validation and WAIC.
 #' \emph{Statistics and Computing} 27: 1413-1432.
 #'
+#' Hug, J.E.  and Paciorek, C.J. (2021). A numerically stable online implementation and exploration of WAIC through variations of the predictive density, using NIMBLE. \emph{arXiv} xx.yy.
+#'
+#'
 #' @examples
 #' code <- nimbleCode({
 #'   for(j in 1:J) {
