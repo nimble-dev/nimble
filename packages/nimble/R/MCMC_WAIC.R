@@ -16,6 +16,24 @@ waicList <- nimbleList(
         nimbleType('WAIC', 'double', 0),
         nimbleType('lppd', 'double', 0),
         nimbleType('pWAIC', 'double', 0),
+    ), name = 'waicList'
+)
+    
+#' waicDetailsList definition
+#' 
+#' \code{waicDetailsList} definition for the \code{nimbleList} type returned by WAIC
+#' computation.
+#'
+#' @details
+#'
+#' See \code{help(waic)} for details on the elements of the list.
+#' 
+#' @author NIMBLE development team
+#'
+#' @export
+#' 
+waicDetailsList <- nimbleList(
+    list(
         nimbleType('marginal', 'logical', 0),
         nimbleType('nItsMarginal', 'double', 0),
         nimbleType('thin', 'logical', 0),
@@ -32,9 +50,8 @@ waicList <- nimbleList(
         nimbleType('lppd_elements', 'double', 1),
         nimbleType('pWAIC_elements', 'double', 1)
 
-    ), name = 'waicList'
+    ), name = 'waicDetailsList'
 )
-    
 
 buildWAIC <- nimbleFunction(
     name = 'waicClass',
@@ -134,9 +151,9 @@ buildWAIC <- nimbleFunction(
     methods = list(
         updateStats = function() {
             ## Online updating of summary stats, called once per MCMC iteration that is used.
-            ticker <- 0  # iterates over MC subsets
+            ticker <- 0  # indexes over MC subsets
             mcmcIter <<- mcmcIter + 1
-            for (k in 1:nItsMarginal) {  # loop over MC samples; for conditional, only one 'iteration'
+            for (k in 1:nItsMarginal) {  # loop over MC samples; for conditional, there is only one 'iteration'
                 if(marginal) {
                     model$simulate(latentNodes)
                     model$calculate(dataNodes) 
@@ -203,6 +220,7 @@ buildWAIC <- nimbleFunction(
                 pWAIC[i] <<- sum(sspWAICmat[i, ]) / (mcmcIter - 1)
                 WAIC[i] <<- -2 * (lppd[i] - pWAIC[i])
             }
+            finalized <<- TRUE
         },
         get = function(returnElements = logical(default = FALSE)) {
             ## Extract WAIC summary information.
@@ -219,6 +237,17 @@ buildWAIC <- nimbleFunction(
             output$WAIC <- WAIC[lengthConvCheck]
             output$lppd <- lppd[lengthConvCheck]
             output$pWAIC  <- pWAIC[lengthConvCheck]
+
+            return(output)
+        },
+        getDetails = function(returnElements = logical(default = FALSE)) {
+            ## Extract WAIC detailed information.
+            returnType(waicDetailsList())
+            if(!finalized)
+                finalize()
+
+            output <- waicDetailsList$new()
+            
             output$marginal <- marginal
             output$thin <- thin
             output$online <- online
@@ -231,14 +260,13 @@ buildWAIC <- nimbleFunction(
                 output$nItsMarginal_partialMC <- checkIts
             } else output$nItsMarginal <- 0
             
-            if(returnElements) {
-                ## Per-observations values useful for (manual) SE calculation when
-                ## contrasting WAIC for two models, per Vehtari et al. 2017 (Staistics and Computing)
-                output$lppd_elements <- lppdSumMaxMat[lengthConvCheck, ] +
-                    log(lppdCurSumMat[lengthConvCheck, ]) - log(mcmcIter)
-                output$pWAIC_elements <- sspWAICmat[lengthConvCheck, ] / (mcmcIter - 1)
-                output$WAIC_elements <- -2 * (output$lppd_elements - output$pWAIC_elements)
-            }
+            ## Per-observations values useful for (manual) SE calculation when
+            ## contrasting WAIC for two models, per Vehtari et al. 2017 (Staistics and Computing)
+            output$lppd_elements <- lppdSumMaxMat[lengthConvCheck, ] +
+                log(lppdCurSumMat[lengthConvCheck, ]) - log(mcmcIter)
+            output$pWAIC_elements <- sspWAICmat[lengthConvCheck, ] / (mcmcIter - 1)
+            output$WAIC_elements <- -2 * (output$lppd_elements - output$pWAIC_elements)
+
             return(output)
         },
         reset = function() {
@@ -247,6 +275,11 @@ buildWAIC <- nimbleFunction(
             lppdSumMaxMat <<-  matrix(0, nrow = lengthConvCheck, ncol = nGroups)
             lppdCurSumMat <<-  matrix(0, nrow = lengthConvCheck, ncol = nGroups)
             sspWAICmat <<- matrix(0, nrow = lengthConvCheck, ncol = nGroups)
+            meanpWAICmat <<- matrix(0, nrow = lengthConvCheck, ncol = nGroups)
+            delta1pWAICmat <<- matrix(0, nrow = lengthConvCheck, ncol = nGroups)
+            delta2pWAICmat <<- matrix(0, nrow = lengthConvCheck, ncol = nGroups)
+            logProbMat <<- matrix(0, nrow = lengthConvCheck, ncol = nGroups)
+            finalized <<- FALSE
         }
     )
 )
@@ -468,7 +501,9 @@ buildWAIC <- nimbleFunction(
 #' evaluation using leave-one-out cross-validation and WAIC.
 #' \emph{Statistics and Computing} 27: 1413-1432.
 #'
-#' Hug, J.E.  and Paciorek, C.J. (2021). A numerically stable online implementation and exploration of WAIC through variations of the predictive density, using NIMBLE. \emph{arXiv} xx.yy.
+#' Hug, J.E.  and Paciorek, C.J. (2021). A numerically stable online
+#' implementation and exploration of WAIC through variations of the
+#' predictive density, using NIMBLE. \emph{arXiv e-print} <arXiv:2106.13359>.
 #'
 #'
 #' @examples

@@ -273,13 +273,22 @@ buildMCMC <- nimbleFunction(
             returnType(double())
             return(WAICCalc)
         },
-        getWAIC = function(returnElements = logical(default = FALSE)) {
+        getWAIC = function() {
             returnType(waicList())
             if(enableWAIC & onlineWAIC) {
-                return(waic$get(returnElements))
+                return(waic$get())
             } else {
                 print("Online WAIC was disabled based on the 'onlineWAIC' element of WAIC control list.")
-                return(waicList$new(WAIC = NA, lppd = NA, pWAIC = NA, marginal = FALSE, nItsMarginal = 0, thin = FALSE, online = FALSE))
+                return(waicList$new(WAIC = NA, lppd = NA, pWAIC = NA))
+            }
+        },
+        getWAICdetails = function() {
+            returnType(waicDetailsList())
+            if(enableWAIC & onlineWAIC) {
+                return(waic$getDetails())
+            } else {
+                print("Online WAIC was disabled based on the 'onlineWAIC' element of WAIC control list.")
+                return(waicDetailsList$new(marginal = FALSE, nItsMarginal = 0, thin = FALSE, online = FALSE))
             }
         }
     )
