@@ -1686,9 +1686,9 @@ test_that('HMC sampler seems to work', {
     set.seed(0)
     samples <- runMCMC(Cmcmc, 10000)
     ##
-    expect_true(all(round(as.numeric(samples[1000,]), 5) == c(1.04219, 2.46754, 2.67295)))
-    expect_true(all(round(as.numeric(apply(samples, 2, mean)), 7) == c(0.4503489, 1.8820432, 3.3086721)))
-    expect_true(all(round(as.numeric(apply(samples, 2, sd)), 7) == c(0.9148666, 1.2039168, 1.2923344)))
+    expect_true(all(round(as.numeric(samples[1000,]), 5) == c(-0.11556, 0.88505, 2.89503)))
+    expect_true(all(round(as.numeric(apply(samples, 2, mean)), 7) == c(0.4136721, 1.8417534, 3.2569954)))
+    expect_true(all(round(as.numeric(apply(samples, 2, sd)), 7) == c(0.9268822, 1.2033593, 1.3179108)))
 })
 
 
@@ -1789,11 +1789,11 @@ test_that('HMC sampler exact samples for different maxTreeDepths', {
     Cmodel3 <- compiledList$model3; Cmcmc3 <- compiledList$mcmc3
     ##
     set.seed(0);   samples1 <- runMCMC(Cmcmc1, 10000)
-    expect_true(all(round(as.numeric(samples1[10000,]),6) == c( 8.743822, 16.491777)))
+    expect_true(all(round(as.numeric(samples1[10000,]),6) == c(-4.153855, 33.602766)))
     set.seed(0);   samples2 <- runMCMC(Cmcmc2, 10000)
-    expect_true(all(round(as.numeric(samples2[10000,]),6) == c(-9.193057, 25.264432)))
+    expect_true(all(round(as.numeric(samples2[10000,]),6) == c(-6.563781, 93.015175)))
     set.seed(0);   samples3 <- runMCMC(Cmcmc3, 10000)
-    expect_true(all(round(as.numeric(samples3[10000,]),6) == c( 5.651490,  5.898725)))
+    expect_true(all(round(as.numeric(samples3[10000,]),6) == c(-6.187742, 8.602518)))
 })
 
 
@@ -1908,8 +1908,8 @@ test_that('HMC sampler reports correct number of divergences and max tree depths
     set.seed(0)
     samples <- runMCMC(Cmcmc, 10000)
     ##
-    expect_equal(Cmcmc$samplerFunctions$contentsList[[4]]$numDivergences,          3)
-    expect_equal(Cmcmc$samplerFunctions$contentsList[[4]]$numTimesMaxTreeDepth, 1630)
+    expect_equal(Cmcmc$samplerFunctions$contentsList[[4]]$numDivergences,         9)
+    expect_equal(Cmcmc$samplerFunctions$contentsList[[4]]$numTimesMaxTreeDepth, 699)
 })
 
 test_that('cc_stripExpr operates correctly', {
