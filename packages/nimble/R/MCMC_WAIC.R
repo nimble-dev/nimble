@@ -262,11 +262,13 @@ buildWAIC <- nimbleFunction(
             
             ## Per-observations values useful for (manual) SE calculation when
             ## contrasting WAIC for two models, per Vehtari et al. 2017 (Staistics and Computing)
-            output$lppd_elements <- lppdSumMaxMat[lengthConvCheck, ] +
-                log(lppdCurSumMat[lengthConvCheck, ]) - log(mcmcIter)
-            output$pWAIC_elements <- sspWAICmat[lengthConvCheck, ] / (mcmcIter - 1)
-            output$WAIC_elements <- -2 * (output$lppd_elements - output$pWAIC_elements)
-
+            ## This would be long if many obs, so have under user control.
+            if(returnElements) {  
+                output$lppd_elements <- lppdSumMaxMat[lengthConvCheck, ] +
+                    log(lppdCurSumMat[lengthConvCheck, ]) - log(mcmcIter)
+                output$pWAIC_elements <- sspWAICmat[lengthConvCheck, ] / (mcmcIter - 1)
+                output$WAIC_elements <- -2 * (output$lppd_elements - output$pWAIC_elements)
+            }
             return(output)
         },
         reset = function() {
