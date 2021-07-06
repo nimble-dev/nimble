@@ -10,7 +10,8 @@
 sampler_BASE <- nimbleFunctionVirtual(
     name = 'sampler_BASE',
     methods = list(
-        reset = function() { }
+        reset    = function() { },
+        finalize = function() { }
     )
 )
 
