@@ -1107,9 +1107,10 @@ sampler_HMC <- nimbleFunction(
         ## checks
         if(!nimbleOptions('experimentalEnableDerivs')) stop('must enable NIMBLE derivates, use: nimbleOptions(experimentalEnableDerivs = TRUE)', call. = FALSE)
         if(initialEpsilon < 0) stop('HMC sampler initialEpsilon must be positive', call. = FALSE)
-        if(!all(M > 0)) stop('HMC sampler M must contain all positive elements')
-        if(d == 1) if(length(M) != 2) stop('length of HMC sampler M must match length of HMC target nodes')
-        if(d  > 1) if(length(M) != d) stop('length of HMC sampler M must match length of HMC target nodes')
+        if(!all(M > 0)) stop('HMC sampler M must contain all positive elements', call. = FALSE)
+        if(d == 1) if(length(M) != 2) stop('length of HMC sampler M must match length of HMC target nodes', call. = FALSE)
+        if(d  > 1) if(length(M) != d) stop('length of HMC sampler M must match length of HMC target nodes', call. = FALSE)
+        if(maxTreeDepth < 1) stop('HMC maxTreeDepth must be at least one ', call. = FALSE)
     },
     run = function() {
         ## No-U-Turn Sampler with Dual Averaging, Algorithm 6 from Hoffman and Gelman (2014)
@@ -1132,7 +1133,7 @@ sampler_HMC <- nimbleFunction(
         drawMomentumValues()    ## draws values for p
         qpLogH <- logH(q, p)
         logu <- qpLogH - rexp(1, 1)    ## logu <- lp - rexp(1, 1) => exp(logu) ~ uniform(0, exp(lp))
-        qL <<- q;   qR <<- q;   pL <<- p;   pR <<- p;   j  <- 0;   n <- 1;   s <- 1;   qNew <<- q
+        qL <<- q;   qR <<- q;   pL <<- p;   pR <<- p;   j  <- 1;   n <- 1;   s <- 1;   qNew <<- q
         while(s == 1) {
             v <- 2*rbinom(1, 1, 0.5) - 1    ## -1 or 1
             if(v == -1) { btNL <- buildtree(qL, pL, logu, v, j, epsilon, qpLogH, 1)        ## first call: first = 1
@@ -1145,7 +1146,7 @@ sampler_HMC <- nimbleFunction(
             ##s <- btNL$s * nimStep(inprod(qDiff, pL)) * nimStep(inprod(qDiff, pR))                      ## this line replaced with the next,
             if(btNL$s == 0) s <- 0 else s <- nimStep(inprod(qDiff, pL)) * nimStep(inprod(qDiff, pR))     ## which acccounts for NaN's in btNL elements
             if(j >= maxTreeDepth) s <- 0
-            if(printJ) {   if(j == 0) cat('j = ', j) else cat(', ', j)
+            if(printJ) {   if(j == 1) cat('j = ', j) else cat(', ', j)
                            cat('(');   if(v==1) cat('R') else cat('L');   cat(')')
                            if(s != 1) print(' ')   }
             if(j >= maxTreeDepth) { numTimesMaxTreeDepth <<- numTimesMaxTreeDepth + 1 }
@@ -1271,7 +1272,7 @@ sampler_HMC <- nimbleFunction(
         buildtree = function(qArg = double(1), pArg = double(1), logu = double(), v = double(), j = double(), eps = double(), logH0 = double(), first = double()) {
             ## Algorithm 6 (second half) from Hoffman and Gelman (2014)
             returnType(btNLDef())
-            if(j == 0) {    ## one leapfrog step in the direction of v
+            if(j == 1) {    ## one leapfrog step in the direction of v
                 qpNL <- leapfrog(qArg, pArg, v*eps, first, v)
                 q <<- qpNL$q;   p <<- qpNL$p;   qpLogH <- logH(q, p)
                 n <- nimStep(qpLogH - logu)          ## step(x) = 1 iff x >= 0, and zero otherwise
