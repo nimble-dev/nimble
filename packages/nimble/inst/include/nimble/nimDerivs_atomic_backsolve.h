@@ -1,14 +1,7 @@
 #ifndef _NIMDERIVS_ATOMIC_BACKSOLVE
 #define _NIMDERIVS_ATOMIC_BACKSOLVE
 
-#include <cppad/cppad.hpp>
-#include <cppad/utility/nan.hpp>
-#include <R.h>
-#include <Rinternals.h>
-#include <Rmath.h>
-#include "nimDerivs_vecmat_utils.h"
-#include "nimDerivs_atomic_matmult.h"
-#include "nimDerivs_atomic_cache.h"
+#include "nimDerivs_atomic_solve_base.h"
 
 void atomic_backsolve(const MatrixXd_CppAD &A,
 		      const MatrixXd_CppAD &B,
@@ -17,20 +10,10 @@ void atomic_backsolve(const MatrixXd_CppAD &A,
 MatrixXd_CppAD nimDerivs_EIGEN_BS(const MatrixXd_CppAD &A,
 				   const MatrixXd_CppAD &B);
 
-class atomic_backsolve_class :  public CppAD::atomic_three< double > {
+class atomic_backsolve_class :  public atomic_solve_base_class, public CppAD::atomic_three< double > {
  public:
   atomic_backsolve_class(const std::string& name);
- private:
-  friend class atomic_cache_class<double>;
-  friend class atomic_cache_class<CppAD::AD<double> >;
-  atomic_cache_class<double> double_cache;
-  atomic_cache_class< CppAD::AD<double> > CppADdouble_cache;
-
-  typedef EigenTemplateTypes<double>::typeEigenConstMapStrd EigenConstMap;
-  typedef EigenTemplateTypes<double>::typeEigenMapStrd EigenMap;
-  typedef EigenTemplateTypes<CppAD::AD<double> >::typeEigenConstMapStrd metaEigenConstMap;
-  typedef EigenTemplateTypes<CppAD::AD<double> >::typeEigenMapStrd metaEigenMap;
-  typedef EigenTemplateTypes<CppAD::AD<double>>::typeMatrixXd metaEigenMatrixXd;
+ public:
   virtual bool for_type(
 			const CppAD::vector<double>&               parameter_x ,
 			const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,

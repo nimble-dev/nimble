@@ -80,14 +80,16 @@ second term: <Ydot_adjoint, dX1dot %*% X2 + X1dot %*% dX2 + dX1 %*% X2dot + X1 %
 
 void atomic_matmult(const MatrixXd_CppAD &x1,
 		    const MatrixXd_CppAD &x2,
-		    MatrixXd_CppAD &y);
+		    MatrixXd_CppAD &y,
+		    bool debug = false);
 
 #define USE_NEW_DYNAMIC // Now required, for the matrix_category handling
 
 enum matrix_category {lower_diagonal, upper_diagonal, square_full, non_square, unknown};
 
 MatrixXd_CppAD nimDerivs_matmult(const MatrixXd_CppAD &x1,
-				 const MatrixXd_CppAD &x2);
+				 const MatrixXd_CppAD &x2,
+				 bool debug = false);
 
 class atomic_matmult_class :  public CppAD::atomic_three< double > {
  private:
@@ -100,6 +102,11 @@ class atomic_matmult_class :  public CppAD::atomic_three< double > {
  public:
   double * get_X_stored_ptr() {return &X_stored[0];}
   CppAD::AD<double> * get_X_AD_stored_ptr() {return &X_AD_stored[0];}
+  void fill_X_AD_stored() {
+    X_AD_stored.resize( X_stored.size() );
+    for(int i = 0; i < X_stored.size(); ++i) X_AD_stored[i] = X_stored[i];
+  };
+  void clear_X_AD_stored() {X_AD_stored.clear();}
   matrix_category transpose_matrix_cat(const matrix_category &Xcat) const {
     if(Xcat == lower_diagonal) return upper_diagonal;
     if(Xcat == upper_diagonal) return lower_diagonal;

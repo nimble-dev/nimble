@@ -945,27 +945,27 @@ nimOneLaplace <- nimbleFunction(
       returnType(double(2))
     },
     ## This was an experiment in double taping the second order.  It was very slow. 
-    ## negHess2_internal = function(p = double(1), reTransform = double(1)) {
-    ##   ans <- derivs(joint_logLik(p, reTransform), wrt = reTrans_indices,
-    ##                 order = 2, model = model,
-    ##                 updateNodes   = joint_updateNodes,
-    ##                 constantNodes = joint_constantNodes)
-    ##   neghess <- matrix(nrow = nreTrans, ncol = nreTrans)
-    ##   for(i in 1:nreTrans)
-    ##     for(j in 1:nreTrans)
-    ##       neghess[i, j] <- -ans$hessian[i, j, 1]
-    ##   return(neghess)
-    ##   returnType(double(2))
-    ## },
-    ## negHess2 = function(p = double(1), reTransform = double(1)) {
-    ##   ans <- derivs(negHess2_internal(p, reTransform), wrt = reTrans_indices,
-    ##                 order = 0, model = model,
-    ##                 updateNodes   = joint_updateNodes,
-    ##                 constantNodes = joint_constantNodes)
-    ##   neghess <- matrix(ans$value, nrow = nreTrans)
-    ##   return(neghess)
-    ##   returnType(double(2))
-    ## },
+    negHess2_internal = function(p = double(1), reTransform = double(1)) {
+      ans <- derivs(joint_logLik(p, reTransform), wrt = reTrans_indices,
+                    order = 2, model = model,
+                    updateNodes   = joint_updateNodes,
+                    constantNodes = joint_constantNodes)
+      neghess <- matrix(nrow = nreTrans, ncol = nreTrans)
+      for(i in 1:nreTrans)
+        for(j in 1:nreTrans)
+          neghess[i, j] <- -ans$hessian[i, j, 1]
+      return(neghess)
+      returnType(double(2))
+    },
+    negHess2 = function(p = double(1), reTransform = double(1)) {
+      ans <- derivs(negHess2_internal(p, reTransform), wrt = reTrans_indices,
+                    order = 0, model = model,
+                    updateNodes   = joint_updateNodes,
+                    constantNodes = joint_constantNodes)
+      neghess <- matrix(ans$value, nrow = nreTrans)
+      return(neghess)
+      returnType(double(2))
+    },
     ## Logdet negative Hessian
     logdetNegHess = function(p = double(1), reTransform = double(1)) {
       negHessian <- negHess(p, reTransform)
@@ -1277,7 +1277,7 @@ nimOneLaplace <- nimbleFunction(
                       gr_joint_logLik_wrt_re_internal   = list(),
                       hess_joint_logLik_wrt_p_wrt_re_internal = list(),
                       negHess_internal                  = list(),
-                      ## negHess2_internal                  = list(noDeriv_vars = c("i","j")),
+                      negHess2_internal                  = list(noDeriv_vars = c("i","j")),
                       gr_logdetNegHess_wrt_p_internal   = list(),
                       gr_logdetNegHess_wrt_re_internal  = list(),
                       joint_logLik_with_grad_and_hess = list(noDeriv_vars = c("i","j")),
