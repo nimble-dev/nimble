@@ -35,7 +35,7 @@ waicList <- nimbleList(
 waicDetailsList <- nimbleList(
     list(
         nimbleType('marginal', 'logical', 0),
-        nimbleType('nItsMarginal', 'double', 0),
+        nimbleType('niterMarginal', 'double', 0),
         nimbleType('thin', 'logical', 0),
         nimbleType('online', 'logical', 0),
 
@@ -43,7 +43,7 @@ waicDetailsList <- nimbleList(
         nimbleType('WAIC_partialMC', 'double', 1),
         nimbleType('lppd_partialMC', 'double', 1),
         nimbleType('pWAIC_partialMC', 'double', 1),
-        nimbleType('nItsMarginal_partialMC', 'double' , 1),  # checkIts
+        nimbleType('niterMarginal_partialMC', 'double' , 1),  # checkIts
 
         ## per data group values potentially useful for SE for contrasting WAIC of two models
         nimbleType('WAIC_elements', 'double', 1),
@@ -60,8 +60,8 @@ buildWAIC <- nimbleFunction(
         online              <- extractControlElement(control, 'online',              TRUE)
         thin                <- extractControlElement(control, 'thin',                FALSE)
         dataGroups          <- extractControlElement(control, 'dataGroups',          NULL)
-        latentNodes         <- extractControlElement(control, 'marginalizeNodes',    NULL)
-        nItsMarginal        <- extractControlElement(control, 'nItsMarginal',        1000)
+        marginalizeNodes    <- extractControlElement(control, 'marginalizeNodes',    NULL)
+        niterMarginal       <- extractControlElement(control, 'niterMarginal',       1000)
         convergenceSet      <- extractControlElement(control, 'convergenceSet',      NULL)
 
         setupOutputs(online, thin)
@@ -90,15 +90,15 @@ buildWAIC <- nimbleFunction(
             groupIndices <- c(groupIndices, 0)
         
         ## Determine marginal versus conditional WAIC.
-        if(!is.null(latentNodes)) {
+        if(!is.null(marginalizeNodes)) {
             marginal <- TRUE
-            latentNodes <- model$getDependencies(latentNodes, self = TRUE, downstream = TRUE, includeData = FALSE)
-            latentAndDataNodes <- model$getDependencies(latentNodes, self = TRUE, downstream = TRUE)
+            marginalizeNodes <- model$getDependencies(marginalizeNodes, self = TRUE, downstream = TRUE, includeData = FALSE)
+            latentAndDataNodes <- model$getDependencies(marginalizeNodes, self = TRUE, downstream = TRUE)
         } else {
             marginal  <- FALSE 
-            nItsMarginal <- 1
+            niterMarginal <- 1
             ## Next two are unused in conditional case but need to exist for compilation.
-            latentNodes <- dataNodes[1]
+            marginalizeNodes <- dataNodes[1]
             latentAndDataNodes <- dataNodes[1]
 
         }
@@ -113,10 +113,10 @@ buildWAIC <- nimbleFunction(
                 convergenceSet <- convergenceSet[!convergenceSet %in% c(0, 1)]
                 if(!length(convergenceSet) || min(convergenceSet) <= 0 || max(convergenceSet) >= 1)
                     stop("buildWAIC: 'convergenceSet' for assessing Monte Carlo error in marginal WAIC should be a set of values between 0 and 1.")
-                checkIts <- convergenceSet * nItsMarginal
+                checkIts <- convergenceSet * niterMarginal
                 lengthConvCheck <- length(checkIts) + 1
             } else {  # Default to 25%, 50%, 75%.
-                checkIts <- floor(quantile(1:nItsMarginal, names = FALSE))[c(2,3,4)]
+                checkIts <- floor(quantile(1:niterMarginal, names = FALSE))[c(2,3,4)]
                 lengthConvCheck <- length(checkIts) + 1
             }
             if(length(checkIts) == 1) checkIts <- c(checkIts, 0)
@@ -153,9 +153,9 @@ buildWAIC <- nimbleFunction(
             ## Online updating of summary stats, called once per MCMC iteration that is used.
             ticker <- 0  # indexes over MC subsets
             mcmcIter <<- mcmcIter + 1
-            for (k in 1:nItsMarginal) {  # loop over MC samples; for conditional, there is only one 'iteration'
+            for (k in 1:niterMarginal) {  # loop over MC samples; for conditional, there is only one 'iteration'
                 if(marginal) {
-                    model$simulate(latentNodes)
+                    model$simulate(marginalizeNodes)
                     model$calculate(dataNodes) 
                 }
                 ## Extract logProbs for each group.
@@ -184,7 +184,7 @@ buildWAIC <- nimbleFunction(
                     logProbMat[ticker, ] <<- (margSumMax + log(margCurSum) - log(k))[1:nGroups]
                 }
             }
-            logProbMat[lengthConvCheck, ] <<- (margSumMax + log(margCurSum) - log(nItsMarginal))[1:nGroups]
+            logProbMat[lengthConvCheck, ] <<- (margSumMax + log(margCurSum) - log(niterMarginal))[1:nGroups]
             ## update the lppd and pWAIC in an online manner. 
             for (i in 1:lengthConvCheck){
                 for (j in 1:nGroups) {
@@ -253,12 +253,12 @@ buildWAIC <- nimbleFunction(
             output$online <- online
 
             if(marginal) {
-                output$nItsMarginal <- nItsMarginal
+                output$niterMarginal <- niterMarginal
                 output$WAIC_partialMC <- WAIC[1:(lengthConvCheck - 1)]
                 output$lppd_partialMC <- lppd[1:(lengthConvCheck - 1)]
                 output$pWAIC_partialMC <- pWAIC[1:(lengthConvCheck - 1)]
-                output$nItsMarginal_partialMC <- checkIts
-            } else output$nItsMarginal <- 0
+                output$niterMarginal_partialMC <- checkIts
+            } else output$niterMarginal <- 0
             
             ## Per-observations values useful for (manual) SE calculation when
             ## contrasting WAIC for two models, per Vehtari et al. 2017 (Staistics and Computing)
@@ -297,12 +297,12 @@ buildWAIC <- nimbleFunction(
 #' calculations for the resulting MCMC algorithm.  Defaults to the value of
 #' \code{nimbleOptions('MCMCenableWAIC')}, which in turn defaults to FALSE.
 #' 
-#' @param waicControl An optional named list of inputs that control the
+#' @param controlWAIC An optional named list of inputs that control the
 #' behavior of the WAIC calculation. See `Details`.
 #'
 #' @name waic
 #' 
-#' @aliases getWAIC calculateWAIC buildWAIC
+#' @aliases getWAIC calculateWAIC buildWAIC WAIC enableWAIC
 #' 
 #' @details
 #'
@@ -316,9 +316,9 @@ buildWAIC <- nimbleFunction(
 #' been retained for compatibility with versions of NIMBLE before 0.12.0. See
 #' below for details on the two different approaches.
 #'
-#' @section \code{waicControl} list:
+#' @section \code{controlWAIC} list:
 #'
-#' The \code{waicControl} argument is a list that controls the behavior of the
+#' The \code{controlWAIC} argument is a list that controls the behavior of the
 #' WAIC algorithm and is passed to either \code{configureMCMC} or
 #' \code{buildMCMC}. One can supply any of the following optional components:
 #'
@@ -339,12 +339,12 @@ buildWAIC <- nimbleFunction(
 #' marginal likelihood), rather than the default conditional WAIC (i.e., WAIC
 #' conditioning on all parent nodes of the data nodes). See details.
 #'
-#' \code{nItsMarginal}: Number of Monte Carlo iterations to use when
+#' \code{niterMarginal}: Number of Monte Carlo iterations to use when
 #' marginalizing (default is 1000).
 #'
 #' \code{convergenceSet}: Optional vector of numbers between 0 and 1 that
 #' specify a set of shorter Monte Carlo simulations for marginal WAIC
-#' calculation as fractions of the full (\code{nItsMarginal}) Monte Carlo
+#' calculation as fractions of the full (\code{niterMarginal}) Monte Carlo
 #' simulation. If not provided, NIMBLE will use 0.25, 0.50, and 0.75.
 #' NIMBLE will report the WAIC, lppd, and pWAIC that would have been obtained
 #' for these smaller Monte Carlo simulations, allowing assessment of the number
@@ -378,7 +378,7 @@ buildWAIC <- nimbleFunction(
 #' \code{marginal}: Logical value indicating whether marginal (\code{TRUE}) or
 #' conditional (\code{FALSE}) WAIC was calculated.
 #' 
-#' \code{nItsMarginal}: Number of Monte Carlo iterations used in computing
+#' \code{niterMarginal}: Number of Monte Carlo iterations used in computing
 #' marginal likelihoods if using marginal WAIC.
 #' 
 #' \code{thin}: Whether WAIC was calculated based only on thinned samples.
@@ -390,7 +390,7 @@ buildWAIC <- nimbleFunction(
 #' simulations, for use in assessing the sensitivity of the WAIC calculation
 #' to the number of Monte Carlo iterations.
 #'
-#' \code{nItsMarginal_partialMC}: Number of Monte Carlo iterations used for the
+#' \code{niterMarginal_partialMC}: Number of Monte Carlo iterations used for the
 #' values in \code{WAIC_partialMC}, \code{lppd_partialMC}, \code{pWAIC_partialMC}.
 #' 
 #' \code{WAIC_elements}, \code{lppd_elements}, \code{pWAIC_elements}: Vectors of
@@ -524,8 +524,8 @@ buildWAIC <- nimbleFunction(
 #' ## Conditional WAIC without data grouping:
 #' conf <- configureMCMC(Rmodel, enableWAIC = TRUE)
 #' ## Conditional WAIC with data grouping
-#' conf <- configureMCMC(Rmodel, enableWAIC = TRUE, waicControl = list(dataGroups = groups))
+#' conf <- configureMCMC(Rmodel, enableWAIC = TRUE, controlWAIC = list(dataGroups = groups))
 #' ## Marginal WAIC with data grouping:
-#' conf <- configureMCMC(Rmodel, enableWAIC = TRUE, waicControl =
+#' conf <- configureMCMC(Rmodel, enableWAIC = TRUE, controlWAIC =
 #'             list(dataGroups = groups, marginalizeNodes = 'mu'))
 NULL

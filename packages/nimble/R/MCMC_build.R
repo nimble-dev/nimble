@@ -79,8 +79,8 @@ buildMCMC <- nimbleFunction(
     name = 'MCMC',
     setup = function(conf, ...) {
         dotdotdotArgNames <- names(list(...))
-        if(inherits(conf, 'MCMCconf') && ('enableWAIC' %in% dotdotdotArgNames || 'waicControl' %in% dotdotdotArgNames))
-            stop("buildMCMC: 'enableWAIC' and 'waicControl' can only be given as arguments when running 'buildMCMC' directly on a model object, not on an MCMC configuration object. Instead pass these argument(s) directly to 'configureMCMC'.") 
+        if(inherits(conf, 'MCMCconf') && ('enableWAIC' %in% dotdotdotArgNames || 'controlWAIC' %in% dotdotdotArgNames))
+            stop("buildMCMC: 'enableWAIC' and 'controlWAIC' can only be given as arguments when running 'buildMCMC' directly on a model object, not on an MCMC configuration object. Instead pass these argument(s) directly to 'configureMCMC'.") 
         
         if(inherits(conf, 'modelBaseClass'))   conf <- configureMCMC(conf, ...)
         else if(!inherits(conf, 'MCMCconf')) stop('conf must either be a nimbleModel or a MCMCconf object (created by configureMCMC(...) )')
@@ -107,7 +107,7 @@ buildMCMC <- nimbleFunction(
         progressBarDefaultSetting <- getNimbleOption('MCMCprogressBar')
 
         ## Build WAIC regardless, as needed in order to compile.
-        waic <- buildWAIC(model, mvSaved, conf$waicControl)
+        waic <- buildWAIC(model, mvSaved, conf$controlWAIC)
         onlineWAIC <- waic$online 
         thinWAIC <- waic$thin
 
@@ -231,16 +231,10 @@ buildMCMC <- nimbleFunction(
             return(samplerTimes[1:(length(samplerTimes)-1)])
         },
         ## Old-style post-sampling WAIC calculation.
-        calculateWAIC = function(nburnin = integer(default = 0),
-                                 burnIn = integer(default = 0)) {
+        calculateWAIC = function(nburnin = integer(default = 0)) {
             if(!enableWAIC) {
                 print('Error: One must set enableWAIC = TRUE in \'configureMCMC\' or \'buildMCMC\'. See \'help(configureMCMC)\' for additional information.')
                 return(NaN)
-            }
-            if(burnIn != 0) {
-                print('Warning: \'burnIn\' argument is deprecated and will not be supported in future versions of NIMBLE. Please use the \'nburnin\' argument instead.')
-                ## If nburnin has not been changed, replace with burnIn value
-                if(nburnin == 0)   nburnin <- burnIn
             }
             nburninPostThinning <- ceiling(nburnin/thinToUseVec[1])
             numMCMCSamples <- getsize(mvSamples) - nburninPostThinning
@@ -249,8 +243,8 @@ buildMCMC <- nimbleFunction(
                 return(-Inf)
             }
             logPredProbs <- matrix(nrow = numMCMCSamples, ncol = dataNodeLength)
-            logAvgProbCalc <- 0
-            pWAICCalc <- 0
+            logAvgProb <- 0
+            pWAIC <- 0
             currentVals <- values(model, allVarsIncludingLogProbs)
             
             for(i in 1:numMCMCSamples) {
@@ -263,15 +257,15 @@ buildMCMC <- nimbleFunction(
             for(j in 1:dataNodeLength) {
                 maxLogPred <- max(logPredProbs[,j])
                 thisDataLogAvgProb <- maxLogPred + log(mean(exp(logPredProbs[,j] - maxLogPred)))
-                logAvgProbCalc <- logAvgProbCalc + thisDataLogAvgProb
+                logAvgProb <- logAvgProb + thisDataLogAvgProb
                 pointLogPredVar <- var(logPredProbs[,j])
-                pWAICCalc <- pWAICCalc + pointLogPredVar
+                pWAIC <- pWAIC + pointLogPredVar
             }
-            WAICCalc <- -2*(logAvgProbCalc - pWAICCalc)
+            WAIC <- -2*(logAvgProb - pWAIC)
             values(model, allVarsIncludingLogProbs) <<- currentVals
-            if(is.nan(WAICCalc)) print('WAIC was calculated as NaN.  You may need to add monitors to model latent states, in order for a valid WAIC calculation.')
+            if(is.nan(WAIC)) print('WAIC was calculated as NaN.  You may need to add monitors to model latent states, in order for a valid WAIC calculation.')
             returnType(double())
-            return(WAICCalc)
+            return(WAIC)
         },
         getWAIC = function() {
             returnType(waicList())
@@ -288,7 +282,7 @@ buildMCMC <- nimbleFunction(
                 return(waic$getDetails(returnElements))
             } else {
                 print("Online WAIC was disabled based on the 'onlineWAIC' element of WAIC control list.")
-                return(waicDetailsList$new(marginal = FALSE, nItsMarginal = 0, thin = FALSE, online = FALSE))
+                return(waicDetailsList$new(marginal = FALSE, niterMarginal = 0, thin = FALSE, online = FALSE))
             }
         }
     )
