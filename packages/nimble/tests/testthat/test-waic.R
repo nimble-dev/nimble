@@ -203,49 +203,190 @@ test_that("New WAIC implementation matches old implementation for conditional, u
         for(j in 1:J) {
             mu[j] ~ dnorm(mu0, sd = tau)
             for(i in 1:I)
-                y[j, i] ~ dnorm(mu[j], sd = tau)
+                y[j, i] ~ dnorm(mu[j], sd = sigma)
         }
     })
+
     inits <- list(mu0 = 0, tau = 0.5, sigma = 1.5,
                                mu = rnorm(J, 0, 0.5))
 
     m <- nimbleModel(code, data = list(y = y),
                      constants = list(I = I, J = J),
-                     inits <- inits)
+                     inits = inits)
     cm <- compileNimble(m)
 
     mcmc <- buildMCMC(m, enableWAIC = TRUE, controlWAIC = list(online = FALSE),
                   monitors = c('mu0','mu','sigma','tau'))
-    cmcmc <- compileNimble(mcmc, project = m, resetFunctions = TRUE)
+    cmcmc <- compileNimble(mcmc, project = m)
+    set.seed(1)
     out1 <- runMCMC(cmcmc, niter = 1000, WAIC = TRUE, inits = inits)
     waic1 <- cmcmc$calculateWAIC()
     expect_output(fullOut <- cmcmc$getWAIC(), "Online WAIC was disabled")
     expect_true(is.na(fullOut$WAIC))
 
-    set.seed(1)
+
+    m <- nimbleModel(code, data = list(y = y),
+                     constants = list(I = I, J = J),
+                     inits <- inits)
+    cm <- compileNimble(m)
     mcmc <- buildMCMC(m, enableWAIC = TRUE)
-    cmcmc <- compileNimble(mcmc, project = m, resetFunctions = TRUE)
+    cmcmc <- compileNimble(mcmc, project = m)
+    set.seed(1)
     out2 <- runMCMC(cmcmc, niter = 1000, WAIC = TRUE, inits = inits)
     waic2 <- cmcmc$getWAIC()
+    expect_equal(waic2$WAIC, waic1)
+    expect_identical(c(waic2$WAIC, waic2$lppd, waic2$pWAIC), c(out2$WAIC$WAIC, out2$WAIC$lppd, out2$WAIC$pWAIC))
 
-                                        # check sum of lppd, pWAIC
-
-    ## check verbose output - element wise
+    waic2full <- cmcmc$getWAICdetails(returnElements = TRUE)
+    expect_identical(waic2full$thin, FALSE)
+    expect_identical(waic2full$online, TRUE)
+    expect_identical(waic2full$marginal, FALSE)
+    expect_identical(waic2full$niterMarginal, 0)
+    expect_equal(sum(waic2full$WAIC_elements), waic2$WAIC)
+    expect_equal(sum(waic2full$lppd_elements), waic2$lppd)
+    expect_equal(sum(waic2full$pWAIC_elements), waic2$pWAIC)
+    expect_identical(length(waic2full$WAIC_elements), as.integer(J*I))
 
 })
 
 
 test_that("Conditional grouped WAIC matches conditional 'ungrouped' with a mv node", {
+    set.seed(1)
+    J <- 5
+    I <- 10
+    tau <- 1
+    sigma <- 1
+    
+    mu <- rnorm(J, 0 , tau)
+    
+    y <- matrix(0, J, I)
+    for(j in 1:J) 
+        y[j, ] <- rnorm(I, mu[j], sigma)
+
+    code <- nimbleCode({
+        tau ~ dunif(0, 10)
+        sigma ~ dunif(0, 10)
+        mu0 ~ dnorm(0, 10)
+        for(j in 1:J) {
+            mu[j] ~ dnorm(mu0, sd = tau)
+            for(i in 1:I)
+                y[j, i] ~ dnorm(mu[j], sd = sigma)
+        }
+    })
+
+    inits <- list(mu0 = 0, tau = 0.5, sigma = 1.5,
+                               mu = rnorm(J, 0, 0.5))
+
+    code2 <- nimbleCode({
+        tau ~ dunif(0, 10)
+        sigma ~ dunif(0, 10)
+        mu0 ~ dnorm(0, 10)
+        Sigma[1:I, 1:I] <- sigma^2 * Iden[1:I, 1:I]
+        for(j in 1:J) {
+            mu[j] ~ dnorm(mu0, sd = tau)
+            mn[j, 1:I] <- ones[1:I]*mu[j]
+            y[j, 1:I] ~ dmnorm(mn[j, 1:I], cov = Sigma[1:I, 1:I])
+        }
+    })
+
+    inits2 <- c(inits, list(ones = rep(1, I), Iden = diag(I)))
+    
+
+    m <- nimbleModel(code2, data = list(y = y),
+                     constants = list(I = I, J = J),
+                     inits = inits2)
+    cm <- compileNimble(m)
+
+    conf <- configureMCMC(m, nodes = NULL, enableWAIC = TRUE, controlWAIC = list(online = FALSE), 
+                          monitors = c('mu0','mu','sigma','tau'))
+    conf$addSampler('tau','RW')
+    conf$addSampler('sigma','RW')
+    for(j in 1:J)
+        conf$addSampler(paste0('mu[', j, ']'), 'RW')
+    conf$addSampler('mu0','conjugate')
+    mcmc <- buildMCMC(conf)
+    cmcmc <- compileNimble(mcmc, project = m)
+    set.seed(1)
+    out1 <- runMCMC(cmcmc, niter = 1000, WAIC = TRUE, inits = inits)
+    waic1 <- cmcmc$calculateWAIC()
+
+    dataGroups = list('y[1, ]', 'y[2, ]', 'y[3, ]', 'y[4, ]', 'y[5, ]') 
+    m <- nimbleModel(code, data = list(y = y),
+                     constants = list(I = I, J = J),
+                     inits = inits)
+    cm <- compileNimble(m)
+    conf <- configureMCMC(m, nodes = NULL, enableWAIC = TRUE, controlWAIC = list(dataGroups = dataGroups))
+    conf$addSampler('tau','RW')
+    conf$addSampler('sigma','RW')
+    for(j in 1:J)
+        conf$addSampler(paste0('mu[', j, ']'), 'RW')
+    conf$addSampler('mu0','conjugate')
+    mcmc <- buildMCMC(conf)
+    cmcmc <- compileNimble(mcmc, project = m)
+    set.seed(1)
+    out2 <- runMCMC(cmcmc, niter = 1000, inits = inits)
+    waic2 <- cmcmc$getWAIC()
+    expect_identical(waic2$WAIC, waic1)
 
 })
 
-test_that("Marginal WAIC implementation matches exact based on analytic integral", {
- # also check partial MC values
+test_that("Marginal, grouped WAIC implementation matches exact based on analytic integral", {
+    set.seed(1)
+    J <- 5
+    I <- 10
+    tau <- 1
+    sigma <- 1
+    
+    mu <- rnorm(J, 0 , tau)
+    
+    y <- matrix(0, J, I)
+    for(j in 1:J) 
+        y[j, ] <- rnorm(I, mu[j], sigma)
+
+    code <- nimbleCode({
+        tau ~ dunif(0, 10)
+        sigma ~ dunif(0, 10)
+        mu0 ~ dnorm(0, 10)
+        for(j in 1:J) {
+            mu[j] ~ dnorm(mu0, sd = tau)
+            for(i in 1:I)
+                y[j, i] ~ dnorm(mu[j], sd = sigma)
+        }
+    })
+
+    inits <- list(mu0 = 0, tau = 0.5, sigma = 1.5,
+                               mu = rnorm(J, 0, 0.5))
+    dataGroups = list('y[1, ]', 'y[2, ]', 'y[3, ]', 'y[4, ]', 'y[5, ]') 
+    m <- nimbleModel(code, data = list(y = y),
+                     constants = list(I = I, J = J),
+                     inits = inits)
+    cm <- compileNimble(m)
+    conf <- configureMCMC(m, enableWAIC = TRUE, 
+                          controlWAIC = list(dataGroups = dataGroups,
+                                             marginalizeNodes = 'mu')))
+    mcmc <- buildMCMC(conf)
+    cmcmc <- compileNimble(mcmc, project = m)
+    set.seed(1)
+    out <- runMCMC(cmcmc, niter = 1000, inits = inits)
+    waic2 <- cmcmc$getWAIC()
+
+    ## run new WAIC marg,grouped
+    ## with saved samples, for each sample, calculate dmnorm marg liks manually and find WAIC
+    ## compare with some tolerance
+
+    cov <- matrix(tau^2, I, I)
+    diag(cov) <- diag(cov) + sigma^2
+    dmnorm(y[j, 1:I], mu[j], cov = cov, log = TRUE)
+    
+    ## also check partial MC values
+    ## for each posterior sample, calculate marginal likelihood?
 })
 
 test_that("Multiple-chain WAIC", {
 
 })
+
+## test cases of invalid marginalizeNodes and invalid grouping or missing obs or extra obs
 
 nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
