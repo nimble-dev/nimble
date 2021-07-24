@@ -5,13 +5,13 @@ nimbleOptions(verbose = FALSE)
 nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
 nimbleOptions(MCMCprogressBar = FALSE)
 
-context("Testing of calcWAIC")
+context("Testing of WAIC")
 
 ###  BUGS models from Chapter 5 of Gelman and Hill
 ###  Below WAIC values from Gelman '13 "Understanding predictive 
 ###  information criteria for Bayesian models"
 
-test_that("school model WAIC is accurate", {
+test_that("school model WAIC is accurate using original WAIC implementation", {
   sigma     <- c(15,10,16,11, 9,11,10,18)
   schoolobs <- c(28,8, -3, 7,-1, 1,18,12)
   schoolSATcode <- nimbleCode({
@@ -180,6 +180,71 @@ test_that("Radon model WAIC is accurate", {
   Cradonmcmc$run(10000)
   ## monitoring coefs is equivalent to monitoring beta, so waic should match
   expect_equal(Cradonmcmc$calculateWAIC(1000), 3937, tolerance = 10)
+})
+
+
+test_that("New WAIC implementation matches old implementation for conditional, ungrouped", {
+    set.seed(1)
+    J <- 5
+    I <- 10
+    tau <- 1
+    sigma <- 1
+    
+    mu <- rnorm(J, 0 , tau)
+    
+    y <- matrix(0, J, I)
+    for(j in 1:J) 
+        y[j, ] <- rnorm(I, mu[j], sigma)
+
+    code <- nimbleCode({
+        tau ~ dunif(0, 10)
+        sigma ~ dunif(0, 10)
+        mu0 ~ dnorm(0, 10)
+        for(j in 1:J) {
+            mu[j] ~ dnorm(mu0, sd = tau)
+            for(i in 1:I)
+                y[j, i] ~ dnorm(mu[j], sd = tau)
+        }
+    })
+    inits <- list(mu0 = 0, tau = 0.5, sigma = 1.5,
+                               mu = rnorm(J, 0, 0.5))
+
+    m <- nimbleModel(code, data = list(y = y),
+                     constants = list(I = I, J = J),
+                     inits <- inits)
+    cm <- compileNimble(m)
+
+    mcmc <- buildMCMC(m, enableWAIC = TRUE, controlWAIC = list(online = FALSE),
+                  monitors = c('mu0','mu','sigma','tau'))
+    cmcmc <- compileNimble(mcmc, project = m, resetFunctions = TRUE)
+    out1 <- runMCMC(cmcmc, niter = 1000, WAIC = TRUE, inits = inits)
+    waic1 <- cmcmc$calculateWAIC()
+    expect_output(fullOut <- cmcmc$getWAIC(), "Online WAIC was disabled")
+    expect_true(is.na(fullOut$WAIC))
+
+    set.seed(1)
+    mcmc <- buildMCMC(m, enableWAIC = TRUE)
+    cmcmc <- compileNimble(mcmc, project = m, resetFunctions = TRUE)
+    out2 <- runMCMC(cmcmc, niter = 1000, WAIC = TRUE, inits = inits)
+    waic2 <- cmcmc$getWAIC()
+
+                                        # check sum of lppd, pWAIC
+
+    ## check verbose output - element wise
+
+})
+
+
+test_that("Conditional grouped WAIC matches conditional 'ungrouped' with a mv node", {
+
+})
+
+test_that("Marginal WAIC implementation matches exact based on analytic integral", {
+ # also check partial MC values
+})
+
+test_that("Multiple-chain WAIC", {
+
 })
 
 nimbleOptions(verbose = nimbleVerboseSetting)

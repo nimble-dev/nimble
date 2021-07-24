@@ -15,7 +15,7 @@ waicList <- nimbleList(
     list(
         nimbleType('WAIC', 'double', 0),
         nimbleType('lppd', 'double', 0),
-        nimbleType('pWAIC', 'double', 0),
+        nimbleType('pWAIC', 'double', 0)
     ), name = 'waicList'
 )
     

@@ -79,7 +79,7 @@ MCMCconf <- setRefClass(
         thin                = 'ANY',
         thin2               = 'ANY',
         enableWAIC          = 'ANY',
-        waicControl         = 'ANY',
+        controlWAIC         = 'ANY',
         samplerConfs        = 'ANY',
         samplerExecutionOrder = 'ANY',
         controlDefaults     = 'ANY',
@@ -97,7 +97,7 @@ MCMCconf <- setRefClass(
             onlyRW = FALSE,
             onlySlice = FALSE,
             multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
-            enableWAIC = getNimbleOption('MCMCenableWAIC'), waicControl = list(),
+            enableWAIC = getNimbleOption('MCMCenableWAIC'), controlWAIC = list(),
             warnNoSamplerAssigned = TRUE,
             print = TRUE, ...) {
             '
@@ -138,7 +138,7 @@ multivariateNodesAsScalars: A logical argument, with default value FALSE.  If sp
 
 enableWAIC: A logical argument, specifying whether to enable WAIC calculations for the resulting MCMC algorithm.  Defaults to the value of nimbleOptions(\'MCMCenableWAIC\'), which in turn defaults to FALSE.  Setting nimbleOptions(\'MCMCenableWAIC\' = TRUE) will ensure that WAIC is enabled for all calls to \`configureMCMC\` and \`buildMCMC\`.
 
-waicControl A named list of inputs that control the behavior of the WAIC calculation, passed as the \'control\' input to \'buildWAIC\'. See \'help(waic)\`.
+controlWAIC A named list of inputs that control the behavior of the WAIC calculation, passed as the \'control\' input to \'buildWAIC\'. See \'help(waic)\`.
 
 warnNoSamplerAssigned: A logical argument specifying whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule. Default is TRUE.
 
@@ -160,7 +160,7 @@ print: A logical argument specifying whether to print the montiors and samplers.
             thin  <<- thin
             thin2 <<- thin2
             enableWAIC <<- enableWAIC
-            waicControl <<- waicControl
+            controlWAIC <<- controlWAIC
             samplerConfs <<- list()
             samplerExecutionOrder <<- numeric()
             controlDefaults <<- list(...)
@@ -1047,7 +1047,7 @@ Details: See the initialize() function
 #'@param onlySlice A logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes. Terminal nodes are still assigned a posterior_predictive sampler.
 #'@param multivariateNodesAsScalars A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided \code{useConjugacy == TRUE}), regardless of the value of this argument.
 #' @param enableWAIC A logical argument, specifying whether to enable WAIC calculations for the resulting MCMC algorithm.  Defaults to the value of \code{nimbleOptions('MCMCenableWAIC')}, which in turn defaults to FALSE.  Setting \code{nimbleOptions('enableWAIC' = TRUE)} will ensure that WAIC is enabled for all calls to \code{\link{configureMCMC}} and \code{\link{buildMCMC}}.
-#' @param waicControl A named list of inputs that control the behavior of the WAIC calculation. See \code{help(waic)}.
+#' @param controlWAIC A named list of inputs that control the behavior of the WAIC calculation. See \code{help(waic)}.
 #' @param warnNoSamplerAssigned A logical argument, with default value TRUE.  This specifies whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule.
 #'@param print A logical argument, specifying whether to print the ordered list of default samplers.
 #'@param autoBlock A logical argument specifying whether to use an automated blocking procedure to determine blocks of model nodes for joint sampling.  If TRUE, an MCMC configuration object will be created and returned corresponding to the results of the automated parameter blocking.  Default value is FALSE.
@@ -1062,7 +1062,7 @@ configureMCMC <- function(model, nodes, control = list(),
                           useConjugacy = getNimbleOption('MCMCuseConjugacy'),
                           onlyRW = FALSE, onlySlice = FALSE,
                           multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
-                          enableWAIC = getNimbleOption('MCMCenableWAIC'), waicControl = list(),
+                          enableWAIC = getNimbleOption('MCMCenableWAIC'), controlWAIC = list(),
                           print = getNimbleOption('verbose'),
                           autoBlock = FALSE, oldConf,
                           ## samplerAssignmentRules system deprecated Nov 2020 -DT
@@ -1089,7 +1089,7 @@ configureMCMC <- function(model, nodes, control = list(),
                          useConjugacy = useConjugacy,
                          onlyRW = onlyRW, onlySlice = onlySlice,
                          multivariateNodesAsScalars = multivariateNodesAsScalars,
-                         enableWAIC = enableWAIC, waicControl = waicControl,
+                         enableWAIC = enableWAIC, controlWAIC = controlWAIC,
                          warnNoSamplerAssigned = warnNoSamplerAssigned,
                          print = print, ...)
     return(invisible(thisConf))
