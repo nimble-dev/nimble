@@ -330,7 +330,7 @@ test_that("Conditional grouped WAIC matches conditional 'ungrouped' with a mv no
 
 })
 
-test_that("Marginal, grouped WAIC implementation matches exact based on analytic integral", {
+test_that("Marginal grouped WAIC implementation matches exact based on analytic integral", {
     set.seed(1)
     J <- 5
     I <- 10
@@ -363,24 +363,39 @@ test_that("Marginal, grouped WAIC implementation matches exact based on analytic
     cm <- compileNimble(m)
     conf <- configureMCMC(m, enableWAIC = TRUE, 
                           controlWAIC = list(dataGroups = dataGroups,
-                                             marginalizeNodes = 'mu')))
+                                             marginalizeNodes = 'mu',
+                                             niterMarginal = 10000))
     mcmc <- buildMCMC(conf)
     cmcmc <- compileNimble(mcmc, project = m)
     set.seed(1)
-    out <- runMCMC(cmcmc, niter = 1000, inits = inits)
-    waic2 <- cmcmc$getWAIC()
+    samples <- runMCMC(cmcmc, niter = 1000, inits = inits)
+    waic <- cmcmc$getWAIC()
 
-    ## run new WAIC marg,grouped
-    ## with saved samples, for each sample, calculate dmnorm marg liks manually and find WAIC
-    ## compare with some tolerance
-
-    cov <- matrix(tau^2, I, I)
-    diag(cov) <- diag(cov) + sigma^2
-    dmnorm(y[j, 1:I], mu[j], cov = cov, log = TRUE)
-    
-    ## also check partial MC values
-    ## for each posterior sample, calculate marginal likelihood?
+    ## Now compute WAIC using analytic marginal likelihood.
+    logPredProbs <- matrix(nrow = nrow(samples), ncol = J)
+    logAvgProb <- 0
+    pWAIC <- 0
+            
+    for(i in 1:nrow(samples)) {
+        cov <- matrix(samples[i, 'tau']^2, I, I)
+        diag(cov) <- diag(cov) + samples[i, 'sigma']^2
+        ch <- chol(cov)
+        for(j in 1:J) 
+            logPredProbs[i, j] <-  dmnorm_chol(y[j, 1:I], samples[i, 'mu0'],
+                                cholesky = ch, prec_param = FALSE, log = TRUE)
+    }
+    for(j in 1:J) {
+        maxLogPred <- max(logPredProbs[,j])
+        thisDataLogAvgProb <- maxLogPred + log(mean(exp(logPredProbs[,j] - maxLogPred)))
+        logAvgProb <- logAvgProb + thisDataLogAvgProb
+        pointLogPredVar <- var(logPredProbs[,j])
+        pWAIC <- pWAIC + pointLogPredVar
+    }
+    WAIC <- -2*(logAvgProb - pWAIC)
+    expect_lt(abs(waic$lppd - logAvgProb), .002)
+    expect_lt(abs(waic$pWAIC - pWAIC), .01)
 })
+
 
 test_that("Multiple-chain WAIC", {
 
