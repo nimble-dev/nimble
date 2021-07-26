@@ -386,7 +386,51 @@ test_that("Multiple-chain WAIC", {
 
 })
 
-## test cases of invalid marginalizeNodes and invalid grouping or missing obs or extra obs
+test_that("invalid WAIC configuration is trapped", {
+    set.seed(1)
+    J <- 5
+    I <- 10
+    tau <- 1
+    sigma <- 1
+    
+    mu <- rnorm(J, 0 , tau)
+    
+    y <- matrix(0, J, I)
+    for(j in 1:J) 
+        y[j, ] <- rnorm(I, mu[j], sigma)
+
+    code <- nimbleCode({
+        tau ~ dunif(0, 10)
+        sigma ~ dunif(0, 10)
+        mu0 ~ dnorm(0, 10)
+        for(j in 1:J) {
+            mu[j] ~ dnorm(mu0, sd = tau)
+            for(i in 1:I)
+                y[j, i] ~ dnorm(mu[j], sd = sigma)
+        }
+    })
+
+    inits <- list(mu0 = 0, tau = 0.5, sigma = 1.5,
+                               mu = rnorm(J, 0, 0.5))
+    dataGroups = list('y[1, ]', 'y[2, ]', 'y[3, ]', 'y[4, ]', 'y[5, ]') 
+    m <- nimbleModel(code, data = list(y = y),
+                     constants = list(I = I, J = J),
+                     inits = inits)
+    conf <- configureMCMC(m, enableWAIC = TRUE, 
+                          controlWAIC = list(dataGroups = dataGroups[1:3],
+                                             marginalizeNodes = 'mu'))
+    expect_warning(mcmc <- buildMCMC(conf), "Potential problem with data grouping")
+
+    conf <- configureMCMC(m, enableWAIC = TRUE, 
+                          controlWAIC = list(dataGroups = c(dataGroups, 'tau'),
+                                             marginalizeNodes = 'mu'))
+    expect_warning(mcmc <- buildMCMC(conf), "Potential problem with data grouping")
+    
+    conf <- configureMCMC(m, enableWAIC = TRUE, 
+                          controlWAIC = list(marginalizeNodes = c('mu0', 'mu')))
+    expect_warning(mcmc <- buildMCMC(conf), "Potential problem with nodes to marginalize over")
+})
+
 
 nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)

@@ -73,13 +73,13 @@ buildWAIC <- nimbleFunction(
             stop('buildWAIC: cannot compute WAIC with no data nodes in the model.')
         if(!is.null(dataGroups)) { 
             useGroups <- TRUE
-            dataNodes <- lapply(dataGroups, function(x) model$expandNodeNames(x))
-            groupIndices <- lapply(dataNodes, length)
+            dataNodesUser <- lapply(dataGroups, function(x) model$expandNodeNames(x))
+            groupIndices <- lapply(dataNodesUser, length)
             groupIndices <- cumsum(groupIndices)
-            dataNodes <- unlist(dataNodes)
-            if (length(dataNodes) != dataNodeLength ) {
-                warning("buildWAIC: Group nodes supplied does not contain all data nodes or contains duplicates.")
-            }
+            dataNodesUser <- unlist(dataNodesUser)
+            if (length(dataNodesUser) != dataNodeLength || sort(dataNodesUser) != sort(dataNodes)) 
+                warning("buildWAIC: Potential problem with data grouping. The nodes included in 'dataGroups' do not match the full set of data nodes in the model.")
+            dataNodes <- dataNodesUser
         } else{
             useGroups <- FALSE
             groupIndices <- rep(1, dataNodeLength)
@@ -94,6 +94,8 @@ buildWAIC <- nimbleFunction(
             marginal <- TRUE
             marginalizeNodes <- model$getDependencies(marginalizeNodes, self = TRUE, downstream = TRUE, includeData = FALSE)
             latentAndDataNodes <- model$getDependencies(marginalizeNodes, self = TRUE, downstream = TRUE)
+            if(any(!marginalizeNodes %in% model$getNodeNames(latentOnly = TRUE)))
+                warning("buildWAIC: Potential problem with nodes to marginalize over. One or more of the nodes in 'marginalizeNodes' are not latent nodes in the model.")
         } else {
             marginal  <- FALSE 
             niterMarginal <- 1
