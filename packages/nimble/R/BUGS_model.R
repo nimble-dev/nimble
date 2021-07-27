@@ -742,7 +742,7 @@ getParents = function(nodes, omit = character(), self = FALSE,
                       immediateOnly = FALSE,
                       returnType = 'names', returnScalarComponents = FALSE) {
   '
- Returns a character vector of the nodes on which the input nodes depend, sorted topologically according to the model graph, by default recursing and stopping at stochastic parent nodes.  In the genealogical metaphor for a graphical model, this function returns the "parents" of the input nodes. In the river network metaphor, it returns upstream nodes.  By default, the returned nodes omit the input nodes, include only stochastic nodes, and stop at stochastic nodes.  Aditional input arguments provide flexibility in the values returned.
+ Returns a character vector of the nodes on which the input nodes depend, sorted topologically according to the model graph, by default recursing and stopping at stochastic parent nodes.  In the genealogical metaphor for a graphical model, this function returns the "parents" of the input nodes. In the river network metaphor, it returns upstream nodes.  By default, the returned nodes omit the input nodes, include only stochastic nodes, and stop at stochastic nodes.  Additional input arguments provide flexibility in the values returned.
 
 Arguments:
 
