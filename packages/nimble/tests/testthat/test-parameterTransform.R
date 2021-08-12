@@ -235,7 +235,7 @@ test_that('parameterTransform for lkj correlation matrices', {
     ## so expect failure until then.
     expect_failure({
         m <- nimbleModel(code, constants = list(n = n, p = p, mu = rep(0, p)),
-                     data = list(y = y), inits = list(sigma = sds, U = U))
+                     data = list(y = y), inits = list(U = U))
 
         pt <- parameterTransform(m, nodes = 'Ustar')
         yt_from_pt <- pt$transform(m$Ustar)
