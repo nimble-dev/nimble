@@ -1026,7 +1026,7 @@ test_that('detect conjugacy when scaling Wishart, inverse Wishart cases', {
 
 test_that('using LKJ randomw walk samplers', {
     opt <- nimbleOptions('buildInterfacesForCompiledNestedNimbleFunctions')
-    nimbleOptions('buildInterfacesForCompiledNestedNimbleFunctions') <- TRUE
+    nimbleOptions('buildInterfacesForCompiledNestedNimbleFunctions' = TRUE)
     
     R <- matrix(c(
         1, 0.9, .3, -.5, .1,
@@ -1086,6 +1086,7 @@ test_that('using LKJ randomw walk samplers', {
                 out[ , i] <- mat[ , i] * vec[i]
             return(out)
         })
+    temporarilyAssignInGlobalEnv(uppertri_mult_diag)
 
     thin <- 10
     
@@ -1207,7 +1208,7 @@ test_that('using LKJ randomw walk samplers', {
     names(postMean) <- NULL
     expect_equal(postMean, c(mat), tolerance = 0.07, info = "RW_lkj posterior not close to truth")
 
-    nimbleOptions('buildInterfacesForCompiledNestedNimbleFunctions') <- opt
+    nimbleOptions('buildInterfacesForCompiledNestedNimbleFunctions' = opt)
 })
 
 ## testing conjugate MVN updating with ragged dependencies;
