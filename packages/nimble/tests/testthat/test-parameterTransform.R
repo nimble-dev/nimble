@@ -223,7 +223,7 @@ test_that('parameterTransform for lkj correlation matrices', {
     set.seed(1)
     n <- 100
     p <- 5
-    y <- t(t(chol(Sigma))%*%matrix(rnorm(p*n),p,n))
+    y <- t(t(U)%*%matrix(rnorm(p*n),p,n))
     
     code <- nimbleCode({
         for(i in 1:n)
