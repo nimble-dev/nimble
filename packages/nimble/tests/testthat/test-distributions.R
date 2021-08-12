@@ -118,7 +118,135 @@ test_that("Test that mvt calculate and simulate are correct in nodeFunctions", {
                  tol = 0.1,
                  info = "Difference in covs in random samples (simulate) exceeds tolerance")
 })
+
+## dlkj
+
+## test use directly from R
+
+eta <- 3.3
+k <- 5
+
+test_that("dlkj_corr_cholesky calculates density correctly", {
+    set.seed(1)
+    U <- rlkj_corr_cholesky(1, eta, k)
+    truth <- sum(log(diag(U)) * (k-(1:k)+2*eta-2))
+    expect_equal(dlkj_corr_cholesky(U, eta, k, log = TRUE),
+                 truth,
+                 info = paste0("incorrect dlkj calculation in R"))
     
+    nf <- nimbleFunction(
+        run = function(eta = double(0), p = double(0)) {
+            returnType(double(0))
+            x <- rlkj_corr_cholesky(n = 1, eta, p)
+            out <- dlkj_corr_cholesky(x = x, eta, p, log = TRUE)
+            return(out)
+        }
+    )
+
+    set.seed(1)
+    expect_equal(nf(eta, k), truth,
+                 info = paste0("incorrect dlkj value in R nimble function"))
+    cnf <- compileNimble(nf)
+    set.seed(1)
+    expect_equal(cnf(eta, k), truth,
+                 info = paste0("incorrect dlkj value in compiled nimble function"))
+})
+
+## test use in model
+
+## code from rethinking package for comparison
+rlkjcorr_rethinking <- function ( n , K , eta = 1 ) {
+
+    stopifnot(is.numeric(K), K >= 2, K == as.integer(K))
+    stopifnot(eta > 0)
+    #if (K == 1) return(matrix(1, 1, 1))
+    
+    f <- function() {
+        alpha <- eta + (K - 2)/2
+        r12 <- 2 * rbeta(1, alpha, alpha) - 1
+        R <- matrix(0, K, K) # upper triangular Cholesky factor until return()
+        R[1,1] <- 1
+        R[1,2] <- r12
+        R[2,2] <- sqrt(1 - r12^2)
+        if(K > 2) for (m in 2:(K - 1)) {
+            alpha <- alpha - 0.5
+            y <- rbeta(1, m / 2, alpha)
+            # Draw uniformally on a hypersphere
+            z <- rnorm(m, 0, 1)
+            z <- z / sqrt(crossprod(z)[1])
+            
+            R[1:m,m+1] <- sqrt(y) * z
+            R[m+1,m+1] <- sqrt(1 - y)
+        }
+        return(crossprod(R))
+    }
+    R <- replicate( n , f() )
+    if ( dim(R)[3]==1 ) {
+        R <- R[,,1]
+    } else {
+        # need to move 3rd dimension to front, so conforms to array structure that Stan uses
+        R <- aperm(R,c(3,1,2))
+    }
+    return(R)
+}
+
+
+test_that("Test that dlkj calculate and simulate are correct in nodeFunctions and nimbleFunctions", {
+    set.seed(1)
+    U <- rlkj_corr_cholesky(1, eta, k)
+    truth <- sum(log(diag(U)) * (k-(1:k)+2*eta-2))
+    lkj_code <- nimbleCode({
+        U[1:k,1:k] ~ dlkj_corr_cholesky(eta = eta, p = k)
+    })
+    lkj_model <- nimbleModel(lkj_code, constants = list(eta = eta, k = k))
+    lkj_model$U <- U
+    expect_equal(lkj_model$calculate(), truth,
+                 info = paste0("incorrect log-likelihood value for uncompiled dlkj"))
+    c_lkj_model <- compileNimble(lkj_model)
+    expect_equal(c_lkj_model$calculate(), truth,
+                 info = paste0("incorrect log-likelihood value for compiled dlkj"))
+
+    ## random sampling - compare to code from rethinking package
+    
+    nf_sampling <- nimbleFunction(
+        run = function(eta = double(0), p = double(0)) {
+            returnType(double(2))
+            out <- rlkj_corr_cholesky(n = 1, eta, p)
+            return(out)
+        }
+    )
+
+    set.seed(1)
+    R <- rlkjcorr_rethinking(1, K = k, eta = eta)
+    set.seed(1)
+    testR <- crossprod(rlkj_corr_cholesky(1, eta, k))
+    set.seed(1)
+    testnf <- crossprod(nf_sampling(eta, k))
+    expect_equal(R, testR, info = "nimble-based and rethinking-based rlkj simulations differ")
+    expect_equal(R, testnf, info = "nimble-based and rethinking-based rlkj simulations differ")
+})
+
+test_that("rlkj_corr_cholesky size processing works", {
+    nf <- nimbleFunction(
+        run = function(eta = double(0), p = double(0), A = double(2)) {
+            returnType(double(3))
+            tmp <- rlkj_corr_cholesky(n = 1, eta, p)
+            x <- nimArray(0, c(p+3,p+3,2))
+            x[2:(p+1),3:(p+2), 2] <- t(tmp) %*% tmp %*% A
+            return(x)
+        }
+    )
+    cnf <- compileNimble(nf)
+
+    set.seed(1)
+    A <- matrix(rnorm(k*k), k)
+    set.seed(1)
+    x <- crossprod(rlkj_corr_cholesky(1, eta, k)) %*% A
+    set.seed(1)
+    x2 <- cnf(eta, k, A)[2:(k+1),3:(k+2),2]
+    expect_equal(x, x2)
+})
+
 ## dmulti and dcat
 
 set.seed(0)

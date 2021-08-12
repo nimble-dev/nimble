@@ -7,6 +7,7 @@ sizeProc_storage_mode <- function(x) {
     
 assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol',
                               'nimArr_rmvt_chol',
+                              'nimArr_rlkj_corr_cholesky',
                               'nimArr_rwish_chol',
                               'nimArr_rinvwish_chol',
                               'nimArr_rcar_normal',
@@ -116,6 +117,7 @@ sizeCalls <- c(
     makeCallList(c('isnan','ISNAN','ISNA'), 'sizeScalarRecurse'),
     makeCallList(c('nimArr_dmnorm_chol',
                    'nimArr_dmvt_chol',
+                   'nimArr_dlkj_corr_cholesky',
                    'nimArr_dwish_chol',
                    'nimArr_dinvwish_chol',
                    'nimArr_dcar_normal',
@@ -126,6 +128,7 @@ sizeCalls <- c(
                    'nimArr_ddirch'), 'sizeScalarRecurseAllowMaps'),
     makeCallList(c('nimArr_rmnorm_chol',
                    'nimArr_rmvt_chol',
+                   'nimArr_rlkj_corr_cholesky',
                    'nimArr_rwish_chol',
                    'nimArr_rinvwish_chol',
                    'nimArr_rcar_normal',
@@ -3261,6 +3264,18 @@ mvFirstArgCheckLists <- list(nimArr_rmnorm_chol = list(c(1, 2, 0), ## dimensiona
                                  1, 'double'), ## 1 = argument from which to take answer size, double = answer type
                              nimArr_rmvt_chol = list(c(1, 2, 0, 0), ## dimensionality of ordered arguments AFTER the first, which is for the return value.  e.g. mean (1D), chol(2D), df(scalar), prec_param(scalar)
                                                        1, 'double'), ## 1 = argument from which to take answer size, double = answer type
+                             nimArr_rlkj_corr_cholesky = list(c(0, 0), ## eta, p
+                                                              function(code) {
+                                                                  ## example
+                                                                  ## Rcode <- quote(nimArr_rlkj_corr_cholesky(eta = k * rho, p = k + a) )
+                                                                  ## code <- nimble:::RparseTree2ExprClasses(Rcode)
+                                                                  dimCode <- parse(text = nimDeparse(code$args[[2]]), keep.source = FALSE)[[1]]
+                                                                  sizeExprs <- list(dimCode, dimCode)
+                                                                  ## dimCode should be quote( k + a )
+                                                                  list(nDim = 2,
+                                                                       sizeExprs = sizeExprs)
+                                                              },
+                                                              'double'),  # '1' won't work here; problem is that no matrices are input but matrix is output
                              nimArr_rwish_chol = list(c(2, 0, 0, 0), ## chol, df, prec_param, overwrite_inputs
                                  1, 'double'),
                              nimArr_rinvwish_chol = list(c(2, 0, 0), ## chol, df, prec_param
@@ -3273,7 +3288,6 @@ mvFirstArgCheckLists <- list(nimArr_rmnorm_chol = list(c(1, 2, 0), ## dimensiona
 
 sizeRmultivarFirstArg <- function(code, symTab, typeEnv) {
     asserts <- recurseSetSizes(code, symTab, typeEnv)
-
     notOK <- FALSE
     checkList <- mvFirstArgCheckLists[[code$name]]
     if(!is.null(checkList)) {
@@ -3292,13 +3306,20 @@ sizeRmultivarFirstArg <- function(code, symTab, typeEnv) {
         stop(exprClassProcessingErrorMsg(code, 'Some argument(s) have the wrong dimension.'), call. = FALSE) 
     }
 
-    if(!inherits(code$args[[returnSizeArgID]], 'exprClass')) stop(exprClassProcessingErrorMsg(code, paste0('Expected ', nimDeparse(code$args[[returnSizeArgID]]) ,' to be an expression.')), call. = FALSE) 
-    
+    if(!(is.function(returnSizeArgID)))
+        if(!inherits(code$args[[returnSizeArgID]], 'exprClass'))
+            stop(exprClassProcessingErrorMsg(code, paste0('Expected ', nimDeparse(code$args[[returnSizeArgID]]) ,' to be an expression or function.')), call. = FALSE) 
+
     code$type <- returnType
-    code$nDim <- code$args[[returnSizeArgID]]$nDim
     code$toEigenize <- 'maybe'
-    code$sizeExprs <- code$args[[returnSizeArgID]]$sizeExprs
-    
+    if(!is.function(returnSizeArgID)) {
+        code$nDim <- code$args[[returnSizeArgID]]$nDim
+        code$sizeExprs <- code$args[[returnSizeArgID]]$sizeExprs
+    } else {
+        sizeInfo <- returnSizeArgID(code)
+        code$nDim <- sizeInfo$nDim
+        code$sizeExprs <- sizeInfo$sizeExprs
+    }
     for(i in seq_along(code$args)) {
         if(inherits(code$args[[i]], 'exprClass')) {
             if(!code$args[[i]]$isName) {

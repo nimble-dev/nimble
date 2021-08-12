@@ -1546,7 +1546,375 @@ sampler_RW_wishart <- nimbleFunction(
     )
 )
 
+######################################################################################
+### RW_lkj_corr_cholesky sampler for non-conjugate LKJ correlation Chlesky factor  ###
+######################################################################################
 
+#' @rdname samplers
+#' @export
+sampler_RW_lkj_corr_cholesky <- nimbleFunction(
+    name = 'sampler_RW_lkj_corr_cholesky',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## node list generation
+        target <- model$expandNodeNames(target)
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)  
+        ##
+        d <- sqrt(length(targetAsScalar))
+        nTheta <- d*(d-1)/2    # this many unconstrained elements to be sampled
+        ## control list extraction
+        adaptive            <- if(!is.null(control$adaptive))            control$adaptive            else TRUE
+        adaptInterval       <- if(!is.null(control$adaptInterval))       control$adaptInterval       else 200
+        adaptFactorExponent <- if(!is.null(control$adaptFactorExponent)) control$adaptFactorExponent else 0.8
+        scaleOriginal       <- if(!is.null(control$scale))               control$scale               else 1
+        if(length(adaptInterval) > 1 || length(adaptFactorExponent) > 1 || length(scaleOriginal) > 1)
+            stop("RW_lkj_corr_cholesky: 'adaptInterval', 'adaptFactorExponent', and 'scaleOriginal' should be single values.")
+        if(scaleOriginal < 0)
+            stop('Cannot use RW_lkj_corr_cholesky sampler with scale control parameter less than 0.')
+        ## adaptation objects
+        scaleVec            <- rep(scaleOriginal, nTheta)
+        timesRan            <- 0
+        timesAcceptedVec    <- rep(nTheta, 0)
+        timesAdapted        <- 0
+        optimalAR           <- 0.44
+        ##
+        z                   <- array(0, c(d, d))  # canonical partial correlations
+        diag(z)             <- 1
+        partialSums         <- array(0, c(d, d))  # 1-x_{13}^2, 1-x_{14}^2, 1-x_{14}^2-x_{24}^2, ...
+        partialSums[1, ]   <- 1
+        ## Temporary vectors for current colum calculations
+        partialSumsProp     <- numeric(d)    
+        currentValue        <- numeric(d)
+        propValue           <- numeric(d)
+        ## checks
+        dist <- model$getDistribution(target)
+        if(dist != 'dlkj_corr_cholesky') stop('RW_lkj_corr_cholesky sampler can only be used with the dlkj_corr_cholesky distribution.')
+        if(d < 2)                        stop('RW_lkj_corr_cholesky sampler requires target node dimension to be at least 2x2.')
+        if(adaptFactorExponent < 0)      stop('Cannot use RW_lkj_corr_cholesky sampler with adaptFactorExponent control parameter less than 0.')
+    },
+    run = function() {
+        ## calculate transformed values (in unconstrained space) and partial sums in each column
+        transform(model[[target]])  # compute z and partialSums
+        ##
+        ## Individual univariate RW on the nTheta elements:
+        ## advantage: probably better movement through space than with block update
+        ## (plus note only column values of target matrix are recalculated for a given scalar update in a given column)
+        ## disadvantage: all downstream dependencies of entire matrix will be recalculated, so much slower than default block sampler
+        cnt <- 0
+        for(i in 2:d) {   # Iterate over columns
+            currentValue <<- model[[target]][1:d, i]
+            partialSumsProp <<- partialSums[, i]
+            for(j in 1:(i-1)) {
+                cnt <- cnt + 1
+                ## RW on unconstrained y
+                yCurrent <- atanh(z[j, i])
+                yProp <- rnorm(1, yCurrent, scaleVec[cnt])
+                zProp <- tanh(yProp)   
+                propValue[j] <<- zProp * sqrt(partialSumsProp[j])  # proposed value of element of U
+                ## Update remainder of column of U so that length of column is 1
+                for(jprime in (j+1):i) {
+                    partialSumsProp[jprime] <<- partialSumsProp[jprime-1] - propValue[jprime-1]^2
+                    propValue[jprime] <<- z[jprime, i] * sqrt(partialSumsProp[jprime])
+                }
+                model[[target]][j:i, i] <<- propValue[j:i] 
+                logMHR <- calculateDiff(model, calcNodesNoSelf) + calculateDiff(model, target)
+                ## Adjust MHR to account for non-symmetric proposal by adjusting prior on U to transformed scale (i.e., y).
+                ## cosh component is for dz/dy and other component is for du/dz  where 'u' is the corr matrix.
+                ## This follows Stan reference manual Section 10.12 (for version 2.27).
+                ## There is an important subtlety here - the transformation is from y to U not y to Sigma, so the Jacobian
+                ## omits the dSigma/dU, which is in Section 10.9 of the Stan reference manual.
+                ## This is because dlkj_corr_cholesky is written directly in terms of a density on U and that density
+                ## already accounts for the Jacobian in going from Sigma to U.
+                logMHR <- logMHR - 2*(log(cosh(yProp)) - log(cosh(yCurrent))) 
+                if(j < i-1) 
+                    logMHR <- logMHR + 0.5*sum(log(partialSumsProp[(j+1):(i-1)]) - log(partialSums[(j+1):(i-1), i]))
+ 
+                jump <- decide(logMHR)
+                ## Avoid copying entire target matrix as we are modifying one column at a time.
+                if(jump) {
+                    nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelf, logProb = TRUE)
+                    timesAcceptedVec[cnt] <<- timesAcceptedVec[cnt] + 1
+                    partialSums[(j+1):i, i] <<- partialSumsProp[(j+1):i]
+                    currentValue[j:i] <<- propValue[j:i]
+                } else {
+                    nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesNoSelf, logProb = TRUE)
+                    model[[target]][j:i, i] <<- currentValue[j:i]
+                    model$calculate(target)   ## Update target logProb since not part of calcNodesNoSelf.
+                    partialSumsProp[j+1] <<- partialSums[j+1, i]  ## Remaining elements will be modified above anyway.
+                }
+            }
+        }
+        nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
+        if(adaptive) {
+            timesRan <<- timesRan + 1
+            if(timesRan %% adaptInterval == 0) {
+                acceptanceRateVec <- timesAcceptedVec / timesRan
+                timesAdapted <<- timesAdapted + 1
+                gamma1 <- 1/((timesAdapted + 3)^adaptFactorExponent)
+                adaptFactorVec <- exp(10 * gamma1 * (acceptanceRateVec - optimalAR))   
+                scaleVec <<- scaleVec * adaptFactorVec
+                timesRan <<- 0
+                timesAcceptedVec <<- numeric(nTheta, 0)
+            }
+        }
+    },
+    methods = list(
+        transform = function(x = double(2)) {
+            ## Calculate canonical partial correlations (z) and partial sums (remaining lengths of U columns)
+            z[1, 2:d] <<- x[1, 2:d]
+            partialSums[2, 2] <<- 1 - x[1, 2]^2
+            for(i in 3:d) {
+                for(j in 2:(i-1)) {
+                    partialSums[j, i] <<- partialSums[j-1, i] - x[j-1, i]^2
+                    z[j, i] <<- x[j, i] / sqrt(partialSums[j, i])
+                }
+                partialSums[i, i] <<- partialSums[i-1, i] - x[i-1, i]^2
+            }
+        },
+        reset = function() {
+            scaleVec         <<- numeric(nTheta, scaleOriginal)
+            timesRan         <<- 0
+            timesAdapted     <<- 0
+            timesAcceptedVec <<- numeric(nTheta, 0)
+        }
+    )
+)
+
+############################################################################################
+### RW_block_lkj_corr_cholesky sampler for non-conjugate LKJ correlation Chlesky factor  ###
+############################################################################################
+
+
+#' @rdname samplers
+#' @export
+sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
+    name = 'sampler_RW_block_lkj_corr_cholesky',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        adaptive            <- if(!is.null(control$adaptive))            control$adaptive            else TRUE
+        adaptScaleOnly      <- if(!is.null(control$adaptScaleOnly))      control$adaptScaleOnly      else FALSE
+        adaptInterval       <- if(!is.null(control$adaptInterval))       control$adaptInterval       else 200
+        adaptFactorExponent <- if(!is.null(control$adaptFactorExponent)) control$adaptFactorExponent else 0.8
+        scale               <- if(!is.null(control$scale))               control$scale               else 1
+        propCov             <- if(!is.null(control$propCov))             control$propCov             else 'identity'
+        tries               <- if(!is.null(control$tries))               control$tries               else 1
+        ## node list generation
+        target <- model$expandNodeNames(target)
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        calcNodes <- model$getDependencies(target)
+        finalTargetIndex <- max(match(model$expandNodeNames(target), calcNodes))
+        if(!is.integer(finalTargetIndex) |
+           length(finalTargetIndex) != 1 |
+           is.na(finalTargetIndex[1]))
+           stop('Problem with target node in sampler_RW_block_lkj_corr_cholesky')
+        calcNodesProposalStage <- calcNodes[1:finalTargetIndex]
+        calcNodesDepStage <- calcNodes[-(1:finalTargetIndex)]
+##        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
+        ## numeric value generation
+        scaleOriginal <- scale
+        timesRan      <- 0
+        timesAccepted <- 0
+        timesAdapted  <- 0
+        p <- sqrt(length(targetAsScalar))
+        d <- p*(p-1)/2    # this many unconstrained elements to be sampled
+        scaleHistory  <- c(0, 0)                                                 ## scaleHistory
+        acceptanceHistory  <- c(0, 0)                                            ## scaleHistory
+        propCovHistory <- if(d<=10) array(0, c(2,d,d)) else array(0, c(2,2,2))   ## scaleHistory
+        saveMCMChistory <- if(nimbleOptions('MCMCsaveHistory')) TRUE else FALSE
+        if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
+        propCovOriginal <- propCov
+        chol_propCov <- chol(propCov)
+        chol_propCov_scale <- scale * chol_propCov
+        empirSamp <- matrix(0, nrow=adaptInterval, ncol=d)
+        ## nested function and function list definitions
+        ##        my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
+        targetNodesAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+##        my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
+        my_calcAdaptationFactor <- calcAdaptationFactor(d, adaptFactorExponent)
+
+        z                   <- array(0, c(p, p))  # canonical partial correlations
+        diag(z)             <- 1
+        y                   <- numeric(d)         # unconstrained parameters; sampling occurs on this scale
+        partialSums         <- array(0, c(p, p))  # 1-x_{21}^2, 1-x_{31}^2, 1-x_{31}^2-x_{32}^2, ...
+        partialSums[1, ]    <- 1
+        logDetJac           <- 0                  # for log of determinant of Jacobian for initial value
+        
+        ## checks
+        if(!inherits(propCov, 'matrix'))       stop('propCov must be a matrix\n')
+        if(!inherits(propCov[1,1], 'numeric')) stop('propCov matrix must be numeric\n')
+        if(!all(dim(propCov) == d))            stop('propCov matrix must have dimension ', d, 'x', d, '\n')
+        if(!isSymmetric(propCov))              stop('propCov matrix must be symmetric')
+
+        dist <- model$getDistribution(target)
+        if(dist != 'dlkj_corr_cholesky') stop('RW_block_lkj_corr_cholesky sampler can only be used with the dlkj_corr_cholesky distribution.')
+        if(d < 2)                        stop('RW_block_lkj_corr_cholesky sampler requires target node dimension to be at least 2x2.')
+        if(adaptFactorExponent < 0)      stop('Cannot use RW_block_lkj_corr_cholesky sampler with adaptFactorExponent control parameter less than 0.')
+
+    },
+    run = function() {
+        transform(model[[target]])  # compute z and partialSums
+        logMHR <- 0
+        for(k in 1:tries) {
+            yPropValueVector <- generateProposalVector()
+            ##        lpMHR <- my_setAndCalculateDiff$run(propValueVector)
+            cnt <- 1
+            for(i in 2:p) {
+                model[[target]][1, i] <<- tanh(yPropValueVector[cnt])
+                partialSumsProp <- 1 - model[[target]][1, i]^2
+                ## Adjust MHR to account for non-symmetric proposal by adjusting prior on U to transformed scale (i.e., y).
+                ## cosh component is for dz/dy and other component is for du/dz  where 'u' is the corr matrix.
+                ## This follows Stan reference manual Section 10.12 (for version 2.27).
+                ## There is an important subtlety here - the transformation is from y to U not y to Sigma, so the Jacobian
+                ## omits the dSigma/dU (which is in Section 10.9 of the Stan reference manual).
+                ## This is because dlkj_corr_cholesky is written directly in terms of a density on U and that density
+                ## already accounts for the Jacobian in going from Sigma to U.
+                logMHR <- logMHR - 2*log(cosh(yPropValueVector[cnt])) 
+                cnt <- cnt+1
+                if(i > 2) {
+                    for(j in 2:(i-1)) {
+                        ## Inverse transform from y to U
+                        model[[target]][j, i] <<- tanh(yPropValueVector[cnt]) * sqrt(partialSumsProp) 
+                        ## Adjust for prior for y using determinant of y to x transformation.
+                        logMHR <- logMHR - 2*log(cosh(yPropValueVector[cnt])) +
+                            0.5*log(partialSumsProp)
+                        cnt <- cnt+1
+                        partialSumsProp <- partialSumsProp - model[[target]][j, i]^2
+                    }
+                }
+                model[[target]][i, i] <<- sqrt(partialSumsProp)
+            }
+            ## Adjust for log determinant term from initial values
+            logMHR <- logMHR - logDetJac
+
+            lpD <- calculateDiff(model, calcNodesProposalStage)
+            if(lpD == -Inf) {
+                nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesProposalStage, logProb = TRUE)
+                jump <- FALSE
+            } else {
+                ##        jump <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
+                logMHR <- logMHR + lpD + calculateDiff(model, calcNodesDepStage)
+                jump <- decide(logMHR)
+                if(jump) {
+                    nimCopy(from = model,   to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+                    y <<- yPropValueVector
+                } else {
+                    nimCopy(from = mvSaved, to = model,   row = 1, nodes = calcNodes, logProb = TRUE)
+                }
+            }
+            if(adaptive)     adaptiveProcedure(jump)
+        }
+    },
+    methods = list(
+        transform = function(x = double(2)) {
+            ## Compute canonical partial correlations (z), transformed parameters (y), and
+            ## remaining lengths of U columns (partialSums).
+            z[1, 2:p] <<- x[1, 2:p]
+            y[1] <<- atanh(z[1, 2])
+            logDetJac <<- -2*log(cosh(y[1]))
+            cnt <- 2
+            partialSums[2, 2] <<- 1 - x[1, 2]^2
+            for(i in 3:p) {
+                y[cnt] <<- atanh(z[1, i])
+                logDetJac <<- logDetJac - 2*log(cosh(y[cnt]))
+                cnt <- cnt+1
+                partialSums[2, i] <<- 1 - x[1, i]^2
+                for(j in 2:(i-1)) {
+                    z[j, i] <<- x[j, i] / sqrt(partialSums[j, i])
+                    y[cnt] <<- atanh(z[j, i])
+                    logDetJac <<- logDetJac - 2*log(cosh(y[cnt])) + 0.5*log(partialSums[j, i]) 
+                    cnt <- cnt+1
+                    partialSums[j+1, i] <<- partialSums[j, i] - x[j, i]^2
+                }
+            }
+        },
+        generateProposalVector = function() {
+            propValueVector <- rmnorm_chol(1, y, chol_propCov_scale, 0)  ## last argument specifies prec_param = FALSE
+            returnType(double(1))
+            return(propValueVector)
+        },
+        adaptiveProcedure = function(jump = logical()) {
+            timesRan <<- timesRan + 1
+            if(jump)     timesAccepted <<- timesAccepted + 1
+            if(!adaptScaleOnly)     empirSamp[timesRan, 1:d] <<- y
+            if(timesRan %% adaptInterval == 0) {
+                acceptanceRate <- timesAccepted / timesRan
+                timesAdapted <<- timesAdapted + 1
+                if(saveMCMChistory) {
+                    setSize(scaleHistory, timesAdapted)                 ## scaleHistory
+                    scaleHistory[timesAdapted] <<- scale                ## scaleHistory
+                    setSize(acceptanceHistory, timesAdapted)            ## scaleHistory
+                    acceptanceHistory[timesAdapted] <<- acceptanceRate  ## scaleHistory
+                    if(d <= 10) {
+                        propCovTemp <- propCovHistory                                           ## scaleHistory
+                        setSize(propCovHistory, timesAdapted, d, d)                             ## scaleHistory
+                        if(timesAdapted > 1)                                                    ## scaleHistory
+                            for(iTA in 1:(timesAdapted-1))                                      ## scaleHistory
+                                propCovHistory[iTA, 1:d, 1:d] <<- propCovTemp[iTA, 1:d, 1:d]    ## scaleHistory
+                        propCovHistory[timesAdapted, 1:d, 1:d] <<- propCov[1:d, 1:d]            ## scaleHistory
+                    }
+                }
+                adaptFactor <- my_calcAdaptationFactor$run(acceptanceRate)
+                scale <<- scale * adaptFactor
+                ## calculate empirical covariance, and adapt proposal covariance
+                if(!adaptScaleOnly) {
+                    gamma1 <- my_calcAdaptationFactor$getGamma1()
+                    for(i in 1:d)     empirSamp[, i] <<- empirSamp[, i] - mean(empirSamp[, i])
+                    empirCov <- (t(empirSamp) %*% empirSamp) / (timesRan-1)
+                    propCov <<- propCov + gamma1 * (empirCov - propCov)
+                    chol_propCov <<- chol(propCov)
+                }
+                chol_propCov_scale <<- chol_propCov * scale
+                timesRan <<- 0
+                timesAccepted <<- 0
+            }
+        },
+        getScaleHistory = function() {  ## scaleHistory
+            if(!saveMCMChistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC")
+            returnType(double(1))
+            return(scaleHistory)
+        },          
+        getAcceptanceHistory = function() {  ## scaleHistory
+            returnType(double(1))
+            if(!saveMCMChistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC")
+            return(acceptanceHistory)
+        },                  
+        getPropCovHistory = function() { ## scaleHistory
+            if(!saveMCMChistory | d > 10)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC and note that to reduce memory use we only save the proposal covariance history for parameter vectors of length 10 or less")
+            returnType(double(3))
+            return(propCovHistory)
+        },
+        ##getScaleHistoryExpanded = function() {                                                              ## scaleHistory
+        ##    scaleHistoryExpanded <- numeric(timesAdapted*adaptInterval, init=FALSE)                         ## scaleHistory
+        ##    for(iTA in 1:timesAdapted)                                                                      ## scaleHistory
+        ##        for(j in 1:adaptInterval)                                                                   ## scaleHistory
+        ##            scaleHistoryExpanded[(iTA-1)*adaptInterval+j] <- scaleHistory[iTA]                      ## scaleHistory
+        ##    returnType(double(1)); return(scaleHistoryExpanded) },                                          ## scaleHistory
+        ##getPropCovHistoryExpanded = function() {                                                            ## scaleHistory
+        ##    propCovHistoryExpanded <- array(dim=c(timesAdapted*adaptInterval,d,d), init=FALSE)              ## scaleHistory
+        ##    for(iTA in 1:timesAdapted)                                                                      ## scaleHistory
+        ##        for(j in 1:adaptInterval)                                                                   ## scaleHistory
+        ##            propCovHistoryExpanded[(iTA-1)*adaptInterval+j,1:d,1:d] <- propCovHistory[iTA,1:d,1:d]  ## scaleHistory
+        ##    returnType(double(3)); return(propCovHistoryExpanded) },                                        ## scaleHistory
+        reset = function() {
+            scale   <<- scaleOriginal
+            propCov <<- propCovOriginal
+            chol_propCov <<- chol(propCov)
+            chol_propCov_scale <<- chol_propCov * scale
+            timesRan      <<- 0
+            timesAccepted <<- 0
+            timesAdapted  <<- 0
+            if(saveMCMChistory) {
+                scaleHistory  <<- c(0, 0)    ## scaleHistory
+                acceptanceHistory  <<- c(0, 0)
+                if(d <= 10) 
+                    propCovHistory <<- nimArray(0, dim = c(2,d,d))
+            }
+            my_calcAdaptationFactor$reset()
+        }
+    )
+)
 
 ####################################################################################################
 ### CAR_scalar_{postPred,conjugate,RW} component samplers for dcar_{normal,proper} distributions ###
@@ -2038,6 +2406,36 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item scale. The initial value of the scalar multiplier for the multivariate normal Metropolis-Hastings proposal covariance.  If adaptive = FALSE, scale will never change. (default = 1)
 #' }
 #'
+#' @section RW_block_lkj_corr_cholesky sampler:
+#'
+#' This sampler is designed for sampling non-conjugate LKJ correlation Cholesky factor distributions. The sampler performs a blocked Metropolis-Hastings update following a transformation to an unconstrained scale (using the signed stickbreaking approach documented in Section 10.12 of the Stan Language Reference Manual, version 2.27). 
+#'
+#' The \code{RW_block_lkj_corr_cholesky} sampler accepts the following control list elements:
+#' \itemize{
+#' \item adaptive. A logical argument, specifying whether the sampler should adapt the scale (a coefficient for the entire proposal covariance matrix) and propCov (the multivariate normal proposal covariance matrix) throughout the course of MCMC execution.  If only the scale should undergo adaptation, this argument should be specified as TRUE. (default = TRUE)
+#' \item adaptScaleOnly. A logical argument, specifying whether adaption should be done only for scale (TRUE) or also for provCov (FALSE).  This argument is only relevant when adaptive = TRUE.  When adaptScaleOnly = FALSE, both scale and propCov undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When adaptScaleOnly = TRUE, only the proposal scale is adapted. (default = FALSE)
+#' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the RW_block sampler will perform its adaptation procedure, based on the past adaptInterval iterations. (default = 200)
+#' \item adaptFactorExponent. Exponent controling the rate of decay of the scale adaptation factor.  See Shaby and Wells, 2011, for details. (default = 0.8)
+#' \item scale. The initial value of the scalar multiplier for propCov.  If adaptive = FALSE, scale will never change. (default = 1)
+#' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the character string 'identity', in which case the identity matrix of the appropriate dimension will be used for the initial proposal covariance matrix. (default = 'identity')
+#' }
+#'
+#' This is the default sampler for the LKJ distribution. However, blocked samplers may perform poorly if the adaptation configuration is poorly chosen. See the comments in the RW_block section of this documentation.
+#'
+#' @section RW_lkj_corr_cholesky sampler:
+#'
+#' This sampler is designed for sampling non-conjugate LKJ correlation Cholesky factor distributions. The sampler performs individual Metropolis-Hastings updates following a transformation to an unconstrained scale (using the signed stickbreaking approach documented in Section 10.12 of the Stan Language Reference Manual, version 2.27). 
+#'
+#' The \code{RW_lkj_corr_cholesky} sampler accepts the following control list elements:
+#' \itemize{
+#' \item adaptive. A logical argument, specifying whether the sampler should adapt the scales of the univariate normal Metropolis-Hasting proposals, to achieve a theoretically desirable acceptance rate for each. (default = TRUE)
+#' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the sampler will perform its adaptation procedure.  (default = 200)
+#' \item adaptFactorExponent. Exponent controling the rate of decay of the scale adaptation factor.  See Shaby and Wells, 2011, for details. (default = 0.8)
+#' \item scale. The initial value of the scalar multiplier for the multivariate normal Metropolis-Hastings proposal covariance.  If adaptive = FALSE, scale will never change. (default = 1)
+#' }
+#'
+#' Note that this sampler is likely run much more slowly than the blocked sampler for the LKJ distribution, as updating each single element will generally incur the full cost of updating all dependencies of the entire matrix. 
+#' 
 #' @section CAR_normal sampler:
 #'
 #' The CAR_normal sampler operates uniquely on improper (intrinsic) Gaussian conditional autoregressive (CAR) nodes, those with a \code{dcar_normal} prior distribution.  It internally assigns one of three univariate samplers to each dimension of the target node: a posterior predictive, conjugate, or RW sampler; however these component samplers are specialized to operate on dimensions of a \code{dcar_normal} distribution.
@@ -2104,7 +2502,7 @@ sampler_CAR_proper <- nimbleFunction(
 #' 
 #' @name samplers
 #'
-#' @aliases sampler binary categorical posterior_predictive posterior_predictive_branch RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block sampler_posterior_predictive sampler_posterior_predictive_branch sampler_binary sampler_categorical sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block CRP CRP_concentration DPmeasure RJ_fixed_prior RJ_indicator RJ_toggled RW_PF RW_PF_block
+#' @aliases sampler binary categorical posterior_predictive posterior_predictive_branch RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block sampler_posterior_predictive sampler_posterior_predictive_branch sampler_binary sampler_categorical sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block CRP CRP_concentration DPmeasure RJ_fixed_prior RJ_indicator RJ_toggled RW_PF RW_PF_block RW_lkj_corr_cholesky sampler_RW_lkj_corr_cholesky RW_block_lkj_corr_cholesky sampler_RW_block_lkj_corr_cholesky
 #'
 #' @examples
 #' ## y[1] ~ dbern() or dbinom():
@@ -2162,6 +2560,8 @@ sampler_CAR_proper <- nimbleFunction(
 #' Roberts, G. O. and S. K. Sahu (1997). Updating Schemes, Correlation Structure, Blocking and Parameterization for the Gibbs Sampler. \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 59(2), 291-317.
 #'
 #' Shaby, B. and M. Wells (2011). \emph{Exploring an Adaptive Metropolis Algorithm}. 2011-14. Department of Statistics, Duke University.
+#'
+#' Stan Development Team (2020). \emph{Stan Language Reference Manual, Version 2.22, Section 10.12}.
 #'
 #' Tibbits, M. M.,  Groendyke, C.,  Haran, M., and Liechty, J. C. (2014).  Automated Factor Slice Sampling.  \emph{Journal of Computational and Graphical Statistics}, 23(2), 543-563.
 #'
