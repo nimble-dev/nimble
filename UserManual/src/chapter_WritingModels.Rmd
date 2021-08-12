@@ -314,12 +314,12 @@ code <- nimbleCode({
 })
 ```
 
-Note that we need to take the upper triangular Cholesky factor (`Ustar`)
-and convert it to the Cholesky factor of a covariance matrix (`U`), based on a vector of
-standard deviations (`sds`), and use that directly in the parameterization of
+Note that we need to take the upper triangular Cholesky factor (`Ustar`) of the correlation matrix
+and convert it to the upper triangular Cholesky factor of a covariance matrix (`U`), based on a vector of
+standard deviations (`sds`), and use that in the parameterization of
 `dmnorm` that directly (and therefore efficiently) uses the Cholesky of the covariance.
 
-Other approaches are possible but unless care is taken are likely to be less
+Other approaches are possible, but unless care is taken they are likely to be less
 computationally efficient than the template above.
 
 The template uses a user-defined nimbleFunction to efficiently combine the
