@@ -233,27 +233,53 @@ Type nimDerivs_nimArr_dmvt_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &mu
 
 /* dlkj: LKJ correlation cholesky factor */
 template<class Type>
-Type nimDerivs_nimArr_dlkj_corr_cholesky(NimArr<2, Type> &x, Type eta, int p, Type give_log) {
-
+Type nimDerivs_nimArr_dlkj_corr_cholesky(NimArr<2, Type> &x, Type eta, Type p, Type give_log) {
+  // Should p be of type Type or double? If double/int no matching call as passed a CppAD::AD<double>
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
-  Eigen::Map<MatrixXt > mapX(x.getPtr(), p, p);
+  typedef Eigen::Array<Type, Eigen::Dynamic, 1> ArrayXt;
+  int n = x.dimSize(0);   // otherwise not sure how to cast `p` to be acceptable to mapX
+  Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
 
-  Type dens = sum(mapX.diagonal().array().log() *
-		  (Type(p) - Eigen::seq(Type(1.0), Type(p)) + Type(2.0)*eta - Type(2.0)));
+  // not sure how to use Eigen:seq in arithmetic or to initialize an array
+  ArrayXt pseq(n);
+  for(int i = 0; i < n; i++)
+    pseq(i) = i+1;
+
+  /*
+  Type dens = Type(0.);
+  int counter = 0;
+  for(int k = 2; k <= n; k++) {
+    counter += p+1;
+    dens += log(x[counter]) * (Type(p) - k + Type(2.0)*eta - Type(2.0));
+  }
+  */
+  Type dens = (mapX.diagonal().array().log() *
+               (Type(p) - pseq + Type(2.0)*eta - Type(2.0))).sum();
 
   dens = CppAD::CondExpEq(give_log, Type(1), dens, exp(dens));
   return(dens);
 }
 
+/*  Type sumDens = Type(0.);
+  for(i = 0; i < n*n; i += n + 1) 
+  sumDens += log(chol[i]);*/
+
+
 template<class Type>
-Type nimDerivs_nimArr_dlkj_corr_cholesky_logFixed(NimArr<2, Type> &x, Type eta, int p, int give_log) {
+Type nimDerivs_nimArr_dlkj_corr_cholesky_logFixed(NimArr<2, Type> &x, Type eta, Type p, int give_log) {
 
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
-  Eigen::Map<MatrixXt > mapX(x.getPtr(), p, p);
+  typedef Eigen::Array<Type, Eigen::Dynamic, 1> ArrayXt;
+  int n = x.dimSize(0);   // otherwise not sure how to cast `p` to be acceptable to mapX
+  Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
 
-  // Ok use of Type(p) in seq()?
-  Type dens = sum(mapX.diagonal().array().log() *
-		  (Type(p) - Eigen::seq(Type(1.0), Type(p)) + Type(2.0)*eta - Type(2.0)));
+  // not sure how to use Eigen:seq in arithmetic
+  ArrayXt pseq(n);
+  for(int i = 0; i < n; i++)
+    pseq(i) = i+1;
+
+  Type dens = (mapX.diagonal().array().log() *
+               (Type(p) - pseq + Type(2.0)*eta - Type(2.0))).sum();
 
   if(!give_log){
     dens = exp(dens);

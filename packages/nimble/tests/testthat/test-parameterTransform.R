@@ -1,4 +1,4 @@
-source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
@@ -231,31 +231,27 @@ test_that('parameterTransform for lkj correlation matrices', {
         U[1:p,1:p] ~ dlkj_corr_cholesky(eta = 1.3, p)
     })
 
-    ## Can't use dlkj until lkj merged into devel and then into ADoak
-    ## so expect failure until then.
-    expect_failure({
-        m <- nimbleModel(code, constants = list(n = n, p = p, mu = rep(0, p)),
+    m <- nimbleModel(code, constants = list(n = n, p = p, mu = rep(0, p)),
                      data = list(y = y), inits = list(U = U))
-
-        pt <- parameterTransform(m, nodes = 'Ustar')
-        yt_from_pt <- pt$transform(m$Ustar)
-        U_from_pt  <- pt$inverseTransform(yt)
-        logDetJac_from_pt  <- pt$logDetJacobian(yt)
-        
-        cm <- compileNimble(m)
-        cpt <- compileNimble(pt, project = m)
-        cyt_from_pt <- cpt$transform(m$Ustar)
-        cU_from_pt  <- cpt$inverseTransform(yt)
-        clogDetJac_from_pt  <- cpt$logDetJacobian(yt)
-        
-        expect_identical(yt, yt_from_pt)
-        expect_identical(U, matrix(U_from_pt, p, p))
-        expect_identical(logDetJac, logDetJac_from_pt)
-        
-        expect_identical(yt, cyt_from_pt)
-        expect_identical(U, matrix(cU_from_pt, p, p))
-        expect_identical(logDetJac, clogDetJac_from_pt)
-    })
+    
+    pt <- parameterTransform(m, nodes = 'U')
+    yt_from_pt <- pt$transform(m$U)
+    U_from_pt  <- pt$inverseTransform(yt)
+    logDetJac_from_pt  <- pt$logDetJacobian(yt)
+    
+    cm <- compileNimble(m)
+    cpt <- compileNimble(pt, project = m)
+    cyt_from_pt <- cpt$transform(m$U)
+    cU_from_pt  <- cpt$inverseTransform(yt)
+    clogDetJac_from_pt  <- cpt$logDetJacobian(yt)
+    
+    expect_identical(yt, yt_from_pt)
+    expect_equal(U, matrix(U_from_pt, p, p))
+    expect_identical(logDetJac, logDetJac_from_pt)
+    
+    expect_identical(yt, cyt_from_pt)
+    expect_equal(U, matrix(cU_from_pt, p, p))
+    expect_identical(logDetJac, clogDetJac_from_pt)
 })
     
 options(warn = RwarnLevel)
