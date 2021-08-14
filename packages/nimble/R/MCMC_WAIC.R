@@ -224,7 +224,7 @@ buildWAIC <- nimbleFunction(
             }
             finalized <<- TRUE
         },
-        get = function(returnElements = logical(default = FALSE)) {
+        get = function() {
             ## Extract WAIC summary information.
             returnType(waicList())
             if(!finalized)
