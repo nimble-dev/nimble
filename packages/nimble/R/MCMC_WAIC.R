@@ -1,61 +1,32 @@
-#' waicList definition
-#' 
-#' \code{waicList} definition for the \code{nimbleList} type returned by WAIC
-#' computation.
-#'
-#' @details
-#'
-#' See \code{help(waic)} for details on the elements of the list.
-#' 
-#' @author NIMBLE development team
-#'
-#' @export
-#' 
-waicList <- nimbleList(
-    list(
-        nimbleType('WAIC', 'double', 0),
-        nimbleType('lppd', 'double', 0),
-        nimbleType('pWAIC', 'double', 0)
-    ), name = 'waicList'
+
+
+waicClass_base <- nimbleFunctionVirtual(
+    name = 'waicClass_base',
+    methods = list(
+        reset = function() {},
+        updateStats = function() {},
+        get = function() { returnType(waicList()) },
+        getDetails = function(returnElements = logical(default = FALSE)) { returnType(waicDetailsList()) }
+    )
 )
-    
-#' waicDetailsList definition
-#' 
-#' \code{waicDetailsList} definition for the \code{nimbleList} type returned by WAIC
-#' computation.
-#'
-#' @details
-#'
-#' See \code{help(waic)} for details on the elements of the list.
-#' 
-#' @author NIMBLE development team
-#'
-#' @export
-#' 
-waicDetailsList <- nimbleList(
-    list(
-        nimbleType('marginal', 'logical', 0),
-        nimbleType('niterMarginal', 'double', 0),
-        nimbleType('thin', 'logical', 0),
-        nimbleType('online', 'logical', 0),
 
-        ## values for shorter MC runs to assess convergence for marginal calculation
-        nimbleType('WAIC_partialMC', 'double', 1),
-        nimbleType('lppd_partialMC', 'double', 1),
-        nimbleType('pWAIC_partialMC', 'double', 1),
-        nimbleType('niterMarginal_partialMC', 'double' , 1),  # checkIts
-
-        ## per data group values potentially useful for SE for contrasting WAIC of two models
-        nimbleType('WAIC_elements', 'double', 1),
-        nimbleType('lppd_elements', 'double', 1),
-        nimbleType('pWAIC_elements', 'double', 1)
-
-    ), name = 'waicDetailsList'
+buildDummyWAIC <- nimbleFunction(
+    name = 'waicDummyClass',
+    contains = waicClass_base,
+    setup = function() {},
+    run = function() {},
+    methods = list(
+        reset = function() {},
+        get = function() { return(waicList$new(WAIC = NA, lppd = NA, pWAIC = NA)); returnType(waicList()) },
+        getDetails = function(returnElements = logical(default = FALSE)) {return(waicDetailsList$new(marginal = FALSE, niterMarginal = 0, thin = FALSE, online = FALSE));  returnType(waicDetailsList()) },
+        updateStats = function() {},
+        finalize = function() {}
+    )
 )
 
 buildWAIC <- nimbleFunction(
     name = 'waicClass',
-    contains = nimbleFunctionVirtual(), 
+    contains = waicClass_base, 
     setup = function(model, mvSaved, control) {
         online              <- extractControlElement(control, 'online',              TRUE)
         thin                <- extractControlElement(control, 'thin',                FALSE)

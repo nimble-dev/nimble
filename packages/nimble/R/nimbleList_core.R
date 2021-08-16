@@ -367,6 +367,63 @@ svdNimbleList <-  nimbleList(list(nimbleType('d', 'double', 1),
 #' @export
 #' @seealso \code{\link{nimDerivs}}
 
+
+#' waicList definition
+#' 
+#' \code{waicList} definition for the \code{nimbleList} type returned by WAIC
+#' computation.
+#'
+#' @details
+#'
+#' See \code{help(waic)} for details on the elements of the list.
+#' 
+#' @author NIMBLE development team
+#'
+#' @export
+#' 
+waicList <- nimbleList(
+    list(
+        nimbleType('WAIC', 'double', 0),
+        nimbleType('lppd', 'double', 0),
+        nimbleType('pWAIC', 'double', 0)
+    ), name = 'waicList'
+)
+    
+#' waicDetailsList definition
+#' 
+#' \code{waicDetailsList} definition for the \code{nimbleList} type returned by WAIC
+#' computation.
+#'
+#' @details
+#'
+#' See \code{help(waic)} for details on the elements of the list.
+#' 
+#' @author NIMBLE development team
+#'
+#' @export
+#' 
+waicDetailsList <- nimbleList(
+    list(
+        nimbleType('marginal', 'logical', 0),
+        nimbleType('niterMarginal', 'double', 0),
+        nimbleType('thin', 'logical', 0),
+        nimbleType('online', 'logical', 0),
+
+        ## values for shorter MC runs to assess convergence for marginal calculation
+        nimbleType('WAIC_partialMC', 'double', 1),
+        nimbleType('lppd_partialMC', 'double', 1),
+        nimbleType('pWAIC_partialMC', 'double', 1),
+        nimbleType('niterMarginal_partialMC', 'double' , 1),  # checkIts
+
+        ## per data group values potentially useful for SE for contrasting WAIC of two models
+        nimbleType('WAIC_elements', 'double', 1),
+        nimbleType('lppd_elements', 'double', 1),
+        nimbleType('pWAIC_elements', 'double', 1)
+
+    ), name = 'waicDetailsList'
+)
+
+
 ADNimbleList <-  nimbleList(list(nimbleType('value', 'double', 1),
                                  nimbleType('gradient', 'double', 2),
                                  nimbleType('hessian', 'double', 3),

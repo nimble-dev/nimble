@@ -1,4 +1,3 @@
-
 #' Create an MCMC function from a NIMBLE model, or an MCMC configuration object
 #'
 #' First required argument, which may be of class \code{MCMCconf} (an MCMC configuration object), or inherit from class \code{modelBaseClass} (a NIMBLE model object).  Returns an uncompiled executable MCMC function.  See details.
@@ -106,10 +105,16 @@ buildMCMC <- nimbleFunction(
         progressBarLength <- 52  ## multiples of 4 only
         progressBarDefaultSetting <- getNimbleOption('MCMCprogressBar')
 
-        ## Build WAIC regardless, as needed in order to compile.
-        waic <- buildWAIC(model, mvSaved, conf$controlWAIC)
-        onlineWAIC <- waic$online 
-        thinWAIC <- waic$thin
+        waicFun <- nimbleFunctionList(waicClass_base)
+        if(enableWAIC && !('online' %in% names(conf$controlWAIC) && !conf$controlWAIC$online)) {
+           waicFun[[1]] <- buildWAIC(model, mvSaved, conf$controlWAIC)
+           onlineWAIC <- waicFun[[1]]$online 
+           thinWAIC <- waicFun[[1]]$thin
+        } else {
+            waicFun[[1]] <- buildDummyWAIC()
+            onlineWAIC <- FALSE
+            thinWAIC <- FALSE
+        }
 
         ## Setup for original WAIC prior to v. 0.12.0, namely cWAIC with no grouping capability.
         ## Retained for backward compatibility.
@@ -164,8 +169,8 @@ buildMCMC <- nimbleFunction(
                 mvSamples2_copyRow <- getsize(mvSamples2)
             }
         }
-        if(resetWAIC)
-            waic$reset()
+        if(onlineWAIC & resetWAIC)
+            waicFun[[1]]$reset()
         resize(mvSamples,  mvSamples_copyRow  + floor((niter-nburnin) / thinToUseVec[1]))
         resize(mvSamples2, mvSamples2_copyRow + floor((niter-nburnin) / thinToUseVec[2]))
         ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
@@ -210,9 +215,9 @@ buildMCMC <- nimbleFunction(
                 }
                 if(enableWAIC & onlineWAIC) {
                     if (!thinWAIC) {
-                        waic$updateStats()
+                        waicFun[[1]]$updateStats()
                     } else if (sampleNumber %% thinToUseVec[1] == 0){ 
-                        waic$updateStats()
+                        waicFun[[1]]$updateStats()
                     }
                 }
             }
@@ -270,7 +275,7 @@ buildMCMC <- nimbleFunction(
         getWAIC = function() {
             returnType(waicList())
             if(enableWAIC & onlineWAIC) {
-                return(waic$get())
+                return(waicFun[[1]]$get())
             } else {
                 print("Online WAIC was disabled based on the 'onlineWAIC' element of WAIC control list.")
                 return(waicList$new(WAIC = NA, lppd = NA, pWAIC = NA))
@@ -279,7 +284,7 @@ buildMCMC <- nimbleFunction(
         getWAICdetails = function(returnElements = logical(default = FALSE)) {
             returnType(waicDetailsList())
             if(enableWAIC & onlineWAIC) {
-                return(waic$getDetails(returnElements))
+                return(waicFun[[1]]$getDetails(returnElements))
             } else {
                 print("Online WAIC was disabled based on the 'onlineWAIC' element of WAIC control list.")
                 return(waicDetailsList$new(marginal = FALSE, niterMarginal = 0, thin = FALSE, online = FALSE))
