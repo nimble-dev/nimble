@@ -4,14 +4,25 @@
 \alias{configureMCMC}
 \title{Build the MCMCconf object for construction of an MCMC object}
 \usage{
-configureMCMC(model, nodes, control = list(), monitors, thin = 1,
-  monitors2 = character(), thin2 = 1,
-  useConjugacy = getNimbleOption("MCMCuseConjugacy"), onlyRW = FALSE,
+configureMCMC(
+  model,
+  nodes,
+  control = list(),
+  monitors,
+  thin = 1,
+  monitors2 = character(),
+  thin2 = 1,
+  useConjugacy = getNimbleOption("MCMCuseConjugacy"),
+  onlyRW = FALSE,
   onlySlice = FALSE,
   multivariateNodesAsScalars = getNimbleOption("MCMCmultivariateNodesAsScalars"),
   enableWAIC = getNimbleOption("MCMCenableWAIC"),
-  print = getNimbleOption("verbose"), autoBlock = FALSE, oldConf,
-  warnNoSamplerAssigned = TRUE, ...)
+  print = getNimbleOption("verbose"),
+  autoBlock = FALSE,
+  oldConf,
+  warnNoSamplerAssigned = TRUE,
+  ...
+)
 }
 \arguments{
 \item{model}{A NIMBLE model object, created from \code{\link{nimbleModel}}}
@@ -64,10 +75,9 @@ Creates a defaut MCMC configuration for a given model.
 \details{
 See \code{\link{MCMCconf}} for details on how to manipulate the \code{MCMCconf} object
 }
-\author{
-Daniel Turek
-}
 \seealso{
 \code{\link{buildMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}
 }
-
+\author{
+Daniel Turek
+}

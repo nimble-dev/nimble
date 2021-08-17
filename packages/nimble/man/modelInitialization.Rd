@@ -11,4 +11,3 @@ Having uninitialized nodes in a NIMBLE model can potentially cause some algorith
    \item Likewise, particle filtering methods will initialize top-level parameters from their prior distributions, which can lead to errors or poor performance in these methods.
 }
 }
-

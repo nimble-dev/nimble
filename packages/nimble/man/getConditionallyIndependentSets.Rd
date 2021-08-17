@@ -4,9 +4,16 @@
 \alias{getConditionallyIndependentSets}
 \title{Get a list of conditionally independent sets of nodes in a nimble model}
 \usage{
-getConditionallyIndependentSets(model, nodes, givenNodes, omit = integer(),
-  inputType = c("latent", "param", "data"), stochOnly = TRUE,
-  returnType = "names", returnScalarComponents = FALSE)
+getConditionallyIndependentSets(
+  model,
+  nodes,
+  givenNodes,
+  omit = integer(),
+  inputType = c("latent", "param", "data"),
+  stochOnly = TRUE,
+  returnType = "names",
+  returnScalarComponents = FALSE
+)
 }
 \arguments{
 \item{model}{A nimble model object (uncompiled or compiled).}
@@ -46,10 +53,9 @@ necessary, as usual with nimble's model-generic programming.  To
 turn off this feature, set
 \code{nimbleOptions(groupDetermWithGivenInCondIndSets = FALSE)}.
 }
-\author{
-Perry de Valpine
-}
 \seealso{
 There is a non-exported function \code{nimble:::testConditionallyIndependentSets(model, sets, initialize = TRUE)} that tests whether the conditional independence of sets is valid.  It should be the case that \code{nimble:::testConditionallyIndependentSets(model, getConditionallyIndependentSets(model), initialize = TRUE)} returns \code{TRUE}.
 }
-
+\author{
+Perry de Valpine
+}

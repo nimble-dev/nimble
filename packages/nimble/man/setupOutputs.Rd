@@ -14,4 +14,3 @@ Normally any object created in \code{setup} whose name appears in \code{run} or 
 
 The \code{setupOutputs} line will be removed from the setup code.  It is really a marker during nimbleFunction creation of what should be preserved.
 }
-

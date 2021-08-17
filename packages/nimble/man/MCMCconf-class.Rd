@@ -2,23 +2,23 @@
 % Please edit documentation in R/MCMC_configuration.R
 \docType{class}
 \name{MCMCconf-class}
-\alias{MCMCconf}
 \alias{MCMCconf-class}
+\alias{MCMCconf}
+\alias{addSampler}
+\alias{removeSamplers}
+\alias{setSamplers}
+\alias{printSamplers}
+\alias{getSamplers}
+\alias{setSamplerExecutionOrder}
+\alias{getSamplerExecutionOrder}
 \alias{addMonitors}
 \alias{addMonitors2}
-\alias{addSampler}
-\alias{getMonitors}
-\alias{getMonitors2}
-\alias{getSamplerExecutionOrder}
-\alias{getSamplers}
-\alias{printMonitors}
-\alias{printSamplers}
-\alias{removeSamplers}
-\alias{resetMonitors}
 \alias{setMonitors}
 \alias{setMonitors2}
-\alias{setSamplerExecutionOrder}
-\alias{setSamplers}
+\alias{resetMonitors}
+\alias{getMonitors}
+\alias{getMonitors2}
+\alias{printMonitors}
 \alias{setThin}
 \alias{setThin2}
 \title{Class \code{MCMCconf}}
@@ -52,8 +52,16 @@ print: A logical argument specifying whether to print all current monitors (defa
 Details: See the initialize() function
             }
 
-\item{\code{addSampler(target, type = "RW", control = list(), print = FALSE, name,
-  scalarComponents = FALSE, silent = FALSE, ...)}}{Adds a sampler to the list of samplers contained in the MCMCconf object.
+\item{\code{addSampler(
+  target,
+  type = "RW",
+  control = list(),
+  print = FALSE,
+  name,
+  scalarComponents = FALSE,
+  silent = FALSE,
+  ...
+)}}{Adds a sampler to the list of samplers contained in the MCMCconf object.
 
 Arguments:
 
@@ -77,8 +85,13 @@ Details: A single instance of the newly configured sampler is added to the end o
 
 Invisibly returns a list of the current sampler configurations, which are samplerConf reference class objects.}
 
-\item{\code{addSamplerOne(thisSamplerName, samplerFunction, targetOne, thisControlList,
-  print)}}{For internal use only}
+\item{\code{addSamplerOne(
+  thisSamplerName,
+  samplerFunction,
+  targetOne,
+  thisControlList,
+  print
+)}}{For internal use only}
 
 \item{\code{getMonitors()}}{Returns a character vector of the current monitors
 
@@ -108,13 +121,23 @@ Arguments:
 
 ind: A numeric vector or character vector.  A numeric vector may be used to specify the indices of the samplerConf objects to return, or a character vector may be used to indicate a set of target nodes and/or variables, for which all samplers acting on these nodes will be returned. For example, getSamplers('x') will return all samplerConf objects whose target is model node 'x', or whose targets are contained (entirely or in part) in the model variable 'x'.  If omitted, then all samplerConf objects in this MCMC configuration object are returned.}
 
-\item{\code{initialize(model, nodes, control = list(), monitors, thin = 1,
-  monitors2 = character(), thin2 = 1,
-  useConjugacy = getNimbleOption("MCMCuseConjugacy"), onlyRW = FALSE,
+\item{\code{initialize(
+  model,
+  nodes,
+  control = list(),
+  monitors,
+  thin = 1,
+  monitors2 = character(),
+  thin2 = 1,
+  useConjugacy = getNimbleOption("MCMCuseConjugacy"),
+  onlyRW = FALSE,
   onlySlice = FALSE,
   multivariateNodesAsScalars = getNimbleOption("MCMCmultivariateNodesAsScalars"),
   enableWAIC = getNimbleOption("MCMCenableWAIC"),
-  warnNoSamplerAssigned = TRUE, print = TRUE, ...)}}{Creates a MCMC configuration for a given model.  The resulting object is suitable as an argument to buildMCMC.
+  warnNoSamplerAssigned = TRUE,
+  print = TRUE,
+  ...
+)}}{Creates a MCMC configuration for a given model.  The resulting object is suitable as an argument to buildMCMC.
 
 Arguments:
 
@@ -162,9 +185,16 @@ print: A logical argument specifying whether to print the montiors and samplers.
 Details: See the initialize() function
             }
 
-\item{\code{printSamplers(..., ind, type, displayControlDefaults = FALSE,
-  displayNonScalars = FALSE, displayConjugateDependencies = FALSE,
-  executionOrder = FALSE, byType = FALSE)}}{Prints details of the MCMC samplers.
+\item{\code{printSamplers(
+  ...,
+  ind,
+  type,
+  displayControlDefaults = FALSE,
+  displayNonScalars = FALSE,
+  displayConjugateDependencies = FALSE,
+  executionOrder = FALSE,
+  byType = FALSE
+)}}{Prints details of the MCMC samplers.
 
 Arguments:
 
@@ -280,6 +310,7 @@ print: A logical argument specifying whether to print all current monitors (defa
 Details: See the initialize() function
             }
 }}
+
 \examples{
 code <- nimbleCode({
  mu ~ dnorm(0, 1)
@@ -296,10 +327,9 @@ conf$setThin2(10)
 conf$printMonitors()
 conf$printSamplers()
 }
-\author{
-Daniel Turek
-}
 \seealso{
 \code{\link{configureMCMC}}
 }
-
+\author{
+Daniel Turek
+}

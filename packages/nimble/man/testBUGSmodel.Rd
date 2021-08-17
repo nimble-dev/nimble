@@ -4,9 +4,17 @@
 \alias{testBUGSmodel}
 \title{Tests BUGS examples in the NIMBLE system}
 \usage{
-testBUGSmodel(example = NULL, dir = NULL, model = NULL, data = NULL,
-  inits = NULL, useInits = TRUE, expectModelWarning = FALSE,
-  debug = FALSE, verbose = nimbleOptions("verbose"))
+testBUGSmodel(
+  example = NULL,
+  dir = NULL,
+  model = NULL,
+  data = NULL,
+  inits = NULL,
+  useInits = TRUE,
+  expectModelWarning = FALSE,
+  debug = FALSE,
+  verbose = nimbleOptions("verbose")
+)
 }
 \arguments{
 \item{example}{(optional) example character vector indicating name of BUGS example to test; can be null if \code{model} is provided}
@@ -41,4 +49,3 @@ testBUGSmodel('pump')
 \author{
 Christopher Paciorek
 }
-

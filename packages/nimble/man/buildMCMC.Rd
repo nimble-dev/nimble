@@ -83,6 +83,7 @@ calculation to be based on the joint predictive density for each group of observ
 data context), one would need to use a multivariate distribution for the
 observations in each group (potentially by writing a user-defined distribution).
 }
+
 \examples{
 \dontrun{
 code <- nimbleCode({
@@ -103,9 +104,6 @@ WAIC <- Cmcmc$calculateWAIC(nburnin = 1000)
 }
 
 }
-\author{
-Daniel Turek
-}
 \references{
 Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation and widely applicable information criterion in singular learning theory. \emph{Journal of Machine Learning Research} 11: 3571-3594.
 
@@ -116,4 +114,6 @@ Ariyo, O., Quintero, A., Munoz, J., Verbeke, G. and Lesaffre, E. (2019). Bayesia
 \seealso{
 \code{\link{configureMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}
 }
-
+\author{
+Daniel Turek
+}

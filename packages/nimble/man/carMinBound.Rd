@@ -24,10 +24,9 @@ Calculate the lower bound for the \code{gamma} parameter of the \code{dcar_prope
 \details{
 Bounds for \code{gamma} are the inverse of the minimum and maximum eigenvalues of: \eqn{M^(-0.5) C M^(0.5)}.
 }
-\author{
-Daniel Turek
-}
 \seealso{
 \code{\link{CAR-Proper}}, \code{\link{carMaxBound}}, \code{\link{carBounds}}
 }
-
+\author{
+Daniel Turek
+}

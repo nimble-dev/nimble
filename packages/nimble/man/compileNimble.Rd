@@ -4,9 +4,15 @@
 \alias{compileNimble}
 \title{compile NIMBLE models and nimbleFunctions}
 \usage{
-compileNimble(..., project, dirName = NULL, projectName = "",
-  control = list(), resetFunctions = FALSE,
-  showCompilerOutput = nimbleOptions("showCompilerOutput"))
+compileNimble(
+  ...,
+  project,
+  dirName = NULL,
+  projectName = "",
+  control = list(),
+  resetFunctions = FALSE,
+  showCompilerOutput = nimbleOptions("showCompilerOutput")
+)
 }
 \arguments{
 \item{...}{An arbitrary set of NIMBLE models and nimbleFunctions, or lists of them.  If given as named parameters, those names may be used in the return list.}
@@ -46,4 +52,3 @@ See NIMBLE User Manual for examples
 \author{
 Perry de Valpine
 }
-

@@ -594,7 +594,7 @@ nimbleOptions(MCMCsaveHistory = TRUE)
 ## Now access the history information:
 cmcmc$samplerFunctions[[idx]]$getScaleHistory()
 cmcmc$samplerFunctions[[idx]]$getAcceptanceHistory()
-cmcmc$samplerFunctions[[idx]]$getPropCovHistory   ## only for RW_block
+cmcmc$samplerFunctions[[idx]]$getPropCovHistory()   ## only for RW_block
 ```
 
 Note that modifying elements of the control list may greatly

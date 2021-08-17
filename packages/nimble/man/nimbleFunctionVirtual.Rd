@@ -4,8 +4,12 @@
 \alias{nimbleFunctionVirtual}
 \title{create a virtual nimbleFunction, a base class for other nimbleFunctions}
 \usage{
-nimbleFunctionVirtual(contains = NULL, run = function() { },
-  methods = list(), name = NA)
+nimbleFunctionVirtual(
+  contains = NULL,
+  run = function() { },
+  methods = list(),
+  name = NA
+)
 }
 \arguments{
 \item{contains}{Not yet functional}
@@ -25,10 +29,9 @@ define argument types and returnType for the \code{run} function and any \code{m
 \details{
 See the NIMBLE User Manual section on nimbleFunctionLists for explanation of how to use a virtual nimbleFunction.
 }
-\author{
-NIMBLE development team
-}
 \seealso{
 \code{\link{nimbleFunction}}
 }
-
+\author{
+NIMBLE development team
+}

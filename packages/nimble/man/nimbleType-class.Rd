@@ -2,8 +2,8 @@
 % Please edit documentation in R/nimbleList_core.R
 \docType{class}
 \name{nimbleType-class}
-\alias{nimbleType}
 \alias{nimbleType-class}
+\alias{nimbleType}
 \title{create a nimbleType object}
 \arguments{
 \item{name}{The name of the object, given as a character string.}
@@ -23,6 +23,7 @@ or can be the name of a previously created \code{\link{nimbleList} definition}.
 
 See the NIMBLE User Manual for additional examples.
 }
+
 \examples{
 nimbleTypeList <- list()
 nimbleTypeList[[1]] <- nimbleType(name = 'x', type = 'integer', dim = 0)
@@ -32,4 +33,3 @@ nimbleTypeList[[2]] <- nimbleType(name = 'Y', type = 'double', dim = 2)
 \author{
 NIMBLE development team
 }
-

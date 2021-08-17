@@ -4,11 +4,26 @@
 \alias{nimbleMCMC}
 \title{Executes one or more chains of NIMBLE's default MCMC algorithm, for a model specified using BUGS code}
 \usage{
-nimbleMCMC(code, constants = list(), data = list(), inits,
-  dimensions = list(), model, monitors, thin = 1, niter = 10000,
-  nburnin = 0, nchains = 1, check = TRUE, setSeed = FALSE,
-  progressBar = getNimbleOption("MCMCprogressBar"), samples = TRUE,
-  samplesAsCodaMCMC = FALSE, summary = FALSE, WAIC = FALSE)
+nimbleMCMC(
+  code,
+  constants = list(),
+  data = list(),
+  inits,
+  dimensions = list(),
+  model,
+  monitors,
+  thin = 1,
+  niter = 10000,
+  nburnin = 0,
+  nchains = 1,
+  check = TRUE,
+  setSeed = FALSE,
+  progressBar = getNimbleOption("MCMCprogressBar"),
+  samples = TRUE,
+  samplesAsCodaMCMC = FALSE,
+  summary = FALSE,
+  WAIC = FALSE
+)
 }
 \arguments{
 \item{code}{The quoted code expression representing the model, such as the return value from a call to \code{nimbleCode}). Not required if \code{model} is provided.}
@@ -94,10 +109,9 @@ mcmc.output <- nimbleMCMC(code, data = data, inits = inits,
 }
 
 }
-\author{
-Daniel Turek
-}
 \seealso{
 \code{\link{configureMCMC}} \code{\link{buildMCMC}} \code{\link{runMCMC}}
 }
-
+\author{
+Daniel Turek
+}

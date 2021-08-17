@@ -15,4 +15,3 @@ During execution of nimbleFunctions that take a long time, it is nice to occassi
 \author{
 Perry de Valpine
 }
-

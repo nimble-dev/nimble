@@ -272,7 +272,7 @@ CusePreviousDemo1$run(1:10)
 baseClass <- nimbleFunctionVirtual(
     run = function(x = double(1)) {returnType(double())},
     methods = list(
-        foo = function() {returnType(double())}
+        foo = function() { returnType(double()) }
     ))
 
 derived1 <- nimbleFunction(
@@ -285,10 +285,12 @@ derived1 <- nimbleFunction(
     },
     methods = list(
         foo = function() {
-        print("foo 1")
-        return(rnorm(1, 0, 1))
-        returnType(double())
-    }))
+            print("foo 1")
+            return(rnorm(1, 0, 1))
+            returnType(double())
+        }
+    )
+)
 
 derived2 <- nimbleFunction(
     contains = baseClass,
@@ -300,10 +302,12 @@ derived2 <- nimbleFunction(
     },
     methods = list(
         foo = function() {
-        print("foo 2")
-        return(runif(1, 100, 200))
-        returnType(double())
-    }))
+            print("foo 2")
+            return(runif(1, 100, 200))
+            returnType(double())
+        }
+    )
+)
 
 useThem <- nimbleFunction(
     setup = function() {

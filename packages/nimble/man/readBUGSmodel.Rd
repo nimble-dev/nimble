@@ -4,9 +4,17 @@
 \alias{readBUGSmodel}
 \title{Create a NIMBLE BUGS model from a variety of input formats, including BUGS model files}
 \usage{
-readBUGSmodel(model, data = NULL, inits = NULL, dir = NULL,
-  useInits = TRUE, debug = FALSE, returnComponents = FALSE,
-  check = getNimbleOption("checkModel"), calculate = TRUE)
+readBUGSmodel(
+  model,
+  data = NULL,
+  inits = NULL,
+  dir = NULL,
+  useInits = TRUE,
+  debug = FALSE,
+  returnComponents = FALSE,
+  check = getNimbleOption("checkModel"),
+  calculate = TRUE
+)
 }
 \arguments{
 \item{model}{one of (1) a character string giving the file name containing the BUGS model code, with relative or absolute path, (2) an R function whose body is the BUGS model code, or (3) the output of \code{\link{nimbleCode}}. If a file name, the file can contain a 'var' block and 'data' block in the manner of the JAGS versions of the BUGS examples but should not contain references to other input data files nor a const block. The '.bug' or '.txt' extension can be excluded.}
@@ -56,10 +64,9 @@ pumpModel$getVarNames()
 pumpModel$x
 
 }
-\author{
-Christopher Paciorek
-}
 \seealso{
 \code{\link{nimbleModel}}
 }
-
+\author{
+Christopher Paciorek
+}

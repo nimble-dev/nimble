@@ -4,18 +4,19 @@
 \name{eigenNimbleList}
 \alias{eigenNimbleList}
 \title{eigenNimbleList definition}
-\format{An object of class \code{list} of length 1.}
+\format{
+An object of class \code{list} of length 1.
+}
 \usage{
 eigenNimbleList
 }
 \description{
 \code{nimbleList} definition for the type of \code{nimbleList} returned by \code{\link{nimEigen}}.
 }
-\author{
-NIMBLE development team
-}
 \seealso{
 \code{\link{nimEigen}}
 }
+\author{
+NIMBLE development team
+}
 \keyword{datasets}
-

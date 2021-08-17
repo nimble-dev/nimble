@@ -24,4 +24,3 @@ Extract named elements from MCMC sampler control list
 \author{
 Daniel Turek
 }
-

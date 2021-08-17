@@ -12,4 +12,3 @@ buildEnsembleKF(...)
 \description{
 This function has been moved to the `nimbleSMC` package
 }
-

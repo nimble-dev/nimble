@@ -40,7 +40,7 @@ nfGen1 <- nimbleFunction(
     setupOutputs(B) ## preserves B even though it is not used in run-code
    },
    run = function() {
-      print('This is A', A, '\\n')
+      print('This is A', A, '\n')
 })
 
 nfGen2 <- nimbleFunction(
@@ -59,4 +59,3 @@ nf2$run()
 \author{
 NIMBLE development team
 }
-

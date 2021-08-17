@@ -51,10 +51,9 @@ In a \code{nimbleFunction}, \code{svd} is identical to \code{nimSvd}.
      return(singularValues)
  })
 }
-\author{
-NIMBLE development team
-}
 \seealso{
 \code{\link{nimEigen}} for spectral decompositions.
 }
-
+\author{
+NIMBLE development team
+}
