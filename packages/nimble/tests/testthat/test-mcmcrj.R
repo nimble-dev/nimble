@@ -197,7 +197,7 @@ test_that("Check sampler_RJ behaviour - no indicator", {
   ## beta1 should be less likely to be 0
   expect_true(sum(output[, 'beta1'] == 0)/100 < 0.5)
   ## beta1 estimate (comparison with lm estimate)
-  expect_lt(abs(mean(output[which(output[, 'beta1'] != 0), 'beta1']J)- as.numeric(coef(lm(Y ~ x1 + x2))[2])), 0.1)
+  expect_lt(abs(mean(output[which(output[, 'beta1'] != 0), 'beta1'])- as.numeric(coef(lm(Y ~ x1 + x2))[2])), 0.1)
 
   # ## beta1 should be in the model in last 100 iterations (chain has converged)
   # expect_false(any(output[, 'beta1'] == 0))
