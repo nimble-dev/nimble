@@ -77,9 +77,9 @@ test_that("Test that mvt calculate and simulate are correct in nodeFunctions", {
     r_samps <- t(replicate(10000, rmvt_chol(n = 1, mn, chol(sc), df, prec_param = FALSE)))
     true_cov <- sc*df/(df-2)
 
-    expect_lt(abs(colMeans(r_samps)- mn) , 0.03,
+    expect_lt(max(abs(colMeans(r_samps)- mn)) , 0.03,
                  label = "Difference in random sample means in R exceeds tolerance")
-    expect_lt(abs(cov(r_samps) - true_cov) , 0.1,
+    expect_lt(max(abs(cov(r_samps) - true_cov)) , 0.1,
                  label = "Difference in random sample covs in R exceeds tolerance")
 
     nf_sampling <- nimbleFunction(
