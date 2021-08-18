@@ -551,14 +551,17 @@ The MCMC algorithm (either the compiled or uncompiled version) can be executed u
 
 The `run` method has optional arguments `nburnin`, `thin` and `thin2`.  These can be used to specify the number of pre-thinning burn-in samples to discard, and the post-burnin thinning intervals for recording samples (corresponding to `monitors` and `monitors2`).  If either `thin` and `thin2` are provided, they will override the thinning intervals that were specified in the original MCMC configuration object.
 
+### Rerunning versus restarting an MCMC {#sec:mcmc-rerun}
+
 The `run` method has an optional `reset` argument.  When `reset = TRUE` (the default value), the following occurs prior to running the MCMC:
 
   1. All model nodes are checked and filled or updated as needed, in valid (topological) order.  If a stochastic node is missing a value, it is populated using a call to `simulate` and its log probability value is calculated.  The values of deterministic nodes are calculated from their parent nodes.  If any right-hand-side-only nodes (e.g., explanatory variables) are missing a value, an error results.
   1. All MCMC sampler functions are reset to their initial state: the initial values of any sampler control parameters (e.g., `scale`, `sliceWidth`, or `propCov`) are reset to their initial values, as were specified by the original MCMC configuration.
   1. The internal modelValues objects `mvSamples` and `mvSamples2` are each resized to the appropriate length for holding the requested number of samples (`niter/thin`, and `niter/thin2`, respectively).
 
+This means that one can run a new MCMC  without having to recompile the MCMC. This can be helpful if one wants to use the same MCMC configuration but with different starting values, different data values, or other changes to values in the model.
 
-When `mcmc$run(niter, reset = FALSE)` is called, the MCMC picks up from where it left off, continuing the previous chain and expanding the output as needed.  No values in the model are checked or altered, and sampler functions are not reset to their initial states.
+In contrast, when `mcmc$run(niter, reset = FALSE)` is called, the MCMC picks up from where it left off, continuing the previous chain and expanding the output as needed.  No values in the model are checked or altered, and sampler functions are not reset to their initial states.
 
 The `run` method also has an optional `resetMV` argument. This argument is only considered when`'reset` is set to `FALSE`. When `mcmc$run(niter, reset = FALSE, resetMV = TRUE)` is called the internal modelValues objects `mvSamples` and `mvSamples2` are each resized to the appropriate length for holding the requested number of samples (`niter/thin`, and `niter/thin2`, respectively) and the MCMC carries on from where it left off. In other words, the previously obtained samples are deleted (e.g. to reduce memory usage) prior to continuing the MCMC. The default value of  `resetMV`  is  `FALSE`. 
 
