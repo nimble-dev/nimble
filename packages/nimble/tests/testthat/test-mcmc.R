@@ -1163,10 +1163,10 @@ test_that('using LKJ randomw walk samplers', {
     cols <- matrix(1:(p*p), p, p)
     cols <- cols[upper.tri(cols)]
 
-    expect_equal(stan_means[cols], nim_means_block[cols], tolerance = 0.005)
-    expect_equal(stan_means[cols], nim_means_uni[cols], tolerance = 0.005)
-    expect_equal(stan_sds[cols], nim_sds_block[cols], tolerance = 0.005)
-    expect_equal(stan_sds[cols], nim_sds_uni[cols], tolerance = 0.005)
+    expect_lt(max(abs(stan_means[cols] - nim_means_block[cols])),  0.005)
+    expect_lt(max(abs(stan_means[cols] - nim_means_uni[cols])), 0.005)
+    expect_lt(max(abs(stan_sds[cols] - nim_sds_block[cols])), 0.005)
+    expect_lt(max(abs(stan_sds[cols] - nim_sds_uni[cols])), 0.005)
     
     ## Compare sampler output to truth for another (simple) model.
     code <- nimbleCode({
@@ -1195,7 +1195,7 @@ test_that('using LKJ randomw walk samplers', {
     samples <- runMCMC(cmcmc, niter = 2500, nburnin = 500)
     postMean <- colMeans(samples)
     names(postMean) <- NULL
-    expect_equal(postMean, c(mat), tolerance = 0.07, info = "RW_block_lkj posterior not close to truth")
+    expect_lt(max(abs(postMean - c(mat))), 0.07, label = "RW_block_lkj posterior not close to truth")
 
     set.seed(1)
     conf <- configureMCMC(m, nodes = NULL)
@@ -1206,7 +1206,7 @@ test_that('using LKJ randomw walk samplers', {
     samples <- runMCMC(cmcmc, niter = 2500, nburnin = 500)
     postMean <- colMeans(samples)
     names(postMean) <- NULL
-    expect_equal(postMean, c(mat), tolerance = 0.07, info = "RW_lkj posterior not close to truth")
+    expect_lt(max(abs(postMean - c(mat))), 0.07, label = "RW_lkj posterior not close to truth")
 
     nimbleOptions('buildInterfacesForCompiledNestedNimbleFunctions' = opt)
 })
@@ -1339,14 +1339,14 @@ test_that('binary sampler setup', {
     ##means
     
     tol <- 0.0025
-    test_that('binary sampler posterior', expect_lt(abs(means[['a']] - 0.5), tol))
-    test_that('binary sampler posterior', expect_lt(abs(means[['b']] - 0.6), tol))
-    test_that('binary sampler posterior', expect_lt(abs(means[['c']] - 0.05), tol))
-    test_that('binary sampler posterior', expect_lt(abs(means[['d']] - 0.2), tol))
-    test_that('binary sampler posterior', expect_lt(abs(means[['e']] - 0.9), tol))
-    test_that('binary sampler posterior', expect_lt(abs(means[['f']] - 0.9525), tol))
-    test_that('binary sampler posterior', expect_lt(abs(means[['g']] - 0.0475), tol))
-    test_that('binary sampler posterior', expect_lt(abs(means[['h']] - 0.5), tol))
+    expect_lt(abs(means[['a']] - 0.5), tol)
+    expect_lt(abs(means[['b']] - 0.6), tol)
+    expect_lt(abs(means[['c']] - 0.05), tol)
+    expect_lt(abs(means[['d']] - 0.2), tol)
+    expect_lt(abs(means[['e']] - 0.9), tol)
+    expect_lt(abs(means[['f']] - 0.9525), tol)
+    expect_lt(abs(means[['g']] - 0.0475), tol)
+    expect_lt(abs(means[['h']] - 0.5), tol)
     
 })
     
@@ -1511,15 +1511,15 @@ test_that('RW_dirichlet sampler consistent with conjugate multinomial sampler', 
     nodes <- c('p[1]','p[2]','p[3]')
     ans <- c(0.12812261, 0.6728109, 0.19906652)
     tol <- 1e-6
-    expect_equal(as.numeric(Rsamples[30, nodes]), ans, tolerance=tol, info = 'correct R RW_dirichlet samples')
-    expect_equal(as.numeric(Csamples[30, nodes]), ans, tolerance=tol, info = 'correct C RW_dirichlet samples')
+    expect_lt(max(abs(as.numeric(Rsamples[30, nodes])-ans)), tol, label = 'correct R RW_dirichlet samples')
+    expect_lt(max(abs(as.numeric(Csamples[30, nodes])-ans)), tol, label = 'correct C RW_dirichlet samples')
     
     Cmcmc$run(100000)
     Csamples <- as.matrix(Cmcmc$mvSamples)
     means <- apply(Csamples, 2, mean)
 
-    expect_true(all(abs(means[c('p[1]','p[2]','p[3]')] - means[c('p2[1]','p2[2]','p2[3]')]) < 0.001),
-                info = 'agreement between RW_dirichlet and conjugate dirichlet sampling' )
+    expect_lt(max(abs(means[c('p[1]','p[2]','p[3]')] - means[c('p2[1]','p2[2]','p2[3]')])), 0.001,
+                label = 'agreement between RW_dirichlet and conjugate dirichlet sampling' )
 })
     
 ## testing RW_dirichlet sampler

@@ -1762,8 +1762,7 @@ test_that("Test opening of new clusters in CRP sampler ", {
   ## now check that cmodel$muTilde[2] is near 50 and first obs has moved to 2nd cluster
   set.seed(1)
   output <- runMCMC(cmcmc, niter=1, nburnin=0, thin=1 , inits=inits, setSeed=FALSE)
-  expect_equal(output[1, 'muTilde[2]'], 50, tolerance = 2, info = 'incorrect update of parameter for second cluster',
-               check.attributes = FALSE)
+  expect_lt(abs(output[1, 'muTilde[2]'] - 50), 3, label = 'incorrect update of parameter for second cluster')
   expect_identical(output[1, 'xi[1]'], c('xi[1]'=2), 'incorrect cluster for first obs')
   expect_identical(output[1, 'muTilde[1]'], c('muTilde[1]'=0), 'incorrect update of parameter for first cluster')
   if(.Platform$OS.type != "windows") {
@@ -1906,9 +1905,8 @@ test_that("Test opening of new clusters in CRP sampler ", {
   ## now check that cmodel$muTilde[2] has changed and first obs has 'stayed' in 2nd cluster
   set.seed(1)
   output <- runMCMC(cmcmc, niter=1, nburnin=0, thin=1 , inits=inits, setSeed=FALSE)
-  expect_equal(output[1, 'muTilde[2]'], 50, tolerance = 5,
-               info = 'incorrect update of parameter for second cluster',
-               check.attributes = FALSE)
+  expect_lt(abs(output[1, 'muTilde[2]'] - 50), 5,
+               label = 'incorrect update of parameter for second cluster')
   expect_identical(output[1, 'xi[1]'], c('xi[1]'=2), 'incorrect cluster for first obs')
   if(.Platform$OS.type != "windows") {
       nimble:::clearCompiled(model)
@@ -2206,9 +2204,8 @@ test_that("random sampling from CRP in model with additional levels", {
   ## K is the number of unique components in x of length 6
   true_EK <- sum(conc/(conc+1:size-1))
   
-  expect_equal(mean(apply(r_samps, 1, function(x)length(unique(x)))), true_EK, 
-               tol = 0.01,
-               info = "Difference in expected mean of K exceeds tolerance")
+  expect_lt(abs(mean(apply(r_samps, 1, function(x)length(unique(x)))) - true_EK), 0.01,
+               label = "Difference in expected mean of K exceeds tolerance")
   
   ## sampling from the model:
   set.seed(1)
@@ -2230,9 +2227,8 @@ test_that("random sampling from CRP in model with additional levels", {
   }
   simul_samps <- t(replicate(10000, simul_samp(c_CRP_model)))
   
-  expect_equal(mean(apply(simul_samps, 1, function(x)length(unique(x)))), true_EK, 
-               tol = 0.01,
-               info = "Difference in expected mean of K, from compiled model, exceeds tolerance")
+  expect_lt(abs(mean(apply(simul_samps, 1, function(x)length(unique(x)))) - true_EK), 0.01,
+               label = "Difference in expected mean of K, from compiled model, exceeds tolerance")
   
 })
 
@@ -7035,8 +7031,8 @@ test_that("Testing BNP model using stick breaking representation", {
   
   L1dist <- mean(abs(f0grid - fhat))
   
-  expect_equal(L1dist, 0.01, tol=0.01,
-               info = "wrong estimation of density in DPM of normal distrbutions")
+  expect_lt(abs(L1dist - 0.01), 0.01,
+               label = "wrong estimation of density in DPM of normal distrbutions")
   
 })
 
@@ -7084,8 +7080,8 @@ test_that("random sampling from model works fine", {
   #-- if z_i ~ beta then weights, w, defined by a SB representation have a generalized dirichlet distribution
   #-- and the expectation of w_j=0.5^j (in this case a=b=1).
   
-  expect_equal(apply(simul_samps, 2, mean)[1:5], trueE, tol=0.01,
-               info = paste0("incorrect weights (w) sampling  in SB_model2"))
+  expect_lt(max(abs(apply(simul_samps, 2, mean)[1:5] - trueE)), 0.01,
+               label = paste0("incorrect weights (w) sampling  in SB_model2"))
   
   
   ## wrong specification of stick variables
@@ -7276,12 +7272,12 @@ test_that("Testing dnorm_dnorm non-identity conjugacy setting, regression settin
     expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm_nonidentity", info = 'dnorm_dnorm_nonidentity conjugacy not detected')
     mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$calculate_offset_coeff(1,4)  # xi[1] = 4
     expect_identical(mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$offset[1:J], rep(m$b0, J), info = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
-    expect_equal(mcmc$samplerFunctions[[crpIndex]]$helperFunctions[[1]]$coeff[1:J], rep(m$x[1], J), tolerance = 1e-15, 
-                 info = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
+    expect_lt(max(abs(mcmc$samplerFunctions[[crpIndex]]$helperFunctions[[1]]$coeff[1:J] - rep(m$x[1], J))), 1e-15, 
+                 label = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
     mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$calculate_offset_coeff(2,3)  # xi[2] = 3
     expect_identical(mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$offset[1:J], rep(m$b0, J), info = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
-    expect_equal(mcmc$samplerFunctions[[crpIndex]]$helperFunctions[[1]]$coeff[1:J], rep(m$x[2], J), tolerance = 1e-15,
-                 info = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
+    expect_lt(max(abs(mcmc$samplerFunctions[[crpIndex]]$helperFunctions[[1]]$coeff[1:J] - rep(m$x[2], J))), 1e-15,
+                 label = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
 
     ## Correct predictive distribution
     tmp <- m$calculate()  ## in case we go back to having calculate_offset_coeff not recalculate after set to 0 and 1
@@ -7305,7 +7301,7 @@ test_that("Testing dnorm_dnorm non-identity conjugacy setting, regression settin
     mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[crpIndex]]$sample(1, 4)
     set.seed(1)
     smp <- rnorm(2, postMean, sqrt(postVar))
-    expect_equal(smp, m$b1[4, 1:2], tolerance = 1e-15, info = "problem with predictive sample for dnorm_dnorm_nonidentity")
+    expect_lt(max(abs(smp -  m$b1[4, 1:2])), 1e-15, label = "problem with predictive sample for dnorm_dnorm_nonidentity")
 
     ## Compare to identity conjugacy as special case.
     set.seed(1)
@@ -7404,8 +7400,8 @@ test_that("Testing that cluster parameters are appropriately updated and mvSaved
     mcmc <- buildMCMC(conf)
     cmcmc <- compileNimble(mcmc, project=m)
     cmcmc$run(1)
-    expect_equal(cm$mu[2], 0, tolerance = 3, info = 'mu[2] is not changed')
-    expect_equal(cm$mu[3], 0, tolerance = 3, info = 'mu[3] is not changed')
+    expect_lt(abs(cm$mu[2]), 3, label = 'mu[2] is not changed')
+    expect_identical(cm$mu[3], 50, info = 'mu[3] is changed')
     expect_identical(cm$mu[4], 50, info = 'mu[4] is changed')
     expect_identical(cmcmc$mvSaved[['mu']], cm$mu)
     expect_identical(cmcmc$mvSaved[['logProb_mu']], cm$logProb_mu)
@@ -7463,7 +7459,7 @@ test_that("Testing that cluster parameters are appropriately updated and mvSaved
     mcmc <- buildMCMC(conf)
     cmcmc <- compileNimble(mcmc, project=m)
     cmcmc$run(1)
-    expect_equal(cm$mu[2], 0, tolerance = 3, info = 'mu[2] is not changed')
+    expect_lt(abs(cm$mu[2]), 3, label = 'mu[2] is not changed')
     expect_identical(cm$mu[3], 50, info = 'mu[3] is  changed')
     expect_identical(cmcmc$mvSaved[['mu']], cm$mu)
     expect_identical(cmcmc$mvSaved[['logProb_mu']], cm$logProb_mu)

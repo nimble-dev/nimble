@@ -60,7 +60,7 @@ test_that("Test that MCEM finds the MLE", {
     
     mle <- c(0.82, 1.26)
     
-    expect_equal(out, mle, tolerance = 0.04)
+    expect_lt(max(abs(out - mle)), 0.04)
 })
 
 ## below example obtained from https://people.ucsc.edu/~abrsvn/bayes_winbugs_jags_4.r
@@ -124,10 +124,10 @@ test_that("Test that asymptotic covariance is correct", {
     mixedEffCov <- mixedEffMCEM$estimateCov(mixedEffMLEs)
     lme4Cov <- matrix(c(87.16, 22.2, 22.2, 135.3), nrow = 2)
     ## test that st.devs and sqrt of covs are close enough to truth.  we only examine cov of mu.int and mu.slope
-    expect_equal(sqrt(lme4Cov[1,1]), sqrt(mixedEffCov[1,1]), tolerance =  2)
-    expect_equal(sqrt(lme4Cov[2,2]), sqrt(mixedEffCov[2,2]), tolerance =  2)
+    expect_lt(abs(sqrt(lme4Cov[1,1]) - sqrt(mixedEffCov[1,1])), 2)
+    expect_lt(abs(sqrt(lme4Cov[2,2]) - sqrt(mixedEffCov[2,2])), 2)
     expect_equal(sign(lme4Cov[2,1]), sign(mixedEffCov[2,1]))
-    expect_equal(sqrt(abs(lme4Cov[2,1])), sqrt(abs(mixedEffCov[2,1])), tolerance = 1)
+    expect_lt(abs(sqrt(abs(lme4Cov[2,1]))- sqrt(abs(mixedEffCov[2,1]))), 1)
 })
 
 sink(NULL)

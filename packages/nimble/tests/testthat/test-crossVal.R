@@ -41,7 +41,7 @@ test_that("voter model cross-validation is accurate: ", {
                               lossFunction = 'predictive',
                               MCMCcontrol = list(niter = 500),
                               nBootReps = 2)
-  expect_equal(testOut$CVvalue*15, -43.8, tolerance = 2)
+  expect_lt(abs(testOut$CVvalue*15 + 43.8), 2)
 })
 
 ## Next two tests are just to ensure that the CV algo runs error-free

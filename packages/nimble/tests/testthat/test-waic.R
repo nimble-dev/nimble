@@ -37,7 +37,7 @@ test_that("school model WAIC is accurate", {
   temporarilyAssignInGlobalEnv(schoolSATmcmc)
   CschoolSATmcmc <- compileNimble(schoolSATmcmc, project = schoolSATmodel)
   CschoolSATmcmc$run(50000)
-  expect_equal(CschoolSATmcmc$calculateWAIC(), 61.8, tolerance = 2.0)
+  expect_lt(abs(CschoolSATmcmc$calculateWAIC() - 61.8), 2.0)
 
   schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('mu', 'itau'))
   expect_error(buildMCMC(schoolSATmcmcConf, enableWAIC = TRUE), 
@@ -46,14 +46,13 @@ test_that("school model WAIC is accurate", {
   ## schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('mu'))
   ## expect_error(buildMCMC(schoolSATmcmcConf, enableWAIC = TRUE))
   ## different set of monitors than above, so different waic value expected
-  ## expect_equal(nimbleMCMC(model = schoolSATmodel, WAIC = TRUE)$WAIC, 67, tolerance = 8) 
+  ## expect_lt(abs(nimbleMCMC(model = schoolSATmodel, WAIC = TRUE)$WAIC - 67, 8) 
 
   schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('schoolmean'))
   schoolSATmcmc <- buildMCMC(schoolSATmcmcConf, enableWAIC = TRUE)
   CschoolSATmcmc <- compileNimble(schoolSATmcmc, project = schoolSATmodel, 
                                   resetFunctions = TRUE)
-  expect_equal(runMCMC(CschoolSATmcmc, WAIC = TRUE)$WAIC, 61.8, 
-               tolerance = 2) 
+  expect_lt(abs(runMCMC(CschoolSATmcmc, WAIC = TRUE)$WAIC - 61.8), 2) 
   schoolSATmcmc <- buildMCMC(schoolSATmcmcConf, enableWAIC = FALSE)
   expect_error(runMCMC(schoolSATmcmc, WAIC = TRUE))
 })
@@ -86,7 +85,7 @@ test_that("voter model WAIC is accurate", {
   temporarilyAssignInGlobalEnv(votermcmc)
   Cvotermcmc <- compileNimble(votermcmc, project = voterModel)
   Cvotermcmc$run(50000)
-  expect_equal(Cvotermcmc$calculateWAIC(), 87.2, tolerance = 2.0)
+  expect_lt(abs(Cvotermcmc$calculateWAIC() - 87.2), 2.0)
   votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_2',
                                                           'sigma'))
   expect_error(buildMCMC(votermcmcConf, enableWAIC = TRUE))
@@ -169,7 +168,7 @@ test_that("Radon model WAIC is accurate", {
   temporarilyAssignInGlobalEnv(radonmcmc)
   Cradonmcmc <- compileNimble(radonmcmc, project = radonModel)
   Cradonmcmc$run(10000)
-  expect_equal(Cradonmcmc$calculateWAIC(1000), 3937, tolerance = 10)
+  expect_lt(abs(Cradonmcmc$calculateWAIC(1000) - 3937), 10)
   radonmcmcConf <- configureMCMC(radonModel, monitors = c('coefs'))
   ## check to ensure monitoring deterministic nodes works
   expect_message(radonmcmc <- buildMCMC(radonmcmcConf, enableWAIC = TRUE), 
