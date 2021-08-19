@@ -1,5 +1,5 @@
 #' Class \code{modelBaseClass}
-#' @aliases modelBaseClass getVarNames getNodeNames topologicallySortNodes resetData setData isData isEndNode getDistribution isDiscrete isBinary isStoch isDeterm isTruncated isUnivariate isMultivariate getDimension getDependencies getDependenciesList getDownstream expandNodeNames setInits checkConjugacy getCode newModel [[,modelBaseClass-method [[<-,modelBaseClass-method initializeInfo
+#' @aliases modelBaseClass getVarNames getNodeNames topologicallySortNodes resetData setData isData isEndNode getDistribution isDiscrete isBinary isStoch isDeterm isTruncated isUnivariate isMultivariate getDimension getDependencies getDependenciesList getDownstream expandNodeNames setInits checkConjugacy getCode newModel getParents [[,modelBaseClass-method [[<-,modelBaseClass-method initializeInfo
 #' @export
 #' @description
 #' This class underlies all NIMBLE model objects: both R model objects created from the return value of nimbleModel(), and compiled model objects.
