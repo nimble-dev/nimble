@@ -92,9 +92,9 @@ test_that("Test that mvt calculate and simulate are correct in nodeFunctions", {
         }
     )
     nf_samps <- t(replicate(10000, nf_sampling(mn, sc, df)))
-    expect_lt(abs(colMeans(nf_samps)-mn) , 0.03,
+    expect_lt(max(abs(colMeans(nf_samps)-mn)), 0.03,
                  label = "Difference in means in nf exceeds tolerance")
-    expect_lt(abs(cov(nf_samps)- true_cov) , 0.1,
+    expect_lt(max(abs(cov(nf_samps)- true_cov)), 0.1,
                  label = "Difference in covs in nf exceeds tolerance")
 
     ## sampling via `simulate`
@@ -106,10 +106,10 @@ test_that("Test that mvt calculate and simulate are correct in nodeFunctions", {
     
     simul_samps <- t(replicate(10000, simul_samp(c_mvt_model)))
     
-    expect_lt(abs(colMeans(simul_samps)-mn) , 0.03,
+    expect_lt(max(abs(colMeans(simul_samps)-mn)) , 0.03,
                  label = "Difference in means in random samples (simulate) exceeds tolerance")
     
-    expect_lt(abs(cov(simul_samps)-true_cov) , 0.1,
+    expect_lt(max(abs(cov(simul_samps)-true_cov)) , 0.1,
                  label = "Difference in covs in random samples (simulate) exceeds tolerance")
 })
 

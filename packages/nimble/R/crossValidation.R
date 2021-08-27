@@ -26,9 +26,13 @@ calcCrossVal <- function(i,
                          niter,
                          nburnin,
                          returnSamples,
-                         nBootReps, 
+                         nBootReps,
+                         parallel = FALSE,
                          silent){
   message(paste("dropping data fold", i))
+  if(parallel) {
+      dirName <- file.path(tempdir(), 'nimble_generatedCode', paste0("worker_", i))
+  } else dirName = NULL
   model <- conf$model
   leaveOutNames <- model$expandNodeNames(foldFunction(i))
   currentDataNames <- model$getNodeNames(dataOnly = TRUE)
@@ -39,8 +43,8 @@ calcCrossVal <- function(i,
   newModel$resetData()
   values(newModel, leaveOutNames) <- NA
   newModel$setData(model$getVarNames(nodes = currentDataNames))
-  if(!silent) compileNimble(newModel)
-  else Cmodel <- suppressMessages(compileNimble(newModel))
+  if(!silent) compileNimble(newModel, dirName = dirName)
+  else Cmodel <- suppressMessages(compileNimble(newModel, dirName = dirName))
   predLoss <- FALSE
   if(is.character(lossFunction) && lossFunction == 'predictive'){
     paramNames <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
@@ -65,13 +69,13 @@ calcCrossVal <- function(i,
   if(!silent){
     modelMCMC <- buildMCMC(modelMCMCConf)
     C.modelMCMC <- compileNimble(modelMCMC,
-                                 project = newModel)
+                                 project = newModel, dirName = dirName)
     C.modelMCMC$run(niter)
   }
   else{
       modelMCMC <- suppressMessages(buildMCMC(modelMCMCConf))
       C.modelMCMC <- suppressMessages(compileNimble(modelMCMC,
-                                   project = newModel))
+                                   project = newModel, dirName = dirName))
       silentNull <- suppressMessages(C.modelMCMC$run(niter, progressBar = FALSE))
   }
   MCMCout <- as.matrix(C.modelMCMC$mvSamples)[,leaveOutNames, drop = FALSE]
@@ -342,8 +346,9 @@ runCrossValidate <- function(MCMCconfiguration,
                             nburnin,
                             returnSamples,
                             nBootReps,
-                            mc.cores = nCores,
-                            silent)
+                            TRUE,
+                            silent,
+                            mc.cores = nCores)
   } else{
       crossValOut <- lapply(1:k, calcCrossVal,
                             MCMCconfiguration,
@@ -353,6 +358,7 @@ runCrossValidate <- function(MCMCconfiguration,
                             nburnin,
                             returnSamples,
                             nBootReps,
+                            FALSE,
                             silent)
   }
   CVvalue <- mean(sapply(crossValOut, function(x) x$crossValAverage),

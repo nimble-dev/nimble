@@ -603,6 +603,7 @@ doubleBracket_keywordInfo <- keywordInfoClass(
             }
             return(ans)			
         }
+        stop("Incorrect use of double brackets in: '", deparse(code), "'.")
     })
 
 modelMemberFun_keywordInfo <- keywordInfoClass(
