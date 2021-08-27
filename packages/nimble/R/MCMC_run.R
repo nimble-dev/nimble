@@ -300,7 +300,7 @@ nimbleMCMC <- function(code,
     if(!missing(code) && inherits(code, 'modelBaseClass')) model <- code   ## let's handle it, if model object is provided as un-named first argument to nimbleMCMC
     if(missing(model)) {  ## model object not provided
         if(!missing(inits)) {
-            if(!is.function(inits) && !is.list(inits)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of inital values')
+            if(!is.function(inits) && !is.list(inits)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of initial values')
             if(is.list(inits) && (length(inits) > 0) && is.list(inits[[1]]) && (length(inits) != nchains)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of inital values')
             if(is.function(inits)) {
                 if(is.numeric(setSeed) || setSeed) { if(is.numeric(setSeed)) set.seed(setSeed[1]) else set.seed(0) }
