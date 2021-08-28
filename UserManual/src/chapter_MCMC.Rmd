@@ -909,7 +909,7 @@ llFun <- nimbleFunction(
         ll <- lfactorial(n) - lfactorial(y) - lfactorial(n-y) +
               y * log(p) + (n-y) * log(1-p)
         returnType(double())
-        return(ll)
+        return(ll[1])
     }
 )
 
@@ -922,6 +922,9 @@ mcmcConf$addSampler(target = "p", type = "RW_llFunction",
 
 Rmcmc <- buildMCMC(mcmcConf)
 ```
+
+Note that we need to return `ll[1]` and not just `ll` because there are no scalar variables in compiled models. Hence `y` and other variables, and therefore `ll`, are of dimension 1 (i.e., vectors / one-dimensional arrays), so we need to specify the first element in order to have the return type be a scalar.
+
 <!---  ### Terminal node `posterior_predictive sampler` 
 % The `posterior_predictive` sampler is only appropriate for use on terminal stochastic nodes (that is, those having no stochastic dependencies).  Note that such nodes play no role in inference but have often been included in BUGS models to accomplish posterior predictive checks.  NIMBLE allows posterior predictive values to be simulated independently of running MCMC, for example by writing a nimbleFunction to do so.  This means that in many cases where terminal stochastic nodes have been included in BUGS models, they are not needed when using NIMBLE.
 The `posterior_predictive` sampler functions by calling the `simulate` method of the relevant node, then updating model probabilities and deterministic dependent nodes.  The `posterior_predictive` sampler will automatically be assigned to all terminal, non-data stochastic nodes in a model by the default MCMC configuration, so it is uncommon to manually assign this sampler.  The `posterior_predictive` sampler accepts no control list arguments. -->
