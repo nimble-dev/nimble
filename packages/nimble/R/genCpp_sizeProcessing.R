@@ -1502,6 +1502,14 @@ identityAssert <- function(lhs, rhs, msg = "") {
     msg <- gsub("\"", "\\\\\"", msg)
     substitute(if(lhs != rhs) nimPrint(msg), list(lhs = lhs, rhs = rhs, msg = msg))
 }
+
+## Generate R code for a greater than assertion
+greaterAssert <- function(lhs, rhs, msg = "") {
+    ## if(lhs <= rhs) return(NULL)   ## not sure if we need this line based on identityAssert /CP
+    msg <- gsub("\"", "\\\\\"", msg)
+    substitute(if(lhs > rhs) nimPrint(msg), list(lhs = lhs, rhs = rhs, msg = msg))
+}
+
 ## Determine if LHS is less information-rich that RHS and issue a warning.
 ## e.g. if LHS is int but RHS is double.
 assignmentTypeWarn <- function(LHS, RHS) {
@@ -2621,7 +2629,7 @@ sizeColonOperator <- function(code, symTab, typeEnv, recurse = TRUE) {
     code$nDim <- 1
     code$toEigenize <- 'maybe' 
     
-    ## could generate an assertiong that second arg is >= first arg
+    ## could generate an assertion that second arg is >= first arg
     if(is.numeric(code$args[[1]]) & is.numeric(code$args[[2]])) {
         code$sizeExprs <- list(code$args[[2]] - code$args[[1]] + 1)
     } else { ## at least one part is an expression
@@ -2632,7 +2640,13 @@ sizeColonOperator <- function(code, symTab, typeEnv, recurse = TRUE) {
         code$sizeExprs <- list(substitute( A - B + 1, list(A = parse(text = nimDeparse(code$args[[2]]), keep.source = FALSE)[[1]],
                                                            B = parse(text = nimDeparse(code$args[[1]]), keep.source = FALSE)[[1]] ) ) )
     }
-    invisible(asserts)
+    ## Add run-time check that don't have negative indexing.
+    assertMessage <- paste0("Run-time negative indexing error: second index ", nimDeparse(code$args[[2]]), " is less than first index ", nimDeparse(code$args[[1]]))
+    newAssert <- greaterAssert(code$args[[1]]$expr, code$args[[2]]$expr, assertMessage)
+    if(is.null(newAssert))
+        invisible(asserts)
+    else
+        invisible(c(asserts, list(newAssert)))
 }
 
 sizeTranspose <- function(code, symTab, typeEnv) {
