@@ -831,9 +831,15 @@ void rmulti(int* ans, double size, double* prob, int K) // Calling functions nee
   double sumProb = 0.0;
   int i;
 
-  for(i = 0; i < K; i++) 
+  for(i = 0; i < K; i++) {
+    if(prob[i] < 0) {
+      for(i = 0; i < K; i++) 
+        ans[i] = R_NaN;
+      return;
+    }
     sumProb += prob[i];
-  if (sumProb <= 0.0) {
+  }
+  if (sumProb <= 0.0) {   // given above check for neg probs, this now will only catch '== 0' cases
     for(i = 0; i < K; i++) 
       ans[i] = R_NaN;
     return;
@@ -918,7 +924,7 @@ double dcat(double x, double* prob, int K, int give_log)
 
   double sumProb(0.0);
   for(int i = 0; i < K; i++) {
-    if(prob[i] < 0) return R_NaN;
+    if(prob[i] < 0) ML_ERR_return_NAN;
     sumProb += prob[i];
   }
 
@@ -940,7 +946,7 @@ double rcat(double* prob, int K)
 
   double sumProb(0.0);
   for(int i = 0; i < K; i++) {
-    if(prob[i] < 0) return NA_REAL;
+    if(prob[i] < 0) return NA_REAL;  // rpois, rbinom give NA with invalid params; rnorm gives NaN
     sumProb += prob[i];
   }
 
