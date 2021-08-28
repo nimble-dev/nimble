@@ -917,8 +917,10 @@ double dcat(double x, double* prob, int K, int give_log)
 #endif
 
   double sumProb(0.0);
-  for(int i = 0; i < K; i++) 
+  for(int i = 0; i < K; i++) {
+    if(prob[i] < 0) return R_NaN;
     sumProb += prob[i];
+  }
 
   R_D_nonint_check(x);
   x = R_D_forceint(x);
@@ -937,8 +939,10 @@ double rcat(double* prob, int K)
   int value = 1;
 
   double sumProb(0.0);
-  for(int i = 0; i < K; i++) 
+  for(int i = 0; i < K; i++) {
+    if(prob[i] < 0) return NA_REAL;
     sumProb += prob[i];
+  }
 
   double u = unif_rand() * sumProb;
   while(u > prob_cum && value < K) {
