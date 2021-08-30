@@ -1505,7 +1505,8 @@ identityAssert <- function(lhs, rhs, msg = "") {
 
 ## Generate R code for a greater than assertion
 greaterAssert <- function(lhs, rhs, msg = "") {
-    ## if(lhs <= rhs) return(NULL)   ## not sure if we need this line based on identityAssert /CP
+    if(is.numeric(lhs) && is.numeric(rhs) && lhs <= rhs)
+        return(NULL)  ## avoid run-time check if fixed constants
     msg <- gsub("\"", "\\\\\"", msg)
     substitute(if(lhs > rhs) nimPrint(msg), list(lhs = lhs, rhs = rhs, msg = msg))
 }
@@ -2641,8 +2642,12 @@ sizeColonOperator <- function(code, symTab, typeEnv, recurse = TRUE) {
                                                            B = parse(text = nimDeparse(code$args[[1]]), keep.source = FALSE)[[1]] ) ) )
     }
     ## Add run-time check that don't have negative indexing.
-    assertMessage <- paste0("Run-time negative indexing error: second index ", nimDeparse(code$args[[2]]), " is less than first index ", nimDeparse(code$args[[1]]))
-    newAssert <- greaterAssert(code$args[[1]]$expr, code$args[[2]]$expr, assertMessage)
+    a1 <- code$args[[1]]
+    a2 <- code$args[[2]]
+    assertMessage <- paste0("Run-time negative indexing error: second index ", nimDeparse(a2), " is less than first index ", nimDeparse(a1))
+    if(is.numeric(a1)) a1expr <- a1 else a1expr <- a1$expr
+    if(is.numeric(a2)) a2expr <- a2 else a2expr <- a2$expr
+    newAssert <- greaterAssert(a1expr, a2expr, assertMessage)
     if(is.null(newAssert))
         invisible(asserts)
     else
