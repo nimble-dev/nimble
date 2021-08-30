@@ -1446,7 +1446,7 @@ sampler_CRP <- nimbleFunction(
     for(i in seq_len(n)) { # dataNodes are always needed so only create them before creating  intermNodes
       stochDeps <- model$getDependencies(targetElements[i], stochOnly = TRUE, self = FALSE)
       if(length(stochDeps) != nObsPerClusID)
-          stop("sampler_CRP: The number of nodes that are jointly clustered must be the same for each group. For example if 'mu[i,j]' are clustered such that all nodes for a given 'i' must be in the same cluster, then the number of nodes for each 'i' must be the same.")
+          stop("sampler_CRP: The number of nodes that are jointly clustered must be the same for each group. For example if 'mu[i,j]' are clustered such that all nodes for a given 'i' must be in the same cluster, then the number of nodes for each 'i' must be the same. Group ", deparse(i), " has ", deparse(length(stochDeps)), " nodes being clustered where ", deparse(nObsPerClusID), " are expected.")
       dataNodes[((i-1)*nObsPerClusID + 1) : (i*nObsPerClusID)] <- stochDeps
     }
     nIntermClusNodesPerClusID <- length(model$getDependencies(targetElements[1], determOnly = TRUE))  #nInterm
@@ -1456,7 +1456,7 @@ sampler_CRP <- nimbleFunction(
       for(i in seq_len(n)) {
         detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
         if(length(detDeps) != nIntermClusNodesPerClusID)
-            stop("sampler_CRP: The number of intermediate deterministic nodes that are jointly clustered must be the same for each group. For example if 'mu[i,j]' are clustered such that all nodes for a given 'i' must be in the same cluster, then the number of nodes for each 'i' must be the same.")
+            stop("sampler_CRP: The number of intermediate deterministic nodes that are jointly clustered must be the same for each group. For example if 'mu[i,j]' are clustered such that all nodes for a given 'i' must be in the same cluster, then the number of nodes for each 'i' must be the same. Group ", deparse(i), " has ", deparse(length(depDeps)), " intermediate nodes being clustered where ", deparse(nIntermClusNodesPerClusID), " are expected.")
         intermNodes[((i-1)*nIntermClusNodesPerClusID+1):(i*nIntermClusNodesPerClusID)] <- detDeps
       }
     }
