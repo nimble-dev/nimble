@@ -134,13 +134,19 @@ getsize <- function(container) {
 }
 
 # simply adds width.cutoff = 500 as the default to deal with creation of long variable names from expressions
-deparse <- function(...) {
+deparse <- function(..., maxlen = NULL) {
     if("width.cutoff" %in% names(list(...))) {
-        base::deparse(..., control = "digits17")
+        out <- base::deparse(..., control = "digits17")
     } else {
-        base::deparse(..., width.cutoff = 500L, control = "digits17")
+        out <- base::deparse(..., width.cutoff = 500L, control = "digits17")
     }
+    if(!is.null(maxlen) && length(out) > maxlen) {
+        out <- out[1:maxlen]
+        out[maxlen] <- paste0(out[maxlen], ' ...')
+    }
+    return(out)
 }
+
 
 
 ## creates objects in the parent.frame(), named by names(lst), values are eval(lst[[i]])
