@@ -1210,7 +1210,7 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
             expr[[i]] <- cc_expandDetermNodesInExpr(model, expr[[i]], targetNode, skipExpansionsNode)
         return(expr)
     }
-    stop(paste0('something went wrong processing: ', deparse(expr)))
+    stop(paste0('something went wrong processing: ', deparse(expr, maxlen = 1)))
 }
 
 
@@ -1325,7 +1325,7 @@ cc_getNodesInExpr <- function(expr) {
     if(is.logical(expr)) return(character(0))   ## expr is logical
     if(is.name(expr) || (is.call(expr) && (expr[[1]] == '[') && is.name(expr[[2]]))) return(deparse(expr))   ## expr is a node name
     if(is.call(expr)) return(unlist(lapply(expr[-1], cc_getNodesInExpr)))   ## expr is some general call
-    stop(paste0('something went wrong processing: ', deparse(expr)))
+    stop(paste0('something went wrong processing: ', deparse(expr, maxlen = 1)))
 }
 
 ## if targetNode is vectorized: determines if any components of targetNode appear in expr

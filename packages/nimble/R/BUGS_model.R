@@ -1030,7 +1030,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                           LHSsize <- LHSsize[LHSsize != 1]
 
                                                       if(!identical(LHSsize, RHSsize))
-                                                          stop("Size/dimension mismatch between left-hand side and right-hand size of BUGS expression: ", deparse(declInfo$code))
+                                                          stop("Size/dimension mismatch between left-hand side and right-hand size of BUGS expression: ", deparse(declInfo$code, maxlen = 1))
                                                   }
                                                   ## these lines caused a problem for functions such as chol() in BUGS code
                                                   ## removed by DT April 2016
@@ -1105,9 +1105,9 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                       matCols <- unlist(sapply(sizes[mats], `[`, 2))
                                                       if(!length(unique(c(matRows, matCols, unlist(sizes[vecs])))) <= 1)
                                                           if(dist %in% names(nimble:::distributionsInputList)) {
-                                                              stop("Size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code))
+                                                              stop("Size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code, maxlen = 1))
                                                           } else {
-                                                              warning("Possible size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code), ". Ignore this warning if the user-provided distribution has multivariate parameters with distinct sizes or if size of variable differs from sizes of parameters.")                                                                                                                                   }
+                                                              warning("Possible size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code, maxlen = 1), ". Ignore this warning if the user-provided distribution has multivariate parameters with distinct sizes or if size of variable differs from sizes of parameters.")                                                                                                                                   }
                                                   }
 
                                               }
@@ -1280,7 +1280,7 @@ insertSingleIndexBrackets <- function(code, varInfo) {
         }
         return(code)
     }
-    if(!is.null(code)) message(paste('confused about reaching end of insertSingleBrackets with ', deparse(code)))
+    if(!is.null(code)) message(paste('confused about reaching end of insertSingleBrackets with ', deparse(code, maxlen = 1)))
     return(code)
 }
 

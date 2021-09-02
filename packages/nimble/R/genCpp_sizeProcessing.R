@@ -1916,7 +1916,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                                     newExpr$type <- LHS$type
                                     newExpr$nDim <- RHS$nDim
                                     if(!is.numeric(LHS$sizeExprs[[1]]) | !is.numeric(RHS$sizeExprs[[2]])) {
-                                        assertMessage <- paste0("Run-time size error: expected ", deparse(LHS$sizeExprs[[1]]), " == ", deparse(RHS$sizeExprs[[2]]))
+                                        assertMessage <- paste0("Run-time size error: expected ", deparse(LHS$sizeExprs[[1]], maxlen = 1), " == ", deparse(RHS$sizeExprs[[2]], maxlen = 1))
                                         thisAssert <- identityAssert(LHS$sizeExprs[[1]], RHS$sizeExprs[[2]], assertMessage)
                                         if(!is.null(thisAssert)) assert[[length(assert) + 1]] <- thisAssert 
                                     } else {
@@ -2972,7 +2972,7 @@ sizeMatrixMult <- function(code, symTab, typeEnv) {
     code$sizeExprs <- list(a1$sizeExprs[[1]], a2$sizeExprs[[2]])
     code$type <- setReturnType(code$name, arithmeticOutputType(a1$type, a2$type))
     if(!nimbleOptions('experimentalNewSizeProcessing') ) code$toEigenize <- 'yes'
-    assertMessage <- paste0("Run-time size error: expected ", deparse(a1$sizeExprs[[2]]), " == ", deparse(a2$sizeExprs[[1]]))
+    assertMessage <- paste0("Run-time size error: expected ", deparse(a1$sizeExprs[[2]], maxlen = 1), " == ", deparse(a2$sizeExprs[[1]], maxlen = 1))
     newAssert <- identityAssert(a1$sizeExprs[[2]], a2$sizeExprs[[1]], assertMessage)
     if(is.null(newAssert))
         return(asserts)
@@ -2993,9 +2993,9 @@ sizeSolveOp <- function(code, symTab, typeEnv) { ## this is for solve(A, b) or f
     if(code$nDim == 1) { code$sizeExprs <- c(a1$sizeExprs[[1]])
                      } else { code$sizeExprs <- c(a1$sizeExprs[[1]], a2$sizeExprs[[2]]) }
     code$toEigenize <- 'yes'
-    assertMessage <- paste0("Run-time size error: expected ", deparse(a1$sizeExprs[[1]]), " == ", deparse(a1$sizeExprs[[2]]))
+    assertMessage <- paste0("Run-time size error: expected ", deparse(a1$sizeExprs[[1]], maxlen = 1), " == ", deparse(a1$sizeExprs[[2]], maxlen = 1))
     assert1 <- identityAssert(a1$sizeExprs[[1]], a1$sizeExprs[[2]], assertMessage)
-    assertMessage <- paste0("Run-time size error: expected ", deparse(a1$sizeExprs[[1]]), " == ", deparse(a2$sizeExprs[[1]]))
+    assertMessage <- paste0("Run-time size error: expected ", deparse(a1$sizeExprs[[1]], maxlen = 1), " == ", deparse(a2$sizeExprs[[1]], maxlen = 1))
     assert2 <- identityAssert(a1$sizeExprs[[1]], a2$sizeExprs[[1]], assertMessage)
     asserts <- c(asserts, assert1, assert2)
     return(asserts)
@@ -3182,7 +3182,7 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
                 a2$nDim <- a1nDim
                 a1ind <- if(a1IsCol) 1 else 2
                 if(!is.numeric(a1sizeExprs[[a1ind]]) | !is.numeric(a2sizeExprs[[1]])) { ## Really do want original a2sizeExprs
-                    assertMessage <- paste0("Run-time size error: expected ", deparse(a1sizeExprs[[a1ind]]), " == ", deparse(a2sizeExprs[[1]]))
+                    assertMessage <- paste0("Run-time size error: expected ", deparse(a1sizeExprs[[a1ind]], maxlen = 1), " == ", deparse(a2sizeExprs[[1]], maxlen = 1))
                     thisAssert <- identityAssert(a1sizeExprs[[a1ind]], a2sizeExprs[[1]], assertMessage)
                     if(!is.null(thisAssert)) asserts[[length(asserts) + 1]] <- thisAssert
                 } else {
@@ -3199,7 +3199,7 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
                 a1$nDim <- a1nDim <- a2nDim
                 a2ind <- if(a2IsCol) 1 else 2
                 if(!is.numeric(a1sizeExprs[[1]]) | !is.numeric(a2sizeExprs[[a2ind]])) { ## Really do want the original a1sizeExprs[[1]], not the modified one.
-                    assertMessage <- paste0("Run-time size error: expected ", deparse(a1sizeExprs[[1]]), " == ", deparse(a2sizeExprs[[a2ind]]))
+                    assertMessage <- paste0("Run-time size error: expected ", deparse(a1sizeExprs[[1]], maxlen = 1), " == ", deparse(a2sizeExprs[[a2ind]], maxlen = 1))
                     thisAssert <- identityAssert(a1sizeExprs[[1]], a2sizeExprs[[a2ind]], assertMessage)
                     if(!is.null(thisAssert)) asserts[[length(asserts) + 1]] <- thisAssert 
                 } else {
@@ -3217,18 +3217,18 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
             ## but add run-time size checks of which dimension must match
             ## This is currently limited in what it will handle
             ## Specifically, it assumes things should be columns
-            assertMessage <- paste0("Run-time size error: expected ", deparse(a1sizeExprs[[1]]), " == ", deparse(a2sizeExprs[[1]]))
+            assertMessage <- paste0("Run-time size error: expected ", deparse(a1sizeExprs[[1]], maxlen = 1), " == ", deparse(a2sizeExprs[[1]], maxlen = 1))
                 thisAssert <- identityAssert(a1sizeExprs[[1]], a2sizeExprs[[1]], assertMessage)
                 if(!is.null(thisAssert)) asserts[[length(asserts) + 1]] <- thisAssert
 
             if(a1nDim == 1 & a2nDim == 2) {
-                assertMessage <- paste0("Run-time size error: expected ", deparse(a2sizeExprs[[2]]), " == ", 1)
+                assertMessage <- paste0("Run-time size error: expected ", deparse(a2sizeExprs[[2]], maxlen = 1), " == ", 1)
                 thisAssert <- identityAssert(a2sizeExprs[[2]], 1, assertMessage)
                 if(!is.null(thisAssert)) asserts[[length(asserts) + 1]] <- thisAssert                
                 code$sizeExprs <- a2sizeExprs
             } else {
                 if(a1nDim == 2 & a2nDim == 1) {
-                    assertMessage <- paste0("Run-time size error: expected ", deparse(a1sizeExprs[[2]]), " == ", 1)
+                    assertMessage <- paste0("Run-time size error: expected ", deparse(a1sizeExprs[[2]], maxlen = 1), " == ", 1)
                     thisAssert <- identityAssert(a1sizeExprs[[2]], 1, assertMessage)
                     if(!is.null(thisAssert)) asserts[[length(asserts) + 1]] <- thisAssert
                     code$sizeExprs <- a1sizeExprs
@@ -3244,7 +3244,7 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
         if(nDim > 0) {
             for(i in 1:nDim) {
                 if(!is.numeric(a1sizeExprs[[i]]) | !is.numeric(a2sizeExprs[[i]])) {
-                    assertMessage <- paste0("Run-time size error: expected ", deparse(a1sizeExprs[[i]]), " == ", deparse(a2sizeExprs[[i]]))
+                    assertMessage <- paste0("Run-time size error: expected ", deparse(a1sizeExprs[[i]], maxlen = 1), " == ", deparse(a2sizeExprs[[i]], maxlen = 1))
                     thisAssert <- identityAssert(a1sizeExprs[[i]], a2sizeExprs[[i]], assertMessage)
                     if(!is.null(thisAssert)) asserts[[length(asserts) + 1]] <- thisAssert 
                 } else {

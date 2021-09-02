@@ -120,7 +120,7 @@ values_keywordInfo <- keywordInfoClass(
       useAccessorVectorByIndex <- FALSE
       if(hasBracket(accessArgList$nodes)) { 
             useAccessorVectorByIndex <- TRUE
-            if(length(accessArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code),'. If you need to index on the nodes argument there should be only one index.'))
+            if(length(accessArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code, maxlen = 1),'. If you need to index on the nodes argument there should be only one index.'))
             nodesIndexExpr <- accessArgList$nodes[[3]]
             accessArgList$nodes <- accessArgList$nodes[[2]]
             accessArgList$sortUnique <- FALSE   
@@ -142,7 +142,7 @@ getParam_keywordInfo <- keywordInfoClass(
     processor = function(code, nfProc) {
         if(!isCodeArgBlank(code, 'nodeFunction'))
             return(code)
-        errorContext <- deparse(code)
+        errorContext <- deparse(code, maxlen = 1)
         nodeFunVec_ArgList <- list(model = code$model, nodes = code$node, includeData = TRUE, sortUnique = TRUE, errorContext = errorContext)
         if(!isCodeArgBlank(code, 'nodeFunctionIndex')) { ## new case: calculate(myNodeFunctionVector, nodeFunctionIndex = i), if myNodeFunctionVector was hand-created in setup code
             if(!isCodeArgBlank(code, 'nodes'))
@@ -158,7 +158,7 @@ getParam_keywordInfo <- keywordInfoClass(
         useNodeFunctionVectorByIndex <- FALSE
         if(hasBracket(nodeFunVec_ArgList$nodes)) { ## like calculate(model, nodes[i]), which could have started as model$calculate(nodes[i])
             useNodeFunctionVectorByIndex <- TRUE
-            if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code),'. If you need to index on the nodes argument there should be only one index.'))
+            if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code, maxlen = 1),'. If you need to index on the nodes argument there should be only one index.'))
             nodesIndexExpr <- nodeFunVec_ArgList$nodes[[3]]
             nodeFunVec_ArgList$nodes <- nodeFunVec_ArgList$nodes[[2]]
             nodeFunVec_ArgList$sortUnique <- FALSE
@@ -190,7 +190,7 @@ getBound_keywordInfo <- keywordInfoClass(
     processor = function(code, nfProc) {
         if(!isCodeArgBlank(code, 'nodeFunction'))
             return(code)
-        errorContext <- deparse(code)
+        errorContext <- deparse(code, maxlen = 1)
         nodeFunVec_ArgList <- list(model = code$model, nodes = code$node, includeData = TRUE, sortUnique = TRUE, errorContext = errorContext)
         if(!isCodeArgBlank(code, 'nodeFunctionIndex')) { ## new case: calculate(myNodeFunctionVector, nodeFunctionIndex = i), if myNodeFunctionVector was hand-created in setup code
             if(!isCodeArgBlank(code, 'nodes'))
@@ -206,7 +206,7 @@ getBound_keywordInfo <- keywordInfoClass(
         useNodeFunctionVectorByIndex <- FALSE
         if(hasBracket(nodeFunVec_ArgList$nodes)) { ## like calculate(model, nodes[i]), which could have started as model$calculate(nodes[i])
             useNodeFunctionVectorByIndex <- TRUE
-            if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code),'. If you need to index on the nodes argument there should be only one index.'))
+            if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code, maxlen = 1),'. If you need to index on the nodes argument there should be only one index.'))
             nodesIndexExpr <- nodeFunVec_ArgList$nodes[[3]]
             nodeFunVec_ArgList$nodes <- nodeFunVec_ArgList$nodes[[2]]
             nodeFunVec_ArgList$sortUnique <- FALSE
@@ -239,7 +239,7 @@ calculate_keywordInfo <- keywordInfoClass(
     processor = function(code, nfProc){
         if(!isCodeArgBlank(code, 'nodeFxnVector'))
             return(code)
-        errorContext <- deparse(code)
+        errorContext <- deparse(code, maxlen = 1)
         nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE, sortUnique = TRUE, errorContext = errorContext)
         
         if(!isCodeArgBlank(code, 'nodeFunctionIndex')) { ## new case: calculate(myNodeFunctionVector, nodeFunctionIndex = i), if myNodeFunctionVector was hand-created in setup code
@@ -258,7 +258,7 @@ calculate_keywordInfo <- keywordInfoClass(
         useNodeFunctionVectorByIndex <- FALSE
         if(hasBracket(nodeFunVec_ArgList$nodes)) { ## like calculate(model, nodes[i]), which could have started as model$calculate(nodes[i])
             useNodeFunctionVectorByIndex <- TRUE
-            if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code),'. If you need to index on the nodes argument there should be only one index.'))
+            if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code, maxlen = 1),'. If you need to index on the nodes argument there should be only one index.'))
             nodesIndexExpr <- nodeFunVec_ArgList$nodes[[3]]
             nodeFunVec_ArgList$nodes <- nodeFunVec_ArgList$nodes[[2]]
             nodeFunVec_ArgList$sortUnique <- FALSE
@@ -281,7 +281,7 @@ calculateDiff_keywordInfo <- keywordInfoClass(
     processor = function(code, nfProc){
         if(!isCodeArgBlank(code, 'nodeFxnVector'))
             return(code)
-        errorContext <- deparse(code)
+        errorContext <- deparse(code, maxlen = 1)
         nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE, sortUnique = TRUE, errorContext = errorContext)
         if(!isCodeArgBlank(code, 'nodeFunctionIndex')) { ## new case: calculate(myNodeFunctionVector, nodeFunctionIndex = i), if myNodeFunctionVector was hand-created in setup code
             if(!isCodeArgBlank(code, 'nodes'))
@@ -300,7 +300,7 @@ calculateDiff_keywordInfo <- keywordInfoClass(
         useNodeFunctionVectorByIndex <- FALSE
         if(hasBracket(nodeFunVec_ArgList$nodes)) { ## like calculate(model, nodes[i]), which could have started as model$calculate(nodes[i])
             useNodeFunctionVectorByIndex <- TRUE
-            if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code),'. If you need to index on the nodes argument there should be only one index.'))
+            if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code, maxlen = 1),'. If you need to index on the nodes argument there should be only one index.'))
             nodesIndexExpr <- nodeFunVec_ArgList$nodes[[3]]
             nodeFunVec_ArgList$nodes <- nodeFunVec_ArgList$nodes[[2]]
             nodeFunVec_ArgList$sortUnique <- FALSE
@@ -327,7 +327,7 @@ simulate_keywordInfo <- keywordInfoClass(
         }
         if(!isCodeArgBlank(code, 'INDEXEDNODEINFO_'))
             return(code)
-        errorContext <- deparse(code)
+        errorContext <- deparse(code, maxlen = 1)
         nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = code$includeData, sortUnique = TRUE, errorContext = errorContext)
         if(!isCodeArgBlank(code, 'nodeFunctionIndex')) { ## new case: calculate(myNodeFunctionVector, nodeFunctionIndex = i), if myNodeFunctionVector was hand-created in setup code
             if(!isCodeArgBlank(code, 'nodes'))
@@ -345,7 +345,7 @@ simulate_keywordInfo <- keywordInfoClass(
         useNodeFunctionVectorByIndex <- FALSE
         if(hasBracket(nodeFunVec_ArgList$nodes)) { ## like calculate(model, nodes[i]), which could have started as model$calculate(nodes[i])
             useNodeFunctionVectorByIndex <- TRUE
-            if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code),'. If you need to index on the nodes argument there should be only one index.'))
+            if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code, maxlen = 1),'. If you need to index on the nodes argument there should be only one index.'))
             nodesIndexExpr <- nodeFunVec_ArgList$nodes[[3]]
             nodeFunVec_ArgList$nodes <- nodeFunVec_ArgList$nodes[[2]]
             nodeFunVec_ArgList$sortUnique <- FALSE # If includeData = FALSE, this can trigger error from nodeFunctionVector if nodes does contain data
@@ -369,7 +369,7 @@ getLogProb_keywordInfo <- keywordInfoClass(
     processor = function(code, nfProc){
         if(!isCodeArgBlank(code, 'nodeFxnVector'))
             return(code)
-        errorContext <- deparse(code)
+        errorContext <- deparse(code, maxlen = 1)
         nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE, sortUnique = TRUE, errorContext = errorContext)
         if(!isCodeArgBlank(code, 'nodeFunctionIndex')) { ## new case: calculate(myNodeFunctionVector, nodeFunctionIndex = i), if myNodeFunctionVector was hand-created in setup code
             if(!isCodeArgBlank(code, 'nodes'))
@@ -387,7 +387,7 @@ getLogProb_keywordInfo <- keywordInfoClass(
         useNodeFunctionVectorByIndex <- FALSE
         if(hasBracket(nodeFunVec_ArgList$nodes)) { ## like calculate(model, nodes[i]), which could have started as model$calculate(nodes[i])
             useNodeFunctionVectorByIndex <- TRUE
-            if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code),'. If you need to index on the nodes argument there should be only one index.'))
+            if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code, maxlen = 1),'. If you need to index on the nodes argument there should be only one index.'))
             nodesIndexExpr <- nodeFunVec_ArgList$nodes[[3]]
             nodeFunVec_ArgList$nodes <- nodeFunVec_ArgList$nodes[[2]]
             nodeFunVec_ArgList$sortUnique <- FALSE
@@ -541,8 +541,8 @@ doubleBracket_keywordInfo <- keywordInfoClass(
             if(is.character(nodeArg)){
                 if(length(nodeArg) > 1)
                     stop(paste0("Problem in ",
-                                deparse(code), ". ",
-                                deparse(code[[3]]),
+                                deparse(code, maxlen = 1), ". ",
+                                deparse(code[[3]], maxlen = 1),
                                 " is too long.  It can only have one element."),
                          call. = FALSE)
                 varAndIndices <- nimbleInternalFunctions$getVarAndIndices(nodeArg)
@@ -554,7 +554,7 @@ doubleBracket_keywordInfo <- keywordInfoClass(
                         stop(paste0("Length of ",
                                     nodeArg,
                                     " requested from ",
-                                    deparse(singleAccess_ArgList$model),
+                                    deparse(singleAccess_ArgList$model, maxlen = 1),
                                     " using '[[' is ",
                                     length(nodeArg),
                                     ". It must be 1.")
@@ -563,7 +563,7 @@ doubleBracket_keywordInfo <- keywordInfoClass(
                 } )
 
                 if(length(unique(allNDims)) > 1)
-                    stop(paste0('Error for ', deparse(code),
+                    stop(paste0('Error for ', deparse(code, maxlen = 1),
                                 '. Inconsistent numbers of dimensions for different instances.'),
                          call. = FALSE)
                 nDim <- allNDims[[1]]
@@ -586,7 +586,7 @@ doubleBracket_keywordInfo <- keywordInfoClass(
             }
             else{
                 allNDims <- determineNdimsFromNfproc(singleAccess_ArgList$model, nodeArg, nfProc)
-                if(length(unique(allNDims)) > 1) stop(paste0('Error for ', deparse(code), '. Inconsistent numbers of dimensions for different instances.'), call. = FALSE)
+                if(length(unique(allNDims)) > 1) stop(paste0('Error for ', deparse(code, maxlen = 1), '. Inconsistent numbers of dimensions for different instances.'), call. = FALSE)
                 nDim <- allNDims[[1]]
                 useMap <- nDim > 0
             }
@@ -603,7 +603,7 @@ doubleBracket_keywordInfo <- keywordInfoClass(
             }
             return(ans)			
         }
-        stop("Incorrect use of double brackets in: '", deparse(code), "'.")
+        stop("Incorrect use of double brackets in: '", deparse(code, maxlen = 1), "'.")
     })
 
 modelMemberFun_keywordInfo <- keywordInfoClass(
@@ -721,7 +721,7 @@ singleBracket_keywordInfo <- keywordInfoClass(
         class <- symTypeFromSymTab(code[[2]], nfProc$setupSymTab)
         if(class == 'symbolModelValues'){
             if(length(code) < 4) {
-                stop(paste0("incorrect syntax for accessing element of modelValues: ", deparse(code)))
+                stop(paste0("incorrect syntax for accessing element of modelValues: ", deparse(code, maxlen = 1)))
             }
             singleMVAccess_ArgList <- list(code = code, modelValues = code[[2]], var = code[[3]], row = code[[4]])
             accessName <- singleModelValuesAccessor_SetupTemplate$makeName(singleMVAccess_ArgList)
@@ -925,13 +925,13 @@ processKeywordCodeMemberFun <- function(code, nfProc) { ## handle cases like a$b
     if(length(objectPart) != 1) isModel <- FALSE ## a case like a[[i]]$b(), which can only be a nimbleFunction list
     else {
         symObj <- nfProc$setupSymTab$getSymbolObject(as.character(objectPart))
-        if(is.null(symObj)) stop(paste0("In processKeywordCodeMemberFun: not sure what to do with ", deparse(code)))
+        if(is.null(symObj)) stop(paste0("In processKeywordCodeMemberFun: not sure what to do with ", deparse(code, maxlen = 1)))
         if(inherits(symObj, 'symbolModel'))
             isModel <- TRUE
     }
     if(isModel) {
         thisKeywordInfo <- keywordListModelMemberFuns[[ as.character(dollarSignPart[[3]]) ]]
-        if(is.null(thisKeywordInfo)) stop(paste0("In processKeywordCodeMemberFun, don't know what do with: ", deparse(code)))
+        if(is.null(thisKeywordInfo)) stop(paste0("In processKeywordCodeMemberFun, don't know what do with: ", deparse(code, maxlen = 1)))
         rearrangedCode <- thisKeywordInfo$processor(code, nfProc)
         rearrangedCode <- matchKeywordCode(rearrangedCode, nfProc)
         return(processKeywords_recurse(rearrangedCode, nfProc))
@@ -1250,7 +1250,7 @@ getSymObj_recurse <- function(code, symTab, recurse = FALSE) { #code will be lik
     } else {
         return(symObject)
     }
-    stop(paste0('Problem (ii) working through ', deparse(code)), .call = FALSE)
+    stop(paste0('Problem (ii) working through ', deparse(code, maxlen = 1)), .call = FALSE)
 }
 
 symTypeFromSymTab <- function(codeName, symTab, options = character(0) ){
@@ -1316,9 +1316,9 @@ determineNdimsFromNfproc <- function(modelExpr, varOrNodeExpr, nfProc) {
         lab <- eval(varOrNodeExpr, envir = x)
         if(length(lab) != 1)
             stop(paste0("Length of ",
-                        deparse(varOrNodeExpr),
+                        deparse(varOrNodeExpr, maxlen = 1),
                         " requested from ",
-                        deparse(modelExpr),
+                        deparse(modelExpr, maxlen = 1),
                         " using '[[' is ",
                         length(lab),
                         ". It must be 1." )
@@ -1348,8 +1348,8 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
                 nestedLeftSide <- TRUE
             } else {
                 nfNestedCall <- leftSide[[1]]
-                if(length(nfNestedCall) != 1) stop(paste0("Cannot handle this expression: ", deparse(code)))
-                if(deparse(nfNestedCall) != '[[') stop(paste0("Cannot handle this expression: ", deparse(code)))
+                if(length(nfNestedCall) != 1) stop(paste0("Cannot handle this expression: ", deparse(code, maxlen = 1)))
+                if(deparse(nfNestedCall) != '[[') stop(paste0("Cannot handle this expression: ", deparse(code, maxlen = 1)))
                 leftLeftSide <- leftSide[[2]]
                 if(length(leftLeftSide) != 1) {
                     if(deparse(leftLeftSide[[1]]) == '$') { ##a$b[[i]]$foo()
@@ -1383,10 +1383,10 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
                 if(is.nlGenerator(possibleNLgen)) {
                     thisFunctionMatch <- makeNimbleListTemplateWithBlankFirstArg(nl.getListDef(possibleNLgen))
                 } else {
-                    stop(paste0('problem with ', deparse(code)))
+                    stop(paste0('problem with ', deparse(code, maxlen = 1)))
                 }
             } else {
-                stop(paste0('problem with ', deparse(code)))
+                stop(paste0('problem with ', deparse(code, maxlen = 1)))
             }
         } else {
             thisFunctionMatch <- makeNimbleListTemplateWithBlankFirstArg(nl.getListDef(symObj$nlProc$nlGenerator))
@@ -1402,14 +1402,14 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
     
     if(symObj$type == 'nimbleFunction') {
         thisRCfunProc <- symObj$nfProc$RCfunProcs[[memFunName]] 
-        if(is.null(thisRCfunProc)) stop(paste0("Cannot handle this expression (member function may not exist): ", deparse(code)), call. = FALSE)
+        if(is.null(thisRCfunProc)) stop(paste0("Cannot handle this expression (member function may not exist): ", deparse(code, maxlen = 1)), call. = FALSE)
         thisFunctionMatch <- thisRCfunProc$RCfun$template
         return(matchAndFill.call(thisFunctionMatch, code ) )
     } 
     if(inherits(symObj, 'symbolModel')) {
         if(nestedLeftSide) stop('Access to a model cannot be nested.')
         thisFunctionMatch <- matchModelMemberFunctions[[ memFunName ]]
-        if(is.null(thisFunctionMatch)) stop(paste0("Cannot handle this expression (looks like a model with an invalid member function call?): ", deparse(code)))
+        if(is.null(thisFunctionMatch)) stop(paste0("Cannot handle this expression (looks like a model with an invalid member function call?): ", deparse(code, maxlen = 1)))
         return(matchAndFill.call(thisFunctionMatch, code) )
     }
     if(inherits(symObj, 'symbolNimbleFunctionList')) {
@@ -1417,7 +1417,7 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
         thisFunctionMatch <- environment(symObj$baseClass)$methodList[[memFunName]]$template
         return(matchAndFill.call(thisFunctionMatch, code ) )
     }
-    stop(paste0("Cannot handle this expression: ", deparse(code))) 
+    stop(paste0("Cannot handle this expression: ", deparse(code, maxlen = 1))) 
 }
 
 
@@ -1431,7 +1431,7 @@ matchKeywordCode <- function(code, nfProc){
             symObj <- nfProc$setupSymTab$getSymbolObject(modCallName)
             if(inherits(symObj, "symbolMemberFunction")) {
                 thisRCfunProc <- nfProc$RCfunProcs[[modCallName]]
-                if(is.null(thisRCfunProc)) stop(paste0("Cannot handle this expression (looks like a member function but something is wrong): ", deparse(code)), call. = FALSE)
+                if(is.null(thisRCfunProc)) stop(paste0("Cannot handle this expression (looks like a member function but something is wrong): ", deparse(code, maxlen = 1)), call. = FALSE)
                 thisFunctionMatch <- thisRCfunProc$RCfun$template
                 return(matchAndFill.call(thisFunctionMatch, code ) )
             }
@@ -1580,7 +1580,7 @@ getVarAndIndices <- function(code) {
             varName <- code[[2]]
             indices <- as.list(code[-c(1,2)])
         } else {
-            stop(paste('Error:', deparse(code), 'is a malformed node label.'))
+            stop(paste('Error:', deparse(code, maxlen = 1), 'is a malformed node label.'))
         }
     } else {
         varName <- code

@@ -129,7 +129,7 @@ nfMethodRC <- setRefClass(
                 if(check) {
                     if(!("return" %in% all.names(code))) {
                         writeLines("Problem in this code:")
-                        writeLines(deparse(code))
+                        writeLines(deparse(code, maxlen = 1))
                         stop('returnType() declaration was provided but there is no return() statement.  At least one return() statement must be provided', call. = FALSE)
                     }
                 }

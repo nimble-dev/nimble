@@ -260,13 +260,13 @@ BUGSdeclClass$methods(
                 code[[3]][[1]] != "I"))
                 stop(
                     paste0('Improper syntax for stochastic declaration: ',
-                           deparse(code))
+                           deparse(code, maxlen = 1))
                 )
         } else if(code[[1]] == '<-') {
             type <<- 'determ'
         } else {
             stop(paste0('Improper syntax for declaration: ',
-                        deparse(code))
+                        deparse(code, maxlen = 1))
                  )
         }
         
@@ -296,7 +296,7 @@ BUGSdeclClass$methods(
                     ## There are subscripts inside the transformation
                     if(targetNodeExpr[[1]] != '[') {
                         print(paste("Invalid subscripting for",
-                                    deparse(targetExpr)))
+                                    deparse(targetExpr, maxlen = 1)))
                     }
                     indexExpr <<- as.list(targetNodeExpr[-c(1,2)])
                     targetVarExpr <<- targetNodeExpr[[2]]
@@ -377,7 +377,7 @@ makeIndexNamePieces <- function(indexCode) {
     ## Diagnostic for messed up indexing here
     if(as.character(indexCode[[1]] != ':'))
         stop(paste0("Error processing model: something is wrong with the index ",
-                    deparse(indexCode),
+                    deparse(indexCode, maxlen = 1),
                     ".\nIndexing in model code requires this syntax: '(start expression):(end expression)'."),
              call. = FALSE)
     p1 <- indexCode[[2]]
@@ -465,7 +465,7 @@ BUGSdeclClass$methods(
             )
         if(inherits(targetIndexNamePieces, 'try-error'))
             stop(paste('Error occurred defining ',
-                       deparse(targetExprReplaced)),
+                       deparse(targetExprReplaced, maxlen = 1)),
                  call. = FALSE)
     if(!nimbleOptions()$allowDynamicIndexing) {
         parentIndexNamePieces <<-
@@ -591,13 +591,13 @@ BUGSdeclClass$methods(
                        is.numeric(boundExprs$upper_) &&
                        boundExprs$lower_ >= boundExprs$upper_)
                         warning(paste0("Lower bound is greater than or equal to upper bound in ",
-                                       deparse(codeReplaced),
+                                       deparse(codeReplaced, maxlen = 1),
                                        "; proceeding anyway, but this is likely to cause numerical issues."))
                     if(is.numeric(boundExprs$lower_) &&
                        is.numeric(distRange$lower) &&
                        boundExprs$lower_ < distRange$lower) {
                         warning(paste0("Lower bound is less than or equal to distribution lower bound in ",
-                                       deparse(codeReplaced), "; ignoring user-provided lower bound."))
+                                       deparse(codeReplaced, maxlen = 1), "; ignoring user-provided lower bound."))
                         boundExprs$lower_ <<- distRange$lower
                         codeReplaced[[3]]['lower_'] <<- distRange$lower
                     }
@@ -605,7 +605,7 @@ BUGSdeclClass$methods(
                        is.numeric(distRange$upper) &&
                        boundExprs$upper_ > distRange$upper) {
                         warning(paste0("Upper bound is greater than or equal to distribution upper bound in ",
-                                       deparse(codeReplaced),
+                                       deparse(codeReplaced, maxlen = 1),
                                        "; ignoring user-provided upper bound."))
                         boundExprs$upper_ <<- distRange$upper
                         codeReplaced[[3]]['upper_'] <<- distRange$upper
@@ -762,7 +762,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             ## error if it looks like mu[i][j] where i is a for-loop index
             if(variable$hasIndex)
                 stop('Error: Variable',
-                     deparse(code[[2]]),
+                     deparse(code[[2]], maxlen = 1),
                      'on outside of [ contains a BUGS code index.')
             
             if(variable$replaceable) {
@@ -770,7 +770,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                 ## block[i], so block is replaceable
                 if(!all(contentsReplaceable)) 
                     ## dynamic index on a constant
-                    stop('getSymbolicParentNodesRecurse: dynamic indexing of constants is not allowed in ', deparse(code), '. Try adding the dynamically-indexed constant as data instead (using the data argument of nimbleModel).')
+                    stop('getSymbolicParentNodesRecurse: dynamic indexing of constants is not allowed in ', deparse(code, maxlen = 1), '. Try adding the dynamically-indexed constant as data instead (using the data argument of nimbleModel).')
                 boolIndexingBlock <-
                     unlist(
                         lapply(code[-c(1,2)],
@@ -802,7 +802,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                 } else { ## non-replaceable indices are dynamic indices (or constant vectors, which are not allowed)
                     if(!nimbleOptions()$allowDynamicIndexing) {
                         warning("It appears you are trying to use dynamic indexing (i.e., the index of a variable is determined by something that is not a constant) in: ",
-                                deparse(code),
+                                deparse(code, maxlen = 1),
                                 ". This is now allowed as of version 0.6-6 (as an optional beta feature) and by default as of version 0.6-7. Please set 'nimbleOptions(allowDynamicIndexing = TRUE)' and report any issues to the NIMBLE users group.")
                         dynamicIndexParent <- code[[2]]
                     } else {
@@ -811,7 +811,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                                    detectNonscalarIndex))
                            )
                             stop("getSymbolicParentNodesRecurse: only scalar indices are allowed; vector indexing found in ",
-                                 deparse(code))
+                                 deparse(code, maxlen = 1))
                         indexedVariable <- deparse(code[[2]])
                         dynamicIndexParent <-
                             addUnknownIndexToVarNameInBracketExpr(code, contextID)
@@ -905,7 +905,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
         }
     }
     stop(paste('Something went wrong in getSymbolicVariablesRecurse with',
-               deparse(code)))
+               deparse(code, maxlen = 1)))
 }
 
 checkNimbleOrRfunctionNames <- function(functionName, envir) {
@@ -1060,7 +1060,7 @@ genReplacementsAndCodeRecurse <- function(code,
             isRonly <- FALSE
         if(isRonly & !allContentsReplaceable)
             stop(paste0('Error, R function \"',
-                        deparse(code[[1]]),
+                        deparse(code[[1]], maxlen = 1),
                         '\" has non-replaceable node values as arguments.  Must be a nimble function.')
                  )
         if(isRfunction & allContentsReplaceable)
@@ -1072,7 +1072,7 @@ genReplacementsAndCodeRecurse <- function(code,
                                 startingAt=2))
     }
     stop(paste('Something went wrong in genReplacementsAndCodeRecurse with',
-               deparse(code)))
+               deparse(code, maxlen = 1)))
 }
 
 replaceAllCodeSuccessfully <- function(code) {

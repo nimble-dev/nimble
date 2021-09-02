@@ -1338,7 +1338,7 @@ sampler_CRP <- nimbleFunction(
     
     if(any(clusterVarInfo$nTilde == 0)) {
       var <- which(clusterVarInfo$nTilde == 0)
-      stop("sampler_CRP: Detected unusual indexing in ", deparse(clusterVarInfo$indexExpr[[var[1]]]),
+      stop("sampler_CRP: Detected unusual indexing in ", deparse(clusterVarInfo$indexExpr[[var[1]]], maxlen = 1),
            " . NIMBLE's CRP MCMC sampling is not designed for this case.")
     }
     
@@ -1403,8 +1403,8 @@ sampler_CRP <- nimbleFunction(
                 if(!identical(clusterVarInfo$clusterNodes[[idx1]], clusterVarInfo$clusterNodes[[idx2]]) &&
                    any(clusterVarInfo$clusterNodes[[idx1]] %in% clusterVarInfo$clusterNodes[[idx2]]))
                     stop("sampler_CRP: Inconsistent indexing in or inconsistent dependencies of ",
-                         deparse(clusterVarInfo$indexExpr[[idx1]]), " and ",
-                         deparse(clusterVarInfo$indexExpr[[idx2]]), ".")
+                         deparse(clusterVarInfo$indexExpr[[idx1]], maxlen = 1), " and ",
+                         deparse(clusterVarInfo$indexExpr[[idx2]], maxlen = 1), ".")
     
     nData <- length(dataNodes)
 
@@ -1412,7 +1412,7 @@ sampler_CRP <- nimbleFunction(
     ## It's likely that if we set the non-conjugate sampler and turn off wrapping omits sampling of empty clusters
     ## (which is not set up correctly for this case), that the existing code would give correct sampling.
     if(any(clusterVarInfo$multipleStochIndexes))
-        stop("sampler_CRP: Detected use of multiple stochastic indexes of a variable: ", deparse(clusterVarInfo$indexExpr[[1]]), ". NIMBLE's CRP sampling is not yet set up to handle this case. Please contact the NIMBLE development team if you are interested in this functionality.")
+        stop("sampler_CRP: Detected use of multiple stochastic indexes of a variable: ", deparse(clusterVarInfo$indexExpr[[1]], maxlen = 1), ". NIMBLE's CRP sampling is not yet set up to handle this case. Please contact the NIMBLE development team if you are interested in this functionality.")
 
     ## Check there is at least one or more "observation" per random index.
     ## Note that cases like mu[xi[i],xi[j]] are being trapped in findClusterNodes().
@@ -1849,7 +1849,7 @@ findClusterNodes <- function(model, target) {
         while(k <= len) {
             if(sum(all.vars(subExpr[[k]]) == targetVar)) {
                 if(foundTarget) {
-                    stop("findClusterNodes: CRP variable used multiple times in ", deparse(subExpr),
+                    stop("findClusterNodes: CRP variable used multiple times in ", deparse(subExpr, maxlen = 1),
                            ". NIMBLE's CRP MCMC sampling not designed for this situation.")
                 } else {
                     foundTarget <- TRUE

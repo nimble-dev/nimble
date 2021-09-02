@@ -212,7 +212,7 @@ nf_substituteExceptFunctionsAndDollarSigns <- function(code, subList) {
                        subList)
         return(code)
     }
-    stop(paste("Error doing replacement for code ", deparse(code)))
+    stop(paste("Error doing replacement for code ", deparse(code, maxlen = 1)))
 }
 
 RCfunProcessing <- setRefClass(
@@ -356,7 +356,7 @@ RCfunProcessing <- setRefClass(
                          message <-
                              paste(eMessage,
                                    'There was some problem in the the setSizes processing step for this code:',
-                                   paste(deparse(compileInfo$origRcode), collapse = '\n'))
+                                   paste(deparse(compileInfo$origRcode, maxlen = 1), collapse = '\n'))
                          if(getNimbleOption('verboseErrors')) {
                              message <- paste(message,
                                               'Internal Error:',
@@ -386,7 +386,7 @@ RCfunProcessing <- setRefClass(
             if(inherits(tryResult, 'try-error')) {
                 stop(
                     paste('There is some problem at the insertAdditions processing step for this code:\n',
-                          paste(deparse(compileInfo$origRcode),
+                          paste(deparse(compileInfo$origRcode, maxlen = 1),
                                 collapse = '\n'),
                           collapse = '\n'),
                     call. = FALSE)
@@ -409,7 +409,7 @@ RCfunProcessing <- setRefClass(
             if(inherits(tryResult, 'try-error')) {
                 stop(
                     paste('There is some problem at the Eigen labeling processing step for this code:\n',
-                          paste(deparse(compileInfo$origRcode),
+                          paste(deparse(compileInfo$origRcode, maxlen = 1),
                                 collapse = '\n'),
                           collapse = '\n'),
                     call. = FALSE)
@@ -427,7 +427,7 @@ RCfunProcessing <- setRefClass(
             if(inherits(tryResult, 'try-error')) {
                 stop(
                     paste('There is some problem at the Eigen processing step for this code:\n',
-                          paste(deparse(compileInfo$origRcode),
+                          paste(deparse(compileInfo$origRcode, maxlen = 1),
                                 collapse = '\n'),
                           collapse = '\n'),
                     call. = FALSE)

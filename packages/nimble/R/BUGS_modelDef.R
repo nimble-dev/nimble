@@ -191,7 +191,7 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
 codeProcessIfThenElse <- function(code, constants, envir = parent.frame()) {
     codeLength <- length(code)
     if(is.name(code))
-        stop("Incomplete declaration found: '", deparse(code), "'.")
+        stop("Incomplete declaration found: '", deparse(code, maxlen = 1), "'.")
         
     if(code[[1]] == '{') {
         if(codeLength > 1) for(i in 2:codeLength) code[[i]] <- codeProcessIfThenElse(code[[i]], constants, envir)
@@ -206,7 +206,7 @@ codeProcessIfThenElse <- function(code, constants, envir = parent.frame()) {
         parent.env(constantsEnv) <- envir
         evaluatedCondition <- try(eval(code[[2]], constantsEnv))
         if(inherits(evaluatedCondition, "try-error")) 
-            stop("Cannot evaluate condition of 'if' statement: ", deparse(code[[2]]), ".\nCondition must be able to be evaluated based on values in 'constants'.")
+            stop("Cannot evaluate condition of 'if' statement: ", deparse(code[[2]], maxlen = 1), ".\nCondition must be able to be evaluated based on values in 'constants'.")
         if(evaluatedCondition) return(codeProcessIfThenElse(code[[3]], constants, envir))
         else {
             if(length(code) == 4) return(codeProcessIfThenElse(code[[4]], constants, envir))
@@ -402,7 +402,7 @@ modelDefClass$methods(initializeContexts = function() {
 reprioritizeColonOperator <- function(code) {
     split.code <- strsplit(deparse(code), ":")
     if(length(split.code[[1]]) == 2) return(parse(text = paste0("(", split.code[[1]][1], "):(", split.code[[1]][2], ")"), keep.source = FALSE)[[1]])
-    if(length(split.code[[1]]) > 2) stop(paste0('Error with this code: ', deparse(code)))
+    if(length(split.code[[1]]) > 2) stop(paste0('Error with this code: ', deparse(code, maxlen = 1)))
     return(code)
 }
 
@@ -464,7 +464,7 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
             BUGScontextClassObject$setup(singleContexts = singleContexts)
             contexts[[nextContextID]] <<- BUGScontextClassObject
             if(length(code[[i]][[4]])==1) {
-                stop('Error, not sure what to do with ', deparse(code[[i]]), ".")
+                stop('Error, not sure what to do with ', deparse(code[[i]], maxlen = 1), ".")
             }
             recurseCode <- if(code[[i]][[4]][[1]] == '{') {
                 code[[i]][[4]]
@@ -477,7 +477,7 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
             lineNumber <- processBUGScode(code[[i]], contextID, lineNumber = lineNumber, userEnv = userEnv)
         }
         if(!deparse(code[[i]][[1]]) %in% c('~', '<-', 'for', '{')) 
-            stop("Error: ", deparse(code[[i]][[1]]), " not allowed in BUGS code in ", deparse(code[[i]]))
+            stop("Error: ", deparse(code[[i]][[1]], maxlen = 1), " not allowed in BUGS code in ", deparse(code[[i]], maxlen = 1))
     }
     lineNumber
 })
@@ -497,9 +497,9 @@ checkUserDefinedDistribution <- function(code, userEnv) {
 
 replaceDistributionAliases <- function(code) {
     if(length(code) < 3)
-        stop("Invalid model declaration: ", deparse(code), ".")
+        stop("Invalid model declaration: ", deparse(code, maxlen = 1), ".")
     if(!is.call(code[[3]]))
-        stop("Invalid model declaration: ", deparse(code), " must call a density function.")
+        stop("Invalid model declaration: ", deparse(code, maxlen = 1), " must call a density function.")
     dist <- as.character(code[[3]][[1]])
     trunc <- FALSE
     if(dist %in% c("T", "I")) {
@@ -521,7 +521,7 @@ checkForDeterministicDorR <- function(code) {
             drFuns <- c(drFuns, dFunsUser, paste0("r", stripPrefix(dFunsUser)))
         }
         if(as.character(code[[3]][[1]]) %in% drFuns)
-            warning("Model includes deterministic assignment using '<-' of the result of a density ('d') or simulation ('r') calculation. This is likely not what you intended in: ", deparse(code), ".")
+            warning("Model includes deterministic assignment using '<-' of the result of a density ('d') or simulation ('r') calculation. This is likely not what you intended in: ", deparse(code, maxlen = 1), ".")
     }
     return(NULL)
 }
@@ -592,11 +592,11 @@ addMissingIndexingRecurse <- function(code, dimensionsList) {
       ## let's check to make sure all indexes are present
       if(any(unlist(lapply(as.list(code), is.blank)))) {
         stop(paste0('Error: This part of NIMBLE is still under development.', '\n',
-                    'The model definition included the expression \'', deparse(code), '\', which contains missing indices.', '\n',
+                    'The model definition included the expression \'', deparse(code, maxlen = 1), '\', which contains missing indices.', '\n',
                     'There are two options to resolve this:', '\n',
-                    '(1) Explicitly provide the missing indices in the model definition (e.g., \'', deparse(example_fillInMissingIndices(code)), '\'), or', '\n',
+                    '(1) Explicitly provide the missing indices in the model definition (e.g., \'', deparse(example_fillInMissingIndices(code), maxlen = 1), '\'), or', '\n',
                     '(2) Provide the dimensions of variable \'', code[[2]], '\' via the \'dimensions\' argument to nimbleModel(), e.g.,', '\n',
-                    '    nimbleModel(code, dimensions = list(', code[[2]], ' = ', deparse(example_getMissingDimensions(code)), '))', '\n',
+                    '    nimbleModel(code, dimensions = list(', code[[2]], ' = ', deparse(example_getMissingDimensions(code), maxlen = 1), '))', '\n',
                     'Thanks for bearing with us.'), call. = FALSE)
       }
       ## and to recurse on all elements
@@ -646,7 +646,7 @@ modelDefClass$methods(processBoundsAndTruncation = function() {
         } else {
             truncated <- TRUE
             if(callName == "I")
-                warning(paste0("Interpreting I(,) as truncation (equivalent to T(,)) in ", deparse(BUGSdecl$code), "; this is only valid when ", deparse(BUGSdecl$targetExpr), " has no unobserved (stochastic) parents."))
+                warning(paste0("Interpreting I(,) as truncation (equivalent to T(,)) in ", deparse(BUGSdecl$code, maxlen = 1), "; this is only valid when ", deparse(BUGSdecl$targetExpr, maxlen = 1), " has no unobserved (stochastic) parents."))
                 
             newCode <- BUGSdecl$code
             newCode[[3]] <- BUGSdecl$valueExpr[[2]]  # insert the core density function call
@@ -804,7 +804,7 @@ modelDefClass$methods(reparameterizeDists = function() {
               if(identical(sort(unique(distRule$alts[[count]])), sort(unique(names(params)))))
                 matchedAlt <- count
             }
-            if(is.null(matchedAlt)) stop(paste0('bad parameters for distribution ', deparse(valueExpr), '. (No available re-parameterization found.)'), call. = FALSE)
+            if(is.null(matchedAlt)) stop(paste0('bad parameters for distribution ', deparse(valueExpr, maxlen = 1), '. (No available re-parameterization found.)'), call. = FALSE)
           }
           nonReqdArgs <- names(params)[!(names(params) %in% distRule$reqdArgs)]
           for(iArg in 1:numArgs) {   ## loop over the required arguments
@@ -814,9 +814,9 @@ modelDefClass$methods(reparameterizeDists = function() {
               newValueExpr[[iArg + 1]] <- params[[reqdArgName]];
               next
             }
-            if(!matchedAlt) error("Something wrong - looking for alternative parameterization but supplied args are same as required args: ", deparse(valueExpr))
+            if(!matchedAlt) error("Something wrong - looking for alternative parameterization but supplied args are same as required args: ", deparse(valueExpr, maxlen = 1))
             if(!reqdArgName %in% names(distRule$exprs[[matchedAlt]]))
-              stop('Error: could not find ', reqdArgName, ' in alternative parameterization number ', matchedAlt, ' for: ', deparse(valueExpr), '.')
+              stop('Error: could not find ', reqdArgName, ' in alternative parameterization number ', matchedAlt, ' for: ', deparse(valueExpr, maxlen = 1), '.')
             transformedParameterPT <- distRule$exprs[[matchedAlt]][[reqdArgName]]
             ## handles pathological-case model variable names, e.g.,
             ## y ~ dnorm(0, tau = sd)
@@ -925,7 +925,7 @@ replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) 
                 if(do.eval) {
                     origCode <- code
                     code <- as.numeric(eval(code, constEnv))
-                    if(length(code) != 1) warning(paste('Code', deparse(origCode),'was given as known but evaluates to a non-scalar.  This is probably not what you want.'))
+                    if(length(code) != 1) warning(paste('Code', deparse(origCode, maxlen = 1),'was given as known but evaluates to a non-scalar.  This is probably not what you want.'))
                 }
                 return(list(code = code,
                             replaceable = TRUE))
@@ -1087,7 +1087,7 @@ isExprLiftable <- function(paramExpr, type = NULL) {
         if(is.vectorized(paramExpr))        return(FALSE)   ## don't lift any expression with vectorized indexing,  funName(x[1:10])
         return(TRUE)
     }
-    stop(paste0('isExprLiftable: NIMBLE cannot process this parameter expression: ', deparse(paramExpr)))
+    stop(paste0('isExprLiftable: NIMBLE cannot process this parameter expression: ', deparse(paramExpr, maxlen = 1)))
 }
 addNecessaryIndexingToNewNode <- function(newNodeNameExpr, paramExpr, indexVarExprs) {
     if(is.call(paramExpr) && deparse(paramExpr[[1]]) %in% names(liftedCallsGetIndexingFromArgumentNumbers))
@@ -1990,7 +1990,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         if(BUGSdecl$type != "unknownIndex" && !all(usedIndexes) && !length(grep("^lifted", BUGSdecl$targetExpr)))
             warning(paste0("Multiple definitions for the same node. Did you forget indexing with '",
                           paste(contexts[[BUGSdecl$contextID]]$indexVarNames[!usedIndexes], collapse = ','),  
-                           "' on the left-hand side of '", deparse(BUGSdecl$code), "'?"))
+                           "' on the left-hand side of '", deparse(BUGSdecl$code, maxlen = 1), "'?"))
         if(nDim > 0) {  ## pieces is a list of index text to construct node names, e.g. list("1", c("1:2", "1:3", "1:4"), c("3", "4", "5"))
             pieces <- vector('list', nDim)
             for(i in 1:nDim) {
@@ -2135,7 +2135,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
             if(rhsVar %in% unknownIndexNames) next ## vertex splitting occurs on lifted unknownIndex declaration, not on unknownIndex usage on RHS
             nDim <- varInfo[[rhsVar]]$nDim
             if(nDim != length(BUGSdecl$parentIndexNamePieces[[iV]]))  # this check should be redundant with equivalent check in genVarInfo3
-               stop("Dimension of ", rhsVar, " is ", nDim, ", which does not match its usage in '", deparse(BUGSdecl$code), "'.")
+               stop("Dimension of ", rhsVar, " is ", nDim, ", which does not match its usage in '", deparse(BUGSdecl$code, maxlen = 1), "'.")
             if(nDim > 0) { ## Make the split.  This function is complicated.
                 splitAns <- splitVertices(vars_2_vertexOrigID[[rhsVar]], BUGSdecl$unrolledIndicesMatrix,
                                           contexts[[BUGSdecl$contextID]]$indexVarExprs, contexts[[BUGSdecl$contextID]]$indexVarNames,
@@ -2488,7 +2488,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
             if(BUGSdecl$numUnrolledNodes == 1) ## a singleton declaration
                 graphID_2_unrolledIndicesMatrixRow[BUGSdecl$graphIDs] <- 0
             else
-                stop(paste('confused assigning unrolledIndicesMatrixRow in case with no unrolledRows by numUnrolledNodes != 1 for code', deparse(BUGSdecl$code)))
+                stop(paste('confused assigning unrolledIndicesMatrixRow in case with no unrolledRows by numUnrolledNodes != 1 for code', deparse(BUGSdecl$code, maxlen = 1)))
         } else {
             theseGraphIDs <- BUGSdecl$graphIDs
             graphID_2_unrolledIndicesMatrixRow[theseGraphIDs] <- 1:length(theseGraphIDs)
@@ -2597,11 +2597,11 @@ modelDefClass$methods(genVarInfo3 = function() {
                                                        anyDynamicallyIndexed = FALSE)
             }
             if(varInfo[[rhsVar]]$nDim != length(BUGSdecl$parentIndexNamePieces[[iV]]))
-                stop("Dimension of ", rhsVar, " is ", varInfo[[rhsVar]]$nDim, ", which does not match its usage in '", deparse(BUGSdecl$code), "'.")
+                stop("Dimension of ", rhsVar, " is ", varInfo[[rhsVar]]$nDim, ", which does not match its usage in '", deparse(BUGSdecl$code, maxlen = 1), "'.")
             if(varInfo[[rhsVar]]$nDim > 0) {
                 for(iDim in 1:varInfo[[rhsVar]]$nDim) {
                     indexNamePieces <- BUGSdecl$parentIndexNamePieces[[iV]][[iDim]]
-                    if(is.null(indexNamePieces)) stop(paste0('There is a problem with some indexing in this line: ', deparse(BUGSdecl$codeReplaced), '.\nOne way this can happen is if you wanted to provide a vector of indices but did not include it in constants.'))
+                    if(is.null(indexNamePieces)) stop(paste0('There is a problem with some indexing in this line: ', deparse(BUGSdecl$codeReplaced, maxlen = 1), '.\nOne way this can happen is if you wanted to provide a vector of indices but did not include it in constants.'))
                     if(is.list(indexNamePieces)) { ## a list would be made if there is a ':' operator in the index expression
                         indsLow <- if(is.numeric(indexNamePieces[[1]])) indexNamePieces[[1]] else BUGSdecl$replacementsEnv[[ indexNamePieces[[1]] ]]
                         indsHigh <- if(is.numeric(indexNamePieces[[2]])) indexNamePieces[[2]] else BUGSdecl$replacementsEnv[[ indexNamePieces[[2]] ]]
@@ -2667,7 +2667,7 @@ modelDefClass$methods(addUnknownIndexVars = function(debug = FALSE) {
             if(!(lhsVar %in% names(varInfo))) {
                 if(length(BUGSdecl$rhsVars) > 1)
                     stop("addUnknownIndexVars: more than one right-hand side variable in unknownIndex declaration: ",
-                         deparse(BUGSdecl$code))
+                         deparse(BUGSdecl$code, maxlen = 1))
                 varInfo[[lhsVar]] <<- varInfo[[BUGSdecl$rhsVars]]$copy()
                 varInfo[[lhsVar]]$varName <<- lhsVar
                 varInfo[[lhsVar]]$anyStoch <<- FALSE
