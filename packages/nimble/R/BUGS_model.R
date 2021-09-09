@@ -1117,7 +1117,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                         varsWithNAs <- NULL
                                         for(v in .self$getVarNames()){
                                           if(!nimble:::isValid(.self[[v]])){
-                                            message(' This model is not fully initialized. This is not an error. To see which variables are not initialized, use model$initializeInfo(). For more information on model initialization, see help(modelInitialization).', appendLF = FALSE)
+                                            message('  [Note] This model is not fully initialized. This is not an error.\n  [Note] To see which variables are not initialized, use model$initializeInfo().\n  [Note] For more information on model initialization, see help(modelInitialization).')
                                             break
                                           }
                                         }
@@ -1135,11 +1135,11 @@ Provides more detailed information on which model nodes are not initialized.
                                       }
                                     }
                                     if(!is.null(varsWithNAs)){
-                                      message('Missing values (NAs) or non-finite values were found in model variables: ', paste(varsWithNAs, collapse = ', '), 
-                                              '. This is not an error, but some or all variables may need to be initialized for certain algorithms to operate properly. For more information on model initialization, see help(modelInitialization).')
+                                      message('  [Note] Missing values (NAs) or non-finite values were found in model variables: ', paste(varsWithNAs, collapse = ', '), 
+                                              '.\n  [Note] This is not an error, but some or all variables may need to be initialized for certain algorithms to operate properly.\n  [Note] For more information on model initialization, see help(modelInitialization).')
                                     }
                                     else{
-                                      message('All model variables are initialized.')
+                                      message('  [Note] All model variables are initialized.')
                                     }
                                   },
                                   check = function() {
