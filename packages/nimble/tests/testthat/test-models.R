@@ -624,6 +624,9 @@ test_that("handling of missing indexes of expressions:", {
                     dimensions = list(k = c(2,2)))
     cm <- compileNimble(m)  # if compilation fails, test_that should catch this; having trouble using expect_message as behavior of whether a message is detected seems to differ when running tests locally versus Travis.
 
+})
+
+test_that("handling of missing indexes of expressions, part 2:", {
     ## Testing that case like `myfun()[,1]` handled similarly to the above case.
     myfun0 <- nimbleFunction(
     run = function() {
