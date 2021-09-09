@@ -535,7 +535,7 @@ modelDefClass$methods(splitConstantsAndData = function() {
         constantsNames <- as.character(constantsNamesList)
         newDataVars <- constantsNames[constantsNames %in% vars]
         if(length(newDataVars)) {
-            if(nimbleOptions('verbose')) message("  [Note] Detected", paste(newDataVars, collapse = ','), "as data within 'constants'.")
+            if(nimbleOptions('verbose')) message("  [Note] Using '", paste(newDataVars, collapse = ','), "' (given within 'constants') as data.")
             constantsNamesList <<- constantsNamesList[!constantsNames %in% vars]
             constantsScalarNamesList <<- constantsScalarNamesList[ !(as.character(constantsScalarNamesList) %in% newDataVars) ]
             constantsList[newDataVars] <<- NULL
@@ -2775,7 +2775,7 @@ modelDefClass$methods(warnRHSonlyDynIdx = function() {
             nodes <- unique(unlist(nodes))
             nodes <- nodes[nodes %in% maps$nodeNamesRHSonly]
             if(length(nodes))
-                message("  [Note] Detected use of non-constant indexes: ", paste(nodes, collapse = ', '), ifelse(nr == 50, ", ...", "."), " For computational efficiency we recommend specifying these in 'constants'.")
+                message("  [Note] Detected use of non-constant indexes: ", paste(nodes, collapse = ', '), ifelse(nr == 50, ", ...", "."), "\n         For computational efficiency we recommend specifying these in 'constants'.")
         }
     }
     return(NULL)
@@ -2862,11 +2862,11 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     model$setInits(inits[!nonVarIndices])
     ## basic size/dimension, NA checking
     if(calculate) {
-        if(nimbleOptions('verbose')) message("Running calculate on model.\n  [Note] Any error reports that follow may simply reflect missing values in model variables.")
+        if(nimbleOptions('verbose')) message("Running calculate on model\n  [Note] Any error reports that follow may simply reflect missing values in model variables.")
         result <- try(model$calculate(), silent = TRUE)
         if(nimbleOptions('verbose')) 
             if(is(result, 'try-error')) 
-                message(geterrmessage()) else message("")  # this ensures a single newline is included
+                message(geterrmessage()) 
     }
     if(nimbleOptions('verbose')) message("Checking model sizes and dimensions")
     model$checkBasics()
