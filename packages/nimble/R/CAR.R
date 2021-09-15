@@ -541,11 +541,13 @@ CAR_proper_evaluateDensity <- nimbleFunction(
     contains = CAR_evaluateDensity_base,
     setup = function(model, targetScalar, neighborNodes, neighborCs, Mi) {
         targetDCAR <- model$expandNodeNames(targetScalar)
-        targetDCARscalarComponents <- model$expandNodeNames(targetScalar, returnScalarComponents = TRUE)
+        targetDCARscalarComponents <- model$expandNodeNames(targetDCAR, returnScalarComponents = TRUE)
         targetIndex <- which(targetDCARscalarComponents == targetScalar)
         island <- length(neighborNodes)==0
         numNeighbors <- length(neighborCs)                        ## fix length-1 neighborCs
         neighborCs <- array(neighborCs, c(1, numNeighbors))       ## fix length-1 neighborCs
+        neighborIndices <- array(0, c(1, numNeighbors))
+        for(i in seq_along(neighborNodes))   neighborIndices[1,i] <- which(targetDCARscalarComponents == neighborNodes[i])
         if(Mi <= 0)                                              stop('dcar distribution internal error')
         if(length(targetDCAR) != 1)                              stop('dcar distribution internal error')
         if(model$getDistribution(targetDCAR) != 'dcar_proper')   stop('dcar distribution internal error')
@@ -561,11 +563,12 @@ CAR_proper_evaluateDensity <- nimbleFunction(
     },
     methods = list(
         getMean = function() {
-            mu <- model$getParam(targetDCAR, 'mu')[targetIndex]
-            if(island) return(mu)
+            targetMu <- model$getParam(targetDCAR, 'mu')[targetIndex]
+            if(island) return(targetMu)
             gamma <- model$getParam(targetDCAR, 'gamma')
             neighborValues <- values(model, neighborNodes)
-            mean <- mu + gamma * sum(neighborCs[1,1:numNeighbors] * (neighborValues - mu))
+            neighborMus <- model$getParam(targetDCAR, 'mu')[neighborIndices[1,1:numNeighbors]]
+            mean <- targetMu + gamma * sum(neighborCs[1,1:numNeighbors] * (neighborValues - neighborMus))
             returnType(double())
             return(mean)
         },
