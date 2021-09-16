@@ -106,7 +106,7 @@ test_that("set one to current values and one to new value by two arguments", {
 nimbleOptions(verbose = TRUE)
 
 test_that("ignores extra variable not in model", {
-    expect_warning(model$setData('a', 'b', 'c'),
+    expect_message(model$setData('a', 'b', 'c'),
                    'is not a variable in the model')
     model$resetData()
 })
