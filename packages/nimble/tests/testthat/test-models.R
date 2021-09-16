@@ -646,6 +646,10 @@ test_that("handling of missing indexes of expressions:", {
             return(out)
         })
 
+    temporarilyAssignInGlobalEnv(myfun0)
+    temporarilyAssignInGlobalEnv(myfun1)
+    temporarilyAssignInGlobalEnv(myfun2)
+
     code <- nimbleCode({
         a[1:3] <- myfun0()[,1]      
     })
