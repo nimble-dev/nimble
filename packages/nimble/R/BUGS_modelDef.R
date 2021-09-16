@@ -313,6 +313,10 @@ modelDefClass$methods(assignConstants = function(constants) {
     if(length(constants) > 0) {
         if(!is.list(constants) || is.null(names(constants)))   stop('constants argument must be a named list')
         list2env(constants, constantsEnv)
+        constantsInCode <- names(constantsEnv) %in% all.vars(BUGScode)
+        if(!all(constantsInCode)) 
+            for(constName in names(constantsEnv)[!constantsInCode])
+                message("  [Note] '", constName, "' is provided in 'constants' but not used in the model code and is being ignored.") 
         constantsList <<- constants
         constantsNamesList <<- lapply(ls(constants), as.name)
         constantLengths <- unlist(lapply(constants, length))
@@ -2855,11 +2859,7 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
                 inits <- inits[-unnamed] else inits <- list()
         }
     }
-    nonVarIndices <- !names(inits) %in% model$getVarNames()
-    if(sum(nonVarIndices))
-        message("  [Note] ", paste(names(inits)[nonVarIndices], collapse = ', '),
-                " ", ifelse(sum(nonVarIndices) > 1, "are", "is"), " not ", ifelse(sum(nonVarIndices) > 1, "variables", "a variable"), " in the model; initial value ignored.")
-    model$setInits(inits[!nonVarIndices])
+    model$setInits(inits) 
     ## basic size/dimension, NA checking
     if(calculate) {
         if(nimbleOptions('verbose')) message("Running calculate on model\n  [Note] Any error reports that follow may simply reflect missing values in model variables.")
