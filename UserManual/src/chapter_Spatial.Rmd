@@ -165,7 +165,7 @@ $$p(x | \mu, C, M, \tau, \gamma) \sim \text{MVN} \left( \mu, \; \tfrac{1}{\tau} 
 
 For the purposes of MCMC sampling the individual CAR process values, the resulting conditional prior of region $i$ is:
 
-$$p(x_i | x_{-i}, \mu, C, M, \tau, \gamma) \sim \text{N} \left( \mu_i + \textstyle\sum_{j \in \mathcal{N}_i } \gamma \, C_{ij} \, (x_j - \mu_i),  \; \tfrac{M_{ii}}{\tau} \right)$$
+$$p(x_i | x_{-i}, \mu, C, M, \tau, \gamma) \sim \text{N} \left( \mu_i + \textstyle\sum_{j \in \mathcal{N}_i } \gamma \, C_{ij} \, (x_j - \mu_j),  \; \tfrac{M_{ii}}{\tau} \right)$$
 
 \noindent where $x_{-i}$ represents all elements of $x$ except $x_{i}$, the neighborhood $\mathcal{N}_i$ of region $i$ is the set of all $j$ for which region $j$ is a neighbor of region $i$, and the Normal distribution is parameterized in terms of variance.
 
