@@ -623,6 +623,86 @@ test_that("handling of missing indexes of expressions:", {
                     inits = list(X = matrix(1, 2, 2), beta = matrix(2,2,2), pr = diag(2)),
                     dimensions = list(k = c(2,2)))
     cm <- compileNimble(m)  # if compilation fails, test_that should catch this; having trouble using expect_message as behavior of whether a message is detected seems to differ when running tests locally versus Travis.
+
+})
+
+test_that("handling of missing indexes of expressions, part 2:", {
+    ## Testing that case like `myfun()[,1]` handled similarly to the above case.
+    myfun0 <- nimbleFunction(
+    run = function() {
+        returnType(double(2))
+        out = matrix(3.1, 3, 3)
+        return(out)
+    })
+
+    myfun1 <- nimbleFunction(
+        run = function(x = double(0)) {
+            returnType(double(2))
+            out = matrix(x, 3, 3)
+            return(out)
+        })
+    
+    myfun2 <- nimbleFunction(
+        run = function(x = double(1), y = double(0)) {
+            returnType(double(2))
+            out = matrix(x[1], 3, 3)
+            return(out)
+        })
+    temporarilyAssignInGlobalEnv(myfun0)
+    temporarilyAssignInGlobalEnv(myfun1)
+    temporarilyAssignInGlobalEnv(myfun2)
+    
+    code <- nimbleCode({
+        a[1:3] <- myfun0()[,1]      
+    })
+    m <- nimbleModel(code)
+    cm <- compileNimble(m)
+    expect_true(is.numeric(cm$calculate('a')))
+
+    code <- nimbleCode({
+        a[1:3] <- (myfun0())[,1]      
+    })
+    m <- nimbleModel(code)
+    cm <- compileNimble(m)
+    expect_true(is.numeric(cm$calculate('a')))
+    
+    code <- nimbleCode({
+        a[1:3] <- myfun1(b)[,1]      
+    })
+    m <- nimbleModel(code, inits = list(b = 3.1))
+    cm <- compileNimble(m)
+    expect_true(is.numeric(cm$calculate('a')))
+
+    code <- nimbleCode({
+        a[1:3] <- myfun2(b[1:3, 1], 7)[,1]      
+    })
+    m <- nimbleModel(code)
+    cm <- compileNimble(m)
+    expect_true(is.numeric(cm$calculate('a')))
+
+    code <- nimbleCode({
+        a[1:3] <- myfun2(b[ , 1], 7)[,1]      
+    })
+    expect_error(m <- nimbleModel(code), "missing indices")
+
+    code <- nimbleCode({
+        a[1:3] <- myfun2(b[1:3, 1], 7)[,1]      
+    })
+    m <- nimbleModel(code, inits = list(b = matrix(rnorm(9), 3, 3)))
+    cm <- compileNimble(m)
+    expect_true(is.numeric(cm$calculate('a')))
+
+    code <- nimbleCode({
+        a[1:3] <- myfun0()[k[,1],1]      
+    })
+    m <- nimbleModel(code, inits = list(k=matrix(2, 3,3)))
+    cm <- compileNimble(m)
+    expect_true(is.numeric(cm$calculate('a')))
+
+    code <- nimbleCode({
+        a[1:3] <- myfun0()[k[,1],1]      
+    })
+    expect_error(m <- nimbleModel(code), "missing indices")
 })
 
 test_that("warning when RHS only nodes used as dynamic indexes", {
