@@ -167,10 +167,12 @@ stick_breaking <- nimbleFunction(
         x <- nimNumeric(N+1) 
         remainingLogProb <- 0 
     
-        x[1] <- log(z[1]) 
-        for(i in 2:N) {
-            remainingLogProb <- remainingLogProb + log(1-z[i-1]) 
-            x[i] <- log(z[i]) + remainingLogProb 
+        x[1] <- log(z[1])
+        if(N > 1) {
+            for(i in 2:N) {
+                remainingLogProb <- remainingLogProb + log(1-z[i-1]) 
+                x[i] <- log(z[i]) + remainingLogProb 
+            }
         }
         
         x[N+1] <- remainingLogProb + log(1-z[N]) 
