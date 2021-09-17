@@ -110,6 +110,7 @@ test_that("basic use of getParents works", {
         }
         mu ~ dnorm(mu0,1)
         mu0 <- mu00
+        mu00 <- mu000
         sigma ~ dunif(sigma0,1)
         sigma1 ~ dunif(0,1)
         tau ~ dunif(0,1)
@@ -121,13 +122,13 @@ test_that("basic use of getParents works", {
                      data = list(y = matrix(rnorm(I*J), J, I)),
                      constants = constants)
     expect_identical(m$getParents('mu', stochOnly =  TRUE), character(0))
-    expect_identical(m$getParents('mu'), c('mu0', 'mu00'))
+    expect_identical(m$getParents('mu'), c('mu00', 'mu0'))
     expect_identical(m$getParents('y', stochOnly = TRUE),
-                     c('theta[1]','theta[2]','theta[3]', 'sigma'))
+                     c('sigma','theta[1]','theta[2]','theta[3]'))
     expect_identical(m$getParents('y'),
-                     c('lifted_d1_over_sqrt_oPsigma_cP', 'theta[1]','theta[2]','theta[3]', 'sigma'))
+                     c('sigma','lifted_d1_over_sqrt_oPsigma_cP', 'theta[1]','theta[2]','theta[3]'))
     expect_identical(m$getParents('y[2, 1:3]', stochOnly = TRUE),
-                     c('theta[2]', 'sigma'))
+                     c('sigma','theta[2]'))
     expect_identical(m$getParents('theta'),
                      c('tau', 'mu'))
     
