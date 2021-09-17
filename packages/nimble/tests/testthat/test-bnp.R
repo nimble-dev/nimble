@@ -6122,7 +6122,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
                 thetaTilde = matrix(rnorm(J*n), n, J))
   model <- nimbleModel(code, data = data, constants = constants, inits = inits)
   expect_silent(conf <- configureMCMC(model, print = FALSE))
-  expect_error(mcmc <- buildMCMC(conf), "replacement has length zero")
+  expect_error(mcmc <- buildMCMC(conf), "The number of nodes that are jointly clustered must be the same")
 
   ## too few xi values
   code <- nimbleCode({
