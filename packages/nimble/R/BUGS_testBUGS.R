@@ -56,7 +56,7 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
         if(is.character(expectModelWarning) || expectModelWarning) {
             if(!is.character(expectModelWarning))
                 expectModelWarning <- NULL
-            testthat::expect_warning(Rmodel <- readBUGSmodel(model = model, data = data, inits = inits, dir = dir, useInits = useInits, debug = debug, check = FALSE, calculate = FALSE), expectModelWarning)
+            testthat::expect_message(Rmodel <- readBUGSmodel(model = model, data = data, inits = inits, dir = dir, useInits = useInits, debug = debug, check = FALSE, calculate = FALSE), expectModelWarning)
         } else Rmodel <- readBUGSmodel(model = model, data = data, inits = inits, dir = dir, useInits = useInits, debug = debug, check = FALSE, calculate = FALSE)
         ## setting check and calculate to FALSE because check() and calculate() in some cases (e.g., ice, kidney) causes initialization of values such that inits as passed in do not match values in R or C model and failure of test of whether initial values are maintained
         
