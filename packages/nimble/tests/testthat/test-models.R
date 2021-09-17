@@ -45,7 +45,7 @@ test_that('unnecessary data do not break model building', {
 
 out <- sapply(allModels, testBUGSmodel, useInits = TRUE)
 
-testBUGSmodel('oxford', useInits = TRUE, expectModelWarning = "tau is not a variable")
+testBUGSmodel('oxford', useInits = TRUE, expectModelWarning = "'tau' has initial values but is not")
 
 ## special cases in vol1: 'epil', 'leuk', 'salm', 'seeds'
 
@@ -58,7 +58,7 @@ testBUGSmodel('oxford', useInits = TRUE, expectModelWarning = "tau is not a vari
 ## various cases where we need to refer to a differently-named .bug file:
 
 testBUGSmodel('epil', model = 'epil2.bug', inits = 'epil-inits.R',
-              data = 'epil-data.R', useInits = TRUE, expectModelWarning = "tau.b is not a variable")
+              data = 'epil-data.R', useInits = TRUE, expectModelWarning = "'tau.b' has initial values but is not")
 testBUGSmodel('epil', model = 'epil3.bug', inits = 'epil-inits.R',
               data = 'epil-data.R', useInits = TRUE)
 testBUGSmodel('seeds', model = 'seedsuni.bug', inits = 'seeds-init.R',
@@ -66,15 +66,15 @@ testBUGSmodel('seeds', model = 'seedsuni.bug', inits = 'seeds-init.R',
 testBUGSmodel('seeds', model = 'seedssig.bug', inits = 'seeds-init.R',
               data = 'seeds-data.R', useInits = FALSE)
 testBUGSmodel('birats', model = 'birats1.bug', inits = 'birats-inits.R',
-              data = 'birats-data.R', useInits = TRUE, expectModelWarning = "Omega.beta is not a variable")
+              data = 'birats-data.R', useInits = TRUE, expectModelWarning = "'Omega.beta' has initial values but is not")
 testBUGSmodel('birats', model = 'birats3.bug', inits = 'birats-inits.R',
-              data = 'birats-data.R', useInits = TRUE, expectModelWarning = "Omega.beta is not a variable")
+              data = 'birats-data.R', useInits = TRUE, expectModelWarning = "'Omega.beta' has initial values but is not")
 testBUGSmodel('ice', model = 'icear.bug', inits = 'ice-inits.R',
               data = 'ice-data.R', useInits = TRUE)
 testBUGSmodel('beetles', model = 'beetles-logit.bug', inits = 'beetles-inits.R',
               data = 'beetles-data.R', useInits = TRUE)
 testBUGSmodel('birats', model = 'birats2.bug', inits = 'birats-inits.R',
-              data = 'birats-data.R', useInits = TRUE, expectModelWarning = "tau.beta is not a variable")
+              data = 'birats-data.R', useInits = TRUE, expectModelWarning = "'tau.beta' has initial values but is not")
 
 ## various cases where we need to modify the BUGS code, generally the indexing
 
@@ -86,7 +86,7 @@ system.in.dir(paste("cat leuk.bug >>", file.path(tempdir(), "leuk.bug")), dir = 
 ## need nimStep in data block as we no longer have step
 system.in.dir(paste("sed -i -e 's/step/nimStep/g'", file.path(tempdir(), "leuk.bug")))
 ##system(paste("sed -i -e 's/step/nimStep/g'", file.path(tempdir(), "leuk.bug")))
-testBUGSmodel('leuk', dir = "", model = file.path(tempdir(), "leuk.bug"), data = system.file('classic-bugs','vol1','leuk','leuk-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol1','leuk','leuk-init.R', package = 'nimble'), useInits = TRUE, expectModelWarning = "tau is not a variable")
+testBUGSmodel('leuk', dir = "", model = file.path(tempdir(), "leuk.bug"), data = system.file('classic-bugs','vol1','leuk','leuk-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol1','leuk','leuk-init.R', package = 'nimble'), useInits = TRUE, expectModelWarning = "'tau' has initial values but is not")
 
 ## salm: need dimensionality of logx
 writeLines(c("var","logx[doses];"), con = file.path(tempdir(), "salm.bug"))
@@ -108,7 +108,7 @@ testBUGSmodel('air', dir = "", model = file.path(tempdir(), "air.bug"), data = s
 ##  Code age was given as known but evaluates to a non-scalar.  This is probably ## not what you want.
 system.in.dir(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g' jaw-linear.bug > ", file.path(tempdir(), "jaw-linear.bug")), dir = system.file('classic-bugs','vol2','jaw', package = 'nimble')) ## alternative way to get size info in there
 ##system(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g'", system.file('classic-bugs','vol2','jaw','jaw-linear.bug', package = 'nimble'), ">", file.path(tempdir(), "jaw-linear.bug"))) ## alternative way to get size info in there
-testBUGSmodel('jaw', dir = "", model = file.path(tempdir(), "jaw-linear.bug"), inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), useInits = TRUE, expectModelWarning = "beta2 is not a variable")
+testBUGSmodel('jaw', dir = "", model = file.path(tempdir(), "jaw-linear.bug"), inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), useInits = TRUE, expectModelWarning = "'beta2' has initial values but is not")
 
 
 
@@ -713,9 +713,9 @@ test_that("warning when RHS only nodes used as dynamic indexes", {
             mu[i] ~ dnorm(0,1)
     })
     
-    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3))),
+    expect_message(m <- nimbleModel(code, inits = list(k = rep(1,3))),
                    "Detected use of non-constant indexes")
-    expect_warning(m <- nimbleModel(code, data = list(k = rep(1,3))),
+    expect_message(m <- nimbleModel(code, data = list(k = rep(1,3))),
                    "Detected use of non-constant indexes")
     ## Hack, but this allows detection of lack of warning given that
     ## Travis and non-Travis behave differently in terms of silent vs. message.
@@ -737,7 +737,7 @@ test_that("warning when RHS only nodes used as dynamic indexes", {
         for(i in 1:3)
             mu[i] ~ dnorm(0,1)
     })
-    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3))),
+    expect_message(m <- nimbleModel(code, inits = list(k = rep(1,3))),
                    "Detected use of non-constant indexes")
 
     code <- nimbleCode({
@@ -746,8 +746,8 @@ test_that("warning when RHS only nodes used as dynamic indexes", {
         for(i in 1:3)
             mu[i] ~ dnorm(0,1)
     })
-    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3)), constants = list(j=1:3)), "Detected use of non-constant indexes")
-    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3), j=1:3)),
+    expect_message(m <- nimbleModel(code, inits = list(k = rep(1,3)), constants = list(j=1:3)), "Detected use of non-constant indexes")
+    expect_message(m <- nimbleModel(code, inits = list(k = rep(1,3), j=1:3)),
                    "Detected use of non-constant indexes")
 
     ## We don't detect when deterministic node intervenes.
@@ -775,9 +775,9 @@ test_that("warning when RHS only nodes used as dynamic indexes", {
             for(ii in 1:4)
                 mu[i, ii] ~ dnorm(0,1)
     })
-    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3), j = rep(1,3))),
+    expect_message(m <- nimbleModel(code, inits = list(k = rep(1,3), j = rep(1,3))),
                    "Detected use of non-constant indexes")
-    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3)), constants = list(j = rep(1,3))),
+    expect_message(m <- nimbleModel(code, inits = list(k = rep(1,3)), constants = list(j = rep(1,3))),
                    "Detected use of non-constant indexes")
 
     code <- nimbleCode({
@@ -787,9 +787,9 @@ test_that("warning when RHS only nodes used as dynamic indexes", {
             for(ii in 1:4)
                 mu[i, ii] ~ dnorm(0,1)
     })
-    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3), j = rep(1,3))),
+    expect_message(m <- nimbleModel(code, inits = list(k = rep(1,3), j = rep(1,3))),
                    "Detected use of non-constant indexes")
-    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3)), constants = list(j = rep(1,3))),
+    expect_message(m <- nimbleModel(code, inits = list(k = rep(1,3)), constants = list(j = rep(1,3))),
                    "Detected use of non-constant indexes")
 
 
@@ -799,7 +799,7 @@ test_that("warning when RHS only nodes used as dynamic indexes", {
         for(i in 1:3)
             mu[1:2, i] ~ dmnorm(z[1:2], prec[1:2,1:2])
     })
-    expect_warning(m <- nimbleModel(code, inits = list(k = rep(1,3))),
+    expect_message(m <- nimbleModel(code, inits = list(k = rep(1,3))),
                    "Detected use of non-constant indexes")
     ## Hack, but this allows detection of lack of warning given that
     ## Travis and non-Travis behave differently in terms of silent vs. message.
@@ -818,9 +818,9 @@ test_that("warning when RHS only nodes used as dynamic indexes", {
                 X[i,j] ~ dnorm(0,1)
     })
     
-    expect_warning(m <- nimbleModel(code, data = list(y=rnorm(5), idx = matrix(rep(1:6), 6, 6))),
+    expect_message(m <- nimbleModel(code, data = list(y=rnorm(5), idx = matrix(rep(1:6), 6, 6))),
                    "Detected use of non-constant indexes")
-    expect_warning(m <- nimbleModel(code, data = list(y=rnorm(5)), inits = list(idx = matrix(rep(1:6), 6, 6))),
+    expect_message(m <- nimbleModel(code, data = list(y=rnorm(5)), inits = list(idx = matrix(rep(1:6), 6, 6))),
                    "Detected use of non-constant indexes")
 
 })
