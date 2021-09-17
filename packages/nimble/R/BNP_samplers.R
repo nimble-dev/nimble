@@ -183,7 +183,7 @@ sampleDPmeasure <- nimbleFunction(
     if( sum(counts) != length(tildeVars) ) 
       stop('sampleDPmeasure: The node(s) representing the cluster variables must be monitored in the MCMC (and therefore stored in the modelValues object).\n')  
     
-    parentNodesTildeVars <- getParentNodes(tildeVars, model, returnType = 'names', stochOnly = TRUE)
+    parentNodesTildeVars <- model$getParents(tildeVars, stochOnly = TRUE)
     if(length(parentNodesTildeVars)) {
       parentNodesTildeVarsDeps <- model$getDependencies(parentNodesTildeVars, self = FALSE)
     } else parentNodesTildeVarsDeps <- NULL
@@ -194,7 +194,7 @@ sampleDPmeasure <- nimbleFunction(
       stop('sampleDPmeasure: The stochastic parent nodes of the cluster variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
 
     ## Check that parent nodes of cluster IDs are monitored.  
-    parentNodesXi <- getParentNodes(dcrpNode, model, returnType = 'names', stochOnly = TRUE)
+    parentNodesXi <- model$getParents(dcrpNode, stochOnly = TRUE)
     
     if(!all(model$getVarNames(nodes = parentNodesXi) %in% mvSavedVars))
       stop('sampleDPmeasure: The stochastic parent nodes of the membership variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
@@ -1431,7 +1431,7 @@ sampler_CRP <- nimbleFunction(
     ## Determine if concentration parameter is fixed or random (code similar to the one in sampleDPmeasure function).
     ## This is used in truncated case to tell user if model is proper or not.
     fixedConc <- TRUE
-    parentNodesTarget <- getParentNodes(target, model, stochOnly = TRUE)
+    parentNodesTarget <- model$getParents(target, stochOnly = TRUE)
     if(length(parentNodesTarget)) {
       fixedConc <- FALSE
     }
