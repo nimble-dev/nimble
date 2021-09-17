@@ -173,7 +173,7 @@ test_that('dcar_proper sampling', {
                 info = 'agreement between R and C sampling of dcar_proper')
 
     expect_lt(max(abs(as.numeric(Csamples[20, sampleNames]) -
-                 c(0.0978025, -0.6643286, 1.9510954, 0.2413084, 2.6684426, -3.2533691))), 1e-6,
+                 c(-0.6643286, 0.0978025, 1.9510954, 0.2413084, 2.6684426, -3.2533691))), 1e-6,
                  label = 'exact sample values for dcar_proper')
 })
 
