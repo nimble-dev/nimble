@@ -101,7 +101,7 @@ test_that("getDependencies in second model with some criss-crossing dependencies
     expect_identical(m2$getDependencies(c('c2','h1','c3')), ans4)
 })
 
-test_that("old getParentNodes works", {
+test_that("basic use of getParents works", {
     code=nimbleCode({
         for(j in 1:J) {
             for(i in 1:I)
@@ -120,15 +120,15 @@ test_that("old getParentNodes works", {
     m <- nimbleModel(code,
                      data = list(y = matrix(rnorm(I*J), J, I)),
                      constants = constants)
-    expect_identical(nimble:::getParentNodes('mu', m, stochOnly =  TRUE), character(0))
-    expect_identical(nimble:::getParentNodes('mu', m), c('mu0', 'mu00'))
-    expect_identical(nimble:::getParentNodes('y', m, stochOnly = TRUE),
+    expect_identical(m$getParents('mu', stochOnly =  TRUE), character(0))
+    expect_identical(m$getParents('mu'), c('mu0', 'mu00'))
+    expect_identical(m$getParents('y', stochOnly = TRUE),
                      c('theta[1]','theta[2]','theta[3]', 'sigma'))
-    expect_identical(nimble:::getParentNodes('y', m),
+    expect_identical(m$getParents('y'),
                      c('lifted_d1_over_sqrt_oPsigma_cP', 'theta[1]','theta[2]','theta[3]', 'sigma'))
-    expect_identical(nimble:::getParentNodes('y[2, 1:3]', m, stochOnly = TRUE),
+    expect_identical(m$getParents('y[2, 1:3]', stochOnly = TRUE),
                      c('theta[2]', 'sigma'))
-    expect_identical(nimble:::getParentNodes('theta', m),
+    expect_identical(m$getParents('theta'),
                      c('tau', 'mu'))
     
 })
