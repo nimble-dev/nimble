@@ -208,7 +208,6 @@ cppProjectClass <- setRefClass('cppProjectClass',
 
                                        logFile <- paste0(dllName, ".log")
                                        errorFile <- paste0(dllName, ".err")
-                                       browser()
                                        status = system2(ssdSHLIBcmd, ssdSHLIBargs, stdout = logFile, stderr = errorFile)
 
                                        if(status == 0 && showCompilerOutput) {
@@ -306,7 +305,6 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        ## We formerly used ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput
                                        ## but when ignore.stdout and ignore.stderr are TRUE nothing gets printed to stdout and stderr so
                                        ## .log and .err files are empty.
-                                       browser()
                                        status = system2(SHLIBcmd, SHLIBargs, stdout = logFile, stderr = errorFile)
                                        if(status == 0 && showCompilerOutput) {
                                            output <- c(readLines(logFile), readLines(errorFile))
