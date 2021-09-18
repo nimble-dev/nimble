@@ -2632,6 +2632,8 @@ sizeColonOperator <- function(code, symTab, typeEnv, recurse = TRUE) {
     
     ## could generate an assertion that second arg is >= first arg
     if(is.numeric(code$args[[1]]) & is.numeric(code$args[[2]])) {
+        if(code$args[[1]] > code$args[[2]])
+            stop("sizeColonOperator: negative indexing cannot be compiled.")
         code$sizeExprs <- list(code$args[[2]] - code$args[[1]] + 1)
     } else { ## at least one part is an expression
         ## This is an awkward case:
