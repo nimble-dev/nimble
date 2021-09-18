@@ -889,6 +889,8 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             if(isRonly & !allContentsReplaceable) {
                 if(!exists(funName, envir))
                     stop("R function '", funName,"' does not exist.")
+                if(funName == ":") ## dynamic indexing in a vector of indices
+                    stop("Dynamic indexing found in a vector of indices, ", deparse(code), ". Only scalar indices, such as 'idx' in 'x[idx]', can be dynamic. One can instead use dynamic indexing in a vector of indices inside a nimbleFunction.") 
                 unreplaceable <-
                     sapply(contents[!contentsReplaceable],
                            function(x) as.character(x$code)

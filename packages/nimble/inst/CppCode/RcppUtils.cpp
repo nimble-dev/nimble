@@ -25,10 +25,6 @@
 #include<sstream>
 #include<algorithm>
 
-// Work around R's unqualified use of `error` in the `ERROR` macro
-// (see $R_SOURCE/src/include/R_ext/RS.h).
-#define error Rf_error
-
 std::ostringstream _nimble_global_output;
 
 void nimble_print_to_R(std::ostringstream &input) {
@@ -548,8 +544,7 @@ SEXP extract_int_2_SEXP(SEXP rPtr, SEXP refNum){
     else if(cRefNum == 2)
         cPtr = (*static_cast<int**> ( vPtr ) );
     else {
-        PROBLEM "incorrect value passed to int_2_SEXP"
-            ERROR;
+      NIMERROR("incorrect value passed to int_2_SEXP");
     }
     SEXP Sans;
     PROTECT(Sans = Rf_allocVector(INTSXP, 1));

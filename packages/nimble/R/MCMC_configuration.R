@@ -200,7 +200,7 @@ print: A logical argument specifying whether to print the montiors and samplers.
                     ## all potential (candidate) posterior predictive branch nodes:
                     candidateNodeIDs <- stochNonDataIDs[!model$isEndNode(stochNonDataIDs)]
                     dataNodeIDs <- model$getNodeNames(dataOnly = TRUE, returnType = 'ids')
-                    dataNodeParentIDs <- model$expandNodeNames(getParentNodes(dataNodeIDs, model, stochOnly = TRUE), returnType = 'ids')
+                    dataNodeParentIDs <- model$expandNodeNames(model$getParents(dataNodeIDs, stochOnly = TRUE), returnType = 'ids')
                     ## remove from candidate nodes all direct parents of data nodes:
                     candidateNodeIDs <- setdiff(candidateNodeIDs, dataNodeParentIDs)
                     nCandidate <- length(candidateNodeIDs)

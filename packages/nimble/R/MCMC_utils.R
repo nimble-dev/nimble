@@ -360,7 +360,7 @@ mcmc_processMonitorNames <- function(model, nodes) {
 
 ## As of 0.10.1 stop WAIC if not monitoring all parameters of data nodes
 mcmc_checkWAICmonitors_conditional <- function(model, monitors, dataNodes) {
-    parentNodes <- getParentNodes(dataNodes, model, stochOnly = TRUE)
+    parentNodes <- model$getParents(dataNodes, stochOnly = TRUE)
     parentVars <- model$getVarNames(nodes = parentNodes)
     wh <- which(!parentVars %in% monitors)
     if(length(wh)) {

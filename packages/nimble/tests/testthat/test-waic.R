@@ -164,16 +164,18 @@ test_that("Radon model WAIC is accurate", {
   temporarilyAssignInGlobalEnv(radonModel)
   CradonModel <- compileNimble(radonModel)
   radonmcmcConf <- configureMCMC(radonModel, monitors = c('beta'))
-  radonmcmc <- buildMCMC(radonmcmcConf, enableWAIC = TRUE)
+  print(radonmcmcConf)
+  expect_message(radonmcmc <- buildMCMC(radonmcmcConf, enableWAIC = TRUE),
+              "Monitored nodes are valid for WAIC")   
   temporarilyAssignInGlobalEnv(radonmcmc)
   Cradonmcmc <- compileNimble(radonmcmc, project = radonModel)
   Cradonmcmc$run(10000)
   expect_lt(abs(Cradonmcmc$calculateWAIC(1000) - 3937), 10)
-  radonmcmcConf <- configureMCMC(radonModel, monitors = c('coefs'))
-  ## check to ensure monitoring deterministic nodes works
-  expect_message(radonmcmc <- buildMCMC(radonmcmcConf, enableWAIC = TRUE), 
-                 "Monitored nodes are valid for WAIC",
-                 all = FALSE, fixed = TRUE)
+  monitors <- radonModel$getNodeNames(determOnly = TRUE)
+  radonmcmcConf <- configureMCMC(radonModel, monitors = monitors)
+  ## check to ensure monitoring deterministic nodes fails
+  expect_error(radonmcmc <- buildMCMC(radonmcmcConf, enableWAIC = TRUE), 
+                 "To calculate WAIC in NIMBLE, all parameters")
   Cradonmcmc <- compileNimble(radonmcmc, project = radonModel,
                               resetFunctions = TRUE)
   Cradonmcmc$run(10000)

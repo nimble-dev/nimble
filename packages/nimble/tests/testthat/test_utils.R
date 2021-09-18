@@ -1320,14 +1320,14 @@ test_dynamic_indexing_model_internal <- function(param) {
                     
                     cm[[param$invalidIndexes[[i]]$var[j]]] <- param$invalidIndexes[[i]]$value[j]
                 }
-                expect_output(out <- calculate(m), "dynamic index out of bounds", info = paste0("problem with lack of warning in R calculate with non-NA invalid indexes, case: ", i))
+                expect_output(out <- calculate(m), "Dynamic index out of bounds", info = paste0("problem with lack of warning in R calculate with non-NA invalid indexes, case: ", i))
                 expect_equal(out, NaN, info = paste0("problem with lack of NaN in R calculate with non-NA invalid indexes, case: ", i))
-                expect_output(out <- calculate(cm), "dynamic index out of bounds", info = paste0("problem with lack of warning in C calculate with invalid indexes, case: ", i))
+                expect_output(out <- calculate(cm), "Dynamic index out of bounds", info = paste0("problem with lack of warning in C calculate with invalid indexes, case: ", i))
                 expect_equal(out, NaN, info = paste0("problem with lack of NaN in C calculate with invalid indexes, case: ", i))
-                expect_output(out <- calculateDiff(cm), "dynamic index out of bounds", info = paste0("problem with lack of warning in C calculateDiff with invalid indexes, case: ", i))
+                expect_output(out <- calculateDiff(cm), "Dynamic index out of bounds", info = paste0("problem with lack of warning in C calculateDiff with invalid indexes, case: ", i))
                 expect_equal(out, NaN, info = paste0("problem with lack of NaN in C calculateDiff with invalid indexes, case: ", i))
                 deps <- m$getDependencies(param$invalidIndexes[[i]]$var, self = FALSE)
-                expect_output(simulate(cm, deps, includeData = TRUE), "dynamic index out of bounds", info = paste0("problem with lack of warning in C simulate with invalid indexes, case: ", i))
+                expect_output(simulate(cm, deps, includeData = TRUE), "Dynamic index out of bounds", info = paste0("problem with lack of warning in C simulate with invalid indexes, case: ", i))
                 expect_true(sum(is.nan(values(cm, deps))) >= 1, info = paste0("problem with lack of NaN in C simulate with invalid indexes, case: ", i))
             }
             if(.Platform$OS.type != "windows") {

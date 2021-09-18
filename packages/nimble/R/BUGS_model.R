@@ -465,7 +465,7 @@ expandNodeNamesFromGraphIDs = function(graphID, returnScalarComponents = FALSE, 
         return(nodeNames)
     }
     if(returnType == 'ids'){
-        if(returnScalarComponents) print("NIMBLE development warning: returning IDs of scalar components may not be meaningful.  Checking to see if we ever see this message.")
+        if(returnScalarComponents) message("NIMBLE development warning: returning IDs of scalar components may not be meaningful.  Checking to see if we ever see this message.")
         return(graphID)
     }
     if(!(returnType %in% c('ids','names')))
@@ -598,8 +598,7 @@ Details: If a provided value (or the current value in the model when only a name
                                                   if(varName == '') {
                                                       warning('setData: unnamed element provided to setData.')
                                                   } else 
-                                                      warning('setData: data not used in model: ',
-                                                              varName)
+                                                      message("  [Note] '", varName, "' is provided in 'data' but is not a variable in the model and is being ignored.")
                                               }
                                               ## Removing unnecessary
                                               ## elements does not
@@ -742,7 +741,7 @@ getParents = function(nodes, omit = character(), self = FALSE,
                       immediateOnly = FALSE,
                       returnType = 'names', returnScalarComponents = FALSE) {
   '
- Returns a character vector of the nodes on which the input nodes depend, sorted topologically according to the model graph, by default recursing and stopping at stochastic parent nodes.  In the genealogical metaphor for a graphical model, this function returns the "parents" of the input nodes. In the river network metaphor, it returns upstream nodes.  By default, the returned nodes omit the input nodes, include only stochastic nodes, and stop at stochastic nodes.  Additional input arguments provide flexibility in the values returned.
+ Returns a character vector of the nodes on which the input nodes depend, sorted topologically according to the model graph, by default recursing and stopping at stochastic parent nodes.  In the genealogical metaphor for a graphical model, this function returns the "parents" of the input nodes. In the river network metaphor, it returns upstream nodes.  By default, the returned nodes omit the input nodes and stop at stochastic nodes.  Additional input arguments provide flexibility in the values returned.
 
 Arguments:
 
@@ -809,7 +808,7 @@ Details: The upward search for dependent nodes propagates through deterministic 
   if(returnScalarComponents)
     parentIDs = unique(parentIDs, FALSE, FALSE, NA)
   if(returnType == 'ids') {
-    if(returnScalarComponents) print("nimble development warning: calling getParents with returnType = ids and returnScalarComponents may not be meaningful.")
+    if(returnScalarComponents) message("NIMBLE development warning: calling getParents with returnType = ids and returnScalarComponents may not be meaningful.")
     return(depIDs)
   }
   if(returnType == 'names') {
@@ -867,7 +866,7 @@ Return value: List of nodes that are in conditionally independent sets.  Within 
                                       includeRHSonly = FALSE, downstream = FALSE,
                                       returnType = 'names', returnScalarComponents = FALSE) {
 '
-Returns a character vector of the nodes dependent upon the input argument nodes, sorted topologically according to the model graph. In the genealogical metaphor for a graphical model, this function returns the "children" of the input nodes.  In the river network metaphor, it returns downstream nodes. By default, the returned nodes include the input nodes, include both deterministic and stochastic nodes, and stop at stochastic nodes. Aditional input arguments provide flexibility in the values returned.
+Returns a character vector of the nodes dependent upon the input argument nodes, sorted topologically according to the model graph. In the genealogical metaphor for a graphical model, this function returns the "children" of the input nodes.  In the river network metaphor, it returns downstream nodes. By default, the returned nodes include the input nodes, include both deterministic and stochastic nodes, and stop at stochastic nodes. Additional input arguments provide flexibility in the values returned.
 
 Arguments:
 
@@ -937,7 +936,7 @@ if(!self)	{
                                       if(returnScalarComponents)
                                           depIDs = unique(depIDs, FALSE, FALSE, NA)
                                       if(returnType == 'ids'){
-                                          if(returnScalarComponents) print("nimble development warning: calling getDependencies with returnType = ids and returnScalarComponents may not be meaningful.")
+                                          if(returnScalarComponents) message("NIMBLE development warning: calling getDependencies with returnType = ids and returnScalarComponents may not be meaningful.")
                                           return(depIDs)
                                       }
                                       if(returnType == 'names') {
@@ -979,7 +978,7 @@ inits: A named list.  The names of list elements must correspond to model variab
                                               next
                                           }
                                           if(!(names(inits)[i] %in% .self$getVarNames())) {
-                                              warning(paste0('setInits: ', names(inits)[i], ' is not a variable in the model; initial value ignored.'))
+                                              message("  [Note] '", names(inits)[i], "' has initial values but is not a variable in the model and is being ignored.")
                                               next
                                           }
                                           dataVals <- .self$isDataEnv[[names(inits)[[i]] ]]
@@ -1117,7 +1116,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                         varsWithNAs <- NULL
                                         for(v in .self$getVarNames()){
                                           if(!nimble:::isValid(.self[[v]])){
-                                            message(' This model is not fully initialized. This is not an error. To see which variables are not initialized, use model$initializeInfo(). For more information on model initialization, see help(modelInitialization).', appendLF = FALSE)
+                                            message('  [Note] This model is not fully initialized. This is not an error.\n         To see which variables are not initialized, use model$initializeInfo().\n         For more information on model initialization, see help(modelInitialization).')
                                             break
                                           }
                                         }
@@ -1135,11 +1134,11 @@ Provides more detailed information on which model nodes are not initialized.
                                       }
                                     }
                                     if(!is.null(varsWithNAs)){
-                                      message('Missing values (NAs) or non-finite values were found in model variables: ', paste(varsWithNAs, collapse = ', '), 
-                                              '. This is not an error, but some or all variables may need to be initialized for certain algorithms to operate properly. For more information on model initialization, see help(modelInitialization).')
+                                      message('  [Note] Missing values (NAs) or non-finite values were found in model variables: ', paste(varsWithNAs, collapse = ', '), 
+                                              '.\n  [Note] This is not an error, but some or all variables may need to be initialized for certain algorithms to operate properly.\n  [Note] For more information on model initialization, see help(modelInitialization).')
                                     }
                                     else{
-                                      message('All model variables are initialized.')
+                                      message('  [Note] All model variables are initialized.')
                                     }
                                   },
                                   check = function() {
@@ -1198,7 +1197,7 @@ Arguments:
 
 data: A named list specifying data nodes and values, for use in the newly returned model.  If not provided, the data argument from the creation of the original R model object will be used.
 
-inits: A named list specifying initial values, for use in the newly returned model.  If not provided, the inits argument from the creation of the original R model object will be used.
+inits: A named list specifying initial valuse, for use in the newly returned model.  If not provided, the inits argument from the creation of the original R model object will be used.
 
 modelName: An optional character string, used to set the internal name of the model object.  If provided, this name will propagate throughout the generated C++ code, serving to improve readability.
 
@@ -1509,73 +1508,6 @@ whyInvalid <- function(value) {
     stop('should never happen')
 }
 
-## FIXME: this is a temporary function (used in BNP sampler setup and WAIC checking)
-## until we bring this into the full model API
-getParentNodes <- function(nodes, model, returnType = 'names', stochOnly = FALSE) {
-  if(isTRUE(nimbleOptions("use_C_getParents"))) {
-    ansC <- getParentNodesC(nodes, model, returnType = 'names', stochOnly)
-#    return(ans)
-  }
-    ## adapted from BUGS_modelDef creation of edgesFrom2To
-    getParentNodesCore <- function(nodes, model, returnType = 'names', stochOnly = FALSE) {
-        nodeIDs <- model$expandNodeNames(nodes, returnType = "ids")
-        fromIDs <- sort(unique(unlist(edgesTo2From[nodeIDs])))
-        fromNodes <- maps$graphID_2_nodeName[fromIDs]
-        if(!length(fromNodes))
-            return(character(0))
-        fromNodesDet <- fromNodes[model$modelDef$maps$types[fromIDs] == 'determ']
-        ## Recurse through parents of deterministic nodes.
-        fromNodes <- c(if(stochOnly) fromNodes[model$modelDef$maps$types[fromIDs] == 'stoch'] else fromNodes, 
-                       if(length(fromNodesDet)) getParentNodesCore(fromNodesDet, model, returnType, stochOnly) else character(0))
-        fromNodes
-    }
-    
-    maps <- model$modelDef$maps
-    maxNodeID <- length(maps$vertexID_2_nodeID) ## should be same as length(maps$nodeNames)
-    ## Only determine edgesTo2From once and then obtain in getParentNodesCore via scoping.
-    edgesLevels <- if(maxNodeID > 0) 1:maxNodeID else numeric(0)
-    fedgesTo <- factor(maps$edgesTo, levels = edgesLevels) ## setting levels ensures blanks inserted into the splits correctly
-    edgesTo2From <- split(maps$edgesFrom, fedgesTo)
-
-  ans <- getParentNodesCore(nodes, model, returnType, stochOnly)
-  if(isTRUE(nimbleOptions("use_C_getParents"))) {
-    sortedAns <- model$topologicallySortNodes(ans)
-    if(!identical(ansC, sortedAns)) {
-      Cextra <- setdiff(ansC, sortedAns)
-      Rextra <- setdiff(sortedAns, ansC)
-      msg <- paste0("getParentNodesC found extras:", paste0(Cextra, collapse = ','),
-                    "getParentNodes (R) found extras:", paste0(Rextra, collapse = ',')   )
-      message(msg)
-      stop(msg)
-    }
-  }
-  ans
-}
-
-getParentNodesC <-  function(nodes, model, returnType = 'names', stochOnly = FALSE) {
-    omitIDs <- integer()
-    upstream <- FALSE
-    returnScalarComponents  <-  FALSE
-    if(is.character(nodes)) {
-        elementIDs <- model$modelDef$nodeName2GraphIDs(nodes, FALSE)
-        nodeIDs <- unique(model$modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
-                          FALSE,
-                          FALSE,
-                          NA)}
-    parentIDs <- model$modelDef$maps$nimbleGraph$getParents(nodeIDs, omitIDs, upstream )
-    if(stochOnly) parentIDs <- parentIDs[model$modelDef$maps$types[parentIDs] == 'stoch']
-    if(returnType == 'ids'){
-        if(returnScalarComponents) message("nimble development warning: calling getParentNodes with returnType = ids and returnScalarComponents may not be meaningful.")
-        return(parentIDs)
-    }
-    if(returnType == 'names') {
-        if(returnScalarComponents)
-            return(model$modelDef$maps$elementNames[parentIDs])
-        retVal <- model$modelDef$maps$nodeNames[parentIDs]
-        return(retVal)
-    }
-}
-
 # The following roxygen is basically redundant with the method documentation for modelBaseClass::getConditionallyIndependentSets.  Not sure we need both.
 
 #' Get a list of conditionally independent sets of nodes in a nimble model
@@ -1669,7 +1601,7 @@ getConditionallyIndependentSets <- function(model,
     startUp,
     startDown)
   if(returnType == 'ids' && returnScalarComponents)
-    message("nimble development warning: calling getConditionallyIndependentSets with returnType = ids and returnScalarComponents may not be meaningful.")
+    message("NIMBLE development warning: calling getConditionallyIndependentSets with returnType = ids and returnScalarComponents may not be meaningful.")
   result <- lapply(result,
                    function(IDs) {
                      if(stochOnly) IDs <- IDs[model$modelDef$maps$types[IDs] == 'stoch']

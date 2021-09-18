@@ -226,9 +226,9 @@ nf_checkDSLcode <- function(code, methodNames, setupVarNames, args) {
                                    function(x)
                                        is.nlGenerator(x, inputIsName = TRUE)))]
         if(length(nonDSLinR))
-            warning(paste0("Detected possible use of R functions in nimbleFunction run code. For this nimbleFunction to compile, these objects must be defined as nimbleFunctions, nimbleFunctionLists, or nimbleLists: ", paste(nonDSLinR, collapse = ', '), "."), call. = FALSE)
+            message("  [Note] Detected possible use of R functions in nimbleFunction run code.\n         For this nimbleFunction to compile, '", paste(nonDSLinR, collapse = ', '), "' must be defined as a nimbleFunction, nimbleFunctionList, or nimbleList.")
         if(length(nonDSLnonR))
-            warning(paste0("For this nimbleFunction to compile, these objects must be defined as nimbleFunctions, nimbleFunctionLists, or nimbleLists before compilation: ", paste(nonDSLnonR, collapse = ', '), "."), call. = FALSE)
+            message("  [Note] For this nimbleFunction to compile, '", paste(nonDSLnonR, collapse = ', '), "' must be defined as a nimbleFunction, nimbleFunctionList, or nimbleList before compilation.")
     }
     return(0)
 }

@@ -30,10 +30,6 @@
 #include<sstream>
 #include<algorithm>
 
-// Work around R's unqualified use of `error` in the `ERROR` macro
-// (see $R_SOURCE/src/include/R_ext/RS.h).
-#define error Rf_error
-
 void SEXP_2_NimArr(SEXP Sn, double &x) {x = SEXP_2_double(Sn);}
 void SEXP_2_NimArr(SEXP Sn, int &x) {x = SEXP_2_int(Sn);}
 void SEXP_2_NimArr(SEXP Sn, bool &x) {x = SEXP_2_bool(Sn);}

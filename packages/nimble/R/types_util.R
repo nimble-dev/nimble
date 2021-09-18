@@ -180,10 +180,12 @@ expandMVNames <- function(mv, varNames){
 
 as.matrix.modelValuesBaseClass <- function(x, varNames, ...){
 	if(missing(varNames))
-			varNames <- x$varNames
+            varNames <- x$varNames
+        if(!length(varNames))
+            return(NULL)
 	nrows = getsize(x)
 	flatNames = expandMVNames(x, varNames)
-	ans <- matrix(0.1, nrow = nrows, ncol = length(flatNames))
+	ans <- matrix(as.numeric(NA), nrow = nrows, ncol = length(flatNames))
 	colIndex = 1
 	for(i in seq_along(varNames)){
 		.Call(fastMatrixInsert, ans, modelValuesElement2Matrix(x, varNames[i]) , as.integer(1), as.integer(colIndex) ) 		
@@ -196,10 +198,12 @@ as.matrix.modelValuesBaseClass <- function(x, varNames, ...){
 
 as.matrix.CmodelValues <- function(x, varNames, ...){
 	if(missing(varNames))
-			varNames <- x$varNames
+            varNames <- x$varNames
+        if(!length(varNames))
+            return(NULL)
 	nrows = getsize(x)
 	flatNames = expandMVNames(x, varNames)
-	ans <- matrix(0.1, nrow = nrows, ncol = length(flatNames))
+	ans <- matrix(as.numeric(NA), nrow = nrows, ncol = length(flatNames))
 	colIndex = 1
 	for(i in seq_along(varNames)){
 		.Call(fastMatrixInsert, ans, modelValuesElement2Matrix(x, varNames[i]) , as.integer(1), as.integer(colIndex) ) 		

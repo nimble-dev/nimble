@@ -3,7 +3,7 @@
     #date <- utils::packageDescription("nimble", field = "Date")
     packageStartupMessage("nimble version ", release, " is loaded.",
                           "\nFor more information on NIMBLE and a User Manual,",
-                          "\nplease visit http://R-nimble.org.")
+                          "\nplease visit https://R-nimble.org.")
 }
 
 if(!exists("NeedMakevarsFile"))

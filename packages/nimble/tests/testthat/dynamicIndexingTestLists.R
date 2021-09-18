@@ -573,7 +573,7 @@ testsInvalidDynIndex <- list(
         }), 
         inits = list(mu = rnorm(5)),
         expectError = TRUE,
-        expectErrorMsg = "arguments that cannot be evaluated"
+        expectErrorMsg = "Dynamic indexing found in a vector"
     ),
     list(
         case = 'dynamic index sequence, multiple dynamic indexes (invalid)',
@@ -584,7 +584,7 @@ testsInvalidDynIndex <- list(
         }), 
         inits = list(mu = rnorm(5)),
         expectError = TRUE,
-        expectErrorMsg = "arguments that cannot be evaluated"
+        expectErrorMsg = "Dynamic indexing found in a vector"
     ),
     list(
         case = 'dynamic indexing of constants',

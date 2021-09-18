@@ -183,7 +183,7 @@ sampleDPmeasure <- nimbleFunction(
     if( sum(counts) != length(tildeVars) ) 
       stop('sampleDPmeasure: The node(s) representing the cluster variables must be monitored in the MCMC (and therefore stored in the modelValues object).\n')  
     
-    parentNodesTildeVars <- getParentNodes(tildeVars, model, returnType = 'names', stochOnly = TRUE)
+    parentNodesTildeVars <- model$getParents(tildeVars, stochOnly = TRUE)
     if(length(parentNodesTildeVars)) {
       parentNodesTildeVarsDeps <- model$getDependencies(parentNodesTildeVars, self = FALSE)
     } else parentNodesTildeVarsDeps <- NULL
@@ -194,7 +194,7 @@ sampleDPmeasure <- nimbleFunction(
       stop('sampleDPmeasure: The stochastic parent nodes of the cluster variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
 
     ## Check that parent nodes of cluster IDs are monitored.  
-    parentNodesXi <- getParentNodes(dcrpNode, model, returnType = 'names', stochOnly = TRUE)
+    parentNodesXi <- model$getParents(dcrpNode, stochOnly = TRUE)
     
     if(!all(model$getVarNames(nodes = parentNodesXi) %in% mvSavedVars))
       stop('sampleDPmeasure: The stochastic parent nodes of the membership variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
@@ -1431,7 +1431,7 @@ sampler_CRP <- nimbleFunction(
     ## Determine if concentration parameter is fixed or random (code similar to the one in sampleDPmeasure function).
     ## This is used in truncated case to tell user if model is proper or not.
     fixedConc <- TRUE
-    parentNodesTarget <- getParentNodes(target, model, stochOnly = TRUE)
+    parentNodesTarget <- model$getParents(target, stochOnly = TRUE)
     if(length(parentNodesTarget)) {
       fixedConc <- FALSE
     }
@@ -1445,6 +1445,8 @@ sampler_CRP <- nimbleFunction(
     ## needs to be legitimate nodes because run code sets up calculate even if if() would never cause it to be used
     for(i in seq_len(n)) { # dataNodes are always needed so only create them before creating  intermNodes
       stochDeps <- model$getDependencies(targetElements[i], stochOnly = TRUE, self = FALSE)
+      if(length(stochDeps) != nObsPerClusID)
+          stop("sampler_CRP: The number of nodes that are jointly clustered must be the same for each group. For example if 'mu[i,j]' are clustered such that all nodes for a given 'i' must be in the same cluster, then the number of nodes for each 'i' must be the same. Group ", deparse(i), " has ", deparse(length(stochDeps)), " nodes being clustered where ", deparse(nObsPerClusID), " are expected.")
       dataNodes[((i-1)*nObsPerClusID + 1) : (i*nObsPerClusID)] <- stochDeps
     }
     nIntermClusNodesPerClusID <- length(model$getDependencies(targetElements[1], determOnly = TRUE))  #nInterm
@@ -1453,6 +1455,8 @@ sampler_CRP <- nimbleFunction(
       intermNodes <- rep(as.character(NA), nIntermClusNodesPerClusID * n)
       for(i in seq_len(n)) {
         detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
+        if(length(detDeps) != nIntermClusNodesPerClusID)
+            stop("sampler_CRP: The number of intermediate deterministic nodes that are jointly clustered must be the same for each group. For example if 'mu[i,j]' are clustered such that all nodes for a given 'i' must be in the same cluster, then the number of nodes for each 'i' must be the same. Group ", deparse(i), " has ", deparse(length(depDeps)), " intermediate nodes being clustered where ", deparse(nIntermClusNodesPerClusID), " are expected.")
         intermNodes[((i-1)*nIntermClusNodesPerClusID+1):(i*nIntermClusNodesPerClusID)] <- detDeps
       }
     }

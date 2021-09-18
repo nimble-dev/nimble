@@ -1839,7 +1839,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
             if(length(LHS$nDim) == 0) stop(exprClassProcessingErrorMsg(code, paste0('In sizeAssignAfterRecursing: nDim for LHS not set.')), call. = FALSE)
             if(length(RHSnDim) == 0) stop(exprClassProcessingErrorMsg(code, paste0('In sizeAssignAfterRecursing: nDim for RHS not set.')), call. = FALSE)
             if(LHS$nDim != RHSnDim) {
-                stop(paste0('Warning, mismatched dimensions in assignment: ', nimDeparse(code), '.'), call. = FALSE )
+                stop('Mismatched dimensions in assignment: ', nimDeparse(code), '.', call. = FALSE )
             }
             ## and warn if type issue e.g. int <- double
             if(assignmentTypeWarn(LHS$type, RHStype)) {
