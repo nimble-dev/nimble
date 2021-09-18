@@ -1206,6 +1206,8 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
         return(newExpr)
     }
     if(is.call(expr)) {
+        if(any(sapply(expr[-1], function(x) x=='')))
+            stop('Found missing indexing in ', deparse(expr), ' that prevents conjugacy processing for this particular model structure.')
         for(i in seq_along(expr)[-1])
             expr[[i]] <- cc_expandDetermNodesInExpr(model, expr[[i]], targetNode, skipExpansionsNode)
         return(expr)
