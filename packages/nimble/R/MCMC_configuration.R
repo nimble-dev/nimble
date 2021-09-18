@@ -838,8 +838,8 @@ Details: See the initialize() function
             }
             vars <- unique(removeIndexing(vars))
             nl_checkVarNamesInModel(model, vars)
-            if(ind == 1)     monitors  <<- unique(c(monitors,  vars))
-            if(ind == 2)     monitors2 <<- unique(c(monitors2, vars))
+            if(ind == 1)     monitors  <<- sort(unique(c(monitors,  vars)))
+            if(ind == 2)     monitors2 <<- sort(unique(c(monitors2, vars)))
             if(print) printMonitors()
             return(invisible(NULL))
         },
