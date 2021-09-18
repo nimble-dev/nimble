@@ -36,14 +36,14 @@ test2 <- nimbleFunction(
     )
 ))
 
-test_that("Test of DSL check of invalid RCfunction with R code present", expect_warning(
+test_that("Test of DSL check of invalid RCfunction with R code present", expect_message(
 test3 <- nimbleFunction(
     run = function(x = double(1), y = double(1)) {
         returnType(double(1))
         out <- lm(y ~ x)
         return(out$coefficients)
     }
-    )
+    ), "Detected possible use of R functions"
 ))
 
 
@@ -106,7 +106,7 @@ test6 <- nimbleFunction(
 )
 ))
 
-test_that("Test of DSL check of valid nimbleFunction using undefined RC function", expect_warning(
+test_that("Test of DSL check of valid nimbleFunction using undefined RC function", expect_message(
 test7 <- nimbleFunction(
     setup = function(model, target) {
         calcNodes <- model$getDependencies(target)
@@ -117,7 +117,7 @@ test7 <- nimbleFunction(
         ans <- model$calculate(calcNodes)
         tmp = myRCfun()
         return(tmp)
-    })
+    }), "For this nimbleFunction to compile"
 ))
 
 test_that("Test of DSL check of valid nimbleFunction using RC function from setup", expect_silent(
@@ -152,7 +152,7 @@ test9 <- nimbleFunction(
     })
 ))
 
-test_that("Test of DSL check of valid nimbleFunction with undefined nimbleList", expect_warning(
+test_that("Test of DSL check of valid nimbleFunction with undefined nimbleList", expect_message(
 test10 <- nimbleFunction(
   setup = function(){    
   },
@@ -168,7 +168,7 @@ test10 <- nimbleFunction(
       return(outList)
     }
   )
-)
+), "For this nimbleFunction to compile"
 ))
 
 test_that("Test of DSL check of valid nimbleFunction with nimbleList in setup", expect_silent(
@@ -212,7 +212,7 @@ test12 <- nimbleFunction(
   )))
 
 ## Actually not any different than test7.
-test_that("Test of DSL check of valid nimbleFunction with call to undefined nimbleFunction", expect_warning(
+test_that("Test of DSL check of valid nimbleFunction with call to undefined nimbleFunction", expect_message(
 test13 <- nimbleFunction(
     setup = function(model, target) {
         calcNodes <- model$getDependencies(target)
@@ -223,7 +223,7 @@ test13 <- nimbleFunction(
         ans <- model$calculate(calcNodes)
         tmp = mynf()
         return(tmp)
-    })
+    }), "For this nimbleFunction to compile"
 ))
 
 

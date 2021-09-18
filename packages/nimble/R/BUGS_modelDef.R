@@ -313,6 +313,10 @@ modelDefClass$methods(assignConstants = function(constants) {
     if(length(constants) > 0) {
         if(!is.list(constants) || is.null(names(constants)))   stop('constants argument must be a named list')
         list2env(constants, constantsEnv)
+        constantsInCode <- names(constantsEnv) %in% all.vars(BUGScode)
+        if(!all(constantsInCode)) 
+            for(constName in names(constantsEnv)[!constantsInCode])
+                message("  [Note] '", constName, "' is provided in 'constants' but not used in the model code and is being ignored.") 
         constantsList <<- constants
         constantsNamesList <<- lapply(ls(constants), as.name)
         constantLengths <- unlist(lapply(constants, length))
@@ -362,7 +366,7 @@ modelDefClass$methods(assignDimensions = function(dimensions, initsList, dataLis
         if(!(length(initDim) == 1 && initDim == 1)) {  # i.e., non-scalar inits; 1-length vectors treated as scalars and not passed along as dimension info to avoid conflicts between scalars and one-length vectors/matrices/arrays in various places
             if(initName %in% names(dL)) {
                 if(!identical(as.numeric(dL[[initName]]), as.numeric(initDim))) {
-                    warning('inconsistent dimensions between inits and dimensions arguments: ', initName, '; ignoring dimensions in inits.')
+                    warning('  [Note] Inconsistent dimensions between inits and dimensions arguments: ', initName, '; ignoring dimensions in inits.')
                 }
             } else {
                 dL[[initName]] <- initDim
@@ -380,7 +384,7 @@ modelDefClass$methods(assignDimensions = function(dimensions, initsList, dataLis
             if(!(length(dataDim) == 1 && dataDim == 1)) {  # i.e., non-scalar data; 1-length vectors treated as scalars and not passed along as dimension info to avoid conflicts between scalars and one-length vectors/matrices/arrays in various places
                 if(dataName %in% names(dL)) {
                     if(!identical(as.numeric(dL[[dataName]]), as.numeric(dataDim))) {
-                        warning('inconsistent dimensions between data and dimensions arguments: ', dataName, '; ignoring dimensions in data.')
+                        warning('  [Note] Inconsistent dimensions between data and dimensions arguments: ', dataName, '; ignoring dimensions in data.')
                     }
                 } else {
                     dL[[dataName]] <- dataDim
@@ -535,7 +539,7 @@ modelDefClass$methods(splitConstantsAndData = function() {
         constantsNames <- as.character(constantsNamesList)
         newDataVars <- constantsNames[constantsNames %in% vars]
         if(length(newDataVars)) {
-            if(nimbleOptions('verbose')) cat("Detected", paste(newDataVars, collapse = ','), "as data within 'constants'.\n")
+            if(nimbleOptions('verbose')) message("  [Note] Using '", paste(newDataVars, collapse = ','), "' (given within 'constants') as data.")
             constantsNamesList <<- constantsNamesList[!constantsNames %in% vars]
             constantsScalarNamesList <<- constantsScalarNamesList[ !(as.character(constantsScalarNamesList) %in% newDataVars) ]
             constantsList[newDataVars] <<- NULL
@@ -661,7 +665,7 @@ modelDefClass$methods(processBoundsAndTruncation = function() {
         } else {
             truncated <- TRUE
             if(callName == "I")
-                warning(paste0("Interpreting I(,) as truncation (equivalent to T(,)) in ", deparse(BUGSdecl$code), "; this is only valid when ", deparse(BUGSdecl$targetExpr), " has no unobserved (stochastic) parents."))
+                message("  [Note] Interpreting I(,) as truncation (equivalent to T(,)) in ", deparse(BUGSdecl$code), "; this is only valid when ", deparse(BUGSdecl$targetExpr), " has no unobserved (stochastic) parents.")
                 
             newCode <- BUGSdecl$code
             newCode[[3]] <- BUGSdecl$valueExpr[[2]]  # insert the core density function call
@@ -2775,7 +2779,7 @@ modelDefClass$methods(warnRHSonlyDynIdx = function() {
             nodes <- unique(unlist(nodes))
             nodes <- nodes[nodes %in% maps$nodeNamesRHSonly]
             if(length(nodes))
-                warning("Detected use of non-constant indexes: ", paste(nodes, collapse = ', '), ifelse(nr == 50, ", ...", "."), " For computational efficiency we recommend specifying these in 'constants'.")
+                message("  [Note] Detected use of non-constant indexes: ", paste(nodes, collapse = ', '), ifelse(nr == 50, ", ...", "."), "\n         For computational efficiency we recommend specifying these in 'constants'.")
         }
     }
     return(NULL)
@@ -2825,12 +2829,12 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     ## handling for JAGS style inits (a list of lists)
     ## added Oct 2015, DT
     if(length(inits) > 0 && is.list(inits[[1]])) {
-        message('detected JAGS style initial values, provided as a list of lists...  using the first set of initial values')
+        message('  [Note] Detected JAGS-style initial values, provided as a list of lists. Using the first set of initial values')
         inits <- inits[[1]]
     }
     
     if(length(data) + length(inits) > 0)
-        if(nimbleOptions('verbose')) message("setting data and initial values...")
+        if(nimbleOptions('verbose')) message("Setting data and initial values")
     model$setData(data)
     # prevent overwriting of data values by inits
     if(FALSE) {  # should now be handled by checking if setInits tries to overwrite data nodes
@@ -2842,7 +2846,7 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
                 nonNAinits <- !is.na(inits[[varName]][dataVars])
                 if(!identical(data[[varName]][dataVars][nonNAinits],
                               inits[[varName]][dataVars][nonNAinits]))
-                    warning("newModel: Conflict between 'data' and 'inits' for ", varName, "; using values from 'data'.\n")
+                    message("  [Note]: Conflict between 'data' and 'inits' for ", varName, "; using values from 'data'.\n")
                 inits[[varName]][dataVars] <- data[[varName]][dataVars]
             }
         }
@@ -2855,25 +2859,20 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
                 inits <- inits[-unnamed] else inits <- list()
         }
     }
-    nonVarIndices <- !names(inits) %in% model$getVarNames()
-    if(sum(nonVarIndices))
-        warning("newModel: ", paste(names(inits)[nonVarIndices], collapse = ', '),
-                " ", ifelse(sum(nonVarIndices) > 1, "are", "is"), " not ", ifelse(sum(nonVarIndices) > 1, "variables", "a variable"), " in the model; initial value ignored.")
-    model$setInits(inits[!nonVarIndices])
+    model$setInits(inits) 
     ## basic size/dimension, NA checking
     if(calculate) {
-        if(nimbleOptions('verbose')) message("running calculate on model (any error reports that follow may simply reflect missing values in model variables) ... ", appendLF = FALSE)
+        if(nimbleOptions('verbose')) message("Running calculate on model\n  [Note] Any error reports that follow may simply reflect missing values in model variables.")
         result <- try(model$calculate(), silent = TRUE)
         if(nimbleOptions('verbose')) 
             if(is(result, 'try-error')) 
-                message(geterrmessage()) else message("")  # this ensures a single newline is included
+                message(geterrmessage()) 
     }
-    if(nimbleOptions('verbose')) message("checking model sizes and dimensions...", appendLF = FALSE)
+    if(nimbleOptions('verbose')) message("Checking model sizes and dimensions")
     model$checkBasics()
-    if(nimbleOptions('verbose')) message("")  # appends newline   
     ## extended model checking via calculate; disabled by default as of July 2016
     if(check) {
-        if(nimbleOptions('verbose')) message("checking model calculations...")
+        if(nimbleOptions('verbose')) message("Checking model calculations")
         model$check()
     }
     fixRStudioHanging(model)
