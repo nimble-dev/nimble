@@ -307,5 +307,26 @@ test_that("Test of detection of nf methods in findMethods", {
     expect_identical(findMethodsInExprClass(expr), c('cc2', 'cc3', 'cc6', 'cc7', 'cc9', 'cc10', 'cc12', 'cc13', 'cc15', 'cc17', 'cc16'))
 })
 
+test_that("Handling of negative indexing in nimbleFunction code", {
+    test = nimbleFunction(
+        run = function(x=double(2)) {
+            nimPrint(sum(x[1:3, 6:1]))
+        }
+    )
+
+    expect_error(cTest <- compileNimble(test), "negative indexing")
+
+    test = nimbleFunction(
+        run = function(x=double(2), n1 = double(0), n2 = double(0)) {
+            nimPrint(sum(x[1:3, n1:n2]))
+        }
+    )
+    cTest <- compileNimble(test)
+    expect_message(cTest(matrix(rnorm(16), 4, 4), 3, 2),
+                   "Run-time negative indexing error")
+    
+})
+
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
