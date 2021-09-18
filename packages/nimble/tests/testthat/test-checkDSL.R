@@ -313,17 +313,24 @@ test_that("Handling of negative indexing in nimbleFunction code", {
             nimPrint(sum(x[1:3, 6:1]))
         }
     )
-
     expect_error(cTest <- compileNimble(test), "negative indexing")
 
+    test = nimbleFunction(
+        run = function(x=double(2)) {
+            for(i in 3:1) {}
+        }
+    )
+    expect_error(cTest <- compileNimble(test), "negative indexing")
+
+    ## We don't check run-time negative indexing.
     test = nimbleFunction(
         run = function(x=double(2), n1 = double(0), n2 = double(0)) {
             nimPrint(sum(x[1:3, n1:n2]))
         }
     )
     cTest <- compileNimble(test)
-    expect_message(cTest(matrix(rnorm(16), 4, 4), 3, 2),
-                   "Run-time negative indexing error")
+    expect_fail(expect_message(cTest(matrix(rnorm(16), 4, 4), 3, 2),
+                   "Run-time negative indexing error"))
     
 })
 
