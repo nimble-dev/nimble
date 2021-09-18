@@ -161,5 +161,24 @@ test_that("set 1-length data vector", {
     expect_equal(model$isData('a'), TRUE)
 })
 
+test_that("mixed data/NAs in multivariate nodes treated as a data node", {
+    code <- nimbleCode({
+        y[1:3] ~ dmnorm(mu[1:3], pr[1:3,1:3])
+        y[4] ~ dnorm(0,1)
+    })
+    m  <- nimbleModel(code)
+    ## first element missing
+    m$setData(y = c(NA, 3, 5, 3))
+    expect_true(m$isData('y[4]'))
+    expect_true(m$isData('y[1:3]'))
+    expect_identical(m$isDataEnv$y, c(FALSE, TRUE, TRUE, TRUE))
+    ## non-first element missing
+    m$setData(y = c(3, NA, 5, NA))
+    expect_false(m$isData('y[4]'))
+    expect_true(m$isData('y[1:3]'))
+    expect_identical(m$isDataEnv$y, c(TRUE, FALSE, TRUE, FALSE))
+})
+    
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
