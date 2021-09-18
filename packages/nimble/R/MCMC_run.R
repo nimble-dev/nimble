@@ -134,8 +134,14 @@ runMCMC <- function(mcmc,
         }
         ##model$calculate()   # shouldn't be necessary, since mcmc$run() includes call to my_initializeModel$run()
         mcmc$run(niter, nburnin = nburnin, thin = thinToUseVec[1], thin2 = thinToUseVec[2], progressBar = progressBar) #, samplerExecutionOrder = samplerExecutionOrderToUse)
-        samplesList[[i]] <- as.matrix(mcmc$mvSamples)
-        if(hasMonitors2)   samplesList2[[i]] <- as.matrix(mcmc$mvSamples2)
+        tmp <- as.matrix(mcmc$mvSamples)
+        if(!is.null(tmp))
+            samplesList[[i]] <- tmp 
+        if(hasMonitors2) {
+            tmp <- as.matrix(mcmc$mvSamples2)
+            if(!is.null(tmp))
+                samplesList2[[i]] <- tmp 
+        }
     }
     if(WAIC) {
         if(nchains > 1) {
@@ -154,8 +160,11 @@ runMCMC <- function(mcmc,
         if(hasMonitors2)   samplesList2 <- as.mcmc.list(lapply(samplesList2, as.mcmc))
     }
     if(nchains == 1) {
-        samplesList <- samplesList[[1]]                       ## returns matrix when nchains = 1
-        if(hasMonitors2)   samplesList2 <- samplesList2[[1]]  ## returns matrix when nchains = 1
+        if(length(samplesList))
+            samplesList <- samplesList[[1]] else samplesList <- NULL   ## returns matrix when nchains = 1
+        if(hasMonitors2)
+            if(length(samplesList2))
+                samplesList2 <- samplesList2[[1]] else samplesList2 <- NULL  ## returns matrix when nchains = 1
     }
     if(summary) {
         if(nchains == 1) {
