@@ -111,25 +111,15 @@ buildMCMC <- nimbleFunction(
            onlineWAIC <- waicFun[[1]]$online 
            thinWAIC <- waicFun[[1]]$thin
         } else {
-            waicFun[[1]] <- buildDummyWAIC()
+            if(enableWAIC) {  
+                ## Setup for original (offline) WAIC prior to v. 0.12.0, namely cWAIC with no grouping capability.
+                ## Retained for backward compatibility.
+                ## It could also be useful to allow post hoc calculation of mWAIC given its computational
+                ## cost, but that is not implemented.
+                waicFun[[1]] <- buildOfflineWAIC(model, mvSamples, conf$controlWAIC, monitors)
+            } else waicFun[[1]] <- buildDummyWAIC()
             onlineWAIC <- FALSE
             thinWAIC <- FALSE
-        }
-
-        ## Setup for original WAIC prior to v. 0.12.0, namely cWAIC with no grouping capability.
-        ## Retained for backward compatibility.
-        ## It could also be useful to allow post hoc calculation of mWAIC given its computational
-        ## cost, but that is not implemented.
-        dataNodes <- model$getNodeNames(dataOnly = TRUE)
-        dataNodeLength <- length(dataNodes)
-        sampledNodes <- model$getVarNames(includeLogProb = FALSE, nodes = monitors)
-        sampledNodes <- sampledNodes[sampledNodes %in% model$getVarNames(includeLogProb = FALSE)]
-        paramDeps <- model$getDependencies(sampledNodes, self = FALSE, downstream = TRUE)
-        allVarsIncludingLogProbs <- model$getVarNames(includeLogProb = TRUE)
-        if(enableWAIC && !onlineWAIC) {
-            if(!dataNodeLength)
-                stop('WAIC cannot be calculated, as no data nodes were detected in the model.')
-            mcmc_checkWAICmonitors_conditional(model = model, monitors = sampledNodes, dataNodes = dataNodes)
         }
     },
     
@@ -241,44 +231,21 @@ buildMCMC <- nimbleFunction(
                 print('Error: One must set enableWAIC = TRUE in \'configureMCMC\' or \'buildMCMC\'. See \'help(configureMCMC)\' for additional information.')
                 return(NaN)
             }
-            nburninPostThinning <- ceiling(nburnin/thinToUseVec[1])
-            numMCMCSamples <- getsize(mvSamples) - nburninPostThinning
-            if((numMCMCSamples) < 2) {
-                print('Error: need more than one post burn-in MCMC samples')
-                return(-Inf)
-            }
-            logPredProbs <- matrix(nrow = numMCMCSamples, ncol = dataNodeLength)
-            logAvgProb <- 0
-            pWAIC <- 0
-            currentVals <- values(model, allVarsIncludingLogProbs)
-            
-            for(i in 1:numMCMCSamples) {
-                copy(mvSamples, model, nodesTo = sampledNodes, row = i + nburninPostThinning)
-                model$simulate(paramDeps)
-                model$calculate(dataNodes)
-                for(j in 1:dataNodeLength)
-                    logPredProbs[i,j] <- model$getLogProb(dataNodes[j])
-            }
-            for(j in 1:dataNodeLength) {
-                maxLogPred <- max(logPredProbs[,j])
-                thisDataLogAvgProb <- maxLogPred + log(mean(exp(logPredProbs[,j] - maxLogPred)))
-                logAvgProb <- logAvgProb + thisDataLogAvgProb
-                pointLogPredVar <- var(logPredProbs[,j])
-                pWAIC <- pWAIC + pointLogPredVar
-            }
-            WAIC <- -2*(logAvgProb - pWAIC)
-            values(model, allVarsIncludingLogProbs) <<- currentVals
-            if(is.nan(WAIC)) print('WAIC was calculated as NaN.  You may need to add monitors to model latent states, in order for a valid WAIC calculation.')
+            result <- waicFun[[1]]$calculateWAIC(nburnin, thinToUseVec[1])
             returnType(double())
-            return(WAIC)
+            return(result$WAIC)
         },
         getWAIC = function() {
             returnType(waicList())
             if(enableWAIC & onlineWAIC) {
                 return(waicFun[[1]]$get())
             } else {
-                print("Online WAIC was disabled based on the 'onlineWAIC' element of WAIC control list.")
-                return(waicList$new(WAIC = NA, lppd = NA, pWAIC = NA))
+                if(enableWAIC) {
+                    return(waicFun[[1]]$calculateWAIC(0, 1))
+                } else {
+                    print("Online WAIC was disabled based on the 'onlineWAIC' element of WAIC control list.")
+                    return(waicList$new(WAIC = NA, lppd = NA, pWAIC = NA))
+                }
             }
         },
         getWAICdetails = function(returnElements = logical(default = FALSE)) {
@@ -286,7 +253,7 @@ buildMCMC <- nimbleFunction(
             if(enableWAIC & onlineWAIC) {
                 return(waicFun[[1]]$getDetails(returnElements))
             } else {
-                print("Online WAIC was disabled based on the 'onlineWAIC' element of WAIC control list.")
+                print("WAIC details are only available when using online WAIC. Online WAIC was disabled based on the 'onlineWAIC' element of WAIC control list.")
                 return(waicDetailsList$new(marginal = FALSE, niterMarginal = 0, thin = FALSE, online = FALSE))
             }
         }

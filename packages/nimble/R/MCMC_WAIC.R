@@ -4,7 +4,8 @@ waicClass_base <- nimbleFunctionVirtual(
         reset = function() {},
         updateStats = function() {},
         get = function() { returnType(waicList()) },
-        getDetails = function(returnElements = logical(default = FALSE)) { returnType(waicDetailsList()) }
+        getDetails = function(returnElements = logical(default = FALSE)) { returnType(waicDetailsList()) },
+        calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 0)) { returnType(waicList()) }
     )
 )
 
@@ -15,12 +16,91 @@ buildDummyWAIC <- nimbleFunction(
     run = function() {},
     methods = list(
         reset = function() {},
+        updateStats = function() {},
         get = function() { return(waicList$new(WAIC = NA, lppd = NA, pWAIC = NA)); returnType(waicList()) },
         getDetails = function(returnElements = logical(default = FALSE)) {return(waicDetailsList$new(marginal = FALSE, niterMarginal = 0, thin = FALSE, online = FALSE));  returnType(waicDetailsList()) },
-        updateStats = function() {},
-        finalize = function() {}
+        calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 0)) { return(waicList$new(WAIC = NA, lppd = NA, pWAIC = NA)); returnType(waicList()) }
     )
 )
+
+buildOfflineWAIC <- nimbleFunction(
+    name = 'waicClass_offline',
+    contains = waicClass_base,
+    setup = function(model, mvSamples, control, monitors) {
+        dataNodes <- model$getNodeNames(dataOnly = TRUE)
+        dataNodeLength <- length(dataNodes)
+        sampledNodes <- model$getVarNames(includeLogProb = FALSE, nodes = monitors)
+        sampledNodes <- sampledNodes[sampledNodes %in% model$getVarNames(includeLogProb = FALSE)]
+        paramDeps <- model$getDependencies(sampledNodes, self = FALSE, downstream = TRUE)
+        allVarsIncludingLogProbs <- model$getVarNames(includeLogProb = TRUE)
+        if(!dataNodeLength)
+            stop('Offline WAIC cannot be calculated, as no data nodes were detected in the model.')
+        mcmc_checkWAICmonitors_conditional(model = model, monitors = sampledNodes, dataNodes = dataNodes)
+        lppd <- -Inf
+        pWAIC <- 0
+        WAIC <- -Inf
+        finalized <- FALSE
+    },
+    run = function() {},
+    methods = list(
+        reset = function() {},
+        updateStats = function() {},
+        getDetails = function(returnElements = logical(default = FALSE)) {return(waicDetailsList$new(marginal = FALSE, niterMarginal = 0, thin = FALSE, online = FALSE));  returnType(waicDetailsList()) },
+        calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 0)) {
+            if(!finalized) {
+                nburninPostThinning <- ceiling(nburnin/thin)
+                numMCMCSamples <- getsize(mvSamples) - nburninPostThinning
+                if((numMCMCSamples) < 2) {
+                    print('Error: need more than one post burn-in MCMC samples')
+                }
+                logPredProbs <- matrix(nrow = numMCMCSamples, ncol = dataNodeLength)
+                logAvgProb <- 0
+                pWAIC <<- 0
+                currentVals <- values(model, allVarsIncludingLogProbs)
+                
+                for(i in 1:numMCMCSamples) {
+                    copy(mvSamples, model, nodesTo = sampledNodes, row = i + nburninPostThinning)
+                    model$simulate(paramDeps)
+                    model$calculate(dataNodes)
+                    for(j in 1:dataNodeLength)
+                        logPredProbs[i,j] <- model$getLogProb(dataNodes[j])
+                }
+                for(j in 1:dataNodeLength) {
+                    maxLogPred <- max(logPredProbs[,j])
+                    thisDataLogAvgProb <- maxLogPred + log(mean(exp(logPredProbs[,j] - maxLogPred)))
+                    logAvgProb <- logAvgProb + thisDataLogAvgProb
+                    pointLogPredVar <- var(logPredProbs[,j])
+                    pWAIC <<- pWAIC + pointLogPredVar
+                }
+                lppd <<- logAvgProb
+                WAIC <<- -2*(logAvgProb - pWAIC)
+                
+                values(model, allVarsIncludingLogProbs) <<- currentVals
+                if(is.nan(WAIC)) print('WAIC was calculated as NaN.  You may need to add monitors to model latent states, in order for a valid WAIC calculation.')
+                finalized <<- TRUE
+            }
+            returnType(waicList())
+            return(get())
+        },
+        get = function() {
+            ## Extract WAIC summary information.
+            returnType(waicList())
+            ## Ideally we would call finalize if needed, but to mimic old offline behavior,
+            ## we need to pass in nburnin, and finalize method for online WAIC doesn't
+            ## take arguments.
+            if(!finalized)
+                stop("Please execute the 'calculateWAIC' method of the offline WAIC object before running 'get'.")
+            output <- waicList$new()
+
+            output$WAIC <- WAIC
+            output$lppd <- lppd
+            output$pWAIC  <- pWAIC
+
+            return(output)
+        }
+    )
+)
+
 
 ## #' waicList definition
 ## #' 
@@ -308,7 +388,8 @@ buildWAIC <- nimbleFunction(
             delta2pWAICmat <<- matrix(0, nrow = lengthConvCheck, ncol = nGroups)
             logProbMat <<- matrix(0, nrow = lengthConvCheck, ncol = nGroups)
             finalized <<- FALSE
-        }
+        },
+        calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 0)) { return(waicList$new(WAIC = NA, lppd = NA, pWAIC = NA)); returnType(waicList()) }
     )
 )
 
