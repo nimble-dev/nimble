@@ -224,7 +224,6 @@ test_that("New WAIC implementation matches old implementation for conditional, u
     expect_output(fullOut <- cmcmc$getWAIC(), "Online WAIC was disabled")
     expect_true(is.na(fullOut$WAIC))
 
-
     m <- nimbleModel(code, data = list(y = y),
                      constants = list(I = I, J = J),
                      inits <- inits)
@@ -247,6 +246,20 @@ test_that("New WAIC implementation matches old implementation for conditional, u
     expect_equal(sum(waic2full$pWAIC_elements), waic2$pWAIC)
     expect_identical(length(waic2full$WAIC_elements), as.integer(J*I))
 
+    ## Multiple chains; check first equivalent to first above
+    m <- nimbleModel(code, data = list(y = y),
+                     constants = list(I = I, J = J),
+                     inits = inits)
+    cm <- compileNimble(m)
+
+    mcmc <- buildMCMC(m, enableWAIC = TRUE, controlWAIC = list(online = FALSE),
+                  monitors = c('mu0','mu','sigma','tau'))
+    cmcmc <- compileNimble(mcmc, project = m)
+    set.seed(1)
+    out3 <- runMCMC(cmcmc, niter = 1000, nchains = 3, WAIC = TRUE, inits = inits, perChainWAIC = TRUE)
+    waic3 <- cmcmc$calculateWAIC()
+    expect_identical(out3$WAIC[3], waic3)
+    expect_identical(out3$WAIC[1], waic1)
 })
 
 
@@ -394,11 +407,6 @@ test_that("Marginal grouped WAIC implementation matches exact based on analytic 
     WAIC <- -2*(logAvgProb - pWAIC)
     expect_lt(abs(waic$lppd - logAvgProb), .002)
     expect_lt(abs(waic$pWAIC - pWAIC), .01)
-})
-
-
-test_that("Multiple-chain WAIC", {
-
 })
 
 test_that("invalid WAIC configuration is trapped", {

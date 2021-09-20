@@ -30,6 +30,8 @@
 #'
 #' @param WAIC Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  Note that in order for the WAIC to be calculated, the \code{mcmc} object must have also been created with the argument `enableWAIC = TRUE`.  If multiple chains are run, then a single WAIC value is calculated using the posterior samples from all chains.  Default value is \code{FALSE}.  See \code{help(waic)}.
 #'
+#' @param perChainWAIC Logical argument. When \code{TRUE} and multiple chains are run , the WAIC for each chain is returned as a means of helping assess the stability of the WAIC estimate. Default value is \code{FALSE}, corresponding to a single WAIC estimate based on all of the chains.
+#'
 #' @return A list is returned with named elements depending on the arguments passed to \code{nimbleMCMC}, unless this list contains only a single element, in which case only that element is returned.  These elements may include \code{samples}, \code{summary}, and \code{WAIC}, and when the MCMC is monitoring a second set of nodes using \code{monitors2}, also \code{samples2}.  When \code{nchains = 1}, posterior samples are returned as a single matrix, and summary statistics as a single matrix.  When \code{nchains > 1}, posterior samples are returned as a list of matrices, one matrix for each chain, and summary statistics are returned as a list containing \code{nchains+1} matrices: one matrix corresponding to each chain, and the final element providing a summary of all chains, combined.  If \code{samplesAsCodaMCMC} is \code{TRUE}, then posterior samples are provided as \code{coda} \code{mcmc} and \code{mcmc.list} objects.  When \code{WAIC} is \code{TRUE}, a WAIC summary object is returned.
 #'
 #' @details
@@ -91,7 +93,8 @@ runMCMC <- function(mcmc,
                     samples = TRUE,
                     samplesAsCodaMCMC = FALSE,
                     summary = FALSE,
-                    WAIC = FALSE) {
+                    WAIC = FALSE,
+                    perChainWAIC = FALSE) {
     if(missing(mcmc)) stop('must provide a NIMBLE MCMC algorithm')
     if(!identical(nfGetDefVar(mcmc, 'name'), 'MCMC')) stop('mcmc argument must be a NIMBLE MCMC algorithm')
     if(!is.Cnf(mcmc)) message('Warning: running an uncompiled MCMC algorithm, use compileNimble() for faster execution.')
@@ -102,6 +105,8 @@ runMCMC <- function(mcmc,
         if(is.list(inits) && (length(inits) > 0) && is.list(inits[[1]]) && (length(inits) != nchains)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of inital values')
     }
     if(WAIC && !mcmc$enableWAIC) stop('mcmc argument must have been created with "enableWAIC = TRUE" in order to calculate WAIC.')
+    if(WAIC && mcmc$enableWAIC && perChainWAIC && mcmc$onlineWAIC)
+        stop('To get per-chain WAIC via runMCMC(), "mcmc" must have been configured with "online = FALSE" in the WAIC control list; see "help(WAIC)" for more information.')
     model <- if(is.Cnf(mcmc)) mcmc$Robject$model$CobjectInterface else mcmc$model
     if(!is.model(model)) stop('something went wrong')
     hasMonitors2 <- length(if(is.Cnf(mcmc)) mcmc$Robject$monitors2 else mcmc$monitors2) > 0
@@ -141,16 +146,24 @@ runMCMC <- function(mcmc,
             ## do calculation as if a single chain.
             WAICvalue <- mcmc$getWAIC()
         } else {
-            if(nchains > 1) {
-                samplesPerChain <- dim(samplesList[[1]])[1]
-                posteriorSamplesMatrix <- matrix(0, nrow = samplesPerChain*nchains, ncol = dim(samplesList[[1]])[2])
+            if(nchains > 1 && perChainWAIC) {
+                WAICvalue <- rep(NA, nchains)
                 for(i in seq_along(samplesList)) {
-                    posteriorSamplesMatrix[((i-1)*samplesPerChain + 1):(i*samplesPerChain),] <- samplesList[[i]][,]
+                    matrix2mv(samplesList[[i]], mcmc$mvSamples)  ## transfer each set of posterior samples into mcmc$mvSamples
+                    WAICvalue[i] <- mcmc$calculateWAIC()
                 }
-                colnames(posteriorSamplesMatrix) <- colnames(samplesList[[1]])
-                matrix2mv(posteriorSamplesMatrix, mcmc$mvSamples)  ## transfer all posterior samples into mcmc$mvSamples
+            } else {
+                if(nchains > 1) {
+                    samplesPerChain <- dim(samplesList[[1]])[1]
+                    posteriorSamplesMatrix <- matrix(0, nrow = samplesPerChain*nchains, ncol = dim(samplesList[[1]])[2])
+                    for(i in seq_along(samplesList)) {
+                        posteriorSamplesMatrix[((i-1)*samplesPerChain + 1):(i*samplesPerChain),] <- samplesList[[i]][,]
+                    }
+                    colnames(posteriorSamplesMatrix) <- colnames(samplesList[[1]])
+                    matrix2mv(posteriorSamplesMatrix, mcmc$mvSamples)  ## transfer all posterior samples into mcmc$mvSamples
+                }
+                WAICvalue <- mcmc$calculateWAIC()
             }
-            WAICvalue <- mcmc$calculateWAIC()
         }
     }
     if(samplesAsCodaMCMC) {
