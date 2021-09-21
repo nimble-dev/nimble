@@ -208,7 +208,6 @@ cppProjectClass <- setRefClass('cppProjectClass',
 
                                        logFile <- paste0(dllName, ".log")
                                        errorFile <- paste0(dllName, ".err")
-                                       
                                        status = system2(ssdSHLIBcmd, ssdSHLIBargs, stdout = logFile, stderr = errorFile)
 
                                        if(status == 0 && showCompilerOutput) {

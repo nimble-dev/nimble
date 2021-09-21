@@ -1502,6 +1502,8 @@ identityAssert <- function(lhs, rhs, msg = "") {
     msg <- gsub("\"", "\\\\\"", msg)
     substitute(if(lhs != rhs) nimPrint(msg), list(lhs = lhs, rhs = rhs, msg = msg))
 }
+
+
 ## Determine if LHS is less information-rich that RHS and issue a warning.
 ## e.g. if LHS is int but RHS is double.
 assignmentTypeWarn <- function(LHS, RHS) {
@@ -2621,8 +2623,10 @@ sizeColonOperator <- function(code, symTab, typeEnv, recurse = TRUE) {
     code$nDim <- 1
     code$toEigenize <- 'maybe' 
     
-    ## could generate an assertiong that second arg is >= first arg
+    ## could generate an assertion that second arg is >= first arg
     if(is.numeric(code$args[[1]]) & is.numeric(code$args[[2]])) {
+        if(code$args[[1]] > code$args[[2]])
+            stop("sizeColonOperator: negative indexing cannot be compiled.")
         code$sizeExprs <- list(code$args[[2]] - code$args[[1]] + 1)
     } else { ## at least one part is an expression
         ## This is an awkward case:
