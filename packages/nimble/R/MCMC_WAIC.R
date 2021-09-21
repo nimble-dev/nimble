@@ -10,7 +10,7 @@ waicClass_base <- nimbleFunctionVirtual(
 )
 
 buildDummyWAIC <- nimbleFunction(
-    name = 'waicDummyClass',
+    name = 'waicClass_dummy',
     contains = waicClass_base,
     setup = function() {},
     run = function() {},
@@ -394,6 +394,71 @@ buildWAIC <- nimbleFunction(
 )
 
 
+#' @export
+calculateWAIC <- function(mcmc, model, nburnin = 0, thin = 1) {
+    ## Standalone function for users to use offline WAIC after MCMC has run without having enabled WAIC
+    ## when the MCMC was built.
+    ## The user can provide an MCMC, in which case the embedded mvSamples are used, or provide a matrix of
+    ## samples, in which case we copy the values into a new modelValues.
+    ## In both cases we use the offline WAIC nf that would have been used if the user had enabled WAIC
+    ## and requested offline calculation.
+    
+    if((is(mcmc, 'MCMC') || is(mcmc, 'MCMC_refClass')) &&
+       identical(nfGetDefVar(mcmc, 'name'), 'MCMC')) {
+        ## MCMC is provided
+        if(exists('model', mcmc, inherits = FALSE)) compiled <- FALSE else compiled <- TRUE
+        if(compiled) {
+            if(!exists('Robject', mcmc, inherits = FALSE) || !exists('model', mcmc$Robject, inherits = FALSE))
+                stop("calculateWAIC: problem with finding model object in compiled MCMC")
+            model <- mcmc$Robject$model
+            mvSamples <- mcmc$Robject$mvSamples
+            waicObj <- mcmc$Robject$waicFun[[1]]
+        } else {
+            model <- mcmc$model
+            mvSamples <- mcmc$mvSamples
+            waicObj <- mcmc$waicFun[[1]]
+        }
+        ## Use existing WAIC methods in the MCMC if they exist (when WAIC was enabled to start with).
+        if(!is(waicObj, 'waicClass_dummy')) {
+            if(!compiled) 
+                warning("calculateWAIC: running uncompiled WAIC. This may be slow and is not recommended.")
+            if(is(waicObj, 'waicClass')) {
+                return(mcmc$getWAIC())
+            }
+            if(is(waicObj, 'waicClass_offline')) {
+                return(mcmc$calculateWAIC())
+            }
+            stop("calculateWAIC: found unexpected WAIC class type in MCMC object.")
+        }
+        usingMCMC <- TRUE
+    } else {
+        ## Samples matrix is provided
+        if(!(is.matrix(mcmc) || is.data.frame(mcmc)))
+            stop("calculateWAIC: 'mcmc' must be a matrix/dataframe of samples or a nimble MCMC object.")
+        if(is.data.frame(mcmc))
+            mcmc <- as.matrix(mcmc)
+        if(missing(model)) 
+            stop("calculateWAIC: 'model' is required if samples are directly provided rather than an MCMC object.")
+        ## Get uncompiled model to avoid warning when passing model into compileNimble
+        if(exists('Rmodel', model, inherits = FALSE))
+            model <- model$Rmodel
+
+        nm <- model$getVarNames(nodes = colnames(mcmc))
+        modelSymbolObjects = model$getSymbolTable()$getSymbolObjects()
+        if(!all(nm %in% names(modelSymbolObjects)))
+            stop('calculateWAIC: some column names indicate variables that are not in the model.') 
+        mvSamplesConf <- modelValuesConf(symbolTable(symbols = modelSymbolObjects[nm]))
+        mvSamples <- modelValues(mvSamplesConf)
+
+        usingMCMC <- FALSE
+    } 
+    waicFun <- buildOfflineWAIC(model, mvSamples, NULL, mvSamples$varNames)
+    cwaicFun <- compileNimble(waicFun, project = model)
+    if(!usingMCMC)  # copy to compiled mvSamples for speed 
+        matrix2mv(mcmc, cwaicFun$mvSamples)
+    result <- cwaicFun$calculateWAIC(nburnin, thin)
+    return(result)
+}
 
 #' Using WAIC
 #'
