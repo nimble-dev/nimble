@@ -329,7 +329,7 @@ test_that("Handling of negative indexing in nimbleFunction code", {
         }
     )
     cTest <- compileNimble(test)
-    expect_fail(expect_message(cTest(matrix(rnorm(16), 4, 4), 3, 2),
+    expect_failure(expect_message(cTest(matrix(rnorm(16), 4, 4), 3, 2),
                    "Run-time negative indexing error"))
     
 })
