@@ -25,6 +25,7 @@ sink_with_messages(outputFile)
 
 nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
 nimbleOptions(MCMCprogressBar = FALSE)
+
 ## tests of classic BUGS examples
 
 test_mcmc('blocker', numItsC = 1000, resampleData = TRUE)
@@ -438,7 +439,7 @@ test_that('Weibull-gamma conjugacy setup', {
                      constants = list(depShape = depShape, shape = shape, rate = rate))
     conf <- configureMCMC(m)
     samplers <- conf$getSamplers()
-    expect_identical(samplers[[1]]$name, 'conjugate_dgamma_dweib',
+    expect_identical(samplers[[1]]$name, 'conjugate_dgamma_dweib_multiplicative',
                                    info = "dweibull-dgamma conjugacy with dependency using lambda not detected")
     mcmc <- buildMCMC(conf)
     comp <- compileNimble(m, mcmc)
@@ -857,7 +858,8 @@ test_that('conjugate Wishart setup with scaling', {
 
     m <- nimbleModel(code, data = data[1],constants=data[2:5],inits = list(Omega = OmegaTrueMean, tau = tau))
     conf <- configureMCMC(m)
-    expect_equal(conf$getSamplers()[[1]]$name, "conjugate_dwish_dmnorm", info = "conjugate dmnorm-dwish with scaling not detected")
+    expect_equal(conf$getSamplers()[[1]]$name, "conjugate_dwish_dmnorm_multiplicativeScalar",
+                 info = "conjugate dmnorm-dwish with scaling not detected")
     
     test_mcmc(model = code, name = 'conjugate Wishart, scaled', data = data, seed = 0, numItsC = 1000, inits = list(Omega = OmegaTrueMean, tau = tau),
               results = list(mean = list(Omega = OmegaTrueMean ),
@@ -1022,6 +1024,193 @@ test_that('detect conjugacy when scaling Wishart, inverse Wishart cases', {
 })
 
 
+test_that('using LKJ randomw walk samplers', {
+    opt <- nimbleOptions('buildInterfacesForCompiledNestedNimbleFunctions')
+    nimbleOptions('buildInterfacesForCompiledNestedNimbleFunctions' = TRUE)
+    
+    R <- matrix(c(
+        1, 0.9, .3, -.5, .1,
+        0.9, 1, .15, -.3, .1,
+        .3, .15, 1, .3, .1,
+        -.5, -.3, .3, 1, .1,
+        .1,.1,.1,.1, 1)
+      , 5, 5)
+
+    U <- chol(R)
+
+    sds <- c(5,4, 3, 2, 1)
+
+    ## Remaining length of columns of U
+    PS <- matrix(0, 5, 5)
+    PS[1,] <- 1
+    PS[2, 2:5] <- 1-U[1, 2:5]^2
+    PS[3, 3] <- 1 - sum(U[1:2, 3]^2)
+    PS[3, 4] <- 1-U[1,4]^2-U[2,4]^2
+    PS[4,4] <- 1 - sum(U[1:3, 4]^2)
+    PS[3, 5] <- 1-U[1,5]^2-U[2,5]^2
+    PS[4, 5]<- 1-U[1,5]^2-U[2,5]^2-U[3,5]^2
+    PS[5, 5]<- 1 - sum(U[1:4, 5]^2)
+
+    ## Canonical partial correlations
+    Z <- diag(5)
+    Z[1,2:5] <- U[1, 2:5]
+    Z[2,3] <- U[2,3]/sqrt(PS[2,3])
+    Z[2,4] <- U[2,4]/sqrt(PS[2,4])
+    Z[3,4] <- U[3,4]/sqrt(PS[3,4])
+    Z[2,5] <- U[2,5]/sqrt(PS[2,5])
+    Z[3,5] <- U[3,5]/sqrt(PS[3,5])
+    Z[4,5] <- U[4,5]/sqrt(PS[4,5])
+
+    ## transformed parameter
+    yt <- atanh(Z)
+    diag(yt) <- 0
+    yt <- yt[yt!=0]
+
+    ## Log determinant of Jacobian of transformation from U to y via Z
+    logDetJac <- 0.5*(log(PS[2,3])+log(PS[2,4])+log(PS[3,4])+log(PS[2,5]) +
+                      log(PS[3,5]) + log(PS[4,5])) - 2*sum(log(cosh(yt)))
+    
+    set.seed(1)
+    Sigma <- diag(sds)%*%R%*%diag(sds)
+
+    n <- 100
+    p <- 5
+    y <- t(t(chol(Sigma))%*%matrix(rnorm(p*n),p,n))
+
+    uppertri_mult_diag <- nimbleFunction(
+        run = function(mat = double(2), vec = double(1)) {
+            returnType(double(2))
+            p <- length(vec)
+            out <- matrix(nrow = p, ncol = p, init = FALSE)
+            for(i in 1:p)
+                out[ , i] <- mat[ , i] * vec[i]
+            return(out)
+        })
+    temporarilyAssignInGlobalEnv(uppertri_mult_diag)
+
+    thin <- 10
+    
+    code <- nimbleCode({
+        for(i in 1:n)
+            y[i, 1:p] ~ dmnorm(mu[1:p], cholesky = U[1:p, 1:p], prec_param = 0)
+        U[1:p,1:p] <- uppertri_mult_diag(Ustar[1:p, 1:p], sds[1:p])
+        Ustar[1:p,1:p] ~ dlkj_corr_cholesky(1.3, p)
+    })
+    m <- nimbleModel(code, constants = list(n = n, p = p, mu = rep(0, p)),
+                     data = list(y = y), inits = list(sds = sds, Ustar = U))
+    cm <- compileNimble(m)
+
+    conf <- configureMCMC(m, nodes = NULL, thin = thin)
+    conf$addSampler('Ustar', 'RW_block_lkj_corr_cholesky',
+                    control = list(adaptInterval = 50, adaptFactorExponent = .25, scale = 0.1))
+    mcmc <- buildMCMC(conf)
+    cmcmc <- compileNimble(mcmc, project = m)
+
+    mcmc$samplerFunctions[[1]]$transform(m$Ustar)
+    expect_identical(mcmc$samplerFunctions[[1]]$y, yt)
+    expect_equal(mcmc$samplerFunctions[[1]]$partialSums, PS)  # not sure why off by double precision f.p. error
+    expect_identical(mcmc$samplerFunctions[[1]]$z, Z)
+    expect_identical(mcmc$samplerFunctions[[1]]$logDetJac, logDetJac)
+
+    cmcmc$samplerFunctions[[1]]$transform(m$Ustar)
+    expect_identical(cmcmc$samplerFunctions[[1]]$y, yt)
+    expect_equal(cmcmc$samplerFunctions[[1]]$partialSums, PS)
+    expect_identical(cmcmc$samplerFunctions[[1]]$z, Z)
+    expect_identical(cmcmc$samplerFunctions[[1]]$logDetJac, logDetJac)
+
+    nIts <- 50000
+    out <- runMCMC(cmcmc, 50000)
+    outSigma <- matrix(0, nrow(out), p*p)
+    for(i in 1:nrow(outSigma))
+        outSigma[i,] <- t(matrix(out[i,], p, p)) %*% matrix(out[i,],p,p)
+                
+    conf <- configureMCMC(m, nodes = NULL, thin = 10)
+    conf$addSampler('Ustar', 'RW_lkj_corr_cholesky', control = list(scale = .1))
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc,project = m)
+
+    mcmc$samplerFunctions[[1]]$transform(m$Ustar)
+    expect_equal(mcmc$samplerFunctions[[1]]$partialSums, PS)
+    expect_identical(mcmc$samplerFunctions[[1]]$z, Z)
+
+    cmcmc$samplerFunctions[[1]]$transform(m$Ustar)
+    expect_equal(cmcmc$samplerFunctions[[1]]$partialSums, PS)
+    expect_identical(cmcmc$samplerFunctions[[1]]$z, Z)
+
+    out2 <- runMCMC(cmcmc, nIts)
+    outSigma2 <- matrix(0, nrow(out), p*p)
+    for(i in 1:nrow(outSigma2))
+        outSigma2[i,] <- t(matrix(out2[i,], p, p)) %*% matrix(out2[i,],p,p)
+    
+    ## Compare sampler output to Stan results (see code in paciorek's lkj_testing.R file)
+    stan_means <- c(1.00000000, 0.87580832, 0.41032781, -0.56213296, 0.09006483, 0.87580832,
+                    1.00000000, 0.18682787, -0.33699708, 0.12656145, 0.41032781, 0.18682787,
+                    1.00000000, 0.11984278, 0.10919301, -0.56213296, -0.33699708, 0.11984278,
+                    1.00000000, 0.10392069, 0.09006483, 0.12656145, 0.10919301, 0.10392069,
+                    1.00000000)
+    stan_sds <- c(0.000000e+00, 1.789045e-02, 6.244945e-02, 5.393811e-02, 7.928870e-02,
+                  1.789045e-02, 0.000000e+00, 8.376820e-02, 7.448420e-02, 8.411652e-02,
+                  6.244945e-02, 8.376820e-02, 8.600611e-17, 8.132228e-02, 9.242809e-02,
+                  5.393811e-02, 7.448420e-02, 8.132228e-02, 8.711701e-17, 8.605078e-02,
+                  7.928870e-02, 8.411652e-02, 9.242809e-02, 8.605078e-02, 1.227811e-16)
+
+    nim_means_block <- apply(outSigma[1001:nrow(out), ], 2, mean)
+    nim_sds_block <- apply(outSigma[1001:nrow(out), ], 2, sd)
+    nim_means_uni <- apply(outSigma2[1001:nrow(out), ], 2, mean)
+    nim_sds_uni <- apply(outSigma2[1001:nrow(out), ], 2, sd)
+
+    cols <- matrix(1:(p*p), p, p)
+    cols <- cols[upper.tri(cols)]
+
+    expect_lt(max(abs(stan_means[cols] - nim_means_block[cols])),  0.005)
+    expect_lt(max(abs(stan_means[cols] - nim_means_uni[cols])), 0.005)
+    expect_lt(max(abs(stan_sds[cols] - nim_sds_block[cols])), 0.005)
+    expect_lt(max(abs(stan_sds[cols] - nim_sds_uni[cols])), 0.005)
+    
+    ## Compare sampler output to truth for another (simple) model.
+    code <- nimbleCode({
+        for(i in 1:n) {
+            y[i, 1:J] ~ dmnorm(mu[1:J], cov = R[1:J, 1:J])
+        }
+        R[1:J, 1:J] <- t(U[1:J, 1:J]) %*% U[1:J, 1:J]
+        U[1:J, 1:J] ~ dlkj_corr_cholesky(eta, J)
+    })
+    J <- 5
+    n <- 2000
+    set.seed(1)
+    eta <- 1.3
+    mat <- rlkj_corr_cholesky(1, eta, J)
+    y <- t(t(mat) %*% matrix(rnorm(n*J), J, n))
+    m <- nimbleModel(code, data = list(y = y), constants = list(n = n, J = J),
+                     inits = list(eta = 1, mu = rep(0, J), U = diag(J)))
+
+    set.seed(1)
+    conf <- configureMCMC(m)
+    samplers <- conf$getSamplers()
+    expect_equal(samplers[[1]]$name, 'RW_block_lkj_corr_cholesky')
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc, project = m)
+    samples <- runMCMC(cmcmc, niter = 2500, nburnin = 500)
+    postMean <- colMeans(samples)
+    names(postMean) <- NULL
+    expect_lt(max(abs(postMean - c(mat))), 0.07, label = "RW_block_lkj posterior not close to truth")
+
+    set.seed(1)
+    conf <- configureMCMC(m, nodes = NULL)
+    conf$addSampler('U', 'RW_lkj_corr_cholesky')
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc, project = m)
+    samples <- runMCMC(cmcmc, niter = 2500, nburnin = 500)
+    postMean <- colMeans(samples)
+    names(postMean) <- NULL
+    expect_lt(max(abs(postMean - c(mat))), 0.07, label = "RW_lkj posterior not close to truth")
+
+    nimbleOptions('buildInterfacesForCompiledNestedNimbleFunctions' = opt)
+})
+
 ## testing conjugate MVN updating with ragged dependencies;
 ## that is, dmnorm dependents of different lengths from the target node
 test_that('conjugate MVN with ragged dependencies', {
@@ -1150,14 +1339,14 @@ test_that('binary sampler setup', {
     ##means
     
     tol <- 0.0025
-    test_that('binary sampler posterior', expect_lt(abs(means[['a']] - 0.5), tol))
-    test_that('binary sampler posterior', expect_lt(abs(means[['b']] - 0.6), tol))
-    test_that('binary sampler posterior', expect_lt(abs(means[['c']] - 0.05), tol))
-    test_that('binary sampler posterior', expect_lt(abs(means[['d']] - 0.2), tol))
-    test_that('binary sampler posterior', expect_lt(abs(means[['e']] - 0.9), tol))
-    test_that('binary sampler posterior', expect_lt(abs(means[['f']] - 0.9525), tol))
-    test_that('binary sampler posterior', expect_lt(abs(means[['g']] - 0.0475), tol))
-    test_that('binary sampler posterior', expect_lt(abs(means[['h']] - 0.5), tol))
+    expect_lt(abs(means[['a']] - 0.5), tol)
+    expect_lt(abs(means[['b']] - 0.6), tol)
+    expect_lt(abs(means[['c']] - 0.05), tol)
+    expect_lt(abs(means[['d']] - 0.2), tol)
+    expect_lt(abs(means[['e']] - 0.9), tol)
+    expect_lt(abs(means[['f']] - 0.9525), tol)
+    expect_lt(abs(means[['g']] - 0.0475), tol)
+    expect_lt(abs(means[['h']] - 0.5), tol)
     
 })
     
@@ -1322,15 +1511,15 @@ test_that('RW_dirichlet sampler consistent with conjugate multinomial sampler', 
     nodes <- c('p[1]','p[2]','p[3]')
     ans <- c(0.12812261, 0.6728109, 0.19906652)
     tol <- 1e-6
-    expect_equal(as.numeric(Rsamples[30, nodes]), ans, tolerance=tol, info = 'correct R RW_dirichlet samples')
-    expect_equal(as.numeric(Csamples[30, nodes]), ans, tolerance=tol, info = 'correct C RW_dirichlet samples')
+    expect_lt(max(abs(as.numeric(Rsamples[30, nodes])-ans)), tol, label = 'correct R RW_dirichlet samples')
+    expect_lt(max(abs(as.numeric(Csamples[30, nodes])-ans)), tol, label = 'correct C RW_dirichlet samples')
     
     Cmcmc$run(100000)
     Csamples <- as.matrix(Cmcmc$mvSamples)
     means <- apply(Csamples, 2, mean)
 
-    expect_true(all(abs(means[c('p[1]','p[2]','p[3]')] - means[c('p2[1]','p2[2]','p2[3]')]) < 0.001),
-                info = 'agreement between RW_dirichlet and conjugate dirichlet sampling' )
+    expect_lt(max(abs(means[c('p[1]','p[2]','p[3]')] - means[c('p2[1]','p2[2]','p2[3]')])), 0.001,
+                label = 'agreement between RW_dirichlet and conjugate dirichlet sampling' )
 })
     
 ## testing RW_dirichlet sampler
@@ -1431,7 +1620,7 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     inits <- list(b0 = 1, beta = rnorm(constants$p))
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
-    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm_linear',
                                    info = "conjugacy with inprod not detected")
 
     code <- nimbleCode({
@@ -1446,7 +1635,7 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
                  X = matrix(rnorm(constants$n * constants$p), constants$n))
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
-    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm_linear',
                                    info = "conjugacy with inprod not detected")
 
 
@@ -1465,7 +1654,7 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     })
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
-    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm_linear',
                                    info = "conjugacy with sum not detected")
 
 
@@ -1536,7 +1725,7 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     })
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
-    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm_linear',
                                    info = "conjugacy with matrix multiplication not detected")
     mcmc <- buildMCMC(conf)
     cm <- compileNimble(m)
@@ -1569,7 +1758,7 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     inits <- list(b0 = 1, beta = rnorm(constants$p))
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
-    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm_linear',
                                    info = "conjugacy with inprod not detected")
    
     code <- nimbleCode({
@@ -1588,7 +1777,7 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     inits <- list(b0 = 1, beta = rnorm(constants$p))
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
-    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm_linear',
                                    info = "conjugacy with inprod not detected")
 
     code <- nimbleCode({
@@ -1605,7 +1794,7 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     inits <- list(b0 = 1, beta = rnorm(constants$p))
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
-    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm_linear',
                      info = "conjugacy with inprod not detected")
 
    code <- nimbleCode({
@@ -1720,6 +1909,179 @@ test_that('cc_checkScalar operates correctly', {
 
 })
 
+test_that('cc_stripExpr operates correctly', {
+    expr <- 'coeff * (log(value) - offset) * taulog'
+    expect_identical(deparse(cc_stripExpr(parse(text = 'coeff^2 * tau')[[1]], TRUE, TRUE)),
+                 '1 * tau')
+    expect_identical(deparse(cc_stripExpr(parse(text = expr)[[1]], TRUE, TRUE)),
+                 '(log(value)) * taulog')
+    expect_identical(deparse(cc_stripExpr(parse(text = expr)[[1]], TRUE, FALSE)),
+                 'coeff * (log(value)) * taulog')
+    expect_identical(deparse(cc_stripExpr(parse(text = expr)[[1]], FALSE, TRUE)),
+                 '(log(value) - offset) * taulog')
+    expect_identical(deparse(cc_stripExpr(parse(text = expr)[[1]], FALSE, FALSE)),
+                 expr)
+})
+
+
+test_that("realized conjugacy links are working", {
+
+    ## dnorm cases
+    code <- nimbleCode({
+        for(i in 1:2)
+            y1[i] ~ dnorm(mu[2], 1)
+        for(i in 1:2)
+            y2[i] ~ dnorm(a + mu[2], 1)
+        for(i in 1:2)
+            y3[i] ~ dnorm(b*mu[2], 1)
+        for(i in 1:2)
+            y4[i] ~ dnorm(a + b*mu[2], 1)
+        for(i in 1:2)
+            y5[i] ~ dnorm(inprod(mu[1:2],x[i,1:2]), 1)
+        mu[2] ~ dnorm(0,1)
+    })
+    m <- nimbleModel(code, data = list (y1 = rnorm(2),
+                               y2=rnorm(2), y3=rnorm(2), y4= rnorm(2), y5 = rnorm(2)),
+                     inits = list(mu = rnorm(2), x = matrix(rnorm(4), 2)))
+    conf <- configureMCMC(m)
+    mcmc <- buildMCMC(conf)
+
+    expect_identical(conf$getSamplers()[[1]]$name, "conjugate_dnorm_dnorm_additive_dnorm_identity_dnorm_linear_dnorm_multiplicative")
+    expect_identical(mcmc$samplerFunctions[[1]]$N_dep_dnorm_identity, 2L)
+    expect_identical(mcmc$samplerFunctions[[1]]$N_dep_dnorm_additive, 2L)
+    expect_identical(mcmc$samplerFunctions[[1]]$N_dep_dnorm_multiplicative, 2L)
+    expect_identical(mcmc$samplerFunctions[[1]]$N_dep_dnorm_linear, 4L)
+
+    expect_identical(c('dep_dnorm_identity_coeff', 'dep_dnorm_additive_coeff') %in%
+                ls(mcmc$samplerFunctions[[1]]), rep(FALSE, 2))
+    expect_identical(c('dep_dnorm_multiplicative_coeff', 'dep_dnorm_linear_coeff') %in%
+                ls(mcmc$samplerFunctions[[1]]), rep(TRUE, 2))
+    expect_identical(c('dep_dnorm_identity_offset', 'dep_dnorm_multiplicative_offset') %in%
+                ls(mcmc$samplerFunctions[[1]]), rep(FALSE, 2))
+    expect_identical(c('dep_dnorm_additive_offset', 'dep_dnorm_linear_offset') %in%
+                ls(mcmc$samplerFunctions[[1]]), rep(TRUE, 2))
+
+    expect_identical(mcmc$samplerFunctions[[1]]$dep_dnorm_identity_nodeNames, c('y1[1]', 'y1[2]'))
+    expect_identical(mcmc$samplerFunctions[[1]]$dep_dnorm_additive_nodeNames, c('y2[1]', 'y2[2]'))
+    expect_identical(mcmc$samplerFunctions[[1]]$dep_dnorm_multiplicative_nodeNames, c('y3[1]', 'y3[2]'))
+    expect_identical(mcmc$samplerFunctions[[1]]$dep_dnorm_linear_nodeNames, c('y4[1]', 'y4[2]', 'y5[1]', 'y5[2]'))
+
+    ## dgamma cases
+    code <- nimbleCode({
+        for(i in 1:2)
+            y1[i] ~ dnorm(mu, tau)
+        for(i in 1:2)
+            y2[i] ~ dnorm(mu, tau/d)
+        for(i in 1:2)
+            y3[i] ~ dpois(tau)
+        for(i in 1:2)
+            y4[i] ~ dpois(tau/d)
+        tau ~ dgamma(1, 1)
+    })
+    m <- nimbleModel(code, data = list (y1 = rnorm(2),
+                               y2=rnorm(2), y3= rpois(2, 1), y4 = rpois(2, 1)),
+                     inits = list(mu = rnorm(1), tau = 1))
+    conf <- configureMCMC(m)
+    mcmc <- buildMCMC(conf)
+
+    expect_identical(conf$getSamplers()[[1]]$name, "conjugate_dgamma_dnorm_identity_dnorm_multiplicative_dpois_identity_dpois_multiplicative")
+    expect_identical(mcmc$samplerFunctions[[1]]$N_dep_dnorm_identity, 2L)
+    expect_identical(mcmc$samplerFunctions[[1]]$N_dep_dnorm_multiplicative, 2L)
+    expect_identical(mcmc$samplerFunctions[[1]]$N_dep_dpois_identity, 2L)
+    expect_identical(mcmc$samplerFunctions[[1]]$N_dep_dpois_multiplicative, 2L)
+
+    expect_identical(c('dep_dnorm_identity_offset', 'dep_dnorm_multiplicative_offset', 'dep_dnorm_additive_offset', 'dep_dnorm_linear_offset') %in%
+                ls(mcmc$samplerFunctions[[1]]), rep(FALSE, 4))
+    expect_identical(c('dep_dnorm_identity_coeff', 'dep_dnorm_multiplicative_coeff', 'dep_dnorm_additive_coeff', 'dep_dnorm_linear_coeff') %in%
+                ls(mcmc$samplerFunctions[[1]]), c(FALSE, TRUE, FALSE, FALSE))
+    expect_identical(c('dep_dpois_identity_offset', 'dep_dpois_multiplicative_offset', 'dep_dpois_additive_offset', 'dep_dpois_linear_offset') %in%
+                ls(mcmc$samplerFunctions[[1]]), rep(FALSE, 4))
+    expect_identical(c('dep_dpois_identity_coeff', 'dep_dpois_multiplicative_coeff', 'dep_dpois_additive_coeff', 'dep_dpois_linear_coeff') %in%
+                ls(mcmc$samplerFunctions[[1]]), c(FALSE, TRUE, FALSE, FALSE))
+
+    expect_identical(mcmc$samplerFunctions[[1]]$dep_dnorm_identity_nodeNames, c('y1[1]', 'y1[2]'))
+    expect_identical(mcmc$samplerFunctions[[1]]$dep_dnorm_multiplicative_nodeNames, c('y2[1]', 'y2[2]'))
+    expect_identical(mcmc$samplerFunctions[[1]]$dep_dpois_identity_nodeNames, c('y3[1]', 'y3[2]'))
+    expect_identical(mcmc$samplerFunctions[[1]]$dep_dpois_multiplicative_nodeNames, c('y4[1]', 'y4[2]'))
+
+    ## dmnorm cases
+    code <- nimbleCode({
+        mu[1:3] ~ dmnorm(z[1:3], pr[1:3,1:3])
+        for(i in 1:2)
+            y1[i, 1:3] ~ dmnorm(mu[1:3], pr[1:3,1:3])
+        mn2[1:3] <- b0[1:3] + mu[1:3]
+        for(i in 1:2) {
+            y2[i, 1:3] ~ dmnorm(mn2[1:3], pr[1:3,1:3])
+        }
+        mn3[1:3] <- A[1:3,1:3]%*%mu[1:3]
+        for(i in 1:2) {
+            y3[i, 1:3] ~ dmnorm(mn3[1:3], pr[1:3,1:3])
+        }
+        mn4[1:3] <- b0[1:3] + A[1:3,1:3]%*%mu[1:3]
+        for(i in 1:2) {
+            y4[i, 1:3] ~ dmnorm(mn4[1:3], pr[1:3,1:3])
+        }
+    })
+    m <- nimbleModel(code, data = list (y1 = matrix(rnorm(6),2),
+                               y2 = matrix(rnorm(6),2),
+                               y3 = matrix(rnorm(6),2),
+                               y4 = matrix(rnorm(6),2)),
+                     inits = list(b0 = rnorm(3), A=matrix(1:9, 3), pr = diag(3)))
+    conf <- configureMCMC(m)
+    mcmc <- buildMCMC(conf)
+
+    expect_identical(conf$getSamplers()[[1]]$name, "conjugate_dmnorm_dmnorm_additive_dmnorm_identity_dmnorm_linear_dmnorm_multiplicative")
+    expect_identical(mcmc$samplerFunctions[[1]]$N_dep_dmnorm_identity, 2L)
+    expect_identical(mcmc$samplerFunctions[[1]]$N_dep_dmnorm_additive, 2L)
+    expect_identical(mcmc$samplerFunctions[[1]]$N_dep_dmnorm_multiplicative, 2L)
+    expect_identical(mcmc$samplerFunctions[[1]]$N_dep_dmnorm_linear, 2L)
+
+    expect_identical(c('dep_dmnorm_identity_coeff', 'dep_dmnorm_additive_coeff') %in%
+                ls(mcmc$samplerFunctions[[1]]), rep(FALSE, 2))
+    expect_identical(c('dep_dmnorm_multiplicative_coeff', 'dep_dmnorm_linear_coeff') %in%
+                ls(mcmc$samplerFunctions[[1]]), rep(TRUE, 2))
+    expect_identical(c('dep_dmnorm_identity_offset', 'dep_dmnorm_multiplicative_offset') %in%
+                ls(mcmc$samplerFunctions[[1]]), rep(FALSE, 2))
+    expect_identical(c('dep_dmnorm_additive_offset', 'dep_dmnorm_linear_offset') %in%
+                ls(mcmc$samplerFunctions[[1]]), rep(TRUE, 2))
+
+    expect_identical(mcmc$samplerFunctions[[1]]$dep_dmnorm_identity_nodeNames, c('y1[1, 1:3]', 'y1[2, 1:3]'))
+    expect_identical(mcmc$samplerFunctions[[1]]$dep_dmnorm_additive_nodeNames, c('y2[1, 1:3]', 'y2[2, 1:3]'))
+    expect_identical(mcmc$samplerFunctions[[1]]$dep_dmnorm_multiplicative_nodeNames, c('y3[1, 1:3]', 'y3[2, 1:3]'))
+    expect_identical(mcmc$samplerFunctions[[1]]$dep_dmnorm_linear_nodeNames, c('y4[1, 1:3]', 'y4[2, 1:3]'))
+
+    ## dwish case
+    code <- nimbleCode({
+        for(i in 1:2) {
+            y1[i, 1:3] ~ dmnorm(mu[1:3], pr[1:3,1:3])
+        }
+        pr2[1:3,1:3] <- d*pr[1:3,1:3]
+        for(i in 1:2) {
+            y2[i, 1:3] ~ dmnorm(mu[1:3], pr2[1:3,1:3])
+        }    
+        pr[1:3,1:3] ~ dwish(R[1:3,1:3], 8)
+    })
+    m <- nimbleModel(code, data = list (y1 = matrix(rnorm(6),2),
+                               y2 = matrix(rnorm(6),2)),
+                     inits = list(pr = diag(3), R = diag(3)))
+    conf <- configureMCMC(m)
+    mcmc <- buildMCMC(conf)
+
+    expect_identical(conf$getSamplers()[[1]]$name, "conjugate_dwish_dmnorm_identity_dmnorm_multiplicativeScalar")
+    expect_identical(mcmc$samplerFunctions[[1]]$N_dep_dmnorm_identity, 2L)
+    expect_identical(mcmc$samplerFunctions[[1]]$N_dep_dmnorm_multiplicativeScalar, 2L)
+
+    expect_identical('dep_dmnorm_identity_coeff' %in%
+                ls(mcmc$samplerFunctions[[1]]), FALSE)
+    expect_identical('dep_dmnorm_multiplicativeScalar_coeff' %in%
+                ls(mcmc$samplerFunctions[[1]]), TRUE)
+    expect_identical(c('dep_dmnorm_identity_offset', 'dep_dmnorm_multiplicativeScalar_offset') %in%
+                ls(mcmc$samplerFunctions[[1]]), rep(FALSE, 2))
+
+    expect_identical(mcmc$samplerFunctions[[1]]$dep_dmnorm_identity_nodeNames, c('y1[1, 1:3]', 'y1[2, 1:3]'))
+    expect_identical(mcmc$samplerFunctions[[1]]$dep_dmnorm_multiplicativeScalar_nodeNames, c('y2[1, 1:3]', 'y2[2, 1:3]'))
+})
+
 test_that('MCMC assigned posterior_predictive_branch sampler correctly', {
     nimblePPBranchSamplerSettingTemp <- getNimbleOption('MCMCjointlySamplePredictiveBranches')
     nimbleOptions(MCMCjointlySamplePredictiveBranches = TRUE)
@@ -1738,24 +2100,26 @@ test_that('MCMC assigned posterior_predictive_branch sampler correctly', {
     data <- list(y = y)
     Rmodel <- nimbleModel(code, constants, data, inits)
     conf <- configureMCMC(Rmodel, print = FALSE)
-    expect_true(all(sapply(conf$getSamplers(), function(x) x$name) == c('conjugate_dgamma_dnorm', rep('conjugate_dnorm_dnorm', 10))))
+    expect_true(all(sapply(conf$getSamplers(), function(x) x$name) == c('conjugate_dgamma_dnorm_identity',
+                                                                        rep('conjugate_dnorm_dnorm_identity_dnorm_multiplicative', 9),
+                                                                        'conjugate_dnorm_dnorm_multiplicative')))
     y <- c(1, 2, 3, NA, 5, 6, 7, 8, NA, NA)
     data <- list(y = y)
     Rmodel <- nimbleModel(code, constants, data, inits)
     conf <- configureMCMC(Rmodel, print = FALSE)
     expect_true(all(sapply(conf$getSamplers(), function(x) x$name) ==
-                    c('conjugate_dgamma_dnorm',
-                      rep('conjugate_dnorm_dnorm', 5),
+                    c('conjugate_dgamma_dnorm_identity',
+                      rep('conjugate_dnorm_dnorm_identity_dnorm_multiplicative', 5),
                       'posterior_predictive',
-                      rep('conjugate_dnorm_dnorm', 3),
+                      rep('conjugate_dnorm_dnorm_identity_dnorm_multiplicative', 3),
                       'posterior_predictive_branch')))
     y <- c(1:(N/2), rep(NA, N/2))
     data <- list(y = y)
     Rmodel <- nimbleModel(code, constants, data, inits)
     conf <- configureMCMC(Rmodel, print = FALSE)
     expect_true(all(sapply(conf$getSamplers(), function(x) x$name) ==
-                    c('conjugate_dgamma_dnorm',
-                      rep('conjugate_dnorm_dnorm', 5),
+                    c('conjugate_dgamma_dnorm_identity',
+                      rep('conjugate_dnorm_dnorm_identity_dnorm_multiplicative', 5),
                       'posterior_predictive_branch')))
     y <- rep(NA, N)
     data <- list(y = y)
@@ -1768,14 +2132,14 @@ test_that('MCMC assigned posterior_predictive_branch sampler correctly', {
     Rmodel <- nimbleModel(code, constants, data, inits)
     conf <- configureMCMC(Rmodel, print = FALSE)
     expect_true(all(sapply(conf$getSamplers(), function(x) x$name) ==
-                    c('conjugate_dgamma_dnorm',
-                      rep('conjugate_dnorm_dnorm', 2),
+                    c('conjugate_dgamma_dnorm_identity',
+                      rep('conjugate_dnorm_dnorm_identity_dnorm_multiplicative', 2),
                       'posterior_predictive',
-                      'conjugate_dnorm_dnorm',
+                      'conjugate_dnorm_dnorm_identity_dnorm_multiplicative',
                       'posterior_predictive',
-                      'conjugate_dnorm_dnorm',
+                      'conjugate_dnorm_dnorm_identity_dnorm_multiplicative',
                       'posterior_predictive',
-                      'conjugate_dnorm_dnorm',
+                      'conjugate_dnorm_dnorm_identity_dnorm_multiplicative',
                       'posterior_predictive',
                       'posterior_predictive_branch')))
     ##
@@ -1792,21 +2156,57 @@ test_that('MCMC assigned posterior_predictive_branch sampler correctly', {
     Rmodel <- nimbleModel(code, data = list(y = 1))
     conf <- configureMCMC(Rmodel, print = FALSE)
     expect_true(all(sapply(conf$getSamplers(), function(x) x$name) ==
-                    c('conjugate_dnorm_dnorm',
+                    c('conjugate_dnorm_dnorm_identity',
                       rep('posterior_predictive_branch', 2))))
     Rmodel <- nimbleModel(code, data = list(y = 1))
     conf <- configureMCMC(Rmodel, nodes = c('a', 'b[1]', 'c'), print = FALSE)
     expect_true(all(sapply(conf$getSamplers(), function(x) x$name) ==
-                    c('conjugate_dnorm_dnorm',
+                    c('conjugate_dnorm_dnorm_identity',
                       rep('posterior_predictive_branch', 1))))
     Rmodel <- nimbleModel(code, data = list(y = 1))
     conf <- configureMCMC(Rmodel, nodes = c('a', 'b[1]', 'b[2]'), print = FALSE)
     expect_true(all(sapply(conf$getSamplers(), function(x) x$name) ==
-                    c('conjugate_dnorm_dnorm',
-                      rep('conjugate_dnorm_dnorm', 2))))
+                    c('conjugate_dnorm_dnorm_identity',
+                      rep('conjugate_dnorm_dnorm_additive', 2))))
     nimbleOptions(MCMCjointlySamplePredictiveBranches = nimblePPBranchSamplerSettingTemp)
 })
 
+test_that('posterior_predictive_branch sampler updates node log-probs', {
+    nimblePPBranchSamplerSettingTemp <- getNimbleOption('MCMCjointlySamplePredictiveBranches')
+    nimbleOptions(MCMCjointlySamplePredictiveBranches = TRUE)
+    expect_true(nimbleOptions('MCMCjointlySamplePredictiveBranches'))
+    code <- nimbleCode({
+        a ~ dnorm(0, 1)
+        y ~ dexp(a^2+1)
+        b ~ dnorm(a, 1)
+        c ~ dnorm(b, 1)
+    })
+    constants <- list()
+    data <- list(y = 3)
+    inits <- list(a = 0, b = 1, c = 1)
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    conf <- configureMCMC(Rmodel)
+    ##
+    expect_true(conf$getSamplers('a')[[1]]$name == 'RW')
+    expect_true(conf$getSamplers('b')[[1]]$name == 'posterior_predictive_branch')
+    ##
+    Rmcmc <- buildMCMC(conf)
+    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
+    Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
+    set.seed(0)
+    Rmcmc$run(10)
+    set.seed(0)
+    Cmcmc$run(10)
+    ##
+    for(node in Rmodel$getNodeNames(stochOnly = TRUE)) {
+        rLP <- Rmodel$getLogProb(node)
+        cLP <- Cmodel$getLogProb(node)
+        expect_equal(rLP, Rmodel$calculate(node))
+        expect_equal(cLP, Cmodel$calculate(node))
+        expect_equal(rLP, cLP)
+    }
+    nimbleOptions(MCMCjointlySamplePredictiveBranches = nimblePPBranchSamplerSettingTemp)
+})
 
 sink(NULL)
 

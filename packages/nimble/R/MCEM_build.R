@@ -7,7 +7,6 @@ calc_asympVar = nimbleFunction(
     calc_E_llk <- calc_E_llk_gen(model, fixedNodes = fixedNodes, sampledNodes = sampledNodes, burnIn = 0, mvSample = mvBlock)
   },
   run = function(nsamps = integer(0), theta = double(1), oldTheta = double(1)){
-    ##declare(svals, double(1, numReps))
     svals <- numeric(numReps, init=FALSE)
     l <- ceiling(min(1000, (nsamps - burnIn)/20)) #length of each block, ensures it's not too big
     q <- (nsamps - burnIn) - l + 1 #total number of blocks available to sample from
@@ -51,24 +50,24 @@ calc_E_llk_gen = nimbleFunction(
       nimCopy(from = mvSample, to = model, nodes = sampledNodes, row = i)
       values(model, fixedNodes) <<- paramValues  #first use new params, then old ones
       if(areFixedDetermNodes){
-        simulate(model, paramDepDetermNodes_fixed)  #	Fills in the deterministic nodes
+        model$simulate(paramDepDetermNodes_fixed)  #	Fills in the deterministic nodes
       }
       if(areLatentDetermNodes){
-        simulate(model, paramDepDetermNodes_latent)	#	Fills in the deterministic nodes
+        model$simulate(paramDepDetermNodes_latent)	#	Fills in the deterministic nodes
       }
-      sample_LL = calculate(model, latentCalcNodes)
+      sample_LL = model$calculate(latentCalcNodes)
       if(is.na(sample_LL) | is.nan(sample_LL) | sample_LL == -Inf | sample_LL == Inf)
             stop("Non-finite log-likelihood occurred; the MCEM optimization cannot continue. Please check the state of the compiled model (accessible as 'name_of_model$CobjectInterface') and determine which parameter values are causing the invalid log-likelihood by calling 'calculate' with subsets of the model parameters (e.g., 'name_of_model$CobjectInterface$calculate('y[3]')' to see if node 'y[3]' is the cause of the problem). Note that if your model is maximizing over parameters whose bounds are not constant (i.e., depend on other parameters), this is one possible cause of such problems; in that case you might try running the MCEM without bounds, by setting 'forceNoConstraints = TRUE'.")
       mean_LL = mean_LL + sample_LL
       if(diff == 1){
         values(model, fixedNodes) <<- oldParamValues #now old params
         if(areFixedDetermNodes){
-          simulate(model, paramDepDetermNodes_fixed)  #	Fills in the deterministic nodes
+          model$simulate(paramDepDetermNodes_fixed)  #	Fills in the deterministic nodes
         }
         if(areLatentDetermNodes){
-          simulate(model, paramDepDetermNodes_latent)  #	Fills in the deterministic nodes
+          model$simulate(paramDepDetermNodes_latent)  #	Fills in the deterministic nodes
         }
-        sample_LL = calculate(model, latentCalcNodes)
+        sample_LL = model$calculate(latentCalcNodes)
         if(is.na(sample_LL) | is.nan(sample_LL) | sample_LL == -Inf | sample_LL == Inf)
             stop("Non-finite log-likelihood occurred; the MCEM optimization cannot continue. Please check the state of the compiled model (accessible as 'name_of_model$CobjectInterface') and determine which parameter values are causing the invalid log-likelihood by calling 'calculate' with subsets of the model parameters (e.g., 'name_of_model$CobjectInterface$calculate('y[3]')'). Note that if your model is maximizing over parameters whose bounds are not constant (i.e., depend on other parameters), this is one possible cause of such problems; in that case you might try running the MCEM without bounds, by setting 'forceNoConstraints = TRUE'.")
         mean_LL = mean_LL - sample_LL
@@ -76,7 +75,7 @@ calc_E_llk_gen = nimbleFunction(
     }
     values(model, fixedNodes) <<- paramValues  #first use new params, then old ones
     if(areFixedDetermNodes){
-      simulate(model, paramDepDetermNodes_fixed)  #	Fills in the deterministic nodes
+      model$simulate(paramDepDetermNodes_fixed)  #	Fills in the deterministic nodes
     }
     mean_LL <- mean_LL / nSamples
     if(is.nan(mean_LL)){
@@ -94,8 +93,8 @@ getMCEMRanges <- nimbleFunction(name = 'getMCEMRanges',
     hi_limits  = rep(Inf,  length(maxNodes) )
     nodes <- model$expandNodeNames(maxNodes)
     for(i in seq_along(nodes)) {
-      low_limits[i] = getBound(model, nodes[i], 'lower') + abs(buffer)
-      hi_limits[i]  = getBound(model, nodes[i], 'upper')  - abs(buffer)
+      low_limits[i] = model$getBound(nodes[i], 'lower') + abs(buffer)
+      hi_limits[i]  = model$getBound(nodes[i], 'upper')  - abs(buffer)
     }
     return(list(low_limits, hi_limits))
   }
@@ -426,38 +425,38 @@ bootstrapGetCov <- nimbleFunction(
     for(i in (burnIn+1):nSamples){
       values(model, fixedNodes) <<- theta
       if(areFixedDetermNodes){
-        simulate(model, paramDepDetermNodes_fixed)  
+        model$simulate(paramDepDetermNodes_fixed)  
       }
       if(areLatentDetermNodes){
-        simulate(model, paramDepDetermNodes_latent)
+        model$simulate(paramDepDetermNodes_latent)
       }
       nimCopy(from = mvSample, to = model, nodes = sampledNodes, row = i)
       if(areFixedDetermNodes){
-        simulate(model, paramDepDetermNodes_fixed) 
+        model$simulate(paramDepDetermNodes_fixed) 
       }
       if(areLatentDetermNodes){
-        simulate(model, paramDepDetermNodes_latent)	
+        model$simulate(paramDepDetermNodes_latent)	
       }
-      origValue <- calculate(model, latentCalcNodes)
+      origValue <- model$calculate(latentCalcNodes)
       for(iNode in 1:paramLengths){
         theta[iNode] <- theta[iNode] + delta
         values(model, fixedNodes) <<- theta 
         if(areFixedDetermNodes){
-          simulate(model, paramDepDetermNodes_fixed)  
+          model$simulate(paramDepDetermNodes_fixed)  
         }
         if(areLatentDetermNodes){
-          simulate(model, paramDepDetermNodes_latent)	
+          model$simulate(paramDepDetermNodes_latent)	
         }
-        fxph[iNode] <- calculate(model, latentCalcNodes)
+        fxph[iNode] <- model$calculate(latentCalcNodes)
         theta[iNode] <- theta[iNode] - 2*delta
         values(model, fixedNodes) <<- theta 
         if(areFixedDetermNodes){
-          simulate(model, paramDepDetermNodes_fixed)  
+          model$simulate(paramDepDetermNodes_fixed)  
         }
         if(areLatentDetermNodes){
-          simulate(model, paramDepDetermNodes_latent)
+          model$simulate(paramDepDetermNodes_latent)
         }
-        fxmh[iNode] <- calculate(model, latentCalcNodes)
+        fxmh[iNode] <- model$calculate(latentCalcNodes)
         grad[iNode] <- (fxph[iNode] - fxmh[iNode])/(2*delta)
         theta[iNode] <- theta[iNode] + delta
         derivxy[iNode, iNode] <- (fxph[iNode] -2*origValue + fxmh[iNode])/(delta^2)
@@ -469,22 +468,22 @@ bootstrapGetCov <- nimbleFunction(
             theta[jNode] <- theta[jNode] + delta
             values(model, fixedNodes) <<- theta 
             if(areFixedDetermNodes){
-              simulate(model, paramDepDetermNodes_fixed) 
+              model$simulate(paramDepDetermNodes_fixed) 
             }
             if(areLatentDetermNodes){
-              simulate(model, paramDepDetermNodes_latent)	
+              model$simulate(paramDepDetermNodes_latent)	
             }
-            fxyph <- calculate(model, latentCalcNodes)
+            fxyph <- model$calculate(latentCalcNodes)
             theta[iNode] <- theta[iNode] - 2*delta
             theta[jNode] <- theta[jNode] - 2*delta
             values(model, fixedNodes) <<- theta
             if(areFixedDetermNodes){
-              simulate(model, paramDepDetermNodes_fixed) 
+              model$simulate(paramDepDetermNodes_fixed) 
             }
             if(areLatentDetermNodes){
-              simulate(model, paramDepDetermNodes_latent)
+              model$simulate(paramDepDetermNodes_latent)
             }
-            fxymh <- calculate(model, latentCalcNodes)
+            fxymh <- model$calculate(latentCalcNodes)
             derivxy[iNode, jNode] <- (fxyph - fxph[iNode] - fxph[jNode] + 2*origValue - fxmh[iNode] - fxmh[jNode] + fxymh)/(2*delta^2)
             theta[iNode] <- theta[iNode] + delta
             theta[jNode] <- theta[jNode] + delta

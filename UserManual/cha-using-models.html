@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<html lang="" xml:lang="">
 <head>
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title></title>
+  <title>Chapter 13 Working with NIMBLE models | NimbleUserManual.utf8</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.12 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.19 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="" />
+  <meta property="og:title" content="Chapter 13 Working with NIMBLE models | NimbleUserManual.utf8" />
   <meta property="og:type" content="book" />
   
   <meta property="og:image" content="nimble-icon.png" />
@@ -16,7 +16,7 @@
   <meta name="github-repo" content="nimble-dev/nimble" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="" />
+  <meta name="twitter:title" content="Chapter 13 Working with NIMBLE models | NimbleUserManual.utf8" />
   
   <meta name="twitter:description" content="This is the NIMBLE User Manual." />
   <meta name="twitter:image" content="nimble-icon.png" />
@@ -29,8 +29,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
-<link rel="prev" href="cha-user-defined.html">
-<link rel="next" href="cha-data-structures.html">
+<link rel="prev" href="cha-user-defined.html"/>
+<link rel="next" href="cha-data-structures.html"/>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -38,6 +38,9 @@
 <link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
 
 
 
@@ -48,41 +51,66 @@
 
 
 <style type="text/css">
-div.sourceCode { overflow-x: auto; }
-table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
-  margin: 0; padding: 0; vertical-align: baseline; border: none; }
-table.sourceCode { width: 100%; line-height: 100%; }
-td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
-td.sourceCode { padding-left: 5px; }
-code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
-code > span.dt { color: #902000; } /* DataType */
-code > span.dv { color: #40a070; } /* DecVal */
-code > span.bn { color: #40a070; } /* BaseN */
-code > span.fl { color: #40a070; } /* Float */
-code > span.ch { color: #4070a0; } /* Char */
-code > span.st { color: #4070a0; } /* String */
-code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
-code > span.ot { color: #007020; } /* Other */
-code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
-code > span.fu { color: #06287e; } /* Function */
-code > span.er { color: #ff0000; font-weight: bold; } /* Error */
-code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
-code > span.cn { color: #880000; } /* Constant */
-code > span.sc { color: #4070a0; } /* SpecialChar */
-code > span.vs { color: #4070a0; } /* VerbatimString */
-code > span.ss { color: #bb6688; } /* SpecialString */
-code > span.im { } /* Import */
-code > span.va { color: #19177c; } /* Variable */
-code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-code > span.op { color: #666666; } /* Operator */
-code > span.bu { } /* BuiltIn */
-code > span.ex { } /* Extension */
-code > span.pp { color: #bc7a00; } /* Preprocessor */
-code > span.at { color: #7d9029; } /* Attribute */
-code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
-code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+a.sourceLine { display: inline-block; line-height: 1.25; }
+a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
+a.sourceLine:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+a.sourceLine { text-indent: -1em; padding-left: 1em; }
+}
+pre.numberSource a.sourceLine
+  { position: relative; left: -4em; }
+pre.numberSource a.sourceLine::before
+  { content: attr(title);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; pointer-events: all; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {  }
+@media screen {
+a.sourceLine::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
 <link rel="stylesheet" href="style.css" type="text/css" />
@@ -100,7 +128,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.10.1</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.11.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -328,7 +356,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
-<li class="chapter" data-level="16" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i><b>16</b> References</a></li>
+<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
       </nav>
@@ -348,17 +376,24 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
             <section class="normal" id="section-">
 <div id="cha:using-models" class="section level1">
 <h1><span class="header-section-number">Chapter 13</span> Working with NIMBLE models</h1>
-<p>Here we describe how one can get information about NIMBLE models and carry out operations on a model. While all of this functionality can be used from R, its primary use occurs when writing nimbleFunctions (see Chapter <a href="cha-progr-with-models.html#cha:progr-with-models">15</a>). Information about node types, distributions, and dimensions can be used to determine algorithm behavior in <em>setup</em> code of nimbleFunctions. Information about node or variable values or the parameter and bound values of a node would generally be used for algorithm calculations in <em>run</em> code of nimbleFunctions. Similarly, carrying out numerical operations on a model, including setting node or variable values, would generally be done in run code.</p>
+<p>Here we describe how one can get information about NIMBLE models and
+carry out operations on a model. While all of this functionality can
+be used from R, its primary use occurs when writing nimbleFunctions (see Chapter <a href="cha-progr-with-models.html#cha:progr-with-models">15</a>).
+Information about node types, distributions, and dimensions can be
+used to determine algorithm behavior in <em>setup</em> code of nimbleFunctions. Information
+about node or variable values or the parameter and bound values of a node would generally be used for algorithm
+calculations in <em>run</em> code of nimbleFunctions. Similarly, carrying out numerical operations
+on a model, including setting node or variable values, would generally be done in run code.</p>
 <div id="sec:accessing-variables" class="section level2">
 <h2><span class="header-section-number">13.1</span> The variables and nodes in a NIMBLE model</h2>
 <p>Section <a href="cha-building-models.html#sec:nodes-and-variables">6.2</a> defines what we mean by variables and nodes in a NIMBLE model and discusses how to determine and access the nodes in a model and their dependency relationships. Here we’ll review and go into more detail on the topics of determining the nodes and node dependencies in a model.</p>
 <div id="sec:get-nodes" class="section level3">
 <h3><span class="header-section-number">13.1.1</span> Determining the nodes in a model</h3>
 <p>One can determine the variables in a model using <code>getVarNames</code> and the nodes in a model using <code>getNodeNames</code>, with optional arguments allowing you to select only certain types of nodes. We illustrate here with the pump model from Chapter <a href="cha-lightning-intro.html#cha:lightning-intro">2</a>.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pump<span class="op">$</span><span class="kw">getVarNames</span>()</code></pre></div>
+<div class="sourceCode" id="cb235"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb235-1" title="1">pump<span class="op">$</span><span class="kw">getVarNames</span>()</a></code></pre></div>
 <pre><code>## [1] &quot;lifted_d1_over_beta&quot; &quot;theta&quot;               &quot;lambda&quot;             
 ## [4] &quot;x&quot;                   &quot;alpha&quot;               &quot;beta&quot;</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pump<span class="op">$</span><span class="kw">getNodeNames</span>()</code></pre></div>
+<div class="sourceCode" id="cb237"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb237-1" title="1">pump<span class="op">$</span><span class="kw">getNodeNames</span>()</a></code></pre></div>
 <pre><code>##  [1] &quot;alpha&quot;               &quot;beta&quot;                &quot;lifted_d1_over_beta&quot;
 ##  [4] &quot;theta[1]&quot;            &quot;theta[2]&quot;            &quot;theta[3]&quot;           
 ##  [7] &quot;theta[4]&quot;            &quot;theta[5]&quot;            &quot;theta[6]&quot;           
@@ -370,37 +405,37 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 ## [25] &quot;x[2]&quot;                &quot;x[3]&quot;                &quot;x[4]&quot;               
 ## [28] &quot;x[5]&quot;                &quot;x[6]&quot;                &quot;x[7]&quot;               
 ## [31] &quot;x[8]&quot;                &quot;x[9]&quot;                &quot;x[10]&quot;</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pump<span class="op">$</span><span class="kw">getNodeNames</span>(<span class="dt">determOnly =</span> <span class="ot">TRUE</span>)</code></pre></div>
+<div class="sourceCode" id="cb239"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb239-1" title="1">pump<span class="op">$</span><span class="kw">getNodeNames</span>(<span class="dt">determOnly =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
 <pre><code>##  [1] &quot;lifted_d1_over_beta&quot; &quot;lambda[1]&quot;           &quot;lambda[2]&quot;          
 ##  [4] &quot;lambda[3]&quot;           &quot;lambda[4]&quot;           &quot;lambda[5]&quot;          
 ##  [7] &quot;lambda[6]&quot;           &quot;lambda[7]&quot;           &quot;lambda[8]&quot;          
 ## [10] &quot;lambda[9]&quot;           &quot;lambda[10]&quot;</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pump<span class="op">$</span><span class="kw">getNodeNames</span>(<span class="dt">stochOnly =</span> <span class="ot">TRUE</span>)</code></pre></div>
-<pre><code>##  [1] &quot;alpha&quot;     &quot;beta&quot;      &quot;theta[1]&quot;  &quot;theta[2]&quot;  &quot;theta[3]&quot; 
-##  [6] &quot;theta[4]&quot;  &quot;theta[5]&quot;  &quot;theta[6]&quot;  &quot;theta[7]&quot;  &quot;theta[8]&quot; 
-## [11] &quot;theta[9]&quot;  &quot;theta[10]&quot; &quot;x[1]&quot;      &quot;x[2]&quot;      &quot;x[3]&quot;     
-## [16] &quot;x[4]&quot;      &quot;x[5]&quot;      &quot;x[6]&quot;      &quot;x[7]&quot;      &quot;x[8]&quot;     
-## [21] &quot;x[9]&quot;      &quot;x[10]&quot;</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pump<span class="op">$</span><span class="kw">getNodeNames</span>(<span class="dt">dataOnly =</span> <span class="ot">TRUE</span>)</code></pre></div>
-<pre><code>##  [1] &quot;x[1]&quot;  &quot;x[2]&quot;  &quot;x[3]&quot;  &quot;x[4]&quot;  &quot;x[5]&quot;  &quot;x[6]&quot;  &quot;x[7]&quot;  &quot;x[8]&quot; 
-##  [9] &quot;x[9]&quot;  &quot;x[10]&quot;</code></pre>
+<div class="sourceCode" id="cb241"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb241-1" title="1">pump<span class="op">$</span><span class="kw">getNodeNames</span>(<span class="dt">stochOnly =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
+<pre><code>##  [1] &quot;alpha&quot;     &quot;beta&quot;      &quot;theta[1]&quot;  &quot;theta[2]&quot;  &quot;theta[3]&quot;  &quot;theta[4]&quot; 
+##  [7] &quot;theta[5]&quot;  &quot;theta[6]&quot;  &quot;theta[7]&quot;  &quot;theta[8]&quot;  &quot;theta[9]&quot;  &quot;theta[10]&quot;
+## [13] &quot;x[1]&quot;      &quot;x[2]&quot;      &quot;x[3]&quot;      &quot;x[4]&quot;      &quot;x[5]&quot;      &quot;x[6]&quot;     
+## [19] &quot;x[7]&quot;      &quot;x[8]&quot;      &quot;x[9]&quot;      &quot;x[10]&quot;</code></pre>
+<div class="sourceCode" id="cb243"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb243-1" title="1">pump<span class="op">$</span><span class="kw">getNodeNames</span>(<span class="dt">dataOnly =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
+<pre><code>##  [1] &quot;x[1]&quot;  &quot;x[2]&quot;  &quot;x[3]&quot;  &quot;x[4]&quot;  &quot;x[5]&quot;  &quot;x[6]&quot;  &quot;x[7]&quot;  &quot;x[8]&quot;  &quot;x[9]&quot; 
+## [10] &quot;x[10]&quot;</code></pre>
 <p>You can see one lifted node (see next section), <code>lifted_d1_over_beta</code>, involved in a reparameterization to NIMBLE’s canonical parameterization of the gamma distribution for the <code>theta</code> nodes.</p>
-<p>We can determine the set of nodes contained in one or more nodes or variables using <code>expandNodeNames</code>, illustrated here for an example with multivariate nodes. The <code>returnScalarComponents</code> argument also allows us to return all of the scalar elements of multivariate nodes.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">multiVarCode2 &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-    X[<span class="dv">1</span>, <span class="dv">1</span><span class="op">:</span><span class="dv">5</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dmnorm</span>(mu[], cov[,])
-    X[<span class="dv">6</span><span class="op">:</span><span class="dv">10</span>, <span class="dv">3</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dmnorm</span>(mu[], cov[,])
-    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">4</span>) 
-        Y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(mn, <span class="dv">1</span>)
-})
-
-multiVarModel2 &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(multiVarCode2,
-                              <span class="dt">dimensions =</span> <span class="kw">list</span>(<span class="dt">mu =</span> <span class="dv">5</span>, <span class="dt">cov =</span> <span class="kw">c</span>(<span class="dv">5</span>,<span class="dv">5</span>)),
-                             <span class="dt">calculate =</span> <span class="ot">FALSE</span>)
-
-
-multiVarModel2<span class="op">$</span><span class="kw">expandNodeNames</span>(<span class="st">&quot;Y&quot;</span>)</code></pre></div>
+<p>We can determine the set of nodes contained in one or more nodes or variables using <code>expandNodeNames</code>, illustrated here for an example with multivariate nodes. The
+<code>returnScalarComponents</code> argument also allows us to return all of the scalar elements of multivariate nodes.</p>
+<div class="sourceCode" id="cb245"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb245-1" title="1">multiVarCode2 &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb245-2" title="2">    X[<span class="dv">1</span>, <span class="dv">1</span><span class="op">:</span><span class="dv">5</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dmnorm</span>(mu[], cov[,])</a>
+<a class="sourceLine" id="cb245-3" title="3">    X[<span class="dv">6</span><span class="op">:</span><span class="dv">10</span>, <span class="dv">3</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dmnorm</span>(mu[], cov[,])</a>
+<a class="sourceLine" id="cb245-4" title="4">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">4</span>) </a>
+<a class="sourceLine" id="cb245-5" title="5">        Y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(mn, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb245-6" title="6">})</a>
+<a class="sourceLine" id="cb245-7" title="7"></a>
+<a class="sourceLine" id="cb245-8" title="8">multiVarModel2 &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(multiVarCode2,</a>
+<a class="sourceLine" id="cb245-9" title="9">                              <span class="dt">dimensions =</span> <span class="kw">list</span>(<span class="dt">mu =</span> <span class="dv">5</span>, <span class="dt">cov =</span> <span class="kw">c</span>(<span class="dv">5</span>,<span class="dv">5</span>)),</a>
+<a class="sourceLine" id="cb245-10" title="10">                             <span class="dt">calculate =</span> <span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb245-11" title="11"></a>
+<a class="sourceLine" id="cb245-12" title="12"></a>
+<a class="sourceLine" id="cb245-13" title="13">multiVarModel2<span class="op">$</span><span class="kw">expandNodeNames</span>(<span class="st">&quot;Y&quot;</span>)</a></code></pre></div>
 <pre><code>## [1] &quot;Y[1]&quot; &quot;Y[2]&quot; &quot;Y[3]&quot; &quot;Y[4]&quot;</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">multiVarModel2<span class="op">$</span><span class="kw">expandNodeNames</span>(<span class="kw">c</span>(<span class="st">&quot;X&quot;</span>, <span class="st">&quot;Y&quot;</span>), <span class="dt">returnScalarComponents =</span> <span class="ot">TRUE</span>)</code></pre></div>
+<div class="sourceCode" id="cb247"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb247-1" title="1">multiVarModel2<span class="op">$</span><span class="kw">expandNodeNames</span>(<span class="kw">c</span>(<span class="st">&quot;X&quot;</span>, <span class="st">&quot;Y&quot;</span>), <span class="dt">returnScalarComponents =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
 <pre><code>##  [1] &quot;X[1, 1]&quot;  &quot;X[1, 2]&quot;  &quot;X[1, 3]&quot;  &quot;X[6, 3]&quot;  &quot;X[7, 3]&quot;  &quot;X[8, 3]&quot; 
 ##  [7] &quot;X[9, 3]&quot;  &quot;X[10, 3]&quot; &quot;X[1, 4]&quot;  &quot;X[1, 5]&quot;  &quot;Y[1]&quot;     &quot;Y[2]&quot;    
 ## [13] &quot;Y[3]&quot;     &quot;Y[4]&quot;</code></pre>
@@ -408,33 +443,60 @@ multiVarModel2<span class="op">$</span><span class="kw">expandNodeNames</span>(<
 </div>
 <div id="sec:introduced-nodes" class="section level3">
 <h3><span class="header-section-number">13.1.2</span> Understanding lifted nodes</h3>
-<p>In some cases, NIMBLE introduces new nodes into the model that were not specified in the BUGS code for the model, such as the <code>lifted_d1_over_beta</code> node in the introductory example. For this reason, it is important that programs written to adapt to different model structures use NIMBLE’s systems for querying the model graph. For example, a call to <code>pump$getDependencies(&quot;beta&quot;)</code> will correctly include <code>lifted_d1_over_beta</code> in the results. If one skips this step and assumes the nodes are only those that appear in the BUGS code, one may not get correct results.</p>
-<p>It can be helpful to know the situations in which lifted nodes are generated. These include:</p>
+<p>In some cases, NIMBLE introduces new nodes into the model that were
+not specified in the BUGS code for the model, such as the
+<code>lifted_d1_over_beta</code> node in the introductory example. For
+this reason, it is important that programs written to adapt to
+different model structures use NIMBLE’s systems for querying the model
+graph. For example, a call to <code>pump$getDependencies("beta")</code> will
+correctly include <code>lifted_d1_over_beta</code> in the results. If one
+skips this step and assumes the nodes are only those that appear in
+the BUGS code, one may not get correct results.</p>
+<p>It can be helpful to know the situations in which lifted nodes are
+generated. These include:</p>
 <ol style="list-style-type: decimal">
-<li>When distribution parameters are expressions, NIMBLE creates a new deterministic node that contains the expression for a given parameter. The node is then a direct descendant of the new deterministic node. This is an optional feature, but it is currently enabled in all cases.</li>
-<li>As discussed in Section <a href="cha-writing-models.html#subsec:BUGS-link">5.2.6</a>, the use of link functions causes new nodes to be introduced. This requires care if you need to initialize values in stochastic declarations with link functions.</li>
-<li>Use of alternative parameterizations of distributions, described in Section <a href="cha-writing-models.html#subsec:dists-and-functions">5.2.4</a> causes new nodes to be introduced. For example when a user provides the precision of a normal distribution as <code>tau</code>, NIMBLE creates a new node <code>sd &lt;- 1/sqrt(tau)</code> and uses <code>sd</code> as a parameter in the normal distribution. If many nodes use the same <code>tau</code>, only one new <code>sd</code> node will be created, so the computation <code>1/sqrt(tau)</code> will not be repeated redundantly.</li>
+<li>When distribution parameters are expressions, NIMBLE
+creates a new deterministic node that contains the expression for a
+given parameter. The node is then a direct descendant of the new
+deterministic node. This is an optional feature, but it is
+currently enabled in all cases.</li>
+<li>As discussed in Section <a href="cha-writing-models.html#subsec:BUGS-link">5.2.6</a>, the use of link
+functions causes new nodes to be introduced. This requires care if
+you need to initialize values in stochastic declarations with link functions.</li>
+<li>Use of alternative parameterizations of distributions, described in Section <a href="cha-writing-models.html#subsec:dists-and-functions">5.2.4</a> causes new nodes to be introduced. For
+example when a user provides the precision of a normal distribution
+as <code>tau</code>, NIMBLE creates a new node <code>sd &lt;- 1/sqrt(tau)</code> and
+uses <code>sd</code> as a parameter in the normal distribution. If many
+nodes use the same <code>tau</code>, only one new <code>sd</code> node will be
+created, so the computation <code>1/sqrt(tau)</code> will not be repeated
+redundantly.</li>
 </ol>
 </div>
 <div id="sec:cdgetdependencies" class="section level3">
 <h3><span class="header-section-number">13.1.3</span> Determining dependencies in a model</h3>
-<p>Next we’ll see how to determine the node dependencies (or ‘descendants’) in a model. There are a variety of arguments to <code>getDependencies</code> that allow one to specify whether to include the node itself, whether to include deterministic or stochastic or data dependents, etc. By default <code>getDependencies</code> returns descendants up to the next stochastic node on all edges emanating from the node(s) specified as input. This is what would be needed to calculate a Metropolis-Hastings acceptance probability in MCMC, for example.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="st">&quot;alpha&quot;</span>)</code></pre></div>
-<pre><code>##  [1] &quot;alpha&quot;     &quot;theta[1]&quot;  &quot;theta[2]&quot;  &quot;theta[3]&quot;  &quot;theta[4]&quot; 
-##  [6] &quot;theta[5]&quot;  &quot;theta[6]&quot;  &quot;theta[7]&quot;  &quot;theta[8]&quot;  &quot;theta[9]&quot; 
-## [11] &quot;theta[10]&quot;</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>))</code></pre></div>
+<p>Next we’ll see how to determine the node dependencies (or
+‘descendants’ or child nodes) in a model. There are a variety of arguments to <code>getDependencies</code> that
+allow one to specify whether to include the node itself, whether to
+include deterministic or stochastic or data dependents, etc. By
+default <code>getDependencies</code> returns descendants up to the next
+stochastic node on all edges emanating from the node(s) specified as input. This is what would be
+needed to calculate a Metropolis-Hastings acceptance probability in
+MCMC, for example.</p>
+<div class="sourceCode" id="cb249"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb249-1" title="1">pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="st">&quot;alpha&quot;</span>)</a></code></pre></div>
+<pre><code>##  [1] &quot;alpha&quot;     &quot;theta[1]&quot;  &quot;theta[2]&quot;  &quot;theta[3]&quot;  &quot;theta[4]&quot;  &quot;theta[5]&quot; 
+##  [7] &quot;theta[6]&quot;  &quot;theta[7]&quot;  &quot;theta[8]&quot;  &quot;theta[9]&quot;  &quot;theta[10]&quot;</code></pre>
+<div class="sourceCode" id="cb251"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb251-1" title="1">pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>))</a></code></pre></div>
 <pre><code>##  [1] &quot;alpha&quot;               &quot;beta&quot;                &quot;lifted_d1_over_beta&quot;
 ##  [4] &quot;theta[1]&quot;            &quot;theta[2]&quot;            &quot;theta[3]&quot;           
 ##  [7] &quot;theta[4]&quot;            &quot;theta[5]&quot;            &quot;theta[6]&quot;           
 ## [10] &quot;theta[7]&quot;            &quot;theta[8]&quot;            &quot;theta[9]&quot;           
 ## [13] &quot;theta[10]&quot;</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="st">&quot;theta[1:3]&quot;</span>, <span class="dt">self =</span> <span class="ot">FALSE</span>)</code></pre></div>
+<div class="sourceCode" id="cb253"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb253-1" title="1">pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="st">&quot;theta[1:3]&quot;</span>, <span class="dt">self =</span> <span class="ot">FALSE</span>)</a></code></pre></div>
 <pre><code>## [1] &quot;lambda[1]&quot; &quot;lambda[2]&quot; &quot;lambda[3]&quot; &quot;x[1]&quot;      &quot;x[2]&quot;      &quot;x[3]&quot;</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="st">&quot;theta[1:3]&quot;</span>, <span class="dt">stochOnly =</span> <span class="ot">TRUE</span>, <span class="dt">self =</span> <span class="ot">FALSE</span>)</code></pre></div>
+<div class="sourceCode" id="cb255"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb255-1" title="1">pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="st">&quot;theta[1:3]&quot;</span>, <span class="dt">stochOnly =</span> <span class="ot">TRUE</span>, <span class="dt">self =</span> <span class="ot">FALSE</span>)</a></code></pre></div>
 <pre><code>## [1] &quot;x[1]&quot; &quot;x[2]&quot; &quot;x[3]&quot;</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># get all dependencies, not just the direct descendants</span>
-pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="st">&quot;alpha&quot;</span>, <span class="dt">downstream =</span> <span class="ot">TRUE</span>)</code></pre></div>
+<div class="sourceCode" id="cb257"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb257-1" title="1"><span class="co"># get all dependencies, not just the direct descendants</span></a>
+<a class="sourceLine" id="cb257-2" title="2">pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="st">&quot;alpha&quot;</span>, <span class="dt">downstream =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
 <pre><code>##  [1] &quot;alpha&quot;      &quot;theta[1]&quot;   &quot;theta[2]&quot;   &quot;theta[3]&quot;   &quot;theta[4]&quot;  
 ##  [6] &quot;theta[5]&quot;   &quot;theta[6]&quot;   &quot;theta[7]&quot;   &quot;theta[8]&quot;   &quot;theta[9]&quot;  
 ## [11] &quot;theta[10]&quot;  &quot;lambda[1]&quot;  &quot;lambda[2]&quot;  &quot;lambda[3]&quot;  &quot;lambda[4]&quot; 
@@ -442,144 +504,203 @@ pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class
 ## [21] &quot;lambda[10]&quot; &quot;x[1]&quot;       &quot;x[2]&quot;       &quot;x[3]&quot;       &quot;x[4]&quot;      
 ## [26] &quot;x[5]&quot;       &quot;x[6]&quot;       &quot;x[7]&quot;       &quot;x[8]&quot;       &quot;x[9]&quot;      
 ## [31] &quot;x[10]&quot;</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="st">&quot;alpha&quot;</span>, <span class="dt">downstream =</span> <span class="ot">TRUE</span>, <span class="dt">dataOnly =</span> <span class="ot">TRUE</span>)</code></pre></div>
-<pre><code>##  [1] &quot;x[1]&quot;  &quot;x[2]&quot;  &quot;x[3]&quot;  &quot;x[4]&quot;  &quot;x[5]&quot;  &quot;x[6]&quot;  &quot;x[7]&quot;  &quot;x[8]&quot; 
-##  [9] &quot;x[9]&quot;  &quot;x[10]&quot;</code></pre>
+<div class="sourceCode" id="cb259"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb259-1" title="1">pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="st">&quot;alpha&quot;</span>, <span class="dt">downstream =</span> <span class="ot">TRUE</span>, <span class="dt">dataOnly =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
+<pre><code>##  [1] &quot;x[1]&quot;  &quot;x[2]&quot;  &quot;x[3]&quot;  &quot;x[4]&quot;  &quot;x[5]&quot;  &quot;x[6]&quot;  &quot;x[7]&quot;  &quot;x[8]&quot;  &quot;x[9]&quot; 
+## [10] &quot;x[10]&quot;</code></pre>
+<p>In addition, one can determine parent nodes using <code>getParents</code>.</p>
+<div class="sourceCode" id="cb261"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb261-1" title="1">pump<span class="op">$</span><span class="kw">getParents</span>(<span class="st">&quot;alpha&quot;</span>)</a></code></pre></div>
+<pre><code>## character(0)</code></pre>
 </div>
 </div>
 <div id="sec:nodeInfo" class="section level2">
 <h2><span class="header-section-number">13.2</span> Accessing information about nodes and variables</h2>
 <div id="getting-distributional-information-about-a-node" class="section level3">
 <h3><span class="header-section-number">13.2.1</span> Getting distributional information about a node</h3>
-<p>We briefly demonstrate some of the functionality for information about a node here, but refer readers to the R help on <code>modelBaseClass</code> for full details.</p>
-<p>Here is an example model, with use of various functions to determine information about nodes or variables.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">4</span>) 
-        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(mu, <span class="dt">sd =</span> sigma)
-    mu <span class="op">~</span><span class="st"> </span><span class="kw">T</span>(<span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">5</span>), <span class="dv">-20</span>, <span class="dv">20</span>)
-    sigma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">10</span>)
-    })
-m &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <span class="dt">data =</span> <span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">rnorm</span>(<span class="dv">4</span>)),
-                           <span class="dt">inits =</span> <span class="kw">list</span>(<span class="dt">mu =</span> <span class="dv">0</span>, <span class="dt">sigma =</span> <span class="dv">1</span>))
-m<span class="op">$</span><span class="kw">isEndNode</span>(<span class="st">&#39;y&#39;</span>)</code></pre></div>
+<p>We briefly demonstrate some of the functionality for information about a node here,
+but refer readers to the R help on <code>modelBaseClass</code> for full details.</p>
+<p>Here is an example model, with use of various functions to determine
+information about nodes or variables.</p>
+<div class="sourceCode" id="cb263"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb263-1" title="1">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb263-2" title="2">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">4</span>) </a>
+<a class="sourceLine" id="cb263-3" title="3">        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(mu, <span class="dt">sd =</span> sigma)</a>
+<a class="sourceLine" id="cb263-4" title="4">    mu <span class="op">~</span><span class="st"> </span><span class="kw">T</span>(<span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">5</span>), <span class="dv">-20</span>, <span class="dv">20</span>)</a>
+<a class="sourceLine" id="cb263-5" title="5">    sigma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">10</span>)</a>
+<a class="sourceLine" id="cb263-6" title="6">    })</a>
+<a class="sourceLine" id="cb263-7" title="7">m &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <span class="dt">data =</span> <span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">rnorm</span>(<span class="dv">4</span>)),</a>
+<a class="sourceLine" id="cb263-8" title="8">                           <span class="dt">inits =</span> <span class="kw">list</span>(<span class="dt">mu =</span> <span class="dv">0</span>, <span class="dt">sigma =</span> <span class="dv">1</span>))</a>
+<a class="sourceLine" id="cb263-9" title="9">m<span class="op">$</span><span class="kw">isEndNode</span>(<span class="st">&#39;y&#39;</span>)</a></code></pre></div>
 <pre><code>## y[1] y[2] y[3] y[4] 
 ## TRUE TRUE TRUE TRUE</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">m<span class="op">$</span><span class="kw">getDistribution</span>(<span class="st">&#39;sigma&#39;</span>)</code></pre></div>
+<div class="sourceCode" id="cb265"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb265-1" title="1">m<span class="op">$</span><span class="kw">getDistribution</span>(<span class="st">&#39;sigma&#39;</span>)</a></code></pre></div>
 <pre><code>##   sigma 
 ## &quot;dunif&quot;</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">m<span class="op">$</span><span class="kw">isDiscrete</span>(<span class="kw">c</span>(<span class="st">&#39;y&#39;</span>, <span class="st">&#39;mu&#39;</span>, <span class="st">&#39;sigma&#39;</span>))</code></pre></div>
+<div class="sourceCode" id="cb267"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb267-1" title="1">m<span class="op">$</span><span class="kw">isDiscrete</span>(<span class="kw">c</span>(<span class="st">&#39;y&#39;</span>, <span class="st">&#39;mu&#39;</span>, <span class="st">&#39;sigma&#39;</span>))</a></code></pre></div>
 <pre><code>##  y[1]  y[2]  y[3]  y[4]    mu sigma 
 ## FALSE FALSE FALSE FALSE FALSE FALSE</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">m<span class="op">$</span><span class="kw">isDeterm</span>(<span class="st">&#39;mu&#39;</span>)</code></pre></div>
+<div class="sourceCode" id="cb269"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb269-1" title="1">m<span class="op">$</span><span class="kw">isDeterm</span>(<span class="st">&#39;mu&#39;</span>)</a></code></pre></div>
 <pre><code>##    mu 
 ## FALSE</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">m<span class="op">$</span><span class="kw">getDimension</span>(<span class="st">&#39;mu&#39;</span>)</code></pre></div>
+<div class="sourceCode" id="cb271"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb271-1" title="1">m<span class="op">$</span><span class="kw">getDimension</span>(<span class="st">&#39;mu&#39;</span>)</a></code></pre></div>
 <pre><code>## value 
 ##     0</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">m<span class="op">$</span><span class="kw">getDimension</span>(<span class="st">&#39;mu&#39;</span>, <span class="dt">includeParams =</span> <span class="ot">TRUE</span>)</code></pre></div>
+<div class="sourceCode" id="cb273"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb273-1" title="1">m<span class="op">$</span><span class="kw">getDimension</span>(<span class="st">&#39;mu&#39;</span>, <span class="dt">includeParams =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
 <pre><code>## value  mean    sd   tau   var 
 ##     0     0     0     0     0</code></pre>
-<p>Note that any variables provided to these functions are expanded into their constituent node names, so the length of results may not be the same length as the input vector of node and variable names. However the order of the results should be preserved relative to the order of the inputs, once the expansion is accounted for.</p>
+<p>Note that any variables provided to these functions are expanded into
+their constituent node names, so the length of results may not be the
+same length as the input vector of node and variable names. However
+the order of the results should be preserved relative to the order of
+the inputs, once the expansion is accounted for.</p>
 </div>
 <div id="getting-information-about-a-distribution" class="section level3">
 <h3><span class="header-section-number">13.2.2</span> Getting information about a distribution</h3>
-<p>One can also get generic information about a distribution based on the name of the distribution using the function <code>getDistributionInfo</code>. In particular, one can determine whether a distribution was provided by the user (<code>isUserDefined</code>), whether a distribution provides CDF and quantile functions (<code>pqDefined</code>), whether a distribution is a discrete distribution (<code>isDiscrete</code>), the parameter names (include alternative parameterizations) for a distribution (<code>getParamNames</code>), and the dimension of the distribution and its parameters (<code>getDimension</code>). For more extensive information, please see the R help for <code>getDistributionInfo</code>.</p>
+<p>One can also get generic information about a distribution based on the
+name of the distribution using the function <code>getDistributionInfo</code>.
+In particular, one can determine whether a distribution
+was provided by the user (<code>isUserDefined</code>), whether a distribution provides CDF and
+quantile functions (<code>pqDefined</code>), whether a distribution is a
+discrete distribution (<code>isDiscrete</code>), the parameter names (include
+alternative parameterizations) for a distribution (<code>getParamNames</code>),
+and the dimension of the distribution and its parameters
+(<code>getDimension</code>). For more extensive information, please see the R
+help for <code>getDistributionInfo</code>.</p>
 </div>
 <div id="sec:getParam" class="section level3">
 <h3><span class="header-section-number">13.2.3</span> Getting distribution parameter values for a node</h3>
-<p>The function <code>getParam</code> provides access to values of the parameters of a node’s distribution. The two arguments must be the name of one (stochastic) node and the name of a parameter for the distribution followed by that node. The parameter does not have to be one of the parameters used when the node was declared. Alternative parameterization values can also be obtained. See Section <a href="cha-writing-models.html#subsec:distributions">5.2.4.1</a> for available parameterizations. (These can also be seen in <code>nimble:::distributionsInputList</code>.)</p>
+<p>The function <code>getParam</code> provides access to values of the parameters
+of a node’s distribution. The two arguments must
+be the name of one (stochastic) node and the name of a parameter for the
+distribution followed by that node. The parameter does not have to be
+one of the parameters used when the node was declared. Alternative
+parameterization values can also be obtained. See
+Section <a href="cha-writing-models.html#subsec:distributions">5.2.4.1</a> for available parameterizations.
+(These can also be seen in <code>nimble:::distributionsInputList</code>.)</p>
 <p>Here is an example:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">gammaModel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(
-    <span class="kw">nimbleCode</span>({
-        a <span class="op">~</span><span class="st"> </span><span class="kw">dlnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)
-        x <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="dt">shape =</span> <span class="dv">2</span>, <span class="dt">scale =</span> a)
-    }), <span class="dt">data =</span> <span class="kw">list</span>(<span class="dt">x =</span> <span class="fl">2.4</span>), <span class="dt">inits =</span> <span class="kw">list</span>(<span class="dt">a =</span> <span class="fl">1.2</span>))
-gammaModel<span class="op">$</span><span class="kw">getParam</span>(<span class="st">&#39;x&#39;</span>, <span class="st">&#39;scale&#39;</span>)</code></pre></div>
+<div class="sourceCode" id="cb275"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb275-1" title="1">gammaModel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(</a>
+<a class="sourceLine" id="cb275-2" title="2">    <span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb275-3" title="3">        a <span class="op">~</span><span class="st"> </span><span class="kw">dlnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb275-4" title="4">        x <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="dt">shape =</span> <span class="dv">2</span>, <span class="dt">scale =</span> a)</a>
+<a class="sourceLine" id="cb275-5" title="5">    }), <span class="dt">data =</span> <span class="kw">list</span>(<span class="dt">x =</span> <span class="fl">2.4</span>), <span class="dt">inits =</span> <span class="kw">list</span>(<span class="dt">a =</span> <span class="fl">1.2</span>))</a>
+<a class="sourceLine" id="cb275-6" title="6">gammaModel<span class="op">$</span><span class="kw">getParam</span>(<span class="st">&#39;x&#39;</span>, <span class="st">&#39;scale&#39;</span>)</a></code></pre></div>
 <pre><code>## [1] 1.2</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">gammaModel<span class="op">$</span><span class="kw">getParam</span>(<span class="st">&#39;x&#39;</span>, <span class="st">&#39;rate&#39;</span>)</code></pre></div>
+<div class="sourceCode" id="cb277"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb277-1" title="1">gammaModel<span class="op">$</span><span class="kw">getParam</span>(<span class="st">&#39;x&#39;</span>, <span class="st">&#39;rate&#39;</span>)</a></code></pre></div>
 <pre><code>## [1] 0.8333333</code></pre>
 <p><code>getParam</code> is part of the NIMBLE language, so it can be used in run code of nimbleFunctions.</p>
 </div>
 <div id="sec:getBound" class="section level3">
 <h3><span class="header-section-number">13.2.4</span> Getting distribution bounds for a node</h3>
-<p>The function <code>getBound</code> provides access to the lower and upper bounds of the distribution for a node. In most cases these bounds will be fixed based on the distribution, but for the uniform distribution the bounds are the parameters of the distribution, and when truncation is used (Section <a href="cha-writing-models.html#subsec:trunc">5.2.7</a>), the bounds will be determined by the truncation. Like the functions described in the previous section, <code>getBound</code> can be used as global function taking a model as the first argument, or it can be used as a model member function. The next two arguments must be the name of one (stochastic) node and either <code>&quot;lower&quot;</code> or <code>&quot;upper&quot;</code> indicating whether the lower or upper bound is desired. For multivariate nodes the bound is a scalar that is the bound for all elements of the node, as we do not handle truncation for multivariate nodes.</p>
+<p>The function <code>getBound</code> provides access to the lower and upper
+bounds of the distribution for a node. In most cases these bounds
+will be fixed based on the distribution, but for the uniform distribution
+the bounds are the parameters of the distribution, and when truncation is used (Section <a href="cha-writing-models.html#subsec:trunc">5.2.7</a>), the bounds will be determined
+by the truncation. Like the functions described in the previous section, <code>getBound</code> can be
+used as global function taking a model as the first argument, or it
+can be used as a model member function. The next two arguments must
+be the name of one (stochastic) node and either <code>"lower"</code> or <code>"upper"</code>
+indicating whether the lower or upper bound is desired. For multivariate nodes
+the bound is a scalar that is the bound for all elements of the node, as we
+do not handle truncation for multivariate nodes.</p>
 <p>Here is an example:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">exampleModel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(
-    <span class="kw">nimbleCode</span>({
-        y <span class="op">~</span><span class="st"> </span><span class="kw">T</span>(<span class="kw">dnorm</span>(mu, <span class="dt">sd =</span> sig), a, <span class="ot">Inf</span>)
-        a <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="op">-</span><span class="dv">1</span>, b)
-        b <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)
-    }), <span class="dt">inits =</span> <span class="kw">list</span>(<span class="dt">a =</span> <span class="fl">-0.5</span>, <span class="dt">mu =</span> <span class="dv">1</span>, <span class="dt">sig =</span> <span class="dv">1</span>, <span class="dt">b =</span> <span class="dv">4</span>),
-        <span class="dt">data =</span> <span class="kw">list</span>(<span class="dt">y =</span> <span class="dv">4</span>))
-<span class="kw">getBound</span>(exampleModel, <span class="st">&#39;y&#39;</span>, <span class="st">&#39;lower&#39;</span>)</code></pre></div>
+<div class="sourceCode" id="cb279"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb279-1" title="1">exampleModel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(</a>
+<a class="sourceLine" id="cb279-2" title="2">    <span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb279-3" title="3">        y <span class="op">~</span><span class="st"> </span><span class="kw">T</span>(<span class="kw">dnorm</span>(mu, <span class="dt">sd =</span> sig), a, <span class="ot">Inf</span>)</a>
+<a class="sourceLine" id="cb279-4" title="4">        a <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="op">-</span><span class="dv">1</span>, b)</a>
+<a class="sourceLine" id="cb279-5" title="5">        b <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb279-6" title="6">    }), <span class="dt">inits =</span> <span class="kw">list</span>(<span class="dt">a =</span> <span class="fl">-0.5</span>, <span class="dt">mu =</span> <span class="dv">1</span>, <span class="dt">sig =</span> <span class="dv">1</span>, <span class="dt">b =</span> <span class="dv">4</span>),</a>
+<a class="sourceLine" id="cb279-7" title="7">        <span class="dt">data =</span> <span class="kw">list</span>(<span class="dt">y =</span> <span class="dv">4</span>))</a>
+<a class="sourceLine" id="cb279-8" title="8"><span class="kw">getBound</span>(exampleModel, <span class="st">&#39;y&#39;</span>, <span class="st">&#39;lower&#39;</span>)</a></code></pre></div>
 <pre><code>## [1] -0.5</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">getBound</span>(exampleModel, <span class="st">&#39;y&#39;</span>, <span class="st">&#39;upper&#39;</span>)</code></pre></div>
+<div class="sourceCode" id="cb281"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb281-1" title="1"><span class="kw">getBound</span>(exampleModel, <span class="st">&#39;y&#39;</span>, <span class="st">&#39;upper&#39;</span>)</a></code></pre></div>
 <pre><code>## [1] Inf</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">exampleModel<span class="op">$</span>b &lt;-<span class="st"> </span><span class="dv">3</span>
-exampleModel<span class="op">$</span><span class="kw">calculate</span>(exampleModel<span class="op">$</span><span class="kw">getDependencies</span>(<span class="st">&#39;b&#39;</span>))</code></pre></div>
+<div class="sourceCode" id="cb283"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb283-1" title="1">exampleModel<span class="op">$</span>b &lt;-<span class="st"> </span><span class="dv">3</span></a>
+<a class="sourceLine" id="cb283-2" title="2">exampleModel<span class="op">$</span><span class="kw">calculate</span>(exampleModel<span class="op">$</span><span class="kw">getDependencies</span>(<span class="st">&#39;b&#39;</span>))</a></code></pre></div>
 <pre><code>## [1] -4.386294</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">getBound</span>(exampleModel, <span class="st">&#39;a&#39;</span>, <span class="st">&#39;upper&#39;</span>)</code></pre></div>
+<div class="sourceCode" id="cb285"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb285-1" title="1"><span class="kw">getBound</span>(exampleModel, <span class="st">&#39;a&#39;</span>, <span class="st">&#39;upper&#39;</span>)</a></code></pre></div>
 <pre><code>## [1] 3</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">exampleModel<span class="op">$</span><span class="kw">getBound</span>(<span class="st">&#39;b&#39;</span>,<span class="st">&#39;lower&#39;</span>)</code></pre></div>
+<div class="sourceCode" id="cb287"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb287-1" title="1">exampleModel<span class="op">$</span><span class="kw">getBound</span>(<span class="st">&#39;b&#39;</span>,<span class="st">&#39;lower&#39;</span>)</a></code></pre></div>
 <pre><code>## [1] 0</code></pre>
-<p><code>getBound</code> is part of the NIMBLE language, so it can be used in run code of nimbleFunctions. In fact, we anticipate that most use of <code>getBound</code> will be for algorithms, such as for the reflection version of the random walk MCMC sampler.</p>
+<p><code>getBound</code> is part of the NIMBLE language, so it can be used in run code of nimbleFunctions. In fact, we anticipate that
+most use of <code>getBound</code> will be for algorithms, such as for the reflection
+version of the random walk MCMC sampler.</p>
 </div>
 </div>
 <div id="sec:cdcalc-cdsim-cdgetl" class="section level2">
 <h2><span class="header-section-number">13.3</span> Carrying out model calculations</h2>
 <div id="core-model-operations-calculation-and-simulation" class="section level3">
 <h3><span class="header-section-number">13.3.1</span> Core model operations: calculation and simulation</h3>
-<p>The four basic ways to operate a model are to calculate nodes, simulate into nodes, get the log probabilities (or probability densities) that have already been calculated, and compare the log probability of a new value to that of an old value. In more detail:</p>
+<p>The four basic ways to operate a model are to calculate nodes,
+simulate into nodes, get the log probabilities (or probability
+densities) that have already been calculated, and compare the log probability
+of a new value to that of an old value. In more detail:</p>
 <ul>
-<li><strong>calculate</strong> For a stochastic node, <code>calculate</code> determines the log probability value, stores it in the appropriate <code>logProb</code> variable, and returns it. For a deterministic node, <code>calculate</code> executes the deterministic calculation and returns 0.</li>
-<li><strong>simulate</strong> For a stochastic node, <code>simulate</code> generates a random draw. For deterministic nodes, <code>simulate</code> is equivalent to <code>calculate</code> without returning 0. <code>simulate</code> always returns <code>NULL</code> (or <code>void</code> in C++).</li>
-<li><strong>getLogProb</strong> <code>getLogProb</code> simply returns the most recently calculated log probability value, or 0 for a deterministic node.</li>
-<li><strong>calculateDiff</strong> <code>calculateDiff</code> is identical to <code>calculate</code>, but it returns the new log probability value minus the one that was previously stored. This is useful when one wants to change the value or values of node(s) in the model (e.g., by setting a value or <code>simulate</code>) and then determine the change in the log probability, such as needed for a Metropolis-Hastings acceptance probability.</li>
+<li><strong>calculate</strong> For a stochastic node,
+<code>calculate</code> determines the log probability value, stores it in the
+appropriate <code>logProb</code> variable, and
+returns it. For a deterministic node, <code>calculate</code> executes the
+deterministic calculation and returns 0.</li>
+<li><strong>simulate</strong> For a stochastic node, <code>simulate</code> generates a
+random draw. For deterministic nodes,
+<code>simulate</code> is equivalent to <code>calculate</code> without returning 0. <code>simulate</code> always returns <code>NULL</code> (or <code>void</code> in C++).</li>
+<li><strong>getLogProb</strong> <code>getLogProb</code> simply
+returns the most recently calculated log probability value, or 0 for a
+deterministic node.</li>
+<li><strong>calculateDiff</strong> <code>calculateDiff</code> is identical to
+<code>calculate</code>, but it returns the new log probability value minus
+the one that was previously stored. This is useful when one wants to
+change the value or values of node(s) in the model (e.g., by setting a value or
+<code>simulate</code>) and then determine
+the change in the log probability, such as needed for a
+Metropolis-Hastings acceptance probability.</li>
 </ul>
-<p>Each of these functions is accessed as a member function of a model object, taking a vector of node names as an argument<a href="#fn25" class="footnoteRef" id="fnref25"><sup>25</sup></a>. If there is more than one node name, <code>calculate</code> and <code>getLogProb</code> return the sum of the log probabilities from each node, while <code>calculateDiff</code> returns the sum of the new values minus the old values. Next we show an example using <code>simulate</code>.</p>
+<p>Each of these functions is accessed as a member function of a model
+object, taking a vector of node names as an argument<a href="#fn25" class="footnote-ref" id="fnref25"><sup>25</sup></a>. If there is
+more than one node name, <code>calculate</code> and <code>getLogProb</code> return the
+sum of the log probabilities from each node, while <code>calculateDiff</code>
+returns the sum of the new values minus the old values. Next we show
+an example using <code>simulate</code>.</p>
 <div id="sec:arbitr-coll-nodes" class="section level4">
 <h4><span class="header-section-number">13.3.1.1</span> Example: simulating arbitrary collections of nodes</h4>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mc &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-    a <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.001</span>)
-    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">5</span>) {
-        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(a, <span class="fl">0.1</span>)
-        <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">3</span>)
-            z[i,j] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(y[i], <span class="dt">sd =</span> <span class="fl">0.1</span>)
-    }
-    y.squared[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>] &lt;-<span class="st"> </span>y[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>]<span class="op">^</span><span class="dv">2</span>
-})
-
-model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(mc, <span class="dt">data =</span> <span class="kw">list</span>(<span class="dt">z =</span> <span class="kw">matrix</span>(<span class="kw">rnorm</span>(<span class="dv">15</span>), <span class="dt">nrow =</span> <span class="dv">5</span>)))
-
-model<span class="op">$</span>a &lt;-<span class="st"> </span><span class="dv">1</span>
-model<span class="op">$</span>y</code></pre></div>
+<div class="sourceCode" id="cb289"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb289-1" title="1">mc &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb289-2" title="2">    a <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.001</span>)</a>
+<a class="sourceLine" id="cb289-3" title="3">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">5</span>) {</a>
+<a class="sourceLine" id="cb289-4" title="4">        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(a, <span class="fl">0.1</span>)</a>
+<a class="sourceLine" id="cb289-5" title="5">        <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">3</span>)</a>
+<a class="sourceLine" id="cb289-6" title="6">            z[i,j] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(y[i], <span class="dt">sd =</span> <span class="fl">0.1</span>)</a>
+<a class="sourceLine" id="cb289-7" title="7">    }</a>
+<a class="sourceLine" id="cb289-8" title="8">    y.squared[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>] &lt;-<span class="st"> </span>y[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>]<span class="op">^</span><span class="dv">2</span></a>
+<a class="sourceLine" id="cb289-9" title="9">})</a>
+<a class="sourceLine" id="cb289-10" title="10"></a>
+<a class="sourceLine" id="cb289-11" title="11">model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(mc, <span class="dt">data =</span> <span class="kw">list</span>(<span class="dt">z =</span> <span class="kw">matrix</span>(<span class="kw">rnorm</span>(<span class="dv">15</span>), <span class="dt">nrow =</span> <span class="dv">5</span>)))</a>
+<a class="sourceLine" id="cb289-12" title="12"></a>
+<a class="sourceLine" id="cb289-13" title="13">model<span class="op">$</span>a &lt;-<span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb289-14" title="14">model<span class="op">$</span>y</a></code></pre></div>
 <pre><code>## [1] NA NA NA NA NA</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model<span class="op">$</span><span class="kw">simulate</span>(<span class="st">&quot;y[1:3]&quot;</span>)
-<span class="co"># simulate(model, &quot;y[1:3]&quot;)</span>
-model<span class="op">$</span>y</code></pre></div>
+<div class="sourceCode" id="cb291"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb291-1" title="1">model<span class="op">$</span><span class="kw">simulate</span>(<span class="st">&quot;y[1:3]&quot;</span>)</a>
+<a class="sourceLine" id="cb291-2" title="2"><span class="co"># simulate(model, &quot;y[1:3]&quot;)</span></a>
+<a class="sourceLine" id="cb291-3" title="3">model<span class="op">$</span>y</a></code></pre></div>
 <pre><code>## [1] -4.3723097  1.7331821  0.6234022         NA         NA</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model<span class="op">$</span><span class="kw">simulate</span>(<span class="st">&quot;y&quot;</span>)
-model<span class="op">$</span>y</code></pre></div>
+<div class="sourceCode" id="cb293"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb293-1" title="1">model<span class="op">$</span><span class="kw">simulate</span>(<span class="st">&quot;y&quot;</span>)</a>
+<a class="sourceLine" id="cb293-2" title="2">model<span class="op">$</span>y</a></code></pre></div>
 <pre><code>## [1]  6.6051146  2.0859962 -0.9702564 -0.3898915 -0.5978887</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model<span class="op">$</span>z</code></pre></div>
+<div class="sourceCode" id="cb295"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb295-1" title="1">model<span class="op">$</span>z</a></code></pre></div>
 <pre><code>##            [,1]       [,2]        [,3]
 ## [1,] -1.0314207 -0.9537793 -0.79453166
 ## [2,] -2.3710229 -0.3980044 -0.30881797
 ## [3,] -0.3245763 -0.3112171  0.36144477
 ## [4,] -0.9442988  0.7960927  1.39879110
 ## [5,] -0.7658900  0.9864283 -0.05607042</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model<span class="op">$</span><span class="kw">simulate</span>(<span class="kw">c</span>(<span class="st">&quot;y[1:3]&quot;</span>, <span class="st">&quot;z[1:5, 1:3]&quot;</span>))
-model<span class="op">$</span>y</code></pre></div>
+<div class="sourceCode" id="cb297"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb297-1" title="1">model<span class="op">$</span><span class="kw">simulate</span>(<span class="kw">c</span>(<span class="st">&quot;y[1:3]&quot;</span>, <span class="st">&quot;z[1:5, 1:3]&quot;</span>))</a>
+<a class="sourceLine" id="cb297-2" title="2">model<span class="op">$</span>y</a></code></pre></div>
 <pre><code>## [1]  1.5882948  1.5578821  3.8961663 -0.3898915 -0.5978887</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model<span class="op">$</span>z</code></pre></div>
+<div class="sourceCode" id="cb299"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb299-1" title="1">model<span class="op">$</span>z</a></code></pre></div>
 <pre><code>##            [,1]       [,2]        [,3]
 ## [1,] -1.0314207 -0.9537793 -0.79453166
 ## [2,] -2.3710229 -0.3980044 -0.30881797
 ## [3,] -0.3245763 -0.3112171  0.36144477
 ## [4,] -0.9442988  0.7960927  1.39879110
 ## [5,] -0.7658900  0.9864283 -0.05607042</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model<span class="op">$</span><span class="kw">simulate</span>(<span class="kw">c</span>(<span class="st">&quot;z[1:5, 1:3]&quot;</span>), <span class="dt">includeData =</span> <span class="ot">TRUE</span>)
-model<span class="op">$</span>z</code></pre></div>
+<div class="sourceCode" id="cb301"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb301-1" title="1">model<span class="op">$</span><span class="kw">simulate</span>(<span class="kw">c</span>(<span class="st">&quot;z[1:5, 1:3]&quot;</span>), <span class="dt">includeData =</span> <span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb301-2" title="2">model<span class="op">$</span>z</a></code></pre></div>
 <pre><code>##            [,1]       [,2]       [,3]
 ## [1,]  1.6203124  1.5516260  1.4942336
 ## [2,]  1.6213524  1.5516332  1.5761658
@@ -588,87 +709,118 @@ model<span class="op">$</span>z</code></pre></div>
 ## [5,] -0.5756517 -0.6255796 -0.4584634</code></pre>
 <p>The example illustrates a number of features:</p>
 <ol style="list-style-type: decimal">
-<li><code>simulate(model, nodes)</code> is equivalent to <code>model$simulate(nodes)</code>. You can use either, but the latter is encouraged and the former may be deprecated inthe future.</li>
-<li>Inputs like <code>&quot;y[1:3]&quot;</code> are automatically expanded into <code>c(&quot;y[1]&quot;, &quot;y[2]&quot;, &quot;y[3]&quot;)</code>. In fact, simply <code>&quot;y&quot;</code> will be expanded into all nodes within <code>y</code>.</li>
-<li>An arbitrary number of nodes can be provided as a character vector.</li>
-<li>Simulations will be done in the order provided, so in practice the nodes should often be obtained by functions such as <code>getDependencies</code>. These return nodes in topologically-sorted order, which means no node is manipulated before something it depends on.</li>
-<li>The data nodes <code>z</code> were not simulated into until <code>includeData = TRUE</code> was used.</li>
+<li><code>simulate(model, nodes)</code> is equivalent to
+<code>model$simulate(nodes)</code>. You can use either, but the latter is
+encouraged and the former may be deprecated inthe future.</li>
+<li>Inputs like <code>"y[1:3]"</code> are automatically expanded into
+<code>c("y[1]", "y[2]", "y[3]")</code>. In fact, simply <code>"y"</code> will be
+expanded into all nodes within <code>y</code>.</li>
+<li>An arbitrary number of nodes can be provided as a character
+vector.</li>
+<li>Simulations will be done in the order provided, so in practice
+the nodes should often be obtained by functions such as
+<code>getDependencies</code>. These return nodes in
+topologically-sorted order, which means no node is manipulated before something
+it depends on.</li>
+<li>The data nodes <code>z</code> were not simulated into until
+<code>includeData = TRUE</code> was used.</li>
 </ol>
-<p>Use of <code>calculate</code>, <code>calculateDiff</code> and <code>getLogProb</code> are similar to <code>simulate</code>, except that they return a value (described above) and they have no <code>includeData</code> argument.</p>
+<p>Use of <code>calculate</code>, <code>calculateDiff</code> and <code>getLogProb</code> are similar to <code>simulate</code>,
+except that they return a value (described above) and they have no <code>includeData</code> argument.</p>
 </div>
 </div>
 <div id="sec:cdsimn-cdcalcn-cdget" class="section level3">
 <h3><span class="header-section-number">13.3.2</span> Pre-defined nimbleFunctions for operating on model nodes: <em>simNodes</em>, <em>calcNodes</em>, and <em>getLogProbNodes</em></h3>
 <!---  Chris would still like to revisit this -- clarify when a user might use these and where to put this text. Main question is that if these are intended as building blocks, their only use is seemingly in R. If you use in run code, you might as well just put calculate()/simulate()/etc. directly in the run code since it will call the compiled nodeFunctions anyway. -->
-<p><code>simNodes</code>, <code>calcNodes</code> and <code>getLogProbNodes</code> are basic nimbleFunctions that simulate, calculate, or get the log probabilities (densities), respectively, of the same set of nodes each time they are called. Each of these takes a model and a character string of node names as inputs. If <code>nodes</code> is left blank, then all the nodes of the model are used.</p>
-<p>For <code>simNodes</code>, the nodes provided will be topologically sorted to simulate in the correct order. For <code>calcNodes</code> and <code>getLogProbNodes</code>, the nodes will be sorted and dependent nodes will be included. Recall that the calculations must be up to date (from a <code>calculate</code> call) for <code>getLogProbNodes</code> to return the values you are probably looking for.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">simpleModelCode &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">4</span>){
-    x[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>)
-    y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(x[i], <span class="dv">1</span>) <span class="co"># y depends on x</span>
-    z[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(y[i], <span class="dv">1</span>) <span class="co"># z depends on y</span>
-    <span class="co"># z conditionally independent of x</span>
-  }
-})
-
-simpleModel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(simpleModelCode, <span class="dt">check =</span> <span class="ot">FALSE</span>)
-cSimpleModel &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(simpleModel)
-
-<span class="co"># simulates all the x&#39;s and y&#39;s</span>
-rSimXY &lt;-<span class="st"> </span><span class="kw">simNodes</span>(simpleModel, <span class="dt">nodes =</span> <span class="kw">c</span>(<span class="st">&#39;x&#39;</span>, <span class="st">&#39;y&#39;</span>) ) 
-
-<span class="co"># calls calculate on x and its dependents (y, but not z)</span>
-rCalcXDep &lt;-<span class="st"> </span><span class="kw">calcNodes</span>(simpleModel, <span class="dt">nodes =</span> <span class="st">&#39;x&#39;</span>)
-
-<span class="co"># calls getLogProb on x&#39;s and y&#39;s</span>
-rGetLogProbXDep &lt;-<span class="st"> </span><span class="kw">getLogProbNodes</span>(simpleModel,
-                  <span class="dt">nodes =</span> <span class="st">&#39;x&#39;</span>)
-
-<span class="co"># compiling the functions</span>
-cSimXY &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rSimXY, <span class="dt">project =</span> simpleModel)
-cCalcXDep &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rCalcXDep, <span class="dt">project =</span> simpleModel)
-cGetLogProbXDep &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rGetLogProbXDep, <span class="dt">project =</span> simpleModel)
-
-cSimpleModel<span class="op">$</span>x</code></pre></div>
+<p><code>simNodes</code>, <code>calcNodes</code> and <code>getLogProbNodes</code> are basic nimbleFunctions that simulate, calculate, or get the log probabilities
+(densities), respectively, of the same set of nodes each time they
+are called. Each of these
+takes a model and a character string of node names
+as inputs. If <code>nodes</code> is left blank, then all the nodes of the model
+are used.</p>
+<p>For <code>simNodes</code>, the nodes provided will be topologically sorted to
+simulate in the correct order. For <code>calcNodes</code> and <code>getLogProbNodes</code>,
+the nodes will be sorted and dependent nodes will be included. Recall that
+the calculations must be up to date (from a <code>calculate</code> call) for <code>getLogProbNodes</code>
+to return the values you are probably looking for.</p>
+<div class="sourceCode" id="cb303"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb303-1" title="1">simpleModelCode &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb303-2" title="2">  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">4</span>){</a>
+<a class="sourceLine" id="cb303-3" title="3">    x[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb303-4" title="4">    y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(x[i], <span class="dv">1</span>) <span class="co"># y depends on x</span></a>
+<a class="sourceLine" id="cb303-5" title="5">    z[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(y[i], <span class="dv">1</span>) <span class="co"># z depends on y</span></a>
+<a class="sourceLine" id="cb303-6" title="6">    <span class="co"># z conditionally independent of x</span></a>
+<a class="sourceLine" id="cb303-7" title="7">  }</a>
+<a class="sourceLine" id="cb303-8" title="8">})</a>
+<a class="sourceLine" id="cb303-9" title="9"></a>
+<a class="sourceLine" id="cb303-10" title="10">simpleModel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(simpleModelCode, <span class="dt">check =</span> <span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb303-11" title="11">cSimpleModel &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(simpleModel)</a>
+<a class="sourceLine" id="cb303-12" title="12"></a>
+<a class="sourceLine" id="cb303-13" title="13"><span class="co"># simulates all the x&#39;s and y&#39;s</span></a>
+<a class="sourceLine" id="cb303-14" title="14">rSimXY &lt;-<span class="st"> </span><span class="kw">simNodes</span>(simpleModel, <span class="dt">nodes =</span> <span class="kw">c</span>(<span class="st">&#39;x&#39;</span>, <span class="st">&#39;y&#39;</span>) ) </a>
+<a class="sourceLine" id="cb303-15" title="15"></a>
+<a class="sourceLine" id="cb303-16" title="16"><span class="co"># calls calculate on x and its dependents (y, but not z)</span></a>
+<a class="sourceLine" id="cb303-17" title="17">rCalcXDep &lt;-<span class="st"> </span><span class="kw">calcNodes</span>(simpleModel, <span class="dt">nodes =</span> <span class="st">&#39;x&#39;</span>)</a>
+<a class="sourceLine" id="cb303-18" title="18"></a>
+<a class="sourceLine" id="cb303-19" title="19"><span class="co"># calls getLogProb on x&#39;s and y&#39;s</span></a>
+<a class="sourceLine" id="cb303-20" title="20">rGetLogProbXDep &lt;-<span class="st"> </span><span class="kw">getLogProbNodes</span>(simpleModel,</a>
+<a class="sourceLine" id="cb303-21" title="21">                  <span class="dt">nodes =</span> <span class="st">&#39;x&#39;</span>)</a>
+<a class="sourceLine" id="cb303-22" title="22"></a>
+<a class="sourceLine" id="cb303-23" title="23"><span class="co"># compiling the functions</span></a>
+<a class="sourceLine" id="cb303-24" title="24">cSimXY &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rSimXY, <span class="dt">project =</span> simpleModel)</a>
+<a class="sourceLine" id="cb303-25" title="25">cCalcXDep &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rCalcXDep, <span class="dt">project =</span> simpleModel)</a>
+<a class="sourceLine" id="cb303-26" title="26">cGetLogProbXDep &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rGetLogProbXDep, <span class="dt">project =</span> simpleModel)</a>
+<a class="sourceLine" id="cb303-27" title="27"></a>
+<a class="sourceLine" id="cb303-28" title="28">cSimpleModel<span class="op">$</span>x</a></code></pre></div>
 <pre><code>## [1] NA NA NA NA</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cSimpleModel<span class="op">$</span>y</code></pre></div>
+<div class="sourceCode" id="cb305"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb305-1" title="1">cSimpleModel<span class="op">$</span>y</a></code></pre></div>
 <pre><code>## [1] NA NA NA NA</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># simulating x and y</span>
-cSimXY<span class="op">$</span><span class="kw">run</span>()</code></pre></div>
+<div class="sourceCode" id="cb307"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb307-1" title="1"><span class="co"># simulating x and y</span></a>
+<a class="sourceLine" id="cb307-2" title="2">cSimXY<span class="op">$</span><span class="kw">run</span>()</a></code></pre></div>
 <pre><code>## NULL</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cSimpleModel<span class="op">$</span>x</code></pre></div>
+<div class="sourceCode" id="cb309"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb309-1" title="1">cSimpleModel<span class="op">$</span>x</a></code></pre></div>
 <pre><code>## [1] -0.6589120  0.6605313 -0.0132557 -0.9314803</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cSimpleModel<span class="op">$</span>y</code></pre></div>
+<div class="sourceCode" id="cb311"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb311-1" title="1">cSimpleModel<span class="op">$</span>y</a></code></pre></div>
 <pre><code>## [1]  0.5557771 -1.4278091 -0.5394082 -2.4728829</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cCalcXDep<span class="op">$</span><span class="kw">run</span>()</code></pre></div>
+<div class="sourceCode" id="cb313"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb313-1" title="1">cCalcXDep<span class="op">$</span><span class="kw">run</span>()</a></code></pre></div>
 <pre><code>## [1] -12.46535</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># gives correct answer because logProbs</span>
-<span class="co"># updated by &#39;calculate&#39; after simulation</span>
-cGetLogProbXDep<span class="op">$</span><span class="kw">run</span>()</code></pre></div>
+<div class="sourceCode" id="cb315"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb315-1" title="1"><span class="co"># gives correct answer because logProbs</span></a>
+<a class="sourceLine" id="cb315-2" title="2"><span class="co"># updated by &#39;calculate&#39; after simulation</span></a>
+<a class="sourceLine" id="cb315-3" title="3">cGetLogProbXDep<span class="op">$</span><span class="kw">run</span>()</a></code></pre></div>
 <pre><code>## [1] -12.46535</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cSimXY<span class="op">$</span><span class="kw">run</span>()</code></pre></div>
+<div class="sourceCode" id="cb317"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb317-1" title="1">cSimXY<span class="op">$</span><span class="kw">run</span>()</a></code></pre></div>
 <pre><code>## NULL</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># gives old answer because logProbs</span>
-<span class="co"># not updated after &#39;simulate&#39;</span>
-cGetLogProbXDep<span class="op">$</span><span class="kw">run</span>()</code></pre></div>
+<div class="sourceCode" id="cb319"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb319-1" title="1"><span class="co"># gives old answer because logProbs</span></a>
+<a class="sourceLine" id="cb319-2" title="2"><span class="co"># not updated after &#39;simulate&#39;</span></a>
+<a class="sourceLine" id="cb319-3" title="3">cGetLogProbXDep<span class="op">$</span><span class="kw">run</span>()</a></code></pre></div>
 <pre><code>## [1] -12.46535</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cCalcXDep<span class="op">$</span><span class="kw">run</span>()</code></pre></div>
+<div class="sourceCode" id="cb321"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb321-1" title="1">cCalcXDep<span class="op">$</span><span class="kw">run</span>()</a></code></pre></div>
 <pre><code>## [1] -9.277808</code></pre>
 </div>
 <div id="sec:access-log-prob" class="section level3">
 <h3><span class="header-section-number">13.3.3</span> Accessing log probabilities via <em>logProb</em> variables</h3>
 <!---  at some point we might remove this as logProb variables might be viewed as private member data, but as PdV points out, these are genuinely useful to a user because they can be added as monitors separately from the associated variable -->
 <p>For each variable that contains at least one stochastic node, NIMBLE generates a model variable with the prefix ‘logProb_’. In general users will not need to access these logProb variables directly but rather will use <code>getLogProb</code>. However, knowing they exist can be useful, in part because these variables can be monitored in an MCMC.</p>
-<p>When the stochastic node is scalar, the <code>logProb</code> variable will have the same size. For example:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model<span class="op">$</span>logProb_y</code></pre></div>
+<p>When the stochastic node is scalar, the
+<code>logProb</code> variable will have the same size. For example:</p>
+<div class="sourceCode" id="cb323"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb323-1" title="1">model<span class="op">$</span>logProb_y</a></code></pre></div>
 <pre><code>## [1] NA NA NA NA NA</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model<span class="op">$</span><span class="kw">calculate</span>(<span class="st">&quot;y&quot;</span>)</code></pre></div>
+<div class="sourceCode" id="cb325"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb325-1" title="1">model<span class="op">$</span><span class="kw">calculate</span>(<span class="st">&quot;y&quot;</span>)</a></code></pre></div>
 <pre><code>## [1] -11.02766</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model<span class="op">$</span>logProb_y</code></pre></div>
+<div class="sourceCode" id="cb327"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb327-1" title="1">model<span class="op">$</span>logProb_y</a></code></pre></div>
 <pre><code>## [1] -2.087536 -2.085793 -2.489620 -2.166821 -2.197894</code></pre>
-<p>Creation of <code>logProb</code> variables for stochastic multivariate nodes is trickier, because they can represent an arbitrary block of a larger variable. In general NIMBLE records the logProb values using the lowest possible indices. For example, if <code>x[5:10, 15:20]</code> follows a Wishart distribution, its log probability (density) value will be stored in <code>logProb_x[5, 15]</code>. When possible, NIMBLE will reduce the dimensions of the corresponding logProb variable. For example, in</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">10</span>) x[i,] <span class="op">~</span><span class="st"> </span><span class="kw">dmnorm</span>(mu[], prec[,])</code></pre></div>
-<p><code>x</code> may be <span class="math inline">\(10 \times 20\)</span> (dimensions must be provided), but <code>logProb_x</code> will be <span class="math inline">\(10 \times 1\)</span>. For the most part you do not need to worry about how NIMBLE is storing the log probability values, because you can always get them using <code>getLogProb</code>.</p>
+<p>Creation of <code>logProb</code> variables for stochastic multivariate nodes
+is trickier, because they can represent an arbitrary block of a larger
+variable. In general NIMBLE records the logProb values using
+the lowest possible indices. For example, if <code>x[5:10, 15:20]</code>
+follows a Wishart distribution, its log probability (density) value
+will be stored in <code>logProb_x[5, 15]</code>. When possible, NIMBLE will
+reduce the dimensions of the corresponding logProb variable. For
+example, in</p>
+<div class="sourceCode" id="cb329"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb329-1" title="1"><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">10</span>) x[i,] <span class="op">~</span><span class="st"> </span><span class="kw">dmnorm</span>(mu[], prec[,])</a></code></pre></div>
+<p><code>x</code> may be <span class="math inline">\(10 \times 20\)</span> (dimensions must be provided), but <code>logProb_x</code>
+will be <span class="math inline">\(10 \times 1\)</span>. For the most part you do not need to worry about
+how NIMBLE is storing the log probability values, because you can
+always get them using <code>getLogProb</code>.</p>
 
 </div>
 </div>
@@ -676,7 +828,7 @@ cGetLogProbXDep<span class="op">$</span><span class="kw">run</span>()</code></pr
 <div class="footnotes">
 <hr />
 <ol start="25">
-<li id="fn25"><p>Standard usage is <code>model$calculate(nodes)</code> but <code>calculate(model, nodes)</code> is synonymous.<a href="cha-using-models.html#fnref25">↩</a></p></li>
+<li id="fn25"><p>Standard usage is <code>model$calculate(nodes)</code> but <code>calculate(model, nodes)</code> is synonymous.<a href="cha-using-models.html#fnref25" class="footnote-back">↩</a></p></li>
 </ol>
 </div>
             </section>
@@ -690,11 +842,13 @@ cGetLogProbXDep<span class="op">$</span><span class="kw">run</span>()</code></pr
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
 <script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
 <script>
 gitbook.require(["gitbook"], function(gitbook) {
 gitbook.start({
@@ -702,12 +856,11 @@ gitbook.start({
 "github": false,
 "facebook": true,
 "twitter": true,
-"google": false,
 "linkedin": false,
 "weibo": false,
 "instapaper": false,
 "vk": false,
-"all": ["facebook", "google", "twitter", "linkedin", "weibo", "instapaper"]
+"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
 },
 "fontsettings": {
 "theme": "white",
@@ -719,6 +872,10 @@ gitbook.start({
 "text": null
 },
 "history": {
+"link": null,
+"text": null
+},
+"view": {
 "link": null,
 "text": null
 },
@@ -736,10 +893,11 @@ gitbook.start({
   (function () {
     var script = document.createElement("script");
     script.type = "text/javascript";
-    var src = "";
+    var src = "true";
     if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
-    if (location.protocol !== "file:" && /^https?:/.test(src))
-      src = src.replace(/^https?:/, '');
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
     script.src = src;
     document.getElementsByTagName("head")[0].appendChild(script);
   })();

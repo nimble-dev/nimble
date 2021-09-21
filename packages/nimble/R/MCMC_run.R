@@ -135,10 +135,15 @@ runMCMC <- function(mcmc,
             model$setInits(theseInits)
         }
         ##model$calculate()   # shouldn't be necessary, since mcmc$run() includes call to my_initializeModel$run()
-        mcmc$run(niter, nburnin = nburnin, thin = thinToUseVec[1], thin2 = thinToUseVec[2], progressBar = progressBar,
-                 resetWAIC = FALSE) #, samplerExecutionOrder = samplerExecutionOrderToUse)
-        samplesList[[i]] <- as.matrix(mcmc$mvSamples)
-        if(hasMonitors2)   samplesList2[[i]] <- as.matrix(mcmc$mvSamples2)
+        mcmc$run(niter, nburnin = nburnin, thin = thinToUseVec[1], thin2 = thinToUseVec[2], progressBar = progressBar, resetWAIC = FALSE) #, samplerExecutionOrder = samplerExecutionOrderToUse)
+        tmp <- as.matrix(mcmc$mvSamples)
+        if(!is.null(tmp))
+            samplesList[[i]] <- tmp 
+        if(hasMonitors2) {
+            tmp <- as.matrix(mcmc$mvSamples2)
+            if(!is.null(tmp))
+                samplesList2[[i]] <- tmp 
+        }
     }
     if(WAIC) {
         if(mcmc$onlineWAIC) {
@@ -171,8 +176,11 @@ runMCMC <- function(mcmc,
         if(hasMonitors2)   samplesList2 <- as.mcmc.list(lapply(samplesList2, as.mcmc))
     }
     if(nchains == 1) {
-        samplesList <- samplesList[[1]]                       ## returns matrix when nchains = 1
-        if(hasMonitors2)   samplesList2 <- samplesList2[[1]]  ## returns matrix when nchains = 1
+        if(length(samplesList))
+            samplesList <- samplesList[[1]] else samplesList <- NULL   ## returns matrix when nchains = 1
+        if(hasMonitors2)
+            if(length(samplesList2))
+                samplesList2 <- samplesList2[[1]] else samplesList2 <- NULL  ## returns matrix when nchains = 1
     }
     if(summary) {
         if(nchains == 1) {
@@ -317,7 +325,7 @@ nimbleMCMC <- function(code,
     if(!missing(code) && inherits(code, 'modelBaseClass')) model <- code   ## let's handle it, if model object is provided as un-named first argument to nimbleMCMC
     if(missing(model)) {  ## model object not provided
         if(!missing(inits)) {
-            if(!is.function(inits) && !is.list(inits)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of inital values')
+            if(!is.function(inits) && !is.list(inits)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of initial values')
             if(is.list(inits) && (length(inits) > 0) && is.list(inits[[1]]) && (length(inits) != nchains)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of inital values')
             if(is.function(inits)) {
                 if(is.numeric(setSeed) || setSeed) { if(is.numeric(setSeed)) set.seed(setSeed[1]) else set.seed(0) }

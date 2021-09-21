@@ -84,5 +84,5 @@ Ariyo, O., Quintero, A., Munoz, J., Verbeke, G. and Lesaffre, E. (2019). Bayesia
 \code{\link{configureMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}
 }
 \author{
-Daniel Turek & me UwU
+Daniel Turek
 }

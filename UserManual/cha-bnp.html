@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<html lang="" xml:lang="">
 <head>
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title></title>
+  <title>Chapter 10 Bayesian nonparametric models | NimbleUserManual.utf8</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.12 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.19 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="" />
+  <meta property="og:title" content="Chapter 10 Bayesian nonparametric models | NimbleUserManual.utf8" />
   <meta property="og:type" content="book" />
   
   <meta property="og:image" content="nimble-icon.png" />
@@ -16,7 +16,7 @@
   <meta name="github-repo" content="nimble-dev/nimble" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="" />
+  <meta name="twitter:title" content="Chapter 10 Bayesian nonparametric models | NimbleUserManual.utf8" />
   
   <meta name="twitter:description" content="This is the NIMBLE User Manual." />
   <meta name="twitter:image" content="nimble-icon.png" />
@@ -29,8 +29,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
-<link rel="prev" href="cha-spatial.html">
-<link rel="next" href="overview.html">
+<link rel="prev" href="cha-spatial.html"/>
+<link rel="next" href="overview.html"/>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -38,6 +38,9 @@
 <link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
 
 
 
@@ -48,41 +51,66 @@
 
 
 <style type="text/css">
-div.sourceCode { overflow-x: auto; }
-table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
-  margin: 0; padding: 0; vertical-align: baseline; border: none; }
-table.sourceCode { width: 100%; line-height: 100%; }
-td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
-td.sourceCode { padding-left: 5px; }
-code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
-code > span.dt { color: #902000; } /* DataType */
-code > span.dv { color: #40a070; } /* DecVal */
-code > span.bn { color: #40a070; } /* BaseN */
-code > span.fl { color: #40a070; } /* Float */
-code > span.ch { color: #4070a0; } /* Char */
-code > span.st { color: #4070a0; } /* String */
-code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
-code > span.ot { color: #007020; } /* Other */
-code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
-code > span.fu { color: #06287e; } /* Function */
-code > span.er { color: #ff0000; font-weight: bold; } /* Error */
-code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
-code > span.cn { color: #880000; } /* Constant */
-code > span.sc { color: #4070a0; } /* SpecialChar */
-code > span.vs { color: #4070a0; } /* VerbatimString */
-code > span.ss { color: #bb6688; } /* SpecialString */
-code > span.im { } /* Import */
-code > span.va { color: #19177c; } /* Variable */
-code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-code > span.op { color: #666666; } /* Operator */
-code > span.bu { } /* BuiltIn */
-code > span.ex { } /* Extension */
-code > span.pp { color: #bc7a00; } /* Preprocessor */
-code > span.at { color: #7d9029; } /* Attribute */
-code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
-code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+a.sourceLine { display: inline-block; line-height: 1.25; }
+a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
+a.sourceLine:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+a.sourceLine { text-indent: -1em; padding-left: 1em; }
+}
+pre.numberSource a.sourceLine
+  { position: relative; left: -4em; }
+pre.numberSource a.sourceLine::before
+  { content: attr(title);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; pointer-events: all; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {  }
+@media screen {
+a.sourceLine::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
 <link rel="stylesheet" href="style.css" type="text/css" />
@@ -100,7 +128,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.10.1</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.11.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -328,7 +356,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
-<li class="chapter" data-level="16" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i><b>16</b> References</a></li>
+<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
       </nav>
@@ -350,13 +378,17 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <h1><span class="header-section-number">Chapter 10</span> Bayesian nonparametric models</h1>
 <div id="sec:bnpmixtures" class="section level2">
 <h2><span class="header-section-number">10.1</span> Bayesian nonparametric mixture models</h2>
-<p>NIMBLE provides support for Bayesian nonparametric (BNP) mixture modeling. The current implementation provides support for hierarchical specifications involving Dirichlet process (DP) mixtures <span class="citation">(Ferguson <a href="references.html#ref-ferguson_73">1973</a>; Ferguson <a href="references.html#ref-ferguson_74">1974</a>; Lo <a href="references.html#ref-lo_84">1984</a>; Escobar <a href="references.html#ref-escobar_94">1994</a>; Escobar and West <a href="references.html#ref-escobar_west_95">1995</a>)</span>. More specifically, a DP mixture model takes the form</p>
-<p><span class="math display">\[y_i \mid G \overset{iid}{\sim} \int h(y_i \mid \theta) G(d\theta),\]</span> <span class="math display">\[G \mid \alpha, G_0 \sim  DP(\alpha, G_0),\]</span></p>
+<p>NIMBLE provides support for Bayesian nonparametric (BNP) mixture modeling. The current implementation provides support for hierarchical specifications involving Dirichlet process (DP) mixtures <span class="citation">(Ferguson <a href="references.html#ref-ferguson_73">1973</a>, <a href="references.html#ref-ferguson_74">1974</a>; Lo <a href="references.html#ref-lo_84">1984</a>; Escobar <a href="references.html#ref-escobar_94">1994</a>; Escobar and West <a href="references.html#ref-escobar_west_95">1995</a>)</span>. More specifically, a DP mixture model takes the form</p>
+<p><span class="math display">\[y_i \mid G \overset{iid}{\sim} \int h(y_i \mid \theta) G(d\theta),\]</span>
+<span class="math display">\[G \mid \alpha, G_0 \sim  DP(\alpha, G_0),\]</span></p>
 <p>where <span class="math inline">\(h(\cdot \mid \theta)\)</span> is a suitable kernel with parameter <span class="math inline">\(\theta\)</span>, and <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(G_0\)</span> are the concentration and baseline distribution parameters of the DP, respectively. DP mixture models can be written with different levels of hierarchy, all being equivalent to the model above.</p>
 <p>When the random measure <span class="math inline">\(G\)</span> is integrated out from the model, the DP mixture model can be written using latent or membership variables, <span class="math inline">\(z_i\)</span>, following a Chinese Restaurant Process (CRP) distribution <span class="citation">(Blackwell and MacQueen <a href="references.html#ref-blackwell_mcqueen_73">1973</a>)</span>, discussed in Section <a href="cha-bnp.html#sec:crp">10.2</a>. The model takes the form</p>
-<p><span class="math display">\[y_i \mid \tilde{\boldsymbol{\theta}}, z_i \overset{ind}{\sim} h(\cdot \mid \tilde{\theta}_{z_i}),\]</span> <span class="math display">\[\boldsymbol{z}\mid \alpha \sim \mbox{CRP}(\alpha),\hspace{0.5cm}  \tilde{\theta}_j \overset{iid}{\sim}G_0,\]</span> where <span class="math inline">\(\mbox{CRP}(\alpha)\)</span> denotes the CRP distribution with concentration parameter <span class="math inline">\(\alpha\)</span>.</p>
+<p><span class="math display">\[y_i \mid \tilde{\boldsymbol{\theta}}, z_i \overset{ind}{\sim} h(\cdot \mid \tilde{\theta}_{z_i}),\]</span>
+<span class="math display">\[\boldsymbol{z}\mid \alpha \sim \mbox{CRP}(\alpha),\hspace{0.5cm}  \tilde{\theta}_j \overset{iid}{\sim}G_0,\]</span>
+where <span class="math inline">\(\mbox{CRP}(\alpha)\)</span> denotes the CRP distribution with concentration parameter <span class="math inline">\(\alpha\)</span>.</p>
 <p>If a stick-breaking representation <span class="citation">(Sethuraman <a href="references.html#ref-sethuraman_94">1994</a>)</span>, discussed in section <a href="cha-bnp.html#sec:sb">10.3</a>, is assumed for the random measure <span class="math inline">\(G\)</span>, then the model takes the form</p>
-<p><span class="math display">\[y_i \mid {\boldsymbol{\theta}}^{\star}, \boldsymbol{v} \overset{ind}{\sim} \sum_{l=1}^{\infty}\left\{ v_l\prod_{m&lt;l}(1-v_m)\right\} h(\cdot \mid {\theta}_l^{\star}),\]</span> <span class="math display">\[v_l \mid \alpha \overset{iid}{\sim} Beta(1, \alpha),\hspace{0.5cm}  {\theta}_l^{\star} \overset{iid}{\sim}G_0.\]</span></p>
+<p><span class="math display">\[y_i \mid {\boldsymbol{\theta}}^{\star}, \boldsymbol{v} \overset{ind}{\sim} \sum_{l=1}^{\infty}\left\{ v_l\prod_{m&lt;l}(1-v_m)\right\} h(\cdot \mid {\theta}_l^{\star}),\]</span>
+<span class="math display">\[v_l \mid \alpha \overset{iid}{\sim} Beta(1, \alpha),\hspace{0.5cm}  {\theta}_l^{\star} \overset{iid}{\sim}G_0.\]</span></p>
 <p>More general representations of the random measure can be specify by considering <span class="math inline">\(v_l \mid \nu_l, \alpha_l \overset{ind}{\sim} Beta(\nu_l, \alpha_l)\)</span>. Finite dimensional approximations can be obtained by truncating the infinite sum to have <span class="math inline">\(L\)</span> components.</p>
 <p>Different representations of DP mixtures lead to different computational algorithms. NIMBLE supports sampling algorithms based on the CRP representation, as well as on the stick-breaking representation. NIMBLE includes definitions of structures required to implement the CRP and stick-breaking distributions, and the associated MCMC algorithms.</p>
 </div>
@@ -389,26 +421,28 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <div id="sec:excrp" class="section level3">
 <h3><span class="header-section-number">10.2.2</span> Example</h3>
 <p>The following example illustrates how to use NIMBLE to perform single density estimation for real-valued data, under a BNP approach, using the <code>dCRP</code> distribution. (Note that the BNP approach is also often used to perform density estimation on random effects.) The model is given by</p>
-<p><span class="math display">\[ y_i \mid \tilde{\boldsymbol{\theta}}, \tilde{\boldsymbol{\sigma}}^2, z_i \overset{ind}{\sim} N(\tilde{\theta}_{z_i}, \tilde{\sigma}^2_{z_i},)\hspace{0.5cm} i = 1, \ldots, N, \]</span> <span class="math display">\[ \boldsymbol{z} \sim \mbox{CRP}(\alpha), \hspace{0.5cm} \alpha \sim \mbox{Gamma}(1, 1), \]</span> <span class="math display">\[ \tilde{\theta}_j \overset{iid}{\sim} N(0, 100),  \hspace{0.5cm}\tilde{\sigma}^2_j \overset{iid}{\sim}\mbox{InvGamma}(1, 1),  \hspace{0.2cm} j=1, \ldots, M. \]</span></p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-  z[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dCRP</span>(alpha, <span class="dt">size =</span> N)
-  alpha <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)
-  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>M) {
-    thetatilde[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">var =</span> <span class="dv">100</span>)
-    s2tilde[i] <span class="op">~</span><span class="st"> </span><span class="kw">dinvgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)
-  }
-  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) 
-    y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(thetatilde[z[i]], <span class="dt">var =</span> s2tilde[z[i]])  
-})
-
-<span class="kw">set.seed</span>(<span class="dv">1</span>)
-constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">100</span>, <span class="dt">M =</span> <span class="dv">50</span>)
-data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">c</span>(<span class="kw">rnorm</span>(<span class="dv">50</span>, <span class="dv">-5</span>, <span class="kw">sqrt</span>(<span class="dv">3</span>)), <span class="kw">rnorm</span>(<span class="dv">50</span>, <span class="dv">5</span>, <span class="kw">sqrt</span>(<span class="dv">4</span>))))
-inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">thetatilde =</span> <span class="kw">rnorm</span>(constants<span class="op">$</span>M, <span class="dv">0</span>, <span class="dv">10</span>), 
-              <span class="dt">s2tilde =</span> <span class="kw">rinvgamma</span>(constants<span class="op">$</span>M, <span class="dv">1</span>, <span class="dv">1</span>), 
-              <span class="dt">z =</span> <span class="kw">sample</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>, <span class="dt">size =</span> constants<span class="op">$</span>N, <span class="dt">replace =</span> <span class="ot">TRUE</span>),
-              <span class="dt">alpha  =</span> <span class="dv">1</span>)
-model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</code></pre></div>
+<p><span class="math display">\[ y_i \mid \tilde{\boldsymbol{\theta}}, \tilde{\boldsymbol{\sigma}}^2, z_i \overset{ind}{\sim} N(\tilde{\theta}_{z_i}, \tilde{\sigma}^2_{z_i},)\hspace{0.5cm} i = 1, \ldots, N, \]</span>
+<span class="math display">\[ \boldsymbol{z} \sim \mbox{CRP}(\alpha), \hspace{0.5cm} \alpha \sim \mbox{Gamma}(1, 1), \]</span>
+<span class="math display">\[ \tilde{\theta}_j \overset{iid}{\sim} N(0, 100),  \hspace{0.5cm}\tilde{\sigma}^2_j \overset{iid}{\sim}\mbox{InvGamma}(1, 1),  \hspace{0.2cm} j=1, \ldots, M. \]</span></p>
+<div class="sourceCode" id="cb211"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb211-1" title="1">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb211-2" title="2">  z[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dCRP</span>(alpha, <span class="dt">size =</span> N)</a>
+<a class="sourceLine" id="cb211-3" title="3">  alpha <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb211-4" title="4">  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>M) {</a>
+<a class="sourceLine" id="cb211-5" title="5">    thetatilde[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">var =</span> <span class="dv">100</span>)</a>
+<a class="sourceLine" id="cb211-6" title="6">    s2tilde[i] <span class="op">~</span><span class="st"> </span><span class="kw">dinvgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb211-7" title="7">  }</a>
+<a class="sourceLine" id="cb211-8" title="8">  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) </a>
+<a class="sourceLine" id="cb211-9" title="9">    y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(thetatilde[z[i]], <span class="dt">var =</span> s2tilde[z[i]])  </a>
+<a class="sourceLine" id="cb211-10" title="10">})</a>
+<a class="sourceLine" id="cb211-11" title="11"></a>
+<a class="sourceLine" id="cb211-12" title="12"><span class="kw">set.seed</span>(<span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb211-13" title="13">constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">100</span>, <span class="dt">M =</span> <span class="dv">50</span>)</a>
+<a class="sourceLine" id="cb211-14" title="14">data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">c</span>(<span class="kw">rnorm</span>(<span class="dv">50</span>, <span class="dv">-5</span>, <span class="kw">sqrt</span>(<span class="dv">3</span>)), <span class="kw">rnorm</span>(<span class="dv">50</span>, <span class="dv">5</span>, <span class="kw">sqrt</span>(<span class="dv">4</span>))))</a>
+<a class="sourceLine" id="cb211-15" title="15">inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">thetatilde =</span> <span class="kw">rnorm</span>(constants<span class="op">$</span>M, <span class="dv">0</span>, <span class="dv">10</span>), </a>
+<a class="sourceLine" id="cb211-16" title="16">              <span class="dt">s2tilde =</span> <span class="kw">rinvgamma</span>(constants<span class="op">$</span>M, <span class="dv">1</span>, <span class="dv">1</span>), </a>
+<a class="sourceLine" id="cb211-17" title="17">              <span class="dt">z =</span> <span class="kw">sample</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>, <span class="dt">size =</span> constants<span class="op">$</span>N, <span class="dt">replace =</span> <span class="ot">TRUE</span>),</a>
+<a class="sourceLine" id="cb211-18" title="18">              <span class="dt">alpha  =</span> <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb211-19" title="19">model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</a></code></pre></div>
 <p>The model can be fitted through MCMC sampling. NIMBLE will assign a specialized sampler to update <code>z</code> and <code>alpha</code>. See Chapter <a href="cha-mcmc.html#cha:mcmc">7</a> for information about NIMBLE’s MCMC engine, and Section <a href="cha-bnp.html#sec:mcmcdcrp">10.4.1</a> for details on MCMC sampling of the CRP.</p>
 <p>One of the advantages of BNP mixture models is that the number of clusters is treated as random. Therefore, in MCMC sampling, the number of cluster parameters varies with the iteration. Since NIMBLE does not currently allow dynamic length allocation, the number of unique cluster parameters, <span class="math inline">\(N^{\star}\)</span>, has to be fixed. One safe option is to set this number to <span class="math inline">\(N\)</span>, but this is inefficient, both in terms of computation and in terms of storage, because in practice it is often that <span class="math inline">\(N^{\star} &lt; N\)</span>. In addition, configuring and building the MCMC can be slow (and use a lot of memory) for large <span class="math inline">\(N\)</span>. In an effort to mitigate these inefficiencies, we allow the user to set <span class="math inline">\(N^{\star} = M\)</span>, with <span class="math inline">\(M&lt;N\)</span>, as seen in the example above. However, if this number is too small and is exceeded in any iteration a warning is issued.</p>
 </div>
@@ -420,29 +454,29 @@ model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, co
 <p><span class="math display">\[ \boldsymbol{z} \sim \mbox{CRP}(\alpha), \hspace{0.5cm} \alpha \sim \mbox{Gamma}(1, 1), \]</span></p>
 <p><span class="math display">\[ \tilde{\theta}_m \overset{iid}{\sim} N(0, 100),  \hspace{0.2cm} m=1, \ldots, M, \hspace{0.5cm} {\sigma}^2 \sim InvGamma(1, 1). \]</span></p>
 <p>The corresponding NIMBLE code is</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-  z[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dCRP</span>(alpha, <span class="dt">size =</span> N)
-  alpha <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)
-  sigma2 <span class="op">~</span><span class="st"> </span><span class="kw">dinvgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)
-  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>M) {
-    thetatilde[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">var =</span> <span class="dv">100</span>) 
-  }
-  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {
-    <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>J) {
-      y[i, j] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(thetatilde[z[i]], <span class="dt">var =</span> sigma2)
-    }
-  }
-})
-
-<span class="kw">set.seed</span>(<span class="dv">1</span>)
-constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">10</span>, <span class="dt">J =</span> <span class="dv">5</span>, <span class="dt">M =</span> <span class="dv">5</span>)
-data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">matrix</span>(<span class="kw">c</span>(<span class="kw">rnorm</span>(<span class="dv">25</span>, <span class="dv">-25</span>, <span class="dv">1</span>), <span class="kw">rnorm</span>(<span class="dv">25</span>, <span class="dv">25</span>, <span class="dv">1</span>)), <span class="dt">ncol=</span>constants<span class="op">$</span>J,
-                        <span class="dt">nrow=</span>constants<span class="op">$</span>N, <span class="dt">byrow=</span><span class="ot">TRUE</span>))
-inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">thetatilde =</span> <span class="kw">rnorm</span>(constants<span class="op">$</span>M, <span class="dv">0</span>, <span class="dv">10</span>), 
-              <span class="dt">z =</span> <span class="kw">sample</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>, <span class="dt">size =</span> constants<span class="op">$</span>N, <span class="dt">replace =</span> <span class="ot">TRUE</span>),
-              <span class="dt">alpha  =</span> <span class="dv">1</span>,
-              <span class="dt">sigma2 =</span> <span class="dv">1</span>)
-modelRandEff &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</code></pre></div>
+<div class="sourceCode" id="cb212"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb212-1" title="1">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb212-2" title="2">  z[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dCRP</span>(alpha, <span class="dt">size =</span> N)</a>
+<a class="sourceLine" id="cb212-3" title="3">  alpha <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb212-4" title="4">  sigma2 <span class="op">~</span><span class="st"> </span><span class="kw">dinvgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb212-5" title="5">  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>M) {</a>
+<a class="sourceLine" id="cb212-6" title="6">    thetatilde[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">var =</span> <span class="dv">100</span>) </a>
+<a class="sourceLine" id="cb212-7" title="7">  }</a>
+<a class="sourceLine" id="cb212-8" title="8">  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {</a>
+<a class="sourceLine" id="cb212-9" title="9">    <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>J) {</a>
+<a class="sourceLine" id="cb212-10" title="10">      y[i, j] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(thetatilde[z[i]], <span class="dt">var =</span> sigma2)</a>
+<a class="sourceLine" id="cb212-11" title="11">    }</a>
+<a class="sourceLine" id="cb212-12" title="12">  }</a>
+<a class="sourceLine" id="cb212-13" title="13">})</a>
+<a class="sourceLine" id="cb212-14" title="14"></a>
+<a class="sourceLine" id="cb212-15" title="15"><span class="kw">set.seed</span>(<span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb212-16" title="16">constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">10</span>, <span class="dt">J =</span> <span class="dv">5</span>, <span class="dt">M =</span> <span class="dv">5</span>)</a>
+<a class="sourceLine" id="cb212-17" title="17">data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">matrix</span>(<span class="kw">c</span>(<span class="kw">rnorm</span>(<span class="dv">25</span>, <span class="dv">-25</span>, <span class="dv">1</span>), <span class="kw">rnorm</span>(<span class="dv">25</span>, <span class="dv">25</span>, <span class="dv">1</span>)), <span class="dt">ncol=</span>constants<span class="op">$</span>J,</a>
+<a class="sourceLine" id="cb212-18" title="18">                        <span class="dt">nrow=</span>constants<span class="op">$</span>N, <span class="dt">byrow=</span><span class="ot">TRUE</span>))</a>
+<a class="sourceLine" id="cb212-19" title="19">inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">thetatilde =</span> <span class="kw">rnorm</span>(constants<span class="op">$</span>M, <span class="dv">0</span>, <span class="dv">10</span>), </a>
+<a class="sourceLine" id="cb212-20" title="20">              <span class="dt">z =</span> <span class="kw">sample</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>, <span class="dt">size =</span> constants<span class="op">$</span>N, <span class="dt">replace =</span> <span class="ot">TRUE</span>),</a>
+<a class="sourceLine" id="cb212-21" title="21">              <span class="dt">alpha  =</span> <span class="dv">1</span>,</a>
+<a class="sourceLine" id="cb212-22" title="22">              <span class="dt">sigma2 =</span> <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb212-23" title="23">modelRandEff &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</a></code></pre></div>
 <p>Alternatively, each subject could have a vector of parameters being clustered. For example in the model above one could instead specify a vector of means, such as <code>thetaTilde[z[i], j]</code>, instead of a single mean.</p>
 <p>As before, the model can be fitted through MCMC sampling. NIMBLE will assign a specialized sampler to update <code>z</code> and <code>alpha</code>. See Chapter <a href="cha-mcmc.html#cha:mcmc">7</a> for information about NIMBLE’s MCMC engine, and Section <a href="cha-bnp.html#sec:mcmcdcrp">10.4.1</a> for details on MCMC sampling of the CRP.</p>
 </div>
@@ -456,7 +490,9 @@ modelRandEff &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(c
 <div id="function" class="section level4">
 <h4><span class="header-section-number">10.3.1.1</span> Function</h4>
 <p>The weights <span class="math inline">\((w_1, \ldots, w_L)\)</span> follow a finite stick-breaking construction if</p>
-<p><span class="math display">\[ \hspace{-2cm} w_1  = v_1, \]</span> <span class="math display">\[ \hspace{2.2cm} w_l  =  v_l\prod_{m&lt;l}(1-v_m),l=2,\ldots,L-1 \]</span> <span class="math display">\[ \hspace{-0.4cm} w_L  =  \prod_{m&lt;L}(1-v_m).\]</span></p>
+<p><span class="math display">\[ \hspace{-2cm} w_1  = v_1, \]</span>
+<span class="math display">\[ \hspace{2.2cm} w_l  =  v_l\prod_{m&lt;l}(1-v_m),l=2,\ldots,L-1 \]</span>
+<span class="math display">\[ \hspace{-0.4cm} w_L  =  \prod_{m&lt;L}(1-v_m).\]</span></p>
 <p>for <span class="math inline">\(v_l \in [0,1], l=1,\ldots,L-1\)</span>.</p>
 </div>
 <div id="specification-3" class="section level4">
@@ -470,39 +506,42 @@ modelRandEff &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(c
 <div id="sec:exsb" class="section level3">
 <h3><span class="header-section-number">10.3.2</span> Example</h3>
 <p>Here we illustrate how to use NIMBLE for the example described in section <a href="cha-bnp.html#sec:excrp">10.2.2</a>, but considering a stick-breaking representation for <span class="math inline">\(G\)</span>. The model is given by</p>
-<p><span class="math display">\[ y_i \mid \boldsymbol{\theta}^{\star}, {\boldsymbol{\sigma}^{\star}}^2, z_i \overset{ind}{\sim} N({{\theta}^{\star}}_{z_i}, {{\sigma}^2}^{\star}_{z_i}),\hspace{0.5cm}  i = 1, \ldots, N, \]</span> <span class="math display">\[ \boldsymbol{z} \sim Discrete(\boldsymbol{w}), \hspace{0.5cm} v_l\overset{iid}{\sim} Beta(1, \alpha), \hspace{0.2cm}l=1, \ldots, L-1, \]</span> <span class="math display">\[ \alpha \sim \mbox{Gamma}(1, 1),\]</span> <span class="math display">\[{\theta}^{\star}_l \overset{iid}{\sim} N(0, 100),  \hspace{0.5cm}{{\sigma}^2}^{\star}_l  \overset{iid}{\sim}\mbox{InvGamma}(1, 1),  \hspace{0.2cm} l=1, \ldots, L.\]</span></p>
+<p><span class="math display">\[ y_i \mid \boldsymbol{\theta}^{\star}, {\boldsymbol{\sigma}^{\star}}^2, z_i \overset{ind}{\sim} N({{\theta}^{\star}}_{z_i}, {{\sigma}^2}^{\star}_{z_i}),\hspace{0.5cm}  i = 1, \ldots, N, \]</span>
+<span class="math display">\[ \boldsymbol{z} \sim Discrete(\boldsymbol{w}), \hspace{0.5cm} v_l\overset{iid}{\sim} Beta(1, \alpha), \hspace{0.2cm}l=1, \ldots, L-1, \]</span>
+<span class="math display">\[ \alpha \sim \mbox{Gamma}(1, 1),\]</span>
+<span class="math display">\[{\theta}^{\star}_l \overset{iid}{\sim} N(0, 100),  \hspace{0.5cm}{{\sigma}^2}^{\star}_l  \overset{iid}{\sim}\mbox{InvGamma}(1, 1),  \hspace{0.2cm} l=1, \ldots, L.\]</span></p>
 <p>where <span class="math inline">\(w_1=v_1\)</span>, <span class="math inline">\(w_l=v_l \prod_{m&lt;l}(1-v_m)\)</span>, for <span class="math inline">\(l=1, \ldots, L-1\)</span>, and <span class="math inline">\(w_L=\prod_{m&lt;L}(1-v_m).\)</span></p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>(L<span class="dv">-1</span>)){
-    v[i] <span class="op">~</span><span class="st"> </span><span class="kw">dbeta</span>(<span class="dv">1</span>, alpha)
-  }
-  alpha <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)
-  w[<span class="dv">1</span><span class="op">:</span>L] &lt;-<span class="st"> </span><span class="kw">stick_breaking</span>(v[<span class="dv">1</span><span class="op">:</span>(L<span class="dv">-1</span>)])
-  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>L) {
-    thetastar[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">var =</span> <span class="dv">100</span>)
-    s2star[i] <span class="op">~</span><span class="st"> </span><span class="kw">dinvgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)
-  }
-  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {
-    z[i] <span class="op">~</span><span class="st"> </span><span class="kw">dcat</span>(w[<span class="dv">1</span><span class="op">:</span>L])
-    y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(thetastar[z[i]], <span class="dt">var =</span> s2star[z[i]])  
-  }
-})
-
-<span class="kw">set.seed</span>(<span class="dv">1</span>)
-constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">100</span>, <span class="dt">L=</span><span class="dv">50</span>)
-data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">c</span>(<span class="kw">rnorm</span>(<span class="dv">50</span>, <span class="dv">-5</span>, <span class="kw">sqrt</span>(<span class="dv">3</span>)), <span class="kw">rnorm</span>(<span class="dv">50</span>, <span class="dv">5</span>, <span class="kw">sqrt</span>(<span class="dv">4</span>))))
-inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">thetastar =</span> <span class="kw">rnorm</span>(constants<span class="op">$</span>L, <span class="dv">0</span>, <span class="dv">100</span>), 
-              <span class="dt">s2star =</span> <span class="kw">rinvgamma</span>(constants<span class="op">$</span>L, <span class="dv">1</span>, <span class="dv">1</span>), 
-              <span class="dt">z =</span> <span class="kw">sample</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>, <span class="dt">size =</span> constants<span class="op">$</span>N, <span class="dt">replace =</span> <span class="ot">TRUE</span>),
-              <span class="dt">v  =</span> <span class="kw">rbeta</span>(constants<span class="op">$</span>L, <span class="dv">1</span>, <span class="dv">1</span>),
-              <span class="dt">alpha =</span> <span class="dv">1</span>)
-modelSB &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</code></pre></div>
+<div class="sourceCode" id="cb213"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb213-1" title="1">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb213-2" title="2">  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>(L<span class="dv">-1</span>)){</a>
+<a class="sourceLine" id="cb213-3" title="3">    v[i] <span class="op">~</span><span class="st"> </span><span class="kw">dbeta</span>(<span class="dv">1</span>, alpha)</a>
+<a class="sourceLine" id="cb213-4" title="4">  }</a>
+<a class="sourceLine" id="cb213-5" title="5">  alpha <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb213-6" title="6">  w[<span class="dv">1</span><span class="op">:</span>L] &lt;-<span class="st"> </span><span class="kw">stick_breaking</span>(v[<span class="dv">1</span><span class="op">:</span>(L<span class="dv">-1</span>)])</a>
+<a class="sourceLine" id="cb213-7" title="7">  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>L) {</a>
+<a class="sourceLine" id="cb213-8" title="8">    thetastar[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">var =</span> <span class="dv">100</span>)</a>
+<a class="sourceLine" id="cb213-9" title="9">    s2star[i] <span class="op">~</span><span class="st"> </span><span class="kw">dinvgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb213-10" title="10">  }</a>
+<a class="sourceLine" id="cb213-11" title="11">  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {</a>
+<a class="sourceLine" id="cb213-12" title="12">    z[i] <span class="op">~</span><span class="st"> </span><span class="kw">dcat</span>(w[<span class="dv">1</span><span class="op">:</span>L])</a>
+<a class="sourceLine" id="cb213-13" title="13">    y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(thetastar[z[i]], <span class="dt">var =</span> s2star[z[i]])  </a>
+<a class="sourceLine" id="cb213-14" title="14">  }</a>
+<a class="sourceLine" id="cb213-15" title="15">})</a>
+<a class="sourceLine" id="cb213-16" title="16"></a>
+<a class="sourceLine" id="cb213-17" title="17"><span class="kw">set.seed</span>(<span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb213-18" title="18">constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">100</span>, <span class="dt">L=</span><span class="dv">50</span>)</a>
+<a class="sourceLine" id="cb213-19" title="19">data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">c</span>(<span class="kw">rnorm</span>(<span class="dv">50</span>, <span class="dv">-5</span>, <span class="kw">sqrt</span>(<span class="dv">3</span>)), <span class="kw">rnorm</span>(<span class="dv">50</span>, <span class="dv">5</span>, <span class="kw">sqrt</span>(<span class="dv">4</span>))))</a>
+<a class="sourceLine" id="cb213-20" title="20">inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">thetastar =</span> <span class="kw">rnorm</span>(constants<span class="op">$</span>L, <span class="dv">0</span>, <span class="dv">100</span>), </a>
+<a class="sourceLine" id="cb213-21" title="21">              <span class="dt">s2star =</span> <span class="kw">rinvgamma</span>(constants<span class="op">$</span>L, <span class="dv">1</span>, <span class="dv">1</span>), </a>
+<a class="sourceLine" id="cb213-22" title="22">              <span class="dt">z =</span> <span class="kw">sample</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>, <span class="dt">size =</span> constants<span class="op">$</span>N, <span class="dt">replace =</span> <span class="ot">TRUE</span>),</a>
+<a class="sourceLine" id="cb213-23" title="23">              <span class="dt">v  =</span> <span class="kw">rbeta</span>(constants<span class="op">$</span>L, <span class="dv">1</span>, <span class="dv">1</span>),</a>
+<a class="sourceLine" id="cb213-24" title="24">              <span class="dt">alpha =</span> <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb213-25" title="25">modelSB &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</a></code></pre></div>
 <p>The resulting model may be carried through to MCMC sampling. NIMBLE will assign a specialized sampler to update <code>v</code>. See Chapter <a href="cha-mcmc.html#cha:mcmc">7</a> for information about NIMBLE’s MCMC engine, and Section <a href="cha-bnp.html#sec:mcmcsb">10.4.2</a> for details on MCMC sampling of the stick-breaking weights.</p>
 </div>
 </div>
 <div id="mcmc-sampling-of-bnp-models" class="section level2">
 <h2><span class="header-section-number">10.4</span> MCMC sampling of BNP models</h2>
-<p>BNP models can be specified in different, yet equivalent, manners. Examples <a href="cha-bnp.html#sec:excrp">10.2.2</a> and <a href="cha-bnp.html#sec:exsb">10.3.2</a> are examples of density estimation for real-valued data, and are specified through the CRP and the stick-breaking process, respectively. Different specifications lead NIMBLE to assign different sampling algorithms for the model. When the model is specified through a CRP, a collapsed sampler <span class="citation">(R. Neal <a href="references.html#ref-neal_2000">2000</a>)</span> is assigned. Under this specification, the random measure <span class="math inline">\(G\)</span> is integrated out from the model. When a stick-breaking representation is used, a blocked Gibbs sampler is assigned, see <span class="citation">Hemant Ishwaran and James (<a href="references.html#ref-ishwaran_2001">2001</a>)</span> and <span class="citation">H Ishwaran and James (<a href="references.html#ref-ishwaran_james_2002">2002</a>)</span>.</p>
+<p>BNP models can be specified in different, yet equivalent, manners. Examples <a href="cha-bnp.html#sec:excrp">10.2.2</a> and <a href="cha-bnp.html#sec:exsb">10.3.2</a> are examples of density estimation for real-valued data, and are specified through the CRP and the stick-breaking process, respectively. Different specifications lead NIMBLE to assign different sampling algorithms for the model. When the model is specified through a CRP, a collapsed sampler <span class="citation">(Neal <a href="references.html#ref-neal_2000">2000</a>)</span> is assigned. Under this specification, the random measure <span class="math inline">\(G\)</span> is integrated out from the model. When a stick-breaking representation is used, a blocked Gibbs sampler is assigned, see <span class="citation">Ishwaran and James (<a href="references.html#ref-ishwaran_2001">2001</a>)</span> and <span class="citation">Ishwaran and James (<a href="references.html#ref-ishwaran_james_2002">2002</a>)</span>.</p>
 <div id="sec:mcmcdcrp" class="section level3">
 <h3><span class="header-section-number">10.4.1</span> Sampling CRP models</h3>
 <p>NIMBLE’s MCMC engine provides specialized samplers for the <code>dCRP</code> distribution, updating each component of the membership vector sequentially. Internally, the sampler is assigned based on inspection of the model structure, evaluating conjugacy between the mixture kernel and the baseline distribution, as follows:</p>
@@ -645,24 +684,25 @@ modelSB &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, 
 <p>Posterior samples of the random measure <span class="math inline">\(G\)</span> are (almost surely) of the form <span class="math inline">\(\sum_{l=1}^{\infty}w_l\delta_{\theta_l}\)</span>, where <span class="math inline">\(\delta_{\theta}\)</span> is the Dirac measure at <span class="math inline">\(\theta\)</span>, <span class="math inline">\(w_l\)</span> are stick-breaking weights, and <span class="math inline">\(\theta_l\)</span> are atoms (or point masses). The variables that define the stick-breaking weights are iid <span class="math inline">\(Beta(1, \alpha + N)\)</span> distributed, where <span class="math inline">\(\alpha\)</span> is the concentration parameter of the CRP distribution and <span class="math inline">\(N\)</span> is the sample size. Independently, the atoms, <span class="math inline">\(\theta_l\)</span>, are iid and follow a distribution of the form</p>
 <p><span class="math display">\[(\alpha+N)^{-1}\sum_{k=1}^{N^{\star}(\boldsymbol{z})}m_k(\boldsymbol{z})\delta_{\{\tilde{\theta}_k\}} + \alpha(\alpha+N)^{-1}G_0,\]</span></p>
 <p>where <span class="math inline">\(G_0\)</span> is the prior baseline distribution, and <span class="math inline">\(\boldsymbol{z}\)</span> and <span class="math inline">\(\tilde{\theta}_k\)</span> are posterior samples of the labeling vector and cluster parameters, respectively. Their values, together with the values of <span class="math inline">\(\alpha\)</span> (if random) are obtained from the MCMC’s output. Expressions <span class="math inline">\(m_k(\boldsymbol{z})\)</span> and <span class="math inline">\(N^{\star}(\boldsymbol{z})\)</span> are defined as in section <a href="cha-bnp.html#sec:crp">10.2</a>.</p>
-<p>The <code>getsamplesDPmeasure</code> function provides samples of a truncated version of the infinite mixture to a level <span class="math inline">\(L\)</span>. The truncation level <span class="math inline">\(L\)</span> is such that the tail probability left from the approximation is at most <code>epsilon</code>, denoted <span class="math inline">\(\epsilon\)</span>. The following relationship determines the truncation level: <span class="math inline">\(L = log(\epsilon) / log[(\alpha+N) / (\alpha + N +1)]\)</span>. The value of <span class="math inline">\(L\)</span> varies at each iteration of the MCMC’s output when <span class="math inline">\(\alpha\)</span> is random, while it is the same at each iteration when <span class="math inline">\(\alpha\)</span> is fixed. For more details about sampling the random measure and its truncation level see <span class="citation">A. E. Gelfand and Kottas (<a href="references.html#ref-gelfand_2002">2002</a>)</span>.</p>
+<p>The <code>getsamplesDPmeasure</code> function provides samples of a truncated version of the infinite mixture to a level <span class="math inline">\(L\)</span>. The truncation level <span class="math inline">\(L\)</span> is such that the tail probability left from the approximation is at most <code>epsilon</code>, denoted <span class="math inline">\(\epsilon\)</span>. The following relationship determines the truncation level: <span class="math inline">\(L = \log(\epsilon) / \log[(\alpha+N) / (\alpha + N +1)]\)</span>. The value of <span class="math inline">\(L\)</span> varies at each iteration of the MCMC’s output when <span class="math inline">\(\alpha\)</span> is random, while it is the same at each iteration when <span class="math inline">\(\alpha\)</span> is fixed. For more details about sampling the random measure and its truncation level see <span class="citation">Gelfand and Kottas (<a href="references.html#ref-gelfand_2002">2002</a>)</span>.</p>
 <p>Because of the discrete nature of the atom’s distribution, the stick-breaking representation truncated to a level <span class="math inline">\(L\)</span> will generally have repeated values. Therefore, in order to reduce the output’s dimensionality, the stick-breaking weights of identical atoms are added up. This results in samples of <span class="math inline">\(G\)</span> that have only the ‘unique’ atoms in <span class="math inline">\(\{\theta_l\}_{l=1}^L\)</span>.</p>
 <p>The following code exemplifies how to generate samples from <span class="math inline">\(G\)</span> after defining the model as in Section <a href="cha-bnp.html#sec:excrp">10.2.2</a>.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cmodel &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(model)
-
-monitors &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&#39;z&#39;</span>, <span class="st">&#39;thetatilde&#39;</span>, <span class="st">&#39;s2tilde&#39;</span> , <span class="st">&#39;alpha&#39;</span>)
-modelConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(model, <span class="dt">monitors =</span> monitors)
-modelMCMC &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(modelConf)
-
-cmodelMCMC &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(modelMCMC, <span class="dt">project =</span> model)
-cmodelMCMC<span class="op">$</span><span class="kw">run</span>(<span class="dv">1000</span>)
-
-samplesG &lt;-<span class="st"> </span><span class="kw">getSamplesDPmeasure</span>(cmodelMCMC)</code></pre></div>
+<div class="sourceCode" id="cb214"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb214-1" title="1">cmodel &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(model)</a>
+<a class="sourceLine" id="cb214-2" title="2"></a>
+<a class="sourceLine" id="cb214-3" title="3">monitors &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&#39;z&#39;</span>, <span class="st">&#39;thetatilde&#39;</span>, <span class="st">&#39;s2tilde&#39;</span> , <span class="st">&#39;alpha&#39;</span>)</a>
+<a class="sourceLine" id="cb214-4" title="4">modelConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(model, <span class="dt">monitors =</span> monitors)</a>
+<a class="sourceLine" id="cb214-5" title="5">modelMCMC &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(modelConf)</a>
+<a class="sourceLine" id="cb214-6" title="6"></a>
+<a class="sourceLine" id="cb214-7" title="7">cmodelMCMC &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(modelMCMC, <span class="dt">project =</span> model)</a>
+<a class="sourceLine" id="cb214-8" title="8">cmodelMCMC<span class="op">$</span><span class="kw">run</span>(<span class="dv">1000</span>)</a>
+<a class="sourceLine" id="cb214-9" title="9"></a>
+<a class="sourceLine" id="cb214-10" title="10">samplesG &lt;-<span class="st"> </span><span class="kw">getSamplesDPmeasure</span>(cmodelMCMC)</a></code></pre></div>
 </div>
 </div>
 <div id="sec:mcmcsb" class="section level3">
 <h3><span class="header-section-number">10.4.2</span> Sampling stick-breaking models</h3>
-<p>NIMBLE’s MCMC engine provides specialized samplers for the beta-distributed random variables that are the arguments to the stick-breaking function, updating each component of the weight vector sequentially. The sampler is assigned based on inspection of the model structure. Specifically, the specialized sampler is assigned when the membership vector has a categorical distribution, its weights are defined by a stick-breaking function, and the vector defining the weights follows a beta distribution.</p>
+<p>NIMBLE’s MCMC engine provides specialized samplers for the
+beta-distributed random variables that are the arguments to the stick-breaking function, updating each component of the weight vector sequentially. The sampler is assigned based on inspection of the model structure. Specifically, the specialized sampler is assigned when the membership vector has a categorical distribution, its weights are defined by a stick-breaking function, and the vector defining the weights follows a beta distribution.</p>
 <div id="initial-values-2" class="section level4">
 <h4><span class="header-section-number">10.4.2.1</span> Initial values</h4>
 <p>Valid initial values should be provided for all elements of the stick-breaking function and membership variable before running the MCMC. A simple and safe choice for <span class="math inline">\(z\)</span> is to provide a sample of size <span class="math inline">\(N\)</span>, of values between 1 and some value less than <span class="math inline">\(L\)</span>, with replacement, as done in the preceding stick-breaking example. For the stick variables, safe initial values can be simulated from a beta distribution.</p>
@@ -685,11 +725,13 @@ samplesG &lt;-<span class="st"> </span><span class="kw">getSamplesDPmeasure</spa
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
 <script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
 <script>
 gitbook.require(["gitbook"], function(gitbook) {
 gitbook.start({
@@ -697,12 +739,11 @@ gitbook.start({
 "github": false,
 "facebook": true,
 "twitter": true,
-"google": false,
 "linkedin": false,
 "weibo": false,
 "instapaper": false,
 "vk": false,
-"all": ["facebook", "google", "twitter", "linkedin", "weibo", "instapaper"]
+"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
 },
 "fontsettings": {
 "theme": "white",
@@ -714,6 +755,10 @@ gitbook.start({
 "text": null
 },
 "history": {
+"link": null,
+"text": null
+},
+"view": {
 "link": null,
 "text": null
 },
@@ -731,10 +776,11 @@ gitbook.start({
   (function () {
     var script = document.createElement("script");
     script.type = "text/javascript";
-    var src = "";
+    var src = "true";
     if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
-    if (location.protocol !== "file:" && /^https?:/.test(src))
-      src = src.replace(/^https?:/, '');
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
     script.src = src;
     document.getElementsByTagName("head")[0].appendChild(script);
   })();

@@ -197,7 +197,7 @@ test_that("Check sampler_RJ behaviour - no indicator", {
   ## beta1 should be less likely to be 0
   expect_true(sum(output[, 'beta1'] == 0)/100 < 0.5)
   ## beta1 estimate (comparison with lm estimate)
-  expect_equal(mean(output[which(output[, 'beta1'] != 0), 'beta1']), as.numeric(coef(lm(Y ~ x1 + x2))[2]) , tolerance=0.1, scale = 1)
+  expect_lt(abs(mean(output[which(output[, 'beta1'] != 0), 'beta1'])- as.numeric(coef(lm(Y ~ x1 + x2))[2])), 0.1)
 
   # ## beta1 should be in the model in last 100 iterations (chain has converged)
   # expect_false(any(output[, 'beta1'] == 0))
@@ -216,7 +216,7 @@ test_that("Check sampler_RJ behaviour - no indicator", {
   output <- runMCMC(cMCMC,  niter=100, thin=1,
                     inits = list(beta0 = 0, beta1 = 0, beta2 = 0, sigma = sd(Y)), setSeed = 1)
   ## beta1 estimate (comparison with lm estimate)
-  expect_equal(mean(output[which(output[, 'beta1'] != 0), 'beta1']), as.numeric(coef(lm(Y ~ x1 + x2))[2]) , tolerance=0.1, scale = 1)
+  expect_lt(abs(mean(output[which(output[, 'beta1'] != 0), 'beta1']) - as.numeric(coef(lm(Y ~ x1 + x2))[2])), 0.1)
   
   #######
   ## fixed value on true beta1
@@ -230,7 +230,7 @@ test_that("Check sampler_RJ behaviour - no indicator", {
   cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
   output <- runMCMC(cMCMC,  niter=100, thin=1,
                     inits = list(beta0 = 0, beta1 = 0, beta2 = 0,  sigma = sd(Y)), setSeed = 1)
-  expect_equal(mean(output[which(output[, 'beta1'] != 0), 'beta1']), 1.5 , tolerance=0.01, scale = 1)
+  expect_lt(abs(mean(output[which(output[, 'beta1'] != 0), 'beta1'])- 1.5), 0.01)
   
   #######
   ## fixedValue on far value for beta2 
@@ -246,7 +246,7 @@ test_that("Check sampler_RJ behaviour - no indicator", {
                     inits = list(beta0 = 1, beta1 = 1, beta2 = 1, sigma = sd(Y)), setSeed = 1)
   
   ## still beta2 is in the models but really small
-  expect_equal(mean(output[which(output[, 'beta2'] != 0), 'beta2']), 0 , tolerance=0.1, scale = 1)
+  expect_lt(abs(mean(output[which(output[, 'beta2'] != 0), 'beta2'])), 0.1)
   
   
   if(.Platform$OS.type != "windows") {
@@ -405,7 +405,7 @@ test_that("Check sampler_RJ_indicator behaviour - indicator", {
   expect_equal(sum(output[, 'beta1'] != 0)/100, mean(output[, 'z1']) )
   
   ## check beta1 estimate
-  expect_equal(mean(output[which(output[, 'z1'] != 0), 'beta1']), as.numeric(coef(lm(Y ~ x1 + x2))[2]) , tolerance=0.1, scale = 1)
+  expect_lt(abs(mean(output[which(output[, 'z1'] != 0), 'beta1']) - as.numeric(coef(lm(Y ~ x1 + x2))[2])), 0.1)
 
   
   ## more challeging data

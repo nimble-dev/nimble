@@ -37,6 +37,8 @@ R_CallMethodDef CallEntries[] = {
  FUN(C_rinterval, 3),
  FUN(C_dmvt_chol, 6),
  FUN(C_rmvt_chol, 4),
+ FUN(C_dlkj_corr_cholesky, 4),
+ FUN(C_rlkj_corr_cholesky, 2),
  FUN(C_dexp_nimble, 3),
  FUN(C_rexp_nimble, 2),
  FUN(C_pexp_nimble, 4),
@@ -66,6 +68,8 @@ R_CallMethodDef CallEntries[] = {
  FUN(C_anyStochDependencies, 1),
  FUN(C_anyStochParents, 1),
  FUN(C_getDependencies, 4),
+ FUN(C_getParents, 5),
+ FUN(C_getConditionallyIndependentSets, 6),
  FUN(C_getDependencyPaths, 2), 
  FUN(C_getDependencyPathCountOneNode, 2), 
  {NULL, NULL, 0}

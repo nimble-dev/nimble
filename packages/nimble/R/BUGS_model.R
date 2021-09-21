@@ -1,5 +1,5 @@
 #' Class \code{modelBaseClass}
-#' @aliases modelBaseClass getVarNames getNodeNames topologicallySortNodes resetData setData isData isEndNode getDistribution isDiscrete isBinary isStoch isDeterm isTruncated isUnivariate isMultivariate getDimension getDependencies getDependenciesList getDownstream expandNodeNames setInits checkConjugacy getCode newModel [[,modelBaseClass-method [[<-,modelBaseClass-method initializeInfo
+#' @aliases modelBaseClass getVarNames getNodeNames topologicallySortNodes resetData setData isData isEndNode getDistribution isDiscrete isBinary isStoch isDeterm isTruncated isUnivariate isMultivariate getDimension getDependencies getDependenciesList getDownstream expandNodeNames setInits checkConjugacy getCode newModel getParents [[,modelBaseClass-method [[<-,modelBaseClass-method initializeInfo
 #' @export
 #' @description
 #' This class underlies all NIMBLE model objects: both R model objects created from the return value of nimbleModel(), and compiled model objects.
@@ -83,11 +83,7 @@ See `help(getBound)`
                                   },
                                   getCode = function() {
                                       '
-Return the code for a model after\n,
-processing if-then-else statements,\n
-expanding macros, and replacing some\n
-keywords (e.g. nimStep for step) to \n
-avoid R ambiguity.
+Return the code for a model after processing if-then-else statements, expanding macros, and replacing some keywords (e.g. nimStep for step) to avoid R ambiguity.
 '
                                       modelDef$BUGScode
                                   },
@@ -365,11 +361,6 @@ nodes: An optional character vector supplying a subset of nodes for which to ext
                                       }
                                       ## "includeData" argument to getVarNames (with default = TRUE)
                                       ## was removed by consensus, March 2017.
-                                      ## no uses of it anywhere in codebase, plus it errors out.
-                                      ##if(!includeData) {
-                                      ##    allData <- unlist(lapply(mget(ans, envir = tm$isDataEnv, inherits = FALSE, ifnotfound = TRUE), all))
-                                      ##    ans <- ans[!allData]
-                                      ##}
     	                              return(ans)
                                   },
 
@@ -411,7 +402,7 @@ returnType: Character argument specific type object returned. Options are \'name
 
 returnScalar Componenets: Logical argument specifying whether multivariate nodes should return full node name (i.e. \'x[1:2]\') or should break down into scalar componenets (i.e. \'x[1]\' and \'x[2]\')
 
-Details: Multiple logical input arguments may be used simultaneously.  For example, model$getNodeNames(endOnly = TRUE, dataOnly = TRUE) will return all end-level nodes from the model which are designated as \'data\'.
+Details: Multiple logical input arguments may be used simultaneously.  For example, `model$getNodeNames(endOnly = TRUE, dataOnly = TRUE)` will return all end-level nodes from the model which are designated as \'data\'.
 '
                                       ## Part of fix for Issue #340:
                                       ## In previous versions, we started with validValues all TRUE
@@ -437,7 +428,10 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                           if(dataOnly)			validValues[!boolIsData] <- FALSE
                                       }
                                       if(topOnly)			validValues[-modelDef$maps$top_IDs] <- FALSE
-                                      if(latentOnly)			validValues[-modelDef$maps$latent_IDs] <- FALSE
+                                      if(latentOnly) {
+                                          if(!length(modelDef$maps$latent_IDs))  # no latents
+                                              validValues <- rep(FALSE, length(validValues)) else validValues[-modelDef$maps$latent_IDs] <- FALSE
+                                      }
                                       if(endOnly)				validValues[-modelDef$maps$end_IDs] <- FALSE
 
                                       ## Part of fix for Issue #340.
@@ -471,7 +465,7 @@ expandNodeNamesFromGraphIDs = function(graphID, returnScalarComponents = FALSE, 
         return(nodeNames)
     }
     if(returnType == 'ids'){
-        if(returnScalarComponents) print("NIMBLE development warning: returning IDs of scalar components may not be meaningful.  Checking to see if we ever see this message.")
+        if(returnScalarComponents) message("NIMBLE development warning: returning IDs of scalar components may not be meaningful.  Checking to see if we ever see this message.")
         return(graphID)
     }
     if(!(returnType %in% c('ids','names')))
@@ -497,19 +491,6 @@ unique: should names be the unique names or should original ordering of nodes (a
                                       if(length(nodes) == 0) return(if(returnType=='names') character() else numeric())
                                       graphID <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents, unique = unique, ignoreNotFound = TRUE)
                                       expandNodeNamesFromGraphIDs(graphID, returnScalarComponents, returnType, sort)
-                                      ## if(sort)
-                                      ##     graphID <- sort(graphID)
-                                      ## if(returnType == 'names'){
-                                      ##     if(returnScalarComponents) nodeNames <- modelDef$maps$elementNames[graphID] ## these are really elementIDs
-                                      ##     else nodeNames <- modelDef$maps$graphID_2_nodeName[graphID]
-                                      ##     return(nodeNames)
-                                      ## }
-                                      ## if(returnType == 'ids'){
-                                      ##     if(returnScalarComponents) print("NIMBLE development warning: returning IDs of scalar components may not be meaningful.  Checking to see if we ever see this message.")
-                                      ##     return(graphID)
-                                      ## }
-                                      ## if(!(returnType %in% c('ids','names')))
-                                      ## 	stop('instead expandNodeNames, imporper returnType chosen')
                                   },
 
                                   topologicallySortNodes = function(nodes, returnType = 'names') {
@@ -522,9 +503,9 @@ nodes: A character vector of node or variable names, which is to be topologicall
 
 returnType: character vector indicating return type. Choices are "names" or "ids"
 
-Details: This function merely reorders its input argument.  This may be inportany prior to calls such as simulate(model, nodes) or calculate(model, nodes), to enforce that the operation is performed in topological order.
+Details: This function merely reorders its input argument.  This may be important prior to calls such as model$simulate(nodes) or model$calculate(nodes), to enforce that the operation is performed in topological order.
 '
-                                      nodeIDs <- expandNodeNames(nodes, returnType = 'ids')			#modelDef$maps$nodeName_2_graphID[nodes]
+                                      nodeIDs <- expandNodeNames(nodes, returnType = 'ids')
                                       nodeIDs <- sort(nodeIDs)
                                       nodeNames <- expandNodeNames(nodeIDs, returnType = returnType)
                                       return(nodeNames)
@@ -560,7 +541,7 @@ Arguments:
 
 ...:  Arguments may be provided as named elements with numeric values or as character names of model variables.  These may be provided in a single list, a single character vector, or as multiple arguments.  When a named element with a numeric value is provided, the size and dimension must match the corresponding model variable.  This value will be copied to the model variable and any non-NA elements will be marked as data.  When a character name is provided, the value of that variable in the model is not changed but any currently non-NA values are marked as data.  Examples: setData(\'x\', y = 1:10) will mark both x and y as data and will set the value of y to 1:10.  setData(list(\'x\', y = 1:10)) is equivalent.  setData(c(\'x\',\'y\')) or setData(\'x\',\'y\') will mark both x and y as data.
 
-Details: If a provided value (or the current value in the model when only a name is specified) contains some NA values, then the model nodes corresponding to these NAs will not have their value set, and will not be designated as \'data\'.  Only model nodes corresponding to numeric values in the argument list elements will be designated as data.  Designating a deterministic model node as \'data\' will result in an error.  Designating part of a multivariate node as \'data\' and part as non-data (NA) will result in an error; multivariate nodes must be entirely data, or entirely non-data.
+Details: If a provided value (or the current value in the model when only a name is specified) contains some NA values, then the model nodes corresponding to these NAs will not have their value set, and will not be designated as \'data\'.  Only model nodes corresponding to numeric values in the argument list elements will be designated as data.  Designating a deterministic model node as \'data\' will result in an error.  Designating part of a multivariate node as \'data\' and part as non-data (NA) is allowed, but \'isData()\' will report such a node as being \'data\', calculations with the node will generally return NA, and MCMC samplers will not be assigned to such nodes.
 '
                                           ## new functionality for setData():
                                           ## ... can be a list, a character vector of variable names, or a mix of both
@@ -593,7 +574,8 @@ Details: If a provided value (or the current value in the model when only a name
                                                }
                                            }
                                            names(data) <- dataNames
-
+                                           if(any(names(data) == ""))
+                                               warning("setData: one or more elements of 'data' is unnamed.")
                                       origData <<- data
                                       ## argument is a named list of data values.
                                       ## all nodes specified (except with NA) are set to that value, and have isDataEnv$VAR set to TRUE
@@ -614,10 +596,9 @@ Details: If a provided value (or the current value in the model when only a name
                                               if(warnAboutMissingNames
                                                  & nimble::nimbleOptions("verbose")) {
                                                   if(varName == '') {
-                                                      warning('unnamed element provided to setData')
+                                                      warning('setData: unnamed element provided to setData.')
                                                   } else 
-                                                      warning('data not used in model: ',
-                                                              varName)
+                                                      message("  [Note] '", varName, "' is provided in 'data' but is not a variable in the model and is being ignored.")
                                               }
                                               ## Removing unnecessary
                                               ## elements does not
@@ -662,26 +643,26 @@ Arguments:
 
 nodes: A character vector of node or variable names.
 
-Details: The variable or node names specified is expanded into a vector of model node names.  A logical vector is returned, indicating whether each model node has been flagged as containing \'data\'.
+Details: The variable or node names specified is expanded into a vector of model node names. A logical vector is returned, indicating whether each model node has been flagged as containing \'data\'. Multivariate nodes for which any elements are flagged as containing \'data\' will be assigned a value of TRUE.
 '
                                                 g_id = modelDef$nodeName2GraphIDs(nodes, unique = FALSE)
                                   		return(isDataFromGraphID(g_id))
                                   },
 
                                   isDataFromGraphID = function(g_id){
-                                      ## notice this uses only the first element for multivariate nodes
+                                      ## returns TRUE if any elements are flagged as data
                                       nodeNames <- modelDef$maps$graphID_2_nodeName[g_id]
                                   	ret <- unlist(lapply(as.list(nodeNames),
                                                   function(nn)
-                                                    return(as.vector(eval(parse(text=nn, keep.source = FALSE)[[1]],
-                                                                                envir=isDataEnv))[[1]])))
+                                                    return(any(eval(parse(text=nn, keep.source = FALSE)[[1]],
+                                                                                envir=isDataEnv)))))
                                     if(is.null(ret))   ret <- logical(0)
                                     return(ret)
                                   },
 
                                   getDependenciesList = function(returnNames = TRUE, sort = TRUE) {
 '
-Returns a list of all neighbor relationships.  Each list element gives the one-step dependencies of one vertex, and the element name is the vertex label (integer ID or character node name)
+Returns a list of all dependent neighbor relationships.  Each list element gives the one-step dependencies of one vertex, and the element name is the vertex label (integer ID or character node name)
 
 Arguments:
 
@@ -705,22 +686,179 @@ Details: This provides a fairly raw representation of the graph (model) structur
                                   getDependencyPathCountOneNode = function(node) {
                                       if(length(node) > 1)
                                           stop("getDependencyPathCountOneNode: argument 'node' should provide a single node.")
-                                      if(inherits(node, 'character')) {
+                                      if(is.character(node)) {
                                           node <- modelDef$nodeName2GraphIDs(node)
                                       }
-                                      if(!inherits(node, 'numeric'))
+                                      if(!is.numeric(node))
                                           stop("getDependencyPathCountOneNode: argument 'node' should be a character node name or a numeric node ID.")
                                       modelDef$maps$nimbleGraph$getDependencyPathCountOneNode(node = node)
                                   },
 getDependencyPaths = function(node) {
     if(length(node) > 1)
         stop("getDependencyPaths: argument 'node' should provide a single node.")
-    if(inherits(node, 'character')) {
+    if(is.character(node)) {
         node <- modelDef$nodeName2GraphIDs(node)
     }
-    if(!inherits(node, 'numeric'))
+    if(!is.numeric(node))
         stop("getDependencyPaths: argument 'node' should be a character node name or a numeric node ID.")
     modelDef$maps$nimbleGraph$getDependencyPaths(node = node)
+},
+getParentsList = function(returnNames = TRUE, sort = TRUE) {
+'
+Returns a list of all parent neighbor relationships.  Each list element gives the one-step parents of one vertex, and the element name is the vertex label (integer ID or character node name)
+
+Arguments:
+
+returnNames: If TRUE (default), list names and element contents are returns as character node names, e.g. \'x[1]\'.  If FALSE, everything is returned using graph IDs, which are unique integer labels for each node.
+
+sort: If TRUE (default), each list element is returned in topologically sorted order.  If FALSE, they are returned in arbitrary order.
+
+Details: This provides a fairly raw representation of the graph (model) structure that may be useful for inspecting what NIMBLE has created from model code.
+'
+  maps <- modelDef$maps
+  # Future option: We could put edgesTo2From in the maps.
+  # For now we create it on the fly here
+  maxNodeID <- length(maps$vertexID_2_nodeID) ## should be same as length(maps$nodeNames)
+  edgesLevels <- if(maxNodeID > 0) 1:maxNodeID else numeric(0)
+  fedgesTo <- factor(maps$edgesTo, levels = edgesLevels) ## setting levels ensures blanks inserted into the splits correctly
+  edgesTo2From <- split(maps$edgesFrom, fedgesTo)
+
+  if(!returnNames)
+    if(!sort) return(edgesTo2From)
+  else return(lapply(edgesTo2From, sort))
+  else {
+    if(!sort) ans <- lapply(edgesTo2From, function(x) modelDef$maps$graphID_2_nodeName[x])
+    else ans <- lapply(edgesTo2From, function(x) modelDef$maps$graphID_2_nodeName[sort(x)])
+    names(ans) <- modelDef$maps$graphID_2_nodeName[as.numeric(names(ans))]
+    return(ans)
+  }
+},
+
+getParents = function(nodes, omit = character(), self = FALSE,
+                      determOnly = FALSE, stochOnly = FALSE,
+                      includeData = TRUE, dataOnly = FALSE,
+                      includeRHSonly = FALSE, upstream = FALSE,
+                      immediateOnly = FALSE,
+                      returnType = 'names', returnScalarComponents = FALSE) {
+  '
+ Returns a character vector of the nodes on which the input nodes depend, sorted topologically according to the model graph, by default recursing and stopping at stochastic parent nodes.  In the genealogical metaphor for a graphical model, this function returns the "parents" of the input nodes. In the river network metaphor, it returns upstream nodes.  By default, the returned nodes omit the input nodes and stop at stochastic nodes.  Additional input arguments provide flexibility in the values returned.
+
+Arguments:
+
+nodes: Character vector of node names, with index blocks allowed, and/or variable names, the parents of which will be returned.
+
+omit: Character vector of node names, which will be omitted from the nodes returned.  In addition, parent nodes beyond these omitted nodes will not be returned.  The omitted nodes argument serves to stop the upward search through the hierarchical model structure, and excludes the specified node.
+
+self: Logical argument specifying whether to include the input argument nodes in the return vector of dependent nodes.  Default is FALSE.
+
+determOnly: Logical argument specifying whether to return only deterministic nodes.  Default is FALSE.
+
+stochOnly: Logical argument specifying whether to return only stochastic nodes.  Default is TRUE.  If both determOnly and stochOnly are TRUE, no nodes will be returned.
+
+includeData: Logical argument specifying whether to include \'data\' nodes (set via nimbleModel or the setData method).  Default is TRUE.
+
+dataOnly: Logical argument specifying whether to return only \'data\' nodes.  Default is FALSE.
+
+includeRHSonly: Logical argument specifying whether to include right-hand-side-only nodes (model nodes which never appear on the left-hand-side of ~ or <- in the model code).  These nodes are neither stochastic nor deterministic, but instead function as variable inputs to the model.  Default is FALSE.
+
+upstream: Logical argument specifying whether the upward search through the hierarchical model structure should continue beyond the first and subsequent stochastic nodes encountered, hence returning all nodes upstream of the input nodes.  Default is FALSE.
+
+immediateOnly: Logical argument specifying whether only the immediate parent nodes should be returned, even if they are deterministic.  If FALSE, getParents recurses and stops at stochastic nodes.  Default is FALSE.
+
+returnType: Character argument specifying type of object returned. Options are \'names\' (returns character vector) and \'ids\' (returns numeric graph IDs for model).
+
+returnScalarComponenets: Logical argument specifying whether multivariate nodes should be returned as full node names (i.e. \'x[1:2]\') or as scalar componenets (i.e. \'x[1]\' and \'x[2]\').
+
+Details: The upward search for dependent nodes propagates through deterministic nodes, but by default will halt at the first level of stochastic nodes encountered.  Use getParentsList for a list of one-step parent nodes of each node in the model.
+'
+  if(is.character(nodes)) {
+    elementIDs <- modelDef$nodeName2GraphIDs(nodes, FALSE)
+    nodeIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
+                      FALSE,
+                      FALSE,
+                      NA)
+  }
+  else if(is.numeric(nodes))
+    nodeIDs <- nodes
+  if(is.character(omit)) {
+    elementIDs <- modelDef$nodeName2GraphIDs(omit, FALSE)
+    omitIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
+                      FALSE,
+                      FALSE,
+                      NA)
+  }
+  else if(is.numeric(omit))
+    omitIDs <- omit
+
+  parentIDs <- modelDef$maps$nimbleGraph$getParents(nodes = nodeIDs,
+                                                    omit = if(is.null(omitIDs)) integer() else omitIDs,
+                                                    upstream = upstream,
+                                                    immediateOnly = immediateOnly)
+  if(self)	{ # The C++ call does *not* return self nodes
+    nodeFunIDs <- unique(modelDef$maps$vertexID_2_nodeID[ nodeIDs ])
+    parentIDs <- sort(c(parentIDs, nodeFunIDs))
+  }
+  if(!includeRHSonly) parentIDs <- parentIDs[modelDef$maps$types[parentIDs] != 'RHSonly']
+  if(determOnly)      parentIDs <- parentIDs[modelDef$maps$types[parentIDs] == 'determ']
+  if(stochOnly)	      parentIDs <- parentIDs[modelDef$maps$types[parentIDs] == 'stoch']
+  if(!includeData)	parentIDs <- parentIDs[!isDataFromGraphID(parentIDs)]
+  if(dataOnly)		parentIDs <- parentIDs[isDataFromGraphID(parentIDs)]
+  
+  parentIDs <- modelDef$nodeName2GraphIDs(modelDef$maps$graphID_2_nodeName[parentIDs], !returnScalarComponents)
+  if(returnScalarComponents)
+    parentIDs = unique(parentIDs, FALSE, FALSE, NA)
+  if(returnType == 'ids') {
+    if(returnScalarComponents) message("NIMBLE development warning: calling getParents with returnType = ids and returnScalarComponents may not be meaningful.")
+    return(depIDs)
+  }
+  if(returnType == 'names') {
+    if(returnScalarComponents)
+      return(modelDef$maps$elementNames[parentIDs])
+    retVal <- modelDef$maps$nodeNames[parentIDs]
+    return(retVal)
+  }
+  if(!(returnType %in% c('ids', 'names')))
+    stop('instead getDependencies, improper returnType chosen')
+},
+getConditionallyIndependentSets = function(nodes,
+                                           givenNodes,
+                                           omit = integer(),
+                                           inputType = c("latent", "param", "data"),
+                                           stochOnly = TRUE,
+                                           returnType = 'names',
+                                           returnScalarComponents = FALSE) {
+  '
+Get a list of conditionally independent sets of nodes in a nimble model.
+
+Conditionally independent sets of nodes are typically groups of latent states whose joint conditional probability (density) will not change even if any other non-fixed node is changed.  Default fixed nodes are data nodes and parameter nodes (with no parent nodes), but this can be controlled.
+
+model: A nimble model object (uncompiled or compiled).
+
+nodes: A vector of node names or their graph IDs that are the starting nodes from which conditionally independent sets of nodes should be found.  If omitted, the default will be all latent nodes, defined as stochastic nodes that are not data and have at least one stochastic parent node (possible with deterministic nodes in between).  Note that this will omit latent states that have no hyperparameters.  An example is the first latent state in some state-space (time-series) models, which is sometimes declared with known prior.  See type because it relates to the interpretation of nodes.
+
+givenNodes: A vector of node names or their graph IDs that should be considered as fixed and hence can be conditioned on.  If omitted, the default will be all data nodes and all parameter nodes, the latter defined as nodes with no stochastic parent nodes (skipping over deterministic parent nodes).
+
+omit: A vector of node names or their graph IDs that should be omitted and should block further graph exploration. 
+
+intputType: Type of input nodes provided in nodes argument.  For \'latent\', the input nodes are interpreted as latent states, from which both downstream and upstream exploration should be done to find nodes in the same set (nodes that are not conditionally independent from each other).  For \'param\', the input nodes are interpreted as parameters, so graph exploration begins from the  top (input) and proceeds downstream.  For \'data\', the input nodes are interpreted and data nodes, so graph exploration begins from the bottom (input) and proceeds upstream.
+
+stochOnly: Logical for whether only stochastic nodes should be returned (default = TRUE).  If FALSE, both deterministic and stochastic nodes are returned.
+
+returnType: Either \'names\' for returned nodes to be node names or \'ids\' for returned nodes to be graph IDs.
+
+returnScalarComponents: If FALSE (default), multivariate nodes are returned as full names (e.g. \'x[1:3]\').  If TRUE, they are returned as scalar elements (e.g. \'x[1]\',  \'x[2]\',  \'x[3]\').
+
+Details: This function returns sets of conditionally independent nodes.  Multiple input nodes might be in the same set or different sets, and other nodes (not in codes) will be included.
+
+By default, deterministic dependencies of givenNodes are also counted as given nodes.  This is relevant only for parent nodes. This allows the givenNodes to include only stochastic nodes.  Say we have A -> B -> C -> D.  A and D are givenNodes.  C is a latent node.  B is a deterministic node.  By default, B is considered given.  Otherwise, other branches that depend on B would be grouped in the same output set as C, but this is usually not what is wanted.  Any use of the resulting output must ensure that B is calculated when necessary, as usual with nimble\'s model-generic programming.  To turn off this feature, set nimbleOptions(groupDetermWithGivenInCondIndSets = FALSE).
+
+There is a non-exported function `nimble:::testConditionallyIndependentSets(model, sets, initialize = TRUE)` that tests whether the conditional independence of sets is valid.  It should be the case that `nimble:::testConditionallyIndependentSets(model, getConditionallyIndependentSets(model), initialize = TRUE)` returns `TRUE`.
+
+Return value: List of nodes that are in conditionally independent sets.  Within each set, nodes are returned in topologically sorted order.  The sets themselves are returned in topologically sorted order of their first nodes.
+'
+  inputType <- match.arg(inputType)
+  nimble:::getConditionallyIndependentSets(.self, nodes, givenNodes, omit, inputType,
+                                  stochOnly, returnType, returnScalarComponents)
 },
                                   getDependencies = function(nodes, omit = character(), self = TRUE,
                                       determOnly = FALSE, stochOnly = FALSE,
@@ -728,83 +866,62 @@ getDependencyPaths = function(node) {
                                       includeRHSonly = FALSE, downstream = FALSE,
                                       returnType = 'names', returnScalarComponents = FALSE) {
 '
-Returns a character vector of the nodes dependent upon the input argument nodes, sorted topologically according to the model graph.  Aditional input arguments provide flexibility in the values returned.
+Returns a character vector of the nodes dependent upon the input argument nodes, sorted topologically according to the model graph. In the genealogical metaphor for a graphical model, this function returns the "children" of the input nodes.  In the river network metaphor, it returns downstream nodes. By default, the returned nodes include the input nodes, include both deterministic and stochastic nodes, and stop at stochastic nodes. Additional input arguments provide flexibility in the values returned.
 
 Arguments:
 
 nodes: Character vector of node names, with index blocks allowed, and/or variable names, the dependents of which will be returned.
 
-omit: Character vector of node names, which will be omitted from the nodes returned.  In addition, dependent nodes subsequent to these omitted nodes will not be returned.  The omitted nodes argument serves to stop the downward search within the hierarchical model struture, and excludes the specified node.
+omit: Character vector of node names, which will be omitted from the nodes returned.  In addition, dependent nodes subsequent to these omitted nodes will not be returned.  The omitted nodes argument serves to stop the downward search within the hierarchical model structure, and excludes the specified node.
 
 self: Logical argument specifying whether to include the input argument nodes in the return vector of dependent nodes.  Default is TRUE.
 
 determOnly: Logical argument specifying whether to return only deterministic nodes.  Default is FALSE.
 
-stochOnly: Logical argument specifying whether to return only stochastic nodes.  Default is FALSE.
+stochOnly: Logical argument specifying whether to return only stochastic nodes.  Default is FALSE.  If both determOnly and stochOnly are TRUE, no nodes will be returned.
 
-includeData: Logical argument specifying whether to include \'data\' nodes (set via the member method setData).  Default is TRUE.
+includeData: Logical argument specifying whether to include \'data\' nodes (set via nimbleModel or the setData method).  Default is TRUE.
 
 dataOnly: Logical argument specifying whether to return only \'data\' nodes.  Default is FALSE.
 
 includeRHSonly: Logical argument specifying whether to include right-hand-side-only nodes (model nodes which never appear on the left-hand-side of ~ or <- in the model code).  These nodes are neither stochastic nor deterministic, but instead function as variable inputs to the model.  Default is FALSE.
 
-downstream: Logical argument specifying whether the downward search through the model hierarchical structure should continue beyond the first and subsequent stochastic nodes encountered, hence returning all nodes downstream of the input nodes.  Default is FALSE.
+downstream: Logical argument specifying whether the downward search through the hierarchical model structure should continue beyond the first and subsequent stochastic nodes encountered, hence returning all nodes downstream of the input nodes.  Default is FALSE.
 
-returnType: Character argument specific type object returned. Options are \'names\' (returns character vector) and \'ids\' (returns numeric graph IDs for model)
+returnType: Character argument specifying type of object returned. Options are \'names\' (returns character vector) and \'ids\' (returns numeric graph IDs for model).
 
-returnScalar Componenets: Logical argument specifying whether multivariate nodes should return full node name (i.e. \'x[1:2]\') or should break down into scalar componenets (i.e. \'x[1]\' and \'x[2]\')
+returnScalarComponenets: Logical argument specifying whether multivariate nodes should be returned as full node names (i.e. \'x[1:2]\') or as scalar componenets (i.e. \'x[1]\' and \'x[2]\').
 
-Details: The downward search for dependent nodes propagates through deterministic nodes, but by default will halt at the first level of stochastic nodes encountered.
+Details: The downward search for dependent nodes propagates through deterministic nodes, but by default will halt at the first level of stochastic nodes encountered.  Use getDependenciesList for a list of one-step dependent nodes of each node in the model.
 '
-                                      if(inherits(nodes, 'character')) {
-                                          ## elementIDs <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents)
-                                          ## if(returnScalarComponents)
-                                          ##    # nodeIDs <- .Internal(unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
-                                          ##     nodeIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
-                                          ##                          FALSE,
-                                          ##                          FALSE,
-                                          ##                          NA)
-                                          ## else
-                                          ##     nodeIDs <- elementIDs
-
-                                          ## experimental: always start from scalar components
+                                      if(is.character(nodes)) {
+                                          ## always start from scalar components
                                           elementIDs <- modelDef$nodeName2GraphIDs(nodes, FALSE)
                                           nodeIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
                                                             FALSE,
                                                             FALSE,
                                                             NA)
                                       }
-                                      else if(inherits(nodes, 'numeric'))
+                                      else if(is.numeric(nodes))
                                           nodeIDs <- nodes
 
-                                      if(inherits(omit, 'character')) { ## mimic above if it works
-                                      ##     elementIDs <- modelDef$nodeName2GraphIDs(omit, !returnScalarComponents)
-                                      ##     if(returnScalarComponents)
-                                      ##         omitIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],
-                                      ##                              FALSE,
-                                      ##                              FALSE,
-                                      ##                              NA)
-                                      ##     else
-                                      ##         omitIDs <- elementIDs
+                                      if(is.character(omit)) { ## mimic above
                                           elementIDs <- modelDef$nodeName2GraphIDs(omit, FALSE)
                                           omitIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
                                                             FALSE,
                                                             FALSE,
                                                             NA)
                                       }
-                                      else if(inherits(omit, 'numeric'))
+                                      else if(is.numeric(omit))
                                           omitIDs <- omit
-
-## new C++ version
+## Go into C++
  depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(is.null(omitIDs)) integer() else omitIDs, downstream = downstream)
-
-## ## Uncomment these lines to catch discrepancies between the old and new systems.
+## ## Uncomment these lines to catch discrepancies between the C++ and R systems.
 ## depIDs <- nimble:::gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(all = TRUE), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
 ## if(!identical(as.numeric(depIDsOld), as.numeric(depIDs))) {
 ##     cat('caught a discrepancy for depIDs')
 ##     browser()
 ## }
-
                                       if(!includeRHSonly) depIDs <- depIDs[modelDef$maps$types[depIDs] != 'RHSonly']
                                       if(determOnly)	depIDs <- depIDs[modelDef$maps$types[depIDs] == 'determ']
                                       if(stochOnly)	depIDs <- depIDs[modelDef$maps$types[depIDs] == 'stoch']
@@ -819,7 +936,7 @@ if(!self)	{
                                       if(returnScalarComponents)
                                           depIDs = unique(depIDs, FALSE, FALSE, NA)
                                       if(returnType == 'ids'){
-                                          if(returnScalarComponents) print("nimble development warning: calling getDependencies with returnType = ids and returnScalarComponents may not be meaningful.")
+                                          if(returnScalarComponents) message("NIMBLE development warning: calling getDependencies with returnType = ids and returnScalarComponents may not be meaningful.")
                                           return(depIDs)
                                       }
                                       if(returnType == 'names') {
@@ -855,14 +972,13 @@ inits: A named list.  The names of list elements must correspond to model variab
                                       }
 
                                       origInits <<- inits
-
                                       for(i in seq_along(inits)) {
                                           if(names(inits)[i] == '') {
                                               warning(paste0('setInits: element ', i, ' of inits list is not named; skipping this element'))
                                               next
                                           }
                                           if(!(names(inits)[i] %in% .self$getVarNames())) {
-                                              warning(paste0('setInits: ', names(inits)[i], ' is not a variable in the model; initial value ignored.'))
+                                              message("  [Note] '", names(inits)[i], "' has initial values but is not a variable in the model and is being ignored.")
                                               next
                                           }
                                           dataVals <- .self$isDataEnv[[names(inits)[[i]] ]]
@@ -873,16 +989,6 @@ inits: A named list.  The names of list elements must correspond to model variab
                                           } else  .self[[names(inits)[i]]] <- inits[[i]]
                                       }
                                   },
-
-
-                                  ## original (older) version of checkConjugacy(), deprecated
-                                  ## DT, Nov. 2016
-                                  ##checkConjugacy = function(nodeVector) {
-                                  ##    if(missing(nodeVector))
-                                  ##        nodeVector <- getNodeNames(stochOnly=TRUE, includeData=FALSE)
-                                  ##    nodeVector <- expandNodeNames(nodeVector)
-                                  ##    nimble:::conjugacyRelationshipsObject$checkConjugacy(.self, nodeVector)
-                                  ##},
                                   checkConjugacy = function(nodeVector, restrictLink = NULL) {
                                       '
 Determines whether or not the input nodes appear in conjugate relationships
@@ -907,9 +1013,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                               declInfo <- .self$modelDef$declInfo[[j]]
                                               nn <- length(declInfo$nodeFunctionNames)
                                               nfn <- declInfo$nodeFunctionNames[nn]
-                                              ## NEWNODEFXNS
                                               nf <- .self$nodeFunctions[[j]]
-                                              #context <- as.list(declInfo$unrolledIndicesMatrix[nrow(declInfo$unrolledIndicesMatrix), ])
 
                                               if(declInfo$type == 'determ') {
                                                   # check LHS and RHS are same size/dim
@@ -959,7 +1063,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                               sizes[[nms[k]]] <- nimble::nimbleInternalFunctions$dimOrLength(e)
                                                               if(prod(sizes[[nms[[k]]]]) == 1) sizes[[nms[[k]]]] <- numeric()
                                                           } else sizes[[nms[[k]]]] <- NA # when have param with dim > 2
-                                                      } else warning(paste0("Unable to calculate parameter '", nms[k], "'; this may simply reflect that there are missing values in model variables."))
+                                                      } else warning(paste0("Unable to calculate parameter '", nms[k], "' for distribution ", dist, " for node '", nfn, "'; this may simply reflect that there are missing values in model variables."))
                                                   }
                                         # check dimensions based on varInfo
                                                   if(length(declInfo$targetExprReplaced) > 1) {
@@ -1012,7 +1116,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                         varsWithNAs <- NULL
                                         for(v in .self$getVarNames()){
                                           if(!nimble:::isValid(.self[[v]])){
-                                            message(' This model is not fully initialized. This is not an error. To see which variables are not initialized, use model$initializeInfo(). For more information on model initialization, see help(modelInitialization).', appendLF = FALSE)
+                                            message('  [Note] This model is not fully initialized. This is not an error.\n         To see which variables are not initialized, use model$initializeInfo().\n         For more information on model initialization, see help(modelInitialization).')
                                             break
                                           }
                                         }
@@ -1030,11 +1134,11 @@ Provides more detailed information on which model nodes are not initialized.
                                       }
                                     }
                                     if(!is.null(varsWithNAs)){
-                                      message('Missing values (NAs) or non-finite values were found in model variables: ', paste(varsWithNAs, collapse = ', '), 
-                                              '. This is not an error, but some or all variables may need to be initialized for certain algorithms to operate properly. For more information on model initialization, see help(modelInitialization).')
+                                      message('  [Note] Missing values (NAs) or non-finite values were found in model variables: ', paste(varsWithNAs, collapse = ', '), 
+                                              '.\n  [Note] This is not an error, but some or all variables may need to be initialized for certain algorithms to operate properly.\n  [Note] For more information on model initialization, see help(modelInitialization).')
                                     }
                                     else{
-                                      message('All model variables are initialized.')
+                                      message('  [Note] All model variables are initialized.')
                                     }
                                   },
                                   check = function() {
@@ -1049,7 +1153,6 @@ Checks for errors in model specification and for missing values that prevent use
                                               if(!nimble:::isValid(.self[[v]]) || !nimble:::isValid(getLogProb(setdiff(expandNodeNames(v), modelDef$maps$nodeNamesRHSonly))))
                                                   varsToCheck <- c(varsToCheck, v)
                                           badVars <- list(na=character(), nan=character(), inf=character())
-                                      ##nns <- getNodeNames(includeRHSonly = TRUE)
                                           nns <- expandNodeNames(varsToCheck)
                                           nns <- topologicallySortNodes(nns)   ## should be unnecessary; just in case
                                           for(nn in nns) {
@@ -1094,7 +1197,7 @@ Arguments:
 
 data: A named list specifying data nodes and values, for use in the newly returned model.  If not provided, the data argument from the creation of the original R model object will be used.
 
-inits: A named list specifying initial values, for use in the newly returned model.  If not provided, the inits argument from the creation of the original R model object will be used.
+inits: A named list specifying initial valuse, for use in the newly returned model.  If not provided, the inits argument from the creation of the original R model object will be used.
 
 modelName: An optional character string, used to set the internal name of the model object.  If provided, this name will propagate throughout the generated C++ code, serving to improve readability.
 
@@ -1308,8 +1411,6 @@ RMakeCustomModelClass <- function(vars, className, isDataVars, modelDef, where =
                 callSuper(modelDef = inputList$modelDef, ...)
                 setupDefaultMV()
                 init_isDataEnv()
-                # setData(modelDef$constantsList, warnAboutMissingNames = FALSE)
-                # removed given new handling of lumped data and constants
             }
         ), where = where),
                     list(FIELDS = makeBUGSclassFields(varnames, vars)
@@ -1407,39 +1508,161 @@ whyInvalid <- function(value) {
     stop('should never happen')
 }
 
-## FIXME: this is a temporary function (used in BNP sampler setup and WAIC checking)
-## until we bring this into the full model API
-getParentNodes <- function(nodes, model, returnType = 'names', stochOnly = FALSE) {
-    ## adapted from BUGS_modelDef creation of edgesFrom2To
-    getParentNodesCore <- function(nodes, model, returnType = 'names', stochOnly = FALSE) {
-        nodeIDs <- model$expandNodeNames(nodes, returnType = "ids")
-        fromIDs <- sort(unique(unlist(edgesTo2From[nodeIDs])))
-        fromNodes <- maps$graphID_2_nodeName[fromIDs]
-        if(!length(fromNodes))
-            return(character(0))
-        fromNodesDet <- fromNodes[model$modelDef$maps$types[fromIDs] == 'determ']
-        ## Recurse through parents of deterministic nodes.
-        fromNodes <- c(if(stochOnly) fromNodes[model$modelDef$maps$types[fromIDs] == 'stoch'] else fromNodes, 
-                       if(length(fromNodesDet)) getParentNodesCore(fromNodesDet, model, returnType, stochOnly) else character(0))
-        fromNodes
-    }
-    
-    maps <- model$modelDef$maps
-    maxNodeID <- length(maps$vertexID_2_nodeID) ## should be same as length(maps$nodeNames)
-    ## Only determine edgesTo2From once and then obtain in getParentNodesCore via scoping.
-    edgesLevels <- if(maxNodeID > 0) 1:maxNodeID else numeric(0)
-    fedgesTo <- factor(maps$edgesTo, levels = edgesLevels) ## setting levels ensures blanks inserted into the splits correctly
-    edgesTo2From <- split(maps$edgesFrom, fedgesTo)
+# The following roxygen is basically redundant with the method documentation for modelBaseClass::getConditionallyIndependentSets.  Not sure we need both.
 
-    getParentNodesCore(nodes, model, returnType, stochOnly)
+#' Get a list of conditionally independent sets of nodes in a nimble model
+#'
+#' Conditionally independent sets of nodes are typically groups of latent states whose joint probability (density) will not change even if any other non-fixed node is changed.  Default fixed nodes are data nodes and parameter nodes (with no parent nodes), but this can be controlled.
+#'
+#' @param model A nimble model object (uncompiled or compiled).
+#'
+#' @param nodes A vector of node names or their graph IDs that are the starting nodes from which conditionally independent sets of nodes should be found.  If omitted, the default will be all latent nodes, defined as stochastic nodes that are not data and have at least one stochastic parent node (possible with determinstic nodes in between).  Note that this will omit latent states that have no hyperparameters.  An example is the first latent state in some state-space (time-series) models, which is sometimes declared with known prior.  See \code{type} because it relates to the interpretation of \code{nodes}.
+#'
+#' @param givenNodes A vector of node names or their graph IDs that should be considered as fixed and hence can be conditioned on.  If omitted, the default will be all data nodes and all parameter nodes, the latter defined as nodes with no stochastic parent nodes (skipping over deterministic parent nodes).
+#'
+#' @param omit A vector of node names or their graph IDs that should be omitted and should block further graph exploration. 
+#'
+#' @param inputType The method of graph exploration depends on what the nodes argument represents.  For \code{latent}, the input \code{nodes} are interpreted as latent states, from which both parent and descendent graph exploration should be done to find nodes in the same set (nodes that are NOT conditionally independent from each other).  For \code{param}, the input \code{nodes} are interpreted as parameters, so graph exploration begins from the  top (input) and explores descendents.  For \code{data}, the input \code{nodes} are interpreted as data nodes, so graph exploration begins from the bottom (input) explores parent nodes.
+#' 
+#' @param stochOnly Logical for whether only stochastic nodes should be returned (default = TRUE).  If FALSE, both deterministic and stochastic nodes are returned.
+#' 
+#' @param returnType Either \code{names} for returned nodes to be node names or \code{ids} for returned nodes to be graph IDs.
+#' 
+#' @param returnScalarComponents If FALSE (default), multivariate nodes are returned as full names (e.g. \code{x[1:3]}).  If TRUE, they are returned as scalar elements (e.g. \code{x[1]},  \code{x[2]},  \code{x[3]}).
+#' 
+#' @author Perry de Valpine
+#'
+#' @details This function returns sets of conditionally independent nodes.  Multiple input \code{nodes} might be in the same set or different sets, and other nodes (not in \code{nodes}) will be included.
+#'
+#' By default, deterministic dependencies of givenNodes are also
+#' counted as given nodes.  This is relevant only for parent nodes.
+#' This allows the givenNodes to include only stochastic nodes.  Say
+#' we have A -> B -> C -> D.  A and D are givenNodes.  C is a latent
+#' node.  B is a deterministic node.  By default, B is considered
+#' given.  Otherwise, other branches that depend on B would be grouped
+#' in the same output set as C, but this is usually what is wanted.
+#' Any use of the resulting output must ensure that B is calculated when
+#' necessary, as usual with nimble's model-generic programming.  To
+#' turn off this feature, set
+#' \code{nimbleOptions(groupDetermWithGivenInCondIndSets = FALSE)}.
+#' 
+#' @return List of nodes that are in conditionally independent sets.  With each set, nodes are returned in topologically sorted order.  The sets themselves are returned in topologically sorted order of their first nodes.
+#'
+#' @seealso There is a non-exported function \code{nimble:::testConditionallyIndependentSets(model, sets, initialize = TRUE)} that tests whether the conditional independence of sets is valid.  It should be the case that \code{nimble:::testConditionallyIndependentSets(model, getConditionallyIndependentSets(model), initialize = TRUE)} returns \code{TRUE}.
+#'
+getConditionallyIndependentSets <- function(model,
+                                            nodes,
+                                            givenNodes,
+                                            omit = integer(),
+                                            inputType = c("latent", "param", "data"),
+                                            stochOnly = TRUE,
+                                            returnType = 'names',
+                                            returnScalarComponents = FALSE) {
+  inputType <- match.arg(inputType)
+  if(missing(nodes)) { # default to latent nodes
+    nodeIDs <- model$getNodeNames(latentOnly = TRUE, stochOnly = TRUE, returnType = 'ids')
+  } else {
+    if(is.character(nodes))
+      nodeIDs <- model$expandNodeNames(nodes, returnType = 'ids')
+    else
+      nodeIDs <- nodes
+  }
+  if(missing(givenNodes)) { # default to top nodes and data nodes. need to be deliberate about end nodes
+    givenNodeIDs <- c(model$getNodeNames(topOnly = TRUE, returnType = 'ids'),
+                      model$getNodeNames(dataOnly = TRUE, returnType = 'ids'))
+  } else {
+    if(is.character(givenNodes))
+        givenNodeIDs <- model$expandNodeNames(givenNodes, returnType = 'ids')
+    else if(is.numeric(givenNodes))
+        givenNodeIDs <- givenNodes
+  }
+  if(isTRUE(nimbleOptions("groupDetermWithGivenInCondIndSets"))) {
+    givenNodeIDs <- unique(c(givenNodeIDs, model$getDependencies(givenNodeIDs, determOnly = TRUE, self = FALSE, returnType = 'ids')))
+  }
+  if(is.character(omit)) {
+    # This mimcs getDependencies.  I think it allows omit to include split nodes, whereas getNodeNames would not.
+    # It would not make sense for nodes or givenNode to include split nodes.
+    elementIDs <- model$modelDef$nodeName2GraphIDs(omit, FALSE)
+    omitIDs <- unique(model$modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
+                      FALSE,
+                      FALSE,
+                      NA)
+  }
+  else if(is.numeric(omit))
+    omitIDs <- omit
+  
+  startUp <- startDown <- TRUE
+  if(inputType == "param") startUp <- FALSE
+  if(inputType == "data") startDown <- FALSE
+  result <- model$modelDef$maps$nimbleGraph$getConditionallyIndependentSets(
+    nodeIDs = nodeIDs,
+    givenNodeIDs = givenNodeIDs,
+    omitIDs = omitIDs,
+    startUp,
+    startDown)
+  if(returnType == 'ids' && returnScalarComponents)
+    message("NIMBLE development warning: calling getConditionallyIndependentSets with returnType = ids and returnScalarComponents may not be meaningful.")
+  result <- lapply(result,
+                   function(IDs) {
+                     if(stochOnly) IDs <- IDs[model$modelDef$maps$types[IDs] == 'stoch']
+                     if(returnType == 'ids') IDs
+                     if(returnType == 'names') {
+                       if(returnScalarComponents)
+                         model$modelDef$maps$elementNames[IDs]
+                       else
+                         model$modelDef$maps$nodeNames[IDs]
+                     }
+                   })
+  result
 }
 
-#' Information on initial values in a nimbleModel
+# testConditionallyIndependentSets checks whether a set of nodes are conditionally independent
+# model: a nimble model
+# sets: a list of node names or IDs
+# intialize: should the model be forced into full initialization by full simulation (except data) and calculation?
+#
+# This works as follows:
+#    For each focal set sets[[i]]:
+#         Determine the logProb from calculating dependencies of sets[[i]] (which includes sets[[i]], data that depends on it, and deterministic nodes in between)
+#         Simulate dependencies of all other sets to change their values.
+#         Re-determine the logProb from calculating dependencies of sets[[i]]
+#         If sets[[i]] is really conditionally independent of other sets, its logProb should be unchanged by having simulated with all other sets.
+#
+# Example: testConditionallyIndependentSets(model, getConditionallyIndependentSets(model), TRUE)
+testConditionallyIndependentSets <- function(model, sets, initialize = TRUE) {
+  if(initialize) { # would be better to use our initializeModel method, but I am doing a quick-and-dirty version here:
+    model$simulate()
+    model$calculate()
+  }
+  # sets is a list of stochastic (and optionally deterministic) nodes.
+  # This function checks that the nodes in each element are conditionally independent of the others.
+  # We check this by simulating all but one set and checking that the logProb of the one set hasn't changed.
+  # We do that for each set.
+  ok <- TRUE
+  # Nodes for calculation/simulation for each set.
+  calcNodeSets <- lapply(sets, function(x) model$getDependencies(x))
+  for(i in seq_along(sets)) { # i is the set being currently checked
+    prevLogProb <- model$calculate(calcNodeSets[[i]]) ## find the logProb for set i
+    for(j in seq_along(sets)) {           # Simulate all other sets (with dependencies)
+      if(i != j) {
+        model$simulate(calcNodeSets[[j]]) # This assumes the bottom nodes of sets are data, which won't be simulated.
+      }
+    }
+    newLogProb <- model$calculate(calcNodeSets[[i]]) # find the logProb for set i again
+    if(prevLogProb != newLogProb) {                  # if it has changed, that set is not conditionally independent all the others
+      message(paste0("Problem: Set ", i, " is not conditionally independent."))
+      ok <- FALSE
+    }
+  }
+  ok
+}
+
+#' Information on initial values in a NIMBLE model
 #'
-#'  Having uninitialized nodes in a nimbleModel can potentially cause some algorithms to fail, and can lead to poor performance in others.  Here are some
-#'  general guidelines on  how non-intitialized variables can affect performance:
+#'  Having uninitialized nodes in a NIMBLE model can potentially cause some algorithms to fail and can lead to poor performance in others.  Here are some
+#'  general guidelines on how non-intitialized variables can affect performance:
 #'  \itemize{
-#'    \item MCMC will atuo-initialize, but will do so from the prior distribution.  This can cause slow convergence, especially in the case of diffuse priors.
+#'    \item MCMC will auto-initialize but will do so from the prior distribution.  This can cause slow convergence, especially in the case of diffuse priors.
 #'    \item Likewise, particle filtering methods will initialize top-level parameters from their prior distributions, which can lead to errors or poor performance in these methods.
 #' }
 #'

@@ -1,33 +1,39 @@
 
 
-## adds explicit indexing to variables (using symtab), then expands indexing present on any variables
-nl_expandNodeNames <- function(nodeNames, symtab, env) {
-    nodeNames <- nl_addIndicesToVariables(nodeNames, symtab)
-    nodeNames <- unlist(lapply(nodeNames, function(node) if(is.indexed(node)) nl_expandNodeIndex(node, env) else node))
-    if(is.null(nodeNames))   return(character(0))
-    return(nodeNames)
-}
+## ## adds explicit indexing to variables (using symtab), then expands indexing present on any variables
+## nl_expandNodeNames <- function(nodeNames, symtab, env) {
+##     nodeNames <- nl_addIndicesToVariables(nodeNames, symtab)
+##     nodeNames <- unlist(lapply(nodeNames, function(node) if(is.indexed(node)) nl_expandNodeIndex(node, env) else node))
+##     if(is.null(nodeNames))   return(character(0))
+##     return(nodeNames)
+## }
 
 
-## Expands variables into their fully indexed form, e.g., 'y' is expanded to 'y[1:10]', using information in the symbolTable
-nl_addIndicesToVariables <- function(nodeNames, symtab) {
-    for(i in seq_along(nodeNames)) {
-        nodeName <- nodeNames[i]
-        varName <- nl_getVarNameFromNodeName(nodeName)
-        if(!(varName %in% symtab$getSymbolNames()))   stop('variable not in symbol table')
-        if(!is.indexed(nodeName) && (symtab$getSymbolField(varName, 'nDim') > 0)) {    ## nodeName has no indexing, and has dimension > 0
-            maxs <- symtab$getSymbolField(varName, 'size')
-            mins <- rep(1, length(maxs))
-            indexStuff <- paste(mins, maxs, sep=':', collapse = ', ')
-            nodeNames[i] <- paste0(varName, '[', indexStuff, ']')
-        }
-    }
-    return(nodeNames)
-}
+## ## Expands variables into their fully indexed form, e.g., 'y' is expanded to 'y[1:10]', using information in the symbolTable
+## nl_addIndicesToVariables <- function(nodeNames, symtab) {
+##     scipen <- options("scipen")[[1]]
+##     options(scipen = 1000000)
+##     on.exit(options(scipen = scipen))
+##     for(i in seq_along(nodeNames)) {
+##         nodeName <- nodeNames[i]
+##         varName <- nl_getVarNameFromNodeName(nodeName)
+##         if(!(varName %in% symtab$getSymbolNames()))   stop('variable not in symbol table')
+##         if(!is.indexed(nodeName) && (symtab$getSymbolField(varName, 'nDim') > 0)) {    ## nodeName has no indexing, and has dimension > 0
+##             maxs <- symtab$getSymbolField(varName, 'size')
+##             mins <- rep(1, length(maxs))
+##             indexStuff <- paste(mins, maxs, sep=':', collapse = ', ')
+##             nodeNames[i] <- paste0(varName, '[', indexStuff, ']')
+##         }
+##     }
+##     return(nodeNames)
+## }
 
 
 ## This is the same as nl_ExpandNodeIndex, except it takes a nodeExpr instead of a node char string
 nl_expandNodeIndexExpr <- function(nodeExpr, env = parent.frame()) {
+    scipen <- options("scipen")[[1]]
+    options(scipen = 1000000)
+    on.exit(options(scipen = scipen))
     if(length(nodeExpr)==1)  if(is.name(nodeExpr)) return(as.character(nodeExpr)) else stop('node expression with only one element, but not a variable name')
     indexExprs <- nodeExpr[-c(1,2)]
     indexStrs <- lapply(indexExprs, function(ind) as.character(eval(ind, envir=env)))
@@ -47,6 +53,9 @@ nl_vectorizedExpandNodeIndexExprs <- function(nodeExprs, env = parent.frame()) {
 
 ## Expands the indexing of a single node name string, e.g., 'x[1:3]' is expanded to c('x[1]', 'x[2]', 'x[3]')
 nl_expandNodeIndex <- function(node, env = parent.frame()) {
+    scipen <- options("scipen")[[1]]
+    options(scipen = 1000000)
+    on.exit(options(scipen = scipen))
     nodeExpr <- parse(text=node, keep.source = FALSE)[[1]]
     if(length(nodeExpr)==1)  if(is.name(nodeExpr)) return(as.character(nodeExpr)) else stop('node expression with only one element, but not a variable name')
     indexExprs <- nodeExpr[-c(1,2)]
@@ -143,19 +152,11 @@ nl_removeNodeNamesNotInSymbolTable <- function(nodeNames, st) {
 
 nl_getVarNameFromNodeName <- function(nodeName)    gsub('\\[.*', '', nodeName)
 
-#nimDim <- function(object){
-#	rDim = dim(object)
-#	if(is.null(rDim) ) {
-#		if(is.vector(object) ) 
-#			return(length(object) ) 
-#		stop('dim called on object ', as.character(substitute(object) ), ' for which dim is undefined')
-#	}
-#	return(dim(object) ) 
-#}
-
 expandMVNames <- function(mv, varNames){
+        scipen <- options("scipen")[[1]]
+        options(scipen = 1000000)
+        on.exit(options(scipen = scipen))
 	sizeList = mv$sizes
-#	varNames = names(sizeList)
 	nodeNames = NA
 	nodeIndex = 0 
 	for(i in seq_along(varNames) ){
@@ -179,10 +180,12 @@ expandMVNames <- function(mv, varNames){
 
 as.matrix.modelValuesBaseClass <- function(x, varNames, ...){
 	if(missing(varNames))
-			varNames <- x$varNames
+            varNames <- x$varNames
+        if(!length(varNames))
+            return(NULL)
 	nrows = getsize(x)
 	flatNames = expandMVNames(x, varNames)
-	ans <- matrix(0.1, nrow = nrows, ncol = length(flatNames))
+	ans <- matrix(as.numeric(NA), nrow = nrows, ncol = length(flatNames))
 	colIndex = 1
 	for(i in seq_along(varNames)){
 		.Call(fastMatrixInsert, ans, modelValuesElement2Matrix(x, varNames[i]) , as.integer(1), as.integer(colIndex) ) 		
@@ -195,10 +198,12 @@ as.matrix.modelValuesBaseClass <- function(x, varNames, ...){
 
 as.matrix.CmodelValues <- function(x, varNames, ...){
 	if(missing(varNames))
-			varNames <- x$varNames
+            varNames <- x$varNames
+        if(!length(varNames))
+            return(NULL)
 	nrows = getsize(x)
 	flatNames = expandMVNames(x, varNames)
-	ans <- matrix(0.1, nrow = nrows, ncol = length(flatNames))
+	ans <- matrix(as.numeric(NA), nrow = nrows, ncol = length(flatNames))
 	colIndex = 1
 	for(i in seq_along(varNames)){
 		.Call(fastMatrixInsert, ans, modelValuesElement2Matrix(x, varNames[i]) , as.integer(1), as.integer(colIndex) ) 		

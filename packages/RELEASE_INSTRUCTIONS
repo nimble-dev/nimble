@@ -56,6 +56,8 @@ summary(out)
 Can also do this to see if anything has changed:
 tools::check_packages_in_dir_changes('.', reverse = list()) # for this you need an the most recent version of nimble as the 'old'
 
+Note that as of 0.11.0 I was having trouble getting this to work unless I manually download the source tarballs of the dependent packages as the default now seems to be to download the non-source Linux binary packages.
+
 run nimbleSMC R CMD check and tests
 
 If have problems with check_packages_in_dir, can
@@ -78,7 +80,7 @@ test cross-machine on Macs and on Windows
 
 can test using rhub (from within packages/nimble):
 
-Rscript -e "library(rhub);check(platform = c('ubuntu-gcc-devel','windows-x86_64-devel','linux-x86_64-rocker-gcc-san','linux-x86_64-centos6-epel','fedora-clang-devel'))" >> /tmp/rhub.out
+Rscript -e "library(rhub);check(platform = c('ubuntu-gcc-devel','windows-x86_64-devel','linux-x86_64-rocker-gcc-san','linux-x86_64-centos-epel','fedora-clang-devel'))" >> /tmp/rhub.out
 
 can test on Windows using win-builder
 
@@ -86,7 +88,7 @@ submit to CRAN - potentially making use of notes in CJP's cranSubmit.txt file
 
 Once CRAN package accepted:
 
-(make sure both html and pdf versions of manual are updated and in repo before doing zenodo upload)
+(make sure both html and pdf versions of manual are updated and in repo before doing zenodo upload, since we should use the updated pdf manual as part of Zenodoversion)
 
 create new version with package tarball and manual in Zenodo. Note that inst/CITATION uses the version-independent DOI so don't need to update DOI in CITATION or on badge on r-nimble.org.
 However we might revisit this as that means that users will cite the version independent DOI at the same time they refer to a specific NIMBLE version. Probably ok and means we don't have to mint the DOI just as we are about to submit to CRAN and then shunt aside the new Zenodo version if there is a CRAN problem.
@@ -120,11 +122,8 @@ note that to make a new blog post or modify pages, need to
 deactivate Google analyticator on Plugins -> Installed Plugins page
 
 change Downloads page on R-nimble.org to reflect new version (including 'download source pkg' link);
-creating link for newly-deprecated version on Archived versions page.
 
-update previous releases page
-
-update archived versions of NIMBLE and User Manual
+update archived versions of newly-deprecated package and User Manual on Archived versions page.
 
 add info on new release to release notes page
 

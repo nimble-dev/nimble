@@ -7,6 +7,7 @@ sizeProc_storage_mode <- function(x) {
     
 assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol',
                               'nimArr_rmvt_chol',
+                              'nimArr_rlkj_corr_cholesky',
                               'nimArr_rwish_chol',
                               'nimArr_rinvwish_chol',
                               'nimArr_rcar_normal',
@@ -116,6 +117,7 @@ sizeCalls <- c(
     makeCallList(c('isnan','ISNAN','ISNA'), 'sizeScalarRecurse'),
     makeCallList(c('nimArr_dmnorm_chol',
                    'nimArr_dmvt_chol',
+                   'nimArr_dlkj_corr_cholesky',
                    'nimArr_dwish_chol',
                    'nimArr_dinvwish_chol',
                    'nimArr_dcar_normal',
@@ -126,6 +128,7 @@ sizeCalls <- c(
                    'nimArr_ddirch'), 'sizeScalarRecurseAllowMaps'),
     makeCallList(c('nimArr_rmnorm_chol',
                    'nimArr_rmvt_chol',
+                   'nimArr_rlkj_corr_cholesky',
                    'nimArr_rwish_chol',
                    'nimArr_rinvwish_chol',
                    'nimArr_rcar_normal',
@@ -1836,7 +1839,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
             if(length(LHS$nDim) == 0) stop(exprClassProcessingErrorMsg(code, paste0('In sizeAssignAfterRecursing: nDim for LHS not set.')), call. = FALSE)
             if(length(RHSnDim) == 0) stop(exprClassProcessingErrorMsg(code, paste0('In sizeAssignAfterRecursing: nDim for RHS not set.')), call. = FALSE)
             if(LHS$nDim != RHSnDim) {
-                stop(paste0('Warning, mismatched dimensions in assignment: ', nimDeparse(code), '.'), call. = FALSE )
+                stop('Mismatched dimensions in assignment: ', nimDeparse(code), '.', call. = FALSE )
             }
             ## and warn if type issue e.g. int <- double
             if(assignmentTypeWarn(LHS$type, RHStype)) {
@@ -2060,16 +2063,12 @@ sizeScalar <- function(code, symTab, typeEnv) {
     if(code$args[[1]]$toEigenize == 'yes') {
         asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
     }
-    ## else {
-    ##     asserts <- NULL
-    ## }
     code$nDim <- 0
     outputType <- scalarOutputTypes[[code$name]]
     if(is.null(outputType)) code$type <- 'double'
     else code$type <- outputType
     code$sizeExprs <- list()
     code$toEigenize <- 'maybe' ## a scalar can be eigenized or not
-    ##invisible(NULL)
     asserts
 }
 
@@ -3265,6 +3264,18 @@ mvFirstArgCheckLists <- list(nimArr_rmnorm_chol = list(c(1, 2, 0), ## dimensiona
                                  1, 'double'), ## 1 = argument from which to take answer size, double = answer type
                              nimArr_rmvt_chol = list(c(1, 2, 0, 0), ## dimensionality of ordered arguments AFTER the first, which is for the return value.  e.g. mean (1D), chol(2D), df(scalar), prec_param(scalar)
                                                        1, 'double'), ## 1 = argument from which to take answer size, double = answer type
+                             nimArr_rlkj_corr_cholesky = list(c(0, 0), ## eta, p
+                                                              function(code) {
+                                                                  ## example
+                                                                  ## Rcode <- quote(nimArr_rlkj_corr_cholesky(eta = k * rho, p = k + a) )
+                                                                  ## code <- nimble:::RparseTree2ExprClasses(Rcode)
+                                                                  dimCode <- parse(text = nimDeparse(code$args[[2]]), keep.source = FALSE)[[1]]
+                                                                  sizeExprs <- list(dimCode, dimCode)
+                                                                  ## dimCode should be quote( k + a )
+                                                                  list(nDim = 2,
+                                                                       sizeExprs = sizeExprs)
+                                                              },
+                                                              'double'),  # '1' won't work here; problem is that no matrices are input but matrix is output
                              nimArr_rwish_chol = list(c(2, 0, 0, 0), ## chol, df, prec_param, overwrite_inputs
                                  1, 'double'),
                              nimArr_rinvwish_chol = list(c(2, 0, 0), ## chol, df, prec_param
@@ -3277,7 +3288,6 @@ mvFirstArgCheckLists <- list(nimArr_rmnorm_chol = list(c(1, 2, 0), ## dimensiona
 
 sizeRmultivarFirstArg <- function(code, symTab, typeEnv) {
     asserts <- recurseSetSizes(code, symTab, typeEnv)
-
     notOK <- FALSE
     checkList <- mvFirstArgCheckLists[[code$name]]
     if(!is.null(checkList)) {
@@ -3296,13 +3306,20 @@ sizeRmultivarFirstArg <- function(code, symTab, typeEnv) {
         stop(exprClassProcessingErrorMsg(code, 'Some argument(s) have the wrong dimension.'), call. = FALSE) 
     }
 
-    if(!inherits(code$args[[returnSizeArgID]], 'exprClass')) stop(exprClassProcessingErrorMsg(code, paste0('Expected ', nimDeparse(code$args[[returnSizeArgID]]) ,' to be an expression.')), call. = FALSE) 
-    
+    if(!(is.function(returnSizeArgID)))
+        if(!inherits(code$args[[returnSizeArgID]], 'exprClass'))
+            stop(exprClassProcessingErrorMsg(code, paste0('Expected ', nimDeparse(code$args[[returnSizeArgID]]) ,' to be an expression or function.')), call. = FALSE) 
+
     code$type <- returnType
-    code$nDim <- code$args[[returnSizeArgID]]$nDim
     code$toEigenize <- 'maybe'
-    code$sizeExprs <- code$args[[returnSizeArgID]]$sizeExprs
-    
+    if(!is.function(returnSizeArgID)) {
+        code$nDim <- code$args[[returnSizeArgID]]$nDim
+        code$sizeExprs <- code$args[[returnSizeArgID]]$sizeExprs
+    } else {
+        sizeInfo <- returnSizeArgID(code)
+        code$nDim <- sizeInfo$nDim
+        code$sizeExprs <- sizeInfo$sizeExprs
+    }
     for(i in seq_along(code$args)) {
         if(inherits(code$args[[i]], 'exprClass')) {
             if(!code$args[[i]]$isName) {
@@ -3350,67 +3367,6 @@ sizePassByMap <- function(code, symTab, typeEnv) {
     typeEnv$.ensureNimbleBlocks <- ensureNimbleBlocks
     asserts
 }
-
-###
-## This function would be called with arguments from an RCfunction or nimbleFunction
-## the functions dim and length would be taken over to work on the sizeExprs.
-## but for now it can just return NAs for size expressions, and then the new returned value will have default size expressions (dim(name)[1], etc)
-##
-## generalFunSizeHandler <- function(code, symTab, typeEnv, returnType, args, chainedCall = FALSE) {
-##     useArgs <- unlist(lapply(args, function(x) as.character(x[[1]]) %in% c('double', 'integer', 'logical')))
-    
-##     if(chainedCall) useArgs <- c(FALSE, useArgs)
-##     if(length(code$args) != length(useArgs)) {
-##         stop(exprClassProcessingErrorMsg(code, 'In generalFunSizeHandler: Wrong number of arguments.'), call. = FALSE)
-##     }
-##     ## Note this is NOT checking the dimensions of each arg. useArgs just means it will recurse on that and lift or do as needed
-    
-##     asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs)
-
-##     ## lift any argument that is an expression
-##     for(i in seq_along(code$args)) {
-##         if(useArgs[i]) {
-##             if(inherits(code$args[[i]], 'exprClass')) {
-##                 if(!code$args[[i]]$isName) {
-##                     asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv) )
-##                 }
-##             }
-##         }
-##     }
-##     if(inherits(returnType, 'symbolNimbleList')) {
-##         code$type <- 'nimbleList'
-##         code$sizeExprs <- returnType
-##         code$toEigenize <- 'maybe'
-##         code$nDim <- 0
-##         liftIfAmidExpression <- TRUE
-##     } else {
-##         returnSymbolBasic <- inherits(returnType, 'symbolBasic')
-##         returnTypeLabel <- if(returnSymbolBasic) returnType$type else as.character(returnType[[1]])
-        
-##         if(returnTypeLabel == 'void') {
-##             code$type <- returnTypeLabel
-##             code$toEigenize <- 'unknown'
-##             return(asserts)
-##         }
-##         returnNDim <- if(returnSymbolBasic) returnType$nDim
-##                       else if(length(returnType) > 1) as.numeric(returnType[[2]]) else 0
-                                                                
-##         returnSizeExprs <- vector('list', returnNDim) ## This stays blank (NULLs), so if assigned as a RHS, the LHS will get default sizes
-##         code$type <- returnTypeLabel
-##         code$nDim <- returnNDim
-##         code$sizeExprs <- returnSizeExprs
-##         code$toEigenize <- if(code$nDim == 0) 'maybe' else 'no'
-##         liftIfAmidExpression <- code$nDim > 0
-##     }
-    
-##     if(liftIfAmidExpression) {
-##         if(!(code$caller$name %in% c('{','<-','<<-','='))) {
-##             asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
-##         } else
-##             typeEnv$.ensureNimbleBlocks <- TRUE
-##     }
-##     return(asserts)
-## }
 
 generalFunSizeHandlerFromSymbols <- function(code, symTab, typeEnv, returnSymbol, argSymTab, chainedCall = FALSE) {
     ## symbols should be in order

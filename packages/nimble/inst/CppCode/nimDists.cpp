@@ -350,6 +350,45 @@ void nimArr_rmvt_chol(NimArr<1, double> &ans, NimArr<1, double> &mu, NimArr<2, d
   // }
 }
 
+// Begin LKJ
+
+double nimArr_dlkj_corr_cholesky(NimArr<2, double> &x, double eta, int p, int give_log) { 
+  
+  double *xptr;
+  NimArr<2, double> xCopy;
+  xptr = nimArrCopyIfNeeded<2, double>(x, xCopy).getPtr();
+
+  if((x.dim()[0] != p) | (x.dim()[1] != p)) {
+    _nimble_global_output<<"Error in nimArr_dlkj_corr_cholesky: some dimensions are not right\n";
+    nimble_print_to_R(_nimble_global_output);
+  }
+  
+  double ans;
+  ans = dlkj_corr_cholesky(xptr, eta, p, give_log);
+  
+  return(ans);
+}
+
+void nimArr_rlkj_corr_cholesky(NimArr<2, double> &ans, double eta, int p) {
+  
+  NimArr<2, double> ansCopy;
+  double *ansPtr;
+  
+  if(!ans.isMap()) {
+    ans.setSize(p, p);
+  } else {
+    if((ans.dim()[0] != p) | (ans.dim()[1] != p)) {
+      _nimble_global_output<<"Error in nimArr_rlkj_corr_cholesky: ans sizes do not match p.\n";
+      nimble_print_to_R(_nimble_global_output);
+    }
+  }
+
+  ansPtr = nimArrCopyIfNeeded<2, double>(ans, ansCopy).getPtr();
+  rlkj_corr_cholesky(ansPtr, eta, p);
+
+  if(ansPtr != ans.getPtr()) {ans = ansCopy;} 
+}
+
 // the next two handle when 'c' is a vector (e.g., interval censoring)
 //  and the following two when 'c' is a scalar (e.g., left- and right-censoring)
 double nimArr_dinterval(double x, double t, NimArr<1, double> &c, int give_log) {
@@ -414,26 +453,6 @@ void nimArr_rcar_normal(NimArr<1, double> &ans, NimArr<1, double> &adj, NimArr<1
   // it's important that simulation via rcar_normal() does *not* set all values to NA (or NaN),
   // since initializeModel() will call this simulate method if there are any NA's present,
   // (which is allowed for island components), which over-writes all the other valid initial values.
-  //
-  //int n = num.size();
-  //NimArr<1, double> ansCopy;
-  //double *ansPtr;
-  //
-  //if(!ans.isMap()) {
-  //  ans.setSize(n);
-  //} else {
-  //  if(ans.size() != n) {
-  //    _nimble_global_output<<"Error in nimArr_rcar_normal: answer size ("<< ans.size() <<") does not match num size ("<<n<<").\n";
-  //    nimble_print_to_R(_nimble_global_output);
-  //  }
-  //}
-  //ansPtr = nimArrCopyIfNeeded<1, double>(ans, ansCopy).getPtr();
-  //for(int i = 0; i < n; i++)
-  //  ansPtr[i] = R_NaN;
-  //
-  //if(ans.isMap()) {
-  //  ans = ansCopy;
-  //}
   //
 }
 
@@ -525,8 +544,5 @@ void nimArr_rcar_proper(NimArr<1, double> &ans, NimArr<1, double> &mu, NimArr<1,
   rcar_proper(ansptr, muptr, Cptr, adjptr, numptr, Mptr, tau, gamma, evsptr, N, L);
 
   if(ansptr != ans.getPtr()) {ans = ansCopy;} 
-  // if(ans.isMap()) {
-  //   ans = ansCopy;
-  // }
 }
 

@@ -331,8 +331,4 @@ is.Cmodel <- function(obj, inputIsName = FALSE) {
     return(inherits(obj, 'CmodelBaseClass'))
 }
 
-# extracts dimension from character vec of form such as c("double(0)", "integer(1)")
-## getDimFromType <- function(text) {
-##     sapply(parse(text = text), '[[', 2)
-## }
 

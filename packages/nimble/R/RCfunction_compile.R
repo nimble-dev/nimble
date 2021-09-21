@@ -186,7 +186,8 @@ nf_substituteExceptFunctionsAndDollarSigns <- function(code, subList) {
         )
     }
     if(is.call(code)) {
-        if(length(code) == 1)
+        ## Second check avoids premature return for code such a nL[[i]]$foo().
+        if(length(code) == 1 && length(code[[1]]) == 1)
             return(code)
         else {
             if(is.call(code[[1]]))

@@ -66,8 +66,8 @@ test_that('initializeModel recalculates all deterministic nodes in topological o
     expect_equal(Rmodel$x, 1)
     expect_equal(Cmodel$x, 1)
     ##
-    expect_equal(Rmodel$getLogProb(), -0.0000453989, tol = 0.0000001)
-    expect_equal(Cmodel$getLogProb(), -0.0000453989, tol = 0.0000001)
+    expect_lt(abs(Rmodel$getLogProb() + 0.0000453989),  0.0000001)
+    expect_lt(abs(Cmodel$getLogProb() + 0.0000453989),  0.0000001)
     ##
     Rmodel$x <- NA
     Cmodel$x <- NA
@@ -79,8 +79,8 @@ test_that('initializeModel recalculates all deterministic nodes in topological o
     ##
     expect_equal(Rmodel$x, 0)
     expect_equal(Cmodel$x, 0)
-    expect_equal(Rmodel$getLogProb(), -0.0000453989, tol = 0.0000001)
-    expect_equal(Cmodel$getLogProb(), -0.0000453989, tol = 0.0000001)
+    expect_lt(abs(Rmodel$getLogProb() + 0.0000453989), 0.0000001)
+    expect_lt(abs(Cmodel$getLogProb() + 0.0000453989), 0.0000001)
 })
 
 

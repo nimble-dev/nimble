@@ -5,12 +5,13 @@ bookdown::gitbook:
       before: |
         <img src="./nimble-icon.png"
              width=100>
-        <li><a href="./">NIMBLE User Manual, Version 0.10.1</a></li>
+        <li><a href="./">NIMBLE User Manual, Version 0.11.1</a></li>
         <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
         <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
       after: |
     toc_depth: 3
     download: ["pdf", "epub"]
+  split_bib: no
 bookdown::pdf_book:
   latex_engine: xelatex
   citation_package: natbib

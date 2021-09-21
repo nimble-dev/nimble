@@ -78,9 +78,11 @@ nfMethodRC <- setRefClass(
             if(code[[1]] != '{')
                 code <<- substitute({CODE}, list(CODE=code))
             ## check all code except nimble package nimbleFunctions
-            if(check && "package:nimble" %in% search()) 
-                nf_checkDSLcode(code, methodNames, setupVarNames)
             generateArgs()
+
+            if(check && "package:nimble" %in% search()) 
+                nf_checkDSLcode(code, methodNames, setupVarNames, names(arguments))
+
             generateTemplate() ## used for argument matching
             removeAndSetReturnType(check = check)
             ## Includes for .h and .cpp files when making external calls:
@@ -160,7 +162,31 @@ nfMethodRC <- setRefClass(
         getReturnType    = function() { return(returnType) })
 )
 
-nf_checkDSLcode <- function(code, methodNames, setupVarNames) {
+## Helper function that walks an exprClass tree and finds methods based on positioning wrt dollar signs
+findMethodsInExprClass <- function(expr) {
+    if(is(expr, 'exprClass')) {
+        if(expr$isAssign) {
+            return(findMethodsInExprClass(expr$args[[2]]))
+        } else {
+            if(expr$isCall) {
+                if(expr$name == '$') {
+                    ## Next check ensures that RHS of $ is a call and not a field
+                    ## Check for whether it is first arg of chainedCall prevents finding
+                    ## 'foo' in m$cc(m$foo) as a method.
+                    if(!is.null(expr$caller) && expr$caller$name == 'chainedCall' &&
+                       identical(expr, expr$caller$args[[1]]))
+                        tmp <- expr$args[[2]]$name else tmp <- NULL
+                    return(c(tmp, findMethodsInExprClass(expr$args[[1]])))
+                } else {
+                    return(unlist(lapply(expr$args, findMethodsInExprClass)))
+                }
+            } 
+        }
+    } 
+    return(NULL)
+}
+
+nf_checkDSLcode <- function(code, methodNames, setupVarNames, args) {
     validCalls <- c(names(sizeCalls),
                     otherDSLcalls,
                     names(specificCallReplacements),
@@ -168,35 +194,14 @@ nf_checkDSLcode <- function(code, methodNames, setupVarNames) {
                     methodNames,
                     setupVarNames)
     calls <- setdiff(all.names(code),
-                     all.vars(code))
+                     c(all.vars(code), args))
     
-    ## Find cases of x$y() and x[]$y() and x[[]]$y().
-    ##
-    ## (This also unnecessarily finds x$y, x[]$y, x[[]]$y.)
-    ##
-    ## This step relies on all.names returning symbols from parse tree
-    ## in particular order
-    names <- all.names(code)
-    dollarsLhs <- dollarsRhs <- NULL
-    dollars <- which(names == "$")
-    if(length(dollars)) {
-        dollarsLhs <- dollars+1
-        dollarsRhs <- dollars+2
-        dollarsRhs[names[dollarsLhs] %in% c('[', '[[')] <-
-            dollarsRhs[names[dollarsLhs] %in% c('[', '[[')] + 1 # account for index
-        while(sum(names[dollarsLhs] %in% c('[', '[['))) {
-            ## bracket appears between $ and the lhs,rhs of the $
-            dollarsRhs[names[dollarsLhs] %in% c('[', '[[')] <-
-                dollarsRhs[names[dollarsLhs] %in% c('[', '[[')] + 1
-            dollarsLhs[names[dollarsLhs] %in% c('[', '[[')] <-
-                dollarsLhs[names[dollarsLhs] %in% c('[', '[[')] + 1
-        }
-        dollarsLhs <- unique(names[dollarsLhs[dollarsLhs <= length(names)]])
-        dollarsRhs <- unique(names[dollarsRhs[dollarsRhs <= length(names)]])
-    } 
+    ## Find the 'y' in cases of x$y() and x[]$y() and x[[]]$y().
+
+    nfMethods <- findMethodsInExprClass(RparseTree2ExprClasses(code))
     
     ## don't check RHS of $ to ensure it is a valid nf method because no current way to easily find the methods of nf's defined in setup code
-    nonDSLcalls <- calls[!(calls %in% c(validCalls, dollarsRhs))]
+    nonDSLcalls <- calls[!(calls %in% c(validCalls, nfMethods))]
     if(length(nonDSLcalls)) {
         objInR <- sapply(nonDSLcalls, exists)
         nonDSLnonR <- nonDSLcalls[!objInR]
@@ -221,9 +226,9 @@ nf_checkDSLcode <- function(code, methodNames, setupVarNames) {
                                    function(x)
                                        is.nlGenerator(x, inputIsName = TRUE)))]
         if(length(nonDSLinR))
-            warning(paste0("Detected possible use of R functions in nimbleFunction run code. For this nimbleFunction to compile, these objects must be defined as nimbleFunctions, nimbleFunctionLists, or nimbleLists: ", paste(nonDSLinR, collapse = ', '), "."), call. = FALSE)
+            message("  [Note] Detected possible use of R functions in nimbleFunction run code.\n         For this nimbleFunction to compile, '", paste(nonDSLinR, collapse = ', '), "' must be defined as a nimbleFunction, nimbleFunctionList, or nimbleList.")
         if(length(nonDSLnonR))
-            warning(paste0("For this nimbleFunction to compile, these objects must be defined as nimbleFunctions, nimbleFunctionLists, or nimbleLists before compilation: ", paste(nonDSLnonR, collapse = ', '), "."), call. = FALSE)
+            message("  [Note] For this nimbleFunction to compile, '", paste(nonDSLnonR, collapse = ', '), "' must be defined as a nimbleFunction, nimbleFunctionList, or nimbleList before compilation.")
     }
     return(0)
 }

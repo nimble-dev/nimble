@@ -551,7 +551,7 @@ testsInvalidDynIndex <- list(
         inits = list(mu = rnorm(5)), 
         data = list(y = rnorm(3)),
         expectError = TRUE,
-        expectErrorMsg = "only scalar random indices are allowed"
+        expectErrorMsg = "only scalar indices are allowed"
     ),
     list(
         case = 'vector dynamic index in multidimensional (invalid)',
@@ -562,7 +562,7 @@ testsInvalidDynIndex <- list(
         inits = list(mu = rnorm(10)), 
         data = list(y = matrix(rnorm(6), 2, 3)),
         expectError = TRUE,
-        expectErrorMsg = "only scalar random indices are allowed"
+        expectErrorMsg = "only scalar indices are allowed"
     ),
     list(
         case = 'dynamic index sequence (invalid)',
@@ -573,7 +573,7 @@ testsInvalidDynIndex <- list(
         }), 
         inits = list(mu = rnorm(5)),
         expectError = TRUE,
-        expectErrorMsg = "arguments that cannot be evaluated"
+        expectErrorMsg = "Dynamic indexing found in a vector"
     ),
     list(
         case = 'dynamic index sequence, multiple dynamic indexes (invalid)',
@@ -584,7 +584,7 @@ testsInvalidDynIndex <- list(
         }), 
         inits = list(mu = rnorm(5)),
         expectError = TRUE,
-        expectErrorMsg = "arguments that cannot be evaluated"
+        expectErrorMsg = "Dynamic indexing found in a vector"
     ),
     list(
         case = 'dynamic indexing of constants',

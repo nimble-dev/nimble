@@ -21,6 +21,8 @@ getNsave <- nimbleFunction(
 #' @param MCMC an MCMC class object, either compiled or uncompiled.
 #' @param epsilon  used for determining the truncation level of the representation of the random measure.
 #' @param setSeed Logical or numeric argument. If a single numeric value is provided, R's random number seed will be set to this value. In the case of a logical value, if \code{TRUE}, then R's random number seed will be set to \code{1}. Note that specifying the argument \code{setSeed = 0} does not prevent setting the RNG seed, but rather sets the random number generation seed to \code{0}.  Default value is \code{FALSE}.
+#'
+#' @param progressBar Logical specifying whether to display a progress bar during execution (default = TRUE).  The progress bar can be permanently disabled by setting the system option \code{nimbleOptions(MCMCprogressBar = FALSE)}
 #' 
 #' @author Claudia Wehrhahn and Christopher Paciorek
 #' 
@@ -51,7 +53,7 @@ getNsave <- nimbleFunction(
 #'   runMCMC(cmcmc, niter = 1000)
 #'   outputG <- getSamplesDPmeasure(cmcmc)
 #' }
-getSamplesDPmeasure <- function(MCMC, epsilon = 1e-4, setSeed = FALSE) {
+getSamplesDPmeasure <- function(MCMC, epsilon = 1e-4, setSeed = FALSE, progressBar = getNimbleOption('MCMCprogressBar')) {
   if(exists('model',MCMC, inherits = FALSE)) compiled <- FALSE else compiled <- TRUE
   if(compiled) {
     if(!exists('Robject', MCMC, inherits = FALSE) || !exists('model', MCMC$Robject, inherits = FALSE))
@@ -74,18 +76,36 @@ getSamplesDPmeasure <- function(MCMC, epsilon = 1e-4, setSeed = FALSE) {
       nimCat('getSamplesDPmeasure: setSeed argument has length > 1 and only the first element will be used') 
     }
   } else if(setSeed) set.seed(1)
+
+  progressBarLength <- 52  ## multiples of 4 only
+  progressBarIncrement <- niter/(progressBarLength+3)
+  progressBarNext <- progressBarIncrement
+  progressBarNextFloor <- floor(progressBarNext)
+
   
   if(compiled) {
     csampler <- compileNimble(rsampler, project = model)
+    if(progressBar) { for(iPB1 in 1:4) { cat('|'); for(iPB2 in 1:(progressBarLength/4)) cat('-') }; cat('|\n'); cat('|') }
     for(i in 1:niter) {
       samplesMeasure[[i]] <- csampler$run(i)
+      if(progressBar && (i == progressBarNextFloor)) {
+          cat('-')
+          progressBarNext <- progressBarNext + progressBarIncrement
+          progressBarNextFloor <- floor(progressBarNext)
+      }
     }
   } else {
     for(i in 1:niter) {
+      if(progressBar) { for(iPB1 in 1:4) { cat('|'); for(iPB2 in 1:(progressBarLength/4)) cat('-') }; print('|'); cat('|') }    
       samplesMeasure[[i]] <- rsampler$run(i)
+      if(progressBar && (i == progressBarNextFloor)) {
+          cat('-')
+          progressBarNext <- progressBarNext + progressBarIncrement
+          progressBarNextFloor <- floor(progressBarNext)
+      }
     }
   }
-  
+  if(progressBar) cat('|\n')
   
   dcrpVar <- rsampler$dcrpVar
   clusterVarInfo <- findClusterNodes(model, dcrpVar) 
@@ -163,7 +183,7 @@ sampleDPmeasure <- nimbleFunction(
     if( sum(counts) != length(tildeVars) ) 
       stop('sampleDPmeasure: The node(s) representing the cluster variables must be monitored in the MCMC (and therefore stored in the modelValues object).\n')  
     
-    parentNodesTildeVars <- getParentNodes(tildeVars, model, returnType = 'names', stochOnly = TRUE)
+    parentNodesTildeVars <- model$getParents(tildeVars, stochOnly = TRUE)
     if(length(parentNodesTildeVars)) {
       parentNodesTildeVarsDeps <- model$getDependencies(parentNodesTildeVars, self = FALSE)
     } else parentNodesTildeVarsDeps <- NULL
@@ -174,7 +194,7 @@ sampleDPmeasure <- nimbleFunction(
       stop('sampleDPmeasure: The stochastic parent nodes of the cluster variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
 
     ## Check that parent nodes of cluster IDs are monitored.  
-    parentNodesXi <- getParentNodes(dcrpNode, model, returnType = 'names', stochOnly = TRUE)
+    parentNodesXi <- model$getParents(dcrpNode, stochOnly = TRUE)
     
     if(!all(model$getVarNames(nodes = parentNodesXi) %in% mvSavedVars))
       stop('sampleDPmeasure: The stochastic parent nodes of the membership variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
@@ -1411,7 +1431,7 @@ sampler_CRP <- nimbleFunction(
     ## Determine if concentration parameter is fixed or random (code similar to the one in sampleDPmeasure function).
     ## This is used in truncated case to tell user if model is proper or not.
     fixedConc <- TRUE
-    parentNodesTarget <- getParentNodes(target, model, stochOnly = TRUE)
+    parentNodesTarget <- model$getParents(target, stochOnly = TRUE)
     if(length(parentNodesTarget)) {
       fixedConc <- FALSE
     }
@@ -1425,6 +1445,8 @@ sampler_CRP <- nimbleFunction(
     ## needs to be legitimate nodes because run code sets up calculate even if if() would never cause it to be used
     for(i in seq_len(n)) { # dataNodes are always needed so only create them before creating  intermNodes
       stochDeps <- model$getDependencies(targetElements[i], stochOnly = TRUE, self = FALSE)
+      if(length(stochDeps) != nObsPerClusID)
+          stop("sampler_CRP: The number of nodes that are jointly clustered must be the same for each group. For example if 'mu[i,j]' are clustered such that all nodes for a given 'i' must be in the same cluster, then the number of nodes for each 'i' must be the same. Group ", deparse(i), " has ", deparse(length(stochDeps)), " nodes being clustered where ", deparse(nObsPerClusID), " are expected.")
       dataNodes[((i-1)*nObsPerClusID + 1) : (i*nObsPerClusID)] <- stochDeps
     }
     nIntermClusNodesPerClusID <- length(model$getDependencies(targetElements[1], determOnly = TRUE))  #nInterm
@@ -1433,6 +1455,8 @@ sampler_CRP <- nimbleFunction(
       intermNodes <- rep(as.character(NA), nIntermClusNodesPerClusID * n)
       for(i in seq_len(n)) {
         detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
+        if(length(detDeps) != nIntermClusNodesPerClusID)
+            stop("sampler_CRP: The number of intermediate deterministic nodes that are jointly clustered must be the same for each group. For example if 'mu[i,j]' are clustered such that all nodes for a given 'i' must be in the same cluster, then the number of nodes for each 'i' must be the same. Group ", deparse(i), " has ", deparse(length(depDeps)), " intermediate nodes being clustered where ", deparse(nIntermClusNodesPerClusID), " are expected.")
         intermNodes[((i-1)*nIntermClusNodesPerClusID+1):(i*nIntermClusNodesPerClusID)] <- detDeps
       }
     }
@@ -1448,26 +1472,28 @@ sampler_CRP <- nimbleFunction(
       sampler <- 'CRP_nonconjugate'
     } else 
       sampler <- switch(conjugacyResult,
-                        conjugate_dnorm_dnorm = 'CRP_conjugate_dnorm_dnorm',
-                        conjugate_dmnorm_dmnorm = 'CRP_conjugate_dmnorm_dmnorm',
-                        conjugate_dnorm_dnorm_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity',
-                        conjugate_dinvgamma_dnorm = 'CRP_conjugate_dinvgamma_dnorm',
-                        conjugate_dinvwish_dmnorm = 'CRP_conjugate_dinvwish_dmnorm',
-                        conjugate_dwish_dmnorm = 'CRP_conjugate_dwish_dmnorm',
+                        conjugate_dnorm_dnorm_identity = 'CRP_conjugate_dnorm_dnorm',
+                        conjugate_dmnorm_dmnorm_identity = 'CRP_conjugate_dmnorm_dmnorm',
+                        conjugate_dnorm_dnorm_additive_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity',
+                        conjugate_dnorm_dnorm_multiplicative_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity',
+                        conjugate_dnorm_dnorm_linear_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity',
+                        conjugate_dinvgamma_dnorm_identity = 'CRP_conjugate_dinvgamma_dnorm',
+                        conjugate_dinvwish_dmnorm_identity = 'CRP_conjugate_dinvwish_dmnorm',
+                        conjugate_dwish_dmnorm_identity = 'CRP_conjugate_dwish_dmnorm',
                         conjugate_dnorm_invgamma_dnorm = 'CRP_conjugate_dnorm_invgamma_dnorm',
                         conjugate_dnorm_gamma_dnorm = 'CRP_conjugate_dnorm_gamma_dnorm',
                         conjugate_dmnorm_invwish_dmnorm = 'CRP_conjugate_dmnorm_invwish_dmnorm',
                         conjugate_dmnorm_wish_dmnorm = 'CRP_conjugate_dmnorm_wish_dmnorm',
-                        conjugate_dbeta_dbern  = 'CRP_conjugate_dbeta_dbern',
-                        conjugate_dbeta_dbin = 'CRP_conjugate_dbeta_dbin',
-                        conjugate_dbeta_dnegbin = 'CRP_conjugate_dbeta_dnegbin',
-                        conjugate_dgamma_dpois = 'CRP_conjugate_dgamma_dpois',
-                        conjugate_dgamma_dexp = 'CRP_conjugate_dgamma_dexp',
-                        conjugate_dgamma_dgamma = 'CRP_conjugate_dgamma_dgamma',
-                        conjugate_dgamma_dnorm = 'CRP_conjugate_dgamma_dnorm',
-                        conjugate_dgamma_dweib = 'CRP_conjugate_dgamma_dweib',
-                        conjugate_dgamma_dinvgamma = 'CRP_conjugate_dgamma_dinvgamma',
-                        conjugate_ddirch_dmulti = 'CRP_conjugate_ddirch_dmulti',
+                        conjugate_dbeta_dbern_identity  = 'CRP_conjugate_dbeta_dbern',
+                        conjugate_dbeta_dbin_identity = 'CRP_conjugate_dbeta_dbin',
+                        conjugate_dbeta_dnegbin_identity = 'CRP_conjugate_dbeta_dnegbin',
+                        conjugate_dgamma_dpois_identity = 'CRP_conjugate_dgamma_dpois',
+                        conjugate_dgamma_dexp_identity = 'CRP_conjugate_dgamma_dexp',
+                        conjugate_dgamma_dgamma_identity = 'CRP_conjugate_dgamma_dgamma',
+                        conjugate_dgamma_dnorm_identity = 'CRP_conjugate_dgamma_dnorm',
+                        conjugate_dgamma_dweib_identity = 'CRP_conjugate_dgamma_dweib',
+                        conjugate_dgamma_dinvgamma_identity = 'CRP_conjugate_dgamma_dinvgamma',
+                        conjugate_ddirch_dmulti_identity = 'CRP_conjugate_ddirch_dmulti',
                         'CRP_nonconjugate')  ## default if we don't have sampler set up for a conjugacy
 
 
@@ -2080,7 +2106,8 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo, n, gammaDist = '
                sum(sapply(conjugacy_dnorm, '[[', 'type') == 'conjugate_dnorm') == length(exampleNodes1) &&
                sum(sapply(conjugacy_dinvgamma, '[[', 'type') == paste0('conjugate_', gammaDist)) == length(exampleNodes2) &&
                all(sapply(seq_along(conjugacy_dinvgamma), function(idx)
-                   sum(conjugacy_dinvgamma[[idx]]$control$dep_dnorm == exampleNodes1[idx]) == 1)))
+                   sum(conjugacy_dinvgamma[[idx]]$control$dep_dnorm_identity == exampleNodes1[idx]) + 
+                   sum(conjugacy_dinvgamma[[idx]]$control$dep_dnorm_multiplicative == exampleNodes1[idx]) == 1)))
                 conjugate <- TRUE
         }
         if(conjugate) {
@@ -2174,7 +2201,8 @@ checkNormalInvWishartConjugacy <- function(model, clusterVarInfo, n, wishartDist
                sum(sapply(conjugacy_dmnorm, '[[', 'type') == 'conjugate_dmnorm') == length(exampleNodes1) &&
                sum(sapply(conjugacy_dinvwish, '[[', 'type') == paste0('conjugate_', wishartDist)) == length(exampleNodes2) &&
                all(sapply(seq_along(conjugacy_dinvwish), function(idx)
-                   sum(conjugacy_dinvwish[[idx]]$control$dep_dmnorm == exampleNodes1[idx]) == 1)))
+                   sum(conjugacy_dinvwish[[idx]]$control$dep_dmnorm_identity == exampleNodes1[idx]) +
+                   sum(conjugacy_dinvwish[[idx]]$control$dep_dmnorm_multiplicativeScalar == exampleNodes1[idx]) == 1)))
                 conjugate <- TRUE
         }
         if(conjugate) {  

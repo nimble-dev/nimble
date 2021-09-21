@@ -16,9 +16,11 @@ getBound(model, node, bound, nodeFunctionIndex)
 \item{nodeFunctionIndex}{For internal NIMBLE use only}
 }
 \description{
-Part of the NIMBLE language
+Get the value of the lower or upper bound for a single stochastic node in a model.
 }
 \details{
+Standard usage is as a method of a model, in the form \code{model$getBound(node, bound)}, but the usage as a simple function with the model as the first argument as above is also allowed.
+
 For nodes that do not involve truncation of the distribution
 this will return the lower or upper bound of the distribution, which
 may be a constant or for a limited number of distributions a parameter

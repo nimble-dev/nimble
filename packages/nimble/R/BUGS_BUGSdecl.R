@@ -92,9 +92,11 @@ nimbleOrRfunctionNames <- c('[',
                             paste0(c('d','r','q','p'), 't'),
                             paste0(c('d','r','q','p'), 'exp'),
                             'nimC', 'nimRep', 'nimSeq', 'diag',
+                            'nimNumeric','nimMatrix','nimArray',
                             'length')
 
-functionsThatShouldNeverBeReplacedInBUGScode <- c(':','nimC','nimRep','nimSeq', 'diag')
+functionsThatShouldNeverBeReplacedInBUGScode <- c(':','nimC','nimRep','nimSeq', 'diag',
+                                                  'nimNumeric', 'nimMatrix', 'nimArray')
 
 #' BUGSdeclClass contains the information extracted from one BUGS declaration
 BUGSdeclClass <- setRefClass(
@@ -797,7 +799,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                     return(list(code = c(contentsCode, list(code)),
                                 replaceable = FALSE,
                                 hasIndex = any(contentsHasIndex)))
-                } else { ## non-replaceable indices are dynamic indices
+                } else { ## non-replaceable indices are dynamic indices (or constant vectors, which are not allowed)
                     if(!nimbleOptions()$allowDynamicIndexing) {
                         warning("It appears you are trying to use dynamic indexing (i.e., the index of a variable is determined by something that is not a constant) in: ",
                                 deparse(code),
@@ -808,7 +810,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                             sapply(contentsCode,
                                    detectNonscalarIndex))
                            )
-                            stop("getSymbolicParentNodesRecurse: only scalar random indices are allowed; vector random indexing found in ",
+                            stop("getSymbolicParentNodesRecurse: only scalar indices are allowed; vector indexing found in ",
                                  deparse(code))
                         indexedVariable <- deparse(code[[2]])
                         dynamicIndexParent <-
@@ -887,6 +889,8 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             if(isRonly & !allContentsReplaceable) {
                 if(!exists(funName, envir))
                     stop("R function '", funName,"' does not exist.")
+                if(funName == ":") ## dynamic indexing in a vector of indices
+                    stop("Dynamic indexing found in a vector of indices, ", deparse(code), ". Only scalar indices, such as 'idx' in 'x[idx]', can be dynamic. One can instead use dynamic indexing in a vector of indices inside a nimbleFunction.") 
                 unreplaceable <-
                     sapply(contents[!contentsReplaceable],
                            function(x) as.character(x$code)

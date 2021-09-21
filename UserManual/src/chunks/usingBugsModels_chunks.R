@@ -165,3 +165,7 @@ pump$getDependencies("theta[1:3]", stochOnly = TRUE, self = FALSE)
 # get all dependencies, not just the direct descendants
 pump$getDependencies("alpha", downstream = TRUE)
 pump$getDependencies("alpha", downstream = TRUE, dataOnly = TRUE)
+
+## @knitr getParents
+
+pump$getParents("alpha")

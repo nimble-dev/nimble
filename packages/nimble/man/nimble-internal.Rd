@@ -28,6 +28,7 @@
 \alias{eigenize_nimbleNullaryClass-Class}
 \alias{exprClass-Class}
 \alias{exprTypeInfoClass-Class}
+\alias{findMethodsInExprClass-Class}
 \alias{indexedNodeInfoTableClass-Class}
 \alias{keywordInfoClass-Class}
 \alias{MakeCustomModelClass-Class}

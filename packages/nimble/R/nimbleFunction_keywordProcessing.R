@@ -28,23 +28,6 @@ setupCodeTemplateClass <- setRefClass('setupCodeTemplateClass',
 
 
 ### KEYWORD INFO OBJECTS
-
-#		Current objects:
-#		d_gamma_keywordInfo
-#		pq_gamma_keywordInfo
-#		rgamma_keywordInfo
-#		d_dist_keywordInfo
-#		qp_dist_keywordInfo
-#		values_keywordInfo
-#		calculate_keywordInfo
-#		simulate_keywordInfo
-#		getLogProb_keywordInfo
-#		nimCopy_keywordInfo
-#		doubleBracket_keywordInfo
-#		dollarSign_keywordInfo
-#		singleBracket_keywordInfo
-		
-		
 		
 d_gamma_keywordInfo <- keywordInfoClass(
     keyword = 'dgamma',
@@ -620,6 +603,7 @@ doubleBracket_keywordInfo <- keywordInfoClass(
             }
             return(ans)			
         }
+        stop("Incorrect use of double brackets in: '", deparse(code), "'.")
     })
 
 modelMemberFun_keywordInfo <- keywordInfoClass(

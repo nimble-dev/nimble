@@ -21,13 +21,13 @@ nimCopy(
 
 \item{to}{Either a NIMBLE model or modelValues object}
 
-\item{nodes}{The nodes of object \code{from} which will be copied from}
+\item{nodes}{Vector of one or more node names of object \code{from} that will be copied from}
 
-\item{nodesTo}{The nodes of object \code{to} which will be copied to. If \code{nodesTo == NA}, will automatically be set to \code{nodes}}
+\item{nodesTo}{Vector of one or more node names of object \code{to} that will be copied to. If \code{nodesTo} is \code{NULL}, will automatically be set to \code{nodes}}
 
-\item{row}{If \code{from} is a modelValues, the row which will be copied from}
+\item{row}{If \code{from} is a modelValues, the row that will be copied from}
 
-\item{rowTo}{If \code{to} is a modelValues, the row which will be copied to. If \code{rowTo == NA}, will automatically be set to \code{row}}
+\item{rowTo}{If \code{to} is a modelValues, the row which will be copied to. If \code{rowTo} is \code{NA}, will automatically be set to \code{row}}
 
 \item{logProb}{A logical value indicating whether the log probabilities of the given nodes should also be copied (i.e. if \code{nodes = 'x'}
 and \code{logProb = TRUE}, then both \code{'x'} and \code{'logProb_x'} will be copied)}
@@ -39,7 +39,7 @@ and \code{logProbOnly = TRUE}, then only \code{'logProb_x'} will be copied)}
 Copies values from a NIMBLE model or modelValues object to another NIMBLE model or modelValues. Work in R and NIMBLE.  The NIMBLE keyword \code{copy} is identical to \code{nimCopy}
 }
 \details{
-See the User Manual for more details
+This function copies values from one or more nodes (possibly including log probabilities for nodes) between models and modelValues objects. For modelValues objects, the row must be specified. This function allows one to conveniently copy multiple nodes, avoiding having to write a loop.
 }
 \examples{
 # Building model and modelValues object

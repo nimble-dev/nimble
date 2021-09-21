@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<html lang="" xml:lang="">
 <head>
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title></title>
+  <title>Chapter 2 Lightning introduction | NimbleUserManual.utf8</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.12 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.19 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="" />
+  <meta property="og:title" content="Chapter 2 Lightning introduction | NimbleUserManual.utf8" />
   <meta property="og:type" content="book" />
   
   <meta property="og:image" content="nimble-icon.png" />
@@ -16,7 +16,7 @@
   <meta name="github-repo" content="nimble-dev/nimble" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="" />
+  <meta name="twitter:title" content="Chapter 2 Lightning introduction | NimbleUserManual.utf8" />
   
   <meta name="twitter:description" content="This is the NIMBLE User Manual." />
   <meta name="twitter:image" content="nimble-icon.png" />
@@ -29,8 +29,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
-<link rel="prev" href="cha-welcome-nimble.html">
-<link rel="next" href="cha-more-introduction.html">
+<link rel="prev" href="cha-welcome-nimble.html"/>
+<link rel="next" href="cha-more-introduction.html"/>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -38,6 +38,9 @@
 <link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
 
 
 
@@ -48,41 +51,66 @@
 
 
 <style type="text/css">
-div.sourceCode { overflow-x: auto; }
-table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
-  margin: 0; padding: 0; vertical-align: baseline; border: none; }
-table.sourceCode { width: 100%; line-height: 100%; }
-td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
-td.sourceCode { padding-left: 5px; }
-code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
-code > span.dt { color: #902000; } /* DataType */
-code > span.dv { color: #40a070; } /* DecVal */
-code > span.bn { color: #40a070; } /* BaseN */
-code > span.fl { color: #40a070; } /* Float */
-code > span.ch { color: #4070a0; } /* Char */
-code > span.st { color: #4070a0; } /* String */
-code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
-code > span.ot { color: #007020; } /* Other */
-code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
-code > span.fu { color: #06287e; } /* Function */
-code > span.er { color: #ff0000; font-weight: bold; } /* Error */
-code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
-code > span.cn { color: #880000; } /* Constant */
-code > span.sc { color: #4070a0; } /* SpecialChar */
-code > span.vs { color: #4070a0; } /* VerbatimString */
-code > span.ss { color: #bb6688; } /* SpecialString */
-code > span.im { } /* Import */
-code > span.va { color: #19177c; } /* Variable */
-code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-code > span.op { color: #666666; } /* Operator */
-code > span.bu { } /* BuiltIn */
-code > span.ex { } /* Extension */
-code > span.pp { color: #bc7a00; } /* Preprocessor */
-code > span.at { color: #7d9029; } /* Attribute */
-code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
-code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+a.sourceLine { display: inline-block; line-height: 1.25; }
+a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
+a.sourceLine:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+a.sourceLine { text-indent: -1em; padding-left: 1em; }
+}
+pre.numberSource a.sourceLine
+  { position: relative; left: -4em; }
+pre.numberSource a.sourceLine::before
+  { content: attr(title);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; pointer-events: all; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {  }
+@media screen {
+a.sourceLine::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
 <link rel="stylesheet" href="style.css" type="text/css" />
@@ -100,7 +128,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.10.1</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.11.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -328,7 +356,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
-<li class="chapter" data-level="16" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i><b>16</b> References</a></li>
+<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
       </nav>
@@ -351,7 +379,9 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <div id="sec:brief-example" class="section level2">
 <h2><span class="header-section-number">2.1</span> A brief example</h2>
 <p>Here we’ll give a simple example of building a model and running some algorithms on the model, as well as creating our own user-specified algorithm. The goal is to give you a sense for what one can do in the system. Later sections will provide more detail.</p>
-<p>We’ll use the <em>pump</em> model example from BUGS<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>. We could load the model from the standard BUGS example file formats (Section <a href="cha-building-models.html#sec:readBUGSmodel">6.1.2</a>), but instead we’ll show how to enter it directly in R.</p>
+<p>We’ll use the <em>pump</em> model example from BUGS<a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a>. We could load the model
+from the standard BUGS example file formats (Section <a href="cha-building-models.html#sec:readBUGSmodel">6.1.2</a>), but instead we’ll show
+how to enter it directly in R.</p>
 <p>In this ‘lightning introduction’ we will:</p>
 <ol style="list-style-type: decimal">
 <li>Create the model for the pump example.</li>
@@ -359,36 +389,43 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li>Create a basic MCMC configuration for the pump model.</li>
 <li>Compile and run the MCMC</li>
 <li>Customize the MCMC configuration and compile and run that.</li>
-<li>Create, compile and run a Monte Carlo Expectation Maximization (MCEM) algorithm, which illustrates some of the flexibility NIMBLE provides to combine R and NIMBLE.</li>
-<li>Write a short <code>nimbleFunction</code> to generate simulations from designated nodes of any model.</li>
+<li>Create, compile and run a Monte Carlo Expectation Maximization (MCEM)
+algorithm, which illustrates some of the flexibility NIMBLE
+provides to combine R and NIMBLE.</li>
+<li>Write a short <code>nimbleFunction</code> to generate simulations from
+designated nodes of any model.</li>
 </ol>
 </div>
 <div id="sec:creating-model" class="section level2">
 <h2><span class="header-section-number">2.2</span> Creating a model</h2>
-<p>First we define the model code, its constants, data, and initial values for MCMC.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpCode &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({ 
-  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N){
-      theta[i] <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(alpha,beta)
-      lambda[i] &lt;-<span class="st"> </span>theta[i]<span class="op">*</span>t[i]
-      x[i] <span class="op">~</span><span class="st"> </span><span class="kw">dpois</span>(lambda[i])
-  }
-  alpha <span class="op">~</span><span class="st"> </span><span class="kw">dexp</span>(<span class="fl">1.0</span>)
-  beta <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.1</span>,<span class="fl">1.0</span>)
-})
-
-pumpConsts &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">10</span>,
-                   <span class="dt">t =</span> <span class="kw">c</span>(<span class="fl">94.3</span>, <span class="fl">15.7</span>, <span class="fl">62.9</span>, <span class="dv">126</span>, <span class="fl">5.24</span>,
-                       <span class="fl">31.4</span>, <span class="fl">1.05</span>, <span class="fl">1.05</span>, <span class="fl">2.1</span>, <span class="fl">10.5</span>))
-
-pumpData &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">x =</span> <span class="kw">c</span>(<span class="dv">5</span>, <span class="dv">1</span>, <span class="dv">5</span>, <span class="dv">14</span>, <span class="dv">3</span>, <span class="dv">19</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">4</span>, <span class="dv">22</span>))
-
-pumpInits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">alpha =</span> <span class="dv">1</span>, <span class="dt">beta =</span> <span class="dv">1</span>,
-                  <span class="dt">theta =</span> <span class="kw">rep</span>(<span class="fl">0.1</span>, pumpConsts<span class="op">$</span>N))</code></pre></div>
-<p>Here <code>x[i]</code> is the number of failures recorded during a time duration of length <code>t[i]</code> for the <code>i</code><span class="math inline">\(^{th}\)</span> pump. <code>theta[i]</code> is a failure rate, and the goal is estimate parameters <code>alpha</code> and <code>beta</code>. Now let’s create the model and look at some of its nodes.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pump &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(<span class="dt">code =</span> pumpCode, <span class="dt">name =</span> <span class="st">&quot;pump&quot;</span>, <span class="dt">constants =</span> pumpConsts,
-                    <span class="dt">data =</span> pumpData, <span class="dt">inits =</span> pumpInits)
-
-pump<span class="op">$</span><span class="kw">getNodeNames</span>()</code></pre></div>
+<p>First we define the model code, its constants, data, and initial
+values for MCMC.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1">pumpCode &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({ </a>
+<a class="sourceLine" id="cb1-2" title="2">  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N){</a>
+<a class="sourceLine" id="cb1-3" title="3">      theta[i] <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(alpha,beta)</a>
+<a class="sourceLine" id="cb1-4" title="4">      lambda[i] &lt;-<span class="st"> </span>theta[i]<span class="op">*</span>t[i]</a>
+<a class="sourceLine" id="cb1-5" title="5">      x[i] <span class="op">~</span><span class="st"> </span><span class="kw">dpois</span>(lambda[i])</a>
+<a class="sourceLine" id="cb1-6" title="6">  }</a>
+<a class="sourceLine" id="cb1-7" title="7">  alpha <span class="op">~</span><span class="st"> </span><span class="kw">dexp</span>(<span class="fl">1.0</span>)</a>
+<a class="sourceLine" id="cb1-8" title="8">  beta <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.1</span>,<span class="fl">1.0</span>)</a>
+<a class="sourceLine" id="cb1-9" title="9">})</a>
+<a class="sourceLine" id="cb1-10" title="10"></a>
+<a class="sourceLine" id="cb1-11" title="11">pumpConsts &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">10</span>,</a>
+<a class="sourceLine" id="cb1-12" title="12">                   <span class="dt">t =</span> <span class="kw">c</span>(<span class="fl">94.3</span>, <span class="fl">15.7</span>, <span class="fl">62.9</span>, <span class="dv">126</span>, <span class="fl">5.24</span>,</a>
+<a class="sourceLine" id="cb1-13" title="13">                       <span class="fl">31.4</span>, <span class="fl">1.05</span>, <span class="fl">1.05</span>, <span class="fl">2.1</span>, <span class="fl">10.5</span>))</a>
+<a class="sourceLine" id="cb1-14" title="14"></a>
+<a class="sourceLine" id="cb1-15" title="15">pumpData &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">x =</span> <span class="kw">c</span>(<span class="dv">5</span>, <span class="dv">1</span>, <span class="dv">5</span>, <span class="dv">14</span>, <span class="dv">3</span>, <span class="dv">19</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">4</span>, <span class="dv">22</span>))</a>
+<a class="sourceLine" id="cb1-16" title="16"></a>
+<a class="sourceLine" id="cb1-17" title="17">pumpInits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">alpha =</span> <span class="dv">1</span>, <span class="dt">beta =</span> <span class="dv">1</span>,</a>
+<a class="sourceLine" id="cb1-18" title="18">                  <span class="dt">theta =</span> <span class="kw">rep</span>(<span class="fl">0.1</span>, pumpConsts<span class="op">$</span>N))</a></code></pre></div>
+<p>Here <code>x[i]</code> is the number of failures recorded during a time
+duration of length <code>t[i]</code> for the <code>i</code><span class="math inline">\(^{th}\)</span> pump.
+<code>theta[i]</code> is a failure rate, and the goal is estimate parameters
+<code>alpha</code> and <code>beta</code>. Now let’s create the model and look at some of its nodes.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" title="1">pump &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(<span class="dt">code =</span> pumpCode, <span class="dt">name =</span> <span class="st">&quot;pump&quot;</span>, <span class="dt">constants =</span> pumpConsts,</a>
+<a class="sourceLine" id="cb2-2" title="2">                    <span class="dt">data =</span> pumpData, <span class="dt">inits =</span> pumpInits)</a>
+<a class="sourceLine" id="cb2-3" title="3"></a>
+<a class="sourceLine" id="cb2-4" title="4">pump<span class="op">$</span><span class="kw">getNodeNames</span>()</a></code></pre></div>
 <pre><code>##  [1] &quot;alpha&quot;               &quot;beta&quot;                &quot;lifted_d1_over_beta&quot;
 ##  [4] &quot;theta[1]&quot;            &quot;theta[2]&quot;            &quot;theta[3]&quot;           
 ##  [7] &quot;theta[4]&quot;            &quot;theta[5]&quot;            &quot;theta[6]&quot;           
@@ -400,86 +437,126 @@ pump<span class="op">$</span><span class="kw">getNodeNames</span>()</code></pre>
 ## [25] &quot;x[2]&quot;                &quot;x[3]&quot;                &quot;x[4]&quot;               
 ## [28] &quot;x[5]&quot;                &quot;x[6]&quot;                &quot;x[7]&quot;               
 ## [31] &quot;x[8]&quot;                &quot;x[9]&quot;                &quot;x[10]&quot;</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pump<span class="op">$</span>x</code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" title="1">pump<span class="op">$</span>x</a></code></pre></div>
 <pre><code>##  [1]  5  1  5 14  3 19  1  1  4 22</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pump<span class="op">$</span>logProb_x</code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" title="1">pump<span class="op">$</span>logProb_x</a></code></pre></div>
 <pre><code>##  [1]  -2.998011  -1.118924  -1.882686  -2.319466  -4.254550 -20.739651
 ##  [7]  -2.358795  -2.358795  -9.630645 -48.447798</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pump<span class="op">$</span>alpha</code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" title="1">pump<span class="op">$</span>alpha</a></code></pre></div>
 <pre><code>## [1] 1</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pump<span class="op">$</span>theta</code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" title="1">pump<span class="op">$</span>theta</a></code></pre></div>
 <pre><code>##  [1] 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pump<span class="op">$</span>lambda</code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb12-1" title="1">pump<span class="op">$</span>lambda</a></code></pre></div>
 <pre><code>##  [1]  9.430  1.570  6.290 12.600  0.524  3.140  0.105  0.105  0.210  1.050</code></pre>
-<p>Notice that in the list of nodes, NIMBLE has introduced a new node, <code>lifted_d1_over_beta</code>. We call this a ‘lifted’ node. Like R, NIMBLE allows alternative parameterizations, such as the scale or rate parameterization of the gamma distribution. Choice of parameterization can generate a lifted node, as can using a link function or a distribution argument that is an expression. It’s helpful to know why they exist, but you shouldn’t need to worry about them.</p>
-<p>Thanks to the plotting capabilities of the <code>igraph</code> package that NIMBLE uses to represent the directed acyclic graph, we can plot the model (Figure 2.1).</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pump<span class="op">$</span><span class="kw">plotGraph</span>()</code></pre></div>
+<p>Notice that in the list of nodes, NIMBLE has introduced a new node,
+<code>lifted_d1_over_beta</code>. We call this a ‘lifted’ node. Like R,
+NIMBLE allows alternative parameterizations, such as the scale or rate
+parameterization of the gamma distribution. Choice of parameterization
+can generate a lifted node, as can using a link function or a
+distribution argument that is an expression. It’s helpful to know why
+they exist, but you shouldn’t need to worry about them.</p>
+<p>Thanks to the plotting capabilities of the <code>igraph</code> package that
+NIMBLE uses to represent the directed acyclic graph, we can plot the
+model (Figure 2.1).</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb14-1" title="1">pump<span class="op">$</span><span class="kw">plotGraph</span>()</a></code></pre></div>
 <div class="figure"><span id="fig:plotPump"></span>
 <img src="NimbleUserManual_files/figure-html/plotPump-1.png" alt="Directed Acyclic Graph plot of the pump model, thanks to the igraph package" width="720" />
 <p class="caption">
 Figure 2.1: Directed Acyclic Graph plot of the pump model, thanks to the igraph package
 </p>
 </div>
-<p>You are in control of the model. By default, <code>nimbleModel</code> does its best to initialize a model, but let’s say you want to re-initialize <code>theta</code>. To simulate from the prior for <code>theta</code> (overwriting the initial values previously in the model) we first need to be sure the parent nodes of all <code>theta[i]</code> nodes are fully initialized, including any non-stochastic nodes such as lifted nodes. We then use the <code>simulate</code> function to simulate from the distribution for <code>theta</code>. Finally we use the <code>calculate</code> function to calculate the dependencies of <code>theta</code>, namely <code>lambda</code> and the log probabilities of <code>x</code> to ensure all parts of the model are up to date. First we show how to use the model’s <code>getDependencies</code> method to query information about its graph. <!---  TODO: the logic here is a bit weird - we say we want to know all parents of theta are initialized by our code actually finds dependencies of alpha+beta not parents of theta --></p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Show all dependencies of alpha and beta terminating in stochastic nodes</span>
-pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>))</code></pre></div>
+<p>You are in control of the model. By default, <code>nimbleModel</code> does
+its best to initialize a model, but let’s say you want to
+re-initialize <code>theta</code>. To simulate from the prior for <code>theta</code> (overwriting the
+initial values previously in the model) we first need to be sure the
+parent nodes of all <code>theta[i]</code> nodes are fully initialized, including any non-stochastic nodes such
+as lifted nodes. We then use the <code>simulate</code> function to simulate
+from the distribution for <code>theta</code>. Finally we use the
+<code>calculate</code> function to
+calculate the dependencies of <code>theta</code>, namely <code>lambda</code> and the
+log probabilities of <code>x</code> to ensure all parts of the
+model are up to date. First we show how
+to use the model’s <code>getDependencies</code> method to query information
+about its graph.
+<!---  TODO: the logic here is a bit weird - we say we want to know all parents of theta are initialized by our code actually finds dependencies of alpha+beta not parents of theta --></p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb15-1" title="1"><span class="co"># Show all dependencies of alpha and beta terminating in stochastic nodes</span></a>
+<a class="sourceLine" id="cb15-2" title="2">pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>))</a></code></pre></div>
 <pre><code>##  [1] &quot;alpha&quot;               &quot;beta&quot;                &quot;lifted_d1_over_beta&quot;
 ##  [4] &quot;theta[1]&quot;            &quot;theta[2]&quot;            &quot;theta[3]&quot;           
 ##  [7] &quot;theta[4]&quot;            &quot;theta[5]&quot;            &quot;theta[6]&quot;           
 ## [10] &quot;theta[7]&quot;            &quot;theta[8]&quot;            &quot;theta[9]&quot;           
 ## [13] &quot;theta[10]&quot;</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Now show only the deterministic dependencies</span>
-pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>), <span class="dt">determOnly =</span> <span class="ot">TRUE</span>)</code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb17-1" title="1"><span class="co"># Now show only the deterministic dependencies</span></a>
+<a class="sourceLine" id="cb17-2" title="2">pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>), <span class="dt">determOnly =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
 <pre><code>## [1] &quot;lifted_d1_over_beta&quot;</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Check that the lifted node was initialized. </span>
-pump[[<span class="st">&quot;lifted_d1_over_beta&quot;</span>]] <span class="co"># It was.</span></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb19-1" title="1"><span class="co"># Check that the lifted node was initialized. </span></a>
+<a class="sourceLine" id="cb19-2" title="2">pump[[<span class="st">&quot;lifted_d1_over_beta&quot;</span>]] <span class="co"># It was.</span></a></code></pre></div>
 <pre><code>## [1] 1</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Now let&#39;s simulate new theta values</span>
-<span class="kw">set.seed</span>(<span class="dv">1</span>) <span class="co"># This makes the simulations here reproducible</span>
-pump<span class="op">$</span><span class="kw">simulate</span>(<span class="st">&quot;theta&quot;</span>)
-pump<span class="op">$</span>theta   <span class="co"># the new theta values</span></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb21-1" title="1"><span class="co"># Now let&#39;s simulate new theta values</span></a>
+<a class="sourceLine" id="cb21-2" title="2"><span class="kw">set.seed</span>(<span class="dv">1</span>) <span class="co"># This makes the simulations here reproducible</span></a>
+<a class="sourceLine" id="cb21-3" title="3">pump<span class="op">$</span><span class="kw">simulate</span>(<span class="st">&quot;theta&quot;</span>)</a>
+<a class="sourceLine" id="cb21-4" title="4">pump<span class="op">$</span>theta   <span class="co"># the new theta values</span></a></code></pre></div>
 <pre><code>##  [1] 0.15514136 1.88240160 1.80451250 0.83617765 1.22254365 1.15835525
 ##  [7] 0.99001994 0.30737332 0.09461909 0.15720154</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># lambda and logProb_x haven&#39;t been re-calculated yet</span>
-pump<span class="op">$</span>lambda <span class="co"># these are the same values as above</span></code></pre></div>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb23-1" title="1"><span class="co"># lambda and logProb_x haven&#39;t been re-calculated yet</span></a>
+<a class="sourceLine" id="cb23-2" title="2">pump<span class="op">$</span>lambda <span class="co"># these are the same values as above</span></a></code></pre></div>
 <pre><code>##  [1]  9.430  1.570  6.290 12.600  0.524  3.140  0.105  0.105  0.210  1.050</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pump<span class="op">$</span>logProb_x</code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb25-1" title="1">pump<span class="op">$</span>logProb_x</a></code></pre></div>
 <pre><code>##  [1]  -2.998011  -1.118924  -1.882686  -2.319466  -4.254550 -20.739651
 ##  [7]  -2.358795  -2.358795  -9.630645 -48.447798</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pump<span class="op">$</span><span class="kw">getLogProb</span>(<span class="st">&quot;x&quot;</span>) <span class="co"># The sum of logProb_x</span></code></pre></div>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb27-1" title="1">pump<span class="op">$</span><span class="kw">getLogProb</span>(<span class="st">&quot;x&quot;</span>) <span class="co"># The sum of logProb_x</span></a></code></pre></div>
 <pre><code>## [1] -96.10932</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pump<span class="op">$</span><span class="kw">calculate</span>(pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="kw">c</span>(<span class="st">&quot;theta&quot;</span>)))</code></pre></div>
+<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb29-1" title="1">pump<span class="op">$</span><span class="kw">calculate</span>(pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="kw">c</span>(<span class="st">&quot;theta&quot;</span>)))</a></code></pre></div>
 <pre><code>## [1] -262.204</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pump<span class="op">$</span>lambda  <span class="co"># Now they have.</span></code></pre></div>
-<pre><code>##  [1]  14.6298299  29.5537051 113.5038360 105.3583839   6.4061287
-##  [6]  36.3723548   1.0395209   0.3227420   0.1987001   1.6506161</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pump<span class="op">$</span>logProb_x</code></pre></div>
+<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb31-1" title="1">pump<span class="op">$</span>lambda  <span class="co"># Now they have.</span></a></code></pre></div>
+<pre><code>##  [1]  14.6298299  29.5537051 113.5038360 105.3583839   6.4061287  36.3723548
+##  [7]   1.0395209   0.3227420   0.1987001   1.6506161</code></pre>
+<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb33-1" title="1">pump<span class="op">$</span>logProb_x</a></code></pre></div>
 <pre><code>##  [1]  -6.002009 -26.167496 -94.632145 -65.346457  -2.626123  -7.429868
 ##  [7]  -1.000761  -1.453644  -9.840589 -39.096527</code></pre>
-<p>Notice that the first <code>getDependencies</code> call returned dependencies from <code>alpha</code> and <code>beta</code> down to the next stochastic nodes in the model. The second call requested only deterministic dependencies. The call to <code>pump$simulate(&quot;theta&quot;)</code> expands <code>&quot;theta&quot;</code> to include all nodes in <code>theta</code>. After simulating into <code>theta</code>, we can see that <code>lambda</code> and the log probabilities of <code>x</code> still reflect the old values of <code>theta</code>, so we <code>calculate</code> them and then see that they have been updated.</p>
+<p>Notice that the first <code>getDependencies</code> call returned dependencies
+from <code>alpha</code> and <code>beta</code> down to the next stochastic nodes in the
+model. The second call requested only deterministic dependencies.
+The call to <code>pump$simulate("theta")</code>
+expands <code>"theta"</code> to include all nodes in <code>theta</code>. After
+simulating into <code>theta</code>, we can see that <code>lambda</code> and the log
+probabilities of <code>x</code> still reflect the old values of <code>theta</code>, so
+we <code>calculate</code> them and then see that they have been updated.</p>
 </div>
 <div id="sec:compiling-model" class="section level2">
 <h2><span class="header-section-number">2.3</span> Compiling the model</h2>
-<p>Next we compile the model, which means generating C++ code, compiling that code, and loading it back into R with an object that can be used just like the uncompiled model. The values in the compiled model will be initialized from those of the original model in R, but the original and compiled models are distinct objects so any subsequent changes in one will not be reflected in the other.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">Cpump &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(pump)
-Cpump<span class="op">$</span>theta</code></pre></div>
+<p>Next we compile the model, which means generating C++ code, compiling
+that code, and loading it back into R with an object that can be used just
+like the uncompiled model. The values in the compiled model will be
+initialized from those of the original model in R, but
+the original and compiled models are distinct objects so any
+subsequent changes in one will not be reflected in the other.</p>
+<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb35-1" title="1">Cpump &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(pump)</a>
+<a class="sourceLine" id="cb35-2" title="2">Cpump<span class="op">$</span>theta</a></code></pre></div>
 <pre><code>##  [1] 0.15514136 1.88240160 1.80451250 0.83617765 1.22254365 1.15835525
 ##  [7] 0.99001994 0.30737332 0.09461909 0.15720154</code></pre>
 <p>Note that the compiled model is used when running any NIMBLE algorithms via C++, so the model needs to be compiled before (or at the same time as) any compilation of algorithms, such as the compilation of the MCMC done in the next section.</p>
 </div>
 <div id="sec:intro-runMCMC" class="section level2">
 <h2><span class="header-section-number">2.4</span> One-line invocation of MCMC</h2>
-<p>The most direct approach to invoking NIMBLE’s MCMC engine is using the <code>nimbleMCMC</code> function. This function would generally take the code, data, constants, and initial values as input, but it can also accept the (compiled or uncompiled) model object as an argument. It provides a variety of options for executing and controlling multiple chains of NIMBLE’s default MCMC algorithm, and returning posterior samples, posterior summary statistics, and/or WAIC values.</p>
-<p>For example, to execute two MCMC chains of 10,000 samples each, and return samples, summary statistics, and WAIC values:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mcmc.out &lt;-<span class="st"> </span><span class="kw">nimbleMCMC</span>(<span class="dt">code =</span> pumpCode, <span class="dt">constants =</span> pumpConsts,
-                       <span class="dt">data =</span> pumpData, <span class="dt">inits =</span> pumpInits,
-                       <span class="dt">nchains =</span> <span class="dv">2</span>, <span class="dt">niter =</span> <span class="dv">10000</span>,
-                       <span class="dt">summary =</span> <span class="ot">TRUE</span>, <span class="dt">WAIC =</span> <span class="ot">TRUE</span>,
-                       <span class="dt">monitors =</span> <span class="kw">c</span>(<span class="st">&#39;alpha&#39;</span>,<span class="st">&#39;beta&#39;</span>,<span class="st">&#39;theta&#39;</span>))
-
-<span class="kw">names</span>(mcmc.out)</code></pre></div>
+<p>The most direct approach to invoking NIMBLE’s MCMC engine is using the
+<code>nimbleMCMC</code> function. This function would generally take the code,
+data, constants, and initial values as input, but it can also accept the (compiled or uncompiled)
+model object as an argument. It provides a variety of options for executing and
+controlling multiple chains of NIMBLE’s default MCMC algorithm, and
+returning posterior samples, posterior summary statistics,
+and/or WAIC values.</p>
+<p>For example, to execute two MCMC chains of 10,000 samples each, and
+return samples, summary statistics, and WAIC values:</p>
+<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb37-1" title="1">mcmc.out &lt;-<span class="st"> </span><span class="kw">nimbleMCMC</span>(<span class="dt">code =</span> pumpCode, <span class="dt">constants =</span> pumpConsts,</a>
+<a class="sourceLine" id="cb37-2" title="2">                       <span class="dt">data =</span> pumpData, <span class="dt">inits =</span> pumpInits,</a>
+<a class="sourceLine" id="cb37-3" title="3">                       <span class="dt">nchains =</span> <span class="dv">2</span>, <span class="dt">niter =</span> <span class="dv">10000</span>,</a>
+<a class="sourceLine" id="cb37-4" title="4">                       <span class="dt">summary =</span> <span class="ot">TRUE</span>, <span class="dt">WAIC =</span> <span class="ot">TRUE</span>,</a>
+<a class="sourceLine" id="cb37-5" title="5">                       <span class="dt">monitors =</span> <span class="kw">c</span>(<span class="st">&#39;alpha&#39;</span>,<span class="st">&#39;beta&#39;</span>,<span class="st">&#39;theta&#39;</span>))</a>
+<a class="sourceLine" id="cb37-6" title="6"></a>
+<a class="sourceLine" id="cb37-7" title="7"><span class="kw">names</span>(mcmc.out)</a></code></pre></div>
 <pre><code>## [1] &quot;samples&quot; &quot;summary&quot; &quot;WAIC&quot;</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mcmc.out<span class="op">$</span>summary</code></pre></div>
+<div class="sourceCode" id="cb39"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb39-1" title="1">mcmc.out<span class="op">$</span>summary</a></code></pre></div>
 <pre><code>## $chain1
 ##                 Mean     Median    St.Dev.   95%CI_low 95%CI_upp
 ## alpha     0.69804352 0.65835063 0.27037676 0.287898244 1.3140461
@@ -524,16 +601,23 @@ Cpump<span class="op">$</span>theta</code></pre></div>
 ## theta[8]  0.89487822 0.70761105 0.73007484 0.07211191 2.8067373
 ## theta[9]  1.57604083 1.44719278 0.76035931 0.46374515 3.3866706
 ## theta[10] 1.98932800 1.96195345 0.42352979 1.24334249 2.9068229</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mcmc.out<span class="op">$</span>WAIC  </code></pre></div>
+<div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb41-1" title="1">mcmc.out<span class="op">$</span>WAIC  </a></code></pre></div>
 <pre><code>## [1] 48.69896</code></pre>
-<p>See Section <a href="cha-mcmc.html#sec:nimbleMCMC">7.1</a> or <code>help(nimbleMCMC)</code> for more details about using <code>nimbleMCMC</code>.</p>
-<p>Note that the WAIC value varies depending on what quantities are treated as parameters; see Section <a href="cha-mcmc.html#sec:WAIC">7.7</a> for more details.</p>
+<p>See Section <a href="cha-mcmc.html#sec:nimbleMCMC">7.1</a> or <code>help(nimbleMCMC)</code> for more
+details about using <code>nimbleMCMC</code>.</p>
+<p>Note that the WAIC value varies depending on what quantities are treated
+as parameters; see Section <a href="cha-mcmc.html#sec:WAIC">7.7</a> for more details.</p>
 </div>
 <div id="sec:creating-mcmc" class="section level2">
 <h2><span class="header-section-number">2.5</span> Creating, compiling and running a basic MCMC configuration</h2>
-<p>At this point we have initial values for all of the nodes in the model, and we have both the original and compiled versions of the model. As a first algorithm to try on our model, let’s use NIMBLE’s default MCMC. Note that conjugate relationships are detected for all nodes except for <code>alpha</code>, on which the default sampler is a random walk Metropolis sampler. <!--- ^[We haven't set up conjugate relationships for an 
-%  exponential yet.] --> <!---  footnote is true but not relevant as there is not a conj relationship for alpha in a gamma-distributed dependency --></p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(pump, <span class="dt">print =</span> <span class="ot">TRUE</span>)</code></pre></div>
+<p>At this point we have initial values for all of the nodes in the model,
+and we have both the original and compiled versions of the model. As a first algorithm
+to try on our model, let’s use NIMBLE’s default MCMC. Note that conjugate relationships are detected for all nodes except for
+<code>alpha</code>, on which the default sampler is a random walk Metropolis sampler.
+<!--- ^[We haven't set up conjugate relationships for an 
+%  exponential yet.] -->
+<!---  footnote is true but not relevant as there is not a conj relationship for alpha in a gamma-distributed dependency --></p>
+<div class="sourceCode" id="cb43"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb43-1" title="1">pumpConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(pump, <span class="dt">print =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
 <pre><code>## ===== Monitors =====
 ## thin = 1: alpha, beta
 ## ===== Samplers =====
@@ -542,73 +626,82 @@ Cpump<span class="op">$</span>theta</code></pre></div>
 ## conjugate sampler (11)
 ##   - beta
 ##   - theta[]  (10 elements)</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpConf<span class="op">$</span><span class="kw">addMonitors</span>(<span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>, <span class="st">&quot;theta&quot;</span>))</code></pre></div>
+<div class="sourceCode" id="cb45"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb45-1" title="1">pumpConf<span class="op">$</span><span class="kw">addMonitors</span>(<span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>, <span class="st">&quot;theta&quot;</span>))</a></code></pre></div>
 <pre><code>## thin = 1: alpha, beta, theta</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpMCMC &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(pumpConf)
-CpumpMCMC &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(pumpMCMC, <span class="dt">project =</span> pump)
-
-niter &lt;-<span class="st"> </span><span class="dv">1000</span>
-<span class="kw">set.seed</span>(<span class="dv">1</span>)
-samples &lt;-<span class="st"> </span><span class="kw">runMCMC</span>(CpumpMCMC, <span class="dt">niter =</span> niter)
-
-<span class="kw">par</span>(<span class="dt">mfrow =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">4</span>), <span class="dt">mai =</span> <span class="kw">c</span>(.<span class="dv">6</span>, <span class="fl">.4</span>, <span class="fl">.1</span>, <span class="fl">.2</span>))
-<span class="kw">plot</span>(samples[ , <span class="st">&quot;alpha&quot;</span>], <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;iteration&quot;</span>,
-     <span class="dt">ylab =</span> <span class="kw">expression</span>(alpha))
-<span class="kw">plot</span>(samples[ , <span class="st">&quot;beta&quot;</span>], <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;iteration&quot;</span>,
-     <span class="dt">ylab =</span> <span class="kw">expression</span>(beta))
-<span class="kw">plot</span>(samples[ , <span class="st">&quot;alpha&quot;</span>], samples[ , <span class="st">&quot;beta&quot;</span>], <span class="dt">xlab =</span> <span class="kw">expression</span>(alpha),
-     <span class="dt">ylab =</span> <span class="kw">expression</span>(beta))
-<span class="kw">plot</span>(samples[ , <span class="st">&quot;theta[1]&quot;</span>], <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;iteration&quot;</span>,
-     <span class="dt">ylab =</span> <span class="kw">expression</span>(theta[<span class="dv">1</span>]))</code></pre></div>
+<div class="sourceCode" id="cb47"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb47-1" title="1">pumpMCMC &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(pumpConf)</a>
+<a class="sourceLine" id="cb47-2" title="2">CpumpMCMC &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(pumpMCMC, <span class="dt">project =</span> pump)</a>
+<a class="sourceLine" id="cb47-3" title="3"></a>
+<a class="sourceLine" id="cb47-4" title="4">niter &lt;-<span class="st"> </span><span class="dv">1000</span></a>
+<a class="sourceLine" id="cb47-5" title="5"><span class="kw">set.seed</span>(<span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb47-6" title="6">samples &lt;-<span class="st"> </span><span class="kw">runMCMC</span>(CpumpMCMC, <span class="dt">niter =</span> niter)</a>
+<a class="sourceLine" id="cb47-7" title="7"></a>
+<a class="sourceLine" id="cb47-8" title="8"><span class="kw">par</span>(<span class="dt">mfrow =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">4</span>), <span class="dt">mai =</span> <span class="kw">c</span>(.<span class="dv">6</span>, <span class="fl">.4</span>, <span class="fl">.1</span>, <span class="fl">.2</span>))</a>
+<a class="sourceLine" id="cb47-9" title="9"><span class="kw">plot</span>(samples[ , <span class="st">&quot;alpha&quot;</span>], <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;iteration&quot;</span>,</a>
+<a class="sourceLine" id="cb47-10" title="10">     <span class="dt">ylab =</span> <span class="kw">expression</span>(alpha))</a>
+<a class="sourceLine" id="cb47-11" title="11"><span class="kw">plot</span>(samples[ , <span class="st">&quot;beta&quot;</span>], <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;iteration&quot;</span>,</a>
+<a class="sourceLine" id="cb47-12" title="12">     <span class="dt">ylab =</span> <span class="kw">expression</span>(beta))</a>
+<a class="sourceLine" id="cb47-13" title="13"><span class="kw">plot</span>(samples[ , <span class="st">&quot;alpha&quot;</span>], samples[ , <span class="st">&quot;beta&quot;</span>], <span class="dt">xlab =</span> <span class="kw">expression</span>(alpha),</a>
+<a class="sourceLine" id="cb47-14" title="14">     <span class="dt">ylab =</span> <span class="kw">expression</span>(beta))</a>
+<a class="sourceLine" id="cb47-15" title="15"><span class="kw">plot</span>(samples[ , <span class="st">&quot;theta[1]&quot;</span>], <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;iteration&quot;</span>,</a>
+<a class="sourceLine" id="cb47-16" title="16">     <span class="dt">ylab =</span> <span class="kw">expression</span>(theta[<span class="dv">1</span>]))</a></code></pre></div>
 <p><img src="NimbleUserManual_files/figure-html/mcmcPump-1.png" width="672" /></p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">acf</span>(samples[, <span class="st">&quot;alpha&quot;</span>]) <span class="co"># plot autocorrelation of alpha sample</span>
-<span class="kw">acf</span>(samples[, <span class="st">&quot;beta&quot;</span>])  <span class="co"># plot autocorrelation of beta  sample</span></code></pre></div>
+<div class="sourceCode" id="cb48"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb48-1" title="1"><span class="kw">acf</span>(samples[, <span class="st">&quot;alpha&quot;</span>]) <span class="co"># plot autocorrelation of alpha sample</span></a>
+<a class="sourceLine" id="cb48-2" title="2"><span class="kw">acf</span>(samples[, <span class="st">&quot;beta&quot;</span>])  <span class="co"># plot autocorrelation of beta  sample</span></a></code></pre></div>
 <p><img src="NimbleUserManual_files/figure-html/mcmcPump-2.png" width="672" /></p>
-<p>Notice the posterior correlation between <code>alpha</code> and <code>beta</code>. A measure of the mixing for each is the autocorrelation for each parameter, shown by the <code>acf</code> plots.</p>
+<p>Notice the posterior correlation between <code>alpha</code> and <code>beta</code>.
+A measure of the mixing for each is the
+autocorrelation for each parameter, shown by the <code>acf</code> plots.</p>
 </div>
 <div id="sec:customizing-mcmc" class="section level2">
 <h2><span class="header-section-number">2.6</span> Customizing the MCMC</h2>
-<p>Let’s add an adaptive block sampler on <code>alpha</code> and <code>beta</code> jointly and see if that improves the mixing.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpConf<span class="op">$</span><span class="kw">addSampler</span>(<span class="dt">target =</span> <span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>), <span class="dt">type =</span> <span class="st">&quot;RW_block&quot;</span>,
-                    <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">adaptInterval =</span> <span class="dv">100</span>))
-                                     
-pumpMCMC2 &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(pumpConf)
-
-<span class="co"># need to reset the nimbleFunctions in order to add the new MCMC</span>
-CpumpNewMCMC &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(pumpMCMC2, <span class="dt">project  =</span> pump,
-                              <span class="dt">resetFunctions =</span> <span class="ot">TRUE</span>)
-
-<span class="kw">set.seed</span>(<span class="dv">1</span>)
-CpumpNewMCMC<span class="op">$</span><span class="kw">run</span>(niter)</code></pre></div>
+<p>Let’s add an adaptive
+block sampler on <code>alpha</code> and <code>beta</code> jointly and see if that
+improves the mixing.</p>
+<div class="sourceCode" id="cb49"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb49-1" title="1">pumpConf<span class="op">$</span><span class="kw">addSampler</span>(<span class="dt">target =</span> <span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>), <span class="dt">type =</span> <span class="st">&quot;RW_block&quot;</span>,</a>
+<a class="sourceLine" id="cb49-2" title="2">                    <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">adaptInterval =</span> <span class="dv">100</span>))</a>
+<a class="sourceLine" id="cb49-3" title="3">                                     </a>
+<a class="sourceLine" id="cb49-4" title="4">pumpMCMC2 &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(pumpConf)</a>
+<a class="sourceLine" id="cb49-5" title="5"></a>
+<a class="sourceLine" id="cb49-6" title="6"><span class="co"># need to reset the nimbleFunctions in order to add the new MCMC</span></a>
+<a class="sourceLine" id="cb49-7" title="7">CpumpNewMCMC &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(pumpMCMC2, <span class="dt">project  =</span> pump,</a>
+<a class="sourceLine" id="cb49-8" title="8">                              <span class="dt">resetFunctions =</span> <span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb49-9" title="9"></a>
+<a class="sourceLine" id="cb49-10" title="10"><span class="kw">set.seed</span>(<span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb49-11" title="11">CpumpNewMCMC<span class="op">$</span><span class="kw">run</span>(niter)</a></code></pre></div>
 <pre><code>## NULL</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">samplesNew &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(CpumpNewMCMC<span class="op">$</span>mvSamples)
-
-<span class="kw">par</span>(<span class="dt">mfrow =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">4</span>), <span class="dt">mai =</span> <span class="kw">c</span>(.<span class="dv">6</span>, <span class="fl">.4</span>, <span class="fl">.1</span>, <span class="fl">.2</span>))
-<span class="kw">plot</span>(samplesNew[ , <span class="st">&quot;alpha&quot;</span>], <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;iteration&quot;</span>,
-     <span class="dt">ylab =</span> <span class="kw">expression</span>(alpha))
-<span class="kw">plot</span>(samplesNew[ , <span class="st">&quot;beta&quot;</span>], <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;iteration&quot;</span>,
-     <span class="dt">ylab =</span> <span class="kw">expression</span>(beta))
-<span class="kw">plot</span>(samplesNew[ , <span class="st">&quot;alpha&quot;</span>], samplesNew[ , <span class="st">&quot;beta&quot;</span>], <span class="dt">xlab =</span> <span class="kw">expression</span>(alpha),
-     <span class="dt">ylab =</span> <span class="kw">expression</span>(beta))
-<span class="kw">plot</span>(samplesNew[ , <span class="st">&quot;theta[1]&quot;</span>], <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;iteration&quot;</span>,
-     <span class="dt">ylab =</span> <span class="kw">expression</span>(theta[<span class="dv">1</span>]))</code></pre></div>
+<div class="sourceCode" id="cb51"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb51-1" title="1">samplesNew &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(CpumpNewMCMC<span class="op">$</span>mvSamples)</a>
+<a class="sourceLine" id="cb51-2" title="2"></a>
+<a class="sourceLine" id="cb51-3" title="3"><span class="kw">par</span>(<span class="dt">mfrow =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">4</span>), <span class="dt">mai =</span> <span class="kw">c</span>(.<span class="dv">6</span>, <span class="fl">.4</span>, <span class="fl">.1</span>, <span class="fl">.2</span>))</a>
+<a class="sourceLine" id="cb51-4" title="4"><span class="kw">plot</span>(samplesNew[ , <span class="st">&quot;alpha&quot;</span>], <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;iteration&quot;</span>,</a>
+<a class="sourceLine" id="cb51-5" title="5">     <span class="dt">ylab =</span> <span class="kw">expression</span>(alpha))</a>
+<a class="sourceLine" id="cb51-6" title="6"><span class="kw">plot</span>(samplesNew[ , <span class="st">&quot;beta&quot;</span>], <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;iteration&quot;</span>,</a>
+<a class="sourceLine" id="cb51-7" title="7">     <span class="dt">ylab =</span> <span class="kw">expression</span>(beta))</a>
+<a class="sourceLine" id="cb51-8" title="8"><span class="kw">plot</span>(samplesNew[ , <span class="st">&quot;alpha&quot;</span>], samplesNew[ , <span class="st">&quot;beta&quot;</span>], <span class="dt">xlab =</span> <span class="kw">expression</span>(alpha),</a>
+<a class="sourceLine" id="cb51-9" title="9">     <span class="dt">ylab =</span> <span class="kw">expression</span>(beta))</a>
+<a class="sourceLine" id="cb51-10" title="10"><span class="kw">plot</span>(samplesNew[ , <span class="st">&quot;theta[1]&quot;</span>], <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;iteration&quot;</span>,</a>
+<a class="sourceLine" id="cb51-11" title="11">     <span class="dt">ylab =</span> <span class="kw">expression</span>(theta[<span class="dv">1</span>]))</a></code></pre></div>
 <p><img src="NimbleUserManual_files/figure-html/mcmcPump2-1.png" width="672" /></p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">acf</span>(samplesNew[, <span class="st">&quot;alpha&quot;</span>]) <span class="co"># plot autocorrelation of alpha sample</span>
-<span class="kw">acf</span>(samplesNew[, <span class="st">&quot;beta&quot;</span>])  <span class="co"># plot autocorrelation of beta  sample</span></code></pre></div>
+<div class="sourceCode" id="cb52"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb52-1" title="1"><span class="kw">acf</span>(samplesNew[, <span class="st">&quot;alpha&quot;</span>]) <span class="co"># plot autocorrelation of alpha sample</span></a>
+<a class="sourceLine" id="cb52-2" title="2"><span class="kw">acf</span>(samplesNew[, <span class="st">&quot;beta&quot;</span>])  <span class="co"># plot autocorrelation of beta  sample</span></a></code></pre></div>
 <p><img src="NimbleUserManual_files/figure-html/mcmcPump2-2.png" width="672" /></p>
-<p>We can see that the block sampler has decreased the autocorrelation for both <code>alpha</code> and <code>beta</code>. Of course these are just short runs, and what we are really interested in is the effective sample size of the MCMC per computation time, but that’s not the point of this example.</p>
-<p>Once you learn the MCMC system, you can write your own samplers and include them. The entire system is written in nimbleFunctions.</p>
+<p>We can see that the block sampler has decreased the
+autocorrelation for both <code>alpha</code> and <code>beta</code>. Of course these
+are just short runs, and what we are really interested in is the
+effective sample size of the MCMC per computation time, but that’s not
+the point of this example.</p>
+<p>Once you learn the MCMC system, you can write your own samplers and
+include them. The entire system is written in nimbleFunctions.</p>
 </div>
 <div id="sec:running-mcem" class="section level2">
 <h2><span class="header-section-number">2.7</span> Running MCEM</h2>
-<p>NIMBLE is a system for working with algorithms, not just an MCMC engine. So let’s try maximizing the marginal likelihood for <code>alpha</code> and <code>beta</code> using Monte Carlo Expectation Maximization<a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a>.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pump2 &lt;-<span class="st"> </span>pump<span class="op">$</span><span class="kw">newModel</span>()
-
-box =<span class="st"> </span><span class="kw">list</span>( <span class="kw">list</span>(<span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>,<span class="st">&quot;beta&quot;</span>), <span class="kw">c</span>(<span class="dv">0</span>, <span class="ot">Inf</span>)))
-
-pumpMCEM &lt;-<span class="st"> </span><span class="kw">buildMCEM</span>(<span class="dt">model =</span> pump2, <span class="dt">latentNodes =</span> <span class="st">&quot;theta[1:10]&quot;</span>,
-                      <span class="dt">boxConstraints =</span> box)
-pumpMLE &lt;-<span class="st"> </span>pumpMCEM<span class="op">$</span><span class="kw">run</span>()</code></pre></div>
+<p>NIMBLE is a system for working with algorithms, not just an MCMC engine. So let’s try maximizing the marginal likelihood for <code>alpha</code> and <code>beta</code> using Monte Carlo Expectation Maximization<a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a>.</p>
+<div class="sourceCode" id="cb53"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb53-1" title="1">pump2 &lt;-<span class="st"> </span>pump<span class="op">$</span><span class="kw">newModel</span>()</a>
+<a class="sourceLine" id="cb53-2" title="2"></a>
+<a class="sourceLine" id="cb53-3" title="3">box =<span class="st"> </span><span class="kw">list</span>( <span class="kw">list</span>(<span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>,<span class="st">&quot;beta&quot;</span>), <span class="kw">c</span>(<span class="dv">0</span>, <span class="ot">Inf</span>)))</a>
+<a class="sourceLine" id="cb53-4" title="4"></a>
+<a class="sourceLine" id="cb53-5" title="5">pumpMCEM &lt;-<span class="st"> </span><span class="kw">buildMCEM</span>(<span class="dt">model =</span> pump2, <span class="dt">latentNodes =</span> <span class="st">&quot;theta[1:10]&quot;</span>,</a>
+<a class="sourceLine" id="cb53-6" title="6">                      <span class="dt">boxConstraints =</span> box)</a>
+<a class="sourceLine" id="cb53-7" title="7">pumpMLE &lt;-<span class="st"> </span>pumpMCEM<span class="op">$</span><span class="kw">run</span>()</a></code></pre></div>
 <pre><code>## Iteration Number: 1.
 ## Current number of MCMC iterations: 1000.
 ## Parameter Estimates: 
@@ -637,62 +730,89 @@ pumpMLE &lt;-<span class="st"> </span>pumpMCEM<span class="op">$</span><span cla
 ##     alpha      beta 
 ## 0.8226618 1.2602452 
 ## Convergence Criterion: 0.0004201048.</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpMLE</code></pre></div>
+<div class="sourceCode" id="cb55"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb55-1" title="1">pumpMLE</a></code></pre></div>
 <pre><code>##     alpha      beta 
 ## 0.8226618 1.2602452</code></pre>
-<p>Both estimates are within 0.01 of the values reported by <span class="citation">George, Makov, and Smith (<a href="references.html#ref-George_Makov_Smith_1993">1993</a>)</span><a href="#fn5" class="footnoteRef" id="fnref5"><sup>5</sup></a>. <!---
+<p>Both estimates are within 0.01 of the values reported by
+<span class="citation">George, Makov, and Smith (<a href="references.html#ref-George_Makov_Smith_1993">1993</a>)</span><a href="#fn5" class="footnote-ref" id="fnref5"><sup>5</sup></a>.
+<!---
 [George, E.I., Makov, U.E. \& Smith,
 A.F.M. 1993. Conjugate likelihood
  distributions. *Scand. J. Statist.* \textbf{20]:147-156.
---> <!---  Their numbers were accidentally swapped in Table 2.}.   --> Some discrepancy is to be expected since it is a Monte Carlo algorithm.</p>
+-->
+<!---  Their numbers were accidentally swapped in Table 2.}.   -->
+Some discrepancy is to be expected since it is a Monte Carlo algorithm.</p>
 </div>
 <div id="sec:creating-your-own" class="section level2">
 <h2><span class="header-section-number">2.8</span> Creating your own functions</h2>
-<p>Now let’s see an example of writing our own algorithm and using it on the model. We’ll do something simple: simulating multiple values for a designated set of nodes and calculating every part of the model that depends on them. More details on programming in NIMBLE are in Part IV.</p>
+<p>Now let’s see an example of writing our own algorithm and using it on
+the model. We’ll do something simple: simulating multiple values for a
+designated set of nodes and calculating every part of the model that
+depends on them. More details on programming in NIMBLE are in Part IV.</p>
 <p>Here is our <em>nimbleFunction</em>:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">simNodesMany &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
-    <span class="dt">setup =</span> <span class="cf">function</span>(model, nodes) {
-        mv &lt;-<span class="st"> </span><span class="kw">modelValues</span>(model)
-        deps &lt;-<span class="st"> </span>model<span class="op">$</span><span class="kw">getDependencies</span>(nodes)
-        allNodes &lt;-<span class="st"> </span>model<span class="op">$</span><span class="kw">getNodeNames</span>()
-    },
-    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">n =</span> <span class="kw">integer</span>()) {
-        <span class="kw">resize</span>(mv, n)
-        <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>n) {
-            model<span class="op">$</span><span class="kw">simulate</span>(nodes)
-            model<span class="op">$</span><span class="kw">calculate</span>(deps)
-            <span class="kw">copy</span>(<span class="dt">from =</span> model, <span class="dt">nodes =</span> allNodes,
-                 <span class="dt">to =</span> mv, <span class="dt">rowTo =</span> i, <span class="dt">logProb =</span> <span class="ot">TRUE</span>)
-        }
-    })
-
-simNodesTheta1to5 &lt;-<span class="st"> </span><span class="kw">simNodesMany</span>(pump, <span class="st">&quot;theta[1:5]&quot;</span>)
-simNodesTheta6to10 &lt;-<span class="st"> </span><span class="kw">simNodesMany</span>(pump, <span class="st">&quot;theta[6:10]&quot;</span>)</code></pre></div>
+<div class="sourceCode" id="cb57"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb57-1" title="1">simNodesMany &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
+<a class="sourceLine" id="cb57-2" title="2">    <span class="dt">setup =</span> <span class="cf">function</span>(model, nodes) {</a>
+<a class="sourceLine" id="cb57-3" title="3">        mv &lt;-<span class="st"> </span><span class="kw">modelValues</span>(model)</a>
+<a class="sourceLine" id="cb57-4" title="4">        deps &lt;-<span class="st"> </span>model<span class="op">$</span><span class="kw">getDependencies</span>(nodes)</a>
+<a class="sourceLine" id="cb57-5" title="5">        allNodes &lt;-<span class="st"> </span>model<span class="op">$</span><span class="kw">getNodeNames</span>()</a>
+<a class="sourceLine" id="cb57-6" title="6">    },</a>
+<a class="sourceLine" id="cb57-7" title="7">    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">n =</span> <span class="kw">integer</span>()) {</a>
+<a class="sourceLine" id="cb57-8" title="8">        <span class="kw">resize</span>(mv, n)</a>
+<a class="sourceLine" id="cb57-9" title="9">        <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>n) {</a>
+<a class="sourceLine" id="cb57-10" title="10">            model<span class="op">$</span><span class="kw">simulate</span>(nodes)</a>
+<a class="sourceLine" id="cb57-11" title="11">            model<span class="op">$</span><span class="kw">calculate</span>(deps)</a>
+<a class="sourceLine" id="cb57-12" title="12">            <span class="kw">copy</span>(<span class="dt">from =</span> model, <span class="dt">nodes =</span> allNodes,</a>
+<a class="sourceLine" id="cb57-13" title="13">                 <span class="dt">to =</span> mv, <span class="dt">rowTo =</span> i, <span class="dt">logProb =</span> <span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb57-14" title="14">        }</a>
+<a class="sourceLine" id="cb57-15" title="15">    })</a>
+<a class="sourceLine" id="cb57-16" title="16"></a>
+<a class="sourceLine" id="cb57-17" title="17">simNodesTheta1to5 &lt;-<span class="st"> </span><span class="kw">simNodesMany</span>(pump, <span class="st">&quot;theta[1:5]&quot;</span>)</a>
+<a class="sourceLine" id="cb57-18" title="18">simNodesTheta6to10 &lt;-<span class="st"> </span><span class="kw">simNodesMany</span>(pump, <span class="st">&quot;theta[6:10]&quot;</span>)</a></code></pre></div>
 <p>Here are a few things to notice about the nimbleFunction.</p>
 <ol style="list-style-type: decimal">
-<li>The <code>setup</code> function is written in R. It creates relevant information specific to our model for use in the run-time code.<br />
+<li>The <code>setup</code> function is written in R. It creates relevant
+information specific to our model for use in the run-time code.<br />
 </li>
-<li>The <code>setup</code> code creates a <em>modelValues</em> object to hold multiple sets of values for variables in the model provided.</li>
-<li>The <code>run</code> function is written in NIMBLE. It carries out the calculations using the information determined once for each set of <code>model</code> and <code>nodes</code> arguments by the setup code. The run-time code is what will be compiled.</li>
-<li>The <code>run</code> code requires type information about the argument <code>n</code>. In this case it is a scalar integer.<br />
+<li>The <code>setup</code> code creates a <em>modelValues</em> object to hold multiple sets of
+values for variables in the model provided.</li>
+<li>The <code>run</code> function is written in NIMBLE. It carries out the
+calculations using the information determined once for each set of
+<code>model</code> and <code>nodes</code> arguments by the setup
+code. The run-time code is what will be compiled.</li>
+<li>The <code>run</code> code requires type information about the argument
+<code>n</code>. In this case it is a scalar integer.<br />
 </li>
-<li>The for-loop looks just like R, but only sequential integer iteration is allowed.</li>
-<li>The functions <code>calculate</code> and <code>simulate</code>, which were introduced above in R, can be used in NIMBLE.</li>
-<li>The special function <code>copy</code> is used here to record values from the model into the modelValues object.<br />
+<li>The for-loop looks just like R, but only sequential integer
+iteration is allowed.</li>
+<li>The functions <code>calculate</code> and <code>simulate</code>, which were
+introduced above in R, can be used in NIMBLE.</li>
+<li>The special function <code>copy</code> is used here to record values
+from the model into the modelValues object.<br />
 </li>
-<li>Multiple instances, or ‘specializations’, can be made by calling <code>simNodesMany</code> with different arguments. Above, <code>simNodesTheta1to5</code> has been made by calling <code>simNodesMany</code> with the <code>pump</code> model and nodes <code>&quot;theta[1:5]&quot;</code> as inputs to the <code>setup</code> function, while <code>simNodesTheta6to10</code> differs by providing <code>&quot;theta[6:10]&quot;</code> as an argument. The returned objects are objects of a uniquely generated R reference class with fields (member data) for the results of the <code>setup</code> code and a <code>run</code> method (member function). <!---  Arbitrary other methods can be provided with a `methods` argument, following the syntax of R's `setRefClass` function. --> <!---  % NOTE: CJP removed previous sentence as I think it is too involved for the lightning intro - CJP --></li>
+<li>Multiple instances, or ‘specializations’, can be made by
+calling <code>simNodesMany</code> with different arguments. Above, <code>simNodesTheta1to5</code> has
+been made by calling <code>simNodesMany</code> with the <code>pump</code> model and
+nodes <code>"theta[1:5]"</code> as inputs to
+the <code>setup</code> function, while <code>simNodesTheta6to10</code> differs by
+providing <code>"theta[6:10]"</code> as an argument. The returned objects
+are objects of a uniquely
+generated R reference class with fields (member data) for the results of the
+<code>setup</code> code and a <code>run</code> method (member function).
+<!---  Arbitrary other methods can be provided with a `methods` argument, following the syntax of R's `setRefClass` function. -->
+<!---  % NOTE: CJP removed previous sentence as I think it is too involved for the lightning intro - CJP --></li>
 </ol>
-<p>By the way, <code>simNodesMany</code> is very similar to a standard <code>nimbleFunction</code> provided with NIMBLE, <code>simNodesMV</code>.</p>
+<p>By the way, <code>simNodesMany</code> is very similar to a standard
+<code>nimbleFunction</code> provided with NIMBLE, <code>simNodesMV</code>.</p>
 <p>Now let’s execute this nimbleFunction in R, before compiling it.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">set.seed</span>(<span class="dv">1</span>)  <span class="co"># make the calculation repeatable</span>
-pump<span class="op">$</span>alpha &lt;-<span class="st"> </span>pumpMLE[<span class="dv">1</span>]
-pump<span class="op">$</span>beta &lt;-<span class="st"> </span>pumpMLE[<span class="dv">2</span>]
-<span class="co"># make sure to update deterministic dependencies of the altered nodes</span>
-pump<span class="op">$</span><span class="kw">calculate</span>(pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>,<span class="st">&quot;beta&quot;</span>), <span class="dt">determOnly =</span> <span class="ot">TRUE</span>))</code></pre></div>
+<div class="sourceCode" id="cb58"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb58-1" title="1"><span class="kw">set.seed</span>(<span class="dv">1</span>)  <span class="co"># make the calculation repeatable</span></a>
+<a class="sourceLine" id="cb58-2" title="2">pump<span class="op">$</span>alpha &lt;-<span class="st"> </span>pumpMLE[<span class="dv">1</span>]</a>
+<a class="sourceLine" id="cb58-3" title="3">pump<span class="op">$</span>beta &lt;-<span class="st"> </span>pumpMLE[<span class="dv">2</span>]</a>
+<a class="sourceLine" id="cb58-4" title="4"><span class="co"># make sure to update deterministic dependencies of the altered nodes</span></a>
+<a class="sourceLine" id="cb58-5" title="5">pump<span class="op">$</span><span class="kw">calculate</span>(pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>,<span class="st">&quot;beta&quot;</span>), <span class="dt">determOnly =</span> <span class="ot">TRUE</span>))</a></code></pre></div>
 <pre><code>## [1] 0</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">saveTheta &lt;-<span class="st"> </span>pump<span class="op">$</span>theta
-simNodesTheta1to5<span class="op">$</span><span class="kw">run</span>(<span class="dv">10</span>)
-simNodesTheta1to5<span class="op">$</span>mv[[<span class="st">&quot;theta&quot;</span>]][<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]</code></pre></div>
+<div class="sourceCode" id="cb60"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb60-1" title="1">saveTheta &lt;-<span class="st"> </span>pump<span class="op">$</span>theta</a>
+<a class="sourceLine" id="cb60-2" title="2">simNodesTheta1to5<span class="op">$</span><span class="kw">run</span>(<span class="dv">10</span>)</a>
+<a class="sourceLine" id="cb60-3" title="3">simNodesTheta1to5<span class="op">$</span>mv[[<span class="st">&quot;theta&quot;</span>]][<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]</a></code></pre></div>
 <pre><code>## [[1]]
 ##  [1] 0.21829875 1.93210969 0.62296551 0.34197266 3.45729601 1.15835525
 ##  [7] 0.99001994 0.30737332 0.09461909 0.15720154
@@ -700,7 +820,7 @@ simNodesTheta1to5<span class="op">$</span>mv[[<span class="st">&quot;theta&quot;
 ## [[2]]
 ##  [1] 0.82759981 0.08784057 0.34414959 0.29521943 0.14183505 1.15835525
 ##  [7] 0.99001994 0.30737332 0.09461909 0.15720154</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">simNodesTheta1to5<span class="op">$</span>mv[[<span class="st">&quot;logProb_x&quot;</span>]][<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]</code></pre></div>
+<div class="sourceCode" id="cb62"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb62-1" title="1">simNodesTheta1to5<span class="op">$</span>mv[[<span class="st">&quot;logProb_x&quot;</span>]][<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]</a></code></pre></div>
 <pre><code>## [[1]]
 ##  [1] -10.250111 -26.921849 -25.630612 -15.594173 -11.217566  -7.429868
 ##  [7]  -1.000761  -1.453644  -9.840589 -39.096527
@@ -708,20 +828,26 @@ simNodesTheta1to5<span class="op">$</span>mv[[<span class="st">&quot;theta&quot;
 ## [[2]]
 ##  [1] -61.043876  -1.057668 -11.060164 -11.761432  -3.425282  -7.429868
 ##  [7]  -1.000761  -1.453644  -9.840589 -39.096527</code></pre>
-<p>In this code we have initialized the values of <code>alpha</code> and <code>beta</code> to their MLE and then recorded the <code>theta</code> values to use below. Then we have requested 10 simulations from <code>simNodesTheta1to5</code>. Shown are the first two simulation results for <code>theta</code> and the log probabilities of <code>x</code>. Notice that <code>theta[6:10]</code> and the corresponding log probabilities for <code>x[6:10]</code> are unchanged because the nodes being simulated are only <code>theta[1:5]</code>. In R, this function runs slowly.</p>
+<p>In this code we have initialized the values of <code>alpha</code> and <code>beta</code>
+to their MLE and then recorded the <code>theta</code> values to use below. Then we
+have requested 10 simulations from
+<code>simNodesTheta1to5</code>. Shown are the first two simulation results
+for <code>theta</code> and the log probabilities of <code>x</code>. Notice that
+<code>theta[6:10]</code> and the corresponding log probabilities for <code>x[6:10]</code> are unchanged because the nodes being simulated are only
+<code>theta[1:5]</code>. In R, this function runs slowly.</p>
 <p>Finally, let’s compile the function and run that version.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">CsimNodesTheta1to5 &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(simNodesTheta1to5,
-                                    <span class="dt">project  =</span> pump, <span class="dt">resetFunctions =</span> <span class="ot">TRUE</span>)
-Cpump<span class="op">$</span>alpha &lt;-<span class="st"> </span>pumpMLE[<span class="dv">1</span>]
-Cpump<span class="op">$</span>beta &lt;-<span class="st"> </span>pumpMLE[<span class="dv">2</span>]
-Cpump<span class="op">$</span><span class="kw">calculate</span>(Cpump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>,<span class="st">&quot;beta&quot;</span>), <span class="dt">determOnly =</span> <span class="ot">TRUE</span>))</code></pre></div>
+<div class="sourceCode" id="cb64"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb64-1" title="1">CsimNodesTheta1to5 &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(simNodesTheta1to5,</a>
+<a class="sourceLine" id="cb64-2" title="2">                                    <span class="dt">project  =</span> pump, <span class="dt">resetFunctions =</span> <span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb64-3" title="3">Cpump<span class="op">$</span>alpha &lt;-<span class="st"> </span>pumpMLE[<span class="dv">1</span>]</a>
+<a class="sourceLine" id="cb64-4" title="4">Cpump<span class="op">$</span>beta &lt;-<span class="st"> </span>pumpMLE[<span class="dv">2</span>]</a>
+<a class="sourceLine" id="cb64-5" title="5">Cpump<span class="op">$</span><span class="kw">calculate</span>(Cpump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>,<span class="st">&quot;beta&quot;</span>), <span class="dt">determOnly =</span> <span class="ot">TRUE</span>))</a></code></pre></div>
 <pre><code>## [1] 0</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">Cpump<span class="op">$</span>theta &lt;-<span class="st"> </span>saveTheta
-
-<span class="kw">set.seed</span>(<span class="dv">1</span>)
-CsimNodesTheta1to5<span class="op">$</span><span class="kw">run</span>(<span class="dv">10</span>)</code></pre></div>
+<div class="sourceCode" id="cb66"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb66-1" title="1">Cpump<span class="op">$</span>theta &lt;-<span class="st"> </span>saveTheta</a>
+<a class="sourceLine" id="cb66-2" title="2"></a>
+<a class="sourceLine" id="cb66-3" title="3"><span class="kw">set.seed</span>(<span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb66-4" title="4">CsimNodesTheta1to5<span class="op">$</span><span class="kw">run</span>(<span class="dv">10</span>)</a></code></pre></div>
 <pre><code>## NULL</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">CsimNodesTheta1to5<span class="op">$</span>mv[[<span class="st">&quot;theta&quot;</span>]][<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]</code></pre></div>
+<div class="sourceCode" id="cb68"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb68-1" title="1">CsimNodesTheta1to5<span class="op">$</span>mv[[<span class="st">&quot;theta&quot;</span>]][<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]</a></code></pre></div>
 <pre><code>## [[1]]
 ##  [1] 0.21829875 1.93210969 0.62296551 0.34197266 3.45729601 1.15835525
 ##  [7] 0.99001994 0.30737332 0.09461909 0.15720154
@@ -729,7 +855,7 @@ CsimNodesTheta1to5<span class="op">$</span><span class="kw">run</span>(<span cla
 ## [[2]]
 ##  [1] 0.82759981 0.08784057 0.34414959 0.29521943 0.14183505 1.15835525
 ##  [7] 0.99001994 0.30737332 0.09461909 0.15720154</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">CsimNodesTheta1to5<span class="op">$</span>mv[[<span class="st">&quot;logProb_x&quot;</span>]][<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]</code></pre></div>
+<div class="sourceCode" id="cb70"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb70-1" title="1">CsimNodesTheta1to5<span class="op">$</span>mv[[<span class="st">&quot;logProb_x&quot;</span>]][<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]</a></code></pre></div>
 <pre><code>## [[1]]
 ##  [1] -10.250111 -26.921849 -25.630612 -15.594173 -11.217566  -2.782156
 ##  [7]  -1.042151  -1.004362  -1.894675  -3.081102
@@ -737,7 +863,8 @@ CsimNodesTheta1to5<span class="op">$</span><span class="kw">run</span>(<span cla
 ## [[2]]
 ##  [1] -61.043876  -1.057668 -11.060164 -11.761432  -3.425282  -2.782156
 ##  [7]  -1.042151  -1.004362  -1.894675  -3.081102</code></pre>
-<p>Given the same initial values and the same random number generator seed, we got identical results for <code>theta[1:5]</code> and their dependencies, but it happened much faster.</p>
+<p>Given the same initial values and the same random number generator
+seed, we got identical results for <code>theta[1:5]</code> and their dependencies, but it happened much faster.</p>
 
 <!--- % See http://yihui.name/knitr/demo/child/ for documentation on the parent/child document system of knitr -->
 </div>
@@ -745,9 +872,10 @@ CsimNodesTheta1to5<span class="op">$</span><span class="kw">run</span>(<span cla
 <div class="footnotes">
 <hr />
 <ol start="3">
-<li id="fn3"><p>The data set describes failure rates of some pumps.<a href="cha-lightning-intro.html#fnref3">↩</a></p></li>
-<li id="fn4"><p>Note that for this model, one could analytically integrate over <code>theta</code> and then numerically maximize the resulting marginal likelihood.<a href="cha-lightning-intro.html#fnref4">↩</a></p></li>
-<li id="fn5"><p>Table 2 of the paper accidentally swapped the two estimates.<a href="cha-lightning-intro.html#fnref5">↩</a></p></li>
+<li id="fn3"><p>The data set
+describes failure rates of some pumps.<a href="cha-lightning-intro.html#fnref3" class="footnote-back">↩</a></p></li>
+<li id="fn4"><p>Note that for this model, one could analytically integrate over <code>theta</code> and then numerically maximize the resulting marginal likelihood.<a href="cha-lightning-intro.html#fnref4" class="footnote-back">↩</a></p></li>
+<li id="fn5"><p>Table 2 of the paper accidentally swapped the two estimates.<a href="cha-lightning-intro.html#fnref5" class="footnote-back">↩</a></p></li>
 </ol>
 </div>
             </section>
@@ -761,11 +889,13 @@ CsimNodesTheta1to5<span class="op">$</span><span class="kw">run</span>(<span cla
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
 <script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
 <script>
 gitbook.require(["gitbook"], function(gitbook) {
 gitbook.start({
@@ -773,12 +903,11 @@ gitbook.start({
 "github": false,
 "facebook": true,
 "twitter": true,
-"google": false,
 "linkedin": false,
 "weibo": false,
 "instapaper": false,
 "vk": false,
-"all": ["facebook", "google", "twitter", "linkedin", "weibo", "instapaper"]
+"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
 },
 "fontsettings": {
 "theme": "white",
@@ -790,6 +919,10 @@ gitbook.start({
 "text": null
 },
 "history": {
+"link": null,
+"text": null
+},
+"view": {
 "link": null,
 "text": null
 },
@@ -807,10 +940,11 @@ gitbook.start({
   (function () {
     var script = document.createElement("script");
     script.type = "text/javascript";
-    var src = "";
+    var src = "true";
     if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
-    if (location.protocol !== "file:" && /^https?:/.test(src))
-      src = src.replace(/^https?:/, '');
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
     script.src = src;
     document.getElementsByTagName("head")[0].appendChild(script);
   })();

@@ -204,7 +204,7 @@ print: A logical argument specifying whether to print the montiors and samplers.
                     ## all potential (candidate) posterior predictive branch nodes:
                     candidateNodeIDs <- stochNonDataIDs[!model$isEndNode(stochNonDataIDs)]
                     dataNodeIDs <- model$getNodeNames(dataOnly = TRUE, returnType = 'ids')
-                    dataNodeParentIDs <- model$expandNodeNames(getParentNodes(dataNodeIDs, model, stochOnly = TRUE), returnType = 'ids')
+                    dataNodeParentIDs <- model$expandNodeNames(model$getParents(dataNodeIDs, stochOnly = TRUE), returnType = 'ids')
                     ## remove from candidate nodes all direct parents of data nodes:
                     candidateNodeIDs <- setdiff(candidateNodeIDs, dataNodeParentIDs)
                     nCandidate <- length(candidateNodeIDs)
@@ -323,13 +323,14 @@ print: A logical argument specifying whether to print the montiors and samplers.
                                 addConjugateSampler(conjugacyResult = conjugacyResult,
                                                     dynamicallyIndexed = model$modelDef$varInfo[[model$getVarNames(nodes=node)]]$anyDynamicallyIndexed);     next }
                         }
-                        if(nodeDist == 'dmulti')       { addSampler(target = node, type = 'RW_multinomial');     next }
-                        if(nodeDist == 'ddirch')       { addSampler(target = node, type = 'RW_dirichlet');       next }
-                        if(nodeDist == 'dwish')        { addSampler(target = node, type = 'RW_wishart');         next }
-                        if(nodeDist == 'dinvwish')     { addSampler(target = node, type = 'RW_wishart');         next }
-                        if(nodeDist == 'dcar_normal')  { addSampler(target = node, type = 'CAR_normal');         next }
-                        if(nodeDist == 'dcar_proper')  { addSampler(target = node, type = 'CAR_proper');         next }
-                        if(nodeDist == 'dCRP')         {
+                        if(nodeDist == 'dmulti')              { addSampler(target = node, type = 'RW_multinomial');     next }
+                        if(nodeDist == 'ddirch')              { addSampler(target = node, type = 'RW_dirichlet');       next }
+                        if(nodeDist == 'dwish')               { addSampler(target = node, type = 'RW_wishart');         next }
+                        if(nodeDist == 'dinvwish')            { addSampler(target = node, type = 'RW_wishart');         next }
+                        if(nodeDist == 'dlkj_corr_cholesky')  { addSampler(target = node, type = 'RW_block_lkj_corr_cholesky');  next }
+                        if(nodeDist == 'dcar_normal')         { addSampler(target = node, type = 'CAR_normal');         next }
+                        if(nodeDist == 'dcar_proper')         { addSampler(target = node, type = 'CAR_proper');         next }
+                        if(nodeDist == 'dCRP')                {
                             numCRPnodes <- numCRPnodes + 1
                             clusterNodeInfo[[numCRPnodes]] <- findClusterNodes(model, node)
                             addSampler(target = node, type = 'CRP', control = list(checkConjugacy = useConjugacy,
