@@ -1029,7 +1029,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                           LHSsize <- LHSsize[LHSsize != 1]
 
                                                       if(!identical(LHSsize, RHSsize))
-                                                          stop("Size/dimension mismatch between left-hand side and right-hand size of BUGS expression: ", deparse(declInfo$code))
+                                                          stop("Size/dimension mismatch between left-hand side and right-hand size of BUGS expression: ", safeDeparse(declInfo$code))
                                                   }
                                                   ## these lines caused a problem for functions such as chol() in BUGS code
                                                   ## removed by DT April 2016
@@ -1042,7 +1042,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                   #   1) dims of param args match those in distInputList based on calculation
                                                   #   2) dims of param args match those in distInputList based on varInfo
                                                   #   3) sizes of vecs and row/column sizes all match for non-scalar quantities (only for Nimble-provided distributions)
-                                                  dist <- deparse(declInfo$valueExprReplaced[[1]])
+                                                  dist <- safeDeparse(declInfo$valueExprReplaced[[1]], warn = TRUE)
 
 							# nimble:::getDimension so uses function not model method
                                                   distDims <- nimble::getDimension(dist, includeParams = TRUE)
@@ -1067,17 +1067,17 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                   }
                                         # check dimensions based on varInfo
                                                   if(length(declInfo$targetExprReplaced) > 1) {
-                                                      LHSvar <- deparse(declInfo$targetExprReplaced[[2]])
-                                                  } else LHSvar <- deparse(declInfo$targetExprReplaced)
+                                                      LHSvar <- safeDeparse(declInfo$targetExprReplaced[[2]], warn = TRUE)
+                                                  } else LHSvar <- safeDeparse(declInfo$targetExprReplaced, warn = TRUE)
                                                   if(.self$modelDef$varInfo[[LHSvar]]$nDim < distDims['value'])
                                                       stop("Dimension of '", LHSvar, "' does not match required dimension for the distribution '", dist, "'. Necessary dimension is ", distDims['value'], ".", ifelse(distDims['value'] > 0, paste0(" You may need to include explicit indexing information, e.g., variable_name", ifelse(distDims['value'] < 2, "[1:2].", "[1:2,1:2].")), ''))
                                                   nms2 <- nms[nms%in%names(declInfo$valueExprReplaced)]
                                                   for(k in seq_along(nms2)) {
-                                                      if(!is.numeric(declInfo$valueExprReplaced[[nms2[k]]]) && !(dist == 'dinterval' && nms2[k] == 'c') && ( length(declInfo$valueExprReplaced[[nms2[k]]]) ==1 || deparse(declInfo$valueExprReplaced[[nms2[k]]][[1]]) == '[' )) {  # can only check variables not expressions or constants
+                                                      if(!is.numeric(declInfo$valueExprReplaced[[nms2[k]]]) && !(dist == 'dinterval' && nms2[k] == 'c') && ( length(declInfo$valueExprReplaced[[nms2[k]]]) ==1 || safeDeparse(declInfo$valueExprReplaced[[nms2[k]]][[1]], warn = TRUE) == '[' )) {  # can only check variables not expressions or constants
                                                           # also dinterval can take 'c' param as scalar or vector, so don't check
                                                           if(length(declInfo$valueExprReplaced[[nms2[k]]]) > 1) {
-                                                              var <- deparse(declInfo$valueExprReplaced[[nms2[k]]][[2]])
-                                                          } else var <- deparse(declInfo$valueExprReplaced[[nms2[k]]])
+                                                              var <- safeDeparse(declInfo$valueExprReplaced[[nms2[k]]][[2]], warn = TRUE)
+                                                          } else var <- safeDeparse(declInfo$valueExprReplaced[[nms2[k]]], warn = TRUE)
                                                           if(var %in% names(.self$modelDef$varInfo) && .self$modelDef$varInfo[[var]]$nDim < distDims[nms2[k]])
                                                               # check less than because variable dim can be bigger than node dim
                                                               stop("Dimension of '", nms2[k], "' does not match required dimension for the distribution '", dist, "'. Necessary dimension is ", distDims[nms2[k]], ".", ifelse(distDims[nms2[k]] > 0, paste0(" You may need to include explicit indexing information, e.g., variable_name", ifelse(distDims[nms2[k]] < 2, "[1:2].", "[1:2,1:2].")), ''))
@@ -1104,9 +1104,9 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                       matCols <- unlist(sapply(sizes[mats], `[`, 2))
                                                       if(!length(unique(c(matRows, matCols, unlist(sizes[vecs])))) <= 1)
                                                           if(dist %in% names(nimble:::distributionsInputList)) {
-                                                              stop("Size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code))
+                                                              stop("Size/dimension mismatch amongst vectors and matrices in BUGS expression: ", safeDeparse(declInfo$code))
                                                           } else {
-                                                              warning("Possible size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code), ". Ignore this warning if the user-provided distribution has multivariate parameters with distinct sizes or if size of variable differs from sizes of parameters.")                                                                                                                                   }
+                                                              warning("Possible size/dimension mismatch amongst vectors and matrices in BUGS expression: ", safeDeparse(declInfo$code), ". Ignore this warning if the user-provided distribution has multivariate parameters with distinct sizes or if size of variable differs from sizes of parameters.")                                                                                                                                   }
                                                   }
 
                                               }
@@ -1279,7 +1279,7 @@ insertSingleIndexBrackets <- function(code, varInfo) {
         }
         return(code)
     }
-    if(!is.null(code)) message(paste('confused about reaching end of insertSingleBrackets with ', deparse(code)))
+    if(!is.null(code)) message(paste('confused about reaching end of insertSingleBrackets with ', safeDeparse(code)))
     return(code)
 }
 
@@ -1326,7 +1326,7 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            RHS <- code[[3]]
                                            if(nimble::nimbleOptions('experimentalEnableDerivs')){
                                              parents <- BUGSdecl$allParentVarNames()
-                                             selfWithNoInds <-  strsplit(deparse(LHS), '[', fixed = TRUE)[[1]][1]
+                                             selfWithNoInds <-  strsplit(safeDeparse(LHS, warn = TRUE), '[', fixed = TRUE)[[1]][1]
                                              parents <- c(selfWithNoInds, parents)
                                              parentsSizeAndDims <- nimble:::makeSizeAndDimList(LHS, parents, BUGSdecl$unrolledIndicesMatrix, checkRagged = TRUE)
                                              parentsSizeAndDims <- nimble:::makeSizeAndDimList(RHS, parents, BUGSdecl$unrolledIndicesMatrix,
@@ -1334,10 +1334,10 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            } else parentsSizeAndDims <- list()
 
                                            if(nimble::nimbleOptions()$allowDynamicIndexing && length(BUGSdecl$dynamicIndexInfo)) {  ## need dim for node for generating NaN with invalid dynamic indexes
-                                               nodeSizeAndDims <- nimble:::makeSizeAndDimList(LHS, deparse(BUGSdecl$targetVarExpr),
+                                               nodeSizeAndDims <- nimble:::makeSizeAndDimList(LHS, safeDeparse(BUGSdecl$targetVarExpr, warn = TRUE),
                                                                                               BUGSdecl$unrolledIndicesMatrix,
                                                                                               checkRagged = FALSE)
-                                               nodeDim <- nodeSizeAndDims[[deparse(BUGSdecl$targetVarExpr)]][[1]]$lengths
+                                               nodeDim <- nodeSizeAndDims[[safeDeparse(BUGSdecl$targetVarExpr, warn = TRUE)]][[1]]$lengths
                                                nodeDim <- nodeDim[nodeDim != 1] ## will be NULL if scalar
                                                if(!length(nodeDim)) nodeDim <- NULL
                                            } else nodeDim <- NULL

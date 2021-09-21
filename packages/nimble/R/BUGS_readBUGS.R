@@ -78,7 +78,7 @@ nimbleModel <- function(code,
                         name = NULL,
                         userEnv = parent.frame()) {
     returnModel <- !returnDef
-    if(is.null(name)) name <- paste0(gsub(" ", "_", substr(deparse(substitute(code))[1], 1, 10)),
+    if(is.null(name)) name <- paste0(gsub(" ", "_", substr(safeDeparse(substitute(code), warn = TRUE)[1], 1, 10)),
                                      '_',
                                      nimbleModelID())
     name <- gsub("::", "_cc_", name) ## :: can arise from a call via do.call, for example, giving name with "base::quote_"...
@@ -300,7 +300,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
 
   modelFileOutput <- modelName <- NULL
   if(is.function(model) || is.character(model)) {
-      if(is.function(model)) modelText <- mergeMultiLineStatements(deparse(body(model)))
+      if(is.function(model)) modelText <- mergeMultiLineStatements(safeDeparse(body(model), warn = TRUE))
       if(is.character(model)) {
           if(skip.file.path) modelFile <- model
           else modelFile <- normalizePath(file.path(dir, model), winslash = "\\", mustWork=FALSE)  # check for "" avoids having "/model.bug" when user provides ""
