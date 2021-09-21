@@ -145,15 +145,33 @@ deparse <- function(...) {
 ## This version of deparse avoids splitting into multiple lines, which generally would lead to
 ## problems. We keep the original nimble:::deparse above as deparse is widely used and there
 ## are cases where not modifying the nlines behavior may be best. 
-safeDeparse <- function(expr, width.cutoff = 500L, nlines = 1L, control = "digits17", warn = FALSE, ...) {
-    out <- base::deparse(expr, width.cutoff = width.cutoff, control = control, ...)
-    if(nlines != -1L && length(out) > nlines) {
-        if(warn)
-            warning("safeDeparse: truncating deparse output to ", nlines, " lines.")
-        out <- out[1:nlines]
+safeDeparse <- function(...) {
+    out <- deparse(...)
+    if(nimbleOptions('useSafeDeparse')) {
+        dotArgs <- list(...)
+        if("nlines" %in% names(dotArgs))
+            nlines <- dotArgs$nlines else nlines <- 1L
+        if(nlines != -1L && length(out) > nlines) {
+            if("warn" %in% names(dotArgs) && dotArgs$warn)
+                warning("safeDeparse: truncating deparse output to ", nlines, " lines.")
+            out <- out[1:nlines]
+        }
     }
     return(out)
 }
+
+## This version of deparse avoids splitting into multiple lines, which generally would lead to
+## problems. We keep the original nimble:::deparse above as deparse is widely used and there
+## are cases where not modifying the nlines behavior may be best. 
+## safeDeparse <- function(expr, width.cutoff = 500L, nlines = 1L, control = "digits17", warn = FALSE, ...) {
+##     out <- base::deparse(expr, width.cutoff = width.cutoff, control = control, ...)
+##     if(nlines != -1L && length(out) > nlines) {
+##         if(warn)
+##             warning("safeDeparse: truncating deparse output to ", nlines, " lines.")
+##         out <- out[1:nlines]
+##     }
+##     return(out)
+## }
 
 
 
