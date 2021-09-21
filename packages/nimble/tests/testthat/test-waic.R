@@ -542,7 +542,8 @@ test_that("standalone offline WAIC works", {
     cmcmc <- compileNimble(mcmc, project = m, resetFunctions = TRUE)
     out <- runMCMC(cmcmc, niter = 1000, inits = inits)
     expect_error(calculateWAIC(cmcmc), "must be monitored")
-}
+})
+
 
 nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
