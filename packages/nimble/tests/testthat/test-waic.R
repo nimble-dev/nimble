@@ -455,5 +455,93 @@ test_that("invalid WAIC configuration is trapped", {
 })
 
 
+test_that("standalone offline WAIC works", {
+    set.seed(1)
+    J <- 5
+    I <- 10
+    tau <- 1
+    sigma <- 1
+
+    mu <- rnorm(J, 0 , tau)
+
+    y <- matrix(0, J, I)
+    for(j in 1:J) 
+        y[j, ] <- rnorm(I, mu[j], sigma)
+
+    code <- nimbleCode({
+        tau ~ dunif(0, 10)
+        sigma ~ dunif(0, 10)
+        mu0 ~ dnorm(0, 10)
+        for(j in 1:J) {
+            mu[j] ~ dnorm(mu0, sd = tau)
+            for(i in 1:I)
+                y[j, i] ~ dnorm(mu[j], sd = tau)
+        }
+    })
+    inits <- list(mu0 = 0, tau = 0.5, sigma = 1.5,
+                  mu = rnorm(J, 0, 0.5))
+
+    m <- nimbleModel(code, data = list(y = y),
+                     constants = list(I = I, J = J),
+                     inits <- inits)
+    cm <- compileNimble(m)
+
+    ## Baseline offline WAIC result.
+    mcmc <- buildMCMC(m, monitors = c('mu0','mu','sigma','tau'), enableWAIC = TRUE,
+            controlWAIC = list(online = FALSE))          
+    cmcmc <- compileNimble(mcmc, project = m)
+    set.seed(1)
+    out <- runMCMC(cmcmc, niter = 1000, inits = inits, WAIC = TRUE)
+    waic_gold <- out$WAIC
+    
+
+    ## Various uses of post hoc calculateWAIC for offline WAIC
+    mcmc <- buildMCMC(m, monitors = c('mu0','mu','sigma','tau'))
+    cmcmc <- compileNimble(mcmc, project = m, resetFunctions = TRUE)
+    set.seed(1)
+    samples <- runMCMC(cmcmc, niter = 1000, inits = inits)
+
+    out <- calculateWAIC(cmcmc)
+    expect_identical(waic_gold, out$WAIC)
+    out <- calculateWAIC(cmcmc, cm)
+    expect_identical(waic_gold, out$WAIC)
+    out <- calculateWAIC(mcmc)
+    expect_identical(waic_gold, out$WAIC)
+    out <- calculateWAIC(samples, cm)
+    expect_identical(waic_gold, out$WAIC)
+
+    mcmc <- buildMCMC(m, monitors = c('mu0','mu','sigma','tau'))
+    cmcmc <- compileNimble(mcmc, project = m, resetFunctions = TRUE)
+    set.seed(1)
+    samples <- runMCMC(cmcmc, niter = 1000, inits = inits)
+    out <- calculateWAIC(samples, m)
+    expect_identical(waic_gold, out$WAIC)
+    
+
+    ## Use of calculateWAIC simply as a wrapper to already-enabled offline WAIC
+    mcmc <- buildMCMC(m, enableWAIC = TRUE, controlWAIC = list(online = FALSE),
+                      monitors = c('mu0','mu','sigma','tau'))
+    cmcmc <- compileNimble(mcmc, project = m, resetFunctions = TRUE)
+    set.seed(1)
+    out <- runMCMC(cmcmc, niter = 1000, inits = inits)
+    waic <- calculateWAIC(cmcmc)  
+    expect_identical(waic_gold, waic)
+    
+    ## Use of calculateWAIC simply as a wrapper to already-enabled online WAIC
+    mcmc <- buildMCMC(m, enableWAIC = TRUE,
+                      monitors = c('mu0','mu','sigma','tau'))
+    cmcmc <- compileNimble(mcmc, project = m, resetFunctions = TRUE)
+    set.seed(1)
+    out <- runMCMC(cmcmc, niter = 1000, inits = inits)
+    waic <- calculateWAIC(cmcmc)  
+    expect_identical(waic_gold, waic$WAIC)
+
+    ## Missing monitors 
+    mcmc <- buildMCMC(m, monitors = c('mu0'))
+    cmcmc <- compileNimble(mcmc, project = m, resetFunctions = TRUE)
+    out <- runMCMC(cmcmc, niter = 1000, inits = inits)
+    expect_error(calculateWAIC(cmcmc), "must be monitored")
+}
+
 nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
