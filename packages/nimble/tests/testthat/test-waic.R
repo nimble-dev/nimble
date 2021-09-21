@@ -483,7 +483,7 @@ test_that("standalone offline WAIC works", {
         for(j in 1:J) {
             mu[j] ~ dnorm(mu0, sd = tau)
             for(i in 1:I)
-                y[j, i] ~ dnorm(mu[j], sd = tau)
+                y[j, i] ~ dnorm(mu[j], sd = sigma)
         }
     })
     inits <- list(mu0 = 0, tau = 0.5, sigma = 1.5,
