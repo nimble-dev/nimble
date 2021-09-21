@@ -32,15 +32,17 @@ test_that("school model WAIC is accurate using original WAIC implementation", {
                                              itau = .2))
   temporarilyAssignInGlobalEnv(schoolSATmodel)
   compileNimble(schoolSATmodel)
-  schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('schoolmean'))
-  schoolSATmcmc <- buildMCMC(schoolSATmcmcConf, enableWAIC = TRUE)
+  schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('schoolmean'),
+                                     enableWAIC = TRUE)
+  schoolSATmcmc <- buildMCMC(schoolSATmcmcConf)
   temporarilyAssignInGlobalEnv(schoolSATmcmc)
   CschoolSATmcmc <- compileNimble(schoolSATmcmc, project = schoolSATmodel)
   CschoolSATmcmc$run(50000)
   expect_lt(abs(CschoolSATmcmc$calculateWAIC() - 61.8), 2.0)
 
-  schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('mu', 'itau'))
-  expect_error(buildMCMC(schoolSATmcmcConf, enableWAIC = TRUE), 
+  schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('mu', 'itau'),
+                                     enableWAIC = TRUE)
+  expect_error(buildMCMC(schoolSATmcmcConf), 
                "To calculate WAIC in NIMBLE, all parameters")
   ## mWAIC not enabled as of 0.10.1
   ## schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('mu'))
@@ -48,12 +50,14 @@ test_that("school model WAIC is accurate using original WAIC implementation", {
   ## different set of monitors than above, so different waic value expected
   ## expect_lt(abs(nimbleMCMC(model = schoolSATmodel, WAIC = TRUE)$WAIC - 67, 8) 
 
-  schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('schoolmean'))
-  schoolSATmcmc <- buildMCMC(schoolSATmcmcConf, enableWAIC = TRUE)
+  schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('schoolmean'),
+                                     enableWAIC = TRUE)
+  schoolSATmcmc <- buildMCMC(schoolSATmcmcConf)
   CschoolSATmcmc <- compileNimble(schoolSATmcmc, project = schoolSATmodel, 
                                   resetFunctions = TRUE)
   expect_lt(abs(runMCMC(CschoolSATmcmc, WAIC = TRUE)$WAIC - 61.8), 2) 
-  schoolSATmcmc <- buildMCMC(schoolSATmcmcConf, enableWAIC = FALSE)
+  schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('schoolmean'))
+  schoolSATmcmc <- buildMCMC(schoolSATmcmcConf)
   expect_error(runMCMC(schoolSATmcmc, WAIC = TRUE))
 })
 
@@ -79,16 +83,17 @@ test_that("voter model WAIC is accurate", {
                                         sigma = 4.4))
   temporarilyAssignInGlobalEnv(voterModel)
   CvoterModel <- compileNimble(voterModel)
-  votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_1', 'beta_2',
-                                                          'sigma'))
-  votermcmc <- buildMCMC(votermcmcConf, enableWAIC = TRUE)
+  votermcmcConf <- configureMCMC(voterModel, monitors =
+            c('beta_1', 'beta_2', 'sigma'), enableWAIC = TRUE)
+  votermcmc <- buildMCMC(votermcmcConf)
   temporarilyAssignInGlobalEnv(votermcmc)
   Cvotermcmc <- compileNimble(votermcmc, project = voterModel)
   Cvotermcmc$run(50000)
   expect_lt(abs(Cvotermcmc$calculateWAIC() - 87.2), 2.0)
   votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_2',
-                                                          'sigma'))
-  expect_error(buildMCMC(votermcmcConf, enableWAIC = TRUE))
+                                                          'sigma'),
+                                 enableWAIC =  TRUE)
+  expect_error(buildMCMC(votermcmcConf))
   
   ## additional testing of validity of monitored nodes below
   voterCode = nimbleCode({
@@ -110,32 +115,37 @@ test_that("voter model WAIC is accurate", {
 
   votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_1',
                                                           'beta_2',
-                                                          'sigma_2'))
-  expect_message(buildMCMC(votermcmcConf, enableWAIC = TRUE), 
+                                                          'sigma_2'),
+                                 enableWAIC = TRUE)
+  expect_message(buildMCMC(votermcmcConf), 
                  "Monitored nodes are valid for WAIC",
                  all = FALSE, fixed = TRUE)
 
   votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_12',
                                                           'beta_2',
-                                                          'sigma'))
-  expect_error(buildMCMC(votermcmcConf, enableWAIC = TRUE), 
+                                                          'sigma'),
+                                 enableWAIC = TRUE)
+  expect_error(buildMCMC(votermcmcConf), 
                  "To calculate WAIC in NIMBLE, all parameters")
   
   votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_12',
                                                           'beta_2',
-                                                          'sigma_2'))
-  expect_error(buildMCMC(votermcmcConf, enableWAIC = TRUE),
+                                                          'sigma_2'),
+                                 enableWAIC = TRUE)
+  expect_error(buildMCMC(votermcmcConf),
                  "To calculate WAIC in NIMBLE, all parameters")
 
   votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_12',
                                                           'beta_2',
-                                                          'sigma'))
-  expect_error(buildMCMC(votermcmcConf, enableWAIC = TRUE), 
+                                                          'sigma'),
+                                 enableWAIC = TRUE)
+  expect_error(buildMCMC(votermcmcConf), 
                  "To calculate WAIC in NIMBLE, all parameters")
 
   votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_1',
-                                                          'beta_2'))
-  expect_error(buildMCMC(votermcmcConf, enableWAIC = TRUE),
+                                                          'beta_2'),
+                                 enableWAIC = TRUE)
+  expect_error(buildMCMC(votermcmcConf),
                "To calculate WAIC in NIMBLE, all parameters")
 })
 
@@ -163,18 +173,18 @@ test_that("Radon model WAIC is accurate", {
                            inits = list(beta = rep(1, 3)))
   temporarilyAssignInGlobalEnv(radonModel)
   CradonModel <- compileNimble(radonModel)
-  radonmcmcConf <- configureMCMC(radonModel, monitors = c('beta'))
+  radonmcmcConf <- configureMCMC(radonModel, monitors = c('beta'), enableWAIC = TRUE)
   print(radonmcmcConf)
-  expect_message(radonmcmc <- buildMCMC(radonmcmcConf, enableWAIC = TRUE),
+  expect_message(radonmcmc <- buildMCMC(radonmcmcConf),
               "Monitored nodes are valid for WAIC")   
   temporarilyAssignInGlobalEnv(radonmcmc)
   Cradonmcmc <- compileNimble(radonmcmc, project = radonModel)
   Cradonmcmc$run(10000)
   expect_lt(abs(Cradonmcmc$calculateWAIC(1000) - 3937), 10)
   monitors <- radonModel$getNodeNames(determOnly = TRUE)
-  radonmcmcConf <- configureMCMC(radonModel, monitors = monitors)
+  radonmcmcConf <- configureMCMC(radonModel, monitors = monitors, enableWAIC = TRUE)
   ## check to ensure monitoring deterministic nodes fails
-  expect_error(radonmcmc <- buildMCMC(radonmcmcConf, enableWAIC = TRUE), 
+  expect_error(radonmcmc <- buildMCMC(radonmcmcConf), 
                  "To calculate WAIC in NIMBLE, all parameters")
   Cradonmcmc <- compileNimble(radonmcmc, project = radonModel,
                               resetFunctions = TRUE)
@@ -222,8 +232,7 @@ test_that("New WAIC implementation matches old implementation for conditional, u
     set.seed(1)
     out1 <- runMCMC(cmcmc, niter = 1000, WAIC = TRUE, inits = inits)
     waic1 <- cmcmc$calculateWAIC()
-    expect_output(fullOut <- cmcmc$getWAIC(), "Online WAIC was disabled")
-    expect_true(is.na(fullOut$WAIC))
+    expect_identical(waic1, cmcmc$getWAIC()$WAIC)
 
     m <- nimbleModel(code, data = list(y = y),
                      constants = list(I = I, J = J),
@@ -508,6 +517,11 @@ test_that("standalone offline WAIC works", {
     expect_identical(waic_gold, out$WAIC)
     out <- calculateWAIC(mcmc)
     expect_identical(waic_gold, out$WAIC)
+
+    mcmc <- buildMCMC(m, monitors = c('mu0','mu','sigma','tau'))
+    cmcmc <- compileNimble(mcmc, project = m, resetFunctions = TRUE)
+    set.seed(1)
+    samples <- runMCMC(cmcmc, niter = 1000, inits = inits)
     out <- calculateWAIC(samples, cm)
     expect_identical(waic_gold, out$WAIC)
 
