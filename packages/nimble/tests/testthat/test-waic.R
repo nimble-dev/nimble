@@ -355,7 +355,7 @@ test_that("Conditional grouped WAIC matches conditional 'ungrouped' with a mv no
     set.seed(1)
     out2 <- runMCMC(cmcmc, niter = 1000, inits = inits)
     waic2 <- cmcmc$getWAIC()
-    expect_identical(waic2$WAIC, waic1)
+    expect_equal(waic2$WAIC, waic1)
 
 })
 

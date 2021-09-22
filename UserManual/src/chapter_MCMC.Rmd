@@ -454,7 +454,7 @@ Rmcmc <- buildMCMC(mcmcConf)
 
 `buildMCMC` is a nimbleFunction.  The returned object `Rmcmc` is an instance  of the nimbleFunction specific to configuration `mcmcConf` (and of course its associated model).  
 
-Note that if you would like to be able to calculate the WAIC of the model, you must set `enableWAIC = TRUE` as an argument to either `configureMCMC` or  `buildMCMC`, or set `nimbleOptions(MCMCenableWAIC = TRUE)`, which will enable WAIC calculations for all subsequently built MCMC functions.  For more information on WAIC calculations, see Section \@ref(sec:WAIC) or `help(waic)` in R.
+Note that if you would like to be able to calculate the WAIC of the model, should generally^[One can call the function `calculateWAIC` on either an MCMC object or a matrix containing posterior sample, but its functionality is less complete and requires that you have correctly set the MCMC monitors when setting up the MCMC.] set `enableWAIC = TRUE` as an argument to`configureMCMC` (or to `buildMCMC` if not using `configureMCMC`), or set `nimbleOptions(MCMCenableWAIC = TRUE)`, which will enable WAIC calculations for all subsequently built MCMC functions.  For more information on WAIC calculations, see Section \@ref(sec:WAIC) or `help(waic)` in R.
 
 When no customization is needed, one can skip `configureMCMC` and simply provide a model object to `buildMCMC`. The following two MCMC functions will be identical:
 
