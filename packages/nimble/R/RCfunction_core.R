@@ -65,7 +65,8 @@ nfMethodRC <- setRefClass(
                               name,
                               check = FALSE,
                               methodNames = NULL,
-                              setupVarNames = NULL) {
+                              setupVarNames = NULL,
+                              where = NULL) {
             ## uniqueName is only needed for a pure RC function.
             ## It is not needed for a nimbleFunction method.
             if(!missing(name)) uniqueName <<- name 
@@ -81,7 +82,7 @@ nfMethodRC <- setRefClass(
             generateArgs()
 
             if(check && "package:nimble" %in% search()) 
-                nf_checkDSLcode(code, methodNames, setupVarNames, names(arguments))
+                nf_checkDSLcode(code, methodNames, setupVarNames, names(arguments), where)
 
             generateTemplate() ## used for argument matching
             removeAndSetReturnType(check = check)
@@ -186,7 +187,7 @@ findMethodsInExprClass <- function(expr) {
     return(NULL)
 }
 
-nf_checkDSLcode <- function(code, methodNames, setupVarNames, args) {
+nf_checkDSLcode <- function(code, methodNames, setupVarNames, args, where = NULL) {
     validCalls <- c(names(sizeCalls),
                     otherDSLcalls,
                     names(specificCallReplacements),
@@ -203,7 +204,7 @@ nf_checkDSLcode <- function(code, methodNames, setupVarNames, args) {
     ## don't check RHS of $ to ensure it is a valid nf method because no current way to easily find the methods of nf's defined in setup code
     nonDSLcalls <- calls[!(calls %in% c(validCalls, nfMethods))]
     if(length(nonDSLcalls)) {
-        objInR <- sapply(nonDSLcalls, exists)
+        objInR <- sapply(nonDSLcalls, exists, where = where)
         nonDSLnonR <- nonDSLcalls[!objInR]
         nonDSLinR <- nonDSLcalls[objInR]
         if(length(nonDSLinR))
@@ -215,16 +216,16 @@ nf_checkDSLcode <- function(code, methodNames, setupVarNames, args) {
             nonDSLinR <-
                 nonDSLinR[!(sapply(nonDSLinR,
                                    function(x)
-                                       is.nf(x, inputIsName = TRUE)) |
+                                       is.nf(x, inputIsName = TRUE, where = where)) |
                             sapply(nonDSLinR,
                                    function(x)
-                                       is(get(x), 'nimbleFunctionList')) |
+                                       is(get(x, envir = where), 'nimbleFunctionList')) |
                             sapply(nonDSLinR,
                                    function(x)
-                                       is.rcf(x, inputIsName = TRUE)) |
+                                       is.rcf(x, inputIsName = TRUE, where = where)) |
                             sapply(nonDSLinR,
                                    function(x)
-                                       is.nlGenerator(x, inputIsName = TRUE)))]
+                                       is.nlGenerator(x, inputIsName = TRUE, where = where)))]
         if(length(nonDSLinR))
             message("  [Note] Detected possible use of R functions in nimbleFunction run code.\n         For this nimbleFunction to compile, '", paste(nonDSLinR, collapse = ', '), "' must be defined as a nimbleFunction, nimbleFunctionList, or nimbleList.")
         if(length(nonDSLnonR))
