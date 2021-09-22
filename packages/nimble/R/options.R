@@ -9,6 +9,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
     list(
         groupDetermWithGivenInCondIndSets = TRUE, # used in getConditionallyIndependentSets
         use_C_getParents = FALSE,
+        useSafeDeparse = TRUE,
         useNewConfigureMCMC = TRUE,
         oldConjugacyChecking = FALSE,
         disallow_multivariate_argument_expressions = TRUE,

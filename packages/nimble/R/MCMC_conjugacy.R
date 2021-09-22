@@ -1150,7 +1150,7 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
                 numericOrVectorIndices <- sapply(indexExprs,
                       function(x) is.numeric(x) || (length(x) == 3 && x[[1]] == ':'))
                 if(!all(numericOrVectorIndices)) {
-                    if(model$getVarNames(nodes = targetNode) == model$getVarNames(nodes = deparse(expr))) {
+                    if(model$getVarNames(nodes = targetNode) == model$getVarNames(nodes = safeDeparse(expr, warn = TRUE))) {
                         ## expr var is same as target var, so plug in target indexes for
                         ## non-constant expr indexes to allow for possibility that
                         ## dynamic index will be that of target (in some cases based on allowed
@@ -1168,7 +1168,7 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
                     } else {
                         ## in this case the expr var is a different var, so shouldn't really matter what
                         ## indexes get plugged in; plug in mins of indexes as a default
-                        varInfo <- model$modelDef$varInfo[[deparse(expr[[2]])]]
+                        varInfo <- model$modelDef$varInfo[[safeDeparse(expr[[2]], warn = TRUE)]]
                         expr[which(!numericOrVectorIndices)+2] <- varInfo$mins[!numericOrVectorIndices]
                         ## sapply business gets rid of () at end of index expression
                         newExpr <- as.call(c(cc_structureExprName, expr, sapply(indexExprs[!numericOrVectorIndices], function(x) x)))
@@ -1179,7 +1179,7 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
                 }  ## else continue with processing as in non-dynamic index case
             }
         }
-        exprText <- deparse(expr)
+        exprText <- safeDeparse(expr, warn = TRUE)
         expandedNodeNamesRaw <- model$expandNodeNames(exprText)
         if(!is.null(skipExpansionsNode) && (exprText %in% model$expandNodeNames(skipExpansionsNode, returnScalarComponents=TRUE))) return(expr)
         ## if exprText is a node itself (and also part of a larger node), then we only want the expansion to be the exprText node:
@@ -1207,12 +1207,12 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
     }
     if(is.call(expr)) {
         if(any(sapply(expr[-1], function(x) x=='')))
-            stop('Found missing indexing in ', deparse(expr), ' that prevents conjugacy processing for this particular model structure.')
+            stop('Found missing indexing in ', safeDeparse(expr), ' that prevents conjugacy processing for this particular model structure.')
         for(i in seq_along(expr)[-1])
             expr[[i]] <- cc_expandDetermNodesInExpr(model, expr[[i]], targetNode, skipExpansionsNode)
         return(expr)
     }
-    stop(paste0('something went wrong processing: ', deparse(expr)))
+    stop(paste0('something went wrong processing: ', safeDeparse(expr)))
 }
 
 
@@ -1257,7 +1257,7 @@ cc_checkScalar <- function(expr) {
     ## We don't know the output dims of all functions,
     ## as there can be user-defined functions that produce non-scalar output from scalar inputs,
     ## so only say it could be scalar (based on input args) in specific known cases we enumerate.
-    if(deparse(expr[[1]]) %in% c('(','[','*','+','-','/','exp','log','^','pow','sqrt')) {
+    if(safeDeparse(expr[[1]], warn = TRUE) %in% c('(','[','*','+','-','/','exp','log','^','pow','sqrt')) {
         return(all(sapply(expr[2:length(expr)], cc_checkScalar)))
     } else return(FALSE)
 }
@@ -1325,9 +1325,9 @@ cc_nodeInExpr <- function(node, expr) { return(node %in% cc_getNodesInExpr(expr)
 cc_getNodesInExpr <- function(expr) {
     if(is.numeric(expr)) return(character(0))   ## expr is numeric
     if(is.logical(expr)) return(character(0))   ## expr is logical
-    if(is.name(expr) || (is.call(expr) && (expr[[1]] == '[') && is.name(expr[[2]]))) return(deparse(expr))   ## expr is a node name
+    if(is.name(expr) || (is.call(expr) && (expr[[1]] == '[') && is.name(expr[[2]]))) return(safeDeparse(expr, warn = TRUE))   ## expr is a node name
     if(is.call(expr)) return(unlist(lapply(expr[-1], cc_getNodesInExpr)))   ## expr is some general call
-    stop(paste0('something went wrong processing: ', deparse(expr)))
+    stop(paste0('something went wrong processing: ', safeDeparse(expr)))
 }
 
 ## if targetNode is vectorized: determines if any components of targetNode appear in expr
@@ -1355,7 +1355,7 @@ cc_checkLinearity <- function(expr, targetNode) {
     }
 
     ## expr is exactly the targetNode
-    if(identical(targetNode, deparse(expr)))
+    if(identical(targetNode, safeDeparse(expr, warn = TRUE)))
         return(list(offset = 0, scale = 1))
 
     if(!is.call(expr))   stop('cc_checkLinearity: expression is not a call object')
