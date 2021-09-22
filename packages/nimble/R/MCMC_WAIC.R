@@ -622,7 +622,7 @@ calculateWAIC <- function(mcmc, model, nburnin = 0, thin = 1) {
 #' 2.5 from Gelman et al. (2014) or Ariyo et al. (2019).
 #'
 #' Note that based on a limited set of simulation experiments in Hug and Paciorek
-#' (2021) we recommend users only use marginal WAIC if also using grouping. 
+#' (2021) our tentative recommendation is that users only use marginal WAIC if also using grouping. 
 #' 
 #' @section Offline WAIC (WAIC computed after MCMC sampling):
 #'
