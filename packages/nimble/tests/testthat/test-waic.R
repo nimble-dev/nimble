@@ -254,6 +254,13 @@ test_that("New WAIC implementation matches old implementation for conditional, u
     expect_equal(sum(waic2full$pWAIC_elements), waic2$pWAIC)
     expect_identical(length(waic2full$WAIC_elements), as.integer(J*I))
 
+    ## Use of nimbleMCMC
+    set.seed(1)
+    out <- nimbleMCMC(code,data = list(y = y),
+                      constants = list(I = I, J = J),
+                      inits = inits, niter = 1000, WAIC = TRUE)
+    expect_identical(out$WAIC$WAIC, waic2$WAIC)
+
     ## Multiple chains; check first equivalent to first above
     m <- nimbleModel(code, data = list(y = y),
                      constants = list(I = I, J = J),
@@ -268,6 +275,7 @@ test_that("New WAIC implementation matches old implementation for conditional, u
     waic3 <- cmcmc$calculateWAIC()
     expect_identical(out3$WAIC[3], waic3)
     expect_identical(out3$WAIC[1], waic1)
+
 })
 
 
