@@ -1456,7 +1456,7 @@ sampler_CRP <- nimbleFunction(
       for(i in seq_len(n)) {
         detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
         if(length(detDeps) != nIntermClusNodesPerClusID)
-            stop("sampler_CRP: The number of intermediate deterministic nodes that are jointly clustered must be the same for each group. For example if 'mu[i,j]' are clustered such that all nodes for a given 'i' must be in the same cluster, then the number of nodes for each 'i' must be the same. Group ", safeDeparse(i), " has ", safeDeparse(length(depDeps)), " intermediate nodes being clustered where ", safeDeparse(nIntermClusNodesPerClusID), " are expected.")
+            stop("sampler_CRP: The number of intermediate deterministic nodes that are jointly clustered must be the same for each group. For example if 'mu[i,j]' are clustered such that all nodes for a given 'i' must be in the same cluster, then the number of nodes for each 'i' must be the same. Group ", safeDeparse(i), " has ", safeDeparse(length(detDeps)), " intermediate nodes being clustered where ", safeDeparse(nIntermClusNodesPerClusID), " are expected.")
         intermNodes[((i-1)*nIntermClusNodesPerClusID+1):(i*nIntermClusNodesPerClusID)] <- detDeps
       }
     }

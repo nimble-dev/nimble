@@ -18,6 +18,8 @@ nfGetDefVar <- function(f, var) {
 #'
 #' @param inputIsName logical indicating whether the function is provided as the character name of the function or the function object itself
 #'
+#' @param where Optional argument needed due to R package namespace issues but which should not need to be provided by a user.
+#' 
 #' @seealso \code{\link{nimbleFunction}} for how to create a nimbleFunction
 #' @export
 is.nf <- function(f, inputIsName = FALSE, where = -1) {

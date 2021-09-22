@@ -642,6 +642,7 @@ rmvt_chol <- function(n = 1, mu, cholesky, df, prec_param = TRUE) {
 #' @aliases lkj-corr lkj-corr-cholesky
 #' 
 #' @param x upper-triangular Cholesky factor of a correlation matrix.
+#' @param n number of observations (only \code{n=1} is handled currently).
 #' @param eta shape parameter.
 #' @param p size of the correlation matrix (number of rows and columns); required because random generation function has no information about dimension of matrix to generate without this argument.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
@@ -653,7 +654,7 @@ rmvt_chol <- function(n = 1, mu, cholesky, df, prec_param = TRUE) {
 #' 
 #' @examples
 #' eta <- 3
-#' x <- rlkj_corr_cholesky(eta, 5)
+#' x <- rlkj_corr_cholesky(1, eta, 5)
 #' dlkj_corr_cholesky(x, eta, 5)
 #' 
 NULL
