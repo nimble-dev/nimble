@@ -547,7 +547,7 @@ test_that("standalone offline WAIC works", {
     set.seed(1)
     out <- runMCMC(cmcmc, niter = 1000, inits = inits)
     waic <- calculateWAIC(cmcmc)  
-    expect_identical(waic_gold, waic$WAIC)
+    expect_equal(waic_gold, waic$WAIC)
 
     ## Missing monitors 
     mcmc <- buildMCMC(m, monitors = c('mu0'))
