@@ -5,7 +5,8 @@ dnl The idea is to generate a Makevars file in inst/make that will be copied or 
 dnl to the user's current directory or the directory in which the C++ code NIMBLE creates.
 
 
-AC_INIT(DESCRIPTION)
+AC_INIT
+AC_CONFIG_SRCDIR([DESCRIPTION])
 
 dnl We should probably get the C++ compiler from R's configuration script to ensure compatability.
 
@@ -226,7 +227,8 @@ dnl AC_SUBST(PKG_LIBS)
 USE_REGISTRATION=".NimbleUseRegistration = TRUE"
 AC_SUBST(USE_REGISTRATION)
 
-AC_OUTPUT(inst/make/Makevars inst/make/Makevars_lib R/config.R src/Makevars)
+AC_CONFIG_FILES([inst/make/Makevars inst/make/Makevars_lib R/config.R src/Makevars])
+AC_OUTPUT
 
 if test "${ENABLE_DEBUGGING}" != "yes"; then
   echo "removing debugging flags"
