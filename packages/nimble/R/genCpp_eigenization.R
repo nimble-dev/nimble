@@ -479,6 +479,12 @@ eigenCast <- function(expr, argIndex, newType) {
 eigenize_assign_before_recurse <- function(code, symTab, typeEnv, workEnv) {
     setupExprs <- list()
     if(length(code$args) != 2) stop(exprClassProcessingErrorMsg(code, 'There is an assignment without 2 arguments.'), call. = FALSE)
+
+  #  if(code$nDim > 0) {
+      promoteArgTypes(code)
+  #    code$type <- code$args[[1]]$type
+  #  }
+
     workEnv$OnLHSnow <- TRUE
     setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[1]], symTab, typeEnv, workEnv))
     workEnv$OnLHSnow <- NULL ## allows workEnv[['OnLHSnow']] to be NULL if is does not exist or if set to NULL

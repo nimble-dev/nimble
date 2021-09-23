@@ -1946,7 +1946,8 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
         ## should already be annotated if it is an indexed assignment.
         ## It should be harmless to re-annotated EXCEPT in case like out[1:5] <- scalar
         code$nDim <- code$args[[1]]$nDim <- RHSnDim
-        code$type <- code$args[[1]]$type <- RHStype
+        code$type <- RHStype
+        # code$type <- code$args[[1]]$type <- RHStype
         code$sizeExprs <- code$args[[1]]$sizeExprs <- RHSsizeExprs
     }
     if(RHSname %in% assignmentAsFirstArgFuns) {
