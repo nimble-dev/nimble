@@ -647,7 +647,7 @@ The second approach allows one to calculate the WAIC after an MCMC has been run 
 
 Here we first discuss the main approach and then close the section by showing the second approach.
 
-To enable WAIC for the first approach, the argument `enableWAIC = TRUE` must be supplied to `configureMCMC` (or to `buildMCMC` if not using `configureWAIC`, or the `enableWAIC` NIMBLE option must have been set to `TRUE`.
+To enable WAIC for the first approach, the argument `enableWAIC = TRUE` must be supplied to `configureMCMC` (or to `buildMCMC` if not using `configureWAIC`), or the `MCMCenableWAIC` NIMBLE option must have been set to `TRUE`.
 
 The WAIC (as well as the pWAIC and lppd values) is extracted by the member method `mcmc$getWAIC` (see `help(waic)` in R for more details) or is available as the `WAIC` element of the `runMCMC` or `nimbleMCMC` output lists. One can use the member method `mcmc$getWAICdetails` for additional quantities related to WAIC that are discussed below.
 
