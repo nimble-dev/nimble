@@ -546,8 +546,8 @@ CAR_proper_evaluateDensity <- nimbleFunction(
         numNeighbors <- length(neighborCs)                        ## fix length-1 neighborCs
         island <- numNeighbors == 0
         neighborCs <- array(neighborCs, c(1, numNeighbors))       ## fix length-1 neighborCs
-        targetNeighborIndices <- array(0, c(1, numNeighbors))
-        targetNeighborIndices[1, ] <- match(neighborNodes, targetDCARscalarComponents)
+        neighborIndices <- array(0, c(1, numNeighbors))
+        neighborIndices[1, ] <- match(neighborNodes, targetDCARscalarComponents)
         if(length(neighborNodes) != numNeighbors)                stop('dcar distribution internal error')
         if(Mi <= 0)                                              stop('dcar distribution internal error')
         if(length(targetDCAR) != 1)                              stop('dcar distribution internal error')
@@ -568,8 +568,7 @@ CAR_proper_evaluateDensity <- nimbleFunction(
             if(island) return(muValues[targetIndex])
             gamma <- model$getParam(targetDCAR, 'gamma')
             neighborValues <- values(model, neighborNodes)
-            mean <- muValues[targetIndex] + gamma * sum(neighborCs[1,1:numNeighbors] *
-                                                        (neighborValues - muValues[targetNeighborIndices[1,]]))
+            mean <- muValues[targetIndex] + gamma * sum(neighborCs[1,1:numNeighbors] * (neighborValues - muValues[neighborIndices[1,1:numNeighbors]]))
             returnType(double())
             return(mean)
         },
