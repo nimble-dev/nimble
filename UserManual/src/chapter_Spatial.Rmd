@@ -264,7 +264,7 @@ Regions with zero neighbors (defined by a 0 appearing in the `num` parameter) ar
 This behavior is different from that of WinBUGS, where the value of zero-neighbor regions of `car.normal` nodes is set to and fixed at zero.
 <!--- Regions with zero neighbors of a `dcar_proper` distribution, in contrast, have a well-defined conditional prior, undergo sampling the same as regions with neighbors, and do contribute to the density evaluation of the subsuming `dcar_proper` node. -->
 
-Also note that for the `dcar_proper` distribution if any regions have zero neighbors the joint density of the process cannot be calculated. As a result one cannot do MCMC sampling of unknown parameters affecting the mean (`mu`) of the process, though one can instead use an uncentered parameterization in which the mean is added to the process rather than the process being centered on the mean.
+Also note that for the `dcar_proper` distribution if any regions have zero neighbors the joint density of the process cannot be calculated. As a result one cannot do MCMC sampling of unknown parameters affecting the mean (`mu`) of the process, though one can instead use an uncentered parameterization in which the mean is added to the process rather than the process being centered on the mean. Or one could remove such regions from the process and model them separately.
 
 
 ### Zero-mean constraint
