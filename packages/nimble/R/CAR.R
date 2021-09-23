@@ -543,11 +543,12 @@ CAR_proper_evaluateDensity <- nimbleFunction(
         targetDCAR <- model$expandNodeNames(targetScalar)
         targetDCARscalarComponents <- model$expandNodeNames(targetDCAR, returnScalarComponents = TRUE)
         targetIndex <- which(targetDCARscalarComponents == targetScalar)
-        island <- length(neighborNodes)==0
         numNeighbors <- length(neighborCs)                        ## fix length-1 neighborCs
+        island <- numNeighbors == 0
         neighborCs <- array(neighborCs, c(1, numNeighbors))       ## fix length-1 neighborCs
         targetNeighborIndices <- array(0, c(1, numNeighbors))
-        targetNeighborIndices[1, i] <- match(neighborNodes, targetDCARscalarComponents)
+        targetNeighborIndices[1, ] <- match(neighborNodes, targetDCARscalarComponents)
+        if(length(neighborNodes) != numNeighbors)                stop('dcar distribution internal error')
         if(Mi <= 0)                                              stop('dcar distribution internal error')
         if(length(targetDCAR) != 1)                              stop('dcar distribution internal error')
         if(model$getDistribution(targetDCAR) != 'dcar_proper')   stop('dcar distribution internal error')
