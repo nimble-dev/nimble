@@ -142,6 +142,24 @@ deparse <- function(...) {
     }
 }
 
+## This version of deparse avoids splitting into multiple lines, which generally would lead to
+## problems. We keep the original nimble:::deparse above as deparse is widely used and there
+## are cases where not modifying the nlines behavior may be best. 
+safeDeparse <- function(..., warn = FALSE) {
+    out <- deparse(...)
+    if(nimbleOptions('useSafeDeparse')) {
+        dotArgs <- list(...)
+        if("nlines" %in% names(dotArgs))
+            nlines <- dotArgs$nlines else nlines <- 1L
+        if(nlines != -1L && length(out) > nlines) {
+            if(warn)
+                warning("safeDeparse: truncating deparse output to ", nlines, " lines.")
+            out <- out[1:nlines]
+        }
+    }
+    return(out)
+}
+
 
 ## creates objects in the parent.frame(), named by names(lst), values are eval(lst[[i]])
 ## this is used for creating the conjugate sampler nimble function generators, among other things

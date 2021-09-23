@@ -483,11 +483,11 @@ prepareDistributionInput <- function(densityName, userEnv) {
 #'     r ~ dunif(0, 100)
 #' })
 #' m <- nimbleModel(code, inits = list(r = 1), data = list(y = 2))
-#' calculate(m, 'y')
+#' m$calculate('y')
 #' m$r <- 2
-#' calculate(m, 'y')
+#' m$calculate('y')
 #' m$resetData()
-#' simulate(m, 'y')
+#' m$simulate('y')
 #' m$y
 #'
 #' # alternatively, simply specify a character vector with the

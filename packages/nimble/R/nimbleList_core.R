@@ -460,8 +460,8 @@ is.nl <- function(l){
   return(FALSE)
 }
 
-is.nlGenerator <- function(x, inputIsName = FALSE) {
-    if(inputIsName) x <- get(x)
+is.nlGenerator <- function(x, inputIsName = FALSE, where = -1) {
+    if(inputIsName) x <- get(x, pos = where)
     if(is.list(x) && is.function(x$new)) {
         if(is.null(environment(x$new))) return(FALSE)
         if(exists('nlDefClassObject', envir = environment(x$new), inherits = FALSE)) return(TRUE)

@@ -146,16 +146,16 @@ RCvirtualFunProcessing <- setRefClass(
 RCfunction <- function(f, name = NA, returnCallable = TRUE, check, where = NULL) {
     if(is.na(name))
         name <- rcFunLabelMaker(envName = environmentName(where))
-    nfm <- nfMethodRC$new(f, name, check = check)
+    nfm <- nfMethodRC$new(f, name, check = check, where = where)
     if(returnCallable)
         nfm$generateFunctionObject(keep.nfMethodRC = TRUE, where = where)
     else
         nfm
 }
 
-is.rcf <- function(x, inputIsName = FALSE) {
+is.rcf <- function(x, inputIsName = FALSE, where = -1) {
     if(inputIsName)
-        x <- get(x)
+        x <- get(x, pos = where)
     if(inherits(x, 'nfMethodRC'))
         return(TRUE)
     if(is.function(x)) {

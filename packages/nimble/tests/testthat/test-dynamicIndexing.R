@@ -281,7 +281,7 @@ test_that("Testing initialization of uninitialized dynamic indexes", {
     consts <- list(n = n, K = K)
     data <- list(y = y1, alpha = rep(1,K))
 
-    expect_output(model1 <- nimbleModel(code = mix_normal, constants = consts, data = data), "Warning: dynamic index out of bounds")
+    expect_output(model1 <- nimbleModel(code = mix_normal, constants = consts, data = data), "Dynamic index out of bounds")
     
     conf1 <- configureMCMC(model1)
     Rmcmc <- buildMCMC(model1)
@@ -302,7 +302,7 @@ test_that("MCMC with invalid indexes produce warning, but runs", {
     mcmc = buildMCMC(m)
     cmcmc = compileNimble(mcmc ,project=m)
     set.seed(1)
-    expect_output(cmcmc$run(10000), "dynamic index out of bounds")
+    expect_output(cmcmc$run(10000), "Dynamic index out of bounds")
     out <- as.matrix(cmcmc$mvSamples)
     expect_lt(abs(sum(out == 2) / sum(out == 3) - dnorm(0)/dnorm(1)), .02)
 })

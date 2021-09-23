@@ -36,14 +36,14 @@ test2 <- nimbleFunction(
     )
 ))
 
-test_that("Test of DSL check of invalid RCfunction with R code present", expect_warning(
+test_that("Test of DSL check of invalid RCfunction with R code present", expect_message(
 test3 <- nimbleFunction(
     run = function(x = double(1), y = double(1)) {
         returnType(double(1))
         out <- lm(y ~ x)
         return(out$coefficients)
     }
-    )
+    ), "Detected possible use of R functions"
 ))
 
 
@@ -106,7 +106,7 @@ test6 <- nimbleFunction(
 )
 ))
 
-test_that("Test of DSL check of valid nimbleFunction using undefined RC function", expect_warning(
+test_that("Test of DSL check of valid nimbleFunction using undefined RC function", expect_message(
 test7 <- nimbleFunction(
     setup = function(model, target) {
         calcNodes <- model$getDependencies(target)
@@ -117,7 +117,7 @@ test7 <- nimbleFunction(
         ans <- model$calculate(calcNodes)
         tmp = myRCfun()
         return(tmp)
-    })
+    }), "For this nimbleFunction to compile"
 ))
 
 test_that("Test of DSL check of valid nimbleFunction using RC function from setup", expect_silent(
@@ -152,7 +152,7 @@ test9 <- nimbleFunction(
     })
 ))
 
-test_that("Test of DSL check of valid nimbleFunction with undefined nimbleList", expect_warning(
+test_that("Test of DSL check of valid nimbleFunction with undefined nimbleList", expect_message(
 test10 <- nimbleFunction(
   setup = function(){    
   },
@@ -168,7 +168,7 @@ test10 <- nimbleFunction(
       return(outList)
     }
   )
-)
+), "For this nimbleFunction to compile"
 ))
 
 test_that("Test of DSL check of valid nimbleFunction with nimbleList in setup", expect_silent(
@@ -212,7 +212,7 @@ test12 <- nimbleFunction(
   )))
 
 ## Actually not any different than test7.
-test_that("Test of DSL check of valid nimbleFunction with call to undefined nimbleFunction", expect_warning(
+test_that("Test of DSL check of valid nimbleFunction with call to undefined nimbleFunction", expect_message(
 test13 <- nimbleFunction(
     setup = function(model, target) {
         calcNodes <- model$getDependencies(target)
@@ -223,7 +223,7 @@ test13 <- nimbleFunction(
         ans <- model$calculate(calcNodes)
         tmp = mynf()
         return(tmp)
-    })
+    }), "For this nimbleFunction to compile"
 ))
 
 
@@ -306,6 +306,34 @@ test_that("Test of detection of nf methods in findMethods", {
     expr <- RparseTree2ExprClasses(code)
     expect_identical(findMethodsInExprClass(expr), c('cc2', 'cc3', 'cc6', 'cc7', 'cc9', 'cc10', 'cc12', 'cc13', 'cc15', 'cc17', 'cc16'))
 })
+
+test_that("Handling of negative indexing in nimbleFunction code", {
+    test = nimbleFunction(
+        run = function(x=double(2)) {
+            nimPrint(sum(x[1:3, 6:1]))
+        }
+    )
+    expect_error(cTest <- compileNimble(test), "negative indexing")
+
+    test = nimbleFunction(
+        run = function(x=double(2)) {
+            for(i in 3:1) {}
+        }
+    )
+    expect_error(cTest <- compileNimble(test), "negative indexing")
+
+    ## We don't check run-time negative indexing.
+    test = nimbleFunction(
+        run = function(x=double(2), n1 = double(0), n2 = double(0)) {
+            nimPrint(sum(x[1:3, n1:n2]))
+        }
+    )
+    cTest <- compileNimble(test)
+    expect_failure(expect_message(cTest(matrix(rnorm(16), 4, 4), 3, 2),
+                   "Run-time negative indexing error"))
+    
+})
+
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)

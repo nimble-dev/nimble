@@ -74,9 +74,9 @@ test_that('testing expect_compiles expected failure', {
         run = function(x = double(1)) {return(x + 1); returnType(double(1))}
     )
     temporarilyAssignInGlobalEnv(foo) ## unfortunately this is necessary for bar to find foo
-    expect_warning(bar <- nimbleFunction(
+    expect_message(bar <- nimbleFunction(
         run = function(x = double(1)) {return(foo_oops(x) + 1); returnType(double(1))}
-    ), "For this nimbleFunction to compile, these objects must be defined as nimbleFunctions")
+    ), "For this nimbleFunction to compile")
     ## temporarilyAssignInGlobalEnv(foo) ## why is this being done again?
     cat("\nBegin expected error message:\n")
     expect_failure(expect_compiles(bar, dirName = '.', info = 'trying to compile foobar')) ## arguments as for compileNimble

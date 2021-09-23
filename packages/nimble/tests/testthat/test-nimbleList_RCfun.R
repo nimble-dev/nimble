@@ -376,14 +376,14 @@ test_that("nimbleList RCfun Test 9", {
     temporarilyAssignInGlobalEnv(testListDef2)
     temporarilyAssignInGlobalEnv(differentNlDef)
 
-    expect_warning(nlTestFun9 <- nimbleFunction(
+    expect_message(nlTestFun9 <- nimbleFunction(
         run = function(nlArg1 = testListDef1(), doubleArg = double()){
             returnNl <- innerNlTestFun9_1(nlArg1, doubleArg)
             returnNl$nlMatrix <- eigen(diag(2))$vectors
             returnType(testListDef1())
             return(returnNl)
         }
-    ), "For this nimbleFunction to compile, these objects must be defined")
+    ), "For this nimbleFunction to compile")
     temporarilyAssignInGlobalEnv(nlTestFun9)
     
     innerNlTestFun9_2 <- nimbleFunction(

@@ -279,7 +279,7 @@ mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonS
                 if(length(controlValue) > 1)
                     controlValue <- ifelse(is.null(dim(controlValue)), 'custom vector', 'custom array')
         if(inherits(controlValue, 'samplerConf'))   controlValue <- controlValue$name
-        deparsedItem <- deparse(controlValue)
+        deparsedItem <- safeDeparse(controlValue, warn = TRUE)
         if(length(deparsedItem) > 1) deparsedItem <- paste0(deparsedItem, collapse='')
         ls2[[i]] <- paste0(controlName, ': ', deparsedItem)
     }
@@ -360,7 +360,7 @@ mcmc_processMonitorNames <- function(model, nodes) {
 
 ## As of 0.10.1 stop WAIC if not monitoring all parameters of data nodes
 mcmc_checkWAICmonitors_conditional <- function(model, monitors, dataNodes) {
-    parentNodes <- getParentNodes(dataNodes, model, stochOnly = TRUE)
+    parentNodes <- model$getParents(dataNodes, stochOnly = TRUE)
     parentVars <- model$getVarNames(nodes = parentNodes)
     wh <- which(!parentVars %in% monitors)
     if(length(wh)) {

@@ -559,7 +559,7 @@ The `run` method has an optional `reset` argument.  When `reset = TRUE` (the def
   1. All MCMC sampler functions are reset to their initial state: the initial values of any sampler control parameters (e.g., `scale`, `sliceWidth`, or `propCov`) are reset to their initial values, as were specified by the original MCMC configuration.
   1. The internal modelValues objects `mvSamples` and `mvSamples2` are each resized to the appropriate length for holding the requested number of samples (`niter/thin`, and `niter/thin2`, respectively).
 
-This means that one can run a new MCMC  without having to recompile the MCMC. This can be helpful if one wants to use the same MCMC configuration but with different starting values, different data values, or other changes to values in the model.
+This means that one can begin a new run of an existing MCMC without having to rebuild or recompile the model or the MCMC. This can be helpful if one wants to use the same model and MCMC configuration, but with different initial values, different values of data nodes (but which nodes are data nodes must be the same), changes to covariate values(or other non-data, non-parameter values) in the model, or a different number of MCMC iterations, thinning interval or burn-in.
 
 In contrast, when `mcmc$run(niter, reset = FALSE)` is called, the MCMC picks up from where it left off, continuing the previous chain and expanding the output as needed.  No values in the model are checked or altered, and sampler functions are not reset to their initial states.
 
@@ -909,7 +909,7 @@ llFun <- nimbleFunction(
         ll <- lfactorial(n) - lfactorial(y) - lfactorial(n-y) +
               y * log(p) + (n-y) * log(1-p)
         returnType(double())
-        return(ll)
+        return(ll[1])
     }
 )
 
@@ -922,6 +922,9 @@ mcmcConf$addSampler(target = "p", type = "RW_llFunction",
 
 Rmcmc <- buildMCMC(mcmcConf)
 ```
+
+Note that we need to return `ll[1]` and not just `ll` because there are no scalar variables in compiled models. Hence `y` and other variables, and therefore `ll`, are of dimension 1 (i.e., vectors / one-dimensional arrays), so we need to specify the first element in order to have the return type be a scalar.
+
 <!---  ### Terminal node `posterior_predictive sampler` 
 % The `posterior_predictive` sampler is only appropriate for use on terminal stochastic nodes (that is, those having no stochastic dependencies).  Note that such nodes play no role in inference but have often been included in BUGS models to accomplish posterior predictive checks.  NIMBLE allows posterior predictive values to be simulated independently of running MCMC, for example by writing a nimbleFunction to do so.  This means that in many cases where terminal stochastic nodes have been included in BUGS models, they are not needed when using NIMBLE.
 The `posterior_predictive` sampler functions by calling the `simulate` method of the relevant node, then updating model probabilities and deterministic dependent nodes.  The `posterior_predictive` sampler will automatically be assigned to all terminal, non-data stochastic nodes in a model by the default MCMC configuration, so it is uncommon to manually assign this sampler.  The `posterior_predictive` sampler accepts no control list arguments. -->

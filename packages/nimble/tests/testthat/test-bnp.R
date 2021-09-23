@@ -6122,7 +6122,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
                 thetaTilde = matrix(rnorm(J*n), n, J))
   model <- nimbleModel(code, data = data, constants = constants, inits = inits)
   expect_silent(conf <- configureMCMC(model, print = FALSE))
-  expect_error(mcmc <- buildMCMC(conf), "replacement has length zero")
+  expect_error(mcmc <- buildMCMC(conf), "The number of nodes that are jointly clustered must be the same")
 
   ## too few xi values
   code <- nimbleCode({
@@ -7225,7 +7225,7 @@ test_that("Testing sampler assignment and misspecification of priors for conc pa
   ## we do not warn of negative concentration values because there could be many such
   ## warnings in certain MCMC samplers for the concentration parameter
   expect_failure(expect_output(m$simulate(), "value of concentration parameter"))
-  expect_output(out <- m$calculate(), "Warning: dynamic index out of bounds")
+  expect_output(out <- m$calculate(), "Dynamic index out of bounds")
   ## think about better way to tell the user that the prior for alpha is wrong
   
   
@@ -7241,7 +7241,7 @@ test_that("Testing sampler assignment and misspecification of priors for conc pa
   ## we do not warn of negative concentration values because there could be many such
   ## warnings in certain MCMC samplers for the concentration parameter
   expect_failure(expect_output(m$simulate(), "value of concentration parameter has to be larger than zero"))
-  expect_output(out <- m$calculate(), "Warning: dynamic index out of bounds")
+  expect_output(out <- m$calculate(), "Dynamic index out of bounds")
 })
 
 
