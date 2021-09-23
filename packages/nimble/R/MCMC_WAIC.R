@@ -142,7 +142,10 @@ buildWAIC <- nimbleFunction(
         ## Determine marginal versus conditional WAIC.
         if(!is.null(marginalizeNodes)) {
             marginal <- TRUE
+            otherLatentNodes <- model$getDependencies(marginalizeNodes, self = FALSE, downstream = TRUE, stochOnly = TRUE, includeData = FALSE)
             marginalizeNodes <- model$getDependencies(marginalizeNodes, self = TRUE, downstream = TRUE, includeData = FALSE)
+            if(length(otherLatentNodes))
+                warning("buildWAIC: Additional latent nodes found that were not specified in 'marginalizeNodes': ", paste0(otherLatentNodes, collapse = ', '), ". These nodes are also being marginalized over.")
             latentAndDataNodes <- model$getDependencies(marginalizeNodes, self = TRUE, downstream = TRUE)
             if(any(!marginalizeNodes %in% model$getNodeNames(latentOnly = TRUE)))
                 warning("buildWAIC: Potential problem with nodes to marginalize over. One or more of the nodes in 'marginalizeNodes' are not latent nodes in the model.")

@@ -564,6 +564,41 @@ test_that("standalone offline WAIC works", {
     expect_error(calculateWAIC(cmcmc), "must be monitored")
 })
 
+test_that("warning for multiple layers of latent nodes", {
+    set.seed(1)
+    J <- 5
+    I <- 10
+    tau <- 1
+    sigma <- 1
+
+    mu <- rnorm(J, 0 , tau)
+
+    y <- matrix(0, J, I)
+    for(j in 1:J) 
+        y[j, ] <- rnorm(I, mu[j], sigma)
+
+    code <- nimbleCode({
+        tau ~ dunif(0, 10)
+        sigma ~ dunif(0, 10)
+        mu00 ~ dnorm(0, 10)
+        for(j in 1:J) {
+            mu[j] ~ dnorm(mu0[j], sd = tau)
+            mu0[j] ~ dnorm(mu00, sd = tau2)
+            for(i in 1:I)
+                y[j, i] ~ dnorm(mu[j], sd = sigma)
+        }
+    })
+    inits <- list(mu00 = 0, tau = 0.5, sigma = 1.5,
+                  mu = rnorm(J, 0, 0.5), mu0 = rnorm(J, 0, 0.5))
+
+    m <- nimbleModel(code, data = list(y = y),
+                     constants = list(I = I, J = J),
+                     inits <- inits)
+    expect_warning(mcmc <- buildMCMC(m, enableWAIC = TRUE, controlWAIC = list(marginalizeNodes = c('mu0'))),
+                   "Additional latent nodes found")
+
+
+})
 
 nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
