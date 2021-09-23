@@ -546,10 +546,8 @@ CAR_proper_evaluateDensity <- nimbleFunction(
         island <- length(neighborNodes)==0
         numNeighbors <- length(neighborCs)                        ## fix length-1 neighborCs
         neighborCs <- array(neighborCs, c(1, numNeighbors))       ## fix length-1 neighborCs
-        numNeighborsPlusOne <- numNeighbors + 1
-        targetNeighborIndices <- array(0, c(1, numNeighborsPlusOne))
-        targetNeighborIndices[1,1] <- targetIndex
-        for(i in seq_along(neighborNodes))   targetNeighborIndices[1,i+1] <- which(targetDCARscalarComponents == neighborNodes[i])
+        targetNeighborIndices <- array(0, c(1, numNeighbors))
+        targetNeighborIndices[1, i] <- match(neighborNodes, targetDCARscalarComponents)
         if(Mi <= 0)                                              stop('dcar distribution internal error')
         if(length(targetDCAR) != 1)                              stop('dcar distribution internal error')
         if(model$getDistribution(targetDCAR) != 'dcar_proper')   stop('dcar distribution internal error')
@@ -565,12 +563,12 @@ CAR_proper_evaluateDensity <- nimbleFunction(
     },
     methods = list(
         getMean = function() {
-            targetNeighborMus <- model$getParam(targetDCAR, 'mu')[targetNeighborIndices[1,1:numNeighborsPlusOne]]
-            if(island) return(targetNeighborMus[1])
+            muValues <- model$getParam(targetDCAR, 'mu')
+            if(island) return(muValues[targetIndex])
             gamma <- model$getParam(targetDCAR, 'gamma')
             neighborValues <- values(model, neighborNodes)
-            neighborMus <- targetNeighborMus[2:numNeighborsPlusOne]
-            mean <- targetNeighborMus[1] + gamma * sum(neighborCs[1,1:numNeighbors] * (neighborValues - neighborMus))
+            mean <- muValues[targetIndex] + gamma * sum(neighborCs[1,1:numNeighbors] *
+                                                        (neighborValues - muValues[targetNeighborIndices[1,]]))
             returnType(double())
             return(mean)
         },
