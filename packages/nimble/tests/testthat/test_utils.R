@@ -201,6 +201,8 @@ test_coreRfeature_batch_internal <- function(input_batch, verbose = nimbleOption
             dimOutR <- attr(out_nfR, 'dim')
             dimOutC <- attr(out_nfC, 'dim')
             attributes(out) <- attributes(out_nfR) <- attributes(out_nfC) <- NULL
+            if(!is.null(input[['storage.mode']]))
+                storage.mode(out) <- storage.mode(out_nfR) <- storage.mode(out_nfC) <- input[['storage.mode']]
             attr(out, 'dim') <- dimOut
             attr(out_nfR, 'dim') <- dimOutR
             attr(out_nfC, 'dim') <- dimOutC
