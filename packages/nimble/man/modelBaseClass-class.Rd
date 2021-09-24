@@ -104,6 +104,7 @@ omit: A vector of node names or their graph IDs that should be omitted and shoul
 
 intputType: Type of input nodes provided in nodes argument.  For 'latent', the input nodes are interpreted as latent states, from which both downstream and upstream exploration should be done to find nodes in the same set (nodes that are not conditionally independent from each other).  For 'param', the input nodes are interpreted as parameters, so graph exploration begins from the  top (input) and proceeds downstream.  For 'data', the input nodes are interpreted and data nodes, so graph exploration begins from the bottom (input) and proceeds upstream.
 
+
 stochOnly: Logical for whether only stochastic nodes should be returned (default = TRUE).  If FALSE, both deterministic and stochastic nodes are returned.
 
 returnType: Either 'names' for returned nodes to be node names or 'ids' for returned nodes to be graph IDs.

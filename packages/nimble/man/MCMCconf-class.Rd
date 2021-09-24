@@ -134,6 +134,7 @@ ind: A numeric vector or character vector.  A numeric vector may be used to spec
   onlySlice = FALSE,
   multivariateNodesAsScalars = getNimbleOption("MCMCmultivariateNodesAsScalars"),
   enableWAIC = getNimbleOption("MCMCenableWAIC"),
+  waicControl = list(),
   warnNoSamplerAssigned = TRUE,
   print = TRUE,
   ...
@@ -172,7 +173,9 @@ onlySlice: A logical argument, with default value FALSE.  If specified as TRUE, 
 
 multivariateNodesAsScalars: A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided useConjugacy == TRUE), regardless of the value of this argument.
 
-enableWAIC: A logical argument, specifying whether to enable WAIC calculations for the resulting MCMC algorithm.  Defaults to the value of nimbleOptions('MCMCenableWAIC'), which in turn defaults to FALSE.  Setting nimbleOptions('MCMCenableWAIC' = TRUE) will ensure that WAIC is enabled for all calls to configureMCMC and buildMCMC.
+enableWAIC: A logical argument, specifying whether to enable WAIC calculations for the resulting MCMC algorithm.  Defaults to the value of nimbleOptions('MCMCenableWAIC'), which in turn defaults to FALSE.  Setting nimbleOptions('MCMCenableWAIC' = TRUE) will ensure that WAIC is enabled for all calls to `configureMCMC` and `buildMCMC`.
+
+waicControl A named list of inputs that control the behavior of the WAIC calculation, passed as the 'control' input to 'buildWAIC'. See 'help(waic)`.
 
 warnNoSamplerAssigned: A logical argument specifying whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule. Default is TRUE.
 
@@ -230,12 +233,6 @@ print: A logical argument specifying whether to print the current list of sample
 
 Details: See the initialize() function
             }
-
-\item{\code{setEnableWAIC(waic = TRUE)}}{Sets the value of enableWAIC.
-
-Arguments:
-
-waic: A logical argument, indicating whether to enable WAIC calculations in the resulting MCMC algorithm (default TRUE).}
 
 \item{\code{setMonitors(..., ind = 1, print = TRUE)}}{Sets new variables to the list of monitors.
 
