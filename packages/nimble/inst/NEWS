@@ -2,7 +2,7 @@
 
 USER LEVEL CHANGES
 
--- Completely revamped WAIC in NIMBLE, creating an online version that does not
+-- Completely revamp WAIC in NIMBLE, creating an online version that does not
 require any particular variable monitors. The new WAIC can calculate conditional
 or marginal WAIC and can group data nodes into joint likelihood terms if
 desired. In addition there is a new `calculateWAIC` function that will calculate
@@ -10,7 +10,7 @@ the basic conditional WAIC on output from MCMC output (either using an MCMC
 object or a matrix of samples), without having to enable the WAIC when creating
 the MCMC (PR #1136).
 
--- Added LKJ distribution, useful for prior distributions for correlation
+-- Add LKJ distribution, useful for prior distributions for correlation
 matrices, including RW samplers executed on an unconstrained transformed
 parameter space, and assigned by default during MCMC configuration (issue #993).
 
@@ -86,7 +86,7 @@ package development for packges depending on `nimble` (PR #1124).
 
 -- Update code for generating predefined C++ code for nimbleLists (issue #1142).
 
--- Updated our package preparation workflow to work with recent versions of
+-- Update our package preparation workflow to work with recent versions of
 `roxygen` (NCT issue 310).
 
 -- Update `configure.ac` (and resulting `configure`) via `autoupdate` per

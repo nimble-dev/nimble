@@ -190,3 +190,9 @@ cat(
     '\n',
     sep = '', file = file.path("nimble", "NAMESPACE"))
 
+
+## Not sure why this is getting created - I think it is because
+## of new roxygen package version. Need to remove or R CMD check complains.
+soFile <- file.path('nimble','inst','CppCode', 'libnimble.so')
+if(file.exists(soFile))
+    file.remove(soFile)
