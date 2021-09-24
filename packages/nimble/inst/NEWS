@@ -2,15 +2,100 @@
 
 USER LEVEL CHANGES
 
--- Completely revamped WAIC in NIMBLE, creating an online version that does not require any particular variable monitors. The new WAIC can calculate conditional or marginal WAIC and can group data nodes into joint likelihood terms if desired. In addition there is a new `calculateWAIC` function that will calculate the basic conditional WAIC on output from MCMC output (either using an MCMC object or a matrix of samples), without having to enable the WAIC when creating the MCMC (PR #1136).
+-- Completely revamped WAIC in NIMBLE, creating an online version that does not
+require any particular variable monitors. The new WAIC can calculate conditional
+or marginal WAIC and can group data nodes into joint likelihood terms if
+desired. In addition there is a new `calculateWAIC` function that will calculate
+the basic conditional WAIC on output from MCMC output (either using an MCMC
+object or a matrix of samples), without having to enable the WAIC when creating
+the MCMC (PR #1136).
 
--- Added LKJ distribution, useful for prior distributions for correlation matrices.
+-- Added LKJ distribution, useful for prior distributions for correlation
+matrices, including RW samplers executed on an unconstrained transformed
+parameter space, and assigned by default during MCMC configuration (issue #993).
+
+-- Improve formatting of standard logging messages and add a check for
+constants provided by a user that are not used in the model (PR 1162).
+
+-- Check for negative indexes in nimbleFunction code and error out
+during compilation (PR #1166).
+
+-- Update handling of missing indexing on the output of functions
+(e.g., `myfun()[,1]`) in model code to allow missing indexing (PR #1156)
+and to error trap if missing indexing prevents conjugacy checking (PR #1155).
+
+-- Improve error message when a user tries to use a dynamic vector of indexes
+(PR #1151).
+
+-- Add error trapping for use of `[[` in model code (PR #1148).
+
+-- Clarify documentation of `getParents` arguments (issue #1143).
 
 BUG FIXES
 
--- Fixed an error in the sampler for the proper CAR distribution (issue #1157) that gives incorrect MCMC results when the mean of the proper CAR is not the same value for all locations, e.g., when embedding covariate effects directly in the `mu` parameter of the `dcar_proper` distribution (PR #1158).
+-- Fix an error in the sampler for the proper CAR distribution (issue #1157)
+that gives incorrect MCMC results when the mean of the proper CAR is not the
+same value for all locations, e.g., when embedding covariate effects directly
+in the `mu` parameter of the `dcar_proper` distribution (PR #1158).
+
+-- Fix `isData` to return TRUE whenever any elements of a multivariate data node
+are flagged as data. As a result, attempting to carry out MCMC on the non-data
+elements will now fail. Formerly if only some elements were flagged as data,
+`isData` would only check the first element, potentially leading to elements
+flagged as data being overwritten (PR #1165).
+
+-- Error trap cases where BNP model had differing number of dependent
+stochastic nodes (e.g., observations) or dependent deterministic nodes
+per group of elements clustered jointly. Previously we were not error trapping
+this, and incorrect MCMC results would be obtained (PR #1152).
+
+-- Fix casting upon assignment for vectors in nimbleFunctions, avoiding
+compilation errors (PR #1168).
+
+-- Fix model processing errors involving long lines of model code related to
+`deparse` producing multiple lines of output (PR #1167).
+
+-- Ensure that variables in uncompiled modelValues are in the same order as
+those in compiled modelValues (PR #1164).
+
+-- Update `stick_breaking` to work if given only one probability (PR #1161).
+
+-- Robustly handle cases where a user specifies no monitors for an MCMC
+(PR #1140).
+
+-- Avoid conflicts between parallel worker processes in parallelized
+cross-validation (PR #1147).
+
+-- Fix `dcat` and `rcat` to return `NaN` and `NA`, respectively, when the
+probability vector includes a negative value (issue #1146) as well
+as having `rmulti` return `NA` values when given a negative probability.
+
+-- Fix `RW_llfunction` sampler example in manual (issue #1135).
+
 
 DEVELOPER LEVEL CHANGES
+
+-- Use `getParents` from the model API in Bayesian nonparametric functionality
+in place of the former bespoke `getParents` written just for BNP (PR #1163).
+
+-- Remove legacy S macros PROBLEM, MESSAGE, ERROR, WARN per CRAN request
+(PR #1150).
+
+-- Pass `where` argument into `nf_checkDSLcode` to improve experience of
+package development for packges depending on `nimble` (PR #1124).
+
+-- Update code for generating predefined C++ code for nimbleLists (issue #1142).
+
+-- Updated our package preparation workflow to work with recent versions of
+`roxygen` (NCT issue 310).
+
+-- Update `configure.ac` (and resulting `configure`) via `autoupdate` per
+CRAN request.
+
+-- Fix testing issues with `expect_equal` where tests acted as if the checking
+used absolute tolerances rather than the actual relative tolerances, as well 
+issue with `expect_lt` applied to vectors, all of which would have
+prevented our testing from detecting errors.
 
 
                             CHANGES IN VERSION 0.11.1 (May 2021)
