@@ -2,8 +2,11 @@
 % Please edit documentation in R/distributions_implementations.R
 \name{LKJ}
 \alias{LKJ}
-\alias{lkj-corr}
-\alias{lkj-corr-cholesky}
+\alias{lkj}
+\alias{dlkj}
+\alias{rlkj}
+\alias{lkj_corr}
+\alias{lkj_corr_cholesky}
 \alias{dlkj_corr_cholesky}
 \alias{rlkj_corr_cholesky}
 \title{The LKJ Distribution for the Cholesky Factor of a Correlation Matrix}
@@ -42,7 +45,7 @@ dlkj_corr_cholesky(x, eta, 5)
 Stan Development Team. Stan Reference Functions, version 2.27.
 }
 \seealso{
-\link{Distributions} for other standard distributions
+\code{\link{Distributions}} for other standard distributions
 }
 \author{
 Christopher Paciorek
