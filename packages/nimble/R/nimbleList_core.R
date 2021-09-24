@@ -372,7 +372,8 @@ waicList <- nimbleList(
         nimbleType('WAIC', 'double', 0),
         nimbleType('lppd', 'double', 0),
         nimbleType('pWAIC', 'double', 0)
-    ), name = 'waicList'
+    ), name = 'waicList',
+    predefined = TRUE
 )
     
 #' waicDetailsList definition
@@ -406,7 +407,8 @@ waicDetailsList <- nimbleList(
         nimbleType('lppd_elements', 'double', 1),
         nimbleType('pWAIC_elements', 'double', 1)
 
-    ), name = 'waicDetailsList'
+    ), name = 'waicDetailsList',
+    predefined = TRUE
 )
 
 
