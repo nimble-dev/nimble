@@ -134,7 +134,7 @@ ind: A numeric vector or character vector.  A numeric vector may be used to spec
   onlySlice = FALSE,
   multivariateNodesAsScalars = getNimbleOption("MCMCmultivariateNodesAsScalars"),
   enableWAIC = getNimbleOption("MCMCenableWAIC"),
-  waicControl = list(),
+  controlWAIC = list(),
   warnNoSamplerAssigned = TRUE,
   print = TRUE,
   ...
@@ -175,7 +175,7 @@ multivariateNodesAsScalars: A logical argument, with default value FALSE.  If sp
 
 enableWAIC: A logical argument, specifying whether to enable WAIC calculations for the resulting MCMC algorithm.  Defaults to the value of nimbleOptions('MCMCenableWAIC'), which in turn defaults to FALSE.  Setting nimbleOptions('MCMCenableWAIC' = TRUE) will ensure that WAIC is enabled for all calls to `configureMCMC` and `buildMCMC`.
 
-waicControl A named list of inputs that control the behavior of the WAIC calculation, passed as the 'control' input to 'buildWAIC'. See 'help(waic)`.
+controlWAIC A named list of inputs that control the behavior of the WAIC calculation, passed as the 'control' input to 'buildWAIC'. See 'help(waic)`.
 
 warnNoSamplerAssigned: A logical argument specifying whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule. Default is TRUE.
 

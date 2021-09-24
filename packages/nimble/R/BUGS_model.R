@@ -741,7 +741,7 @@ getParents = function(nodes, omit = character(), self = FALSE,
                       immediateOnly = FALSE,
                       returnType = 'names', returnScalarComponents = FALSE) {
   '
- Returns a character vector of the nodes on which the input nodes depend, sorted topologically according to the model graph, by default recursing and stopping at stochastic parent nodes.  In the genealogical metaphor for a graphical model, this function returns the "parents" of the input nodes. In the river network metaphor, it returns upstream nodes.  By default, the returned nodes omit the input nodes and stop at stochastic nodes.  Additional input arguments provide flexibility in the values returned.
+ Returns a character vector of the nodes on which the input nodes depend, sorted topologically according to the model graph, by default recursing and stopping at stochastic parent nodes.  In the genealogical metaphor for a graphical model, this function returns the "parents" of the input nodes. In the river network metaphor, it returns upstream nodes.  By default, the returned nodes omit the input nodes. Additional input arguments provide flexibility in the values returned.
 
 Arguments:
 
@@ -753,7 +753,7 @@ self: Logical argument specifying whether to include the input argument nodes in
 
 determOnly: Logical argument specifying whether to return only deterministic nodes.  Default is FALSE.
 
-stochOnly: Logical argument specifying whether to return only stochastic nodes.  Default is TRUE.  If both determOnly and stochOnly are TRUE, no nodes will be returned.
+stochOnly: Logical argument specifying whether to return only stochastic nodes.  Default is FALSE.  If both determOnly and stochOnly are TRUE, no nodes will be returned.
 
 includeData: Logical argument specifying whether to include \'data\' nodes (set via nimbleModel or the setData method).  Default is TRUE.
 

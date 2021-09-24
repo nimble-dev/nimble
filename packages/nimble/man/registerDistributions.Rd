@@ -24,7 +24,7 @@ user-supplied distributions in BUGS model code
 \details{
 When \code{distributionsInput} is a list of lists, see below for more information on the structure of the list. When \code{distributionsInput} is a character vector, the distribution is assumed to be of standard form, with parameters assumed to be the arguments provided in the density nimbleFunction, no alternative parameterizations, and the distribution assumed to be continuous with range from minus infinity to infinity. The availability of distribution and quantile functions is inferred from whether appropriately-named functions exist in the global environment.
 
-Finally, note that one no longer needs to explicitly call \code{registerDistributions} as it will be called automatically when the user-supplied distribution is used for the first time in BUGS code. However, if one wishes to provide alternative parameterizations, to provide a range, or to indicate a distribution is discrete, then one still must explicitly register the distribution using \code{registerDistributions} with the argument in the list format.
+One usually does not need to explicitly call \code{registerDistributions} as it will be called automatically when the user-supplied distribution is used for the first time in BUGS code. However, if one wishes to provide alternative parameterizations, to provide a range, or to indicate a distribution is discrete, then one still must explicitly register the distribution using \code{registerDistributions} with the argument in the list format.
 
 Format of the component lists when \code{distributionsInput} is a list of lists:
 \itemize{
@@ -81,11 +81,11 @@ code <- nimbleCode({
     r ~ dunif(0, 100)
 })
 m <- nimbleModel(code, inits = list(r = 1), data = list(y = 2))
-calculate(m, 'y')
+m$calculate('y')
 m$r <- 2
-calculate(m, 'y')
+m$calculate('y')
 m$resetData()
-simulate(m, 'y')
+m$simulate('y')
 m$y
 
 # alternatively, simply specify a character vector with the

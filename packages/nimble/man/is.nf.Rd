@@ -4,12 +4,14 @@
 \alias{is.nf}
 \title{check if a nimbleFunction}
 \usage{
-is.nf(f, inputIsName = FALSE)
+is.nf(f, inputIsName = FALSE, where = -1)
 }
 \arguments{
 \item{f}{object to be tested}
 
 \item{inputIsName}{logical indicating whether the function is provided as the character name of the function or the function object itself}
+
+\item{where}{Optional argument needed due to R package namespace issues but which should not need to be provided by a user.}
 }
 \description{
 Checks an object to determine if it is a nimbleFunction (i.e., a function created by \code{nimbleFunction} using setup code).

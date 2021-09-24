@@ -17,7 +17,7 @@ configureMCMC(
   onlySlice = FALSE,
   multivariateNodesAsScalars = getNimbleOption("MCMCmultivariateNodesAsScalars"),
   enableWAIC = getNimbleOption("MCMCenableWAIC"),
-  waicControl = list(),
+  controlWAIC = list(),
   print = getNimbleOption("verbose"),
   autoBlock = FALSE,
   oldConf,
@@ -60,7 +60,7 @@ The default value is an empty character vector, i.e. no values will be recorded.
 
 \item{enableWAIC}{A logical argument, specifying whether to enable WAIC calculations for the resulting MCMC algorithm.  Defaults to the value of \code{nimbleOptions('MCMCenableWAIC')}, which in turn defaults to FALSE.  Setting \code{nimbleOptions('enableWAIC' = TRUE)} will ensure that WAIC is enabled for all calls to \code{\link{configureMCMC}} and \code{\link{buildMCMC}}.}
 
-\item{waicControl}{A named list of inputs that control the behavior of the WAIC calculation. See \code{help(waic)}.}
+\item{controlWAIC}{A named list of inputs that control the behavior of the WAIC calculation. See \code{help(waic)}.}
 
 \item{print}{A logical argument, specifying whether to print the ordered list of default samplers.}
 

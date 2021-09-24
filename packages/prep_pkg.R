@@ -11,7 +11,8 @@ library(methods)
 if(!file.exists(file.path('nimble','R','config.R')))
     stop("You need a nimble/R/config.R file, but it must NOT be in the repository; you can probably do the following to create config.R from nimble/packages: 'make configure; cd nimble; ./configure'.")
 
-out <- file.remove(file.path('nimble', 'NAMESPACE'))  ## roxygen2 doesn't want to overwrite if file not created by roxygen2; assignment to out prevents printing of TRUE/FALSE
+## Seemingly no longer the case with roxygen 7.1.1
+## out <- file.remove(file.path('nimble', 'NAMESPACE'))  ## roxygen2 doesn't want to overwrite if file not created by roxygen2; assignment to out prevents printing of TRUE/FALSE
 roxygenize('nimble', c('namespace','rd'))
 
 
@@ -182,5 +183,10 @@ additionalExports <- c(additionalExports, additionalExportsNotInternal, 'nimbleT
 exportTextAdd <- paste0("export(", additionalExports, ")")
 exportText <- c(exportTextAdd, exportText)
 
-cat(paste(imports, importFroms, dynLibLine, S3methods, collapse = '\n', sep = '\n'), '\n', paste0(exportText, collapse = '\n'), sep = '', file = file.path("nimble", "NAMESPACE"))
+cat(
+    paste(imports, importFroms, dynLibLine, S3methods, collapse = '\n', sep = '\n'),
+    '\n',
+    paste0(exportText, collapse = '\n'),
+    '\n',
+    sep = '', file = file.path("nimble", "NAMESPACE"))
 

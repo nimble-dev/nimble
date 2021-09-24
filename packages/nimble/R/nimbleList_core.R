@@ -336,7 +336,6 @@ nlProcessing <- setRefClass('nlProcessing',
 #' @export
 #'
 #' @seealso  \code{\link{nimEigen}} 
-
 eigenNimbleList <- nimbleList(list(nimbleType('values', 'double', 1),
                                    nimbleType('vectors', 'double', 2)), name = "EIGEN_EIGENCLASS", predefined = TRUE)
 
@@ -350,22 +349,9 @@ eigenNimbleList <- nimbleList(list(nimbleType('values', 'double', 1),
 #' @export
 #' 
 #' @seealso  \code{\link{nimSvd}} 
-
 svdNimbleList <-  nimbleList(list(nimbleType('d', 'double', 1),
                                   nimbleType('u', 'double', 2),
                                   nimbleType('v', 'double', 2)), name = "EIGEN_SVDCLASS", predefined = TRUE)
-
-#' EXPERIMENTAL Data type for the return value of \code{\link{nimDerivs}}
-#'
-#' \code{\link{nimbleList}} definition for the type of \code{\link{nimbleList}} returned by \code{\link{nimDerivs}}.
-#'
-#' @field value The value of the function evaluated at the given input arguments. 
-#' @field gradient	The gradient of the function evaluated at the given input arguments. 
-#' @field hessian The Hessian of the function evaluated at the given input arguments. 
-#' @field thirdDerivs Currently unused.
-#'
-#' @export
-#' @seealso \code{\link{nimDerivs}}
 
 
 #' waicList definition
@@ -424,6 +410,17 @@ waicDetailsList <- nimbleList(
 )
 
 
+#' EXPERIMENTAL Data type for the return value of \code{\link{nimDerivs}}
+#'
+#' \code{\link{nimbleList}} definition for the type of \code{\link{nimbleList}} returned by \code{\link{nimDerivs}}.
+#'
+#' @field value The value of the function evaluated at the given input arguments. 
+#' @field gradient	The gradient of the function evaluated at the given input arguments. 
+#' @field hessian The Hessian of the function evaluated at the given input arguments. 
+#' @field thirdDerivs Currently unused.
+#'
+#' @export
+#' @seealso \code{\link{nimDerivs}}
 ADNimbleList <-  nimbleList(list(nimbleType('value', 'double', 1),
                                  nimbleType('gradient', 'double', 2),
                                  nimbleType('hessian', 'double', 3),
@@ -490,64 +487,6 @@ optimControlNimbleList <- nimbleList(
     name = "OptimControlNimbleList",
     predefined = TRUE
 )
-
-#' waicList definition
-#' 
-#' \code{waicList} definition for the \code{nimbleList} type returned by WAIC
-#' computation.
-#'
-#' @details
-#'
-#' See \code{help(waic)} for details on the elements of the list.
-#' 
-#' @author NIMBLE development team
-#'
-#' @export
-#' 
-waicList <- nimbleList(
-    list(
-        nimbleType('WAIC', 'double', 0),
-        nimbleType('lppd', 'double', 0),
-        nimbleType('pWAIC', 'double', 0)
-    ), name = 'waicList',
-    predefined = TRUE
-)
-
-#' waicDetailsList definition
-#' 
-#' \code{waicDetailsList} definition for the \code{nimbleList} type returned by WAIC
-#' computation.
-#'
-#' @details
-#'
-#' See \code{help(waic)} for details on the elements of the list.
-#' 
-#' @author NIMBLE development team
-#'
-#' @export
-#' 
-waicDetailsList <- nimbleList(
-    list(
-        nimbleType('marginal', 'logical', 0),
-        nimbleType('niterMarginal', 'double', 0),
-        nimbleType('thin', 'logical', 0),
-        nimbleType('online', 'logical', 0),
-
-        ## values for shorter MC runs to assess convergence for marginal calculation
-        nimbleType('WAIC_partialMC', 'double', 1),
-        nimbleType('lppd_partialMC', 'double', 1),
-        nimbleType('pWAIC_partialMC', 'double', 1),
-        nimbleType('niterMarginal_partialMC', 'double' , 1),  # checkIts
-
-        ## per data group values potentially useful for SE for contrasting WAIC of two models
-        nimbleType('WAIC_elements', 'double', 1),
-        nimbleType('lppd_elements', 'double', 1),
-        nimbleType('pWAIC_elements', 'double', 1)
-
-    ), name = 'waicDetailsList',
-    predefined = TRUE
-)
-
 
 ## any DSL functions that return nimbleLists should be added to the list below, in the form:
 ## functionName = list(nlGen = nimbleList definition, cppName = name of cpp function corresponding to dsl function)
