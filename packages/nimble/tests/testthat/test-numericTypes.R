@@ -47,7 +47,7 @@ unaryCwiseTypeTests <- unlist(recursive = FALSE,
 
 unaryCwiseTypeTests <- indexNames(unaryCwiseTypeTests)
 
-makeBinaryCwiseTypeTest <- function(name, funName, LHStype, RHStype, nDim, outputNDim = nDim) {
+makeBinaryCwiseTypeTest <- function(name, funName, LHStype, RHStype, nDim, outputNDim = nDim, assignType = NULL) {
     outputHandling <- nimble:::returnTypeHandling[[funName]]
     
     if(is.null(outputHandling)) outputType <- LHStype
@@ -60,9 +60,30 @@ makeBinaryCwiseTypeTest <- function(name, funName, LHStype, RHStype, nDim, outpu
     RHSseqBy <- if(RHStype == 'double') 0.1 else 1L
     
     lenOut <- if(nDim == 2) 4 else nDim + 1
+
+    # outputType is used to create the returnType declaration.
+    # assignType is used to make "out" declared before "out <- FOO(arg1, arg2)", so that casting from LHS to RHS might be needed.
+    # If assignType is provided, it also over-rides outputType
+    
+    if(is.null(assignType)) {
+      expr <- substitute(out <- FOO(arg1, arg2), list(FOO = as.name(inverseReplace(funName))))
+    } else {
+      assignType2 <- assignType
+      if(assignType2 == 'double') assignType2 <- 'numeric'
+      if(nDim == 0)
+        outDecl <- substitute(out <- A, list(A = switch(assignType, logical=FALSE, integer = 0L, double = 0)))
+      if(nDim == 1)
+        outDecl <- substitute(out <- F(length(arg1)), list(F = as.name(assignType2)))
+      if(nDim == 2)
+        outDecl <- substitute(out <- nimMatrix(type = T, nrow = dim(arg1)[1], ncol = dim(arg1)[2]), list(T = assignType))
+      expr <- substitute({OUTDECL; out <- FOO(arg1, arg2)},
+                         list(OUTDECL = outDecl,
+                              FOO = as.name(inverseReplace(funName))))
+      outputType <- assignType
+    }
     
     list(name = paste(name, LHStype, RHStype, nDim),
-         expr = substitute(out <- FOO(arg1, arg2), list(FOO = as.name(inverseReplace(funName)))),
+         expr = expr,
          args = list(arg1 = substitute(TYPE(NDIM), list(TYPE = as.name(LHStype), NDIM = nDim)),
                      arg2 = substitute(TYPE(NDIM), list(TYPE = as.name(RHStype), NDIM = nDim))),
          setArgVals = substitute( {
@@ -73,7 +94,6 @@ makeBinaryCwiseTypeTest <- function(name, funName, LHStype, RHStype, nDim, outpu
          }, list(LENOUT = lenOut, LHSTYPE = LHStype, RHSTYPE = RHStype, LHSSEQFROM = LHSseqFrom, LHSSEQBY = LHSseqBy, RHSSEQFROM = RHSseqFrom, RHSSEQBY = RHSseqBy, NDIM = nDim)),
          outputType = substitute(OUTPUTTYPE(NDIM), list(OUTPUTTYPE = as.name(outputType), NDIM = outputNDim)))
 }
-
 
 binaryCwiseTypeTests <- unlist(recursive = FALSE,
                               x = lapply(nimble:::binaryMidLogicalOperatorsComparison,
@@ -89,6 +109,53 @@ binaryCwiseTypeTests <- unlist(recursive = FALSE,
                               )
 
 binaryCwiseTypeTests <- indexNames(binaryCwiseTypeTests)
+
+# Tests of operations like <double vector> <- <integer vector> >= <integer vector>
+# To reduce combinatorial explosion of tests, fewer of these cases are covered.
+binaryCwiseAssignCastTests_part1 <- unlist(recursive = FALSE,
+                                           x = lapply(c('==','<=','>'),  # a subset of nimble:::binaryMidLogicalOperatorsComparison
+                                                      function(x) {
+                                                          ans <- mapply(makeBinaryCwiseTypeTest,
+                                                                        LHStype = rep('integer', 3),
+                                                                        RHStype = rep('logical', 3),
+                                                                        nDim = 0:2,
+                                                                        MoreArgs = list(name = paste("casting", x), funName = x, assignType = 'double'),
+                                                                        SIMPLIFY = FALSE)
+                                                          lapply(ans, function(x) {x$checkEqual <- TRUE; x$storage.mode <- 'double'; x})
+                                                      }
+                                                      )
+                                           )
+
+binaryCwiseAssignCastTests_part2 <- unlist(recursive = FALSE,
+                                           x = lapply(c('==','<=','>', nimble:::binaryMidLogicalOperatorsLogical),  # a subset of nimble:::binaryMidLogicalOperatorsComparison
+                                                      function(x) {
+                                                          ans <- mapply(makeBinaryCwiseTypeTest,
+                                                                        LHStype = rep('logical', 3),
+                                                                        RHStype = rep('logical', 3),
+                                                                        nDim = 0:2,
+                                                                        MoreArgs = list(name = paste("casting", x), funName = x, assignType = 'integer'),
+                                                                        SIMPLIFY = FALSE)
+                                                          lapply(ans, function(x) {x$checkEqual <- TRUE; x$storage.mode <- 'integer'; x})
+                                                      }
+                                                      )
+                                           )
+
+binaryCwiseAssignCastTests_part3 <- unlist(recursive = FALSE,
+                                           x = lapply(c('+','-','/','*'),
+                                                      function(x) {
+                                                          ans <- mapply(makeBinaryCwiseTypeTest,
+                                                                        LHStype = rep('integer', 3),
+                                                                        RHStype = rep('integer', 3),
+                                                                        nDim = 0:2,
+                                                                        MoreArgs = list(name = paste("casting", x), funName = x, assignType = 'double'),
+                                                                        SIMPLIFY = FALSE)
+                                                          lapply(ans, function(x) {x$checkEqual <- TRUE; x})
+                                                      }
+                                                      )
+                                           )
+
+binaryCwiseAssignCastTests <- c(binaryCwiseAssignCastTests_part1, binaryCwiseAssignCastTests_part2, binaryCwiseAssignCastTests_part3)
+binaryCwiseAssignCastTests <- indexNames(binaryCwiseAssignCastTests)
 
 
 binaryCwiseTypeTestsLogicals <- unlist(recursive = FALSE,
@@ -283,6 +350,9 @@ binaryCwiseMidOpsResults <- test_coreRfeature_batch(binaryCwiseTypeTestsMidOps, 
 binaryCwiseInProdResults <- test_coreRfeature_batch(binaryCwiseTypeTestsInprod, 'binaryCwiseTypeTestsInprod') ## lapply(binaryCwiseTypeTestsInprod, test_coreRfeature)
 binaryCwiseLeftPromoteResults <- test_coreRfeature_batch(binaryCwiseTypeTestsLeftPromotOps, 'binaryCwiseTypeTestsLeftPromotOps') ## lapply(binaryCwiseTypeTestsLeftPromotOps, test_coreRfeature)
 binaryMatrixOpResults <- test_coreRfeature_batch(binaryMatrixOpTypeTests, 'binaryMatrixOpTypeTests') ## lapply(binaryMatrixOpTypeTests, test_coreRfeature)
+
+
+binaryCwiseAssignCastResult <- test_coreRfeature_batch(binaryCwiseAssignCastTests, 'binaryCwiseAssignCastTests')
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
