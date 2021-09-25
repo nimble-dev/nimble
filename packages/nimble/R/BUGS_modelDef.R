@@ -313,10 +313,11 @@ modelDefClass$methods(assignConstants = function(constants) {
     if(length(constants) > 0) {
         if(!is.list(constants) || is.null(names(constants)))   stop('constants argument must be a named list')
         list2env(constants, constantsEnv)
-        constantsInCode <- names(constantsEnv) %in% all.vars(BUGScode)
-        if(!all(constantsInCode)) 
-            for(constName in names(constantsEnv)[!constantsInCode])
-                message("  [Note] '", constName, "' is provided in 'constants' but not used in the model code and is being ignored.") 
+        ## Need to do check before we process if-then-else, so comment out for now.
+        ## constantsInCode <- names(constantsEnv) %in% all.vars(BUGScode)
+        ## if(!all(constantsInCode)) 
+        ##     for(constName in names(constantsEnv)[!constantsInCode])
+        ##         message("  [Note] '", constName, "' is provided in 'constants' but not used in the model code and is being ignored.") 
         constantsList <<- constants
         constantsNamesList <<- lapply(ls(constants), as.name)
         constantLengths <- unlist(lapply(constants, length))
