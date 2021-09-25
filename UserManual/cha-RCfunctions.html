@@ -4,22 +4,22 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Chapter 11 Writing simple nimbleFunctions | NimbleUserManual.utf8</title>
+  <title>Chapter 11 Writing simple nimbleFunctions | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.19 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="Chapter 11 Writing simple nimbleFunctions | NimbleUserManual.utf8" />
+  <meta property="og:title" content="Chapter 11 Writing simple nimbleFunctions | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
   
-  <meta property="og:image" content="nimble-icon.png" />
+  <meta property="og:image" content="/nimble-icon.png" />
   <meta property="og:description" content="This is the NIMBLE User Manual." />
   <meta name="github-repo" content="nimble-dev/nimble" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Chapter 11 Writing simple nimbleFunctions | NimbleUserManual.utf8" />
+  <meta name="twitter:title" content="Chapter 11 Writing simple nimbleFunctions | NimbleUserManual.knit" />
   
   <meta name="twitter:description" content="This is the NIMBLE User Manual." />
-  <meta name="twitter:image" content="nimble-icon.png" />
+  <meta name="twitter:image" content="/nimble-icon.png" />
 
 
 
@@ -48,6 +48,8 @@
 
 
 
+<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
 
 
 <style type="text/css">
@@ -113,6 +115,7 @@ code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
+
 <link rel="stylesheet" href="style.css" type="text/css" />
 </head>
 
@@ -128,7 +131,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.11.1</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.12.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -212,8 +215,9 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="7.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:build-compile-mcmc"><i class="fa fa-check"></i><b>7.3</b> Building and compiling the MCMC</a></li>
 <li class="chapter" data-level="7.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:runMCMC"><i class="fa fa-check"></i><b>7.4</b> User-friendly execution of MCMC algorithms: <em>runMCMC</em></a></li>
 <li class="chapter" data-level="7.5" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:executing-the-mcmc-algorithm"><i class="fa fa-check"></i><b>7.5</b> Running the MCMC</a><ul>
-<li class="chapter" data-level="7.5.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:sampler-time"><i class="fa fa-check"></i><b>7.5.1</b> Measuring sampler computation times: <em>getTimes</em></a></li>
-<li class="chapter" data-level="7.5.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#assessing-the-adaption-process-of-rw-and-rw_block-samplers"><i class="fa fa-check"></i><b>7.5.2</b> Assessing the adaption process of <em>RW</em> and <em>RW_block</em> samplers</a></li>
+<li class="chapter" data-level="7.5.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-rerun"><i class="fa fa-check"></i><b>7.5.1</b> Rerunning versus restarting an MCMC</a></li>
+<li class="chapter" data-level="7.5.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:sampler-time"><i class="fa fa-check"></i><b>7.5.2</b> Measuring sampler computation times: <em>getTimes</em></a></li>
+<li class="chapter" data-level="7.5.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#assessing-the-adaption-process-of-rw-and-rw_block-samplers"><i class="fa fa-check"></i><b>7.5.3</b> Assessing the adaption process of <em>RW</em> and <em>RW_block</em> samplers</a></li>
 </ul></li>
 <li class="chapter" data-level="7.6" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:extracting-samples"><i class="fa fa-check"></i><b>7.6</b> Extracting MCMC samples</a></li>
 <li class="chapter" data-level="7.7" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:WAIC"><i class="fa fa-check"></i><b>7.7</b> Calculating WAIC</a></li>
@@ -390,24 +394,24 @@ is needed. These can be used for any purpose in R programming. They
 can also be used as new functions and distributions in NIMBLE’s
 extension of BUGS (Chapter <a href="cha-user-defined.html#cha:user-defined">12</a>).</p>
 <p>Here’s a basic example implementing the textbook calculation of
-least squares estimation of linear regression parameters<a href="#fn19" class="footnote-ref" id="fnref19"><sup>19</sup></a>:</p>
-<div class="sourceCode" id="cb215"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb215-1" title="1">solveLeastSquares &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
-<a class="sourceLine" id="cb215-2" title="2">    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">X =</span> <span class="kw">double</span>(<span class="dv">2</span>), <span class="dt">y =</span> <span class="kw">double</span>(<span class="dv">1</span>)) { <span class="co"># type declarations</span></a>
-<a class="sourceLine" id="cb215-3" title="3">        ans &lt;-<span class="st"> </span><span class="kw">inverse</span>(<span class="kw">t</span>(X) <span class="op">%*%</span><span class="st"> </span>X) <span class="op">%*%</span><span class="st"> </span>(<span class="kw">t</span>(X) <span class="op">%*%</span><span class="st"> </span>y)</a>
-<a class="sourceLine" id="cb215-4" title="4">        <span class="kw">return</span>(ans)</a>
-<a class="sourceLine" id="cb215-5" title="5">        <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">2</span>))  <span class="co"># return type declaration</span></a>
-<a class="sourceLine" id="cb215-6" title="6">    } )</a>
-<a class="sourceLine" id="cb215-7" title="7"></a>
-<a class="sourceLine" id="cb215-8" title="8">X &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">rnorm</span>(<span class="dv">400</span>), <span class="dt">nrow =</span> <span class="dv">100</span>)</a>
-<a class="sourceLine" id="cb215-9" title="9">y &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">100</span>)</a>
-<a class="sourceLine" id="cb215-10" title="10"><span class="kw">solveLeastSquares</span>(X, y)</a></code></pre></div>
+least squares estimation of linear regression parameters<a href="#fn20" class="footnote-ref" id="fnref20"><sup>20</sup></a>:</p>
+<div class="sourceCode" id="cb218"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb218-1" title="1">solveLeastSquares &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
+<a class="sourceLine" id="cb218-2" title="2">    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">X =</span> <span class="kw">double</span>(<span class="dv">2</span>), <span class="dt">y =</span> <span class="kw">double</span>(<span class="dv">1</span>)) { <span class="co"># type declarations</span></a>
+<a class="sourceLine" id="cb218-3" title="3">        ans &lt;-<span class="st"> </span><span class="kw">inverse</span>(<span class="kw">t</span>(X) <span class="op">%*%</span><span class="st"> </span>X) <span class="op">%*%</span><span class="st"> </span>(<span class="kw">t</span>(X) <span class="op">%*%</span><span class="st"> </span>y)</a>
+<a class="sourceLine" id="cb218-4" title="4">        <span class="kw">return</span>(ans)</a>
+<a class="sourceLine" id="cb218-5" title="5">        <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">2</span>))  <span class="co"># return type declaration</span></a>
+<a class="sourceLine" id="cb218-6" title="6">    } )</a>
+<a class="sourceLine" id="cb218-7" title="7"></a>
+<a class="sourceLine" id="cb218-8" title="8">X &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">rnorm</span>(<span class="dv">400</span>), <span class="dt">nrow =</span> <span class="dv">100</span>)</a>
+<a class="sourceLine" id="cb218-9" title="9">y &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">100</span>)</a>
+<a class="sourceLine" id="cb218-10" title="10"><span class="kw">solveLeastSquares</span>(X, y)</a></code></pre></div>
 <pre><code>##              [,1]
 ## [1,]  0.088547575
 ## [2,]  0.002025635
 ## [3,] -0.090387283
 ## [4,] -0.072660391</code></pre>
-<div class="sourceCode" id="cb217"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb217-1" title="1">CsolveLeastSquares &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(solveLeastSquares)</a>
-<a class="sourceLine" id="cb217-2" title="2"><span class="kw">CsolveLeastSquares</span>(X, y)</a></code></pre></div>
+<div class="sourceCode" id="cb220"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb220-1" title="1">CsolveLeastSquares &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(solveLeastSquares)</a>
+<a class="sourceLine" id="cb220-2" title="2"><span class="kw">CsolveLeastSquares</span>(X, y)</a></code></pre></div>
 <pre><code>##              [,1]
 ## [1,]  0.088547575
 ## [2,]  0.002025635
@@ -418,7 +422,7 @@ randomly generated explanatory variables (<code>X</code>). We ran the
 nimbleFunction
 <code>solveLeastSquares</code> uncompiled,
 natively in R, allowing testing and debugging (Section <a href="cha-progr-with-models.html#sec:debugging">15.7</a>). Then we compiled it and showed that the compiled version does the same thing,
-but faster<a href="#fn20" class="footnote-ref" id="fnref20"><sup>20</sup></a>. NIMBLE’s compiler creates C++ that uses the Eigen (<a href="http://eigen.tuxfamily.org">http://eigen.tuxfamily.org</a>)
+but faster<a href="#fn21" class="footnote-ref" id="fnref21"><sup>21</sup></a>. NIMBLE’s compiler creates C++ that uses the Eigen (<a href="http://eigen.tuxfamily.org">http://eigen.tuxfamily.org</a>)
 library for linear algebra.</p>
 <p>Notice that the actual NIMBLE code is written as an R function
 definition that is passed to <code>nimbleFunction</code> as the <code>run</code>
@@ -1183,13 +1187,14 @@ nimbleFunctions.</p>
 <li><code>dunif(x, min, max, log)</code></li>
 <li><code>dweibull(x, shape, scale, log)</code></li>
 <li><code>ddirch(x, alpha, log)</code></li>
+<li><code>dlkj_corr_cholesky(x, shape, size, log)</code></li>
 <li><code>dmnorm_chol(x, mean, cholesky, prec_param, log)</code></li>
 <li><code>dmvt_chol(x, mu, cholesky, df, prec_param, log)</code></li>
 <li><code>dwish_chol(x, cholesky, df, scale_param, log)</code></li>
 </ul>
 <p>In the last three, <code>cholesky</code> stands for Cholesky decomposition of the relevant matrix;
 <code>prec_param</code> is a logical indicating whether the Cholesky is of a
-precision matrix (TRUE) or covariance matrix (FALSE)<a href="#fn21" class="footnote-ref" id="fnref21"><sup>21</sup></a>; and <code>scale_param</code> is a logical indicating whether the Cholesky is of a scale matrix (TRUE) or an inverse scale matrix (FALSE).</p>
+precision matrix (TRUE) or covariance matrix (FALSE)<a href="#fn22" class="footnote-ref" id="fnref22"><sup>22</sup></a>; and <code>scale_param</code> is a logical indicating whether the Cholesky is of a scale matrix (TRUE) or an inverse scale matrix (FALSE).</p>
 </div>
 <div id="sec:basic-flow-control" class="section level3">
 <h3><span class="header-section-number">11.2.5</span> Flow control: <em>if-then-else</em>, <em>for</em>, <em>while</em>, and <em>stop</em></h3>
@@ -1304,7 +1309,7 @@ evaluated. NIMBLE’s static types makes it stricter than R.</p>
 <h4><span class="header-section-number">11.3.2.1</span> When NIMBLE can automatically set a numeric type</h4>
 <p>When a variable is first created by assignment, its type is determined
 automatically by that assignment. For example, if <code>x</code> has not appeared before, then</p>
-<div class="sourceCode" id="cb219"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb219-1" title="1">x &lt;-<span class="st"> </span>A <span class="op">%*%</span><span class="st"> </span>B <span class="co"># assume A and B are double matrices or vectors</span></a></code></pre></div>
+<div class="sourceCode" id="cb222"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb222-1" title="1">x &lt;-<span class="st"> </span>A <span class="op">%*%</span><span class="st"> </span>B <span class="co"># assume A and B are double matrices or vectors</span></a></code></pre></div>
 <p>will create <code>x</code> to be a double matrix of the correct size
 (determined during execution).</p>
 <div id="avoid-changing-types-of-a-variable-within-a-nimblefunction" class="section level5">
@@ -1315,9 +1320,9 @@ If <code>x</code> is used subsequently, it can
 only be used as a double matrix. This is true even if it is assigned a
 new value, which will again set its size automatically but cannot
 change its type.</p>
-<div class="sourceCode" id="cb220"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb220-1" title="1">x &lt;-<span class="st"> </span>A <span class="op">%*%</span><span class="st"> </span>B <span class="co"># assume A and B are double matrices or vectors</span></a>
-<a class="sourceLine" id="cb220-2" title="2">x &lt;-<span class="st"> </span><span class="kw">nimMatrix</span>(<span class="dv">0</span>, <span class="dt">nrow =</span> <span class="dv">5</span>, <span class="dt">ncol =</span> <span class="dv">2</span>)  <span class="co"># OK: &#39;x&#39; is still a double matrix</span></a>
-<a class="sourceLine" id="cb220-3" title="3">x &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">10</span>)  <span class="co"># NOT OK: &#39;x&#39; is a double vector</span></a></code></pre></div>
+<div class="sourceCode" id="cb223"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb223-1" title="1">x &lt;-<span class="st"> </span>A <span class="op">%*%</span><span class="st"> </span>B <span class="co"># assume A and B are double matrices or vectors</span></a>
+<a class="sourceLine" id="cb223-2" title="2">x &lt;-<span class="st"> </span><span class="kw">nimMatrix</span>(<span class="dv">0</span>, <span class="dt">nrow =</span> <span class="dv">5</span>, <span class="dt">ncol =</span> <span class="dv">2</span>)  <span class="co"># OK: &#39;x&#39; is still a double matrix</span></a>
+<a class="sourceLine" id="cb223-3" title="3">x &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">10</span>)  <span class="co"># NOT OK: &#39;x&#39; is a double vector</span></a></code></pre></div>
 </div>
 </div>
 <div id="sec:when-numeric-object" class="section level4">
@@ -1328,10 +1333,10 @@ it must be large enough for its eventual contents; it will not be automatically
 resized if assignments are made beyond its current size. For example,
 in the following code, <code>x</code> must be created before being filled with
 contents for specific indices.</p>
-<div class="sourceCode" id="cb221"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb221-1" title="1">x &lt;-<span class="st"> </span><span class="kw">numeric</span>(<span class="dv">10</span>)</a>
-<a class="sourceLine" id="cb221-2" title="2"></a>
-<a class="sourceLine" id="cb221-3" title="3"><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">10</span>) </a>
-<a class="sourceLine" id="cb221-4" title="4">   x[i] &lt;-<span class="st"> </span><span class="kw">foo</span>(y[i]) </a></code></pre></div>
+<div class="sourceCode" id="cb224"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb224-1" title="1">x &lt;-<span class="st"> </span><span class="kw">numeric</span>(<span class="dv">10</span>)</a>
+<a class="sourceLine" id="cb224-2" title="2"></a>
+<a class="sourceLine" id="cb224-3" title="3"><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">10</span>) </a>
+<a class="sourceLine" id="cb224-4" title="4">   x[i] &lt;-<span class="st"> </span><span class="kw">foo</span>(y[i]) </a></code></pre></div>
 </div>
 <div id="how-nimble-handles-na" class="section level4">
 <h4><span class="header-section-number">11.3.2.3</span> How NIMBLE handles <code>NA</code></h4>
@@ -1348,30 +1353,30 @@ contents for specific indices.</p>
 <h4><span class="header-section-number">11.3.2.4</span> Changing the sizes of existing objects: <em>setSize</em></h4>
 <p><code>setSize</code> changes the size of an object, preserving its contents in
 column-major order.</p>
-<div class="sourceCode" id="cb222"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb222-1" title="1"><span class="co"># Example of creating and resizing a floating-point vector</span></a>
-<a class="sourceLine" id="cb222-2" title="2"><span class="co"># myNumericVector will be of length 10, with all elements initialized to 2 </span></a>
-<a class="sourceLine" id="cb222-3" title="3">myNumericVector &lt;-<span class="st"> </span><span class="kw">numeric</span>(<span class="dv">10</span>, <span class="dt">value =</span> <span class="dv">2</span>) </a>
-<a class="sourceLine" id="cb222-4" title="4"><span class="co"># resize this numeric vector to be length 20; last 10 elements will be 0</span></a>
-<a class="sourceLine" id="cb222-5" title="5"><span class="kw">setSize</span>(myNumericVector, <span class="dv">20</span>)</a></code></pre></div>
-<div class="sourceCode" id="cb223"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb223-1" title="1"><span class="co"># Example of creating a 1-by-10 matrix with values 1:10 and resizing it</span></a>
-<a class="sourceLine" id="cb223-2" title="2">myMatrix &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>, <span class="dt">nrow =</span> <span class="dv">1</span>, <span class="dt">ncol =</span> <span class="dv">10</span>) </a>
-<a class="sourceLine" id="cb223-3" title="3"><span class="co"># resize this matrix to be a 10-by-10 matrix</span></a>
-<a class="sourceLine" id="cb223-4" title="4"><span class="kw">setSize</span>(myMatrix, <span class="kw">c</span>(<span class="dv">10</span>, <span class="dv">10</span>))</a>
-<a class="sourceLine" id="cb223-5" title="5"><span class="co"># The first column will have the 1:10</span></a></code></pre></div>
+<div class="sourceCode" id="cb225"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb225-1" title="1"><span class="co"># Example of creating and resizing a floating-point vector</span></a>
+<a class="sourceLine" id="cb225-2" title="2"><span class="co"># myNumericVector will be of length 10, with all elements initialized to 2 </span></a>
+<a class="sourceLine" id="cb225-3" title="3">myNumericVector &lt;-<span class="st"> </span><span class="kw">numeric</span>(<span class="dv">10</span>, <span class="dt">value =</span> <span class="dv">2</span>) </a>
+<a class="sourceLine" id="cb225-4" title="4"><span class="co"># resize this numeric vector to be length 20; last 10 elements will be 0</span></a>
+<a class="sourceLine" id="cb225-5" title="5"><span class="kw">setSize</span>(myNumericVector, <span class="dv">20</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb226"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb226-1" title="1"><span class="co"># Example of creating a 1-by-10 matrix with values 1:10 and resizing it</span></a>
+<a class="sourceLine" id="cb226-2" title="2">myMatrix &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>, <span class="dt">nrow =</span> <span class="dv">1</span>, <span class="dt">ncol =</span> <span class="dv">10</span>) </a>
+<a class="sourceLine" id="cb226-3" title="3"><span class="co"># resize this matrix to be a 10-by-10 matrix</span></a>
+<a class="sourceLine" id="cb226-4" title="4"><span class="kw">setSize</span>(myMatrix, <span class="kw">c</span>(<span class="dv">10</span>, <span class="dv">10</span>))</a>
+<a class="sourceLine" id="cb226-5" title="5"><span class="co"># The first column will have the 1:10</span></a></code></pre></div>
 </div>
 <div id="sec:conf-betw-scal" class="section level4">
 <h4><span class="header-section-number">11.3.2.5</span> Confusions between scalars and length-one vectors</h4>
 <p>In R, there is no such thing is a true scalar; scalars can always be
 treated as vectors of length one. NIMBLE allows true scalars, which
 can create confusions. For example, consider the following code:</p>
-<div class="sourceCode" id="cb224"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb224-1" title="1">myfun &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
-<a class="sourceLine" id="cb224-2" title="2">    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">i =</span> <span class="kw">integer</span>()) { <span class="co"># i is an integer scalar</span></a>
-<a class="sourceLine" id="cb224-3" title="3">        randomValues &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">10</span>)   <span class="co"># double vector</span></a>
-<a class="sourceLine" id="cb224-4" title="4">        a &lt;-<span class="st"> </span>randomValues[i]        <span class="co"># double scalar</span></a>
-<a class="sourceLine" id="cb224-5" title="5">        b &lt;-<span class="st"> </span>randomValues[i<span class="op">:</span>i]      <span class="co"># double vector</span></a>
-<a class="sourceLine" id="cb224-6" title="6">        d &lt;-<span class="st"> </span>a <span class="op">+</span><span class="st"> </span>b                  <span class="co"># double vector</span></a>
-<a class="sourceLine" id="cb224-7" title="7">        f &lt;-<span class="st"> </span><span class="kw">c</span>(i)                   <span class="co"># integer vector</span></a>
-<a class="sourceLine" id="cb224-8" title="8">    })</a></code></pre></div>
+<div class="sourceCode" id="cb227"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb227-1" title="1">myfun &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
+<a class="sourceLine" id="cb227-2" title="2">    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">i =</span> <span class="kw">integer</span>()) { <span class="co"># i is an integer scalar</span></a>
+<a class="sourceLine" id="cb227-3" title="3">        randomValues &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">10</span>)   <span class="co"># double vector</span></a>
+<a class="sourceLine" id="cb227-4" title="4">        a &lt;-<span class="st"> </span>randomValues[i]        <span class="co"># double scalar</span></a>
+<a class="sourceLine" id="cb227-5" title="5">        b &lt;-<span class="st"> </span>randomValues[i<span class="op">:</span>i]      <span class="co"># double vector</span></a>
+<a class="sourceLine" id="cb227-6" title="6">        d &lt;-<span class="st"> </span>a <span class="op">+</span><span class="st"> </span>b                  <span class="co"># double vector</span></a>
+<a class="sourceLine" id="cb227-7" title="7">        f &lt;-<span class="st"> </span><span class="kw">c</span>(i)                   <span class="co"># integer vector</span></a>
+<a class="sourceLine" id="cb227-8" title="8">    })</a></code></pre></div>
 <p>In the line that creates <code>b</code>, the index range <code>i:i</code> is not
 evaluated until run time. Even though <code>i:i</code> will always evaluate
 to simpy <code>i</code>, the compiler does not determine that. Since there is
@@ -1384,15 +1389,15 @@ illustrated in the last line.</p>
 <div id="sec:conf-betw-scal2" class="section level4">
 <h4><span class="header-section-number">11.3.2.6</span> Confusions between vectors and one-column or one-row matrices</h4>
 <p>Consider the following code:</p>
-<div class="sourceCode" id="cb225"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb225-1" title="1">myfun &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
-<a class="sourceLine" id="cb225-2" title="2">    <span class="dt">run =</span> <span class="cf">function</span>() { </a>
-<a class="sourceLine" id="cb225-3" title="3">        A &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dt">value =</span> <span class="kw">rnorm</span>(<span class="dv">9</span>), <span class="dt">nrow =</span> <span class="dv">3</span>)</a>
-<a class="sourceLine" id="cb225-4" title="4">        B &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">3</span>)</a>
-<a class="sourceLine" id="cb225-5" title="5">        Cmatrix &lt;-<span class="st"> </span>A <span class="op">%*%</span><span class="st"> </span>B                <span class="co"># double matrix, one column</span></a>
-<a class="sourceLine" id="cb225-6" title="6">        Cvector &lt;-<span class="st"> </span>(A <span class="op">%*%</span><span class="st"> </span>B)[,<span class="dv">1</span>]          <span class="co"># double vector</span></a>
-<a class="sourceLine" id="cb225-7" title="7">        Cmatrix &lt;-<span class="st"> </span>(A <span class="op">%*%</span><span class="st"> </span>B)[,<span class="dv">1</span>]          <span class="co"># error, vector assigned to matrix</span></a>
-<a class="sourceLine" id="cb225-8" title="8">        Cmatrix[,<span class="dv">1</span>] &lt;-<span class="st"> </span>(A <span class="op">%*%</span><span class="st"> </span>B)[,<span class="dv">1</span>]      <span class="co"># ok, if Cmatrix is large enough</span></a>
-<a class="sourceLine" id="cb225-9" title="9">    })</a></code></pre></div>
+<div class="sourceCode" id="cb228"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb228-1" title="1">myfun &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
+<a class="sourceLine" id="cb228-2" title="2">    <span class="dt">run =</span> <span class="cf">function</span>() { </a>
+<a class="sourceLine" id="cb228-3" title="3">        A &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dt">value =</span> <span class="kw">rnorm</span>(<span class="dv">9</span>), <span class="dt">nrow =</span> <span class="dv">3</span>)</a>
+<a class="sourceLine" id="cb228-4" title="4">        B &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">3</span>)</a>
+<a class="sourceLine" id="cb228-5" title="5">        Cmatrix &lt;-<span class="st"> </span>A <span class="op">%*%</span><span class="st"> </span>B                <span class="co"># double matrix, one column</span></a>
+<a class="sourceLine" id="cb228-6" title="6">        Cvector &lt;-<span class="st"> </span>(A <span class="op">%*%</span><span class="st"> </span>B)[,<span class="dv">1</span>]          <span class="co"># double vector</span></a>
+<a class="sourceLine" id="cb228-7" title="7">        Cmatrix &lt;-<span class="st"> </span>(A <span class="op">%*%</span><span class="st"> </span>B)[,<span class="dv">1</span>]          <span class="co"># error, vector assigned to matrix</span></a>
+<a class="sourceLine" id="cb228-8" title="8">        Cmatrix[,<span class="dv">1</span>] &lt;-<span class="st"> </span>(A <span class="op">%*%</span><span class="st"> </span>B)[,<span class="dv">1</span>]      <span class="co"># ok, if Cmatrix is large enough</span></a>
+<a class="sourceLine" id="cb228-9" title="9">    })</a></code></pre></div>
 <p>This creates a matrix <code>A</code>, a vector <code>B</code>, and matrix-multiplies
 them. The vector <code>B</code> is automatically treated as a one-column
 matrix in matrix algebra computations. The result of matrix multiplication is always a matrix, but
@@ -1464,14 +1469,14 @@ and will be re-sized for the result.</li>
 <h4><span class="header-section-number">11.3.2.8</span> Size warnings and the potential for crashes</h4>
 <p>For matrix algebra, NIMBLE cannot ensure perfect behavior because
 sizes are not known until run time. Therefore, it is possible for you
-to write code that will crash your R session. In Version 0.11.1, NIMBLE
+to write code that will crash your R session. In Version 0.12.0, NIMBLE
 attempts to issue a warning if sizes are not compatible, but it does not
 halt execution. Therefore, if you execute <code>A &lt;- M1 %*% M2</code>, and <code>M1</code> and <code>M2</code> are not compatible for matrix multiplication,
 NIMBLE will output a warning that the number of rows of <code>M1</code> does not
 match the number of columns of <code>M2</code>. After that warning the statement
 will be executed and may result in a crash. Another easy way to write
 code that will crash is to do things like <code>Y[5:10, 20:30] &lt;- x</code> without ensuring Y is at least 10x30. In the future we hope to
-prevent crashes, but in Version 0.11.1 we limit ourselves to trying to provide
+prevent crashes, but in Version 0.12.0 we limit ourselves to trying to provide
 useful information.</p>
 </div>
 </div>
@@ -1493,9 +1498,9 @@ For example, <code>double(2, c(4, 5))</code> declares a <span class="math inline
 are omitted, they will be set either by assignment or by <code>setSize</code>.</p>
 <p>In the case of scalar arguments only, a default value can be
 provided. For example, to provide 1.2 as a default:</p>
-<div class="sourceCode" id="cb226"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb226-1" title="1">myfun &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
-<a class="sourceLine" id="cb226-2" title="2">    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">x =</span> <span class="kw">double</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="fl">1.2</span>)) {</a>
-<a class="sourceLine" id="cb226-3" title="3">})</a></code></pre></div>
+<div class="sourceCode" id="cb229"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb229-1" title="1">myfun &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
+<a class="sourceLine" id="cb229-2" title="2">    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">x =</span> <span class="kw">double</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="fl">1.2</span>)) {</a>
+<a class="sourceLine" id="cb229-3" title="3">})</a></code></pre></div>
 <p>Functions with return values must have their return type explicitly declared using <code>returnType</code>, which can occur anywhere in the run code. For example <code>returnType(integer(2))</code> declares the return type to be a matrix of integers. A return type of <code>void()</code> means there is
 no return value, which is the default if no <code>returnType</code> statement
 is included.</p>
@@ -1528,15 +1533,15 @@ arguments requires testing the compiled versions.</p>
 </div>
 <div class="footnotes">
 <hr />
-<ol start="19">
-<li id="fn19"><p>Of course, in general, explicitly
+<ol start="20">
+<li id="fn20"><p>Of course, in general, explicitly
 calculating the inverse is not the recommended numerical recipe for
-least squares.<a href="cha-RCfunctions.html#fnref19" class="footnote-back">↩</a></p></li>
-<li id="fn20"><p>On the machine this is
+least squares.<a href="cha-RCfunctions.html#fnref20" class="footnote-back">↩</a></p></li>
+<li id="fn21"><p>On the machine this is
 being written on, the compiled version runs a few times faster than
 the uncompiled version. However we refrain from formal speed
-tests.<a href="cha-RCfunctions.html#fnref20" class="footnote-back">↩</a></p></li>
-<li id="fn21"><p>For the multivariate t, these are more properly termed the ‘inverse scale’ and ‘scale’ matrices<a href="cha-RCfunctions.html#fnref21" class="footnote-back">↩</a></p></li>
+tests.<a href="cha-RCfunctions.html#fnref21" class="footnote-back">↩</a></p></li>
+<li id="fn22"><p>For the multivariate t, these are more properly termed the ‘inverse scale’ and ‘scale’ matrices<a href="cha-RCfunctions.html#fnref22" class="footnote-back">↩</a></p></li>
 </ol>
 </div>
             </section>
@@ -1568,6 +1573,7 @@ gitbook.start({
 "weibo": false,
 "instapaper": false,
 "vk": false,
+"whatsapp": false,
 "all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
 },
 "fontsettings": {

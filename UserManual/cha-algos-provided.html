@@ -4,22 +4,22 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Chapter 8 Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM | NimbleUserManual.utf8</title>
+  <title>Chapter 8 Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.19 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="Chapter 8 Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM | NimbleUserManual.utf8" />
+  <meta property="og:title" content="Chapter 8 Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
   
-  <meta property="og:image" content="nimble-icon.png" />
+  <meta property="og:image" content="/nimble-icon.png" />
   <meta property="og:description" content="This is the NIMBLE User Manual." />
   <meta name="github-repo" content="nimble-dev/nimble" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Chapter 8 Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM | NimbleUserManual.utf8" />
+  <meta name="twitter:title" content="Chapter 8 Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM | NimbleUserManual.knit" />
   
   <meta name="twitter:description" content="This is the NIMBLE User Manual." />
-  <meta name="twitter:image" content="nimble-icon.png" />
+  <meta name="twitter:image" content="/nimble-icon.png" />
 
 
 
@@ -48,6 +48,8 @@
 
 
 
+<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
 
 
 <style type="text/css">
@@ -113,6 +115,7 @@ code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
+
 <link rel="stylesheet" href="style.css" type="text/css" />
 </head>
 
@@ -128,7 +131,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.11.1</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.12.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -212,8 +215,9 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="7.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:build-compile-mcmc"><i class="fa fa-check"></i><b>7.3</b> Building and compiling the MCMC</a></li>
 <li class="chapter" data-level="7.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:runMCMC"><i class="fa fa-check"></i><b>7.4</b> User-friendly execution of MCMC algorithms: <em>runMCMC</em></a></li>
 <li class="chapter" data-level="7.5" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:executing-the-mcmc-algorithm"><i class="fa fa-check"></i><b>7.5</b> Running the MCMC</a><ul>
-<li class="chapter" data-level="7.5.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:sampler-time"><i class="fa fa-check"></i><b>7.5.1</b> Measuring sampler computation times: <em>getTimes</em></a></li>
-<li class="chapter" data-level="7.5.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#assessing-the-adaption-process-of-rw-and-rw_block-samplers"><i class="fa fa-check"></i><b>7.5.2</b> Assessing the adaption process of <em>RW</em> and <em>RW_block</em> samplers</a></li>
+<li class="chapter" data-level="7.5.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-rerun"><i class="fa fa-check"></i><b>7.5.1</b> Rerunning versus restarting an MCMC</a></li>
+<li class="chapter" data-level="7.5.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:sampler-time"><i class="fa fa-check"></i><b>7.5.2</b> Measuring sampler computation times: <em>getTimes</em></a></li>
+<li class="chapter" data-level="7.5.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#assessing-the-adaption-process-of-rw-and-rw_block-samplers"><i class="fa fa-check"></i><b>7.5.3</b> Assessing the adaption process of <em>RW</em> and <em>RW_block</em> samplers</a></li>
 </ul></li>
 <li class="chapter" data-level="7.6" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:extracting-samples"><i class="fa fa-check"></i><b>7.6</b> Extracting MCMC samples</a></li>
 <li class="chapter" data-level="7.7" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:WAIC"><i class="fa fa-check"></i><b>7.7</b> Calculating WAIC</a></li>
@@ -385,168 +389,168 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>NIMBLE includes algorithms for four different types of sequential Monte Carlo (also known as particle filters), which can be used to sample from the latent states and approximate the log likelihood of a state-space model. These include the bootstrap filter, the auxiliary particle filter, the Liu-West filter, and the ensemble Kalman filter. The iterated filtering version 2 (IF2) is a related method for maximum-likelihood estimation. Each of these is built with the eponymous functions <code>buildBootstrapFilter</code>, <code>buildAuxiliaryFilter</code>, <code>buildLiuWestFilter</code>, <code>buildEnsembleKF</code>, and <code>buildIteratedFilter2</code>. Each method requires setup arguments <code>model</code> and <code>nodes</code>; the latter should be a character vector specifying latent model nodes. In addition, each method can be customized using a <code>control</code> list argument. Details on the control options and specifics of the algorithms can be found in the help pages for the functions.</p>
 <p>Once built, each filter can be run by specifying the number of particles. Each filter has a modelValues object named <code>mvEWSamples</code> that is populated with equally-weighted samples from the posterior distribution of the latent states (and in the case of the Liu-West filter, the posterior distribution of the top level parameters as well) as the filter is run. The bootstrap, auxiliary, and Liu-West filters, as well as the IF2 method, also have another modelValues object, <code>mvWSamples</code>. This has unequally-weighted samples from the posterior distribution of the latent states, along with weights for each particle. In addition, the bootstrap and auxiliary particle filters return estimates of the log-likelihood of the given state-space model.</p>
 <p>We first create a linear state-space model to use as an example for our particle filter algorithms.</p>
-<div class="sourceCode" id="cb184"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb184-1" title="1"><span class="co"># Building a simple linear state-space model. </span></a>
-<a class="sourceLine" id="cb184-2" title="2"><span class="co"># x is latent space, y is observed data</span></a>
-<a class="sourceLine" id="cb184-3" title="3">timeModelCode &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
-<a class="sourceLine" id="cb184-4" title="4">  x[<span class="dv">1</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(mu_<span class="dv">0</span>, <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb184-5" title="5">  y[<span class="dv">1</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(x[<span class="dv">1</span>], <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb184-6" title="6">  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">2</span><span class="op">:</span>t){</a>
-<a class="sourceLine" id="cb184-7" title="7">    x[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(x[i<span class="dv">-1</span>] <span class="op">*</span><span class="st"> </span>a <span class="op">+</span><span class="st"> </span>b, <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb184-8" title="8">    y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(x[i] <span class="op">*</span><span class="st"> </span>c, <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb184-9" title="9">  }</a>
-<a class="sourceLine" id="cb184-10" title="10">  </a>
-<a class="sourceLine" id="cb184-11" title="11">  a <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb184-12" title="12">  b <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb184-13" title="13">  c <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">1</span>,<span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb184-14" title="14">  mu_<span class="dv">0</span> <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb184-15" title="15">})</a>
-<a class="sourceLine" id="cb184-16" title="16"></a>
-<a class="sourceLine" id="cb184-17" title="17"><span class="co"># simulate some data</span></a>
-<a class="sourceLine" id="cb184-18" title="18">t &lt;-<span class="st"> </span><span class="dv">25</span>; mu_<span class="dv">0</span> &lt;-<span class="st"> </span><span class="dv">1</span></a>
-<a class="sourceLine" id="cb184-19" title="19">x &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1</span> ,mu_<span class="dv">0</span>, <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb184-20" title="20">y &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1</span>, x, <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb184-21" title="21">a &lt;-<span class="st"> </span><span class="fl">0.5</span>; b &lt;-<span class="st"> </span><span class="dv">1</span>; c &lt;-<span class="st"> </span><span class="dv">1</span></a>
-<a class="sourceLine" id="cb184-22" title="22"><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">2</span><span class="op">:</span>t){</a>
-<a class="sourceLine" id="cb184-23" title="23">  x[i] &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1</span>, x[i<span class="dv">-1</span>] <span class="op">*</span><span class="st"> </span>a <span class="op">+</span><span class="st"> </span>b, <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb184-24" title="24">  y[i] &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1</span>, x[i] <span class="op">*</span><span class="st"> </span>c, <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb184-25" title="25">}</a>
-<a class="sourceLine" id="cb184-26" title="26"></a>
-<a class="sourceLine" id="cb184-27" title="27"><span class="co"># build the model</span></a>
-<a class="sourceLine" id="cb184-28" title="28">rTimeModel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(timeModelCode, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">t =</span> t), </a>
-<a class="sourceLine" id="cb184-29" title="29">                          data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> y), <span class="dt">check =</span> <span class="ot">FALSE</span> )</a>
-<a class="sourceLine" id="cb184-30" title="30"></a>
-<a class="sourceLine" id="cb184-31" title="31"><span class="co"># Set parameter values and compile the model</span></a>
-<a class="sourceLine" id="cb184-32" title="32">rTimeModel<span class="op">$</span>a &lt;-<span class="st"> </span><span class="fl">0.5</span></a>
-<a class="sourceLine" id="cb184-33" title="33">rTimeModel<span class="op">$</span>b &lt;-<span class="st"> </span><span class="dv">1</span></a>
-<a class="sourceLine" id="cb184-34" title="34">rTimeModel<span class="op">$</span>c &lt;-<span class="st"> </span><span class="dv">1</span></a>
-<a class="sourceLine" id="cb184-35" title="35">rTimeModel<span class="op">$</span>mu_<span class="dv">0</span> &lt;-<span class="st"> </span><span class="dv">1</span></a>
-<a class="sourceLine" id="cb184-36" title="36"></a>
-<a class="sourceLine" id="cb184-37" title="37">cTimeModel &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rTimeModel)</a></code></pre></div>
+<div class="sourceCode" id="cb187"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb187-1" title="1"><span class="co"># Building a simple linear state-space model. </span></a>
+<a class="sourceLine" id="cb187-2" title="2"><span class="co"># x is latent space, y is observed data</span></a>
+<a class="sourceLine" id="cb187-3" title="3">timeModelCode &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb187-4" title="4">  x[<span class="dv">1</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(mu_<span class="dv">0</span>, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb187-5" title="5">  y[<span class="dv">1</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(x[<span class="dv">1</span>], <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb187-6" title="6">  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">2</span><span class="op">:</span>t){</a>
+<a class="sourceLine" id="cb187-7" title="7">    x[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(x[i<span class="dv">-1</span>] <span class="op">*</span><span class="st"> </span>a <span class="op">+</span><span class="st"> </span>b, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb187-8" title="8">    y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(x[i] <span class="op">*</span><span class="st"> </span>c, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb187-9" title="9">  }</a>
+<a class="sourceLine" id="cb187-10" title="10">  </a>
+<a class="sourceLine" id="cb187-11" title="11">  a <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb187-12" title="12">  b <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb187-13" title="13">  c <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">1</span>,<span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb187-14" title="14">  mu_<span class="dv">0</span> <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb187-15" title="15">})</a>
+<a class="sourceLine" id="cb187-16" title="16"></a>
+<a class="sourceLine" id="cb187-17" title="17"><span class="co"># simulate some data</span></a>
+<a class="sourceLine" id="cb187-18" title="18">t &lt;-<span class="st"> </span><span class="dv">25</span>; mu_<span class="dv">0</span> &lt;-<span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb187-19" title="19">x &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1</span> ,mu_<span class="dv">0</span>, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb187-20" title="20">y &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1</span>, x, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb187-21" title="21">a &lt;-<span class="st"> </span><span class="fl">0.5</span>; b &lt;-<span class="st"> </span><span class="dv">1</span>; c &lt;-<span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb187-22" title="22"><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">2</span><span class="op">:</span>t){</a>
+<a class="sourceLine" id="cb187-23" title="23">  x[i] &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1</span>, x[i<span class="dv">-1</span>] <span class="op">*</span><span class="st"> </span>a <span class="op">+</span><span class="st"> </span>b, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb187-24" title="24">  y[i] &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1</span>, x[i] <span class="op">*</span><span class="st"> </span>c, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb187-25" title="25">}</a>
+<a class="sourceLine" id="cb187-26" title="26"></a>
+<a class="sourceLine" id="cb187-27" title="27"><span class="co"># build the model</span></a>
+<a class="sourceLine" id="cb187-28" title="28">rTimeModel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(timeModelCode, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">t =</span> t), </a>
+<a class="sourceLine" id="cb187-29" title="29">                          data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> y), <span class="dt">check =</span> <span class="ot">FALSE</span> )</a>
+<a class="sourceLine" id="cb187-30" title="30"></a>
+<a class="sourceLine" id="cb187-31" title="31"><span class="co"># Set parameter values and compile the model</span></a>
+<a class="sourceLine" id="cb187-32" title="32">rTimeModel<span class="op">$</span>a &lt;-<span class="st"> </span><span class="fl">0.5</span></a>
+<a class="sourceLine" id="cb187-33" title="33">rTimeModel<span class="op">$</span>b &lt;-<span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb187-34" title="34">rTimeModel<span class="op">$</span>c &lt;-<span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb187-35" title="35">rTimeModel<span class="op">$</span>mu_<span class="dv">0</span> &lt;-<span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb187-36" title="36"></a>
+<a class="sourceLine" id="cb187-37" title="37">cTimeModel &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rTimeModel)</a></code></pre></div>
 <div id="bootstrap-filter" class="section level4">
 <h4><span class="header-section-number">8.1.1.1</span> Bootstrap filter</h4>
 <p>Here is an example of building and running the bootstrap filter.</p>
-<div class="sourceCode" id="cb185"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb185-1" title="1"><span class="co"># Build bootstrap filter</span></a>
-<a class="sourceLine" id="cb185-2" title="2">rBootF &lt;-<span class="st"> </span><span class="kw">buildBootstrapFilter</span>(rTimeModel, <span class="st">&quot;x&quot;</span>, </a>
-<a class="sourceLine" id="cb185-3" title="3">                               <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">thresh =</span> <span class="fl">0.8</span>, <span class="dt">saveAll =</span> <span class="ot">TRUE</span>, </a>
-<a class="sourceLine" id="cb185-4" title="4">                                              <span class="dt">smoothing =</span> <span class="ot">FALSE</span>))</a>
-<a class="sourceLine" id="cb185-5" title="5"><span class="co"># Compile filter   </span></a>
-<a class="sourceLine" id="cb185-6" title="6">cBootF &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rBootF,<span class="dt">project =</span> rTimeModel)</a>
-<a class="sourceLine" id="cb185-7" title="7"><span class="co"># Set number of particles</span></a>
-<a class="sourceLine" id="cb185-8" title="8">parNum &lt;-<span class="st"> </span><span class="dv">5000</span></a>
-<a class="sourceLine" id="cb185-9" title="9"><span class="co"># Run bootstrap filter, which returns estimate of model log-likelihood</span></a>
-<a class="sourceLine" id="cb185-10" title="10">bootLLEst &lt;-<span class="st"> </span>cBootF<span class="op">$</span><span class="kw">run</span>(parNum)</a>
-<a class="sourceLine" id="cb185-11" title="11"><span class="co"># The bootstrap filter can also return an estimate of the effective </span></a>
-<a class="sourceLine" id="cb185-12" title="12"><span class="co"># sample size (ESS) at each time point</span></a>
-<a class="sourceLine" id="cb185-13" title="13">bootESS &lt;-<span class="st"> </span>cBootF<span class="op">$</span><span class="kw">returnESS</span>()</a></code></pre></div>
+<div class="sourceCode" id="cb188"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb188-1" title="1"><span class="co"># Build bootstrap filter</span></a>
+<a class="sourceLine" id="cb188-2" title="2">rBootF &lt;-<span class="st"> </span><span class="kw">buildBootstrapFilter</span>(rTimeModel, <span class="st">&quot;x&quot;</span>, </a>
+<a class="sourceLine" id="cb188-3" title="3">                               <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">thresh =</span> <span class="fl">0.8</span>, <span class="dt">saveAll =</span> <span class="ot">TRUE</span>, </a>
+<a class="sourceLine" id="cb188-4" title="4">                                              <span class="dt">smoothing =</span> <span class="ot">FALSE</span>))</a>
+<a class="sourceLine" id="cb188-5" title="5"><span class="co"># Compile filter   </span></a>
+<a class="sourceLine" id="cb188-6" title="6">cBootF &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rBootF,<span class="dt">project =</span> rTimeModel)</a>
+<a class="sourceLine" id="cb188-7" title="7"><span class="co"># Set number of particles</span></a>
+<a class="sourceLine" id="cb188-8" title="8">parNum &lt;-<span class="st"> </span><span class="dv">5000</span></a>
+<a class="sourceLine" id="cb188-9" title="9"><span class="co"># Run bootstrap filter, which returns estimate of model log-likelihood</span></a>
+<a class="sourceLine" id="cb188-10" title="10">bootLLEst &lt;-<span class="st"> </span>cBootF<span class="op">$</span><span class="kw">run</span>(parNum)</a>
+<a class="sourceLine" id="cb188-11" title="11"><span class="co"># The bootstrap filter can also return an estimate of the effective </span></a>
+<a class="sourceLine" id="cb188-12" title="12"><span class="co"># sample size (ESS) at each time point</span></a>
+<a class="sourceLine" id="cb188-13" title="13">bootESS &lt;-<span class="st"> </span>cBootF<span class="op">$</span><span class="kw">returnESS</span>()</a></code></pre></div>
 </div>
 <div id="auxiliary-particle-filter" class="section level4">
 <h4><span class="header-section-number">8.1.1.2</span> Auxiliary particle filter</h4>
 <p>Next, we provide an example of building and running the auxiliary particle filter. Note that a filter cannot be built on a model that already has a filter specialized to it, so we create a new copy of our state space model first.</p>
-<div class="sourceCode" id="cb186"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb186-1" title="1"><span class="co"># Copy our state-space model for use with the auxiliary filter</span></a>
-<a class="sourceLine" id="cb186-2" title="2">auxTimeModel &lt;-<span class="st"> </span>rTimeModel<span class="op">$</span><span class="kw">newModel</span>(<span class="dt">replicate =</span> <span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb186-3" title="3"><span class="kw">compileNimble</span>(auxTimeModel)</a>
-<a class="sourceLine" id="cb186-4" title="4"><span class="co"># Build auxiliary filter</span></a>
-<a class="sourceLine" id="cb186-5" title="5">rAuxF &lt;-<span class="st"> </span><span class="kw">buildAuxiliaryFilter</span>(auxTimeModel, <span class="st">&quot;x&quot;</span>, </a>
-<a class="sourceLine" id="cb186-6" title="6">                              <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">thresh =</span> <span class="fl">0.5</span>, <span class="dt">saveAll =</span> <span class="ot">TRUE</span>))</a>
-<a class="sourceLine" id="cb186-7" title="7"><span class="co"># Compile filter   </span></a>
-<a class="sourceLine" id="cb186-8" title="8">cAuxF &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rAuxF,<span class="dt">project =</span> auxTimeModel)</a>
-<a class="sourceLine" id="cb186-9" title="9"><span class="co"># Run auxiliary filter, which returns estimate of model log-likelihood</span></a>
-<a class="sourceLine" id="cb186-10" title="10">auxLLEst &lt;-<span class="st"> </span>cAuxF<span class="op">$</span><span class="kw">run</span>(parNum)</a>
-<a class="sourceLine" id="cb186-11" title="11"><span class="co"># The auxiliary filter can also return an estimate of the effective </span></a>
-<a class="sourceLine" id="cb186-12" title="12"><span class="co"># sample size (ESS) at each time point</span></a>
-<a class="sourceLine" id="cb186-13" title="13">auxESS &lt;-<span class="st"> </span>cAuxF<span class="op">$</span><span class="kw">returnESS</span>()</a></code></pre></div>
+<div class="sourceCode" id="cb189"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb189-1" title="1"><span class="co"># Copy our state-space model for use with the auxiliary filter</span></a>
+<a class="sourceLine" id="cb189-2" title="2">auxTimeModel &lt;-<span class="st"> </span>rTimeModel<span class="op">$</span><span class="kw">newModel</span>(<span class="dt">replicate =</span> <span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb189-3" title="3"><span class="kw">compileNimble</span>(auxTimeModel)</a>
+<a class="sourceLine" id="cb189-4" title="4"><span class="co"># Build auxiliary filter</span></a>
+<a class="sourceLine" id="cb189-5" title="5">rAuxF &lt;-<span class="st"> </span><span class="kw">buildAuxiliaryFilter</span>(auxTimeModel, <span class="st">&quot;x&quot;</span>, </a>
+<a class="sourceLine" id="cb189-6" title="6">                              <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">thresh =</span> <span class="fl">0.5</span>, <span class="dt">saveAll =</span> <span class="ot">TRUE</span>))</a>
+<a class="sourceLine" id="cb189-7" title="7"><span class="co"># Compile filter   </span></a>
+<a class="sourceLine" id="cb189-8" title="8">cAuxF &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rAuxF,<span class="dt">project =</span> auxTimeModel)</a>
+<a class="sourceLine" id="cb189-9" title="9"><span class="co"># Run auxiliary filter, which returns estimate of model log-likelihood</span></a>
+<a class="sourceLine" id="cb189-10" title="10">auxLLEst &lt;-<span class="st"> </span>cAuxF<span class="op">$</span><span class="kw">run</span>(parNum)</a>
+<a class="sourceLine" id="cb189-11" title="11"><span class="co"># The auxiliary filter can also return an estimate of the effective </span></a>
+<a class="sourceLine" id="cb189-12" title="12"><span class="co"># sample size (ESS) at each time point</span></a>
+<a class="sourceLine" id="cb189-13" title="13">auxESS &lt;-<span class="st"> </span>cAuxF<span class="op">$</span><span class="kw">returnESS</span>()</a></code></pre></div>
 </div>
 <div id="liu-and-west-filter" class="section level4">
 <h4><span class="header-section-number">8.1.1.3</span> Liu and West filter</h4>
 <p>Now we give an example of building and running the Liu and West filter, which can sample from the posterior distribution of top-level parameters as well as latent states. Note that the Liu-West filter ofen performs poorly and is provided primarily for didactic purposes. The Liu and West filter accepts an additional <code>params</code> argument, specifying the top-level parameters to be sampled.</p>
-<div class="sourceCode" id="cb187"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb187-1" title="1"><span class="co"># Copy model</span></a>
-<a class="sourceLine" id="cb187-2" title="2">LWTimeModel &lt;-<span class="st"> </span>rTimeModel<span class="op">$</span><span class="kw">newModel</span>(<span class="dt">replicate =</span> <span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb187-3" title="3"><span class="kw">compileNimble</span>(LWTimeModel)</a>
-<a class="sourceLine" id="cb187-4" title="4"><span class="co"># Build Liu-West filter, also </span></a>
-<a class="sourceLine" id="cb187-5" title="5"><span class="co"># specifying which top level parameters to estimate</span></a>
-<a class="sourceLine" id="cb187-6" title="6">rLWF &lt;-<span class="st"> </span><span class="kw">buildLiuWestFilter</span>(LWTimeModel, <span class="st">&quot;x&quot;</span>, <span class="dt">params =</span> <span class="kw">c</span>(<span class="st">&quot;a&quot;</span>, <span class="st">&quot;b&quot;</span>, <span class="st">&quot;c&quot;</span>),</a>
-<a class="sourceLine" id="cb187-7" title="7">                           <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">saveAll =</span> <span class="ot">FALSE</span>))     </a></code></pre></div>
+<div class="sourceCode" id="cb190"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb190-1" title="1"><span class="co"># Copy model</span></a>
+<a class="sourceLine" id="cb190-2" title="2">LWTimeModel &lt;-<span class="st"> </span>rTimeModel<span class="op">$</span><span class="kw">newModel</span>(<span class="dt">replicate =</span> <span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb190-3" title="3"><span class="kw">compileNimble</span>(LWTimeModel)</a>
+<a class="sourceLine" id="cb190-4" title="4"><span class="co"># Build Liu-West filter, also </span></a>
+<a class="sourceLine" id="cb190-5" title="5"><span class="co"># specifying which top level parameters to estimate</span></a>
+<a class="sourceLine" id="cb190-6" title="6">rLWF &lt;-<span class="st"> </span><span class="kw">buildLiuWestFilter</span>(LWTimeModel, <span class="st">&quot;x&quot;</span>, <span class="dt">params =</span> <span class="kw">c</span>(<span class="st">&quot;a&quot;</span>, <span class="st">&quot;b&quot;</span>, <span class="st">&quot;c&quot;</span>),</a>
+<a class="sourceLine" id="cb190-7" title="7">                           <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">saveAll =</span> <span class="ot">FALSE</span>))     </a></code></pre></div>
 <pre><code>## Warning in buildLiuWestFilter(LWTimeModel, &quot;x&quot;, params = c(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;), :
 ## The Liu-West filter ofen performs poorly and is provided primarily for didactic
 ## purposes.</code></pre>
-<div class="sourceCode" id="cb189"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb189-1" title="1"><span class="co"># Compile filter   </span></a>
-<a class="sourceLine" id="cb189-2" title="2">cLWF &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rLWF,<span class="dt">project =</span> LWTimeModel)</a>
-<a class="sourceLine" id="cb189-3" title="3"><span class="co"># Run Liu-West filter</span></a>
-<a class="sourceLine" id="cb189-4" title="4">cLWF<span class="op">$</span><span class="kw">run</span>(parNum)</a></code></pre></div>
+<div class="sourceCode" id="cb192"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb192-1" title="1"><span class="co"># Compile filter   </span></a>
+<a class="sourceLine" id="cb192-2" title="2">cLWF &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rLWF,<span class="dt">project =</span> LWTimeModel)</a>
+<a class="sourceLine" id="cb192-3" title="3"><span class="co"># Run Liu-West filter</span></a>
+<a class="sourceLine" id="cb192-4" title="4">cLWF<span class="op">$</span><span class="kw">run</span>(parNum)</a></code></pre></div>
 </div>
 <div id="ensemble-kalman-filter" class="section level4">
 <h4><span class="header-section-number">8.1.1.4</span> Ensemble Kalman filter</h4>
 <p>Next we give an example of building and running the ensemble Kalman filter, which can sample from the posterior distribution of latent states.</p>
-<div class="sourceCode" id="cb190"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb190-1" title="1"><span class="co"># Copy model</span></a>
-<a class="sourceLine" id="cb190-2" title="2">ENKFTimeModel &lt;-<span class="st"> </span>rTimeModel<span class="op">$</span><span class="kw">newModel</span>(<span class="dt">replicate =</span> <span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb190-3" title="3"><span class="kw">compileNimble</span>(ENKFTimeModel)</a>
-<a class="sourceLine" id="cb190-4" title="4"><span class="co"># Build and compile ensemble Kalman filter</span></a>
-<a class="sourceLine" id="cb190-5" title="5">rENKF &lt;-<span class="st"> </span><span class="kw">buildEnsembleKF</span>(ENKFTimeModel, <span class="st">&quot;x&quot;</span>,</a>
-<a class="sourceLine" id="cb190-6" title="6">                         <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">saveAll =</span> <span class="ot">FALSE</span>))  </a>
-<a class="sourceLine" id="cb190-7" title="7">cENKF &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rENKF,<span class="dt">project =</span> ENKFTimeModel)</a>
-<a class="sourceLine" id="cb190-8" title="8"><span class="co"># Run ensemble Kalman filter</span></a>
-<a class="sourceLine" id="cb190-9" title="9">cENKF<span class="op">$</span><span class="kw">run</span>(parNum)</a></code></pre></div>
+<div class="sourceCode" id="cb193"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb193-1" title="1"><span class="co"># Copy model</span></a>
+<a class="sourceLine" id="cb193-2" title="2">ENKFTimeModel &lt;-<span class="st"> </span>rTimeModel<span class="op">$</span><span class="kw">newModel</span>(<span class="dt">replicate =</span> <span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb193-3" title="3"><span class="kw">compileNimble</span>(ENKFTimeModel)</a>
+<a class="sourceLine" id="cb193-4" title="4"><span class="co"># Build and compile ensemble Kalman filter</span></a>
+<a class="sourceLine" id="cb193-5" title="5">rENKF &lt;-<span class="st"> </span><span class="kw">buildEnsembleKF</span>(ENKFTimeModel, <span class="st">&quot;x&quot;</span>,</a>
+<a class="sourceLine" id="cb193-6" title="6">                         <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">saveAll =</span> <span class="ot">FALSE</span>))  </a>
+<a class="sourceLine" id="cb193-7" title="7">cENKF &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rENKF,<span class="dt">project =</span> ENKFTimeModel)</a>
+<a class="sourceLine" id="cb193-8" title="8"><span class="co"># Run ensemble Kalman filter</span></a>
+<a class="sourceLine" id="cb193-9" title="9">cENKF<span class="op">$</span><span class="kw">run</span>(parNum)</a></code></pre></div>
 <p>Once each filter has been run, we can extract samples from the posterior distribution of our latent states as follows:</p>
-<div class="sourceCode" id="cb191"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb191-1" title="1"><span class="co"># Equally-weighted samples (available from all filters)</span></a>
-<a class="sourceLine" id="cb191-2" title="2">bootEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cBootF<span class="op">$</span>mvEWSamples) <span class="co"># alternative: as.list</span></a>
-<a class="sourceLine" id="cb191-3" title="3">auxEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cAuxF<span class="op">$</span>mvEWSamples)</a>
-<a class="sourceLine" id="cb191-4" title="4">LWFEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cLWF<span class="op">$</span>mvEWSamples)</a>
-<a class="sourceLine" id="cb191-5" title="5">ENKFEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cENKF<span class="op">$</span>mvEWSamples)</a>
-<a class="sourceLine" id="cb191-6" title="6"></a>
-<a class="sourceLine" id="cb191-7" title="7"><span class="co"># Unequally-weighted samples, along with weights (available </span></a>
-<a class="sourceLine" id="cb191-8" title="8"><span class="co"># from bootstrap, auxiliary, and Liu and West filters)</span></a>
-<a class="sourceLine" id="cb191-9" title="9">bootWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cBootF<span class="op">$</span>mvWSamples, <span class="st">&quot;x&quot;</span>)</a>
-<a class="sourceLine" id="cb191-10" title="10">bootWts &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cBootF<span class="op">$</span>mvWSamples, <span class="st">&quot;wts&quot;</span>)</a>
-<a class="sourceLine" id="cb191-11" title="11">auxWSamp &lt;-<span class="st">  </span><span class="kw">as.matrix</span>(xAuxF<span class="op">$</span>mvWSamples, <span class="st">&quot;x&quot;</span>)</a>
-<a class="sourceLine" id="cb191-12" title="12">auxWts &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cAuxF<span class="op">$</span>mvWSamples, <span class="st">&quot;wts&quot;</span>)</a>
-<a class="sourceLine" id="cb191-13" title="13"></a>
-<a class="sourceLine" id="cb191-14" title="14"><span class="co"># Liu and West filter also returns samples </span></a>
-<a class="sourceLine" id="cb191-15" title="15"><span class="co"># from posterior distribution of top-level parameters:</span></a>
-<a class="sourceLine" id="cb191-16" title="16">aEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cLWF<span class="op">$</span>mvEWSamples, <span class="st">&quot;a&quot;</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb194"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb194-1" title="1"><span class="co"># Equally-weighted samples (available from all filters)</span></a>
+<a class="sourceLine" id="cb194-2" title="2">bootEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cBootF<span class="op">$</span>mvEWSamples) <span class="co"># alternative: as.list</span></a>
+<a class="sourceLine" id="cb194-3" title="3">auxEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cAuxF<span class="op">$</span>mvEWSamples)</a>
+<a class="sourceLine" id="cb194-4" title="4">LWFEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cLWF<span class="op">$</span>mvEWSamples)</a>
+<a class="sourceLine" id="cb194-5" title="5">ENKFEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cENKF<span class="op">$</span>mvEWSamples)</a>
+<a class="sourceLine" id="cb194-6" title="6"></a>
+<a class="sourceLine" id="cb194-7" title="7"><span class="co"># Unequally-weighted samples, along with weights (available </span></a>
+<a class="sourceLine" id="cb194-8" title="8"><span class="co"># from bootstrap, auxiliary, and Liu and West filters)</span></a>
+<a class="sourceLine" id="cb194-9" title="9">bootWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cBootF<span class="op">$</span>mvWSamples, <span class="st">&quot;x&quot;</span>)</a>
+<a class="sourceLine" id="cb194-10" title="10">bootWts &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cBootF<span class="op">$</span>mvWSamples, <span class="st">&quot;wts&quot;</span>)</a>
+<a class="sourceLine" id="cb194-11" title="11">auxWSamp &lt;-<span class="st">  </span><span class="kw">as.matrix</span>(xAuxF<span class="op">$</span>mvWSamples, <span class="st">&quot;x&quot;</span>)</a>
+<a class="sourceLine" id="cb194-12" title="12">auxWts &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cAuxF<span class="op">$</span>mvWSamples, <span class="st">&quot;wts&quot;</span>)</a>
+<a class="sourceLine" id="cb194-13" title="13"></a>
+<a class="sourceLine" id="cb194-14" title="14"><span class="co"># Liu and West filter also returns samples </span></a>
+<a class="sourceLine" id="cb194-15" title="15"><span class="co"># from posterior distribution of top-level parameters:</span></a>
+<a class="sourceLine" id="cb194-16" title="16">aEWSamp &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cLWF<span class="op">$</span>mvEWSamples, <span class="st">&quot;a&quot;</span>)</a></code></pre></div>
 </div>
 <div id="iterated-filtering-2-if2" class="section level4">
 <h4><span class="header-section-number">8.1.1.5</span> Iterated filtering 2 (IF2)</h4>
 <p>The IF2 method accomplishes maximum likelihood estimation using a scheme wherein both latent states and parameters are represented by particles that are weighted and resampled during the iterations. Iterations include perturbations to the parameter particles following a schedule of decreasing magnitude to yield convergence to the MLE.</p>
 <p>Here we apply IF2 to Nile River flow data, specifying a changepoint in the year the Aswan Dam was constructed, as the dam altered river flows.</p>
-<div class="sourceCode" id="cb192"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb192-1" title="1"><span class="kw">library</span>(FKF)</a>
-<a class="sourceLine" id="cb192-2" title="2"></a>
-<a class="sourceLine" id="cb192-3" title="3">flowCode &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
-<a class="sourceLine" id="cb192-4" title="4">    <span class="cf">for</span>(t <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>n)</a>
-<a class="sourceLine" id="cb192-5" title="5">        y[t] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(x[t], <span class="dt">sd =</span> sigmaMeasurements)</a>
-<a class="sourceLine" id="cb192-6" title="6">    x[<span class="dv">1</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(x0, <span class="dt">sd =</span> sigmaInnovations)    </a>
-<a class="sourceLine" id="cb192-7" title="7">    <span class="cf">for</span>(t <span class="cf">in</span> <span class="dv">2</span><span class="op">:</span>n)</a>
-<a class="sourceLine" id="cb192-8" title="8">        x[t] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>((t<span class="dv">-1</span><span class="op">==</span><span class="dv">28</span>)<span class="op">*</span>meanShift1899 <span class="op">+</span><span class="st"> </span>x[t<span class="dv">-1</span>], <span class="dt">sd =</span> sigmaInnovations)</a>
-<a class="sourceLine" id="cb192-9" title="9">    logSigmaInnovations <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">100</span>)</a>
-<a class="sourceLine" id="cb192-10" title="10">    logSigmaMeasurements <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">100</span>)</a>
-<a class="sourceLine" id="cb192-11" title="11">    sigmaInnovations &lt;-<span class="st"> </span><span class="kw">exp</span>(logSigmaInnovations)</a>
-<a class="sourceLine" id="cb192-12" title="12">    sigmaMeasurements &lt;-<span class="st"> </span><span class="kw">exp</span>(logSigmaMeasurements)</a>
-<a class="sourceLine" id="cb192-13" title="13">    x0 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">1120</span>, <span class="dt">var =</span> <span class="dv">100</span>)</a>
-<a class="sourceLine" id="cb192-14" title="14">    meanShift1899 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">100</span>)</a>
-<a class="sourceLine" id="cb192-15" title="15">})</a>
-<a class="sourceLine" id="cb192-16" title="16"></a>
-<a class="sourceLine" id="cb192-17" title="17">flowModel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(flowCode, <span class="dt">data =</span> <span class="kw">list</span>(<span class="dt">y =</span> Nile),</a>
-<a class="sourceLine" id="cb192-18" title="18">                 <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">n =</span> <span class="kw">length</span>(Nile)),</a>
-<a class="sourceLine" id="cb192-19" title="19">                 <span class="dt">inits =</span> <span class="kw">list</span>(<span class="dt">logSigmaInnovations =</span> <span class="kw">log</span>(<span class="kw">sd</span>(Nile)),</a>
-<a class="sourceLine" id="cb192-20" title="20">                              <span class="dt">logSigmaMeasurements =</span> <span class="kw">log</span>(<span class="kw">sd</span>(Nile)),</a>
-<a class="sourceLine" id="cb192-21" title="21">                              <span class="dt">meanShift1899 =</span> <span class="dv">-100</span>))</a></code></pre></div>
+<div class="sourceCode" id="cb195"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb195-1" title="1"><span class="kw">library</span>(FKF)</a>
+<a class="sourceLine" id="cb195-2" title="2"></a>
+<a class="sourceLine" id="cb195-3" title="3">flowCode &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb195-4" title="4">    <span class="cf">for</span>(t <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>n)</a>
+<a class="sourceLine" id="cb195-5" title="5">        y[t] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(x[t], <span class="dt">sd =</span> sigmaMeasurements)</a>
+<a class="sourceLine" id="cb195-6" title="6">    x[<span class="dv">1</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(x0, <span class="dt">sd =</span> sigmaInnovations)    </a>
+<a class="sourceLine" id="cb195-7" title="7">    <span class="cf">for</span>(t <span class="cf">in</span> <span class="dv">2</span><span class="op">:</span>n)</a>
+<a class="sourceLine" id="cb195-8" title="8">        x[t] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>((t<span class="dv">-1</span><span class="op">==</span><span class="dv">28</span>)<span class="op">*</span>meanShift1899 <span class="op">+</span><span class="st"> </span>x[t<span class="dv">-1</span>], <span class="dt">sd =</span> sigmaInnovations)</a>
+<a class="sourceLine" id="cb195-9" title="9">    logSigmaInnovations <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">100</span>)</a>
+<a class="sourceLine" id="cb195-10" title="10">    logSigmaMeasurements <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">100</span>)</a>
+<a class="sourceLine" id="cb195-11" title="11">    sigmaInnovations &lt;-<span class="st"> </span><span class="kw">exp</span>(logSigmaInnovations)</a>
+<a class="sourceLine" id="cb195-12" title="12">    sigmaMeasurements &lt;-<span class="st"> </span><span class="kw">exp</span>(logSigmaMeasurements)</a>
+<a class="sourceLine" id="cb195-13" title="13">    x0 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">1120</span>, <span class="dt">var =</span> <span class="dv">100</span>)</a>
+<a class="sourceLine" id="cb195-14" title="14">    meanShift1899 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">100</span>)</a>
+<a class="sourceLine" id="cb195-15" title="15">})</a>
+<a class="sourceLine" id="cb195-16" title="16"></a>
+<a class="sourceLine" id="cb195-17" title="17">flowModel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(flowCode, <span class="dt">data =</span> <span class="kw">list</span>(<span class="dt">y =</span> Nile),</a>
+<a class="sourceLine" id="cb195-18" title="18">                 <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">n =</span> <span class="kw">length</span>(Nile)),</a>
+<a class="sourceLine" id="cb195-19" title="19">                 <span class="dt">inits =</span> <span class="kw">list</span>(<span class="dt">logSigmaInnovations =</span> <span class="kw">log</span>(<span class="kw">sd</span>(Nile)),</a>
+<a class="sourceLine" id="cb195-20" title="20">                              <span class="dt">logSigmaMeasurements =</span> <span class="kw">log</span>(<span class="kw">sd</span>(Nile)),</a>
+<a class="sourceLine" id="cb195-21" title="21">                              <span class="dt">meanShift1899 =</span> <span class="dv">-100</span>))</a></code></pre></div>
 <p>Note that the prior distributions for the parameters are not used by IF2, except possibly to obtain boundaries of valid parameter values (not the case here).</p>
 <p>Now we build the filter, specifying user-controlled standard deviations (in this case the same as the perturbation <code>sigma</code> values) for use in generating the initial particles for the parameters via the <code>control</code> list.</p>
-<div class="sourceCode" id="cb193"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb193-1" title="1">filter &lt;-<span class="st"> </span><span class="kw">buildIteratedFilter2</span>(<span class="dt">model =</span> flowModel,</a>
-<a class="sourceLine" id="cb193-2" title="2">                           <span class="dt">nodes =</span> <span class="st">&#39;x&#39;</span>,</a>
-<a class="sourceLine" id="cb193-3" title="3">                           <span class="dt">params =</span> <span class="kw">c</span>(<span class="st">&#39;logSigmaInnovations&#39;</span>,</a>
-<a class="sourceLine" id="cb193-4" title="4">                                      <span class="st">&#39;logSigmaMeasurements&#39;</span>,</a>
-<a class="sourceLine" id="cb193-5" title="5">                                      <span class="st">&#39;meanShift1899&#39;</span>),</a>
-<a class="sourceLine" id="cb193-6" title="6">                           <span class="dt">baselineNode =</span> <span class="st">&#39;x0&#39;</span>,</a>
-<a class="sourceLine" id="cb193-7" title="7">                           <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">sigma =</span> <span class="kw">c</span>(<span class="fl">0.1</span>, <span class="fl">0.1</span>, <span class="dv">5</span>),</a>
-<a class="sourceLine" id="cb193-8" title="8">                                          <span class="dt">initParamSigma =</span> <span class="kw">c</span>(<span class="fl">0.1</span>, <span class="fl">0.1</span>, <span class="dv">5</span>)))</a>
-<a class="sourceLine" id="cb193-9" title="9">cFlowModel &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(flowModel)</a>
-<a class="sourceLine" id="cb193-10" title="10">cFilter  &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(filter, <span class="dt">project =</span> flowModel)</a></code></pre></div>
+<div class="sourceCode" id="cb196"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb196-1" title="1">filter &lt;-<span class="st"> </span><span class="kw">buildIteratedFilter2</span>(<span class="dt">model =</span> flowModel,</a>
+<a class="sourceLine" id="cb196-2" title="2">                           <span class="dt">nodes =</span> <span class="st">&#39;x&#39;</span>,</a>
+<a class="sourceLine" id="cb196-3" title="3">                           <span class="dt">params =</span> <span class="kw">c</span>(<span class="st">&#39;logSigmaInnovations&#39;</span>,</a>
+<a class="sourceLine" id="cb196-4" title="4">                                      <span class="st">&#39;logSigmaMeasurements&#39;</span>,</a>
+<a class="sourceLine" id="cb196-5" title="5">                                      <span class="st">&#39;meanShift1899&#39;</span>),</a>
+<a class="sourceLine" id="cb196-6" title="6">                           <span class="dt">baselineNode =</span> <span class="st">&#39;x0&#39;</span>,</a>
+<a class="sourceLine" id="cb196-7" title="7">                           <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">sigma =</span> <span class="kw">c</span>(<span class="fl">0.1</span>, <span class="fl">0.1</span>, <span class="dv">5</span>),</a>
+<a class="sourceLine" id="cb196-8" title="8">                                          <span class="dt">initParamSigma =</span> <span class="kw">c</span>(<span class="fl">0.1</span>, <span class="fl">0.1</span>, <span class="dv">5</span>)))</a>
+<a class="sourceLine" id="cb196-9" title="9">cFlowModel &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(flowModel)</a>
+<a class="sourceLine" id="cb196-10" title="10">cFilter  &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(filter, <span class="dt">project =</span> flowModel)</a></code></pre></div>
 <p>We now run the algorithm with 1000 particles for 100 iterations with the schedule parameter equal to 0.2.</p>
 <p>In addition to the estimates, we can extract the values of the log-likelihood, the estimates and the standard deviation of the parameter particles as they evolve over the iterations, in order to assess convergence.</p>
-<div class="sourceCode" id="cb194"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb194-1" title="1"><span class="kw">set.seed</span>(<span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb194-2" title="2">est &lt;-<span class="st"> </span>cFilter<span class="op">$</span><span class="kw">run</span>(<span class="dt">m =</span> <span class="dv">1000</span>, <span class="dt">niter =</span> <span class="dv">100</span>, <span class="dt">alpha =</span> <span class="fl">0.2</span>)</a>
-<a class="sourceLine" id="cb194-3" title="3"></a>
-<a class="sourceLine" id="cb194-4" title="4">cFilter<span class="op">$</span>estimates[<span class="dv">95</span><span class="op">:</span><span class="dv">100</span>,] <span class="co">## Last 5 iterations of parameter values</span></a></code></pre></div>
+<div class="sourceCode" id="cb197"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb197-1" title="1"><span class="kw">set.seed</span>(<span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb197-2" title="2">est &lt;-<span class="st"> </span>cFilter<span class="op">$</span><span class="kw">run</span>(<span class="dt">m =</span> <span class="dv">1000</span>, <span class="dt">niter =</span> <span class="dv">100</span>, <span class="dt">alpha =</span> <span class="fl">0.2</span>)</a>
+<a class="sourceLine" id="cb197-3" title="3"></a>
+<a class="sourceLine" id="cb197-4" title="4">cFilter<span class="op">$</span>estimates[<span class="dv">95</span><span class="op">:</span><span class="dv">100</span>,] <span class="co">## Last 5 iterations of parameter values</span></a></code></pre></div>
 <pre><code>##              [,1]     [,2]      [,3]
 ## [1,]  0.013306153 4.822613 -269.7837
 ## [2,] -0.013961938 4.857470 -271.4965
@@ -554,22 +558,22 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 ## [4,]  0.015598044 4.851961 -272.3889
 ## [5,] -0.005571944 4.842719 -272.6390
 ## [6,]  0.042982317 4.837347 -271.1800</code></pre>
-<div class="sourceCode" id="cb196"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb196-1" title="1">cFilter<span class="op">$</span>logLik[<span class="dv">90</span><span class="op">:</span><span class="dv">100</span>] <span class="co">## Last 5 iterations of log likelihood values</span></a></code></pre></div>
+<div class="sourceCode" id="cb199"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb199-1" title="1">cFilter<span class="op">$</span>logLik[<span class="dv">90</span><span class="op">:</span><span class="dv">100</span>] <span class="co">## Last 5 iterations of log likelihood values</span></a></code></pre></div>
 <pre><code>##  [1] -627.0497 -626.9570 -626.9856 -626.9954 -626.7448 -626.7521 -626.8472
 ##  [8] -626.7398 -626.9869 -627.1354 -626.6648</code></pre>
 <p>Comparing to use of the the Kalman Filter from the FKF package, we see the log-likelihood is fairly similar:</p>
-<div class="sourceCode" id="cb198"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb198-1" title="1">dtpred &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>, <span class="dt">ncol =</span> <span class="kw">length</span>(Nile))</a>
-<a class="sourceLine" id="cb198-2" title="2">dtpred[<span class="dv">28</span>] &lt;-<span class="st"> </span>est[<span class="dv">3</span>]</a>
-<a class="sourceLine" id="cb198-3" title="3">ct &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>)</a>
-<a class="sourceLine" id="cb198-4" title="4">Zt &lt;-<span class="st"> </span>Tt &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb198-5" title="5"></a>
-<a class="sourceLine" id="cb198-6" title="6">fkfResult &lt;-<span class="st"> </span><span class="kw">fkf</span>(<span class="dt">HHt =</span> <span class="kw">matrix</span>(<span class="kw">exp</span>(<span class="dv">2</span><span class="op">*</span>est[<span class="dv">1</span>])),</a>
-<a class="sourceLine" id="cb198-7" title="7">                 <span class="dt">GGt =</span> <span class="kw">matrix</span>(<span class="kw">exp</span>(<span class="dv">2</span><span class="op">*</span>est[<span class="dv">2</span>])),</a>
-<a class="sourceLine" id="cb198-8" title="8">                 <span class="dt">yt =</span> <span class="kw">rbind</span>(Nile),</a>
-<a class="sourceLine" id="cb198-9" title="9">                 <span class="dt">a0 =</span> <span class="dv">1120</span>,</a>
-<a class="sourceLine" id="cb198-10" title="10">                 <span class="dt">P0 =</span> <span class="kw">matrix</span>(<span class="dv">100</span>),</a>
-<a class="sourceLine" id="cb198-11" title="11">                 <span class="dt">dt =</span> dtpred, <span class="dt">ct =</span> ct, <span class="dt">Zt =</span> Zt, <span class="dt">Tt =</span> Tt)</a>
-<a class="sourceLine" id="cb198-12" title="12">fkfResult<span class="op">$</span>logLik</a></code></pre></div>
+<div class="sourceCode" id="cb201"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb201-1" title="1">dtpred &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>, <span class="dt">ncol =</span> <span class="kw">length</span>(Nile))</a>
+<a class="sourceLine" id="cb201-2" title="2">dtpred[<span class="dv">28</span>] &lt;-<span class="st"> </span>est[<span class="dv">3</span>]</a>
+<a class="sourceLine" id="cb201-3" title="3">ct &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>)</a>
+<a class="sourceLine" id="cb201-4" title="4">Zt &lt;-<span class="st"> </span>Tt &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb201-5" title="5"></a>
+<a class="sourceLine" id="cb201-6" title="6">fkfResult &lt;-<span class="st"> </span><span class="kw">fkf</span>(<span class="dt">HHt =</span> <span class="kw">matrix</span>(<span class="kw">exp</span>(<span class="dv">2</span><span class="op">*</span>est[<span class="dv">1</span>])),</a>
+<a class="sourceLine" id="cb201-7" title="7">                 <span class="dt">GGt =</span> <span class="kw">matrix</span>(<span class="kw">exp</span>(<span class="dv">2</span><span class="op">*</span>est[<span class="dv">2</span>])),</a>
+<a class="sourceLine" id="cb201-8" title="8">                 <span class="dt">yt =</span> <span class="kw">rbind</span>(Nile),</a>
+<a class="sourceLine" id="cb201-9" title="9">                 <span class="dt">a0 =</span> <span class="dv">1120</span>,</a>
+<a class="sourceLine" id="cb201-10" title="10">                 <span class="dt">P0 =</span> <span class="kw">matrix</span>(<span class="dv">100</span>),</a>
+<a class="sourceLine" id="cb201-11" title="11">                 <span class="dt">dt =</span> dtpred, <span class="dt">ct =</span> ct, <span class="dt">Zt =</span> Zt, <span class="dt">Tt =</span> Tt)</a>
+<a class="sourceLine" id="cb201-12" title="12">fkfResult<span class="op">$</span>logLik</a></code></pre></div>
 <pre><code>## [1] -626.5521</code></pre>
 </div>
 </div>
@@ -604,12 +608,12 @@ use in the particle filter. See <code>help(samplers)</code> for details. The
 MCMC configuration for the <code>timeModel</code> in the previous section will
 serve as an example for the use of our PMCMC sampler. Here we use the
 identity matrix as our proposal covariance matrix.</p>
-<div class="sourceCode" id="cb200"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb200-1" title="1">timeConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(rTimeModel)   <span class="co"># default MCMC configuration</span></a>
-<a class="sourceLine" id="cb200-2" title="2"></a>
-<a class="sourceLine" id="cb200-3" title="3"><span class="co"># Add random walk PMCMC sampler with particle number optimization.</span></a>
-<a class="sourceLine" id="cb200-4" title="4">timeConf<span class="op">$</span><span class="kw">addSampler</span>(<span class="dt">target =</span> <span class="kw">c</span>(<span class="st">&quot;a&quot;</span>, <span class="st">&quot;b&quot;</span>, <span class="st">&quot;c&quot;</span>, <span class="st">&quot;mu_0&quot;</span>), <span class="dt">type =</span> <span class="st">&quot;RW_PF_block&quot;</span>,</a>
-<a class="sourceLine" id="cb200-5" title="5">                    <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">propCov=</span> <span class="kw">diag</span>(<span class="dv">4</span>), <span class="dt">adaptScaleOnly =</span> <span class="ot">FALSE</span>,</a>
-<a class="sourceLine" id="cb200-6" title="6">                                 <span class="dt">latents =</span> <span class="st">&quot;x&quot;</span>, <span class="dt">pfOptimizeNparticles =</span> <span class="ot">TRUE</span>))</a></code></pre></div>
+<div class="sourceCode" id="cb203"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb203-1" title="1">timeConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(rTimeModel)   <span class="co"># default MCMC configuration</span></a>
+<a class="sourceLine" id="cb203-2" title="2"></a>
+<a class="sourceLine" id="cb203-3" title="3"><span class="co"># Add random walk PMCMC sampler with particle number optimization.</span></a>
+<a class="sourceLine" id="cb203-4" title="4">timeConf<span class="op">$</span><span class="kw">addSampler</span>(<span class="dt">target =</span> <span class="kw">c</span>(<span class="st">&quot;a&quot;</span>, <span class="st">&quot;b&quot;</span>, <span class="st">&quot;c&quot;</span>, <span class="st">&quot;mu_0&quot;</span>), <span class="dt">type =</span> <span class="st">&quot;RW_PF_block&quot;</span>,</a>
+<a class="sourceLine" id="cb203-5" title="5">                    <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">propCov=</span> <span class="kw">diag</span>(<span class="dv">4</span>), <span class="dt">adaptScaleOnly =</span> <span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb203-6" title="6">                                 <span class="dt">latents =</span> <span class="st">&quot;x&quot;</span>, <span class="dt">pfOptimizeNparticles =</span> <span class="ot">TRUE</span>))</a></code></pre></div>
 <p>The <code>type = "RW_PF"</code> and <code>type = "RW_PF*block"</code> samplers
 default to using a bootstrap filter. The adapatation control
 parameters <code>adaptive</code>, <code>adaptInterval</code>, and
@@ -673,18 +677,18 @@ the size of the changes in the likelihood between each iteration. Additionally, 
 <p>We will revisit the <em>pump</em> example to illustrate the use of
 NIMBLE’s MCEM algorithm.
 <!--- % newPump didn't exist so I'm creating it in some non-echoed code. --></p>
-<div class="sourceCode" id="cb201"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb201-1" title="1">pump &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(<span class="dt">code =</span> pumpCode, <span class="dt">name =</span> <span class="st">&quot;pump&quot;</span>, <span class="dt">constants =</span> pumpConsts,</a>
-<a class="sourceLine" id="cb201-2" title="2">                       <span class="dt">data =</span> pumpData, <span class="dt">inits =</span> pumpInits, <span class="dt">check =</span> <span class="ot">FALSE</span>)</a>
-<a class="sourceLine" id="cb201-3" title="3"></a>
-<a class="sourceLine" id="cb201-4" title="4"><span class="kw">compileNimble</span>(pump)</a>
-<a class="sourceLine" id="cb201-5" title="5"></a>
-<a class="sourceLine" id="cb201-6" title="6"><span class="co"># build an MCEM algorithm with ascent-based convergence criterion</span></a>
-<a class="sourceLine" id="cb201-7" title="7">pumpMCEM &lt;-<span class="st"> </span><span class="kw">buildMCEM</span>(<span class="dt">model =</span> pump,</a>
-<a class="sourceLine" id="cb201-8" title="8">                      <span class="dt">latentNodes =</span> <span class="st">&quot;theta&quot;</span>, <span class="dt">burnIn =</span> <span class="dv">300</span>,</a>
-<a class="sourceLine" id="cb201-9" title="9">                      <span class="dt">mcmcControl =</span> <span class="kw">list</span>(<span class="dt">adaptInterval =</span> <span class="dv">100</span>),</a>
-<a class="sourceLine" id="cb201-10" title="10">                      <span class="dt">boxConstraints =</span> <span class="kw">list</span>( <span class="kw">list</span>( <span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>), </a>
-<a class="sourceLine" id="cb201-11" title="11">                                                  <span class="dt">limits =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="ot">Inf</span>) ) ), </a>
-<a class="sourceLine" id="cb201-12" title="12">                      <span class="dt">buffer =</span> <span class="fl">1e-6</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb204"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb204-1" title="1">pump &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(<span class="dt">code =</span> pumpCode, <span class="dt">name =</span> <span class="st">&quot;pump&quot;</span>, <span class="dt">constants =</span> pumpConsts,</a>
+<a class="sourceLine" id="cb204-2" title="2">                       <span class="dt">data =</span> pumpData, <span class="dt">inits =</span> pumpInits, <span class="dt">check =</span> <span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb204-3" title="3"></a>
+<a class="sourceLine" id="cb204-4" title="4"><span class="kw">compileNimble</span>(pump)</a>
+<a class="sourceLine" id="cb204-5" title="5"></a>
+<a class="sourceLine" id="cb204-6" title="6"><span class="co"># build an MCEM algorithm with ascent-based convergence criterion</span></a>
+<a class="sourceLine" id="cb204-7" title="7">pumpMCEM &lt;-<span class="st"> </span><span class="kw">buildMCEM</span>(<span class="dt">model =</span> pump,</a>
+<a class="sourceLine" id="cb204-8" title="8">                      <span class="dt">latentNodes =</span> <span class="st">&quot;theta&quot;</span>, <span class="dt">burnIn =</span> <span class="dv">300</span>,</a>
+<a class="sourceLine" id="cb204-9" title="9">                      <span class="dt">mcmcControl =</span> <span class="kw">list</span>(<span class="dt">adaptInterval =</span> <span class="dv">100</span>),</a>
+<a class="sourceLine" id="cb204-10" title="10">                      <span class="dt">boxConstraints =</span> <span class="kw">list</span>( <span class="kw">list</span>( <span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>), </a>
+<a class="sourceLine" id="cb204-11" title="11">                                                  <span class="dt">limits =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="ot">Inf</span>) ) ), </a>
+<a class="sourceLine" id="cb204-12" title="12">                      <span class="dt">buffer =</span> <span class="fl">1e-6</span>)</a></code></pre></div>
 <p>The first argument <code>buildMCEM</code>, <code>model</code>, is a NIMBLE model, which can be
 either the uncompiled or compiled version. At the moment, the model provided cannot be part of another MCMC sampler.</p>
 <p>Initial values for the parameters are taken to be the values in the model at the time <code>buildMCEM</code> is called, unless the values in the compiled model are changed before running the MCEM.</p>
@@ -713,7 +717,7 @@ the second is the upper limit. Values of <code>Inf</code> and <code>-Inf</code> 
 non-finite values occurring when a parameter is on the boundary.</p>
 <p>In addition, the MCEM has some extra control options that can be used to further tune the convergence criterion. See <code>help(buildMCEM)</code> for more information.</p>
 <p>The <code>buildMCEM</code> function returns a list with two elements. The first element is a function called <code>run</code>, which will use the MCEM algorithm to estimate the MLEs. The second function is called <code>estimateCov</code>, and is described in Section <a href="cha-algos-provided.html#sec:estimate-mcem-cov">8.2.1</a>. The <code>run</code> function can be run as follows. There is only one run-time argument, <code>initM</code>, which is the number of MCMC iterations to use when the algorithm is initialized.</p>
-<div class="sourceCode" id="cb202"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb202-1" title="1">pumpMLE &lt;-<span class="st"> </span>pumpMCEM<span class="op">$</span><span class="kw">run</span>(<span class="dt">initM =</span> <span class="dv">1000</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb205"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb205-1" title="1">pumpMLE &lt;-<span class="st"> </span>pumpMCEM<span class="op">$</span><span class="kw">run</span>(<span class="dt">initM =</span> <span class="dv">1000</span>)</a></code></pre></div>
 <pre><code>## Iteration Number: 1.
 ## Current number of MCMC iterations: 1000.
 ## Parameter Estimates: 
@@ -742,20 +746,20 @@ non-finite values occurring when a parameter is on the boundary.</p>
 ##     alpha      beta 
 ## 0.8270797 1.2730042 
 ## Convergence Criterion: 0.0002820885.</code></pre>
-<div class="sourceCode" id="cb204"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb204-1" title="1">pumpMLE</a></code></pre></div>
+<div class="sourceCode" id="cb207"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb207-1" title="1">pumpMLE</a></code></pre></div>
 <pre><code>##     alpha      beta 
 ## 0.8270797 1.2730042</code></pre>
 <p>Direct maximization after analytically integrating over the latent nodes (possible for this model but often not feasible) gives estimates of <span class="math inline">\(\hat\alpha=0.823\)</span> and <span class="math inline">\(\hat\beta = 1.261\)</span>, so the MCEM seems to do pretty well, though tightening the convergence criteria may be warranted in actual usage.</p>
 <div id="sec:estimate-mcem-cov" class="section level3">
 <h3><span class="header-section-number">8.2.1</span> Estimating the asymptotic covariance From MCEM</h3>
 <p>The second element of the list returned by a call to <code>buildMCEM</code> is a function called <code>estimateCov</code>, which estimates the asymptotic covariance of the parameters at their MLE values. If the <code>run</code> function has been called previously, the <code>estimateCov</code> function will automatically use the MLE values produced by the <code>run</code> function to estimate the covariance. Alternatively, a user can supply their own MLE values using the <code>MLEs</code> argument, which allows the covariance to be estimated without having called the <code>run</code> function. More details about the <code>estimateCov</code> function can be found by calling <code>help(buildMCEM)</code>. Below is an example of using the <code>estimateCov</code> function.</p>
-<div class="sourceCode" id="cb206"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb206-1" title="1">pumpCov &lt;-<span class="st"> </span>pumpMCEM<span class="op">$</span><span class="kw">estimateCov</span>()</a>
-<a class="sourceLine" id="cb206-2" title="2">pumpCov</a></code></pre></div>
+<div class="sourceCode" id="cb209"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb209-1" title="1">pumpCov &lt;-<span class="st"> </span>pumpMCEM<span class="op">$</span><span class="kw">estimateCov</span>()</a>
+<a class="sourceLine" id="cb209-2" title="2">pumpCov</a></code></pre></div>
 <pre><code>##           alpha      beta
 ## alpha 0.1283888 0.2180972
 ## beta  0.2180972 0.6377524</code></pre>
-<div class="sourceCode" id="cb208"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb208-1" title="1"><span class="co"># Alternatively, you can manually specify the MLE values as a named vector.</span></a>
-<a class="sourceLine" id="cb208-2" title="2">pumpCov &lt;-<span class="st"> </span>pumpMCEM<span class="op">$</span><span class="kw">estimateCov</span>(<span class="dt">MLEs =</span> <span class="kw">c</span>(<span class="dt">alpha =</span> <span class="fl">0.823</span>, <span class="dt">beta =</span> <span class="fl">1.261</span>))</a></code></pre></div>
+<div class="sourceCode" id="cb211"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb211-1" title="1"><span class="co"># Alternatively, you can manually specify the MLE values as a named vector.</span></a>
+<a class="sourceLine" id="cb211-2" title="2">pumpCov &lt;-<span class="st"> </span>pumpMCEM<span class="op">$</span><span class="kw">estimateCov</span>(<span class="dt">MLEs =</span> <span class="kw">c</span>(<span class="dt">alpha =</span> <span class="fl">0.823</span>, <span class="dt">beta =</span> <span class="fl">1.261</span>))</a></code></pre></div>
 
 <!--- % See http://yihui.name/knitr/demo/child/ for documentation on the parent/child document system of knitr -->
 <!---  
@@ -793,6 +797,7 @@ gitbook.start({
 "weibo": false,
 "instapaper": false,
 "vk": false,
+"whatsapp": false,
 "all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
 },
 "fontsettings": {

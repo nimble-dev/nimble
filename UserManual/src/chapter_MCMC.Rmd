@@ -174,7 +174,7 @@ The default sampler assigned to a stochastic node is determined by the following
   1. If the node has a conjugate relationship between its prior distribution and the distributions of its stochastic dependents, a `conjugate` (`Gibbs') sampler is assigned.
   1. If the node follows a multinomial distribution, then a `RW_multinomial` sampler is assigned.  This is a discrete random-walk sampler in the space of multinomial outcomes.
   1. If a node follows a Dirichlet distribution, then a `RW_dirichlet` sampler is assigned.  This is a random walk sampler in the space of the simplex defined by the Dirichlet.
-  1. If a node follows an LKJ correlation distribution, then a `RW_block_lkj_corr_cholesky` sampler is assigned. This is a block random walk sampler in a transformed space where the transformation uses the signed stickbreaking approach described in Section 10.12 of [@Stan_2021].
+  1. If a node follows an LKJ correlation distribution, then a `RW_block_lkj_corr_cholesky` sampler is assigned. This is a block random walk sampler in a transformed space where the transformation uses the signed stickbreaking approach described in Section 10.12 of [@Stan_Lang_2021].
   1. If the node follows any other multivariate distribution, then a `RW_block` sampler is assigned for all elements.  This is a Metropolis-Hastings adaptive random-walk sampler with a multivariate normal proposal [@Roberts_Sahu_1997].
   1. If the node is binary-valued (strictly taking values 0 or 1), then a `binary` sampler is assigned.  This sampler calculates the conditional probability for both possible node values and draws the new node value from the conditional distribution, in effect making a Gibbs sampler.
   1. If the node is otherwise discrete-valued, then a `slice` sampler is assigned [@Neal2003].
@@ -641,20 +641,15 @@ Obtaining samples as matrices or lists is most common, but see Section \@ref(sec
 
 ## Calculating WAIC {#sec:WAIC}
 
-The WAIC [@Watanabe_2010] can be calculated from the posterior samples produced during the MCMC algorithm. Users have two options to calculate WAIC. The main approach requires enabling WAIC when setting up the MCMC and allows access to a variety of ways to calculate WAIC. This approach does not require that any specific monitors be set^[Prior to version 0.12.0, NIMBLE required specific monitors, because WAIC was calculated at the end of the MCMC using the entire set of MCMC samples] because the WAIC is calculated in an online manner, accumulating the necessary quantities to calculate WAIC as the MCMC is run.
+The WAIC [@Watanabe_2010] can be calculated from the posterior samples produced during the MCMC algorithm. Users have two options to calculate WAIC. The main approach requires enabling WAIC when setting up the MCMC and allows access to a variety of ways to calculate WAIC. This approach does not require that any specific monitors be set^[Prior to version 0.12.0, NIMBLE required specific monitors, because WAIC was calculated at the end of the MCMC using the entire set of MCMC samples.] because the WAIC is calculated in an online manner, accumulating the necessary quantities to calculate WAIC as the MCMC is run.
 
 The second approach allows one to calculate the WAIC after an MCMC has been run using an MCMC object or matrix (or dataframe) containing the posterior samples, but it requires the user to have correctly specified the monitored variables and only provides the default way to calculate WAIC.
 
-Here we first discuss the main approach and then close the section by showing the second approach.
+Here we first discuss the main approach and then close the section by showing the second approach. Specific details of the syntax are provided in `help(waic)`.
 
 To enable WAIC for the first approach, the argument `enableWAIC = TRUE` must be supplied to `configureMCMC` (or to `buildMCMC` if not using `configureWAIC`), or the `MCMCenableWAIC` NIMBLE option must have been set to `TRUE`.
 
 The WAIC (as well as the pWAIC and lppd values) is extracted by the member method `mcmc$getWAIC` (see `help(waic)` in R for more details) or is available as the `WAIC` element of the `runMCMC` or `nimbleMCMC` output lists. One can use the member method `mcmc$getWAICdetails` for additional quantities related to WAIC that are discussed below.
-
-
-```{r, eval=FALSE}
-Cmcmc$getWAIC()
-Cmcmc$getWAICdetails()
 ```
 
 Note that there is not a unique value of WAIC for a model. WAIC is calculated from

@@ -4,22 +4,22 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Chapter 9 Spatial models | NimbleUserManual.utf8</title>
+  <title>Chapter 9 Spatial models | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.19 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="Chapter 9 Spatial models | NimbleUserManual.utf8" />
+  <meta property="og:title" content="Chapter 9 Spatial models | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
   
-  <meta property="og:image" content="nimble-icon.png" />
+  <meta property="og:image" content="/nimble-icon.png" />
   <meta property="og:description" content="This is the NIMBLE User Manual." />
   <meta name="github-repo" content="nimble-dev/nimble" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Chapter 9 Spatial models | NimbleUserManual.utf8" />
+  <meta name="twitter:title" content="Chapter 9 Spatial models | NimbleUserManual.knit" />
   
   <meta name="twitter:description" content="This is the NIMBLE User Manual." />
-  <meta name="twitter:image" content="nimble-icon.png" />
+  <meta name="twitter:image" content="/nimble-icon.png" />
 
 
 
@@ -48,6 +48,8 @@
 
 
 
+<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
 
 
 <style type="text/css">
@@ -113,6 +115,7 @@ code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
+
 <link rel="stylesheet" href="style.css" type="text/css" />
 </head>
 
@@ -128,7 +131,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.11.1</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.12.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -212,8 +215,9 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="7.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:build-compile-mcmc"><i class="fa fa-check"></i><b>7.3</b> Building and compiling the MCMC</a></li>
 <li class="chapter" data-level="7.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:runMCMC"><i class="fa fa-check"></i><b>7.4</b> User-friendly execution of MCMC algorithms: <em>runMCMC</em></a></li>
 <li class="chapter" data-level="7.5" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:executing-the-mcmc-algorithm"><i class="fa fa-check"></i><b>7.5</b> Running the MCMC</a><ul>
-<li class="chapter" data-level="7.5.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:sampler-time"><i class="fa fa-check"></i><b>7.5.1</b> Measuring sampler computation times: <em>getTimes</em></a></li>
-<li class="chapter" data-level="7.5.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#assessing-the-adaption-process-of-rw-and-rw_block-samplers"><i class="fa fa-check"></i><b>7.5.2</b> Assessing the adaption process of <em>RW</em> and <em>RW_block</em> samplers</a></li>
+<li class="chapter" data-level="7.5.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-rerun"><i class="fa fa-check"></i><b>7.5.1</b> Rerunning versus restarting an MCMC</a></li>
+<li class="chapter" data-level="7.5.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:sampler-time"><i class="fa fa-check"></i><b>7.5.2</b> Measuring sampler computation times: <em>getTimes</em></a></li>
+<li class="chapter" data-level="7.5.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#assessing-the-adaption-process-of-rw-and-rw_block-samplers"><i class="fa fa-check"></i><b>7.5.3</b> Assessing the adaption process of <em>RW</em> and <em>RW_block</em> samplers</a></li>
 </ul></li>
 <li class="chapter" data-level="7.6" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:extracting-samples"><i class="fa fa-check"></i><b>7.6</b> Extracting MCMC samples</a></li>
 <li class="chapter" data-level="7.7" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:WAIC"><i class="fa fa-check"></i><b>7.7</b> Calculating WAIC</a></li>
@@ -421,23 +425,23 @@ compatibility with existing WinBUGS code. NIMBLE also provides the WinBUGS name 
 <h3><span class="header-section-number">9.1.2</span> Example</h3>
 <p>Here we provide an example model using the intrinsic Gaussian <code>dcar_normal</code> distribution. The CAR process values are used in a spatially-dependent Poisson regression.</p>
 <p>To mimic the behavior of WinBUGS, we specify <code>zero_mean = 1</code> to enforce a zero-mean constraint on the CAR process, and therefore include a separate intercept term <code>alpha</code> in the model. Note that we do not necessarily recommend imposing this constraint, per the discussion earlier in this chapter.</p>
-<div class="sourceCode" id="cb209"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb209-1" title="1">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
-<a class="sourceLine" id="cb209-2" title="2">    alpha <span class="op">~</span><span class="st"> </span><span class="kw">dflat</span>()</a>
-<a class="sourceLine" id="cb209-3" title="3">    beta <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)</a>
-<a class="sourceLine" id="cb209-4" title="4">    tau <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)</a>
-<a class="sourceLine" id="cb209-5" title="5">    s[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dcar_normal</span>(adj[<span class="dv">1</span><span class="op">:</span>L], weights[<span class="dv">1</span><span class="op">:</span>L], num[<span class="dv">1</span><span class="op">:</span>N], tau, <span class="dt">zero_mean =</span> <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb209-6" title="6">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {</a>
-<a class="sourceLine" id="cb209-7" title="7">        <span class="kw">log</span>(lambda[i]) &lt;-<span class="st"> </span>alpha <span class="op">+</span><span class="st"> </span>beta<span class="op">*</span>x[i] <span class="op">+</span><span class="st"> </span>s[i]</a>
-<a class="sourceLine" id="cb209-8" title="8">        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dpois</span>(lambda[i])</a>
-<a class="sourceLine" id="cb209-9" title="9">    }</a>
-<a class="sourceLine" id="cb209-10" title="10">})</a>
-<a class="sourceLine" id="cb209-11" title="11"></a>
-<a class="sourceLine" id="cb209-12" title="12">L &lt;-<span class="st"> </span><span class="dv">8</span></a>
-<a class="sourceLine" id="cb209-13" title="13">constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">4</span>, <span class="dt">L =</span> L, <span class="dt">num =</span> <span class="kw">c</span>(<span class="dv">3</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">1</span>), <span class="dt">weights =</span> <span class="kw">rep</span>(<span class="dv">1</span>, L),</a>
-<a class="sourceLine" id="cb209-14" title="14">                  <span class="dt">adj =</span> <span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">1</span>), <span class="dt">x =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">8</span>))</a>
-<a class="sourceLine" id="cb209-15" title="15">data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">c</span>(<span class="dv">6</span>, <span class="dv">9</span>, <span class="dv">7</span>, <span class="dv">12</span>))</a>
-<a class="sourceLine" id="cb209-16" title="16">inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">alpha =</span> <span class="dv">0</span>, <span class="dt">beta =</span> <span class="dv">0</span>, <span class="dt">tau =</span> <span class="dv">1</span>, <span class="dt">s =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>))</a>
-<a class="sourceLine" id="cb209-17" title="17">Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</a></code></pre></div>
+<div class="sourceCode" id="cb212"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb212-1" title="1">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb212-2" title="2">    alpha <span class="op">~</span><span class="st"> </span><span class="kw">dflat</span>()</a>
+<a class="sourceLine" id="cb212-3" title="3">    beta <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)</a>
+<a class="sourceLine" id="cb212-4" title="4">    tau <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)</a>
+<a class="sourceLine" id="cb212-5" title="5">    s[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dcar_normal</span>(adj[<span class="dv">1</span><span class="op">:</span>L], weights[<span class="dv">1</span><span class="op">:</span>L], num[<span class="dv">1</span><span class="op">:</span>N], tau, <span class="dt">zero_mean =</span> <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb212-6" title="6">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {</a>
+<a class="sourceLine" id="cb212-7" title="7">        <span class="kw">log</span>(lambda[i]) &lt;-<span class="st"> </span>alpha <span class="op">+</span><span class="st"> </span>beta<span class="op">*</span>x[i] <span class="op">+</span><span class="st"> </span>s[i]</a>
+<a class="sourceLine" id="cb212-8" title="8">        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dpois</span>(lambda[i])</a>
+<a class="sourceLine" id="cb212-9" title="9">    }</a>
+<a class="sourceLine" id="cb212-10" title="10">})</a>
+<a class="sourceLine" id="cb212-11" title="11"></a>
+<a class="sourceLine" id="cb212-12" title="12">L &lt;-<span class="st"> </span><span class="dv">8</span></a>
+<a class="sourceLine" id="cb212-13" title="13">constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">4</span>, <span class="dt">L =</span> L, <span class="dt">num =</span> <span class="kw">c</span>(<span class="dv">3</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">1</span>), <span class="dt">weights =</span> <span class="kw">rep</span>(<span class="dv">1</span>, L),</a>
+<a class="sourceLine" id="cb212-14" title="14">                  <span class="dt">adj =</span> <span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">1</span>), <span class="dt">x =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">8</span>))</a>
+<a class="sourceLine" id="cb212-15" title="15">data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">c</span>(<span class="dv">6</span>, <span class="dv">9</span>, <span class="dv">7</span>, <span class="dv">12</span>))</a>
+<a class="sourceLine" id="cb212-16" title="16">inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">alpha =</span> <span class="dv">0</span>, <span class="dt">beta =</span> <span class="dv">0</span>, <span class="dt">tau =</span> <span class="dv">1</span>, <span class="dt">s =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>))</a>
+<a class="sourceLine" id="cb212-17" title="17">Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</a></code></pre></div>
 <p>The resulting model may be carried through to MCMC sampling.
 NIMBLE will assign a specialized sampler to the update the elements of the CAR process.
 See Chapter <a href="cha-mcmc.html#cha:mcmc">7</a> for information about NIMBLE’s MCMC engine, and Section
@@ -477,52 +481,52 @@ compatibility with existing WinBUGS code. NIMBLE also provides the WinBUGS name 
 <p><span class="math display">\[p(x | \mu, C, M, \tau, \gamma) \sim \text{MVN} \left( \mu, \; \tfrac{1}{\tau} (I-\gamma C)^{-1} M \right)\]</span></p>
 <p>where the multivariate normal distribution is parameterized in terms of covariance.</p>
 <p>For the purposes of MCMC sampling the individual CAR process values, the resulting conditional prior of region <span class="math inline">\(i\)</span> is:</p>
-<p><span class="math display">\[p(x_i | x_{-i}, \mu, C, M, \tau, \gamma) \sim \text{N} \left( \mu_i + \textstyle\sum_{j \in \mathcal{N}_i } \gamma \, C_{ij} \, (x_j - \mu_i),  \; \tfrac{M_{ii}}{\tau} \right)\]</span></p>
+<p><span class="math display">\[p(x_i | x_{-i}, \mu, C, M, \tau, \gamma) \sim \text{N} \left( \mu_i + \textstyle\sum_{j \in \mathcal{N}_i } \gamma \, C_{ij} \, (x_j - \mu_j),  \; \tfrac{M_{ii}}{\tau} \right)\]</span></p>
 <p>where <span class="math inline">\(x_{-i}\)</span> represents all elements of <span class="math inline">\(x\)</span> except <span class="math inline">\(x_{i}\)</span>, the neighborhood <span class="math inline">\(\mathcal{N}_i\)</span> of region <span class="math inline">\(i\)</span> is the set of all <span class="math inline">\(j\)</span> for which region <span class="math inline">\(j\)</span> is a neighbor of region <span class="math inline">\(i\)</span>, and the Normal distribution is parameterized in terms of variance.</p>
 </div>
 </div>
 <div id="example-1" class="section level3">
 <h3><span class="header-section-number">9.2.2</span> Example</h3>
 <p>We provide two example models using the proper Gaussian <code>dcar_proper</code> distribution. In both, the CAR process values are used in a spatially-dependent logistic regression to model binary presence/absence data. In the first example, the <code>C</code> and <code>M</code> parameters are omitted, which uses weights equal to one for all neighbor relationships. In the second example, symmetric unnormalized weights are specified, and <code>as.carCM</code> is used to construct the <code>C</code> and <code>M</code> parameters to the <code>dcar_proper</code> distribution.</p>
-<div class="sourceCode" id="cb210"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb210-1" title="1"><span class="co"># omitting C and M sets all non-zero weights to one</span></a>
-<a class="sourceLine" id="cb210-2" title="2">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
-<a class="sourceLine" id="cb210-3" title="3">    mu0 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)</a>
-<a class="sourceLine" id="cb210-4" title="4">    tau <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)</a>
-<a class="sourceLine" id="cb210-5" title="5">    gamma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb210-6" title="6">    s[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dcar_proper</span>(mu[<span class="dv">1</span><span class="op">:</span>N], <span class="dt">adj=</span>adj[<span class="dv">1</span><span class="op">:</span>L], <span class="dt">num=</span>num[<span class="dv">1</span><span class="op">:</span>N], <span class="dt">tau=</span>tau, </a>
-<a class="sourceLine" id="cb210-7" title="7">                         <span class="dt">gamma=</span>gamma)</a>
-<a class="sourceLine" id="cb210-8" title="8">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {</a>
-<a class="sourceLine" id="cb210-9" title="9">        mu[i] &lt;-<span class="st"> </span>mu0</a>
-<a class="sourceLine" id="cb210-10" title="10">        <span class="kw">logit</span>(p[i]) &lt;-<span class="st"> </span>s[i]</a>
-<a class="sourceLine" id="cb210-11" title="11">        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dbern</span>(p[i])</a>
-<a class="sourceLine" id="cb210-12" title="12">    }</a>
-<a class="sourceLine" id="cb210-13" title="13">})</a>
-<a class="sourceLine" id="cb210-14" title="14"></a>
-<a class="sourceLine" id="cb210-15" title="15">adj &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">2</span>, <span class="dv">4</span>, <span class="dv">3</span>)</a>
-<a class="sourceLine" id="cb210-16" title="16">num &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb210-17" title="17">constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">adj =</span> adj, <span class="dt">num =</span> num, <span class="dt">N =</span> <span class="dv">4</span>, <span class="dt">L =</span> <span class="dv">6</span>)</a>
-<a class="sourceLine" id="cb210-18" title="18">data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>))</a>
-<a class="sourceLine" id="cb210-19" title="19">inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">mu0 =</span> <span class="dv">0</span>, <span class="dt">tau =</span> <span class="dv">1</span>, <span class="dt">gamma =</span> <span class="dv">0</span>, <span class="dt">s =</span> <span class="kw">rep</span>(<span class="dv">0</span>, <span class="dv">4</span>))</a>
-<a class="sourceLine" id="cb210-20" title="20">Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</a>
-<a class="sourceLine" id="cb210-21" title="21"></a>
-<a class="sourceLine" id="cb210-22" title="22"><span class="co"># specify symmetric unnormalized weights, use as.carCM to generate C and M</span></a>
-<a class="sourceLine" id="cb210-23" title="23">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
-<a class="sourceLine" id="cb210-24" title="24">    mu0 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)</a>
-<a class="sourceLine" id="cb210-25" title="25">    tau <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)</a>
-<a class="sourceLine" id="cb210-26" title="26">    gamma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb210-27" title="27">    s[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dcar_proper</span>(mu[<span class="dv">1</span><span class="op">:</span>N], C[<span class="dv">1</span><span class="op">:</span>L], adj[<span class="dv">1</span><span class="op">:</span>L], num[<span class="dv">1</span><span class="op">:</span>N], M[<span class="dv">1</span><span class="op">:</span>N], tau, </a>
-<a class="sourceLine" id="cb210-28" title="28">                         gamma)</a>
-<a class="sourceLine" id="cb210-29" title="29">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {</a>
-<a class="sourceLine" id="cb210-30" title="30">        mu[i] &lt;-<span class="st"> </span>mu0</a>
-<a class="sourceLine" id="cb210-31" title="31">        <span class="kw">logit</span>(p[i]) &lt;-<span class="st"> </span>s[i]</a>
-<a class="sourceLine" id="cb210-32" title="32">        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dbern</span>(p[i])</a>
-<a class="sourceLine" id="cb210-33" title="33">    }</a>
-<a class="sourceLine" id="cb210-34" title="34">})</a>
-<a class="sourceLine" id="cb210-35" title="35"></a>
-<a class="sourceLine" id="cb210-36" title="36">weights &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">4</span>)</a>
-<a class="sourceLine" id="cb210-37" title="37">CM &lt;-<span class="st"> </span><span class="kw">as.carCM</span>(adj, weights, num)</a>
-<a class="sourceLine" id="cb210-38" title="38">constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">C =</span> CM<span class="op">$</span>C, <span class="dt">adj =</span> adj, <span class="dt">num =</span> num, <span class="dt">M =</span> CM<span class="op">$</span>M, <span class="dt">N =</span> <span class="dv">4</span>, <span class="dt">L =</span> <span class="dv">6</span>)</a>
-<a class="sourceLine" id="cb210-39" title="39">Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</a></code></pre></div>
+<div class="sourceCode" id="cb213"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb213-1" title="1"><span class="co"># omitting C and M sets all non-zero weights to one</span></a>
+<a class="sourceLine" id="cb213-2" title="2">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb213-3" title="3">    mu0 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)</a>
+<a class="sourceLine" id="cb213-4" title="4">    tau <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)</a>
+<a class="sourceLine" id="cb213-5" title="5">    gamma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb213-6" title="6">    s[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dcar_proper</span>(mu[<span class="dv">1</span><span class="op">:</span>N], <span class="dt">adj=</span>adj[<span class="dv">1</span><span class="op">:</span>L], <span class="dt">num=</span>num[<span class="dv">1</span><span class="op">:</span>N], <span class="dt">tau=</span>tau, </a>
+<a class="sourceLine" id="cb213-7" title="7">                         <span class="dt">gamma=</span>gamma)</a>
+<a class="sourceLine" id="cb213-8" title="8">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {</a>
+<a class="sourceLine" id="cb213-9" title="9">        mu[i] &lt;-<span class="st"> </span>mu0</a>
+<a class="sourceLine" id="cb213-10" title="10">        <span class="kw">logit</span>(p[i]) &lt;-<span class="st"> </span>s[i]</a>
+<a class="sourceLine" id="cb213-11" title="11">        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dbern</span>(p[i])</a>
+<a class="sourceLine" id="cb213-12" title="12">    }</a>
+<a class="sourceLine" id="cb213-13" title="13">})</a>
+<a class="sourceLine" id="cb213-14" title="14"></a>
+<a class="sourceLine" id="cb213-15" title="15">adj &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">2</span>, <span class="dv">4</span>, <span class="dv">3</span>)</a>
+<a class="sourceLine" id="cb213-16" title="16">num &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb213-17" title="17">constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">adj =</span> adj, <span class="dt">num =</span> num, <span class="dt">N =</span> <span class="dv">4</span>, <span class="dt">L =</span> <span class="dv">6</span>)</a>
+<a class="sourceLine" id="cb213-18" title="18">data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>))</a>
+<a class="sourceLine" id="cb213-19" title="19">inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">mu0 =</span> <span class="dv">0</span>, <span class="dt">tau =</span> <span class="dv">1</span>, <span class="dt">gamma =</span> <span class="dv">0</span>, <span class="dt">s =</span> <span class="kw">rep</span>(<span class="dv">0</span>, <span class="dv">4</span>))</a>
+<a class="sourceLine" id="cb213-20" title="20">Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</a>
+<a class="sourceLine" id="cb213-21" title="21"></a>
+<a class="sourceLine" id="cb213-22" title="22"><span class="co"># specify symmetric unnormalized weights, use as.carCM to generate C and M</span></a>
+<a class="sourceLine" id="cb213-23" title="23">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb213-24" title="24">    mu0 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)</a>
+<a class="sourceLine" id="cb213-25" title="25">    tau <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)</a>
+<a class="sourceLine" id="cb213-26" title="26">    gamma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb213-27" title="27">    s[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dcar_proper</span>(mu[<span class="dv">1</span><span class="op">:</span>N], C[<span class="dv">1</span><span class="op">:</span>L], adj[<span class="dv">1</span><span class="op">:</span>L], num[<span class="dv">1</span><span class="op">:</span>N], M[<span class="dv">1</span><span class="op">:</span>N], tau, </a>
+<a class="sourceLine" id="cb213-28" title="28">                         gamma)</a>
+<a class="sourceLine" id="cb213-29" title="29">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {</a>
+<a class="sourceLine" id="cb213-30" title="30">        mu[i] &lt;-<span class="st"> </span>mu0</a>
+<a class="sourceLine" id="cb213-31" title="31">        <span class="kw">logit</span>(p[i]) &lt;-<span class="st"> </span>s[i]</a>
+<a class="sourceLine" id="cb213-32" title="32">        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dbern</span>(p[i])</a>
+<a class="sourceLine" id="cb213-33" title="33">    }</a>
+<a class="sourceLine" id="cb213-34" title="34">})</a>
+<a class="sourceLine" id="cb213-35" title="35"></a>
+<a class="sourceLine" id="cb213-36" title="36">weights &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">4</span>)</a>
+<a class="sourceLine" id="cb213-37" title="37">CM &lt;-<span class="st"> </span><span class="kw">as.carCM</span>(adj, weights, num)</a>
+<a class="sourceLine" id="cb213-38" title="38">constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">C =</span> CM<span class="op">$</span>C, <span class="dt">adj =</span> adj, <span class="dt">num =</span> num, <span class="dt">M =</span> CM<span class="op">$</span>M, <span class="dt">N =</span> <span class="dv">4</span>, <span class="dt">L =</span> <span class="dv">6</span>)</a>
+<a class="sourceLine" id="cb213-39" title="39">Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</a></code></pre></div>
 <p>Each of the resulting models may be carried through to MCMC sampling.
 NIMBLE will assign a specialized sampler to update the elements of the CAR process.
 See Chapter <a href="cha-mcmc.html#cha:mcmc">7</a> for information about NIMBLE’s MCMC engine, and Section
@@ -554,6 +558,7 @@ See Chapter <a href="cha-mcmc.html#cha:mcmc">7</a> for information about NIMBLE�
 </ol>
 <p>This behavior is different from that of WinBUGS, where the value of zero-neighbor regions of <code>car.normal</code> nodes is set to and fixed at zero.
 <!--- Regions with zero neighbors of a `dcar_proper` distribution, in contrast, have a well-defined conditional prior, undergo sampling the same as regions with neighbors, and do contribute to the density evaluation of the subsuming `dcar_proper` node. --></p>
+<p>Also note that for the <code>dcar_proper</code> distribution if any regions have zero neighbors the joint density of the process cannot be calculated. As a result one cannot do MCMC sampling of unknown parameters affecting the mean (<code>mu</code>) of the process, though one can instead use an uncentered parameterization in which the mean is added to the process rather than the process being centered on the mean. Or one could remove such regions from the process and model them separately.</p>
 </div>
 <div id="zero-mean-constraint" class="section level3">
 <h3><span class="header-section-number">9.3.3</span> Zero-mean constraint</h3>
@@ -596,6 +601,7 @@ gitbook.start({
 "weibo": false,
 "instapaper": false,
 "vk": false,
+"whatsapp": false,
 "all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
 },
 "fontsettings": {

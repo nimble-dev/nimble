@@ -4,22 +4,22 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Chapter 4 Installing NIMBLE | NimbleUserManual.utf8</title>
+  <title>Chapter 4 Installing NIMBLE | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.19 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="Chapter 4 Installing NIMBLE | NimbleUserManual.utf8" />
+  <meta property="og:title" content="Chapter 4 Installing NIMBLE | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
   
-  <meta property="og:image" content="nimble-icon.png" />
+  <meta property="og:image" content="/nimble-icon.png" />
   <meta property="og:description" content="This is the NIMBLE User Manual." />
   <meta name="github-repo" content="nimble-dev/nimble" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Chapter 4 Installing NIMBLE | NimbleUserManual.utf8" />
+  <meta name="twitter:title" content="Chapter 4 Installing NIMBLE | NimbleUserManual.knit" />
   
   <meta name="twitter:description" content="This is the NIMBLE User Manual." />
-  <meta name="twitter:image" content="nimble-icon.png" />
+  <meta name="twitter:image" content="/nimble-icon.png" />
 
 
 
@@ -48,6 +48,8 @@
 
 
 
+<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
 
 
 <style type="text/css">
@@ -113,6 +115,7 @@ code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
+
 <link rel="stylesheet" href="style.css" type="text/css" />
 </head>
 
@@ -128,7 +131,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.11.1</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.12.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -212,8 +215,9 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="7.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:build-compile-mcmc"><i class="fa fa-check"></i><b>7.3</b> Building and compiling the MCMC</a></li>
 <li class="chapter" data-level="7.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:runMCMC"><i class="fa fa-check"></i><b>7.4</b> User-friendly execution of MCMC algorithms: <em>runMCMC</em></a></li>
 <li class="chapter" data-level="7.5" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:executing-the-mcmc-algorithm"><i class="fa fa-check"></i><b>7.5</b> Running the MCMC</a><ul>
-<li class="chapter" data-level="7.5.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:sampler-time"><i class="fa fa-check"></i><b>7.5.1</b> Measuring sampler computation times: <em>getTimes</em></a></li>
-<li class="chapter" data-level="7.5.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#assessing-the-adaption-process-of-rw-and-rw_block-samplers"><i class="fa fa-check"></i><b>7.5.2</b> Assessing the adaption process of <em>RW</em> and <em>RW_block</em> samplers</a></li>
+<li class="chapter" data-level="7.5.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-rerun"><i class="fa fa-check"></i><b>7.5.1</b> Rerunning versus restarting an MCMC</a></li>
+<li class="chapter" data-level="7.5.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:sampler-time"><i class="fa fa-check"></i><b>7.5.2</b> Measuring sampler computation times: <em>getTimes</em></a></li>
+<li class="chapter" data-level="7.5.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#assessing-the-adaption-process-of-rw-and-rw_block-samplers"><i class="fa fa-check"></i><b>7.5.3</b> Assessing the adaption process of <em>RW</em> and <em>RW_block</em> samplers</a></li>
 </ul></li>
 <li class="chapter" data-level="7.6" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:extracting-samples"><i class="fa fa-check"></i><b>7.6</b> Extracting MCMC samples</a></li>
 <li class="chapter" data-level="7.7" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:WAIC"><i class="fa fa-check"></i><b>7.7</b> Calculating WAIC</a></li>
@@ -418,7 +422,7 @@ site</a> and the
 <p>On Linux, you can install the GNU compiler suite (<em>gcc</em>/<em>g++</em>).
 You can use the package manager to install pre-built binaries.
 On Ubuntu, the following command will install or update <em>make</em>, <em>gcc</em> and <em>libc</em>.</p>
-<div class="sourceCode" id="cb72"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb72-1" title="1"><span class="fu">sudo</span> apt-get install build-essential</a></code></pre></div>
+<div class="sourceCode" id="cb74"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb74-1" title="1"><span class="fu">sudo</span> apt-get install build-essential</a></code></pre></div>
 </div>
 <div id="windows" class="section level3">
 <h3><span class="header-section-number">4.2.3</span> Windows</h3>
@@ -456,10 +460,10 @@ but we want to hear about any and help resolve them.</p>
 <ul>
 <li>Be sure you have set <code>PATH</code> when installing Rtools (see instructions above in the Windows installation section). Alternatively, one can set the <code>PATH</code> manually using syntax similar to this (after changing <code>C:\\Rtools\\bin;C:\\Rtools\\mingw_64\\bin</code> to be appropriate for your system):</li>
 </ul>
-<div class="sourceCode" id="cb73"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb73-1" title="1">path &lt;-<span class="st"> </span><span class="kw">Sys.getenv</span>(<span class="st">&#39;PATH&#39;</span>)</a>
-<a class="sourceLine" id="cb73-2" title="2">newPath &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;C:</span><span class="ch">\\</span><span class="st">Rtools</span><span class="ch">\\</span><span class="st">bin;C:</span><span class="ch">\\</span><span class="st">Rtools</span><span class="ch">\\</span><span class="st">mingw_64</span><span class="ch">\\</span><span class="st">bin;&quot;</span>,</a>
-<a class="sourceLine" id="cb73-3" title="3">                 path, <span class="dt">sep =</span> <span class="st">&quot;&quot;</span>)</a>
-<a class="sourceLine" id="cb73-4" title="4"><span class="kw">Sys.setenv</span>(<span class="dt">PATH =</span> newPath) </a></code></pre></div>
+<div class="sourceCode" id="cb75"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb75-1" title="1">path &lt;-<span class="st"> </span><span class="kw">Sys.getenv</span>(<span class="st">&#39;PATH&#39;</span>)</a>
+<a class="sourceLine" id="cb75-2" title="2">newPath &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;C:</span><span class="ch">\\</span><span class="st">Rtools</span><span class="ch">\\</span><span class="st">bin;C:</span><span class="ch">\\</span><span class="st">Rtools</span><span class="ch">\\</span><span class="st">mingw_64</span><span class="ch">\\</span><span class="st">bin;&quot;</span>,</a>
+<a class="sourceLine" id="cb75-3" title="3">                 path, <span class="dt">sep =</span> <span class="st">&quot;&quot;</span>)</a>
+<a class="sourceLine" id="cb75-4" title="4"><span class="kw">Sys.setenv</span>(<span class="dt">PATH =</span> newPath) </a></code></pre></div>
 <ul>
 <li>Be sure the <code>Rtools.exe</code> version matches the R version.</li>
 <li>Try re-installing <code>Rtools</code> followed by re-installing NIMBLE.</li>
@@ -473,7 +477,7 @@ but we want to hear about any and help resolve them.</p>
 <li>Newly installed Xcode/command line tools may need to be started once manually to provide a one-time permission before they will work from NIMBLE.</li>
 <li>Upgrading your MacOS version may result in an error while installing or using NIMBLE. Please try running the following in the Terminal to reinstall Xcode/command line tools:</li>
 </ul>
-<div class="sourceCode" id="cb74"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb74-1" title="1"><span class="ex">xcode-select</span> --install</a></code></pre></div>
+<div class="sourceCode" id="cb76"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb76-1" title="1"><span class="ex">xcode-select</span> --install</a></code></pre></div>
 <ul>
 <li>If multiple C++ compilers are present on a system, be sure the <code>PATH</code> will find the right one.</li>
 </ul>
@@ -519,7 +523,7 @@ library - <em>libnimble.so</em>. This single instance of the library is then lin
 with the code for each generated model. In contrast, the default for Windows and MacOS
 is to compile the library code as a static library - <em>libnimble.a</em> - that is compiled into each model’s and each algorithm’s own dynamically loadable library (DLL). This does repeat the same code across models and so occupies more memory. There may be a marginal speed advantage.
 If one would like to enable the linkable library in place of the static library (do this only on MacOS and other UNIX variants and not on Windows), one can install the source package with the configuration argument <code>--enable-dylib</code> set to true. First obtain the NIMBLE source package (which will have the extension <code>.tar.gz</code> from <a href="https://r-nimble.org/download">our website</a> and then install as follows, replacing <code>VERSION</code> with the appropriate version number:</p>
-<div class="sourceCode" id="cb75"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb75-1" title="1"><span class="ex">R</span> CMD INSTALL --configure-args=<span class="st">&#39;--enable-dylib=true&#39;</span> nimble_VERSION.tar.gz</a></code></pre></div>
+<div class="sourceCode" id="cb77"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb77-1" title="1"><span class="ex">R</span> CMD INSTALL --configure-args=<span class="st">&#39;--enable-dylib=true&#39;</span> nimble_VERSION.tar.gz</a></code></pre></div>
 </div>
 <div id="sec:blas" class="section level3">
 <h3><span class="header-section-number">4.5.3</span> BLAS and LAPACK</h3>
@@ -599,6 +603,7 @@ gitbook.start({
 "weibo": false,
 "instapaper": false,
 "vk": false,
+"whatsapp": false,
 "all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
 },
 "fontsettings": {

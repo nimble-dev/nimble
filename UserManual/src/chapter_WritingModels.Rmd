@@ -293,7 +293,7 @@ prior or require proper (normalized) densities.
 ##### LKJ distribution for correlation matrices
 
 NIMBLE provides the LKJ distribution via `dlkj_corr_cholesky`
-for correlation matrices, discussed in Section 24 of [@Stan_Fun_2021] and based on
+for correlation matrices, discussed in Section 24 of [@Stan_Lang_Fun_2021] and based on
 [@Lewandowski_etal_2009]. This distribution has various advantages (both from a modeling perspective and an
 MCMC fitting perspective) over other prior distributions for correlation
 or covariance matrices such as the inverse Wishart distribution.
