@@ -14,8 +14,7 @@ the MCMC (PR #1136).
 matrices, including RW samplers executed on an unconstrained transformed
 parameter space, and assigned by default during MCMC configuration (issue #993).
 
--- Improve formatting of standard logging messages and add a check for
-constants provided by a user that are not used in the model (PR 1162).
+-- Improve formatting of standard logging messages (PR 1162).
 
 -- Check for negative indexes in nimbleFunction code and error out
 during compilation (PR #1166).
