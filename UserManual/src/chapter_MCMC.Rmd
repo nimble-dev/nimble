@@ -643,7 +643,7 @@ Obtaining samples as matrices or lists is most common, but see Section \@ref(sec
 
 The WAIC [@Watanabe_2010] can be calculated from the posterior samples produced during the MCMC algorithm. Users have two options to calculate WAIC. The main approach requires enabling WAIC when setting up the MCMC and allows access to a variety of ways to calculate WAIC. This approach does not require that any specific monitors be set^[Prior to version 0.12.0, NIMBLE required specific monitors, because WAIC was calculated at the end of the MCMC using the entire set of MCMC samples.] because the WAIC is calculated in an online manner, accumulating the necessary quantities to calculate WAIC as the MCMC is run.
 
-The second approach allows one to calculate the WAIC after an MCMC has been run using an MCMC object or matrix (or dataframe) containing the posterior samples, but it requires the user to have correctly specified the monitored variables and only provides the default way to calculate WAIC.
+The second approach allows one to calculate the WAIC after an MCMC has been run using an MCMC object or matrix (or dataframe) containing the posterior samples, but it requires the user to have correctly specified the monitored variables and only provides the default way to calculate WAIC. An advantage of the second approach is that one can specify additional burnin beyond that specified for the MCMC.
 
 Here we first discuss the main approach and then close the section by showing the second approach. Specific details of the syntax are provided in `help(waic)`.
 
@@ -674,6 +674,8 @@ samples <- runMCMC(Cmcmc, niter = 10000, nburnin = 1000)
 calculateWAIC(Cmcmc)
 ## Using calculateWAIC with a matrix of samples
 calculateWAIC(samples, model)
+## Specifying additional burnin, so only last 5000 (1000+4000) iterations used
+calculateWAIC(Cmcmc, burnin = 4000)
 ```
 
 This approach only provides conditional WAIC without any grouping of data nodes (though one can achieve grouping by grouping data nodes into multivariate nodes).

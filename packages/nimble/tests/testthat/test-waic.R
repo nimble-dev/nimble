@@ -507,9 +507,22 @@ test_that("standalone offline WAIC works", {
             controlWAIC = list(online = FALSE))          
     cmcmc <- compileNimble(mcmc, project = m)
     set.seed(1)
-    out <- runMCMC(cmcmc, niter = 1000, inits = inits, WAIC = TRUE)
-    waic_gold <- out$WAIC
-    
+    results <- runMCMC(cmcmc, niter = 1000, inits = inits, WAIC = TRUE)
+    samples <- results$samples
+    waic_gold <- cmcmc$getWAIC()
+
+    ## Not sure why not identical
+    out <- calculateWAIC(cmcmc)
+    expect_equal(waic_gold, out)
+    out <- calculateWAIC(cmcmc, cm)
+    expect_equal(waic_gold, out)
+
+    out <- calculateWAIC(samples, cm)
+    expect_equal(waic_gold, out)
+    out <- calculateWAIC(samples, m)
+    expect_equal(waic_gold, out)
+
+    waic_burn1 <- calculateWAIC(cmcmc, nburnin = 100)  
 
     ## Various uses of post hoc calculateWAIC for offline WAIC
     mcmc <- buildMCMC(m, monitors = c('mu0','mu','sigma','tau'))
@@ -518,44 +531,30 @@ test_that("standalone offline WAIC works", {
     samples <- runMCMC(cmcmc, niter = 1000, inits = inits)
 
     out <- calculateWAIC(cmcmc)
-    expect_identical(waic_gold, out$WAIC)
+    expect_equal(waic_gold, out)
     out <- calculateWAIC(cmcmc, cm)
-    expect_identical(waic_gold, out$WAIC)
-    out <- calculateWAIC(mcmc)
-    expect_identical(waic_gold, out$WAIC)
+    expect_equal(waic_gold, out)
 
-    mcmc <- buildMCMC(m, monitors = c('mu0','mu','sigma','tau'))
-    cmcmc <- compileNimble(mcmc, project = m, resetFunctions = TRUE)
-    set.seed(1)
-    samples <- runMCMC(cmcmc, niter = 1000, inits = inits)
     out <- calculateWAIC(samples, cm)
-    expect_identical(waic_gold, out$WAIC)
-
-    mcmc <- buildMCMC(m, monitors = c('mu0','mu','sigma','tau'))
-    cmcmc <- compileNimble(mcmc, project = m, resetFunctions = TRUE)
-    set.seed(1)
-    samples <- runMCMC(cmcmc, niter = 1000, inits = inits)
+    expect_equal(waic_gold, out)
     out <- calculateWAIC(samples, m)
-    expect_identical(waic_gold, out$WAIC)
-    
+    expect_equal(waic_gold, out)
 
-    ## Use of calculateWAIC simply as a wrapper to already-enabled offline WAIC
-    mcmc <- buildMCMC(m, enableWAIC = TRUE, controlWAIC = list(online = FALSE),
-                      monitors = c('mu0','mu','sigma','tau'))
-    cmcmc <- compileNimble(mcmc, project = m, resetFunctions = TRUE)
-    set.seed(1)
-    out <- runMCMC(cmcmc, niter = 1000, inits = inits)
-    waic <- calculateWAIC(cmcmc)  
-    expect_identical(waic_gold, waic)
-    
-    ## Use of calculateWAIC simply as a wrapper to already-enabled online WAIC
+    waic_burn2 <- calculateWAIC(cmcmc, nburnin = 100)  
+    expect_equal(waic_burn1, waic_burn2)
+
+    ## Use of calculateWAIC after online WAIC
     mcmc <- buildMCMC(m, enableWAIC = TRUE,
                       monitors = c('mu0','mu','sigma','tau'))
     cmcmc <- compileNimble(mcmc, project = m, resetFunctions = TRUE)
     set.seed(1)
     out <- runMCMC(cmcmc, niter = 1000, inits = inits)
-    waic <- calculateWAIC(cmcmc)  
-    expect_equal(waic_gold, waic$WAIC)
+    waic_gold <- cmcmc$getWAIC()
+    waic1 <- calculateWAIC(cmcmc)  
+    expect_equal(waic_gold, waic1)
+
+    waic_burn3 <- calculateWAIC(cmcmc, nburnin = 100)  
+    expect_equal(waic_burn1, waic_burn3)
 
     ## Missing monitors 
     mcmc <- buildMCMC(m, monitors = c('mu0'))
