@@ -540,8 +540,7 @@ test_that("standalone offline WAIC works", {
     out <- calculateWAIC(samples, m)
     expect_equal(waic_gold, out)
 
-    waic_burn2 <- calculateWAIC(cmcmc, nburnin = 100)  
-    expect_equal(waic_burn1, waic_burn2)
+    waic_burn2 <- calculateWAIC(cmcmc, nburnin = 100)
 
     ## Use of calculateWAIC after online WAIC
     mcmc <- buildMCMC(m, enableWAIC = TRUE,
@@ -549,12 +548,20 @@ test_that("standalone offline WAIC works", {
     cmcmc <- compileNimble(mcmc, project = m, resetFunctions = TRUE)
     set.seed(1)
     out <- runMCMC(cmcmc, niter = 1000, inits = inits)
-    waic_gold <- cmcmc$getWAIC()
+
     waic1 <- calculateWAIC(cmcmc)  
     expect_equal(waic_gold, waic1)
-
-    waic_burn3 <- calculateWAIC(cmcmc, nburnin = 100)  
-    expect_equal(waic_burn1, waic_burn3)
+    waic_burn3 <- calculateWAIC(cmcmc, nburnin = 100)
+    
+    mcmc <- buildMCMC(m, monitors = c('mu0','mu','sigma','tau'), enableWAIC = TRUE)
+    cmcmc <- compileNimble(mcmc, project = m, resetFunctions = TRUE)
+    set.seed(1)
+    out <- runMCMC(cmcmc, niter = 1000, nburnin = 100, inits = inits, WAIC = TRUE)
+    waic_burn_gold <- out$WAIC
+    
+    expect_equal(waic_burn_gold, waic_burn1)
+    expect_equal(waic_burn_gold, waic_burn2)
+    expect_equal(waic_burn_gold, waic_burn3)
 
     ## Missing monitors 
     mcmc <- buildMCMC(m, monitors = c('mu0'))

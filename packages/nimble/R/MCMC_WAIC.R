@@ -345,7 +345,9 @@ buildWAIC <- nimbleFunction(
 #' Calculating WAIC using an offline algorithm
 #'
 #' In addition to the core online algorithm, NIMBLE implements an offline
-#' WAIC algorithm that can be computed on the results of an MCMC.
+#' WAIC algorithm that can be computed on the results of an MCMC. In contrast
+#' to NIMBLE's built-in online WAIC, offline WAIC can compute only conditional
+#' WAIC and does not allow for grouping data nodes.
 #' 
 #' @param mcmc An MCMC object (compiled or uncompiled) or matrix or dataframe
 #' of MCMC samples as the first argument of \code{calculateWAIC}.
@@ -497,13 +499,6 @@ buildWAIC <- nimbleFunction(
 #' }
 #' @export
 calculateWAIC <- function(mcmc, model, nburnin = 0, thin = 1) {
-    ## Standalone function for users to use offline WAIC after MCMC has run without having enabled WAIC
-    ## when the MCMC was built.
-    ## The user can provide an MCMC, in which case the embedded mvSamples are used, or provide a matrix of
-    ## samples, in which case we copy the values into a new modelValues.
-    ## In both cases we use the offline WAIC nf that would have been used if the user had enabled WAIC
-    ## and requested offline calculation.
-    
     if((is(mcmc, 'MCMC') || is(mcmc, 'MCMC_refClass')) &&
        identical(nfGetDefVar(mcmc, 'name'), 'MCMC')) {
         ## MCMC is provided
@@ -544,7 +539,7 @@ calculateWAIC <- function(mcmc, model, nburnin = 0, thin = 1) {
     cwaicFun <- compileNimble(waicFun, project = model, resetFunctions = TRUE)
     if(!usingMCMC) { # copy to compiled mvSamples for speed 
         matrix2mv(mcmc, cwaicFun$mvSamples)
-    } else matrix2mv(samples, cwaicFun$mvSamples)
+    } else matrix2mv(samples, cwaicFun$mvSamples) # for the moment we can't use the existing mvSamples values directly
     result <- cwaicFun$calculateWAIC(nburnin, thin)
     return(result)
 }

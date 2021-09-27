@@ -25,15 +25,19 @@ corresponding to no thinning).}
 }
 \description{
 In addition to the core online algorithm, NIMBLE implements an offline
-WAIC algorithm that can be computed on the results of an MCMC.
+WAIC algorithm that can be computed on the results of an MCMC. In contrast
+to NIMBLE's built-in online WAIC, offline WAIC can compute only conditional
+WAIC and does not allow for grouping data nodes.
 }
 \details{
 The ability to calculate WAIC post hoc after all MCMC sampling has been done
-has been retained for compatibility with versions of NIMBLE before 0.12.0,
-and as discussed in detail below. This functionality includes the ability
-to call the \code{calculateWAIC} function on an MCMC object or matrix of
-samples after running an MCMC and without setting up the MCMC initially to
-use WAIC, provided the necessary variables are monitored.
+has certain advantages (e.g., allowing a user to exclude additional burnin
+samples beyond that specified initially for the MCMC) in addition to
+providing compatibility with versions of NIMBLE before 0.12.0. This
+functionality includes the ability to call the \code{calculateWAIC} function
+on an MCMC object or matrix of samples after running an MCMC and without
+setting up the MCMC initially to use WAIC, provided the necessary variables
+are monitored.
 
 See \code{help(waic)} for details on using NIMBLE's recommended online
 algorithm for WAIC.
@@ -125,6 +129,9 @@ Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
 output <- runMCMC(Cmcmc, niter = 1000)
 calculateWAIC(Cmcmc)           # Can run on the MCMC object
 calculateWAIC(output, Rmodel)  # Can run on the samples directly
+
+## Apply additional burnin (additional to any burnin already done in the MCMC.
+calculateWAIC(Cmcmc, burnin = 500)
 }
 }
 \references{
