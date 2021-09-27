@@ -309,7 +309,7 @@ matrix2mv <- function(mat, mv){
 			varInds <- colNames == vN
 			if(totVals != sum(varInds) )
 				stop('matrix2mv halted because dimensions of variables do not match')
-			subMatrix <- as.matrix(mat[, varInds])
+			subMatrix <- as.matrix(mat[, varInds, drop = FALSE])
 			Cmatrix2mvOneVar(subMatrix, mv, vN, k)
 		}
 	}
@@ -319,7 +319,7 @@ matrix2mv <- function(mat, mv){
 			varInds <- colNames == vN
 			if(totVals != sum(varInds) )
 				stop('matrix2mv halted because dimensions of variables do not match')
-			subMatrix <- as.matrix(mat[, varInds])
+			subMatrix <- as.matrix(mat[, varInds, drop = FALSE])
 			Rmatrix2mvOneVar(subMatrix, mv, vN, k)
 		}
 	}

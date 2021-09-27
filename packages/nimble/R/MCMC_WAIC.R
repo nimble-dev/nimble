@@ -5,7 +5,7 @@ waicClass_base <- nimbleFunctionVirtual(
         updateStats = function() {},
         get = function() { returnType(waicList()) },
         getDetails = function(returnElements = logical(default = FALSE)) { returnType(waicDetailsList()) },
-        calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 0)) { returnType(waicList()) }
+        calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 1)) { returnType(waicList()) }
     )
 )
 
@@ -19,7 +19,7 @@ buildDummyWAIC <- nimbleFunction(
         updateStats = function() {},
         get = function() { return(waicList$new(WAIC = NA, lppd = NA, pWAIC = NA)); returnType(waicList()) },
         getDetails = function(returnElements = logical(default = FALSE)) {return(waicDetailsList$new(marginal = FALSE, niterMarginal = 0, thin = FALSE, online = FALSE));  returnType(waicDetailsList()) },
-        calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 0)) { return(waicList$new(WAIC = NA, lppd = NA, pWAIC = NA)); returnType(waicList()) }
+        calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 1)) { return(waicList$new(WAIC = NA, lppd = NA, pWAIC = NA)); returnType(waicList()) }
     )
 )
 
@@ -46,39 +46,38 @@ buildOfflineWAIC <- nimbleFunction(
         reset = function() {},
         updateStats = function() {},
         getDetails = function(returnElements = logical(default = FALSE)) {return(waicDetailsList$new(marginal = FALSE, niterMarginal = 0, thin = FALSE, online = FALSE));  returnType(waicDetailsList()) },
-        calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 0)) {
-            if(!finalized) {
-                nburninPostThinning <- ceiling(nburnin/thin)
-                numMCMCSamples <- getsize(mvSamples) - nburninPostThinning
-                if((numMCMCSamples) < 2) {
-                    print('Error: need more than one post burn-in MCMC samples')
-                }
-                logPredProbs <- matrix(nrow = numMCMCSamples, ncol = dataNodeLength)
-                logAvgProb <- 0
-                pWAIC <<- 0
-                currentVals <- values(model, allVarsIncludingLogProbs)
-                
-                for(i in 1:numMCMCSamples) {
-                    copy(mvSamples, model, nodesTo = sampledNodes, row = i + nburninPostThinning)
-                    model$simulate(paramDeps)
-                    model$calculate(dataNodes)
-                    for(j in 1:dataNodeLength)
-                        logPredProbs[i,j] <- model$getLogProb(dataNodes[j])
-                }
-                for(j in 1:dataNodeLength) {
-                    maxLogPred <- max(logPredProbs[,j])
-                    thisDataLogAvgProb <- maxLogPred + log(mean(exp(logPredProbs[,j] - maxLogPred)))
-                    logAvgProb <- logAvgProb + thisDataLogAvgProb
-                    pointLogPredVar <- var(logPredProbs[,j])
-                    pWAIC <<- pWAIC + pointLogPredVar
-                }
-                lppd <<- logAvgProb
-                WAIC <<- -2*(logAvgProb - pWAIC)
-                
-                values(model, allVarsIncludingLogProbs) <<- currentVals
-                if(is.nan(WAIC)) print('WAIC was calculated as NaN.  You may need to add monitors to model latent states, in order for a valid WAIC calculation.')
-                finalized <<- TRUE
+        calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 1)) {
+            nburninPostThinning <- ceiling(nburnin/thin)
+            numMCMCSamples <- getsize(mvSamples) - nburninPostThinning
+            if((numMCMCSamples) < 2) {
+                print('Error: need more than one post burn-in MCMC samples')
             }
+            logPredProbs <- matrix(nrow = numMCMCSamples, ncol = dataNodeLength)
+            logAvgProb <- 0
+            pWAIC <<- 0
+            currentVals <- values(model, allVarsIncludingLogProbs)
+            
+            for(i in 1:numMCMCSamples) {
+                copy(mvSamples, model, nodesTo = sampledNodes, row = i + nburninPostThinning)
+                model$simulate(paramDeps)
+                model$calculate(dataNodes)
+                for(j in 1:dataNodeLength)
+                    logPredProbs[i,j] <- model$getLogProb(dataNodes[j])
+            }
+            for(j in 1:dataNodeLength) {
+                maxLogPred <- max(logPredProbs[,j])
+                thisDataLogAvgProb <- maxLogPred + log(mean(exp(logPredProbs[,j] - maxLogPred)))
+                logAvgProb <- logAvgProb + thisDataLogAvgProb
+                pointLogPredVar <- var(logPredProbs[,j])
+                pWAIC <<- pWAIC + pointLogPredVar
+            }
+            lppd <<- logAvgProb
+            WAIC <<- -2*(logAvgProb - pWAIC)
+            
+            values(model, allVarsIncludingLogProbs) <<- currentVals
+            if(is.nan(WAIC)) print('WAIC was calculated as NaN.  You may need to add monitors to model latent states, in order for a valid WAIC calculation.')
+            finalized <<- TRUE
+
             returnType(waicList())
             return(get())
         },
@@ -338,7 +337,7 @@ buildWAIC <- nimbleFunction(
             logProbMat <<- matrix(0, nrow = lengthConvCheck, ncol = nGroups)
             finalized <<- FALSE
         },
-        calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 0)) { return(waicList$new(WAIC = NA, lppd = NA, pWAIC = NA)); returnType(waicList()) }
+        calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 1)) { return(waicList$new(WAIC = NA, lppd = NA, pWAIC = NA)); returnType(waicList()) }
     )
 )
 
@@ -346,7 +345,9 @@ buildWAIC <- nimbleFunction(
 #' Calculating WAIC using an offline algorithm
 #'
 #' In addition to the core online algorithm, NIMBLE implements an offline
-#' WAIC algorithm that can be computed on the results of an MCMC.
+#' WAIC algorithm that can be computed on the results of an MCMC. In contrast
+#' to NIMBLE's built-in online WAIC, offline WAIC can compute only conditional
+#' WAIC and does not allow for grouping data nodes.
 #' 
 #' @param mcmc An MCMC object (compiled or uncompiled) or matrix or dataframe
 #' of MCMC samples as the first argument of \code{calculateWAIC}.
@@ -367,11 +368,13 @@ buildWAIC <- nimbleFunction(
 #' @details
 #'
 #' The ability to calculate WAIC post hoc after all MCMC sampling has been done
-#' has been retained for compatibility with versions of NIMBLE before 0.12.0,
-#' and as discussed in detail below. This functionality includes the ability
-#' to call the \code{calculateWAIC} function on an MCMC object or matrix of
-#' samples after running an MCMC and without setting up the MCMC initially to
-#' use WAIC, provided the necessary variables are monitored.
+#' has certain advantages (e.g., allowing a user to exclude additional burnin
+#' samples beyond that specified initially for the MCMC) in addition to
+#' providing compatibility with versions of NIMBLE before 0.12.0. This
+#' functionality includes the ability to call the \code{calculateWAIC} function
+#' on an MCMC object or matrix of samples after running an MCMC and without
+#' setting up the MCMC initially to use WAIC, provided the necessary variables
+#' are monitored.
 #'
 #' See \code{help(waic)} for details on using NIMBLE's recommended online
 #' algorithm for WAIC.
@@ -490,16 +493,12 @@ buildWAIC <- nimbleFunction(
 #' output <- runMCMC(Cmcmc, niter = 1000)
 #' calculateWAIC(Cmcmc)           # Can run on the MCMC object
 #' calculateWAIC(output, Rmodel)  # Can run on the samples directly
+#'
+#' ## Apply additional burnin (additional to any burnin already done in the MCMC.
+#' calculateWAIC(Cmcmc, burnin = 500)
 #' }
 #' @export
 calculateWAIC <- function(mcmc, model, nburnin = 0, thin = 1) {
-    ## Standalone function for users to use offline WAIC after MCMC has run without having enabled WAIC
-    ## when the MCMC was built.
-    ## The user can provide an MCMC, in which case the embedded mvSamples are used, or provide a matrix of
-    ## samples, in which case we copy the values into a new modelValues.
-    ## In both cases we use the offline WAIC nf that would have been used if the user had enabled WAIC
-    ## and requested offline calculation.
-    
     if((is(mcmc, 'MCMC') || is(mcmc, 'MCMC_refClass')) &&
        identical(nfGetDefVar(mcmc, 'name'), 'MCMC')) {
         ## MCMC is provided
@@ -509,24 +508,11 @@ calculateWAIC <- function(mcmc, model, nburnin = 0, thin = 1) {
                 stop("calculateWAIC: problem with finding model object in compiled MCMC")
             model <- mcmc$Robject$model
             mvSamples <- mcmc$Robject$mvSamples
-            waicObj <- mcmc$Robject$waicFun[[1]]
         } else {
             model <- mcmc$model
             mvSamples <- mcmc$mvSamples
-            waicObj <- mcmc$waicFun[[1]]
         }
-        ## Use existing WAIC methods in the MCMC if they exist (when WAIC was enabled to start with).
-        if(!is(waicObj, 'waicClass_dummy')) {
-            if(!compiled) 
-                warning("calculateWAIC: running uncompiled WAIC. This may be slow and is not recommended.")
-            if(is(waicObj, 'waicClass')) {
-                return(mcmc$getWAIC())
-            }
-            if(is(waicObj, 'waicClass_offline')) {
-                return(mcmc$calculateWAIC())
-            }
-            stop("calculateWAIC: found unexpected WAIC class type in MCMC object.")
-        }
+        samples <- as.matrix(mcmc$mvSamples) # because compilation below is not giving access to existing samples
         usingMCMC <- TRUE
     } else {
         ## Samples matrix is provided
@@ -550,9 +536,10 @@ calculateWAIC <- function(mcmc, model, nburnin = 0, thin = 1) {
         usingMCMC <- FALSE
     } 
     waicFun <- buildOfflineWAIC(model, mvSamples, NULL, mvSamples$varNames)
-    cwaicFun <- compileNimble(waicFun, project = model)
-    if(!usingMCMC)  # copy to compiled mvSamples for speed 
+    cwaicFun <- compileNimble(waicFun, project = model, resetFunctions = TRUE)
+    if(!usingMCMC) { # copy to compiled mvSamples for speed 
         matrix2mv(mcmc, cwaicFun$mvSamples)
+    } else matrix2mv(samples, cwaicFun$mvSamples) # for the moment we can't use the existing mvSamples values directly
     result <- cwaicFun$calculateWAIC(nburnin, thin)
     return(result)
 }
