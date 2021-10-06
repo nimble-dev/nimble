@@ -2145,9 +2145,16 @@ test_that('cc_checkLinearity and cc_replace01 unit tests', {
 
     code <- quote(0+1*b)
     ## quote((0+1i)+(1+1i)*b) doesn't work so need deparse().
-    expect_identical(deparse(cc_replace01(code)),
-                     "(0+1i) + (1+1i) * b")
+    codeReplaced <- cc_replace01(code)
+    expect_identical(codeReplaced[[2]], 0+1i)
+    expect_identical(codeReplaced[[3]][[2]], 1+1i)
+    expect_identical(deparse(codeReplaced),
+                     "0+1i + (1+1i) * b")
     
+    code <- quote(d/(0+1*b[3*a+0]))
+    ## quote((0+1i)+(1+1i)*b) doesn't work so need deparse().
+    expect_identical(deparse(cc_replace01(code)),
+                     "d/(0+1i + (1+1i) * b[3 * a + (0+1i)])")
 })
 
 test_that('cc_checkLinearity behaves correctly with constants', {

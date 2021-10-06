@@ -1348,7 +1348,7 @@ cc_vectorizedComponentCheck <- function(targetNode, expr) {
 
 cc_replace01 <- function(expr) {
     ## replace {0,1} with {0,1}+1i so distinguished from offset,scale of 0,1 when match target
-    if(is.numeric(expr) && (expr %in% c(0, 1))) {
+    if(is.numeric(expr) && (expr %in% c(0, 1))) 
         return(expr + 1i)
     if(is.call(expr))
         for(i in 2:length(expr))
