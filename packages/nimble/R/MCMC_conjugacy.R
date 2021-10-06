@@ -1346,12 +1346,23 @@ cc_vectorizedComponentCheck <- function(targetNode, expr) {
 ##############################################################################################
 ##############################################################################################
 
+cc_replace01 <- function(expr) {
+    ## replace {0,1} with {0,1}+1i so distinguished from offset,scale of 0,1 when match target
+    if(is.numeric(expr) && (expr %in% c(0, 1))) {
+        return(expr + 1i)
+    if(is.call(expr))
+        for(i in 2:length(expr))
+            expr[[i]] <- cc_replace01(expr[[i]])
+    return(expr)
+}
+
 cc_checkLinearity <- function(expr, targetNode) {
 
     ## targetNode doesn't appear in expr
     if(!cc_nodeInExpr(targetNode, expr)) {
         if(is.call(expr) && expr[[1]] == '(') return(cc_checkLinearity(expr[[2]], targetNode))
-        return(list(offset = expr, scale = 0))
+        # add +1i to tags 0s and 1s as not being from exact match to target
+        return(list(offset = cc_replace01(expr), scale = 0))  
     }
 
     ## expr is exactly the targetNode
@@ -1364,7 +1375,7 @@ cc_checkLinearity <- function(expr, targetNode) {
     if(expr[[1]] == '(')
         return(cc_checkLinearity(expr[[2]], targetNode))
 
-    if(expr[[1]] == '[')
+    if(expr[[1]] == '[') 
         return(cc_checkLinearity(expr[[2]], targetNode))
 
     ## Look for individual nodes in vectorized use or other strange cases.
