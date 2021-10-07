@@ -407,8 +407,8 @@ test_that('various conjugacies setup', {
     code <- nimbleCode({
         x ~ dgamma(1, 1)       # should satisfy 'gamma' conjugacy class
         a  ~ dnorm(0, x)     # should satisfy 'norm' conjugacy class
-        a2 ~ dnorm(0, tau = 3*x+0)
-        b  ~ dpois(0+5*x)
+        a2 ~ dnorm(0, tau = 3*x)
+        b  ~ dpois(5*x)
         b2 ~ dpois(1*x*1)
         c ~ dgamma(1, 7*x*5)
         for(i in 2:3) {
@@ -1734,12 +1734,12 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     expect_equal(smp1, smp3, info = 'conjugate sampler with matrix mult. does not match summation')
 
     check <- nimble:::cc_checkLinearity(quote(b0 + (X[1, 1:3] %*% structureExpr(beta[1], beta[2], beta[3]))[1,1]), 'beta[1]')
-    expect_identical(check, list(offset = quote(b0 + X[1, 1:3] * structureExpr(beta[1], beta[2], beta[3])),
-                                 scale = quote(X[1, 1:3])))
+    expect_identical(deparse(check$offset), "b0 + X[1+1i, (1+1i):3] * structureExpr(beta[1], beta[2], beta[3])")
+    expect_identical(deparse(check$scale), "X[1+1i, (1+1i):3]")
 
     check <- nimble:::cc_checkLinearity(quote(b0 + inprod(structureExpr(beta[1], beta[2], beta[3]), X[1, 1:3])), 'beta[1]')
-    expect_identical(check, list(offset = quote(b0 + structureExpr(beta[1], beta[2], beta[3]) * X[1, 1:3]),
-                                 scale = quote(X[1, 1:3])))
+    expect_identical(deparse(check$offset), "b0 + structureExpr(beta[1], beta[2], beta[3]) * X[1+1i, (1+1i):3]")
+    expect_identical(deparse(check$scale), "X[1+1i, (1+1i):3]")
 
     ## check nested specifications
     
@@ -1875,14 +1875,14 @@ test_that('checkConjugacy corner case when linear scale is identically zero', {
     targetNode <- 'beta[4]'
     linearityCheckExpr <- quote(beta[4] * 0 * alpha.smrcent[3])
     conjugacyCheck <- nimble:::cc_checkLinearity(linearityCheckExpr, targetNode)
-    expect_identical(conjugacyCheck, list(offset = 0, scale = 0))
+    expect_identical(conjugacyCheck$offset, 0)
+    expect_identical(deparse(conjugacyCheck$scale), "(0+1i) * alpha.smrcent[3]")
     
     targetNode <- 'beta[4]'
     linearityCheckExpr <- quote(beta[1] + beta[2] * 0 + beta[3] * alpha.smrcent[3] + beta[4] * 0 * alpha.smrcent[3] + alpha.stream[1] + alpha.family[3, 1])
     conjugacyCheck <- nimble:::cc_checkLinearity(linearityCheckExpr, targetNode)
-    expect_identical(conjugacyCheck,
-                     list(offset = quote(beta[1] + beta[2] * 0 + beta[3] * alpha.smrcent[3] + alpha.stream[1] + alpha.family[3, 1]),
-                          scale = 0))
+    expect_identical(deparse(conjugacyCheck$offset), "beta[1+1i] + beta[2] * (0+1i) + beta[3] * alpha.smrcent[3] + alpha.stream[1+1i] + alpha.family[3, 1+1i]")
+    expect_identical(deparse(conjugacyCheck$scale), "(0+1i) * alpha.smrcent[3]")               
 })
 
 test_that('cc_checkScalar operates correctly', {
