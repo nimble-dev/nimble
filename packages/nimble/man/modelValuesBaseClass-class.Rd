@@ -20,7 +20,7 @@ a model or be custom built via the \code{modelValuesConf} function. They consist
 row can be thought of as a set of values from a model. Like most nimble objects, and unlike most
 R objects, they are passed by reference instead of by value. 
 
-See user manual for more details.
+See the \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} for more details.
 }
 
 \examples{

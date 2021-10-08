@@ -98,7 +98,7 @@ getNimbleFunctionEnvironment <- function() {
 #' @param k				number of rows that modelValues is set to
 #' @author				Clifford Anderson-Bergman
 #' @details
-#' See the User Manual or \code{help(modelValuesBaseClass)} for infomation about modelValues objects
+#' See the \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} or \code{help(modelValuesBaseClass)} for infomation about modelValues objects
 #'
 #' @examples
 #' mvConf <- modelValuesConf(vars = c('a', 'b'),
@@ -122,7 +122,7 @@ resize <- function(container, k) {
 #' @author Clifford Anderson-Bergman
 #' @export
 #' @details
-#' See the User Manual or \code{help(modelValuesBaseClass)} for information about modelValues objects 
+#' See the \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} or \code{help(modelValuesBaseClass)} for information about modelValues objects 
 #'
 #' @examples
 #'	mvConf <- modelValuesConf(vars = 'a', types = 'double', sizes = list(a = 1) )

@@ -16,7 +16,7 @@ or the object returned from \code{modelValuesConf}}
 Builds modelValues object from a model values configuration object, which can include a NIMBLE model
 }
 \details{
-See the User Manual or \code{help(modelValuesBaseClass)} for information about manipulating NIMBLE modelValues object returned by this function
+See the \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} or \code{help(modelValuesBaseClass)} for information about manipulating NIMBLE modelValues object returned by this function
 }
 \examples{
 #From model object:

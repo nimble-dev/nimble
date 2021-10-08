@@ -15,7 +15,8 @@
 #' main goal of the BUGS/JAGS language for writing models, one can use
 #' NIMBLE for writing arbitrary other kinds of model-generic algorithms
 #' as well. A full User Manual is available at
-#' \url{https://r-nimble.org}.
+#' \url{https://r-nimble.org/html_manual/cha-welcome-nimble.html}.
 #' @name nimble
 #' @docType package
 NULL
+

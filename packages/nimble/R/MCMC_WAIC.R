@@ -676,7 +676,8 @@ calculateWAIC <- function(mcmc, model, nburnin = 0, thin = 1) {
 #' elements of the control list, users can request a marginal WAIC (using a
 #' marginal likelihood that integrates over user-specified latent nodes) and/or
 #' a WAIC based on grouping observations (e.g., all observations in a cluster)
-#' to use joint density values. See the MCMC Chapter of the NIMBLE User Manual
+#' to use joint density values. See the MCMC Chapter of the NIMBLE
+#' \href{https://r-nimble.org/html_manual/cha-mcmc.html}{User Manual}
 #' for more details.
 #'
 #' For more detail on the use of different predictive distributions, see Section

@@ -17,7 +17,7 @@ nfVar(nf, varName) <- value
 \item{value}{value to set the variable to.}
 }
 \value{
-whatever varName is in  the nimbleFunction nf.
+whatever varName is in the nimbleFunction nf.
 }
 \description{
 Access or set a member variable of a specialized nimbleFunction, i.e. a variable passed to or created during the \code{setup} function that is used in run code or preserved by \code{setupOutputs}.  Works in R for any variable and in NIMBLE for numeric variables.
@@ -31,7 +31,7 @@ When \code{nimbleFunction} is called and a \code{setup} function is provided, th
 
 For internal access to methods of \code{nf}, see \code{\link{nfMethod}}.
 
-For more information, see \code{?nimbleFunction} and the NIMBLE User Manual.
+For more information, see \code{?nimbleFunction} and the NIMBLE \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual}.
 }
 \examples{
 nfGen1 <- nimbleFunction(

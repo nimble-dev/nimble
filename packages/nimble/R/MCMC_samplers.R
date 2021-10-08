@@ -2242,7 +2242,7 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' @section \code{sampler_base}: base class for new samplers
 #'
-#' When you write a new sampler for use in a NIMBLE MCMC (see User Manual), you must include \code{contains = sampler_BASE}.
+#' When you write a new sampler for use in a NIMBLE MCMC (see \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual}), you must include \code{contains = sampler_BASE}.
 #'
 #' @section binary sampler:
 #'

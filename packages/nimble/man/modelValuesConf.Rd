@@ -34,7 +34,7 @@ Options include `double' (for real-valued variables) and `int'.}
 Builds an R-based modelValues conf object
 }
 \details{
-See the User Manual or \code{help(modelValuesBaseClass)} and \code{help(modelValues)} for information
+See the \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} or \code{help(modelValuesBaseClass)} and \code{help(modelValues)} for information
 }
 \examples{
 #Custom modelValues object:

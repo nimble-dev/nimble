@@ -9,7 +9,7 @@
 Create an empty list of nimbleFunctions that all will inherit from a base class.
 }
 \details{
-See the User Manual for information about creating and populating a \code{nimbleFunctionList}.
+See the \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} for information about creating and populating a \code{nimbleFunctionList}.
 }
 
 \author{

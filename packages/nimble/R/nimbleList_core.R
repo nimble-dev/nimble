@@ -42,7 +42,7 @@ nimbleListBase <- setRefClass(Class = 'nimbleListBase',
 #' The \code{type} argument can be chosen from among \code{character}, \code{double}, \code{integer}, and \code{logical},
 #' or can be the name of a previously created \code{\link{nimbleList} definition}.
 #' 
-#' See the NIMBLE User Manual for additional examples.
+#' See the NIMBLE \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} for additional examples.
 #' 
 #' @examples 
 #' nimbleTypeList <- list()

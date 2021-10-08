@@ -13,7 +13,7 @@
 #' @author NIMBLE development team
 #' @export
 #' @details
-#' See the User Manual or \code{help(modelValuesBaseClass)} for information about manipulating NIMBLE modelValues object returned by this function
+#' See the \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} or \code{help(modelValuesBaseClass)} for information about manipulating NIMBLE modelValues object returned by this function
 #'
 #' @examples
 #'	#From model object:
@@ -49,7 +49,7 @@ modelValues <- function(conf, m = 1) {
 #' row can be thought of as a set of values from a model. Like most nimble objects, and unlike most
 #' R objects, they are passed by reference instead of by value. 
 #'
-#'See user manual for more details.
+#'See the \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} for more details.
 #' @aliases [,CmodelValues-method [<-,CmodelValues-method [[,CmodelValues-method [[<-,CmodelValues-method [,CmodelValues-method,character,missing [,modelValuesBaseClass-method [<-,modelValuesBaseClass-method [,CmodelValues-method,character,missing,ANY-method [,CmodelValues-method,ANY,ANY [,CmodelValues-method,ANY,ANY
 #' @examples
 #'mvConf <- modelValuesConf(vars = c('a', 'b'), 
@@ -177,7 +177,7 @@ setMethod('[<-', 'modelValuesBaseClass',
 #' @author Clifford Anderson-Bergman
 #' @export
 #' @details
-#' See the User Manual or \code{help(modelValuesBaseClass)} and \code{help(modelValues)} for information
+#' See the \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} or \code{help(modelValuesBaseClass)} and \code{help(modelValues)} for information
 #'
 #' @examples
 #'	#Custom modelValues object:

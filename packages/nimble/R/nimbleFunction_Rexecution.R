@@ -23,7 +23,7 @@
 #'
 #' \code{nimRep} is NIMBLE's version of \code{rep}.  It should behave identically to \code{rep}.  There are no NIMBLE versions of \code{rep.int} or \code{rep_len}.
 #'
-#' \code{nimSeq} is NIMBLE's version of \code{seq}.  It behaves like \code{seq} with support for \code{from}, \code{to}, \code{by} and \code{length.out} arguments.  The \code{along.with} argument is not supported.  There are no NIMBLE versions of \code{seq.int}, \code{seq_along} or \code{seq_len}, with the exception that \code{seq_along} can take a nimbleFunctionList as an argument to provide the index range of a for-loop (User Manual Ch. 13). 
+#' \code{nimSeq} is NIMBLE's version of \code{seq}.  It behaves like \code{seq} with support for \code{from}, \code{to}, \code{by} and \code{length.out} arguments.  The \code{along.with} argument is not supported.  There are no NIMBLE versions of \code{seq.int}, \code{seq_along} or \code{seq_len}, with the exception that \code{seq_along} can take a nimbleFunctionList as an argument to provide the index range of a for-loop (\href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} Ch. 13). 
 #'
 #' \code{which} behaves like the R version but without support for \code{arr.ind} or \code{useNames} arguments.
 #'
@@ -813,9 +813,9 @@ nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA
 #'
 #' For internal access to methods of \code{nf}, see \code{\link{nfMethod}}.
 #' 
-#' For more information, see \code{?nimbleFunction} and the NIMBLE User Manual.
+#' For more information, see \code{?nimbleFunction} and the NIMBLE \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual}.
 #'
-#' @return whatever varName is in  the nimbleFunction nf.
+#' @return whatever varName is in the nimbleFunction nf.
 #' @examples
 #' nfGen1 <- nimbleFunction(
 #'     setup = function(A) {
