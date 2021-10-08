@@ -131,7 +131,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.12.0</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.12.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -1469,14 +1469,14 @@ and will be re-sized for the result.</li>
 <h4><span class="header-section-number">11.3.2.8</span> Size warnings and the potential for crashes</h4>
 <p>For matrix algebra, NIMBLE cannot ensure perfect behavior because
 sizes are not known until run time. Therefore, it is possible for you
-to write code that will crash your R session. In Version 0.12.0, NIMBLE
+to write code that will crash your R session. In Version 0.12.1, NIMBLE
 attempts to issue a warning if sizes are not compatible, but it does not
 halt execution. Therefore, if you execute <code>A &lt;- M1 %*% M2</code>, and <code>M1</code> and <code>M2</code> are not compatible for matrix multiplication,
 NIMBLE will output a warning that the number of rows of <code>M1</code> does not
 match the number of columns of <code>M2</code>. After that warning the statement
 will be executed and may result in a crash. Another easy way to write
 code that will crash is to do things like <code>Y[5:10, 20:30] &lt;- x</code> without ensuring Y is at least 10x30. In the future we hope to
-prevent crashes, but in Version 0.12.0 we limit ourselves to trying to provide
+prevent crashes, but in Version 0.12.1 we limit ourselves to trying to provide
 useful information.</p>
 </div>
 </div>

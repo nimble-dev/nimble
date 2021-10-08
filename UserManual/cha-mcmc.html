@@ -131,7 +131,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.12.0</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.12.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -853,7 +853,7 @@ greatly improved performance in some cases.</p>
 <div id="sec:WAIC" class="section level2">
 <h2><span class="header-section-number">7.7</span> Calculating WAIC</h2>
 <p>The WAIC <span class="citation">(Watanabe <a href="references.html#ref-Watanabe_2010">2010</a>)</span> can be calculated from the posterior samples produced during the MCMC algorithm. Users have two options to calculate WAIC. The main approach requires enabling WAIC when setting up the MCMC and allows access to a variety of ways to calculate WAIC. This approach does not require that any specific monitors be set<a href="#fn18" class="footnote-ref" id="fnref18"><sup>18</sup></a> because the WAIC is calculated in an online manner, accumulating the necessary quantities to calculate WAIC as the MCMC is run.</p>
-<p>The second approach allows one to calculate the WAIC after an MCMC has been run using an MCMC object or matrix (or dataframe) containing the posterior samples, but it requires the user to have correctly specified the monitored variables and only provides the default way to calculate WAIC.</p>
+<p>The second approach allows one to calculate the WAIC after an MCMC has been run using an MCMC object or matrix (or dataframe) containing the posterior samples, but it requires the user to have correctly specified the monitored variables and only provides the default way to calculate WAIC. An advantage of the second approach is that one can specify additional burnin beyond that specified for the MCMC.</p>
 <p>Here we first discuss the main approach and then close the section by showing the second approach. Specific details of the syntax are provided in <code>help(waic)</code>.</p>
 <p>To enable WAIC for the first approach, the argument <code>enableWAIC = TRUE</code> must be supplied to <code>configureMCMC</code> (or to <code>buildMCMC</code> if not using <code>configureWAIC</code>), or the <code>MCMCenableWAIC</code> NIMBLE option must have been set to <code>TRUE</code>.</p>
 <p>The WAIC (as well as the pWAIC and lppd values) is extracted by the member method <code>mcmc$getWAIC</code> (see <code>help(waic)</code> in R for more details) or is available as the <code>WAIC</code> element of the <code>runMCMC</code> or <code>nimbleMCMC</code> output lists. One can use the member method <code>mcmc$getWAICdetails</code> for additional quantities related to WAIC that are discussed below.
@@ -871,7 +871,9 @@ user control over how WAIC is calculated in two ways.</p>
 <a class="sourceLine" id="cb171-2" title="2"><span class="co">## Using calculateWAIC with an MCMC object</span></a>
 <a class="sourceLine" id="cb171-3" title="3"><span class="kw">calculateWAIC</span>(Cmcmc)</a>
 <a class="sourceLine" id="cb171-4" title="4"><span class="co">## Using calculateWAIC with a matrix of samples</span></a>
-<a class="sourceLine" id="cb171-5" title="5"><span class="kw">calculateWAIC</span>(samples, model)</a></code></pre></div>
+<a class="sourceLine" id="cb171-5" title="5"><span class="kw">calculateWAIC</span>(samples, model)</a>
+<a class="sourceLine" id="cb171-6" title="6"><span class="co">## Specifying additional burnin, so only last 5000 (1000+4000) iterations used</span></a>
+<a class="sourceLine" id="cb171-7" title="7"><span class="kw">calculateWAIC</span>(Cmcmc, <span class="dt">burnin =</span> <span class="dv">4000</span>)</a></code></pre></div>
 <p>This approach only provides conditional WAIC without any grouping of data nodes (though one can achieve grouping by grouping data nodes into multivariate nodes).</p>
 </div>
 <div id="k-fold-cross-validation" class="section level2">
