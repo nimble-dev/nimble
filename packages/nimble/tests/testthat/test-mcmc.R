@@ -407,8 +407,8 @@ test_that('various conjugacies setup', {
     code <- nimbleCode({
         x ~ dgamma(1, 1)       # should satisfy 'gamma' conjugacy class
         a  ~ dnorm(0, x)     # should satisfy 'norm' conjugacy class
-        a2 ~ dnorm(0, tau = 3*x+0)
-        b  ~ dpois(0+5*x)
+        a2 ~ dnorm(0, tau = 3*x)
+        b  ~ dpois(5*x)
         b2 ~ dpois(1*x*1)
         c ~ dgamma(1, 7*x*5)
         for(i in 2:3) {
@@ -1734,12 +1734,12 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     expect_equal(smp1, smp3, info = 'conjugate sampler with matrix mult. does not match summation')
 
     check <- nimble:::cc_checkLinearity(quote(b0 + (X[1, 1:3] %*% structureExpr(beta[1], beta[2], beta[3]))[1,1]), 'beta[1]')
-    expect_identical(check, list(offset = quote(b0 + X[1, 1:3] * structureExpr(beta[1], beta[2], beta[3])),
-                                 scale = quote(X[1, 1:3])))
+    expect_identical(deparse(check$offset), "b0 + X[1+1i, (1+1i):3] * structureExpr(beta[1], beta[2], beta[3])")
+    expect_identical(deparse(check$scale), "X[1+1i, (1+1i):3]")
 
     check <- nimble:::cc_checkLinearity(quote(b0 + inprod(structureExpr(beta[1], beta[2], beta[3]), X[1, 1:3])), 'beta[1]')
-    expect_identical(check, list(offset = quote(b0 + structureExpr(beta[1], beta[2], beta[3]) * X[1, 1:3]),
-                                 scale = quote(X[1, 1:3])))
+    expect_identical(deparse(check$offset), "b0 + structureExpr(beta[1], beta[2], beta[3]) * X[1+1i, (1+1i):3]")
+    expect_identical(deparse(check$scale), "X[1+1i, (1+1i):3]")
 
     ## check nested specifications
     
@@ -1875,14 +1875,14 @@ test_that('checkConjugacy corner case when linear scale is identically zero', {
     targetNode <- 'beta[4]'
     linearityCheckExpr <- quote(beta[4] * 0 * alpha.smrcent[3])
     conjugacyCheck <- nimble:::cc_checkLinearity(linearityCheckExpr, targetNode)
-    expect_identical(conjugacyCheck, list(offset = 0, scale = 0))
+    expect_identical(conjugacyCheck$offset, 0)
+    expect_identical(deparse(conjugacyCheck$scale), "(0+1i) * alpha.smrcent[3]")
     
     targetNode <- 'beta[4]'
     linearityCheckExpr <- quote(beta[1] + beta[2] * 0 + beta[3] * alpha.smrcent[3] + beta[4] * 0 * alpha.smrcent[3] + alpha.stream[1] + alpha.family[3, 1])
     conjugacyCheck <- nimble:::cc_checkLinearity(linearityCheckExpr, targetNode)
-    expect_identical(conjugacyCheck,
-                     list(offset = quote(beta[1] + beta[2] * 0 + beta[3] * alpha.smrcent[3] + alpha.stream[1] + alpha.family[3, 1]),
-                          scale = 0))
+    expect_identical(deparse(conjugacyCheck$offset), "beta[1+1i] + beta[2] * (0+1i) + beta[3] * alpha.smrcent[3] + alpha.stream[1+1i] + alpha.family[3, 1+1i]")
+    expect_identical(deparse(conjugacyCheck$scale), "(0+1i) * alpha.smrcent[3]")               
 })
 
 test_that('cc_checkScalar operates correctly', {
@@ -2080,6 +2080,142 @@ test_that("realized conjugacy links are working", {
 
     expect_identical(mcmc$samplerFunctions[[1]]$dep_dmnorm_identity_nodeNames, c('y1[1, 1:3]', 'y1[2, 1:3]'))
     expect_identical(mcmc$samplerFunctions[[1]]$dep_dmnorm_multiplicativeScalar_nodeNames, c('y2[1, 1:3]', 'y2[2, 1:3]'))
+})
+
+test_that('cc_checkLinearity and cc_replace01 unit tests', {
+    target <- 'b'
+    code <- quote(b)
+    expect_identical(cc_checkLinearity(code, target),
+                     list(offset = 0, scale = 1))
+
+    code <- quote(0+b)
+    expect_identical(cc_checkLinearity(code, target),
+                     list(offset = 0+1i, scale = 1))
+    
+    code <- quote(1*b)
+    expect_identical(cc_checkLinearity(code, target),
+                     list(offset = 0, scale = 1+1i))
+    
+    code <- quote(b+a)
+    expect_identical(cc_checkLinearity(code, target),
+                     list(offset = quote(a), scale = 1))
+    
+    
+    code <- quote(b*3)
+    expect_identical(cc_checkLinearity(code, target),
+                     list(offset = 0, scale = 3))
+    
+    code <- quote(a+phi*b)
+    expect_identical(cc_checkLinearity(code, target),
+                     list(offset = quote(a), scale = quote(phi)))
+
+    code <- quote(a+phi*(3+b))
+    expect_identical(cc_checkLinearity(code, target),
+                     list(offset = quote(a+phi*3), scale = quote(phi)))
+
+    code <- quote(b/phi)
+    expect_identical(cc_checkLinearity(code, target),
+                     list(offset = 0, scale = quote(1/phi)))
+
+    code <- quote((b+a)/phi)
+    expect_identical(cc_checkLinearity(code, target),
+                     list(offset = quote(a/phi), scale = quote(1/phi)))
+
+    code <- quote((phi+a)/b)
+    expect_identical(cc_checkLinearity(code, target), NULL)
+
+    code <- quote(b+b)
+    expect_identical(cc_checkLinearity(code, target),
+                     list(offset = 0, scale = 2))
+
+    code <- quote(a+d)
+    expect_identical(cc_checkLinearity(code, target),
+                     list(offset = quote(a+d), scale = 0))
+
+    code <- quote(b*(2*b))
+    expect_identical(cc_checkLinearity(code, target), NULL)
+
+    code <- quote(-b)
+    expect_identical(cc_checkLinearity(code, target), 
+                     list(offset = 0, scale = -1))
+    
+    code <- quote(b-(a-b))
+    expect_identical(cc_checkLinearity(code, target), 
+                     list(offset = quote(-a), scale = 2))
+
+    code <- quote(0+1*b)
+    ## quote((0+1i)+(1+1i)*b) doesn't work so need deparse().
+    codeReplaced <- cc_replace01(code)
+    expect_identical(codeReplaced[[2]], 0+1i)
+    expect_identical(codeReplaced[[3]][[2]], 1+1i)
+    expect_identical(deparse(codeReplaced),
+                     "0+1i + (1+1i) * b")
+    
+    code <- quote(d/(0+1*b[3*a+0]))
+    ## quote((0+1i)+(1+1i)*b) doesn't work so need deparse().
+    expect_identical(deparse(cc_replace01(code)),
+                     "d/(0+1i + (1+1i) * b[3 * a + (0+1i)])")
+})
+
+test_that('cc_checkLinearity behaves correctly with constants', {
+    code <- nimbleCode( {
+        beta ~ dnorm(0,0.001)
+        for (i in 1:n) 
+            y[i] ~ dnorm(alpha+beta*x[i], tau) 
+    })
+    m <- nimbleModel(code, constants = list(n = 4, x = 1:4), data = list(y = rnorm(4)))
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm_linear')
+
+    code <- nimbleCode( {
+        beta ~ dnorm(0,0.001)
+        for (i in 1:n) 
+            y[i] ~ dnorm(alpha[i]+beta, tau) 
+    })
+    m <- nimbleModel(code, constants = list(n = 4, alpha = 0:3), data = list(y = rnorm(4)))
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm_additive')
+    
+    code <- nimbleCode( {
+        beta ~ dnorm(0,0.001)
+        for (i in 1:n) 
+            y[i] ~ dnorm(alpha[i]+beta*x[i], tau) 
+    })
+    m <- nimbleModel(code, constants = list(n = 4, alpha = 0:3, x = 1:4), data = list(y = rnorm(4)))
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm_linear')
+
+    code <- nimbleCode( {
+        beta ~ dgamma(1, 1)
+        for (i in 1:n) 
+            y[i] ~ dpois(beta*x[i])
+    })
+    m <- nimbleModel(code, constants = list(n = 4, x = 1:4), data = list(y = rpois(4, 1)))
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dgamma_dpois_multiplicative')
+
+    code <- nimbleCode( {
+        beta[1:3] ~ dmnorm(z[1:3], pr[1:3, 1:3])
+        for (i in 1:n) {
+            mn[i, 1:3] <- x[i]*beta[1:3]
+            y[i, 1:3] ~ dmnorm(mn[i,1:3], pr[1:3,1:3])
+        }
+    })
+    m <- nimbleModel(code, constants = list(n = 4, x = 1:4), data = list(y = matrix(rnorm(12), 4)))
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dmnorm_dmnorm_multiplicative')
+
+    ## note that vector constants not baked in so this should never have had problems
+    code <- nimbleCode( {
+        beta[1:3] ~ dmnorm(z[1:3], pr[1:3, 1:3])
+        for (i in 1:n) {
+            mn[i, 1:3] <- x[i,1:3] * beta[1:3]
+            y[i, 1:3] ~ dmnorm(mn[i, 1:3], pr[1:3, 1:3])
+        }
+    })
+    m <- nimbleModel(code, constants = list(n = 4, x = matrix(1:12, 4)), data = list(y = matrix(rnorm(12), 4)))
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dmnorm_dmnorm_multiplicative')
 })
 
 test_that('MCMC assigned posterior_predictive_branch sampler correctly', {
