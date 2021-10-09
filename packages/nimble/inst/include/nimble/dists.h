@@ -19,6 +19,17 @@
  * https://www.R-project.org/Licenses/
  */
 
+// Based on Writing R Extensions 6.6.1 and mgcv's mgcv.h
+#define USE_FC_LEN_T
+#include <Rconfig.h>
+#include <R_ext/BLAS.h>
+/* If we are compiling with a version of R before FCONE and the explicit supplying of extra arguments 
+   was introduced, then FCONE has to be defined */ 
+#ifndef FCONE
+#define FCONE
+#endif
+
+
 #ifndef __DISTS
 #define __DISTS
 

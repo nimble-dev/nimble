@@ -90,7 +90,7 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
       for(i = 0; i <= j; i++) 
         xChol[j*p+i] = x[j*p+i];
   }
-  F77_CALL(dpotrf)(&uplo, &p, xChol, &p, &info);
+  F77_CALL(dpotrf)(&uplo, &p, xChol, &p, &info FCONE);
   for(i = 0; i < p*p; i += p + 1) 
     dens += (df - p - 1) * log(xChol[i]);
   
@@ -106,7 +106,7 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
       for(i = j+1; i < p; i++)
         xChol[j*p+i] = 0.0;
     F77_CALL(dtrsm)(&sideR, &uplo, &transN, &diag, &p, &p, &alpha, 
-                    chol, &p, xChol, &p);
+                    chol, &p, xChol, &p FCONE FCONE FCONE FCONE);
     // trace of crossproduct of result is sum of squares of elements
     for(j = 0; j < p; j++) 
       for(i = 0; i <= j; i++) 
@@ -122,7 +122,7 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
     }
     // chol %*% x
     F77_CALL(dtrmm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, 
-           chol, &p, xCopy, &p);
+           chol, &p, xCopy, &p FCONE FCONE FCONE FCONE);
     // trace crossproduct of t(chol) with result is sum of product of upper-triangular elements
     for(j = 0; j < p; j++) {
       for(i = 0; i <= j; i++) {
@@ -250,8 +250,8 @@ void rwish_chol(double *Z, double* chol, double df, int p, double scale_param, i
       for(i = 0; i < p*p; i++) 
         cholCopy[i] = chol[i];
   }
-  if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, Z, &p, cholCopy, &p);
-  else F77_CALL(dtrsm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, chol, &p, Z, &p);
+  if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, Z, &p, cholCopy, &p FCONE FCONE FCONE FCONE);
+  else F77_CALL(dtrsm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, chol, &p, Z, &p FCONE FCONE FCONE FCONE);
 
   // cp result to Z or chol so can be used as matrix to multiply against and overwrite
   if(scale_param) {
@@ -264,8 +264,8 @@ void rwish_chol(double *Z, double* chol, double df, int p, double scale_param, i
 
   // do crossprod of result
   // for dtrmm call, again this would be more efficient if use fact that RHS upper triangular, but no available BLAS routine and hand-coding would eliminate use of threading and might well not be faster
-  if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transT, &diag, &p, &p, &alpha, cholCopy, &p, Z, &p);
-  else F77_CALL(dgemm)(&transN, &transT, &p, &p, &p, &alpha, cholCopy, &p, cholCopy, &p, &beta, Z, &p); 
+  if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transT, &diag, &p, &p, &alpha, cholCopy, &p, Z, &p FCONE FCONE FCONE FCONE);
+  else F77_CALL(dgemm)(&transN, &transT, &p, &p, &p, &alpha, cholCopy, &p, cholCopy, &p, &beta, Z, &p FCONE FCONE); 
   if(!overwrite_inputs)
     delete [] cholCopy;
 }
@@ -351,7 +351,7 @@ double dinvwish_chol(double* x, double* chol, double df, int p, double scale_par
     for(i = 0; i < p*p; i++) 
       xChol[i] = x[i];
   }
-  F77_CALL(dpotrf)(&uplo, &p, xChol, &p, &info);
+  F77_CALL(dpotrf)(&uplo, &p, xChol, &p, &info FCONE);
   for(i = 0; i < p*p; i += p + 1) 
     dens -= (df + p + 1) * log(xChol[i]);
   
@@ -374,7 +374,7 @@ double dinvwish_chol(double* x, double* chol, double df, int p, double scale_par
     }
     // chol %*% inverse(chol(x))
     F77_CALL(dtrsm)(&sideR, &uplo, &transN, &diag, &p, &p, &alpha, 
-           xChol, &p, cholCopy, &p);
+           xChol, &p, cholCopy, &p FCONE FCONE FCONE FCONE);
     // trace of crossproduct is sum of elements squared
     for(j = 0; j < p; j++) {
       for(i = 0; i <= j; i++) {
@@ -390,10 +390,10 @@ double dinvwish_chol(double* x, double* chol, double df, int p, double scale_par
         if(i == j) iden[j*p+i] = 1.0; else iden[j*p+i] = 0.0;
     // inverse of chol
     F77_CALL(dtrsm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, 
-                    chol, &p, iden, &p);
+                    chol, &p, iden, &p FCONE FCONE FCONE FCONE);
     // solve(t(chol(x)), result)
     F77_CALL(dtrsm)(&sideL, &uplo, &transT, &diag, &p, &p, &alpha, 
-                    xChol, &p, iden, &p);
+                    xChol, &p, iden, &p FCONE FCONE FCONE FCONE);
     // trace of crossproduct is sum of elements squared
     for(j = 0; j < p; j++) {
       for(i = 0; i < p; i++) {
@@ -491,21 +491,21 @@ void rinvwish_chol(double *Z, double* chol, double df, int p, double scale_param
   // with R parameterization: inverse(chol)%*%Z%*%t(Z)%*%inverse(t(chol)) is Wishart-distributed, again inverse of pieces
   if(scale_param) {
     // Z %*% chol
-    F77_CALL(dtrmm)(&sideL, &uploU, &transN, &diag, &p, &p, &alpha, Z, &p, cholCopy, &p);
+    F77_CALL(dtrmm)(&sideL, &uploU, &transN, &diag, &p, &p, &alpha, Z, &p, cholCopy, &p FCONE FCONE FCONE FCONE);
     double* iden = new double[p*p];
     for(j = 0; j < p; j++)
       for(i = 0; i < p; i++)
         if(i == j) iden[j*p+i] = 1.0; else iden[j*p+i] = 0.0;
     // inverse(Z %*% chol)
-    F77_CALL(dtrsm)(&sideL, &uploU, &transN, &diag, &p, &p, &alpha, cholCopy, &p, iden, &p);
+    F77_CALL(dtrsm)(&sideL, &uploU, &transN, &diag, &p, &p, &alpha, cholCopy, &p, iden, &p FCONE FCONE FCONE FCONE);
     // crossproduct of result
-    F77_CALL(dgemm)(&transN, &transT, &p, &p, &p, &alpha, iden, &p, iden, &p, &beta, Z, &p);    
+    F77_CALL(dgemm)(&transN, &transT, &p, &p, &p, &alpha, iden, &p, iden, &p, &beta, Z, &p FCONE FCONE);    
     delete [] iden;
   } else {    
     // solve(Z, chol)
-    F77_CALL(dtrsm)(&sideL, &uploL, &transN, &diag, &p, &p, &alpha, Z, &p, cholCopy, &p);
+    F77_CALL(dtrsm)(&sideL, &uploL, &transN, &diag, &p, &p, &alpha, Z, &p, cholCopy, &p FCONE FCONE FCONE FCONE);
     // crossproduct of result
-    F77_CALL(dgemm)(&transT, &transN, &p, &p, &p, &alpha, cholCopy, &p, cholCopy, &p, &beta, Z, &p);
+    F77_CALL(dgemm)(&transT, &transN, &p, &p, &p, &alpha, cholCopy, &p, cholCopy, &p, &beta, Z, &p FCONE FCONE);
   }
 
   if(!overwrite_inputs)
@@ -1067,8 +1067,8 @@ double dmnorm_chol(double* x, double* mean, double* chol, int n, double prec_par
   // do matrix-vector multiply with upper-triangular matrix stored column-wise as full n x n matrix (prec parameterization)
   // or upper-triangular (transpose) solve (cov parameterization)
   // dtr{m,s}v is a BLAS level-2 function
-  if(prec_param) F77_CALL(dtrmv)(&uplo, &transPrec, &diag, &n, chol, &lda, xCopy, &incx);
-  else F77_CALL(dtrsv)(&uplo, &transCov, &diag, &n, chol, &lda, xCopy, &incx);
+  if(prec_param) F77_CALL(dtrmv)(&uplo, &transPrec, &diag, &n, chol, &lda, xCopy, &incx FCONE FCONE FCONE);
+  else F77_CALL(dtrsv)(&uplo, &transCov, &diag, &n, chol, &lda, xCopy, &incx FCONE FCONE FCONE);
 
   // sum of squares to calculate quadratic form
   double tmp = 0.0;
@@ -1159,8 +1159,8 @@ void rmnorm_chol(double *ans, double* mean, double* chol, int n, double prec_par
 
   // do upper-triangular solve or (transpose) multiply
   // dtr{s,m}v is a BLAS level-2 function
-  if(prec_param) F77_CALL(dtrsv)(&uplo, &transPrec, &diag, &n, chol, &lda, ans, &incx);
-  else F77_CALL(dtrmv)(&uplo, &transCov, &diag, &n, chol, &lda, ans, &incx);
+  if(prec_param) F77_CALL(dtrsv)(&uplo, &transPrec, &diag, &n, chol, &lda, ans, &incx FCONE FCONE FCONE);
+  else F77_CALL(dtrmv)(&uplo, &transCov, &diag, &n, chol, &lda, ans, &incx FCONE FCONE FCONE);
 
   for(i = 0; i < n; i++) 
     ans[i] += mean[i];
@@ -1259,8 +1259,8 @@ double dmvt_chol(double* x, double* mu, double* chol, double df, int n, double p
   // do matrix-vector multiply with upper-triangular matrix stored column-wise as full n x n matrix (prec parameterization)
   // or upper-triangular (transpose) solve (cov parameterization)
   // dtr{m,s}v is a BLAS level-2 function
-  if(prec_param) F77_CALL(dtrmv)(&uplo, &transPrec, &diag, &n, chol, &lda, xCopy, &incx);
-  else F77_CALL(dtrsv)(&uplo, &transCov, &diag, &n, chol, &lda, xCopy, &incx);
+  if(prec_param) F77_CALL(dtrmv)(&uplo, &transPrec, &diag, &n, chol, &lda, xCopy, &incx FCONE FCONE FCONE);
+  else F77_CALL(dtrsv)(&uplo, &transCov, &diag, &n, chol, &lda, xCopy, &incx FCONE FCONE FCONE);
   
   // sum of squares to calculate quadratic form
   double tmp = 0.0;
@@ -1355,8 +1355,8 @@ void rmvt_chol(double *ans, double* mu, double* chol, double df, int n, double p
   
   // do upper-triangular solve or (transpose) multiply
   // dtr{s,m}v is a BLAS level-2 function
-  if(prec_param) F77_CALL(dtrsv)(&uplo, &transPrec, &diag, &n, chol, &lda, ans, &incx);
-  else F77_CALL(dtrmv)(&uplo, &transCov, &diag, &n, chol, &lda, ans, &incx);
+  if(prec_param) F77_CALL(dtrsv)(&uplo, &transPrec, &diag, &n, chol, &lda, ans, &incx FCONE FCONE FCONE);
+  else F77_CALL(dtrmv)(&uplo, &transCov, &diag, &n, chol, &lda, ans, &incx FCONE FCONE FCONE);
   
   for(i = 0; i < n; i++) 
     ans[i] = mu[i] + ans[i] * scaling;
@@ -2758,7 +2758,7 @@ void rcar_proper(double* ans, double* mu, double* C, double* adj, double* num, d
   // http://www.netlib.org/lapack/double/dpotrf.f
   char uplo('U');
   int info(0);
-  F77_CALL(dpotrf)(&uplo, &N, Qchol, &N, &info);
+  F77_CALL(dpotrf)(&uplo, &N, Qchol, &N, &info FCONE);
   
   if(!R_FINITE_VEC(Qchol, N*N)) {
     for(i = 0; i < N; i++) {
@@ -2776,7 +2776,7 @@ void rcar_proper(double* ans, double* mu, double* C, double* adj, double* num, d
   char diag('N');
   int lda(N);
   int incx(1);
-  F77_CALL(dtrsv)(&uplo, &transPrec, &diag, &N, Qchol, &lda, ans, &incx);
+  F77_CALL(dtrsv)(&uplo, &transPrec, &diag, &N, Qchol, &lda, ans, &incx FCONE FCONE FCONE);
   for(i = 0; i < N; i++) {
     ans[i] += mu[i];
   }
