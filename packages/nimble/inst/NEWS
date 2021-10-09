@@ -9,6 +9,11 @@ beta subject to conjugate sampling and either (i) 'x' provided via NIMBLE's
 constants argument and x[1] == 1 or (ii) 'a' provided via NIMBLE's constants
 argument and a[1] == 0.
 
+DEVELOPER LEVEL CHANGES
+
+-- Use USE_FC_LEN_T-related syntax in F77 calls in dists.cpp per CRAN request
+(PR #1173).
+
                             CHANGES IN VERSION 0.12.0 (September 2021)
 
 USER LEVEL CHANGES
