@@ -50,13 +50,13 @@ run examples in nimble-demos as further test
 
 check reverse dependencies:
 
-from nimble/packages, with the current nimble .tar.gz in that directory, do:
+from nimble/packages/rev_deps, with the current nimble .tar.gz in that directory, do:
 out <- tools::check_packages_in_dir('.', reverse = list())
 summary(out)
 Can also do this to see if anything has changed:
 tools::check_packages_in_dir_changes('.', reverse = list()) # for this you need an the most recent version of nimble as the 'old'
 
-Note that as of 0.11.0 I was having trouble getting this to work unless I manually download the source tarballs of the dependent packages as the default now seems to be to download the non-source Linux binary packages.
+Note that as of 0.11.0 I was having trouble getting this to work unless I manually download the source tarballs of the dependent packages as the default now seems to be to download the non-source Linux binary packages. It's best to download them to nimble/packages/rev_deps as otherwise some built objects populate nimble/packages/nimble and we don't want those accidentally committed to the repo.
 
 run nimbleSMC R CMD check and tests
 
