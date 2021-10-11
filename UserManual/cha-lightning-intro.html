@@ -360,7 +360,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
-<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
       </nav>
@@ -464,10 +463,8 @@ NIMBLE uses to represent the directed acyclic graph, we can plot the
 model (Figure 2.1).</p>
 <div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb14-1" title="1">pump<span class="op">$</span><span class="kw">plotGraph</span>()</a></code></pre></div>
 <div class="figure"><span id="fig:plotPump"></span>
-<img src="NimbleUserManual_files/figure-html/plotPump-1.png" alt="Directed Acyclic Graph plot of the pump model, thanks to the igraph package" width="720" />
-<p class="caption">
-Figure 2.1: Directed Acyclic Graph plot of the pump model, thanks to the igraph package
-</p>
+<embed src="NimbleUserManual_files/figure-latex/plotPump-1.pdf" />
+<p class="caption">Figure 2.1: Directed Acyclic Graph plot of the pump model, thanks to the igraph package</p>
 </div>
 <p>You are in control of the model. By default, <code>nimbleModel</code> does
 its best to initialize a model, but let’s say you want to
@@ -654,10 +651,10 @@ to try on our model, let’s use NIMBLE’s default MCMC. Note that conjugate re
 <a class="sourceLine" id="cb49-14" title="14">     <span class="dt">ylab =</span> <span class="kw">expression</span>(beta))</a>
 <a class="sourceLine" id="cb49-15" title="15"><span class="kw">plot</span>(samples[ , <span class="st">&quot;theta[1]&quot;</span>], <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;iteration&quot;</span>,</a>
 <a class="sourceLine" id="cb49-16" title="16">     <span class="dt">ylab =</span> <span class="kw">expression</span>(theta[<span class="dv">1</span>]))</a></code></pre></div>
-<p><img src="NimbleUserManual_files/figure-html/mcmcPump-1.png" width="672" /></p>
+<p><embed src="NimbleUserManual_files/figure-latex/mcmcPump-1.pdf" /><!-- --></p>
 <div class="sourceCode" id="cb50"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb50-1" title="1"><span class="kw">acf</span>(samples[, <span class="st">&quot;alpha&quot;</span>]) <span class="co"># plot autocorrelation of alpha sample</span></a>
 <a class="sourceLine" id="cb50-2" title="2"><span class="kw">acf</span>(samples[, <span class="st">&quot;beta&quot;</span>])  <span class="co"># plot autocorrelation of beta  sample</span></a></code></pre></div>
-<p><img src="NimbleUserManual_files/figure-html/mcmcPump-2.png" width="672" /></p>
+<p><embed src="NimbleUserManual_files/figure-latex/mcmcPump-2.pdf" /><!-- --></p>
 <p>Notice the posterior correlation between <code>alpha</code> and <code>beta</code>.
 A measure of the mixing for each is the
 autocorrelation for each parameter, shown by the <code>acf</code> plots.</p>
@@ -690,10 +687,10 @@ improves the mixing.</p>
 <a class="sourceLine" id="cb53-9" title="9">     <span class="dt">ylab =</span> <span class="kw">expression</span>(beta))</a>
 <a class="sourceLine" id="cb53-10" title="10"><span class="kw">plot</span>(samplesNew[ , <span class="st">&quot;theta[1]&quot;</span>], <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;iteration&quot;</span>,</a>
 <a class="sourceLine" id="cb53-11" title="11">     <span class="dt">ylab =</span> <span class="kw">expression</span>(theta[<span class="dv">1</span>]))</a></code></pre></div>
-<p><img src="NimbleUserManual_files/figure-html/mcmcPump2-1.png" width="672" /></p>
+<p><embed src="NimbleUserManual_files/figure-latex/mcmcPump2-1.pdf" /><!-- --></p>
 <div class="sourceCode" id="cb54"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb54-1" title="1"><span class="kw">acf</span>(samplesNew[, <span class="st">&quot;alpha&quot;</span>]) <span class="co"># plot autocorrelation of alpha sample</span></a>
 <a class="sourceLine" id="cb54-2" title="2"><span class="kw">acf</span>(samplesNew[, <span class="st">&quot;beta&quot;</span>])  <span class="co"># plot autocorrelation of beta  sample</span></a></code></pre></div>
-<p><img src="NimbleUserManual_files/figure-html/mcmcPump2-2.png" width="672" /></p>
+<p><embed src="NimbleUserManual_files/figure-latex/mcmcPump2-2.pdf" /><!-- --></p>
 <p>We can see that the block sampler has decreased the
 autocorrelation for both <code>alpha</code> and <code>beta</code>. Of course these
 are just short runs, and what we are really interested in is the
@@ -744,7 +741,7 @@ include them. The entire system is written in nimbleFunctions.</p>
 <pre><code>##     alpha      beta 
 ## 0.8226618 1.2602452</code></pre>
 <p>Both estimates are within 0.01 of the values reported by
-<span class="citation">George, Makov, and Smith (<a href="references.html#ref-George_Makov_Smith_1993">1993</a>)</span><a href="#fn5" class="footnote-ref" id="fnref5"><sup>5</sup></a>.
+<span class="citation">George, Makov, and Smith (<a href="cha-progr-with-models.html#ref-George_Makov_Smith_1993">1993</a>)</span><a href="#fn5" class="footnote-ref" id="fnref5"><sup>5</sup></a>.
 <!---
 [George, E.I., Makov, U.E. \& Smith,
 A.F.M. 1993. Conjugate likelihood

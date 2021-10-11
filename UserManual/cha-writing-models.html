@@ -360,7 +360,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
-<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
       </nav>
@@ -522,10 +521,8 @@ of statistical models can be thought of as graphs.</p>
 <a class="sourceLine" id="cb78-56" title="56">     <span class="dt">asp =</span> <span class="fl">0.5</span>,</a>
 <a class="sourceLine" id="cb78-57" title="57">     <span class="dt">edge.color =</span> edge.color)</a></code></pre></div>
 <div class="figure"><span id="fig:linearRegressionGraph"></span>
-<img src="NimbleUserManual_files/figure-html/linearRegressionGraph-1.png" alt="Graph of a linear regression model" width="1920" />
-<p class="caption">
-Figure 5.1: Graph of a linear regression model
-</p>
+<embed src="NimbleUserManual_files/figure-latex/linearRegressionGraph-1.pdf" />
+<p class="caption">Figure 5.1: Graph of a linear regression model</p>
 </div>
 <p>The graph representing the model is
 shown in Figure <a href="cha-writing-models.html#fig:linearRegressionGraph">5.1</a>. Each observation,
@@ -1071,8 +1068,8 @@ prior or require proper (normalized) densities.</p>
 <div id="lkj-distribution-for-correlation-matrices" class="section level5">
 <h5><span class="header-section-number">5.2.4.1.2</span> LKJ distribution for correlation matrices</h5>
 <p>NIMBLE provides the LKJ distribution via <code>dlkj_corr_cholesky</code>
-for correlation matrices, discussed in Section 24 of <span class="citation">(Stan Development Team <a href="references.html#ref-Stan_Lang_Fun_2021">2021</a><a href="references.html#ref-Stan_Lang_Fun_2021">a</a>)</span> and based on
-<span class="citation">(Lewandowski, Kurowicka, and Joe <a href="references.html#ref-Lewandowski_etal_2009">2009</a>)</span>. This distribution has various advantages (both from a modeling perspective and an
+for correlation matrices, discussed in Section 24 of <span class="citation">(Stan Development Team <a href="cha-progr-with-models.html#ref-Stan_Lang_Fun_2021">2021</a><a href="cha-progr-with-models.html#ref-Stan_Lang_Fun_2021">a</a>)</span> and based on
+<span class="citation">(Lewandowski, Kurowicka, and Joe <a href="cha-progr-with-models.html#ref-Lewandowski_etal_2009">2009</a>)</span>. This distribution has various advantages (both from a modeling perspective and an
 MCMC fitting perspective) over other prior distributions for correlation
 or covariance matrices such as the inverse Wishart distribution.</p>
 <p>For computational efficiency, the distribution is on the Cholesky factor
