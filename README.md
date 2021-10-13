@@ -1,5 +1,5 @@
 # NIMBLE
-[![Build Status](https://github.com/nimble-dev/nimble/actions/workflows/ci.yaml/badge.svg?branch=devel)[https://github.com/nimble-dev/nimble/actions/workflows/ci.yaml]
+[![Build Status](https://github.com/nimble-dev/nimble/actions/workflows/ci.yaml/badge.svg?branch=devel)](https://github.com/nimble-dev/nimble/actions/workflows/ci.yaml)
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/nimble-dev/nimble?branch=devel&svg=true)](https://ci.appveyor.com/project/nimble-dev/nimble)
 [![CRAN](http://www.r-pkg.org/badges/version/nimble)](https://CRAN.R-project.org/package=nimble)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1211190.svg)](https://zenodo.org/record/1211190)
