@@ -89,6 +89,11 @@ jobs:
           R CMD build packages/nimble  # Is this needed? Is purpose of this to see if 'build' induces an error?
           R CMD INSTALL --install-tests packages/nimble
 
+      - name: Install reverse dependencies
+        run: |
+          source('install_revDeps.R')  # Windows doesn't like running via ./install_requirements.R
+        shell: Rscript {0}
+
       - name: Run tests
         run: |
           source('run_tests.R')           # Windows doesn't like running via ./run_tests.R
