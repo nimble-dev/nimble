@@ -51,8 +51,7 @@ if (length(grep('^-', argv, invert = TRUE))) {
     cat('SKIPPING', omitlist, sep = '\n  ')
     allTests <- setdiff(allTests, omitlist)
 
-    smcTests <- list.files('packages/nimbleSMC/tests/testthat')
-    smcTests <- allTests[grepl('test-.*\\.R', smcTests)]
+    smcTests <- 'test-filtering.R'
 }
 
 # Sort tests by duration, running the shortest tests first.
@@ -88,6 +87,8 @@ if (!is.na(testBatch)) {
 cat('PLANNING TO TEST', allTests, sep = '\n  ')
 cat('PREDICTED DURATION =', sum(testTimes[allTests, 'time']), 'sec\n')
 if (optionDryRun) quit()
+if(testBatch == 3)
+    cat('PLANNING TO TEST nimbleSMC', smcTests, sep = '\n  ')
 
 # Run under /usr/bin/time -v if possible, to gather timing information.
 runner <- 'Rscript'
