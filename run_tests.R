@@ -116,8 +116,7 @@ runTest <- function(test, pkg = 'nimble', logToFile = FALSE, runViaTestthat = TR
     if (!logToFile) cat('--------------------------------------------------------------------------------\n')
     cat('TESTING', test, '\n')
     if (runViaTestthat) {
-        if(pkg == 'nimble')
-            name <- gsub('test-(.*)\\.R', '\\1', test) else name <- test
+        name <- gsub('test-(.*)\\.R', '\\1', test) 
         script <- paste0('library(methods);',
                          'library(testthat);',
                          'library(', pkg, ');',
