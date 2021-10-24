@@ -1,3 +1,9 @@
+
+BUG FIXES
+
+-- Fixed a bug in the ordering used by the setSamplers method of MCMC configuration objects, occuring when the samplers are specified as a vector of node or variable names.
+
+
                             CHANGES IN VERSION 0.12.1 (October 2021)
 
 BUG FIXES
