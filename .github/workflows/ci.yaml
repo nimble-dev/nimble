@@ -72,6 +72,7 @@ jobs:
           do
             eval sudo $cmd
           done < <(Rscript -e 'writeLines(remotes::system_requirements("ubuntu", "20.04", "./packages/nimble"))')
+          apt-get install libcurl4-openssl-dev  # needed for R pkg curl -> covr
 
       - name: Install dependencies
         run: |

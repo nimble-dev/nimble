@@ -12,5 +12,7 @@ for (package in revDeps) {
                                                 character.only = TRUE))) {
         install.packages(package, type = 'source', INSTALL_opts = '--install-tests', repos = 'http://cran.us.r-project.org')
     }
+    print(list.files(system.file('tests','testthat', package='nimbleSMC')))
+    print(list.files(system.file('', package='nimbleSMC')))
 }
 
