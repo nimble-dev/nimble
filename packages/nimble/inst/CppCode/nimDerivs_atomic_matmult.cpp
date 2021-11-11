@@ -10,7 +10,7 @@
 
 // #define VERBOSE_ATOMIC_MATMULT
 // #define VERBOSE_ATOMIC_MATMULT_REGIONS
-#define VERBOSE_DYNAMIC_CPP_HANDLING
+// #define VERBOSE_DYNAMIC_CPP_HANDLING
 // #define VERBOSE_TRIANGULAR_CASES
 
 
@@ -309,16 +309,13 @@ bool atomic_matmult_class::forward(
 				   CppAD::vector<double>&                     taylor_y     ) {
   //forward mode
   int nrow = order_up + 1;
+
+#ifdef VERBOSE_ATOMIC_MATMULT
   printf("In matmult forward\n");
   std::cout<<"need_y = "<<need_y;
   if(need_y == size_t(CppAD::constant_enum)) std::cout <<" (constant) ";
   if(need_y == size_t(CppAD::dynamic_enum)) std::cout <<" (dynamic) ";
   if(need_y == size_t(CppAD::variable_enum)) std::cout <<" (variable) ";  std::cout<<std::endl;
-  std::cout<<"order_low = "<<order_low<<" order_up = "<<order_up<<" nrow = "<<nrow<<std::endl;
-
-#ifdef VERBOSE_ATOMIC_MATMULT
-  printf("In matmult forward\n");
-  std::cout<<"need_y = "<<need_y<<std::endl;
   std::cout<<"order_low = "<<order_low<<" order_up = "<<order_up<<" nrow = "<<nrow<<std::endl;
   for( int i = 0; i < type_x.size(); ++i) std::cout<<type_x[i]<<"\t";
   std::cout<<std::endl;
@@ -435,11 +432,9 @@ bool atomic_matmult_class::forward(
 				   CppAD::vector<CppAD::AD<double> >&                     taylor_y     ) {
   //forward mode
   int nrow = order_up + 1;
-  printf("In matmult meta-forward\n");
-  std::cout<<"need_y = "<<need_y<<std::endl;
-  std::cout<<"order_low = "<<order_low<<" order_up = "<<order_up<<" nrow = "<<nrow<<std::endl;
 #ifdef VERBOSE_ATOMIC_MATMULT
   printf("In matmult meta-forward\n");
+  std::cout<<"need_y = "<<need_y<<std::endl;
   std::cout<<"order_low = "<<order_low<<" order_up = "<<order_up<<" nrow = "<<nrow<<std::endl;
 #endif
 
