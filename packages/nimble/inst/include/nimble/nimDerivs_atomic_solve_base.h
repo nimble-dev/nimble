@@ -22,6 +22,8 @@ class atomic_solve_base_class {
   std::vector<double> X_stored;
   std::vector<CppAD::AD<double> > X_AD_stored;
   bool A_is_constant_, B_is_constant_;
+  bool A_is_variable_, B_is_variable_;
+
   double * get_X_stored_ptr() {return &X_stored[0];}
   CppAD::AD<double> * get_X_AD_stored_ptr() {return &X_AD_stored[0];}
   void fill_X_AD_stored() {
@@ -42,7 +44,12 @@ class atomic_solve_base_class {
   bool &Bconstant() {return B_is_constant_;}
   bool const &Aconstant() const {return A_is_constant_;}
   bool const &Bconstant() const {return B_is_constant_;}
-  
+
+  bool &Avariable() {return A_is_variable_;}
+  bool &Bvariable() {return B_is_variable_;}
+  bool const &Avariable() const {return A_is_variable_;}
+  bool const &Bvariable() const {return B_is_variable_;}
+
   typedef EigenTemplateTypes<double>::typeEigenConstMapStrd EigenConstMap;
   typedef EigenTemplateTypes<double>::typeEigenMapStrd EigenMap;
   typedef EigenTemplateTypes<CppAD::AD<double> >::typeEigenConstMapStrd metaEigenConstMap;

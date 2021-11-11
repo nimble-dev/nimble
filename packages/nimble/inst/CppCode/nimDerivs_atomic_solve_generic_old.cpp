@@ -103,37 +103,19 @@ bool ATOMIC_SOLVE_CLASS::forward(
 
     new (&dY_map) EigenMap(&taylor_y[1], n1, n2, EigStrDyn(nrow*n1, nrow ) );
     //EigenMap dY_map(&taylor_y[1], n1, n2, EigStrDyn(nrow*n1, nrow ) );
-    // if((!Aconstant()) && (!Bconstant())) {
-    //   dY_map = ND_SOLVE(Amap, dB_map - ND_MAIN_TRI(dA_map) * Ymap).eval();
-    //   //      dY_map = Amap.template triangularView<Eigen::Lower>().solve(dB_map - dA_map.template triangularView<Eigen::Lower>() * Ymap).eval();// This .eval() is necessary and I don't understand why.  Normally that would be for aliasing, but there should be no over-lapping points here.  There are inter-woven maps, and that's weird but should work.
-    // } else if(Aconstant()) {
-    //   dY_map = ND_SOLVE(Amap, dB_map).eval();
-    //   //      dY_map = Amap.template triangularView<Eigen::Lower>().solve(dB_map).eval();
-    // } else if(Bconstant()) {
-    //   // std::cout<<"using Bconstant case"<<std::endl;
-    //   dY_map = -ND_SOLVE(Amap, ND_MAIN_TRI(dA_map) * Ymap).eval();
-    //   //      dY_map = -Amap.template triangularView<Eigen::Lower>().solve(dA_map.template triangularView<Eigen::Lower>() * Ymap).eval();
-    // } else {
-    //   // This case should never happen, and should have been warned above.
-    // }
-
-    //
-    if(Avariable() && Bvariable()) {
+    if((!Aconstant()) && (!Bconstant())) {
       dY_map = ND_SOLVE(Amap, dB_map - ND_MAIN_TRI(dA_map) * Ymap).eval();
       //      dY_map = Amap.template triangularView<Eigen::Lower>().solve(dB_map - dA_map.template triangularView<Eigen::Lower>() * Ymap).eval();// This .eval() is necessary and I don't understand why.  Normally that would be for aliasing, but there should be no over-lapping points here.  There are inter-woven maps, and that's weird but should work.
-    } else if(!Avariable()) {
+    } else if(Aconstant()) {
       dY_map = ND_SOLVE(Amap, dB_map).eval();
       //      dY_map = Amap.template triangularView<Eigen::Lower>().solve(dB_map).eval();
-    } else if(!Bvariable()) {
+    } else if(Bconstant()) {
+      // std::cout<<"using Bconstant case"<<std::endl;
       dY_map = -ND_SOLVE(Amap, ND_MAIN_TRI(dA_map) * Ymap).eval();
       //      dY_map = -Amap.template triangularView<Eigen::Lower>().solve(dA_map.template triangularView<Eigen::Lower>() * Ymap).eval();
     } else {
-      // Technically we could have A and B both dynamic (not variable, not constant).
-      // I'm not sure order one will ever be called in this case.
+      // This case should never happen, and should have been warned above.
     }
-    //
-
-    
     double_cache.set_cache( 1, 1, order_up, taylor_x, taylor_y );
   }
   return true;
@@ -221,22 +203,22 @@ bool ATOMIC_SOLVE_CLASS::forward(
     new (&mdY_map) metaEigenMap(&taylor_y[1], n1, n2, EigStrDyn(nrow*n1, nrow ) );
     //  metaEigenMap dY_map(&taylor_y[1], n1, n2, EigStrDyn(nrow*n1, nrow ) );
 
-    if(Avariable() && Bvariable()) {
+    if((!Aconstant()) && (!Bconstant())) {    
       mdY_map = ND_META_SOLVE(mAmap, mdB_map - nimDerivs_matmult( ND_MAIN_TRI(mdA_map), mYmap) );
       //      mdY_map = ND_META_SOLVE(mAmap, mdB_map - nimDerivs_matmult( ND_MAIN_TRI(mdA_map), mYmap));
       //mdY_map = nimDerivs_EIGEN_FS(mAmap, mdB_map - nimDerivs_matmult(mdA_map.template triangularView<Eigen::Lower>(), mYmap));
 
     //    dY_map = Amap.template triangularView<Eigen::Upper>().solve(dB_map - dA_map * Ymap).eval();// This .eval() is necessary and I don't understand why.  Normally that would be for aliasing, but there should be no over-lapping points here.  There are inter-woven maps, and that's weird but should work.
-    } else if(!Avariable()) {
+    } else if(Aconstant()) {
       mdY_map = ND_META_SOLVE(mAmap, mdB_map);
       // mdY_map = nimDerivs_EIGEN_FS(mAmap, mdB_map);
-    } else if(!Bvariable()) {
+    } else if(Bconstant()) {
       mdY_map = ND_META_SOLVE(mAmap, -nimDerivs_matmult(ND_MAIN_TRI(mdA_map), mYmap));
       // mdY_map = nimDerivs_EIGEN_FS(mAmap, -nimDerivs_matmult(mdA_map.template triangularView<Eigen::Lower>(), mYmap));
     } else {
-      // Technically we could have A and B both dynamic (not variable, not constant).
-      // I'm not sure order one will ever be called in this case.
+      // This case should never happen, and should have been warned above.
     }
+    
     CppADdouble_cache.set_cache( 1, 1, order_up, taylor_x, taylor_y );
   }
   return true;
@@ -318,7 +300,7 @@ bool ATOMIC_SOLVE_CLASS::reverse(
     Badjoint_map = ND_TRANS_SOLVE(Amap, Yadjoint_map).eval();
     //    Badjoint_map = Amap.transpose().template triangularView<Eigen::Upper>().solve(Yadjoint_map).eval();
     if(order_up == 0) { // otherwise this gets included below
-      if(Avariable())
+      if(!Aconstant())
 	Aadjoint_map = ND_MAIN_TRI(-Badjoint_map * YmapC.transpose());
     }
   }
@@ -344,7 +326,7 @@ bool ATOMIC_SOLVE_CLASS::reverse(
       // EigenMap Bdot_adjoint_map(&partial_x[1 + n1sq*nrow], n1, n2, EigStrDyn(nrow*n1, nrow ) );
       /* Bdot_adjoint = A^-T Ydot_adjoint */
 
-    if(Avariable()) {
+    if(!Aconstant()) {
       // Comes after Bdot_adjoint_map because that is used in Adjoint_map
       new (&Adot_map) EigenConstMap(&taylor_x[1], n1, n1, EigStrDyn(nrow*n1, nrow) );
       // EigenConstMap Adot_map(&taylor_x[1], n1, n1, EigStrDyn(nrow*n1, nrow) );
@@ -452,7 +434,7 @@ bool ATOMIC_SOLVE_CLASS::reverse(
     //mBadjoint_map = nimDerivs_EIGEN_BS(mAmap.transpose().template triangularView<Eigen::Upper>(), mYadjoint_map);
     // Badjoint_map = Amap.transpose().template triangularView<Eigen::Lower>().solve(Yadjoint_map);
     if(order_up == 0) {
-      if(Avariable())
+       if(!Aconstant())
 	 mAadjoint_map = ND_MAIN_TRI(nimDerivs_matmult(-mBadjoint_map, mYmapC.transpose()));
        // mAadjoint_map = nimDerivs_matmult(-mBadjoint_map, mYmapC.transpose()).template triangularView<Eigen::Lower>();//-Badjoint_map * Ymap.transpose(); // otherwise this gets included below
     }
@@ -478,7 +460,7 @@ bool ATOMIC_SOLVE_CLASS::reverse(
     mBdot_adjoint_map = ND_META_TRANS_SOLVE(ND_TRANS_TRI(mAmap), mYdot_adjoint_map);
     // mBdot_adjoint_map = nimDerivs_EIGEN_BS(mAmap.transpose().template triangularView<Eigen::Upper>(), mYdot_adjoint_map);
     
-    if(Avariable()) {
+    if(!Aconstant()) {
       new (&mAdot_map) metaEigenConstMap(&taylor_x[1], n1, n1, EigStrDyn(nrow*n1, nrow) );
       // metaEigenConstMap Adot_map(&taylor_x[1], n1, n1, EigStrDyn(nrow*n1, nrow) );
       new (&mAdot_adjoint_map) metaEigenMap(&partial_x[1], n1, n1, EigStrDyn(nrow*n1, nrow) );

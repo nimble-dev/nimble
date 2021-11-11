@@ -295,12 +295,24 @@ void atomic_forwardsolve(const MatrixXd_CppAD &A,
     return;
   }
 
+  auto dyn_cond = [](const CppAD::AD<double> &x)->bool {return CppAD::Dynamic(x);};
+  bool A_is_dynamic(false);
+  int a, b, c, d; // dummies
+  if(!A_is_constant)
+    A_is_dynamic = delineate_condition_region(dyn_cond, A, a, b, c, d);
+  bool B_is_dynamic(false);
+  if(!B_is_constant)
+    B_is_dynamic = delineate_condition_region(dyn_cond, B, a, b, c, d);
+  
   // - A or B or neither are constant: record atomic
   atomic_forwardsolve_class *atomic_forwardsolve;
   atomic_forwardsolve = new atomic_forwardsolve_class("atomic_forwardsolve");
   atomic_forwardsolve->Aconstant() = A_is_constant;
   atomic_forwardsolve->Bconstant() = B_is_constant;
-  
+
+  atomic_forwardsolve->Avariable() = !(A_is_constant || A_is_dynamic);
+  atomic_forwardsolve->Bvariable() = !(A_is_constant || A_is_dynamic);
+
   int xVecSize = 0;
   if(!A_is_constant) xVecSize += n1*n1;
   if(!B_is_constant) xVecSize += n1*n2;

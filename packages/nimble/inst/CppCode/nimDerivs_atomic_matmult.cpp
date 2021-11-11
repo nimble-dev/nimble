@@ -34,7 +34,7 @@ atomic_matmult_class::atomic_matmult_class(const std::string& name) :
   mX2dot_mapC(0, 0, 0, EigStrDyn(0, 0)), mYdot_adjoint_mapC(0, 0, 0, EigStrDyn(0, 0)),
   mYmap(0, 0, 0, EigStrDyn(0, 0)), mdY_map(0, 0, 0, EigStrDyn(0, 0)),
   mX1adjoint_map(0, 0, 0, EigStrDyn(0, 0)), mX2adjoint_map(0, 0, 0, EigStrDyn(0, 0)),
-  mX1dot_adjoint_map(0, 0, 0, EigStrDyn(0, 0)),  mX2dot_adjoint_map(0, 0, 0, EigStrDyn(0, 0))  
+  mX1dot_adjoint_map(0, 0, 0, EigStrDyn(0, 0)),  mX2dot_adjoint_map(0, 0, 0, EigStrDyn(0, 0))
 {};
 
 bool atomic_matmult_class::for_type(

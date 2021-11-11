@@ -3,6 +3,7 @@
 
 atomic_solve_base_class::atomic_solve_base_class() :
   A_is_constant_(false), B_is_constant_(false),
+  A_is_variable_(true), B_is_variable_(true),
   Amap(0,0,0, EigStrDyn(0,0)),
   Bmap(0,0,0, EigStrDyn(0,0)),
   dA_map(0,0,0, EigStrDyn(0,0)),
