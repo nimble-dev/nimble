@@ -9,17 +9,16 @@
 // But actually, the new in place works well to manage that some inputs might be constants.
 
 // #define VERBOSE_ATOMIC_MATMULT
-// #define VERBOSE_ATOMIC_MATMULT_REGIONS
-#define VERBOSE_DYNAMIC_CPP_HANDLING
+#define VERBOSE_ATOMIC_MATMULT_REGIONS
+
 // #define VERBOSE_TRIANGULAR_CASES
 
-
+#ifdef USE_NEW_DYNAMIC
 atomic_matmult_class::atomic_matmult_class(const std::string& name) :
   CppAD::atomic_three<double>(name),
   n1_(0),
   X1cat_(unknown), X2cat_(unknown),
   x1_is_constant_(false), x2_is_constant_(false),
-  x1_is_variable_(true), x2_is_variable_(true),
   X1mapC(0, 0, 0, EigStrDyn(0, 0)),
   X2mapC(0, 0, 0, EigStrDyn(0, 0)),
   dX1mapC(0, 0, 0, EigStrDyn(0, 0)), dX2mapC(0, 0, 0, EigStrDyn(0, 0)),
@@ -309,26 +308,20 @@ bool atomic_matmult_class::forward(
 				   CppAD::vector<double>&                     taylor_y     ) {
   //forward mode
   int nrow = order_up + 1;
-  printf("In matmult forward\n");
-  std::cout<<"need_y = "<<need_y;
-  if(need_y == size_t(CppAD::constant_enum)) std::cout <<" (constant) ";
-  if(need_y == size_t(CppAD::dynamic_enum)) std::cout <<" (dynamic) ";
-  if(need_y == size_t(CppAD::variable_enum)) std::cout <<" (variable) ";  std::cout<<std::endl;
-  std::cout<<"order_low = "<<order_low<<" order_up = "<<order_up<<" nrow = "<<nrow<<std::endl;
 
-#ifdef VERBOSE_ATOMIC_MATMULT
   printf("In matmult forward\n");
   std::cout<<"need_y = "<<need_y<<std::endl;
-  std::cout<<"order_low = "<<order_low<<" order_up = "<<order_up<<" nrow = "<<nrow<<std::endl;
   for( int i = 0; i < type_x.size(); ++i) std::cout<<type_x[i]<<"\t";
   std::cout<<std::endl;
   for( int i = 0; i < parameter_x.size(); ++i) std::cout<<parameter_x[i]<<"\t";
   std::cout<<std::endl;
-  for( int i = 0; i < taylor_x.size(); ++i) std::cout<<taylor_x[i]<<"\t";
+  for( int i = 0; i < taylor_x.size(); ++i) std::cout<<parameter_x[i]<<"\t";
   std::cout<<std::endl;
-  std::cout<<X1constant()<<" "<<X1variable()<<". "<<X2constant()<<" "<<X2variable()<<"."<<std::endl;
-#endif
   
+#ifdef VERBOSE_ATOMIC_MATMULT
+  printf("In matmult forward\n");
+  std::cout<<"order_low = "<<order_low<<" order_up = "<<order_up<<" nrow = "<<nrow<<std::endl;
+#endif
   int n = static_cast<double>(taylor_x.size()/nrow); // size of input
   int m = taylor_y.size() / nrow;                    // size of output
   int n1 = get_n1();                                 // rows of X1
@@ -338,9 +331,13 @@ bool atomic_matmult_class::forward(
   else if(X2constant()) n2 = n / n1; 
   else n2 = n/(n1 + n3);
 
+#ifdef VERBOSE_ATOMIC_MATMULT
+  std::cout << "n1 = "<< n1 <<" n2 = "<< n2 <<" n3 = "<< n3 <<" "<<X1constant()<<" "<<X2constant()<<std::endl;
+#endif
+
   typedef EigenTemplateTypes<double>::typeEigenConstMapStrd EMapC;
   typedef EigenTemplateTypes<double>::typeEigenMapStrd      EMap;
-
+  
   const double *Xptr;
   int row_mult;
   
@@ -348,10 +345,12 @@ bool atomic_matmult_class::forward(
     {Xptr = get_X_stored_ptr(); row_mult = 1;} else
     {Xptr = &taylor_x[0];       row_mult = nrow;}
   new (&X1mapC) EMapC(Xptr, n1, n2, EigStrDyn(row_mult*n1, row_mult) );
-
+  
 #ifdef VERBOSE_ATOMIC_MATMULT
   //  cout<<"X1\n"<<X1mapC<<endl;
 #endif
+  //   EigenTemplateTypes<double>::typeEigenConstMapStrd X1map(&taylor_x[0 + 1*nrow],
+  //							   n1, n2, EigStrDyn(nrow*n1, nrow) );
   if(X2constant()) 
     {Xptr = get_X_stored_ptr(); row_mult = 1; } else 
     { row_mult = nrow;
@@ -366,57 +365,37 @@ bool atomic_matmult_class::forward(
   
   if(order_low <= 0 & order_up >= 0) { // value
     // We could compile different cases depending on need for strides or not.
+    // We could use const maps.
     new (&Ymap) EMap(&taylor_y[0], n1, n3, EigStrDyn(nrow*n1, nrow ) );
-    // Calculate value for any cases of dynamic or parameter CppAD types
     matmult_internal_respecting_upper_lower(X1mapC, X2mapC, Ymap, X1cat(), X2cat());
 #ifdef VERBOSE_ATOMIC_MATMULT
     //    cout<<"Y\n"<<Ymap<<endl;
 #endif
   }
   if(order_low <= 1 & order_up >= 1) { // forward 1
-    //  printf("In forward >1\n");
+    // printf("In forward >1\n");
     new (&dY_map) EMap(&taylor_y[1], n1, n3, EigStrDyn(nrow*n1, nrow ) );
     if(!X1constant()) {
-      //      printf("here1\n");
       new (&dX1mapC) EMapC(&taylor_x[1], n1, n2, EigStrDyn(nrow*n1, nrow) );
-      if(X1variable())
-	matmult_internal_respecting_upper_lower(dX1mapC, X2mapC, dY_map, X1cat(), X2cat());
+      matmult_internal_respecting_upper_lower(dX1mapC, X2mapC, dY_map, X1cat(), X2cat());
       //dY_map = dX1mapC * X2mapC;
-#ifdef VERBOSE_DYNAMIC_CPP_HANDLING
-      else
-	std::cout<<"Forward 1: Skipping dX1 term because X1 is dynamic, not variable"<<std::endl;
-#endif
     }
-    if(X2variable()) {
+    if(!X2constant()) {
       if(!X1constant()) {
 	new (&dX2mapC) EMapC(&taylor_x[1 + (n1*n2)*nrow], n2, n3, EigStrDyn(nrow*n2, nrow ) );
-      } else {
-	new (&dX2mapC) EMapC(&taylor_x[1 ], n2, n3, EigStrDyn(nrow*n2, nrow ) );
-      }
-      if(X1variable()) {
 	matmult_internal_respecting_upper_lower_add(X1mapC, dX2mapC, dY_map, X1cat(), X2cat());
 	// dY_map += X1mapC * dX2mapC;
       } else {
+	new (&dX2mapC) EMapC(&taylor_x[1 ], n2, n3, EigStrDyn(nrow*n2, nrow ) );
 	matmult_internal_respecting_upper_lower(X1mapC, dX2mapC, dY_map, X1cat(), X2cat());
 	// dY_map = X1mapC * dX2mapC;
       }
     }
-#ifdef VERBOSE_DYNAMIC_CPP_HANDLING
-    else {
-      if(!X2constant()) {
-	std::cout<<"Forward 1: Skipping dX2 term because X2 is dynamic, not variable"<<std::endl;
-      }
-    }
-#endif
-    if(!(X1variable() || X2variable())) {
-#ifdef VERBOSE_DYNAMIC_CPP_HANDLING
-      std::cout<<"Forward 1: Filling result with 0 because neither X1 nor X2 are variables."<<std::endl;
-#endif
-      dY_map.fill(0);
-    }
 #ifdef VERBOSE_ATOMIC_MATMULT
     //    cout<<"dY_map\n"<<dY_map<<endl;
 #endif
+    
+    // X1constant() and X2constant() should not both be true, or this atomic wouldn't exist.
     // dY_map = dX1mapC * X2mapC + X1mapC * dX2mapC;
   }
 #ifdef VERBOSE_ATOMIC_MATMULT
@@ -435,14 +414,10 @@ bool atomic_matmult_class::forward(
 				   CppAD::vector<CppAD::AD<double> >&                     taylor_y     ) {
   //forward mode
   int nrow = order_up + 1;
-  printf("In matmult meta-forward\n");
-  std::cout<<"need_y = "<<need_y<<std::endl;
-  std::cout<<"order_low = "<<order_low<<" order_up = "<<order_up<<" nrow = "<<nrow<<std::endl;
 #ifdef VERBOSE_ATOMIC_MATMULT
   printf("In matmult meta-forward\n");
   std::cout<<"order_low = "<<order_low<<" order_up = "<<order_up<<" nrow = "<<nrow<<std::endl;
 #endif
-
   int n = static_cast<double>(taylor_x.size()/nrow);
   int m = taylor_y.size() / nrow;
   int n1 = get_n1(); //CppAD::Value(taylor_x[0]);
@@ -475,6 +450,7 @@ bool atomic_matmult_class::forward(
 	{Xptr = &taylor_x[0 + (n1*n2)*nrow]; }
     }
   new (&mX2mapC) EMapC(Xptr, n2, n3, EigStrDyn(row_mult*n2, row_mult ) );  
+  
   if(order_low <= 0 & order_up >= 0) { // value
     new (&mYmap) EMap(&taylor_y[0], n1, n3, EigStrDyn(nrow*n1, nrow ) );
     // This and other terms do not use X1cat() and X2cat() (triangular cases),
@@ -498,37 +474,32 @@ bool atomic_matmult_class::forward(
 #ifdef VERBOSE_ATOMIC_MATMULT
     std::cout<<"recording mdX1mapC %*% mX2mapC"<<std::endl;
 #endif
-    if(X1variable())
       atomic_matmult(mdX1mapC, mX2mapC, mTerm1);
 #ifdef VERBOSE_ATOMIC_MATMULT
     std::cout<<"done recording mdX1mapC %*% mX2mapC"<<std::endl;
 #endif
       mdY_map = mTerm1;
     }
-    if(X2variable()) {
+    if(!X2constant()) {
 #ifdef VERBOSE_ATOMIC_MATMULT
     std::cout<<"recording mX1mapC %*% mdX2mapC"<<std::endl;
 #endif
       if(!X1constant()) {
 	new (&mdX2mapC) EMapC(&taylor_x[1 + (n1*n2)*nrow], n2, n3, EigStrDyn(nrow*n2, nrow ) );
-      } else {
-	new (&mdX2mapC) EMapC(&taylor_x[1 ], n2, n3, EigStrDyn(nrow*n2, nrow ) );
-      }
-      atomic_matmult(mX1mapC, mdX2mapC, mTerm2);
-      if(X1variable()) {
+	atomic_matmult(mX1mapC, mdX2mapC, mTerm2);
 	mdY_map += mTerm2;
 	// dY_map += X1mapC * dX2mapC;
       } else {
+	new (&mdX2mapC) EMapC(&taylor_x[1 ], n2, n3, EigStrDyn(nrow*n2, nrow ) );
+	atomic_matmult(mX1mapC, mdX2mapC, mTerm2);
 	mdY_map = mTerm2;
 	// dY_map = X1mapC * dX2mapC;
-      }
-      if(!(X1variable() || X2variable())) {
-	dY_map.fill(0);
       }
 #ifdef VERBOSE_ATOMIC_MATMULT
       std::cout<<"done recording mX1mapC %*% mdX2mapC"<<std::endl;
 #endif
     }
+    // X1constant() and X2constant() should not both be true, or this atomic wouldn't exist.
     // dY_map = dX1mapC * X2mapC + X1mapC * dX2mapC;
   }
 #ifdef VERBOSE_ATOMIC_MATMULT
@@ -536,7 +507,7 @@ bool atomic_matmult_class::forward(
 #endif
   return true;
 }
-
+ 
 bool atomic_matmult_class::reverse(
 				   const CppAD::vector<double>&               parameter_x ,
 				   const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
@@ -575,8 +546,7 @@ bool atomic_matmult_class::reverse(
   if(X1constant())
     {Xptr = get_X_stored_ptr(); row_mult = 1;} else
     {Xptr = &taylor_x[0];       row_mult = nrow;
-      if(X1variable())
-	new (&X1adjoint_map) EMap(&partial_x[0], n1, n2, EigStrDyn(nrow*n1, nrow) );}
+      new (&X1adjoint_map) EMap(&partial_x[0], n1, n2, EigStrDyn(nrow*n1, nrow) );}
   new (&X1mapC) EMapC(Xptr, n1, n2, EigStrDyn(row_mult*n1, row_mult) );
   
   if(X2constant()) 
@@ -585,8 +555,7 @@ bool atomic_matmult_class::reverse(
       if(X1constant())
 	{Xptr = &taylor_x[0];                pXptr = &partial_x[0];} else
 	{Xptr = &taylor_x[0 + (n1*n2)*nrow]; pXptr = &partial_x[0 + (n1*n2)*nrow];}
-      if(X2variable())
-	new (&X2adjoint_map) EMap(pXptr, n2, n3, EigStrDyn(nrow*n2, nrow ) );
+      new (&X2adjoint_map) EMap(pXptr, n2, n3, EigStrDyn(nrow*n2, nrow ) );
     }
   new (&X2mapC) EMapC(Xptr, n2, n3, EigStrDyn(row_mult*n2, row_mult ) );
     
@@ -601,7 +570,7 @@ bool atomic_matmult_class::reverse(
   if(order_up >= 0) {
     // reverse 1
     //    partial_x[0] = 0;
-    if(X1variable()) {
+    if(!X1constant()) {
       matmult_internal_respecting_upper_lower(Yadjoint_mapC, X2mapC.transpose(), X1adjoint_map,
 					      unknown, transpose_X2cat());
       //    X1adjoint_map = Yadjoint_mapC * X2mapC.transpose();
@@ -609,7 +578,7 @@ bool atomic_matmult_class::reverse(
       //      std::cout<<"X1adjoint\n"<<X1adjoint_map<<std::endl;
 #endif
     }
-    if(X2variable()) {
+    if(!X2constant()) {
       matmult_internal_respecting_upper_lower( X1mapC.transpose(), Yadjoint_mapC, X2adjoint_map,
 					       transpose_X1cat(), unknown );
       // X2adjoint_map = X1mapC.transpose() * Yadjoint_mapC;
@@ -625,14 +594,14 @@ bool atomic_matmult_class::reverse(
     //    cout<<"Ydot_adjoint\n"<<Ydot_adjoint_mapC<<endl;
 #endif
     
-    if(X1variable()) {
+    if(!X1constant()) {
       new (&X1dot_mapC) EMapC(&taylor_x[1], n1, n2, EigStrDyn(nrow*n1, nrow) );
       new (&X1dot_adjoint_map) EMap(&partial_x[1], n1, n2, EigStrDyn(nrow*n1, nrow) );
 #ifdef VERBOSE_ATOMIC_MATMULT
       //      cout<<"X1dot\n"<<X1dot_mapC<<endl;
 #endif
     }
-    if(X2variable()) {
+    if(!X2constant()) {
       if(!X1constant()) {
 	Xptr = &taylor_x[1 + (n1*n2)*nrow]; pXptr = &partial_x[1 + (n1*n2)*nrow];
       } else {
@@ -645,7 +614,7 @@ bool atomic_matmult_class::reverse(
 #endif
     }
 
-    if((X1variable()) && (X2variable())) {
+    if((!X1constant()) && (!X2constant())) {
       matmult_internal_respecting_upper_lower_add(Ydot_adjoint_mapC, X2dot_mapC.transpose(), X1adjoint_map,
 						  unknown, transpose_X2cat());
       //   X1adjoint_map += Ydot_adjoint_mapC * X2dot_mapC.transpose();
@@ -660,40 +629,33 @@ bool atomic_matmult_class::reverse(
 #endif
       //   X2adjoint_map += X1dot_mapC.transpose() * Ydot_adjoint_mapC;
     }
-    if(X1variable()) {
+    if(!X1constant()) {
       matmult_internal_respecting_upper_lower(Ydot_adjoint_mapC, X2mapC.transpose(), X1dot_adjoint_map,
 					      unknown, transpose_X2cat());
       //      X1dot_adjoint_map = Ydot_adjoint_mapC * X2mapC.transpose();
 #ifdef VERBOSE_ATOMIC_MATMULT
       //      cout<<"X1dot_adjoint\n"<<X1dot_adjoint_map<<endl;
 #endif
-    } else {
-      if(!X1constant())
-	X1dot_adjoint_map.fill(0);
     }
-    if(X2variable()) {
+    if(!X2constant()) {
       matmult_internal_respecting_upper_lower(X1mapC.transpose(), Ydot_adjoint_mapC, X2dot_adjoint_map,
 						  transpose_X1cat(), unknown);
 #ifdef VERBOSE_ATOMIC_MATMULT
       //      cout<<"X2dot_adjoint\n"<<X2dot_adjoint_map<<endl;
 #endif
       //      X2dot_adjoint_map = X1mapC.transpose() * Ydot_adjoint_mapC;
-    } else {
-      if(!X2constant())
-	X2dot_adjoint_map.fill(0);
     }
   }
 #ifdef VERBOSE_ATOMIC_MATMULT
   std::cout<<"Leaving matmult reverse"<<std::endl;
 #endif
-  
+
   if(order_up >= 2) {
     printf("Unsupported reverse order requested\n");
     return false;
   }
   return true;
 }
-
 bool atomic_matmult_class::reverse(
 				   const CppAD::vector<CppAD::AD<double> >&               parameter_x ,
 				   const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
@@ -730,14 +692,13 @@ bool atomic_matmult_class::reverse(
   int row_mult;
 
   
-  // new (&mX1mapC) EigenTemplateTypes<CppAD::AD<double> >::typeEigenConstMapStrd(&taylor_x[0],
+  //  new (&mX1mapC) EigenTemplateTypes<CppAD::AD<double> >::typeEigenConstMapStrd(&taylor_x[0],
   //									       n1, n2, EigStrDyn(nrow*n1, nrow) );
 
   if(X1constant())
     {fill_X_AD_stored(); Xptr = get_X_AD_stored_ptr(); row_mult = 1;} else
     {                    Xptr = &taylor_x[0];          row_mult = nrow;
-      if(X1variable())
-	new (&mX1adjoint_map) EMap(&partial_x[0], n1, n2, EigStrDyn(nrow*n1, nrow) );}
+      new (&mX1adjoint_map) EMap(&partial_x[0], n1, n2, EigStrDyn(nrow*n1, nrow) );}
   new (&mX1mapC) EMapC(Xptr, n1, n2, EigStrDyn(row_mult*n1, row_mult) );
   
   if(X2constant()) 
@@ -746,21 +707,29 @@ bool atomic_matmult_class::reverse(
       if(X1constant())
 	{Xptr = &taylor_x[0];                pXptr = &partial_x[0];} else
 	{Xptr = &taylor_x[0 + (n1*n2)*nrow]; pXptr = &partial_x[0 + (n1*n2)*nrow];}
-      if(X2variable())
-	new (&mX2adjoint_map) EMap(pXptr, n2, n3, EigStrDyn(nrow*n2, nrow ) );
+      new (&mX2adjoint_map) EMap(pXptr, n2, n3, EigStrDyn(nrow*n2, nrow ) );
     }
   new (&mX2mapC) EMapC(Xptr, n2, n3, EigStrDyn(row_mult*n2, row_mult ) );
   new (&mYadjoint_mapC) EMapC(&partial_y[0], n1, n3, EigStrDyn(nrow*n1, nrow ) );
 
+  // if(order_up >= 0) {
+  //   // reverse 1
+  //   //  partial_x[0] = 0;
+  //   atomic_matmult(mYadjoint_mapC, mX2mapC.transpose(), mTerm1);
+  //   mX1adjoint_map = mTerm1;
+  //   atomic_matmult(mX1mapC.transpose(), mYadjoint_mapC,  mTerm2);
+  //   mX2adjoint_map = mTerm2;
+  // }
+
   if(order_up >= 0) {
     // reverse 1
     //    partial_x[0] = 0;
-    if(X1variable()) {
+    if(!X1constant()) {
       atomic_matmult(mYadjoint_mapC, mX2mapC.transpose(), mTerm1);
       mX1adjoint_map = mTerm1;
       //    X1adjoint_map = Yadjoint_mapC * X2mapC.transpose();
     }
-    if(X2variable()) {
+    if(!X2constant()) {
       atomic_matmult(mX1mapC.transpose(), mYadjoint_mapC,  mTerm2);
       mX2adjoint_map = mTerm2;
       // X2adjoint_map = X1mapC.transpose() * Yadjoint_mapC;
@@ -771,11 +740,11 @@ bool atomic_matmult_class::reverse(
     // reverse 2
     new (&mYdot_adjoint_mapC) EMapC(&partial_y[1], n1, n3, EigStrDyn(nrow*n1, nrow ) );
     
-    if(X1variable()) {
+    if(!X1constant()) {
       new (&mX1dot_mapC) EMapC(&taylor_x[1], n1, n2, EigStrDyn(nrow*n1, nrow) );
       new (&mX1dot_adjoint_map) EMap(&partial_x[1], n1, n2, EigStrDyn(nrow*n1, nrow) );
     }
-    if(X2variable()) {
+    if(!X2constant()) {
       if(!X1constant()) {
 	Xptr = &taylor_x[1 + (n1*n2)*nrow]; pXptr = &partial_x[1 + (n1*n2)*nrow];
       } else {
@@ -785,7 +754,7 @@ bool atomic_matmult_class::reverse(
       new (&mX2dot_adjoint_map) EMap(pXptr, n2, n3, EigStrDyn(nrow*n2, nrow ));
     }
 
-    if((X1variable()) && (X2variable())) {
+    if((!X1constant()) && (!X2constant())) {
       atomic_matmult(mYdot_adjoint_mapC, mX2dot_mapC.transpose(), mTerm1);
       atomic_matmult(mX1dot_mapC.transpose() , mYdot_adjoint_mapC, mTerm2);
       mX1adjoint_map += mTerm1;
@@ -793,12 +762,12 @@ bool atomic_matmult_class::reverse(
       //   X1adjoint_map += Ydot_adjoint_mapC * X2dot_mapC.transpose();
       //   X2adjoint_map += X1dot_mapC.transpose() * Ydot_adjoint_mapC;
     }
-    if(X1variable()) {
+    if(!X1constant()) {
       atomic_matmult(mYdot_adjoint_mapC, mX2mapC.transpose(), mTerm1);
       mX1dot_adjoint_map = mTerm1;
       //      X1dot_adjoint_map = Ydot_adjoint_mapC * X2mapC.transpose();
     }
-    if(X2variable()) {
+    if(!X2constant()) {
       atomic_matmult(mX1mapC.transpose(), mYdot_adjoint_mapC,  mTerm2);
       mX2dot_adjoint_map = mTerm2;
     //      X2dot_adjoint_map = X1mapC.transpose() * Ydot_adjoint_mapC;
@@ -820,6 +789,356 @@ void atomic_matmult_class::set_X_stored(const MatrixXd_CppAD &X) {
   X_stored.resize(n1 * n2);
   mat2vec_v(X, X_stored, 0);
 }
+
+#else // USE_
+// Use local Eigen maps
+// This is now deprecated because of use of the matrix_category system above
+
+atomic_matmult_class::atomic_matmult_class(const std::string& name) :
+  CppAD::atomic_three<double>(name),
+  n1_(0)
+{};
+bool atomic_matmult_class::for_type(
+				    const CppAD::vector<double>&               parameter_x ,
+				    const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
+				    CppAD::vector<CppAD::ad_type_enum>&        type_y      )
+{
+  // printf("In matmult for_type\n");
+  int n = static_cast<double>(type_x.size());
+  int m = type_y.size();
+  int n1 = get_n1(); //parameter_x[0];
+  //std::cout<<"n1 = "<<n1<<std::endl;
+  //std::cout<<"constant "<<CppAD::constant_enum<<std::endl;
+  //std::cout<<"dynamic "<<CppAD::dynamic_enum<<std::endl;
+  //std::cout<<"variable "<<CppAD::variable_enum<<std::endl;
+  //    if(type_x[0] == CppAD::constant_enum) std::cout<<"constant"<<std::endl;
+  //    if(type_x[0] == CppAD::dynamic_enum) std::cout<<"dynamic"<<std::endl;
+  //    if(type_x[0] == CppAD::variable_enum) std::cout<<"variable"<<std::endl;
+  int n3 = m/n1;
+  int n2 = n/(n1 + n3);
+  // std::cout << "n1 = "<< n1 <<" n2 = "<< n2 <<" n3 = "<< n3 <<std::endl;
+  CppAD::vector<CppAD::ad_type_enum> x1RowTypes(n1);
+  CppAD::vector<CppAD::ad_type_enum> x2ColTypes(n3);
+
+  CppAD::ad_type_enum this_row_type;
+  CppAD::ad_type_enum item_type;
+  for(size_t i = 0; i < n1; ++i) {
+    this_row_type = CppAD::constant_enum;
+    for(size_t j = 0; j < n2; ++j) {
+      item_type = type_x[i + j*n1];
+      //  std::cout<<"x1("<<i<<","<< j<<") type = "<<item_type<<"\n";
+      if(item_type == CppAD::variable_enum) {
+	this_row_type = CppAD::variable_enum;
+	break;
+      } else {
+	if(item_type == CppAD::dynamic_enum)
+	  this_row_type = CppAD::dynamic_enum;
+      }
+    }
+    x1RowTypes[i] = this_row_type;
+  }
+  int n12 = n1*n2;
+  CppAD::ad_type_enum this_col_type;
+  for(size_t j = 0; j < n3; ++j) {
+    this_col_type = CppAD::constant_enum;
+    for(size_t i = 0; i < n2; ++i) {
+      item_type = type_x[n12 + i + j*n2];
+      //std::cout<<"x2("<<i<<","<< j<<") type = "<<item_type<<"\n";
+      if(item_type == CppAD::variable_enum) {
+	this_col_type = CppAD::variable_enum;
+	break;
+      } else {
+	if(item_type == CppAD::dynamic_enum)
+	  this_col_type = CppAD::dynamic_enum;
+      }
+    }
+    x2ColTypes[j] = this_col_type;
+  }
+
+  for(size_t i = 0; i < n1; ++i) {
+    for(size_t j = 0; j < n3; ++j) {
+      item_type = CppAD::constant_enum;
+      if(x1RowTypes[i] == CppAD::variable_enum || x2ColTypes[j] == CppAD::variable_enum) {
+	item_type = CppAD::variable_enum;
+      } else {
+	if(x1RowTypes[i] == CppAD::dynamic_enum || x2ColTypes[j] == CppAD::dynamic_enum) {
+	  item_type = CppAD::dynamic_enum;
+	}
+      }
+      type_y[i + j*n1] = item_type;
+      //std::cout<<"y("<<i<<","<<j<<") type = "<<item_type<<"\n";
+    }
+  }
+  //    size_t n = type_y.size();
+  //    for(size_t i = 0; i < n; ++i) type_y[i] = CppAD::variable_enum;
+  return true;
+}
+
+bool atomic_matmult_class::rev_depend(
+				      const CppAD::vector<double>&          parameter_x ,
+				      const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
+				      CppAD::vector<bool>&                depend_x    ,
+				      const CppAD::vector<bool>&          depend_y
+				      ) {
+  // printf("In matmult reverse_depend\n");
+  // Here we put true in an element of depend_x if there are true depend_y elements that are functions of the depend_x element
+  int n = static_cast<double>(type_x.size());
+  int m = depend_y.size();
+  int n1 = get_n1();// parameter_x[0];
+  // std::cout<<"n1 = "<<n1<<std::endl;
+  //    if(type_x[0] == CppAD::constant_enum) std::cout<<"constant"<<std::endl;
+  //    if(type_x[0] == CppAD::dynamic_enum) std::cout<<"dynamic"<<std::endl;
+  //    if(type_x[0] == CppAD::variable_enum) std::cout<<"variable"<<std::endl;
+  int n3 = m/n1;
+  int n2 = n/(n1 + n3);
+
+  CppAD::vector<bool> depend_x1Row(n1);
+  CppAD::vector<bool> depend_x2Col(n3);
+  for(size_t i = 0; i < n1; ++i) depend_x1Row[i] = false;
+  for(size_t j = 0; j < n3; ++j) depend_x2Col[j] = false;
+  bool this_depend;
+  for(size_t i = 0; i < n1; ++i) {
+    for(size_t j = 0; j < n3; ++j) {
+      this_depend = depend_y[i + j*n1];
+      depend_x1Row[i] |= this_depend;
+      depend_x2Col[j] |= this_depend;
+    }
+  }
+  for(size_t i = 0; i < n1; ++i) {
+    this_depend = depend_x1Row[i];
+    for(size_t j = 0; j < n2; ++j) {
+      depend_x[i + j*n1] = this_depend;
+    }
+  }
+  int n12 = n1*n2;
+  for(size_t j = 0; j < n3; ++j) {
+    this_depend = depend_x2Col[j];
+    for(size_t i = 0; i < n2; ++i) {
+      depend_x[n12 + i + j*n2] = this_depend;
+    }
+  }
+  return true;
+}
+
+bool atomic_matmult_class::forward(
+				   const CppAD::vector<double>&               parameter_x  ,
+				   const CppAD::vector<CppAD::ad_type_enum>&  type_x       ,
+				   size_t                              need_y       ,
+				   size_t                              order_low    ,
+				   size_t                              order_up     ,
+				   const CppAD::vector<double>&               taylor_x     ,
+				   CppAD::vector<double>&                     taylor_y     ) {
+  //forward mode
+  //  printf("In matmult forward\n");
+  int nrow = order_up + 1;
+  // std::cout<<"nrow = "<<nrow<<std::endl;
+  int n = static_cast<double>(taylor_x.size()/nrow);
+  int m = taylor_y.size() / nrow;
+  int n1 = get_n1(); //taylor_x[0];
+  int n3 = m/n1;
+  int n2 = n/(n1 + n3);
+
+  // std::cout << "n1 = "<< n1 <<" n2 = "<< n2 <<" n3 = "<< n3 <<std::endl;
+   
+  EigenTemplateTypes<double>::typeEigenConstMapStrd X1mapC(&taylor_x[0],
+							   n1, n2, EigStrDyn(nrow*n1, nrow) );
+  EigenTemplateTypes<double>::typeEigenConstMapStrd X2mapC(&taylor_x[0 + (n1*n2)*nrow],
+							   n2, n3, EigStrDyn(nrow*n2, nrow ) );
+  if(order_low <= 0 & order_up >= 0) { // value
+    // We could compile different cases depending on need for strides or not.
+    // We could use const maps.
+    EigenTemplateTypes<double>::typeEigenMapStrd Ymap(&taylor_y[0],
+						      n1, n3, EigStrDyn(nrow*n1, nrow ) );
+    Ymap = X1mapC * X2mapC;
+    // for(int i = 0; i < X1mapC.rows(); ++i) {
+    //   for(int j = 0; j < X1mapC.cols(); ++j) {
+    // 	std::cout<<X1mapC(i,j)<<" ";
+    //   }
+    //   std::cout<<std::endl;
+    // }      
+  }
+  if(order_low <= 1 & order_up >= 1) { // forward 1
+    // printf("In forward >1\n");
+    EigenTemplateTypes<double>::typeEigenConstMapStrd dX1mapC(&taylor_x[1],
+							      n1, n2, EigStrDyn(nrow*n1, nrow) );
+    EigenTemplateTypes<double>::typeEigenConstMapStrd dX2mapC(&taylor_x[1 + (n1*n2)*nrow],
+							      n2, n3, EigStrDyn(nrow*n2, nrow ) );
+    EigenTemplateTypes<double>::typeEigenMapStrd dY_map(&taylor_y[1],
+							n1, n3, EigStrDyn(nrow*n1, nrow ) );
+    dY_map = dX1mapC * X2mapC + X1mapC * dX2mapC;
+  }
+  return true;
+}
+
+bool atomic_matmult_class::forward(
+				   const CppAD::vector<CppAD::AD<double> >&               parameter_x  ,
+				   const CppAD::vector<CppAD::ad_type_enum>&  type_x       ,
+				   size_t                              need_y       ,
+				   size_t                              order_low    ,
+				   size_t                              order_up     ,
+				   const CppAD::vector<CppAD::AD<double> >&               taylor_x     ,
+				   CppAD::vector<CppAD::AD<double> >&                     taylor_y     ) {
+  //forward mode
+  //  printf("In matmult meta-forward\n");
+  int nrow = order_up + 1;
+  // std::cout<<"nrow = "<<nrow<<std::endl;
+  int n = static_cast<double>(taylor_x.size()/nrow);
+  int m = taylor_y.size() / nrow;
+  int n1 = get_n1(); //CppAD::Value(taylor_x[0]);
+  int n3 = m/n1;
+  int n2 = n/(n1 + n3);
+  EigenTemplateTypes<CppAD::AD<double>>::typeMatrixXd mTerm1, mTerm2;
+  EigenTemplateTypes<CppAD::AD<double> >::typeEigenConstMapStrd mX1mapC(&taylor_x[0],
+									n1, n2, EigStrDyn(nrow*n1, nrow) );
+  EigenTemplateTypes<CppAD::AD<double> >::typeEigenConstMapStrd mX2mapC(&taylor_x[0 + (n1*n2)*nrow],
+									n2, n3, EigStrDyn(nrow*n2, nrow ) );
+  if(order_low <= 0 & order_up >= 0) { // value
+    EigenTemplateTypes<CppAD::AD<double> >::typeEigenMapStrd mYmap(&taylor_y[0],
+								   n1, n3, EigStrDyn(nrow*n1, nrow ) );
+    atomic_matmult(mX1mapC, mX2mapC, mTerm1); //Ymap = X1map * X2map;
+    mYmap = mTerm1;
+  }
+  if(order_low <= 1 & order_up >= 1) { // forward 1
+    // printf("In forward >1\n");
+    EigenTemplateTypes<CppAD::AD<double>>::typeEigenConstMapStrd mdX1mapC(&taylor_x[1],
+									  n1, n2, EigStrDyn(nrow*n1, nrow) );
+    EigenTemplateTypes<CppAD::AD<double>>::typeEigenConstMapStrd mdX2mapC(&taylor_x[1 + (n1*n2)*nrow],
+									  n2, n3, EigStrDyn(nrow*n2, nrow ) );
+    EigenTemplateTypes<CppAD::AD<double>>::typeEigenMapStrd mdY_map(&taylor_y[1],
+								    n1, n3, EigStrDyn(nrow*n1, nrow ) );
+
+    atomic_matmult(mdX1mapC, mX2mapC, mTerm1);
+    atomic_matmult(mX1mapC, mdX2mapC, mTerm2);
+    mdY_map = mTerm1 + mTerm2;
+  }
+  return true;
+}
+ 
+bool atomic_matmult_class::reverse(
+				   const CppAD::vector<double>&               parameter_x ,
+				   const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
+				   size_t                              order_up    ,
+				   const CppAD::vector<double>&               taylor_x    ,
+				   const CppAD::vector<double>&               taylor_y    ,
+				   CppAD::vector<double>&                     partial_x   ,
+				   const CppAD::vector<double>&               partial_y   )
+{
+  //reverse mode
+  // printf("In matmult reverse\n");
+  int nrow = order_up + 1;
+  // std::cout<<"nrow = "<<nrow<<std::endl;
+  int n = static_cast<double>(taylor_x.size()/nrow);
+  int m = taylor_y.size() / nrow;
+  int n1 = get_n1();//taylor_x[0];
+  int n3 = m/n1;
+  int n2 = n/(n1 + n3);
+  EigenTemplateTypes<double>::typeEigenConstMapStrd X1mapC(&taylor_x[0],
+							   n1, n2, EigStrDyn(nrow*n1, nrow) );
+  EigenTemplateTypes<double>::typeEigenConstMapStrd X2mapC(&taylor_x[0 + (n1*n2)*nrow],
+							   n2, n3, EigStrDyn(nrow*n2, nrow ) );
+  EigenTemplateTypes<double>::typeEigenConstMapStrd Yadjoint_mapC(&partial_y[0],
+								  n1, n3, EigStrDyn(nrow*n1, nrow ) );
+  EigenTemplateTypes<double>::typeEigenMapStrd X1adjoint_map(&partial_x[0],
+							     n1, n2, EigStrDyn(nrow*n1, nrow) );
+  EigenTemplateTypes<double>::typeEigenMapStrd X2adjoint_map(&partial_x[0 + (n1*n2)*nrow],
+							     n2, n3, EigStrDyn(nrow*n2, nrow ) );
+  if(order_up >= 0) {
+    // reverse 1
+    partial_x[0] = 0;
+    X1adjoint_map = Yadjoint_mapC *  X2mapC.transpose();
+    X2adjoint_map = X1mapC.transpose() * Yadjoint_mapC;
+  }
+  if(order_up >= 1) {
+    // reverse 2
+    EigenTemplateTypes<double>::typeEigenConstMapStrd X1dot_mapC(&taylor_x[1],
+								 n1, n2, EigStrDyn(nrow*n1, nrow) );
+    EigenTemplateTypes<double>::typeEigenConstMapStrd X2dot_mapC(&taylor_x[1 + (n1*n2)*nrow],
+								 n2, n3, EigStrDyn(nrow*n2, nrow ) );
+    EigenTemplateTypes<double>::typeEigenConstMapStrd Ydot_adjoint_mapC(&partial_y[1],
+									n1, n3, EigStrDyn(nrow*n1, nrow ) );
+    EigenTemplateTypes<double>::typeEigenMapStrd X1dot_adjoint_map(&partial_x[1],
+								   n1, n2, EigStrDyn(nrow*n1, nrow) );
+    EigenTemplateTypes<double>::typeEigenMapStrd X2dot_adjoint_map(&partial_x[1 + (n1*n2)*nrow],
+								   n2, n3, EigStrDyn(nrow*n2, nrow ) );
+    X1adjoint_map += Ydot_adjoint_mapC * X2dot_mapC.transpose();
+    X2adjoint_map += X1dot_mapC.transpose() * Ydot_adjoint_mapC;
+    X1dot_adjoint_map = Ydot_adjoint_mapC * X2mapC.transpose();
+    X2dot_adjoint_map = X1mapC.transpose() * Ydot_adjoint_mapC;
+  }
+  if(order_up >= 2) {
+    printf("Unsupported reverse order requested\n");
+    return false;
+  }
+  return true;
+}
+bool atomic_matmult_class::reverse(
+				   const CppAD::vector<CppAD::AD<double> >&               parameter_x ,
+				   const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
+				   size_t                              order_up    ,
+				   const CppAD::vector<CppAD::AD<double> >&               taylor_x    ,
+				   const CppAD::vector<CppAD::AD<double> >&               taylor_y    ,
+				   CppAD::vector<CppAD::AD<double> >&                     partial_x   ,
+				   const CppAD::vector<CppAD::AD<double> >&               partial_y   )
+{
+  //reverse mode
+  // printf("In matmult reverse\n");
+  int nrow = order_up + 1;
+  // std::cout<<"nrow = "<<nrow<<std::endl;
+  int n = static_cast<double>(taylor_x.size()/nrow);
+  int m = taylor_y.size() / nrow;
+  int n1 = get_n1(); //CppAD::Value(taylor_x[0]);
+  int n3 = m/n1;
+  int n2 = n/(n1 + n3);
+  EigenTemplateTypes<CppAD::AD<double>>::typeMatrixXd mTerm1, mTerm2;
+  EigenTemplateTypes<CppAD::AD<double> >::typeEigenConstMapStrd mX1mapC(&taylor_x[0],
+									n1, n2, EigStrDyn(nrow*n1, nrow) );
+  EigenTemplateTypes<CppAD::AD<double> >::typeEigenConstMapStrd mX2mapC(&taylor_x[0 + (n1*n2)*nrow],
+									n2, n3, EigStrDyn(nrow*n2, nrow ) );
+  EigenTemplateTypes<CppAD::AD<double> >::typeEigenConstMapStrd mYadjoint_mapC(&partial_y[0],
+									       n1, n3, EigStrDyn(nrow*n1, nrow ) );
+  EigenTemplateTypes<CppAD::AD<double> >::typeEigenMapStrd mX1adjoint_map(&partial_x[0],
+									  n1, n2, EigStrDyn(nrow*n1, nrow) );
+  EigenTemplateTypes<CppAD::AD<double> >::typeEigenMapStrd mX2adjoint_map(&partial_x[0 + (n1*n2)*nrow],
+									  n2, n3, EigStrDyn(nrow*n2, nrow ) );
+  if(order_up >= 0) {
+    // reverse 1
+    partial_x[0] = 0;
+    atomic_matmult(mYadjoint_mapC, mX2mapC.transpose(), mTerm1);
+    mX1adjoint_map = mTerm1;
+    atomic_matmult(mX1mapC.transpose(), mYadjoint_mapC,  mTerm2);
+    mX2adjoint_map = mTerm2;
+  }
+  if(order_up >= 1) {
+    // reverse 2
+    EigenTemplateTypes<CppAD::AD<double> >::typeEigenConstMapStrd mX1dot_mapC(&taylor_x[1],
+									      n1, n2, EigStrDyn(nrow*n1, nrow) );
+    EigenTemplateTypes<CppAD::AD<double> >::typeEigenConstMapStrd mX2dot_mapC(&taylor_x[1 + (n1*n2)*nrow],
+									      n2, n3, EigStrDyn(nrow*n2, nrow ) );
+    EigenTemplateTypes<CppAD::AD<double> >::typeEigenConstMapStrd mYdot_adjoint_mapC(&partial_y[1],
+										     n1, n3, EigStrDyn(nrow*n1, nrow ) );
+    EigenTemplateTypes<CppAD::AD<double> >::typeEigenMapStrd mX1dot_adjoint_map(&partial_x[1],
+										n1, n2, EigStrDyn(nrow*n1, nrow) );
+    EigenTemplateTypes<CppAD::AD<double> >::typeEigenMapStrd mX2dot_adjoint_map(&partial_x[1 + (n1*n2)*nrow],
+										n2, n3, EigStrDyn(nrow*n2, nrow ) );
+
+    atomic_matmult(mYdot_adjoint_mapC, mX2dot_mapC.transpose(), mTerm1);
+    atomic_matmult(mX1dot_mapC.transpose() , mYdot_adjoint_mapC, mTerm2);
+    mX1adjoint_map += mTerm1;
+    mX2adjoint_map += mTerm2;
+
+    atomic_matmult(mYdot_adjoint_mapC, mX2mapC.transpose(), mTerm1);
+    mX1dot_adjoint_map = mTerm1;
+    atomic_matmult(mX1mapC.transpose(), mYdot_adjoint_mapC,  mTerm2);
+    mX2dot_adjoint_map = mTerm2;
+  }
+  if(order_up >= 2) {
+    printf("Unsupported reverse order requested\n");
+    return false;
+  }
+  return true;
+}
+
+#endif
 
 // matmult atomic objects created by this factory are not
 // cleaned up until the library is unloaded.
@@ -866,6 +1185,182 @@ matrix_category decide_matrix_category(const MatrixXd_CppAD &x) {
   return square_full;
 }
 
+// template<typename Cond>
+// bool delineate_condition_region(const Cond &cond,
+// 				const MatrixXd_CppAD &x,
+// 				int &rowStart_arg, int &rowEnd_arg,
+// 				int &colStart_arg, int &colEnd_arg,
+// 				bool reset = true) {
+//   // This generically checks for a box within x such that condition cond is false.
+//   // In one use, the condition is that elements are CppAD constants.
+//   // In another use, the condition is that they have value 0.
+  
+//   // All "end" values are C-style, that is one past the last valid index.
+
+//   // Result is returned through rowStart_arg, rowEnd_arg, colStart_arg, colEnd_arg.
+//   // The "arg" values are ignored upon input if reset = true.
+//   // If reset = false, they are used to mark the region to check.
+//   // In either case, they are used to return the result.
+//   int nRow = x.rows();
+//   int nCol = x.cols();
+//   // These four values will store the result until the end, when the result
+//   // will be moved into the "[]_arg" reference variables.
+//   // They will be initialized as if reset = TRUE.
+//   // Note that they are flipped, so rowStart begins at nRow, the value it should take
+//   // if all rows satisfy cond(ition).
+//   // rowEnd starts at 0, but if all rows satisfy cond, it will be nRow upon completion.
+//   int rowStart(nRow);  // first row that is not all constant
+//   int rowEnd(0);       // one past last row that is not all constant
+//   int colStart(nCol);  // first col that is not all constant
+//   int colEnd(0);       // one past last col that is not all constant
+//   // If not resetting, take input regions by flipping input values.
+//   if(!reset) {
+//     rowStart = rowEnd_arg;
+//     rowEnd = rowStart_arg; 
+//     colStart = colEnd_arg;
+//     colEnd = colStart_arg;
+//   } else {
+//     // Use the input variables as for loop bounds.
+//     // If !reset, the above clause achieves this, so it is only done if reset==true.
+//     rowStart_arg = rowEnd; // These are deliberately flipped.  Default 0
+//     rowEnd_arg = rowStart; // Default nRow
+//     colStart_arg = colEnd; // Default 0
+//     colEnd_arg = colStart; // Default nCol
+//   }
+
+//   // For each row, counting up from start, check if all columns satisfy cond
+//   for(int i = rowStart_arg; i < rowEnd_arg; ++i) {
+//     bool this_row_true(true);
+//     for(int j = colStart_arg; j < colEnd_arg; ++j) {
+//       if(!(this_row_true &= cond(x(i, j )))) break;
+//     }
+//     if(!this_row_true) { // mark the first row that has an element failing cond
+//       rowStart = i;
+//       break;
+//     }
+//   }
+
+//   // If all rows satsify cond, there is no need to iterate again for rowEnd
+//   if(rowStart == rowEnd_arg) {
+//     rowEnd = rowEnd_arg;
+//   } else {
+//     // For each row, counting down from end, check if all columns satsify cond
+//     for(int i = rowEnd_arg-1; i >= rowStart_arg; --i) {
+//       bool this_row_true(true);
+//       for(int j = colStart_arg; j < colEnd_arg; ++j) {
+// 	if(!(this_row_true &= cond(x(i, j )))) break;
+//       }
+//       if(!this_row_true) {
+// 	rowEnd = i + 1; // mark one past the highest row (first from counting down) that has an element failing cond
+// 	break;
+//       }
+//     }
+//   }
+
+//   // For each col, counting up from start, check if all rows satsify cond
+//   for(int j = colStart_arg; j < colEnd_arg; ++j) {
+//     bool this_col_true(true);
+//     for(int i = rowStart_arg; i < rowEnd_arg; ++i) {
+//       if(!(this_col_true &= cond(x(i, j )))) break;
+//     }
+//     if(!this_col_true) {
+//       colStart = j; // mark first col that has an element failing cond
+//       break;
+//     }
+//   }
+
+//   // If all cols satisfy cond, there is no need to iterate again for colEnd
+//   if(colStart == colEnd_arg) {
+//     colEnd = colEnd_arg;
+//   } else {
+//     // For each col, counting down from end, check if all rows satisfy cond
+//     for(int j = colEnd_arg-1; j >= colStart_arg; --j) {
+//       bool this_col_true(true);
+//       for(int i = rowStart_arg; i < rowEnd_arg; ++i) {
+// 	if(!(this_col_true &= cond(x(i, j )))) break;
+//       }
+//       if(!this_col_true) {
+// 	colEnd = j + 1; // mark one past last highest col (first from counting down) that has an element failing cod
+// 	break;
+//       }
+//     }
+//   }
+//   // Does the entire block satisfy cond?
+//   bool all_true = (rowStart == rowStart_arg) && (rowEnd == rowEnd_arg) && (colStart == colStart_arg) && (colEnd == colEnd_arg);
+//   rowStart_arg = rowStart;
+//   rowEnd_arg = rowEnd;
+//   colStart_arg = colStart;
+//   colEnd_arg = colEnd;
+
+//   return all_true;
+// }
+
+// bool delineate_constant_region(const MatrixXd_CppAD &x,
+// 			       int &rowStart, int &rowEnd,
+// 			       int &colStart, int &colEnd) {
+//   // All "end" values are C-style, that is one past the last valid index.
+//   int nRow = x.rows();
+//   int nCol = x.cols();
+//   rowStart = nRow; // first row that is not all constant
+//   rowEnd = 0;      // one past last row that is not all constant
+//   colStart = nCol; // first col that is not all constant
+//   colEnd = 0;      // one past last col that is not all constant
+
+//   for(int i = 0; i < nRow; ++i) {
+//     bool this_row_constant(true);
+//     for(int j = 0; j < nCol; ++j) {
+//       if(!(this_row_constant &= CppAD::Constant(x(i, j )))) break;
+//     }
+//     if(!this_row_constant) {
+//       rowStart = i;
+//       break;
+//     }
+//   }
+
+//   if(rowStart == nRow) {
+//     rowEnd = nRow;
+//   } else {
+//     for(int i = nRow-1; i >= 0; --i) {
+//       bool this_row_constant(true);
+//       for(int j = 0; j < nCol; ++j) {
+// 	if(!(this_row_constant &= CppAD::Constant(x(i, j )))) break;
+//       }
+//       if(!this_row_constant) {
+// 	rowEnd = i + 1;
+// 	break;
+//       }
+//     }
+//   }
+
+//   for(int j = 0; j < nCol; ++j) {
+//     bool this_col_constant(true);
+//     for(int i = 0; i < nRow; ++i) {
+//       if(!(this_col_constant &= CppAD::Constant(x(i, j )))) break;
+//     }
+//     if(!this_col_constant) {
+//       colStart = j;
+//       break;
+//     }
+//   }
+
+//   if(colStart == nCol) {
+//     colEnd = nCol;
+//   } else {
+//     for(int j = nCol-1; j >= 0; --j) {
+//       bool this_col_constant(true);
+//       for(int i = 0; i < nRow; ++i) {
+// 	if(!(this_col_constant &= CppAD::Constant(x(i, j )))) break;
+//       }
+//       if(!this_col_constant) {
+// 	colEnd = j + 1;
+// 	break;
+//       }
+//     }
+//   }
+//   if((rowStart == nRow) && (rowEnd == nRow) && (colStart == nCol) && (colEnd == nCol))
+//     return true;  
+//   return false; // not all constant
+// }
 
 void atomic_matmult_internal(const MatrixXd_CppAD &x1,
 			     const MatrixXd_CppAD &x2,
@@ -892,18 +1387,6 @@ void atomic_matmult_internal(const MatrixXd_CppAD &x1,
   atomic_matmult->X2cat() = decide_matrix_category(x2);
   atomic_matmult->X1constant() = x1_is_constant;
   atomic_matmult->X2constant() = x2_is_constant;
-
-  auto dyn_cond = [](const CppAD::AD<double> &x)->bool {return CppAD::Dynamic(x);};
-  bool x1_is_dynamic(false);
-  int a, b, c, d; // dummies
-  if(!x1_is_constant)
-    x1_is_dynamic = delineate_condition_region(dyn_cond, x1, a, b, c, d);
-  bool x2_is_dynamic(false);
-  if(!x2_is_constant)
-    x2_is_dynamic = delineate_condition_region(dyn_cond, x2, a, b, c, d);
-
-  atomic_matmult->X1variable() = !(x1_is_constant || x1_is_dynamic);
-  atomic_matmult->X2variable() = !(x2_is_constant || x2_is_dynamic);
   
   int xVecSize = 0;
   if(!x1_is_constant) xVecSize += n1*n2;
@@ -1323,7 +1806,7 @@ void atomic_matmult(const MatrixXd_CppAD &x1,
       }
     } // end of B2 within B1
   } // end of B1
-}    
+}
 
 MatrixXd_CppAD nimDerivs_matmult(const MatrixXd_CppAD &x1,
 				 const MatrixXd_CppAD &x2,

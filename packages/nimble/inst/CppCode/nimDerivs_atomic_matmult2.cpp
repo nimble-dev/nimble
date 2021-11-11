@@ -9,8 +9,8 @@
 // But actually, the new in place works well to manage that some inputs might be constants.
 
 // #define VERBOSE_ATOMIC_MATMULT
-// #define VERBOSE_ATOMIC_MATMULT_REGIONS
-#define VERBOSE_DYNAMIC_CPP_HANDLING
+#define VERBOSE_ATOMIC_MATMULT_REGIONS
+
 // #define VERBOSE_TRIANGULAR_CASES
 
 
@@ -198,107 +198,6 @@ bool atomic_matmult_class::rev_depend(
   return true;
 }
 
-template<class X1c, class X2c, class Yc >
-void matmult_internal_respecting_upper_lower(const X1c &X1, const X2c &X2, Yc &Y,
-					     const matrix_category &X1cat,
-					     const matrix_category &X2cat) {
-  if(X1cat == upper_diagonal) {
-    if(X2cat == upper_diagonal) {
-#ifdef VERBOSE_TRIANGULAR_CASES
-      cout<<"upper-upper case"<<endl;
-#endif
-      MatrixXd temp = X2.template triangularView<Eigen::Upper>(); // This MatrixXd needs to be extracted from the template types in general
-      Y = X1.template triangularView<Eigen::Upper>() * temp;
-    } else if(X2cat == lower_diagonal) {
-#ifdef VERBOSE_TRIANGULAR_CASES
-      cout<<"upper-lower case"<<endl;
-#endif
-      MatrixXd temp = X2.template triangularView<Eigen::Lower>();
-      Y = X1.template triangularView<Eigen::Upper>() * temp;
-    } else {
-#ifdef VERBOSE_TRIANGULAR_CASES
-      cout<<"upper-general case"<<endl;
-#endif
-      Y = X1.template triangularView<Eigen::Upper>() * X2;
-    }      
-  } else if(X1cat == lower_diagonal) {
-    if(X2cat == upper_diagonal) {
-#ifdef VERBOSE_TRIANGULAR_CASES
-      cout<<"lower-upper case"<<endl;
-#endif
-      MatrixXd temp = X2.template triangularView<Eigen::Upper>();
-      Y = X1.template triangularView<Eigen::Lower>() * temp;
-    } else if(X2cat == lower_diagonal) {
-#ifdef VERBOSE_TRIANGULAR_CASES
-      cout<<"lower-lower case"<<endl;
-#endif
-      MatrixXd temp = X2.template triangularView<Eigen::Lower>();
-      Y = X1.template triangularView<Eigen::Lower>() * temp;
-    } else {
-#ifdef VERBOSE_TRIANGULAR_CASES
-      cout<<"lower-general case"<<endl;
-#endif
-      Y = X1.template triangularView<Eigen::Lower>() * X2;
-    }
-  } else {
-    if(X2cat == upper_diagonal) {
-#ifdef VERBOSE_TRIANGULAR_CASES
-      cout<<"general-upper case"<<endl;
-#endif
-      Y = X1
-	* X2.template triangularView<Eigen::Upper>();
-    } else if(X1cat == lower_diagonal) {
-#ifdef VERBOSE_TRIANGULAR_CASES
-      cout<<"general-lower case"<<endl;
-#endif
-      Y = X1
-	* X2.template triangularView<Eigen::Lower>();
-    } else {
-#ifdef VERBOSE_TRIANGULAR_CASES
-      cout<<"general-general case"<<endl;
-#endif
-      Y = X1 * X2; // general case is here
-    }
-  }
-}
-
-template<class X1c, class X2c, class Yc >
-void matmult_internal_respecting_upper_lower_add(const X1c &X1, const X2c &X2, Yc &Y,
-						 const matrix_category &X1cat,
-						 const matrix_category &X2cat) {
-  if(X1cat == upper_diagonal) {
-    if(X2cat == upper_diagonal) {
-      MatrixXd temp = X2.template triangularView<Eigen::Upper>();
-      Y += X1.template triangularView<Eigen::Upper>() * temp;
-    } else if(X2cat == lower_diagonal) {
-      MatrixXd temp = X2.template triangularView<Eigen::Lower>();
-      Y += X1.template triangularView<Eigen::Upper>() * temp;
-    } else {
-      Y += X1.template triangularView<Eigen::Upper>() * X2;
-    }      
-  } else if(X1cat == lower_diagonal) {
-    if(X2cat == upper_diagonal) {
-      MatrixXd temp = X2.template triangularView<Eigen::Upper>();
-      Y += X1.template triangularView<Eigen::Lower>() * temp;
-    } else if(X2cat == lower_diagonal) {
-      MatrixXd temp = X2.template triangularView<Eigen::Lower>();
-      Y += X1.template triangularView<Eigen::Lower>() * temp;
-    } else {
-      Y += X1.template triangularView<Eigen::Lower>() * X2;
-    }
-  } else {
-    if(X2cat == upper_diagonal) {
-      Y += X1
-	* X2.template triangularView<Eigen::Upper>();
-    } else if(X1cat == lower_diagonal) {
-      Y += X1
-	* X2.template triangularView<Eigen::Lower>();
-    } else {
-      Y += X1 * X2; // general case is here
-    }
-  }
-}
-
 bool atomic_matmult_class::forward(
 				   const CppAD::vector<double>&               parameter_x  ,
 				   const CppAD::vector<CppAD::ad_type_enum>&  type_x       ,
@@ -309,26 +208,20 @@ bool atomic_matmult_class::forward(
 				   CppAD::vector<double>&                     taylor_y     ) {
   //forward mode
   int nrow = order_up + 1;
-  printf("In matmult forward\n");
-  std::cout<<"need_y = "<<need_y;
-  if(need_y == size_t(CppAD::constant_enum)) std::cout <<" (constant) ";
-  if(need_y == size_t(CppAD::dynamic_enum)) std::cout <<" (dynamic) ";
-  if(need_y == size_t(CppAD::variable_enum)) std::cout <<" (variable) ";  std::cout<<std::endl;
-  std::cout<<"order_low = "<<order_low<<" order_up = "<<order_up<<" nrow = "<<nrow<<std::endl;
 
-#ifdef VERBOSE_ATOMIC_MATMULT
   printf("In matmult forward\n");
   std::cout<<"need_y = "<<need_y<<std::endl;
-  std::cout<<"order_low = "<<order_low<<" order_up = "<<order_up<<" nrow = "<<nrow<<std::endl;
   for( int i = 0; i < type_x.size(); ++i) std::cout<<type_x[i]<<"\t";
   std::cout<<std::endl;
   for( int i = 0; i < parameter_x.size(); ++i) std::cout<<parameter_x[i]<<"\t";
   std::cout<<std::endl;
-  for( int i = 0; i < taylor_x.size(); ++i) std::cout<<taylor_x[i]<<"\t";
+  for( int i = 0; i < taylor_x.size(); ++i) std::cout<<parameter_x[i]<<"\t";
   std::cout<<std::endl;
-  std::cout<<X1constant()<<" "<<X1variable()<<". "<<X2constant()<<" "<<X2variable()<<"."<<std::endl;
-#endif
   
+#ifdef VERBOSE_ATOMIC_MATMULT
+  printf("In matmult forward\n");
+  std::cout<<"order_low = "<<order_low<<" order_up = "<<order_up<<" nrow = "<<nrow<<std::endl;
+#endif
   int n = static_cast<double>(taylor_x.size()/nrow); // size of input
   int m = taylor_y.size() / nrow;                    // size of output
   int n1 = get_n1();                                 // rows of X1
@@ -374,18 +267,13 @@ bool atomic_matmult_class::forward(
 #endif
   }
   if(order_low <= 1 & order_up >= 1) { // forward 1
-    //  printf("In forward >1\n");
+    // printf("In forward >1\n");
     new (&dY_map) EMap(&taylor_y[1], n1, n3, EigStrDyn(nrow*n1, nrow ) );
     if(!X1constant()) {
-      //      printf("here1\n");
       new (&dX1mapC) EMapC(&taylor_x[1], n1, n2, EigStrDyn(nrow*n1, nrow) );
       if(X1variable())
 	matmult_internal_respecting_upper_lower(dX1mapC, X2mapC, dY_map, X1cat(), X2cat());
       //dY_map = dX1mapC * X2mapC;
-#ifdef VERBOSE_DYNAMIC_CPP_HANDLING
-      else
-	std::cout<<"Forward 1: Skipping dX1 term because X1 is dynamic, not variable"<<std::endl;
-#endif
     }
     if(X2variable()) {
       if(!X1constant()) {
@@ -401,17 +289,7 @@ bool atomic_matmult_class::forward(
 	// dY_map = X1mapC * dX2mapC;
       }
     }
-#ifdef VERBOSE_DYNAMIC_CPP_HANDLING
-    else {
-      if(!X2constant()) {
-	std::cout<<"Forward 1: Skipping dX2 term because X2 is dynamic, not variable"<<std::endl;
-      }
-    }
-#endif
     if(!(X1variable() || X2variable())) {
-#ifdef VERBOSE_DYNAMIC_CPP_HANDLING
-      std::cout<<"Forward 1: Filling result with 0 because neither X1 nor X2 are variables."<<std::endl;
-#endif
       dY_map.fill(0);
     }
 #ifdef VERBOSE_ATOMIC_MATMULT
@@ -435,14 +313,10 @@ bool atomic_matmult_class::forward(
 				   CppAD::vector<CppAD::AD<double> >&                     taylor_y     ) {
   //forward mode
   int nrow = order_up + 1;
-  printf("In matmult meta-forward\n");
-  std::cout<<"need_y = "<<need_y<<std::endl;
-  std::cout<<"order_low = "<<order_low<<" order_up = "<<order_up<<" nrow = "<<nrow<<std::endl;
 #ifdef VERBOSE_ATOMIC_MATMULT
   printf("In matmult meta-forward\n");
   std::cout<<"order_low = "<<order_low<<" order_up = "<<order_up<<" nrow = "<<nrow<<std::endl;
 #endif
-
   int n = static_cast<double>(taylor_x.size()/nrow);
   int m = taylor_y.size() / nrow;
   int n1 = get_n1(); //CppAD::Value(taylor_x[0]);
@@ -633,7 +507,7 @@ bool atomic_matmult_class::reverse(
 #endif
     }
     if(X2variable()) {
-      if(!X1constant()) {
+      if(X1variable()) {
 	Xptr = &taylor_x[1 + (n1*n2)*nrow]; pXptr = &partial_x[1 + (n1*n2)*nrow];
       } else {
 	Xptr = &taylor_x[1]; pXptr = &partial_x[1];
@@ -667,9 +541,6 @@ bool atomic_matmult_class::reverse(
 #ifdef VERBOSE_ATOMIC_MATMULT
       //      cout<<"X1dot_adjoint\n"<<X1dot_adjoint_map<<endl;
 #endif
-    } else {
-      if(!X1constant())
-	X1dot_adjoint_map.fill(0);
     }
     if(X2variable()) {
       matmult_internal_respecting_upper_lower(X1mapC.transpose(), Ydot_adjoint_mapC, X2dot_adjoint_map,
@@ -678,15 +549,12 @@ bool atomic_matmult_class::reverse(
       //      cout<<"X2dot_adjoint\n"<<X2dot_adjoint_map<<endl;
 #endif
       //      X2dot_adjoint_map = X1mapC.transpose() * Ydot_adjoint_mapC;
-    } else {
-      if(!X2constant())
-	X2dot_adjoint_map.fill(0);
     }
   }
 #ifdef VERBOSE_ATOMIC_MATMULT
   std::cout<<"Leaving matmult reverse"<<std::endl;
 #endif
-  
+
   if(order_up >= 2) {
     printf("Unsupported reverse order requested\n");
     return false;
@@ -776,7 +644,7 @@ bool atomic_matmult_class::reverse(
       new (&mX1dot_adjoint_map) EMap(&partial_x[1], n1, n2, EigStrDyn(nrow*n1, nrow) );
     }
     if(X2variable()) {
-      if(!X1constant()) {
+      if(X1variable()) {
 	Xptr = &taylor_x[1 + (n1*n2)*nrow]; pXptr = &partial_x[1 + (n1*n2)*nrow];
       } else {
 	Xptr = &taylor_x[1]; pXptr = &partial_x[1];
@@ -897,10 +765,10 @@ void atomic_matmult_internal(const MatrixXd_CppAD &x1,
   bool x1_is_dynamic(false);
   int a, b, c, d; // dummies
   if(!x1_is_constant)
-    x1_is_dynamic = delineate_condition_region(dyn_cond, x1, a, b, c, d);
+    x1_is_dynamic = delineate_condition_region(dyn_cont, x1, a, b, c, d);
   bool x2_is_dynamic(false);
   if(!x2_is_constant)
-    x2_is_dynamic = delineate_condition_region(dyn_cond, x2, a, b, c, d);
+    x2_is_dynamic = delineate_condition_region(dyn_cont, x2, a, b, c, d);
 
   atomic_matmult->X1variable() = !(x1_is_constant || x1_is_dynamic);
   atomic_matmult->X2variable() = !(x2_is_constant || x2_is_dynamic);

@@ -98,6 +98,7 @@ class atomic_matmult_class :  public CppAD::atomic_three< double > {
   std::vector<CppAD::AD<double> > X_AD_stored;
   matrix_category X1cat_, X2cat_;
   bool x1_is_constant_, x2_is_constant_;
+  bool x1_is_variable_, x2_is_variable_;
   
  public:
   double * get_X_stored_ptr() {return &X_stored[0];}
@@ -126,7 +127,12 @@ class atomic_matmult_class :  public CppAD::atomic_three< double > {
   bool &X2constant() {return x2_is_constant_;}
   bool const &X1constant() const {return x1_is_constant_;}
   bool const &X2constant() const {return x2_is_constant_;}
-  
+
+  bool &X1variable() {return x1_is_variable_;}
+  bool &X2variable() {return x2_is_variable_;}
+  bool const &X1variable() const {return x1_is_variable_;}
+  bool const &X2variable() const {return x2_is_variable_;}
+
   atomic_matmult_class(const std::string& name);
   void set_n1(int n1__) {n1_ = n1__;}
   int get_n1() {return n1_;}

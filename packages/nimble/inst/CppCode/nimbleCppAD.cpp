@@ -167,7 +167,9 @@ void update_dynamicVars(NodeVectorClassNew_derivs &NV,
     std::copy( NimArrValues.getPtr(),
 	       NimArrValues.getPtr() + length_extraInput,
 	       ADinfo.dynamicVars.begin());
+    std::cout<<"calling new_dynamic"<<std::endl;
     ADinfo.ADtape->new_dynamic(ADinfo.dynamicVars);
+    std::cout<<"done in new_dynamic"<<std::endl;
   }
 }
 
@@ -184,7 +186,9 @@ void update_dynamicVars(nimbleCppADinfoClass &ADinfo) {
     std::copy( NimArrValues.getPtr(),
 	       NimArrValues.getPtr() + length_extraInput,
 	       ADinfo.dynamicVars.begin());
+    //    std::cout<<"calling new_dynamic"<<std::endl;
     ADinfo.ADtape->new_dynamic(ADinfo.dynamicVars);
+    //    std::cout<<"done in new_dynamic"<<std::endl;
   }
 }
 
