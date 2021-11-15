@@ -1024,7 +1024,7 @@ Details: See the initialize() function
 
 #' Build the MCMCconf object for construction of an MCMC object
 #'
-#' Creates a defaut MCMC configuration for a given model.
+#' Creates a default MCMC configuration for a given model.
 #'
 #'@param model A NIMBLE model object, created from \code{\link{nimbleModel}}
 #'@param nodes An optional character vector, specifying the nodes and/or variables for which samplers should be created.
