@@ -4,6 +4,7 @@ samplerConf <- setRefClass(
     fields = list(
         name            = 'ANY',
         samplerFunction = 'ANY',
+        baseClassName   = 'ANY',
         target          = 'ANY',
         control         = 'ANY',
         targetAsScalar  = 'ANY'
@@ -12,6 +13,7 @@ samplerConf <- setRefClass(
         initialize = function(name, samplerFunction, target, control, model) {
             name <<- name
             samplerFunction <<- samplerFunction
+            baseClassName <<- environment(environment(samplerFunction)$contains)$className
             target <<- target
             control <<- control
             if(name == 'crossLevel')   control <<- c(control, list(dependent_nodes = model$getDependencies(target, self = FALSE, stochOnly = TRUE)))  ## special case for printing dependents of crossLevel sampler (only)
