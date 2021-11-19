@@ -17,6 +17,24 @@ sampler_BASE <- nimbleFunctionVirtual(
 
 
 ####################################################################
+### virtual nimbleFunction template, for version2 samplers #########
+####################################################################
+
+#' @rdname samplers
+#' @export
+sampler_BASE2 <- nimbleFunctionVirtual(
+    name = 'sampler_BASE2',
+    contains = sampler_BASE,
+    methods = list(
+        initialize = function(MCMCniter = double(), MCMCnburnin = double(), MCMCchain = double()) { },
+        finalize   = function() { },
+        reset      = function() { }
+    )
+)
+
+
+
+####################################################################
 ### posterior_predictive sampler for trailing stoch. nodes #########
 ####################################################################
 
