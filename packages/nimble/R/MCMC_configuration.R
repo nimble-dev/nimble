@@ -14,6 +14,7 @@ samplerConf <- setRefClass(
             name <<- name
             samplerFunction <<- samplerFunction
             baseClassName <<- environment(environment(samplerFunction)$contains)$className
+            if(is.null(baseClassName) || !(baseClassName %in% c('sampler_BASE','sampler_BASE2'))) stop('MCMC sampler nimbleFunctions must inherit from (using "contains" argument) base class sampler_BASE or sampler_BASE2')
             target <<- target
             control <<- control
             if(name == 'crossLevel')   control <<- c(control, list(dependent_nodes = model$getDependencies(target, self = FALSE, stochOnly = TRUE)))  ## special case for printing dependents of crossLevel sampler (only)
