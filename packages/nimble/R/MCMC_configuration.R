@@ -1021,7 +1021,7 @@ waic: A logical argument, indicating whether to enable WAIC calculations in the 
             cat('===== Monitors =====\n')
             printMonitors()
             cat('===== Samplers =====\n')
-            if(length(samplerConfs) == 0) cat('[ no samplers assigned ]')
+            if(length(samplerConfs) == 0) cat('[ no samplers assigned ]\n')
             printSamplers(byType = TRUE)
         }
     )
