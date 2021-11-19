@@ -117,13 +117,13 @@ buildMCMC <- nimbleFunction(
         model <- conf$model
         my_initializeModel <- initializeModel(model)
         mvSaved <- modelValues(model)
-        samplerFunctions <- nimbleFunctionList(sampler_BASE)
-        samplerFunctionsHMC <- nimbleFunctionList(sampler_HMC_BASE)
+        samplerFunctions  <- nimbleFunctionList(sampler_BASE)
+        samplerFunctions2 <- nimbleFunctionList(sampler_BASE2)
         for(i in seq_along(conf$samplerConfs)) {
             newSF <- conf$samplerConfs[[i]]$buildSampler(model=model, mvSaved=mvSaved)
             samplerFunctions[[i]] <- newSF
-            if(conf$samplerConfs[[i]]$name %in% c('HMC', 'HMC2'))
-                samplerFunctionsHMC[[length(samplerFunctionsHMC)+1]] <- newSF
+            if(conf$samplerConfs[[i]]$baseClassName == 'sampler_BASE2')
+                samplerFunctions2[[length(samplerFunctions2)+1]] <- newSF
         }
         samplerExecutionOrderFromConfPlusTwoZeros <- c(conf$samplerExecutionOrder, 0, 0)  ## establish as a vector
         monitors  <- mcmc_processMonitorNames(model, conf$monitors)
@@ -137,7 +137,6 @@ buildMCMC <- nimbleFunction(
         samplerTimes <- c(0,0) ## establish as a vector
         progressBarLength <- 52  ## multiples of 4 only
         progressBarDefaultSetting <- getNimbleOption('MCMCprogressBar')
-        nimbleVerboseOption <- getNimbleOption('verbose')
         ## WAIC setup:
         dataNodes <- model$getNodeNames(dataOnly = TRUE)
         dataNodeLength <- length(dataNodes)
@@ -174,8 +173,8 @@ buildMCMC <- nimbleFunction(
         nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)
         if(reset) {
             samplerTimes <<- numeric(length(samplerFunctions) + 1)       ## default inititialization to zero
-            for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$reset()
-            if(length(samplerFunctionsHMC) > 0)   for(i in seq_along(samplerFunctionsHMC))   samplerFunctionsHMC[[i]]$initializeWarmup(niter, chain)
+            for(i in seq_along(samplerFunctions))    samplerFunctions [[i]]$reset()
+            for(i in seq_along(samplerFunctions2))   samplerFunctions2[[i]]$initialize(niter, nburnin, chain)
             mvSamples_copyRow  <- 0
             mvSamples2_copyRow <- 0
         } else {
@@ -239,17 +238,7 @@ buildMCMC <- nimbleFunction(
             }
         }
         if(progressBar) print('|')
-        if((length(samplerFunctionsHMC) > 0) & nimbleVerboseOption) {
-            for(i in seq_along(samplerFunctionsHMC)) {
-                maxTreeDepth <- samplerFunctionsHMC[[i]]$getMaxTreeDepth()
-                numDivergences <- samplerFunctionsHMC[[i]]$getNumDivergences()
-                numTimesMaxTreeDepth <- samplerFunctionsHMC[[i]]$getNumTimesMaxTreeDepth()
-                if(numDivergences == 1) print('HMC sampler encountered ', numDivergences, ' divergent path')
-                if(numDivergences  > 1) print('HMC sampler encountered ', numDivergences, ' divergent paths')
-                if(numTimesMaxTreeDepth == 1) print('HMC sampler reached the maximum search tree depth ', numTimesMaxTreeDepth, ' time')
-                if(numTimesMaxTreeDepth  > 1) print('HMC sampler reached the maximum search tree depth ', numTimesMaxTreeDepth, ' times')
-            }
-        }
+        for(i in seq_along(samplerFunctions2))   samplerFunctions2[[i]]$finalize()
         returnType(void())
     },
     methods = list(
