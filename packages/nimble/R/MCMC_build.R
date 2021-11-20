@@ -174,7 +174,7 @@ buildMCMC <- nimbleFunction(
         if(reset) {
             samplerTimes <<- numeric(length(samplerFunctions) + 1)       ## default inititialization to zero
             for(i in seq_along(samplerFunctions))    samplerFunctions [[i]]$reset()
-            for(i in seq_along(samplerFunctions2))   samplerFunctions2[[i]]$initialize(niter, nburnin, chain)
+            for(i in seq_along(samplerFunctions2))   samplerFunctions2[[i]]$before_chain(niter, nburnin, chain)
             mvSamples_copyRow  <- 0
             mvSamples2_copyRow <- 0
         } else {
@@ -238,7 +238,7 @@ buildMCMC <- nimbleFunction(
             }
         }
         if(progressBar) print('|')
-        for(i in seq_along(samplerFunctions2))   samplerFunctions2[[i]]$finalize()
+        for(i in seq_along(samplerFunctions2))   samplerFunctions2[[i]]$after_chain()
         returnType(void())
     },
     methods = list(
