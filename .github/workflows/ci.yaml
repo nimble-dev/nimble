@@ -72,6 +72,7 @@ jobs:
           do
             eval sudo $cmd
           done < <(Rscript -e 'writeLines(remotes::system_requirements("ubuntu", "20.04", "./packages/nimble"))')
+          sudo apt-get install libcurl4-openssl-dev  # needed for R pkg curl -> covr
 
       - name: Install dependencies
         run: |
@@ -88,6 +89,11 @@ jobs:
         run: |
           R CMD build packages/nimble  # Is this needed? Is purpose of this to see if 'build' induces an error?
           R CMD INSTALL --install-tests packages/nimble
+
+      - name: Install reverse dependencies
+        run: |
+          source('install_revDeps.R')  # Windows doesn't like running via ./install_requirements.R
+        shell: Rscript {0}
 
       - name: Run tests
         run: |

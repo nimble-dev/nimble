@@ -50,6 +50,8 @@ if (length(grep('^-', argv, invert = TRUE))) {
         ## 'test-benchmarks.R')  # some issue with version conflicts causing tensorflow to fail on Travis with errors such as 'nimble-tensorflow_11_20_18_17_45.so: undefined symbol: TF_DeleteImportGraphDefOptions'
     cat('SKIPPING', omitlist, sep = '\n  ')
     allTests <- setdiff(allTests, omitlist)
+
+    smcTests <- 'test-filtering.R'
 }
 
 # Sort tests by duration, running the shortest tests first.
@@ -85,6 +87,8 @@ if (!is.na(testBatch)) {
 cat('PLANNING TO TEST', allTests, sep = '\n  ')
 cat('PREDICTED DURATION =', sum(testTimes[allTests, 'time']), 'sec\n')
 if (optionDryRun) quit()
+if(testBatch == 3)
+    cat('PLANNING TO TEST nimbleSMC', smcTests, sep = '\n  ')
 
 # Run under /usr/bin/time -v if possible, to gather timing information.
 runner <- 'Rscript'
@@ -109,22 +113,22 @@ if (require(sys)) {
 # As of recent (>= 3.0.0?) testthat versions, use of inst/tests is deprecated
 # and testthat wants a more formal approach to setup and cleanup code for each test file,
 # so for now, we'll just run 'manually'.
-runTest <- function(test, logToFile = FALSE, runViaTestthat = TRUE) {
+runTest <- function(test, pkg = 'nimble', logToFile = FALSE, runViaTestthat = TRUE) {
     if (!logToFile) cat('--------------------------------------------------------------------------------\n')
     cat('TESTING', test, '\n')
     if (runViaTestthat) {
-        name <- gsub('test-(.*)\\.R', '\\1', test)
+        name <- gsub('test-(.*)\\.R', '\\1', test) 
         script <- paste0('library(methods);',
                          'library(testthat);',
-                         'library(nimble);',
-                         'tryCatch(test_package("nimble", "^', name, '$",',
+                         'library(', pkg, ');',
+                         'tryCatch(test_package("', pkg, '", "^', name, '$",',
                          '                      reporter = ', reporter, '),',
                          '  error = function(e) quit(status = 1))')
         command <- c(runner, '-e', custom_shQuote(script))
-    } else command <- c(runner, file.path('packages', 'nimble', 'tests', 'testthat', test))
+    } else command <- c(runner, file.path('packages', pkg, 'tests', 'testthat', test))
     Sys.setenv(MAKEFLAGS = '-j1')  # Work around broken job pipe when GNU make is run under mclapply.
     if (logToFile) {
-        logDir <- '/tmp/log/nimble'
+        logDir <- paste0('/tmp/log/', pkg)
         dir.create(logDir, recursive = TRUE, showWarnings = FALSE)
         stderr.log <- file.path(logDir, paste0('test-', name, '.stderr'))
         stdout.log <- file.path(logDir, paste0('test-', name, '.stdout'))
@@ -156,5 +160,10 @@ if (optionParallel) {
 } else {
     for (test in allTests) {
         runTest(test)
+    }
+}
+if(testBatch == 3) { ## currently quickest to run so do SMC testing here
+    for (test in smcTests) {
+        runTest(test, 'nimbleSMC')
     }
 }
