@@ -23,7 +23,7 @@ binaryMidPromoteNoLogicalOperators <- c('*','%%')
 binaryMidOperators <- c(binaryMidDoubleOperators,
                         binaryMidPromoteNoLogicalOperators)
 
-binaryLeftDoubleOperators <- c('pow','nimMod')
+binaryLeftDoubleOperators <- c('pow','nimMod', 'pow_int')
 binaryLeftPromoteOperators <- c('pmin','pmax','pairmin','pairmax')
 binaryLeftLogicalOperators <- c( 'nimEquals')
 binaryLeftOperators <- c(binaryLeftDoubleOperators,
@@ -342,7 +342,8 @@ nimDerivsPrependTypeOperators <- c("dnorm", "dpois", "dgamma", "dinvgamma", "dsq
                                    "nimArr_ddirch", "nimArr_dmvt_chol", "nimArr_dmnorm_chol", 
 				   "nimArr_dwish_chol", "nimArr_dinvwish_chol", "nimArr_dlkj_corr_cholesky",
                                    "nimStep", 'ilogit', 'icloglog', 'iprobit', 'probit', 'cloglog',
-                                   "nimEquals", "lgammafn", "gammafn", "lfactorial", "factorial", "logit", "cube", "inprod")
+                                   "nimEquals", "lgammafn", "gammafn", "lfactorial", "factorial", "logit",
+                                   "cube", "inprod", "pow_int")
 
 ## Reflects distribution funs that support recycling rule with AD -- see nimDerivs_TMB.h.
 recyclingRuleOperatorsAD <- c(

@@ -8,6 +8,7 @@
 #include <Rinternals.h>
 #include <Rmath.h>
 
+#include "nimDerivs_atomic_pow_int.h"
 #include "nimDerivs_atomic_matmult.h"
 #include "nimDerivs_atomic_matinverse.h"
 #include "nimDerivs_atomic_backsolve.h"

@@ -68,7 +68,7 @@ callsFromExternalUnaries <- as.character(unlist(lapply(eigProxyTranslateExternal
 
 eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or matrix
     makeCallList(c('abs','square','sqrt','(','t'), 'eigenize_cWiseUnaryEither'),
-    makeCallList('pow', 'eigenize_cWiseByScalarArray'),
+    makeCallList(c('pow', 'pow_int'), 'eigenize_cWiseByScalarArray'),
     makeCallList(c('asRow', 'asCol'), 'eigenize_asRowOrCol'),
     ## component-wise unarys valid only for only Eigen array
     makeCallList(c('exp','log','cube','cwiseInverse','sin','cos','tan','asin','acos'), 'eigenize_cWiseUnaryArray'), 

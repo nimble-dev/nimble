@@ -161,3 +161,4 @@ bool atomic_lgamma_class::reverse(
 
      return true;
 }
+

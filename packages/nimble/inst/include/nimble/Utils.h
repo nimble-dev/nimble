@@ -169,6 +169,8 @@ bool nimNot(bool x);
 
 static inline bool isTRUE(bool x) {return(x);}
 
+double pow_int(double a, double b);
+
 // needed for link functions
 double ilogit(double x);
 template<class T>

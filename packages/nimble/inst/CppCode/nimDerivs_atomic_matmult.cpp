@@ -1,4 +1,5 @@
 #include <nimble/nimDerivs_atomic_matmult.h>
+//#include <nimble/nimbleCppAD.h> // for ad_timer only
 #include <array>
 /* This atomic does not need caching because adjoints in reverse mode do not use Y or Ydot. */
 
@@ -13,6 +14,23 @@
 // #define VERBOSE_DYNAMIC_CPP_HANDLING
 // #define VERBOSE_TRIANGULAR_CASES
 
+//#define _TIME_AD_MATMULT // also need _TIME_AD in nimbleCppAD.h
+
+#ifdef _TIME_AD_MATMULT
+ad_timer derivs_matmult_timer("derivs_matmult");
+SEXP report_AD_timers() {
+  derivs_matmult_timer.show_report();
+  return(R_NilValue);
+}
+SEXP reset_AD_timers(SEXP SreportInterval) {
+  derivs_matmult_timer.reset();
+  derivs_matmult_timer.set_interval(INTEGER(SreportInterval)[0]);
+  return(R_NilValue);
+}
+void derivs_matmult_timer_start() {derivs_matmult_timer.start(false);}
+void derivs_matmult_timer_stop() {derivs_matmult_timer.stop(false);}
+
+#endif
 
 atomic_matmult_class::atomic_matmult_class(const std::string& name) :
   CppAD::atomic_three<double>(name),
@@ -307,6 +325,9 @@ bool atomic_matmult_class::forward(
 				   size_t                              order_up     ,
 				   const CppAD::vector<double>&               taylor_x     ,
 				   CppAD::vector<double>&                     taylor_y     ) {
+#ifdef _TIME_AD_MATMULT
+  derivs_matmult_timer_start();
+#endif
   //forward mode
   int nrow = order_up + 1;
 
@@ -419,6 +440,10 @@ bool atomic_matmult_class::forward(
 #ifdef VERBOSE_ATOMIC_MATMULT
   printf("Leaving matmult forward\n");
 #endif
+#ifdef _TIME_AD_MATMULT
+  derivs_matmult_timer_stop();
+#endif
+
   return true;
 }
 
@@ -542,6 +567,10 @@ bool atomic_matmult_class::reverse(
 				   const CppAD::vector<double>&               partial_y   )
 {
   //reverse mode
+#ifdef _TIME_AD_MATMULT
+  derivs_matmult_timer_start();
+#endif
+
   int nrow = order_up + 1;
 #ifdef VERBOSE_ATOMIC_MATMULT
   printf("In matmult reverse\n");
@@ -681,7 +710,10 @@ bool atomic_matmult_class::reverse(
 #ifdef VERBOSE_ATOMIC_MATMULT
   std::cout<<"Leaving matmult reverse"<<std::endl;
 #endif
-  
+#ifdef _TIME_AD_MATMULT
+  derivs_matmult_timer_stop();
+#endif
+
   if(order_up >= 2) {
     printf("Unsupported reverse order requested\n");
     return false;

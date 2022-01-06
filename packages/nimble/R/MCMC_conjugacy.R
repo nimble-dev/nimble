@@ -1255,7 +1255,7 @@ cc_checkScalar <- function(expr) {
     ## We don't know the output dims of all functions,
     ## as there can be user-defined functions that produce non-scalar output from scalar inputs,
     ## so only say it could be scalar (based on input args) in specific known cases we enumerate.
-    if(deparse(expr[[1]]) %in% c('(','[','*','+','-','/','exp','log','^','pow','sqrt')) {
+    if(deparse(expr[[1]]) %in% c('(','[','*','+','-','/','exp','log','^','pow','pow_int','sqrt')) {
         return(all(sapply(expr[2:length(expr)], cc_checkScalar)))
     } else return(FALSE)
 }

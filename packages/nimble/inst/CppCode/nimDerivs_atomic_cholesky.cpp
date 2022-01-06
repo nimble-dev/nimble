@@ -1,5 +1,6 @@
 #include <nimble/nimDerivs_atomic_cholesky.h>
 #include <nimble/nimDerivs_atomic_cache.h>
+#include <nimble/nimbleCppAD.h> // for ad_timer only
 
 template<typename T>
 void HalfDiag(T &Mat) { // There may be a pure Eigen way to do this.
@@ -10,6 +11,22 @@ void HalfDiag(T &Mat) { // There may be a pure Eigen way to do this.
   }
 }
 
+//#define _TIME_AD_CHOL // also need _TIME_AD in nimbleCppAD.h
+#ifdef _TIME_AD_CHOL
+ad_timer derivs_chol_timer("derivs_chol");
+SEXP report_AD_timers() {
+  derivs_chol_timer.show_report();
+  return(R_NilValue);
+}
+SEXP reset_AD_timers(SEXP SreportInterval) {
+  derivs_chol_timer.reset();
+  derivs_chol_timer.set_interval(INTEGER(SreportInterval)[0]);
+  return(R_NilValue);
+}
+void derivs_chol_timer_start() {derivs_chol_timer.start(false);}
+void derivs_chol_timer_stop() {derivs_chol_timer.stop(false);}
+
+#endif
 
 /*
 We follow Murray (2018), but he uses lower-triangular whereas
@@ -160,6 +177,9 @@ bool atomic_cholesky_class::forward(
 				    size_t                              order_up     ,
 				    const CppAD::vector<double>&               taylor_x     ,
 				    CppAD::vector<double>&                     taylor_y     ) {
+#ifdef _TIME_AD_CHOL
+  derivs_chol_timer_start();
+#endif
   //forward mode
   //  std::cout<<"In Cholesky forward "<<order_low<<" "<<order_up<<std::endl;
   int nrow = order_up + 1;
@@ -248,7 +268,9 @@ bool atomic_cholesky_class::forward(
     double_cache.set_cache( 1, 1, order_up, taylor_x, taylor_y );
   }
   //  printf("done cholesky forward\n");
-
+#ifdef _TIME_AD_CHOL
+  derivs_chol_timer_stop();
+#endif
   return true;
 }
 
@@ -319,8 +341,12 @@ bool atomic_cholesky_class::reverse(
 				    CppAD::vector< double >&                     partial_x   ,
 				    const CppAD::vector< double >&               partial_y   ) {
   //reverse m_ode
-  //  printf("In reverse\n");
-  //std::cout<<"In reverse "<<order_up<<std::endl;
+  // printf("In reverse\n");
+  // std::cout<<"In Chol reverse "<<order_up<<std::endl;
+#ifdef _TIME_AD_CHOL
+  derivs_chol_timer_start();
+#endif
+
   int nrow = order_up + 1;
   int n = static_cast<int>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
     
@@ -454,6 +480,9 @@ bool atomic_cholesky_class::reverse(
     Xadjoint_map -= Xadjoint_term.template triangularView<Eigen::Upper>();
     Xadjoint_map -= Xadjoint_term.transpose().template triangularView<Eigen::StrictlyUpper>(); 
   }
+#ifdef _TIME_AD_CHOL
+  derivs_chol_timer_start();
+#endif
   if(order_up >= 2) {
     printf("Unsupported reverse order requested\n");
     return false;
@@ -487,7 +516,7 @@ bool atomic_cholesky_class::reverse(
   metaEigenConstMap Yadjoint_map(&partial_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
   metaEigenMap Xadjoint_map(&partial_x[0], n, n, EigStrDyn(nrow*n, nrow) );
   if(order_up >= 0) {
-    MatrixXd_CppAD Yadjoint_UT = nimDerivs_matmult(Yadjoint_map, Ymap.transpose().template triangularView<Eigen::Lower>()).template triangularView<Eigen::Upper>();
+    MatrixXd_CppAD Yadjoint_UT =  Ymap.transpose().template triangularView<Eigen::Upper>();//nimDerivs_matmult(Yadjoint_map, Ymap.transpose().template triangularView<Eigen::Lower>()).template triangularView<Eigen::Upper>();
     //      MatrixXd_CppAD Yadjoint_UT = (Yadjoint_map * Ymap.transpose().template triangularView<Eigen::Lower>()).template triangularView<Eigen::Upper>();
     HalfDiag(Yadjoint_UT);
     MatrixXd_CppAD Uinv_PhiStuff_UinvT = nimDerivs_EIGEN_BS(Ymap,
@@ -542,9 +571,9 @@ void atomic_cholesky(const MatrixXd_CppAD &x, // This (non-template) type forces
   //  static atomic_cholesky_class atomic_cholesky("atomic_cholesky"); // this has no state information so the same object can be used for all cases
   atomic_cholesky_class *atomic_cholesky; // Need to do it this way for multiple compilation units
   int n = x.rows();
-  std::vector<CppAD::AD<double> > xVec(n*n);
-  mat2vec(x, xVec);
-  std::vector<CppAD::AD<double> > yVec(n*n);
+  CppAD::vector<CppAD::AD<double> > xVec(n*n);
+  mat2vec(x, xVec); // could be mat2vec_lower_zero but it doesn't seem to matter.
+  CppAD::vector<CppAD::AD<double> > yVec(n*n);
   atomic_cholesky = new atomic_cholesky_class("atomic_cholesky");
   (*atomic_cholesky)(xVec, yVec);
   y.resize(n, n);

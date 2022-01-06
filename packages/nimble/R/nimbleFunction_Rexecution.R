@@ -13,6 +13,21 @@
 #' @export
 ADbreak <- function(x) x
 
+#' @name pow_int
+#'
+#' pow function with exponent required to be integer
+#'
+#' @param a Base
+#' @param b Exponent
+#'
+#' @return a^b
+#'
+#' @details This is required in nimble models and nimbleFunctions if derivatives will be tracked
+#' but tracked only with respect to a, such that b might be any (positive, 0, or negative) integer.
+#' This contrasts with pow(a, b) (equivalent to a^b), which requires b > 0 if derivatives will be
+#' tracked, even if they will only be requested with respect to a.
+pow_int <- function(a, b) a^round(b) # b should be integer.  rounding it makes finite-element derivatives 0, as needed.
+
 #' NIMBLE language functions for R-like vector construction
 #'
 #' The functions \code{c}, \code{rep}, \code{seq}, \code{which}, \code{diag}, \code{length}, \code{seq_along}, \code{is.na}, \code{is.nan}, \code{any}, and \code{all} can be used in nimbleFunctions and compiled using \code{compileNimble}.

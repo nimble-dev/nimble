@@ -187,7 +187,7 @@ cppOutputNimDerivsPrependType <- function(code, symTab){
   ##          })), collapse = ', '), ')')
   ## }
   ## else
-      if(identical(nimbleUserNamespace$cppADCode, 2L)) {
+    if(identical(nimbleUserNamespace$cppADCode, 2L)) {
     argList <- list()
     logFixedString <- ''
     for(i in seq_along(code$args)){

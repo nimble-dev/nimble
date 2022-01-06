@@ -17,6 +17,18 @@ void mat2vec(const MT &m, VT &v, size_t offset = 0) {
 }
 
 template<typename MT, typename VT>
+void mat2vec_lower_zero(const MT &m, VT &v, size_t offset = 0) {
+  size_t nrow = m.rows();
+  size_t ncol = m.cols();
+  for(size_t i=0; i < nrow; ++i) {
+    for(size_t j=0; j < ncol; ++j) {
+      if(j < i) v[i + j*nrow + offset] = 0;
+      else      v[i + j*nrow + offset] = m(i,j);
+    }
+  }
+}
+
+template<typename MT, typename VT>
 void mat2vec_v(const MT &m, VT &v, size_t offset = 0) {
   size_t nrow = m.rows();
   size_t ncol = m.cols();

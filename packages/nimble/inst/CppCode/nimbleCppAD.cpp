@@ -24,7 +24,7 @@ void setSizeGeneric( ) {
 }
 
 
-#ifdef _TIME_AD
+#ifdef _TIME_AD_GENERAL // need also _TIME_AD in nimbleCppAD.h
 ad_timer derivs_main_timer("derivs_main");
 ad_timer derivs_calc_timer("derivs_calc");
 ad_timer derivs_node_iteration_timer("derivs_node_iteration");
@@ -83,33 +83,33 @@ nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(
   std::cout<<"CALLING A FUNCTION THAT WE THOUGHT COULD BE DEPRECATED.  PLEASE REPORT TO PERRY."<<std::endl;
   
   if(!nodes.tapeRecorded()) nodes.recordTape();
-#ifdef _TIME_AD
+#ifdef _TIME_AD_GENERAL
   derivs_main_timer.start();
 #endif
 
   nimSmartPtr<NIMBLE_ADCLASS> ansList = new NIMBLE_ADCLASS;
-#ifdef _TIME_AD
+#ifdef _TIME_AD_GENERAL
   derivs_getDerivs_timer.start();
 #endif
   std::vector<double> independentVars;
   nodes.runTape_setIndependent(independentVars);
   std::vector<double> dependentVars;
 
-#ifdef _TIME_AD
+#ifdef _TIME_AD_GENERAL
   derivs_run_tape_timer.start();
 #endif
   
   nodes.runTape_runTape(independentVars, dependentVars,
 			derivOrders, ansList);
-#ifdef _TIME_AD
+#ifdef _TIME_AD_GENERAL
   derivs_run_tape_timer.stop();
 #endif
 
-#ifdef _TIME_AD
+#ifdef _TIME_AD_GENERAL
   derivs_getDerivs_timer.stop();
 #endif
 
-#ifdef _TIME_AD
+#ifdef _TIME_AD_GENERAL
   derivs_main_timer.stop();
 #endif
 
@@ -258,7 +258,7 @@ void getDerivs_internal(vector<BASE> &independentVars,
   //   std::cout<<wrtVector[ijk]<<" ";
   // std::cout<<std::endl;
   
-#ifdef _TIME_AD
+#ifdef _TIME_AD_GENERAL
   derivs_getDerivs_timer_start();
   derivs_tick_id();
   derivs_show_id();  
@@ -280,12 +280,12 @@ void getDerivs_internal(vector<BASE> &independentVars,
   //  std::cout<<"orders: "<<ordersFound[0]<<" "<<ordersFound[1]<<" "<<ordersFound[2]<<" "<<maxOrder<<std::endl;
   // std::cout<<"maxOrder = "<<maxOrder<<std::endl;
   vector<BASE> value_ans;
-  #ifdef _TIME_AD
+  #ifdef _TIME_AD_GENERAL
   derivs_run_tape_timer_start();
 #endif
   value_ans = ADtape->Forward(0, independentVars);
   //  std::cout<<"value_ans.size() = "<<value_ans.size()<<std::endl;
-#ifdef _TIME_AD
+#ifdef _TIME_AD_GENERAL
   derivs_run_tape_timer_stop();
 #endif
   if (ordersFound[0]) {
@@ -312,11 +312,11 @@ void getDerivs_internal(vector<BASE> &independentVars,
       w[dy_ind] = 1;
       if (maxOrder == 1) {   
 	if(!infIndicators[dy_ind]){
-#ifdef _TIME_AD
+#ifdef _TIME_AD_GENERAL
 	  derivs_run_tape_timer_start();
 #endif
 	  cppad_derivOut = ADtape->Reverse(1, w);
-#ifdef _TIME_AD
+#ifdef _TIME_AD_GENERAL
 	  derivs_run_tape_timer_stop();
 #endif
 	}
@@ -336,7 +336,7 @@ void getDerivs_internal(vector<BASE> &independentVars,
 	    // of s across all directions r, then
 	    // second dim, ...
 	    x1[dx1_ind] = 1;
-#ifdef _TIME_AD
+#ifdef _TIME_AD_GENERAL
 	    derivs_run_tape_timer_start();
 #endif
 	    // std::cout<<"Forward 1 x1: ";
@@ -356,7 +356,7 @@ void getDerivs_internal(vector<BASE> &independentVars,
 	    //   std::cout<<cppad_derivOut[ijk]<<" ";
 	    // std::cout<<std::endl;
 
-#ifdef _TIME_AD
+#ifdef _TIME_AD_GENERAL
 	    derivs_run_tape_timer_stop();
 #endif
 	  }
@@ -410,7 +410,7 @@ void getDerivs_internal(vector<BASE> &independentVars,
       w[dy_ind] = 0;
     }
   }
-#ifdef _TIME_AD
+#ifdef _TIME_AD_GENERAL
   derivs_getDerivs_timer_stop();
 #endif
 };
