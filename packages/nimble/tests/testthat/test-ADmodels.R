@@ -144,7 +144,7 @@ test_that('makeUpdateNodes works correctly', {
    
 }
 
-## First set of tests are one's Nick developed
+## First set of tests are ones Nick developed
 
 ## Second set are those under development by Chris, which use the
 ## test_ADModelCalculate that tests various standard use cases.
@@ -238,7 +238,10 @@ test_that('Derivs of calculate function work for model ADmod5 (tricky indexing)'
 })
 
 
-test_that('Derivs of calculate function work for model equiv', { ## This test gives a crash on i = 3, j = 1.  It is due to pow(x, y) with y = 0.
+test_that('Derivs of calculate function work for model equiv', {
+    ## This test gives a crash on i = 3, j = 1.  It is due to pow(x, y) with y = 0.
+    ## 1. Try changing model code to use pow_int instead of pow.
+    ## 2. Need to error-trap to avoid crash if pow is used.
   dir = nimble:::getBUGSexampleDir('equiv')
   Rmodel <- readBUGSmodel('equiv', data = NULL, inits = list(tau = c(.2, .2), pi = 1, phi = 1, mu = 1), dir = dir, useInits = TRUE,
                           check = FALSE)
@@ -300,13 +303,13 @@ test_that("Derivs of calculate function work for rats model", {
                         order = c(0, 1, 2))
 })
 
-## Ragged arrays not supported for derivs yet.
-# dir = nimble:::getBUGSexampleDir('bones')
-# Rmodel <- readBUGSmodel('bones', data = NULL, inits = NULL, dir = dir, useInits = TRUE,
-#                         check = FALSE)
-# test_ADModelCalculate_nick(Rmodel, calcNodeNames = list(Rmodel$getDependencies('theta'), Rmodel$getDependencies('grade')),
-#                       wrt = list(c('theta'), c('grade'), c('theta', 'grade'), c('grade[1, 2]')), testR = TRUE,
-#                       testCompiled = FALSE)
+## Fails on dcat.  Potential issue of support for ragged arrays.
+## dir = nimble:::getBUGSexampleDir('bones')
+## Rmodel <- readBUGSmodel('bones', data = NULL, inits = NULL, dir = dir, useInits = TRUE,
+##                         check = FALSE)
+## test_ADModelCalculate_nick(Rmodel, name = 'bones', calcNodeNames = list(Rmodel$getDependencies('theta'), Rmodel$getDependencies('grade')),
+##                            wrt = list(c('theta'), c('grade'), c('theta', 'grade'), c('grade[1, 2]')),
+##                            order = c(0, 1, 2))
 
 
 ## end of Nick's tests ##

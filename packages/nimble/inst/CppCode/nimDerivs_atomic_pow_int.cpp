@@ -8,6 +8,11 @@
  
  dy = b a^(b-1) dx
  d2y = b (b-1)
+ 
+ a is x[0]
+ b is x[1]
+ y is y[0]
+
 */
 #include <nimble/nimDerivs_atomic_pow_int.h>
 
@@ -108,7 +113,7 @@ bool atomic_pow_int_class::reverse(
 {
   // <y_adj, dy> = <y_adj, b a^(b-1) da> = <a_adj, da>
   // giving a_adj = b a^(b-1) y_adj.
-  // This uses that b_adj = 0 because this is a function of a with b an integer.
+  // This uses that b_adj = 0 because pow_int is a function of a with b an integer.
   //
   // y_dot = b a^(b-1) a_dot
   // <y_dot_adj, dy_dot> = < y_dot_adj, b (b-1) a^(b-2) a_dot da + b a^(b-1) da_dot>
