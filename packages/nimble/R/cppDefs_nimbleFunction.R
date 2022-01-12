@@ -732,7 +732,7 @@ modifyForAD_issueWarning <- function(code, symTab, workEnv) {
 }
 
 modifyForAD_matmult <- function(code, symTab, workEnv) {
-  if(!isTRUE(nimbleOptions("skipADmatMultAtomic")))
+  if(isTRUE(nimbleOptions("useADmatMultAtomic")))
     if(length(code$args)==2)  ## something is wrong if there are not 2 args
       if(!(isEigScalar(code$args[[1]]) | isEigScalar(code$args[[2]]))) ## are both non-scalar?
         code$name <- 'nimDerivs_matmult'
@@ -740,7 +740,7 @@ modifyForAD_matmult <- function(code, symTab, workEnv) {
 }
 
 modifyForAD_matinverse <- function(code, symTab, workEnv) {
-  if(!isTRUE(nimbleOptions("skipADmatInverseAtomic")))
+  if(isTRUE(nimbleOptions("useADmatInverseAtomic")))
     code$name <- 'nimDerivs_matinverse'
   invisible(NULL)
 }
@@ -829,10 +829,10 @@ modifyForAD_prependNimDerivs <- function(code, symTab, workEnv) {
   origName <- code$name
   atomic <- TRUE
   if(origName == 'EIGEN_FS' | origName == 'EIGEN_BS')
-    if(isTRUE(nimbleOptions("skipADsolveAtomic")))
+    if(!isTRUE(nimbleOptions("useADsolveAtomic")))
         atomic <- FALSE
   if(origName == "EIGEN_CHOL")
-    if(isTRUE(nimbleOptions("skipADcholAtomic")))
+    if(!isTRUE(nimbleOptions("useADcholAtomic")))
         atomic <- FALSE
   if(atomic)
     code$name <- paste0("nimDerivs_", origName)

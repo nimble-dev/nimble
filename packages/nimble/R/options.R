@@ -8,10 +8,10 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
 .nimbleOptions <- as.environment(
     list(
         useCppADoptimize = TRUE,
-        skipADcholAtomic = TRUE,
-        skipADsolveAtomic = TRUE,
-        skipADmatMultAtomic = TRUE, # If TRUE, do not use nimble's CppAD atomic class for %*%
-        skipADmatInverseAtomic = TRUE, # If TRUE, do not use nimble's CppAD atomic class for inverse
+        useADcholAtomic = FALSE, # If TRUE, use nimble's CppAD atomic for cholesky decomposition
+        useADsolveAtomic = FALSE, # If TRUE, use nimble's CppAD atomic for matrix inverse
+        useADmatMultAtomic = FALSE, # If TRUE, use nimble's CppAD atomic class for %*%
+        useADmatInverseAtomic = FALSE, # If TRUE, use nimble's CppAD atomic class for inverse
         groupDetermWithGivenInCondIndSets = TRUE, # used in getConditionallyIndependentSets
         use_C_getParents = FALSE,
         useNewConfigureMCMC = TRUE,
