@@ -9,7 +9,7 @@
 require(nimble)
 ``` 
 
-# Bayesian nonparametric models {#cha:bnp}
+# Bayesian nonparametric models {#cha-bnp}
 
 ## Bayesian nonparametric mixture models {#sec:bnpmixtures}
  
@@ -105,7 +105,7 @@ inits <- list(thetatilde = rnorm(constants$M, 0, 10),
 model <- nimbleModel(code, constants, data, inits)
 ```
 
-The model can be fitted through  MCMC sampling. NIMBLE will assign a specialized sampler to update `z` and `alpha`. See Chapter  \@ref(cha:mcmc) for information about NIMBLE's MCMC engine, and Section \@ref(sec:mcmcdcrp) for details on  MCMC sampling of the CRP. 
+The model can be fitted through  MCMC sampling. NIMBLE will assign a specialized sampler to update `z` and `alpha`. See Chapter  \@ref(cha-mcmc) for information about NIMBLE's MCMC engine, and Section \@ref(sec:mcmcdcrp) for details on  MCMC sampling of the CRP. 
 
 One of the advantages of BNP mixture models is that the number of clusters is treated as random. Therefore, in MCMC sampling, the number of cluster parameters varies with the iteration. Since NIMBLE does not currently allow dynamic length allocation, the number of unique cluster parameters, $N^{\star}$, has to be fixed. One safe option is to set this number to $N$, but this is inefficient, both in terms of computation and in terms of storage, because in practice it is often that $N^{\star} < N$. In addition, configuring and building the MCMC can be slow (and use a lot of memory) for large $N$. In an effort to mitigate these inefficiencies, we allow the user to set $N^{\star} = M$, with $M<N$, as seen in the example above.  However, if this number is too small and is exceeded in any iteration a warning is issued.
 
@@ -151,7 +151,7 @@ modelRandEff <- nimbleModel(code, constants, data, inits)
 
 Alternatively, each subject could have a vector of parameters being clustered. For example in the model above one could instead specify a vector of means, such as `thetaTilde[z[i], j]`, instead of a single mean. 
 
-As before, the model can be fitted through  MCMC sampling. NIMBLE will assign a specialized sampler to update `z` and `alpha`. See Chapter  \@ref(cha:mcmc) for information about NIMBLE's MCMC engine, and Section \@ref(sec:mcmcdcrp) for details on  MCMC sampling of the CRP.
+As before, the model can be fitted through  MCMC sampling. NIMBLE will assign a specialized sampler to update `z` and `alpha`. See Chapter  \@ref(cha-mcmc) for information about NIMBLE's MCMC engine, and Section \@ref(sec:mcmcdcrp) for details on  MCMC sampling of the CRP.
 
 ## Stick-breaking model {#sec:sb}
 
@@ -223,7 +223,7 @@ inits <- list(thetastar = rnorm(constants$L, 0, 100),
 modelSB <- nimbleModel(code, constants, data, inits)
 ```
 
-The resulting model may be carried through to MCMC sampling. NIMBLE will assign a specialized sampler to update `v`. See Chapter  \@ref(cha:mcmc) for information about NIMBLE's MCMC engine, and Section \@ref(sec:mcmcsb) for details on  MCMC sampling of the stick-breaking weights. 
+The resulting model may be carried through to MCMC sampling. NIMBLE will assign a specialized sampler to update `v`. See Chapter  \@ref(cha-mcmc) for information about NIMBLE's MCMC engine, and Section \@ref(sec:mcmcsb) for details on  MCMC sampling of the stick-breaking weights. 
 
 
 ## MCMC sampling of BNP models

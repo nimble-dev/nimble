@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 11 Writing simple nimbleFunctions | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 11 Writing simple nimbleFunctions | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
@@ -31,7 +31,8 @@
   
 <link rel="prev" href="overview.html"/>
 <link rel="next" href="cha-user-defined.html"/>
-<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
@@ -39,7 +40,6 @@
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
-
 
 
 
@@ -131,7 +131,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.12.1</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.12.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -360,6 +360,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
+<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
       </nav>
@@ -377,7 +378,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="cha:RCfunctions" class="section level1">
+<div id="cha-RCfunctions" class="section level1">
 <h1><span class="header-section-number">Chapter 11</span> Writing simple nimbleFunctions</h1>
 <div id="sec:RC-intro" class="section level2">
 <h2><span class="header-section-number">11.1</span> Introduction to simple nimbleFunctions</h2>
@@ -391,7 +392,7 @@ can also be compiled. Simple nimbleFunctions are useful for doing math or the ot
 kinds of processing available in NIMBLE when no model or modelValues
 is needed. These can be used for any purpose in R programming. They
 can also be used as new functions and distributions in NIMBLE’s
-extension of BUGS (Chapter <a href="cha-user-defined.html#cha:user-defined">12</a>).</p>
+extension of BUGS (Chapter <a href="cha-user-defined.html#cha-user-defined">12</a>).</p>
 <p>Here’s a basic example implementing the textbook calculation of
 least squares estimation of linear regression parameters<a href="#fn20" class="footnote-ref" id="fnref20"><sup>20</sup></a>:</p>
 <div class="sourceCode" id="cb218"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb218-1" title="1">solveLeastSquares &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
@@ -1154,7 +1155,7 @@ array.</li>
 (if given). Standard arguments to distribution functions in R
 (<code>log</code>, <code>log.p</code>, <code>lower.tail</code>) can be used and have the same
 defaults. User-defined distributions for BUGS (Chapter
-<a href="cha-user-defined.html#cha:user-defined">12</a>) can also be used from
+<a href="cha-user-defined.html#cha-user-defined">12</a>) can also be used from
 nimbleFunctions.</p>
 <p>For standard distributions, we rely on R’s regular help pages
 (e.g., <code>help(dgamma)</code>. For distributions unique to NIMBLE
@@ -1553,7 +1554,6 @@ tests.<a href="cha-RCfunctions.html#fnref21" class="footnote-back">↩</a></p></
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
-<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
 <script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
@@ -1593,6 +1593,10 @@ gitbook.start({
 "text": null
 },
 "download": ["NimbleUserManual.pdf", "NimbleUserManual.epub"],
+"search": {
+"engine": "fuse",
+"options": null
+},
 "toc": {
 "collapse": "subsection"
 },

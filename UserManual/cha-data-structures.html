@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 14 Data structures in NIMBLE | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 14 Data structures in NIMBLE | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
@@ -31,7 +31,8 @@
   
 <link rel="prev" href="cha-using-models.html"/>
 <link rel="next" href="cha-progr-with-models.html"/>
-<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
@@ -39,7 +40,6 @@
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
-
 
 
 
@@ -131,7 +131,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.12.1</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.12.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -360,6 +360,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
+<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
       </nav>
@@ -377,7 +378,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="cha:data-structures" class="section level1">
+<div id="cha-data-structures" class="section level1">
 <h1><span class="header-section-number">Chapter 14</span> Data structures in NIMBLE</h1>
 <p>NIMBLE provides several data structures useful for programming.</p>
 <p>We’ll first describe <em>modelValues</em>, which are containers designed for
@@ -396,7 +397,7 @@ they were motivated by models, one is free to set up a
 modelValues with any variables one wants.</p>
 <p>As with the material in the rest of this chapter, modelValues objects
 will generally be used in nimbleFunctions that interact with models
-(see Chapter <a href="cha-progr-with-models.html#cha:progr-with-models">15</a>)<a href="#fn26" class="footnote-ref" id="fnref26"><sup>26</sup></a>. modelValues objects can
+(see Chapter <a href="cha-progr-with-models.html#cha-progr-with-models">15</a>)<a href="#fn26" class="footnote-ref" id="fnref26"><sup>26</sup></a>. modelValues objects can
 be defined either in setup code or separately in R (and then passed as
 an argument to setup code). The modelValues object can then used in run code of nimbleFunctions.</p>
 <div id="creating-modelvalues-objects" class="section level3">
@@ -748,7 +749,7 @@ instances can be created in run code.</p>
 <hr />
 <ol start="26">
 <li id="fn26"><p>One may want to read this
-section after an initial reading of Chapter <a href="cha-progr-with-models.html#cha:progr-with-models">15</a>.<a href="cha-data-structures.html#fnref26" class="footnote-back">↩</a></p></li>
+section after an initial reading of Chapter <a href="cha-progr-with-models.html#cha-progr-with-models">15</a>.<a href="cha-data-structures.html#fnref26" class="footnote-back">↩</a></p></li>
 <li id="fn27"><p>The <em>configuration</em> for a modelValues object is the same concept as a <em>definition</em> here; in a future release of NIMBLE we may make the usage more consistent between modelValues and nimbleLists.<a href="cha-data-structures.html#fnref27" class="footnote-back">↩</a></p></li>
 </ol>
 </div>
@@ -762,7 +763,6 @@ section after an initial reading of Chapter <a href="cha-progr-with-models.html#
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
-<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
 <script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
@@ -802,6 +802,10 @@ gitbook.start({
 "text": null
 },
 "download": ["NimbleUserManual.pdf", "NimbleUserManual.epub"],
+"search": {
+"engine": "fuse",
+"options": null
+},
 "toc": {
 "collapse": "subsection"
 },

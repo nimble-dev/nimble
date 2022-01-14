@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 1 Welcome to NIMBLE | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 1 Welcome to NIMBLE | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
@@ -31,7 +31,8 @@
   
 
 <link rel="next" href="cha-lightning-intro.html"/>
-<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
@@ -39,7 +40,6 @@
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
-
 
 
 
@@ -131,7 +131,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.12.1</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.12.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -360,6 +360,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
+<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
       </nav>
@@ -379,7 +380,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
             <section class="normal" id="section-">
 <!--bookdown:title:end-->
 <!--bookdown:title:start-->
-<div id="cha:welcome-nimble" class="section level1">
+<div id="cha-welcome-nimble" class="section level1">
 <h1><span class="header-section-number">Chapter 1</span> Welcome to NIMBLE</h1>
 <p>NIMBLE is a system for building and sharing analysis methods for
 statistical models from R, especially for hierarchical models and
@@ -437,7 +438,7 @@ written in the NIMBLE language.</p>
 </div>
 <div id="how-to-use-this-manual" class="section level2">
 <h2><span class="header-section-number">1.2</span> How to use this manual</h2>
-<p>We suggest everyone start with the Lightning Introduction in Chapter <a href="cha-lightning-intro.html#cha:lightning-intro">2</a>.</p>
+<p>We suggest everyone start with the Lightning Introduction in Chapter <a href="cha-lightning-intro.html#cha-lightning-intro">2</a>.</p>
 <p>Then, if you want to jump into using NIMBLE’s algorithms without learning
 about NIMBLE’s programming system, go to Part II to
 learn how to build your model and Part III to learn
@@ -458,7 +459,7 @@ are written as nimbleFunctions.</p>
 <hr />
 <ol start="1">
 <li id="fn1"><p>See Chapter
-<a href="cha-writing-models.html#cha:writing-models">5</a> for information about NIMBLE’s version of
+<a href="cha-writing-models.html#cha-writing-models">5</a> for information about NIMBLE’s version of
 BUGS.<a href="cha-welcome-nimble.html#fnref1" class="footnote-back">↩</a></p></li>
 <li id="fn2"><p>The packages <a href="http://www.rcpp.org/">Rcpp</a> and
 RcppEigen provide different ways of connecting C++, the Eigen
@@ -477,7 +478,6 @@ turns it into C++.<a href="cha-welcome-nimble.html#fnref2" class="footnote-back"
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
-<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
 <script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
@@ -517,6 +517,10 @@ gitbook.start({
 "text": null
 },
 "download": ["NimbleUserManual.pdf", "NimbleUserManual.epub"],
+"search": {
+"engine": "fuse",
+"options": null
+},
 "toc": {
 "collapse": "subsection"
 },

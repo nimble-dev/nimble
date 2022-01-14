@@ -9,7 +9,7 @@ read_chunk(file.path('chunks', 'introExample_chunks.R'))  # one can put code chu
 ``` 
 
 
-# Lightning introduction {#cha:lightning-intro}
+# Lightning introduction {#cha-lightning-intro}
 
 ## A brief example {#sec:brief-example}
 

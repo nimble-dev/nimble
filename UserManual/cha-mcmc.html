@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 7 MCMC | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 7 MCMC | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
@@ -31,7 +31,8 @@
   
 <link rel="prev" href="cha-building-models.html"/>
 <link rel="next" href="cha-algos-provided.html"/>
-<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
@@ -39,7 +40,6 @@
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
-
 
 
 
@@ -131,7 +131,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.12.1</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.12.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -360,6 +360,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
+<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
       </nav>
@@ -377,7 +378,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="cha:mcmc" class="section level1">
+<div id="cha-mcmc" class="section level1">
 <h1><span class="header-section-number">Chapter 7</span> MCMC</h1>
 <p>NIMBLE provides a variety of paths to creating and executing an MCMC algorithm, which differ greatly in their simplicity of use, and also in the options available and customizability.</p>
 <p>The most direct approach to invoking the MCMC engine is using the <code>nimbleMCMC</code> function (Section <a href="cha-mcmc.html#sec:nimbleMCMC">7.1</a>). This one-line call creates and executes an MCMC, and provides a wide range of options for controlling the MCMC: specifying monitors, burn-in, and thinning, running multiple MCMC chains with different initial values, and returning posterior samples, summary statistics, and/or a WAIC value. However, this approach is restricted to using NIMBLE’s default MCMC algorithm; further customization of, for example, the specific samplers employed, is not possible.</p>
@@ -434,7 +435,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li>returning posterior summary statistics; and</li>
 <li>returning a WAIC value calculated using post-burn-in samples from all chains.</li>
 </ul>
-<p>This entry point for using <code>nimbleMCMC</code> is the <code>code</code>, <code>constants</code>, <code>data</code>, and <code>inits</code> arguments that are used for building a NIMBLE model (see Chapters <a href="cha-writing-models.html#cha:writing-models">5</a> and <a href="cha-building-models.html#cha:building-models">6</a>). However, when using <code>nimbleMCMC</code>, the <code>inits</code> argument can also specify a list of lists of initial values that will be used for each MCMC chain, or a function that generates a list of initial values, which will be generated at the onset of each chain. As an alternative entry point, a NIMBLE <code>model</code> object can also be supplied to <code>nimbleMCMC</code>, in which case this model will be used to build the MCMC algorithm.</p>
+<p>This entry point for using <code>nimbleMCMC</code> is the <code>code</code>, <code>constants</code>, <code>data</code>, and <code>inits</code> arguments that are used for building a NIMBLE model (see Chapters <a href="cha-writing-models.html#cha-writing-models">5</a> and <a href="cha-building-models.html#cha-building-models">6</a>). However, when using <code>nimbleMCMC</code>, the <code>inits</code> argument can also specify a list of lists of initial values that will be used for each MCMC chain, or a function that generates a list of initial values, which will be generated at the onset of each chain. As an alternative entry point, a NIMBLE <code>model</code> object can also be supplied to <code>nimbleMCMC</code>, in which case this model will be used to build the MCMC algorithm.</p>
 <p>Based on its arguments, <code>nimbleMCMC</code> optionally returns any combination of</p>
 <ul>
 <li>Posterior samples,</li>
@@ -500,10 +501,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li>If the node has a conjugate relationship between its prior distribution and the distributions of its stochastic dependents, a <code>conjugate</code> (`Gibbs’) sampler is assigned.</li>
 <li>If the node follows a multinomial distribution, then a <code>RW_multinomial</code> sampler is assigned. This is a discrete random-walk sampler in the space of multinomial outcomes.</li>
 <li>If a node follows a Dirichlet distribution, then a <code>RW_dirichlet</code> sampler is assigned. This is a random walk sampler in the space of the simplex defined by the Dirichlet.</li>
-<li>If a node follows an LKJ correlation distribution, then a <code>RW_block_lkj_corr_cholesky</code> sampler is assigned. This is a block random walk sampler in a transformed space where the transformation uses the signed stickbreaking approach described in Section 10.12 of <span class="citation">(Stan Development Team <a href="cha-progr-with-models.html#ref-Stan_Lang_2021">2021</a><a href="cha-progr-with-models.html#ref-Stan_Lang_2021">b</a>)</span>.</li>
-<li>If the node follows any other multivariate distribution, then a <code>RW_block</code> sampler is assigned for all elements. This is a Metropolis-Hastings adaptive random-walk sampler with a multivariate normal proposal <span class="citation">(Roberts and Sahu <a href="cha-progr-with-models.html#ref-Roberts_Sahu_1997">1997</a>)</span>.</li>
+<li>If a node follows an LKJ correlation distribution, then a <code>RW_block_lkj_corr_cholesky</code> sampler is assigned. This is a block random walk sampler in a transformed space where the transformation uses the signed stickbreaking approach described in Section 10.12 of <span class="citation">(Stan Development Team <a href="references.html#ref-Stan_Lang_2021">2021</a><a href="references.html#ref-Stan_Lang_2021">b</a>)</span>.</li>
+<li>If the node follows any other multivariate distribution, then a <code>RW_block</code> sampler is assigned for all elements. This is a Metropolis-Hastings adaptive random-walk sampler with a multivariate normal proposal <span class="citation">(Roberts and Sahu <a href="references.html#ref-Roberts_Sahu_1997">1997</a>)</span>.</li>
 <li>If the node is binary-valued (strictly taking values 0 or 1), then a <code>binary</code> sampler is assigned. This sampler calculates the conditional probability for both possible node values and draws the new node value from the conditional distribution, in effect making a Gibbs sampler.</li>
-<li>If the node is otherwise discrete-valued, then a <code>slice</code> sampler is assigned <span class="citation">(Neal <a href="cha-progr-with-models.html#ref-Neal2003">2003</a>)</span>.</li>
+<li>If the node is otherwise discrete-valued, then a <code>slice</code> sampler is assigned <span class="citation">(Neal <a href="references.html#ref-Neal2003">2003</a>)</span>.</li>
 <li>If none of the above criteria are satisfied, then a <code>RW</code> sampler is assigned. This is a Metropolis-Hastings adaptive random-walk sampler with a univariate normal proposal distribution.</li>
 </ol>
 <!-- These sampler assignment rules can be inspected, reordered, and easily modified using the system option `nimbleOptions("MCMCdefaultSamplerAssignmentRules")` and customized  `samplerAssignmentRules` objects. -->
@@ -851,20 +852,20 @@ greatly improved performance in some cases.</p>
 </div>
 <div id="sec:WAIC" class="section level2">
 <h2><span class="header-section-number">7.7</span> Calculating WAIC</h2>
-<p>The WAIC <span class="citation">(Watanabe <a href="cha-progr-with-models.html#ref-Watanabe_2010">2010</a>)</span> can be calculated from the posterior samples produced during the MCMC algorithm. Users have two options to calculate WAIC. The main approach requires enabling WAIC when setting up the MCMC and allows access to a variety of ways to calculate WAIC. This approach does not require that any specific monitors be set<a href="#fn18" class="footnote-ref" id="fnref18"><sup>18</sup></a> because the WAIC is calculated in an online manner, accumulating the necessary quantities to calculate WAIC as the MCMC is run.</p>
+<p>The WAIC <span class="citation">(Watanabe <a href="references.html#ref-Watanabe_2010">2010</a>)</span> can be calculated from the posterior samples produced during the MCMC algorithm. Users have two options to calculate WAIC. The main approach requires enabling WAIC when setting up the MCMC and allows access to a variety of ways to calculate WAIC. This approach does not require that any specific monitors be set<a href="#fn18" class="footnote-ref" id="fnref18"><sup>18</sup></a> because the WAIC is calculated in an online manner, accumulating the necessary quantities to calculate WAIC as the MCMC is run.</p>
 <p>The second approach allows one to calculate the WAIC after an MCMC has been run using an MCMC object or matrix (or dataframe) containing the posterior samples, but it requires the user to have correctly specified the monitored variables and only provides the default way to calculate WAIC. An advantage of the second approach is that one can specify additional burnin beyond that specified for the MCMC.</p>
 <p>Here we first discuss the main approach and then close the section by showing the second approach. Specific details of the syntax are provided in <code>help(waic)</code>.</p>
 <p>To enable WAIC for the first approach, the argument <code>enableWAIC = TRUE</code> must be supplied to <code>configureMCMC</code> (or to <code>buildMCMC</code> if not using <code>configureWAIC</code>), or the <code>MCMCenableWAIC</code> NIMBLE option must have been set to <code>TRUE</code>.</p>
 <p>The WAIC (as well as the pWAIC and lppd values) is extracted by the member method <code>mcmc$getWAIC</code> (see <code>help(waic)</code> in R for more details) or is available as the <code>WAIC</code> element of the <code>runMCMC</code> or <code>nimbleMCMC</code> output lists. One can use the member method <code>mcmc$getWAICdetails</code> for additional quantities related to WAIC that are discussed below.
 ```</p>
 <p>Note that there is not a unique value of WAIC for a model. WAIC is calculated from
-Equations 5, 12, and 13 in <span class="citation">(Gelman, Hwang, and Vehtari <a href="cha-progr-with-models.html#ref-Gelman_etal_2014">2014</a>)</span> (i.e., using WAIC2), as discussed in detail in <span class="citation">(Hug and Paciorek <a href="cha-progr-with-models.html#ref-Hug_Paciorek_2021">2021</a>)</span>. Therefore, NIMBLE provides
+Equations 5, 12, and 13 in <span class="citation">(Gelman, Hwang, and Vehtari <a href="references.html#ref-Gelman_etal_2014">2014</a>)</span> (i.e., using WAIC2), as discussed in detail in <span class="citation">(Hug and Paciorek <a href="references.html#ref-Hug_Paciorek_2021">2021</a>)</span>. Therefore, NIMBLE provides
 user control over how WAIC is calculated in two ways.</p>
-<p>First, by default NIMBLE provides the conditional WAIC, namely the version of WAIC where all parameters directly involved in the likelihood are treated as <span class="math inline">\(\theta\)</span> for the purposes of Equation 5 from <span class="citation">(Gelman, Hwang, and Vehtari <a href="cha-progr-with-models.html#ref-Gelman_etal_2014">2014</a>)</span>. Users can request the marginal WAIC (see <span class="citation">(Ariyo et al. <a href="cha-progr-with-models.html#ref-Ariyo_etal_2019">2020</a>)</span>), namely the version of WAIC where latent variables are integrated over (i.e., using a marginal likelihood). This is done by providing the <code>waicControl</code> list with a <code>marginalizeNodes</code> element to <code>configureMCMC</code> or <code>buildMCMC</code> (when providing a model as the argument to <code>buildMCMC</code>). See <code>help(waic)</code> for more details.</p>
+<p>First, by default NIMBLE provides the conditional WAIC, namely the version of WAIC where all parameters directly involved in the likelihood are treated as <span class="math inline">\(\theta\)</span> for the purposes of Equation 5 from <span class="citation">(Gelman, Hwang, and Vehtari <a href="references.html#ref-Gelman_etal_2014">2014</a>)</span>. Users can request the marginal WAIC (see <span class="citation">(Ariyo et al. <a href="references.html#ref-Ariyo_etal_2019">2020</a>)</span>), namely the version of WAIC where latent variables are integrated over (i.e., using a marginal likelihood). This is done by providing the <code>waicControl</code> list with a <code>marginalizeNodes</code> element to <code>configureMCMC</code> or <code>buildMCMC</code> (when providing a model as the argument to <code>buildMCMC</code>). See <code>help(waic)</code> for more details.</p>
 <p>Second, WAIC relies on a partition of the observations, i.e., ‘pointwise’ prediction. By default, in NIMBLE the sum over log pointwise predictive density values treats each data node as contributing a single value to the sum. When a data node is multivariate, that data node contributes a single value to the sum based on the joint density of the elements in the node. If one wants to group data nodes such that the joint density within each group is used, one can provide the <code>waicControl</code> list with a <code>dataGroups</code> element to <code>configureMCMC</code> or <code>buildMCMC</code> (when providing a model as the argument to <code>buildMCMC</code>). See <code>help(waic)</code> for more details.</p>
-<p>Note that based on a limited set of simulation experiments in <span class="citation">(Hug and Paciorek <a href="cha-progr-with-models.html#ref-Hug_Paciorek_2021">2021</a>)</span>, our tentative recommendation is that users only use marginal WAIC if also using grouping.</p>
+<p>Note that based on a limited set of simulation experiments in <span class="citation">(Hug and Paciorek <a href="references.html#ref-Hug_Paciorek_2021">2021</a>)</span>, our tentative recommendation is that users only use marginal WAIC if also using grouping.</p>
 <p>Marginal WAIC requires using Monte Carlo simulation at each iteration of the MCMC to average over draws for the latent variables. To assess the stability of the marginal WAIC to the number of Monte Carlo iterations, one can examine how the WAIC changes with increasing iterations (up to the full number of iterations specified via the <code>nItsMarginal</code> element of the <code>waicControl</code> list) based on the <code>WAIC_partialMC</code>, <code>lppd_partialMC</code>, and <code>pWAIC_partialMC</code> elements of the detailed WAIC output.</p>
-<p>For comparing WAIC between two models, <span class="citation">(Vehtari, Gelman, and Gabry <a href="cha-progr-with-models.html#ref-Vehtari_etal_2017">2017</a>)</span> discuss using the per-observation (more generally, per-data group) contributions to the overall WAIC values to get an approximate standard error for the difference in WAIC between the models. These element-wise values are available as the <code>WAIC_elements</code>, <code>lppd_elements</code>, and <code>pWAIC_elements</code> components of the detailed WAIC output.</p>
+<p>For comparing WAIC between two models, <span class="citation">(Vehtari, Gelman, and Gabry <a href="references.html#ref-Vehtari_etal_2017">2017</a>)</span> discuss using the per-observation (more generally, per-data group) contributions to the overall WAIC values to get an approximate standard error for the difference in WAIC between the models. These element-wise values are available as the <code>WAIC_elements</code>, <code>lppd_elements</code>, and <code>pWAIC_elements</code> components of the detailed WAIC output.</p>
 <p>The second overall approach to WAIC available in NIMBLE allows one to calculate WAIC post hoc after MCMC sampling using an MCMC object or matrix (or dataframe) containing posterior samples. Simply set up the MCMC and run it without enabling WAIC (but making sure to include in the monitors all stochastic parent nodes of the data nodes) and then use the function <code>calculateWAIC</code>, as shown in this example:</p>
 <div class="sourceCode" id="cb171"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb171-1" title="1">samples &lt;-<span class="st"> </span><span class="kw">runMCMC</span>(Cmcmc, <span class="dt">niter =</span> <span class="dv">10000</span>, <span class="dt">nburnin =</span> <span class="dv">1000</span>)</a>
 <a class="sourceLine" id="cb171-2" title="2"><span class="co">## Using calculateWAIC with an MCMC object</span></a>
@@ -882,7 +883,7 @@ user control over how WAIC is calculated in two ways.</p>
 <div id="sec:rjmcmc" class="section level2">
 <h2><span class="header-section-number">7.9</span> Variable selection using Reversible Jump MCMC</h2>
 <p>A common method for Bayesian variable selection in regression-style problems is to define a space of different models and have MCMC sample over the models as well as the parameters for each model. The models differ in which explanatory variables are included. Often this idea is implemented in the BUGS language by writing the largest possible model and including indicator variables to turn regression parameters off and on (see model code below for an example of how indicator variables can be used). Foramally, that approach doesn’t sample between different models, instead embedding the models in one large model. However, that approach can result in poor mixing and require compromises in choices of prior distributions because a given regression parameter will sample from its prior when the corresponding indicator is 0. It is also computationally wasteful, because sampling effort will be spent on a coefficient even if it has no effect because the corresponding indicator is 0.</p>
-<p>A different view of the problem is that the different combinations of coefficients represent models of different dimensions. Reversible Jump MCMC <span class="citation">(Green <a href="cha-progr-with-models.html#ref-Green_1995">1995</a>)</span> (RJMCMC) is a general framework for MCMC simulation in which the dimension of the parameter space can vary between iterates of the Markov chain. The reversible jump sampler can be viewed as an extension of the Metropolis-Hastings algorithm onto more general state spaces. NIMBLE provides an implementation of RJMCMC for variable selection that requires the user to write the largest model of interest and supports use of indicator variables but formally uses RJMCMC sampling for better mixing and efficiency. When a coefficient is not in the model (or its indicator is 0), it will not be sampled, and it will therefore not follow its prior in that case.</p>
+<p>A different view of the problem is that the different combinations of coefficients represent models of different dimensions. Reversible Jump MCMC <span class="citation">(Green <a href="references.html#ref-Green_1995">1995</a>)</span> (RJMCMC) is a general framework for MCMC simulation in which the dimension of the parameter space can vary between iterates of the Markov chain. The reversible jump sampler can be viewed as an extension of the Metropolis-Hastings algorithm onto more general state spaces. NIMBLE provides an implementation of RJMCMC for variable selection that requires the user to write the largest model of interest and supports use of indicator variables but formally uses RJMCMC sampling for better mixing and efficiency. When a coefficient is not in the model (or its indicator is 0), it will not be sampled, and it will therefore not follow its prior in that case.</p>
 <p>In technical detail, given two models <span class="math inline">\(M_1\)</span> and <span class="math inline">\(M_2\)</span> of possibly different dimensions, the core idea of RJMCMC is to remove the difference in the dimensions of models <span class="math inline">\(M_1\)</span> and <span class="math inline">\(M_2\)</span> by supplementing the corresponding parameters <span class="math inline">\(\boldsymbol{\theta_1}\)</span> and <span class="math inline">\(\boldsymbol{\theta_2}\)</span> with auxiliary variables <span class="math inline">\(\boldsymbol{u}_{1 \rightarrow 2}\)</span> and <span class="math inline">\(\boldsymbol{u}_{2 \rightarrow 1}\)</span> such that <span class="math inline">\((\boldsymbol{\theta_1}, \boldsymbol{u}_{1 \rightarrow 2})\)</span> and <span class="math inline">\((\boldsymbol{\theta_2}, \boldsymbol{u}_{2 \rightarrow 1})\)</span>
 are in bijection, <span class="math inline">\((\boldsymbol{\theta_2}, \boldsymbol{u}_{2 \rightarrow 1}) = \Psi(\boldsymbol{\theta_1}, \boldsymbol{u}_{1 \rightarrow 2})\)</span>. The corresponding Metropolis-Hastings acceptance probability is generalized accounting for the proposal density for the auxiliary variables.</p>
 <p>NIMBLE implements RJMCMC for variable selection using a univariate normal distribution centered on 0 (or some fixed value) as the proposal density for parameters being added to the model. Two ways to set up models for RJMCMC are supported, which differ by whether the inclusion probabilities for each parameter are assumed known or must be written in the model:</p>
@@ -1203,7 +1204,7 @@ All <code>control</code> elements can be scalars or vectors. A scalar values wil
 </div>
 <div id="customized-log-likelihood-evaluations-rw_llfunction-sampler" class="section level3">
 <h3><span class="header-section-number">7.10.2</span> Customized log-likelihood evaluations: <em>RW_llFunction sampler</em></h3>
-<p>Sometimes it is useful to control the log-likelihood calculations used for an MCMC updater instead of simply using the model. For example, one could use a sampler with a log-likelihood that analytically (or numerically) integrates over latent model nodes. Or one could use a sampler with a log-likelihood that comes from a stochastic approximation such as a particle filter (see below), allowing composition of a particle MCMC (PMCMC) algorithm <span class="citation">(Andrieu, Doucet, and Holenstein <a href="cha-progr-with-models.html#ref-Andrieu_Doucet_Holenstein_2010">2010</a>)</span>. The <code>RW_llFunction</code> sampler handles this by using a Metropolis-Hastings algorithm with a normal proposal distribution and a user-provided log-likelihood function. To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction. The log-likelihood function may use the same model as the MCMC as a setup argument (as does the example below), but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise).</p>
+<p>Sometimes it is useful to control the log-likelihood calculations used for an MCMC updater instead of simply using the model. For example, one could use a sampler with a log-likelihood that analytically (or numerically) integrates over latent model nodes. Or one could use a sampler with a log-likelihood that comes from a stochastic approximation such as a particle filter (see below), allowing composition of a particle MCMC (PMCMC) algorithm <span class="citation">(Andrieu, Doucet, and Holenstein <a href="references.html#ref-Andrieu_Doucet_Holenstein_2010">2010</a>)</span>. The <code>RW_llFunction</code> sampler handles this by using a Metropolis-Hastings algorithm with a normal proposal distribution and a user-provided log-likelihood function. To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction. The log-likelihood function may use the same model as the MCMC as a setup argument (as does the example below), but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise).</p>
 <p>The <code>RW_llFunction</code> sampler can be customized using the <code>control</code> list argument to set the initial proposal distribution scale and the adaptive properties for the Metropolis-Hastings sampling. In addition, the <code>control</code> list argument must contain a named <code>llFunction</code> element. This is the specialized nimbleFunction that calculates the log-likelihood; it must accept no arguments and return a scalar double number. The return value must be the total log-likelihood of all stochastic dependents of the <code>target</code> nodes – and, if <code>includesTarget = TRUE</code>, of the target node(s) themselves – or whatever surrogate is being used for the total log-likelihood. This is a required <code>control</code> list element with no default. See <code>help(samplers)</code> for details.</p>
 <p>Here is a complete example:</p>
 <div class="sourceCode" id="cb185"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb185-1" title="1">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
@@ -1395,7 +1396,6 @@ The `posterior_predictive` sampler functions by calling the `simulate` method of
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
-<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
 <script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
@@ -1435,6 +1435,10 @@ gitbook.start({
 "text": null
 },
 "download": ["NimbleUserManual.pdf", "NimbleUserManual.epub"],
+"search": {
+"engine": "fuse",
+"options": null
+},
 "toc": {
 "collapse": "subsection"
 },

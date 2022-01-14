@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 13 Working with NIMBLE models | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 13 Working with NIMBLE models | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
@@ -31,7 +31,8 @@
   
 <link rel="prev" href="cha-user-defined.html"/>
 <link rel="next" href="cha-data-structures.html"/>
-<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
@@ -39,7 +40,6 @@
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
-
 
 
 
@@ -131,7 +131,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.12.1</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.12.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -360,6 +360,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
+<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
       </nav>
@@ -377,11 +378,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="cha:using-models" class="section level1">
+<div id="cha-using-models" class="section level1">
 <h1><span class="header-section-number">Chapter 13</span> Working with NIMBLE models</h1>
 <p>Here we describe how one can get information about NIMBLE models and
 carry out operations on a model. While all of this functionality can
-be used from R, its primary use occurs when writing nimbleFunctions (see Chapter <a href="cha-progr-with-models.html#cha:progr-with-models">15</a>).
+be used from R, its primary use occurs when writing nimbleFunctions (see Chapter <a href="cha-progr-with-models.html#cha-progr-with-models">15</a>).
 Information about node types, distributions, and dimensions can be
 used to determine algorithm behavior in <em>setup</em> code of nimbleFunctions. Information
 about node or variable values or the parameter and bound values of a node would generally be used for algorithm
@@ -392,7 +393,7 @@ on a model, including setting node or variable values, would generally be done i
 <p>Section <a href="cha-building-models.html#sec:nodes-and-variables">6.2</a> defines what we mean by variables and nodes in a NIMBLE model and discusses how to determine and access the nodes in a model and their dependency relationships. Here we’ll review and go into more detail on the topics of determining the nodes and node dependencies in a model.</p>
 <div id="sec:get-nodes" class="section level3">
 <h3><span class="header-section-number">13.1.1</span> Determining the nodes in a model</h3>
-<p>One can determine the variables in a model using <code>getVarNames</code> and the nodes in a model using <code>getNodeNames</code>, with optional arguments allowing you to select only certain types of nodes. We illustrate here with the pump model from Chapter <a href="cha-lightning-intro.html#cha:lightning-intro">2</a>.</p>
+<p>One can determine the variables in a model using <code>getVarNames</code> and the nodes in a model using <code>getNodeNames</code>, with optional arguments allowing you to select only certain types of nodes. We illustrate here with the pump model from Chapter <a href="cha-lightning-intro.html#cha-lightning-intro">2</a>.</p>
 <div class="sourceCode" id="cb238"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb238-1" title="1">pump<span class="op">$</span><span class="kw">getVarNames</span>()</a></code></pre></div>
 <pre><code>## [1] &quot;lifted_d1_over_beta&quot; &quot;theta&quot;               &quot;lambda&quot;             
 ## [4] &quot;x&quot;                   &quot;alpha&quot;               &quot;beta&quot;</code></pre>
@@ -844,7 +845,6 @@ always get them using <code>getLogProb</code>.</p>
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
-<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
 <script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
@@ -884,6 +884,10 @@ gitbook.start({
 "text": null
 },
 "download": ["NimbleUserManual.pdf", "NimbleUserManual.epub"],
+"search": {
+"engine": "fuse",
+"options": null
+},
 "toc": {
 "collapse": "subsection"
 },

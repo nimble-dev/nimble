@@ -6,7 +6,7 @@
 require(nimble)
 ``` 
 
-# Writing nimbleFunctions to interact with models {#cha:progr-with-models}
+# Writing nimbleFunctions to interact with models {#cha-progr-with-models}
 
 ```{r, echo=FALSE}
 read_chunk(file.path('chunks', 'programmingWithModels_chunks.R')) 
@@ -34,7 +34,7 @@ are two kinds of code and two steps of execution:
   as its name implies, sets up information for run-time code.  It is
   executed in R, so it can use any aspect of R.
   1. *Run* code is provided in the NIMBLE language, which was
-  introduced in Chapter \@ref(cha:RCfunctions).  This is
+  introduced in Chapter \@ref(cha-RCfunctions).  This is
   similar to a narrow subset of R, but it is important to remember
   that it is different -- defined by what can be compiled -- and much more limited.  *Run* code can
   use the objects created by the *setup* code.  In addition,
@@ -187,7 +187,7 @@ anywhere in the setup code.
 
 ## Writing run code {#sec:nimble-lang-comp}
 
-In Chapter \@ref(cha:RCfunctions) we described the functionality of the NIMBLE language that could be used in run code without setup code (typically in cases where no models or modelValues are needed).   Next we explain the additional features that allow use of models and modelValues in the run code. 
+In Chapter \@ref(cha-RCfunctions) we described the functionality of the NIMBLE language that could be used in run code without setup code (typically in cases where no models or modelValues are needed).   Next we explain the additional features that allow use of models and modelValues in the run code. 
 
 ### Driving models: *calculate*, *calculateDiff*, *simulate*, *getLogProb* {#sec:driv-models:-calc}
 
