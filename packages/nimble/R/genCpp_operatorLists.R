@@ -343,7 +343,7 @@ nimDerivsPrependTypeOperators <- c("dnorm", "dpois", "dgamma", "dinvgamma", "dsq
 				   "nimArr_dwish_chol", "nimArr_dinvwish_chol", "nimArr_dlkj_corr_cholesky",
                                    "nimStep", 'ilogit', 'icloglog', 'iprobit', 'probit', 'cloglog',
                                    "nimEquals", "lgammafn", "gammafn", "lfactorial", "factorial", "logit",
-                                   "cube", "inprod", "pow_int")
+                                   "cube", "inprod")
 
 ## Reflects distribution funs that support recycling rule with AD -- see nimDerivs_TMB.h.
 recyclingRuleOperatorsAD <- c(

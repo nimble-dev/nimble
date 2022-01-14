@@ -72,6 +72,7 @@ cppOutputCalls <- c(## makeCallList(recyclingRuleOperatorsAD, 'cppOutputRecyclin
                         ADbreak = 'cppOutputSkip')
                     )
 cppOutputCalls[['pow']] <-  'cppOutputPow'
+cppOutputCalls[['pow_int']] <-  'cppOutputPow'
 cppMidOperators <- midOperators
 cppMidOperators[['::']] <- '::'
 cppMidOperators[['%*%']] <- ' * '
@@ -536,7 +537,7 @@ cppOutputPow <- function(code, symTab) {
         ## if(isTRUE(nimbleUserNamespace$cppADCode))
         ##     FALSE
         ## else
-            if(is.numeric(code$args[[2]]) )
+        if(is.numeric(code$args[[2]]) )
             TRUE
         else identical(code$args[[2]]$nDim, 0)
     if(useStaticCast) {

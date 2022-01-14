@@ -7,6 +7,71 @@ warning("All atomics currently off as result of NCT issue 274")
 context("Testing of derivatives for calculate() for nimbleModels")
 
 
+test_that('pow and pow_int work', {
+
+  ## Following example is reduced from BUGS equiv example.
+  ## It is a case from which we have had some problems and crashes in the past.
+  mc <- nimbleCode({
+    d ~ dnorm(0, sd = 10)
+    trt <- 0
+    a <- -1
+    m <- pow(a, trt) + d
+    y ~ dnorm(m, sd = 2)
+  })
+  m <- nimbleModel(mc, data = list(y = 1.5),
+                   inits = list(d = .3))
+
+  calcNodes <- c(m$getDependencies("d"))
+  wrtNodes <- 'd'
+  order <- 0:2
+  m$calculate()
+  wrapperDerivs <- nimDerivs(m$calculate(calcNodes), wrt = wrtNodes, order = order)
+  testFunctionInstance <- testCompiledModelDerivsNimFxn(m, calcNodes, wrtNodes, order)
+  cm <- compileNimble(m)
+  ctestFunctionInstance <- compileNimble(testFunctionInstance, project =  m, resetFunctions = TRUE)
+  cDerivs <- ctestFunctionInstance$run()
+  expect_equal(wrapperDerivs$value, cDerivs$value)
+  expect_equal(wrapperDerivs$jacobian, cDerivs$jacobian)
+  expect_equal(wrapperDerivs$hessian, cDerivs$hessian, tolerance = 1e-4)
+  m$trt <- cm$trt <- -2
+  m$calculate()
+  cm$calculate()
+  wrapperDerivs <- nimDerivs(m$calculate(calcNodes), wrt = wrtNodes, order = order)
+  cDerivs <- ctestFunctionInstance$run()
+  expect_equal(wrapperDerivs$value, cDerivs$value)
+  expect_equal(wrapperDerivs$jacobian, cDerivs$jacobian)
+  expect_equal(wrapperDerivs$hessian, cDerivs$hessian, tolerance = 1e-4)
+
+  mc <- nimbleCode({
+    d ~ dnorm(0, sd = 10)
+    trt <- -1
+    a <- -1
+    m <- pow_int(a, trt) + d
+    y ~ dnorm(m, sd = 2)
+  })
+  m <- nimbleModel(mc, data = list(y = 1.5),
+                   inits = list(d = .3))
+  calcNodes <- c(m$getDependencies("d"))
+  wrtNodes <- 'd'
+  order <- 0:2
+  m$calculate()
+  wrapperDerivs <- nimDerivs(m$calculate(calcNodes), wrt = wrtNodes, order = order)
+  testFunctionInstance <- testCompiledModelDerivsNimFxn(m, calcNodes, wrtNodes, order)
+  cm <- compileNimble(m)
+  ctestFunctionInstance <- compileNimble(testFunctionInstance, project =  m, resetFunctions = TRUE)
+  cDerivs <- ctestFunctionInstance$run()
+  expect_equal(wrapperDerivs$value, cDerivs$value)
+  expect_equal(wrapperDerivs$jacobian, cDerivs$jacobian)
+  expect_equal(wrapperDerivs$hessian, cDerivs$hessian, tolerance = 1e-4)
+  m$trt <- cm$trt <- -2
+  m$calculate()
+  cm$calculate()
+  wrapperDerivs <- nimDerivs(m$calculate(calcNodes), wrt = wrtNodes, order = order)
+  cDerivs <- ctestFunctionInstance$run()
+  expect_equal(wrapperDerivs$value, cDerivs$value)
+  expect_equal(wrapperDerivs$jacobian, cDerivs$jacobian)
+  expect_equal(wrapperDerivs$hessian, cDerivs$hessian, tolerance = 1e-4)  
+})
 
 ## check logic of results
 test_that('makeUpdateNodes works correctly', {

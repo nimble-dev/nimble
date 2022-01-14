@@ -970,30 +970,43 @@ CPPAD_DISCRETE_FUNCTION(double, discrete_round)
 /* The CondExp expressions may slow down CppAD tapes.*/
 template<class Type> 
 Type nimDerivs_pow(Type x, Type y) {
-	Type outVal = CppAD::CondExpGt(x, Type(0),
-				       CppAD::pow(x, y),
-				       CppAD::CondExpEq(y, discrete_round(y),
-							CppAD::pow(x, CppAD::Integer(y)),
-							Type(CppAD::numeric_limits<Type>::quiet_NaN())));
-	return(outVal);
+
+  /* We experimented with CppAD conditionals but still had cases that 
+     crashed or had constants baked into tapes when they shouldn't be
+     As a result we implemented nimDerivs_pow_int for cases where 
+     y will only have integer values and never need its derivatives taken.
+  */
+
+  /* Type outVal = CppAD::CondExpGt(x, Type(0), */
+  /* 			       CppAD::pow(x, y), */
+  /* 			       CppAD::CondExpEq(y, discrete_round(y), */
+  /* 						CppAD::pow(x, CppAD::Integer(y)), */
+  /* 						Type(CppAD::numeric_limits<Type>::quiet_NaN()))); */
+
+  /* There is still a need to identify hard-coded cases with integer y and 
+     divert them to nimDerivs_pow_int.  Currently nimble-generated code
+     does not cast the second argument to Type() for pow, so one of the 
+     over-loaded cases below (for y being int or double) will be called.*/
+  Type outVal = CppAD::pow(x, y);
+  return(outVal);
 }
 
-template<class Type> 
-Type nimDerivs_pow(int x, Type y) {
-	Type outVal = CppAD::CondExpGt(x, Type(0),
-				       CppAD::pow(x, y),
-				       CppAD::CondExpEq(y, discrete_round(y),
-							CppAD::pow(x, CppAD::Integer(y)),
-							Type(CppAD::numeric_limits<Type>::quiet_NaN())));
-	return(outVal);
-}
-
+// This may not longer ever be used from nimble-generated code.
 template<class Type> 
 Type nimDerivs_pow(Type x, int y) {
-	Type outVal = CppAD::pow(x, y);
-	return(outVal);
+  Type outVal = nimDerivs_pow_int(x, y);
+  return(outVal);
 }
 
+template<class Type> 
+Type nimDerivs_pow(Type x, double y) {
+  Type outVal;
+  if(fabs(y - round(y)) < 1e-8) // allows binary rounding error on computed indices
+    outVal = nimDerivs_pow_int(x, round(y));
+  else
+    outVal = nimDerivs_pow(x, Type(y));
+  return(outVal);
+}
 
 /* probit */
 /* This is modified from TMB's qnorm, to avoid using the mean and sd arguments unnecessarily. */
