@@ -4,10 +4,10 @@ BUG FIXES
 
 -- Fix a bug introduced in conjugacy processing in version 0.11.0 (PR #1087)
 that causes incorrect MCMC sampling only in specific cases.  The impacted cases
-have terms of the form "a[i] + x[i] * beta" (or more simply "x[i] * beta"), with
-beta subject to conjugate sampling and either (i) 'x' provided via NIMBLE's
-constants argument and x[1] == 1 or (ii) 'a' provided via NIMBLE's constants
-argument and a[1] == 0 (PR #1172).
+have terms of the form "a[i] + x[i] * beta" (or more simply "x[i] * beta" or
+"a[i] + beta"), with beta subject to conjugate sampling and either (i) 'x'
+provided via NIMBLE's constants argument and x[1] == 1 or (ii) 'a' provided
+via NIMBLE's constants argument and a[1] == 0 (PR #1172).
 
 DEVELOPER LEVEL CHANGES
 
