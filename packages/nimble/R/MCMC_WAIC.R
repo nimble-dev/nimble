@@ -388,8 +388,8 @@ buildWAIC <- nimbleFunction(
 #' \code{runMCMC}. The function checks that the necessary variables were
 #' monitored in the MCMC and returns an error if they were not. This function
 #' behaves identically to the \code{calculateWAIC} method of an MCMC object.
-#' Note that this function cannot be used when using \code{nimbleMCMC} as the
-#' underlying MCMC object is not available to the user in that case.
+#' Note that to use this function when using \code{nimbleMCMC} one would
+#' need to build the model outside of \code{nimbleMCMC}.
 #'
 #' The \code{calculateWAIC} function requires either an MCMC object or a matrix
 #' (or dataframe) of posterior samples plus a model object. In addition, one
