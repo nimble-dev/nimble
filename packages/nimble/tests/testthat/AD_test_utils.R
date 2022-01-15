@@ -1,4 +1,4 @@
-source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
 #####################
 ## knownFailure utils

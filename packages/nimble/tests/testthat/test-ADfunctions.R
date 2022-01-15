@@ -205,6 +205,7 @@ test_AD_batch(unaryOpTests, knownFailures = AD_knownFailures)
 test_AD_batch(unaryReductionOpTests, knownFailures = AD_knownFailures)
 test_AD_batch(binaryOpTests, knownFailures = AD_knownFailures)
 test_AD_batch(powOpTests, knownFailures = AD_knownFailures)
+test_AD_batch(pow_int_OpTests, knownFailures = AD_knownFailures)
 test_AD_batch(binaryReductionOpTests, knownFailures = AD_knownFailures)
 test_AD_batch(squareMatrixOpTests, knownFailures = AD_knownFailures) ## trace has a knownFailures entry for compilation failure.  Do we even support it?
 test_AD_batch(binaryMatrixOpTests, knownFailures = AD_knownFailures)

@@ -634,7 +634,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
 ## The next block of code has the initial setup for an AST processing stage
 ## to make modifications for AD based on context etc.
 modifyForAD_handlers <- c(list(
-    pow = 'modifyForAD_issueWarning',
+    pow = 'modifyForAD_issuePowWarning',
     eigenBlock = 'modifyForAD_eigenBlock',
     calculate = 'modifyForAD_calculate',
     getValues = 'modifyForAD_getSetValues',
@@ -726,8 +726,8 @@ recurse_modifyForAD <- function(code, symTab, workEnv) {
   invisible(NULL)
 }
 
-modifyForAD_issueWarning <- function(code, symTab, workEnv) {
-  warning(paste0("Operator ", code$name, " can cause problems (potentially crashes) from AD."), call.=FALSE)
+modifyForAD_issuePowWarning <- function(code, symTab, workEnv) {
+  warning(paste0("Operator pow may cause derivative problems with negative arguments.  If the exponent is guaranteed to be an integer, use pow_int insted."), call.=FALSE)
   invisible(NULL)
 }
 

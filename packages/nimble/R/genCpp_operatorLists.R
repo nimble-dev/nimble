@@ -351,7 +351,7 @@ recyclingRuleOperatorsAD <- c(
   'dinvgamma', 'ddexp', 'dlnorm', 'dlogis', 'dunif', 'dweibull',
   ## The following operators should work but are currently broken for various
   ## reasons which are explained in test-ADfunctions.R.
-  'dexp', 'dsqrtinvgamma', 'dt_nonstandard', 'dt'
+  'dexp', 'dsqrtinvgamma', 'dt_nonstandard', 'dt', 'pow_int'
 )
 recyclingRuleOperatorsAD <- paste0(
     recyclingRuleOperatorsAD,

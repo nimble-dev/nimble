@@ -1624,6 +1624,7 @@ MAKE_RECYCLING_RULE_CLASS_r3(rt_nonstandard, double)
 MAKE_RECYCLING_RULE_CLASS_r1(rt, double)
 
 MAKE_RECYCLING_RULE_CLASS2_1scalar(bessel_k, double)
+MAKE_RECYCLING_RULE_CLASS1_1scalar(pow_int, double)
 
 // matrix, array, as.numeric, as.matrix, as.array
 
