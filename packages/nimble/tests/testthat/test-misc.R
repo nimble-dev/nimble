@@ -40,8 +40,10 @@ test_that("Test of full model check", {
         y ~ dnorm(mu, 1)
         mu ~ dnorm(0, 1)
     })
-    expect_output(m <- nimbleModel(code, data = list(y = 0), check = TRUE, name = 'test'),
+    nimbleOptions(verbose = TRUE)
+    expect_message(m <- nimbleModel(code, data = list(y = 0), check = TRUE, name = 'test'),
                    "NAs were detected")
+    nimbleOptions(verbose = FALSE)
 
     errmsg <- geterrmessage()    
 
@@ -283,8 +285,7 @@ test_that("pi case 1", {
     cnf <- compileNimble(nf)
     expect_equal(nf(), c(pi, 2*pi, 10.1), info = 'pi case 1 uncompiled')
     expect_equal(cnf(), c(pi, 2*pi, 10.1), info = 'pi case 1 compiled')
-    }
-)
+})
 
 test_that("pi case 2", {
     nf <- nimbleFunction(
@@ -298,8 +299,7 @@ test_that("pi case 2", {
     cnf <- compileNimble(nf)
     expect_equal(nf(), c(pi, 2*pi), info = 'pi case 1 uncompiled')
     expect_equal(cnf(), c(pi, 2*pi), info = 'pi case 1 compiled')
-    }
-)
+})
 
 test_that("pi case 3", {
     nf <- nimbleFunction(
@@ -314,8 +314,7 @@ test_that("pi case 3", {
     cnf <- compileNimble(nf)
     expect_equal(nf(), c(10.1, 20.2), info = 'pi case 1 uncompiled')
     expect_equal(cnf(), c(10.1, 20.2), info = 'pi case 1 compiled')
-    }
-)
+})
 
 ## From GitHub Issue #695
 test_that("setInits works in complicated case", {
@@ -328,11 +327,13 @@ test_that("setInits works in complicated case", {
     })
     inits = list(x = matrix(1:6, nrow = 2))
     data = list(x = matrix(c(100, NA, 100, NA, NA, NA), nrow = 2))
-    expect_warning(m <- nimbleModel(mc1,
+    nimbleOptions(verbose = TRUE)
+    expect_message(m <- nimbleModel(mc1,
                      constants = list(f = c(1, 2),
                                       n = 3),
                      data = data,
                      inits = inits), "Ignoring non-NA values in inits")
+    nimbleOptions(verbose = FALSE)
     ## This model defines x[1, 1], x[1, 2], x[1, 3], x[2, 2], and x[2, 3]. 
     ## x[2,1] is not a node in the model.
     ## data are provided for x[1, 1] and x[1, 2]
