@@ -305,7 +305,7 @@ sampler_RW <- nimbleFunction(
             if(saveMCMChistory) {
                 return(scaleHistory)
             } else {
-                print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC")
+                print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
                 return(numeric(1, 0))
             }
         },          
@@ -314,7 +314,7 @@ sampler_RW <- nimbleFunction(
             if(saveMCMChistory) {
                 return(acceptanceHistory)
             } else {
-                print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC")
+                print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
                 return(numeric(1, 0))
             }
         },
@@ -475,17 +475,17 @@ sampler_RW_block <- nimbleFunction(
             }
         },
         getScaleHistory = function() {  ## scaleHistory
-            if(!saveMCMChistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC")
+            if(!saveMCMChistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
             returnType(double(1))
             return(scaleHistory)
         },          
         getAcceptanceHistory = function() {  ## scaleHistory
             returnType(double(1))
-            if(!saveMCMChistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC")
+            if(!saveMCMChistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
             return(acceptanceHistory)
         },                  
         getPropCovHistory = function() { ## scaleHistory
-            if(!saveMCMChistory | d > 10)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC and note that to reduce memory use we only save the proposal covariance history for parameter vectors of length 10 or less")
+            if(!saveMCMChistory | d > 10)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC and note that to reduce memory use we only save the proposal covariance history for parameter vectors of length 10 or less.")
             returnType(double(3))
             return(propCovHistory)
         },
@@ -683,7 +683,7 @@ sampler_slice <- nimbleFunction(
             if(saveMCMChistory) {
                 return(widthHistory)
             } else {
-                print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC")
+                print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
                 return(numeric(1, 0))
             }
        },
@@ -1871,17 +1871,17 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
             }
         },
         getScaleHistory = function() {  ## scaleHistory
-            if(!saveMCMChistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC")
+            if(!saveMCMChistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
             returnType(double(1))
             return(scaleHistory)
         },          
         getAcceptanceHistory = function() {  ## scaleHistory
             returnType(double(1))
-            if(!saveMCMChistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC")
+            if(!saveMCMChistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
             return(acceptanceHistory)
         },                  
         getPropCovHistory = function() { ## scaleHistory
-            if(!saveMCMChistory | d > 10)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC and note that to reduce memory use we only save the proposal covariance history for parameter vectors of length 10 or less")
+            if(!saveMCMChistory | d > 10)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC and note that to reduce memory use we only save the proposal covariance history for parameter vectors of length 10 or less.")
             returnType(double(3))
             return(propCovHistory)
         },

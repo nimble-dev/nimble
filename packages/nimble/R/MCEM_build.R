@@ -223,13 +223,13 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
     limits = boxConstraints[[i]][[2]]
     inds = which(maxNodes %in% constraintNames[[i]])
     if(length(inds) == 0)
-      stop(paste("warning: provided a constraint for nodes", constraintNames[[i]], ", but those nodes do not exist in the model!"))
+      stop("Provided a constraint for nodes", constraintNames[[i]], ", but those nodes do not exist in the model!")
     tooLowNodes <- which(limits[1] + abs(buffer) < low_limits[inds])
     tooHighNodes <- which(limits[2] - abs(buffer) > hi_limits[inds])
-    if(length(tooLowNodes) > 0) warning(paste0("User-specified lower bound for ", constraintNames[[i]][tooLowNodes],
-                                               " is below lower bound detected by NIMBLE.  "))
-    if(length(tooHighNodes) > 0) warning(paste0("User-specified upper bound for ", constraintNames[[i]][tooHighNodes],
-                                                " is above upper bound detected by NIMBLE.  "))
+    if(length(tooLowNodes) > 0) warning("User-specified lower bound for ", constraintNames[[i]][tooLowNodes],
+                                               " is below lower bound detected by NIMBLE.  ")
+    if(length(tooHighNodes) > 0) warning("User-specified upper bound for ", constraintNames[[i]][tooHighNodes],
+                                                " is above upper bound detected by NIMBLE.  ")
     low_limits[inds] = limits[1] + abs(buffer)
     hi_limits[inds] = limits[2] - abs(buffer)
   }
@@ -333,7 +333,7 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
         ase <- sqrt(sigSq) #asymptotic std. error
         diff <- cCalc_E_llk$run(theta, thetaPrev, 1)
         if((diff - zAlpha*ase)<0){ #swamped by mc error
-          cat("Monte Carlo error too big: increasing MCMC sample size.\n")
+          messageIfVerbose("Monte Carlo error too big: increasing MCMC sample size.")
           mAdd <- ceiling((m-burnIn)/2)  #from section 2.3, additional mcmc samples will be taken if difference is not great enough
           cmcmc_Latent$run(mAdd, reset = FALSE)
           m <- m + mAdd
@@ -344,7 +344,7 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
           if(itNum == 1)
             endCrit <- C+1 #ensure that at least two iterations are run
           
-          if(verbose == T){
+          if(verbose){
             cat("Iteration Number: ", itNum, ".\n", sep = "")
             cat("Current number of MCMC iterations: ", m, ".\n", sep = "")
             output = optimOutput$par
@@ -381,8 +381,8 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
       }
     }
     if(dim(as.matrix(cmcmc_Latent$mvSamples))[1]<2){
-      if(useExistingSamples == TRUE){
-        warning('MCMC over latent states has not been run yet, cannot have useExistingSamples = TRUE')
+      if(useExistingSamples){
+        warning('MCMC over latent states has not been run yet; cannot have useExistingSamples = TRUE')
         useExistingSamples <- FALSE
       }
     }

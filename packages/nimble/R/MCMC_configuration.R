@@ -478,7 +478,7 @@ Invisibly returns a list of the current sampler configurations, which are sample
                 }
                 thisSamplerName <- if(nameProvided) name else gsub('^sampler_', '', type)   ## removes 'sampler_' from beginning of name, if present
                 if(thisSamplerName == 'RW_block' && !silent) {
-                    message('Note: Assigning an RW_block sampler to nodes with very different scales can result in low MCMC efficiency.  If all nodes assigned to RW_block are not on a similar scale, we recommend providing an informed value for the \"propCov\" control list argument, or using the AFSS sampler instead.')
+                    messageIfVerbose('  [Note] Assigning an RW_block sampler to nodes with very different scales can result in low MCMC efficiency.  If all nodes assigned to RW_block are not on a similar scale, we recommend providing an informed value for the \"propCov\" control list argument, or using the AFSS sampler instead.')
                 }
                 if(thisSamplerName %in% c("RW_PF", "RW_PF_block")) {
                     if (!("nimbleSMC" %in% (installed.packages()[,"Package"]))) {
@@ -823,7 +823,7 @@ Details: See the initialize() function
             '
             
             if(isMvSamplesReady(ind)){
-            	cat('Changing monitors, even though an MCMC has been built already. When compiling the MCMC, use resetFunctions = TRUE option\n')
+            	message('Changing monitors, even though an MCMC has been built already. When compiling the MCMC, use resetFunctions = TRUE option.')
             	if(ind == 1)
                     mvSamples1Conf <<- NULL
             	if(ind == 2)
@@ -905,7 +905,7 @@ Details: See the initialize() function
             monitors2 <<- character()
             
             if(isMvSamplesReady(1) || isMvSamplesReady(2)){
-            	cat('Changing monitors, even though an MCMC has been built already. When compiling the MCMC, use resetFunctions = TRUE option\n')
+            	message('Changing monitors, even though an MCMC has been built already. When compiling the MCMC, use resetFunctions = TRUE option.')
             	mvSamples1Conf <<- NULL
             	mvSamples2Conf <<- NULL
             }

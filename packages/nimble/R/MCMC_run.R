@@ -97,7 +97,7 @@ runMCMC <- function(mcmc,
                     perChainWAIC = FALSE) {
     if(missing(mcmc)) stop('must provide a NIMBLE MCMC algorithm')
     if(!identical(nfGetDefVar(mcmc, 'name'), 'MCMC')) stop('mcmc argument must be a NIMBLE MCMC algorithm')
-    if(!is.Cnf(mcmc)) message('Warning: running an uncompiled MCMC algorithm, use compileNimble() for faster execution.')
+    if(!is.Cnf(mcmc)) messageIfVerbose('  [Warning] Running an uncompiled MCMC algorithm, use compileNimble() for faster execution.')
     if(!samples && !summary && !WAIC) stop('no output specified, use samples = TRUE, summary = TRUE, or WAIC = TRUE')
     if(nchains < 1) stop('must have nchains > 0')
     if(!missing(inits)) {
@@ -119,12 +119,12 @@ runMCMC <- function(mcmc,
     ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
     ##samplerExecutionOrderToUse <- if(!missing(samplerExecutionOrder)) samplerExecutionOrder else mcmc$samplerExecutionOrderFromConfPlusTwoZeros[mcmc$samplerExecutionOrderFromConfPlusTwoZeros>0]
     for(i in 1:nchains) {
-        if(nimbleOptions('verbose')) message('Running chain ', i, '...')
+        messageIfVerbose('Running chain ', i, ' ...')
         ##if(setSeed) set.seed(i)
         if(is.numeric(setSeed)) {
             if(length(setSeed) == 1) {
                 set.seed(setSeed)
-            } else { if(length(setSeed) == nchains) set.seed(setSeed[i]) else stop('setSeed argument has different length from nchains') }
+            } else { if(length(setSeed) == nchains) set.seed(setSeed[i]) else stop('setSeed argument has different length from nchains.') }
         } else if(setSeed) set.seed(i)
         if(!missing(inits)) {
             if(is.function(inits)) {

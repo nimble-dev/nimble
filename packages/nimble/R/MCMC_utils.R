@@ -401,7 +401,7 @@ mcmc_checkWAICmonitors <- function(model, monitors, dataNodes) {
         thisVars <- model$getVarNames(nodes = nextNodes)
         thisVars <- thisVars[!(thisVars %in% monitors)]
     }
-    message('Monitored nodes are valid for WAIC')
+    messageIfVerbose('  [Note] Monitored nodes are valid for WAIC.')
 }
 
 
