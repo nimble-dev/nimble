@@ -3421,7 +3421,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- conf$getSamplers('thetaTilde')
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n, each = J))
+  expect_identical(as.integer(ids), rep(1:n, times = J))
 
   ## Basic case of truncated parameters
   code <- nimbleCode({
