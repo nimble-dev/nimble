@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 6 Building and using models | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 6 Building and using models | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
@@ -31,7 +31,8 @@
   
 <link rel="prev" href="cha-writing-models.html"/>
 <link rel="next" href="cha-mcmc.html"/>
-<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
@@ -39,7 +40,6 @@
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
-
 
 
 
@@ -131,7 +131,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.12.1</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.12.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -360,6 +360,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
+<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
       </nav>
@@ -377,7 +378,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="cha:building-models" class="section level1">
+<div id="cha-building-models" class="section level1">
 <h1><span class="header-section-number">Chapter 6</span> Building and using models</h1>
 <p>This chapter explains how to build and manipulate model objects
 starting from BUGS code.</p>
@@ -385,7 +386,7 @@ starting from BUGS code.</p>
 <h2><span class="header-section-number">6.1</span> Creating model objects</h2>
 <p>NIMBLE provides two functions for creating model objects:
 <code>nimbleModel</code> and <code>readBUGSmodel</code>. The first, <code>nimbleModel</code>,
-is more general and was illustrated in Chapter <a href="cha-lightning-intro.html#cha:lightning-intro">2</a>. The
+is more general and was illustrated in Chapter <a href="cha-lightning-intro.html#cha-lightning-intro">2</a>. The
 second, <code>readBUGSmodel</code> provides compatibility with BUGS file
 formats for models, variables, data, and initial values for MCMC.</p>
 <p>In addition one can create new model objects from existing model objects.</p>
@@ -430,7 +431,7 @@ for-loops must also be provided as constants.</li>
 <li><em>Data</em> is a label for the role a node plays in the model.
 Nodes marked as data will by default be protected from any functions
 that would simulate over their values (see <code>simulate</code> in Chapter
-<a href="cha-using-models.html#cha:using-models">13</a>), but it is possible to over-ride
+<a href="cha-using-models.html#cha-using-models">13</a>), but it is possible to over-ride
 that default or to change their values by direct assignment. This
 allows an algorithm to be applied to many data sets in the same
 model without re-creating the model each time. It also allows
@@ -669,7 +670,7 @@ it helps define the model.</p>
 <h2><span class="header-section-number">6.2</span> NIMBLE models are objects you can query and manipulate</h2>
 <p>NIMBLE models are objects that can be modified and manipulated from R.
 In this section we introduce some basic ways to use a model object.
-Chapter <a href="cha-using-models.html#cha:using-models">13</a> covers more topics for writing
+Chapter <a href="cha-using-models.html#cha-using-models">13</a> covers more topics for writing
 algorithms that use models.</p>
 <div id="sec:what-are-nodes-and-variables" class="section level3">
 <h3><span class="header-section-number">6.2.1</span> What are variables and nodes?</h3>
@@ -846,7 +847,6 @@ during the compilation process.</p>
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
-<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
 <script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
@@ -886,6 +886,10 @@ gitbook.start({
 "text": null
 },
 "download": ["NimbleUserManual.pdf", "NimbleUserManual.epub"],
+"search": {
+"engine": "fuse",
+"options": null
+},
 "toc": {
 "collapse": "subsection"
 },

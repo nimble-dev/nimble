@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 3 More introduction | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 3 More introduction | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
@@ -31,7 +31,8 @@
   
 <link rel="prev" href="cha-lightning-intro.html"/>
 <link rel="next" href="cha-installing-nimble.html"/>
-<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
@@ -39,7 +40,6 @@
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
-
 
 
 
@@ -131,7 +131,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.12.1</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.12.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -360,6 +360,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
+<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
       </nav>
@@ -377,7 +378,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="cha:more-introduction" class="section level1">
+<div id="cha-more-introduction" class="section level1">
 <h1><span class="header-section-number">Chapter 3</span> More introduction</h1>
 <p>Now that we have shown a brief example, we will introduce more about
 the concepts and design of NIMBLE.</p>
@@ -409,7 +410,7 @@ extensible language, which is a major departure from previous
 packages that implement BUGS.</p>
 <p>We adopted BUGS because it has been so successful, with over 30,000
 users by the time they stopped counting
-<span class="citation">(Lunn et al. <a href="cha-progr-with-models.html#ref-Lunn_Spiegelhalter_Thomas_Best_2009">2009</a>)</span>. Many papers and books
+<span class="citation">(Lunn et al. <a href="references.html#ref-Lunn_Spiegelhalter_Thomas_Best_2009">2009</a>)</span>. Many papers and books
 provide BUGS code as a way to document their statistical models. We
 describe NIMBLE’s version of BUGS later. The web sites for WinBUGS,
 OpenBUGS and JAGS provide other useful documntation on writing models
@@ -439,7 +440,7 @@ data from a model written in BUGS code. Since NIMBLE creates model
 objects that you can control from R, simulating new data is trivial.
 With previous BUGS-based packages, this isn’t possible.</p>
 <p>More information about specifying and manipulating models is in
-Chapters <a href="cha-building-models.html#cha:building-models">6</a> and <a href="cha-using-models.html#cha:using-models">13</a>.</p>
+Chapters <a href="cha-building-models.html#cha-building-models">6</a> and <a href="cha-using-models.html#cha-using-models">13</a>.</p>
 </div>
 <div id="sec:nimble-lang-writ" class="section level2">
 <h2><span class="header-section-number">3.2</span> nimbleFunctions for writing algorithms</h2>
@@ -496,7 +497,7 @@ Member data are determined automatically as the objects from a
 setup function needed in run functions. If no setup
 function is provided, the nimbleFunction corresponds to a simple
 (compilable) function rather than a class.</p>
-<p>More about writing algorithms is in Chapter <a href="cha-progr-with-models.html#cha:progr-with-models">15</a>.</p>
+<p>More about writing algorithms is in Chapter <a href="cha-progr-with-models.html#cha-progr-with-models">15</a>.</p>
 </div>
 <div id="sec:nimble-algor-libr" class="section level2">
 <h2><span class="header-section-number">3.3</span> The NIMBLE algorithm library</h2>
@@ -522,7 +523,7 @@ tools for larger algorithms. These include:</p>
 </ol></li>
 </ol>
 <!---  Someone (Perry?) added this comment: Add references where appropriate. Chris suggests we probably don't need refs here as we are referring to very widely-known algorithms. -->
-<p>More about the NIMBLE algorithm library is in Chapter <a href="cha-algos-provided.html#cha:algos-provided">8</a>.</p>
+<p>More about the NIMBLE algorithm library is in Chapter <a href="cha-algos-provided.html#cha-algos-provided">8</a>.</p>
 
 <!--- % See http://yihui.name/knitr/demo/child/ for documentation on the parent/child document system of knitr -->
 </div>
@@ -546,7 +547,6 @@ functions and distributions written as nimbleFunctions in BUGS code.<a href="cha
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
-<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
 <script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
@@ -586,6 +586,10 @@ gitbook.start({
 "text": null
 },
 "download": ["NimbleUserManual.pdf", "NimbleUserManual.epub"],
+"search": {
+"engine": "fuse",
+"options": null
+},
 "toc": {
 "collapse": "subsection"
 },

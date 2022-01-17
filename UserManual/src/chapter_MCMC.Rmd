@@ -4,7 +4,7 @@
 require(nimble)
 ``` 
 
-# MCMC {#cha:mcmc}
+# MCMC {#cha-mcmc}
 
 ```{r, MCMCchunk0, echo = FALSE}
 # source the code
@@ -87,7 +87,7 @@ The `nimbleMCMC` function provides control over the:
   - returning a WAIC value calculated using post-burn-in samples from all chains.
 
 
-This entry point for using `nimbleMCMC` is the `code`, `constants`, `data`, and `inits` arguments that are used for building a NIMBLE model (see Chapters \@ref(cha:writing-models) and \@ref(cha:building-models)).  However, when using `nimbleMCMC`, the `inits` argument can also specify a list of lists of initial values that will be used for each MCMC chain, or a function that generates a list of initial values, which will be generated at the onset of each chain.  As an alternative entry point, a NIMBLE `model` object can also be supplied to `nimbleMCMC`, in which case this model will be used to build the MCMC algorithm.
+This entry point for using `nimbleMCMC` is the `code`, `constants`, `data`, and `inits` arguments that are used for building a NIMBLE model (see Chapters \@ref(cha-writing-models) and \@ref(cha-building-models)).  However, when using `nimbleMCMC`, the `inits` argument can also specify a list of lists of initial values that will be used for each MCMC chain, or a function that generates a list of initial values, which will be generated at the onset of each chain.  As an alternative entry point, a NIMBLE `model` object can also be supplied to `nimbleMCMC`, in which case this model will be used to build the MCMC algorithm.
 
 Based on its arguments, `nimbleMCMC` optionally returns any combination of
 

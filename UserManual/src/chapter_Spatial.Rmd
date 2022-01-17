@@ -7,7 +7,7 @@
 require(nimble)
 ``` 
 
-# Spatial models {#cha:spatial}
+# Spatial models {#cha-spatial}
 
 
 NIMBLE supports two variations of conditional autoregressive (CAR) model
@@ -103,7 +103,7 @@ Rmodel <- nimbleModel(code, constants, data, inits)
   
 The resulting model may be carried through to MCMC sampling.
 NIMBLE will assign a specialized sampler to the update the elements of the CAR process.
-See Chapter \@ref(cha:mcmc) for information about NIMBLE's MCMC engine, and Section
+See Chapter \@ref(cha-mcmc) for information about NIMBLE's MCMC engine, and Section
 \@ref(sec:spatial-mcmc-sampling-car) for details on MCMC sampling of the CAR processes.
 
 
@@ -221,7 +221,7 @@ Rmodel <- nimbleModel(code, constants, data, inits)
 
 Each of the resulting models may be carried through to MCMC sampling.
 NIMBLE will assign a specialized sampler to update the elements of the CAR process.
-See Chapter \@ref(cha:mcmc) for information about NIMBLE's MCMC engine, and Section
+See Chapter \@ref(cha-mcmc) for information about NIMBLE's MCMC engine, and Section
 \@ref(sec:spatial-mcmc-sampling-car) for details on MCMC sampling of the CAR processes.
 
 

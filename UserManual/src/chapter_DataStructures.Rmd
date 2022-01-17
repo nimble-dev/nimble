@@ -4,7 +4,7 @@
 require(nimble)
 ``` 
 
-# Data structures in NIMBLE {#cha:data-structures}
+# Data structures in NIMBLE {#cha-data-structures}
 
 NIMBLE provides several data structures useful for programming.
 
@@ -27,8 +27,8 @@ modelValues with any variables one wants.
 
 As with the material in the rest of this chapter, modelValues objects
 will generally be used in nimbleFunctions that interact with models
-(see Chapter \@ref(cha:progr-with-models))^[One may want to read this
-section after an initial reading of Chapter \@ref(cha:progr-with-models).]. modelValues objects can
+(see Chapter \@ref(cha-progr-with-models))^[One may want to read this
+section after an initial reading of Chapter \@ref(cha-progr-with-models).]. modelValues objects can
 be defined either in setup code or separately in R (and then passed as
 an argument to setup code). The modelValues object can then used in run code of nimbleFunctions.
  

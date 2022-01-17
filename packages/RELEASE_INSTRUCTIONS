@@ -131,7 +131,8 @@ update version numbering on license and citation page
 
 This is a good time to update info on our core developer team on the website if needed.
 
-make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag (not just a 'category'!!!) if you want it picked up by R-bloggers)
+make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag (not just a 'category'!!!) if you want it picked up by R-bloggers). Posts that are close to time of r-bloggers appearance in late afternoon Pacific time tend to show up first or early on the days blogs, so try to avoid always posting at that time out of fairness. If post in evening after r-bloggers appears, would be lower down.
+
 (best to point with a hyperlink to the info on versions/news on webpage not to NEWS)
 
 send notice to nimble-announce, nimble-users as christopher.paciorek@gmail.com (i.e., from the email of your admin status)

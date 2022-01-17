@@ -2,7 +2,7 @@
 
 
 
-# Installing NIMBLE {#cha:installing-nimble}
+# Installing NIMBLE {#cha-installing-nimble}
 
 ## Requirements to run NIMBLE {#sec:requ-run-nimble}
 

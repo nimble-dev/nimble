@@ -4,3 +4,4 @@ To create the PDF version of the manual, go to 'src' and run 'make NimbleUserMan
 
 To create the HTML version of the manual, go to 'src' and run 'make NimbleUserManual.html'.
 
+2022-01-13: I changed the #cha:foo refs to #cha-foo as as of recent bookdown, the ':' is no longer changed to '-' in generating the .html file names, so the rendering would produce file names such as cha:welcome-nimble.html.

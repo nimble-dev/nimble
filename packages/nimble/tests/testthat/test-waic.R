@@ -91,7 +91,9 @@ test_that("voter model WAIC is accurate", {
   temporarilyAssignInGlobalEnv(votermcmc)
   Cvotermcmc <- compileNimble(votermcmc, project = voterModel)
   Cvotermcmc$run(50000)
-  expect_lt(abs(Cvotermcmc$getWAIC()$WAIC - 87.2), 2.0)
+  expect_output(waic <- Cvotermcmc$getWAIC()$WAIC,
+                 "There are individual pWAIC values that are greater than 0.4")
+  expect_lt(abs(waic - 87.2), 2.0)
   
   ## additional testing of validity of monitored nodes below
   voterCode = nimbleCode({
@@ -116,9 +118,7 @@ test_that("voter model WAIC is accurate", {
                                                           'sigma_2'),
                                  enableWAIC = TRUE,
                                  controlWAIC = list(online = FALSE))
-  expect_message(buildMCMC(votermcmcConf), 
-                 "Monitored nodes are valid for WAIC",
-                 all = FALSE, fixed = TRUE)
+  expect_silent(mcmc <- buildMCMC(votermcmcConf))
 
   votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_12',
                                                           'beta_2',

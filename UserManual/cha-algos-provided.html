@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 8 Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.22 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 8 Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
@@ -31,7 +31,8 @@
   
 <link rel="prev" href="cha-mcmc.html"/>
 <link rel="next" href="cha-spatial.html"/>
-<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
@@ -39,7 +40,6 @@
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
-
 
 
 
@@ -131,7 +131,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.12.1</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.12.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -360,6 +360,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
+<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
       </nav>
@@ -377,7 +378,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="cha:algos-provided" class="section level1">
+<div id="cha-algos-provided" class="section level1">
 <h1><span class="header-section-number">Chapter 8</span> Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM</h1>
 <p>The NIMBLE algorithm library is growing and currently includes a suite of sequential Monte Carlo (particle filtering) algorithms, particle MCMC for combining particle filters with MCMC, iterated filtering version 2 and Monte Carlo expectation maximization (MCEM) for maximum likelihood estimation, and k-fold cross-validation.</p>
 <div id="particle-filters-sequential-monte-carlo-and-iterated-filtering" class="section level2">
@@ -581,7 +582,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>Particle MCMC (PMCMC) is a method that uses MCMC for top-level model
 parameters and uses a particle filter to approximate the time-series
 likelihood for use in determining MCMC acceptance probabilities
-<span class="citation">(Andrieu, Doucet, and Holenstein <a href="cha-progr-with-models.html#ref-Andrieu_Doucet_Holenstein_2010">2010</a>)</span>. NIMBLE implements PMCMC by
+<span class="citation">(Andrieu, Doucet, and Holenstein <a href="references.html#ref-Andrieu_Doucet_Holenstein_2010">2010</a>)</span>. NIMBLE implements PMCMC by
 providing random-walk Metropolis-Hastings samplers for model
 parameters that make use of particle filters in this way. These
 samplers can use NIMBLE’s bootstrap filter or auxiliary particle
@@ -777,7 +778,6 @@ non-finite values occurring when a parameter is on the boundary.</p>
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
-<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
 <script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
@@ -817,6 +817,10 @@ gitbook.start({
 "text": null
 },
 "download": ["NimbleUserManual.pdf", "NimbleUserManual.epub"],
+"search": {
+"engine": "fuse",
+"options": null
+},
 "toc": {
 "collapse": "subsection"
 },

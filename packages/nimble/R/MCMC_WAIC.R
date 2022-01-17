@@ -281,11 +281,12 @@ buildWAIC <- nimbleFunction(
             returnType(waicList())
             if(!finalized)
                 finalize()
-            badpWAIC <- sum( sspWAICmat[lengthConvCheck, ] / (mcmcIter-1) > 0.4 )
-            if(badpWAIC) {  
-                print("There are individual pWAIC values that are greater than 0.4. This may indicate that the WAIC estimate is unstable (Vehtari et al., 2017), at least in cases without grouping of data nodes or multivariate data nodes." )
+            if(mcmcIter > 1) {
+                badpWAIC <- any( sspWAICmat[lengthConvCheck, ] / (mcmcIter-1) > 0.4 )
+                if(badpWAIC) {  
+                    print("  [Warning] There are individual pWAIC values that are greater than 0.4. This may indicate that the WAIC estimate is unstable (Vehtari et al., 2017), at least in cases without grouping of data nodes or multivariate data nodes." )
+                }
             }
-            
             output <- waicList$new()
             
             output$WAIC <- WAIC[lengthConvCheck]
@@ -373,8 +374,10 @@ buildWAIC <- nimbleFunction(
 #' providing compatibility with versions of NIMBLE before 0.12.0. This
 #' functionality includes the ability to call the \code{calculateWAIC} function
 #' on an MCMC object or matrix of samples after running an MCMC and without
-#' setting up the MCMC initially to use WAIC, provided the necessary variables
-#' are monitored.
+#' setting up the MCMC initially to use WAIC.
+#'
+#' Important: The necessary variables to compute WAIC (all stochastic parent
+#' nodes of the data nodes) must have been monitored when setting up the MCMC.
 #'
 #' See \code{help(waic)} for details on using NIMBLE's recommended online
 #' algorithm for WAIC.
@@ -388,8 +391,8 @@ buildWAIC <- nimbleFunction(
 #' \code{runMCMC}. The function checks that the necessary variables were
 #' monitored in the MCMC and returns an error if they were not. This function
 #' behaves identically to the \code{calculateWAIC} method of an MCMC object.
-#' Note that this function cannot be used when using \code{nimbleMCMC} as the
-#' underlying MCMC object is not available to the user in that case.
+#' Note that to use this function when using \code{nimbleMCMC} one would
+#' need to build the model outside of \code{nimbleMCMC}.
 #'
 #' The \code{calculateWAIC} function requires either an MCMC object or a matrix
 #' (or dataframe) of posterior samples plus a model object. In addition, one
@@ -540,6 +543,7 @@ calculateWAIC <- function(mcmc, model, nburnin = 0, thin = 1) {
     if(!usingMCMC) { # copy to compiled mvSamples for speed 
         matrix2mv(mcmc, cwaicFun$mvSamples)
     } else matrix2mv(samples, cwaicFun$mvSamples) # for the moment we can't use the existing mvSamples values directly
+    message("Calculating WAIC.")
     result <- cwaicFun$calculateWAIC(nburnin, thin)
     return(result)
 }
