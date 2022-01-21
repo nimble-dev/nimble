@@ -2009,7 +2009,7 @@ test_that("Test that not nonparametric MCMC message in CRP sampler is printed", 
   m <- nimbleModel(code, data=Data, inits=Inits)
   cm <- compileNimble(m)
   mConf <- configureMCMC(m, monitors =  c('thetatilde',  'xi'))
-  expect_silent(mMCMC <- buildMCMC(mConf), "The number of clusters")
+  expect_message(mMCMC <- buildMCMC(mConf), "The number of clusters")
   cMCMC <- compileNimble(mMCMC, project = m) 
   expect_output(out <- runMCMC(cMCMC, niter=1, nburnin = 0, thin=1),
                 'CRP_sampler: This MCMC is for a parametric model.')
@@ -3255,7 +3255,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
   conf <- configureMCMC(m)
   crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
-  expect_silent(mcmc <- buildMCMC(conf), "less than the number of potential clusters")
+  expect_message(mcmc <- buildMCMC(conf), "less than the number of potential clusters")
   expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_invgamma_dnorm")
   clusterNodeInfo <- nimble:::findClusterNodes(m, target)
   expect_equal(clusterNodeInfo$clusterNodes[[2]], paste0("muTilde[", 1:(n-1), "]"))
@@ -6491,7 +6491,7 @@ test_that("Testing of misspecification of dimension when using CRP", {
   m <- nimbleModel(code, data = list(y = rnorm(100)),
                    inits = list(xi = rep(1,100), mu=rnorm(50), s2=rinvgamma(50,1,1)))
   conf <- configureMCMC(m)
-  expect_silent(buildMCMC(conf),
+  expect_message(buildMCMC(conf),
                  "sampler_CRP: The number of clusters based on the cluster parameters is less than the number of potential clusters")
   
   ## multiple tilde parameters, one is common for every observation
