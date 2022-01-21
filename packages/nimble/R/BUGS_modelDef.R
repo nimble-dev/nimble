@@ -1048,7 +1048,9 @@ modelDefClass$methods(liftExpressionArgs = function() {
                 if(!isExprLiftable(paramExpr, types[[paramName]]))    next     ## if this param isn't an expression, go ahead to next parameter
                 requireNewAndUniqueDecl <- any(contexts[[BUGSdecl$contextID]]$indexVarNames %in% all.vars(paramExpr))
                 uniquePiece <- if(requireNewAndUniqueDecl) paste0("_L", BUGSdecl$sourceLineNumber) else ""
-                newNodeNameExpr <- as.name(paste0('lifted_', Rname2CppName(paramExpr, colonsOK = TRUE), uniquePiece))   ## create the name of the new node ##nameMashup
+                ## Pass through Rname2CppName twice so that long names truncated if adding 'lifted_' puts them over nchar limit
+                newNodeNameExpr <- as.name(paste0(Rname2CppName(paste0('lifted_',
+                                                  Rname2CppName(paramExpr, colonsOK = TRUE)), colonsOK = TRUE), uniquePiece))   ## create the name of the new node ##nameMashup
                 if(safeDeparse(paramExpr[[1]], warn = TRUE) %in% liftedCallsDoNotAddIndexing) {   ## skip adding indexing to mixed-size calls
                     newNodeNameExprIndexed <- newNodeNameExpr
                 } else {
