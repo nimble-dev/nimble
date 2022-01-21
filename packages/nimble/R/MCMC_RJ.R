@@ -299,6 +299,8 @@ configureRJ <- function(conf, targetNodes, indicatorNodes = NULL, priorProb = NU
             nodeControl <- list(priorProb = priorProb[i], mean = mean[i],
                                 scale = scale[i], fixedValue = fixedValue[i])
             for(j in 1:length(nodeAsScalar)) {
+                ## RJ system does not support non-constant hyperparameters of target RJ nodes:
+                if(length(conf$model$getParents(nodeAsScalar[j], stochOnly = TRUE, includeData = FALSE)) > 0) stop('Reversible jump target node \"', nodeAsScalar[j], '\" appears to have a non-constant hyper-parameter, which is not currently supported for reversible jump MCMC.  Please contact the nimble development team at <nimble.stats@gmail.com> if support for this case would be helpful.')
                 currentConf <- conf$getSamplers(nodeAsScalar[j])
                 ## check on node configuration
                 if(length(currentConf) == 0) {
@@ -338,6 +340,8 @@ configureRJ <- function(conf, targetNodes, indicatorNodes = NULL, priorProb = NU
                 stop(paste0("configureRJ: indicatorNodes node '", indicatorNodes[i] ,"' does not match '", targetNodes[i], "' size."))
             nodeControl  = list(mean = mean[i], scale = scale[i])
             for(j in 1:length(nodeAsScalar)) {
+                ## RJ system does not support non-constant hyperparameters of target RJ nodes:
+                if(length(conf$model$getParents(nodeAsScalar[j], stochOnly = TRUE, includeData = FALSE)) > 0) stop('Reversible jump target node \"', nodeAsScalar[j], '\" appears to have a non-constant hyper-parameter, which is not currently supported for reversible jump MCMC.  Please contact the nimble development team at <nimble.stats@gmail.com> if support for this case would be helpful.')
                 nodeControl$targetNode <- nodeAsScalar[j]
                 currentConf <- conf$getSamplers(nodeAsScalar[j])
                 ## check on node configuration

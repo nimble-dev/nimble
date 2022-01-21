@@ -9,6 +9,9 @@ have terms of the form "a[i] + x[i] * beta" (or more simply "x[i] * beta" or
 provided via NIMBLE's constants argument and x[1] == 1 or (ii) 'a' provided
 via NIMBLE's constants argument and a[1] == 0 (PR #1172).
 
+-- Reversible jump MCMC system now detects non-constant hyperparameters
+of reversible jump target nodes, and will not operate on such nodes.
+
 DEVELOPER LEVEL CHANGES
 
 -- Use USE_FC_LEN_T-related syntax in F77 calls in dists.cpp per CRAN request
