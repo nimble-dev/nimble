@@ -488,3 +488,39 @@ test_that("Check passing node vector - indicator", {
   # }
   
 })
+
+
+test_that("Bails out for non-constant target node hyperparameters", {
+
+    code <- nimbleCode({
+        sigma ~ dunif(0, 100)
+        beta1 ~ dnorm(0, sd = 100)
+        beta2 ~ dnorm(0, sd = sigma)
+        sigma2 <- sigma^2
+        beta3 ~ dnorm(0, sd = sigma2)
+        z ~ dbern(0.5)
+        Ypred <- beta0 + beta1 * z * x1 + beta2 * z * x2 + beta3 * z * x3
+        Y ~ dnorm(Ypred, sd = sigma)
+    })
+
+    Rmodel <- nimbleModel(code)
+
+    conf <- configureMCMC(Rmodel)
+    expect_error(configureRJ(conf, targetNodes = 'beta1', indicatorNodes = 'z'), NA)
+
+    conf <- configureMCMC(Rmodel)
+    expect_error(configureRJ(conf, targetNodes = 'beta2', indicatorNodes = 'z'))
+
+    conf <- configureMCMC(Rmodel)
+    expect_error(configureRJ(conf, targetNodes = 'beta3', indicatorNodes = 'z'))
+
+    conf <- configureMCMC(Rmodel)
+    expect_error(configureRJ(conf, targetNodes = 'beta1', priorProb = 0.5, NA))
+
+    conf <- configureMCMC(Rmodel)
+    expect_error(configureRJ(conf, targetNodes = 'beta2', priorProb = 0.5))
+
+    conf <- configureMCMC(Rmodel)
+    expect_error(configureRJ(conf, targetNodes = 'beta3', priorProb = 0.5))
+
+})
