@@ -1845,9 +1845,7 @@ test_that('MCMC with logProb variable being monitored builds and compiles.', {
   Cmodel <- compileNimble(Rmodel)
   expect_silent(conf <- configureMCMC(Rmodel, monitors = 'logProb_y'))
   expect_silent(Rmcmc  <- buildMCMC(conf))
-  if(nimbleOptions('verbose')) {
-      expect_message(Cmcmc <- compileNimble(Rmcmc, project = Rmodel), "compilation finished")
-  } else expect_silent(Cmcmc <- compileNimble(Rmcmc, project = Rmodel))
+  expect_silent(Cmcmc <- compileNimble(Rmcmc, project = Rmodel))
   Cmcmc$run(10)
 })
 

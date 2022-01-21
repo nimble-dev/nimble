@@ -3,7 +3,7 @@ source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'ni
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
-nimbleOptions(verbose = FALSE)
+nimbleOptions(verbose = TRUE)
 
 context("Testing of miscellaneous functionality")
 
@@ -40,10 +40,8 @@ test_that("Test of full model check", {
         y ~ dnorm(mu, 1)
         mu ~ dnorm(0, 1)
     })
-    nimbleOptions(verbose = TRUE)
     expect_message(m <- nimbleModel(code, data = list(y = 0), check = TRUE, name = 'test'),
                    "NAs were detected")
-    nimbleOptions(verbose = FALSE)
 
     errmsg <- geterrmessage()    
 
@@ -327,13 +325,12 @@ test_that("setInits works in complicated case", {
     })
     inits = list(x = matrix(1:6, nrow = 2))
     data = list(x = matrix(c(100, NA, 100, NA, NA, NA), nrow = 2))
-    nimbleOptions(verbose = TRUE)
     expect_message(m <- nimbleModel(mc1,
                      constants = list(f = c(1, 2),
                                       n = 3),
                      data = data,
                      inits = inits), "Ignoring non-NA values in inits")
-    nimbleOptions(verbose = FALSE)
+
     ## This model defines x[1, 1], x[1, 2], x[1, 3], x[2, 2], and x[2, 3]. 
     ## x[2,1] is not a node in the model.
     ## data are provided for x[1, 1] and x[1, 2]

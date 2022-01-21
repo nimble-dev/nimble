@@ -1,5 +1,4 @@
 ===== Starting MCMC test for unnamed case. =====
-done compiling model
 ===== Monitors =====
 thin = 1: s1, s2
 ===== Samplers =====
@@ -13,7 +12,6 @@ sd    0.09932756 0.09504889
 97.5% 3.26618954 3.17636930
 ===== Finished MCMC test for unnamed case. =====
 ===== Starting MCMC test for unnamed case. =====
-done compiling model
 ===== Monitors =====
 thin = 1: alpha
 ===== Samplers =====

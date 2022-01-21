@@ -5,7 +5,7 @@ source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'ni
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
-nimbleOptions(verbose = FALSE)
+nimbleOptions(verbose = TRUE)
 
 context('Testing distributions API')
 
@@ -280,8 +280,8 @@ const <- list(M = 2, K = 4, n = 5, N = rep(1000, 5),
 alphaInits <- rbind(c(10, 30, 100, 3), c(12, 15, 15, 8))
 
 # don't really care about this test, but having it as an expectation suppresses the registration message
-expect_output(m <- nimbleModel(code, constants = const,
-                               inits = list(alpha = alphaInits)), "NIMBLE has registered ddirchmulti", info = "no registration message printed")
+expect_message(m <- nimbleModel(code, constants = const,
+                               inits = list(alpha = alphaInits)), "Registering 'ddirchmulti'", info = "no registration message printed")
 
 
 # won't be correct because haven't used registerDistributions such that it's noted as discrete
