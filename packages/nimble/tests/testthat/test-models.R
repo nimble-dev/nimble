@@ -400,7 +400,7 @@ test_that("test of using dimensions of data when dimension information not avail
     expect_equal(m$modelDef$dimensionsList$mu, 5, info = "dimension for mu not equal to that given in data")
     nimbleOptions(verbose = FALSE)
     expect_error(m <- nimbleModel(code, data = list(y = rep(1, 3), mu = 1:8), inits = list(k = rep(1, 3)), dimensions = list(mu = 5)), info = "expected error because of dimension mismatch")  # error emitted by setData() and warning by assignDimensions()
-    nimbleOptions(verbose = nimbleVerboseSetting)
+    nimbleOptions(verbose = TRUE)
     
 })
 
@@ -532,7 +532,9 @@ test_that("test of using ragged arrays in a model:", {
     n <- c(2, 3)
     X <- matrix(1:6, nrow = 2)
     constants <- list(n = n, X = X)
-    m <- nimbleModel(mc, constants = constants)
+    nimbleOptions(verbose = FALSE)
+    expect_silent(m <- nimbleModel(mc, constants = constants))
+    nimbleOptions(verbose = TRUE))
 })
 
 test_that("warnings for multiply-defined model nodes:", {
@@ -721,18 +723,9 @@ test_that("warning when RHS only nodes used as dynamic indexes", {
     expect_message(m <- nimbleModel(code, data = list(k = rep(1,3))),
                    "Detected use of non-constant indexes")
 
-    ## old stuff
-    ## Hack, but this allows detection of lack of warning given that
-    ## Travis and non-Travis behave differently in terms of silent vs. message.
-    ## warnOptions <- options()$warn
-    ## options(warn = 2)
-    ## if this were to warn, it would cause error
-
-    ## Not expecting a warning, so need to turn off messages.
     nimbleOptions(verbose = FALSE)
     expect_silent(m <- nimbleModel(code, constants = list(k = rep(1,3))))
-  ##  options(warn = warnOptions)
-    nimbleOptions(verbose = nimbleVerboseSetting)
+    nimbleOptions(verbose = TRUE)
     
     myfun <- nimbleFunction(run = function(x = double()) {
         returnType(double())
@@ -768,19 +761,12 @@ test_that("warning when RHS only nodes used as dynamic indexes", {
         for(i in 1:5)
             mu[i] ~ dnorm(0,1)
     })
-    ## Hack, but this allows detection of lack of warning given that
-    ## Travis and non-Travis behave differently in terms of silent vs. message.
- ##   warnOptions <- options()$warn
- ##   options(warn = 2)
-    ## if this were to warn, it would cause error
 
+    ## Checking that no warning; if this were to warn, it would cause error
     nimbleOptions(verbose = FALSE)
-   ##  options(warn = warnOptions)
-    
     expect_silent(m <- nimbleModel(code, inits = list(k = rep(1,3)), constants = list(kk = 1:3)))
     expect_silent(m <- nimbleModel(code, inits = list(k = rep(1,3), kk = 1:3)))
-    ##options(warn = warnOptions)
-    nimbleOptions(verbose = nimbleVerboseSetting)
+    nimbleOptions(verbose = TRUE)
     
     code <- nimbleCode({
         for(i in 1:3) 
@@ -815,15 +801,11 @@ test_that("warning when RHS only nodes used as dynamic indexes", {
     })
     expect_message(m <- nimbleModel(code, inits = list(k = rep(1,3))),
                    "Detected use of non-constant indexes")
-    ## Hack, but this allows detection of lack of warning given that
-    ## Travis and non-Travis behave differently in terms of silent vs. message.
-##    warnOptions <- options()$warn
- ##   options(warn = 2)
-    ## if this were to warn, it would cause error
+
+    ## Checking that no warning; if this were to warn, it would cause error
     nimbleOptions(verbose = FALSE)
-     expect_silent(m <- nimbleModel(code, constants = list(k = rep(1,3))))
-    ##  options(warn = warnOptions)
-        nimbleOptions(verbose = nimbleVerboseSetting)
+    expect_silent(m <- nimbleModel(code, constants = list(k = rep(1,3))))
+    nimbleOptions(verbose = TRUE)
  
 
     ## To test for problem raised in issue #996

@@ -550,7 +550,6 @@ test_mcmc_internal <- function(Rmodel, ##data = NULL, inits = NULL,
     
     if(doCpp) {
         Cmodel <- compileNimble(Rmodel)
-        if(verbose) cat('done compiling model\n')
     }
     if(!is.null(mcmcControl)) mcmcConf <- configureMCMC(Rmodel, control = mcmcControl) else mcmcConf <- configureMCMC(Rmodel)
     if(removeAllDefaultSamplers) mcmcConf$removeSamplers()

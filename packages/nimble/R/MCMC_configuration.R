@@ -844,7 +844,7 @@ Details: See the initialize() function
             nl_checkVarNamesInModel(model, vars)
             if(ind == 1)     monitors  <<- sort(unique(c(monitors,  vars)))
             if(ind == 2)     monitors2 <<- sort(unique(c(monitors2, vars)))
-            if(print) printMonitors()
+            if(print && nimbleOptions('verbose')) printMonitors()
             return(invisible(NULL))
         },
 
@@ -955,7 +955,7 @@ print: A logical argument specifying whether to print all current monitors (defa
 Details: See the initialize() function
             '
             thin <<- thin
-            if(print) printMonitors()
+            if(print && nimbleOptions('verbose')) printMonitors()
             return(invisible(NULL))
         },
         setThin2 = function(thin2, print = TRUE) {
@@ -971,7 +971,7 @@ print: A logical argument specifying whether to print all current monitors (defa
 Details: See the initialize() function
             '
             thin2 <<- thin2
-            if(print) printMonitors()
+            if(print && nimbleOptions('verbose')) printMonitors()
             return(invisible(NULL))
         },
 
