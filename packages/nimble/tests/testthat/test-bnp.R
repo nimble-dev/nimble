@@ -2032,7 +2032,7 @@ test_that("Test that not nonparametric MCMC message in CRP sampler is printed", 
   m <- nimbleModel(code, data=Data, inits=Inits)
   cm <- compileNimble(m)
   mConf <- configureMCMC(m, monitors =  c('thetatilde',  'xi'))
-  expect_silent(mMCMC <- buildMCMC(mConf), "The number of clusters")
+  expect_message(mMCMC <- buildMCMC(mConf), "The number of clusters")
   cMCMC <- compileNimble(mMCMC, project = m) 
   expect_output(out <- runMCMC(cMCMC, niter=1, nburnin = 0, thin=1),
                 'CRP_sampler: This MCMC is for a parametric model.')
@@ -3450,7 +3450,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   expect_identical(cn$numNodesPerCluster, as.integer(J))
   expect_silent(conf <- configureMCMC(model, print = FALSE))
   crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
-  expect_silent(mcmc <- buildMCMC(conf), "is less than the number of potential")
+  expect_message(mcmc <- buildMCMC(conf), "is less than the number of potential")
   crpSampler <- mcmc$samplerFunctions[[crpIndex]]
   expect_equal(crpSampler$sampler, "CRP_conjugate_dnorm_dnorm")
   expect_identical(crpSampler$nObsPerClusID, J)
@@ -6539,7 +6539,7 @@ test_that("Testing of misspecification of dimension when using CRP", {
                    inits = list(xi = rep(1,100), mu=rnorm(3)))
   cm <- compileNimble(m)
   conf <- configureMCMC(m)
-  expect_silent(mMCMC <- buildMCMC(conf))
+  expect_message(mMCMC <- buildMCMC(conf))
   cmMCMC=compileNimble(mMCMC, project=m, resetFunctions=TRUE)
   set.seed(1)
   expect_output(cmMCMC$run(1), "CRP_sampler: This MCMC is for a parametric model")

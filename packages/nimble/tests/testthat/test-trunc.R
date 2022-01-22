@@ -5,7 +5,7 @@ context("Testing of truncation, censoring, and constraints")
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
-nimbleOptions(verbose = TRUE)
+nimbleOptions(verbose = FALSE)
 oldWidth <- getOption("width")
 options(width = 1000)
 oldMaxPrint <- getOption("max.print")
