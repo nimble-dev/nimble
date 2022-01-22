@@ -2057,7 +2057,8 @@ test_that("Test that not nonparametric MCMC message in CRP sampler is printed", 
   mConf <- configureMCMC(m, monitors =  c('thetatilde',  'xi'))
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
-  expect_silent(out <- runMCMC(cMCMC, niter=1, nburnin = 0, thin=1))  
+  expect_message(out <- runMCMC(cMCMC, niter=1, nburnin = 0, thin=1),
+                 "Running chain")  
   
   
   ## dirichlet-multinomial model, no message is sent when xi = 1:n
@@ -3491,7 +3492,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   expect_identical(cn$numNodesPerCluster, as.integer(J))
   expect_silent(conf <- configureMCMC(model, print = FALSE))
   crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
-  expect_silent(mcmc <- buildMCMC(conf), "is less than the number of potential")
+  expect_message(mcmc <- buildMCMC(conf), "is less than the number of potential")
   crpSampler <- mcmc$samplerFunctions[[crpIndex]]
   expect_equal(crpSampler$sampler, "CRP_conjugate_dnorm_dnorm")
   expect_identical(crpSampler$nObsPerClusID, J)
