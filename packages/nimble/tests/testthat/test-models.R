@@ -534,7 +534,7 @@ test_that("test of using ragged arrays in a model:", {
     constants <- list(n = n, X = X)
     nimbleOptions(verbose = FALSE)
     expect_silent(m <- nimbleModel(mc, constants = constants))
-    nimbleOptions(verbose = TRUE))
+    nimbleOptions(verbose = TRUE)
 })
 
 test_that("warnings for multiply-defined model nodes:", {
