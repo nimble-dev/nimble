@@ -43,6 +43,12 @@
 #include <vector>
 #include <algorithm>
 
+class nimble_atomic_base {
+ public:
+  nimble_atomic_base() {};
+  virtual ~nimble_atomic_base() {};
+};
+
 void copy_CppADdouble_to_double(CppAD::AD<double> *first, CppAD::AD<double> *last, double *output);
 void copy_CppADdouble_to_double(NimArrBase< CppAD::AD<double> > &from, NimArrBase< double > &to);
 void copy_CppADdouble_to_double(CppAD::AD<double> &from, double &to);
@@ -124,6 +130,38 @@ void derivs_tick_id();
 void show_tick_id();
 #endif
 
+/* A place to manage atomic objects associated with a tape */
+class nimble_CppAD_tape_mgr {
+ public:
+  std::vector<nimble_atomic_base *> atomic_ptrs;
+  void add_atomic_ptr(nimble_atomic_base *new_atomic_ptr) {atomic_ptrs.push_back(new_atomic_ptr);};
+  CppAD::ADFun<double> *ADtape_;
+  CppAD::ADFun<double>* &ADtape() {return ADtape_;};
+  CppAD::local::ADTape<double>* internal_tape_ptr_;
+  void reset() {
+    //    std::cout<<"Doing nimble_CppAD_tape_mgr::reset"<<std::endl;
+    for(int i = 0; i < atomic_ptrs.size(); ++i) {
+      delete atomic_ptrs[i];
+    }
+    atomic_ptrs.resize(0);
+    if(ADtape_) {
+      delete ADtape_;
+      ADtape_ = 0;
+    }
+  }
+  void set_internal_tape(CppAD::local::ADTape<double>* internal_tape_ptr) {
+    internal_tape_ptr_ = internal_tape_ptr;
+    internal_tape_ptr->nimble_CppAD_tape_mgr_ptr() = static_cast<void*>(this);
+  };
+ nimble_CppAD_tape_mgr() : ADtape_(0), internal_tape_ptr_(0) {};
+  ~nimble_CppAD_tape_mgr() {
+    //  std::cout<<"Doing ~nimble_CppAD_tape_mgr"<<std::endl;
+    reset();
+  };
+};
+
+void track_nimble_atomic(nimble_atomic_base *obj, void *tape_mgr_ptr );
+
 /* nimbleCppADinfoClass is the class to convey information from a nimbleFunction
    object
    to generic CppAD driver wrappers like calcjacobian.
@@ -135,7 +173,13 @@ class nimbleCppADinfoClass {
   std::vector< CppAD::AD<double> > independentVars_meta;
   std::vector< CppAD::AD<double> > dynamicVars_meta;
   bool metaFlag;
-  CppAD::ADFun<double> *ADtape;
+  nimble_CppAD_tape_mgr ADtape_mgr_;
+  bool ADtape_empty() {return ADtape_mgr_.ADtape() == 0;}
+  void ADtape_reset() {ADtape_mgr_.reset();}
+  void set_internal_tape(CppAD::local::ADTape<double>* internal_tape_ptr) {
+    ADtape_mgr_.set_internal_tape(internal_tape_ptr);}
+  CppAD::ADFun<double>* &ADtape() {return ADtape_mgr_.ADtape(); }
+  //  CppAD::ADFun<double> *ADtape;
   NodeVectorClassNew_derivs *updaterNV_;
   NodeVectorClassNew_derivs *updaterNV() {return updaterNV_;}
   nimbleCppADinfoClass& setUpdaterNV(NodeVectorClassNew_derivs &UNV) {
@@ -158,17 +202,17 @@ class nimbleCppADinfoClass {
   }
  nimbleCppADinfoClass() :
   metaFlag(false),
-    ADtape(0),
+    //    ADtape(0),
     updaterNV_(0),
     updateModel_(true),
     nodeFunPtrSet_(false),
     nodeFunPtr_(0)
       {}
   ~nimbleCppADinfoClass() {
-    if(ADtape) {
-      delete ADtape;
-      ADtape = 0;
-    }
+    /* if(ADtape) { */
+    /*   delete ADtape; */
+    /*   ADtape = 0; */
+    /* } */
   }
 };
 
@@ -310,7 +354,7 @@ inline nimbleCppADinfoClass& set_tape_ptr(nimbleCppADinfoClass &ADtapeSetup,
 					  CppAD::ADFun<double>* &ADtapePtr,
 					  bool do_this) {
   if(!ADtapePtr) ADtapePtr = new CppAD::ADFun<double>;
-  if(do_this) ADtapeSetup.ADtape = ADtapePtr;
+  if(do_this) ADtapeSetup.ADtape() = ADtapePtr;
   return ADtapeSetup;
 }
 

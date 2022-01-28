@@ -168,7 +168,7 @@ void update_dynamicVars(NodeVectorClassNew_derivs &NV,
 	       NimArrValues.getPtr() + length_extraInput,
 	       ADinfo.dynamicVars.begin());
     std::cout<<"calling new_dynamic"<<std::endl;
-    ADinfo.ADtape->new_dynamic(ADinfo.dynamicVars);
+    ADinfo.ADtape()->new_dynamic(ADinfo.dynamicVars);
     std::cout<<"done in new_dynamic"<<std::endl;
   }
 }
@@ -187,7 +187,7 @@ void update_dynamicVars(nimbleCppADinfoClass &ADinfo) {
 	       NimArrValues.getPtr() + length_extraInput,
 	       ADinfo.dynamicVars.begin());
     //    std::cout<<"calling new_dynamic"<<std::endl;
-    ADinfo.ADtape->new_dynamic(ADinfo.dynamicVars);
+    ADinfo.ADtape()->new_dynamic(ADinfo.dynamicVars);
     //    std::cout<<"done in new_dynamic"<<std::endl;
   }
 }
@@ -452,7 +452,7 @@ void nimbleFunctionCppADbase::getDerivs_meta(nimbleCppADinfoClass &ADinfo,
   }
 
   CppAD::ADFun< CppAD::AD<double>, double > innerTape;
-  innerTape = ADinfo.ADtape->base2ad();
+  innerTape = ADinfo.ADtape()->base2ad();
   innerTape.new_dynamic(ADinfo.dynamicVars_meta);
 
   //  std::cout<<" after making inner tape\n";
@@ -482,10 +482,10 @@ void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
   getDerivs_internal<double,
 		     CppAD::ADFun<double>,
 		     NIMBLE_ADCLASS>(ADinfo.independentVars,
-		       ADinfo.ADtape,
-		       derivOrders,
-		       wrtVector,
-		       ansList);
+				     ADinfo.ADtape(),
+				     derivOrders,
+				     wrtVector,
+				     ansList);
   ADinfo.updateModel() = oldUpdateModel;
   //  std::cout<<"Exiting getDerivs"<<std::endl;
 }
@@ -561,6 +561,7 @@ CppAD::ADFun<double>* calculate_recordTape(NodeVectorClassNew_derivs &NV,
   // std::cout<<"recording with "<<dynamicVars.size()<<std::endl;
   // std::cout<<"Before independent: tape handle address = "<< CppAD::AD<double>::get_handle_address_nimble() <<std::endl;
   CppAD::Independent(independentVars, abort_op_index, record_compare, dynamicVars);
+  ADinfo.set_internal_tape(CppAD::AD<double>::get_tape_handle_nimble());
   //  std::cout<<"After independent: tape handle address = "<< CppAD::AD<double>::get_handle_address_nimble() <<std::endl;
   {
     set_CppAD_tape_info_for_model my_tape_info_RAII_(NV,
@@ -627,15 +628,15 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
   bool use_meta_tape = true;
   //  cout<<"in getDerivs_calculate_internal"<<endl;
   // Record tape(s) if this is the first time or if reset is true.
-  if(!ADinfo.ADtape || reset) {
+  if(ADinfo.ADtape_empty() || reset) {
     // Delete previous tape if it exists.
-    if(ADinfo.ADtape)
-      delete ADinfo.ADtape;
+    if(!ADinfo.ADtape_empty())
+      ADinfo.ADtape_reset();
     if(!use_meta_tape) {
-      ADinfo.ADtape = calculate_recordTape(nodes, true, ADinfo);
+      ADinfo.ADtape() = calculate_recordTape(nodes, true, ADinfo); // sets internal tape for atomic tracking
     } else {
       CppAD::ADFun< double > *firstTape;
-      firstTape = calculate_recordTape(nodes, false, ADinfo);
+      firstTape = calculate_recordTape(nodes, false, ADinfo); // sets internal tape for atomic tracking
       CppAD::ADFun< CppAD::AD<double>, double > innerTape;
       // Make original tape use CppAD::AD<double> instead of double
       set_CppAD_atomic_info_for_model(nodes, CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage());
@@ -672,6 +673,7 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
       nimSmartPtr<NIMBLE_ADCLASS_META> ansList_meta = new NIMBLE_ADCLASS_META;
       // start recording new (second) tape
       CppAD::Independent(independentVars, abort_op_index, record_compare, dynamicVars);
+      ADinfo.set_internal_tape(CppAD::AD<double>::get_tape_handle_nimble());
       // Trick CppAD statics to work across nimble compilation units
       {
 	set_CppAD_tape_info_for_model my_tape_info_RAII_(nodes,
@@ -709,11 +711,11 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
 						 ansList_meta);
 	for(size_t iii = 0; iii < length_wrt; ++iii)
 	  dependentVars[iii] = ansList_meta->jacobian[iii];
-	ADinfo.ADtape = new CppAD::ADFun<double>;
+	ADinfo.ADtape() = new CppAD::ADFun<double>;
       } // These {} ensure the RAII object's destructor is called before Dependent, which is important on OS's (linux) with libnimble.so instead of libnimble.a
-      ADinfo.ADtape->Dependent(dependentVars);
+      ADinfo.ADtape()->Dependent(dependentVars);
 #ifdef USE_CPPAD_OPTIMIZE_FOR_MODEL_TAPES
-      ADinfo.ADtape->optimize();
+      ADinfo.ADtape()->optimize();
 #endif
       delete firstTape;
     }
@@ -751,7 +753,7 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
     //for(int ijk = 0; ijk < length_extraNodes_accessor; ijk++)
     //  std::cout<<dynamicVars[ijk]<<" ";
     //std::cout<<std::endl;
-    ADinfo.ADtape->new_dynamic(dynamicVars);
+    ADinfo.ADtape()->new_dynamic(dynamicVars);
   }
 
   if(use_meta_tape) {
@@ -778,7 +780,7 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
       getDerivs_internal<double,
 			 CppAD::ADFun<double>,
 			 NIMBLE_ADCLASS>(ADinfo.independentVars,
-					 ADinfo.ADtape,
+					 ADinfo.ADtape(),
 					 derivOrders_nested,
 					 wrtVector, // NOTE: This will not behave fully correctly in non-default use without further thought.
 					 ansList_nested);
@@ -800,7 +802,7 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
     getDerivs_internal<double,
 		       CppAD::ADFun<double>,
 		       NIMBLE_ADCLASS>(ADinfo.independentVars,
-				       ADinfo.ADtape,
+				       ADinfo.ADtape(),
 				       derivOrders,
 				       wrtVector,
 				       ansList);
@@ -1002,4 +1004,8 @@ CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
     //    std::cout<<"done with extraOutputStep"<<std::endl;
   }
   return(ans);
+}
+
+void track_nimble_atomic(nimble_atomic_base *obj, void *tape_mgr_ptr ) {
+  static_cast<nimble_CppAD_tape_mgr*>(tape_mgr_ptr)->add_atomic_ptr(obj);
 }

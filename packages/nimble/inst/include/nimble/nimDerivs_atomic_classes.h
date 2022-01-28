@@ -8,6 +8,7 @@
 #include <Rinternals.h>
 #include <Rmath.h>
 
+#include "nimbleCppAD.h"
 #include "nimDerivs_atomic_pow_int.h"
 #include "nimDerivs_atomic_matmult.h"
 #include "nimDerivs_atomic_matinverse.h"
@@ -17,7 +18,7 @@
 #include "nimDerivs_atomic_cache.h"
 
 template<class T>
-class unary_atomic_class : public CppAD::atomic_three<T> {
+class unary_atomic_class : public CppAD::atomic_three<T>, public nimble_atomic_base {
   // This layer in the class hierarchy simply provides the same for_type and rev_depend
   // for all atomic classes representing unary functions below.
  public:
@@ -75,7 +76,7 @@ class atomic_lgamma_class : public unary_atomic_class<double> {
   // From atomic_three_get_started
   atomic_lgamma_class(const std::string& name, int baseOrder_);
   atomic_lgamma_class(const std::string& name, int baseOrder_, bool verbose_);
-
+  ~atomic_lgamma_class() {}; //std::cout<<"destructing atomic_lgamma_class"<<std::endl;
 private:
     int baseOrder;
     bool verbose;
@@ -318,6 +319,17 @@ T nimDerivs_lgammafn(T x, int baseOrder, bool verbose = FALSE) {
     break;
   default:
     std::cout<<"Error: attempting lgamma derivative beyond order 4."<<std::endl;
+  }
+  if(CppAD::AD<double>::get_tape_handle_nimble() == nullptr) {
+    // std::cout<<"deleting atomic_lgamma because there is no tape recording."<<std::endl;
+    delete atomic_lgamma;
+    // std::cout<<"done deleting atomic_lgamma"<<std::endl;
+  } else {
+    //  std::cout<<"calling track_nimble_atomic"<<std::endl;
+    std::cout<<CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr()<<std::endl;
+    track_nimble_atomic(atomic_lgamma,
+			CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr());
+    //    std::cout<<"done calling track_nimble_atomic"<<std::endl;
   }
   return out[0];
 }

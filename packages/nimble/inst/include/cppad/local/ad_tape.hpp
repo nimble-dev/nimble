@@ -143,7 +143,9 @@ public:
         bool            record_compare ,
         ADBaseVector&   dynamic
     );
-
+  // NIMBLE extensions
+  void *nimble_CppAD_tape_mgr_ptr_;
+  void* &nimble_CppAD_tape_mgr_ptr() {return nimble_CppAD_tape_mgr_ptr_;}
 };
 // ---------------------------------------------------------------------------
 // Private functions

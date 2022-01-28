@@ -538,6 +538,7 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
   ##recordingInfoSym <- cppVarFull(name = "recordingInfo_", baseType = "nimbleCppADrecordingInfoClass",
   ##                               constructor = "(false, &ADinfo)")
   localVars$addSymbol(recordingInfoSym)
+  setInternalTapeLine <- cppLiteral("ADinfo.set_internal_tape(CppAD::AD<double>::get_tape_handle_nimble());");
   setRecordingFalseLine <- cppLiteral("recordingInfo_.recording()=false;")
   setRecordingTrueLine <- cppLiteral("recordingInfo_.recording()=true;")
   updateRecordingInfoLine <- cppLiteral(paste0("recordingInfo_.tape_id()=CppAD::AD<double>::get_tape_id_nimble();\n",
@@ -713,6 +714,7 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
                                        copyDynamicVarsToModelCode, ## once for non-taping call
                                        tapingCallRCode,
                                        CppADindependentCode,
+                                       setInternalTapeLine,
                                        setRecordingTrueLine,
                                        updateRecordingInfoLine,
                                        copyDynamicVarsToModelCode), ## again for taping call to be sure
@@ -877,15 +879,17 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
                                       quote(ADinfo)),
                                     quote = TRUE)
     if_record_condition <- if(metaTape) {
-      quote((!cppMemberFunction(recording(recordingInfo_))) & (!memberData(ADinfo, ADtape) | RESET_)) ##HERE
+      # quote((!cppMemberFunction(recording(recordingInfo_))) & (!memberData(ADinfo, ADtape) | RESET_)) ##HERE
+      quote((!cppMemberFunction(recording(recordingInfo_))) & (cppMemberFunction(ADtape_empty(ADinfo)) | RESET_)) ##HERE
     } else {
-      quote(!memberData(ADinfo, ADtape) | RESET_)
+      # quote(!memberData(ADinfo, ADtape) | RESET_)
+      quote(cppMemberFunction(ADtape_empty(ADinfo)) | RESET_)
     }
     recordIfNeededCode <- substitute(
       if(IFRECORDCONDITION) {
-        cppLiteral("if(ADinfo.ADtape) delete ADinfo.ADtape;")
+        cppLiteral("if(!ADinfo.ADtape_empty()) ADinfo.ADtape_reset();")
         COPYTODOUBLESLINES
-        memberData(ADinfo, ADtape) <- RUNCALLFORTAPING
+        cppMemberFunction(ADtape(ADinfo)) <- RUNCALLFORTAPING
         UPDATERECORDINGINFOTAPEINFOLINES
       },
       list(IFRECORDCONDITION = if_record_condition,
