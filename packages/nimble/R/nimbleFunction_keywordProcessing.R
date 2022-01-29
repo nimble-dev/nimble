@@ -99,7 +99,7 @@ nimSeq_keywordInfo <- keywordInfoClass(
                 newRunCode <- substitute(nimSeqLen(FROM, TO, 0, LEN), list(FROM = code$from, TO = code$to, LEN = code$length.out))
             } else {
                 byVal <- if(useBy) code$by else 1 ## default by = 1
-                newRunCode <- substitute(nimSeqBy(FROM, TO, BY, 0), list(FROM = code$from, TO = code$to, BY = code$by))
+                newRunCode <- substitute(nimSeqBy(FROM, TO, BY, 0), list(FROM = code$from, TO = code$to, BY = byVal))
             }
         }
         return(newRunCode)
