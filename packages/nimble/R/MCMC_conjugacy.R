@@ -579,7 +579,8 @@ conjugacyClass <- setRefClass(
                 distName <- tmp[[1]]
                 currentLink <- tmp[[2]]
                 if(currentLink %in% c('additive', 'multiplicative', 'multiplicativeScalar', 'linear') || (nimbleOptions()$allowDynamicIndexing && doDependentScreen)) {
-                    if(currentLink == 'multiplicativeScalar')  
+                    ## For 2-d (i.e., wish/invwish) cases, we only allow scalar coeff, including in dynamic indexing case. 
+                    if(currentLink == 'multiplicativeScalar' || (nimbleOptions()$allowDynamicIndexing && doDependentScreen && targetNdim == 2))  
                         targetCoeffNdim <- 0
                      ## the 2's here are *only* to prevent warnings about assigning into member variable names using
                     inputList <-  list(DEP_OFFSET_VAR2     = as.name(paste0('dep_', distLinkName, '_offset')),  ## local assignment '<-', so changed the names to "...2"
@@ -956,7 +957,6 @@ conjugacyClass <- setRefClass(
                 tmp <- strsplit(names(dependentCounts)[iDepCount], '_')[[1]]
                 distName <- tmp[[1]]
                 currentLink <- tmp[[2]]
-
                 targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
                 if(targetCoeffNdim == 2 && link == 'multiplicativeScalar')   ## There are no cases where we allow non-scalar 'coeff'.
                     targetCoeffNdim <- 0

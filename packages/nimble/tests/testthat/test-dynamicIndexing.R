@@ -199,6 +199,58 @@ test_that("Testing multivariate normal-Wishart dependency conjugacy detection wi
                  info = "failed to detect dmnorm-dmnorm conjugacy in multivariate multi-conjugacy setting")
 })
 
+test_that("Testing full MVN-Wishart conjugacy  dynamic indexing for correct dependency detection", {    
+
+    code <- nimbleCode({
+        for ( i in 1:3 ) {
+            mu[1:J,i] ~ dmnorm(mu_mean[1:J], cov = mu_cov[1:J,1:J])
+            Sigma[1:J,1:J,i] ~ dinvwish(S = S[1:J, 1:J], df = df)
+        }
+        for ( k in 1:n ) {
+            d[k] ~ dcat(p[1:3])
+            y[1:J,k] ~ dmnorm(mu[1:J, d[k]], cov = Sigma[1:J,1:J, d[k]] )
+        }
+    })
+
+    set.seed(1)
+    n <- 5
+    J <- 2
+    constants <- list(n = n, J = J, mu_mean = rep(0, 2), S = diag(J), df = 20,
+                      mu_cov = diag(J), p = c(.499,.002,.499))
+    
+    Sigma_init <- array(c(2,.7,.7,2, 1,.5,.5,1,3,.7,.7,3), c(2,2,3))
+    inits <- list(d = c(1,3,1,3,1), mu = matrix(rnorm(J*3), J, 3), Sigma = Sigma_init)
+    data <- list(y = matrix(rnorm(J*n),J,n))
+
+    m <- nimbleModel(code, data = data, constants = constants, inits = inits)
+    conf <- configureMCMC(m)
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc, project = m)
+
+    set.seed(1)
+    mcmc$run(1)
+    ## expect_identical(m$d, c(1,1,3,3,1))  # this is what we get but check is responsive to value of 'd'.
+    ## Check correct zero-ing out of non-deps. Multiplier for dmnorm actual deps should be identity matrix
+    ## and for dwish the value 1. Otherwise a zero matrix or a 0, respectively.
+    wh1 <- as.numeric(m$d == 1)
+    wh2 <- as.numeric(m$d == 2)
+    wh3 <- as.numeric(m$d == 3)
+    expect_identical(mcmc$samplerFunctions[[6]]$dep_dmnorm_identity_coeff,
+                     array(c(wh1,rep(0,10),wh1), c(5,2,2)))
+    expect_identical(mcmc$samplerFunctions[[7]]$dep_dmnorm_identity_coeff,
+                     array(c(wh2,rep(0,10),wh2), c(5,2,2)))
+    expect_identical(mcmc$samplerFunctions[[8]]$dep_dmnorm_identity_coeff,
+                     array(c(wh3,rep(0,10),wh3), c(5,2,2)))
+    expect_identical(mcmc$samplerFunctions[[9]]$dep_dmnorm_identity_coeff,
+                     array(wh1, 5))
+    expect_identical(mcmc$samplerFunctions[[10]]$dep_dmnorm_identity_coeff,
+                     array(wh2, 5))
+    expect_identical(mcmc$samplerFunctions[[11]]$dep_dmnorm_identity_coeff,
+                     array(wh3, 5))
+})
+
+
 test_that("Testing multivariate normal-Wishart dependency conjugacy detection with dynamic indexing", {
     ## Note this is a strange model in terms of conjugacy as y depends on only
     ## one element of mu[1:3,i], but our dynamic calculation of offset and coeff
