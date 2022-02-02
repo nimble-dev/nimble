@@ -249,7 +249,9 @@ Note that both samplers are specialized versions that operate on a vector having
 ```{r, child = 'tables/BNPconjugacyTable2.md'}
 ```
 
-Additionally, a specialized sampler is assigned to the `conc` hyper parameter when a gamma hyper prior is assigned, see section 6 in @escobar_west_95 for more details. Otherwise, a random walk Metropolis-Hastings sampler is assigned.
+To reduce computation and improve mixing, we only sample the parameters of the clusters (e.g., $\tilde{theta}_j$ in \@ref(sec:excrp) when the associated cluster is occupied, using the `CRP_cluster_wrapper` sampler, which wraps around an underlying actual sampler. In addition, this approach requires that any sampler assigned to parameters of the base measure, $G_0$, (i.e., unknown parameters in the prior for $\tilde{theta}_j$) ignore cluster parameters associated with clusters that are not occupied, since their current values are meaningless. We assign a special slice sampler that determines the occupied clusters in any given iteration, called `slice_CRP_base_param`. Note that if you choose to use a different sampler for the base measure parameters, you should also avoid using the `CRP_cluster_wrapper` sampler.
+
+Finally, a specialized sampler is assigned to the `conc` hyper parameter when a gamma hyper prior is assigned, see section 6 in @escobar_west_95 for more details. Otherwise, a random walk Metropolis-Hastings sampler is assigned.
 
 #### Initial values
 
