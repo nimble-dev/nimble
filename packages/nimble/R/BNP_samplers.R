@@ -2279,7 +2279,7 @@ sampler_CRP_cluster_wrapper <- nimbleFunction(
 
 #' @rdname samplers
 #' @export
-sampler_slice_CRP_cluster_params <- nimbleFunction(
+sampler_slice_CRP_base_param <- nimbleFunction(
     name = 'sampler_slice_CRP_cluster_params',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {

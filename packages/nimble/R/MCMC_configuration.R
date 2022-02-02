@@ -433,7 +433,7 @@ print: A logical argument specifying whether to print the montiors and samplers.
 
                                 for(cnt in seq_along(clusterNodeParams)) {
                                     removeSamplers(clusterNodeParams[cnt])
-                                    addSampler(clusterNodeParams[cnt], 'slice_CRP_cluster_params',
+                                    addSampler(clusterNodeParams[cnt], 'slice_CRP_base_param',
                                                control = list(dcrpNode = dcrpNode[[k]], clusterNodes = clusterNodes,
                                                               clusterIDs = clusterNodeInfo[[k]]$clusterIDs[[idx]]))
                                 }
