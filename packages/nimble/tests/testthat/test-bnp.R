@@ -8037,9 +8037,9 @@ test_that("Only cluster hyperparameter dependents (cluster node parameters) in u
     inits2 <- c(inits, inits2)
     m <- nimbleModel(code, data = data, constants = const, inits = inits2)
     conf <- configureMCMC(m)
-    expect_identical(conf$getSamplers('a0')[[1]]$name, "RW_sampler")
+    expect_identical(conf$getSamplers('a0')[[1]]$name, "RW")
     expect_identical(conf$getSamplers('b0')[[1]]$name, "conjugate_dgamma_dgamma_identity")
-    expect_identical(conf$getSamplers('k0')[[1]]$name, "conjugate_dgamma_dnorm_multiplicative sampler")
+    expect_identical(conf$getSamplers('k0')[[1]]$name, "conjugate_dgamma_dnorm_multiplicative")
     expect_identical(conf$getSamplers('muTilde[1]')[[1]]$name, "conjugate_dnorm_dnorm_identity_dynamicDeps")
     expect_identical(conf$getSamplers('tauTilde[1]')[[1]]$name, "conjugate_dgamma_dnorm_identity_dnorm_multiplicative_dynamicDeps")
 
