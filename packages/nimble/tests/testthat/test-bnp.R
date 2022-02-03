@@ -8140,7 +8140,9 @@ test_that("Only cluster hyperparameter dependents (cluster node parameters) in u
         mu0 ~ dnorm(0,1)
         xi[1:n] ~ dCRP(alpha, size = n)
     })
-    m <- nimbleModel(code, data = data, constants = constants, inits = inits)
+    inits2 <- inits
+    inits2$muTilde <- matrix(inits$muTilde, J, n)
+    m <- nimbleModel(code, data = data, constants = constants, inits = inits2)
     conf <- configureMCMC(m)
     expect_identical(conf$getSamplers('mu0')[[1]]$name, "slice_CRP_base_param")
     expect_identical(conf$getSamplers('muTilde[1, 1]')[[1]]$name, "CRP_cluster_wrapper")
