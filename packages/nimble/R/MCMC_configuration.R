@@ -10,18 +10,17 @@ samplerConf <- setRefClass(
     ),
     methods = list(
         initialize = function(name, samplerFunction, target, control, model) {
-            name <<- name
-            samplerFunction <<- samplerFunction
-            target <<- target
-            control <<- control
+            setName(name)
+            setSamplerFunction(samplerFunction)
+            setTarget(target, model)
+            setControl(control)
             if(name == 'crossLevel')   control <<- c(control, list(dependent_nodes = model$getDependencies(target, self = FALSE, stochOnly = TRUE)))  ## special case for printing dependents of crossLevel sampler (only)
-            targetAsScalar <<- model$expandNodeNames(target, returnScalarComponents = TRUE)
         },
         setName = function(name) name <<- name,
         setSamplerFunction = function(fun) samplerFunction <<- fun,
         setTarget = function(target, model) {
             target <<- target
-            targetAsScalar <<- model$expandNodeNames(target, returnScalarComponents = TRUE)
+            targetAsScalar <<- model$expandNodeNames(target, returnScalarComponents = TRUE, sort = TRUE)
         },
         setControl = function(control) control <<- control,
         buildSampler = function(model, mvSaved) {
