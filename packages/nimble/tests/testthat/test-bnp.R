@@ -3460,7 +3460,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- conf$getSamplers('thetaTilde')
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n2*J))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n2, J))
+  expect_identical(as.integer(ids), rep(1:n2, each = J))
 
   ## Truncated and intermediate
   code <- nimbleCode({
@@ -3501,7 +3501,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- conf$getSamplers('thetaTilde')
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n2*J))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n2, J))
+  expect_identical(as.integer(ids), rep(1:n2, each = J))
 
   ## Column instead of row
   code <- nimbleCode({
@@ -3571,7 +3571,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- conf$getSamplers('thetaTilde')
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n, each = J))
+  expect_identical(as.integer(ids), rep(1:n, J))
 
   ## Column instead of row, intermediate nodes, indexes swapped
   code <- nimbleCode({
@@ -3608,7 +3608,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- conf$getSamplers('thetaTilde')
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n, J))
+  expect_identical(as.integer(ids), rep(1:n, each = J))
 
 
   ## index offset
@@ -3648,7 +3648,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- conf$getSamplers('thetaTilde')
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n, J))
+  expect_identical(as.integer(ids), rep(1:n, each = J))
 
 
   ## index offset, with intermediate
@@ -3689,7 +3689,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- conf$getSamplers('thetaTilde')
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n, J))
+  expect_identical(as.integer(ids), rep(1:n, each = J))
 
   ## multiple obs, but only single thetaTilde in each group
   code <- nimbleCode({
@@ -3940,7 +3940,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- conf$getSamplers('thetaTilde')
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n, J))
+  expect_identical(as.integer(ids), rep(1:n, each = J))
 
   ## Model E: dmnorm obs, separate prior declarations
   code <- nimbleCode({
@@ -4048,7 +4048,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- conf$getSamplers('thetaTilde')
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), as.integer(1:n))
+  expect_identical(as.integer(ids), as.integer(c(2:5, 1)))
 
   ## Model F: non conjugate, non-identical data
   ## doesn't detect presence of some conjugacies because only check first set
@@ -4151,7 +4151,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- conf$getSamplers('thetaTilde')
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n, J))
+  expect_identical(as.integer(ids), rep(1:n, each = J))
 
 
   ## Model H: separate obs and prior declarations
@@ -4268,7 +4268,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- c(conf$getSamplers('thetaTilde'), conf$getSamplers('sigmaTilde'))
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*(J+1)))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), c(1:n, rep(1:n, J)))
+  expect_identical(as.integer(ids), c(1:n, rep(1:n, each = J)))
 
 
   ## Model K: more complicated intermediate nodes
@@ -4352,10 +4352,10 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
   expect_identical(crpSampler$n, as.integer(n))
 
-  paramSamplers <- conf$getSamplers('thetaTilde')[c(6:10, 16:20, 26:30)]
+  paramSamplers <- conf$getSamplers('thetaTilde')[seq(2, 30, by = 2)]
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n, J))
+  expect_identical(as.integer(ids), rep(1:n, each = J))
 
 
   ## 3-d case with full third index
@@ -4406,7 +4406,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- conf$getSamplers('thetaTilde')
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J*2))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(rep(1:n, each = 2), J))
+  expect_identical(as.integer(ids), rep(1:n, each = J*2))
 
   ## index is a function - not allowed
   code <- nimbleCode({
