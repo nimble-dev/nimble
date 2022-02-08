@@ -753,7 +753,7 @@ ind: A numeric vector or character vector.  A numeric vector may be used to spec
 
         findSamplersOnNodes = function(nodes) {
             if(length(samplerConfs) == 0) return(integer())
-            nodes <- model$expandNodeNames(nodes, returnScalarComponents = TRUE)
+            nodes <- model$expandNodeNames(nodes, returnScalarComponents = TRUE, sort = TRUE)
             samplerConfNodesList <- lapply(samplerConfs, function(sc) sc$targetAsScalar)
             return(unique(unlist(lapply(nodes, function(n) which(unlist(lapply(samplerConfNodesList, function(scn) n %in% scn)))))))
         },
