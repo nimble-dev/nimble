@@ -8,6 +8,7 @@
 #include <R.h>
 #include <Rinternals.h>
 #include <Rmath.h>
+#include "nimbleCppAD.h"
 #include "nimDerivs_vecmat_utils.h"
 
 /*
@@ -91,7 +92,7 @@ MatrixXd_CppAD nimDerivs_matmult(const MatrixXd_CppAD &x1,
 				 const MatrixXd_CppAD &x2,
 				 bool debug = false);
 
-class atomic_matmult_class :  public CppAD::atomic_three< double > {
+class atomic_matmult_class :  public CppAD::atomic_three< double >, public nimble_atomic_base {
  private:
   int n1_;
   std::vector<double> X_stored;

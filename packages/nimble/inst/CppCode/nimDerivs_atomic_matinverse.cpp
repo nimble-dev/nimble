@@ -309,6 +309,12 @@ void atomic_matinverse(const MatrixXd_CppAD &x, // This (non-template) type forc
   (*atomic_matinverse)(xVec, yVec);
   y.resize(n, n);
   vec2mat(yVec, y);  
+  if(CppAD::AD<double>::get_tape_handle_nimble() == nullptr) {
+    delete atomic_matinverse;
+  } else {
+    track_nimble_atomic(atomic_matinverse,
+			CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr());
+  }
 }
 
 MatrixXd_CppAD nimDerivs_matinverse(const MatrixXd_CppAD &x) {

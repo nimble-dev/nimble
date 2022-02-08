@@ -337,6 +337,12 @@ void atomic_forwardsolve(const MatrixXd_CppAD &A,
   (*atomic_forwardsolve)(xVec, yVec);
   // dummy test : for(int i = 0; i < n1*n2; ++i) yVec[i] = xVec[i];
   vec2mat(yVec, Y);
+  if(CppAD::AD<double>::get_tape_handle_nimble() == nullptr) {
+    delete atomic_forwardsolve;
+  } else {
+    track_nimble_atomic(atomic_forwardsolve,
+			CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr());
+  }
 }
 
 

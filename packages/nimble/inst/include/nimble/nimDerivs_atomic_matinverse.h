@@ -15,7 +15,7 @@ void atomic_matinverse(const MatrixXd_CppAD &x,
 
 MatrixXd_CppAD nimDerivs_matinverse(const MatrixXd_CppAD &x);
 
-class atomic_matinverse_class :  public CppAD::atomic_three< double > {
+class atomic_matinverse_class :  public CppAD::atomic_three< double >, public nimble_atomic_base {
  public:
   atomic_matinverse_class(const std::string& name);
  private:

@@ -138,8 +138,8 @@ distn_params[['multi_with_size']] <- distn_params[['multi_no_size']]
 distn_params[['multi_with_size']]$args[['rand_variate']]$input_gen_fun <-
   function(n) function(size, prob) nimble::rmulti(n = 1, size, prob)
 distn_params[['multi_with_size']]$args[['size']]  <- list(
-  input_gen_fun = function(n) sample(1:1000, n, replace = TRUE),
-  type = c('double(1, 5)')
+  input_gen_fun = function(n) sample(10:100, 1, replace = TRUE),
+  type = c('double(0)')
 )
 
 #################################

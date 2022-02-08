@@ -408,6 +408,13 @@ void atomic_backsolve(const MatrixXd_CppAD &A,
   (*atomic_backsolve)(xVec, yVec);
   // dummy test : for(int i = 0; i < n1*n2; ++i) yVec[i] = xVec[i];
   vec2mat(yVec, Y);
+  if(CppAD::AD<double>::get_tape_handle_nimble() == nullptr) {
+    delete atomic_backsolve;
+  } else {
+    track_nimble_atomic(atomic_backsolve,
+			CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr());
+  }
+
 }
 
 

@@ -17,7 +17,7 @@ void atomic_cholesky(const MatrixXd_CppAD &x,
 
 MatrixXd_CppAD nimDerivs_EIGEN_CHOL(const MatrixXd_CppAD &x);
 
-class atomic_cholesky_class : public CppAD::atomic_three< double > {
+class atomic_cholesky_class : public CppAD::atomic_three< double >, public nimble_atomic_base {
  public:
   atomic_cholesky_class(const std::string& name);
  private:

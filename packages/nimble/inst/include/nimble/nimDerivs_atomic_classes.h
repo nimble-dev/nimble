@@ -325,8 +325,8 @@ T nimDerivs_lgammafn(T x, int baseOrder, bool verbose = FALSE) {
     delete atomic_lgamma;
     // std::cout<<"done deleting atomic_lgamma"<<std::endl;
   } else {
-    //  std::cout<<"calling track_nimble_atomic"<<std::endl;
-    std::cout<<CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr()<<std::endl;
+    // std::cout<<"calling track_nimble_atomic"<<std::endl;
+    // std::cout<<CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr()<<std::endl;
     track_nimble_atomic(atomic_lgamma,
 			CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr());
     //    std::cout<<"done calling track_nimble_atomic"<<std::endl;

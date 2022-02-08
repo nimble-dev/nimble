@@ -10,7 +10,7 @@ void atomic_forwardsolve(const MatrixXd_CppAD &A,
 MatrixXd_CppAD nimDerivs_EIGEN_FS(const MatrixXd_CppAD &A,
 				   const MatrixXd_CppAD &B);
 
-class atomic_forwardsolve_class :  public atomic_solve_base_class, public CppAD::atomic_three< double > {
+class atomic_forwardsolve_class :  public atomic_solve_base_class, public CppAD::atomic_three< double >, public nimble_atomic_base {
  public:
   atomic_forwardsolve_class(const std::string& name);
  public:  

@@ -850,6 +850,7 @@ void atomic_matmult_class::set_X_stored(const MatrixXd_CppAD &X) {
 
 // matmult atomic objects created by this factory are not
 // cleaned up until the library is unloaded.
+/*
 class atomic_matmult_factory {
 public:
   std::vector<atomic_matmult_class *> created_objects;
@@ -864,8 +865,8 @@ public:
     return res;
   }
 };
-
 atomic_matmult_factory global_matmult_factory;
+*/
 
 matrix_category decide_matrix_category(const MatrixXd_CppAD &x) {
   int nRow = x.rows();
@@ -914,7 +915,7 @@ void atomic_matmult_internal(const MatrixXd_CppAD &x1,
   cout<<"setting up an atomic call of dims ("<<n1<<", "<<n2<<", "<<x1_is_constant<<") %*% ("<<n2<<", "<<n3<<", "<<x2_is_constant<<") = ("<<n1<<", "<<n3<<")"<<endl;
 #endif
   
-  atomic_matmult_class * atomic_matmult = global_matmult_factory.create();
+  atomic_matmult_class * atomic_matmult = new atomic_matmult_class("atomic_matmult");//global_matmult_factory.create();
   atomic_matmult->X1cat() = decide_matrix_category(x1);
   atomic_matmult->X2cat() = decide_matrix_category(x2);
   atomic_matmult->X1constant() = x1_is_constant;
@@ -955,6 +956,12 @@ void atomic_matmult_internal(const MatrixXd_CppAD &x1,
   std::vector<CppAD::AD<double> > yVec(n1*n3);
   (*atomic_matmult)(xVec, yVec);
   vec2mat(yVec, y);
+  if(CppAD::AD<double>::get_tape_handle_nimble() == nullptr) {
+    delete atomic_matmult;
+  } else {
+    track_nimble_atomic(atomic_matmult,
+			CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr());
+  }
 }
 
 void atomic_matmult_diagnostic_message(int x1i, int x1j, int x1rows, int x1cols,

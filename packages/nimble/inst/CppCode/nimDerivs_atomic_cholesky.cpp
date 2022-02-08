@@ -578,6 +578,12 @@ void atomic_cholesky(const MatrixXd_CppAD &x, // This (non-template) type forces
   (*atomic_cholesky)(xVec, yVec);
   y.resize(n, n);
   vec2mat(yVec, y);
+  if(CppAD::AD<double>::get_tape_handle_nimble() == nullptr) {
+    delete atomic_cholesky;
+  } else {
+    track_nimble_atomic(atomic_cholesky,
+			CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr());
+  }
 }
 
 MatrixXd_CppAD nimDerivs_EIGEN_CHOL(const MatrixXd_CppAD &x) {
