@@ -5014,7 +5014,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- c(conf$getSamplers('mu'), conf$getSamplers('sigma'))
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*2*2))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(rep(1:n, each = 2), 2))
+  expect_identical(as.integer(ids), rep(1:n, 4))
 
   ## only one sigma per cluster
   code <- nimbleCode({
