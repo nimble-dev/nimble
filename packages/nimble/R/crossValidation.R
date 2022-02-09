@@ -78,7 +78,8 @@ calcCrossVal <- function(i,
                                    project = newModel, dirName = dirName))
       silentNull <- suppressMessages(C.modelMCMC$run(niter, progressBar = FALSE))
   }
-  MCMCout <- as.matrix(C.modelMCMC$mvSamples)[,leaveOutNames, drop = FALSE]
+  leaveOutNamesExpanded <- newModel$expandNodeNames(leaveOutNames, returnScalarComponents = TRUE)
+  MCMCout <- as.matrix(C.modelMCMC$mvSamples)[,leaveOutNamesExpanded, drop = FALSE]
   sampNum <- dim(MCMCout)[1]
   startIndex <- nburnin+1
   if(predLoss){
