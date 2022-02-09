@@ -4614,7 +4614,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- conf$getSamplers('beta')
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*2))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n, 2))
+  expect_identical(as.integer(ids), rep(1:n, each = 2))
 
 
   ## use of inprod
@@ -4902,7 +4902,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- c(conf$getSamplers('mu'), conf$getSamplers('sigma'))
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*2*2))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n, 4))
+  expect_identical(as.integer(ids), rep(rep(1:n, each = 2), 2))
 
 
   ## not IID across clusters
@@ -4939,7 +4939,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- c(conf$getSamplers('mu'), conf$getSamplers('sigma'))
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*2*2))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n, 4))
+  expect_identical(as.integer(ids), rep(rep(1:n, each = 2), 2))
 
 
   ## IID across but not within clusters
@@ -4977,8 +4977,8 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- c(conf$getSamplers('mu'), conf$getSamplers('sigma'))
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*2*2))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n, 4))
-
+  expect_identical(as.integer(ids), rep(rep(1:n, each = 2), 2))
+  
 
   ## no dependence on sigma in mu prior
   code <- nimbleCode({
@@ -5014,7 +5014,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- c(conf$getSamplers('mu'), conf$getSamplers('sigma'))
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*2*2))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n, 4))
+  expect_identical(as.integer(ids), rep(rep(1:n, each = 2), 2))
 
   ## only one sigma per cluster
   code <- nimbleCode({
@@ -5055,7 +5055,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- c(conf$getSamplers('mu'), conf$getSamplers('sigma'))
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*3))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n, 3))
+  expect_identical(as.integer(ids), c(rep(1:n, each = 2), 1:n))
 
   ## only one mu and one sigma per cluster
   code <- nimbleCode({
@@ -5395,7 +5395,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- conf$getSamplers('thetaTilde')
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n, J))
+  expect_identical(as.integer(ids), rep(1:n, each = J))
 
 
   ## clusters IID G0; indep but not identically distributed within cluster, 
@@ -5433,7 +5433,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- conf$getSamplers('thetaTilde')
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n, J))
+  expect_identical(as.integer(ids), rep(1:n, each = J))
 
 
   ## clusters IID G0; indep but not identically distributed within cluster, 
@@ -5594,7 +5594,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- conf$getSamplers(c('thetaTilde', 's2tilde'))
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*(J+1)))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), c(1:n, rep(1:n, J)))
+  expect_identical(as.integer(ids), c(rep(1:n, each = J), 1:n))
 
 
   ## mutilde and s2tilde; not conjugate, case 2
@@ -5676,7 +5676,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- conf$getSamplers(c('thetaTilde', 's2tilde'))
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J*2))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n, J*2))
+  expect_identical(as.integer(ids), rep(rep(1:n, each = J), 2))
 
 
 
@@ -5721,10 +5721,10 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(J))
   expect_identical(crpSampler$n, as.integer(n))
 
-  paramSamplers <- conf$getSamplers(c('thetaTilde', 's2tilde'))[c(1:15, 17:21, 23:27, 29:33)]
+  paramSamplers <- conf$getSamplers(c('thetaTilde', 's2tilde'))[4:33]
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J*2))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n, J*2))
+  expect_identical(as.integer(ids), rep(rep(1:n, each = J), 2))
 
   ## mutilde and s2tilde, IID across cluster, indep within, conjugate
   code <- nimbleCode({
@@ -5765,7 +5765,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- conf$getSamplers(c('thetaTilde', 's2tilde'))
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J*2))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n, J*2))
+  expect_identical(as.integer(ids), rep(rep(1:n, each = J), 2))
 
   ## mutilde and s2tilde, not IID across clusters
   code <- nimbleCode({
@@ -5805,7 +5805,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- conf$getSamplers(c('thetaTilde', 's2tilde'))
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J*2))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n, J*2))
+  expect_identical(as.integer(ids), rep(rep(1:n, each = J), 2))
 
   ## mutilde and s2tilde; not conj because don't have one parameter set per obs
   code <- nimbleCode({
@@ -5885,7 +5885,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- conf$getSamplers(c('thetaTilde', 's2tilde'))
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*(J+1)))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n, 4))
+  expect_identical(as.integer(ids), c(1:n, rep(1:n, each = 3)))
 
   ## function in index - not allowed
   code <- nimbleCode({
