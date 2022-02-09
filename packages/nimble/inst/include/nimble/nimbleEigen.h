@@ -751,7 +751,6 @@ public:
   
   Scalar &coeffRef(IndexType i) const {
     std::div_t divRes = div(static_cast<int>(i), dim1);
-g
     return target.coeffRef(nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex1>::nimbleUseLinearAccess), I1Scalar, DerivedIndex1, IndexType >::getCoeff(I1, divRes.rem)-1,
 			   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex2>::nimbleUseLinearAccess), I2Scalar, DerivedIndex2, IndexType >::getCoeff(I2, divRes.quot)-1);
 
