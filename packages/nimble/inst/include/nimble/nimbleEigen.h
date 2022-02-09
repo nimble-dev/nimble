@@ -49,26 +49,31 @@ template<typename totLenT, typename knownDimT>
 template<typename T>
 struct nimble_eigen_traits {
   enum {nimbleUseLinearAccess = int(Eigen::internal::traits<T>::Flags & LinearAccessBit)};
+  typedef typename Eigen::internal::traits<T>::Scalar Scalar;
 };
 
 template<>
 struct nimble_eigen_traits<double> {
   enum {nimbleUseLinearAccess = int(1)};
+  typedef double Scalar;
 };
 
 template<>
 struct nimble_eigen_traits<int> {
   enum {nimbleUseLinearAccess = int(1)};
+  typedef int Scalar;
 };
 
 template<>
 struct nimble_eigen_traits<bool> {
   enum {nimbleUseLinearAccess = int(1)};
+  typedef bool Scalar;
 };
 
 template<typename V>
 struct nimble_eigen_traits<std::vector<V> > {
   enum {nimbleUseLinearAccess = int(1)};
+  typedef V Scalar;
 };
 
 template<typename T>
@@ -712,6 +717,7 @@ public:
     I2(I2in) {
     dim1 = nimble_size_impl<DerivedIndex1>::getSize(I1);
     dim2 = nimble_size_impl<DerivedIndex2>::getSize(I2);
+      std::cout<<"Constructing coeffSetting with "<<dim1<<" "<<dim2<<std::endl;
     totSize = dim1 * dim2;
   }
   int size() const {return(totSize);}
@@ -726,30 +732,34 @@ public:
       return;
     }
     for(int i = 0 ; i  < totSize; i++) {
-      coeffRef(i) = nimble_eigen_coeff_impl< bool(nimble_eigen_traits<fromType>::nimbleUseLinearAccess), Scalar, fromType, IndexType >::getCoeff(from, i);
+      coeffRef(i) = nimble_eigen_coeff_impl< bool(nimble_eigen_traits<fromType>::nimbleUseLinearAccess),
+      typename nimble_eigen_traits<fromType>::Scalar, fromType, IndexType >::getCoeff(from, i);
       //      from(i);
     }
   }
   template<typename fromType>
   void fill(const fromType &from) {
     Scalar val = nimble_eigen_coeff_impl< bool(nimble_eigen_traits<fromType>::nimbleUseLinearAccess), Scalar, fromType, IndexType >::getCoeff(from, 0);
-    //printf("In from\n");
     for(int i = 0 ; i  < totSize; i++) {
       coeffRef(i) = val;
     }
   }
   // this will only work for Eigen types 
   typedef typename Eigen::internal::traits<DerivedTarget>::Scalar Scalar;
+  typedef typename nimble_eigen_traits<DerivedIndex1>::Scalar I1Scalar;
+  typedef typename nimble_eigen_traits<DerivedIndex2>::Scalar I2Scalar;
+  
   Scalar &coeffRef(IndexType i) const {
-    std::div_t divRes = div(static_cast<int>(i), dim1);
-    return target.coeffRef(nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex1>::nimbleUseLinearAccess), Scalar, DerivedIndex1, IndexType >::getCoeff(I1, divRes.rem)-1,
-			   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex2>::nimbleUseLinearAccess), Scalar, DerivedIndex2, IndexType >::getCoeff(I2, divRes.quot)-1);
+    std::div_t divRes = div(static_cast<int>(i), totSize); // was dim1, seemed wrong?
+
+    return target.coeffRef(nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex1>::nimbleUseLinearAccess), I1Scalar, DerivedIndex1, IndexType >::getCoeff(I1, divRes.rem)-1,
+			   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex2>::nimbleUseLinearAccess), I2Scalar, DerivedIndex2, IndexType >::getCoeff(I2, divRes.quot)-1);
 
     // use % to get the i-th total element
   }
   Scalar &coeffRef(IndexType i, IndexType j) const {
-    return target.coeffRef( nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex1>::nimbleUseLinearAccess), Scalar, DerivedIndex1, IndexType >::getCoeff(I1, i)-1,
-			    nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex2>::nimbleUseLinearAccess), Scalar, DerivedIndex2, IndexType >::getCoeff(I2, j)-1);
+    return target.coeffRef( nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex1>::nimbleUseLinearAccess), I1Scalar, DerivedIndex1, IndexType >::getCoeff(I1, i)-1,
+			    nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex2>::nimbleUseLinearAccess), I2Scalar, DerivedIndex2, IndexType >::getCoeff(I2, j)-1);
   }
   // accesses coeffRef of objects using provided indices.
 };
