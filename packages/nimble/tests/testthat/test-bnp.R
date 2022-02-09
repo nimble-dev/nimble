@@ -4048,7 +4048,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- conf$getSamplers('thetaTilde')
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), as.integer(c(2:5, 1)))
+  expect_identical(as.integer(ids), as.integer(c(2:n, 1)))
 
   ## Model F: non conjugate, non-identical data
   ## doesn't detect presence of some conjugacies because only check first set
@@ -4978,7 +4978,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*2*2))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
   expect_identical(as.integer(ids), rep(rep(1:n, each = 2), 2))
-  
+
 
   ## no dependence on sigma in mu prior
   code <- nimbleCode({
@@ -5721,7 +5721,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(J))
   expect_identical(crpSampler$n, as.integer(n))
 
-  paramSamplers <- conf$getSamplers(c('thetaTilde', 's2tilde'))[4:33]
+  paramSamplers <- conf$getSamplers(c('thetaTilde', 's2tilde'))[-(1:J)]
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J*2))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
   expect_identical(as.integer(ids), rep(rep(1:n, each = J), 2))
@@ -5885,7 +5885,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- conf$getSamplers(c('thetaTilde', 's2tilde'))
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*(J+1)))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), c(1:n, rep(1:n, each = 3)))
+  expect_identical(as.integer(ids), c(1:n, rep(1:n, each = J)))
 
   ## function in index - not allowed
   code <- nimbleCode({
