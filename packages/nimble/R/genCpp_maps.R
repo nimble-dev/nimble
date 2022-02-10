@@ -229,7 +229,7 @@ makeMapExprFromBrackets <- function(code, drop = TRUE) {
 ## This is used to build the setMap expression for a NimArr
 nimArrMapExpr <- function(code, symTab, typeEnv, newName) {
     mapName <- newName
-    varRexpr <- code$args[[1]] ## This should already be an R parse tree, not a nimExpr
+    varRexpr <- code$args[[1]] 
     possibleVarName <- deparse(varRexpr)
     needStartOffset <- !is.null(typeEnv$passedArgumentNames[[possibleVarName]])
     targetSym <- symTab$getSymbolObject(possibleVarName, TRUE)
@@ -257,7 +257,7 @@ nimArrMapExpr <- function(code, symTab, typeEnv, newName) {
     else offsetRexpr <- substitute( chainedCall(template(static_cast, int), OE), list(OE = code$args[[3]]) )
     
     ## Need to build up this expression
-    ans <- list(as.name('setMap'), as.name(newName), varRexpr, offsetRexpr) ## varName used to be targetSym$name. Should be identical
+    ans <- list(as.name('setMap'), as.name(newName), as.name(varRexpr), offsetRexpr) ## varName used to be targetSym$name. Should be identical
     ans <- c(ans, strides, sizeExprs)
     ans <- as.call(ans)
     return(ans)
