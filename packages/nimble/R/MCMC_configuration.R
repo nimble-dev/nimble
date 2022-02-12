@@ -400,7 +400,7 @@ print: A logical argument specifying whether to print the montiors and samplers.
                             clusterNodeParams <- model$getParents(clusterNodes, stochOnly = TRUE, includeData = FALSE)
                             clusterNodeParams <- clusterNodeParams[!clusterNodeParams %in% allClusterNodesVec]
 
-                            ## Avoid cases where there is other stochastic indexing that doesn't use dCRP but also
+                            ## Avoid cases where there is other stochastic indexing (that might or might not use dCRP) but also
                             ## indexes the cluster nodes, e.g., mu[xi[i]] and mu[eta[i]] as hard to determine if cluster is occupied.
                             clusterNodeDeps <- model$getDependencies(clusterNodes, stochOnly = TRUE, self = FALSE)
                             clusterNodeDeps <- clusterNodeDeps[!clusterNodeDeps %in% allClusterNodesVec]
