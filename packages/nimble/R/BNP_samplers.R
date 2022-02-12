@@ -1789,6 +1789,8 @@ findClusterNodes <- function(model, target) {
   ## for what is indexed by the dCRP clusterID nodes. This also determine which clusterID
   ## each cluster parameter is associated with.
   targetVar <- model$getVarNames(nodes = target)
+    if(model$getVarInfo(targetVar)$nDim > 1)
+        stop("findClusterNodes: CRP variable, '", targetVar, "' cannot be a matrix or array.")
   targetElements <- model$expandNodeNames(target, returnScalarComponents = TRUE)
   deps <- model$getDependencies(target, self = FALSE, returnType = 'ids')
   declIDs <- model$modelDef$maps$graphID_2_declID[deps] ## declaration IDs of the nodeIDs

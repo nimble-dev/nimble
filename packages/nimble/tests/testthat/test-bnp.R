@@ -4151,7 +4151,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- conf$getSamplers('thetaTilde')
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n, J))
+  expect_identical(as.integer(ids), rep(1:n, each = J))
 
 
   ## Model H: separate obs and prior declarations
@@ -4352,7 +4352,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   expect_identical(crpSampler$nIntermClusNodesPerClusID, as.integer(0))
   expect_identical(crpSampler$n, as.integer(n))
 
-  paramSamplers <- conf$getSamplers('thetaTilde')[16:30]
+  paramSamplers <- conf$getSamplers('thetaTilde')[seq(2, 30, by = 2)]
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*J))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
   expect_identical(as.integer(ids), rep(1:n, each = J))
@@ -4614,7 +4614,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- conf$getSamplers('beta')
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*2))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), rep(1:n, 2))
+  expect_identical(as.integer(ids), rep(1:n, each = 2))
 
 
   ## use of inprod
@@ -5594,7 +5594,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   paramSamplers <- conf$getSamplers(c('thetaTilde', 's2tilde'))
   expect_identical(sapply(paramSamplers, function(x) x$name), rep('CRP_cluster_wrapper', n*(J+1)))
   ids <- sapply(paramSamplers, function(x) x$control$clusterID)
-  expect_identical(as.integer(ids), c(1:n, rep(1:n, each = J)))
+  expect_identical(as.integer(ids), c(rep(1:n, each = J), 1:n))
 
 
   ## mutilde and s2tilde; not conjugate, case 2
