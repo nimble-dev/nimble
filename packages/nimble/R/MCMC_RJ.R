@@ -285,10 +285,10 @@ configureRJ <- function(conf, targetNodes, indicatorNodes = NULL, priorProb = NU
     if(indicatorFlag && any(fixedValue != 0)) warning("configureRJ: 'fixedValue' can be provided only when using 'priorProb'; it will be ignored.")
     ## RJ system does not support non-constant hyperparameters of target RJ nodes:
     if(nimbleOptions('MCMCRJcheckHyperparam')) {
-        targetNodesAsScalars <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)
-        if(length(conf$model$getParents(targetNodesAsScalars, stochOnly = TRUE, includeData = FALSE)) > 0) {
+        if(length(model$getParents(targetNodes, stochOnly = TRUE, includeData = FALSE)) > 0) {
+            targetNodesAsScalars <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)
             for(i in seq_along(targetNodesAsScalars)) {
-                if(length(conf$model$getParents(targetNodesAsScalars[i], stochOnly = TRUE, includeData = FALSE)) > 0) {
+                if(length(model$getParents(targetNodesAsScalars[i], stochOnly = TRUE, includeData = FALSE)) > 0) {
                     stop('Reversible jump target node \"', targetNodesAsScalars[i], '\" appears to have a non-constant hyper-parameter, which is not currently supported for reversible jump MCMC.')
                 }
             }
