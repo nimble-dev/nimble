@@ -1208,6 +1208,74 @@ test_that('using LKJ randomw walk samplers', {
     names(postMean) <- NULL
     expect_lt(max(abs(postMean - c(mat))), 0.07, label = "RW_lkj posterior not close to truth")
 
+    ## 2x2 case
+
+    code <- nimbleCode({
+        for(i in 1:n) {
+            y[i, 1:J] ~ dmnorm(mu[1:J], cov = R[1:J, 1:J])
+        }
+        R[1:J, 1:J] <- t(U[1:J, 1:J]) %*% U[1:J, 1:J]
+        U[1:J, 1:J] ~ dlkj_corr_cholesky(eta, J)
+    })
+    J <- 2
+    n <- 2000
+    set.seed(1)
+    eta <- 1.3   
+    mat <- rlkj_corr_cholesky(1, eta, J)
+    y <- t(t(mat) %*% matrix(rnorm(n*J), J, n))
+    m <- nimbleModel(code, data = list(y = y), constants = list(n = n, J = J),
+                     inits = list(eta = 1.3, mu = rep(0, J), U = diag(J)))
+
+
+    set.seed(1)
+    conf <- configureMCMC(m, nodes = 'U')
+    expect_identical(conf$getSamplers('U')[[1]]$name, "RW_lkj_corr_cholesky")
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc, project = m)
+    samples <- runMCMC(cmcmc, niter = 5500, nburnin = 500)
+    postMean <- mean(samples[ , 'U[1, 2]'])
+    expect_lt(abs(postMean - mat[1,2]), 0.04, label = "RW_lkj posterior not close to truth for 2x2 case")
+
+    
+    ## Now compare for eta=1 prior (uniform prior case)
+    m <- nimbleModel(code, data = list(y = y), constants = list(n = n, J = J),
+                     inits = list(eta = 1, mu = rep(0, J), U = diag(J)))
+
+    set.seed(1)
+    conf <- configureMCMC(m, nodes = 'U')
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc, project = m)
+    samples <- runMCMC(cmcmc, niter = 5500, nburnin = 500)
+    postMean <- mean(samples[ , 'U[1, 2]'])
+    postSD <- sd(samples[ , 'U[1, 2]'])
+
+    code <- nimbleCode({
+        for(i in 1:n) {
+            y[i, 1:J] ~ dmnorm(mu[1:J], cov = R[1:J, 1:J])
+        }
+        R[1,2] <- rho
+        R[2,1] <- rho
+        rho ~ dunif(-1,1)
+    })
+    m <- nimbleModel(code, data = list(y = y), constants = list(n = n, J = J),
+                     inits = list(rho = 0, mu = rep(0, J), R = diag(J)))
+
+
+    set.seed(1)
+    conf <- configureMCMC(m, nodes = NULL)
+    conf$addSampler('rho','slice')
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc, project = m)
+    samples <- runMCMC(cmcmc, niter = 1000, nburnin = 100)
+    postMeanAlt <- mean(samples)
+    postSDAlt <- sd(samples)
+    expect_lt(abs(postMean - postMeanAlt), 0.0005, label = "RW_lkj posterior not close to slice-based MCMC")
+    expect_lt(abs(postSD - postSDAlt), 0.001, label = "RW_lkj posterior not close to slice-based MCMC")
+
+    
     nimbleOptions('buildInterfacesForCompiledNestedNimbleFunctions' = opt)
 })
 

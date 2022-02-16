@@ -326,7 +326,16 @@ print: A logical argument specifying whether to print the montiors and samplers.
                         if(nodeDist == 'ddirch')              { addSampler(target = node, type = 'RW_dirichlet');       next }
                         if(nodeDist == 'dwish')               { addSampler(target = node, type = 'RW_wishart');         next }
                         if(nodeDist == 'dinvwish')            { addSampler(target = node, type = 'RW_wishart');         next }
-                        if(nodeDist == 'dlkj_corr_cholesky')  { addSampler(target = node, type = 'RW_block_lkj_corr_cholesky');  next }
+                        if(nodeDist == 'dlkj_corr_cholesky')  {
+                            if(nodeLength >= 9) {
+                                addSampler(target = node, type = 'RW_block_lkj_corr_cholesky')
+                            } else {
+                                if(nodeLength == 4) {
+                                    addSampler(target = node, type = 'RW_lkj_corr_cholesky')  ## only a scalar free param in 2x2 case
+                                } else warning("Not assigning sampler to dlkj_corr_cholesky node for 1x1 case.")
+                            }
+                            next
+                        }
                         if(nodeDist == 'dcar_normal')         { addSampler(target = node, type = 'CAR_normal');         next }
                         if(nodeDist == 'dcar_proper')         { addSampler(target = node, type = 'CAR_proper');         next }
                         if(nodeDist == 'dCRP')                {

@@ -1573,9 +1573,10 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
         if(scaleOriginal < 0)
             stop('Cannot use RW_lkj_corr_cholesky sampler with scale control parameter less than 0.')
         ## adaptation objects
+        if(nTheta == 1) nTheta <- 2
         scaleVec            <- rep(scaleOriginal, nTheta)
         timesRan            <- 0
-        timesAcceptedVec    <- rep(nTheta, 0)
+        timesAcceptedVec    <- rep(0, nTheta)
         timesAdapted        <- 0
         optimalAR           <- 0.44
         ##
@@ -1749,7 +1750,7 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
 
         dist <- model$getDistribution(target)
         if(dist != 'dlkj_corr_cholesky') stop('RW_block_lkj_corr_cholesky sampler can only be used with the dlkj_corr_cholesky distribution.')
-        if(d < 2)                        stop('RW_block_lkj_corr_cholesky sampler requires target node dimension to be at least 2x2.')
+        if(d < 3)                        stop('RW_block_lkj_corr_cholesky sampler requires target node dimension to be at least 3x3.')
         if(adaptFactorExponent < 0)      stop('Cannot use RW_block_lkj_corr_cholesky sampler with adaptFactorExponent control parameter less than 0.')
 
     },
