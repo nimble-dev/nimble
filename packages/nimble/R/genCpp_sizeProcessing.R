@@ -282,13 +282,16 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
                             code,
                             'In size processing: A no-setup nimbleFunction with no internal name is being called.'),
                         call. = FALSE)
-                if(is.null(typeEnv$neededRCfuns[[uniqueName]])) {
-                    typeEnv$neededRCfuns[[uniqueName]] <- nfmObj
-                }
                 ## new with nimbleLists: we need to initiate compilation here so we can get full returnType information, including of nimbleLists
                 RCfunProc <-
                     typeEnv$.nimbleProject$compileRCfun(obj,
                                                         initialTypeInference = TRUE)
+                
+                if(is.null(typeEnv$neededRCfuns[[uniqueName]])) {
+                    if(!identical(RCfunProc$RCfun$uniqueName, typeEnv$.myUniqueName))
+                        typeEnv$neededRCfuns[[uniqueName]] <- nfmObj
+                }
+                
                 return(sizeRCfunction(code, symTab, typeEnv, nfmObj, RCfunProc))
             }
         }
