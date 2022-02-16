@@ -65,7 +65,7 @@ getSamplesDPmeasure <- function(MCMC, epsilon = 1e-4, setSeed = FALSE, progressB
     mvSamples <- MCMC$mvSamples
   }
   
-  rsampler <- sampleDPmeasure(model, mvSamples, epsilon) # 
+  rsampler <- sampleDPmeasure(model, mvSamples, epsilon)  
 
   niter <- getsize(MCMC$mvSamples)
   samplesMeasure <- list()
@@ -73,7 +73,7 @@ getSamplesDPmeasure <- function(MCMC, epsilon = 1e-4, setSeed = FALSE, progressB
   if(is.numeric(setSeed)) {
     set.seed(setSeed[1])
     if(length(setSeed) > 1) {
-      nimCat('getSamplesDPmeasure: setSeed argument has length > 1 and only the first element will be used') 
+      messageIfVerbose('  [Warning] getSamplesDPmeasure: setSeed argument has length > 1 and only the first element will be used.') 
     }
   } else if(setSeed) set.seed(1)
 
@@ -1426,7 +1426,7 @@ sampler_CRP <- nimbleFunction(
         stop('sampler_CRP: In a model with multiple cluster parameters, the number of those parameters must all be the same.\n')
     min_nTilde <- nTilde[1]
     if(min_nTilde < n)
-      warning('sampler_CRP: The number of clusters based on the cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if it ever proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.\n', call. = FALSE)
+      messageIfVerbose('  [Warning] sampler_CRP: The number of clusters based on the cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if it ever proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.')
     
     ## Determine if concentration parameter is fixed or random (code similar to the one in sampleDPmeasure function).
     ## This is used in truncated case to tell user if model is proper or not.
@@ -1541,8 +1541,8 @@ sampler_CRP <- nimbleFunction(
         if(any(marginalizedNodes %in% deps))
             stop("sampler_CRP: cluster parameters must be independent across clusters.")
         if(!identical(sort(deps), sort(dataNodes)))
-            warning("sampler_CRP: dependencies of cluster parameters include unexpected nodes: ",
-                    paste0(deps[!deps %in% dataNodes], collapse = ', '), call. = FALSE)
+            messageIfVerbose("  [Warning] sampler_CRP: dependencies of cluster parameters include unexpected nodes: ",
+                    paste0(deps[!deps %in% dataNodes], collapse = ', '))
     }
     
     identityLink <- TRUE
@@ -1629,9 +1629,9 @@ sampler_CRP <- nimbleFunction(
     if(kNew > min_nTilde & min_nTilde < n) {
       if(printMessage) {
         if(fixedConc) {
-          nimCat('CRP_sampler: This MCMC is for a parametric model. The MCMC attempted to use more components than the number of cluster parameters. To have a sampler for a nonparametric model increase the number of cluster parameters.\n')
+          nimCat('  [Warning] CRP_sampler: This MCMC is for a parametric model. The MCMC attempted to use more components than the number of cluster parameters. To have a sampler for a nonparametric model increase the number of cluster parameters.\n')
         } else {
-          nimCat('CRP_sampler: This MCMC is not for a proper model. The MCMC attempted to use more components than the number of cluster parameters. Please increase the number of cluster parameters.\n')
+          nimCat('  [Warning] CRP_sampler: This MCMC is not for a proper model. The MCMC attempted to use more components than the number of cluster parameters. Please increase the number of cluster parameters.\n')
         }
       }
       kNew <- 0 

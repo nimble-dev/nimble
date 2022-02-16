@@ -160,7 +160,7 @@ stick_breaking <- nimbleFunction(
         N <- length(z)   
         cond <- any(z < 0 | z > 1)
         if(cond) {
-            nimCat("stick_breaking: values in 'z' have to be in (0,1).\n")
+            nimCat("  [Warning] stick_breaking: values in 'z' have to be in (0,1).\n")
             return(rep(NaN, N+1))
         }
     

@@ -38,7 +38,7 @@ distributionsClass <- setRefClass(
                   ## namesExprList[dupl] <<- NULL
                   ## translations[dupl] <<- NULL
                   nmsDuplicated <- paste0(nms[dupl], collapse = ', ')
-                  cat(paste0("Overwriting the following user-supplied distributions: ", nmsDuplicated, "\n"))
+                  messageIfVerbose("  [Note] Overwriting the following user-supplied distributions: ", nmsDuplicated, ".")
               }
               for(i in seq_along(dil))     distObjectsNew[[i]] <- distClass(dil[[i]], nms[i])
               names(distObjectsNew) <- nms
@@ -280,8 +280,8 @@ checkDistributionFunctions <- function(distributionInput, userEnv) {
                     " is not available.  It must be a nimbleFunction (with no setup code)."))
     }
     if(!exists(simulateName, where = userEnv) || !is.rcf(get(simulateName, pos = userEnv))) {
-        cat(paste0("Warning: random generation function for ", densityName,
-                    " is not available. NIMBLE is generating a placeholder function, ", simulateName, ", that will invoke an error if an algorithm needs to simulate from this distribution. Some algorithms (such as random-walk Metropolis MCMC sampling) will work without the ability to simulate from the distribution.  If simulation is needed, provide a nimbleFunction (with no setup code) to do it.\n"))
+        messageIfVerbose("  [Warning] Random generation function for ", densityName,
+                    " is not available. NIMBLE is generating a placeholder function, ", simulateName, ", that will invoke an error if an algorithm needs to simulate from this distribution. Some algorithms (such as random-walk Metropolis MCMC sampling) will work without the ability to simulate from the distribution.  If simulation is needed, provide a nimbleFunction (with no setup code) to do it.")
         rargInfo <- environment(get(densityName, pos = userEnv))$nfMethodRCobject$argInfo
         returnType <- deparse(unlist(rargInfo[[1]]))
         returnDim <- 0
@@ -319,7 +319,7 @@ checkDistributionFunctions <- function(distributionInput, userEnv) {
     rargs <- rargs[-1]
     
     if(!identical(dargs, rargs))
-        warning(paste0("checkDistributionFunctions: parameter arguments not the same amongst density and simulation functions for ", densityName, ". Continuing anyway based on arguments to the density function; algorithms using the simulation function are unlikely to function properly."))
+        messageIfVerbose("  [Warning] CheckDistributionFunctions: parameter arguments not the same amongst density and simulation functions for ", densityName, ". Continuing anyway based on arguments to the density function; algorithms using the simulation function are unlikely to function properly.")
     if(!is.null(distributionInput) && is.list(distributionInput) && exists("pqAvail", distributionInput, inherits = FALSE) &&
        distributionInput$pqAvail) {
         cdfName <- sub('^d', 'p', densityName)
@@ -529,26 +529,22 @@ prepareDistributionInput <- function(densityName, userEnv) {
 #'     ))
 registerDistributions <- function(distributionsInput, userEnv = parent.frame(), verbose = nimbleOptions('verbose')) {
     if(missing(distributionsInput)) {
-        cat("No distribution information supplied\n")
+        stop("No distribution information supplied.")
     } else {
         if(!(is.character(distributionsInput) || (is.list(distributionsInput) &&
                                                   (length(distributionsInput) == 1 || is.list(distributionsInput[[1]])))))
-                                                   stop("'distributionsInput' should be a named list of lists or a character vector")
+                                                   stop("'distributionsInput' should be a named list of lists or a character vector.")
         if(is.character(distributionsInput)) {
-           nms <- distributionsInput
-         } else {
+            nms <- distributionsInput
+        } else {
             nms <- names(distributionsInput)
-          }
-        if(verbose) {
-            nmsTogether <- paste0(nms, collapse = ', ')
-            cat(paste0("Registering the following user-provided distributions: ", nmsTogether, "\n"))
         }
         dupl <- nms[nms %in% getAllDistributionsInfo('namesVector', nimbleOnly = TRUE)]
         if(length(dupl)) {
             distributionsInput[dupl] <- NULL
             duplTogether <- paste0(dupl, collapse = ', ')
-            cat(paste0("Ignoring the following user-supplied distributions as they have the same names as default NIMBLE distributions: ", duplTogether, ". Please rename to avoid the conflict.\n"))
-          }
+            messageIfVerbose("  [Warning] Ignoring the following user-supplied distributions as they have the same names as default NIMBLE distributions: ", duplTogether, ". Please rename to avoid the conflict.")
+        }
 
         if(is.list(distributionsInput)) 
            sapply(distributionsInput, checkDistributionInput)
@@ -568,7 +564,6 @@ registerDistributions <- function(distributionsInput, userEnv = parent.frame(), 
     # note don't use rFunHandler as rUserDist nimbleFunction needs n as first arg so it works on R side, therefore we have n in the C version of the nimbleFunction and don't want to strip it out in Cpp generation
       }
     invisible(NULL)
-        
 }
 
 
@@ -582,15 +577,15 @@ registerDistributions <- function(distributionsInput, userEnv = parent.frame(), 
 #' @export
 deregisterDistributions <- function(distributionsNames) {
     if(!exists('distributions', nimbleUserNamespace, inherits = FALSE)) 
-        cat("No user-supplied distributions are registered\n")
+        warning("No user-supplied distributions are registered.")
     matched <- distributionsNames %in% getAllDistributionsInfo('namesVector', userOnly = TRUE)
     if(sum(matched)) {
         distsMatched <- paste0(distributionsNames[matched], collapse = ', ')
-        cat(paste0("Deregistering ", distsMatched, " from user-registered distributions\n"))
+        messageIfVerbose("Deregistering ", distsMatched, " from user-registered distributions.")
     }
     if(sum(!matched))
         for(nm in distributionsNames[!matched]) {
-            cat(paste0("Cannot deregister ", nm, " as it is not registered as a user-defined distribution\n"))
+            warning("Cannot deregister ", nm, " as it is not registered as a user-defined distribution.")
         }
     
     distributionsNames <- distributionsNames[matched]
@@ -807,7 +802,7 @@ getDimension <- function(dist, params = NULL, valueOnly = is.null(params) &&
   }
   notFound <- which(! params %in% getParamNames(dist))
   if(length(notFound)) {
-    if('x' %in% params[notFound]) warning("getDimension: use 'value' instead of 'x'.")
+    if('x' %in% params[notFound]) message("getDimension: use 'value' instead of 'x'.")
     stop("getDimension: these parameter names not found: ", params[notFound])
   }
   out <- sapply(params, function(p) distInfo$types[[p]]$nDim)

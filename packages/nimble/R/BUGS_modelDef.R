@@ -367,7 +367,7 @@ modelDefClass$methods(assignDimensions = function(dimensions, initsList, dataLis
         if(!(length(initDim) == 1 && initDim == 1)) {  # i.e., non-scalar inits; 1-length vectors treated as scalars and not passed along as dimension info to avoid conflicts between scalars and one-length vectors/matrices/arrays in various places
             if(initName %in% names(dL)) {
                 if(!identical(as.numeric(dL[[initName]]), as.numeric(initDim))) {
-                    warning('  [Note] Inconsistent dimensions between inits and dimensions arguments: ', initName, '; ignoring dimensions in inits.')
+                    messageIfVerbose('  [Warning] Inconsistent dimensions between inits and dimensions arguments: ', initName, '; ignoring dimensions in inits.')
                 }
             } else {
                 dL[[initName]] <- initDim
@@ -494,8 +494,8 @@ checkUserDefinedDistribution <- function(code, userEnv) {
         dist <- as.character(code[[3]][[2]][[1]])
     if(!dist %in% distributions$namesVector)
         if(!exists('distributions', nimbleUserNamespace, inherits = FALSE) || !dist %in% nimbleUserNamespace$distributions$namesVector) {
+            messageIfVerbose("  [Note] Registering '", dist, "' as a distribution based on its use in BUGS code. If you make changes to the nimbleFunctions for the distribution, you must call 'deregisterDistributions' before using the distribution in BUGS code for those changes to take effect.")
             registerDistributions(dist, userEnv)
-            cat("NIMBLE has registered ", dist, " as a distribution based on its use in BUGS code. Note that if you make changes to the nimbleFunctions for the distribution, you must call 'deregisterDistributions' before using the distribution in BUGS code for those changes to take effect.\n", sep = "") 
         }
 }
         

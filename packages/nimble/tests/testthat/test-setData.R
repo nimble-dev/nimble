@@ -3,7 +3,7 @@ source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'ni
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
-nimbleOptions(verbose = FALSE)
+nimbleOptions(verbose = TRUE)
 
 context("Testing setData")
 
@@ -103,8 +103,6 @@ test_that("set one to current values and one to new value by two arguments", {
     expect_equal(all(model$isData('b')), FALSE)
 })
 
-nimbleOptions(verbose = TRUE)
-
 test_that("ignores extra variable not in model", {
     expect_message(model$setData('a', 'b', 'c'),
                    'is not a variable in the model')
@@ -115,8 +113,6 @@ test_that("unnamed argument produces error", {
     expect_warning(model$setData(a = c(11, NA, 13:15), 7), 'unnamed element')
     model$resetData()
 })
-
-nimbleOptions(verbose = FALSE)
 
 test_that("unnamed arguments produce error", {
     expect_error(model$setData('a', 3), 'multiple inputs must be named')

@@ -50,7 +50,7 @@ buildOfflineWAIC <- nimbleFunction(
             nburninPostThinning <- ceiling(nburnin/thin)
             numMCMCSamples <- getsize(mvSamples) - nburninPostThinning
             if((numMCMCSamples) < 2) {
-                print('Error: need more than one post burn-in MCMC samples')
+                cat('calculateWAIC:: need more than one post burn-in MCMC sample.\n')
             }
             logPredProbs <- matrix(nrow = numMCMCSamples, ncol = dataNodeLength)
             logAvgProb <- 0
@@ -75,7 +75,7 @@ buildOfflineWAIC <- nimbleFunction(
             WAIC <<- -2*(logAvgProb - pWAIC)
             
             values(model, allVarsIncludingLogProbs) <<- currentVals
-            if(is.nan(WAIC)) print('WAIC was calculated as NaN.  You may need to add monitors to model latent states, in order for a valid WAIC calculation.')
+            if(is.nan(WAIC)) cat('WAIC was calculated as NaN.  You may need to add monitors to model latent states, in order for a valid WAIC calculation.\n')
             finalized <<- TRUE
 
             returnType(waicList())
@@ -284,7 +284,7 @@ buildWAIC <- nimbleFunction(
             if(mcmcIter > 1) {
                 badpWAIC <- any( sspWAICmat[lengthConvCheck, ] / (mcmcIter-1) > 0.4 )
                 if(badpWAIC) {  
-                    print("  [Warning] There are individual pWAIC values that are greater than 0.4. This may indicate that the WAIC estimate is unstable (Vehtari et al., 2017), at least in cases without grouping of data nodes or multivariate data nodes." )
+                    cat("  [Warning] There are individual pWAIC values that are greater than 0.4. This may indicate that the WAIC estimate is unstable (Vehtari et al., 2017), at least in cases without grouping of data nodes or multivariate data nodes.\n" )
                 }
             }
             output <- waicList$new()
@@ -543,7 +543,7 @@ calculateWAIC <- function(mcmc, model, nburnin = 0, thin = 1) {
     if(!usingMCMC) { # copy to compiled mvSamples for speed 
         matrix2mv(mcmc, cwaicFun$mvSamples)
     } else matrix2mv(samples, cwaicFun$mvSamples) # for the moment we can't use the existing mvSamples values directly
-    message("Calculating WAIC.")
+    messageIfVerbose("Calculating WAIC.")
     result <- cwaicFun$calculateWAIC(nburnin, thin)
     return(result)
 }

@@ -153,7 +153,7 @@ safeDeparse <- function(..., warn = FALSE) {
             nlines <- dotArgs$nlines else nlines <- 1L
         if(nlines != -1L && length(out) > nlines) {
             if(warn)
-                warning("safeDeparse: truncating deparse output to ", nlines, " lines.")
+                message("  [Note] safeDeparse: truncating deparse output to ", nlines, " lines.")
             out <- out[1:nlines]
         }
     }
@@ -198,3 +198,6 @@ printErrors <- function(excludeWarnings = TRUE) {
         cat(errors, sep = "\n")
     } else cat("No error file found.")
 }
+
+messageIfVerbose <- function(...) 
+    if(nimbleOptions('verbose')) message(...)

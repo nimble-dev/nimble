@@ -310,7 +310,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
             inProjectAlready <- nf_getRefClassObject(fun)[['nimbleProject']]
             if(!is.null(inProjectAlready)) {
                 if(!identical(inProjectAlready, .self)) stop('Trying to add a specialized nimbleFunction to a project, but it is already part of another project. \nIf you did not specify a project, this error can occur in trying to create a new project -- you likely need to specify the relevant model as the project.\nIf you are recompiling, try redefining models and specialized nimbleFunctions. (The reset option works now for nimbleFunctions but not models.)', call. = FALSE)
-                else warning('Adding a specialized nimbleFunction to a project to which it already belongs', call. = FALSE)
+                else warning('Adding a specialized nimbleFunction to a project to which it already belongs.', call. = FALSE)
             }
             generatorName <- nfGetDefVar(fun, 'name')
             if(is.null(nfCompInfos[[generatorName]])) {
@@ -325,7 +325,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                 assign('name', nfCompInfos[[generatorName]]$labelMaker(), envir = nf_getRefClassObject(fun))
             } else {
                 if(!is.null(nimbleFunctions[[ nf_getRefClassObject(fun)$name ]])) {
-                    stop('nimbleFunction provided to project has same name as another one in the same project', call. = FALSE)
+                    stop('nimbleFunction provided to project has same name as another one in the same project.', call. = FALSE)
                 }
             }
             nimbleFunctions[[ nf_getRefClassObject(fun)$name ]] <<- fun
@@ -360,7 +360,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
           inProjectAlready <- nl[['nimbleProject']]
           if(!is.null(inProjectAlready)) {
             if(!identical(inProjectAlready, .self)) stop('Trying to add a specialized nimbleList to a project, but it is already part of another project. \nIf you did not specify a project, this error can occur in trying to create a new project -- you likely need to specify the relevant model as the project.\nIf you are recompiling, try redefining models and specialized nimbleFunctions and nimbleLists.', call. = FALSE)
-            else warning('Adding a specialized nimbleList to a project to which it already belongs', call. = FALSE)
+            else warning('Adding a specialized nimbleList to a project to which it already belongs.', call. = FALSE)
           }
 
           ## Next two lines can become addNimbleListGen, but would have to migrate recursion out of compileNimbleList
@@ -488,7 +488,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
             sym = if(!is.null(dll))
                 getNativeSymbolInfo(generatorName, dll)
             else {
-                warning('a nimbleFunctionInterface is about to build a CmodelValues without dll info, based on generatorFun name only.', call. = FALSE)
+                warning('A nimbleFunctionInterface is about to build a CmodelValues without dll info, based on generatorFun name only.', call. = FALSE)
                 generatorName
             }
             ans <- CmodelValues(sym, dll = dll)
@@ -591,7 +591,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                     nlList <- nl
                     ## set generator
                 } else {
-                    if(!is.nl(nl)) stop(paste0("nl argument provided is not a nimbleList."), call. = FALSE)
+                    if(!is.nl(nl)) stop("nl argument provided is not a nimbleList.", call. = FALSE)
                     nlList <- list(nl)
                     className <- nl$nimbleListDef$className
                     ## set generator
@@ -614,7 +614,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                 if(reset) {
                                     nimbleLists[[thisName]] <<- NULL
                                 } else {
-                                    if(!identical(nlList[[i]], tmp)) stop('Trying to compile something with same name as previously added nimbleList that is not the same thing')
+                                    if(!identical(nlList[[i]], tmp)) stop('Trying to compile something with same name as previously added nimbleList that is not the same thing.')
                                     addNL <- FALSE
                                 }
                             }
@@ -1082,7 +1082,7 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
 
     ## 2. Get project or make new project
     if(missing(project)) {
-        if(reset) warning("reset = TRUE but no project was provided.  If you are trying to re-compiled something into the same project, give it as the project argument as well as a compilation item. For example, 'compileNimble(myFunction, project = myFunction, reset = TRUE)'")
+        if(reset) warning("You requested 'reset = TRUE', but no project was provided.  If you are trying to re-compiled something into the same project, give it as the project argument as well as a compilation item. For example, 'compileNimble(myFunction, project = myFunction, reset = TRUE)'.")
         if(!is.null(nimbleOptions()$nimbleProject)) project <- nimbleOptions()$nimbleProject
         else project <- nimbleProjectClass(dirName, name = projectName)
 
@@ -1107,11 +1107,11 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
     
 
     ## Units should be either Rmodel, nimbleFunction, or RCfunction (now coming from nimbleFunction with no setup)
-    if(nimbleOptions('verbose') && !showCompilerOutput) {
-        message("Compiling\n  [Note] This may take a minute.\n  [Note] Use 'showCompilerOutput = TRUE' to see C++ compilation details.")
+    if(!showCompilerOutput) {
+        messageIfVerbose("Compiling\n  [Note] This may take a minute.\n  [Note] Use 'showCompilerOutput = TRUE' to see C++ compilation details.")
     }
-    if(nimbleOptions('verbose') && showCompilerOutput) {
-        message("Compiling\n  [Note] This may take a minute.\n  [Note] On some systems there may be some compiler warnings that can be safely ignored.")
+    if(showCompilerOutput) {
+        messageIfVerbose("Compiling\n  [Note] This may take a minute.\n  [Note] On some systems there may be some compiler warnings that can be safely ignored.")
     }
 
     ## Compile models first

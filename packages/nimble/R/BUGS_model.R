@@ -465,7 +465,7 @@ expandNodeNamesFromGraphIDs = function(graphID, returnScalarComponents = FALSE, 
         return(nodeNames)
     }
     if(returnType == 'ids'){
-        if(returnScalarComponents) message("NIMBLE development warning: returning IDs of scalar components may not be meaningful.  Checking to see if we ever see this message.")
+        if(returnScalarComponents) warning("NIMBLE development warning: returning IDs of scalar components may not be meaningful.  Checking to see if we ever see this message.")
         return(graphID)
     }
     if(!(returnType %in% c('ids','names')))
@@ -598,7 +598,7 @@ Details: If a provided value (or the current value in the model when only a name
                                                   if(varName == '') {
                                                       warning('setData: unnamed element provided to setData.')
                                                   } else 
-                                                      message("  [Note] '", varName, "' is provided in 'data' but is not a variable in the model and is being ignored.")
+                                                      messageIfVerbose("  [Note] '", varName, "' is provided in 'data' but is not a variable in the model and is being ignored.")
                                               }
                                               ## Removing unnecessary
                                               ## elements does not
@@ -808,7 +808,7 @@ Details: The upward search for dependent nodes propagates through deterministic 
   if(returnScalarComponents)
     parentIDs = unique(parentIDs, FALSE, FALSE, NA)
   if(returnType == 'ids') {
-    if(returnScalarComponents) message("NIMBLE development warning: calling getParents with returnType = ids and returnScalarComponents may not be meaningful.")
+    if(returnScalarComponents) warning("NIMBLE development warning: calling getParents with returnType = ids and returnScalarComponents may not be meaningful.")
     return(depIDs)
   }
   if(returnType == 'names') {
@@ -936,7 +936,7 @@ if(!self)	{
                                       if(returnScalarComponents)
                                           depIDs = unique(depIDs, FALSE, FALSE, NA)
                                       if(returnType == 'ids'){
-                                          if(returnScalarComponents) message("NIMBLE development warning: calling getDependencies with returnType = ids and returnScalarComponents may not be meaningful.")
+                                          if(returnScalarComponents) warning("NIMBLE development warning: calling getDependencies with returnType = ids and returnScalarComponents may not be meaningful.")
                                           return(depIDs)
                                       }
                                       if(returnType == 'names') {
@@ -978,14 +978,14 @@ inits: A named list.  The names of list elements must correspond to model variab
                                               next
                                           }
                                           if(!(names(inits)[i] %in% .self$getVarNames())) {
-                                              message("  [Note] '", names(inits)[i], "' has initial values but is not a variable in the model and is being ignored.")
+                                              messageIfVerbose("  [Note] '", names(inits)[i], "' has initial values but is not a variable in the model and is being ignored.")
                                               next
                                           }
                                           dataVals <- .self$isDataEnv[[names(inits)[[i]] ]]
                                           if(any(dataVals)) {
                                               .self[[names(inits)[i]]][!dataVals] <- inits[[i]][!dataVals]
                                               if(any(!is.na(inits[[i]][dataVals])))
-                                                  warning("Ignoring non-NA values in inits for data nodes: ", names(inits)[[i]], ".", call. = FALSE)
+                                                  messageIfVerbose("  [Note] Ignoring non-NA values in inits for data nodes: ", names(inits)[[i]], ".")
                                           } else  .self[[names(inits)[i]]] <- inits[[i]]
                                       }
                                   },
@@ -1063,7 +1063,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                               sizes[[nms[k]]] <- nimble::nimbleInternalFunctions$dimOrLength(e)
                                                               if(prod(sizes[[nms[[k]]]]) == 1) sizes[[nms[[k]]]] <- numeric()
                                                           } else sizes[[nms[[k]]]] <- NA # when have param with dim > 2
-                                                      } else warning(paste0("Unable to calculate parameter '", nms[k], "' for distribution ", dist, " for node '", nfn, "'; this may simply reflect that there are missing values in model variables."))
+                                                      } else messageIfVerbose("  [Warning] Unable to calculate parameter '", nms[k], "' for distribution ", dist, " for node '", nfn, "'; this may simply reflect that there are missing values in model variables.")
                                                   }
                                         # check dimensions based on varInfo
                                                   if(length(declInfo$targetExprReplaced) > 1) {
@@ -1106,7 +1106,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                           if(dist %in% names(nimble:::distributionsInputList)) {
                                                               stop("Size/dimension mismatch amongst vectors and matrices in BUGS expression: ", nimble:::safeDeparse(declInfo$code))
                                                           } else {
-                                                              warning("Possible size/dimension mismatch amongst vectors and matrices in BUGS expression: ", nimble:::safeDeparse(declInfo$code), ". Ignore this warning if the user-provided distribution has multivariate parameters with distinct sizes or if size of variable differs from sizes of parameters.")                                                                                                                                   }
+                                                              messageIfVerbose("  [Warning] Possible size/dimension mismatch amongst vectors and matrices in BUGS expression: '", nimble:::safeDeparse(declInfo$code), "'. Ignore this warning if the user-provided distribution has multivariate parameters with distinct sizes or if size of variable differs from sizes of parameters.")                                                                                                                                   }
                                                   }
 
                                               }
@@ -1116,7 +1116,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                         varsWithNAs <- NULL
                                         for(v in .self$getVarNames()){
                                           if(!nimble:::isValid(.self[[v]])){
-                                            message('  [Note] This model is not fully initialized. This is not an error.\n         To see which variables are not initialized, use model$initializeInfo().\n         For more information on model initialization, see help(modelInitialization).')
+                                            messageIfVerbose('  [Note] This model is not fully initialized. This is not an error.\n         To see which variables are not initialized, use model$initializeInfo().\n         For more information on model initialization, see help(modelInitialization).')
                                             break
                                           }
                                         }
@@ -1158,23 +1158,23 @@ Checks for errors in model specification and for missing values that prevent use
                                           for(nn in nns) {
                                               val <- .self[[nn]]
                                               type <- getNodeType(nn)
-                                              if(length(type) > 1) stop('something wrong with Daniel\'s understanding of nimbleModel')
+                                              if(length(type) > 1) stop('check: Unexpectedly found "type" to have multiple values.')
                                               if(type == 'RHSonly') {
                                                   if(!nimble:::isValid(val)) badVars[[nimble:::whyInvalid(val)]] <- c(badVars[[nimble:::whyInvalid(val)]], nn)
                                               } else if(type == 'determ') {
                                                   test <- try(calculate(nn))
                                                   if(inherits(test, 'try-error'))
-                                                      cat("Note: cannot calculate logProb for node ", nn, ".\n")
+                                                      messageIfVerbose("  [Note] Cannot calculate logProb for node ", nn, ".")
                                                   val <- .self[[nn]]
                                                   if(!nimble:::isValid(val)) badVars[[nimble:::whyInvalid(val)]] <- c(badVars[[nimble:::whyInvalid(val)]], nn)
                                               } else if(type == 'stoch') {
                                                   if(!nimble:::isValid(val)) badVars[[nimble:::whyInvalid(val)]] <- c(badVars[[nimble:::whyInvalid(val)]], nn)
                                                   test <- try(val <- calculate(nn))
                                                   if(inherits(test, 'try-error'))
-                                                      cat("Note: cannot calculate logProb for node ", nn, ".\n")
+                                                      cat("  [Note] Cannot calculate logProb for node ", nn, ".")
 
                                                   if(!nimble:::isValid(val)) badVars[[nimble:::whyInvalid(val)]] <- c(badVars[[nimble:::whyInvalid(val)]], paste0('logProb_', nn))
-                                              } else stop('unknown node type: ', type)
+                                              } else stop('Unknown node type: ', type)
                                           }
                                           badVars <- lapply(badVars, nimble:::removeIndexing)
                                           badVars <- lapply(badVars, unique)
@@ -1183,7 +1183,7 @@ Checks for errors in model specification and for missing values that prevent use
                                           for(i in seq_along(conds)) {
                                               v <- badVars[[conds[[i]][1]]]
                                               m <- conds[[i]][2]
-                                              if(!is.null(v)) cat(m, ' were detected in model variable', if(grepl(',',v)) 's' else '', ': ', v, ".\n", sep = '')
+                                              if(!is.null(v)) messageIfVerbose(  "[Note] ", m, ' were detected in model variable', if(grepl(',',v)) 's' else '', ': ', v, ".")
                                           }
                                       }
 
@@ -1279,7 +1279,7 @@ insertSingleIndexBrackets <- function(code, varInfo) {
         }
         return(code)
     }
-    if(!is.null(code)) message(paste('confused about reaching end of insertSingleBrackets with ', safeDeparse(code)))
+    if(!is.null(code)) warning('Unexpectedly reached end of insertSingleBrackets with ', safeDeparse(code))
     return(code)
 }
 
@@ -1501,7 +1501,7 @@ isValid <- function(value) {
 }
 
 whyInvalid <- function(value) {
-    if(isValid(value)) { warning('checking why a valid value is invalid'); return(NULL) }
+    if(isValid(value)) { warning('Checking why a valid value is invalid.'); return(NULL) }
     if(any(is.nan(value))) return('nan')
     if(any(is.na(value))) return('na')
     if(any(abs(value)==Inf)) return('inf')
@@ -1601,7 +1601,7 @@ getConditionallyIndependentSets <- function(model,
     startUp,
     startDown)
   if(returnType == 'ids' && returnScalarComponents)
-    message("NIMBLE development warning: calling getConditionallyIndependentSets with returnType = ids and returnScalarComponents may not be meaningful.")
+    warning("NIMBLE development warning: calling getConditionallyIndependentSets with returnType = ids and returnScalarComponents may not be meaningful.")
   result <- lapply(result,
                    function(IDs) {
                      if(stochOnly) IDs <- IDs[model$modelDef$maps$types[IDs] == 'stoch']
@@ -1650,7 +1650,7 @@ testConditionallyIndependentSets <- function(model, sets, initialize = TRUE) {
     }
     newLogProb <- model$calculate(calcNodeSets[[i]]) # find the logProb for set i again
     if(prevLogProb != newLogProb) {                  # if it has changed, that set is not conditionally independent all the others
-      message(paste0("Problem: Set ", i, " is not conditionally independent."))
+      message("Problem: Set ", i, " is not conditionally independent.")
       ok <- FALSE
     }
   }

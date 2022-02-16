@@ -93,7 +93,7 @@ nimbleModel <- function(code,
             (is.data.frame(x) && all(sapply(x, 'is.numeric'))) })))
         stop("BUGSmodel: elements of 'data' must be numeric")
     md <- modelDefClass$new(name = name)
-    if(nimbleOptions('verbose')) message("Defining model")
+    messageIfVerbose("Defining model")
     md$setupModel(code=code, constants=constants, dimensions=dimensions, inits = inits, data = data, userEnv = userEnv, debug=debug)
     if(!returnModel) return(md)
     # move any data lumped in 'constants' into 'data' for
@@ -102,12 +102,12 @@ nimbleModel <- function(code,
     vars <- names(md$varInfo) # varNames contains logProb vars too...
     dataVarIndices <- names(constants) %in% vars & !names(constants) %in% names(data)  # don't overwrite anything in 'data'
     if(sum(names(constants) %in% names(data)))
-        message("  [Note] Found the same variable(s) in both 'data' and 'constants'; using variable(s) from 'data'.\n")
+        messageIfVerbose("  [Note] Found the same variable(s) in both 'data' and 'constants'; using variable(s) from 'data'.\n")
     if(sum(dataVarIndices)) {
         data <- c(data, constants[dataVarIndices])
         ## if(nimbleOptions('verbose')) message("  Adding '", paste(names(constants)[dataVarIndices], collapse = ', '), "' as data for building model.")
     }
-    if(nimbleOptions('verbose')) message("Building model")
+    messageIfVerbose("Building model")
     model <- md$newModel(data=data, inits=inits, where=where, check=check, calculate = calculate, debug = debug)
     return(model)
 }

@@ -3,7 +3,7 @@ source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'ni
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
-nimbleOptions(verbose = FALSE)
+nimbleOptions(verbose = TRUE)
 
 context("Testing of NIMBLE model building and operation")
 
@@ -272,15 +272,14 @@ K <- length(alpha)
 p <- matrix(0, g, K)
 y <- array(0, c(m, g, K))
 
-if(require(nimble)) {
-    for(i in seq_len(g))
-        p[i, ] <- rdirch(1, alpha)
-} else {
-    p[1,]  <- c(.12, .24, .10, .53, .01)
-    p[2,]  <- c(.2, .3, .05, .2, .25)
-    p[3,]  <- c(.05, .05, .10, .3, .5)
-    rmulti <- rmultinom
-}
+for(i in seq_len(g))
+    p[i, ] <- rdirch(1, alpha)
+## We had this for when NIMBLE not available but not clear why that would ever be the case.
+    ## p[1,]  <- c(.12, .24, .10, .53, .01)
+    ## p[2,]  <- c(.2, .3, .05, .2, .25)
+    ## p[3,]  <- c(.05, .05, .10, .3, .5)
+    ## rmulti <- rmultinom
+
 
 for(i in seq_len(g))
     for(j in seq_len(m))
@@ -358,7 +357,8 @@ test_that("test of preventing overwriting of data values by inits:", {
     })
     xVal <- c(3, NA)
     xInit <- c(4, 4)
-    expect_warning(m <- nimbleModel(code, constants = list(x = xVal), inits = list(x = xInit)), "Ignoring non-NA values in inits for data nodes")
+
+    expect_message(m <- nimbleModel(code, constants = list(x = xVal), inits = list(x = xInit)), "Ignoring non-NA values in inits for data nodes")
     expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flag is not set correctly in fourth test")
     expect_equal(m$x, c(xVal[1], xInit[2]), info = "value of 'x' not correctly set in fourth test")
     expect_equal(c('x[1]','x[2]') %in% m$getNodeNames(), c(TRUE, TRUE), info = "'x' nodes note correctly set in fourth test")
@@ -368,7 +368,7 @@ test_that("test of preventing overwriting of data values by inits:", {
         x[2] ~ dnorm(mu,1)
         mu ~ dnorm(0, 1)
     })
-    expect_warning(m <- nimbleModel(code, data = list(x = xVal), inits = list(x = xInit)), "Ignoring non-NA values in inits for data nodes")
+    expect_message(m <- nimbleModel(code, data = list(x = xVal), inits = list(x = xInit)), "Ignoring non-NA values in inits for data nodes")
     expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flag is not set correctly in fifth test")
     expect_equal(m$x, c(xVal[1], xInit[2]), info = "value of 'x' not correctly set in fifth test")
     expect_equal(c('x[1]','x[2]') %in% m$getNodeNames(), c(TRUE, TRUE), info = "'x' nodes note correctly set in fifth test")
@@ -385,7 +385,7 @@ test_that("test of using dimensions of inits when dimension information not avai
     expect_error(m <- nimbleModel(code, data = list(y = rep(1, 3))), info = "expected error because dimension of mu is unknown")
     m <- nimbleModel(code, data = list(y = rep(1, 3)), inits = list(k = rep(1, 3), mu = 1:5))
     expect_equal(m$modelDef$dimensionsList$mu, 5, info = "dimension for mu not equal to that given in inits")
-    expect_warning(m <- nimbleModel(code, data = list(y = rep(1, 3)), inits = list(k = rep(1, 3), mu = 1:8), dimensions = list(mu = 5)), info = "expected error because of dimension mismatch")
+    expect_message(m <- nimbleModel(code, data = list(y = rep(1, 3)), inits = list(k = rep(1, 3), mu = 1:8), dimensions = list(mu = 5)), "Inconsistent dimensions between inits and dimensions")
 })
 
 test_that("test of using dimensions of data when dimension information not available:", {
@@ -398,7 +398,10 @@ test_that("test of using dimensions of data when dimension information not avail
     expect_error(m <- nimbleModel(code, data = list(y = rep(1, 3))), info = "expected error because dimension of mu is unknown")
     m <- nimbleModel(code, data = list(y = rep(1, 3), mu = 1:5), inits = list(k = rep(1, 3)))
     expect_equal(m$modelDef$dimensionsList$mu, 5, info = "dimension for mu not equal to that given in data")
+    nimbleOptions(verbose = FALSE)
     expect_error(m <- nimbleModel(code, data = list(y = rep(1, 3), mu = 1:8), inits = list(k = rep(1, 3)), dimensions = list(mu = 5)), info = "expected error because of dimension mismatch")  # error emitted by setData() and warning by assignDimensions()
+    nimbleOptions(verbose = TRUE)
+    
 })
 
 test_that("test of the handling of missing covariates:", {
@@ -529,7 +532,9 @@ test_that("test of using ragged arrays in a model:", {
     n <- c(2, 3)
     X <- matrix(1:6, nrow = 2)
     constants <- list(n = n, X = X)
+    nimbleOptions(verbose = FALSE)
     expect_silent(m <- nimbleModel(mc, constants = constants))
+    nimbleOptions(verbose = TRUE)
 })
 
 test_that("warnings for multiply-defined model nodes:", {
@@ -717,14 +722,11 @@ test_that("warning when RHS only nodes used as dynamic indexes", {
                    "Detected use of non-constant indexes")
     expect_message(m <- nimbleModel(code, data = list(k = rep(1,3))),
                    "Detected use of non-constant indexes")
-    ## Hack, but this allows detection of lack of warning given that
-    ## Travis and non-Travis behave differently in terms of silent vs. message.
-    warnOptions <- options()$warn
-    options(warn = 2)
-    ## if this were to warn, it would cause error
-    m <- nimbleModel(code, constants = list(k = rep(1,3)))
-    options(warn = warnOptions)
 
+    nimbleOptions(verbose = FALSE)
+    expect_silent(m <- nimbleModel(code, constants = list(k = rep(1,3))))
+    nimbleOptions(verbose = TRUE)
+    
     myfun <- nimbleFunction(run = function(x = double()) {
         returnType(double())
         return(1)
@@ -759,15 +761,13 @@ test_that("warning when RHS only nodes used as dynamic indexes", {
         for(i in 1:5)
             mu[i] ~ dnorm(0,1)
     })
-    ## Hack, but this allows detection of lack of warning given that
-    ## Travis and non-Travis behave differently in terms of silent vs. message.
-    warnOptions <- options()$warn
-    options(warn = 2)
-    ## if this were to warn, it would cause error
-    m <- nimbleModel(code, inits = list(k = rep(1,3)), constants = list(kk = 1:3))
-    m <- nimbleModel(code, inits = list(k = rep(1,3), kk = 1:3))
-    options(warn = warnOptions)
 
+    ## Checking that no warning; if this were to warn, it would cause error
+    nimbleOptions(verbose = FALSE)
+    expect_silent(m <- nimbleModel(code, inits = list(k = rep(1,3)), constants = list(kk = 1:3)))
+    expect_silent(m <- nimbleModel(code, inits = list(k = rep(1,3), kk = 1:3)))
+    nimbleOptions(verbose = TRUE)
+    
     code <- nimbleCode({
         for(i in 1:3) 
             y[i] ~ dnorm(mu[2, k[i]+j[i]],1)
@@ -801,13 +801,12 @@ test_that("warning when RHS only nodes used as dynamic indexes", {
     })
     expect_message(m <- nimbleModel(code, inits = list(k = rep(1,3))),
                    "Detected use of non-constant indexes")
-    ## Hack, but this allows detection of lack of warning given that
-    ## Travis and non-Travis behave differently in terms of silent vs. message.
-    warnOptions <- options()$warn
-    options(warn = 2)
-    ## if this were to warn, it would cause error
-    m <- nimbleModel(code, constants = list(k = rep(1,3)))
-    options(warn = warnOptions)
+
+    ## Checking that no warning; if this were to warn, it would cause error
+    nimbleOptions(verbose = FALSE)
+    expect_silent(m <- nimbleModel(code, constants = list(k = rep(1,3))))
+    nimbleOptions(verbose = TRUE)
+ 
 
     ## To test for problem raised in issue #996
     code <- nimbleCode({

@@ -3,13 +3,12 @@ source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'ni
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
-nimbleOptions(verbose = FALSE)
+nimbleOptions(verbose = TRUE)
 nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
 nimbleOptions(MCMCprogressBar = FALSE)
 
 context("Testing of MCEM")
 
-nimbleOptions(verbose = TRUE)
 goldFileName <- 'mcemTestLog_Correct.Rout'
 tempFileName <- 'mcemTestLog.Rout'
 generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForMCEMtesting'))
