@@ -2566,8 +2566,13 @@ sizeSeq <- function(code, symTab, typeEnv, recurse = TRUE) {
     integerTo <- isIntegerEquivalent(code$args[[2]])
     liftExprRanges <- TRUE
     if(integerFrom && integerTo) {
-        if((!byProvided && !lengthProvided) || (byProvided && !lengthProvided && is.numeric(code$args[[3]]) && code$args[[3]] == 1)) {
+        if((!byProvided && !lengthProvided) ||
+           (byProvided && !lengthProvided && is.numeric(code$args[[3]]) && code$args[[3]] == 1)) {
             code$name = ':'
+            if(length(code$args) > 2) {
+                for(i in length(code$args):3)
+                    setArg(code, i, NULL)
+            }
             asserts <- c(asserts, sizeColonOperator(code, symTab, typeEnv, recurse = FALSE))
             return(if(length(asserts)==0) NULL else asserts)
         }
