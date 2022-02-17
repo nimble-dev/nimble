@@ -1000,9 +1000,11 @@ replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) 
                     # if(callChar != ':') {
                     if(!is.vectorized(code)) {
                         if(is.null(neverReplaceable[[callChar]])) {
-                            if(inherits(get(callChar, constEnv),'function')) {
-                                testcode <- as.numeric(eval(code, constEnv))
-                                if(length(testcode) == 1) code <- testcode
+                            if(isTRUE(callChar %in% nimblePreevaluationFunctionNames)) {
+                                if(inherits(get(callChar, constEnv),'function')) {
+                                    testcode <- as.numeric(eval(code, constEnv))
+                                    if(length(testcode) == 1) code <- testcode
+                                }
                             }
                         }
                     }

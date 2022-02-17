@@ -916,6 +916,7 @@ pqDists <- BUGSdistToRdist(pqAvail, dIncluded = TRUE)
 distribution_pFuns <- gsub("^d", "p", pqDists)
 distribution_qFuns <- gsub("^d", "q", pqDists)
 
+det_distributionFuns <- c(distribution_dFuns, distribution_pFuns, distribution_qFuns)
 distributionFuns <- c(distribution_dFuns, distribution_rFuns, distribution_pFuns, distribution_qFuns)
 
 ## following sections are added for use in genCpp_operatorLists and other places.  Slightly different need is to have separate list of scalar distributions and to use Rdist names

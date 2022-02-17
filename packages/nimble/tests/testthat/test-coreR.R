@@ -420,6 +420,8 @@ seqTests <- list(
     ##1
     list(name = "1:5", expr = quote(out <- 1:5), args = list(),
          setArgVals = quote({}), outputType = quote(double(1)), checkEqual = TRUE),
+    list(name = "seq(1, 10)", expr = quote(out <- seq(1, 10)), args = list(),
+         setArgVals = quote({}), outputType = quote(double(1)), checkEqual = TRUE),
     list(name = "seq(.1, 10, by = .1)", expr = quote(out <- seq(.1, 10, by = .1)), args = list(),
          setArgVals = quote({}), outputType = quote(double(1))),
     list(name = "seq(.1, 10, length.out = 11)", expr = quote(out <- seq(.1, 10, length.out = 11)), args = list(),
