@@ -231,6 +231,7 @@ Supported distributions, listed by their 'd' function, include:
   - `dmnorm_chol(x, mean, cholesky, prec_param, log)`
   - `dmvt_chol(x, mu, cholesky, df, prec_param, log)`
   - `dwish_chol(x, cholesky, df, scale_param, log)`
+  - `dinvwish_chol(x, cholesky, df, scale_param, log)`
 
 
 
