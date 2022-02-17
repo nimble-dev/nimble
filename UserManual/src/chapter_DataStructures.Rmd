@@ -243,6 +243,7 @@ cGetLogProbMany <- compileNimble(rGetLogProbMany, project = simpleModel)
 cSimManyXY$run(m = 5) # simulating 5 times
 cCalcManyXDeps$run(saveLP = TRUE) # calculating 
 cGetLogProbMany$run() #
+result <- as.matrix(cSimManyXY$mv) # extract simulated values
 ```
   
 ## The nimbleList data structure {#sec:nimbleLists}
