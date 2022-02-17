@@ -174,7 +174,7 @@ The default sampler assigned to a stochastic node is determined by the following
   1. If the node has a conjugate relationship between its prior distribution and the distributions of its stochastic dependents, a `conjugate` (`Gibbs') sampler is assigned.
   1. If the node follows a multinomial distribution, then a `RW_multinomial` sampler is assigned.  This is a discrete random-walk sampler in the space of multinomial outcomes.
   1. If a node follows a Dirichlet distribution, then a `RW_dirichlet` sampler is assigned.  This is a random walk sampler in the space of the simplex defined by the Dirichlet.
-  1. If a node follows an LKJ correlation distribution, then a `RW_block_lkj_corr_cholesky` sampler is assigned. This is a block random walk sampler in a transformed space where the transformation uses the signed stickbreaking approach described in Section 10.12 of [@Stan_Lang_2021].
+  1. If a node follows an LKJ correlation distribution, then a `RW_block_lkj_corr_cholesky` sampler is assigned. This is a block random walk sampler in a transformed space where the transformation uses the signed stickbreaking approach described in Section 10.12 of @Stan_Lang_2021.
   1. If the node follows any other multivariate distribution, then a `RW_block` sampler is assigned for all elements.  This is a Metropolis-Hastings adaptive random-walk sampler with a multivariate normal proposal [@Roberts_Sahu_1997].
   1. If the node is binary-valued (strictly taking values 0 or 1), then a `binary` sampler is assigned.  This sampler calculates the conditional probability for both possible node values and draws the new node value from the conditional distribution, in effect making a Gibbs sampler.
   1. If the node is otherwise discrete-valued, then a `slice` sampler is assigned [@Neal2003].
@@ -653,18 +653,18 @@ The WAIC (as well as the pWAIC and lppd values) is extracted by the member metho
 ```
 
 Note that there is not a unique value of WAIC for a model. WAIC is calculated from
-Equations 5, 12, and 13 in [@Gelman_etal_2014] (i.e., using \emph{p}WAIC2), as discussed in detail in [@Hug_Paciorek_2021]. Therefore, NIMBLE provides
+Equations 5, 12, and 13 in @Gelman_etal_2014 (i.e., using \emph{p}WAIC2), as discussed in detail in @Hug_Paciorek_2021. Therefore, NIMBLE provides
 user control over how WAIC is calculated in two ways.
 
-First, by default NIMBLE provides the conditional WAIC, namely the version of WAIC where all parameters directly involved in the likelihood are treated as $\theta$ for the purposes of Equation 5 from [@Gelman_etal_2014]. Users can request the marginal WAIC (see [@Ariyo_etal_2019]), namely the version of WAIC where latent variables are integrated over (i.e., using a marginal likelihood). This is done by providing the `waicControl` list with a `marginalizeNodes` element to `configureMCMC` or `buildMCMC` (when providing a model as the argument to `buildMCMC`). See `help(waic)` for more details.
+First, by default NIMBLE provides the conditional WAIC, namely the version of WAIC where all parameters directly involved in the likelihood are treated as $\theta$ for the purposes of Equation 5 from @Gelman_etal_2014. Users can request the marginal WAIC (see @Ariyo_etal_2019), namely the version of WAIC where latent variables are integrated over (i.e., using a marginal likelihood). This is done by providing the `waicControl` list with a `marginalizeNodes` element to `configureMCMC` or `buildMCMC` (when providing a model as the argument to `buildMCMC`). See `help(waic)` for more details.
 
 Second, WAIC relies on a partition of the observations, i.e., 'pointwise' prediction. By default, in NIMBLE the sum over log pointwise predictive density values treats each data node as contributing a single value to the sum. When a data node is multivariate, that data node contributes a single value to the sum based on the joint density of the elements in the node. If one wants to group data nodes such that the joint density within each group is used, one can provide the `waicControl` list with a `dataGroups` element to `configureMCMC` or `buildMCMC` (when providing a model as the argument to `buildMCMC`). See `help(waic)` for more details.
 
-Note that based on a limited set of simulation experiments in [@Hug_Paciorek_2021], our tentative recommendation is that users only use marginal WAIC if also using grouping. 
+Note that based on a limited set of simulation experiments in @Hug_Paciorek_2021, our tentative recommendation is that users only use marginal WAIC if also using grouping. 
 
 Marginal WAIC requires using Monte Carlo simulation at each iteration of the MCMC to average over draws for the latent variables. To assess the stability of the marginal WAIC to the number of Monte Carlo iterations, one can examine how the WAIC changes with increasing iterations (up to the full number of iterations specified via the `nItsMarginal` element of the `waicControl` list) based on the `WAIC_partialMC`, `lppd_partialMC`, and `pWAIC_partialMC` elements of the detailed WAIC output.
 
-For comparing WAIC between two models, [@Vehtari_etal_2017] discuss using the per-observation (more generally, per-data group) contributions to the overall WAIC values to get an approximate standard error for the difference in WAIC between the models. These element-wise values are available as the `WAIC_elements`, `lppd_elements`, and `pWAIC_elements` components of the detailed WAIC output.
+For comparing WAIC between two models, @Vehtari_etal_2017 discuss using the per-observation (more generally, per-data group) contributions to the overall WAIC values to get an approximate standard error for the difference in WAIC between the models. These element-wise values are available as the `WAIC_elements`, `lppd_elements`, and `pWAIC_elements` components of the detailed WAIC output.
 
 The second overall approach to WAIC available in NIMBLE allows one to calculate WAIC post hoc after MCMC sampling using an MCMC object or matrix (or dataframe) containing posterior samples. Simply set up the MCMC and run it without enabling WAIC (but making sure to include in the monitors all stochastic parent nodes of the data nodes) and then use the function `calculateWAIC`, as shown in this example:
 
@@ -875,7 +875,7 @@ If one wants information about conjugate node relationships for other purposes, 
 
 <!---  ### Scalar Metropolis-Hastings random walk `RW sampler` -->
 
-<!---  The `RW` sampler executes adaptive Metropolis-Hastings sampling with a normal proposal distribution, implementing the adaptation routine given in [@Shaby2011].  This sampler can be applied to any scalar continuous-valued stochastic node, and can optionally sample on a log scale. -->
+<!---  The `RW` sampler executes adaptive Metropolis-Hastings sampling with a normal proposal distribution, implementing the adaptation routine given in @Shaby2011.  This sampler can be applied to any scalar continuous-valued stochastic node, and can optionally sample on a log scale. -->
 
 <!---  The `RW` sampler can be customized using the `control` list argument to set the initial proposal distribution scale, the adaptive properties of the sampler, the reflective property of proposals, and whether to sample on a log scale.  See `help(samplers)` for details.  -->
  
@@ -883,7 +883,7 @@ If one wants information about conjugate node relationships for other purposes, 
 
 <!---  ### Multivariate Metropolis-Hastings `RW_block sampler` -->
 
-<!---  The `RW_block` sampler performs a simultaneous update of one or more model nodes, using an adaptive Metropolis-Hastings algorithm with a multivariate normal proposal distribution [@Roberts_Sahu_1997], implementing the adaptation routine given in [@Shaby2011].  This sampler may be applied to any set of continuous-valued model nodes, to any single continuous-valued multivariate model node, or to any combination thereof.  -->
+<!---  The `RW_block` sampler performs a simultaneous update of one or more model nodes, using an adaptive Metropolis-Hastings algorithm with a multivariate normal proposal distribution [@Roberts_Sahu_1997], implementing the adaptation routine given in @Shaby2011.  This sampler may be applied to any set of continuous-valued model nodes, to any single continuous-valued multivariate model node, or to any combination thereof.  -->
 
 <!---  The `RW_block` sampler can be customized using the `control` list argument to set the initial proposal covariance, and the adaptive properties of the sampler.  See `help(samplers)` for details.  -->
 
