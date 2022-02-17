@@ -572,17 +572,15 @@ conjugacyClass <- setRefClass(
             ## July 2017
             targetNdim <- getDimension(prior)
             targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
-            targetCoeffNdimSave <- targetCoeffNdim 
+            if(targetCoeffNdim == 2 && link == 'multiplicativeScalar')   ## Handles wish/invwish. There are no cases where we allow non-scalar 'coeff'.
+                targetCoeffNdim <- 0
             for(iDepCount in seq_along(dependentCounts)) {
                 distLinkName <- names(dependentCounts)[iDepCount]
                 tmp <- strsplit(names(dependentCounts)[iDepCount], "_")[[1]]
                 distName <- tmp[[1]]
                 currentLink <- tmp[[2]]
                 if(currentLink %in% c('additive', 'multiplicative', 'multiplicativeScalar', 'linear') || (nimbleOptions()$allowDynamicIndexing && doDependentScreen)) {
-                    ## For 2-d (i.e., wish/invwish) cases, we only allow scalar coeff, including in dynamic indexing case. 
-                    if(currentLink == 'multiplicativeScalar' || (nimbleOptions()$allowDynamicIndexing && doDependentScreen && targetNdim == 2))  
-                        targetCoeffNdim <- 0
-                     ## the 2's here are *only* to prevent warnings about assigning into member variable names using
+                    ## the 2's here are *only* to prevent warnings about assigning into member variable names using
                     inputList <-  list(DEP_OFFSET_VAR2     = as.name(paste0('dep_', distLinkName, '_offset')),  ## local assignment '<-', so changed the names to "...2"
                                        DEP_COEFF_VAR2      = as.name(paste0('dep_', distLinkName, '_coeff')),   ## so it doesn't recognize the ref class field name
                                        DECLARE_SIZE_OFFSET = makeDeclareSizeField(as.name(paste0('N_dep_', distLinkName)), as.name(paste0('dep_', distLinkName, '_nodeSizeMax')), as.name(paste0('dep_', distLinkName, '_nodeSizeMax')), targetNdim),
@@ -600,7 +598,6 @@ conjugacyClass <- setRefClass(
                             DEP_OFFSET_VAR2  <- array(0, dim = DECLARE_SIZE_OFFSET)
                             DEP_COEFF_VAR2  <- array(0, dim = DECLARE_SIZE_COEFF)
                         }, inputList) 
-                    targetCoeffNdim <- targetCoeffNdimSave
                 }
             }
 
@@ -1024,7 +1021,6 @@ conjugacyClass <- setRefClass(
                                      list(N_DEP       = as.name(paste0('N_dep_', distLinkName)),
                                           FORLOOPBODY = forLoopBody$getCode()))
             }
-            ##}
         }
     )
 )
