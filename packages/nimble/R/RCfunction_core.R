@@ -40,6 +40,18 @@ nimKeyWords <- list(copy = 'nimCopy',
                     optimDefaultControl = 'nimOptimDefaultControl',
                     min.bound = 'carMinBound',
                     max.bound = 'carMaxBound',
+                    dweib = 'dweibull',
+                    pweib = 'pweibull',
+                    qweib = 'qweibull',
+                    rweib = 'rweibull',
+                    dbin = 'dbinom',
+                    pbin = 'pbinom',
+                    qbin = 'qbinom',
+                    rbin = 'rbinom',
+                    dnegbin = 'dnbinom',
+                    pnegbin = 'pnbinom',
+                    qnegbin = 'qnbinom',
+                    rnegbin = 'rnbinom',
                     derivs = 'nimDerivs')
 
 nfMethodRCinterface <- setRefClass(
