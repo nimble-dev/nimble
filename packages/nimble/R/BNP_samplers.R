@@ -2282,7 +2282,7 @@ sampler_CRP_cluster_wrapper <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_slice_CRP_base_param <- nimbleFunction(
-    name = 'sampler_slice_CRP_cluster_params',
+    name = 'sampler_slice_CRP_base_param',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -2330,11 +2330,12 @@ sampler_slice_CRP_base_param <- nimbleFunction(
     },
     run = function() {
 
+        usedClusters <<- nimLogical(numPossibleClusters, FALSE)
         for(i in 1:numPossibleClusters) 
             usedClusters[model[[dcrpNode]][i]] <<- TRUE
         ## usedClusters[model[[dcrpNode]]] <<- TRUE  ## doesn't work - see issue #1201
         usedDeps <<- usedClusters[clusterIDs]
-        usedClusters <<- nimLogical(numPossibleClusters, FALSE)
+
         
         u <- model$getLogProb(target) + model$getLogProb(calcNodesNoSelfStoch[usedDeps]) - rexp(1, 1)    # generate (log)-auxiliary variable: exp(u) ~ uniform(0, exp(lp))
         x0 <- model[[target]]    # create random interval (L,R), of width 'width', around current value of target
