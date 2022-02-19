@@ -131,7 +131,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.12.1</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.12.2</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -518,10 +518,6 @@ multivariate Dirichlet-multinomial distribution.</p>
 <a class="sourceLine" id="cb233-68" title="68">     })</a>
 <a class="sourceLine" id="cb233-69" title="69"></a>
 <a class="sourceLine" id="cb233-70" title="70">model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">K =</span> <span class="dv">5</span>, <span class="dt">n =</span> <span class="dv">10</span>))</a></code></pre></div>
-<pre><code>## Registering the following user-provided distributions: ddirchmulti
-## NIMBLE has registered ddirchmulti as a distribution based on its use in BUGS code. Note that if you make changes to the nimbleFunctions for the distribution, you must call &#39;deregisterDistributions&#39; before using the distribution in BUGS code for those changes to take effect.
-## Registering the following user-provided distributions: dmyexp
-## NIMBLE has registered dmyexp as a distribution based on its use in BUGS code. Note that if you make changes to the nimbleFunctions for the distribution, you must call &#39;deregisterDistributions&#39; before using the distribution in BUGS code for those changes to take effect.</code></pre>
 <p>The distribution-related functions should take as input the parameters
 for a single parameterization, which will be the canonical
 parameterization that NIMBLE will use.</p>
@@ -557,26 +553,25 @@ functions, be sure to specify <code>pqAvail = TRUE</code> when you call
 to provide an alternative parameterization (scale instead of rate) and to provide the range
 for the user-defined exponential distribution. We can then use
 the alternative parameterization in our BUGS code.</p>
-<div class="sourceCode" id="cb235"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb235-1" title="1"><span class="kw">registerDistributions</span>(<span class="kw">list</span>(</a>
-<a class="sourceLine" id="cb235-2" title="2">    <span class="dt">dmyexp =</span> <span class="kw">list</span>(</a>
-<a class="sourceLine" id="cb235-3" title="3">        <span class="dt">BUGSdist =</span> <span class="st">&quot;dmyexp(rate, scale)&quot;</span>,</a>
-<a class="sourceLine" id="cb235-4" title="4">        <span class="dt">Rdist =</span> <span class="st">&quot;dmyexp(rate = 1/scale)&quot;</span>,</a>
-<a class="sourceLine" id="cb235-5" title="5">        <span class="dt">altParams =</span> <span class="kw">c</span>(<span class="st">&quot;scale = 1/rate&quot;</span>, <span class="st">&quot;mean = 1/rate&quot;</span>),</a>
-<a class="sourceLine" id="cb235-6" title="6">        <span class="dt">pqAvail =</span> <span class="ot">TRUE</span>, </a>
-<a class="sourceLine" id="cb235-7" title="7">        <span class="dt">range =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="ot">Inf</span>)</a>
-<a class="sourceLine" id="cb235-8" title="8">        )</a>
-<a class="sourceLine" id="cb235-9" title="9">    ))</a></code></pre></div>
-<pre><code>## Registering the following user-provided distributions: dmyexp
-## Overwriting the following user-supplied distributions: dmyexp</code></pre>
-<div class="sourceCode" id="cb237"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb237-1" title="1">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
-<a class="sourceLine" id="cb237-2" title="2">     y[<span class="dv">1</span><span class="op">:</span>K] <span class="op">~</span><span class="st"> </span><span class="kw">ddirchmulti</span>(alpha[<span class="dv">1</span><span class="op">:</span>K], n)</a>
-<a class="sourceLine" id="cb237-3" title="3">     <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>K) {</a>
-<a class="sourceLine" id="cb237-4" title="4">         alpha[i] <span class="op">~</span><span class="st"> </span><span class="kw">T</span>(<span class="kw">dmyexp</span>(<span class="dt">scale =</span> <span class="dv">3</span>), <span class="dv">0</span>, <span class="dv">100</span>)</a>
-<a class="sourceLine" id="cb237-5" title="5">      }</a>
-<a class="sourceLine" id="cb237-6" title="6">     })</a>
-<a class="sourceLine" id="cb237-7" title="7"></a>
-<a class="sourceLine" id="cb237-8" title="8">model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">K =</span> <span class="dv">5</span>, <span class="dt">n =</span> <span class="dv">10</span>), </a>
-<a class="sourceLine" id="cb237-9" title="9">                     <span class="dt">inits =</span> <span class="kw">list</span>(<span class="dt">alpha =</span> <span class="kw">rep</span>(<span class="dv">1</span>, <span class="dv">5</span>)))</a></code></pre></div>
+<div class="sourceCode" id="cb234"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb234-1" title="1"><span class="kw">registerDistributions</span>(<span class="kw">list</span>(</a>
+<a class="sourceLine" id="cb234-2" title="2">    <span class="dt">dmyexp =</span> <span class="kw">list</span>(</a>
+<a class="sourceLine" id="cb234-3" title="3">        <span class="dt">BUGSdist =</span> <span class="st">&quot;dmyexp(rate, scale)&quot;</span>,</a>
+<a class="sourceLine" id="cb234-4" title="4">        <span class="dt">Rdist =</span> <span class="st">&quot;dmyexp(rate = 1/scale)&quot;</span>,</a>
+<a class="sourceLine" id="cb234-5" title="5">        <span class="dt">altParams =</span> <span class="kw">c</span>(<span class="st">&quot;scale = 1/rate&quot;</span>, <span class="st">&quot;mean = 1/rate&quot;</span>),</a>
+<a class="sourceLine" id="cb234-6" title="6">        <span class="dt">pqAvail =</span> <span class="ot">TRUE</span>, </a>
+<a class="sourceLine" id="cb234-7" title="7">        <span class="dt">range =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="ot">Inf</span>)</a>
+<a class="sourceLine" id="cb234-8" title="8">        )</a>
+<a class="sourceLine" id="cb234-9" title="9">    ))</a>
+<a class="sourceLine" id="cb234-10" title="10"></a>
+<a class="sourceLine" id="cb234-11" title="11">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb234-12" title="12">     y[<span class="dv">1</span><span class="op">:</span>K] <span class="op">~</span><span class="st"> </span><span class="kw">ddirchmulti</span>(alpha[<span class="dv">1</span><span class="op">:</span>K], n)</a>
+<a class="sourceLine" id="cb234-13" title="13">     <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>K) {</a>
+<a class="sourceLine" id="cb234-14" title="14">         alpha[i] <span class="op">~</span><span class="st"> </span><span class="kw">T</span>(<span class="kw">dmyexp</span>(<span class="dt">scale =</span> <span class="dv">3</span>), <span class="dv">0</span>, <span class="dv">100</span>)</a>
+<a class="sourceLine" id="cb234-15" title="15">      }</a>
+<a class="sourceLine" id="cb234-16" title="16">     })</a>
+<a class="sourceLine" id="cb234-17" title="17"></a>
+<a class="sourceLine" id="cb234-18" title="18">model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">K =</span> <span class="dv">5</span>, <span class="dt">n =</span> <span class="dv">10</span>), </a>
+<a class="sourceLine" id="cb234-19" title="19">                     <span class="dt">inits =</span> <span class="kw">list</span>(<span class="dt">alpha =</span> <span class="kw">rep</span>(<span class="dv">1</span>, <span class="dv">5</span>)))</a></code></pre></div>
 <p>There are a few rules for how you specify the information about a
 distribution that you provide to <code>registerDistributions</code>:</p>
 <ul>

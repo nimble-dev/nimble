@@ -9,9 +9,9 @@ is denoted by $x$.
                 `shape2 = b)`, $a > 0$, $b > 0$
   Binomial      `dbin(prob = p, size = n)`                  ${n \choose x} p^x (1-p)^{n-x}$                                                                                                                              $0$   $n$
                 $0 < p < 1$, $n \in \mathbb{N}^*$
-  CAR           `dcar_normal(adj, weights,`                 see chapter \@ref(cha:spatial) for details
+  CAR           `dcar_normal(adj, weights,`                 see chapter \@ref(cha-spatial) for details
    (intrinsic)  `num, tau, c, zero_mean)`
-  CAR           `dcar_proper(mu, C, adj,`                   see chapter \@ref(cha:spatial) for details
+  CAR           `dcar_proper(mu, C, adj,`                   see chapter \@ref(cha-spatial) for details
    (proper)     `num, M, tau, gamma)`
   Categorical   `dcat(prob = p)`                            $\frac{p_x}{\sum_i p_i}$                                                                                                                                     $1$   $N$ 
                 $p \in (\mathbb{R}^+)^N$
@@ -27,7 +27,7 @@ is denoted by $x$.
   Half flat     `dhalfflat()`                               $\propto 1$ (improper)                                                                                                                                       $0$
   Inverse       `dinvgamma(shape = r, scale = ` $\lambda$`)`$\frac{ \lambda^r x^{-(r + 1)} \exp(-\lambda / x)}{ \Gamma(r)}$                                                                                              $0$
    gamma        $\lambda > 0$, $r > 0$
-  LKJ Correl'n  `dlkj_corr_cholesky(eta = ` $\eta$`,`    $\prod_{i=2}^{p} x_{kk}^{p - i + 2\eta -2}$    
+  LKJ Correl'n  `dlkj_corr_cholesky(eta = ` $\eta$`,`       $\prod_{i=2}^{p} x_{ii}^{p - i + 2\eta -2}$    
    Cholesky     `size = p),` $\eta > 0$
   Logistic      `dlogis(location = ` $\mu$,                 $\frac{ \tau \exp\{(x - \mu) \tau\}}{\left[1 + \exp\{(x - \mu) \tau\}\right]^2}$
                 `rate = ` $\tau$`), `$\tau > 0$

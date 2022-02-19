@@ -131,7 +131,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.12.1</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.12.2</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -673,7 +673,8 @@ where <span class="math inline">\(\mbox{CRP}(\alpha)\)</span> denotes the CRP di
 </tr>
 </tbody>
 </table>
-<p>Additionally, a specialized sampler is assigned to the <code>conc</code> hyper parameter when a gamma hyper prior is assigned, see section 6 in <span class="citation">Escobar and West (<a href="references.html#ref-escobar_west_95">1995</a>)</span> for more details. Otherwise, a random walk Metropolis-Hastings sampler is assigned.</p>
+<p>To reduce computation and improve mixing, we only sample the parameters of the clusters (e.g., <span class="math inline">\(\tilde{theta}_j\)</span> in <a href="cha-bnp.html#sec:excrp">10.2.2</a> when the associated cluster is occupied, using the <code>CRP_cluster_wrapper</code> sampler, which wraps around an underlying actual sampler. In addition, this approach requires that any sampler assigned to parameters of the base measure, <span class="math inline">\(G_0\)</span>, (i.e., unknown parameters in the prior for <span class="math inline">\(\tilde{theta}_j\)</span>) ignore cluster parameters associated with clusters that are not occupied, since their current values are meaningless. We assign a special slice sampler that determines the occupied clusters in any given iteration, called <code>slice_CRP_base_param</code>. Note that if you choose to use a different sampler for the base measure parameters, you should also avoid using the <code>CRP_cluster_wrapper</code> sampler.</p>
+<p>Finally, a specialized sampler is assigned to the <code>conc</code> hyper parameter when a gamma hyper prior is assigned, see section 6 in <span class="citation">Escobar and West (<a href="references.html#ref-escobar_west_95">1995</a>)</span> for more details. Otherwise, a random walk Metropolis-Hastings sampler is assigned.</p>
 <div id="initial-values-1" class="section level4">
 <h4><span class="header-section-number">10.4.1.1</span> Initial values</h4>
 <p>Valid initial values should be provided for all elements of the process specified by a CRP structure before running the MCMC. A simple and safe choice for <code>z</code> is to provide a sample of size <code>N</code>, the same as its length, of values between 1 and some reasonable number of clusters (less than or equal to the length of <code>z</code>), with replacement, as done in the preceding CRP example. For the concentration parameter, a safe initial value is 1.</p>

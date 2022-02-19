@@ -131,7 +131,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.12.1</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.12.2</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -557,7 +557,7 @@ return samples, summary statistics, and WAIC values:</p>
 <a class="sourceLine" id="cb37-3" title="3">                       <span class="dt">nchains =</span> <span class="dv">2</span>, <span class="dt">niter =</span> <span class="dv">10000</span>,</a>
 <a class="sourceLine" id="cb37-4" title="4">                       <span class="dt">summary =</span> <span class="ot">TRUE</span>, <span class="dt">WAIC =</span> <span class="ot">TRUE</span>,</a>
 <a class="sourceLine" id="cb37-5" title="5">                       <span class="dt">monitors =</span> <span class="kw">c</span>(<span class="st">&#39;alpha&#39;</span>,<span class="st">&#39;beta&#39;</span>,<span class="st">&#39;theta&#39;</span>))</a></code></pre></div>
-<pre><code>## There are individual pWAIC values that are greater than 0.4. This may indicate that the WAIC estimate is unstable (Vehtari et al., 2017), at least in cases without grouping of data nodes or multivariate data nodes.</code></pre>
+<pre><code>##   [Warning] There are individual pWAIC values that are greater than 0.4. This may indicate that the WAIC estimate is unstable (Vehtari et al., 2017), at least in cases without grouping of data nodes or multivariate data nodes.</code></pre>
 <div class="sourceCode" id="cb39"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb39-1" title="1"><span class="kw">names</span>(mcmc.out)</a></code></pre></div>
 <pre><code>## [1] &quot;samples&quot; &quot;summary&quot; &quot;WAIC&quot;</code></pre>
 <div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb41-1" title="1">mcmc.out<span class="op">$</span>summary</a></code></pre></div>
@@ -724,16 +724,12 @@ include them. The entire system is written in nimbleFunctions.</p>
 ##     alpha      beta 
 ## 0.8045037 1.1993128 
 ## Convergence Criterion: 0.0223464.
-## Monte Carlo error too big: increasing MCMC sample size.
 ## Iteration Number: 3.
 ## Current number of MCMC iterations: 1250.
 ## Parameter Estimates: 
 ##     alpha      beta 
 ## 0.8203178 1.2497067 
 ## Convergence Criterion: 0.004913688.
-## Monte Carlo error too big: increasing MCMC sample size.
-## Monte Carlo error too big: increasing MCMC sample size.
-## Monte Carlo error too big: increasing MCMC sample size.
 ## Iteration Number: 4.
 ## Current number of MCMC iterations: 3032.
 ## Parameter Estimates: 
