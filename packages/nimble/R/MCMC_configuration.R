@@ -280,7 +280,7 @@ print: A logical argument specifying whether to print the montiors and samplers.
                 allDists <- allDists[!is.na(allDists)]
                 check_dCRP <- any(allDists == "dCRP")
                 
-                clusterNodeInfo <- NULL; dcrpNode <- NULL; numCRPnodes <- 0
+                clusterNodeInfo <- NULL; dcrpNode <- NULL; numCRPnodes <- 0; clusterNodeParams <- NULL
 
                 for(i in seq_along(nodes)) {
                     node <- nodes[i]
@@ -390,16 +390,61 @@ print: A logical argument specifying whether to print the montiors and samplers.
                     addSampler(target = node, type = 'RW');     next
                 }
 
-                ## For CRP-based models, wrap samplers for cluster parameters so not sampled if cluster is unoccupied.
+                ## For CRP-based models, wrap samplers for cluster parameters so not sampled if cluster is unoccupied,
+                ## and check for non-fixed (hyper)parameters of cluster parameters and assign special slice sampler that knows how
+                ## to determine dependencies dynamically.
+                ## If anything contraindicates wrapping, we avoid it. E.g., a dangerous case is if a single hyperparameter is involved
+                ## in multiple sets of cluster parameters, but another hyperparameter is involved in one of those sets.
+                ## In that case, the processing of second hyperparameter could turn on the wrapping for some cluster parameters
+                ## which would mess up sampling of the first hyperparameter. 
+                wrap <- TRUE
                 if(!is.null(clusterNodeInfo)) {
                     allClusterNodes <- lapply(clusterNodeInfo, function(x) x$clusterNodes)
+                    allClusterNodesVec <- unlist(allClusterNodes)
                     for(k in seq_along(clusterNodeInfo)) {
                         for(idx in seq_along(clusterNodeInfo[[k]]$clusterNodes)) {
+
                             clusterNodes <- clusterNodeInfo[[k]]$clusterNodes[[idx]]
-                            if(length(allClusterNodes) == 1 || !any(clusterNodes %in% unlist(allClusterNodes[-k]))) {
-                                ## For now avoid wrapper if any overlap of clusterNodes, as hard to determine if cluster is occupied.
-                                ## We'll need to come back to this to handle the mu[xi[i],eta[j]] case if we want to
-                                ## avoid sampling empty clusters in that case.
+                            clusterNodeParams <- model$getParents(clusterNodes, stochOnly = TRUE, includeData = FALSE)
+                            clusterNodeParams <- clusterNodeParams[!clusterNodeParams %in% allClusterNodesVec]
+
+                            ## Avoid cases where there is other stochastic indexing (that might or might not use dCRP) but also
+                            ## indexes the cluster nodes, e.g., mu[xi[i]] and mu[eta[i]] as hard to determine if cluster is occupied.
+                            clusterNodeDeps <- model$getDependencies(clusterNodes, stochOnly = TRUE, self = FALSE)
+                            clusterNodeDeps <- clusterNodeDeps[!clusterNodeDeps %in% allClusterNodesVec]
+                            if(!all(clusterNodeDeps %in%
+                                    model$getDependencies(dcrpNode[[k]], stochOnly = TRUE, self = FALSE)))
+                                wrap <- FALSE
+                                
+                            ## For now avoid wrapper if any overlap of clusterNodes, as hard to determine if cluster is occupied.
+                            ## We'll need to come back to this to handle the mu[xi[i],eta[j]] case if we want to
+                            ## avoid sampling empty clusters in that case.
+                            if(length(allClusterNodes) > 1 && any(clusterNodes %in% unlist(allClusterNodes[-k])))
+                                wrap <- FALSE
+
+                            ## Avoid cases where a parameter is involved in multiple sets of cluster nodes.
+                            for(cnt in seq_along(clusterNodeParams)) {
+                                depNodes <- model$getDependencies(clusterNodeParams[cnt],
+                                                                  stochOnly = TRUE, self = FALSE, includeData = TRUE)
+                                if(!identical(sort(depNodes), sort(clusterNodes)))
+                                    wrap <- FALSE
+                            }
+                        }
+                    }
+                    if(wrap) {
+                        for(k in seq_along(clusterNodeInfo)) {
+                            for(idx in seq_along(clusterNodeInfo[[k]]$clusterNodes)) {
+
+                                clusterNodes <- clusterNodeInfo[[k]]$clusterNodes[[idx]]
+                                clusterNodeParams <- model$getParents(clusterNodes, stochOnly = TRUE, includeData = FALSE)
+                                clusterNodeParams <- clusterNodeParams[!clusterNodeParams %in% allClusterNodesVec]
+
+                                for(cnt in seq_along(clusterNodeParams)) {
+                                    removeSamplers(clusterNodeParams[cnt])
+                                    addSampler(clusterNodeParams[cnt], 'slice_CRP_base_param',
+                                               control = list(dcrpNode = dcrpNode[[k]], clusterNodes = clusterNodes,
+                                                              clusterIDs = clusterNodeInfo[[k]]$clusterIDs[[idx]]))
+                                }
 
                                 samplers <- getSamplers(clusterNodes)
                                 removeSamplers(clusterNodes)
@@ -408,7 +453,7 @@ print: A logical argument specifying whether to print the montiors and samplers.
                                     ## getSamplers() returns samplers in order of configuration not in order of input.
                                     clusterID <- which(clusterNodes == node)
                                     if(length(clusterID) != 1)
-                                       stop("Cannot determine wrapped sampler for cluster parameter ", node, ".")
+                                        stop("Cannot determine wrapped sampler for cluster parameter ", node, ".")
                                     addSampler(target = node, type = 'CRP_cluster_wrapper',
                                                control = list(wrapped_type = samplers[[i]]$name, wrapped_conf = samplers[[i]],
                                                               dcrpNode = dcrpNode[[k]], clusterID = clusterNodeInfo[[k]]$clusterIDs[[idx]][clusterID]))

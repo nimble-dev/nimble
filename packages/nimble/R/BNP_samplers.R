@@ -1789,6 +1789,8 @@ findClusterNodes <- function(model, target) {
   ## for what is indexed by the dCRP clusterID nodes. This also determine which clusterID
   ## each cluster parameter is associated with.
   targetVar <- model$getVarNames(nodes = target)
+    if(model$getVarInfo(targetVar)$nDim > 1)
+        stop("findClusterNodes: CRP variable, '", targetVar, "' cannot be a matrix or array.")
   targetElements <- model$expandNodeNames(target, returnScalarComponents = TRUE)
   deps <- model$getDependencies(target, self = FALSE, returnType = 'ids')
   declIDs <- model$modelDef$maps$graphID_2_declID[deps] ## declaration IDs of the nodeIDs
@@ -2274,7 +2276,160 @@ sampler_CRP_cluster_wrapper <- nimbleFunction(
     },
     methods = list(
         reset = function() {regular_sampler[[1]]$reset()}
-    ))
+    )
+)
+
+#' @rdname samplers
+#' @export
+sampler_slice_CRP_base_param <- nimbleFunction(
+    name = 'sampler_slice_CRP_base_param',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        adaptive               <- extractControlElement(control, 'adaptive',               TRUE)
+        adaptInterval          <- extractControlElement(control, 'adaptInterval',          200)
+        width                  <- extractControlElement(control, 'sliceWidth',             1)
+        maxSteps               <- extractControlElement(control, 'sliceMaxSteps',          100)
+        maxContractions        <- extractControlElement(control, 'maxContractions',        1000)
+        maxContractionsWarning <- extractControlElement(control, 'maxContractionsWarning', TRUE)
+        dcrpNode               <- extractControlElement(control, 'dcrpNode', "dcrpNode must be provided for sampler_slice_CRP_cluster_params")
+        clusterNodes           <- extractControlElement(control, 'clusterNodes', "dcrpNode must be provided for sampler_slice_CRP_cluster_params")
+        clusterIDs             <- extractControlElement(control, 'clusterIDs', "dcrpNode must be provided for sampler_slice_CRP_cluster_params")
+
+       
+        eps <- 1e-15
+        ## node list generation
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        calcNodes <- model$getDependencies(target)
+        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
+        isStochCalcNodesNoSelf <- model$isStoch(calcNodesNoSelf)   ## should be made faster
+        calcNodesNoSelfDeterm <- calcNodesNoSelf[!isStochCalcNodesNoSelf]
+        calcNodesNoSelfStoch <- calcNodesNoSelf[isStochCalcNodesNoSelf]
+        ## numeric value generation
+        widthOriginal <- width
+        timesRan      <- 0
+        timesAdapted  <- 0
+        sumJumps      <- 0
+        widthHistory  <- c(0, 0)   ## widthHistory
+        if(nimbleOptions('MCMCsaveHistory')) {
+            saveMCMChistory <- TRUE
+        } else saveMCMChistory <- FALSE
+        discrete      <- model$isDiscrete(target)
+
+        numPossibleClusters <- length(model$expandNodeNames(dcrpNode, returnScalarComponents = TRUE))
+        usedClusters <- nimLogical(numPossibleClusters, FALSE)
+        usedDeps <- nimLogical(length(clusterIDs), FALSE)
+                
+        ## checks
+        if(length(targetAsScalar) > 1)     stop('Cannot use specialized slice sampler for CRP cluster hyperparameter on more than one target node.')
+
+        if(!identical(sort(calcNodesNoSelfStoch), sort(clusterNodes)))
+            stop("Unexpected dependencies of parameter ", clusterNodeParams[cnt], ". Cannot assign specialized slice sampler.")
+        mapping <- match(calcNodesNoSelfStoch, clusterNodes)
+        clusterIDs <- clusterIDs[mapping]
+    },
+    run = function() {
+
+        usedClusters <<- nimLogical(numPossibleClusters, FALSE)
+        for(i in 1:numPossibleClusters) 
+            usedClusters[model[[dcrpNode]][i]] <<- TRUE
+        ## usedClusters[model[[dcrpNode]]] <<- TRUE  ## doesn't work - see issue #1201
+        usedDeps <<- usedClusters[clusterIDs]
+
+        
+        u <- model$getLogProb(target) + model$getLogProb(calcNodesNoSelfStoch[usedDeps]) - rexp(1, 1)    # generate (log)-auxiliary variable: exp(u) ~ uniform(0, exp(lp))
+        x0 <- model[[target]]    # create random interval (L,R), of width 'width', around current value of target
+        L <- x0 - runif(1, 0, 1) * width
+        R <- L + width
+        maxStepsL <- floor(runif(1, 0, 1) * maxSteps)    # randomly allot (maxSteps-1) into maxStepsL and maxStepsR
+        maxStepsR <- maxSteps - 1 - maxStepsL
+        lp <- setAndCalculateTarget(L)
+        while(maxStepsL > 0 & !is.nan(lp) & lp >= u) {   # step L left until outside of slice (max maxStepsL steps)
+            L <- L - width
+            lp <- setAndCalculateTarget(L)
+            maxStepsL <- maxStepsL - 1
+        }
+        lp <- setAndCalculateTarget(R)
+        while(maxStepsR > 0 & !is.nan(lp) & lp >= u) {   # step R right until outside of slice (max maxStepsR steps)
+            R <- R + width
+            lp <- setAndCalculateTarget(R)
+            maxStepsR <- maxStepsR - 1
+        }
+        x1 <- L + runif(1, 0, 1) * (R - L)
+        lp <- setAndCalculateTarget(x1)
+        numContractions <- 0
+        while((is.nan(lp) | lp < u) & (R-L)/(abs(R)+abs(L)+eps) > eps & numContractions < maxContractions) {   # must be is.nan()
+            ## The checks for R-L small and max number of contractions are for cases where model is in
+            ## invalid state and lp calculations are NA/NaN or where R and L contract to each other
+            ## division by R+L+eps ensures we check relative difference and that contracting to zero is ok
+            if(x1 < x0) { L <- x1
+                      } else      { R <- x1 }
+            x1 <- L + runif(1, 0, 1) * (R - L)           # sample uniformly from (L,R) until sample is inside of slice (with shrinkage)
+            lp <- setAndCalculateTarget(x1)
+            numContractions <- numContractions + 1
+        }
+        if((R-L)/(abs(R)+abs(L)+eps) <= eps | numContractions == maxContractions) {
+            if(maxContractionsWarning)
+                cat("Warning: slice sampler reached maximum number of contractions for '", target, "'. Current parameter value is ", x0, ".\n")
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesNoSelfDeterm, logProb = FALSE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesNoSelfStoch, logProbOnly = TRUE)
+        } else {
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelfDeterm, logProb = FALSE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelfStoch, logProbOnly = TRUE)
+            jumpDist <- abs(x1 - x0)
+            if(adaptive)     adaptiveProcedure(jumpDist)
+        }
+    },
+    methods = list(
+        setAndCalculateTarget = function(value = double()) {
+            if(discrete)     value <- floor(value)
+            model[[target]] <<- value
+            lp <- model$calculate(target)
+            if(lp == -Inf) return(-Inf) 
+            model$calculate(calcNodesNoSelf)
+            lp <- lp + model$getLogProb(calcNodesNoSelfStoch[usedDeps])
+            returnType(double())
+            return(lp)
+        },
+        adaptiveProcedure = function(jumpDist = double()) {
+            timesRan <<- timesRan + 1
+            sumJumps <<- sumJumps + jumpDist   # cumulative (absolute) distance between consecutive values
+            if(timesRan %% adaptInterval == 0) {
+                adaptFactor <- (3/4) ^ timesAdapted
+                meanJump <- sumJumps / timesRan
+                width <<- width + (2*meanJump - width) * adaptFactor   # exponentially decaying adaptation of 'width' -> 2 * (avg. jump distance)
+                timesAdapted <<- timesAdapted + 1
+                if(saveMCMChistory) {
+                    setSize(widthHistory, timesAdapted)                 ## widthHistory
+                    widthHistory[timesAdapted] <<- width                ## widthHistory
+                }
+                timesRan <<- 0
+                sumJumps <<- 0
+            }
+        },
+        getWidthHistory = function() {       ## widthHistory
+            returnType(double(1))
+            if(saveMCMChistory) {
+                return(widthHistory)
+            } else {
+                print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC")
+                return(numeric(1, 0))
+            }
+       },
+        reset = function() {
+            width        <<- widthOriginal
+            timesRan     <<- 0
+            timesAdapted <<- 0
+            sumJumps     <<- 0
+            if(saveMCMChistory) {
+                widthHistory  <<- c(0, 0)    ## widthHistory
+            }
+        }
+    )
+)
+
 
 
 getSamplesDPmeasureNames <- function(clusterVarInfo, model, truncG, p) {
