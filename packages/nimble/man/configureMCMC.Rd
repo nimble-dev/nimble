@@ -73,7 +73,7 @@ The default value is an empty character vector, i.e. no values will be recorded.
 \item{...}{Additional named control list elements for default samplers, or additional arguments to be passed to the \code{\link{autoBlock}} function when \code{autoBlock = TRUE}}
 }
 \description{
-Creates a defaut MCMC configuration for a given model.
+Creates a default MCMC configuration for a given model.
 }
 \details{
 See \code{\link{MCMCconf}} for details on how to manipulate the \code{MCMCconf} object

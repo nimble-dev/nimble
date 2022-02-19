@@ -1,6 +1,5 @@
                             CHANGES IN VERSION 0.12.2 (February 2022)
 
-
 BUG FIXES
 
 -- Fix bug in Bayesian nonparametrics (BNP) functionality that gives incorrect MCMC results with the dCRP distribution when the parameters of the mixture components (i.e., the clusters) have hyperparameters (i.e., the base measure parameters) that are unknown and sampled during the MCMC (PR #1202).

@@ -69,6 +69,7 @@ Rglp <- getLogProbNodesMV(myModel, myMV)
   Csim$run(10)
   Ccalc$run(saveLP = FALSE)
   Cglp$run()	  #Gives wrong answers because logProbs were not saved
+  result <- as.matrix(Csim$mv)
 }
 }
 \author{

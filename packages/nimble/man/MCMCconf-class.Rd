@@ -274,7 +274,7 @@ This function also has the side effect of resetting the sampler execution orderi
 
 Arguments:
 
-...: Chracter strings or numeric indices.  Character names may be used to specify the node names for samplers to retain.  A numeric indices may be used to specify the indicies for the new list of MCMC samplers, in terms of the current ordered list of samplers.
+...: Chracter strings or numeric indices.  Character names may be used to specify the node names for samplers to retain.  Numeric indices may be used to specify the indicies for the new list of MCMC samplers, in terms of the current ordered list of samplers.
 
 ind: A numeric vector or character vector.  A numeric vector may be used to specify the indicies for the new list of MCMC samplers, in terms of the current ordered list of samplers.
 For example, if the MCMCconf object currently has 3 samplers, then the ordering may be reversed by calling MCMCconf$setSamplers(3:1), or all samplers may be removed by calling MCMCconf$setSamplers(numeric(0)).
