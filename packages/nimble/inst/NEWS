@@ -1,7 +1,37 @@
+                            CHANGES IN VERSION 0.12.2 (February 2022)
+
 
 BUG FIXES
 
--- Fixed a bug in the ordering used by the setSamplers method of MCMC configuration objects, occuring when the samplers are specified as a vector of node or variable names.
+-- Fix bug in Bayesian nonparametrics (BNP) functionality that gives incorrect MCMC results with the dCRP distribution when the parameters of the mixture components (i.e., the clusters) have hyperparameters (i.e., the base measure parameters) that are unknown and sampled during the MCMC (PR #1202).
+
+-- Error trap a similar case to the bug just above that would cause incorrect reversible jump MCMC sampling when a parameter being moved into/out of the model has an unknown hyperparameter (PR #1193). 
+
+-- Fix a bug preventing setup of conjugate sampler for dwishart or dinvwishart nodes when using dynamic indexing (PR #1200).
+
+-- Fix a bug preventing use of truncation bounds specified via `data` or `constants` (PR #1209).
+
+-- Fix a bug preventing MCMC sampling with the LKJ prior for 2x2 matrices (PR #1195).
+
+-- Fix a bug in the ordering used by the setSamplers method of MCMC configuration objects, occuring when the samplers are specified as a vector of node or variable names (PR #1178).
+
+-- Fix a bug in `runCrossValidate` affecting extraction of multivariate nodes (PR #1206).
+
+-- Fix a bug producing incorrect subset assignment into logical vectors in nimbleFunction code (PR #1205).
+
+-- Fix a bug preventing use of `nimbleExternalCall` with a constant expression (PR #1204).
+
+-- Fix a bug preventing use of recursion in nimbleFunctions without setup code (PR #1203).
+
+-- Fix a bug in handling `nimSeq` default `by` value (PR # 1199).
+
+-- Fix a bug in name mangling affecting certain long names of lifted nodes (PR #1192).
+
+-- Fix access to member data more than two dimensions in a nested nimbleFunction (PR #1046).
+
+DEVELOPER LEVEL CHANGES
+
+-- Clean up message verbosity handling (PR #1191).
 
 
                             CHANGES IN VERSION 0.12.1 (October 2021)
