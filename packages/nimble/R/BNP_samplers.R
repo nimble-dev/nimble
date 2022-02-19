@@ -2324,7 +2324,7 @@ sampler_slice_CRP_base_param <- nimbleFunction(
         if(length(targetAsScalar) > 1)     stop('Cannot use specialized slice sampler for CRP cluster hyperparameter on more than one target node.')
 
         if(!identical(sort(calcNodesNoSelfStoch), sort(clusterNodes)))
-            stop("Unexpected dependencies of parameter ", clusterNodeParams[cnt], ". Cannot assign specialized slice sampler.")
+            stop("Unexpected dependencies of node ", target, ". Cannot assign specialized slice sampler.")
         mapping <- match(calcNodesNoSelfStoch, clusterNodes)
         clusterIDs <- clusterIDs[mapping]
     },

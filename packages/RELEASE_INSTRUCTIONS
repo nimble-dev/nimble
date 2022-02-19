@@ -50,7 +50,7 @@ run examples in nimble-demos as further test
 
 check reverse dependencies:
 
-from nimble/packages/rev_deps, with the current nimble .tar.gz in that directory, do:
+from nimble/packages/rev_deps, with the current nimble .tar.gz in that directory (and having removed old .tar.gz files for the dependencies, if they are in the rev_deps directory), do:
 out <- tools::check_packages_in_dir('.', reverse = list())
 summary(out)
 Can also do this to see if anything has changed:

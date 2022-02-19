@@ -199,5 +199,6 @@ printErrors <- function(excludeWarnings = TRUE) {
     } else cat("No error file found.")
 }
 
+#' @export
 messageIfVerbose <- function(...) 
     if(nimbleOptions('verbose')) message(...)
