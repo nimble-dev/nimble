@@ -296,12 +296,15 @@ cppFunctionDef <- setRefClass('cppFunctionDef',
                                           }
                                            return(outputCode) 
                                       } else {
-                                          if(inherits(code$code, 'uninitializedField')) {
+                                          code_is_empty <- inherits(code$code, 'uninitializedField')
+                                          if(code_is_empty) {
                                               ## There is no code. This can occur for a nimbleFunctionVirtual, which is an abstract base class.
-                                              return(character(0))
+                                              if(abstract)
+                                                  return(character(0))
                                           }
-                                          c(paste(generateFunctionHeader(returnType, name, argsToUse, scopes, template, static = FALSE, ...), if(const) ' const ' else character(0), '{'),
-                                            code$generate(...),
+                                          c(paste(generateFunctionHeader(returnType, name, argsToUse, scopes, template, static = FALSE, ...),
+                                                  if(const) ' const ' else character(0), '{'),
+                                            if(!code_is_empty) code$generate(...) else '',
                                             list('}'))
                                       }
                                   }
