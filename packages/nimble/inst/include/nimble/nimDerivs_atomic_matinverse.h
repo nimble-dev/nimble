@@ -77,4 +77,7 @@ class atomic_matinverse_class :  public CppAD::atomic_three< double >, public ni
 		       const CppAD::vector<CppAD::AD<double> >&               partial_y   );
 };
 
+atomic_matinverse_class* new_atomic_matinverse(void* tape_mgr, const std::string& name);
+void delete_atomic_matinverse(void* tape_mgr, atomic_matinverse_class *atomic_matinverse);
+
 #endif

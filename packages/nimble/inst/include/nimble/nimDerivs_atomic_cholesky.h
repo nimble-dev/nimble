@@ -78,4 +78,7 @@ class atomic_cholesky_class : public CppAD::atomic_three< double >, public nimbl
 		       const CppAD::vector<CppAD::AD<double> >&               partial_y   );
 };
 
+atomic_cholesky_class* new_atomic_cholesky(void* tape_mgr, const std::string& name);
+void delete_atomic_cholesky(void* tape_mgr, atomic_cholesky_class *atomic_cholesky);
+
 #endif

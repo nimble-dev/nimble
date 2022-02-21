@@ -211,4 +211,7 @@ class atomic_matmult_class :  public CppAD::atomic_three< double >, public nimbl
 		      const CppAD::vector<CppAD::AD<double> >&               partial_y   );
 };
 
+atomic_matmult_class* new_atomic_matmult(void* tape_mgr, const std::string& name);
+void delete_atomic_matmult(void* tape_mgr, atomic_matmult_class *atomic_matmult);
+
 #endif

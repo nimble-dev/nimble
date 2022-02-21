@@ -1492,7 +1492,7 @@ calcNodesForDerivs <- nimbleFunction(
 ##   tolerance:     A numeric argument, the tolerance to use when comparing wrapperDerivs to chainRuleDerivs.
 ##   verbose:       A logical argument.  Currently serves no purpose.
 test_ADModelCalculate_nick <- function(model, name = NULL, calcNodeNames = NULL, wrt = NULL, order = c(0,1,2), 
-                                  testCompiled = TRUE, tolerance = .001,  verbose = TRUE){
+                                  testCompiled = TRUE, tolerance = .001,  verbose = TRUE, gc = FALSE){
   temporarilyAssignInGlobalEnv(model)  
 
   if(testCompiled){
@@ -1507,8 +1507,10 @@ test_ADModelCalculate_nick <- function(model, name = NULL, calcNodeNames = NULL,
                           print(calcNodeNames[[i]])
                           print(wrt[[j]])
                           testFunctionInstance <- testCompiledModelDerivsNimFxn(model, calcNodeNames[[i]], wrt[[j]], order)
-                          expect_message(ctestFunctionInstance <- compileNimble(testFunctionInstance, project =  model, resetFunctions = TRUE))
-                          cDerivs <- ctestFunctionInstance$run()
+                            if(gc) gc()
+                            expect_message(ctestFunctionInstance <- compileNimble(testFunctionInstance, project =  model, resetFunctions = TRUE))
+                            if(gc) gc()
+                            cDerivs <- ctestFunctionInstance$run()
                           if(0 %in% order) expect_equal(wrapperDerivs$value, cDerivs$value, tolerance = tolerance)
                           if(1 %in% order) expect_equal(wrapperDerivs$jacobian, cDerivs$jacobian, tolerance = tolerance)
                           if(2 %in% order) expect_equal(wrapperDerivs$hessian, cDerivs$hessian, tolerance = tolerance)

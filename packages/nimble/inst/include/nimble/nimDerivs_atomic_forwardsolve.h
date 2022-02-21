@@ -62,6 +62,8 @@ class atomic_forwardsolve_class :  public atomic_solve_base_class, public CppAD:
 		       const CppAD::vector<CppAD::AD<double> >&               partial_y   );
 };
 
+atomic_forwardsolve_class* new_atomic_forwardsolve(void* tape_mgr, const std::string& name);
+void delete_atomic_forwardsolve(void* tape_mgr, atomic_forwardsolve_class *atomic_forwardsolve);
 
 #endif
 

@@ -175,7 +175,7 @@ SEXP register_namedObjects_Finalizer(SEXP Snp, SEXP Dll, SEXP Slabel) {
 }
 
 void namedObjects_Finalizer(SEXP Snp){
-  // std::cout<< "In namedObjects_Finalizer\n";
+  //  std::cout<< "In namedObjects_Finalizer\n";
   NamedObjects* np = static_cast<NamedObjects*>(R_ExternalPtrAddr(Snp));
   if(np) delete np;
   R_ClearExternalPtr(Snp);

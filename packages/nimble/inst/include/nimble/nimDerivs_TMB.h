@@ -1036,7 +1036,7 @@ Type nimDerivs_factorial(Type x) {
 /* gammafn */
 template<class Type>
 Type nimDerivs_gammafn(Type x) {
-  return exp(nimDerivs_lgammafn<Type>(x));
+  return exp(nimDerivs_lgammafn(x));
 }
 
 /* AD recycling rule. See nimbleEigen.h for the non-AD equivalents. */

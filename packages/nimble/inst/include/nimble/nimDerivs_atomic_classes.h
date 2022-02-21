@@ -17,12 +17,16 @@
 #include "nimDerivs_atomic_cholesky.h"
 #include "nimDerivs_atomic_cache.h"
 
+CppAD::AD<double> nimDerivs_lgammafn(CppAD::AD<double> x, int baseOrder, bool verbose = FALSE);
+CppAD::AD<double> nimDerivs_lgammafn(CppAD::AD<double> x);
+
 template<class T>
 class unary_atomic_class : public CppAD::atomic_three<T>, public nimble_atomic_base {
   // This layer in the class hierarchy simply provides the same for_type and rev_depend
   // for all atomic classes representing unary functions below.
  public:
  unary_atomic_class(const std::string& name) : CppAD::atomic_three<T>(name) {};
+  virtual ~unary_atomic_class() {};
  private:
    // for_type is essential.
   // This determines which elements of y are constants, dynamic parameters, or variables
@@ -282,57 +286,63 @@ T nimDerivs_lgammafn_verbose(T x, int baseOrder ) {
   return out[0];
 }
 
-template<class T>
-T nimDerivs_lgammafn(T x, int baseOrder, bool verbose = FALSE) {
-  if(verbose) {
-    return nimDerivs_lgammafn_verbose(x, baseOrder);
-  }
-  atomic_lgamma_class *atomic_lgamma;
-  /* static atomic_lgamma_class static_atomic_lgamma0("nimDerivs_lgamma", 0); */
-  /* static atomic_lgamma_class static_atomic_lgamma1("nimDerivs_lgamma", 1); */
-  /* static atomic_lgamma_class static_atomic_lgamma2("nimDerivs_lgamma", 2); */
-  /* static atomic_lgamma_class static_atomic_lgamma3("nimDerivs_lgamma", 3); */
-  /* static atomic_lgamma_class static_atomic_lgamma4("nimDerivs_lgamma", 4); */
-  CppAD::vector<T> in(1);
-  CppAD::vector<T> out(1);
-  in[0] = x;
-  switch(baseOrder) {
-  case 0:
-    atomic_lgamma = new atomic_lgamma_class("nimDerivs_lgamma0", 0);
-    (*atomic_lgamma)(in, out);
-    break;
-  case 1:
-    atomic_lgamma = new atomic_lgamma_class("nimDerivs_lgamma1", 1);
-    (*atomic_lgamma)(in, out);
-    break;
-  case 2:
-    atomic_lgamma = new atomic_lgamma_class("nimDerivs_lgamma2", 2);
-    (*atomic_lgamma)(in, out);
-    break;
-  case 3:
-    atomic_lgamma = new atomic_lgamma_class("nimDerivs_lgamma3", 3);
-    (*atomic_lgamma)(in, out);
-    break;
-  case 4:
-    atomic_lgamma = new atomic_lgamma_class("nimDerivs_lgamma4", 4);
-    (*atomic_lgamma)(in, out);
-    break;
-  default:
-    std::cout<<"Error: attempting lgamma derivative beyond order 4."<<std::endl;
-  }
-  if(CppAD::AD<double>::get_tape_handle_nimble() == nullptr) {
-    // std::cout<<"deleting atomic_lgamma because there is no tape recording."<<std::endl;
-    delete atomic_lgamma;
-    // std::cout<<"done deleting atomic_lgamma"<<std::endl;
-  } else {
-    // std::cout<<"calling track_nimble_atomic"<<std::endl;
-    // std::cout<<CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr()<<std::endl;
-    track_nimble_atomic(atomic_lgamma,
-			CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr());
-    //    std::cout<<"done calling track_nimble_atomic"<<std::endl;
-  }
-  return out[0];
-}
+atomic_lgamma_class* new_atomic_lgamma(void* tape_mgr, const std::string& name, int bO);
+void delete_atomic_lgamma(void* tape_mgr, atomic_lgamma_class *atomic_lgamma);
+
+
+/* template<class T> */
+/* T nimDerivs_lgammafn(T x, int baseOrder, bool verbose = FALSE) { */
+/*   if(verbose) { */
+/*     return nimDerivs_lgammafn_verbose(x, baseOrder); */
+/*   } */
+/*   //  void *tape_mgr = CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr(); */
+/*   // atomic_lgamma_class *atomic_lgamma; */
+/*   static atomic_lgamma_class static_atomic_lgamma0("nimDerivs_lgamma", 0); */
+/*   static atomic_lgamma_class static_atomic_lgamma1("nimDerivs_lgamma", 1); */
+/*   static atomic_lgamma_class static_atomic_lgamma2("nimDerivs_lgamma", 2); */
+/*   static atomic_lgamma_class static_atomic_lgamma3("nimDerivs_lgamma", 3); */
+/*   static atomic_lgamma_class static_atomic_lgamma4("nimDerivs_lgamma", 4); */
+/*   CppAD::vector<T> in(1); */
+/*   CppAD::vector<T> out(1); */
+/*   in[0] = x; */
+/*   switch(baseOrder) { */
+/*   case 0: */
+/*     //    atomic_lgamma = new_atomic_lgamma(tape_mgr, "nimDerivs_lgamma0", 0); */
+/*     // (*atomic_lgamma)(in, out); */
+/*     static_atomic_lgamma0(in, out); */
+/*     break; */
+/*   case 1: */
+/*     //    atomic_lgamma = new_atomic_lgamma(tape_mgr, "nimDerivs_lgamma1", 1); */
+/*     //    (*atomic_lgamma)(in, out); */
+/*     static_atomic_lgamma0(in, out); */
+/*     break; */
+/*   case 2: */
+/*     /\* atomic_lgamma = new_atomic_lgamma(tape_mgr, "nimDerivs_lgamma2", 2); *\/ */
+/*     /\* (*atomic_lgamma)(in, out); *\/ */
+/*     static_atomic_lgamma0(in, out); */
+/*     break; */
+/*   case 3: */
+/*     /\* atomic_lgamma = new_atomic_lgamma(tape_mgr, "nimDerivs_lgamma3", 3); *\/ */
+/*     /\* (*atomic_lgamma)(in, out); *\/ */
+/*     static_atomic_lgamma0(in, out); */
+/*     break; */
+/*   case 4: */
+/*     /\* atomic_lgamma = new_atomic_lgamma(tape_mgr, "nimDerivs_lgamma4", 4); *\/ */
+/*     /\* (*atomic_lgamma)(in, out); *\/ */
+/*     static_atomic_lgamma0(in, out); */
+/*     break; */
+/*   default: */
+/*     std::cout<<"Error: attempting lgamma derivative beyond order 4."<<std::endl; */
+/*   } */
+/*   /\* if(CppAD::AD<double>::get_tape_handle_nimble() == nullptr) { *\/ */
+/*   /\*   delete_atomic_lgamma(tape_mgr, atomic_lgamma); *\/ */
+/*   /\* } else { *\/ */
+/*   /\*   track_nimble_atomic(atomic_lgamma, *\/ */
+/*   /\* 			CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr(), *\/ */
+/*   /\* 			CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage() ); *\/ */
+/*   /\* } *\/ */
+/*   return out[0]; */
+/* } */
 
 /* template<class T> */
 /* T nimDerivs_lgammafn(T x, int baseOrder, bool verbose = FALSE) { */
@@ -370,10 +380,10 @@ T nimDerivs_lgammafn(T x, int baseOrder, bool verbose = FALSE) {
 /* } */
 
 
-template<class T>
-T nimDerivs_lgammafn(T x) {
-  return nimDerivs_lgammafn<T>(x, 0); // simply putting a default value of 0 above leads to failure in std::ptr_fun<CppAD::AD<double>, CppAD::AD<double>>(nimDerivs_lgammafn) in Eigen-style vectorization
-}
+/* template<class T> */
+/* T nimDerivs_lgammafn(T x) { */
+/*   return nimDerivs_lgammafn<T>(x, 0); // simply putting a default value of 0 above leads to failure in std::ptr_fun<CppAD::AD<double>, CppAD::AD<double>>(nimDerivs_lgammafn) in Eigen-style vectorization */
+/* } */
 
 template<class T>
 T nimDerivs_lgammafn_verbose(T x) {

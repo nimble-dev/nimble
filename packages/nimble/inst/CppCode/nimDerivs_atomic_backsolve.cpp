@@ -379,8 +379,9 @@ void atomic_backsolve(const MatrixXd_CppAD &A,
   }
 
   // - A or B or neither are constant: record atomic
+  void *tape_mgr = CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr();
   atomic_backsolve_class *atomic_backsolve;
-  atomic_backsolve = new atomic_backsolve_class("atomic_backsolve");
+  atomic_backsolve = new_atomic_backsolve(tape_mgr, "atomic_backsolve");
   atomic_backsolve->Aconstant() = A_is_constant;
   atomic_backsolve->Bconstant() = B_is_constant;
   
@@ -409,10 +410,11 @@ void atomic_backsolve(const MatrixXd_CppAD &A,
   // dummy test : for(int i = 0; i < n1*n2; ++i) yVec[i] = xVec[i];
   vec2mat(yVec, Y);
   if(CppAD::AD<double>::get_tape_handle_nimble() == nullptr) {
-    delete atomic_backsolve;
+    delete_atomic_backsolve(tape_mgr, atomic_backsolve);
   } else {
     track_nimble_atomic(atomic_backsolve,
-			CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr());
+			CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr(),
+			CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage() );
   }
 
 }

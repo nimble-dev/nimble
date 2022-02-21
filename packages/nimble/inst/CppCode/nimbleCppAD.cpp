@@ -1006,6 +1006,59 @@ CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
   return(ans);
 }
 
-void track_nimble_atomic(nimble_atomic_base *obj, void *tape_mgr_ptr ) {
-  static_cast<nimble_CppAD_tape_mgr*>(tape_mgr_ptr)->add_atomic_ptr(obj);
+void nimble_CppAD_tape_mgr::add_atomic_ptr(nimble_atomic_base *new_atomic_ptr, std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  // std::cout<<"adding atomic_ptr "<<new_atomic_ptr<<" to "<<this<<" with atomic vec_ptr "<<vec_ptr<<std::endl;
+  atomic_ptrs.push_back(atomic_pair(new_atomic_ptr, vec_ptr) );
+};
+void nimble_CppAD_tape_mgr::reset() {
+  //  std::cout<<"Doing nimble_CppAD_tape_mgr::reset "<<this<<" "<<atomic_ptrs.size()<<std::endl;
+  if(ADtape_) {
+    delete ADtape_;
+    ADtape_ = nullptr;
+  }
+  // std::cout<<"Doing nimble_CppAD_tape_mgr::reset 2"<<std::endl;
+  //  std::vector<CppAD::local::atomic_index_info>* temp_vec_ptr;
+  // temp_vec_ptr = CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage();
+  for(int i = 0; i < atomic_ptrs.size(); ++i) {
+    //    std::cout<<i<<std::endl;
+    CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage(1, atomic_ptrs[i].second);
+    /* This sets the atomic vec mgr back to what it was when the atomic was constructed.
+       This should be redundant and unnecessary because nimble_atomic_base handles the same 
+       issue.  So the delete line will call ~nimble_atomic_base before ~atomic_three<>,
+       and the formder should also reset the info vec manager. We leave this here
+       as a failsafe and because the behavior this solves has been difficult to follow. */
+    atomic_ptrs[i].first->set_CppAD_atomic_info_vec_manager(atomic_ptrs[i].second);
+    delete atomic_ptrs[i].first;
+  }
+  //  CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage(1, temp_vec_ptr);
+  atomic_ptrs.resize(0);
+  //  std::cout<<"Done with nimble_CppAD_tape_mgr::reset"<<std::endl;
+}
+void nimble_CppAD_tape_mgr::set_internal_tape(CppAD::local::ADTape<double>* internal_tape_ptr) {
+  internal_tape_ptr_ = internal_tape_ptr;
+  internal_tape_ptr->nimble_CppAD_tape_mgr_ptr() = static_cast<void*>(this);
+};
+nimble_CppAD_tape_mgr::nimble_CppAD_tape_mgr() : ADtape_(0), internal_tape_ptr_(0) {};
+nimble_CppAD_tape_mgr::~nimble_CppAD_tape_mgr() {
+  // std::cout<<"Doing ~nimble_CppAD_tape_mgr "<<this<<std::endl;
+  reset();
+};
+
+
+nimble_atomic_base::nimble_atomic_base() {
+  vec_ptr_where_constructed = CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage();
+}
+
+nimble_atomic_base::~nimble_atomic_base() {
+  set_CppAD_atomic_info_vec_manager(vec_ptr_where_constructed);
+}
+
+void nimble_atomic_base::set_CppAD_atomic_info_vec_manager( std::vector<CppAD::local::atomic_index_info>* vec_ptr ) {
+  // std::cout<<"Setting atomic vec_ptr from value of "<<CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage()<<" to "<<vec_ptr<<std::endl;
+  CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage(1, vec_ptr);
+}
+
+void track_nimble_atomic(nimble_atomic_base *obj, void *tape_mgr_ptr, std::vector<CppAD::local::atomic_index_info>* vec_ptr ) {
+  // std::cout<<"track_nimble_atomic for "<<obj<<" in "<<tape_mgr_ptr<<" with atomic vec_ptr "<< vec_ptr<<std::endl;
+  reinterpret_cast<nimble_CppAD_tape_mgr*>(tape_mgr_ptr)->add_atomic_ptr(obj, vec_ptr);
 }

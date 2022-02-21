@@ -62,6 +62,8 @@ class atomic_backsolve_class :  public atomic_solve_base_class, public CppAD::at
 		       const CppAD::vector<CppAD::AD<double> >&               partial_y   );
 };
 
+atomic_backsolve_class* new_atomic_backsolve(void* tape_mgr, const std::string& name);
+void delete_atomic_backsolve(void* tape_mgr, atomic_backsolve_class *atomic_backsolve);
 
 #endif
 

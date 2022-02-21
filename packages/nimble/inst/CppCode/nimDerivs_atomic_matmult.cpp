@@ -914,8 +914,9 @@ void atomic_matmult_internal(const MatrixXd_CppAD &x1,
 #ifdef VERBOSE_ATOMIC_MATMULT
   cout<<"setting up an atomic call of dims ("<<n1<<", "<<n2<<", "<<x1_is_constant<<") %*% ("<<n2<<", "<<n3<<", "<<x2_is_constant<<") = ("<<n1<<", "<<n3<<")"<<endl;
 #endif
-  
-  atomic_matmult_class * atomic_matmult = new atomic_matmult_class("atomic_matmult");//global_matmult_factory.create();
+
+  void *tape_mgr = CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr();
+  atomic_matmult_class * atomic_matmult = new_atomic_matmult(tape_mgr, "atomic_matmult");//global_matmult_factory.create();
   atomic_matmult->X1cat() = decide_matrix_category(x1);
   atomic_matmult->X2cat() = decide_matrix_category(x2);
   atomic_matmult->X1constant() = x1_is_constant;
@@ -957,10 +958,11 @@ void atomic_matmult_internal(const MatrixXd_CppAD &x1,
   (*atomic_matmult)(xVec, yVec);
   vec2mat(yVec, y);
   if(CppAD::AD<double>::get_tape_handle_nimble() == nullptr) {
-    delete atomic_matmult;
+    delete_atomic_matmult(tape_mgr, atomic_matmult);
   } else {
     track_nimble_atomic(atomic_matmult,
-			CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr());
+			CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr(),
+			CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage() );
   }
 }
 

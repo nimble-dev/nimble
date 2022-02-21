@@ -354,7 +354,8 @@ test_ADModelCalculate_nick(Rmodel, name = 'SSM',
                       order = c(0, 1, 2))
 })
 
-
+# This causes crashes due to atomic memory mgmt.
+# Removing the first calcNodeNames case fixes it, so something is being over-written there.
 test_that("Derivs of calculate function work for rats model", {
   Rmodel <- readBUGSmodel('rats', dir = getBUGSexampleDir('rats'))
   test_ADModelCalculate_nick(Rmodel, name = 'rats', calcNodeNames = list(Rmodel$getNodeNames(),

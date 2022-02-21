@@ -43,11 +43,36 @@
 #include <vector>
 #include <algorithm>
 
+/*
+  nimble_atomic_base has two purposes:
+1. It allows a base calss pointer to any nimble atomic
+2. Its constructor records the atomic vec manager (a static in CppAD), and
+   its destructor resets that to its original location.
+   This prevents crashes when the atomic_three<> destructor is called.
+
+   ***It is necessary to declare atomic_three<> inheritance before nimble_atomic_base
+   inheritance to guarantee the correct order of destructor calls.***
+ */
 class nimble_atomic_base {
  public:
-  nimble_atomic_base() {};
-  virtual ~nimble_atomic_base() {};
+  nimble_atomic_base();
+  virtual ~nimble_atomic_base();
+  std::vector<CppAD::local::atomic_index_info>* vec_ptr_where_constructed;
+  /* This needs to be virtual to avoid any compiler inlining it and then
+     crossing boundaries of the static variables used in CppAD.
+     By making it virtual, the impementation will be looked up at
+     run-time and will be in the correct DLL. */
+  virtual void set_CppAD_atomic_info_vec_manager( std::vector<CppAD::local::atomic_index_info>* vec_ptr );
 };
+
+void track_nimble_atomic(nimble_atomic_base *obj, void *tape_mgr_ptr, std::vector<CppAD::local::atomic_index_info>* vec_ptr );
+
+class atomic_lgamma_class;
+class atomic_backsolve_class;
+class atomic_forwardsolve_class;
+class atomic_cholesky_class;
+class atomic_matmult_class;
+class atomic_matinverse_class;
 
 void copy_CppADdouble_to_double(CppAD::AD<double> *first, CppAD::AD<double> *last, double *output);
 void copy_CppADdouble_to_double(NimArrBase< CppAD::AD<double> > &from, NimArrBase< double > &to);
@@ -131,36 +156,41 @@ void show_tick_id();
 #endif
 
 /* A place to manage atomic objects associated with a tape */
+/* The system of atomic_pair and the "new_" and "delete_" functions
+   came from efforts to manage the atomic vec manager (a static inside CppAD) used
+   when any atomic is created or destructed. This was necessary in some
+   cases because nimble pass objects between DLLs, in a way that we hope to
+   clean up in the future but has always worked but has caused some headaches
+   when interacting with CppAD statics.  At this point the atomic_pair
+   system may be entirely unnecessary because nimble_atomic_base does the job
+   of recording the atomic vec manager on construction and ensuring
+   the same one is used during destruction.  However we are leaving both
+   systems in place in further needs are revealed. */
 class nimble_CppAD_tape_mgr {
  public:
-  std::vector<nimble_atomic_base *> atomic_ptrs;
-  void add_atomic_ptr(nimble_atomic_base *new_atomic_ptr) {atomic_ptrs.push_back(new_atomic_ptr);};
+  typedef std::pair<nimble_atomic_base *, std::vector<CppAD::local::atomic_index_info>* > atomic_pair;
+  std::vector<atomic_pair> atomic_ptrs;
+  void add_atomic_ptr(nimble_atomic_base *new_atomic_ptr, std::vector<CppAD::local::atomic_index_info>* vec_ptr);
   CppAD::ADFun<double> *ADtape_;
   CppAD::ADFun<double>* &ADtape() {return ADtape_;};
   CppAD::local::ADTape<double>* internal_tape_ptr_;
-  void reset() {
-    //    std::cout<<"Doing nimble_CppAD_tape_mgr::reset"<<std::endl;
-    for(int i = 0; i < atomic_ptrs.size(); ++i) {
-      delete atomic_ptrs[i];
-    }
-    atomic_ptrs.resize(0);
-    if(ADtape_) {
-      delete ADtape_;
-      ADtape_ = 0;
-    }
-  }
-  void set_internal_tape(CppAD::local::ADTape<double>* internal_tape_ptr) {
-    internal_tape_ptr_ = internal_tape_ptr;
-    internal_tape_ptr->nimble_CppAD_tape_mgr_ptr() = static_cast<void*>(this);
-  };
- nimble_CppAD_tape_mgr() : ADtape_(0), internal_tape_ptr_(0) {};
-  ~nimble_CppAD_tape_mgr() {
-    //  std::cout<<"Doing ~nimble_CppAD_tape_mgr"<<std::endl;
-    reset();
-  };
+  void reset();
+  void set_internal_tape(CppAD::local::ADTape<double>* internal_tape_ptr);
+  nimble_CppAD_tape_mgr();
+  ~nimble_CppAD_tape_mgr();
+  atomic_lgamma_class* new_atomic_lgamma(const std::string& name, int bO);
+  void delete_atomic_lgamma(atomic_lgamma_class *atomic_lgamma);
+  atomic_backsolve_class* new_atomic_backsolve(const std::string& name);
+  void delete_atomic_backsolve(atomic_backsolve_class *atomic_backsolve);
+  atomic_forwardsolve_class* new_atomic_forwardsolve(const std::string& name);
+  void delete_atomic_forwardsolve(atomic_forwardsolve_class *atomic_forwardsolve);
+  atomic_cholesky_class* new_atomic_cholesky(const std::string& name);
+  void delete_atomic_cholesky(atomic_cholesky_class *atomic_cholesky);
+  atomic_matmult_class* new_atomic_matmult(const std::string& name);
+  void delete_atomic_matmult(atomic_matmult_class *atomic_matmult);
+  atomic_matinverse_class* new_atomic_matinverse(const std::string& name);
+  void delete_atomic_matinverse(atomic_matinverse_class *atomic_matinverse);
 };
-
-void track_nimble_atomic(nimble_atomic_base *obj, void *tape_mgr_ptr );
 
 /* nimbleCppADinfoClass is the class to convey information from a nimbleFunction
    object
