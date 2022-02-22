@@ -717,7 +717,6 @@ public:
     I2(I2in) {
     dim1 = nimble_size_impl<DerivedIndex1>::getSize(I1);
     dim2 = nimble_size_impl<DerivedIndex2>::getSize(I2);
-      std::cout<<"Constructing coeffSetting with "<<dim1<<" "<<dim2<<std::endl;
     totSize = dim1 * dim2;
   }
   int size() const {return(totSize);}
