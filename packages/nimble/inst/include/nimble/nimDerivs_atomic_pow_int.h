@@ -7,11 +7,15 @@
 #include <R.h>
 #include <Rinternals.h>
 #include <Rmath.h>
+#include "nimbleCppAD.h"
 
 CppAD::AD<double> nimDerivs_pow_int(const CppAD::AD<double> &a,
 				    const CppAD::AD<double> &b);
 
-class atomic_pow_int_class : public CppAD::atomic_three<double> {
+atomic_pow_int_class *track_atomic_pow_int(void* tape_mgr_ptr,
+					   std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+
+class atomic_pow_int_class : public CppAD::atomic_three<double>, public nimble_atomic_base {
 public:
   atomic_pow_int_class(const std::string& name);
  private:

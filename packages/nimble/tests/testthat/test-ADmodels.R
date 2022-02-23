@@ -332,7 +332,7 @@ ssmCode <- nimbleCode({
   b ~ dnorm(0, sd = 1000)
   sigPN ~ dunif(1e-04, 1)
   sigOE ~ dunif(1e-04, 1)
-  x[1] ~ dnorm(b/(1 - a), sd = sqrt(sigPN^2 + sigOE^2))
+  x[1] ~ dnorm(b/(1 - a), sd = sqrt(sigPN^2 + sigOE*sigOE)) #sqrt(sigPN^2 + sigOE^2))
   y[1] ~ dnorm(x[1], sd = sigOE)
   for (i in 2:t) {
     x[i] ~ dnorm(x[i - 1] * a + b, sd = sigPN)
@@ -350,7 +350,8 @@ test_ADModelCalculate_nick(Rmodel, name = 'SSM',
                                            Rmodel$getDependencies('x')),
                       wrt = list(c('a', 'b'),
                                  c('sigPN'),
-                                 c('x[1]')), tolerance = .5,
+                                 c('x[1]')),
+                      tolerance = 0.0001,
                       order = c(0, 1, 2))
 })
 
@@ -365,7 +366,7 @@ test_that("Derivs of calculate function work for rats model", {
                         wrt = list(c('alpha[1]',
                                      'beta[1]'),
                                    c('mu[1,1]')),
-                        tolerance = .5,
+                        tolerance = .0001,
                         order = c(0, 1, 2))
 })
 

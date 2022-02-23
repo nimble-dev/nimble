@@ -1032,13 +1032,29 @@ void nimble_CppAD_tape_mgr::reset() {
   }
   //  CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage(1, temp_vec_ptr);
   atomic_ptrs.resize(0);
+  pow_int_exists = false;
+  pow_int_index = 0;
+  for(int i = 0; i < 5; i++) {
+    lgamma_exists[i] = false;
+    lgamma_index[i] = 0;
+  }
   //  std::cout<<"Done with nimble_CppAD_tape_mgr::reset"<<std::endl;
 }
 void nimble_CppAD_tape_mgr::set_internal_tape(CppAD::local::ADTape<double>* internal_tape_ptr) {
   internal_tape_ptr_ = internal_tape_ptr;
   internal_tape_ptr->nimble_CppAD_tape_mgr_ptr() = static_cast<void*>(this);
 };
-nimble_CppAD_tape_mgr::nimble_CppAD_tape_mgr() : ADtape_(0), internal_tape_ptr_(0) {};
+nimble_CppAD_tape_mgr::nimble_CppAD_tape_mgr() :
+  ADtape_(0),
+  internal_tape_ptr_(0),
+  pow_int_index(0),
+  pow_int_exists(false)
+{
+  for(int i = 0; i < 5; i++) {
+    lgamma_exists[i] = false;
+    lgamma_index[i] = 0;
+  }
+};
 nimble_CppAD_tape_mgr::~nimble_CppAD_tape_mgr() {
   // std::cout<<"Doing ~nimble_CppAD_tape_mgr "<<this<<std::endl;
   reset();
@@ -1050,6 +1066,7 @@ nimble_atomic_base::nimble_atomic_base() {
 }
 
 nimble_atomic_base::~nimble_atomic_base() {
+  //  std::cout<<"trying to delete nimble_atomic_base"<<std::endl;
   set_CppAD_atomic_info_vec_manager(vec_ptr_where_constructed);
 }
 

@@ -172,11 +172,23 @@ bool atomic_pow_int_class::reverse(
 
 CppAD::AD<double> nimDerivs_pow_int(const CppAD::AD<double> &a,
 				    const CppAD::AD<double> &b) {
-  static atomic_pow_int_class atomic_pow_int("nimDerivs_pow_int");
+  // We can't use statics for reasons of multiple DLLs and bad interaction with CppAD statics.
+  //  static atomic_pow_int_class atomic_pow_int("nimDerivs_pow_int");
+  atomic_pow_int_class* atomic_pow_int;
+  bool recording = CppAD::AD<double>::get_tape_handle_nimble() != nullptr;
+  if(!recording) {
+    atomic_pow_int = new atomic_pow_int_class("atomic_pow_int");
+  } else {
+    atomic_pow_int = track_atomic_pow_int(CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr(),
+					  CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage() );
+  }
   CppAD::vector< CppAD::AD<double> > in(2);
   in[0] = a;
   in[1] = b;
   CppAD::vector< CppAD::AD<double> > out(1);
-  atomic_pow_int(in, out);
+  (*atomic_pow_int)(in, out);
+  if(!recording) {
+    delete atomic_pow_int;
+  }
   return out[0];
 }

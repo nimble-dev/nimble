@@ -68,6 +68,7 @@ class nimble_atomic_base {
 void track_nimble_atomic(nimble_atomic_base *obj, void *tape_mgr_ptr, std::vector<CppAD::local::atomic_index_info>* vec_ptr );
 
 class atomic_lgamma_class;
+class atomic_pow_int_class;
 class atomic_backsolve_class;
 class atomic_forwardsolve_class;
 class atomic_cholesky_class;
@@ -178,8 +179,19 @@ class nimble_CppAD_tape_mgr {
   void set_internal_tape(CppAD::local::ADTape<double>* internal_tape_ptr);
   nimble_CppAD_tape_mgr();
   ~nimble_CppAD_tape_mgr();
+
+  int lgamma_index[5];
+  bool lgamma_exists[5];
   atomic_lgamma_class* new_atomic_lgamma(const std::string& name, int bO);
   void delete_atomic_lgamma(atomic_lgamma_class *atomic_lgamma);
+  atomic_lgamma_class *get_atomic_lgamma(int baseOrder,
+					 std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+  int pow_int_index;
+  bool pow_int_exists;
+  atomic_pow_int_class* new_atomic_pow_int(const std::string& name);
+  void delete_atomic_pow_int(atomic_pow_int_class *atomic_pow_int);
+  atomic_pow_int_class *get_atomic_pow_int(std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+  
   atomic_backsolve_class* new_atomic_backsolve(const std::string& name);
   void delete_atomic_backsolve(atomic_backsolve_class *atomic_backsolve);
   atomic_forwardsolve_class* new_atomic_forwardsolve(const std::string& name);

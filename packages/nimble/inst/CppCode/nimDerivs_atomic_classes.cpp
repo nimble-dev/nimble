@@ -26,6 +26,7 @@ ATOMIC_NEW_DELETE_(cholesky)
 ATOMIC_NEW_DELETE_(forwardsolve)
 ATOMIC_NEW_DELETE_(matinverse)
 ATOMIC_NEW_DELETE_(matmult)
+ATOMIC_NEW_DELETE_(pow_int)
 
 atomic_lgamma_class* new_atomic_lgamma(void* tape_mgr_ptr, const std::string& name, int bO) {
   return reinterpret_cast<nimble_CppAD_tape_mgr*>(tape_mgr_ptr)->new_atomic_lgamma(name, bO);
@@ -45,6 +46,35 @@ void nimble_CppAD_tape_mgr::delete_atomic_lgamma(atomic_lgamma_class *atomic_lga
   delete atomic_lgamma;
 }
 
+atomic_pow_int_class *track_atomic_pow_int(void* tape_mgr_ptr,
+					   std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  return reinterpret_cast<nimble_CppAD_tape_mgr*>(tape_mgr_ptr)->get_atomic_pow_int(vec_ptr);
+}
+atomic_pow_int_class *nimble_CppAD_tape_mgr::get_atomic_pow_int(std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  if(!pow_int_exists) {
+    pow_int_index = atomic_ptrs.size();
+    atomic_ptrs.push_back(atomic_pair(new_atomic_pow_int("atomic_pow_int_managed"), vec_ptr) );
+    pow_int_exists = true;
+  }
+  return dynamic_cast<atomic_pow_int_class*>(atomic_ptrs[pow_int_index].first);
+}
+
+atomic_lgamma_class *track_atomic_lgamma(int baseOrder,
+					 void* tape_mgr_ptr,
+					 std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  return reinterpret_cast<nimble_CppAD_tape_mgr*>(tape_mgr_ptr)->get_atomic_lgamma(baseOrder, vec_ptr);
+}
+
+atomic_lgamma_class *nimble_CppAD_tape_mgr::get_atomic_lgamma(int baseOrder,
+							      std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  if(baseOrder > 4) baseOrder = 4;
+  if(!lgamma_exists[baseOrder]) {
+    lgamma_index[baseOrder] = atomic_ptrs.size();
+    atomic_ptrs.push_back(atomic_pair(new_atomic_lgamma("atomic_lgamma_managed", baseOrder), vec_ptr) );
+    lgamma_exists[baseOrder] = true;
+  }
+  return dynamic_cast<atomic_lgamma_class*>(atomic_ptrs[lgamma_index[baseOrder] ].first);
+}
 
 atomic_lgamma_class::atomic_lgamma_class(const std::string& name, int baseOrder_) : 
   unary_atomic_class<double>(name),
@@ -212,44 +242,29 @@ CppAD::AD<double> nimDerivs_lgammafn(CppAD::AD<double> x, int baseOrder, bool ve
   if(verbose) {
     return nimDerivs_lgammafn_verbose(x, baseOrder);
   }
+  atomic_lgamma_class *atomic_lgamma;
+  bool recording = CppAD::AD<double>::get_tape_handle_nimble() != nullptr;
+  if(!recording) {
+    atomic_lgamma = new atomic_lgamma_class("nimDerivs_lgamma", baseOrder);
+  } else {
+    if(baseOrder > 4) {
+      std::cout<<"Error: lgamma derivatives requested for higher order than supported. "<<std::endl;
+      baseOrder = 4;
+    }
+    atomic_lgamma = track_atomic_lgamma(baseOrder,
+					CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr(),
+					CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage() );
+  }
   //  void *tape_mgr = CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr();
-  // atomic_lgamma_class *atomic_lgamma;
-  static atomic_lgamma_class static_atomic_lgamma0("nimDerivs_lgamma", 0);
-  static atomic_lgamma_class static_atomic_lgamma1("nimDerivs_lgamma", 1);
-  static atomic_lgamma_class static_atomic_lgamma2("nimDerivs_lgamma", 2);
-  static atomic_lgamma_class static_atomic_lgamma3("nimDerivs_lgamma", 3);
-  static atomic_lgamma_class static_atomic_lgamma4("nimDerivs_lgamma", 4);
+
+  // We can't use statics for reasons of multiple DLLs and bad interaction with CppAD statics.
+ 
   CppAD::vector<CppAD::AD<double>> in(1);
   CppAD::vector<CppAD::AD<double>> out(1);
   in[0] = x;
-  switch(baseOrder) {
-  case 0:
-    //    atomic_lgamma = new_atomic_lgamma(tape_mgr, "nimDerivs_lgamma0", 0);
-    // (*atomic_lgamma)(in, out);
-    static_atomic_lgamma0(in, out);
-    break;
-  case 1:
-    //    atomic_lgamma = new_atomic_lgamma(tape_mgr, "nimDerivs_lgamma1", 1);
-    //    (*atomic_lgamma)(in, out);
-    static_atomic_lgamma0(in, out);
-    break;
-  case 2:
-    /* atomic_lgamma = new_atomic_lgamma(tape_mgr, "nimDerivs_lgamma2", 2); */
-    /* (*atomic_lgamma)(in, out); */
-    static_atomic_lgamma0(in, out);
-    break;
-  case 3:
-    /* atomic_lgamma = new_atomic_lgamma(tape_mgr, "nimDerivs_lgamma3", 3); */
-    /* (*atomic_lgamma)(in, out); */
-    static_atomic_lgamma0(in, out);
-    break;
-  case 4:
-    /* atomic_lgamma = new_atomic_lgamma(tape_mgr, "nimDerivs_lgamma4", 4); */
-    /* (*atomic_lgamma)(in, out); */
-    static_atomic_lgamma0(in, out);
-    break;
-  default:
-    std::cout<<"Error: attempting lgamma derivative beyond order 4."<<std::endl;
+  (*atomic_lgamma)(in, out);
+   if(!recording) {
+    delete atomic_lgamma;
   }
   /* if(CppAD::AD<double>::get_tape_handle_nimble() == nullptr) { */
   /*   delete_atomic_lgamma(tape_mgr, atomic_lgamma); */
