@@ -180,13 +180,14 @@ test_that('makeUpdateNodes works correctly', {
                                            model$expandNodeNames('y')))
     expect_identical(result$constantNodes, character(0))
 
+    # @paciorek take a look at this one
     result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('mu[1]','y[1]'), model)
-    expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", lftChElems, 'mu[1]'))
+    expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", lftChElems, 'mu[1]', 'mu[2]', 'mu[3]'))
     expect_identical(result$constantNodes, "y[1]")
 
-    ## NCT issue 257: should include mu[3] presumably
+    # @paciorek and this one. Note that prElems is not in result$updateNodes and shouldn't be.
     result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('mu[1:2]','y[1:2]'), model)
-    expect_identical(result$updateNodes, c(prElems, "lifted_sqrt_oPsigma2_cP", lftChElems, model$expandNodeNames('mu')))
+    expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", lftChElems, model$expandNodeNames('mu', returnScalarComponents = TRUE)))
     expect_identical(result$constantNodes, c("y[1]", "y[2]"))
 
     result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('sigma2', 'mu0', 'mu','y'), model)
@@ -355,8 +356,6 @@ test_ADModelCalculate_nick(Rmodel, name = 'SSM',
                       order = c(0, 1, 2))
 })
 
-# This causes crashes due to atomic memory mgmt.
-# Removing the first calcNodeNames case fixes it, so something is being over-written there.
 test_that("Derivs of calculate function work for rats model", {
   Rmodel <- readBUGSmodel('rats', dir = getBUGSexampleDir('rats'))
   test_ADModelCalculate_nick(Rmodel, name = 'rats', calcNodeNames = list(Rmodel$getNodeNames(),

@@ -1982,6 +1982,9 @@ nimDerivsInfoClass_init_impl <- function(.self
                                                logProb = FALSE)
     .self$wrtMapInfo <- makeMapInfoFromAccessorVectorFaster(wrtNodesAccessor)
 
+    # See comment in makeUpdateNodes for explanation of why both of the next
+    # two lines are necessary.
+    calcNodes <- model$expandNodeNames(calcNodes)
     calcNodes <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE)
     updateNodes <- makeUpdateNodes_impl(wrtNodes,
                                         calcNodes,
@@ -2060,7 +2063,12 @@ makeUpdateNodes <- function(wrtNodes,
                             model,
                             dataAsConstantNodes = TRUE) {
   wrtNodes <- model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE)
-  calcNodes <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE)
+  # This ensures that elements of a non-scalar node become the entire non-scalare node
+  calcNodes <- model$expandNodeNames(calcNodes)
+  # And then this splits into scalar components.
+  # E.g. if calcNodes is 'mu[1]' but 'mu[1:3]' is a vector node,
+  # the above call gets `mu[1:3]` and then the below call splits it.
+  calcNodes <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE) 
   makeUpdateNodes_impl(wrtNodes,
                        calcNodes,
                        model,
