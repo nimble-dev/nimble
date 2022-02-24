@@ -117,13 +117,10 @@ buildMCMC <- nimbleFunction(
         model <- conf$model
         my_initializeModel <- initializeModel(model)
         mvSaved <- modelValues(model)
-        samplerFunctions  <- nimbleFunctionList(sampler_BASE)
-        samplerFunctions2 <- nimbleFunctionList(sampler_BASE2)
+        samplerFunctions <- nimbleFunctionList(sampler_BASE)
         for(i in seq_along(conf$samplerConfs)) {
             newSF <- conf$samplerConfs[[i]]$buildSampler(model=model, mvSaved=mvSaved)
             samplerFunctions[[i]] <- newSF
-            if(conf$samplerConfs[[i]]$baseClassName == 'sampler_BASE2')
-                samplerFunctions2[[length(samplerFunctions2)+1]] <- newSF
         }
         samplerExecutionOrderFromConfPlusTwoZeros <- c(conf$samplerExecutionOrder, 0, 0)  ## establish as a vector
         monitors  <- mcmc_processMonitorNames(model, conf$monitors)
@@ -173,8 +170,8 @@ buildMCMC <- nimbleFunction(
         nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)
         if(reset) {
             samplerTimes <<- numeric(length(samplerFunctions) + 1)       ## default inititialization to zero
-            for(i in seq_along(samplerFunctions))    samplerFunctions [[i]]$reset()
-            for(i in seq_along(samplerFunctions2))   samplerFunctions2[[i]]$before_chain(niter, nburnin, chain)
+            for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$reset()
+            for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$before_chain(niter, nburnin, chain)
             mvSamples_copyRow  <- 0
             mvSamples2_copyRow <- 0
         } else {
@@ -238,7 +235,7 @@ buildMCMC <- nimbleFunction(
             }
         }
         if(progressBar) print('|')
-        for(i in seq_along(samplerFunctions2))   samplerFunctions2[[i]]$after_chain()
+        for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$after_chain()
         returnType(void())
     },
     methods = list(

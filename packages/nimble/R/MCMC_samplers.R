@@ -10,25 +10,13 @@
 sampler_BASE <- nimbleFunctionVirtual(
     name = 'sampler_BASE',
     methods = list(
-        reset = function() { }
-    )
-)
-
-
-
-####################################################################
-### virtual nimbleFunction template, for version2 samplers #########
-####################################################################
-
-#' @rdname samplers
-#' @export
-sampler_BASE2 <- nimbleFunctionVirtual(
-    name = 'sampler_BASE2',
-    contains = sampler_BASE,
-    methods = list(
+        reset        = function() { },
         before_chain = function(MCMCniter = double(), MCMCnburnin = double(), MCMCchain = double()) { },
-        after_chain  = function() { },
-        reset        = function() { }
+        after_chain  = function() { }
+    ),
+    methodControl = list(
+        before_chain = list(abstract = FALSE),
+        after_chain  = list(abstract = FALSE)
     )
 )
 
