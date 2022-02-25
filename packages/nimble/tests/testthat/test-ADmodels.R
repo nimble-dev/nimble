@@ -374,7 +374,14 @@ test_that("Derivs of calculate function work for rats model", {
                         order = c(0, 1, 2))
 })
 
-## Fails on dcat.  Potential issue of support for ragged arrays.
+## bones uses dcat.  dcat works as of 2/25/22.
+## However these tests are *very* slow for uncompiled,
+## so I've only confirmed the first test passes.
+## Also there are derivatives wrt variables that follow a dcat.
+## In uncompiled execution, this generates endless warnings
+## becuase x+delta is non-integer, but dcat returns only integers.
+## In compiled execution it should would but I haven't checked.
+## I am leaving these commented-out because they are so slow.
 ## dir = nimble:::getBUGSexampleDir('bones')
 ## Rmodel <- readBUGSmodel('bones', data = NULL, inits = NULL, dir = dir, useInits = TRUE,
 ##                         check = FALSE)
