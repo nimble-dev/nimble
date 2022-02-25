@@ -1,7 +1,12 @@
 source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 nimbleOptions(experimentalEnableDerivs = TRUE)
 
-warning("All atomics currently off as result of NCT issue 274")
+nimbleOptions(useADsolveAtomic = TRUE)
+nimbleOptions(useADmatMultAtomic = TRUE)
+nimbleOptions(useADmatInverseAtomic = TRUE)
+nimbleOptions(useADcholAtomic = TRUE)
+
+## warning("All atomics currently off as result of NCT issue 274")
 
 ##nimbleOptions(showCompilerOutput = TRUE)
 context("Testing of derivatives for calculate() for nimbleModels")
@@ -483,6 +488,7 @@ model <- nimbleModel(code, constants = list(n = n), data = list(y = rpois(n, 1))
                      inits = list(mu0 = rnorm(1), sigma = runif(1), mu = exp(log_mu_init),
                                 log_mu = log_mu_init, a = runif(1), b = runif(1)))
 test_ADModelCalculate(model, name = 'stochastic link model')
+## 2d$value and 012$hessian not identical (1e-15)
 
 ## dexp and dt, which are provided by NIMBLE to allow expanded parameterizations
 code <- nimbleCode({
