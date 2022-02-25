@@ -109,11 +109,6 @@ AD_knownFailures <- list( ## not complete:
       segfault = TRUE
     )
   ),
-  dcat = list(
-    "*" = list(
-      compilation = TRUE
-    )
-  ),
   ## ddexp: Recycling-rule is not implemented in R.  Although it works in C++, it is considered unsupported.
   ## ddexp = list(
   ##   ## 'x = double(0) location = double(0) scale = double(0)' = list(
