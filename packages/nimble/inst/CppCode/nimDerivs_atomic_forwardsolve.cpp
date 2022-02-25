@@ -306,8 +306,13 @@ void atomic_forwardsolve(const MatrixXd_CppAD &A,
   
   // - A or B or neither are constant: record atomic
   atomic_forwardsolve_class *atomic_forwardsolve;
-  void *tape_mgr = CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr();
-  atomic_forwardsolve = new_atomic_forwardsolve(tape_mgr, "atomic_forwardsolve");
+  bool recording = CppAD::AD<double>::get_tape_handle_nimble() != nullptr;
+  if(!recording) {
+    atomic_forwardsolve = new atomic_forwardsolve_class("atomic_forwardsolve");
+  } else {
+    void *tape_mgr = CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr();
+    atomic_forwardsolve = new_atomic_forwardsolve(tape_mgr, "atomic_forwardsolve");
+  }
   atomic_forwardsolve->Aconstant() = A_is_constant;
   atomic_forwardsolve->Bconstant() = B_is_constant;
 
@@ -338,8 +343,8 @@ void atomic_forwardsolve(const MatrixXd_CppAD &A,
   (*atomic_forwardsolve)(xVec, yVec);
   // dummy test : for(int i = 0; i < n1*n2; ++i) yVec[i] = xVec[i];
   vec2mat(yVec, Y);
-  if(CppAD::AD<double>::get_tape_handle_nimble() == nullptr) {
-    delete_atomic_forwardsolve(tape_mgr, atomic_forwardsolve);
+  if(!recording) {
+    delete atomic_forwardsolve;
   } else {
     track_nimble_atomic(atomic_forwardsolve,
 			CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr(),

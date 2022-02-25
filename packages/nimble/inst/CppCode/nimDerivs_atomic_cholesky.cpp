@@ -574,13 +574,19 @@ void atomic_cholesky(const MatrixXd_CppAD &x, // This (non-template) type forces
   CppAD::vector<CppAD::AD<double> > xVec(n*n);
   mat2vec(x, xVec); // could be mat2vec_lower_zero but it doesn't seem to matter.
   CppAD::vector<CppAD::AD<double> > yVec(n*n);
-  void *tape_mgr = CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr();
-  atomic_cholesky = new_atomic_cholesky(tape_mgr, "atomic_cholesky");
+  bool recording = CppAD::AD<double>::get_tape_handle_nimble() != nullptr;
+
+  if(!recording) {
+    atomic_cholesky = new atomic_cholesky_class("atomic_cholesky");
+  } else {
+    void *tape_mgr = CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr();
+    atomic_cholesky = new_atomic_cholesky(tape_mgr, "atomic_cholesky");
+  }
   (*atomic_cholesky)(xVec, yVec);
   y.resize(n, n);
   vec2mat(yVec, y);
-  if(CppAD::AD<double>::get_tape_handle_nimble() == nullptr) {
-    delete_atomic_cholesky(tape_mgr, atomic_cholesky);
+  if(!recording) {
+    delete atomic_cholesky;
   } else {
     track_nimble_atomic(atomic_cholesky,
 			CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr(),
