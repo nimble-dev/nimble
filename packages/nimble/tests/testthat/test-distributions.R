@@ -77,12 +77,10 @@ test_that("Test that mvt calculate and simulate are correct in nodeFunctions", {
     r_samps <- t(replicate(10000, rmvt_chol(n = 1, mn, chol(sc), df, prec_param = FALSE)))
     true_cov <- sc*df/(df-2)
 
-    expect_equal(colMeans(r_samps), mn, 
-                 tol = 0.03,
-                 info = "Difference in random sample means in R exceeds tolerance")
-    expect_equal(cov(r_samps), true_cov,
-                 tol = 0.1,
-                 info = "Difference in random sample covs in R exceeds tolerance")
+    expect_lt(max(abs(colMeans(r_samps)- mn)) , 0.03,
+                 label = "Difference in random sample means in R exceeds tolerance")
+    expect_lt(max(abs(cov(r_samps) - true_cov)) , 0.1,
+                 label = "Difference in random sample covs in R exceeds tolerance")
 
     nf_sampling <- nimbleFunction(
         run = function(mn = double(1), scale = double(2), df = double(0)) {
@@ -94,12 +92,10 @@ test_that("Test that mvt calculate and simulate are correct in nodeFunctions", {
         }
     )
     nf_samps <- t(replicate(10000, nf_sampling(mn, sc, df)))
-    expect_equal(colMeans(nf_samps), mn, 
-                 tol = 0.03,
-                 info = "Difference in means in nf exceeds tolerance")
-    expect_equal(cov(nf_samps), true_cov,
-                 tol = 0.1,
-                 info = "Difference in covs in nf exceeds tolerance")
+    expect_lt(max(abs(colMeans(nf_samps)-mn)), 0.03,
+                 label = "Difference in means in nf exceeds tolerance")
+    expect_lt(max(abs(cov(nf_samps)- true_cov)), 0.1,
+                 label = "Difference in covs in nf exceeds tolerance")
 
     ## sampling via `simulate`
     set.seed(0)
@@ -110,13 +106,11 @@ test_that("Test that mvt calculate and simulate are correct in nodeFunctions", {
     
     simul_samps <- t(replicate(10000, simul_samp(c_mvt_model)))
     
-    expect_equal(colMeans(simul_samps), mn,
-                 tol = 0.03,
-                 info = "Difference in means in random samples (simulate) exceeds tolerance")
+    expect_lt(max(abs(colMeans(simul_samps)-mn)) , 0.03,
+                 label = "Difference in means in random samples (simulate) exceeds tolerance")
     
-    expect_equal(cov(simul_samps), true_cov, 
-                 tol = 0.1,
-                 info = "Difference in covs in random samples (simulate) exceeds tolerance")
+    expect_lt(max(abs(cov(simul_samps)-true_cov)) , 0.1,
+                 label = "Difference in covs in random samples (simulate) exceeds tolerance")
 })
 
 ## dlkj
@@ -283,7 +277,7 @@ y <- 1.1; a <- 1; c <- 2; alpha <- 3; beta <- 2; theta <- 1
 
 manDens <- alpha*log(beta) - lgamma(alpha) - (alpha+1)*log(y) - beta/y
 test_that("Test that dinvgamma gets correct result: ",
-              expect_equal(manDens, dinvgamma(y, alpha, scale = beta, log = TRUE), tol = 1e-15))
+              expect_lt(abs(manDens - dinvgamma(y, alpha, scale = beta, log = TRUE)) , 1e-15))
 
 set.seed(0)
 smp1 <- rinvgamma(100000, shape = alpha, scale = beta)
@@ -291,27 +285,27 @@ set.seed(0)
 smp2 <- rinvgamma(100000, shape = alpha, rate = 1/beta)
 
 test_that("Test that rinvgamma with scale gets correct result: ",
-              expect_equal(beta / (alpha-1), mean(smp1), tol = 0.01,
-                           info = "Difference in mean exceeds tolerance"))
+              expect_lt(abs(beta / (alpha-1)-mean(smp1)) , 0.01,
+                           label = "Difference in mean exceeds tolerance"))
 test_that("Test that rinvgamma with rate gets correct result: ",
-              expect_equal(beta / (alpha-1), mean(smp2), tol = 0.01,
-                           info = "Difference in mean exceeds tolerance"))
+              expect_lt(abs(beta / (alpha-1)-mean(smp2)) , 0.01,
+                           label = "Difference in mean exceeds tolerance"))
 test_that("Test that rinvgamma with scale gets correct result: ",
-              expect_equal(beta/((alpha-1)*sqrt(alpha-2)), sd(smp1), tol = 0.1,
-                           info = "Difference in sd exceeds tolerance"))
+              expect_lt(abs(beta/((alpha-1)*sqrt(alpha-2))-sd(smp1)) ,  0.1,
+                           label = "Difference in sd exceeds tolerance"))
 test_that("Test that rinvgamma with rate gets correct result: ",
-              expect_equal(beta/((alpha-1)*sqrt(alpha-2)), sd(smp2), tol = 0.1,
-                           info = "Difference in sd exceeds tolerance"))
+              expect_lt(abs(beta/((alpha-1)*sqrt(alpha-2))-sd(smp2)) , 0.1,
+                           label = "Difference in sd exceeds tolerance"))
 
 quantile <- quantile(smp1, .15)
 attributes(quantile) <- NULL
 test_that("Test that pinvgamma gets correct result: ",
-              expect_equal(qinvgamma(.15, alpha, scale = beta), quantile, tol = 0.005,
-                           info = "Difference in quantile exceeds tolerance"))
+              expect_lt(abs(qinvgamma(.15, alpha, scale = beta) - quantile) , 0.005,
+                           label = "Difference in quantile exceeds tolerance"))
 p <- mean(smp1 < .5)
 test_that("Test that qinvgamma gets correct result: ",
-              expect_equal(pinvgamma(.5, alpha, scale = beta), p, tol = 0.005,
-                           info = "Difference in probability exceeds tolerance"))
+              expect_lt(abs(pinvgamma(.5, alpha, scale = beta)-p) , 0.005,
+                           label = "Difference in probability exceeds tolerance"))
 
 test_that("dinvgamma-dinvgamma conjugacy with dependency using scale", {
     code <- nimbleCode({
@@ -431,12 +425,12 @@ test_that("Test that rinvwish_chol, dinvwish_chol, dwish_chol, and rwish_chol gi
     for(i in 1:n)
         draws3[,,i] <- rinvwish_chol(1, chol(solve(C)), df, scale_param = FALSE)
     pmean3 <- apply(draws3, c(1,2), mean)
-    expect_equal(max(abs(pmean1 - pm)), 0, tol = 0.03,
-                 info = "mean of inverse of rwish draws differs from truth")
-    expect_equal(max(abs(pmean2 - pm)), 0, tol = 0.03,
-                 info = "mean of rinvwish with scale draws differs from truth")
-    expect_equal(max(abs(pmean3 - pm)), 0, tol = 0.03,
-                 info = "mean of rinvwish with rate differs from truth")
+    expect_lt(abs(max(abs(pmean1 - pm))) , 0.03,
+                 label = "mean of inverse of rwish draws differs from truth")
+    expect_lt(abs(max(abs(pmean2 - pm))) , 0.03,
+                 label = "mean of rinvwish with scale draws differs from truth")
+    expect_lt(abs(max(abs(pmean3 - pm))) , 0.03,
+                 label = "mean of rinvwish with rate differs from truth")
 
     # draws1 is from rwish not rinvwish, but for comparing density values it doesn't matter their origin.
     dens1 <- dinvwish_chol(draws1[,,1], chol(C), df, scale_param = TRUE, log = TRUE)
@@ -450,10 +444,10 @@ test_that("Test that rinvwish_chol, dinvwish_chol, dwish_chol, and rwish_chol gi
     }
     
     dens3 <-  dfun(draws1[,,1], C, df)
-    expect_equal(dens1-dens3, 0, tol = 0.000001,
-                 info = "dinvwish with scale differs from truth")
-    expect_equal(dens2-dens3, 0, tol = 0.000001,
-                 info = "dinvwish with rate differs from truth")
+    expect_lt(abs(dens1-dens3) ,  0.000001,
+                 label = "dinvwish with scale differs from truth")
+    expect_lt(abs(dens2-dens3) ,  0.000001,
+                 label = "dinvwish with rate differs from truth")
 
     dens1 <- dwish_chol(draws1[,,1], chol(C), df, scale_param = TRUE, log = TRUE)
     dens2 <- dwish_chol(draws1[,,1], chol(solve(C)), df, scale_param = FALSE, log = TRUE)
@@ -466,10 +460,10 @@ test_that("Test that rinvwish_chol, dinvwish_chol, dwish_chol, and rwish_chol gi
     }
 
     dens3 <-  dfun(draws1[,,1], C, df)
-    expect_equal(dens1-dens3, 0, tol = 0.000001,
-                 info = "dinvwish with scale differs from truth")
-    expect_equal(dens2-dens3, 0, tol = 0.000001,
-                 info = "dinvwish with rate differs from truth")
+    expect_lt(abs(dens1-dens3) , 0.000001,
+                 label = "dinvwish with scale differs from truth")
+    expect_lt(abs(dens2-dens3) , 0.000001,
+                 label = "dinvwish with rate differs from truth")
 
 })
                                                                         
@@ -579,8 +573,8 @@ test_that("dflat and dhalfflat usage", {
     
     expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dflat_dnorm_identity', info = "did not detect conjugacy")
     expect_identical(rsmp, csmp[1:10], "R and compiled samples don't match")
-    expect_equal(mean(csmp), mean(m$y), tol = 0.001, info = "posterior mean for mu not correct")
-    expect_equal(sd(csmp), 1/sqrt(n), tol = 0.002, info = "posterior sd for mu not correct")
+    expect_lt(abs(mean(csmp) - mean(m$y)) , 0.001, label = "posterior mean for mu not correct")
+    expect_lt(abs(sd(csmp) - 1/sqrt(n)) , 0.002, label = "posterior sd for mu not correct")
     
     m$setInits(inits)
     cm$setInits(inits)
@@ -596,7 +590,7 @@ test_that("dflat and dhalfflat usage", {
     
     expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dhalfflat_dnorm_identity', info = "did not detect conjugacy")
     expect_identical(rsmp, csmp[1:10], info = "R and compiled samples don't match")
-    expect_equal(mean(csmp^2), var(m$y), tol = 0.03, info = "posterior mean for sigma not correct")
+    expect_lt(abs(mean(csmp^2) - var(m$y)) ,  0.03, label = "posterior mean for sigma not correct")
     
     m$setInits(inits)
     cm$setInits(inits)
@@ -612,10 +606,10 @@ test_that("dflat and dhalfflat usage", {
     
     expect_equivalent(rsmp, csmp[1:10, ], info = "R and compiled samples don't match")
 # for some reason, these are not identical - after 8-10 iterations, R and C values diverge in 8th decimal place or so
-    expect_equal(mean(csmp[ , 'mu']), mean(m$y), tol = 0.001, info = "posterior mean for mu not correct")
-    expect_equal(sd(csmp[ , 'mu']), sd(m$y)/sqrt(n), tol = 0.003, info = "posterior sd for mu not correct")
+    expect_lt(abs(mean(csmp[ , 'mu']) - mean(m$y)) ,  0.001, label = "posterior mean for mu not correct")
+    expect_lt(abs(sd(csmp[ , 'mu']) - sd(m$y)/sqrt(n)) ,  0.003, label = "posterior sd for mu not correct")
 
-    expect_equal(mean(csmp[ , 'sigma']^2), var(m$y), tol = 0.05, info = "posterior mean for sigma not correct")
+    expect_lt(abs(mean(csmp[ , 'sigma']^2) - var(m$y)) ,  0.05, label = "posterior mean for sigma not correct")
 })
 
 test_that("ddexp usage", {
@@ -634,17 +628,17 @@ test_that("ddexp usage", {
 
     set.seed(1)
     smp <- rdexp(n, mean, scale)
-    expect_equal(mean(smp), mean, tolerance = 0.02, info = "mean of random sample")
-    expect_equal(mean(smp > value), 1-p, tolerance = 0.01, info = "upper quantile of random sample")
-    expect_equal(mean(smp < symm_value), 1-p, tolerance = 0.01, info = "lower quantile of random sample")
+    expect_lt(abs(mean(smp) - mean) ,  0.02, label = "mean of random sample")
+    expect_lt(abs(mean(smp > value) - (1-p)) ,  0.01, label = "upper quantile of random sample")
+    expect_lt(abs(mean(smp < symm_value) - (1-p)) ,  0.01, label = "lower quantile of random sample")
 
     expect_identical(pdexp(value, mean, scale), p, "basic use of pdexp")
     expect_identical(pdexp(value, mean, scale, log.p = TRUE), log(p), "basic use of pdexp, log scale")
-    expect_equal(pdexp(value, mean, scale, lower.tail = FALSE), 1-p, tolerance = 0.001, info = "basic use of pdexp, upper tail")
+    expect_lt(abs(pdexp(value, mean, scale, lower.tail = FALSE) -  (1-p)) ,  0.001, label = "basic use of pdexp, upper tail")
     expect_identical(pdexp(value, mean, scale, lower.tail = FALSE, log.p = TRUE), log(1-p), "basic use of pdexp, upper tail, log scale")
 
-    expect_equal(pdexp(symm_value, mean, scale), 1-p, tolerance = 0.001, info = "basic use of pdexp, left half")
-    expect_equal(pdexp(symm_value, mean, scale, log.p = TRUE), log(1-p), tolerance = 0.001, info = "basic use of pdexp, left half, log scale")
+    expect_lt(abs(pdexp(symm_value, mean, scale)- (1-p)) ,  0.001, label = "basic use of pdexp, left half")
+    expect_lt(abs(pdexp(symm_value, mean, scale, log.p = TRUE) - log(1-p)) ,  0.001, label = "basic use of pdexp, left half, log scale")
     expect_identical(pdexp(symm_value, mean, scale, lower.tail = FALSE), p, "basic use of pdexp, left half, upper tail")
     expect_identical(pdexp(symm_value, mean, scale, lower.tail = FALSE, log.p = TRUE), log(p),
                  "basic use of pdexp, left half, upper tail, log scale")

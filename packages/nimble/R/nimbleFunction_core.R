@@ -14,7 +14,7 @@ nf_refClassLabelMaker <- labelFunctionCreator('nfRefClass')
 #'
 #' @export
 #'
-#' @details See the NIMBLE User Manual section on nimbleFunctionLists for explanation of how to use a virtual nimbleFunction.
+#' @details See the NIMBLE \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} section on nimbleFunctionLists for explanation of how to use a virtual nimbleFunction.
 #'
 #' @seealso \code{\link{nimbleFunction}}
 #' 
@@ -59,7 +59,7 @@ nimbleFunctionVirtual <- function(contains = NULL,
 #' @export
 #'
 #' @details
-#' This is the main function for defining nimbleFunctions.  A lot of information is provided in the NIMBLE User Manual, so only a brief summary will be given here.
+#' This is the main function for defining nimbleFunctions.  A lot of information is provided in the NIMBLE \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual}, so only a brief summary will be given here.
 #'
 #' If a \code{setup} function is provided, then \code{nimbleFunction} returns a generator: a function that when called with arguments for the setup function will execute that function and return a specialized nimbleFunction.   The \code{run} and other methods can be called using \code{$} like in other R classes, e.g. \code{nf$run()}. The methods can use objects that were created in or passed to the \code{setup} function.
 #'
@@ -67,7 +67,7 @@ nimbleFunctionVirtual <- function(contains = NULL,
 #'
 #' If one wants a generator but does not need any setup arguments or code, \code{setup = TRUE} can be used.
 #'
-#' See the NIMBLE User Manual for examples.
+#' See the NIMBLE \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} for examples.
 #'
 #' For more information about the \code{contains} argument, see the section on nimbleFunctionLists.
 nimbleFunction <- function(setup         = NULL,
@@ -97,7 +97,6 @@ nimbleFunction <- function(setup         = NULL,
     className <- name
     methodList <- c(list(run = run), methods)   # create a list of the run function, and all other methods
     # simply pass in names of vars in setup code so that those can be used in nf_checkDSLcode; to be more sophisticated we would only pass vars that are the result of nimbleListDefs or nimbleFunctions
-    safeMethodNames <- character()
     if(nimbleOptions('experimentalEnableDerivs')
        && length(enableDerivs)>0) {
         ## convert enableDerivs to a format of name = list(controls...)
@@ -106,31 +105,13 @@ nimbleFunction <- function(setup         = NULL,
                 lapply(enableDerivs, function(x) list()),
                 names = enableDerivs)
         }
-
-        ## staticDerivNames <- names(enableDerivs)[unlist(lapply(enableDerivs, function(x) isTRUE(x[['static']])))]
-        ## if(length(staticDerivNames) > 0) {
-        ##     derivMethodInfo <- buildDerivMethods(methodList, staticDerivNames)
-        ##     methodList <- c(methodList,
-        ##                     derivMethodInfo$derivMethodsList)
-        ##     safeMethodNames <- c(safeMethodNames, derivMethodInfo$argTransferNames)
-        ## }
-        ## nonstaticDerivNames <- names(enableDerivs)[unlist(lapply(enableDerivs, function(x) !isTRUE(x[['static']])))]
-        ## if(length(nonstaticDerivNames) > 0) {
-        ##     if(isTRUE(nimbleOptions("useADreconfigure"))) {
-        ##         derivMethod2Info <- buildDerivMethods2(methodList, nonstaticDerivNames)
-        ##         methodList <- c(methodList,
-        ##                         derivMethod2Info$derivMethodsList)
-        ##         safeMethodNames <- c(safeMethodNames, derivMethod2Info$argTransferNames)
-        ##         enableDerivs <- c(enableDerivs, derivMethod2Info$newEnableDerivs)
-        ##     }
-        ## } 
     } else if(!nimbleOptions('experimentalEnableDerivs')
               && length(enableDerivs)>0)
         stop('To enable nimbleFunction derivatives, you must first set "nimbleOptions(experimentalEnableDerivs = TRUE)".')
     methodList <- lapply(methodList,
                          nfMethodRC,
                          check = check,
-                         methodNames = c(names(methodList), safeMethodNames),
+                         methodNames = names(methodList),
                          setupVarNames = c(all.vars(body(setup)), names(formals(setup))))
     if(nimbleOptions('experimentalEnableDerivs')
        && length(enableDerivs)>0) {
@@ -140,6 +121,11 @@ nimbleFunction <- function(setup         = NULL,
                 methodList[[iM]]$enableDerivs <- thisEnableDerivs
         }
     }
+=======
+    if(nimbleOptions('experimentalEnableDerivs') && length(enableDerivs)>0) methodList <- c(methodList, buildDerivMethods(methodList, enableDerivs))
+    else if(!nimbleOptions('experimentalEnableDerivs') && length(enableDerivs)>0) stop('To enable nimbleFunction derivatives, you must first set "nimbleOptions(experimentalEnableDerivs = TRUE)".')
+    methodList <- lapply(methodList, nfMethodRC, check = check, methodNames = names(methodList), setupVarNames = c(all.vars(body(setup)), names(formals(setup))), where = where)
+>>>>>>> devel
     ## record any setupOutputs declared by setupOutput()
     setupOutputsDeclaration <- nf_processSetupFunctionBody(setup, returnSetupOutputDeclaration = TRUE)
     declaredSetupOutputNames <- nf_getNamesFromSetupOutputDeclaration(setupOutputsDeclaration)

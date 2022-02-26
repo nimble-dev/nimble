@@ -2,8 +2,8 @@
 % Please edit documentation in R/distributions_implementations.R
 \name{Multinomial}
 \alias{Multinomial}
-\alias{dmulti}
 \alias{multinomial}
+\alias{dmulti}
 \alias{rmulti}
 \title{The Multinomial Distribution}
 \usage{
@@ -37,13 +37,12 @@ probs <- c(1/4, 1/10, 1 - 1/4 - 1/10)
 x <- rmulti(1, size, probs)
 dmulti(x, size, probs)
 }
-\author{
-Christopher Paciorek
-}
 \references{
 Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
 }
 \seealso{
 \link{Distributions} for other standard distributions
 }
-
+\author{
+Christopher Paciorek
+}

@@ -9,7 +9,7 @@
 require(nimble)
 ``` 
 
-# Bayesian nonparametric models {#cha:bnp}
+# Bayesian nonparametric models {#cha-bnp}
 
 ## Bayesian nonparametric mixture models {#sec:bnpmixtures}
  
@@ -105,7 +105,7 @@ inits <- list(thetatilde = rnorm(constants$M, 0, 10),
 model <- nimbleModel(code, constants, data, inits)
 ```
 
-The model can be fitted through  MCMC sampling. NIMBLE will assign a specialized sampler to update `z` and `alpha`. See Chapter  \@ref(cha:mcmc) for information about NIMBLE's MCMC engine, and Section \@ref(sec:mcmcdcrp) for details on  MCMC sampling of the CRP. 
+The model can be fitted through  MCMC sampling. NIMBLE will assign a specialized sampler to update `z` and `alpha`. See Chapter  \@ref(cha-mcmc) for information about NIMBLE's MCMC engine, and Section \@ref(sec:mcmcdcrp) for details on  MCMC sampling of the CRP. 
 
 One of the advantages of BNP mixture models is that the number of clusters is treated as random. Therefore, in MCMC sampling, the number of cluster parameters varies with the iteration. Since NIMBLE does not currently allow dynamic length allocation, the number of unique cluster parameters, $N^{\star}$, has to be fixed. One safe option is to set this number to $N$, but this is inefficient, both in terms of computation and in terms of storage, because in practice it is often that $N^{\star} < N$. In addition, configuring and building the MCMC can be slow (and use a lot of memory) for large $N$. In an effort to mitigate these inefficiencies, we allow the user to set $N^{\star} = M$, with $M<N$, as seen in the example above.  However, if this number is too small and is exceeded in any iteration a warning is issued.
 
@@ -151,7 +151,7 @@ modelRandEff <- nimbleModel(code, constants, data, inits)
 
 Alternatively, each subject could have a vector of parameters being clustered. For example in the model above one could instead specify a vector of means, such as `thetaTilde[z[i], j]`, instead of a single mean. 
 
-As before, the model can be fitted through  MCMC sampling. NIMBLE will assign a specialized sampler to update `z` and `alpha`. See Chapter  \@ref(cha:mcmc) for information about NIMBLE's MCMC engine, and Section \@ref(sec:mcmcdcrp) for details on  MCMC sampling of the CRP.
+As before, the model can be fitted through  MCMC sampling. NIMBLE will assign a specialized sampler to update `z` and `alpha`. See Chapter  \@ref(cha-mcmc) for information about NIMBLE's MCMC engine, and Section \@ref(sec:mcmcdcrp) for details on  MCMC sampling of the CRP.
 
 ## Stick-breaking model {#sec:sb}
 
@@ -223,7 +223,7 @@ inits <- list(thetastar = rnorm(constants$L, 0, 100),
 modelSB <- nimbleModel(code, constants, data, inits)
 ```
 
-The resulting model may be carried through to MCMC sampling. NIMBLE will assign a specialized sampler to update `v`. See Chapter  \@ref(cha:mcmc) for information about NIMBLE's MCMC engine, and Section \@ref(sec:mcmcsb) for details on  MCMC sampling of the stick-breaking weights. 
+The resulting model may be carried through to MCMC sampling. NIMBLE will assign a specialized sampler to update `v`. See Chapter  \@ref(cha-mcmc) for information about NIMBLE's MCMC engine, and Section \@ref(sec:mcmcsb) for details on  MCMC sampling of the stick-breaking weights. 
 
 
 ## MCMC sampling of BNP models
@@ -249,7 +249,9 @@ Note that both samplers are specialized versions that operate on a vector having
 ```{r, child = 'tables/BNPconjugacyTable2.md'}
 ```
 
-Additionally, a specialized sampler is assigned to the `conc` hyper parameter when a gamma hyper prior is assigned, see section 6 in @escobar_west_95 for more details. Otherwise, a random walk Metropolis-Hastings sampler is assigned.
+To reduce computation and improve mixing, we only sample the parameters of the clusters (e.g., $\tilde{theta}_j$ in \@ref(sec:excrp) when the associated cluster is occupied, using the `CRP_cluster_wrapper` sampler, which wraps around an underlying actual sampler. In addition, this approach requires that any sampler assigned to parameters of the base measure, $G_0$, (i.e., unknown parameters in the prior for $\tilde{theta}_j$) ignore cluster parameters associated with clusters that are not occupied, since their current values are meaningless. We assign a special slice sampler that determines the occupied clusters in any given iteration, called `slice_CRP_base_param`. Note that if you choose to use a different sampler for the base measure parameters, you should also avoid using the `CRP_cluster_wrapper` sampler.
+
+Finally, a specialized sampler is assigned to the `conc` hyper parameter when a gamma hyper prior is assigned, see section 6 in @escobar_west_95 for more details. Otherwise, a random walk Metropolis-Hastings sampler is assigned.
 
 #### Initial values
 
@@ -273,7 +275,7 @@ $$(\alpha+N)^{-1}\sum_{k=1}^{N^{\star}(\boldsymbol{z})}m_k(\boldsymbol{z})\delta
 
 where $G_0$ is the prior baseline distribution, and $\boldsymbol{z}$ and $\tilde{\theta}_k$ are posterior samples of the labeling vector and cluster parameters, respectively. Their values, together with the values of $\alpha$ (if random) are obtained from the MCMC’s output. Expressions $m_k(\boldsymbol{z})$ and $N^{\star}(\boldsymbol{z})$ are defined as in section \@ref(sec:crp). 
 
-The `getsamplesDPmeasure` function provides samples of a truncated version of the infinite mixture to a level $L$. The truncation level $L$ is such that the tail probability left from the approximation is at most `epsilon`, denoted $\epsilon$. The following relationship determines the truncation level: $L = log(\epsilon) / log[(\alpha+N) / (\alpha + N +1)]$. The value of $L$ varies at each iteration of the MCMC's output when $\alpha$ is random, while it is the same at each iteration when $\alpha$ is fixed. For more details about sampling the random measure and its truncation level see @gelfand_2002.     
+The `getsamplesDPmeasure` function provides samples of a truncated version of the infinite mixture to a level $L$. The truncation level $L$ is such that the tail probability left from the approximation is at most `epsilon`, denoted $\epsilon$. The following relationship determines the truncation level: $L = \log(\epsilon) / \log[(\alpha+N) / (\alpha + N +1)]$. The value of $L$ varies at each iteration of the MCMC's output when $\alpha$ is random, while it is the same at each iteration when $\alpha$ is fixed. For more details about sampling the random measure and its truncation level see @gelfand_2002.     
 
 Because of the discrete nature of the atom's distribution, the stick-breaking representation truncated to a level $L$ will generally have repeated values. Therefore, in order to reduce the output's dimensionality, the stick-breaking weights of identical atoms are added up. This results in samples of $G$ that have only the 'unique' atoms in $\{\theta_l\}_{l=1}^L$.
 

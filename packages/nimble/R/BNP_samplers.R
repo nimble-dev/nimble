@@ -21,6 +21,8 @@ getNsave <- nimbleFunction(
 #' @param MCMC an MCMC class object, either compiled or uncompiled.
 #' @param epsilon  used for determining the truncation level of the representation of the random measure.
 #' @param setSeed Logical or numeric argument. If a single numeric value is provided, R's random number seed will be set to this value. In the case of a logical value, if \code{TRUE}, then R's random number seed will be set to \code{1}. Note that specifying the argument \code{setSeed = 0} does not prevent setting the RNG seed, but rather sets the random number generation seed to \code{0}.  Default value is \code{FALSE}.
+#'
+#' @param progressBar Logical specifying whether to display a progress bar during execution (default = TRUE).  The progress bar can be permanently disabled by setting the system option \code{nimbleOptions(MCMCprogressBar = FALSE)}
 #' 
 #' @author Claudia Wehrhahn and Christopher Paciorek
 #' 
@@ -51,7 +53,7 @@ getNsave <- nimbleFunction(
 #'   runMCMC(cmcmc, niter = 1000)
 #'   outputG <- getSamplesDPmeasure(cmcmc)
 #' }
-getSamplesDPmeasure <- function(MCMC, epsilon = 1e-4, setSeed = FALSE) {
+getSamplesDPmeasure <- function(MCMC, epsilon = 1e-4, setSeed = FALSE, progressBar = getNimbleOption('MCMCprogressBar')) {
   if(exists('model',MCMC, inherits = FALSE)) compiled <- FALSE else compiled <- TRUE
   if(compiled) {
     if(!exists('Robject', MCMC, inherits = FALSE) || !exists('model', MCMC$Robject, inherits = FALSE))
@@ -63,7 +65,7 @@ getSamplesDPmeasure <- function(MCMC, epsilon = 1e-4, setSeed = FALSE) {
     mvSamples <- MCMC$mvSamples
   }
   
-  rsampler <- sampleDPmeasure(model, mvSamples, epsilon) # 
+  rsampler <- sampleDPmeasure(model, mvSamples, epsilon)  
 
   niter <- getsize(MCMC$mvSamples)
   samplesMeasure <- list()
@@ -71,21 +73,39 @@ getSamplesDPmeasure <- function(MCMC, epsilon = 1e-4, setSeed = FALSE) {
   if(is.numeric(setSeed)) {
     set.seed(setSeed[1])
     if(length(setSeed) > 1) {
-      nimCat('getSamplesDPmeasure: setSeed argument has length > 1 and only the first element will be used') 
+      messageIfVerbose('  [Warning] getSamplesDPmeasure: setSeed argument has length > 1 and only the first element will be used.') 
     }
   } else if(setSeed) set.seed(1)
+
+  progressBarLength <- 52  ## multiples of 4 only
+  progressBarIncrement <- niter/(progressBarLength+3)
+  progressBarNext <- progressBarIncrement
+  progressBarNextFloor <- floor(progressBarNext)
+
   
   if(compiled) {
     csampler <- compileNimble(rsampler, project = model)
+    if(progressBar) { for(iPB1 in 1:4) { cat('|'); for(iPB2 in 1:(progressBarLength/4)) cat('-') }; cat('|\n'); cat('|') }
     for(i in 1:niter) {
       samplesMeasure[[i]] <- csampler$run(i)
+      if(progressBar && (i == progressBarNextFloor)) {
+          cat('-')
+          progressBarNext <- progressBarNext + progressBarIncrement
+          progressBarNextFloor <- floor(progressBarNext)
+      }
     }
   } else {
     for(i in 1:niter) {
+      if(progressBar) { for(iPB1 in 1:4) { cat('|'); for(iPB2 in 1:(progressBarLength/4)) cat('-') }; print('|'); cat('|') }    
       samplesMeasure[[i]] <- rsampler$run(i)
+      if(progressBar && (i == progressBarNextFloor)) {
+          cat('-')
+          progressBarNext <- progressBarNext + progressBarIncrement
+          progressBarNextFloor <- floor(progressBarNext)
+      }
     }
   }
-  
+  if(progressBar) cat('|\n')
   
   dcrpVar <- rsampler$dcrpVar
   clusterVarInfo <- findClusterNodes(model, dcrpVar) 
@@ -163,7 +183,7 @@ sampleDPmeasure <- nimbleFunction(
     if( sum(counts) != length(tildeVars) ) 
       stop('sampleDPmeasure: The node(s) representing the cluster variables must be monitored in the MCMC (and therefore stored in the modelValues object).\n')  
     
-    parentNodesTildeVars <- getParentNodes(tildeVars, model, returnType = 'names', stochOnly = TRUE)
+    parentNodesTildeVars <- model$getParents(tildeVars, stochOnly = TRUE)
     if(length(parentNodesTildeVars)) {
       parentNodesTildeVarsDeps <- model$getDependencies(parentNodesTildeVars, self = FALSE)
     } else parentNodesTildeVarsDeps <- NULL
@@ -174,7 +194,7 @@ sampleDPmeasure <- nimbleFunction(
       stop('sampleDPmeasure: The stochastic parent nodes of the cluster variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
 
     ## Check that parent nodes of cluster IDs are monitored.  
-    parentNodesXi <- getParentNodes(dcrpNode, model, returnType = 'names', stochOnly = TRUE)
+    parentNodesXi <- model$getParents(dcrpNode, stochOnly = TRUE)
     
     if(!all(model$getVarNames(nodes = parentNodesXi) %in% mvSavedVars))
       stop('sampleDPmeasure: The stochastic parent nodes of the membership variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
@@ -1318,7 +1338,7 @@ sampler_CRP <- nimbleFunction(
     
     if(any(clusterVarInfo$nTilde == 0)) {
       var <- which(clusterVarInfo$nTilde == 0)
-      stop("sampler_CRP: Detected unusual indexing in ", deparse(clusterVarInfo$indexExpr[[var[1]]]),
+      stop("sampler_CRP: Detected unusual indexing in ", safeDeparse(clusterVarInfo$indexExpr[[var[1]]]),
            " . NIMBLE's CRP MCMC sampling is not designed for this case.")
     }
     
@@ -1383,8 +1403,8 @@ sampler_CRP <- nimbleFunction(
                 if(!identical(clusterVarInfo$clusterNodes[[idx1]], clusterVarInfo$clusterNodes[[idx2]]) &&
                    any(clusterVarInfo$clusterNodes[[idx1]] %in% clusterVarInfo$clusterNodes[[idx2]]))
                     stop("sampler_CRP: Inconsistent indexing in or inconsistent dependencies of ",
-                         deparse(clusterVarInfo$indexExpr[[idx1]]), " and ",
-                         deparse(clusterVarInfo$indexExpr[[idx2]]), ".")
+                         safeDeparse(clusterVarInfo$indexExpr[[idx1]]), " and ",
+                         safeDeparse(clusterVarInfo$indexExpr[[idx2]]), ".")
     
     nData <- length(dataNodes)
 
@@ -1392,7 +1412,7 @@ sampler_CRP <- nimbleFunction(
     ## It's likely that if we set the non-conjugate sampler and turn off wrapping omits sampling of empty clusters
     ## (which is not set up correctly for this case), that the existing code would give correct sampling.
     if(any(clusterVarInfo$multipleStochIndexes))
-        stop("sampler_CRP: Detected use of multiple stochastic indexes of a variable: ", deparse(clusterVarInfo$indexExpr[[1]]), ". NIMBLE's CRP sampling is not yet set up to handle this case. Please contact the NIMBLE development team if you are interested in this functionality.")
+        stop("sampler_CRP: Detected use of multiple stochastic indexes of a variable: ", safeDeparse(clusterVarInfo$indexExpr[[1]]), ". NIMBLE's CRP sampling is not yet set up to handle this case. Please contact the NIMBLE development team if you are interested in this functionality.")
 
     ## Check there is at least one or more "observation" per random index.
     ## Note that cases like mu[xi[i],xi[j]] are being trapped in findClusterNodes().
@@ -1406,12 +1426,12 @@ sampler_CRP <- nimbleFunction(
         stop('sampler_CRP: In a model with multiple cluster parameters, the number of those parameters must all be the same.\n')
     min_nTilde <- nTilde[1]
     if(min_nTilde < n)
-      warning('sampler_CRP: The number of clusters based on the cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if it ever proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.\n', call. = FALSE)
+      messageIfVerbose('  [Warning] sampler_CRP: The number of clusters based on the cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if it ever proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.')
     
     ## Determine if concentration parameter is fixed or random (code similar to the one in sampleDPmeasure function).
     ## This is used in truncated case to tell user if model is proper or not.
     fixedConc <- TRUE
-    parentNodesTarget <- getParentNodes(target, model, stochOnly = TRUE)
+    parentNodesTarget <- model$getParents(target, stochOnly = TRUE)
     if(length(parentNodesTarget)) {
       fixedConc <- FALSE
     }
@@ -1425,6 +1445,8 @@ sampler_CRP <- nimbleFunction(
     ## needs to be legitimate nodes because run code sets up calculate even if if() would never cause it to be used
     for(i in seq_len(n)) { # dataNodes are always needed so only create them before creating  intermNodes
       stochDeps <- model$getDependencies(targetElements[i], stochOnly = TRUE, self = FALSE)
+      if(length(stochDeps) != nObsPerClusID)
+          stop("sampler_CRP: The number of nodes that are jointly clustered must be the same for each group. For example if 'mu[i,j]' are clustered such that all nodes for a given 'i' must be in the same cluster, then the number of nodes for each 'i' must be the same. Group ", safeDeparse(i), " has ", safeDeparse(length(stochDeps)), " nodes being clustered where ", safeDeparse(nObsPerClusID), " are expected.")
       dataNodes[((i-1)*nObsPerClusID + 1) : (i*nObsPerClusID)] <- stochDeps
     }
     nIntermClusNodesPerClusID <- length(model$getDependencies(targetElements[1], determOnly = TRUE))  #nInterm
@@ -1433,6 +1455,8 @@ sampler_CRP <- nimbleFunction(
       intermNodes <- rep(as.character(NA), nIntermClusNodesPerClusID * n)
       for(i in seq_len(n)) {
         detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
+        if(length(detDeps) != nIntermClusNodesPerClusID)
+            stop("sampler_CRP: The number of intermediate deterministic nodes that are jointly clustered must be the same for each group. For example if 'mu[i,j]' are clustered such that all nodes for a given 'i' must be in the same cluster, then the number of nodes for each 'i' must be the same. Group ", safeDeparse(i), " has ", safeDeparse(length(detDeps)), " intermediate nodes being clustered where ", safeDeparse(nIntermClusNodesPerClusID), " are expected.")
         intermNodes[((i-1)*nIntermClusNodesPerClusID+1):(i*nIntermClusNodesPerClusID)] <- detDeps
       }
     }
@@ -1517,8 +1541,8 @@ sampler_CRP <- nimbleFunction(
         if(any(marginalizedNodes %in% deps))
             stop("sampler_CRP: cluster parameters must be independent across clusters.")
         if(!identical(sort(deps), sort(dataNodes)))
-            warning("sampler_CRP: dependencies of cluster parameters include unexpected nodes: ",
-                    paste0(deps[!deps %in% dataNodes], collapse = ', '), call. = FALSE)
+            messageIfVerbose("  [Warning] sampler_CRP: dependencies of cluster parameters include unexpected nodes: ",
+                    paste0(deps[!deps %in% dataNodes], collapse = ', '))
     }
     
     identityLink <- TRUE
@@ -1605,9 +1629,9 @@ sampler_CRP <- nimbleFunction(
     if(kNew > min_nTilde & min_nTilde < n) {
       if(printMessage) {
         if(fixedConc) {
-          nimCat('CRP_sampler: This MCMC is for a parametric model. The MCMC attempted to use more components than the number of cluster parameters. To have a sampler for a nonparametric model increase the number of cluster parameters.\n')
+          nimCat('  [Warning] CRP_sampler: This MCMC is for a parametric model. The MCMC attempted to use more components than the number of cluster parameters. To have a sampler for a nonparametric model increase the number of cluster parameters.\n')
         } else {
-          nimCat('CRP_sampler: This MCMC is not for a proper model. The MCMC attempted to use more components than the number of cluster parameters. Please increase the number of cluster parameters.\n')
+          nimCat('  [Warning] CRP_sampler: This MCMC is not for a proper model. The MCMC attempted to use more components than the number of cluster parameters. Please increase the number of cluster parameters.\n')
         }
       }
       kNew <- 0 
@@ -1765,6 +1789,8 @@ findClusterNodes <- function(model, target) {
   ## for what is indexed by the dCRP clusterID nodes. This also determine which clusterID
   ## each cluster parameter is associated with.
   targetVar <- model$getVarNames(nodes = target)
+    if(model$getVarInfo(targetVar)$nDim > 1)
+        stop("findClusterNodes: CRP variable, '", targetVar, "' cannot be a matrix or array.")
   targetElements <- model$expandNodeNames(target, returnScalarComponents = TRUE)
   deps <- model$getDependencies(target, self = FALSE, returnType = 'ids')
   declIDs <- model$modelDef$maps$graphID_2_declID[deps] ## declaration IDs of the nodeIDs
@@ -1821,7 +1847,7 @@ findClusterNodes <- function(model, target) {
         varIdx <- varIdx + 1
         multipleStochIndexes <- c(multipleStochIndexes, FALSE)
           
-        clusterVars <- c(clusterVars, deparse(subExpr[[2]]))
+        clusterVars <- c(clusterVars, safeDeparse(subExpr[[2]], warn = TRUE))
         
         ## Determine which index the target variable occurs in.
         k <- whichIndex <- 3
@@ -1829,7 +1855,7 @@ findClusterNodes <- function(model, target) {
         while(k <= len) {
             if(sum(all.vars(subExpr[[k]]) == targetVar)) {
                 if(foundTarget) {
-                    stop("findClusterNodes: CRP variable used multiple times in ", deparse(subExpr),
+                    stop("findClusterNodes: CRP variable used multiple times in ", safeDeparse(subExpr),
                            ". NIMBLE's CRP MCMC sampling not designed for this situation.")
                 } else {
                     foundTarget <- TRUE
@@ -1870,7 +1896,7 @@ findClusterNodes <- function(model, target) {
         loopIndexes <- unlist(sapply(declInfo$symbolicParentNodes,
                                     function(x) {
                                         if(length(x) >= 3 && x[[1]] == '[' &&
-                                           x[[2]] == targetVar) return(deparse(x[[3]]))
+                                           x[[2]] == targetVar) return(safeDeparse(x[[3]], warn = TRUE))
                                         else return(NULL) }))
         if(length(loopIndexes) != 1)
             stop("findClusterNodes: found cluster membership parameters that use different indexing variables; NIMBLE's CRP sampling not designed for this case.")
@@ -1901,7 +1927,7 @@ findClusterNodes <- function(model, target) {
                     if(length(all.vars(expr[[k]])))  # prevents eval of things like 1:3, which the as.numeric would change to c(1,3)
                         templateExpr[[k]] <- as.numeric(eval(substitute(EXPR, list(EXPR = expr[[k]])),
                                                              c(as.list(unrolledIndices[i,]), e)))  # as.numeric avoids 1L, 2L, etc.
-                clusterNodes[[varIdx]][i] <- deparse(templateExpr)  # convert to node names
+                clusterNodes[[varIdx]][i] <- safeDeparse(templateExpr, warn = TRUE)  # convert to node names
             }
         } else {
             clusterNodes[[varIdx]] <- character(0)
@@ -1909,7 +1935,7 @@ findClusterNodes <- function(model, target) {
         }
       } 
       if(len >= 3 && is.call(subExpr) && subExpr[[1]] == '[' && subExpr[[2]] == targetVar)
-          targetNonIndex <- deparse(model$getDeclInfo(exampleDeps[idx])[[1]]$codeReplaced)
+          targetNonIndex <- safeDeparse(model$getDeclInfo(exampleDeps[idx])[[1]]$codeReplaced, warn = TRUE)
     }
   }
   ## Find the potential cluster nodes that are actually model nodes,
@@ -2108,7 +2134,7 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo, n, gammaDist = '
                 exprs <- sapply(exprs, function(expr) cc_expandDetermNodesInExpr(model, expr))
                 names(exprs) <- NULL
                 for(i in seq_along(exprs)) {
-                    varText <- deparse(exprs[[i]])
+                    varText <- safeDeparse(exprs[[i]], warn = TRUE)
                     if(length(grep(splitNodes2[[idx]][i], varText, fixed = TRUE)))  ## remove clusterNodes2[i] from expression so var expressions will be the same
                         exprs[[i]] <- parse(text = gsub(splitNodes2[[idx]][i],
                                                         "a", varText, fixed = TRUE))[[1]]
@@ -2203,7 +2229,7 @@ checkNormalInvWishartConjugacy <- function(model, clusterVarInfo, n, wishartDist
                 exprs <- sapply(exprs, function(expr) cc_expandDetermNodesInExpr(model, expr))
                 names(exprs) <- NULL
                 for(i in seq_along(exprs)) {
-                    varText <- deparse(exprs[[i]])
+                    varText <- safeDeparse(exprs[[i]], warn = TRUE)
                     if(length(grep(splitNodes2[[idx]][i], varText, fixed = TRUE)))  ## remove clusterNodes2[i] from expression so var expressions will be the same
                         exprs[[i]] <- parse(text = gsub(splitNodes2[[idx]][i],
                                                         "a", varText, fixed = TRUE))[[1]]
@@ -2250,7 +2276,160 @@ sampler_CRP_cluster_wrapper <- nimbleFunction(
     },
     methods = list(
         reset = function() {regular_sampler[[1]]$reset()}
-    ))
+    )
+)
+
+#' @rdname samplers
+#' @export
+sampler_slice_CRP_base_param <- nimbleFunction(
+    name = 'sampler_slice_CRP_base_param',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        adaptive               <- extractControlElement(control, 'adaptive',               TRUE)
+        adaptInterval          <- extractControlElement(control, 'adaptInterval',          200)
+        width                  <- extractControlElement(control, 'sliceWidth',             1)
+        maxSteps               <- extractControlElement(control, 'sliceMaxSteps',          100)
+        maxContractions        <- extractControlElement(control, 'maxContractions',        1000)
+        maxContractionsWarning <- extractControlElement(control, 'maxContractionsWarning', TRUE)
+        dcrpNode               <- extractControlElement(control, 'dcrpNode', "dcrpNode must be provided for sampler_slice_CRP_cluster_params")
+        clusterNodes           <- extractControlElement(control, 'clusterNodes', "dcrpNode must be provided for sampler_slice_CRP_cluster_params")
+        clusterIDs             <- extractControlElement(control, 'clusterIDs', "dcrpNode must be provided for sampler_slice_CRP_cluster_params")
+
+       
+        eps <- 1e-15
+        ## node list generation
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        calcNodes <- model$getDependencies(target)
+        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
+        isStochCalcNodesNoSelf <- model$isStoch(calcNodesNoSelf)   ## should be made faster
+        calcNodesNoSelfDeterm <- calcNodesNoSelf[!isStochCalcNodesNoSelf]
+        calcNodesNoSelfStoch <- calcNodesNoSelf[isStochCalcNodesNoSelf]
+        ## numeric value generation
+        widthOriginal <- width
+        timesRan      <- 0
+        timesAdapted  <- 0
+        sumJumps      <- 0
+        widthHistory  <- c(0, 0)   ## widthHistory
+        if(nimbleOptions('MCMCsaveHistory')) {
+            saveMCMChistory <- TRUE
+        } else saveMCMChistory <- FALSE
+        discrete      <- model$isDiscrete(target)
+
+        numPossibleClusters <- length(model$expandNodeNames(dcrpNode, returnScalarComponents = TRUE))
+        usedClusters <- nimLogical(numPossibleClusters, FALSE)
+        usedDeps <- nimLogical(length(clusterIDs), FALSE)
+                
+        ## checks
+        if(length(targetAsScalar) > 1)     stop('Cannot use specialized slice sampler for CRP cluster hyperparameter on more than one target node.')
+
+        if(!identical(sort(calcNodesNoSelfStoch), sort(clusterNodes)))
+            stop("Unexpected dependencies of node ", target, ". Cannot assign specialized slice sampler.")
+        mapping <- match(calcNodesNoSelfStoch, clusterNodes)
+        clusterIDs <- clusterIDs[mapping]
+    },
+    run = function() {
+
+        usedClusters <<- nimLogical(numPossibleClusters, FALSE)
+        for(i in 1:numPossibleClusters) 
+            usedClusters[model[[dcrpNode]][i]] <<- TRUE
+        ## usedClusters[model[[dcrpNode]]] <<- TRUE  ## doesn't work - see issue #1201
+        usedDeps <<- usedClusters[clusterIDs]
+
+        
+        u <- model$getLogProb(target) + model$getLogProb(calcNodesNoSelfStoch[usedDeps]) - rexp(1, 1)    # generate (log)-auxiliary variable: exp(u) ~ uniform(0, exp(lp))
+        x0 <- model[[target]]    # create random interval (L,R), of width 'width', around current value of target
+        L <- x0 - runif(1, 0, 1) * width
+        R <- L + width
+        maxStepsL <- floor(runif(1, 0, 1) * maxSteps)    # randomly allot (maxSteps-1) into maxStepsL and maxStepsR
+        maxStepsR <- maxSteps - 1 - maxStepsL
+        lp <- setAndCalculateTarget(L)
+        while(maxStepsL > 0 & !is.nan(lp) & lp >= u) {   # step L left until outside of slice (max maxStepsL steps)
+            L <- L - width
+            lp <- setAndCalculateTarget(L)
+            maxStepsL <- maxStepsL - 1
+        }
+        lp <- setAndCalculateTarget(R)
+        while(maxStepsR > 0 & !is.nan(lp) & lp >= u) {   # step R right until outside of slice (max maxStepsR steps)
+            R <- R + width
+            lp <- setAndCalculateTarget(R)
+            maxStepsR <- maxStepsR - 1
+        }
+        x1 <- L + runif(1, 0, 1) * (R - L)
+        lp <- setAndCalculateTarget(x1)
+        numContractions <- 0
+        while((is.nan(lp) | lp < u) & (R-L)/(abs(R)+abs(L)+eps) > eps & numContractions < maxContractions) {   # must be is.nan()
+            ## The checks for R-L small and max number of contractions are for cases where model is in
+            ## invalid state and lp calculations are NA/NaN or where R and L contract to each other
+            ## division by R+L+eps ensures we check relative difference and that contracting to zero is ok
+            if(x1 < x0) { L <- x1
+                      } else      { R <- x1 }
+            x1 <- L + runif(1, 0, 1) * (R - L)           # sample uniformly from (L,R) until sample is inside of slice (with shrinkage)
+            lp <- setAndCalculateTarget(x1)
+            numContractions <- numContractions + 1
+        }
+        if((R-L)/(abs(R)+abs(L)+eps) <= eps | numContractions == maxContractions) {
+            if(maxContractionsWarning)
+                cat("Warning: slice sampler reached maximum number of contractions for '", target, "'. Current parameter value is ", x0, ".\n")
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesNoSelfDeterm, logProb = FALSE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesNoSelfStoch, logProbOnly = TRUE)
+        } else {
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelfDeterm, logProb = FALSE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelfStoch, logProbOnly = TRUE)
+            jumpDist <- abs(x1 - x0)
+            if(adaptive)     adaptiveProcedure(jumpDist)
+        }
+    },
+    methods = list(
+        setAndCalculateTarget = function(value = double()) {
+            if(discrete)     value <- floor(value)
+            model[[target]] <<- value
+            lp <- model$calculate(target)
+            if(lp == -Inf) return(-Inf) 
+            model$calculate(calcNodesNoSelf)
+            lp <- lp + model$getLogProb(calcNodesNoSelfStoch[usedDeps])
+            returnType(double())
+            return(lp)
+        },
+        adaptiveProcedure = function(jumpDist = double()) {
+            timesRan <<- timesRan + 1
+            sumJumps <<- sumJumps + jumpDist   # cumulative (absolute) distance between consecutive values
+            if(timesRan %% adaptInterval == 0) {
+                adaptFactor <- (3/4) ^ timesAdapted
+                meanJump <- sumJumps / timesRan
+                width <<- width + (2*meanJump - width) * adaptFactor   # exponentially decaying adaptation of 'width' -> 2 * (avg. jump distance)
+                timesAdapted <<- timesAdapted + 1
+                if(saveMCMChistory) {
+                    setSize(widthHistory, timesAdapted)                 ## widthHistory
+                    widthHistory[timesAdapted] <<- width                ## widthHistory
+                }
+                timesRan <<- 0
+                sumJumps <<- 0
+            }
+        },
+        getWidthHistory = function() {       ## widthHistory
+            returnType(double(1))
+            if(saveMCMChistory) {
+                return(widthHistory)
+            } else {
+                print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC")
+                return(numeric(1, 0))
+            }
+       },
+        reset = function() {
+            width        <<- widthOriginal
+            timesRan     <<- 0
+            timesAdapted <<- 0
+            sumJumps     <<- 0
+            if(saveMCMChistory) {
+                widthHistory  <<- c(0, 0)    ## widthHistory
+            }
+        }
+    )
+)
+
 
 
 getSamplesDPmeasureNames <- function(clusterVarInfo, model, truncG, p) {
@@ -2270,7 +2449,7 @@ getSamplesDPmeasureNames <- function(clusterVarInfo, model, truncG, p) {
       tmp[i, ] <- sapply(seq_len(truncG),
                          function(idx) {
                            expr[[2+clusterVarInfo$indexPosition[j]]] <- as.numeric(idx)
-                           return(deparse(expr))
+                           return(safeDeparse(expr, warn = TRUE))
                          })
     }
     result <- rbind(result , tmp)

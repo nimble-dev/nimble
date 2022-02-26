@@ -155,11 +155,6 @@ SEXP RNimble_Ptr_CheckAndRunAllDllFinalizers(SEXP Dll, SEXP Sforce) {
     else
       PRINTF("Warning: %i objects were found from a DLL\n", objectsFound);
   }
-  //  SEXP Sans;
-  //  PROTECT(Sans = Rf_allocVector(INTSXP, 1));
-  //  INTEGER(Sans)[0] = objectsFound;
-  //  UNPROTECT(1);
-  //  return(Sans);
 
   return(local_vectorString_2_STRSEXP(objectsFoundLabels));
 }

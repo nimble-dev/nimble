@@ -2,8 +2,8 @@
 % Please edit documentation in R/distributions_implementations.R
 \name{Inverse-Wishart}
 \alias{Inverse-Wishart}
-\alias{dinvwish_chol}
 \alias{inverse-wishart}
+\alias{dinvwish_chol}
 \alias{rinvwish_chol}
 \title{The Inverse Wishart Distribution}
 \usage{
@@ -40,13 +40,12 @@ x <- rwish_chol(1, ch, df = df)
 dwish_chol(x, ch, df = df)
 
 }
-\author{
-Christopher Paciorek
-}
 \references{
 Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
 }
 \seealso{
 \link{Distributions} for other standard distributions
 }
-
+\author{
+Christopher Paciorek
+}

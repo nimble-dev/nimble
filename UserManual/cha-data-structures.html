@@ -1,25 +1,25 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<html lang="" xml:lang="">
 <head>
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title></title>
+  <title>Chapter 14 Data structures in NIMBLE | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.12 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="" />
+  <meta property="og:title" content="Chapter 14 Data structures in NIMBLE | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
   
-  <meta property="og:image" content="nimble-icon.png" />
+  <meta property="og:image" content="/nimble-icon.png" />
   <meta property="og:description" content="This is the NIMBLE User Manual." />
   <meta name="github-repo" content="nimble-dev/nimble" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="" />
+  <meta name="twitter:title" content="Chapter 14 Data structures in NIMBLE | NimbleUserManual.knit" />
   
   <meta name="twitter:description" content="This is the NIMBLE User Manual." />
-  <meta name="twitter:image" content="nimble-icon.png" />
+  <meta name="twitter:image" content="/nimble-icon.png" />
 
 
 
@@ -29,15 +29,17 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
-<link rel="prev" href="cha-using-models.html">
-<link rel="next" href="cha-progr-with-models.html">
-<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<link rel="prev" href="cha-using-models.html"/>
+<link rel="next" href="cha-progr-with-models.html"/>
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
 
 
 
@@ -45,45 +47,74 @@
 
 
 
+
+<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
 
 
 <style type="text/css">
-div.sourceCode { overflow-x: auto; }
-table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
-  margin: 0; padding: 0; vertical-align: baseline; border: none; }
-table.sourceCode { width: 100%; line-height: 100%; }
-td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
-td.sourceCode { padding-left: 5px; }
-code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
-code > span.dt { color: #902000; } /* DataType */
-code > span.dv { color: #40a070; } /* DecVal */
-code > span.bn { color: #40a070; } /* BaseN */
-code > span.fl { color: #40a070; } /* Float */
-code > span.ch { color: #4070a0; } /* Char */
-code > span.st { color: #4070a0; } /* String */
-code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
-code > span.ot { color: #007020; } /* Other */
-code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
-code > span.fu { color: #06287e; } /* Function */
-code > span.er { color: #ff0000; font-weight: bold; } /* Error */
-code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
-code > span.cn { color: #880000; } /* Constant */
-code > span.sc { color: #4070a0; } /* SpecialChar */
-code > span.vs { color: #4070a0; } /* VerbatimString */
-code > span.ss { color: #bb6688; } /* SpecialString */
-code > span.im { } /* Import */
-code > span.va { color: #19177c; } /* Variable */
-code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-code > span.op { color: #666666; } /* Operator */
-code > span.bu { } /* BuiltIn */
-code > span.ex { } /* Extension */
-code > span.pp { color: #bc7a00; } /* Preprocessor */
-code > span.at { color: #7d9029; } /* Attribute */
-code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
-code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+a.sourceLine { display: inline-block; line-height: 1.25; }
+a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
+a.sourceLine:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+a.sourceLine { text-indent: -1em; padding-left: 1em; }
+}
+pre.numberSource a.sourceLine
+  { position: relative; left: -4em; }
+pre.numberSource a.sourceLine::before
+  { content: attr(title);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; pointer-events: all; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {  }
+@media screen {
+a.sourceLine::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
+
 
 <link rel="stylesheet" href="style.css" type="text/css" />
 </head>
@@ -100,7 +131,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.10.1</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.12.2</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -184,8 +215,9 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="7.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:build-compile-mcmc"><i class="fa fa-check"></i><b>7.3</b> Building and compiling the MCMC</a></li>
 <li class="chapter" data-level="7.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:runMCMC"><i class="fa fa-check"></i><b>7.4</b> User-friendly execution of MCMC algorithms: <em>runMCMC</em></a></li>
 <li class="chapter" data-level="7.5" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:executing-the-mcmc-algorithm"><i class="fa fa-check"></i><b>7.5</b> Running the MCMC</a><ul>
-<li class="chapter" data-level="7.5.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:sampler-time"><i class="fa fa-check"></i><b>7.5.1</b> Measuring sampler computation times: <em>getTimes</em></a></li>
-<li class="chapter" data-level="7.5.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#assessing-the-adaption-process-of-rw-and-rw_block-samplers"><i class="fa fa-check"></i><b>7.5.2</b> Assessing the adaption process of <em>RW</em> and <em>RW_block</em> samplers</a></li>
+<li class="chapter" data-level="7.5.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-rerun"><i class="fa fa-check"></i><b>7.5.1</b> Rerunning versus restarting an MCMC</a></li>
+<li class="chapter" data-level="7.5.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:sampler-time"><i class="fa fa-check"></i><b>7.5.2</b> Measuring sampler computation times: <em>getTimes</em></a></li>
+<li class="chapter" data-level="7.5.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#assessing-the-adaption-process-of-rw-and-rw_block-samplers"><i class="fa fa-check"></i><b>7.5.3</b> Assessing the adaption process of <em>RW</em> and <em>RW_block</em> samplers</a></li>
 </ul></li>
 <li class="chapter" data-level="7.6" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:extracting-samples"><i class="fa fa-check"></i><b>7.6</b> Extracting MCMC samples</a></li>
 <li class="chapter" data-level="7.7" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:WAIC"><i class="fa fa-check"></i><b>7.7</b> Calculating WAIC</a></li>
@@ -328,7 +360,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
-<li class="chapter" data-level="16" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i><b>16</b> References</a></li>
+<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
       </nav>
@@ -346,59 +378,85 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="cha:data-structures" class="section level1">
+<div id="cha-data-structures" class="section level1">
 <h1><span class="header-section-number">Chapter 14</span> Data structures in NIMBLE</h1>
 <p>NIMBLE provides several data structures useful for programming.</p>
-<p>We’ll first describe <em>modelValues</em>, which are containers designed for storing values for models. Then in Section <a href="cha-data-structures.html#sec:nimbleLists">14.2</a> we’ll describe <em>nimbleLists</em>, which have a similar purpose to lists in R, allowing you to store heterogeneous information in a single object.</p>
+<p>We’ll first describe <em>modelValues</em>, which are containers designed for
+storing values for models. Then in Section <a href="cha-data-structures.html#sec:nimbleLists">14.2</a> we’ll describe <em>nimbleLists</em>, which have a similar purpose to lists in R, allowing you to store heterogeneous information in a single object.</p>
 <p>modelValues can be created in either R or in nimbleFunction setup code. nimbleLists can be created in R code, in nimbleFunction setup code, and in nimbleFunction run code, from a nimbleList definition created in R or setup code. Once created, modelValues and <code>nimbleLists</code> can then be used either in R or in nimbleFunction setup or run code. If used in run code, they will be compiled along with the nimbleFunction.</p>
 <div id="sec:modelValues-struct" class="section level2">
 <h2><span class="header-section-number">14.1</span> The modelValues data structure</h2>
-<p>modelValues are containers designed for storing values for models. They may be used for model outputs or model inputs. A modelValues object will contain <em>rows</em> of variables. Each row contains one object of each variable, which may be multivariate. The simplest way to build a modelValues object is from a model object. This will create a modelValues object with the same variables as the model. Although they were motivated by models, one is free to set up a modelValues with any variables one wants.</p>
-<p>As with the material in the rest of this chapter, modelValues objects will generally be used in nimbleFunctions that interact with models (see Chapter <a href="cha-progr-with-models.html#cha:progr-with-models">15</a>)<a href="#fn26" class="footnoteRef" id="fnref26"><sup>26</sup></a>. modelValues objects can be defined either in setup code or separately in R (and then passed as an argument to setup code). The modelValues object can then used in run code of nimbleFunctions.</p>
+<p>modelValues are containers designed for
+storing values for models. They may be used for model outputs or
+model inputs. A modelValues object will contain <em>rows</em> of
+variables. Each row contains one object of each variable, which may
+be multivariate. The simplest way to build a
+modelValues object is from a model object. This will create a
+modelValues object with the same variables as the model. Although
+they were motivated by models, one is free to set up a
+modelValues with any variables one wants.</p>
+<p>As with the material in the rest of this chapter, modelValues objects
+will generally be used in nimbleFunctions that interact with models
+(see Chapter <a href="cha-progr-with-models.html#cha-progr-with-models">15</a>)<a href="#fn26" class="footnote-ref" id="fnref26"><sup>26</sup></a>. modelValues objects can
+be defined either in setup code or separately in R (and then passed as
+an argument to setup code). The modelValues object can then used in run code of nimbleFunctions.</p>
 <div id="creating-modelvalues-objects" class="section level3">
 <h3><span class="header-section-number">14.1.1</span> Creating modelValues objects</h3>
 <p>Here is a simple example of creating a modelValues object:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpModelValues =<span class="st"> </span><span class="kw">modelValues</span>(pumpModel, <span class="dt">m =</span> <span class="dv">2</span>)
-pumpModel<span class="op">$</span>x</code></pre></div>
+<div class="sourceCode" id="cb330"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb330-1" title="1">pumpModelValues =<span class="st"> </span><span class="kw">modelValues</span>(pumpModel, <span class="dt">m =</span> <span class="dv">2</span>)</a>
+<a class="sourceLine" id="cb330-2" title="2">pumpModel<span class="op">$</span>x</a></code></pre></div>
 <pre><code>##  [1]  5  1  5 14  3 19  1  1  4 22</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpModelValues<span class="op">$</span>x</code></pre></div>
+<div class="sourceCode" id="cb332"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb332-1" title="1">pumpModelValues<span class="op">$</span>x</a></code></pre></div>
 <pre><code>## [[1]]
 ##  [1] NA NA NA NA NA NA NA NA NA NA
 ## 
 ## [[2]]
 ##  [1] NA NA NA NA NA NA NA NA NA NA</code></pre>
-<p>In this example, <code>pumpModelValues</code> has the same variables as <code>pumpModel</code>, and we set <code>pumpModelValues</code> to have <code>m = 2</code> rows. As you can see, the rows are stored as elements of a list.</p>
-<p>Alternatively, one can define a modelValues object manually by first defining a modelValues <em>configuration</em> via the <code>modelValuesConf</code> function, and then creating an instance from that configuration, like this: <!--- %    
+<p>In this example, <code>pumpModelValues</code> has the same variables as
+<code>pumpModel</code>, and we set <code>pumpModelValues</code> to have <code>m = 2</code>
+rows. As you can see, the rows are stored as elements of a list.</p>
+<p>Alternatively, one can define a modelValues object manually by first defining a modelValues <em>configuration</em> via the
+<code>modelValuesConf</code> function, and then creating an instance from that configuration, like this:
+<!--- %    
 %%    1. `vars`, which is a character vector of variable names, 
 %      1. `type`, which is a character vector of the data types for each variable (`double' for real numbers, `integer' for integers) and  
 %%        1. `size`, which is a list of vectors of the sizes in each dimension of each variable. The names of the list elements must match the names provided in `vars`.   --></p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mvConf =<span class="st"> </span><span class="kw">modelValuesConf</span>(<span class="dt">vars =</span> <span class="kw">c</span>(<span class="st">&#39;a&#39;</span>, <span class="st">&#39;b&#39;</span>, <span class="st">&#39;c&#39;</span>), 
-                         <span class="dt">type =</span> <span class="kw">c</span>(<span class="st">&#39;double&#39;</span>, <span class="st">&#39;int&#39;</span>, <span class="st">&#39;double&#39;</span>), 
-                         <span class="dt">size =</span> <span class="kw">list</span>(<span class="dt">a =</span> <span class="dv">2</span>, <span class="dt">b =</span><span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">2</span>), <span class="dt">c =</span> <span class="dv">1</span>) )
-
-customMV =<span class="st"> </span><span class="kw">modelValues</span>(mvConf, <span class="dt">m =</span> <span class="dv">2</span>)
-customMV<span class="op">$</span>a</code></pre></div>
+<div class="sourceCode" id="cb334"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb334-1" title="1">mvConf =<span class="st"> </span><span class="kw">modelValuesConf</span>(<span class="dt">vars =</span> <span class="kw">c</span>(<span class="st">&#39;a&#39;</span>, <span class="st">&#39;b&#39;</span>, <span class="st">&#39;c&#39;</span>), </a>
+<a class="sourceLine" id="cb334-2" title="2">                         <span class="dt">type =</span> <span class="kw">c</span>(<span class="st">&#39;double&#39;</span>, <span class="st">&#39;int&#39;</span>, <span class="st">&#39;double&#39;</span>), </a>
+<a class="sourceLine" id="cb334-3" title="3">                         <span class="dt">size =</span> <span class="kw">list</span>(<span class="dt">a =</span> <span class="dv">2</span>, <span class="dt">b =</span><span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">2</span>), <span class="dt">c =</span> <span class="dv">1</span>) )</a>
+<a class="sourceLine" id="cb334-4" title="4"></a>
+<a class="sourceLine" id="cb334-5" title="5">customMV =<span class="st"> </span><span class="kw">modelValues</span>(mvConf, <span class="dt">m =</span> <span class="dv">2</span>)</a>
+<a class="sourceLine" id="cb334-6" title="6">customMV<span class="op">$</span>a</a></code></pre></div>
 <pre><code>## [[1]]
 ## [1] NA NA
 ## 
 ## [[2]]
 ## [1] NA NA</code></pre>
-<p>The arguments to <code>modelValuesConf</code> are matching lists of variable names, types, and sizes. See <code>help(modelValuesConf)</code> for more details. Note that in R execution, the types are not enforced. But they will be the types created in C++ code during compilation, so they should be specified carefully.</p>
-<p>The object returned by <code>modelValues</code> is an uncompiled modelValues object. When a nimbleFunction is compiled, any modelValues objects it uses are also compiled. A NIMBLE model always contains a modelValues object that it uses as a default location to store the values of its variables.</p>
-<p>Here is an example where the <code>customMV</code> created above is used as the setup argument for a nimbleFunction, which is then compiled. Its compiled modelValues is then accessed with <code>$</code>.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># simple nimbleFunction that uses a modelValues object</span>
-resizeMV &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
-  <span class="dt">setup =</span> <span class="cf">function</span>(mv){},
-  <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">k =</span> <span class="kw">integer</span>() ){
-    <span class="kw">resize</span>(mv,k)})
-
-rResize &lt;-<span class="st"> </span><span class="kw">resizeMV</span>(customMV)
-cResize &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rResize)
-cResize<span class="op">$</span><span class="kw">run</span>(<span class="dv">5</span>)</code></pre></div>
+<p>The arguments to <code>modelValuesConf</code> are matching lists of variable
+names, types, and sizes. See <code>help(modelValuesConf)</code> for more
+details. Note that in R execution, the types are not enforced. But
+they will be the types created in C++ code during compilation, so they
+should be specified carefully.</p>
+<p>The object returned by <code>modelValues</code> is an uncompiled
+modelValues object. When a nimbleFunction is compiled, any modelValues
+objects it uses are also compiled. A NIMBLE model always contains a
+modelValues object that it uses as a default location to store the values of its variables.</p>
+<p>Here is an example where the <code>customMV</code> created above is used as
+the setup argument for a nimbleFunction, which is then compiled. Its
+compiled modelValues is then accessed with <code>$</code>.</p>
+<div class="sourceCode" id="cb336"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb336-1" title="1"><span class="co"># simple nimbleFunction that uses a modelValues object</span></a>
+<a class="sourceLine" id="cb336-2" title="2">resizeMV &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
+<a class="sourceLine" id="cb336-3" title="3">  <span class="dt">setup =</span> <span class="cf">function</span>(mv){},</a>
+<a class="sourceLine" id="cb336-4" title="4">  <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">k =</span> <span class="kw">integer</span>() ){</a>
+<a class="sourceLine" id="cb336-5" title="5">    <span class="kw">resize</span>(mv,k)})</a>
+<a class="sourceLine" id="cb336-6" title="6"></a>
+<a class="sourceLine" id="cb336-7" title="7">rResize &lt;-<span class="st"> </span><span class="kw">resizeMV</span>(customMV)</a>
+<a class="sourceLine" id="cb336-8" title="8">cResize &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rResize)</a>
+<a class="sourceLine" id="cb336-9" title="9">cResize<span class="op">$</span><span class="kw">run</span>(<span class="dv">5</span>)</a></code></pre></div>
 <pre><code>## NULL</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cCustomMV &lt;-<span class="st"> </span>cResize<span class="op">$</span>mv
-<span class="co"># cCustomMV is a compiled modelValues object</span>
-cCustomMV[[<span class="st">&#39;a&#39;</span>]]</code></pre></div>
+<div class="sourceCode" id="cb338"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb338-1" title="1">cCustomMV &lt;-<span class="st"> </span>cResize<span class="op">$</span>mv</a>
+<a class="sourceLine" id="cb338-2" title="2"><span class="co"># cCustomMV is a compiled modelValues object</span></a>
+<a class="sourceLine" id="cb338-3" title="3">cCustomMV[[<span class="st">&#39;a&#39;</span>]]</a></code></pre></div>
 <pre><code>## [[1]]
 ## [1] NA NA
 ## 
@@ -413,46 +471,55 @@ cCustomMV[[<span class="st">&#39;a&#39;</span>]]</code></pre></div>
 ## 
 ## [[5]]
 ## [1] 0 0</code></pre>
-<p>Compiled modelValues objects can be accessed and altered in all the same ways as uncompiled ones. However, only uncompiled modelValues can be used as arguments to setup code in nimbleFunctions.</p>
-<p>In the example above a modelValues object is passed to setup code, but a modelValues configuration can also be passed, with creation of modelValues object(s) from the configuration done in setup code.</p>
+<p>Compiled modelValues objects can be accessed and altered in all the
+same ways as uncompiled ones. However, only uncompiled modelValues
+can be used as arguments to setup code in nimbleFunctions.</p>
+<p>In the example above a modelValues object is passed to setup code, but
+a modelValues configuration can also be passed, with creation of
+modelValues object(s) from the configuration done in setup code.</p>
 </div>
 <div id="sec:access-cont-modelv" class="section level3">
 <h3><span class="header-section-number">14.1.2</span> Accessing contents of modelValues</h3>
-<p>The values in a modelValues object can be accessed in several ways from R, and in fewer ways from NIMBLE.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># sets the first row of a to (0, 1).  R only.</span>
-customMV[[<span class="st">&#39;a&#39;</span>]][[<span class="dv">1</span>]] &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">1</span>)   
-
-<span class="co"># sets the second row of a to (2, 3)</span>
-customMV[<span class="st">&#39;a&#39;</span>, <span class="dv">2</span>] &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">3</span>)       
-
-<span class="co"># can access subsets of each row</span>
-customMV[<span class="st">&#39;a&#39;</span>, <span class="dv">2</span>][<span class="dv">2</span>] &lt;-<span class="st"> </span><span class="dv">4</span>
-
-<span class="co"># accesses all values of &#39;a&#39;. Output is a list.  R only.</span>
-customMV[[<span class="st">&#39;a&#39;</span>]]                  </code></pre></div>
+<p>The values in a modelValues object can be accessed in several ways
+from R, and in fewer ways from NIMBLE.</p>
+<div class="sourceCode" id="cb340"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb340-1" title="1"><span class="co"># sets the first row of a to (0, 1).  R only.</span></a>
+<a class="sourceLine" id="cb340-2" title="2">customMV[[<span class="st">&#39;a&#39;</span>]][[<span class="dv">1</span>]] &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">1</span>)   </a>
+<a class="sourceLine" id="cb340-3" title="3"></a>
+<a class="sourceLine" id="cb340-4" title="4"><span class="co"># sets the second row of a to (2, 3)</span></a>
+<a class="sourceLine" id="cb340-5" title="5">customMV[<span class="st">&#39;a&#39;</span>, <span class="dv">2</span>] &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">3</span>)       </a>
+<a class="sourceLine" id="cb340-6" title="6"></a>
+<a class="sourceLine" id="cb340-7" title="7"><span class="co"># can access subsets of each row</span></a>
+<a class="sourceLine" id="cb340-8" title="8">customMV[<span class="st">&#39;a&#39;</span>, <span class="dv">2</span>][<span class="dv">2</span>] &lt;-<span class="st"> </span><span class="dv">4</span></a>
+<a class="sourceLine" id="cb340-9" title="9"></a>
+<a class="sourceLine" id="cb340-10" title="10"><span class="co"># accesses all values of &#39;a&#39;. Output is a list.  R only.</span></a>
+<a class="sourceLine" id="cb340-11" title="11">customMV[[<span class="st">&#39;a&#39;</span>]]                  </a></code></pre></div>
 <pre><code>## [[1]]
 ## [1] 0 1
 ## 
 ## [[2]]
 ## [1] 2 4</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># sets the first row of b to a matrix with values 1. R only.</span>
-customMV[[<span class="st">&#39;b&#39;</span>]][[<span class="dv">1</span>]] &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">1</span>, <span class="dt">nrow =</span> <span class="dv">2</span>, <span class="dt">ncol =</span> <span class="dv">2</span>)  
-
-<span class="co"># sets the second row of b.  R only.</span>
-customMV[[<span class="st">&#39;b&#39;</span>]][[<span class="dv">2</span>]] &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">2</span>, <span class="dt">nrow =</span> <span class="dv">2</span>, <span class="dt">ncol =</span> <span class="dv">2</span>)  
-
-<span class="co"># make sure the size of inputs is correct</span>
-<span class="co"># customMV[&#39;a&#39;, 1] &lt;- 1:10  &quot;</span>
-<span class="co"># problem: size of &#39;a&#39; is 2, not 10!</span>
-<span class="co"># will cause problems when compiling nimbleFunction using customMV</span></code></pre></div>
-<p>Currently, only the syntax <code>customMV[&quot;a&quot;, 2]</code> works in the NIMBLE language, not <code>customMV[[&quot;a&quot;][[2]]</code>.</p>
-<p>We can query and change the number of rows using <code>getsize</code> and <code>resize</code>, respectively. These work in both R and NIMBLE. Note that we don’t specify the variables in this case: all variables in a modelValues object will have the same number of rows.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">getsize</span>(customMV)</code></pre></div>
+<div class="sourceCode" id="cb342"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb342-1" title="1"><span class="co"># sets the first row of b to a matrix with values 1. R only.</span></a>
+<a class="sourceLine" id="cb342-2" title="2">customMV[[<span class="st">&#39;b&#39;</span>]][[<span class="dv">1</span>]] &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">1</span>, <span class="dt">nrow =</span> <span class="dv">2</span>, <span class="dt">ncol =</span> <span class="dv">2</span>)  </a>
+<a class="sourceLine" id="cb342-3" title="3"></a>
+<a class="sourceLine" id="cb342-4" title="4"><span class="co"># sets the second row of b.  R only.</span></a>
+<a class="sourceLine" id="cb342-5" title="5">customMV[[<span class="st">&#39;b&#39;</span>]][[<span class="dv">2</span>]] &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">2</span>, <span class="dt">nrow =</span> <span class="dv">2</span>, <span class="dt">ncol =</span> <span class="dv">2</span>)  </a>
+<a class="sourceLine" id="cb342-6" title="6"></a>
+<a class="sourceLine" id="cb342-7" title="7"><span class="co"># make sure the size of inputs is correct</span></a>
+<a class="sourceLine" id="cb342-8" title="8"><span class="co"># customMV[&#39;a&#39;, 1] &lt;- 1:10  &quot;</span></a>
+<a class="sourceLine" id="cb342-9" title="9"><span class="co"># problem: size of &#39;a&#39; is 2, not 10!</span></a>
+<a class="sourceLine" id="cb342-10" title="10"><span class="co"># will cause problems when compiling nimbleFunction using customMV</span></a></code></pre></div>
+<p>Currently, only the syntax <code>customMV["a", 2]</code> works in the NIMBLE
+language, not <code>customMV[["a"][[2]]</code>.</p>
+<p>We can query and change the number of rows using <code>getsize</code> and
+<code>resize</code>, respectively. These work in both R and NIMBLE. Note
+that we don’t specify the variables in this case: all variables in a
+modelValues object will have the same number of rows.</p>
+<div class="sourceCode" id="cb343"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb343-1" title="1"><span class="kw">getsize</span>(customMV)</a></code></pre></div>
 <pre><code>## [1] 2</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">resize</span>(customMV, <span class="dv">3</span>)
-<span class="kw">getsize</span>(customMV)</code></pre></div>
+<div class="sourceCode" id="cb345"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb345-1" title="1"><span class="kw">resize</span>(customMV, <span class="dv">3</span>)</a>
+<a class="sourceLine" id="cb345-2" title="2"><span class="kw">getsize</span>(customMV)</a></code></pre></div>
 <pre><code>## [1] 3</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">customMV<span class="op">$</span>a</code></pre></div>
+<div class="sourceCode" id="cb347"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb347-1" title="1">customMV<span class="op">$</span>a</a></code></pre></div>
 <pre><code>## [[1]]
 ## [1] 0 1
 ## 
@@ -461,25 +528,37 @@ customMV[[<span class="st">&#39;b&#39;</span>]][[<span class="dv">2</span>]] &lt
 ## 
 ## [[3]]
 ## [1] NA NA</code></pre>
-<p>Often it is useful to convert a modelValues object to a matrix for use in R. For example, we may want to convert MCMC output into a matrix, for use with the <code>coda</code> package for processing MCMC samples, or into a list. This can be done with the <code>as.matrix</code> and <code>as.list</code> methods for modelValues objects, respectively. <code>as.matrix</code> will generate column names from every scalar element of variables (e.g. “b[1, 1]” ,“b[2, 1]”, etc.). The rows of the modelValues will be the rows of the matrix, with any matrices or arrays converted to a vector based on column-major ordering.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">as.matrix</span>(customMV, <span class="st">&#39;a&#39;</span>)   <span class="co"># convert &#39;a&#39;</span></code></pre></div>
+<p>Often it is useful to convert a modelValues object to a matrix for use
+in R. For example, we may want to convert MCMC output into a matrix,
+for use with the <code>coda</code> package for processing MCMC samples, or into a
+list. This can be done with the <code>as.matrix</code> and <code>as.list</code> methods for
+modelValues objects, respectively. <code>as.matrix</code> will generate column
+names from every scalar element of variables (e.g. “b[1, 1]” ,“b[2,
+1]”, etc.). The rows of the modelValues will be the rows of the
+matrix, with any matrices or arrays converted to a vector based on
+column-major ordering.</p>
+<div class="sourceCode" id="cb349"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb349-1" title="1"><span class="kw">as.matrix</span>(customMV, <span class="st">&#39;a&#39;</span>)   <span class="co"># convert &#39;a&#39;</span></a></code></pre></div>
 <pre><code>##      a[1] a[2]
 ## [1,]    0    1
 ## [2,]    2    4
 ## [3,]   NA   NA</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">as.matrix</span>(customMV)        <span class="co"># convert all variables</span></code></pre></div>
+<div class="sourceCode" id="cb351"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb351-1" title="1"><span class="kw">as.matrix</span>(customMV)        <span class="co"># convert all variables</span></a></code></pre></div>
 <pre><code>##      a[1] a[2] b[1, 1] b[2, 1] b[1, 2] b[2, 2] c[1]
 ## [1,]    0    1       1       1       1       1   NA
 ## [2,]    2    4       2       2       2       2   NA
 ## [3,]   NA   NA      NA      NA      NA      NA   NA</code></pre>
-<p><code>as.list</code> will return a list with an element for each variable. Each element will be an array of the same size and shape as the variable with an additional index for the iteration (e.g., MCMC iteration when used for MCMC output). By default iteration is the first index, but it can be the last if needed.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">as.list</span>(customMV, <span class="st">&#39;a&#39;</span>)    <span class="co"># get only &#39;a&#39;</span></code></pre></div>
+<p><code>as.list</code> will return a list with an element for each variable. Each
+element will be an array of the same size and shape as the variable
+with an additional index for the iteration (e.g., MCMC iteration when used for
+MCMC output). By default iteration is the first index, but it
+can be the last if needed.</p>
+<div class="sourceCode" id="cb353"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb353-1" title="1"><span class="kw">as.list</span>(customMV, <span class="st">&#39;a&#39;</span>)    <span class="co"># get only &#39;a&#39;</span></a></code></pre></div>
 <pre><code>## $a
 ##      [,1] [,2]
 ## [1,]    0    1
 ## [2,]    2    4
 ## [3,]   NA   NA</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">as.list</span>(customMV)         <span class="co"># get all variables</span></code></pre></div>
+<div class="sourceCode" id="cb355"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb355-1" title="1"><span class="kw">as.list</span>(customMV)         <span class="co"># get all variables</span></a></code></pre></div>
 <pre><code>## $a
 ##      [,1] [,2]
 ## [1,]    0    1
@@ -507,21 +586,22 @@ customMV[[<span class="st">&#39;b&#39;</span>]][[<span class="dv">2</span>]] &lt
 ## [1,]   NA
 ## [2,]   NA
 ## [3,]   NA</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">as.list</span>(customMV, <span class="st">&#39;a&#39;</span>, <span class="dt">iterationAsLastIndex =</span> <span class="ot">TRUE</span>) <span class="co"># put iteration in last index</span></code></pre></div>
+<div class="sourceCode" id="cb357"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb357-1" title="1"><span class="kw">as.list</span>(customMV, <span class="st">&#39;a&#39;</span>, <span class="dt">iterationAsLastIndex =</span> <span class="ot">TRUE</span>) <span class="co"># put iteration in last index</span></a></code></pre></div>
 <pre><code>## $a
 ##      [,1] [,2] [,3]
 ## [1,]    0    2   NA
 ## [2,]    1    4   NA</code></pre>
 <p>If a variable is a scalar, using <code>unlist</code> in R to extract all rows as a vector can be useful.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">customMV[<span class="st">&#39;c&#39;</span>, <span class="dv">1</span>] &lt;-<span class="st"> </span><span class="dv">1</span>
-customMV[<span class="st">&#39;c&#39;</span>, <span class="dv">2</span>] &lt;-<span class="st"> </span><span class="dv">2</span>
-customMV[<span class="st">&#39;c&#39;</span>, <span class="dv">3</span>] &lt;-<span class="st"> </span><span class="dv">3</span>
-<span class="kw">unlist</span>(customMV[<span class="st">&#39;c&#39;</span>, ])</code></pre></div>
+<div class="sourceCode" id="cb359"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb359-1" title="1">customMV[<span class="st">&#39;c&#39;</span>, <span class="dv">1</span>] &lt;-<span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb359-2" title="2">customMV[<span class="st">&#39;c&#39;</span>, <span class="dv">2</span>] &lt;-<span class="st"> </span><span class="dv">2</span></a>
+<a class="sourceLine" id="cb359-3" title="3">customMV[<span class="st">&#39;c&#39;</span>, <span class="dv">3</span>] &lt;-<span class="st"> </span><span class="dv">3</span></a>
+<a class="sourceLine" id="cb359-4" title="4"><span class="kw">unlist</span>(customMV[<span class="st">&#39;c&#39;</span>, ])</a></code></pre></div>
 <pre><code>## [1] 1 2 3</code></pre>
-<p>Once we have a modelValues object, we can see the structure of its contents via the <code>varNames</code> and <code>sizes</code> components of the object.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">customMV<span class="op">$</span>varNames</code></pre></div>
+<p>Once we have a modelValues object, we can see the structure of its
+contents via the <code>varNames</code> and <code>sizes</code> components of the object.</p>
+<div class="sourceCode" id="cb361"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb361-1" title="1">customMV<span class="op">$</span>varNames</a></code></pre></div>
 <pre><code>## [1] &quot;a&quot; &quot;b&quot; &quot;c&quot;</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">customMV<span class="op">$</span>sizes</code></pre></div>
+<div class="sourceCode" id="cb363"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb363-1" title="1">customMV<span class="op">$</span>sizes</a></code></pre></div>
 <pre><code>## $a
 ## [1] 2
 ## 
@@ -530,69 +610,86 @@ customMV[<span class="st">&#39;c&#39;</span>, <span class="dv">3</span>] &lt;-<s
 ## 
 ## $c
 ## [1] 1</code></pre>
-<p>As with most NIMBLE objects, modelValues are passed by reference, not by value. That means any modifications of modelValues objects in either R functions or nimbleFunctions will persist outside of the function. This allows for more efficient computation, as stored values are immediately shared among nimbleFunctions.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">alter_a &lt;-<span class="st"> </span><span class="cf">function</span>(mv){
-  mv[<span class="st">&#39;a&#39;</span>,<span class="dv">1</span>][<span class="dv">1</span>] &lt;-<span class="st"> </span><span class="dv">1</span>
-}
-customMV[<span class="st">&#39;a&#39;</span>, <span class="dv">1</span>]</code></pre></div>
+<p>As with most NIMBLE objects, modelValues are passed by reference, not
+by value. That means any modifications of modelValues objects in
+either R functions or nimbleFunctions will persist outside of the
+function. This allows for more efficient computation, as stored values
+are immediately shared among nimbleFunctions.</p>
+<div class="sourceCode" id="cb365"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb365-1" title="1">alter_a &lt;-<span class="st"> </span><span class="cf">function</span>(mv){</a>
+<a class="sourceLine" id="cb365-2" title="2">  mv[<span class="st">&#39;a&#39;</span>,<span class="dv">1</span>][<span class="dv">1</span>] &lt;-<span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb365-3" title="3">}</a>
+<a class="sourceLine" id="cb365-4" title="4">customMV[<span class="st">&#39;a&#39;</span>, <span class="dv">1</span>]</a></code></pre></div>
 <pre><code>## [1] 0 1</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">alter_a</span>(customMV)
-customMV[<span class="st">&#39;a&#39;</span>,<span class="dv">1</span>]</code></pre></div>
+<div class="sourceCode" id="cb367"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb367-1" title="1"><span class="kw">alter_a</span>(customMV)</a>
+<a class="sourceLine" id="cb367-2" title="2">customMV[<span class="st">&#39;a&#39;</span>,<span class="dv">1</span>]</a></code></pre></div>
 <pre><code>## [1] 1 1</code></pre>
 <p>However, when you retrieve a variable from a modelValues object, the result is a standard R list, which is subsequently passed by value, as usual in R.</p>
 <div id="automating-calculation-and-simulation-using-modelvalues" class="section level4">
 <h4><span class="header-section-number">14.1.2.1</span> Automating calculation and simulation using modelValues</h4>
 <!---  At some point Chris would still  like to discuss when a user would be expected to use this (e.g., we could mention a use case), though he thinks this is more clear than simNodes/calcNodes. -->
-<p>The nimbleFunctions <code>simNodesMV</code>, <code>calcNodesMV</code>, and <code>getLogProbsMV</code> can be used to operate on a model based on rows in a modelValues object. For example, <code>simNodesMV</code> will simulate in the model multiple times and record each simulation in a row of its modelValues. <code>calcNodesMV</code> and <code>getLogProbsMV</code> iterate over the rows of a modelValues, copy the nodes into the model, and then do their job of calculating or collecting log probabilities (densities), respectively. Each of these returns a numeric vector with the summed log probabilities of the chosen nodes from each row. <code>calcNodesMV</code> will save the log probabilities back into the modelValues object if <code>saveLP = TRUE</code>, a run-time argument.</p>
+<p>The nimbleFunctions <code>simNodesMV</code>, <code>calcNodesMV</code>, and <code>getLogProbsMV</code>
+can be used to operate on a model based on rows in a modelValues object.
+For example,
+<code>simNodesMV</code> will simulate in the model multiple times and record
+each simulation in a row of its modelValues. <code>calcNodesMV</code> and
+<code>getLogProbsMV</code> iterate over the rows of a modelValues, copy the
+nodes into the model, and then do their job of calculating or
+collecting log probabilities (densities), respectively. Each of these
+returns a numeric vector with the summed log probabilities of the
+chosen nodes from each row. <code>calcNodesMV</code> will
+save the log probabilities back into the modelValues object if
+<code>saveLP = TRUE</code>, a run-time argument.</p>
 <p>Here are some examples:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mv &lt;-<span class="st"> </span><span class="kw">modelValues</span>(simpleModel)
-rSimManyXY &lt;-<span class="st"> </span><span class="kw">simNodesMV</span>(simpleModel, <span class="dt">nodes =</span> <span class="kw">c</span>(<span class="st">&#39;x&#39;</span>, <span class="st">&#39;y&#39;</span>), <span class="dt">mv =</span> mv)
-rCalcManyXDeps &lt;-<span class="st"> </span><span class="kw">calcNodesMV</span>(simpleModel, <span class="dt">nodes =</span> <span class="st">&#39;x&#39;</span>, <span class="dt">mv =</span> mv)
-rGetLogProbMany &lt;-<span class="st"> </span><span class="kw">getLogProbNodesMV</span>(simpleModel, <span class="dt">nodes =</span> <span class="st">&#39;x&#39;</span>, <span class="dt">mv =</span> mv)
-
-cSimManyXY &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rSimManyXY, <span class="dt">project =</span> simpleModel)
-cCalcManyXDeps &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rCalcManyXDeps, <span class="dt">project =</span> simpleModel)
-cGetLogProbMany &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rGetLogProbMany, <span class="dt">project =</span> simpleModel)
-
-cSimManyXY<span class="op">$</span><span class="kw">run</span>(<span class="dt">m =</span> <span class="dv">5</span>) <span class="co"># simulating 5 times</span></code></pre></div>
+<div class="sourceCode" id="cb369"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb369-1" title="1">mv &lt;-<span class="st"> </span><span class="kw">modelValues</span>(simpleModel)</a>
+<a class="sourceLine" id="cb369-2" title="2">rSimManyXY &lt;-<span class="st"> </span><span class="kw">simNodesMV</span>(simpleModel, <span class="dt">nodes =</span> <span class="kw">c</span>(<span class="st">&#39;x&#39;</span>, <span class="st">&#39;y&#39;</span>), <span class="dt">mv =</span> mv)</a>
+<a class="sourceLine" id="cb369-3" title="3">rCalcManyXDeps &lt;-<span class="st"> </span><span class="kw">calcNodesMV</span>(simpleModel, <span class="dt">nodes =</span> <span class="st">&#39;x&#39;</span>, <span class="dt">mv =</span> mv)</a>
+<a class="sourceLine" id="cb369-4" title="4">rGetLogProbMany &lt;-<span class="st"> </span><span class="kw">getLogProbNodesMV</span>(simpleModel, <span class="dt">nodes =</span> <span class="st">&#39;x&#39;</span>, <span class="dt">mv =</span> mv)</a>
+<a class="sourceLine" id="cb369-5" title="5"></a>
+<a class="sourceLine" id="cb369-6" title="6">cSimManyXY &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rSimManyXY, <span class="dt">project =</span> simpleModel)</a>
+<a class="sourceLine" id="cb369-7" title="7">cCalcManyXDeps &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rCalcManyXDeps, <span class="dt">project =</span> simpleModel)</a>
+<a class="sourceLine" id="cb369-8" title="8">cGetLogProbMany &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rGetLogProbMany, <span class="dt">project =</span> simpleModel)</a>
+<a class="sourceLine" id="cb369-9" title="9"></a>
+<a class="sourceLine" id="cb369-10" title="10">cSimManyXY<span class="op">$</span><span class="kw">run</span>(<span class="dt">m =</span> <span class="dv">5</span>) <span class="co"># simulating 5 times</span></a></code></pre></div>
 <pre><code>## NULL</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cCalcManyXDeps<span class="op">$</span><span class="kw">run</span>(<span class="dt">saveLP =</span> <span class="ot">TRUE</span>) <span class="co"># calculating </span></code></pre></div>
+<div class="sourceCode" id="cb371"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb371-1" title="1">cCalcManyXDeps<span class="op">$</span><span class="kw">run</span>(<span class="dt">saveLP =</span> <span class="ot">TRUE</span>) <span class="co"># calculating </span></a></code></pre></div>
 <pre><code>## [1] -18.52723 -14.93433 -23.21395 -22.64131 -12.31624</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cGetLogProbMany<span class="op">$</span><span class="kw">run</span>() <span class="co">#</span></code></pre></div>
+<div class="sourceCode" id="cb373"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb373-1" title="1">cGetLogProbMany<span class="op">$</span><span class="kw">run</span>() <span class="co">#</span></a></code></pre></div>
 <pre><code>## [1] -18.52723 -14.93433 -23.21395 -22.64131 -12.31624</code></pre>
+<div class="sourceCode" id="cb375"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb375-1" title="1">result &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(cSimManyXY<span class="op">$</span>mv) <span class="co"># extract simulated values</span></a></code></pre></div>
 </div>
 </div>
 </div>
 <div id="sec:nimbleLists" class="section level2">
 <h2><span class="header-section-number">14.2</span> The nimbleList data structure</h2>
-<p>nimbleLists provide a container for storing different types of objects in NIMBLE, similar to the list data structure in R. Before a nimbleList can be created and used, a <em>definition</em><a href="#fn27" class="footnoteRef" id="fnref27"><sup>27</sup></a> for that nimbleList must be created that provides the names, types, and dimensions of the elements in the nimbleList. nimbleList definitions must be created in R (either in R’s global environment or in setup code), but the nimbleList instances can be created in run code.</p>
+<p>nimbleLists provide a container for storing different types of objects in NIMBLE, similar to the list data structure in R. Before a nimbleList can be created and used, a <em>definition</em><a href="#fn27" class="footnote-ref" id="fnref27"><sup>27</sup></a> for that nimbleList must be created that provides the names, types, and dimensions of the elements in the nimbleList. nimbleList definitions must be created in R (either in R’s global environment or in setup code), but the nimbleList
+instances can be created in run code.</p>
 <p>Unlike lists in R, nimbleLists must have the names and types of all list elements provided by a definition before the list can be used. A nimbleList definition can be made by using the <code>nimbleList</code> function in one of two manners. The first manner is to provide the <code>nimbleList</code> function with a series of expressions of the form <code>name = type(nDim)</code>, similar to the specification of run-time arguments to nimbleFunctions. The types allowed for a nimbleList are the same as those allowed as run-time arguments to a nimbleFunction, described in Section <a href="cha-RCfunctions.html#sec:decl-argum-return">11.4</a>. For example, the following line of code creates a nimbleList definition with two elements: <code>x</code>, which is a scalar integer, and <code>Y</code>, which is a matrix of doubles.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"> exampleNimListDef &lt;-<span class="st"> </span><span class="kw">nimbleList</span>(<span class="dt">x =</span> <span class="kw">integer</span>(<span class="dv">0</span>), <span class="dt">Y =</span> <span class="kw">double</span>(<span class="dv">2</span>))</code></pre></div>
+<div class="sourceCode" id="cb376"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb376-1" title="1"> exampleNimListDef &lt;-<span class="st"> </span><span class="kw">nimbleList</span>(<span class="dt">x =</span> <span class="kw">integer</span>(<span class="dv">0</span>), <span class="dt">Y =</span> <span class="kw">double</span>(<span class="dv">2</span>))</a></code></pre></div>
 <p>The second method of creating a nimbleList definition is by providing an R list of <em>nimbleType</em> objects to the <code>nimbleList()</code> function. A nimbleType object can be created using the <code>nimbleType</code> function, which must be provided with three arguments: the <code>name</code> of the element being created, the <code>type</code> of the element being created, and the <code>dim</code> of the element being created. For example, the following code creates a list with two nimbleType objects and uses these objects to create a nimbleList definition.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">nimbleListTypes &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="kw">nimbleType</span>(<span class="dt">name =</span> <span class="st">&#39;x&#39;</span>, <span class="dt">type =</span> <span class="st">&#39;integer&#39;</span>, <span class="dt">dim =</span> <span class="dv">0</span>),
-                        <span class="kw">nimbleType</span>(<span class="dt">name =</span> <span class="st">&#39;Y&#39;</span>, <span class="dt">type =</span> <span class="st">&#39;double&#39;</span>, <span class="dt">dim =</span> <span class="dv">2</span>))
-
- <span class="co"># this nimbleList definition is identical to the one created above</span>
- exampleNimListDef2 &lt;-<span class="st"> </span><span class="kw">nimbleList</span>(nimbleListTypes)</code></pre></div>
+<div class="sourceCode" id="cb377"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb377-1" title="1">nimbleListTypes &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="kw">nimbleType</span>(<span class="dt">name =</span> <span class="st">&#39;x&#39;</span>, <span class="dt">type =</span> <span class="st">&#39;integer&#39;</span>, <span class="dt">dim =</span> <span class="dv">0</span>),</a>
+<a class="sourceLine" id="cb377-2" title="2">                        <span class="kw">nimbleType</span>(<span class="dt">name =</span> <span class="st">&#39;Y&#39;</span>, <span class="dt">type =</span> <span class="st">&#39;double&#39;</span>, <span class="dt">dim =</span> <span class="dv">2</span>))</a>
+<a class="sourceLine" id="cb377-3" title="3"></a>
+<a class="sourceLine" id="cb377-4" title="4"> <span class="co"># this nimbleList definition is identical to the one created above</span></a>
+<a class="sourceLine" id="cb377-5" title="5"> exampleNimListDef2 &lt;-<span class="st"> </span><span class="kw">nimbleList</span>(nimbleListTypes)</a></code></pre></div>
 <p>Creating definitions using a list of <code>nimbleType</code>s can be useful, as it allows for programmatic generation of nimbleList elements.</p>
 <p>Once a nimbleList definition has been created, new instances of nimbleLists can be made from that definition using the <code>new</code> member function. The <code>new</code> function can optionally take initial values for the list elements as arguments. Below, we create a new nimbleList from our <code>exampleNimListDef</code> and specify values for the two elements of our list:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"> exampleNimList &lt;-<span class="st"> </span>exampleNimListDef<span class="op">$</span><span class="kw">new</span>(<span class="dt">x =</span> <span class="dv">1</span>, <span class="dt">Y =</span> <span class="kw">diag</span>(<span class="dv">2</span>))</code></pre></div>
+<div class="sourceCode" id="cb378"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb378-1" title="1"> exampleNimList &lt;-<span class="st"> </span>exampleNimListDef<span class="op">$</span><span class="kw">new</span>(<span class="dt">x =</span> <span class="dv">1</span>, <span class="dt">Y =</span> <span class="kw">diag</span>(<span class="dv">2</span>))</a></code></pre></div>
 <p>Once created, nimbleList elements can be accessed using the <code>$</code> operator, just as with lists in R. For example, the value of the <code>x</code> element of our <code>exampleNimbleList</code> can be set to <code>7</code> using</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"> exampleNimList<span class="op">$</span>x &lt;-<span class="st"> </span><span class="dv">7</span></code></pre></div>
+<div class="sourceCode" id="cb379"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb379-1" title="1"> exampleNimList<span class="op">$</span>x &lt;-<span class="st"> </span><span class="dv">7</span></a></code></pre></div>
 <p>nimbleList definitions can be created either in R’s global environment or in <code>setup</code> code of a nimbleFunction. Once a nimbleList definition has been made, new instances of nimbleLists can be created using the <code>new</code> function in R’s global environment, in setup code, or in run code of a nimbleFunction.</p>
 <p>nimbleLists can also be passed as arguments to run code of nimbleFunctions and returned from nimbleFunctions. To use a nimbleList as a run function argument, the name of the nimbleList definition should be provided as the argument type, with a set of parentheses following. To return a nimbleList from the run code of a nimbleFunction, the <code>returnType</code> of that function should be the name of the nimbleList definition, again using a following set of parentheses.</p>
 <p>Below, we demonstrate a function that takes the <code>exampleNimList</code> as an argument, modifies its <code>Y</code> element, and returns the nimbleList.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mynf &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
-  <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">vals =</span> <span class="kw">exampleNimListDef</span>()){
-    onesMatrix &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dt">value =</span> <span class="dv">1</span>, <span class="dt">nrow =</span> <span class="dv">2</span>, <span class="dt">ncol =</span> <span class="dv">2</span>)
-    vals<span class="op">$</span>Y  &lt;-<span class="st"> </span>onesMatrix
-    <span class="kw">returnType</span>(<span class="kw">exampleNimListDef</span>())
-    <span class="kw">return</span>(vals)
-  })
- 
-<span class="co"># pass exampleNimList as argument to mynf</span>
-<span class="kw">mynf</span>(exampleNimList)</code></pre></div>
-<pre><code>## nimbleList object of type nfRefClass_52
+<div class="sourceCode" id="cb380"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb380-1" title="1">mynf &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
+<a class="sourceLine" id="cb380-2" title="2">  <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">vals =</span> <span class="kw">exampleNimListDef</span>()){</a>
+<a class="sourceLine" id="cb380-3" title="3">    onesMatrix &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dt">value =</span> <span class="dv">1</span>, <span class="dt">nrow =</span> <span class="dv">2</span>, <span class="dt">ncol =</span> <span class="dv">2</span>)</a>
+<a class="sourceLine" id="cb380-4" title="4">    vals<span class="op">$</span>Y  &lt;-<span class="st"> </span>onesMatrix</a>
+<a class="sourceLine" id="cb380-5" title="5">    <span class="kw">returnType</span>(<span class="kw">exampleNimListDef</span>())</a>
+<a class="sourceLine" id="cb380-6" title="6">    <span class="kw">return</span>(vals)</a>
+<a class="sourceLine" id="cb380-7" title="7">  })</a>
+<a class="sourceLine" id="cb380-8" title="8"> </a>
+<a class="sourceLine" id="cb380-9" title="9"><span class="co"># pass exampleNimList as argument to mynf</span></a>
+<a class="sourceLine" id="cb380-10" title="10"><span class="kw">mynf</span>(exampleNimList)</a></code></pre></div>
+<pre><code>## nimbleList object of type nfRefClass_58
 ## Field &quot;x&quot;:
 ## [1] 7
 ## Field &quot;Y&quot;:
@@ -600,48 +697,48 @@ cSimManyXY<span class="op">$</span><span class="kw">run</span>(<span class="dt">
 ## [1,]    1    1
 ## [2,]    1    1</code></pre>
 <p>nimbleList arguments to run functions are passed by reference – this means that if an element of a nimbleList argument is modified within a function, that element will remain modified when the function has finished running. To see this, we can inspect the value of the <code>Y</code> element of the <code>exampleNimList</code> object and see that it has been modified.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">exampleNimList<span class="op">$</span>Y</code></pre></div>
+<div class="sourceCode" id="cb382"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb382-1" title="1">exampleNimList<span class="op">$</span>Y</a></code></pre></div>
 <pre><code>##      [,1] [,2]
 ## [1,]    1    1
 ## [2,]    1    1</code></pre>
 <p>In addition to storing basic data types, nimbleLists can also store other nimbleLists. To achieve this, we must create a nimbleList definition that declares the types of nested nimbleLists a nimbleList will store. Below, we create two types of nimbleLists: the first, named <code>innerNimList</code>, will be stored inside the second, named <code>outerNimList</code>:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># first, create definitions for both inner and outer nimbleLists</span>
-innerNimListDef &lt;-<span class="st"> </span><span class="kw">nimbleList</span>(<span class="dt">someText =</span> <span class="kw">character</span>(<span class="dv">0</span>))
-outerNimListDef &lt;-<span class="st"> </span><span class="kw">nimbleList</span>(<span class="dt">xList =</span> <span class="kw">innerNimListDef</span>(),
-                              <span class="dt">z =</span> <span class="kw">double</span>(<span class="dv">0</span>))
-
-<span class="co"># then, create outer nimbleList</span>
-outerNimList &lt;-<span class="st"> </span>outerNimListDef<span class="op">$</span><span class="kw">new</span>(<span class="dt">z =</span> <span class="fl">3.14</span>)
-
-<span class="co"># access element of inner nimbleList</span>
-outerNimList<span class="op">$</span>xList<span class="op">$</span>someText &lt;-<span class="st"> &quot;hello, world&quot;</span></code></pre></div>
+<div class="sourceCode" id="cb384"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb384-1" title="1"><span class="co"># first, create definitions for both inner and outer nimbleLists</span></a>
+<a class="sourceLine" id="cb384-2" title="2">innerNimListDef &lt;-<span class="st"> </span><span class="kw">nimbleList</span>(<span class="dt">someText =</span> <span class="kw">character</span>(<span class="dv">0</span>))</a>
+<a class="sourceLine" id="cb384-3" title="3">outerNimListDef &lt;-<span class="st"> </span><span class="kw">nimbleList</span>(<span class="dt">xList =</span> <span class="kw">innerNimListDef</span>(),</a>
+<a class="sourceLine" id="cb384-4" title="4">                              <span class="dt">z =</span> <span class="kw">double</span>(<span class="dv">0</span>))</a>
+<a class="sourceLine" id="cb384-5" title="5"></a>
+<a class="sourceLine" id="cb384-6" title="6"><span class="co"># then, create outer nimbleList</span></a>
+<a class="sourceLine" id="cb384-7" title="7">outerNimList &lt;-<span class="st"> </span>outerNimListDef<span class="op">$</span><span class="kw">new</span>(<span class="dt">z =</span> <span class="fl">3.14</span>)</a>
+<a class="sourceLine" id="cb384-8" title="8"></a>
+<a class="sourceLine" id="cb384-9" title="9"><span class="co"># access element of inner nimbleList</span></a>
+<a class="sourceLine" id="cb384-10" title="10">outerNimList<span class="op">$</span>xList<span class="op">$</span>someText &lt;-<span class="st"> &quot;hello, world&quot;</span></a></code></pre></div>
 <p>Note that definitions for inner, or nested, nimbleLists must be created before the definition for an outer nimbleList.</p>
 <div id="sec:eigen-nimFunctions" class="section level3">
 <h3><span class="header-section-number">14.2.1</span> Using <em>eigen</em> and <em>svd</em> in nimbleFunctions</h3>
 <p>NIMBLE has two linear algebra functions that return nimbleLists. The <code>eigen</code> function takes a symmetic matrix, <code>x</code>, as an argument and returns a nimbleList of type <code>eigenNimbleList</code>. nimbleLists of type <code>eigenNimbleList</code> have two elements: <code>values</code>, a vector with the eigenvalues of <code>x</code>, and <code>vectors</code>, a square matrix with the same dimension as <code>x</code> whose columns are the eigenvectors of <code>x</code>. The <code>eigen</code> function has two additional arguments: <code>symmetric</code> and <code>only.values</code>. The <code>symmetric</code> argument can be used to specify if <code>x</code> is a symmetric matrix or not. If <code>symmetric = FALSE</code> (the default value), <code>x</code> will be checked for symmetry. Eigendecompositions in NIMBLE for symmetric matrices are both faster and more accurate. Additionally, eigendecompostions of non-symmetric matrices can have complex entries, which are not supported by NIMBLE. If a complex entry is detected, NIMBLE will issue a warning and that entry will be set to <code>NaN</code>. The <code>only.values</code> arument defaults to <code>FALSE</code>. If <code>only.values = TRUE</code>, the <code>eigen</code> function will not calculate the eigenvectors of <code>x</code>, leaving the <code>vectors</code> nimbleList element empty. This can reduce calculation time if only the eigenvalues of <code>x</code> are needed.</p>
-<p>The <code>svd</code> function takes an <span class="math inline">\(n \times p\)</span> matrix <code>x</code> as an argument, and returns a nimbleList of type <code>svdNimbleList</code>. nimbleLists of type <code>svdNimbleList</code> have three elements: <code>d</code>, a vector with the singular values of <code>x</code>, <code>u</code> a matrix with the left singular vectors of <code>x</code>, and <code>v</code>, a matrix with the right singular vectors of <code>x</code>. The <code>svd</code> function has an optional argument <code>vectors</code> which defaults to a value of <code>&quot;full&quot;</code>. The <code>vectors</code> argument can be used to specify the number of singular vectors that are returned. If <code>vectors = &quot;full&quot;</code>, <code>v</code> will be an <span class="math inline">\(n \times n\)</span> matrix and <code>u</code> will be an <span class="math inline">\(p \times p\)</span> matrix. If <code>vectors = &quot;thin&quot;</code>, <code>v</code> will be an<span class="math inline">\(n \times m\)</span> matrix, where <span class="math inline">\(m = \min(n,p)\)</span>, and <code>u</code> will be an <span class="math inline">\(m \times p\)</span> matrix. If <code>vectors = &quot;none&quot;</code>, the <code>u</code> and <code>v</code> elements of the returned nimbleList will not be populated.</p>
+<p>The <code>svd</code> function takes an <span class="math inline">\(n \times p\)</span> matrix <code>x</code> as an argument, and returns a nimbleList of type <code>svdNimbleList</code>. nimbleLists of type <code>svdNimbleList</code> have three elements: <code>d</code>, a vector with the singular values of <code>x</code>, <code>u</code> a matrix with the left singular vectors of <code>x</code>, and <code>v</code>, a matrix with the right singular vectors of <code>x</code>. The <code>svd</code> function has an optional argument <code>vectors</code> which defaults to a value of <code>"full"</code>. The <code>vectors</code> argument can be used to specify the number of singular vectors that are returned. If <code>vectors = "full"</code>, <code>v</code> will be an <span class="math inline">\(n \times n\)</span> matrix and <code>u</code> will be an <span class="math inline">\(p \times p\)</span> matrix. If <code>vectors = "thin"</code>, <code>v</code> will be an<span class="math inline">\(n \times m\)</span> matrix, where <span class="math inline">\(m = \min(n,p)\)</span>, and <code>u</code> will be an <span class="math inline">\(m \times p\)</span> matrix. If <code>vectors = "none"</code>, the <code>u</code> and <code>v</code> elements of the returned nimbleList will not be populated.</p>
 <p>nimbleLists created by either <code>eigen</code> or <code>svd</code> can be returned from a nimbleFunction, using <code>returnType(eigenNimbleList())</code> or <code>returnType(svdNimbleList())</code> respectively. nimbleLists created by <code>eigen</code> and <code>svd</code> can also be used within other nimbleLists by specifying the nimbleList element types as <code>eigenNimbleList()</code> and <code>svdNimbleList()</code>. The below example demonstrates the use of <code>eigen</code> and <code>svd</code> within a nimbleFunction.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">eigenListFunctionGenerator &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
-  <span class="dt">setup =</span> <span class="cf">function</span>(){
-    demoMatrix &lt;-<span class="st"> </span><span class="kw">diag</span>(<span class="dv">4</span>) <span class="op">+</span><span class="st"> </span><span class="dv">2</span>
-    eigenAndSvdListDef &lt;-<span class="st"> </span><span class="kw">nimbleList</span>(<span class="dt">demoEigenList =</span> <span class="kw">eigenNimbleList</span>(), 
-                                     <span class="dt">demoSvdList =</span> <span class="kw">svdNimbleList</span>())
-    eigenAndSvdList &lt;-<span class="st"> </span>eigenAndSvdListDef<span class="op">$</span><span class="kw">new</span>()
-  },
-  <span class="dt">run =</span> <span class="cf">function</span>(){
-    <span class="co"># we will take the eigendecomposition and svd of a symmetric matrix</span>
-    eigenAndSvdList<span class="op">$</span>demoEigenList &lt;&lt;-<span class="st"> </span><span class="kw">eigen</span>(demoMatrix, <span class="dt">symmetric =</span> <span class="ot">TRUE</span>, 
-                                            <span class="dt">only.values =</span> <span class="ot">TRUE</span>)
-    eigenAndSvdList<span class="op">$</span>demoSvdList &lt;&lt;-<span class="st"> </span><span class="kw">svd</span>(demoMatrix, <span class="dt">vectors =</span> <span class="st">&#39;none&#39;</span>)
-    <span class="kw">returnType</span>(<span class="kw">eigenAndSvdListDef</span>())
-    <span class="kw">return</span>(eigenAndSvdList)
-  })
-eigenListFunction &lt;-<span class="st"> </span><span class="kw">eigenListFunctionGenerator</span>()
-
-outputList &lt;-<span class="st">  </span>eigenListFunction<span class="op">$</span><span class="kw">run</span>()
-outputList<span class="op">$</span>demoEigenList<span class="op">$</span>values</code></pre></div>
+<div class="sourceCode" id="cb385"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb385-1" title="1">eigenListFunctionGenerator &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
+<a class="sourceLine" id="cb385-2" title="2">  <span class="dt">setup =</span> <span class="cf">function</span>(){</a>
+<a class="sourceLine" id="cb385-3" title="3">    demoMatrix &lt;-<span class="st"> </span><span class="kw">diag</span>(<span class="dv">4</span>) <span class="op">+</span><span class="st"> </span><span class="dv">2</span></a>
+<a class="sourceLine" id="cb385-4" title="4">    eigenAndSvdListDef &lt;-<span class="st"> </span><span class="kw">nimbleList</span>(<span class="dt">demoEigenList =</span> <span class="kw">eigenNimbleList</span>(), </a>
+<a class="sourceLine" id="cb385-5" title="5">                                     <span class="dt">demoSvdList =</span> <span class="kw">svdNimbleList</span>())</a>
+<a class="sourceLine" id="cb385-6" title="6">    eigenAndSvdList &lt;-<span class="st"> </span>eigenAndSvdListDef<span class="op">$</span><span class="kw">new</span>()</a>
+<a class="sourceLine" id="cb385-7" title="7">  },</a>
+<a class="sourceLine" id="cb385-8" title="8">  <span class="dt">run =</span> <span class="cf">function</span>(){</a>
+<a class="sourceLine" id="cb385-9" title="9">    <span class="co"># we will take the eigendecomposition and svd of a symmetric matrix</span></a>
+<a class="sourceLine" id="cb385-10" title="10">    eigenAndSvdList<span class="op">$</span>demoEigenList &lt;&lt;-<span class="st"> </span><span class="kw">eigen</span>(demoMatrix, <span class="dt">symmetric =</span> <span class="ot">TRUE</span>, </a>
+<a class="sourceLine" id="cb385-11" title="11">                                            <span class="dt">only.values =</span> <span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb385-12" title="12">    eigenAndSvdList<span class="op">$</span>demoSvdList &lt;&lt;-<span class="st"> </span><span class="kw">svd</span>(demoMatrix, <span class="dt">vectors =</span> <span class="st">&#39;none&#39;</span>)</a>
+<a class="sourceLine" id="cb385-13" title="13">    <span class="kw">returnType</span>(<span class="kw">eigenAndSvdListDef</span>())</a>
+<a class="sourceLine" id="cb385-14" title="14">    <span class="kw">return</span>(eigenAndSvdList)</a>
+<a class="sourceLine" id="cb385-15" title="15">  })</a>
+<a class="sourceLine" id="cb385-16" title="16">eigenListFunction &lt;-<span class="st"> </span><span class="kw">eigenListFunctionGenerator</span>()</a>
+<a class="sourceLine" id="cb385-17" title="17"></a>
+<a class="sourceLine" id="cb385-18" title="18">outputList &lt;-<span class="st">  </span>eigenListFunction<span class="op">$</span><span class="kw">run</span>()</a>
+<a class="sourceLine" id="cb385-19" title="19">outputList<span class="op">$</span>demoEigenList<span class="op">$</span>values</a></code></pre></div>
 <pre><code>## [1] 9 1 1 1</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">outputList<span class="op">$</span>demoSvdList<span class="op">$</span>d</code></pre></div>
+<div class="sourceCode" id="cb387"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb387-1" title="1">outputList<span class="op">$</span>demoSvdList<span class="op">$</span>d</a></code></pre></div>
 <pre><code>## [1] 9 1 1 1</code></pre>
 <p>The eigenvalues and singular values returned from the above function are the same since the matrix being decomposed was symmetric. However, note that both eigendecompositions and singular value decompositions are numerical procedures, and computed solutions may have slight differences even for a symmetric input matrix.</p>
 
@@ -652,8 +749,9 @@ outputList<span class="op">$</span>demoEigenList<span class="op">$</span>values<
 <div class="footnotes">
 <hr />
 <ol start="26">
-<li id="fn26"><p>One may want to read this section after an initial reading of Chapter <a href="cha-progr-with-models.html#cha:progr-with-models">15</a>.<a href="cha-data-structures.html#fnref26">↩</a></p></li>
-<li id="fn27"><p>The <em>configuration</em> for a modelValues object is the same concept as a <em>definition</em> here; in a future release of NIMBLE we may make the usage more consistent between modelValues and nimbleLists.<a href="cha-data-structures.html#fnref27">↩</a></p></li>
+<li id="fn26"><p>One may want to read this
+section after an initial reading of Chapter <a href="cha-progr-with-models.html#cha-progr-with-models">15</a>.<a href="cha-data-structures.html#fnref26" class="footnote-back">↩</a></p></li>
+<li id="fn27"><p>The <em>configuration</em> for a modelValues object is the same concept as a <em>definition</em> here; in a future release of NIMBLE we may make the usage more consistent between modelValues and nimbleLists.<a href="cha-data-structures.html#fnref27" class="footnote-back">↩</a></p></li>
 </ol>
 </div>
             </section>
@@ -666,12 +764,13 @@ outputList<span class="op">$</span>demoEigenList<span class="op">$</span>values<
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
-<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
 <script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
 <script>
 gitbook.require(["gitbook"], function(gitbook) {
 gitbook.start({
@@ -679,12 +778,12 @@ gitbook.start({
 "github": false,
 "facebook": true,
 "twitter": true,
-"google": false,
 "linkedin": false,
 "weibo": false,
 "instapaper": false,
 "vk": false,
-"all": ["facebook", "google", "twitter", "linkedin", "weibo", "instapaper"]
+"whatsapp": false,
+"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
 },
 "fontsettings": {
 "theme": "white",
@@ -699,7 +798,15 @@ gitbook.start({
 "link": null,
 "text": null
 },
+"view": {
+"link": null,
+"text": null
+},
 "download": ["NimbleUserManual.pdf", "NimbleUserManual.epub"],
+"search": {
+"engine": "fuse",
+"options": null
+},
 "toc": {
 "collapse": "subsection"
 },
@@ -713,10 +820,11 @@ gitbook.start({
   (function () {
     var script = document.createElement("script");
     script.type = "text/javascript";
-    var src = "";
+    var src = "true";
     if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
-    if (location.protocol !== "file:" && /^https?:/.test(src))
-      src = src.replace(/^https?:/, '');
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
     script.src = src;
     document.getElementsByTagName("head")[0].appendChild(script);
   })();

@@ -4,6 +4,7 @@
 #ifndef __NIMBLE_PREDEFINEDNIMBLELISTS_H
 #define __NIMBLE_PREDEFINEDNIMBLELISTS_H
 
+#include <nimble/smartPtrs.h>
 #include <Rinternals.h>
 #include <nimble/NamedObjects.h>
 #include <nimble/NimArr.h>
@@ -94,5 +95,54 @@ extern "C" SEXP NIMBLE_ADCLASS_castPtrPtrToNamedObjectsPtrSEXP(SEXP input);
 
 extern "C" SEXP NIMBLE_ADCLASS_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input);
 
+class waicList : public NamedObjects, public pointedToBase {
+ public:
+  double WAIC;
+  double lppd;
+  double pWAIC;
+  SEXP RObjectPointer;
+  bool RCopiedFlag;
+  void copyFromSEXP(SEXP S_nimList_);
+  SEXP copyToSEXP();
+  void createNewSEXP();
+  void resetFlags();
+  void copyFromRobject(SEXP Robject);
+  waicList();
+};
+
+extern "C" SEXP new_waicList();
+
+extern "C" SEXP waicList_castPtrPtrToNamedObjectsPtrSEXP(SEXP input);
+
+extern "C" SEXP waicList_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input);
+
+class waicDetailsList : public NamedObjects, public pointedToBase {
+ public:
+  bool marginal;
+  double niterMarginal;
+  bool thin;
+  bool online;
+  NimArr<1, double> WAIC_partialMC;
+  NimArr<1, double> lppd_partialMC;
+  NimArr<1, double> pWAIC_partialMC;
+  NimArr<1, double> niterMarginal_partialMC;
+  NimArr<1, double> WAIC_elements;
+  NimArr<1, double> lppd_elements;
+  NimArr<1, double> pWAIC_elements;
+  SEXP RObjectPointer;
+  bool RCopiedFlag;
+  void copyFromSEXP(SEXP S_nimList_);
+  SEXP copyToSEXP();
+  void createNewSEXP();
+  void resetFlags();
+  void copyFromRobject(SEXP Robject);
+  waicDetailsList();
+};
+
+extern "C" SEXP new_waicDetailsList();
+
+extern "C" SEXP waicDetailsList_castPtrPtrToNamedObjectsPtrSEXP(SEXP input);
+
+extern "C" SEXP waicDetailsList_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input);
 
 #endif  // __NIMBLE_PREDEFINEDNIMBLELISTS_H

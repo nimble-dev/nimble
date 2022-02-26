@@ -2,7 +2,7 @@
 
 # (PART) Introduction {-}
 
-# Welcome to NIMBLE {#cha:welcome-nimble}
+# Welcome to NIMBLE {#cha-welcome-nimble}
 
 NIMBLE is a system for building and sharing analysis methods for
 statistical models from R, especially for hierarchical models and
@@ -45,7 +45,7 @@ You can think of NIMBLE as comprising four pieces:
 
   1. A system for writing statistical models flexibly, which is an
   extension of the BUGS language^[See Chapter
-    \@ref(cha:writing-models) for information about NIMBLE's version of
+    \@ref(cha-writing-models) for information about NIMBLE's version of
     BUGS.].
   1. A library of algorithms such as MCMC.
   1. A language, called NIMBLE, embedded within and similar in style
@@ -76,7 +76,7 @@ written in the NIMBLE language.
 
 ## How to use this manual
 
-We suggest everyone start with the Lightning Introduction in Chapter \@ref(cha:lightning-intro).
+We suggest everyone start with the Lightning Introduction in Chapter \@ref(cha-lightning-intro).
 
 Then, if you want to jump into using NIMBLE's algorithms without learning
 about NIMBLE's programming system, go to Part II to

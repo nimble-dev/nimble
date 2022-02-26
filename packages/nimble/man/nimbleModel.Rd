@@ -4,10 +4,20 @@
 \alias{nimbleModel}
 \title{Create a NIMBLE model from BUGS code}
 \usage{
-nimbleModel(code, constants = list(), data = list(), inits = list(),
-  dimensions = list(), returnDef = FALSE, where = globalenv(),
-  debug = FALSE, check = getNimbleOption("checkModel"), calculate = TRUE,
-  name = NULL, userEnv = parent.frame())
+nimbleModel(
+  code,
+  constants = list(),
+  data = list(),
+  inits = list(),
+  dimensions = list(),
+  returnDef = FALSE,
+  where = globalenv(),
+  debug = FALSE,
+  check = getNimbleOption("checkModel"),
+  calculate = TRUE,
+  name = NULL,
+  userEnv = parent.frame()
+)
 }
 \arguments{
 \item{code}{code for the model in the form returned by \code{\link{nimbleCode}} or (equivalently) \code{\link{quote}}}
@@ -38,9 +48,9 @@ nimbleModel(code, constants = list(), data = list(), inits = list(),
 processes BUGS model code and optional constants, data, and initial values. Returns a NIMBLE model (see \code{\link{modelBaseClass}}) or model definition.
 }
 \details{
-See the User Manual or \code{help(\link{modelBaseClass})} for information about manipulating NIMBLE models created by \code{\link{nimbleModel}}, including methods that operate on models, such as \code{\link{getDependencies}}.
+See the \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} or \code{help(\link{modelBaseClass})} for information about manipulating NIMBLE models created by \code{\link{nimbleModel}}, including methods that operate on models, such as \code{\link{getDependencies}}.
 
-The user may need to provide dimensions for certain variables as in some cases NIMBLE cannot automatically determine the dimensions and sizes of variables. See the User Manual for more information.
+The user may need to provide dimensions for certain variables as in some cases NIMBLE cannot automatically determine the dimensions and sizes of variables. See the \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} for more information.
 
 As noted above, one may lump together constants and data (as part of the \code{constants} argument (unlike R interfaces to JAGS and BUGS where they are provided as the \code{data} argument). One may not provide lumped constants and data as the \code{data} argument.
 
@@ -55,10 +65,9 @@ constants = list(prior_sd = 1)
 data = list(x = 4)
 Rmodel <- nimbleModel(code, constants = constants, data = data)
 }
-\author{
-NIMBLE development team
-}
 \seealso{
 \code{\link{readBUGSmodel}} for creating models from BUGS-format model files
 }
-
+\author{
+NIMBLE development team
+}

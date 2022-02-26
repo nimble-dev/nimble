@@ -480,9 +480,15 @@ eigenCast <- function(expr, argIndex, newType) {
 eigenize_assign_before_recurse <- function(code, symTab, typeEnv, workEnv) {
     setupExprs <- list()
     if(length(code$args) != 2) stop(exprClassProcessingErrorMsg(code, 'There is an assignment without 2 arguments.'), call. = FALSE)
+
+
     workEnv$OnLHSnow <- TRUE
     setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[1]], symTab, typeEnv, workEnv))
     workEnv$OnLHSnow <- NULL ## allows workEnv[['OnLHSnow']] to be NULL if is does not exist or if set to NULL
+
+    promoteArgTypes(code)
+    if(!is.null(code$type)) code$type <- code$args[[2]]$type
+
     changeToFill <- FALSE
     if(inherits(code$args[[2]], 'exprClass')) {
         setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[2]], symTab, typeEnv, workEnv))
@@ -836,7 +842,7 @@ eigenizeName <- function(code, symTab, typeEnv, workEnv) {
     
     if(needStrides) {
         newArgs <- list()
-        newArgs[[1]] <- code$name
+       newArgs[[1]] <- as.name(code$name)
         newArgs[[2]] <- code$nDim ## not used but for completeness
         newArgs[[3]] <- quote(0) ## eigenizeNameStrided will insert getOffset(ptr)
         newArgs[[4]] <- code$sizeExprs
@@ -849,7 +855,13 @@ eigenizeName <- function(code, symTab, typeEnv, workEnv) {
     }
     
     if(!identical(as.integer(targetSym$nDim), as.integer(code$nDim))) { writeLines('found a case where !identical(targetSym$nDim, code$nDim)'); browser() }
-    if(!identical(targetSym$type, code$type)) { writeLines('found a case where !identical(targetSym$type, code$type)'); browser() }
+    if(!identical(targetSym$type, code$type)) {
+      if(!is.null(workEnv[['OnLHSnow']])) { ## This is a hack for a case like <Double vector> <- <Expression returning Integer Vector>
+        code$type <- targetSym$type         ## This is done only when we are processing the LHS name
+      } else {
+        writeLines('found a case where !identical(targetSym$type, code$type)'); browser()
+      }
+    }
     if(!identical(targetSym$name, code$name)) { writeLines('found a case where !identical(targetSym$name, code$name)'); browser() }
     targetTypeSizeExprs <- code$sizeExprs
 

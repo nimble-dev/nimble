@@ -9,7 +9,7 @@ buildMCMC(conf, ...)
 \arguments{
 \item{conf}{An MCMC configuration object of class \code{MCMCconf} that specifies the model, samplers, monitors, and thinning intervals for the resulting MCMC function.  See \code{configureMCMC} for details of creating MCMC configuration objects.  Alternatively, \code{conf} may a NIMBLE model object, in which case an MCMC function corresponding to the default MCMC configuration for this model is returned.}
 
-\item{...}{Additional arguments to be passed to \code{configureMCMC} if \code{conf} is a NIMBLE model object}
+\item{...}{Additional arguments to be passed to \code{configureMCMC} if \code{conf} is a NIMBLE model object (see \code{help(configureMCMC)}).}
 }
 \description{
 First required argument, which may be of class \code{MCMCconf} (an MCMC configuration object), or inherit from class \code{modelBaseClass} (a NIMBLE model object).  Returns an uncompiled executable MCMC function.  See details.
@@ -48,41 +48,9 @@ The compiled function will function identically to the uncompiled object, except
 \section{Calculating WAIC}{
 
 
-After the MCMC has been run, calling the \code{calculateWAIC()} method of the MCMC object will return the WAIC for the model, calculated using the posterior samples from the MCMC run.
-
-\code{calculateWAIC()} accepts a single arugment:
-
-\code{nburnin}: The number of pre-thinning MCMC samples to remove from the beginning of the posterior samples for WAIC calculation (default = 0). These samples are discarded in addition to any burn-in specified when running the MCMC.
-
-The \code{calculateWAIC} method can only be used if the \code{enableWAIC} 
-argument to \code{configureMCMC} or to \code{buildMCMC} is set to \code{TRUE}, or if the NIMBLE option
-\code{enableWAIC} is set to \code{TRUE}.  If a user attempts
-to call \code{calculateWAIC} without having set \code{enableWAIC = TRUE}
-(either in the call to \code{configureMCMC}, or \code{buildMCMC}, or as a NIMBLE option),
-an error will occur.  
-
-The \code{calculateWAIC} method calculates the WAIC of the model that the
-MCMC was performed on. The WAIC (Watanabe, 2010) is calculated from
-Equations 5, 12, and 13 in Gelman et al. (2014) (i.e., using \emph{p}WAIC2).
-
-Note that there is not a unique value of WAIC for a model. The current version of
-NIMBLE only provides the conditional WAIC, namely the version of WAIC where all
-parameters directly involved in the likelihood are treated as \eqn{theta}
-for the purposes of Equation 5 from Gelman et al. (2014). As a result, the user
-must set the MCMC monitors (via the \code{monitors} argument) to include all stochastic
-nodes that are parents of any data nodes; by default the MCMC monitors are only
-the top-level nodes of the model. For more detail on the use of different predictive
-distributions, see Section 2.5 from Gelman et al. (2014) or Ariyo et al. (2019).
-Also note that WAIC relies on a partition of the observations, i.e., 'pointwise'
-prediction. In NIMBLE the sum over log pointwise predictive density values treats
-each data node as contributing a single value to the sum. When a data node is
-multivariate, that data node contributes a single value to the sum based on the
-joint density of the elements in the node. Note that if one wants the WAIC
-calculation to be based on the joint predictive density for each group of observations
-(e.g., grouping the observations from each person or unit in a longitudinal
-data context), one would need to use a multivariate distribution for the
-observations in each group (potentially by writing a user-defined distribution).
+Please see \code{help(waic)} for more information.
 }
+
 \examples{
 \dontrun{
 code <- nimbleCode({
@@ -91,20 +59,19 @@ code <- nimbleCode({
     y ~ dnorm(x, 1)
 })
 Rmodel <- nimbleModel(code, data = list(y = 0))
-conf <- configureMCMC(Rmodel, monitors = c('mu', 'x'))
-Rmcmc <- buildMCMC(conf, enableWAIC = TRUE)
+conf <- configureMCMC(Rmodel, monitors = c('mu', 'x'), enableWAIC = TRUE)
+Rmcmc <- buildMCMC(conf)
 Cmodel <- compileNimble(Rmodel)
 Cmcmc <- compileNimble(Rmcmc, project=Rmodel)
 Cmcmc$run(10000)
 samples <- as.matrix(Cmcmc$mvSamples)
 samplesAsList <- as.list(Cmcmc$mvSamples)
 head(samples)
-WAIC <- Cmcmc$calculateWAIC(nburnin = 1000)
+waicInfo <- Cmcmc$getWAIC()
+waicInfo$WAIC
+waicInfo$pWAIC
 }
 
-}
-\author{
-Daniel Turek
 }
 \references{
 Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation and widely applicable information criterion in singular learning theory. \emph{Journal of Machine Learning Research} 11: 3571-3594.
@@ -116,4 +83,6 @@ Ariyo, O., Quintero, A., Munoz, J., Verbeke, G. and Lesaffre, E. (2019). Bayesia
 \seealso{
 \code{\link{configureMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}
 }
-
+\author{
+Daniel Turek
+}

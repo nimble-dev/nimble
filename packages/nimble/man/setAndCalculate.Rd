@@ -39,4 +39,3 @@ lp <- my_setAndCalc$run(c(1.2, 1.4, 7.6, 8.9))
 \author{
 Daniel Turek
 }
-

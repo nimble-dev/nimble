@@ -208,7 +208,6 @@ cppProjectClass <- setRefClass('cppProjectClass',
 
                                        logFile <- paste0(dllName, ".log")
                                        errorFile <- paste0(dllName, ".err")
-                                       
                                        status = system2(ssdSHLIBcmd, ssdSHLIBargs, stdout = logFile, stderr = errorFile)
 
                                        if(status == 0 && showCompilerOutput) {
@@ -217,6 +216,10 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        }
                                        if(status != 0) {
                                            if(showCompilerOutput) {
+                                               warnLength <- options()$warning.length
+                                               options(warning.length = 8000)
+                                               on.exit(options(warning.length = warnLength))
+                                               
                                                output <- c(readLines(logFile), readLines(errorFile))
                                                stop(structure(simpleError(paste0("Failed to create the shared library.\n", paste0(output, collapse = "\n"))),
                                                               class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))
@@ -309,6 +312,10 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        }
                                        if(status != 0) {
                                            if(showCompilerOutput) {
+                                               warnLength <- options()$warning.length
+                                               options(warning.length = 8000)
+                                               on.exit(options(warning.length = warnLength))
+
                                                output <- c(readLines(logFile), readLines(errorFile))
                                                stop(structure(simpleError(paste0("Failed to create the shared library.\n", paste0(output, collapse = "\n"))),
                                                               class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))

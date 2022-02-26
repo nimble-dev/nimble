@@ -15,7 +15,7 @@ resize(container, k)
 Adds or removes rows to a modelValues object. If rows are added to a modelValues object, the default values are \code{NA}. Works in both R and NIMBLE.
 }
 \details{
-See the User Manual or \code{help(modelValuesBaseClass)} for infomation about modelValues objects
+See the \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} or \code{help(modelValuesBaseClass)} for infomation about modelValues objects
 }
 \examples{
 mvConf <- modelValuesConf(vars = c('a', 'b'),
@@ -30,4 +30,3 @@ as.matrix(mv)
 \author{
 Clifford Anderson-Bergman
 }
-

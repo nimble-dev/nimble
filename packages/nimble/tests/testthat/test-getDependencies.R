@@ -101,7 +101,7 @@ test_that("getDependencies in second model with some criss-crossing dependencies
     expect_identical(m2$getDependencies(c('c2','h1','c3')), ans4)
 })
 
-test_that("old getParentNodes works", {
+test_that("basic use of getParents works", {
     code=nimbleCode({
         for(j in 1:J) {
             for(i in 1:I)
@@ -110,6 +110,7 @@ test_that("old getParentNodes works", {
         }
         mu ~ dnorm(mu0,1)
         mu0 <- mu00
+        mu00 <- mu000
         sigma ~ dunif(sigma0,1)
         sigma1 ~ dunif(0,1)
         tau ~ dunif(0,1)
@@ -120,15 +121,15 @@ test_that("old getParentNodes works", {
     m <- nimbleModel(code,
                      data = list(y = matrix(rnorm(I*J), J, I)),
                      constants = constants)
-    expect_identical(nimble:::getParentNodes('mu', m, stochOnly =  TRUE), character(0))
-    expect_identical(nimble:::getParentNodes('mu', m), c('mu0', 'mu00'))
-    expect_identical(nimble:::getParentNodes('y', m, stochOnly = TRUE),
-                     c('theta[1]','theta[2]','theta[3]', 'sigma'))
-    expect_identical(nimble:::getParentNodes('y', m),
-                     c('lifted_d1_over_sqrt_oPsigma_cP', 'theta[1]','theta[2]','theta[3]', 'sigma'))
-    expect_identical(nimble:::getParentNodes('y[2, 1:3]', m, stochOnly = TRUE),
-                     c('theta[2]', 'sigma'))
-    expect_identical(nimble:::getParentNodes('theta', m),
+    expect_identical(m$getParents('mu', stochOnly =  TRUE), character(0))
+    expect_identical(m$getParents('mu'), c('mu00', 'mu0'))
+    expect_identical(m$getParents('y', stochOnly = TRUE),
+                     c('sigma','theta[1]','theta[2]','theta[3]'))
+    expect_identical(m$getParents('y'),
+                     c('sigma','lifted_d1_over_sqrt_oPsigma_cP', 'theta[1]','theta[2]','theta[3]'))
+    expect_identical(m$getParents('y[2, 1:3]', stochOnly = TRUE),
+                     c('sigma','theta[2]'))
+    expect_identical(m$getParents('theta'),
                      c('tau', 'mu'))
     
 })
@@ -154,13 +155,13 @@ test_that("getParents works in model with no criss-crossing dependencies", {
   m1 <- nimbleModel(c1)
 
   expect_identical(m1$getParents("f1"), c("a1", "a2", "c2", "c4", "c3"))
-  expect_identical(m1$getParents("f1", oneStep = TRUE), c("c4", "c3"))
+  expect_identical(m1$getParents("f1", immediateOnly = TRUE), c("c4", "c3"))
   expect_identical(m1$getParents(c("f1", "g1"), stochOnly = TRUE), c("a1", "a2", "f1"))
-  expect_identical(m1$getParents(c("f1", "g1"), oneStep = TRUE), c("c4", "c3", "f1"))
+  expect_identical(m1$getParents(c("f1", "g1"), immediateOnly = TRUE), c("c4", "c3", "f1"))
   expect_identical(m1$getParents(c("g1", "f1"), stochOnly = TRUE), c("a1", "a2", "f1"))
   expect_identical(m1$getParents(c("f1", "g1"), stochOnly = TRUE, self = TRUE), c("a1", "a2", "f1", "g1"))
   expect_identical(m1$getParents(c("c3", "c2", "e1"), stochOnly = FALSE), c("a1", "c2", "c3"))
-  expect_identical(m1$getParents(c("c3", "c2", "e1"), oneStep = TRUE, stochOnly = FALSE), c("a1", "c2", "c3"))
+  expect_identical(m1$getParents(c("c3", "c2", "e1"), immediateOnly = TRUE, stochOnly = FALSE), c("a1", "c2", "c3"))
   expect_identical(m1$getParents("h1", includeRHSonly = TRUE, stochOnly = FALSE), c("lho"))
 })
 
@@ -225,7 +226,7 @@ test_that("getParents works in model with LHSinferred (aka split) nodes", {
   expect_identical(m3$getParents("c[1]", stochOnly = TRUE), c("var", "a[1:3]"))
   expect_identical(m3$getParents("c[2]", stochOnly = TRUE), c("sig2", "a[1:3]"))
   expect_identical(m3$getParents("c[1:2]", stochOnly = TRUE), c("var", "sig2", "a[1:3]"))
-  expect_identical(m3$getParents("c[1:2]", oneStep = TRUE, stochOnly = TRUE), c("sig2", "a[1:3]"))
+  expect_identical(m3$getParents("c[1:2]", immediateOnly = TRUE, stochOnly = TRUE), c("sig2", "a[1:3]"))
   expect_identical(m3$getParents("sig", stochOnly = TRUE), c("var"))
   expect_identical(m3$getDependencies("a[1]"), c("a[1:3]", "b[1:3]", "c[1]"))
   expect_identical(m3$getDependencies("a[2]"), c("a[1:3]", "c[2]"))

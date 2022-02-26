@@ -50,7 +50,7 @@ pow_int <- function(a, b) a^round(b) # b should be integer.  rounding it makes f
 #'
 #' \code{nimRep} is NIMBLE's version of \code{rep}.  It should behave identically to \code{rep}.  There are no NIMBLE versions of \code{rep.int} or \code{rep_len}.
 #'
-#' \code{nimSeq} is NIMBLE's version of \code{seq}.  It behaves like \code{seq} with support for \code{from}, \code{to}, \code{by} and \code{length.out} arguments.  The \code{along.with} argument is not supported.  There are no NIMBLE versions of \code{seq.int}, \code{seq_along} or \code{seq_len}, with the exception that \code{seq_along} can take a nimbleFunctionList as an argument to provide the index range of a for-loop (User Manual Ch. 13). 
+#' \code{nimSeq} is NIMBLE's version of \code{seq}.  It behaves like \code{seq} with support for \code{from}, \code{to}, \code{by} and \code{length.out} arguments.  The \code{along.with} argument is not supported.  There are no NIMBLE versions of \code{seq.int}, \code{seq_along} or \code{seq_len}, with the exception that \code{seq_along} can take a nimbleFunctionList as an argument to provide the index range of a for-loop (\href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} Ch. 13). 
 #'
 #' \code{which} behaves like the R version but without support for \code{arr.ind} or \code{useNames} arguments.
 #'
@@ -258,7 +258,7 @@ defaultParamInfo <- function() {
 
 #' Get value of a parameter of a stochastic node in a model
 #'
-#' Part of the NIMBLE language
+#' Get the value of a parameter for any single stochastic node in a model.
 #'
 #' @param model A NIMBLE model object
 #'
@@ -269,9 +269,12 @@ defaultParamInfo <- function() {
 #' @param nodeFunctionIndex For internal NIMBLE use only
 #'
 #' @export
-#' @details For example, suppose node 'x[1:5]' follows a multivariate
+#' @details
+#' Standard usage is as a method of a model, in the form \code{model$getParam(node, param)}, but the usage as a simple function with the model as the first argument as above is also allowed.
+#'
+#' For example, suppose node 'x[1:5]' follows a multivariate
 #' normal distribution (dmnorm) in a model declared by BUGS code.
-#' getParam(model, 'x[1:5]', 'mean') would return the current value of
+#' model$getParam('x[1:5]', 'mean') would return the current value of
 #' the mean parameter (which may be determined from other nodes).  The
 #' parameter requested does not have to be part of the
 #' parameterization used to declare the node.  Rather, it can be any
@@ -287,6 +290,8 @@ getParam <- function(model, node, param, nodeFunctionIndex) {
     } else {
         ## not already converted; this is regular execution
         if(length(node) != 1) stop(paste0("getParam only works for one node at a time, but ", length(node), " were provided."))
+        tmp <- model$expandNodeNames(node)
+        if(length(tmp) != 1) stop(paste0("getParam only works for one node at a time, but ", node, " includes multiple nodes."))
         ## makeParamInfo, called by nodeFunctionVector, will check on length of param
         ## nodeFunctionIndex should never be used.
         nfv <- nodeFunctionVector(model, node)
@@ -350,7 +355,7 @@ makeBoundInfo <- function(model, nodes, bound) {
 
 #' Get value of bound of a stochastic node in a model
 #'
-#' Part of the NIMBLE language
+#' Get the value of the lower or upper bound for a single stochastic node in a model.
 #'
 #' @param model A NIMBLE model object
 #'
@@ -361,7 +366,10 @@ makeBoundInfo <- function(model, nodes, bound) {
 #' @param nodeFunctionIndex For internal NIMBLE use only
 #'
 #' @export
-#' @details For nodes that do not involve truncation of the distribution
+#' @details
+#' Standard usage is as a method of a model, in the form \code{model$getBound(node, bound)}, but the usage as a simple function with the model as the first argument as above is also allowed.
+#'
+#' For nodes that do not involve truncation of the distribution
 #' this will return the lower or upper bound of the distribution, which
 #' may be a constant or for a limited number of distributions a parameter
 #' or functional of a parameter (at the moment in NIMBLE, the only case
@@ -454,6 +462,8 @@ rCalcDiffNodes <- function(model, nfv){
 #' @param includeData  A logical argument specifying whether \code{data} nodes should be simulated into (only relevant for \code{\link{simulate}})
 #' @author NIMBLE development team
 #' @details
+#' Standard usage is as a method of a model, in the form \code{model$calculate(nodes)}, but the usage as a simple function with the model as the first argument as above is also allowed.
+#' 
 #' These functions expands the nodes and then process them in the model in the order provided.  Expanding nodes means turning 'y[1:2]' into c('y[1]','y[2]') if y is a vector of scalar nodes.
 #' Calculation is defined for a stochastic node as executing the log probability (density) calculation and for a deterministic node as calculating whatever function was provided on the right-hand side of the model declaration.
 #'
@@ -715,10 +725,10 @@ values <- function(model, nodes, accessorIndex){
 #' 
 #' @param from		Either a NIMBLE model or modelValues object
 #' @param to		Either a NIMBLE model or modelValues object
-#' @param nodes		The nodes of object \code{from} which will be copied from
-#' @param nodesTo	The nodes of object \code{to} which will be copied to. If \code{nodesTo == NA}, will automatically be set to \code{nodes}
-#' @param row		If \code{from} is a modelValues, the row which will be copied from
-#' @param rowTo		If \code{to} is a modelValues, the row which will be copied to. If \code{rowTo == NA}, will automatically be set to \code{row}
+#' @param nodes		Vector of one or more node names of object \code{from} that will be copied from
+#' @param nodesTo	Vector of one or more node names of object \code{to} that will be copied to. If \code{nodesTo} is \code{NULL}, will automatically be set to \code{nodes}
+#' @param row		If \code{from} is a modelValues, the row that will be copied from
+#' @param rowTo		If \code{to} is a modelValues, the row which will be copied to. If \code{rowTo} is \code{NA}, will automatically be set to \code{row}
 #' @param logProb	A logical value indicating whether the log probabilities of the given nodes should also be copied (i.e. if \code{nodes = 'x'}
 #' and \code{logProb = TRUE}, then both \code{'x'} and \code{'logProb_x'} will be copied)
 #' @param logProbOnly   A logical value indicating whether only the log probabilities of the given nodes should be copied (i.e. if \code{nodes = 'x'}
@@ -730,7 +740,7 @@ values <- function(model, nodes, accessorIndex){
 #' @export
 #' @details
 #'
-#' See the User Manual for more details
+#' This function copies values from one or more nodes (possibly including log probabilities for nodes) between models and modelValues objects. For modelValues objects, the row must be specified. This function allows one to conveniently copy multiple nodes, avoiding having to write a loop. 
 #'
 #' @examples
 #'	# Building model and modelValues object
@@ -827,9 +837,9 @@ nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA
 #'
 #' For internal access to methods of \code{nf}, see \code{\link{nfMethod}}.
 #' 
-#' For more information, see \code{?nimbleFunction} and the NIMBLE User Manual.
+#' For more information, see \code{?nimbleFunction} and the NIMBLE \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual}.
 #'
-#' @return whatever varName is in  the nimbleFunction nf.
+#' @return whatever varName is in the nimbleFunction nf.
 #' @examples
 #' nfGen1 <- nimbleFunction(
 #'     setup = function(A) {

@@ -150,7 +150,8 @@ testsReduction = list(
   list(name = 'sd of vector', expr = quote(out <- sd(arg1)), inputDim = 1, outputDim = 0),
   list(name = 'var of vector', expr = quote(out <- var(arg1)), inputDim = 1, outputDim = 0),
   list(name = 'prod of vector', expr = quote(out <- prod(arg1)), inputDim = 1, outputDim = 0),
-  list(name = 'norm of vector', expr = quote(out <- norm(arg1)), inputDim = 1, outputDim = 0, knownFailure = '(.*compiles|.*runs)', expectWarnings = 'builds'),  ## norm doesn't work on vector in R and, in addition, is disabled because of C-R inconsistency so compilation fails as well
+  list(name = 'norm of vector', expr = quote(out <- norm(arg1)), inputDim = 1, outputDim = 0, knownFailure = '(.*compiles|.*runs)'),  ## norm doesn't work on vector in R and, in addition, is disabled because of C-R inconsistency so compilation fails as well
+  ## 2021-09-15: as of change in logging, norm now just returns message not a warning.
   ### matrix
   list(name = 'min of matrix', expr = quote(out <- min(arg1)), inputDim = 2, outputDim = 0),
   list(name = 'max of matrix', expr = quote(out <- max(arg1)), inputDim = 2, outputDim = 0),
@@ -159,7 +160,7 @@ testsReduction = list(
   list(name = 'sd of matrix', expr = quote(out <- sd(arg1)), inputDim = 2, outputDim = 0),
   list(name = 'var of matrix', expr = quote(out <- var(arg1)), inputDim = 2, outputDim = 0, knownFailure = '.*compiles'),  # Not supported
   list(name = 'prod of matrix', expr = quote(out <- prod(arg1)), inputDim = 2, outputDim = 0),
-  list(name = 'norm of matrix', expr = quote(out <- norm(arg1)), inputDim = 2, outputDim = 0, Rcode = quote(out <- norm(arg1, "F")), knownFailure = '(.*compiles|.*runs)', expectWarnings = 'builds') ## NIMBLE's C norm is apparently Frobenius, so R and C nimble functions, and, in addition, is disabled because of C-R inconsistency so compilation fails as well
+  list(name = 'norm of matrix', expr = quote(out <- norm(arg1)), inputDim = 2, outputDim = 0, Rcode = quote(out <- norm(arg1, "F")), knownFailure = '(.*compiles|.*runs)') ## NIMBLE's C norm is apparently Frobenius, so R and C nimble functions, and, in addition, is disabled because of C-R inconsistency so compilation fails as well
   )
 
 testsComparison = list(

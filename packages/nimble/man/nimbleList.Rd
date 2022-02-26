@@ -4,8 +4,12 @@
 \alias{nimbleList}
 \title{create a nimbleList}
 \usage{
-nimbleList(..., name = NA, predefined = FALSE,
-  where = getNimbleFunctionEnvironment())
+nimbleList(
+  ...,
+  name = NA,
+  predefined = FALSE,
+  where = getNimbleFunctionEnvironment()
+)
 }
 \arguments{
 \item{...}{arbitrary set of names and types for the elements of the list or a single R list of type \code{nimbleType}.}
@@ -41,4 +45,3 @@ Instances of \code{nimbleList} definitions can be used as arguments to run code 
 \author{
 NIMBLE development team
 }
-

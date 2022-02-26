@@ -1,12 +1,7 @@
-
-
-
 ## returns a list of all deterministic dependents up to the first stochastic dependent,
 ## omitting any nodes in 'omit', or down the path of 'omit' nodes
 ## works only in terms of vertex IDs, as in the igraph object.
 gd_getDependencies_IDs <- function(graph, maps, nodes, omit, downstream) {
-  # nonStochNodes <- which(maps$types != 'stoch') 		We should be able to speed things up by looking up by graphID instead of intersecting...
-
     nodes <- setdiff(nodes, omit)
     newNodes <- if(length(nodes) > 0)    unlist(maps$edgesFrom2To[nodes]) else integer(0)  ## first set of dependencies, including from LHSinferred
     newNodes <- setdiff(newNodes, omit)
@@ -23,8 +18,6 @@ gd_getDependencies_IDs <- function(graph, maps, nodes, omit, downstream) {
         nodes <- c(nodes, fullNodes)           ## add to nodes
 
         fullNodesForRecursion <- fullNodes
-      ##  fullNodesForRecursion <- if(downstream)   fullNodes   else  fullNodes[maps$types[fullNodes] != 'stoch'] ## find recursion nodes
-
         fullNodesDeps <- if(length(fullNodesForRecursion) > 0) unlist(maps$edgesFrom2To[fullNodesForRecursion]) else integer(0) ## get dependencies of x[1:10]
         
         fullNodesDepsLHSinferred <- maps$types[fullNodesDeps] == 'LHSinferred' ## filter out LHSinferred dependencies, e.g. x[2]
@@ -43,21 +36,6 @@ gd_getDependencies_IDs <- function(graph, maps, nodes, omit, downstream) {
     nodes <- unique(nodes)
     nodes <- sort(nodes)    # topological sort
     return(nodes)
-
-    ## old
-    ## nodes <- setdiff(nodes, omit)
-    ## newNodes <- if(length(nodes) > 0)    unlist(maps$edgesFrom2To[nodes]) else integer(0) 
-    ## newNodes <- setdiff(newNodes, omit)
-    ## while(length(newNodes) > 0) {
-    ##     nodes <- c(nodes, newNodes)
-    ##     newNodesForRecursion <- if(downstream)   newNodes   else  newNodes[maps$types[newNodes] != 'stoch'] 
-    ##     newNodes <- if(length(newNodesForRecursion) > 0)  unlist(maps$edgesFrom2To[newNodesForRecursion]) else integer(0) 
-    ##     newNodes <- setdiff(newNodes, omit)
-    ## }
-    ## nodes <- unique(nodes)
-    ## nodes <- sort(nodes)    # topological sort
-    ## return(nodes)
-
 }
 
 

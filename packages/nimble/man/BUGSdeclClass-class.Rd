@@ -2,8 +2,8 @@
 % Please edit documentation in R/BUGS_BUGSdecl.R
 \docType{class}
 \name{BUGSdeclClass-class}
-\alias{BUGSdeclClass}
 \alias{BUGSdeclClass-class}
+\alias{BUGSdeclClass}
 \title{BUGSdeclClass contains the information extracted from one BUGS declaration}
 \description{
 BUGSdeclClass contains the information extracted from one BUGS declaration

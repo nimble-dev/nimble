@@ -16,4 +16,3 @@ for use in BUGS model code
 \author{
 Christopher Paciorek
 }
-

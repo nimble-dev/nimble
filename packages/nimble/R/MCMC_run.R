@@ -1,6 +1,3 @@
-
-
-
 #' Run one or more chains of an MCMC algorithm and return samples, summary and/or WAIC
 #'
 #' Takes as input an MCMC algorithm (ideally a compiled one for speed)
@@ -31,9 +28,11 @@
 #' 
 #' @param summary Logical argument.  When \code{TRUE}, summary statistics for the posterior samples of each parameter are also returned, for each MCMC chain.  This may be returned in addition to the posterior samples themselves.  Default value is \code{FALSE}.  See details.
 #'
-#' @param WAIC Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  Note that in order for the WAIC to be calculated, the \code{mcmc} object must have also been created with the argument `enableWAIC = TRUE`.  If multiple chains are run, then a single WAIC value is calculated using the posterior samples from all chains.  Default value is \code{FALSE}.  See details.
+#' @param WAIC Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  Note that in order for the WAIC to be calculated, the \code{mcmc} object must have also been created with the argument `enableWAIC = TRUE`.  If multiple chains are run, then a single WAIC value is calculated using the posterior samples from all chains.  Default value is \code{FALSE}.  See \code{help(waic)}.
 #'
-#' @return A list is returned with named elements depending on the arguments passed to \code{nimbleMCMC}, unless this list contains only a single element, in which case only that element is returned.  These elements may include \code{samples}, \code{summary}, and \code{WAIC}, and when the MCMC is monitoring a second set of nodes using \code{monitors2}, also \code{samples2}.  When \code{nchains = 1}, posterior samples are returned as a single matrix, and summary statistics as a single matrix.  When \code{nchains > 1}, posterior samples are returned as a list of matrices, one matrix for each chain, and summary statistics are returned as a list containing \code{nchains+1} matrices: one matrix corresponding to each chain, and the final element providing a summary of all chains, combined.  If \code{samplesAsCodaMCMC} is \code{TRUE}, then posterior samples are provided as \code{coda} \code{mcmc} and \code{mcmc.list} objects.  When \code{WAIC} is \code{TRUE}, a single WAIC value is returned.
+#' @param perChainWAIC Logical argument. When \code{TRUE} and multiple chains are run, the WAIC for each chain is returned as a means of helping assess the stability of the WAIC estimate. Default value is \code{FALSE}, corresponding to a single WAIC estimate based on all of the chains.
+#'
+#' @return A list is returned with named elements depending on the arguments passed to \code{nimbleMCMC}, unless this list contains only a single element, in which case only that element is returned.  These elements may include \code{samples}, \code{summary}, and \code{WAIC}, and when the MCMC is monitoring a second set of nodes using \code{monitors2}, also \code{samples2}.  When \code{nchains = 1}, posterior samples are returned as a single matrix, and summary statistics as a single matrix.  When \code{nchains > 1}, posterior samples are returned as a list of matrices, one matrix for each chain, and summary statistics are returned as a list containing \code{nchains+1} matrices: one matrix corresponding to each chain, and the final element providing a summary of all chains, combined.  If \code{samplesAsCodaMCMC} is \code{TRUE}, then posterior samples are provided as \code{coda} \code{mcmc} and \code{mcmc.list} objects.  When \code{WAIC} is \code{TRUE}, a WAIC summary object is returned.
 #'
 #' @details
 #'
@@ -94,10 +93,11 @@ runMCMC <- function(mcmc,
                     samples = TRUE,
                     samplesAsCodaMCMC = FALSE,
                     summary = FALSE,
-                    WAIC = FALSE) {
+                    WAIC = FALSE,
+                    perChainWAIC = FALSE) {
     if(missing(mcmc)) stop('must provide a NIMBLE MCMC algorithm')
     if(!identical(nfGetDefVar(mcmc, 'name'), 'MCMC')) stop('mcmc argument must be a NIMBLE MCMC algorithm')
-    if(!is.Cnf(mcmc)) message('Warning: running an uncompiled MCMC algorithm, use compileNimble() for faster execution.')
+    if(!is.Cnf(mcmc)) messageIfVerbose('  [Warning] Running an uncompiled MCMC algorithm, use compileNimble() for faster execution.')
     if(!samples && !summary && !WAIC) stop('no output specified, use samples = TRUE, summary = TRUE, or WAIC = TRUE')
     if(nchains < 1) stop('must have nchains > 0')
     if(!missing(inits)) {
@@ -105,6 +105,8 @@ runMCMC <- function(mcmc,
         if(is.list(inits) && (length(inits) > 0) && is.list(inits[[1]]) && (length(inits) != nchains)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of inital values')
     }
     if(WAIC && !mcmc$enableWAIC) stop('mcmc argument must have been created with "enableWAIC = TRUE" in order to calculate WAIC.')
+    if(WAIC && mcmc$enableWAIC && perChainWAIC && mcmc$onlineWAIC)
+        stop('To get per-chain WAIC via runMCMC(), "mcmc" must have been configured with "online = FALSE" in the WAIC control list; see "help(WAIC)" for more information.')
     model <- if(is.Cnf(mcmc)) mcmc$Robject$model$CobjectInterface else mcmc$model
     if(!is.model(model)) stop('something went wrong')
     hasMonitors2 <- length(if(is.Cnf(mcmc)) mcmc$Robject$monitors2 else mcmc$monitors2) > 0
@@ -117,12 +119,12 @@ runMCMC <- function(mcmc,
     ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
     ##samplerExecutionOrderToUse <- if(!missing(samplerExecutionOrder)) samplerExecutionOrder else mcmc$samplerExecutionOrderFromConfPlusTwoZeros[mcmc$samplerExecutionOrderFromConfPlusTwoZeros>0]
     for(i in 1:nchains) {
-        if(nimbleOptions('verbose')) message('running chain ', i, '...')
+        messageIfVerbose('Running chain ', i, ' ...')
         ##if(setSeed) set.seed(i)
         if(is.numeric(setSeed)) {
             if(length(setSeed) == 1) {
                 set.seed(setSeed)
-            } else { if(length(setSeed) == nchains) set.seed(setSeed[i]) else stop('setSeed argument has different length from nchains') }
+            } else { if(length(setSeed) == nchains) set.seed(setSeed[i]) else stop('setSeed argument has different length from nchains.') }
         } else if(setSeed) set.seed(i)
         if(!missing(inits)) {
             if(is.function(inits)) {
@@ -133,31 +135,52 @@ runMCMC <- function(mcmc,
             model$setInits(theseInits)
         }
         ##model$calculate()   # shouldn't be necessary, since mcmc$run() includes call to my_initializeModel$run()
-        mcmc$run(niter, nburnin = nburnin,
-                 thin = thinToUseVec[1], thin2 = thinToUseVec[2],
-                 progressBar = progressBar, chain = i) #, samplerExecutionOrder = samplerExecutionOrderToUse)
-        samplesList[[i]] <- as.matrix(mcmc$mvSamples)
-        if(hasMonitors2)   samplesList2[[i]] <- as.matrix(mcmc$mvSamples2)
+        mcmc$run(niter, nburnin = nburnin, thin = thinToUseVec[1], thin2 = thinToUseVec[2], progressBar = progressBar, resetWAIC = FALSE) #, samplerExecutionOrder = samplerExecutionOrderToUse)
+        tmp <- as.matrix(mcmc$mvSamples)
+        if(!is.null(tmp))
+            samplesList[[i]] <- tmp 
+        if(hasMonitors2) {
+            tmp <- as.matrix(mcmc$mvSamples2)
+            if(!is.null(tmp))
+                samplesList2[[i]] <- tmp 
+        }
     }
     if(WAIC) {
-        if(nchains > 1) {
-            samplesPerChain <- dim(samplesList[[1]])[1]
-            posteriorSamplesMatrix <- matrix(0, nrow = samplesPerChain*nchains, ncol = dim(samplesList[[1]])[2])
-            for(i in seq_along(samplesList)) {
-                posteriorSamplesMatrix[((i-1)*samplesPerChain + 1):(i*samplesPerChain),] <- samplesList[[i]][,]
+        if(mcmc$onlineWAIC) {
+            ## Because resetWAIC is FALSE above, we keep accumulating WAIC stats over all chains and can just
+            ## do calculation as if a single chain.
+            WAICvalue <- mcmc$getWAIC()
+        } else {
+            if(nchains > 1 && perChainWAIC) {
+                WAICvalue <- rep(NA, nchains)
+                for(i in seq_along(samplesList)) {
+                    matrix2mv(samplesList[[i]], mcmc$mvSamples)  ## transfer each set of posterior samples into mcmc$mvSamples
+                    WAICvalue[i] <- mcmc$calculateWAIC()
+                }
+            } else {
+                if(nchains > 1) {
+                    samplesPerChain <- dim(samplesList[[1]])[1]
+                    posteriorSamplesMatrix <- matrix(0, nrow = samplesPerChain*nchains, ncol = dim(samplesList[[1]])[2])
+                    for(i in seq_along(samplesList)) {
+                        posteriorSamplesMatrix[((i-1)*samplesPerChain + 1):(i*samplesPerChain),] <- samplesList[[i]][,]
+                    }
+                    colnames(posteriorSamplesMatrix) <- colnames(samplesList[[1]])
+                    matrix2mv(posteriorSamplesMatrix, mcmc$mvSamples)  ## transfer all posterior samples into mcmc$mvSamples
+                }
+                WAICvalue <- mcmc$calculateWAIC()
             }
-            colnames(posteriorSamplesMatrix) <- colnames(samplesList[[1]])
-            matrix2mv(posteriorSamplesMatrix, mcmc$mvSamples)  ## transfer all posterior samples into mcmc$mvSamples
         }
-        WAICvalue <- mcmc$calculateWAIC()
     }
     if(samplesAsCodaMCMC) {
         samplesList <- as.mcmc.list(lapply(samplesList, as.mcmc))
         if(hasMonitors2)   samplesList2 <- as.mcmc.list(lapply(samplesList2, as.mcmc))
     }
     if(nchains == 1) {
-        samplesList <- samplesList[[1]]                       ## returns matrix when nchains = 1
-        if(hasMonitors2)   samplesList2 <- samplesList2[[1]]  ## returns matrix when nchains = 1
+        if(length(samplesList))
+            samplesList <- samplesList[[1]] else samplesList <- NULL   ## returns matrix when nchains = 1
+        if(hasMonitors2)
+            if(length(samplesList2))
+                samplesList2 <- samplesList2[[1]] else samplesList2 <- NULL  ## returns matrix when nchains = 1
     }
     if(summary) {
         if(nchains == 1) {
@@ -224,9 +247,9 @@ runMCMC <- function(mcmc,
 #' 
 #' @param summary Logical argument.  When \code{TRUE}, summary statistics for the posterior samples of each parameter are also returned, for each MCMC chain.  This may be returned in addition to the posterior samples themselves.  Default value is \code{FALSE}.  See details.
 #'z
-#' @param WAIC Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  If multiple chains are run, then a single WAIC value is calculated using the posterior samples from all chains.  Default value is \code{FALSE}.  See details.
+#' @param WAIC Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  If multiple chains are run, then a single WAIC value is calculated using the posterior samples from all chains.  Default value is \code{FALSE}. Note that the version of WAIC used is the default WAIC conditional on random effects/latent states and without any grouping of data nodes. See \code{help(waic)} for more details. If a different version of WAIC is desired, use \code{runMCMC} instead of \code{nimbleMCMC}.
 #' 
-#' @return A list is returned with named elements depending on the arguments passed to \code{nimbleMCMC}, unless only one among samples, summary, and WAIC are requested, in which case only that element is returned.  These elements may include \code{samples}, \code{summary}, and \code{WAIC}.  When \code{nchains = 1}, posterior samples are returned as a single matrix, and summary statistics as a single matrix.  When \code{nchains > 1}, posterior samples are returned as a list of matrices, one matrix for each chain, and summary statistics are returned as a list containing \code{nchains+1} matrices: one matrix corresponding to each chain, and the final element providing a summary of all chains, combined.  If \code{samplesAsCodaMCMC} is \code{TRUE}, then posterior samples are provided as \code{coda} \code{mcmc} and \code{mcmc.list} objects.  When \code{WAIC} is \code{TRUE}, a single WAIC value is returned.
+#' @return A list is returned with named elements depending on the arguments passed to \code{nimbleMCMC}, unless only one among samples, summary, and WAIC are requested, in which case only that element is returned.  These elements may include \code{samples}, \code{summary}, and \code{WAIC}.  When \code{nchains = 1}, posterior samples are returned as a single matrix, and summary statistics as a single matrix.  When \code{nchains > 1}, posterior samples are returned as a list of matrices, one matrix for each chain, and summary statistics are returned as a list containing \code{nchains+1} matrices: one matrix corresponding to each chain, and the final element providing a summary of all chains, combined.  If \code{samplesAsCodaMCMC} is \code{TRUE}, then posterior samples are provided as \code{coda} \code{mcmc} and \code{mcmc.list} objects.  When \code{WAIC} is \code{TRUE}, a WAIC summary object is returned.
 #'
 #' @details
 #'
@@ -302,7 +325,7 @@ nimbleMCMC <- function(code,
     if(!missing(code) && inherits(code, 'modelBaseClass')) model <- code   ## let's handle it, if model object is provided as un-named first argument to nimbleMCMC
     if(missing(model)) {  ## model object not provided
         if(!missing(inits)) {
-            if(!is.function(inits) && !is.list(inits)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of inital values')
+            if(!is.function(inits) && !is.list(inits)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of initial values')
             if(is.list(inits) && (length(inits) > 0) && is.list(inits[[1]]) && (length(inits) != nchains)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of inital values')
             if(is.function(inits)) {
                 if(is.numeric(setSeed) || setSeed) { if(is.numeric(setSeed)) set.seed(setSeed[1]) else set.seed(0) }

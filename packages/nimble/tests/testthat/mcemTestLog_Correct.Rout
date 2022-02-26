@@ -10,7 +10,6 @@ Parameter Estimates:
     alpha      beta 
 0.8280561 1.2275740 
 Convergence Criterion: 0.02385357.
-Monte Carlo error too big: increasing MCMC sample size.
 Iteration Number: 3.
 Current number of MCMC iterations: 1350.
 Parameter Estimates: 

@@ -24,4 +24,3 @@ As an internal step, the NIMBLE compiler turns \code{nf$method(x)} into \code{nf
 \author{
 NIMBLE development team
 }
-

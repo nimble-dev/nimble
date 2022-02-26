@@ -100,7 +100,7 @@ getNimbleFunctionEnvironment <- function() {
 #' @param k				number of rows that modelValues is set to
 #' @author				Clifford Anderson-Bergman
 #' @details
-#' See the User Manual or \code{help(modelValuesBaseClass)} for infomation about modelValues objects
+#' See the \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} or \code{help(modelValuesBaseClass)} for infomation about modelValues objects
 #'
 #' @examples
 #' mvConf <- modelValuesConf(vars = c('a', 'b'),
@@ -124,7 +124,7 @@ resize <- function(container, k) {
 #' @author Clifford Anderson-Bergman
 #' @export
 #' @details
-#' See the User Manual or \code{help(modelValuesBaseClass)} for information about modelValues objects 
+#' See the \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} or \code{help(modelValuesBaseClass)} for information about modelValues objects 
 #'
 #' @examples
 #'	mvConf <- modelValuesConf(vars = 'a', types = 'double', sizes = list(a = 1) )
@@ -138,10 +138,28 @@ getsize <- function(container) {
 # simply adds width.cutoff = 500 as the default to deal with creation of long variable names from expressions
 deparse <- function(...) {
     if("width.cutoff" %in% names(list(...))) {
-        base::deparse(...)
+        base::deparse(..., control = "digits17")
     } else {
-          base::deparse(..., width.cutoff = 500L)
-      }
+        base::deparse(..., width.cutoff = 500L, control = "digits17")
+    }
+}
+
+## This version of deparse avoids splitting into multiple lines, which generally would lead to
+## problems. We keep the original nimble:::deparse above as deparse is widely used and there
+## are cases where not modifying the nlines behavior may be best. 
+safeDeparse <- function(..., warn = FALSE) {
+    out <- deparse(...)
+    if(nimbleOptions('useSafeDeparse')) {
+        dotArgs <- list(...)
+        if("nlines" %in% names(dotArgs))
+            nlines <- dotArgs$nlines else nlines <- 1L
+        if(nlines != -1L && length(out) > nlines) {
+            if(warn)
+                message("  [Note] safeDeparse: truncating deparse output to ", nlines, " lines.")
+            out <- out[1:nlines]
+        }
+    }
+    return(out)
 }
 
 
@@ -182,3 +200,7 @@ printErrors <- function(excludeWarnings = TRUE) {
         cat(errors, sep = "\n")
     } else cat("No error file found.")
 }
+
+#' @export
+messageIfVerbose <- function(...) 
+    if(nimbleOptions('verbose')) message(...)

@@ -4,7 +4,9 @@
 \name{optimResultNimbleList}
 \alias{optimResultNimbleList}
 \title{EXPERIMENTAL Data type for the return value of \code{\link{nimOptim}}}
-\format{An object of class \code{list} of length 1.}
+\format{
+An object of class \code{list} of length 1.
+}
 \usage{
 optimResultNimbleList
 }
@@ -30,8 +32,8 @@ optimResultNimbleList
 
 \item{\code{hessian}}{Only if argument hessian is true. A symmetric matrix giving an estimate of the Hessian at the solution found.}
 }}
+
 \seealso{
 \code{\link{optim}}, \code{\link{nimOptim}}
 }
 \keyword{datasets}
-

@@ -4,10 +4,17 @@
 \alias{nimbleFunction}
 \title{create a nimbleFunction}
 \usage{
-nimbleFunction(setup = NULL, run = function() { }, methods = list(),
-  globalSetup = NULL, contains = NULL, enableDerivs = list(), name = NA,
+nimbleFunction(
+  setup = NULL,
+  run = function() { },
+  methods = list(),
+  globalSetup = NULL,
+  contains = NULL,
+  enableDerivs = list(),
+  name = NA,
   check = getNimbleOption("checkNimbleFunction"),
-  where = getNimbleFunctionEnvironment())
+  where = getNimbleFunctionEnvironment()
+)
 }
 \arguments{
 \item{setup}{An optional R function definition for setup processing.}
@@ -32,7 +39,7 @@ nimbleFunction(setup = NULL, run = function() { }, methods = list(),
 create a nimbleFunction from a setup function, run function, possibly other methods, and possibly inheritance via \code{contains}
 }
 \details{
-This is the main function for defining nimbleFunctions.  A lot of information is provided in the NIMBLE User Manual, so only a brief summary will be given here.
+This is the main function for defining nimbleFunctions.  A lot of information is provided in the NIMBLE \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual}, so only a brief summary will be given here.
 
 If a \code{setup} function is provided, then \code{nimbleFunction} returns a generator: a function that when called with arguments for the setup function will execute that function and return a specialized nimbleFunction.   The \code{run} and other methods can be called using \code{$} like in other R classes, e.g. \code{nf$run()}. The methods can use objects that were created in or passed to the \code{setup} function.
 
@@ -40,11 +47,10 @@ If no \code{setup} function is provided, then \code{nimbleFunction} returns a fu
 
 If one wants a generator but does not need any setup arguments or code, \code{setup = TRUE} can be used.
 
-See the NIMBLE User Manual for examples.
+See the NIMBLE \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} for examples.
 
 For more information about the \code{contains} argument, see the section on nimbleFunctionLists.
 }
 \author{
 NIMBLE development team
 }
-

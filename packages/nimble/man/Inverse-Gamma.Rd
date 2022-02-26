@@ -3,20 +3,32 @@
 \name{Inverse-Gamma}
 \alias{Inverse-Gamma}
 \alias{dinvgamma}
+\alias{rinvgamma}
 \alias{pinvgamma}
 \alias{qinvgamma}
-\alias{rinvgamma}
 \title{The Inverse Gamma Distribution}
 \usage{
 dinvgamma(x, shape, scale = 1, rate = 1/scale, log = FALSE)
 
 rinvgamma(n = 1, shape, scale = 1, rate = 1/scale)
 
-pinvgamma(q, shape, scale = 1, rate = 1/scale, lower.tail = TRUE,
-  log.p = FALSE)
+pinvgamma(
+  q,
+  shape,
+  scale = 1,
+  rate = 1/scale,
+  lower.tail = TRUE,
+  log.p = FALSE
+)
 
-qinvgamma(p, shape, scale = 1, rate = 1/scale, lower.tail = TRUE,
-  log.p = FALSE)
+qinvgamma(
+  p,
+  shape,
+  scale = 1,
+  rate = 1/scale,
+  lower.tail = TRUE,
+  log.p = FALSE
+)
 }
 \arguments{
 \item{x}{vector of values.}
@@ -72,13 +84,12 @@ the BUGS manual for mathematical details.
 x <- rinvgamma(50, shape = 1, scale = 3)
 dinvgamma(x, shape = 1, scale = 3)
 }
-\author{
-Christopher Paciorek
-}
 \references{
 Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
 }
 \seealso{
 \link{Distributions} for other standard distributions
 }
-
+\author{
+Christopher Paciorek
+}

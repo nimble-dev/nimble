@@ -13,7 +13,7 @@ getsize(container)
 Returns the number of rows of NIMBLE modelValues object. Works in R and NIMBLE.
 }
 \details{
-See the User Manual or \code{help(modelValuesBaseClass)} for information about modelValues objects
+See the \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} or \code{help(modelValuesBaseClass)} for information about modelValues objects
 }
 \examples{
 mvConf <- modelValuesConf(vars = 'a', types = 'double', sizes = list(a = 1) )
@@ -24,4 +24,3 @@ getsize(mv)
 \author{
 Clifford Anderson-Bergman
 }
-

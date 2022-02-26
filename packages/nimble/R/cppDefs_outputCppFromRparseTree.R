@@ -31,7 +31,6 @@ ModifiedRmmParseKeywords2 <- c( structure( as.list(rep('outputCppBinaryOperation
                                    '(' = 'outputCppOpenParentheses2',
                                    'cppOpenParentheses' = 'outputCppOpenParentheses2', 'if' = 'outputCppIfElse2', '{' = 'outputCppOpenBracketInvisible',
                                    scopeBlock = 'outputCppOpenBracket2',
-                                   ##'[[' = 'outputCppArrayIndex2',
                                    '[' = 'outputCppArrayIndex2', 'cppFor' = 'outputCppFor2', 'cppDereference' = 'outputCppDereference2',
                                    'cppReference' = 'outputCppReference2', 'cppCommentBlock' = 'outputCppCommentBlock2', 'cppCout' = 'outputCppCout2',
                                    'c' = 'outputCppTempArray2', 'cppExit' = 'outputCppExit2', 'cppWhile' = 'outputCppWhile2', 'cppScopeResolution' = 'outputCppScopeResolution2',

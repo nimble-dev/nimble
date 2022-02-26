@@ -541,12 +541,14 @@ CAR_proper_evaluateDensity <- nimbleFunction(
     contains = CAR_evaluateDensity_base,
     setup = function(model, targetScalar, neighborNodes, neighborCs, Mi) {
         targetDCAR <- model$expandNodeNames(targetScalar)
-        targetDCARscalarComponents <- model$expandNodeNames(targetScalar, returnScalarComponents = TRUE)
+        targetDCARscalarComponents <- model$expandNodeNames(targetDCAR, returnScalarComponents = TRUE)
         targetIndex <- which(targetDCARscalarComponents == targetScalar)
-        island <- length(neighborNodes)==0
         numNeighbors <- length(neighborCs)                        ## fix length-1 neighborCs
+        island <- numNeighbors == 0
         neighborCs <- array(neighborCs, c(1, numNeighbors))       ## fix length-1 neighborCs
-        if(Mi <= 0)                                              stop('dcar distribution internal error')
+        neighborIndices <- array(0, c(1, numNeighbors))
+        neighborIndices[1, ] <- match(neighborNodes, targetDCARscalarComponents)
+        if(length(neighborNodes) != numNeighbors)                stop('dcar distribution internal error')
         if(length(targetDCAR) != 1)                              stop('dcar distribution internal error')
         if(model$getDistribution(targetDCAR) != 'dcar_proper')   stop('dcar distribution internal error')
         if(length(targetIndex) != 1)                             stop('dcar distribution internal error')
@@ -561,11 +563,11 @@ CAR_proper_evaluateDensity <- nimbleFunction(
     },
     methods = list(
         getMean = function() {
-            mu <- model$getParam(targetDCAR, 'mu')[targetIndex]
-            if(island) return(mu)
+            muValues <- model$getParam(targetDCAR, 'mu')
+            if(island) return(muValues[targetIndex])
             gamma <- model$getParam(targetDCAR, 'gamma')
             neighborValues <- values(model, neighborNodes)
-            mean <- mu + gamma * sum(neighborCs[1,1:numNeighbors] * (neighborValues - mu))
+            mean <- muValues[targetIndex] + gamma * sum(neighborCs[1,1:numNeighbors] * (neighborValues - muValues[neighborIndices[1,1:numNeighbors]]))
             returnType(double())
             return(mean)
         },

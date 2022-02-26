@@ -4,7 +4,7 @@
 require(nimble)
 ``` 
 
-# MCMC {#cha:mcmc}
+# MCMC {#cha-mcmc}
 
 ```{r, MCMCchunk0, echo = FALSE}
 # source the code
@@ -33,7 +33,7 @@ The lengthier and more customizable approach to invoking the MCMC engine on a pa
   1. Use `buildMCMC` to build the MCMC object and its samplers either from the model (using default MCMC configuration) or from a customized MCMC configuration (Section \@ref(sec:build-compile-mcmc)).
   1. Compile the MCMC object (and the model), unless one is debugging and wishes to run the uncompiled MCMC.
   1. Run the MCMC and extract the samples (Sections \@ref(sec:runMCMC), \@ref(sec:executing-the-mcmc-algorithm) and \@ref(sec:extracting-samples)).
-  1. Optionally, calculate the WAIC using the posterior samples (Section \@ref(sec:WAIC)).
+  1. Optionally, calculate the WAIC (Section \@ref(sec:WAIC)).
 
 Prior to version 0.8.0, NIMBLE provided two additional functions, `MCMCsuite` and `compareMCMCs`, to facilitate comparison of multiple MCMC algorithms, either internal or external to NIMBLE.  Those capabilities have been redesigned and moved into a separate package called `compareMCMCs`.
 
@@ -84,10 +84,10 @@ The `nimbleMCMC` function provides control over the:
   - setting the random number seed;
   - returning posterior samples as a matrix or a `coda` `mcmc` object;
   - returning posterior summary statistics; and
-  - returning a WAIC value calculated using samples from all chains.
+  - returning a WAIC value calculated using post-burn-in samples from all chains.
 
 
-This entry point for using `nimbleMCMC` is the `code`, `constants`, `data`, and `inits` arguments that are used for building a NIMBLE model (see Chapters \@ref(cha:writing-models) and \@ref(cha:building-models)).  However, when using `nimbleMCMC`, the `inits` argument can also specify a list of lists of initial values that will be used for each MCMC chain, or a function that generates a list of initial values, which will be generated at the onset of each chain.  As an alternative entry point, a NIMBLE `model` object can also be supplied to `nimbleMCMC`, in which case this model will be used to build the MCMC algorithm.
+This entry point for using `nimbleMCMC` is the `code`, `constants`, `data`, and `inits` arguments that are used for building a NIMBLE model (see Chapters \@ref(cha-writing-models) and \@ref(cha-building-models)).  However, when using `nimbleMCMC`, the `inits` argument can also specify a list of lists of initial values that will be used for each MCMC chain, or a function that generates a list of initial values, which will be generated at the onset of each chain.  As an alternative entry point, a NIMBLE `model` object can also be supplied to `nimbleMCMC`, in which case this model will be used to build the MCMC algorithm.
 
 Based on its arguments, `nimbleMCMC` optionally returns any combination of
 
@@ -174,7 +174,7 @@ The default sampler assigned to a stochastic node is determined by the following
   1. If the node has a conjugate relationship between its prior distribution and the distributions of its stochastic dependents, a `conjugate` (`Gibbs') sampler is assigned.
   1. If the node follows a multinomial distribution, then a `RW_multinomial` sampler is assigned.  This is a discrete random-walk sampler in the space of multinomial outcomes.
   1. If a node follows a Dirichlet distribution, then a `RW_dirichlet` sampler is assigned.  This is a random walk sampler in the space of the simplex defined by the Dirichlet.
-  1. If a node follows an LKJ correlation distribution, then a `RW_block_lkj_corr_cholesky` sampler is assigned. This is a block random walk sampler in a transformed space where the transformation uses the signed stickbreaking approach described in Section 10.12 of [@Stan_2021].
+  1. If a node follows an LKJ correlation distribution, then a `RW_block_lkj_corr_cholesky` sampler is assigned. This is a block random walk sampler in a transformed space where the transformation uses the signed stickbreaking approach described in Section 10.12 of @Stan_Lang_2021.
   1. If the node follows any other multivariate distribution, then a `RW_block` sampler is assigned for all elements.  This is a Metropolis-Hastings adaptive random-walk sampler with a multivariate normal proposal [@Roberts_Sahu_1997].
   1. If the node is binary-valued (strictly taking values 0 or 1), then a `binary` sampler is assigned.  This sampler calculates the conditional probability for both possible node values and draws the new node value from the conditional distribution, in effect making a Gibbs sampler.
   1. If the node is otherwise discrete-valued, then a `slice` sampler is assigned [@Neal2003].
@@ -431,7 +431,7 @@ The current lists of monitors and thinning intervals may be displayed using the 
 
 To record model log-probabilities from an MCMC, one can add monitors for *logProb* variables (which begin with the prefix `logProb_`) that correspond to variables with (any) stochastic nodes.   For example, to record and extract log-probabilities for the variables `alpha`, `sigma_mu`, and `Y`:
 ```{r, eval=FALSE}
-mcmcConf <- configureMCMC(Rmodel)
+mcmcConf <- configureMCMC(Rmodel, enableWAIC = TRUE)
 mcmcConf$addMonitors("logProb_alpha", "logProb_sigma_mu", "logProb_Y")
 Rmcmc <- buildMCMC(mcmcConf)
 Cmodel <- compileNimble(Rmodel)
@@ -449,12 +449,12 @@ The `samples` matrix will contain both MCMC samples and model log-probabilities.
 Once the MCMC configuration object has been created, and customized to one's liking, it may be used to build an MCMC function:
 
 ```{r, buildMCMC, eval=FALSE}
-Rmcmc <- buildMCMC(mcmcConf, enableWAIC = TRUE)
+Rmcmc <- buildMCMC(mcmcConf)
 ```
 
 `buildMCMC` is a nimbleFunction.  The returned object `Rmcmc` is an instance  of the nimbleFunction specific to configuration `mcmcConf` (and of course its associated model).  
 
-Note that if you would like to be able to calculate the WAIC of the model after the MCMC function has been run, you must set `enableWAIC = TRUE` as an argument to either `configureMCMC` or `buildMCMC`, or set `nimbleOptions(MCMCenableWAIC = TRUE)`, which will enable WAIC calculations for all subsequently built MCMC functions.  For more information on WAIC calculations, see Section \@ref(sec:WAIC) or `help(buildMCMC)` in R.
+Note that if you would like to be able to calculate the WAIC of the model, you should usually set `enableWAIC = TRUE` as an argument to`configureMCMC` (or to `buildMCMC` if not using `configureMCMC`), or set `nimbleOptions(MCMCenableWAIC = TRUE)`, which will enable WAIC calculations for all subsequently built MCMC functions.  For more information on WAIC calculations, including situations in which you can calculate WAIC without having set `enableWAIC = TRUE` see Section \@ref(sec:WAIC) or `help(waic)` in R.
 
 When no customization is needed, one can skip `configureMCMC` and simply provide a model object to `buildMCMC`. The following two MCMC functions will be identical:
 
@@ -503,7 +503,7 @@ Once an MCMC algorithm has been created using `buildMCMC`, the function `runMCMC
   - Setting the random number seed;
   - Returning the posterior samples as a `coda` `mcmc` object;
   - Returning summary statistics calculated from each chains; and
-  - Returning a WAIC value calculated using (post-burn-in and thinned) samples from all chains.
+  - Returning a WAIC value calculated using (post-burn-in) samples from all chains.
 
 <!---  See `help(runMCMC)` for details of these arguments. -->
 
@@ -523,7 +523,7 @@ mcmc.out <- runMCMC(Cmcmc)
 mcmc.out <- runMCMC(Cmcmc, niter=10000, nburnin=1000, thin=10, nchains=3)
 
 # run three chains, returning posterior samples, summary statistics,
-# and the WAIC value for each chain
+# and the WAIC value
 mcmc.out <- runMCMC(Cmcmc, nchains = 3, summary = TRUE, WAIC = TRUE)
 
 # run two chains, and specify the initial values for each
@@ -551,14 +551,17 @@ The MCMC algorithm (either the compiled or uncompiled version) can be executed u
 
 The `run` method has optional arguments `nburnin`, `thin` and `thin2`.  These can be used to specify the number of pre-thinning burn-in samples to discard, and the post-burnin thinning intervals for recording samples (corresponding to `monitors` and `monitors2`).  If either `thin` and `thin2` are provided, they will override the thinning intervals that were specified in the original MCMC configuration object.
 
+### Rerunning versus restarting an MCMC {#sec:mcmc-rerun}
+
 The `run` method has an optional `reset` argument.  When `reset = TRUE` (the default value), the following occurs prior to running the MCMC:
 
   1. All model nodes are checked and filled or updated as needed, in valid (topological) order.  If a stochastic node is missing a value, it is populated using a call to `simulate` and its log probability value is calculated.  The values of deterministic nodes are calculated from their parent nodes.  If any right-hand-side-only nodes (e.g., explanatory variables) are missing a value, an error results.
   1. All MCMC sampler functions are reset to their initial state: the initial values of any sampler control parameters (e.g., `scale`, `sliceWidth`, or `propCov`) are reset to their initial values, as were specified by the original MCMC configuration.
   1. The internal modelValues objects `mvSamples` and `mvSamples2` are each resized to the appropriate length for holding the requested number of samples (`niter/thin`, and `niter/thin2`, respectively).
 
+This means that one can begin a new run of an existing MCMC without having to rebuild or recompile the model or the MCMC. This can be helpful if one wants to use the same model and MCMC configuration, but with different initial values, different values of data nodes (but which nodes are data nodes must be the same), changes to covariate values(or other non-data, non-parameter values) in the model, or a different number of MCMC iterations, thinning interval or burn-in.
 
-When `mcmc$run(niter, reset = FALSE)` is called, the MCMC picks up from where it left off, continuing the previous chain and expanding the output as needed.  No values in the model are checked or altered, and sampler functions are not reset to their initial states.
+In contrast, when `mcmc$run(niter, reset = FALSE)` is called, the MCMC picks up from where it left off, continuing the previous chain and expanding the output as needed.  No values in the model are checked or altered, and sampler functions are not reset to their initial states.
 
 The `run` method also has an optional `resetMV` argument. This argument is only considered when`'reset` is set to `FALSE`. When `mcmc$run(niter, reset = FALSE, resetMV = TRUE)` is called the internal modelValues objects `mvSamples` and `mvSamples2` are each resized to the appropriate length for holding the requested number of samples (`niter/thin`, and `niter/thin2`, respectively) and the MCMC carries on from where it left off. In other words, the previously obtained samples are deleted (e.g. to reduce memory usage) prior to continuing the MCMC. The default value of  `resetMV`  is  `FALSE`. 
 
@@ -592,10 +595,21 @@ nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions = TRUE)
 nimbleOptions(MCMCsaveHistory = TRUE)
 ## Next, set up and run your MCMC.
 ## Now access the history information:
-cmcmc$samplerFunctions[[idx]]$getScaleHistory()
-cmcmc$samplerFunctions[[idx]]$getAcceptanceHistory()
-cmcmc$samplerFunctions[[idx]]getPropCovHistory   ## only for RW_block
+Cmcmc$samplerFunctions[[idx]]$getScaleHistory()
+Cmcmc$samplerFunctions[[idx]]$getAcceptanceHistory()
+Cmcmc$samplerFunctions[[idx]]$getPropCovHistory()   ## only for RW_block
 ```
+
+Note that modifying elements of the control list may greatly
+     affect the performance of the `RW_block` sampler. In particular, the sampler
+     can take a long time to find a good proposal covariance when the
+     elements being sampled are not on the same scale. We recommend
+     providing an informed value for ‘propCov’ in this case (possibly
+     simply a diagonal matrix that approximates the relative scales),
+     as well as possibly providing a value of ‘scale’ that errs on the
+     side of being too small. You may also consider decreasing
+     ‘adaptFactorExponent’ and/or ‘adaptInterval’, as doing so has
+     greatly improved performance in some cases.
 
 ## Extracting MCMC samples {#sec:extracting-samples}
 
@@ -627,21 +641,44 @@ Obtaining samples as matrices or lists is most common, but see Section \@ref(sec
 
 ## Calculating WAIC {#sec:WAIC}
 
-Once an MCMC algorithm has been run, as described in Section \@ref(sec:executing-the-mcmc-algorithm), the WAIC [@Watanabe_2010] can be calculated from the posterior samples produced by the MCMC algorithm.  Note that in order to calculate the WAIC value after running an MCMC algorithm, the argument `enableWAIC = TRUE` must have been supplied to `configureMCMC` or to `buildMCMC`, or the `enableWAIC` NIMBLE option must have been set to `TRUE`.
+The WAIC [@Watanabe_2010] can be calculated from the posterior samples produced during the MCMC algorithm. Users have two options to calculate WAIC. The main approach requires enabling WAIC when setting up the MCMC and allows access to a variety of ways to calculate WAIC. This approach does not require that any specific monitors be set^[Prior to version 0.12.0, NIMBLE required specific monitors, because WAIC was calculated at the end of the MCMC using the entire set of MCMC samples.] because the WAIC is calculated in an online manner, accumulating the necessary quantities to calculate WAIC as the MCMC is run.
 
-The WAIC is calculated by calling the member method `mcmc$calculateWAIC` (see `help(buildMCMC)` in R for more details).  The `calculateWAIC` method has one required argument, `nburnin`, the number of initial samples to discard prior to WAIC calculation.  `nburnin` defaults to 0. This burn-in is done in addition to any burn-in specified when running the MCMC, and the burn-in is applied to the samples before any thinning specified when setting up or running the MCMC. 
+The second approach allows one to calculate the WAIC after an MCMC has been run using an MCMC object or matrix (or dataframe) containing the posterior samples, but it requires the user to have correctly specified the monitored variables and only provides the default way to calculate WAIC. An advantage of the second approach is that one can specify additional burnin beyond that specified for the MCMC.
 
-```{r, eval=FALSE}
-Cmcmc$calculateWAIC(nburnin = 100)
+Here we first discuss the main approach and then close the section by showing the second approach. Specific details of the syntax are provided in `help(waic)`.
+
+To enable WAIC for the first approach, the argument `enableWAIC = TRUE` must be supplied to `configureMCMC` (or to `buildMCMC` if not using `configureWAIC`), or the `MCMCenableWAIC` NIMBLE option must have been set to `TRUE`.
+
+The WAIC (as well as the pWAIC and lppd values) is extracted by the member method `mcmc$getWAIC` (see `help(waic)` in R for more details) or is available as the `WAIC` element of the `runMCMC` or `nimbleMCMC` output lists. One can use the member method `mcmc$getWAICdetails` for additional quantities related to WAIC that are discussed below.
 ```
 
 Note that there is not a unique value of WAIC for a model. WAIC is calculated from
-Equations 5, 12, and 13 in [@Gelman_etal_2014] (i.e., using \emph{p}WAIC2). The current version of NIMBLE only provides the conditional WAIC, namely the version of WAIC where all parameters directly involved in the likelihood are treated as
-$\theta$ for the purposes of Equation 5 from [@Gelman_etal_2014]. As a result, the user *must* set the MCMC monitors (via the `monitors` argument) to include all stochastic nodes that are parents of any data nodes; by default the MCMC monitors are only the top-level nodes of the model.
+Equations 5, 12, and 13 in @Gelman_etal_2014 (i.e., using \emph{p}WAIC2), as discussed in detail in @Hug_Paciorek_2021. Therefore, NIMBLE provides
+user control over how WAIC is calculated in two ways.
 
-In some cases, one would want to calculate the marginal version of WAIC, integrating over latent variables, e.g., [@Ariyo_etal_2019]. NIMBLE does not currently provide this version of WAIC (although you could monitor the relevant nodes and carry out the calculations yourself based on the MCMC output).
+First, by default NIMBLE provides the conditional WAIC, namely the version of WAIC where all parameters directly involved in the likelihood are treated as $\theta$ for the purposes of Equation 5 from @Gelman_etal_2014. Users can request the marginal WAIC (see @Ariyo_etal_2019), namely the version of WAIC where latent variables are integrated over (i.e., using a marginal likelihood). This is done by providing the `waicControl` list with a `marginalizeNodes` element to `configureMCMC` or `buildMCMC` (when providing a model as the argument to `buildMCMC`). See `help(waic)` for more details.
 
-Also note that WAIC relies on a partition of the observations, i.e., 'pointwise' prediction. In NIMBLE the sum over log pointwise predictive density values treats each data node as contributing a single value to the sum. When a data node is multivariate, that data node contributes a single value to the sum based on the joint density of the elements in the node. Note that if one wants the WAIC calculation to be based on the joint likelihood for each group of observations (e.g., grouping the observations from each person or unit in a longitudinal data context), one would need to use a multivariate distribution for the observations in each group (potentially by writing a user-defined distribution).
+Second, WAIC relies on a partition of the observations, i.e., 'pointwise' prediction. By default, in NIMBLE the sum over log pointwise predictive density values treats each data node as contributing a single value to the sum. When a data node is multivariate, that data node contributes a single value to the sum based on the joint density of the elements in the node. If one wants to group data nodes such that the joint density within each group is used, one can provide the `waicControl` list with a `dataGroups` element to `configureMCMC` or `buildMCMC` (when providing a model as the argument to `buildMCMC`). See `help(waic)` for more details.
+
+Note that based on a limited set of simulation experiments in @Hug_Paciorek_2021, our tentative recommendation is that users only use marginal WAIC if also using grouping. 
+
+Marginal WAIC requires using Monte Carlo simulation at each iteration of the MCMC to average over draws for the latent variables. To assess the stability of the marginal WAIC to the number of Monte Carlo iterations, one can examine how the WAIC changes with increasing iterations (up to the full number of iterations specified via the `nItsMarginal` element of the `waicControl` list) based on the `WAIC_partialMC`, `lppd_partialMC`, and `pWAIC_partialMC` elements of the detailed WAIC output.
+
+For comparing WAIC between two models, @Vehtari_etal_2017 discuss using the per-observation (more generally, per-data group) contributions to the overall WAIC values to get an approximate standard error for the difference in WAIC between the models. These element-wise values are available as the `WAIC_elements`, `lppd_elements`, and `pWAIC_elements` components of the detailed WAIC output.
+
+The second overall approach to WAIC available in NIMBLE allows one to calculate WAIC post hoc after MCMC sampling using an MCMC object or matrix (or dataframe) containing posterior samples. Simply set up the MCMC and run it without enabling WAIC (but making sure to include in the monitors all stochastic parent nodes of the data nodes) and then use the function `calculateWAIC`, as shown in this example:
+
+```{r, eval=FALSE}
+samples <- runMCMC(Cmcmc, niter = 10000, nburnin = 1000)
+## Using calculateWAIC with an MCMC object
+calculateWAIC(Cmcmc)
+## Using calculateWAIC with a matrix of samples
+calculateWAIC(samples, model)
+## Specifying additional burnin, so only last 5000 (1000+4000) iterations used
+calculateWAIC(Cmcmc, burnin = 4000)
+```
+
+This approach only provides conditional WAIC without any grouping of data nodes (though one can achieve grouping by grouping data nodes into multivariate nodes).
 
 ## k-fold cross-validation
 
@@ -838,7 +875,7 @@ If one wants information about conjugate node relationships for other purposes, 
 
 <!---  ### Scalar Metropolis-Hastings random walk `RW sampler` -->
 
-<!---  The `RW` sampler executes adaptive Metropolis-Hastings sampling with a normal proposal distribution, implementing the adaptation routine given in [@Shaby2011].  This sampler can be applied to any scalar continuous-valued stochastic node, and can optionally sample on a log scale. -->
+<!---  The `RW` sampler executes adaptive Metropolis-Hastings sampling with a normal proposal distribution, implementing the adaptation routine given in @Shaby2011.  This sampler can be applied to any scalar continuous-valued stochastic node, and can optionally sample on a log scale. -->
 
 <!---  The `RW` sampler can be customized using the `control` list argument to set the initial proposal distribution scale, the adaptive properties of the sampler, the reflective property of proposals, and whether to sample on a log scale.  See `help(samplers)` for details.  -->
  
@@ -846,7 +883,7 @@ If one wants information about conjugate node relationships for other purposes, 
 
 <!---  ### Multivariate Metropolis-Hastings `RW_block sampler` -->
 
-<!---  The `RW_block` sampler performs a simultaneous update of one or more model nodes, using an adaptive Metropolis-Hastings algorithm with a multivariate normal proposal distribution [@Roberts_Sahu_1997], implementing the adaptation routine given in [@Shaby2011].  This sampler may be applied to any set of continuous-valued model nodes, to any single continuous-valued multivariate model node, or to any combination thereof.  -->
+<!---  The `RW_block` sampler performs a simultaneous update of one or more model nodes, using an adaptive Metropolis-Hastings algorithm with a multivariate normal proposal distribution [@Roberts_Sahu_1997], implementing the adaptation routine given in @Shaby2011.  This sampler may be applied to any set of continuous-valued model nodes, to any single continuous-valued multivariate model node, or to any combination thereof.  -->
 
 <!---  The `RW_block` sampler can be customized using the `control` list argument to set the initial proposal covariance, and the adaptive properties of the sampler.  See `help(samplers)` for details.  -->
 
@@ -895,7 +932,7 @@ llFun <- nimbleFunction(
         ll <- lfactorial(n) - lfactorial(y) - lfactorial(n-y) +
               y * log(p) + (n-y) * log(1-p)
         returnType(double())
-        return(ll)
+        return(ll[1])
     }
 )
 
@@ -908,6 +945,9 @@ mcmcConf$addSampler(target = "p", type = "RW_llFunction",
 
 Rmcmc <- buildMCMC(mcmcConf)
 ```
+
+Note that we need to return `ll[1]` and not just `ll` because there are no scalar variables in compiled models. Hence `y` and other variables, and therefore `ll`, are of dimension 1 (i.e., vectors / one-dimensional arrays), so we need to specify the first element in order to have the return type be a scalar.
+
 <!---  ### Terminal node `posterior_predictive sampler` 
 % The `posterior_predictive` sampler is only appropriate for use on terminal stochastic nodes (that is, those having no stochastic dependencies).  Note that such nodes play no role in inference but have often been included in BUGS models to accomplish posterior predictive checks.  NIMBLE allows posterior predictive values to be simulated independently of running MCMC, for example by writing a nimbleFunction to do so.  This means that in many cases where terminal stochastic nodes have been included in BUGS models, they are not needed when using NIMBLE.
 The `posterior_predictive` sampler functions by calling the `simulate` method of the relevant node, then updating model probabilities and deterministic dependent nodes.  The `posterior_predictive` sampler will automatically be assigned to all terminal, non-data stochastic nodes in a model by the default MCMC configuration, so it is uncommon to manually assign this sampler.  The `posterior_predictive` sampler accepts no control list arguments. -->
@@ -1049,5 +1089,7 @@ Please see the `compareMCMCs` package for the features previously provided by `M
 It is possible to run multiple chains in parallel using standard R parallelization packages such as `parallel`, `foreach`, and `future`. However, you must create separate copies of all model and MCMC objects using `nimbleModel`, `buildMCMC`, `compileNimble`, etc. This is because NIMBLE uses Reference Classes and R6 classes, so copying such objects simply creates a new variable name that refers to the original object.
 
 Thus, in your parallel loop or lapply-style statement, you should run `nimbleModel` and all subsequent calls to create and compile the model and MCMC algorithm within the parallelized block of code, once for each MCMC chain being run in parallel.
+
+For a worked example, please see [the parallelization example on our webpage](https://r-nimble.org/nimbleExamples/parallelizing_NIMBLE.html).
 
 

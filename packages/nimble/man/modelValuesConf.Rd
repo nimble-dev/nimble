@@ -4,8 +4,15 @@
 \alias{modelValuesConf}
 \title{Create the confs for a custom NIMBLE modelValues object}
 \usage{
-modelValuesConf(symTab, className, vars, types, sizes, modelDef = NA,
-  where = globalenv())
+modelValuesConf(
+  symTab,
+  className,
+  vars,
+  types,
+  sizes,
+  modelDef = NA,
+  where = globalenv()
+)
 }
 \arguments{
 \item{symTab}{For internal use only}
@@ -27,7 +34,7 @@ Options include `double' (for real-valued variables) and `int'.}
 Builds an R-based modelValues conf object
 }
 \details{
-See the User Manual or \code{help(modelValuesBaseClass)} and \code{help(modelValues)} for information
+See the \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} or \code{help(modelValuesBaseClass)} and \code{help(modelValues)} for information
 }
 \examples{
 #Custom modelValues object:
@@ -40,4 +47,3 @@ custom_mv['y',]
 \author{
 Clifford Anderson-Bergman
 }
-

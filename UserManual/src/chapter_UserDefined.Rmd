@@ -5,10 +5,10 @@ require(nimble)
 library(methods)
 ``` 
 
-# Creating user-defined BUGS distributions and functions {#cha:user-defined}
+# Creating user-defined BUGS distributions and functions {#cha-user-defined}
 
 
-NIMBLE allows you to define your own functions and distributions as *nimbleFunction*s for use in BUGS code. As a result, NIMBLE frees you from being constrained to the functions and distributions discussed in Chapter \@ref(cha:writing-models).  For example, instead of setting up a Dirichlet prior with multinomial data and needing to use MCMC, one could recognize that this results in a Dirichlet-multinomial distribution for the data and provide that as a user-defined distribution instead.
+NIMBLE allows you to define your own functions and distributions as *nimbleFunction*s for use in BUGS code. As a result, NIMBLE frees you from being constrained to the functions and distributions discussed in Chapter \@ref(cha-writing-models).  For example, instead of setting up a Dirichlet prior with multinomial data and needing to use MCMC, one could recognize that this results in a Dirichlet-multinomial distribution for the data and provide that as a user-defined distribution instead.
 
 Since NIMBLE allows you to wrap calls to external compiled code or arbitrary R functions as nimbleFunctions, and since you can define model functions and distributions as nimbleFunctions, you can combine these features to build external compiled code or arbitrary R functions into a model.  See Sections \@ref(sec:calling-external-code)-\@ref(sec:calling-R-code).
 
@@ -27,7 +27,7 @@ assign('rfoo', rfoo, envir = .GlobalEnv)
 
 ## User-defined functions {#sec:user-functions}
 
-To provide a new function for use in BUGS code, simply create a nimbleFunction that has no *setup* code as discussed in Chapter \@ref(cha:RCfunctions). Then use it in your BUGS code. That's it.
+To provide a new function for use in BUGS code, simply create a nimbleFunction that has no *setup* code as discussed in Chapter \@ref(cha-RCfunctions). Then use it in your BUGS code. That's it.
 
 Writing nimbleFunctions requires that you declare the dimensionality of arguments and the returned object (Section \@ref(sec:decl-argum-return)).  Make sure that the dimensionality specified in your nimbleFunction matches how you use it in BUGS code.  For example, if you define  scalar parameters in your BUGS code you will want to define nimbleFunctions that take scalar arguments.  Here is an example that returns twice its input argument:
 
@@ -76,15 +76,18 @@ At present in compiled use of a model, you cannot provide a scalar argument wher
 ## User-defined distributions {#sec:user-distributions}
 
 To provide a user-defined distribution, you need to define density
-('d') and (optionally^[You need to provide the simulation ('r') function if any algorithm used with a model
-that uses the distribution needs to simulate from the distribution; this is not the case for NIMBLE's built-in
-MCMC sampler functions and therefore the simulation function is not required for standard MCMC in NIMBLE.])
+('d') and (optionally)
 simulation ('r') `nimbleFunctions`, without setup
 code, for your distribution. In many cases you can then
 simply use your distribution in BUGS code as you would any
 distribution already provided by NIMBLE, while in a few special cases^[These include providing alternative parameterizations, specifying
 the range of the distribution, or specifying that the distribution is a discrete distribution.]
 you need to explicitly register your distribution as described in Section \@ref(sec:registerDistributions).
+
+You need to provide the simulation ('r') function if any algorithm used with a model
+that uses the distribution needs to simulate from the distribution. This is not the case for NIMBLE's built-in
+MCMC sampler functions, and therefore the simulation function is not generally required for standard MCMC in NIMBLE.
+However, the 'r' function is necessary for initialization of nodes that are assigned the user-defined distribution if no initial value is provided, and for sampling posterior predictive nodes (those nodes with no downstream data dependencies) that are assigned the user-defined distribution.
 
 You can optionally provide distribution ('p') and quantile ('q')
 functions, which will allow truncation to be applied to a user-defined
