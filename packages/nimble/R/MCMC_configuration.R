@@ -160,6 +160,9 @@ print: A logical argument specifying whether to print the montiors and samplers.
             controlWAIC <<- controlWAIC
             samplerConfs <<- list()
             samplerExecutionOrder <<- numeric()
+            controlDefaults <<- list(...)
+            ##namedSamplerLabelMaker <<- labelFunctionCreator('namedSampler')  ## usage long since deprecated (Dec 2020)
+            for(i in seq_along(control))     controlDefaults[[names(control)[i]]] <<- control[[i]]
             if(identical(nodes, character())) {
                 nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
                 # Check of all(model$isStoch(nodes)) is not needed in this case
@@ -168,14 +171,12 @@ print: A logical argument specifying whether to print the montiors and samplers.
             }
             
             addDefaultSampler(target = nodes,
-                              control = control,
                               useConjugacy = useConjugacy,
                               onlyRW = onlyRW,
                               onlySlice = onlySlice,
                               multivariateNodesAsScalars = multivariateNodesAsScalars,
                               warnNoSamplerAssigned = warnNoSamplerAssigned,
-                              print = print,
-                              ...)
+                              print = print)
         },
 
         addDefaultSampler = function(target = character(),
@@ -216,6 +217,9 @@ print: A logical argument specifying whether to print the montiors and samplers.
 '
             useNewConfigureMCMC <- isTRUE(nimbleOptions("useNewConfigureMCMC"))
             
+            controlDefaultsArg <- list(...)
+            for(i in seq_along(control))     controlDefaultsArg[[names(control)[i]]] <- control[[i]]
+
             nodes <- target
             if(!is.character(nodes))   stop('nodes argument must be a character vector of model nodes or variables')
             if(length(nodes) == 0)   return()
@@ -228,9 +232,6 @@ print: A logical argument specifying whether to print the montiors and samplers.
                                 collapse=', ')) }    ## ensure all target node(s) are stochastic
             }
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
-
-            controlDefaults <<- list(...)
-            for(i in seq_along(control))     controlDefaults[[names(control)[i]]] <<- control[[i]]
 
             if(!useNewConfigureMCMC) {
                 if(!(all(model$isStoch(nodes)))) { stop('assigning samplers to non-stochastic nodes: ', paste0(nodes[!model$isStoch(nodes)], collapse=', ')) }
@@ -360,10 +361,10 @@ print: A logical argument specifying whether to print the montiors and samplers.
                         }
                     }
                     ## if node has 0 stochastic dependents, assign 'posterior_predictive' sampler (e.g. for predictive nodes)
-                    if(isEndNode[i]) { addSampler(target = node, type = 'posterior_predictive');     next }
+                    if(isEndNode[i]) { addSampler(target = node, type = 'posterior_predictive', control = controlDefaultsArg);     next }
 
                     ## if nodes is a branch point of a network of entirely non-data nodes, assign 'posterior_predictive_branch' sampler
-                    if(node %in% posteriorPredictiveBranchNodes) { addSampler(target = node, type = 'posterior_predictive_branch');     next }
+                    if(node %in% posteriorPredictiveBranchNodes) { addSampler(target = node, type = 'posterior_predictive_branch', control = controlDefaultsArg);     next }
                     
                     ## for multivariate nodes, either add a conjugate sampler, RW_multinomial, or RW_block sampler
                     if(nodeLength > 1) {
@@ -373,38 +374,40 @@ print: A logical argument specifying whether to print the montiors and samplers.
                                 addConjugateSampler(conjugacyResult = conjugacyResult,
                                                     dynamicallyIndexed = model$modelDef$varInfo[[model$getVarNames(nodes=node)]]$anyDynamicallyIndexed);     next }
                         }
-                        if(nodeDist == 'dmulti')              { addSampler(target = node, type = 'RW_multinomial');     next }
-                        if(nodeDist == 'ddirch')              { addSampler(target = node, type = 'RW_dirichlet');       next }
-                        if(nodeDist == 'dwish')               { addSampler(target = node, type = 'RW_wishart');         next }
-                        if(nodeDist == 'dinvwish')            { addSampler(target = node, type = 'RW_wishart');         next }
+                        if(nodeDist == 'dmulti')              { addSampler(target = node, type = 'RW_multinomial', control = controlDefaultsArg);     next }
+                        if(nodeDist == 'ddirch')              { addSampler(target = node, type = 'RW_dirichlet', control = controlDefaultsArg);       next }
+                        if(nodeDist == 'dwish')               { addSampler(target = node, type = 'RW_wishart', control = controlDefaultsArg);         next }
+                        if(nodeDist == 'dinvwish')            { addSampler(target = node, type = 'RW_wishart', control = controlDefaultsArg);         next }
                         if(nodeDist == 'dlkj_corr_cholesky')  {
                             if(nodeLength >= 9) {
-                                addSampler(target = node, type = 'RW_block_lkj_corr_cholesky')
+                                addSampler(target = node, type = 'RW_block_lkj_corr_cholesky', control = controlDefaultsArg)
                             } else {
                                 if(nodeLength == 4) {
-                                    addSampler(target = node, type = 'RW_lkj_corr_cholesky')  ## only a scalar free param in 2x2 case
+                                    addSampler(target = node, type = 'RW_lkj_corr_cholesky', control = controlDefaultsArg)  ## only a scalar free param in 2x2 case
                                 } else warning("Not assigning sampler to dlkj_corr_cholesky node for 1x1 case.")
                             }
                             next
                         }
-                        if(nodeDist == 'dcar_normal')         { addSampler(target = node, type = 'CAR_normal');         next }
-                        if(nodeDist == 'dcar_proper')         { addSampler(target = node, type = 'CAR_proper');         next }
+                        if(nodeDist == 'dcar_normal')         { addSampler(target = node, type = 'CAR_normal', control = controlDefaultsArg);         next }
+                        if(nodeDist == 'dcar_proper')         { addSampler(target = node, type = 'CAR_proper', control = controlDefaultsArg);         next }
                         if(nodeDist == 'dCRP')                {
                             numCRPnodes <- numCRPnodes + 1
                             clusterNodeInfo[[numCRPnodes]] <- findClusterNodes(model, node)
-                            addSampler(target = node, type = 'CRP', control = list(checkConjugacy = useConjugacy,
-                                                                                   clusterVarInfo = clusterNodeInfo[[numCRPnodes]]))
+                            controlCRP <- controlDefaultsArg
+                            controlCRP$checkConjugacy <- useConjugacy
+                            controlCRP$clusterVarInfo <- clusterNodeInfo[[numCRPnodes]]
+                            addSampler(target = node, type = 'CRP', control = controlCRP)
                             dcrpNode[numCRPnodes] <- node
                             next
                         }
                         if(multivariateNodesAsScalars) {
                             for(scalarNode in nodeScalarComponents) {
-                                if(onlySlice) addSampler(target = scalarNode, type = 'slice')
-                                else          addSampler(target = scalarNode, type = 'RW')    };     next }
-                        addSampler(target = node, type = 'RW_block', silent = TRUE);     next }
+                                if(onlySlice) addSampler(target = scalarNode, type = 'slice', control = controlDefaultsArg)
+                                else          addSampler(target = scalarNode, type = 'RW',    control = controlDefaultsArg)    };     next }
+                        addSampler(target = node, type = 'RW_block', silent = TRUE, control = controlDefaultsArg);     next }
                     
-                    if(onlyRW && !discrete)   { addSampler(target = node, type = 'RW'   );     next }
-                    if(onlySlice)             { addSampler(target = node, type = 'slice');     next }
+                    if(onlyRW && !discrete)   { addSampler(target = node, type = 'RW',    control = controlDefaultsArg);     next }
+                    if(onlySlice)             { addSampler(target = node, type = 'slice', control = controlDefaultsArg);     next }
                     
                     ## if node passes checkConjugacy(), assign 'conjugate_dxxx' sampler
                     if(useConjugacy) {
@@ -415,13 +418,13 @@ print: A logical argument specifying whether to print the montiors and samplers.
                     }
                     
                     ## if node is discrete 0/1 (binary), assign 'binary' sampler
-                    if(binary) { addSampler(target = node, type = 'binary');     next }
+                    if(binary) { addSampler(target = node, type = 'binary', control = controlDefaultsArg);     next }
                     
                     ## for categorical nodes, assign a 'categorical' sampler
-                    if(nodeDist == 'dcat') { addSampler(target = node, type = 'categorical');     next }
+                    if(nodeDist == 'dcat') { addSampler(target = node, type = 'categorical', control = controlDefaultsArg);     next }
                     
                     ## if node distribution is discrete, assign 'slice' sampler
-                    if(discrete) { addSampler(target = node, type = 'slice');     next }
+                    if(discrete) { addSampler(target = node, type = 'slice', control = controlDefaultsArg);     next }
                     
                     ## if node distribution is dgamma and its dependency is dCRP, assign 'CRP_concentration' sampler
                     if(check_dCRP) {
@@ -430,7 +433,7 @@ print: A logical argument specifying whether to print the montiors and samplers.
                             if(length(depNode) == 1) {
                                 depNodeDist <- model$getDistribution(depNode)
                                 if(!is.na(depNodeDist[1]) & depNodeDist[1] == 'dCRP'){  ## depNodeDist should be length 1
-                                    addSampler(target = node, type = 'CRP_concentration')
+                                    addSampler(target = node, type = 'CRP_concentration', control = controlDefaultsArg)
                                     next
                                 }
                             }
@@ -438,7 +441,7 @@ print: A logical argument specifying whether to print the montiors and samplers.
                     }
                     
                     ## default: 'RW' sampler
-                    addSampler(target = node, type = 'RW');     next
+                    addSampler(target = node, type = 'RW', control = controlDefaultsArg);     next
                 }
 
                 ## For CRP-based models, wrap samplers for cluster parameters so not sampled if cluster is unoccupied,
@@ -492,9 +495,11 @@ print: A logical argument specifying whether to print the montiors and samplers.
 
                                 for(cnt in seq_along(clusterNodeParams)) {
                                     removeSamplers(clusterNodeParams[cnt])
-                                    addSampler(clusterNodeParams[cnt], 'slice_CRP_base_param',
-                                               control = list(dcrpNode = dcrpNode[[k]], clusterNodes = clusterNodes,
-                                                              clusterIDs = clusterNodeInfo[[k]]$clusterIDs[[idx]]))
+                                    controlCRP <- controlDefaultsArg
+                                    controlCRP$dcrpNode <- dcrpNode[[k]]
+                                    controlCRP$clusterNodes <- clusterNodes
+                                    controlCRP$clusterIDs <- clusterNodeInfo[[k]]$clusterIDs[[idx]]
+                                    addSampler(clusterNodeParams[cnt], 'slice_CRP_base_param', control = controlCRP)
                                 }
 
                                 samplers <- getSamplers(clusterNodes)
@@ -505,9 +510,12 @@ print: A logical argument specifying whether to print the montiors and samplers.
                                     clusterID <- which(clusterNodes == node)
                                     if(length(clusterID) != 1)
                                         stop("Cannot determine wrapped sampler for cluster parameter ", node, ".")
-                                    addSampler(target = node, type = 'CRP_cluster_wrapper',
-                                               control = list(wrapped_type = samplers[[i]]$name, wrapped_conf = samplers[[i]],
-                                                              dcrpNode = dcrpNode[[k]], clusterID = clusterNodeInfo[[k]]$clusterIDs[[idx]][clusterID]))
+                                    controlCRP <- controlDefaultsArg
+                                    controlCRP$wrapped_type <- samplers[[i]]$name
+                                    controlCRP$wrapped_conf <- samplers[[i]]
+                                    controlCRP$dcrpNode <- dcrpNode[[k]]
+                                    controlCRP$clusterID <- clusterNodeInfo[[k]]$clusterIDs[[idx]][clusterID]
+                                    addSampler(target = node, type = 'CRP_cluster_wrapper', control = controlCRP)
                                 }
                             }
                         }
