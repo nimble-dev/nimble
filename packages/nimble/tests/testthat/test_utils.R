@@ -1537,7 +1537,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
     if(is.null(wrt) && is.null(calcNodes)) {
         
         ## HMC/MAP use case
-        if(verbose) cat("======================\ntesting HMC/MAP-based scenario\n----------------------\n")
+        if(verbose) cat("============================================\ntesting HMC/MAP-based scenario\n--------------------------------------------\n")
         calcNodes <- model$getNodeNames()
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         tmp <- values(model, wrt)
@@ -1560,7 +1560,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
                                            checkNewConstantNodesValues = checkNewConstantNodesValues,
                                        verbose = verbose, debug = debug))
         ## max. lik. use case
-        if(verbose) cat("======================\ntesting ML-based scenario\n----------------------\n")
+        if(verbose) cat("============================================\ntesting ML-based scenario\n--------------------------------------------\n")
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         calcNodes <- model$getNodeNames()
         topNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
@@ -1587,7 +1587,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
                                            verbose = verbose, debug = debug))
 
         ## modular HMC/MAP use case
-        if(verbose) cat("======================\ntesting HMC/MAP partial-based scenario\n----------------------\n")
+        if(verbose) cat("============================================\ntesting HMC/MAP partial-based scenario\n--------------------------------------------\n")
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         calcNodes <- model$getNodeNames()
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
@@ -1621,7 +1621,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
                                            verbose = verbose, debug = debug))
 
         ## conditional max. lik. use case
-        if(verbose) cat("======================\ntesting ML partial-based scenario\n----------------------\n")
+        if(verbose) cat("============================================\ntesting ML partial-based scenario\n--------------------------------------------\n")
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         calcNodes <- model$getNodeNames()
         topNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
@@ -1658,7 +1658,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
                                            verbose = verbose, debug = debug))
 
         ## empirical Bayes use case (though not actually integrating over any latent nodes)
-        if(verbose) cat('======================\ntesting EB-based scenario\n----------------------\n')
+        if(verbose) cat('============================================\ntesting EB-based scenario\n--------------------------------------------\n')
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         calcNodes <- model$getNodeNames()
         topNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
@@ -1842,19 +1842,19 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 
                 if(verbose) {
                     if(case == 1) {
-                        if(idx == 1) cat("testing initial wrt values with initial constantNodes\n----------------------\n")
-                        if(idx == 2) cat("testing new wrt values with initial constantNodes\n----------------------\n")
-                        if(idx == 3) cat("testing new updateNode values with initial constantNodes\n----------------------\n")
+                        if(idx == 1) cat("Testing initial wrt values with initial constantNodes\n")
+                        if(idx == 2) cat("Testing new wrt values with initial constantNodes\n")
+                        if(idx == 3) cat("Testing new updateNode values with initial constantNodes\n")
                     } else {
-                        if(idx == 1) cat("testing initial wrt values with new constantNodes\n----------------------\n")
-                        if(idx == 2) cat("testing new wrt values with new constantNodes\n----------------------\n")
-                        if(idx == 3) cat("testing new updateNode values with new constantNodes\n----------------------\n")
+                        if(idx == 1) cat("Testing initial wrt values with new constantNodes\n")
+                        if(idx == 2) cat("Testing new wrt values with new constantNodes\n")
+                        if(idx == 3) cat("Testing new updateNode values with new constantNodes\n")
                     }
                 }
 
                 if(idx == 3) {
                     ## Also modify updateNodes to make sure nothing has been incorrectly baked in.
-                    if(verbose && length(updateNodes)) cat(paste0("Using updateNodes: ", paste0(updateNodes, collapse = ', '), "\n"))
+                    if(verbose && length(updateNodes)) cat(paste0("  Using updateNodes: ", paste0(updateNodes, collapse = ', '), "\n"))
                     updateNodesSim <- updateNodes
                     if(!is.null(excludeUpdateNodes)) {
                         ## Try to be safe as updateNodes are generally specified as scalar components
@@ -1876,7 +1876,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 reset <- FALSE
                 if(case == 2) {
                     reset <- TRUE
-                    if(verbose && length(constantNodes)) cat(paste0("Using constantNodes: ", paste0(constantNodes, collapse = ', '), "\n"))
+                    if(verbose && length(constantNodes)) cat(paste0("  Using constantNodes: ", paste0(constantNodes, collapse = ', '), "\n"))
                     constantNodesSim <- constantNodes
                     if(!is.null(excludeConstantNodes)) {
                         ## Try to be safe as constantNodes are generally specified as scalar components

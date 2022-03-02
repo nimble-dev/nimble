@@ -433,9 +433,6 @@ test_ADModelCalculate(model, verbose = TRUE, name = 'basic state space')
 ## with SOME random seeds, R and C 2d11 jacobian only match to only 1-2 digits with new updateNode values
 ## presumably just stochasticity in that the Hessian tolerance is .001 
 
-nimbleOptions(useADmatMultAtomic = TRUE)
-nimbleOptions(useADmatMultAtomic = FALSE)
-nimbleOptions(useADcholAtomic = TRUE) # causes crash
 
 ## basic tricky indexing
 code <- nimbleCode({
