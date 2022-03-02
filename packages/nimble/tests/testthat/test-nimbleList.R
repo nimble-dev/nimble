@@ -1146,7 +1146,6 @@ test_that("nimbleList test 25: return object (from C++) is nimbleList", {
 ########
 ## Test #2 for eigen() function.  Use eigen() to specify a nl element.
 ########
-
 test_that("nimbleList test 26: return object (from C++) is nimbleList", {
     nlTestFunc26 <- nimbleFunction(
         setup = function(){
