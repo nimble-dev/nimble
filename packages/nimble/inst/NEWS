@@ -1,3 +1,8 @@
+USER LEVEL CHANGES
+
+-- For MCMC configuration addSampler method, changed name of the scalarComponents argument to expandComponents.
+
+
                             CHANGES IN VERSION 0.12.2 (February 2022)
 
 BUG FIXES
@@ -51,6 +56,7 @@ DEVELOPER LEVEL CHANGES
 
 -- Use USE_FC_LEN_T-related syntax in F77 calls in dists.cpp per CRAN request
 (PR #1173).
+
 
                             CHANGES IN VERSION 0.12.0 (September 2021)
 
