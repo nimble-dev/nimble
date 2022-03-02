@@ -490,7 +490,7 @@ print: A logical argument specifying whether to print the montiors and samplers.
             addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, print = print, name = nameToPrint)
         },
         
-        addSampler = function(target, type = 'RW', control = list(), print = FALSE, name, scalarComponents = FALSE, silent = FALSE, ...) {
+        addSampler = function(target, type = 'RW', control = list(), print = FALSE, name, scalarComponents, expandComponents = FALSE, silent = FALSE, ...) {
             '
 Adds a sampler to the list of samplers contained in the MCMCconf object.
 
@@ -506,7 +506,9 @@ print: Logical argument, specifying whether to print the details of the newly ad
 
 name: Optional character string name for the sampler, which is used by the printSamplers method.  If \'name\' is not provided, the \'type\' argument is used to generate the sampler name.
 
-scalarComponents: Logical argument, indicating whether the specified sampler \'type\' should be assigned independently to each scalar (univariate) component of the specified \'target\' node or variable.  This option should only be specified as TRUE when the sampler \'type\' specifies a univariate sampler.
+scalarComponents: Deprecated, and replaced by the \'expandComponents\' argument, which operates identically.  The \'scalarComponents\' argument may be removed in a future release.
+
+expandComponents: Logical argument, indicating whether the specified sampler \'type\' should be assigned independently to each expanded node component of the specified \'target\' variable.  That is, distinct instances of the specified sampler will be assigned to each of the nodes which comprise \'target\'.  If \'target\' is comprised of multiple univariate nodes, then a univariate sampler should be specified, and similarly when \'target\' expands to one or more multivariate nodes, then a multivariate sampler should be specified.
 
 silent: Logical argument, specifying whether to print warning messages when assigning samplers.
 
@@ -573,12 +575,17 @@ Invisibly returns a list of the current sampler configurations, which are sample
             controlArgs <- c(control, list(...))
             thisControlList <- mcmc_generateControlListArgument(control=controlArgs, controlDefaults=controlDefaults)  ## should name arguments
             
-            if(!scalarComponents) {
+            if(!missing(scalarComponents)) {
+                ## I should remove the old 'scalarComponents' argument entirely at some future point.  -DT March 2022
+                warning('  [Warning] The \'scalarComponents\' argument has been deprecated, and replaced by \'expandComponents\', which functions identically.  Please use \'expandComponents\' instead.  The deprecated \'scalarComponents\' argument may be removed in a future release.')
+                expandComponents <- scalarComponents
+            }
+            if(!expandComponents) {
                 addSamplerOne(thisSamplerName, samplerFunction, target, thisControlList, print)
-            } else {  ## assign sampler type to each scalar component of target
-                targetAsScalars <- model$expandNodeNames(target)
-                for(i in seq_along(targetAsScalars)) {
-                    addSamplerOne(thisSamplerName, samplerFunction, targetAsScalars[i], thisControlList, print)
+            } else {  ## assign sampler type to each component of target after expanding node names
+                targetExpanded <- model$expandNodeNames(target, sort = TRUE)
+                for(i in seq_along(targetExpanded)) {
+                    addSamplerOne(thisSamplerName, samplerFunction, targetExpanded[i], thisControlList, print)
                 }
             }
             
