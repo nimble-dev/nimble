@@ -145,8 +145,6 @@ print: A logical argument specifying whether to print the montiors and samplers.
 
 ...: Additional named control list elements for default samplers, or additional arguments to be passed to the autoBlock function when autoBlock = TRUE.
 '
-            useNewConfigureMCMC <- isTRUE(nimbleOptions("useNewConfigureMCMC"))
-            
             if(is(model, 'RmodelBaseClass')) {
                 model <<- model
             } else if(is(model, 'CmodelBaseClass')) {
@@ -216,6 +214,8 @@ print: A logical argument specifying whether to print the montiors and samplers.
 
 ...: Additional named control list elements for default samplers, or additional arguments to be passed to the autoBlock function when autoBlock = TRUE.
 '
+            useNewConfigureMCMC <- isTRUE(nimbleOptions("useNewConfigureMCMC"))
+            
             nodes <- target
             if(!is.character(nodes))   stop('nodes argument must be a character vector of model nodes or variables')
             if(length(nodes) == 0)   return()
