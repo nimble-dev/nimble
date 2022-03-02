@@ -1,6 +1,10 @@
+BUG FIXES
+
 USER LEVEL CHANGES
 
 -- For MCMC configuration addSampler method, changed name of the scalarComponents argument to expandComponents.
+
+-- New method is added for MCMC configuration objects, called add addDefaultSampler.  This method adds default samplers (conjugate, or otherwise) to the specified nodes, for an existing MCMC configuration object.  The addition of this method provides an entry point to the logic of default sampler determination and assignment, without creating a new MCMC configuration object.
 
 
                             CHANGES IN VERSION 0.12.2 (February 2022)

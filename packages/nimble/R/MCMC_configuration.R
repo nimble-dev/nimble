@@ -162,25 +162,76 @@ print: A logical argument specifying whether to print the montiors and samplers.
             controlWAIC <<- controlWAIC
             samplerConfs <<- list()
             samplerExecutionOrder <<- numeric()
-            controlDefaults <<- list(...)
-            ##namedSamplerLabelMaker <<- labelFunctionCreator('namedSampler')  ## usage long since deprecated (Dec 2020)
-            for(i in seq_along(control))     controlDefaults[[names(control)[i]]] <<- control[[i]]
             if(identical(nodes, character())) {
                 nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
                 # Check of all(model$isStoch(nodes)) is not needed in this case
-            } else             {
+            } else {
                 if(is.null(nodes) || length(nodes)==0)     nodes <- character(0)
-                nl_checkVarNamesInModel(model, removeIndexing(nodes))
-                nodes <- model$expandNodeNames(nodes)
-                if(useNewConfigureMCMC) { 
-                    if(!(all(model$isStoch(nodes)))) {
-                        stop('assigning samplers to non-stochastic nodes: ',
-                             paste0(nodes[!model$isStoch(nodes)],
-                                    collapse=', ')) }    ## ensure all target node(s) are stochastic
-                }
             }
             
+            addDefaultSampler(target = nodes,
+                              control = control,
+                              useConjugacy = useConjugacy,
+                              onlyRW = onlyRW,
+                              onlySlice = onlySlice,
+                              multivariateNodesAsScalars = multivariateNodesAsScalars,
+                              warnNoSamplerAssigned = warnNoSamplerAssigned,
+                              print = print,
+                              ...)
+        },
+
+        addDefaultSampler = function(target = character(),
+                                     control = list(),
+                                     useConjugacy = getNimbleOption('MCMCuseConjugacy'),
+                                     onlyRW = FALSE,
+                                     onlySlice = FALSE,
+                                     multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
+                                     warnNoSamplerAssigned = TRUE,    ## NOTE: this doesn't do anything, and should be removed  -DT March 2022
+                                     print = TRUE,
+                                     ...) {
+            '
+Adds default MCMC samplers to the specified nodes.
+
+Arguments:
+
+target: A character vector, specifying the nodes for which default samplers should be added.
+Nodes may be specified in their indexed form, \'y[1, 3]\', or nodes specified without indexing will be expanded fully, e.g., \'x\' will be expanded to \'x[1]\', \'x[2]\', etc.
+If missing or of zero length, then samplers are not added to any nodes.
+
+control: An optional list of control arguments to sampler functions.  If a control list is provided, the elements will be provided to all sampler functions which utilize the named elements given.
+For example, the standard Metropolis-Hastings random walk sampler (sampler_RW) utilizes control list elements \'adaptive\', \'adaptInterval\', \'scale\'.
+The default values for control list arguments for samplers (if not otherwise provided as an argument to configureMCMC() or addSampler()) are contained in the setup code of each sampling algorithm.
+
+useConjugacy: A logical argument, with default value TRUE.  If specified as FALSE, then no conjugate samplers will be used, even when a node is determined to be in a conjugate relationship.
+
+onlyRW: A logical argument, with default value FALSE.  If specified as TRUE, then Metropolis-Hastings random walk samplers will be assigned for all non-terminal continuous-valued nodes nodes. Discrete-valued nodes are assigned a slice sampler, and terminal nodes are assigned a posterior_predictive sampler.
+
+onlySlice: A logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes. Terminal nodes are still assigned a posterior_predictive sampler.
+
+multivariateNodesAsScalars: A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided useConjugacy == TRUE), regardless of the value of this argument.
+
+warnNoSamplerAssigned: A logical argument specifying whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule. Default is TRUE.
+
+print: A logical argument specifying whether to print the montiors and samplers.  Default is TRUE.
+
+...: Additional named control list elements for default samplers, or additional arguments to be passed to the autoBlock function when autoBlock = TRUE.
+'
+            nodes <- target
+            if(!is.character(nodes))   stop('nodes argument must be a character vector of model nodes or variables')
+            if(length(nodes) == 0)   return()
+            nl_checkVarNamesInModel(model, removeIndexing(nodes))
+            nodes <- model$expandNodeNames(nodes)
+            if(useNewConfigureMCMC) {
+                if(!(all(model$isStoch(nodes)))) {
+                    stop('assigning samplers to non-stochastic nodes: ',
+                         paste0(nodes[!model$isStoch(nodes)],
+                                collapse=', ')) }    ## ensure all target node(s) are stochastic
+            }
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
+
+            controlDefaults <<- list(...)
+            for(i in seq_along(control))     controlDefaults[[names(control)[i]]] <<- control[[i]]
+
             if(!useNewConfigureMCMC) {
                 if(!(all(model$isStoch(nodes)))) { stop('assigning samplers to non-stochastic nodes: ', paste0(nodes[!model$isStoch(nodes)], collapse=', ')) }
                 isEndNode <- model$isEndNode(nodes)
@@ -1108,9 +1159,9 @@ Details: See the initialize() function
 #'@param onlyRW A logical argument, with default value FALSE.  If specified as TRUE, then Metropolis-Hastings random walk samplers (\link{sampler_RW}) will be assigned for all non-terminal continuous-valued nodes nodes. Discrete-valued nodes are assigned a slice sampler (\link{sampler_slice}), and terminal nodes are assigned a posterior_predictive sampler (\link{sampler_posterior_predictive}).
 #'@param onlySlice A logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes. Terminal nodes are still assigned a posterior_predictive sampler.
 #'@param multivariateNodesAsScalars A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided \code{useConjugacy == TRUE}), regardless of the value of this argument.
-#' @param enableWAIC A logical argument, specifying whether to enable WAIC calculations for the resulting MCMC algorithm.  Defaults to the value of \code{nimbleOptions('MCMCenableWAIC')}, which in turn defaults to FALSE.  Setting \code{nimbleOptions('enableWAIC' = TRUE)} will ensure that WAIC is enabled for all calls to \code{\link{configureMCMC}} and \code{\link{buildMCMC}}.
-#' @param controlWAIC A named list of inputs that control the behavior of the WAIC calculation. See \code{help(waic)}.
-#' @param warnNoSamplerAssigned A logical argument, with default value TRUE.  This specifies whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule.
+#'@param enableWAIC A logical argument, specifying whether to enable WAIC calculations for the resulting MCMC algorithm.  Defaults to the value of \code{nimbleOptions('MCMCenableWAIC')}, which in turn defaults to FALSE.  Setting \code{nimbleOptions('enableWAIC' = TRUE)} will ensure that WAIC is enabled for all calls to \code{\link{configureMCMC}} and \code{\link{buildMCMC}}.
+#'@param controlWAIC A named list of inputs that control the behavior of the WAIC calculation. See \code{help(waic)}.
+#'@param warnNoSamplerAssigned A logical argument, with default value TRUE.  This specifies whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule.
 #'@param print A logical argument, specifying whether to print the ordered list of default samplers.
 #'@param autoBlock A logical argument specifying whether to use an automated blocking procedure to determine blocks of model nodes for joint sampling.  If TRUE, an MCMC configuration object will be created and returned corresponding to the results of the automated parameter blocking.  Default value is FALSE.
 #'@param oldConf An optional MCMCconf object to modify rather than creating a new MCMCconf from scratch
