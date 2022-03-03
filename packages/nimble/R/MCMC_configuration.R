@@ -597,7 +597,7 @@ Invisibly returns a list of the current sampler configurations, which are sample
                 return()
             }
 
-            print <- if(is.null(print)) FALSE else print,                       ## default of print is FALSE otherwise
+            print <- if(is.null(print)) FALSE else print                        ## default of print is FALSE otherwise
             
             nameProvided <- !missing(name)
             if(is.character(type)) {
