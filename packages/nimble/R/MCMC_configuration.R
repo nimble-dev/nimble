@@ -838,12 +838,14 @@ byType: A logical argument, specifying whether the nodes being sampled should be
                     if(length(unlist(uniNodesListByVar)) != length(univariateList)) stop('something went wrong')
                     for(j in seq_along(uniNodesListByVar)) {
                         theseNodes <- uniNodesListByVar[[j]]
-                        isIndexed <- grepl("\\[", theseNodes[1])
+                        isIndexedVector <- grepl("\\[", theseNodes)
+                        if((sum(isIndexedVector)!=0) && (sum(isIndexedVector)!=length(isIndexedVector))) stop(paste0('improper assignment of samplers: ', removeIndexing(theseNodes[1])), call. = FALSE)
+                        isIndexed <- isIndexedVector[1]
                         if(isIndexed) { numElements <- length(theseNodes)
                                         sTag <- ifelse(numElements>1, 's', '')
                                         cat(paste0(indent, theseUniVars[j], '[]  (', numElements, ' element', sTag, ')'))
                         } else { if(length(theseNodes) == 1) cat(paste0(indent, theseNodes))
-                                 if(length(theseNodes) >  1 & length(unique(theseNodes)) > 1) stop('something wrong with Daniel\'s understanding')
+                                 if(length(theseNodes) >  1 & length(unique(theseNodes)) > 1) stop('something wrong with Daniel\'s understanding', call. = FALSE)
                                  if(length(theseNodes) >  1) cat(paste0(indent, theseNodes[1], '  (', length(theseNodes), ')'))
                         }
                         cat('\n') }
