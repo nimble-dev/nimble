@@ -97,7 +97,6 @@ MCMCconf <- setRefClass(
             onlySlice = FALSE,
             multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
             enableWAIC = getNimbleOption('MCMCenableWAIC'), controlWAIC = list(),
-            warnNoSamplerAssigned = TRUE,
             print = TRUE, ...) {
             '
 Creates a MCMC configuration for a given model.  The resulting object is suitable as an argument to buildMCMC.
@@ -139,8 +138,6 @@ enableWAIC: A logical argument, specifying whether to enable WAIC calculations f
 
 controlWAIC A named list of inputs that control the behavior of the WAIC calculation, passed as the \'control\' input to \'buildWAIC\'. See \'help(waic)\`.
 
-warnNoSamplerAssigned: A logical argument specifying whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule. Default is TRUE.
-
 print: A logical argument specifying whether to print the montiors and samplers.  Default is TRUE.
 
 ...: Additional named control list elements for default samplers, or additional arguments to be passed to the autoBlock function when autoBlock = TRUE.
@@ -175,7 +172,6 @@ print: A logical argument specifying whether to print the montiors and samplers.
                               onlyRW = onlyRW,
                               onlySlice = onlySlice,
                               multivariateNodesAsScalars = multivariateNodesAsScalars,
-                              warnNoSamplerAssigned = warnNoSamplerAssigned,
                               print = print)
         },
 
@@ -185,7 +181,6 @@ print: A logical argument specifying whether to print the montiors and samplers.
                                      onlyRW = FALSE,
                                      onlySlice = FALSE,
                                      multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
-                                     warnNoSamplerAssigned = TRUE,    ## NOTE: this doesn't do anything, and should be removed  -DT March 2022
                                      print = TRUE,
                                      ...) {
             '
@@ -208,8 +203,6 @@ onlyRW: A logical argument, with default value FALSE.  If specified as TRUE, the
 onlySlice: A logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes. Terminal nodes are still assigned a posterior_predictive sampler.
 
 multivariateNodesAsScalars: A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided useConjugacy == TRUE), regardless of the value of this argument.
-
-warnNoSamplerAssigned: A logical argument specifying whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule. Default is TRUE.
 
 print: A logical argument specifying whether to print the montiors and samplers.  Default is TRUE.
 
@@ -549,7 +542,20 @@ print: A logical argument specifying whether to print the montiors and samplers.
             addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, print = print, name = nameToPrint)
         },
         
-        addSampler = function(target, type = 'RW', control = list(), print = FALSE, name, scalarComponents, expandComponents = FALSE, silent = FALSE, ...) {
+        addSampler = function(target,
+                              type = 'RW',
+                              control = list(),
+                              print = NULL,        ## default value print is TRUE when default=TRUE, and FALSE otherwise
+                              name,
+                              scalarComponents,    ## deprecated; should remove sometime -DT March 2022
+                              expandComponents = FALSE,
+                              silent = FALSE,
+                              default = FALSE,
+                              useConjugacy = getNimbleOption('MCMCuseConjugacy'),
+                              onlyRW = FALSE,
+                              onlySlice = FALSE,
+                              multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
+                              ...) {
             '
 Adds a sampler to the list of samplers contained in the MCMCconf object.
 
@@ -577,7 +583,22 @@ Details: A single instance of the newly configured sampler is added to the end o
 
 Invisibly returns a list of the current sampler configurations, which are samplerConf reference class objects.
 '
+            if(missing(target)) return()
 
+            if(default) {
+                addDefaultSampler(target = target,
+                                  control = control,
+                                  useConjugacy = useConjugacy,
+                                  onlyRW = onlyRW,
+                                  onlySlice = onlySlice,
+                                  multivariateNodesAsScalars = multivariateNodesAsScalars,
+                                  print = if(is.null(print)) TRUE else print,   ## default of print is TRUE when adding default sampler
+                                  ...)
+                return()
+            }
+
+            print <- if(is.null(print)) FALSE else print,                       ## default of print is FALSE otherwise
+            
             nameProvided <- !missing(name)
             if(is.character(type)) {
                 if(type == 'conjugate') {
@@ -1169,7 +1190,6 @@ Details: See the initialize() function
 #'@param multivariateNodesAsScalars A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided \code{useConjugacy == TRUE}), regardless of the value of this argument.
 #'@param enableWAIC A logical argument, specifying whether to enable WAIC calculations for the resulting MCMC algorithm.  Defaults to the value of \code{nimbleOptions('MCMCenableWAIC')}, which in turn defaults to FALSE.  Setting \code{nimbleOptions('enableWAIC' = TRUE)} will ensure that WAIC is enabled for all calls to \code{\link{configureMCMC}} and \code{\link{buildMCMC}}.
 #'@param controlWAIC A named list of inputs that control the behavior of the WAIC calculation. See \code{help(waic)}.
-#'@param warnNoSamplerAssigned A logical argument, with default value TRUE.  This specifies whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule.
 #'@param print A logical argument, specifying whether to print the ordered list of default samplers.
 #'@param autoBlock A logical argument specifying whether to use an automated blocking procedure to determine blocks of model nodes for joint sampling.  If TRUE, an MCMC configuration object will be created and returned corresponding to the results of the automated parameter blocking.  Default value is FALSE.
 #'@param oldConf An optional MCMCconf object to modify rather than creating a new MCMCconf from scratch
@@ -1188,7 +1208,7 @@ configureMCMC <- function(model, nodes, control = list(),
                           autoBlock = FALSE, oldConf,
                           ## samplerAssignmentRules system deprecated Nov 2020 -DT
                           ##rules = getNimbleOption('MCMCdefaultSamplerAssignmentRules'),
-                          warnNoSamplerAssigned = TRUE, ...) {
+                          ...) {
     
     ## samplerAssignmentRules system deprecated Nov 2020 -DT
     ##if(!inherits(rules, 'samplerAssignmentRules')) stop('rules argument must be a samplerAssignmentRules object')
@@ -1211,7 +1231,6 @@ configureMCMC <- function(model, nodes, control = list(),
                          onlyRW = onlyRW, onlySlice = onlySlice,
                          multivariateNodesAsScalars = multivariateNodesAsScalars,
                          enableWAIC = enableWAIC, controlWAIC = controlWAIC,
-                         warnNoSamplerAssigned = warnNoSamplerAssigned,
                          print = print, ...)
     return(invisible(thisConf))
 }
