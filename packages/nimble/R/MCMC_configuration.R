@@ -839,7 +839,7 @@ byType: A logical argument, specifying whether the nodes being sampled should be
                     for(j in seq_along(uniNodesListByVar)) {
                         theseNodes <- uniNodesListByVar[[j]]
                         isIndexedVector <- grepl("\\[", theseNodes)
-                        if((sum(isIndexedVector)!=0) && (sum(isIndexedVector)!=length(isIndexedVector))) stop(paste0('improper assignment of samplers: ', removeIndexing(theseNodes[1])), call. = FALSE)
+                        if((sum(isIndexedVector)!=0) && (sum(isIndexedVector)!=length(isIndexedVector))) warning(paste0('improper assignment of samplers: ', removeIndexing(theseNodes[1])), call. = FALSE)
                         isIndexed <- isIndexedVector[1]
                         if(isIndexed) { numElements <- length(theseNodes)
                                         sTag <- ifelse(numElements>1, 's', '')
