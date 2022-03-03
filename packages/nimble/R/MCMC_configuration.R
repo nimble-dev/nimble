@@ -192,7 +192,6 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
             for(i in seq_along(control))     controlDefaultsArg[[names(control)[i]]] <- control[[i]]
 
             if(!is.character(nodes))   stop('nodes argument must be a character vector of model nodes or variables')
-            if(length(nodes) == 0)   return()
             nl_checkVarNamesInModel(model, removeIndexing(nodes))
             nodes <- model$expandNodeNames(nodes)
             if(useNewConfigureMCMC) {
@@ -1152,6 +1151,7 @@ Details: See the initialize() function
             cat('===== Monitors =====\n')
             printMonitors()
             cat('===== Samplers =====\n')
+            if(length(samplerConfs) == 0) cat('(no samplers assigned)\n')
             printSamplers(byType = TRUE)
         }
     )
