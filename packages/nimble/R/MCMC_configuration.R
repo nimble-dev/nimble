@@ -160,7 +160,7 @@ print: A logical argument specifying whether to print the montiors and samplers.
             controlDefaults <<- list(...)
             ##namedSamplerLabelMaker <<- labelFunctionCreator('namedSampler')  ## usage long since deprecated (Dec 2020)
             for(i in seq_along(control))     controlDefaults[[names(control)[i]]] <<- control[[i]]
-            if(identical(nodes, character())) {
+            if(missing(nodes)) {
                 nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
                 # Check of all(model$isStoch(nodes)) is not needed in this case
             } else {
@@ -519,14 +519,15 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
             addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, print = print, name = nameToPrint)
         },
         
-        addSampler = function(target = character(),
+        addSampler = function(target = character(),    ## target argument is *not* expanded (unless expandTarget = TRUE)
                               type = 'RW',
                               control = list(),
                               print = NULL,        ## default value print is TRUE when default=TRUE, and FALSE otherwise
                               name,
                               scalarComponents,    ## deprecated; should remove sometime -DT March 2022
-                              expandComponents = FALSE,
+                              expandTarget = FALSE,
                               silent = FALSE,
+                              nodes = character(),     ## nodes argument is always expanded via expandNodeNames
                               default = FALSE,
                               useConjugacy = getNimbleOption('MCMCuseConjugacy'),
                               onlyRW = FALSE,
@@ -538,9 +539,9 @@ Adds a sampler to the list of samplers contained in the MCMCconf object.
 
 Arguments:
 
-target: The target node or nodes to be sampled.  This may be specified as a character vector of model node and/or variable names.  If missing or of zero length, then samplers are not added to any nodes.
+target: The target node or nodes to be sampled.  This may be specified as a character vector of model node and/or variable names.  For univariate samplers, only a single target node should be provided (unless `expandTarget` = TRUE).  For multivariate samplers, one instance of the multivariate sampler will be assigned to all nodes specified.  Only one of the \'target\' or \'nodes\' argument should be provided.
 
-type: The type of sampler to add, specified as either a character string or a nimbleFunction object.  If the character argument type=\'newSamplerType\', then either newSamplerType or sampler_newSamplertype must correspond to a nimbleFunction (i.e. a function returned by nimbleFunction, not a specialized nimbleFunction).  Alternatively, the type argument may be provided as a nimbleFunction itself rather than its name.  In that case, the \'name\' argument may also be supplied to provide a meaningful name for this sampler.  The default value is \'RW\' which specifies scalar adaptive Metropolis-Hastings sampling with a normal proposal distribution. This default will result in an error if \'target\' specifies more than one target node.  This argument is not used when the \'default\' argument is TRUE.
+type: When \'default\' is FALSE, specifies the type of sampler to add, specified as either a character string or a nimbleFunction object.  If the character argument type=\'newSamplerType\', then either newSamplerType or sampler_newSamplertype must correspond to a nimbleFunction (i.e. a function returned by nimbleFunction, not a specialized nimbleFunction).  Alternatively, the type argument may be provided as a nimbleFunction itself rather than its name.  In that case, the \'name\' argument may also be supplied to provide a meaningful name for this sampler.  The default value is \'RW\' which specifies scalar adaptive Metropolis-Hastings sampling with a normal proposal distribution. This default will result in an error if \'target\' specifies more than one target node (unless \'expandTarget\' is TRUE).  This argument is not used when the \'default\' argument is TRUE.
 
 control: An optional list of control arguments to sampler functions.  These will override those specified in the control list argument to configureMCMC.  If a control list is provided, the elements will be provided to all sampler functions which utilize the named elements given. For example, the standard Metropolis-Hastings random walk sampler (sampler_RW) utilizes control list elements \'adaptive\', \'adaptInterval\', \'scale\'. The default values for control list arguments for samplers (if not otherwise provided as an argument to configureMCMC or addSampler) are contained in the setup code of each sampling algorithm.
 
@@ -548,13 +549,15 @@ print: Logical argument, specifying whether to print the details of newly added 
 
 name: Optional character string name for the sampler, which is used by the printSamplers method.  If \'name\' is not provided, the \'type\' argument is used to generate the sampler name.
 
-scalarComponents: Deprecated, and replaced by the \'expandComponents\' argument, which operates identically.  The \'scalarComponents\' argument may be removed in a future release.
+scalarComponents: Deprecated, and replaced by the \'expandTarget\' argument, which operates identically by expanding the \'target\' argument.  The \'scalarComponents\' argument may be removed in a future release.
 
-expandComponents: Logical argument, indicating whether the specified sampler \'type\' should be assigned independently to each expanded node component of the specified \'target\' variable.  That is, distinct instances of the specified sampler will be assigned to each of the nodes which comprise \'target\'.  If \'target\' is comprised of multiple univariate nodes, then a univariate sampler should be specified, and similarly when \'target\' expands to one or more multivariate nodes, then a multivariate sampler should be specified.
+expandTarget: Logical argument, indicating whether to expand the \'target\' argument to separate all constitutent model nodes.  In this case, samplers will be assigned independently to each node component of \'target\'.  That is, distinct instances of the specified sampler will be assigned to each of the nodes which comprise \'target\'.  If \'target\' is comprised of multiple univariate nodes, then a univariate sampler should be specified, and similarly when \'target\' expands to one or more multivariate nodes, then a multivariate sampler should be specified.
 
 silent: Logical argument, specifying whether to print warning messages when assigning samplers.
 
-default: Logical argument, with default value FALSE.  When FALSE, the \'type\' argument dictates what sampling algorithm is assigned to the \'target\' nodes.  When TRUE, default samplers will be assigned to the \'target\' nodes following the same logic as the configureMCMC method, and also using the \'useConjugacy\', \'onlyRW\', \'onlySlice\' and \'multivariateNodesAsScalars\' arguments.
+nodes: Identical to the \'target\' argument, with the exception that \'nodes\' always undergo expansion.  Only one of the \'target\' or \'nodes\' argument should be provided.
+
+default: Logical argument, with default value FALSE.  When FALSE, the \'type\' argument dictates what sampling algorithm is assigned to the specified nodes.  When TRUE, default samplers will be assigned to the specified nodes following the same logic as the configureMCMC method, and also using the \'useConjugacy\', \'onlyRW\', \'onlySlice\' and \'multivariateNodesAsScalars\' arguments.
 
 useConjugacy: Logical argument, with default value TRUE.  If specified as FALSE, then no conjugate samplers will be used, even when a node is determined to be in a conjugate relationship.  This argument is only used when the \'default\' argument is TRUE.
 
@@ -566,11 +569,18 @@ multivariateNodesAsScalars: Logical argument, with default value FALSE.  If spec
 
 ...: Additional named arguments passed through ... will be used as additional control list elements.
 
-Details: A single instance of the newly configured sampler is added to the end of the list of samplers for this MCMCconf object.
+Details:
+
+Samplers will be assigned to nodes specified by either the \'target\' or the \'nodes\' argument.  The \'target\' argument does not undergo expansion, unless \'expandTarget\' is TRUE.  Providing the \'target\' argument is useful for assigning a univariate sampler to a single univariate node, or assigning a single block sampler to a group of univariate nodes.  In contrast, the \'nodes\' argument always undergoes expansion, to sepearate it into its constituent model nodes.  Then, multiple samplers are added to each constituent model node.  Providing \'target\' along with \'expandTarget\' = TRUE is functionally the same as providing the \'nodes\' argument, which is added as a convenience for adding multiple samplers.  Both \'target\' and \'nodes\' should not be simultaneously provided.
+
+Samplers are added added to the end of the list of samplers for this MCMCconf object, and do not replace any exisiting samplers.  Samplers are removed using the removeSamplers method.
 
 Invisibly returns a list of the current sampler configurations, which are samplerConf reference class objects.
 '
-            if(length(target) == 0)   return()
+            ## we deal with the 'nodes' argument very simply right here:
+            if(length(target) && length(nodes))   stop('Only provide one of \'target\' and \'nodes\' arguments to addSampler.', call. = FALSE)
+            if(length(nodes)) { target <- nodes; expandTarget <- TRUE }
+            if(length(target) == 0)   return(invisible(samplerConfs))
 
             if(default) {
                 addDefaultSampler(nodes = target,
@@ -581,7 +591,7 @@ Invisibly returns a list of the current sampler configurations, which are sample
                                   multivariateNodesAsScalars = multivariateNodesAsScalars,
                                   print = if(is.null(print)) TRUE else print,   ## default of print is TRUE when adding default sampler
                                   ...)
-                return()
+                return(invisible(samplerConfs))
             }
 
             print <- if(is.null(print)) FALSE else print                        ## default of print is FALSE otherwise
@@ -644,10 +654,10 @@ Invisibly returns a list of the current sampler configurations, which are sample
             
             if(!missing(scalarComponents)) {
                 ## I should remove the old 'scalarComponents' argument entirely at some future point.  -DT March 2022
-                warning('  [Warning] The \'scalarComponents\' argument has been deprecated, and replaced by \'expandComponents\', which functions identically.  Please use \'expandComponents\' instead.  The deprecated \'scalarComponents\' argument may be removed in a future release.')
-                expandComponents <- scalarComponents
+                warning('  [Warning] The \'scalarComponents\' argument has been deprecated, and replaced by \'expandTarget\', which functions identically.  Please use \'expandTarget\' instead.  The deprecated \'scalarComponents\' argument may be removed in a future release.')
+                expandTarget <- scalarComponents
             }
-            if(!expandComponents) {
+            if(!expandTarget) {
                 addSamplerOne(thisSamplerName, samplerFunction, target, thisControlList, print)
             } else {  ## assign sampler type to each component of target after expanding node names
                 targetExpanded <- model$expandNodeNames(target, sort = TRUE)
@@ -833,7 +843,10 @@ byType: A logical argument, specifying whether the nodes being sampled should be
                         if(isIndexed) { numElements <- length(theseNodes)
                                         sTag <- ifelse(numElements>1, 's', '')
                                         cat(paste0(indent, theseUniVars[j], '[]  (', numElements, ' element', sTag, ')'))
-                                    } else cat(paste0(indent, theseNodes))
+                        } else { if(length(theseNodes) == 1) cat(paste0(indent, theseNodes))
+                                 if(length(theseNodes) >  1 & length(unique(theseNodes)) > 1) stop('something wrong with Daniel\'s understanding')
+                                 if(length(theseNodes) >  1) cat(paste0(indent, theseNodes[1], '  (', length(theseNodes), ')'))
+                        }
                         cat('\n') }
                 }
                 if(length(multivariateList) > 0) {   ## multivariate samplers:
@@ -1207,7 +1220,6 @@ configureMCMC <- function(model, nodes, control = list(),
     }
     
     if(missing(model))        stop('Either oldConf or model must be supplied')
-    if(missing(nodes))        nodes <- character()
     if(missing(monitors))     monitors <- NULL
 
     if(autoBlock) return(autoBlock(model, ...)$conf)

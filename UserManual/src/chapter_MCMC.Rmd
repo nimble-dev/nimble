@@ -258,7 +258,7 @@ When `default = TRUE`, `addSampler` will assign NIMBLE's default sampling algori
 
 When `default = FALSE`, or when this argument is omitted, `addSampler` uses the `type` argument to specify the precise sampler to assign.  Instances of this particular sampler are assigned to all nodes specified.  The `type` argument may be provided as a character string or a nimbleFunction object. Valid character strings are indicated in `help(samplers)` (do not include `"sampler_"`).  Added samplers can be labeled with a `name` argument, which is used in output of `printSamplers`.  Writing a new sampler as a nimbleFunction is covered in Section \@ref(sec:user-samplers).
 
-Regardless of the mode of operation, the `target` argument to `addSampler` specifies the node(s) for which samplers should be added, provided as a character vector. Newly added samplers will be appended to the end of current sampler list.  Adding a sampler for a node will *not* remove existing samplers operating on that node.
+Regardless of the mode of operation, nodes are specified using either the `target` or the `nodes` argument.  The `target` argument does not undergo expansion to constituent nodes (unless `default = TRUE`), and thus only a single sampler is added.  The `nodes` argument is always expanded to the underlying nodes, and separate samplers are added for each node. Eithe argument is provided as a character vector. Newly added samplers will be appended to the end of current sampler list.  Adding a sampler for a node will *not* remove existing samplers operating on that node.
 
 The hierarchy of precedence for control list elements for added samplers is:
 
