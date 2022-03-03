@@ -250,23 +250,24 @@ mcmcConf <- configureMCMC(Rmodel, control = list(scale = 3, adaptive = FALSE))
 
 When adding samplers to a configuration using `addSampler`, the default control list can also be over-ridden.
 
-#### Adding samplers to the configuration: *addDefaultSampler* and *addSampler*
+#### Adding samplers to the configuration: *addSampler*
 
-Additional samplers may be added to a configuration using either the `addDefaultSampler` or the `addSampler` methods of the `MCMCconf` object.  The first argument (`target`) to either method specifies the node(s) for which samplers should be added, as a character vector.
+Additional samplers may be added to a configuration using the `addSampler` method of the `MCMCconf` object.  The `addSampler` method has two modes of operation, determined by the `default` argument.
 
-The `addDefaultSampler` method will determine and assign NIMBLE's default sampling algorithm for each node specified.  This may include conjugate samplers, multivariate samplers, or otherwise.  `addDefaultSampler` accepts several additional arguments, guiding the determination of the default sampler (for example, `useConjugacy` and `multivariateNodesAsScalars`).  See `help(addDefaultSampler)` for details.
+When `default = TRUE`, `addSampler` will assign NIMBLE's default sampling algorithm for each node specified following the same protocol as `configureMCMC`.  This may include conjugate samplers, multivariate samplers, or otherwise, also using additional arguments to guide the selection process (for example, `useConjugacy` and `multivariateNodesAsScalars`).  In this mode of operation, the `type` argument is not used.
 
-In contrast, the `addSampler` method accepts a `type` argument, which specifies the precise type of sampler to assign.  This argument may be provided as a character string or a nimbleFunction object. Valid character strings are indicated in `help(samplers)` (do not include `"sampler_"`).  Added samplers can be labeled with a `name` argument, which is used in output of `printSamplers`.
+When `default = FALSE`, or when this argument is omitted, `addSampler` uses the `type` argument to specify the precise sampler to assign.  Instances of this particular sampler are assigned to all nodes specified.  The `type` argument may be provided as a character string or a nimbleFunction object. Valid character strings are indicated in `help(samplers)` (do not include `"sampler_"`).  Added samplers can be labeled with a `name` argument, which is used in output of `printSamplers`.  Writing a new sampler as a nimbleFunction is covered in Section \@ref(sec:user-samplers).
 
-Writing a new sampler as a nimbleFunction is covered in Section \@ref(sec:user-samplers).
+Regardless of the mode of operation, the `target` argument to `addSampler` specifies the node(s) for which samplers should be added, provided as a character vector. Newly added samplers will be appended to the end of current sampler list.  Adding a sampler for a node will *not* remove existing samplers operating on that node.
 
-The hierarchy of precedence for control list elements for samplers is:
+The hierarchy of precedence for control list elements for added samplers is:
 
-  1. The `control` list argument provided to `addDefaultSampler` or `addSampler`;
+  1. The `control` list argument provided to `addSampler`;
   1. The original `control` list argument provided to `configureMCMC`;
   1. The default values, as defined in the sampling algorithm `setup` function.
 
-Samplers added by either `addDefaultSampler` or `addSampler` will be appended to the end of current sampler list.  Adding a sampler for a node will *not* automatically remove any existing samplers on that node. 
+See `help(addSampler)` for more details.
+
 
 #### Printing, re-ordering, modifying and removing samplers: *printSamplers*, *removeSamplers*, *setSamplers*, and *getSamplerDefinition*
 
