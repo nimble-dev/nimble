@@ -172,7 +172,9 @@ print: A logical argument specifying whether to print the montiors and samplers.
                               onlyRW = onlyRW,
                               onlySlice = onlySlice,
                               multivariateNodesAsScalars = multivariateNodesAsScalars,
-                              print = print)
+                              print = FALSE)
+
+            if(print)   show()    ##printSamplers()
         },
 
         addDefaultSampler = function(nodes = character(),
@@ -492,7 +494,7 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                 }
             }
             
-            if(print)   show()    ##printSamplers()
+            if(print)   printSamplers(byType = TRUE)   ##show()    ##printSamplers()
         },
 
         addConjugateSampler = function(conjugacyResult, dynamicallyIndexed = FALSE, print = FALSE) {
