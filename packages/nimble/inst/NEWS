@@ -1,3 +1,14 @@
+BUG FIXES
+
+USER LEVEL CHANGES
+
+-- For MCMC configuration addSampler method, changed name of the scalarComponents argument to expandComponents.
+
+-- New `default` argument added for the `addSampler` method of MCMC configuration objects.  When `default = TRUE`, default samplers (conjugate, or otherwise) will be added to the specified nodes.  The addition of this argument provides an entry point to the logic of default sampler determination and assignment, without creating a new MCMC configuration object.
+
+-- New `nodes` argument added for the `addSampler` method of MCMC configuration objects.  Nodes specified in `nodes` automatically undergo expansion according to `expandNodeNames` prior to sampler assignment, allowing for easier assignment of samplers to multiple nodes.
+
+
                             CHANGES IN VERSION 0.12.2 (February 2022)
 
 BUG FIXES
@@ -51,6 +62,7 @@ DEVELOPER LEVEL CHANGES
 
 -- Use USE_FC_LEN_T-related syntax in F77 calls in dists.cpp per CRAN request
 (PR #1173).
+
 
                             CHANGES IN VERSION 0.12.0 (September 2021)
 
