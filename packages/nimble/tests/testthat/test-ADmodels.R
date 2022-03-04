@@ -556,8 +556,6 @@ code <- nimbleCode({
     b ~ dunif(0,5 )
 })
 model <- nimbleModel(code, data = list(y = 1), inits = list(mu = 0.5,a=1,b=1))
-
-
 ## compilation error
 test_ADModelCalculate(model, name = 'truncation with dbeta')
 
