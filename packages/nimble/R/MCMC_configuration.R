@@ -238,7 +238,6 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                         ## skip candidate nodes that have any downstream data nodes:
                         if(length(intersect(stochDownstreamNoSelfIDs, dataNodeIDs)) > 0)   { nextCandInd <- nextCandInd + 1;   next }
                         ## skip candidate nodes for which the entire resulting branch wasn't going to be sampled:
-
                         if(!all(c(thisCandNodeID, stochDownstreamNoSelfIDs) %in% nodeIDsOrig))   { nextCandInd <- nextCandInd + 1;   next }
                         ## found a posterior predictive branch node:
                         posteriorPredictiveBranchNodeIDs <- c(posteriorPredictiveBranchNodeIDs, thisCandNodeID)
