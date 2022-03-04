@@ -117,7 +117,7 @@ compileModel_impl <- function(.self,
     cppProj$addClass(mvc, filename = filename)
     cppProj$addClass(modelCpp, modelDefName, filename)
 
-    if(isTRUE(getNimbleOption('experimentalEnableDerivs'))) {
+    if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs"))) {
         CnameAD <- paste0(Cname,"_AD")
         modelCppAD <- cppBUGSmodelClass(modelDef = modelDef, model = model,
                                         name = CnameAD, project = .self)

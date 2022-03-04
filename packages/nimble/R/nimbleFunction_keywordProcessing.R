@@ -243,7 +243,7 @@ calculate_keywordInfo <- keywordInfoClass(
 
         enableDerivs <- FALSE
         withDerivsOutputOnly <- FALSE
-        if(nimbleOptions('experimentalEnableDerivs')) {
+        if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs"))) {
           derivControl <- environment(nfProc$nfGenerator)$enableDerivs[[RCfunProc$name]]
           ## There are two cases.
           ## If enableDerivs has an entry, then derivatives are enabled either

@@ -1,5 +1,8 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
-nimbleOptions(experimentalEnableDerivs = TRUE)
+EDopt <- nimbleOptions("enableDerivs")
+BDopt <- nimbleOptions("buildDerivs")
+nimbleOptions(enableDerivs = TRUE)
+nimbleOptions(buildDerivs = TRUE)
 nimbleOptions(showCompilerOutput = FALSE)
 context("Testing of derivatives for distributions and dsl functions")
 
@@ -380,3 +383,6 @@ lapply(distributionArgsList, function(x){
                            x$distnName)
     })
 })
+
+nimbleOptions(enableDerivs = EDopt)
+nimbleOptions(buildDerivs = BDopt)

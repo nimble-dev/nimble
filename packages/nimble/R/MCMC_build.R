@@ -109,7 +109,7 @@ buildMCMC <- nimbleFunction(
         samplerTimes <- c(0,0) ## establish as a vector
         progressBarLength <- 52  ## multiples of 4 only
         progressBarDefaultSetting <- getNimbleOption('MCMCprogressBar')
-
+        nimbleVerboseOption <- getNimbleOption('verbose')
         waicFun <- nimbleFunctionList(waicClass_base)
         if(enableWAIC && !('online' %in% names(conf$controlWAIC) && !conf$controlWAIC$online)) {
            waicFun[[1]] <- buildWAIC(model, mvSaved, conf$controlWAIC)
@@ -139,7 +139,8 @@ buildMCMC <- nimbleFunction(
         nburnin               = integer(default =  0),
         thin                  = integer(default = -1),
         thin2                 = integer(default = -1),
-        resetWAIC             = logical(default = TRUE)) {
+        resetWAIC             = logical(default = TRUE),
+        chain                 = integer(default =  1)) {
         if(niter < 0)       stop('cannot specify niter < 0')
         if(nburnin < 0)     stop('cannot specify nburnin < 0')
         if(nburnin > niter) stop('cannot specify nburnin > niter')

@@ -572,7 +572,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       addInheritance(baseClassName)
                                                       addAncestors('NamedObjects')
                                                   }
-                                                  handleDerivs <- nimbleOptions('experimentalEnableDerivs') &&
+                                                  handleDerivs <- isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs")) &&
                                                       length(environment(nfProc$nfGenerator)$enableDerivs) > 0
                                                   if(handleDerivs) {
                                                       constructorCode <- addADclassContent() ## Might generate code to insert into constructor, which is built later
@@ -1009,9 +1009,8 @@ makeSingleCopyCall <- function(varName, cppCopyType) {
            },
            'modelVarAccess' = {
                cppLiteral(paste0("COPY_VALUE_MAP_ACCESSORS_FROM_NODE_NAMES(\"", varName, "\"",
-                                 if(isTRUE(nimbleOptions('experimentalEnableDerivs'))) ", 1" else ", 0", ");"))
+                                 if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs"))) ", 1" else ", 0", ");"))
            },
-           
            NULL)
 }
 

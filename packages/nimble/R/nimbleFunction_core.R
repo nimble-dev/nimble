@@ -97,7 +97,7 @@ nimbleFunction <- function(setup         = NULL,
     className <- name
     methodList <- c(list(run = run), methods)   # create a list of the run function, and all other methods
     # simply pass in names of vars in setup code so that those can be used in nf_checkDSLcode; to be more sophisticated we would only pass vars that are the result of nimbleListDefs or nimbleFunctions
-    if(nimbleOptions('experimentalEnableDerivs')
+    if(isTRUE(nimbleOptions('enableDerivs'))
        && length(enableDerivs)>0) {
         ## convert enableDerivs to a format of name = list(controls...)
         if(is.character(enableDerivs)) {
@@ -105,15 +105,16 @@ nimbleFunction <- function(setup         = NULL,
                 lapply(enableDerivs, function(x) list()),
                 names = enableDerivs)
         }
-    } else if(!nimbleOptions('experimentalEnableDerivs')
+    } else if(!isTRUE(nimbleOptions('enableDerivs'))
               && length(enableDerivs)>0)
-        stop('To enable nimbleFunction derivatives, you must first set "nimbleOptions(experimentalEnableDerivs = TRUE)".')
+        stop('To enable nimbleFunction derivatives, you must first set "nimbleOptions(enableDerivs = TRUE)".')
     methodList <- lapply(methodList,
                          nfMethodRC,
                          check = check,
                          methodNames = names(methodList),
-                         setupVarNames = c(all.vars(body(setup)), names(formals(setup))))
-    if(nimbleOptions('experimentalEnableDerivs')
+                         setupVarNames = c(all.vars(body(setup)), names(formals(setup))),
+                         where = where)
+    if(nimbleOptions('enableDerivs')
        && length(enableDerivs)>0) {
         for(iM in seq_along(methodList)) {
             thisEnableDerivs <-  enableDerivs[[ names(methodList)[iM] ]]
@@ -121,11 +122,6 @@ nimbleFunction <- function(setup         = NULL,
                 methodList[[iM]]$enableDerivs <- thisEnableDerivs
         }
     }
-=======
-    if(nimbleOptions('experimentalEnableDerivs') && length(enableDerivs)>0) methodList <- c(methodList, buildDerivMethods(methodList, enableDerivs))
-    else if(!nimbleOptions('experimentalEnableDerivs') && length(enableDerivs)>0) stop('To enable nimbleFunction derivatives, you must first set "nimbleOptions(experimentalEnableDerivs = TRUE)".')
-    methodList <- lapply(methodList, nfMethodRC, check = check, methodNames = names(methodList), setupVarNames = c(all.vars(body(setup)), names(formals(setup))), where = where)
->>>>>>> devel
     ## record any setupOutputs declared by setupOutput()
     setupOutputsDeclaration <- nf_processSetupFunctionBody(setup, returnSetupOutputDeclaration = TRUE)
     declaredSetupOutputNames <- nf_getNamesFromSetupOutputDeclaration(setupOutputsDeclaration)
@@ -389,8 +385,6 @@ nf_getVarFromAssignmentLHScode <- function(code) {
     if(is.name(code)) return(deparse(code))
     return(nf_getVarFromAssignmentLHScode(code[[2]]))
 }
-
-
 
 ## creates a list of all the names of all variables and functions in the code of methodList functions
 nf_createAllNamesFromMethodList <- function(methodList, onlyArgsAndReturn = F) {

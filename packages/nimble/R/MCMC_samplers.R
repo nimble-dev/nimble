@@ -1021,7 +1021,8 @@ sampler_langevin <- nimbleFunction(
         timesRan <- 0
         timesAdapted <- 0
         ## checks
-        if(!nimbleOptions('experimentalEnableDerivs')) stop('must enable NIMBLE derivatives, set nimbleOptions(experimentalEnableDerivs = TRUE)')
+        if(!(isTRUE(nimbleOptions('enableDerivs')) && isTRUE(nimbleOptions("buildDerivs"))))
+            stop(' [Warning] must enable and build NIMBLE derivatives, set nimbleOptions(enableDerivs = TRUE) and nimbleOptions(buildDerivs = TRUE)')
         if(any(model$isDiscrete(targetAsScalar)))      stop(paste0('langevin sampler can only operate on continuous-valued nodes:', paste0(targetAsScalar[model$isDiscrete(targetAsScalar)], collapse=', ')))
     },
     run = function() {
@@ -1143,7 +1144,8 @@ sampler_HMC <- nimbleFunction(
         qpNLDef <- nimbleList(q  = double(1), p  = double(1))
         btNLDef <- nimbleList(q1 = double(1), p1 = double(1), q2 = double(1), p2 = double(1), q3 = double(1), n = double(), s = double(), a = double(), na = double())
         ## checks
-        if(!nimbleOptions('experimentalEnableDerivs')) stop('must enable NIMBLE derivates, use: nimbleOptions(experimentalEnableDerivs = TRUE)', call. = FALSE)
+        if(!(isTRUE(nimbleOptions('enableDerivs')) && isTRUE(nimbleOptions("buildDerivs"))))
+            stop('must enable and build NIMBLE derivatices, use: nimbleOptions(enableDerivs = TRUE) and nimbleOptions(buildDerivs = TRUE)', call. = FALSE)
         if(initialEpsilon < 0) stop('HMC sampler initialEpsilon must be positive', call. = FALSE)
         if(!all(M > 0)) stop('HMC sampler M must contain all positive elements', call. = FALSE)
         if(d == 1) if(length(M) != 2) stop('length of HMC sampler M must match length of HMC target nodes', call. = FALSE)

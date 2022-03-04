@@ -265,11 +265,15 @@ makeNimbleListBindingFields <- function(symTab, cppNames, castFunName) {
         if(inherits(thisSymbol, 'symbolNimbleList')) { ## copy type 'nimbleList'
             className <- thisSymbol$nlProc$cppDef$name
             castToPtrPairName <- thisSymbol$nlProc$cppDef$ptrCastToPtrPairFun$name
+            DLLcode <- if(isTRUE( thisSymbol$nlProc$cppDef$predefined ))
+                           quote(nimbleUserNamespace$sessionSpecificDll)
+                       else
+                           quote(dll)
             eval(substitute( fieldList$VARNAME <- function(x) {
                 namedObjectsPtr <- CASTFUNCALL ##.Call(dll$CASTFUN, .ptrToPtr)
                 extPtrNL <- nimbleInternalFunctions$newObjElementPtr(namedObjectsPtr, VARNAME, dll = dll)
-                nimbleInternalFunctions$getSetNimbleList(vptr = extPtrNL, name = VARNAME, value = x, cppDef = symTab$getSymbolObject(VARNAME)$nlProc$cppDef, dll = dll )
-            }, list(VARNAME = vn, CASTFUNCALL = castFunCall, CLASSNAME = className, CASTTOPTRPAIRNAME = castToPtrPairName) ) ) ##CASTFUN = castFunName,
+                nimbleInternalFunctions$getSetNimbleList(vptr = extPtrNL, name = VARNAME, value = x, cppDef = symTab$getSymbolObject(VARNAME)$nlProc$cppDef, dll = DLL )
+            }, list(VARNAME = vn, CASTFUNCALL = castFunCall, CLASSNAME = className, CASTTOPTRPAIRNAME = castToPtrPairName, DLL = DLLcode) ) ) ##CASTFUN = castFunName,
             next
         }
         if(thisSymbol$type == "character") { ## cpp copy type 'character'  : 2 sub-cases (vector and scalar)

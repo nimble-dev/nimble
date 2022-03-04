@@ -27,7 +27,7 @@ nodeFunctionNew <- function(LHS,
             dynamicIndexLimitsExpr <- nndf_generateDynamicIndexLimitsExpr(dynamicIndexInfo)
         } else dynamicIndexLimitsExpr <- NULL
     } else dynamicIndexLimitsExpr <- NULL
-    if(nimbleOptions('experimentalEnableDerivs')){
+    if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs"))) {
         parents <- names(parentsSizeAndDims)
         ADconstantsInfo <- makeSizeAndDimListForIndexedInfo(LHSrep, parents, unrolledIndicesMatrix)
         ADconstantsInfo <- makeSizeAndDimListForIndexedInfo(RHSrep, parents, unrolledIndicesMatrix,
@@ -66,7 +66,7 @@ nodeFunctionNew <- function(LHS,
                                                       dynamicIndexLimitsExpr,
                                                       RHS,
                                                       nodeDim),
-                CALCAD_LIST   = if(nimbleOptions('experimentalEnableDerivs')) list(calculate_ADproxyModel = list(isNode = TRUE)) else list(),
+                CALCAD_LIST   = if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs"))) list(calculate_ADproxyModel = list(isNode = TRUE)) else list(),
                 where         = where)
         )
     if(evaluate){
@@ -145,7 +145,7 @@ setupOutputs <- function(...) NULL
 
 ## creates a function object for use as setup argument to nimbleFunction()
 nndf_createSetupFunction <- function() {
-    if(isTRUE(getNimbleOption('experimentalEnableDerivs'))) {
+    if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs"))) {
         setup <- function(model, BUGSdecl) {
             indexedNodeInfoTable <- indexedNodeInfoTableClass(BUGSdecl)
             ADproxyModel <- model$ADproxyModel
@@ -306,7 +306,7 @@ parentsArgs <-c()
     ADexceptionNames <- c(names(parentsArgs), deparse(logProbNodeExpr[[2]]))
     methodList <- nndf_addModelDollarSignsToMethods(methodList, exceptionNames = c("LocalAns", "LocalNewLogProb","PARAMID_","PARAMANSWER_", "BOUNDID_", "BOUNDANSWER_", "INDEXEDNODEINFO_"), 
                                                     ADexceptionNames = ADexceptionNames)
-    if(isTRUE(getNimbleOption('experimentalEnableDerivs'))){
+    if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs"))) {
         methodList[['calculate_ADproxyModel']] <- methodList[['calculate']]
         if(type=="stoch")
             newBody <- body(methodList[['calculate']])

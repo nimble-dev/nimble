@@ -27,7 +27,6 @@ nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
 nimbleOptions(MCMCprogressBar = FALSE)
 
 ## tests of classic BUGS examples
-
 test_mcmc('blocker', numItsC = 1000, resampleData = TRUE)
 # 100% coverage; looks fine
 
@@ -1916,10 +1915,12 @@ test_that('MCMC with logProb variable being monitored builds and compiles.', {
   Cmcmc$run(10)
 })
 
-
 test_that('HMC sampler seems to work', {
-    nimbleOptions(experimentalEnableDerivs = TRUE)
-    nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions = TRUE)
+    EDopt <- nimbleOptions("enableDerivs")
+    BDopt <- nimbleOptions("buildDerivs")
+    nimbleOptions(enableDerivs = TRUE)
+    nimbleOptions(buildDerivs = TRUE)
+#    nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions = TRUE)
     code <- nimbleCode({
         a[1] ~ dnorm(0, 1)
         a[2] ~ dnorm(a[1]+1, 1)
@@ -1942,6 +1943,8 @@ test_that('HMC sampler seems to work', {
     expect_true(all(round(as.numeric(samples[1000,]), 5) == c(-0.11556, 0.88505, 2.89503)))
     expect_true(all(round(as.numeric(apply(samples, 2, mean)), 7) == c(0.4136721, 1.8417534, 3.2569954)))
     expect_true(all(round(as.numeric(apply(samples, 2, sd)), 7) == c(0.9268822, 1.2033593, 1.3179108)))
+    nimbleOptions(enableDerivs = EDopt)
+    nimbleOptions(buildDerivs = BDopt)
 })
 
 
@@ -2004,8 +2007,11 @@ test_that('cc_checkScalar operates correctly', {
 })
 
 test_that('HMC sampler exact samples for different maxTreeDepths', {
-    nimbleOptions(experimentalEnableDerivs = TRUE)
-    nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions = TRUE)
+    EDopt <- nimbleOptions("enableDerivs")
+    BDopt <- nimbleOptions("buildDerivs")
+    nimbleOptions(enableDerivs = TRUE)
+    nimbleOptions(buildDerivs = TRUE)
+    #nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions = TRUE)
     ##
     code <- nimbleCode({
         sigma ~ dunif(0, 100)
@@ -2047,12 +2053,17 @@ test_that('HMC sampler exact samples for different maxTreeDepths', {
     expect_true(all(round(as.numeric(samples2[10000,]),6) == c(-6.563781, 93.015175)))
     set.seed(0);   samples3 <- runMCMC(Cmcmc3, 10000)
     expect_true(all(round(as.numeric(samples3[10000,]),6) == c(-6.187742, 8.602518)))
+    nimbleOptions(enableDerivs = EDopt)
+    nimbleOptions(buildDerivs = BDopt)
 })
 
 
 test_that('HMC sampler error messages for transformations with non-constant bounds', {
-    nimbleOptions(experimentalEnableDerivs = TRUE)
-    nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions = TRUE)
+    EDopt <- nimbleOptions("enableDerivs")
+    BDopt <- nimbleOptions("buildDerivs")
+    nimbleOptions(enableDerivs = TRUE)
+    nimbleOptions(buildDerivs = TRUE)
+    #nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions = TRUE)
     ##
     code <- nimbleCode({ x ~ dexp(1); y ~ dunif(1, x) })
     Rmodel <- nimbleModel(code, inits = list(x = 10))
@@ -2095,12 +2106,17 @@ test_that('HMC sampler error messages for transformations with non-constant boun
     conf <- configureMCMC(Rmodel, nodes = NULL)
     conf$addSampler('y', 'HMC')
     expect_error(Rmcmc <- buildMCMC(conf))
+    nimbleOptions(enableDerivs = EDopt)
+    nimbleOptions(buildDerivs = BDopt)
 })
 
 
 test_that('HMC sampler error messages for invalid M mass matrix arguments', {
-    nimbleOptions(experimentalEnableDerivs = TRUE)
-    nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions = TRUE)
+    EDopt <- nimbleOptions("enableDerivs")
+    BDopt <- nimbleOptions("buildDerivs")
+    nimbleOptions(enableDerivs = TRUE)
+    nimbleOptions(buildDerivs = TRUE)
+    #nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions = TRUE)
     ##
     code <- nimbleCode({
         for(i in 1:5)    x[i] ~ dnorm(0, 1)
@@ -2130,10 +2146,15 @@ test_that('HMC sampler error messages for invalid M mass matrix arguments', {
     conf <- configureMCMC(Rmodel, nodes = NULL)
     conf$addSampler('x[1:3]', 'HMC', M = c(1,2,3))
     expect_error(Rmcmc <- buildMCMC(conf), NA)   ## means: expect_no_error
+    nimbleOptions(enableDerivs = EDopt)
+    nimbleOptions(buildDerivs = BDopt)
 })
 
 test_that('HMC sampler reports correct number of divergences and max tree depths', {
-    nimbleOptions(experimentalEnableDerivs = TRUE)
+    EDopt <- nimbleOptions("enableDerivs")
+    BDopt <- nimbleOptions("buildDerivs")
+    nimbleOptions(enableDerivs = TRUE)
+    nimbleOptions(buildDerivs = TRUE)
     nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions = TRUE)
     ##
     code <- nimbleCode({
@@ -2163,6 +2184,8 @@ test_that('HMC sampler reports correct number of divergences and max tree depths
     ##
     expect_equal(Cmcmc$samplerFunctions$contentsList[[4]]$numDivergences,         9)
     expect_equal(Cmcmc$samplerFunctions$contentsList[[4]]$numTimesMaxTreeDepth, 699)
+    nimbleOptions(enableDerivs = EDopt)
+    nimbleOptions(buildDerivs = BDopt)
 })
 
 test_that('cc_stripExpr operates correctly', {

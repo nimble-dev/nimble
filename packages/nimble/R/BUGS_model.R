@@ -1324,7 +1324,7 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            code <- nimble:::insertSingleIndexBrackets(code, modelDef$varInfo)
                                            LHS <- code[[2]]
                                            RHS <- code[[3]]
-                                           if(nimble::nimbleOptions('experimentalEnableDerivs')){
+                                           if(isTRUE(nimble::nimbleOptions("enableDerivs")) && isTRUE(nimble::nimbleOptions("buildDerivs"))) {
                                              parents <- BUGSdecl$allParentVarNames()
                                              selfWithNoInds <-  strsplit(nimble:::safeDeparse(LHS, warn = TRUE), '[', fixed = TRUE)[[1]][1]
                                              parents <- c(selfWithNoInds, parents)
@@ -1410,7 +1410,7 @@ RMakeCustomModelClass <- function(vars, className, isDataVars, modelDef, where =
     className <- paste0(className, '_', nimbleUniqueID())
 
     allFields <- makeBUGSclassFields(varnames, vars)
-    if(nimbleOptions('experimentalEnableDerivs')) {
+    if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs"))) {
         allFields[[length(allFields) + 1]] <- 'ANY'
         names(allFields)[[length(allFields)]] <- 'ADproxyModel'
     }
@@ -1436,7 +1436,7 @@ RMakeCustomModelClass <- function(vars, className, isDataVars, modelDef, where =
             }
         ), where = where),
         list(FIELDS = allFields,
-             ADPROXYLINE = if(nimbleOptions('experimentalEnableDerivs'))
+             ADPROXYLINE = if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs")))
                                quote(ADproxyModel <<- nimble:::ADproxyModelClass(.self))
                            else
                                NULL
