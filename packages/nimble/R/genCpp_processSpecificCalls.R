@@ -8,7 +8,7 @@
 ####################################
 
 specificCallReplacements <- list(
-    '^' = 'pow',
+#    '^' = 'pow', # Has its own handler below
     '%%' = 'nimMod',
     length = 'size',
     is.nan = 'ISNAN',
@@ -38,7 +38,9 @@ specificCallHandlers = c(
          declare = 'declareHandler',
          min = 'minMaxHandler',
          max = 'minMaxHandler',
-         nimSvd = 'svdHandler'),
+         nimSvd = 'svdHandler',
+         pow = "powHandler",
+         '^' = "powHandler"),
     makeCallList(names(specificCallReplacements), 'replacementHandler'),
     makeCallList(c('nimNumeric', 'nimLogical', 'nimInteger', 'nimMatrix', 'nimArray'), 'nimArrayGeneralHandler' ),
     makeCallList(c('dmnorm_chol', 'dmvt_chol', 'dlkj_corr_cholesky', 'dwish_chol', 'dinvwish_chol', 'dcar_normal', 'dcar_proper', 'dmulti', 'dcat', 'dinterval', 'ddirch'), 'dmFunHandler')
@@ -296,5 +298,16 @@ mvAccessHandler <- function(code, symTab) {
     if(code$caller$caller$caller$name != '[') {
         insertExprClassLayer(code$caller$caller$caller, code$callerArgID, '[')
         code$caller$caller$caller$args[[2]] <- 1
+    }
+}
+
+powHandler <- function(code, symTab) {
+    code$name <- "pow"
+    if(length(code$args) == 2) {
+        if(is.numeric(code$args[[2]])) {
+            if(code$args[[2]] == round(code$args[[2]])) {
+                code$name <- "pow_int"
+            }
+        }
     }
 }

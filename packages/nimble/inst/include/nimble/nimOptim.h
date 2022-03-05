@@ -174,7 +174,7 @@ class NimOptimProblem_model : public NimOptimProblem {
   NimArr<1, double> derivOrders;
   NodeVectorClassNew_derivs &nodes;
   nimbleCppADinfoClass ADinfo;
-  CppAD::ADFun<double> ADtape;
+  //  CppAD::ADFun<double> ADtape;
   nimbleFunctionCppADbase CppADbase;
   NimArr<1, double> get_wrt() {
     NimArr<1, double > wrt;
@@ -198,7 +198,7 @@ class NimOptimProblem_model : public NimOptimProblem {
       derivOrders.setSize(2);
       derivOrders[0] = 0;
       derivOrders[1] = 1;
-      ADinfo.ADtape = &ADtape;
+      ADinfo.ADtape() = new CppAD::ADFun<double>; //&ADtape;
       length_wrt = nodes.get_model_wrt_accessor().getTotalLength();
       lastP.setSize(length_wrt, false, false);
       lastGradient.setSize(length_wrt, false, false);

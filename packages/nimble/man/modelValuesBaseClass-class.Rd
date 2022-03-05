@@ -2,17 +2,17 @@
 % Please edit documentation in R/types_modelValues.R
 \docType{class}
 \name{modelValuesBaseClass-class}
+\alias{modelValuesBaseClass-class}
+\alias{modelValuesBaseClass}
 \alias{[,CmodelValues-method}
-\alias{[,CmodelValues-method,ANY,ANY}
-\alias{[,CmodelValues-method,character,missing}
-\alias{[,CmodelValues-method,character,missing,ANY-method}
-\alias{[,modelValuesBaseClass-method}
 \alias{[<-,CmodelValues-method}
-\alias{[<-,modelValuesBaseClass-method}
 \alias{[[,CmodelValues-method}
 \alias{[[<-,CmodelValues-method}
-\alias{modelValuesBaseClass}
-\alias{modelValuesBaseClass-class}
+\alias{[,CmodelValues-method,character,missing}
+\alias{[,modelValuesBaseClass-method}
+\alias{[<-,modelValuesBaseClass-method}
+\alias{[,CmodelValues-method,character,missing,ANY-method}
+\alias{[,CmodelValues-method,ANY,ANY}
 \title{Class \code{modelValuesBaseClass}}
 \description{
 modelValues are NIMBLE containers built to store values from models. They can either be built directly from 
@@ -20,8 +20,9 @@ a model or be custom built via the \code{modelValuesConf} function. They consist
 row can be thought of as a set of values from a model. Like most nimble objects, and unlike most
 R objects, they are passed by reference instead of by value. 
 
-See user manual for more details.
+See the \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} for more details.
 }
+
 \examples{
 mvConf <- modelValuesConf(vars = c('a', 'b'), 
 	types = c('double', 'double'), 
@@ -45,4 +46,3 @@ basicModel <- nimbleModel(basicModelCode)
 basicMV <- modelValues(basicModel, m = 2)	# m sets the number of rows
 basicMV['b',]
 }
-

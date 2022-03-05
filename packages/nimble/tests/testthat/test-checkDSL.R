@@ -36,14 +36,14 @@ test2 <- nimbleFunction(
     )
 ))
 
-test_that("Test of DSL check of invalid RCfunction with R code present", expect_warning(
+test_that("Test of DSL check of invalid RCfunction with R code present", expect_message(
 test3 <- nimbleFunction(
     run = function(x = double(1), y = double(1)) {
         returnType(double(1))
         out <- lm(y ~ x)
         return(out$coefficients)
     }
-    )
+    ), "Detected possible use of R functions"
 ))
 
 
@@ -106,7 +106,7 @@ test6 <- nimbleFunction(
 )
 ))
 
-test_that("Test of DSL check of valid nimbleFunction using undefined RC function", expect_warning(
+test_that("Test of DSL check of valid nimbleFunction using undefined RC function", expect_message(
 test7 <- nimbleFunction(
     setup = function(model, target) {
         calcNodes <- model$getDependencies(target)
@@ -117,7 +117,7 @@ test7 <- nimbleFunction(
         ans <- model$calculate(calcNodes)
         tmp = myRCfun()
         return(tmp)
-    })
+    }), "For this nimbleFunction to compile"
 ))
 
 test_that("Test of DSL check of valid nimbleFunction using RC function from setup", expect_silent(
@@ -152,14 +152,14 @@ test9 <- nimbleFunction(
     })
 ))
 
-test_that("Test of DSL check of valid nimbleFunction with undefined nimbleList", expect_warning(
+test_that("Test of DSL check of valid nimbleFunction with undefined nimbleList", expect_message(
 test10 <- nimbleFunction(
   setup = function(){    
   },
   run = function(){
     outList <- method1()
     returnType(testListDef())
-     return(outList)
+    return(outList)
   },
   methods = list(
     method1 = function(){
@@ -168,7 +168,7 @@ test10 <- nimbleFunction(
       return(outList)
     }
   )
-)
+), "For this nimbleFunction to compile"
 ))
 
 test_that("Test of DSL check of valid nimbleFunction with nimbleList in setup", expect_silent(
@@ -211,7 +211,8 @@ test12 <- nimbleFunction(
   )
   )))
 
-test_that("Test of DSL check of valid nimbleFunction with call to undefined nimbleFunction", expect_warning(
+## Actually not any different than test7.
+test_that("Test of DSL check of valid nimbleFunction with call to undefined nimbleFunction", expect_message(
 test13 <- nimbleFunction(
     setup = function(model, target) {
         calcNodes <- model$getDependencies(target)
@@ -222,7 +223,7 @@ test13 <- nimbleFunction(
         ans <- model$calculate(calcNodes)
         tmp = mynf()
         return(tmp)
-    })
+    }), "For this nimbleFunction to compile"
 ))
 
 
@@ -245,6 +246,174 @@ test14 <- nimbleFunction(
     })
 }
 ))
+
+test_that("Test of DSL check of valid nimbleFunction with calls to undefined nimbleFunctions and list elements", {
+    nf_base= nimbleFunctionVirtual(
+        name = 'nfbase',
+        run = function() {returnType(double(0))},
+        methods = list(
+            foo = function() { }
+        )
+    )
+
+    nfextend = nimbleFunction(
+        contains = nf_base,
+        setup = function() {},
+        run = function() {
+            returnType(double(0))
+            return(3)
+        },
+        methods = list(
+            foo2 = function() {},
+            foo3 = function() {}
+        )
+    )
+
+    expect_silent(
+        nf_more <- nimbleFunction(
+            setup = function() {
+                fxns = nimbleFunctionList(nf_base)
+                fxns[[1]] <- nf_extend()
+            },
+            run = function() {
+                returnType(double(0))
+                fxns[[1]]$foo()
+                fxns[[1]]$foo2()
+                i <- 1
+                fxns[[i]]$foo3()
+                out = fxns[[1]]$run()
+                fxns[[i]]$foo4()
+                return(out)
+            }))
+})
+
+test_that("Test of detection of nf methods in findMethods", {
+    code <- quote({
+        m$cc1
+        m$cc2()
+        m$cc3(a)
+        m[[1]]$cc4
+        m[[i]]$cc5
+        m[[1]]$cc6()
+        m[[i]]$cc7()
+        m[[x+3]]$cc8
+        m[[x+3]]$cc9()
+        m[[1]]$cc10(mm$cc11)
+        m[[1]]$cc12(mm$cc13())
+        m[[mm$cc14]]$cc15()
+        m[[mm$cc16()]]$cc17()
+    })
+    expr <- RparseTree2ExprClasses(code)
+    expect_identical(findMethodsInExprClass(expr), c('cc2', 'cc3', 'cc6', 'cc7', 'cc9', 'cc10', 'cc12', 'cc13', 'cc15', 'cc17', 'cc16'))
+})
+
+test_that("Handling of negative indexing in nimbleFunction code", {
+    test = nimbleFunction(
+        run = function(x=double(2)) {
+            nimPrint(sum(x[1:3, 6:1]))
+        }
+    )
+    expect_error(cTest <- compileNimble(test), "negative indexing")
+
+    test = nimbleFunction(
+        run = function(x=double(2)) {
+            for(i in 3:1) {}
+        }
+    )
+    expect_error(cTest <- compileNimble(test), "negative indexing")
+
+    ## We don't check run-time negative indexing.
+    test = nimbleFunction(
+        run = function(x=double(2), n1 = double(0), n2 = double(0)) {
+            nimPrint(sum(x[1:3, n1:n2]))
+        }
+    )
+    cTest <- compileNimble(test)
+    expect_failure(expect_message(cTest(matrix(rnorm(16), 4, 4), 3, 2),
+                   "Run-time negative indexing error"))
+    
+})
+
+test_that("nimbleFunctionVirtual works with abstract and non-abstract methods", {
+  # methods in nimbleFunctionVirtual are by default *abstract*, which means they
+  # are declared in the base class but are not defined. (In C++ they have "=0" at the
+  # end of the declaration.)  Hence they can't be called.
+  # This means that any derived class *must* provide a definition to become a
+  # fully defined (non-abstract) class and thus be usable.
+  #
+  # In order to provide nimbleFunctionVirtual methods that are not abstract,
+  # make an entry in the methodControl list setting abstract=FALSE,
+  # as shown in baseNF below. 
+  # non-abstract methods are limited to default do-nothing ({}) behavior.
+  # This means that to do anything interesting, a method must still be defined in
+  # a derived class.  But the do-nothing behavior allows the method to be
+  # simply ignored in a derived class that doesn't want to define it.
+  # This is a bare-bones feature that could be expanded in the future (e.g.
+  # by a meaningful base class method definition instead of simply {}).
+  baseNF <- nimbleFunctionVirtual(
+    run = function(x = double()) {returnType(double())},
+    methods = list(
+      foo = function(x = double(1)) {returnType(double(1))},
+      hw = function(x = double(1)) {a < 1; returnType(void())}    ),
+    methodControl = list(hw = list(required = FALSE))
+  )
+
+  dNFa <- nimbleFunction(
+    contains = baseNF,
+    setup = TRUE,
+    run = function(x = double()) {
+      return(x + 1)
+      returnType(double())
+    },
+    methods = list(
+      foo = function(x = double(1)) {
+        return(x + 1)
+        returnType(double(1))
+      },
+      hw = function(x = double(1)) {
+        cat("hello world from a dNFa object.\n")
+      }
+    )
+  )
+
+  dNFb <- nimbleFunction(
+    contains = baseNF,
+    setup = TRUE,
+    run = function(x = double()) {
+      return(x + 2)
+      returnType(double())
+    },
+    methods = list(
+      foo = function(x = double(1)) {
+        return(x + 2)
+        returnType(double(1))
+      } # NO how method provided.
+    )
+  )
+
+  useBase <- nimbleFunction(
+    setup = function() {
+      NFlist <- nimbleFunctionList(baseNF)
+      NFlist[[1]] <- dNFa()
+      NFlist[[2]] <- dNFb()
+    },
+    run = function(x = double(1)) {
+      for(i in 1:2) {
+        x[1] <- NFlist[[i]]$run(x[1])
+        x <- NFlist[[i]]$foo(x)
+        NFlist[[i]]$hw(x)
+      }
+      return(x)
+      returnType(double(1))
+    }
+  )
+
+  useBase1 <- useBase()
+  CuseBase1 <- compileNimble(useBase1)
+  res <- capture.output(ans <- CuseBase1$run( c(10, 100) ))
+  expect_identical(ans, c(16, 103))
+  expect_true(grepl("hello world", res)) 
+})
 
 
 options(warn = RwarnLevel)

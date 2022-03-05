@@ -97,7 +97,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
 
                                      ## to be wrapped in conditional
                                      buildADtemplateFun <- FALSE
-                                     if(isTRUE(nimbleOptions('experimentalEnableDerivs')))
+                                     if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs")))
                                          if(is.list(RCfunProc$RCfun$enableDerivs))
                                              if(is.list(RCfunProc$RCfun$enableDerivs[['run']]))
                                                  buildADtemplateFun <- TRUE

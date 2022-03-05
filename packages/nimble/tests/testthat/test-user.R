@@ -3,7 +3,7 @@ source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'ni
 context("Testing of user-supplied distributions and functions in BUGS code")
 
 nimbleVerboseSetting <- nimbleOptions('verbose')
-nimbleOptions(verbose = FALSE)
+nimbleOptions(verbose = TRUE)
 
 goldFileName <- 'userTestLog_Correct.Rout'
 tempFileName <- 'userTestLog.Rout'

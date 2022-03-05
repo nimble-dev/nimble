@@ -42,7 +42,7 @@ nimbleListBase <- setRefClass(Class = 'nimbleListBase',
 #' The \code{type} argument can be chosen from among \code{character}, \code{double}, \code{integer}, and \code{logical},
 #' or can be the name of a previously created \code{\link{nimbleList} definition}.
 #' 
-#' See the NIMBLE User Manual for additional examples.
+#' See the NIMBLE \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} for additional examples.
 #' 
 #' @examples 
 #' nimbleTypeList <- list()
@@ -336,7 +336,6 @@ nlProcessing <- setRefClass('nlProcessing',
 #' @export
 #'
 #' @seealso  \code{\link{nimEigen}} 
-
 eigenNimbleList <- nimbleList(list(nimbleType('values', 'double', 1),
                                    nimbleType('vectors', 'double', 2)), name = "EIGEN_EIGENCLASS", predefined = TRUE)
 
@@ -350,10 +349,68 @@ eigenNimbleList <- nimbleList(list(nimbleType('values', 'double', 1),
 #' @export
 #' 
 #' @seealso  \code{\link{nimSvd}} 
-
 svdNimbleList <-  nimbleList(list(nimbleType('d', 'double', 1),
                                   nimbleType('u', 'double', 2),
                                   nimbleType('v', 'double', 2)), name = "EIGEN_SVDCLASS", predefined = TRUE)
+
+
+#' waicList definition
+#' 
+#' \code{waicList} definition for the \code{nimbleList} type returned by WAIC
+#' computation.
+#'
+#' @details
+#'
+#' See \code{help(waic)} for details on the elements of the list.
+#' 
+#' @author NIMBLE development team
+#'
+#' @export
+#' 
+waicList <- nimbleList(
+    list(
+        nimbleType('WAIC', 'double', 0),
+        nimbleType('lppd', 'double', 0),
+        nimbleType('pWAIC', 'double', 0)
+    ), name = 'waicList',
+    predefined = TRUE
+)
+    
+#' waicDetailsList definition
+#' 
+#' \code{waicDetailsList} definition for the \code{nimbleList} type returned by WAIC
+#' computation.
+#'
+#' @details
+#'
+#' See \code{help(waic)} for details on the elements of the list.
+#' 
+#' @author NIMBLE development team
+#'
+#' @export
+#' 
+waicDetailsList <- nimbleList(
+    list(
+        nimbleType('marginal', 'logical', 0),
+        nimbleType('niterMarginal', 'double', 0),
+        nimbleType('thin', 'logical', 0),
+        nimbleType('online', 'logical', 0),
+
+        ## values for shorter MC runs to assess convergence for marginal calculation
+        nimbleType('WAIC_partialMC', 'double', 1),
+        nimbleType('lppd_partialMC', 'double', 1),
+        nimbleType('pWAIC_partialMC', 'double', 1),
+        nimbleType('niterMarginal_partialMC', 'double' , 1),  # checkIts
+
+        ## per data group values potentially useful for SE for contrasting WAIC of two models
+        nimbleType('WAIC_elements', 'double', 1),
+        nimbleType('lppd_elements', 'double', 1),
+        nimbleType('pWAIC_elements', 'double', 1)
+
+    ), name = 'waicDetailsList',
+    predefined = TRUE
+)
+
 
 #' EXPERIMENTAL Data type for the return value of \code{\link{nimDerivs}}
 #'
@@ -366,7 +423,6 @@ svdNimbleList <-  nimbleList(list(nimbleType('d', 'double', 1),
 #'
 #' @export
 #' @seealso \code{\link{nimDerivs}}
-
 ADNimbleList <-  nimbleList(list(nimbleType('value', 'double', 1),
                                  nimbleType('jacobian', 'double', 2),
                                  nimbleType('hessian', 'double', 3),
@@ -463,8 +519,8 @@ is.nl <- function(l){
   return(FALSE)
 }
 
-is.nlGenerator <- function(x, inputIsName = FALSE) {
-    if(inputIsName) x <- get(x)
+is.nlGenerator <- function(x, inputIsName = FALSE, where = -1) {
+    if(inputIsName) x <- get(x, pos = where)
     if(is.list(x) && is.function(x$new)) {
         if(is.null(environment(x$new))) return(FALSE)
         if(exists('nlDefClassObject', envir = environment(x$new), inherits = FALSE)) return(TRUE)

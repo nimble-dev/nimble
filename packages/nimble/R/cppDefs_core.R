@@ -228,7 +228,7 @@ cppClassDef <- setRefClass('cppClassDef',
 ## The parse tree can be either an R parse tree or one of our exprClass objects
 cppCodeBlock <- setRefClass('cppCodeBlock',
                             fields = list(typeDefs = 'ANY', objectDefs = 'ANY', code = 'ANY', skipBrackets = 'ANY',
-                                          cppADCode = 'ANY', generatorSymTab = 'ANY'),			#'logical'),
+                                          cppADCode = 'ANY', generatorSymTab = 'ANY'),
                             methods = list(
                                 generate = function(indent = '', ...) {
                                     ## TRUE was an original possible value.
@@ -253,7 +253,7 @@ cppCodeBlock <- setRefClass('cppCodeBlock',
                                     objectDefsToUse <- if(inherits(objectDefs, 'symbolTable')) objectDefs$symbols else objectDefs
                                     if(length(objectDefsToUse) > 0) {
                                         outputCppCode <- c(outputCppCode, paste0(indent, generateObjectDefs(objectDefsToUse),';'))
-                                    } ##else outputCppCode <- list()
+                                    } 
 
                                     if(inherits(code, 'exprClass')) {
                                         if(inherits(generatorSymTab, 'symbolTable')) useSymTab <- generatorSymTab
@@ -308,14 +308,15 @@ cppFunctionDef <- setRefClass('cppFunctionDef',
                                           }
                                            return(outputCode) 
                                       } else {
-                                          if(inherits(code$code, 'uninitializedField')) {
+                                          code_is_empty <- inherits(code$code, 'uninitializedField')
+                                          if(code_is_empty) {
                                               ## There is no code. This can occur for a nimbleFunctionVirtual, which is an abstract base class.
-                                              return(character(0))
+                                              if(abstract)
+                                                  return(character(0))
                                           }
                                           c(paste(generateFunctionHeader(returnType, name, argsToUse, scopes, template, static = FALSE, ...),
-                                                  if(const) ' const ' else character(0),
-                                                  '{'),
-                                            code$generate(...),
+                                                  if(const) ' const ' else character(0), '{'),
+                                            if(!code_is_empty) code$generate(...) else '',
                                             list('}'))
                                       }
                                   }

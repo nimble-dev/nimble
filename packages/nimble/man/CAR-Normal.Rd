@@ -6,11 +6,26 @@
 \alias{rcar_normal}
 \title{The CAR-Normal Distribution}
 \usage{
-dcar_normal(x, adj, weights = adj/adj, num, tau, c = CAR_calcNumIslands(adj,
-  num), zero_mean = 0, log = FALSE)
+dcar_normal(
+  x,
+  adj,
+  weights = adj/adj,
+  num,
+  tau,
+  c = CAR_calcNumIslands(adj, num),
+  zero_mean = 0,
+  log = FALSE
+)
 
-rcar_normal(n = 1, adj, weights = adj/adj, num, tau,
-  c = CAR_calcNumIslands(adj, num), zero_mean = 0)
+rcar_normal(
+  n = 1,
+  adj,
+  weights = adj/adj,
+  num,
+  tau,
+  c = CAR_calcNumIslands(adj, num),
+  zero_mean = 0
+)
 }
 \arguments{
 \item{x}{vector of values.}
@@ -23,7 +38,7 @@ rcar_normal(n = 1, adj, weights = adj/adj, num, tau,
 
 \item{tau}{scalar precision of the Gaussian CAR prior.}
 
-\item{c}{integer number of constraints to impose on the improper density function.  If omitted, \code{c} is calculated as the number of disjoint groups of spatial locations in the adjacency structure, which implicitly assumes a first-order CAR process for each group. Note that \code{c} should be equal to the number of eigenvalues of the precision matrix that are zero. For example, if the neighborhood structure is based on a second-order Markov random field in one dimension then the matrix has two zero eigenvalues and in two dimensions it has three zero eigenvalues. See Rue and Held (2005) and the NIMBLE User Manual for more information.}
+\item{c}{integer number of constraints to impose on the improper density function.  If omitted, \code{c} is calculated as the number of disjoint groups of spatial locations in the adjacency structure, which implicitly assumes a first-order CAR process for each group. Note that \code{c} should be equal to the number of eigenvalues of the precision matrix that are zero. For example, if the neighborhood structure is based on a second-order Markov random field in one dimension then the matrix has two zero eigenvalues and in two dimensions it has three zero eigenvalues. See Rue and Held (2005) and the NIMBLE \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} for more information.}
 
 \item{zero_mean}{integer specifying whether to set the mean of all locations to zero during MCMC sampling of a node specified with this distribution in BUGS code (default \code{0}). This argument is used only in BUGS model code when specifying models in NIMBLE. If \code{0}, the overall process mean is included implicitly in the value of each location in a BUGS model; if \code{1}, then during MCMC sampling, the mean of all locations is set to zero at each MCMC iteration, and a separate intercept term should be included in the BUGS model. Note that centering during MCMC as implemented in NIMBLE follows the ad hoc approach of \pkg{WinBUGS} and does not sample under the constraint that the mean is zero as discussed on p. 36 of Rue and Held (2005).  See \sQuote{Details}.}
 
@@ -50,9 +65,6 @@ adj <- c(2, 1,3, 2,4, 3)
 weights <- c(1, 1, 1, 1, 1, 1)
 lp <- dcar_normal(x, adj, weights, num, tau = 1)
 }
-\author{
-Daniel Turek
-}
 \references{
 Banerjee, S., Carlin, B.P., and Gelfand, A.E. (2015). \emph{Hierarchical Modeling and Analysis for Spatial Data}, 2nd ed. Chapman and Hall/CRC.
 
@@ -61,4 +73,6 @@ Rue, H. and L. Held (2005). \emph{Gaussian Markov Random Fields}, Chapman and Ha
 \seealso{
 \link{CAR-Proper}, \link{Distributions} for other standard distributions
 }
-
+\author{
+Daniel Turek
+}

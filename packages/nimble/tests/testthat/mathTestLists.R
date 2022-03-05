@@ -60,6 +60,8 @@ testsBasicMath = list(
   list(name = 'ratio of scalars', expr = quote(out <- arg1 / arg2), inputDim = c(0,0), outputDim = 0),
   list(name = 'power of scalars via ^', expr = quote(out <- arg1 ^ arg2), inputDim = c(0,0), outputDim = 0),
   list(name = 'power of scalars via pow', expr = quote(out <- pow(arg1, arg2)), inputDim = c(0,0), outputDim = 0),
+  list(name = 'power of scalars via pow_int case 1', expr = quote(out <- pow_int(arg1, round(arg2) + 4)), inputDim = c(0,0), outputDim = 0),
+  list(name = 'power of scalars via pow_int case 2', expr = quote(out <- pow_int(arg1, round(arg2) - 4)), inputDim = c(0,0), outputDim = 0),
   list(name = 'power of scalars via ^ with positive first arg', expr = quote(out <- exp(arg1) ^ arg2), inputDim = c(0,0), outputDim = 0),
   list(name = 'power of scalars via pow with positive first arg', expr = quote(out <- pow(exp(arg1), arg2)), inputDim = c(0,0), outputDim = 0),
   list(name = 'modulo of positive scalars', expr = quote(out <- abs(arg1) %% abs(arg2)), inputDim = c(0,0), outputDim = 0), 
@@ -83,6 +85,8 @@ testsBasicMath = list(
   list(name = 'ratio of vector and scalar', expr = quote(out <- arg1 + arg2), inputDim = c(1,0), outputDim = 1),
   list(name = 'power of vector and scalar via ^', expr = quote(out <- arg1 ^ arg2), inputDim = c(1,0), outputDim = 1),
   list(name = 'power of vector and scalar via pow', expr = quote(out <- pow(arg1, arg2)), inputDim = c(1,0), outputDim = 1),
+  list(name = 'power of vector and scalar via pow_int case 1', expr = quote(out <- pow_int(arg1, round(arg2) + 4)), inputDim = c(1,0), outputDim = 1),
+  list(name = 'power of vector and scalar via pow_int case 2', expr = quote(out <- pow_int(arg1, round(arg2) - 4)), inputDim = c(1,0), outputDim = 1),
   list(name = 'power of vector and constant via ^', expr = quote(out <- arg1 ^ 2), inputDim = c(1,0), outputDim = 1),
   list(name = 'power of vector and constant via pow', expr = quote(out <- pow(arg1, 2)), inputDim = c(1,0), outputDim = 1),
   list(name = 'power of vector and scalar via ^ with positive first arg', expr = quote(out <- exp(arg1) ^ arg2), inputDim = c(1,0), outputDim = 1),
@@ -146,7 +150,8 @@ testsReduction = list(
   list(name = 'sd of vector', expr = quote(out <- sd(arg1)), inputDim = 1, outputDim = 0),
   list(name = 'var of vector', expr = quote(out <- var(arg1)), inputDim = 1, outputDim = 0),
   list(name = 'prod of vector', expr = quote(out <- prod(arg1)), inputDim = 1, outputDim = 0),
-  list(name = 'norm of vector', expr = quote(out <- norm(arg1)), inputDim = 1, outputDim = 0, knownFailure = '(.*compiles|.*runs)', expectWarnings = 'builds'),  ## norm doesn't work on vector in R and, in addition, is disabled because of C-R inconsistency so compilation fails as well
+  list(name = 'norm of vector', expr = quote(out <- norm(arg1)), inputDim = 1, outputDim = 0, knownFailure = '(.*compiles|.*runs)'),  ## norm doesn't work on vector in R and, in addition, is disabled because of C-R inconsistency so compilation fails as well
+  ## 2021-09-15: as of change in logging, norm now just returns message not a warning.
   ### matrix
   list(name = 'min of matrix', expr = quote(out <- min(arg1)), inputDim = 2, outputDim = 0),
   list(name = 'max of matrix', expr = quote(out <- max(arg1)), inputDim = 2, outputDim = 0),
@@ -155,7 +160,7 @@ testsReduction = list(
   list(name = 'sd of matrix', expr = quote(out <- sd(arg1)), inputDim = 2, outputDim = 0),
   list(name = 'var of matrix', expr = quote(out <- var(arg1)), inputDim = 2, outputDim = 0, knownFailure = '.*compiles'),  # Not supported
   list(name = 'prod of matrix', expr = quote(out <- prod(arg1)), inputDim = 2, outputDim = 0),
-  list(name = 'norm of matrix', expr = quote(out <- norm(arg1)), inputDim = 2, outputDim = 0, Rcode = quote(out <- norm(arg1, "F")), knownFailure = '(.*compiles|.*runs)', expectWarnings = 'builds') ## NIMBLE's C norm is apparently Frobenius, so R and C nimble functions, and, in addition, is disabled because of C-R inconsistency so compilation fails as well
+  list(name = 'norm of matrix', expr = quote(out <- norm(arg1)), inputDim = 2, outputDim = 0, Rcode = quote(out <- norm(arg1, "F")), knownFailure = '(.*compiles|.*runs)') ## NIMBLE's C norm is apparently Frobenius, so R and C nimble functions, and, in addition, is disabled because of C-R inconsistency so compilation fails as well
   )
 
 testsComparison = list(

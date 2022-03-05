@@ -201,6 +201,8 @@ test_coreRfeature_batch_internal <- function(input_batch, verbose = nimbleOption
             dimOutR <- attr(out_nfR, 'dim')
             dimOutC <- attr(out_nfC, 'dim')
             attributes(out) <- attributes(out_nfR) <- attributes(out_nfC) <- NULL
+            if(!is.null(input[['storage.mode']]))
+                storage.mode(out) <- storage.mode(out_nfR) <- storage.mode(out_nfC) <- input[['storage.mode']]
             attr(out, 'dim') <- dimOut
             attr(out_nfR, 'dim') <- dimOutR
             attr(out_nfC, 'dim') <- dimOutC
@@ -555,7 +557,6 @@ test_mcmc_internal <- function(Rmodel, ##data = NULL, inits = NULL,
     
     if(doCpp) {
         Cmodel <- compileNimble(Rmodel)
-        if(verbose) cat('done compiling model\n')
     }
     if(!is.null(mcmcControl)) mcmcConf <- configureMCMC(Rmodel, control = mcmcControl) else mcmcConf <- configureMCMC(Rmodel)
     if(removeAllDefaultSamplers) mcmcConf$removeSamplers()
@@ -1297,9 +1298,10 @@ testCompiledModelDerivsNimFxn <- nimbleFunction(
 derivsNimbleFunction <- nimbleFunction(
   setup = function(model, calcNodes, wrt) {},
   run = function(x = double(1),
-                 order = double(1)) {
+                 order = double(1),
+                 reset = logical(0, default = FALSE)) {
     values(model, wrt) <<- x  
-    ans <- nimDerivs(model$calculate(calcNodes), wrt = wrt, order = order, reset = FALSE)
+    ans <- nimDerivs(model$calculate(calcNodes), wrt = wrt, order = order, reset = reset)
     return(ans)
     returnType(ADNimbleList())
   }  ## don't need enableDerivs if call nimDerivs directly, but would if just have model$calc in nf
@@ -1307,7 +1309,7 @@ derivsNimbleFunction <- nimbleFunction(
 
 ## nf for double-taping
 derivsNimbleFunctionMeta <- nimbleFunction(
-  setup = function(model, calcNodes, wrt) {
+  setup = function(model, calcNodes, wrt, reset = FALSE) {
     innerWrtVec <- seq_along(model$expandNodeNames(wrt, returnScalarComponents = TRUE))
     d <- length(innerWrtVec)  
     allUpdateNodes <- makeUpdateNodes(wrt, calcNodes, model)
@@ -1322,16 +1324,14 @@ derivsNimbleFunctionMeta <- nimbleFunction(
   },
   methods = list(
     ## inner first-order deriv
-    derivs1Run = function(x = double(1),
-                         reset = logical(0, default = FALSE)) {
+    derivs1Run = function(x = double(1)) {
         ans <- nimDerivs(run(x), wrt = innerWrtVec, order = 1, reset = reset,
                          updateNodes = updateNodes, constantNodes = constantNodes, model = model)
       return(ans$jacobian[1,])
       returnType(double(1))
     },
     ## inner second-order deriv
-    derivs2Run = function(x = double(1),
-                         reset = logical(0, default = FALSE)) {
+    derivs2Run = function(x = double(1)) {
         ans <- nimDerivs(run(x), wrt = innerWrtVec, order = 2, reset = reset,
                          updateNodes = updateNodes, constantNodes = constantNodes, model = model)
         ## not clear why can't do ans$hessian[,,1] with double(2) returnType
@@ -1344,7 +1344,7 @@ derivsNimbleFunctionMeta <- nimbleFunction(
                              reset = logical(0, default = FALSE)) {
       wrtVec <- 1:length(x)
       if(length(wrtVec) != d) stop("inner and outer wrt mismatch")  
-      ans <- nimDerivs(derivs1Run(x, reset), wrt = wrtVec, order = order, reset = reset,
+      ans <- nimDerivs(derivs1Run(x), wrt = wrtVec, order = order, reset = reset,
                        updateNodes = updateNodes, constantNodes = constantNodes, model = model)
       return(ans)
       returnType(ADNimbleList())
@@ -1355,7 +1355,7 @@ derivsNimbleFunctionMeta <- nimbleFunction(
                              reset = logical(0, default = FALSE)) {
       wrtVec <- 1:length(x)
       if(length(wrtVec) != d) stop("inner and outer wrt mismatch")  
-      ans <- nimDerivs(derivs2Run(x, reset), wrt = wrtVec, order = order, reset = reset,
+      ans <- nimDerivs(derivs2Run(x), wrt = wrtVec, order = order, reset = reset,
                        updateNodes = updateNodes, constantNodes = constantNodes, model = model)
       return(ans)
       returnType(ADNimbleList())
@@ -1378,11 +1378,12 @@ derivsNimbleFunctionParamTransform <- nimbleFunction(
         constantNodes <- allUpdateNodes$constantNodes
     },
     run = function(x = double(1),
-                   order = double(1)) {
+                   order = double(1),
+                   reset = logical(0, default = FALSE)) {
         transformed_x <- my_parameterTransform$transform(x)  # transform(x)
         ans <- nimDerivs(inverseTransformStoreCalculate(transformed_x), order = order, wrt = nimDerivs_wrt,
                          model = model, updateNodes = updateNodes,
-                         constantNodes = constantNodes, reset = FALSE)
+                         constantNodes = constantNodes, reset = reset)
 
         return(ans)
         returnType(ADNimbleList())
@@ -1399,7 +1400,7 @@ derivsNimbleFunctionParamTransform <- nimbleFunction(
 
 
 derivsNimbleFunctionParamTransformMeta <- nimbleFunction(
-    setup = function(model, calcNodes, wrt) {
+    setup = function(model, calcNodes, wrt, reset = FALSE) {
         wrtNodesAsScalars <- model$expandNodeNames(wrt, returnScalarComponents = TRUE)
         my_parameterTransform <- parameterTransform(model, wrtNodesAsScalars)
         d <- my_parameterTransform$getTransformedLength()
@@ -1416,16 +1417,14 @@ derivsNimbleFunctionParamTransformMeta <- nimbleFunction(
             return(lp)
     },
     methods = list(
-        derivs1Run = function(transformed_x = double(1),
-                              reset = logical(0, default = FALSE)) {
+        derivs1Run = function(transformed_x = double(1)) {
             if(length(transformed_x) != d) stop("mismatch of x and wrtVec")
             ans <- nimDerivs(run(transformed_x), wrt = nimDerivs_wrt, order = 1, reset = reset,
                              updateNodes = updateNodes, constantNodes = constantNodes, model = model)
             return(ans$jacobian[1,])
             returnType(double(1))
         },
-        derivs2Run = function(transformed_x = double(1),
-                              reset = logical(0, default = FALSE)) {
+        derivs2Run = function(transformed_x = double(1)) {
             if(length(transformed_x) != d) stop("mismatch of x and wrtVec")
             ans <- nimDerivs(run(transformed_x), wrt = nimDerivs_wrt, order = 2, reset = reset,
                          updateNodes = updateNodes, constantNodes = constantNodes, model = model)
@@ -1438,7 +1437,7 @@ derivsNimbleFunctionParamTransformMeta <- nimbleFunction(
                                   reset = logical(0, default = FALSE)) {
             transformed_x <- my_parameterTransform$transform(x)
             if(length(transformed_x) != d) stop("mismatch of x and wrtVec")
-            ans <- nimDerivs(derivs1Run(transformed_x, reset), wrt = nimDerivs_wrt, order = order, reset = reset,
+            ans <- nimDerivs(derivs1Run(transformed_x), wrt = nimDerivs_wrt, order = order, reset = reset,
                              updateNodes = updateNodes, constantNodes = constantNodes, model = model)
             return(ans)
             returnType(ADNimbleList())
@@ -1449,7 +1448,7 @@ derivsNimbleFunctionParamTransformMeta <- nimbleFunction(
                                   reset = logical(0, default = FALSE)) {
             transformed_x <- my_parameterTransform$transform(x)
             if(length(transformed_x) != d) stop("mismatch of x and wrtVec")
-            ans <- nimDerivs(derivs2Run(transformed_x, reset), wrt = nimDerivs_wrt, order = order, reset = reset,
+            ans <- nimDerivs(derivs2Run(transformed_x), wrt = nimDerivs_wrt, order = order, reset = reset,
                              updateNodes = updateNodes, constantNodes = constantNodes, model = model)
             return(ans)
             returnType(ADNimbleList())
@@ -1492,7 +1491,7 @@ calcNodesForDerivs <- nimbleFunction(
 ##   tolerance:     A numeric argument, the tolerance to use when comparing wrapperDerivs to chainRuleDerivs.
 ##   verbose:       A logical argument.  Currently serves no purpose.
 test_ADModelCalculate_nick <- function(model, name = NULL, calcNodeNames = NULL, wrt = NULL, order = c(0,1,2), 
-                                  testCompiled = TRUE, tolerance = .001,  verbose = TRUE){
+                                  testCompiled = TRUE, tolerance = .001,  verbose = TRUE, gc = FALSE){
   temporarilyAssignInGlobalEnv(model)  
 
   if(testCompiled){
@@ -1507,8 +1506,10 @@ test_ADModelCalculate_nick <- function(model, name = NULL, calcNodeNames = NULL,
                           print(calcNodeNames[[i]])
                           print(wrt[[j]])
                           testFunctionInstance <- testCompiledModelDerivsNimFxn(model, calcNodeNames[[i]], wrt[[j]], order)
-                          expect_message(ctestFunctionInstance <- compileNimble(testFunctionInstance, project =  model, resetFunctions = TRUE))
-                          cDerivs <- ctestFunctionInstance$run()
+                            if(gc) gc()
+                            expect_message(ctestFunctionInstance <- compileNimble(testFunctionInstance, project =  model, resetFunctions = TRUE))
+                            if(gc) gc()
+                            cDerivs <- ctestFunctionInstance$run()
                           if(0 %in% order) expect_equal(wrapperDerivs$value, cDerivs$value, tolerance = tolerance)
                           if(1 %in% order) expect_equal(wrapperDerivs$jacobian, cDerivs$jacobian, tolerance = tolerance)
                           if(2 %in% order) expect_equal(wrapperDerivs$hessian, cDerivs$hessian, tolerance = tolerance)
@@ -1524,7 +1525,7 @@ test_ADModelCalculate_nick <- function(model, name = NULL, calcNodeNames = NULL,
 test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNodes = NULL, wrt = NULL,
                                   excludeUpdateNodes = NULL,
                                   relTol = c(1e-15, 1e-8, 1e-3, 1e-3), useFasterRderivs = FALSE, useParamTransform = FALSE,
-                                  checkDoubleTape = TRUE, checkCompiledValuesIdentical = TRUE,
+                                  checkDoubleTape = TRUE, checkCompiledValuesIdentical = TRUE, checkNewConstantNodesValues = FALSE,
                                   seed = 1, verbose = FALSE, debug = FALSE){
     if(!is.null(seed))
         set.seed(seed)
@@ -1537,7 +1538,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
     if(is.null(wrt) && is.null(calcNodes)) {
         
         ## HMC/MAP use case
-        if(verbose) cat("======================\ntesting HMC/MAP\n----------------------\n")
+        if(verbose) cat("============================================\ntesting HMC/MAP-based scenario\n--------------------------------------------\n")
         calcNodes <- model$getNodeNames()
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         tmp <- values(model, wrt)
@@ -1556,10 +1557,11 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
                                            savedMV = mv, relTol = relTol,
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
-                                       checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           checkNewConstantNodesValues = checkNewConstantNodesValues,
                                        verbose = verbose, debug = debug))
         ## max. lik. use case
-        if(verbose) cat("======================\ntesting ML\n----------------------\n")
+        if(verbose) cat("============================================\ntesting ML-based scenario\n--------------------------------------------\n")
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         calcNodes <- model$getNodeNames()
         topNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
@@ -1579,13 +1581,14 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         } else xNew <- runif(length(tmp))
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, excludeUpdateNodes = excludeUpdateNodes,
                                            savedMV =mv, relTol = relTol,
-                                       useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
-                                       checkDoubleTape = checkDoubleTape,
-                                       checkCompiledValuesIdentical = checkCompiledValuesIdentical,
-                                       verbose = verbose, debug = debug))
+                                           useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
+                                           checkDoubleTape = checkDoubleTape,
+                                           checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           checkNewConstantNodesValues = checkNewConstantNodesValues,
+                                           verbose = verbose, debug = debug))
 
         ## modular HMC/MAP use case
-        if(verbose) cat("======================\ntesting HMC/MAP partial\n----------------------\n")
+        if(verbose) cat("============================================\ntesting HMC/MAP partial-based scenario\n--------------------------------------------\n")
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         calcNodes <- model$getNodeNames()
         wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
@@ -1612,13 +1615,14 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrtSub, excludeUpdateNodes = excludeUpdateNodes,
                                            savedMV = mv, relTol = relTol,
-                                       useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
-                                       checkDoubleTape = checkDoubleTape,
-                                       checkCompiledValuesIdentical = checkCompiledValuesIdentical,
-                                       verbose = verbose, debug = debug))
+                                           useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
+                                           checkDoubleTape = checkDoubleTape,
+                                           checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           checkNewConstantNodesValues = checkNewConstantNodesValues,
+                                           verbose = verbose, debug = debug))
 
         ## conditional max. lik. use case
-        if(verbose) cat("======================\ntesting ML partial\n----------------------\n")
+        if(verbose) cat("============================================\ntesting ML partial-based scenario\n--------------------------------------------\n")
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         calcNodes <- model$getNodeNames()
         topNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
@@ -1648,13 +1652,14 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrtSub, excludeUpdateNodes = excludeUpdateNodes,
                                            savedMV = mv, relTol = relTol,
-                                       useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
-                                       checkDoubleTape = checkDoubleTape,
-                                       checkCompiledValuesIdentical = checkCompiledValuesIdentical,
-                                       verbose = verbose, debug = debug))
+                                           useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
+                                           checkDoubleTape = checkDoubleTape,
+                                           checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           checkNewConstantNodesValues = checkNewConstantNodesValues,
+                                           verbose = verbose, debug = debug))
 
         ## empirical Bayes use case (though not actually integrating over any latent nodes)
-        if(verbose) cat('======================\ntesting EB\n----------------------\n')
+        if(verbose) cat('============================================\ntesting EB-based scenario\n--------------------------------------------\n')
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         calcNodes <- model$getNodeNames()
         topNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
@@ -1673,10 +1678,11 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         } else xNew <- runif(length(tmp))
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, excludeUpdateNodes = excludeUpdateNodes,
                                            savedMV = mv, relTol = relTol,
-                                       useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
-                                       checkDoubleTape = checkDoubleTape,
-                                       checkCompiledValuesIdentical = checkCompiledValuesIdentical,
-                                       verbose = verbose, debug = debug))
+                                           useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
+                                           checkDoubleTape = checkDoubleTape,
+                                           checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           checkNewConstantNodesValues = checkNewConstantNodesValues,
+                                           verbose = verbose, debug = debug))
     } else {
         if(is.null(calcNodes)) calcNodes <- model$getNodeNames()
         if(is.null(wrt)) wrt <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
@@ -1693,10 +1699,11 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
             nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         } else xNew <- runif(length(tmp))
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, excludeUpdateNodes = excludeUpdateNodes, relTol = relTol,
-                                       useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
-                                       checkDoubleTape = checkDoubleTape,
-                                       checkCompiledValuesIdentical = checkCompiledValuesIdentical,
-                                       verbose = verbose, debug = debug))
+                                           useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
+                                           checkDoubleTape = checkDoubleTape,
+                                           checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           checkNewConstantNodesValues = checkNewConstantNodesValues,
+                                           verbose = verbose, debug = debug))
     }
 }
 
@@ -1705,12 +1712,15 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
 ## forward and backward mode and to assess whether values in the model are updated.
 test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL, xNew = NULL,
                                            calcNodes = NULL, wrt = NULL,
-                                           excludeUpdateNodes = NULL, savedMV = NULL, 
+                                           excludeUpdateNodes = NULL, excludeConstantNodes = NULL, savedMV = NULL, 
                                            relTol = c(1e-15, 1e-8, 1e-3, 1e-3), useFasterRderivs = FALSE,
-                                           useParamTransform = FALSE, checkDoubleTape = TRUE,
+                                           useParamTransform = FALSE, checkDoubleTape = TRUE, checkNewConstantNodesValues = FALSE,
                                            checkCompiledValuesIdentical = TRUE,
                                            verbose = FALSE, debug = FALSE){
 
+    saved_edition <- edition_get()
+    local_edition(3)
+    
     test_that(paste0("Derivatives of calculate for model ", name), {
         if(exists('paciorek') && paciorek == 0) browser()
         if(is.null(calcNodes))
@@ -1733,19 +1743,32 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
         otherNodes <- model$getNodeNames()
         otherNodes <- otherNodes[!otherNodes %in% wrt]
 
-        updateNodes <- makeUpdateNodes(wrt, calcNodes, model)$updateNodes
+        checkSquareMatrix <- function(node) {
+            val <- model[[node]]
+            d <- dim(val)
+            if(!is.null(d) && length(d) == 2 && d[1] == d[2]) return(TRUE) else return(FALSE)
+        }        
+        
+        allUpdateNodes <- makeUpdateNodes(wrt, calcNodes, model)
+        updateNodes <- allUpdateNodes$updateNodes
         updateNodesDeps <- model$getDependencies(updateNodes)
 
         ## Manipulations so can set random matrices to be positive definite.
         ## Only needed for updateNodes, not wrt, because for wrt we'll need param transform anyway.
         updateNodesAsNodes <- model$expandNodeNames(updateNodes)
         updateNodesAsNodes <- updateNodesAsNodes[!updateNodesAsNodes %in% model$expandNodeNames(excludeUpdateNodes)]
-        checkSquareMatrix <- function(node) {
-            val <- model[[node]]
-            d <- dim(val)
-            if(!is.null(d) && length(d) == 2 && d[1] == d[2]) return(TRUE) else return(FALSE)
-        }        
         updateNodesMat <- sapply(updateNodesAsNodes, checkSquareMatrix)
+
+        if(checkNewConstantNodesValues) {
+            constantNodes <- allUpdateNodes$constantNodes
+            constantNodesDeps <- model$getDependencies(constantNodes)
+            
+            ## Manipulations so can set random matrices to be positive definite.
+            ## Only needed for constantNodes, not wrt, because for wrt we'll need param transform anyway.
+            constantNodesAsNodes <- model$expandNodeNames(constantNodes)
+            constantNodesAsNodes <- constantNodesAsNodes[!constantNodesAsNodes %in% model$expandNodeNames(excludeConstantNodes)]
+            constantNodesMat <- sapply(constantNodesAsNodes, checkSquareMatrix)
+        }
         
         if(useParamTransform) {
             rDerivs <- derivsNimbleFunctionParamTransform(model, calcNodes = calcNodes, wrt = wrt)
@@ -1757,8 +1780,13 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
         if(checkDoubleTape) {
             if(useParamTransform) {
                 rDerivsMeta <- derivsNimbleFunctionParamTransformMeta(model, calcNodes = calcNodes, wrt = wrt)
-            } else rDerivsMeta <- derivsNimbleFunctionMeta(model, calcNodes = calcNodes, wrt = wrt)
+                rDerivsMetaReset <- derivsNimbleFunctionParamTransformMeta(model, calcNodes = calcNodes, wrt = wrt, reset = TRUE)
+            } else {
+                rDerivsMeta <- derivsNimbleFunctionMeta(model, calcNodes = calcNodes, wrt = wrt)
+                rDerivsMetaReset <- derivsNimbleFunctionMeta(model, calcNodes = calcNodes, wrt = wrt, reset = TRUE)
+            }
             cDerivsMeta <- compileNimble(rDerivsMeta, project = model, resetFunctions = TRUE)
+            cDerivsMetaReset <- compileNimble(rDerivsMetaReset, project = model, resetFunctions = TRUE)
         }
         
         if(useFasterRderivs) {
@@ -1781,11 +1809,19 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             }
             if(checkDoubleTape) {
                 wrapperMeta1 <- function(x) {
-                    ans <- nimDerivs(wrapper(x), order = 1)
+                    ans <- nimDerivs(wrapper(x), order = 1, reset = FALSE)
+                    return(ans$jacobian[1, ])
+                }
+                wrapperMeta1Reset <- function(x) {
+                    ans <- nimDerivs(wrapper(x), order = 1, reset = TRUE)
                     return(ans$jacobian[1, ])
                 }
                 wrapperMeta2 <- function(x) {
-                    ans <- nimDerivs(wrapper(x), order = 2)
+                    ans <- nimDerivs(wrapper(x), order = 2, reset = FALSE)
+                    return(ans$hessian)
+                }
+                wrapperMeta2Reset <- function(x) {
+                    ans <- nimDerivs(wrapper(x), order = 2, reset = TRUE)
                     return(ans$hessian)
                 }
             }
@@ -1797,423 +1833,512 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             xList[[3]] <- xNew
         }
 
-        for(idx in seq_along(xList)) {
-            if(exists('paciorek') && paciorek == idx) browser()
-            
-            if(verbose) {
-                if(idx == 1) cat("testing initial wrt values\n----------------------\n")
-                if(idx == 2) cat("testing new wrt values\n----------------------\n")
-                if(idx == 3) cat("testing new updateNode values\n----------------------\n")
+        for(case in 1:2) {
+            if(case == 2 && !checkNewConstantNodesValues) {
+                warning("Not checking new constantNode values.")
+                next
             }
-
-            if(idx == 3) {
-                ## Also modify updateNodes to make sure nothing has been incorrectly baked in.
-                if(verbose && length(updateNodes)) cat(paste0("Using updateNodes: ", paste0(updateNodes, collapse = ', '), "\n"))
-                updateNodesSim <- updateNodes
-                if(!is.null(excludeUpdateNodes)) {
-                    ## Try to be safe as updateNodes are generally specified as scalar components
-                    excludeUpdateNodesFull <- c(model$expandNodeNames(excludeUpdateNodes),
-                                                model$expandNodeNames(excludeUpdateNodes, returnScalarComponents = TRUE))
-                    updateNodesSim <- updateNodesSim[!updateNodesSim %in% excludeUpdateNodesFull]
+            for(idx in seq_along(xList)) {
+                if(exists('paciorek') && paciorek == idx) browser()
+                
+                if(verbose) {
+                    if(case == 1) {
+                        if(idx == 1) cat("Testing initial wrt values with initial constantNodes\n")
+                        if(idx == 2) cat("Testing new wrt values with initial constantNodes\n")
+                        if(idx == 3) cat("Testing new updateNode values with initial constantNodes\n")
+                    } else {
+                        if(idx == 1) cat("Testing initial wrt values with new constantNodes\n")
+                        if(idx == 2) cat("Testing new wrt values with new constantNodes\n")
+                        if(idx == 3) cat("Testing new updateNode values with new constantNodes\n")
+                    }
                 }
-                values(model, updateNodesSim) <- runif(length(updateNodesSim))
-                ## Make sure updateNodes are positive definite if square matrices.
-                for(nodeIdx in seq_along(updateNodesAsNodes)) 
-                    if(updateNodesMat[nodeIdx])
-                        model[[updateNodesAsNodes[nodeIdx]]] <- t(model[[updateNodesAsNodes[nodeIdx]]]) %*%
-                            model[[updateNodesAsNodes[nodeIdx]]]
-                model$calculate(updateNodesDeps)
-                values(cModel, updateNodes) <- values(model, updateNodes)
-                cModel$calculate(updateNodesDeps)
-            }
 
-            x <- xList[[idx]]
+                if(idx == 3) {
+                    ## Also modify updateNodes to make sure nothing has been incorrectly baked in.
+                    if(verbose && length(updateNodes)) cat(paste0("  Using updateNodes: ", paste0(updateNodes, collapse = ', '), "\n"))
+                    updateNodesSim <- updateNodes
+                    if(!is.null(excludeUpdateNodes)) {
+                        ## Try to be safe as updateNodes are generally specified as scalar components
+                        excludeUpdateNodesFull <- c(model$expandNodeNames(excludeUpdateNodes),
+                                                    model$expandNodeNames(excludeUpdateNodes, returnScalarComponents = TRUE))
+                        updateNodesSim <- updateNodesSim[!updateNodesSim %in% excludeUpdateNodesFull]
+                    }
+                    values(model, updateNodesSim) <- runif(length(updateNodesSim))
+                    ## Make sure updateNodes are positive definite if square matrices.
+                    for(nodeIdx in seq_along(updateNodesAsNodes)) 
+                        if(updateNodesMat[nodeIdx])
+                            model[[updateNodesAsNodes[nodeIdx]]] <- t(model[[updateNodesAsNodes[nodeIdx]]]) %*%
+                                model[[updateNodesAsNodes[nodeIdx]]]
+                    model$calculate(updateNodesDeps)
+                    values(cModel, updateNodes) <- values(model, updateNodes)
+                    cModel$calculate(updateNodesDeps)
+                }
 
-            nimCopy(model, tmpMV, nodes, nodes, row = 1, logProb = TRUE)
-            ## Ensure both models are consistent.
-            nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
-            
-            rWrt_orig <- cWrt_orig <- values(model, wrt)
-            
-            ## Store current logProb and non-wrt values to check that order=c(1,2) doesn't change them.
-            ## Don't calculate model as want to assess possibility model is out-of-state.
-            ## model$calculate()
-            ## cModel$calculate()
-            
-            rLogProb_orig <- cLogProb_orig <- model$getLogProb(calcNodes)
-            rVals_orig <- cVals_orig <- values(model, otherNodes)
-            
-            if(useFasterRderivs) {
+                reset <- FALSE
+                if(case == 2) {
+                    reset <- TRUE
+                    if(verbose && length(constantNodes)) cat(paste0("  Using constantNodes: ", paste0(constantNodes, collapse = ', '), "\n"))
+                    constantNodesSim <- constantNodes
+                    if(!is.null(excludeConstantNodes)) {
+                        ## Try to be safe as constantNodes are generally specified as scalar components
+                        excludeConstantNodesFull <- c(model$expandNodeNames(excludeConstantNodes),
+                                                    model$expandNodeNames(excludeConstantNodes, returnScalarComponents = TRUE))
+                        constantNodesSim <- constantNodesSim[!constantNodesSim %in% excludeConstantNodesFull]
+                    }
+                    values(model, constantNodesSim) <- runif(length(constantNodesSim))
+                    ## Make sure constantNodes are positive definite if square matrices.
+                    for(nodeIdx in seq_along(constantNodesAsNodes)) 
+                        if(constantNodesMat[nodeIdx])
+                            model[[constantNodesAsNodes[nodeIdx]]] <- t(model[[constantNodesAsNodes[nodeIdx]]]) %*%
+                                model[[constantNodesAsNodes[nodeIdx]]]
+                    model$calculate(constantNodesDeps)
+                    values(cModel, constantNodes) <- values(model, constantNodes)
+                    cModel$calculate(constantNodesDeps)
+                }
                 
-                inputx <- x
-                if(useParamTransform)
-                    inputx <- rDerivs$my_parameterTransform$transform(x)
+                x <- xList[[idx]]
 
-                rOutput12 <- nimDerivs(wrapper(inputx), order = 1:2, model = cModel)
-                rVals12 <- values(cModel, otherNodes)
-                rLogProb12 <- cModel$getLogProb(calcNodes)
-                rWrt12 <- values(cModel, wrt)
+                nimCopy(model, tmpMV, nodes, nodes, row = 1, logProb = TRUE)
+                ## Ensure both models are consistent.
+                nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
                 
-                nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
-                rOutput01 <- nimDerivs(wrapper(inputx), order = 0:1)
-                rLogProb01 <- cModel$getLogProb(calcNodes)
-                rVals01 <- values(cModel, otherNodes)
-                rWrt01 <- values(cModel, wrt)
+                rWrt_orig <- cWrt_orig <- values(model, wrt)
+                
+                ## Store current logProb and non-wrt values to check that order=c(1,2) doesn't change them.
+                ## Don't calculate model as want to assess possibility model is out-of-state.
+                ## model$calculate()
+                ## cModel$calculate()
+                
+                rLogProb_orig <- cLogProb_orig <- model$getLogProb(calcNodes)
+                rVals_orig <- cVals_orig <- values(model, otherNodes)
+                
+                if(useFasterRderivs) {
+                    
+                    inputx <- x
+                    if(useParamTransform)
+                        inputx <- rDerivs$my_parameterTransform$transform(x)
 
-                nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
-                rOutput012 <- nimDerivs(wrapper(inputx), order = 0:2)
-                rVals012 <- values(cModel, otherNodes)
-                rLogProb012 <- cModel$getLogProb(calcNodes)
-                rWrt012 <- values(cModel, wrt)
-
-                nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
-                rOutput02 <- nimDerivs(wrapper(inputx), order = c(0,2))
-                rVals02 <- values(cModel, otherNodes)
-                rLogProb02 <- cModel$getLogProb(calcNodes)
-                rWrt02 <- values(cModel, wrt)
-
-                if(checkDoubleTape) {
-                    ## Note that because inner deriv is order 1 or 2, don't expect model to be updated,
-                    ## so need to do this before 01, 012 cases below.
-                    nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
-                    rOutput1d <- nimDerivs(wrapperMeta1(inputx), order = 0, model = cModel)
-                    rVals1d <- values(cModel, otherNodes)
-                    rLogProb1d <- cModel$getLogProb(calcNodes)
-                    rWrt1d <- values(cModel, wrt)
+                    rOutput12 <- nimDerivs(wrapper(inputx), order = 1:2, model = cModel, reset = reset)
+                    rVals12 <- values(cModel, otherNodes)
+                    rLogProb12 <- cModel$getLogProb(calcNodes)
+                    rWrt12 <- values(cModel, wrt)
                     
                     nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
-                    rOutput2d <- nimDerivs(wrapperMeta2(inputx), order = 0, model = cModel)
-                    rVals2d <- values(cModel, otherNodes)
-                    rLogProb2d <- cModel$getLogProb(calcNodes)
-                    rWrt2d <- values(cModel, wrt)
+                    rOutput01 <- nimDerivs(wrapper(inputx), order = 0:1, reset = reset)
+                    rLogProb01 <- cModel$getLogProb(calcNodes)
+                    rVals01 <- values(cModel, otherNodes)
+                    rWrt01 <- values(cModel, wrt)
 
                     nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
-                    rOutput2d11 <- nimDerivs(wrapperMeta1(inputx), order = 1, model = cModel)
-                    rVals2d11 <- values(cModel, otherNodes)
-                    rLogProb2d11 <- cModel$getLogProb(calcNodes)
-                    rWrt2d11 <- values(cModel, wrt)
+                    rOutput012 <- nimDerivs(wrapper(inputx), order = 0:2, reset = reset)
+                    rVals012 <- values(cModel, otherNodes)
+                    rLogProb012 <- cModel$getLogProb(calcNodes)
+                    rWrt012 <- values(cModel, wrt)
+
+                    nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+                    rOutput02 <- nimDerivs(wrapper(inputx), order = c(0,2), reset = reset)
+                    rVals02 <- values(cModel, otherNodes)
+                    rLogProb02 <- cModel$getLogProb(calcNodes)
+                    rWrt02 <- values(cModel, wrt)
+
+                    if(checkDoubleTape) {
+                        ## Note that because inner deriv is order 1 or 2, don't expect model to be updated,
+                        ## so need to do this before 01, 012 cases below.
+                        nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+                        if(reset) {
+                            rOutput1d <- nimDerivs(wrapperMeta1Reset(inputx), order = 0, model = cModel, reset = reset)
+                        } else rOutput1d <- nimDerivs(wrapperMeta1(inputx), order = 0, model = cModel, reset = reset)
+                        rVals1d <- values(cModel, otherNodes)
+                        rLogProb1d <- cModel$getLogProb(calcNodes)
+                        rWrt1d <- values(cModel, wrt)
+                        
+                        nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+                        if(reset) {
+                            rOutput2d <- nimDerivs(wrapperMeta2Reset(inputx), order = 0, model = cModel, reset = reset)
+                        } else rOutput2d <- nimDerivs(wrapperMeta2(inputx), order = 0, model = cModel, reset = reset)
+                        rVals2d <- values(cModel, otherNodes)
+                        rLogProb2d <- cModel$getLogProb(calcNodes)
+                        rWrt2d <- values(cModel, wrt)
+
+                        nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+                        if(reset) {
+                            rOutput2d11 <- nimDerivs(wrapperMeta1Reset(inputx), order = 1, model = cModel, reset = reset)
+                        } else rOutput2d11 <- nimDerivs(wrapperMeta1(inputx), order = 1, model = cModel, reset = reset)
+                        
+                        rVals2d11 <- values(cModel, otherNodes)
+                        rLogProb2d11 <- cModel$getLogProb(calcNodes)
+                        rWrt2d11 <- values(cModel, wrt)
+                    }
+
+                    rLogProb_new <- wrapper(inputx)
+                    rVals_new <- values(cModel, otherNodes)
+
+                    ## now reset cModel for use in compiled derivs
+                    nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+
+                } else {
+                    rOutput12 <- rDerivs$run(x, 1:2, reset = reset)
+                    rVals12 <- values(model, otherNodes)
+                    rLogProb12 <- model$getLogProb(calcNodes)
+                    rWrt12 <- values(model, wrt)
+
+                    nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
+                    rOutput01 <- rDerivs$run(x, 0:1, reset = reset)
+                    rLogProb01 <- model$getLogProb(calcNodes)
+                    rVals01 <- values(model, otherNodes)
+                    rWrt01 <- values(model, wrt)
+
+                    nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
+                    rOutput012 <- rDerivs$run(x, 0:2, reset = reset)
+                    rVals012 <- values(model, otherNodes)
+                    rLogProb012 <- model$getLogProb(calcNodes)
+                    rWrt012 <- values(model, wrt)
+
+                    nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
+                    rOutput02 <- rDerivs$run(x, c(0,2), reset = reset)
+                    rVals02 <- values(model, otherNodes)
+                    rLogProb02 <- model$getLogProb(calcNodes)
+                    rWrt02 <- values(model, wrt)
+
+                    if(checkDoubleTape) {
+                        ## Note that because inner deriv is order 1 or 2, don't expect model to be updated.
+                        nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
+                        if(reset) {
+                            rOutput1d <- rDerivsMetaReset$metaDerivs1Run(x = x, order = 0, reset = reset)
+                        } else rOutput1d <- rDerivsMeta$metaDerivs1Run(x = x, order = 0, reset = reset)
+                        rVals1d <- values(model, otherNodes)
+                        rLogProb1d <- model$getLogProb(calcNodes)
+                        rWrt1d <- values(model, wrt)
+                        
+                        nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
+                        if(reset) {
+                            rOutput2d <- rDerivsMetaReset$metaDerivs2Run(x = x, order = 0, reset = reset)
+                        } else rOutput2d <- rDerivsMeta$metaDerivs2Run(x = x, order = 0, reset = reset)
+                        rVals2d <- values(model, otherNodes)
+                        rLogProb2d <- model$getLogProb(calcNodes)
+                        rWrt2d <- values(model, wrt)
+                        
+                        nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
+                        if(reset) {
+                            rOutput2d11 <- rDerivsMetaReset$metaDerivs1Run(x = x, order = 1, reset = reset)
+                        } else rOutput2d11 <- rDerivsMeta$metaDerivs1Run(x = x, order = 1, reset = reset)
+                        rVals2d11 <- values(model, otherNodes)
+                        rLogProb2d11 <- model$getLogProb(calcNodes)
+                        rWrt2d11 <- values(model, wrt)
+                    }
+
+                    values(model, wrt) <- x
+                    rLogProb_new <- model$calculate(calcNodes)
+                    rVals_new <- values(model, otherNodes)
                 }
 
-                rLogProb_new <- wrapper(inputx)
-                rVals_new <- values(cModel, otherNodes)
+                ## Without useParamTransform, wrt should be updated, because assignment into model is outside nimDerivs call,
+                ## but with useParamTransform they should not,
+                cOutput12 <- cDerivs$run(x, 1:2, reset = reset)
+                cVals12 <- values(cModel, otherNodes)
+                cLogProb12 <- cModel$getLogProb(calcNodes)
+                cWrt12 <- values(cModel, wrt)
 
-                ## now reset cModel for use in compiled derivs
                 nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+                cOutput01 <- cDerivs$run(x, 0:1, reset = reset)
+                cVals01 <- values(cModel, otherNodes)
+                cLogProb01 <- cModel$getLogProb(calcNodes)
+                cWrt01 <- values(cModel, wrt)
 
-            } else {
-                rOutput12 <- rDerivs$run(x, 1:2)
-                rVals12 <- values(model, otherNodes)
-                rLogProb12 <- model$getLogProb(calcNodes)
-                rWrt12 <- values(model, wrt)
+                nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+                cOutput012 <- cDerivs$run(x, 0:2, reset = reset)
+                cVals012 <- values(cModel, otherNodes)
+                cLogProb012 <- cModel$getLogProb(calcNodes)
+                cWrt012 <- values(cModel, wrt)
 
-                nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
-                rOutput01 <- rDerivs$run(x, 0:1)
-                rLogProb01 <- model$getLogProb(calcNodes)
-                rVals01 <- values(model, otherNodes)
-                rWrt01 <- values(model, wrt)
-
-                nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
-                rOutput012 <- rDerivs$run(x, 0:2)
-                rVals012 <- values(model, otherNodes)
-                rLogProb012 <- model$getLogProb(calcNodes)
-                rWrt012 <- values(model, wrt)
-
-                nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
-                rOutput02 <- rDerivs$run(x, c(0,2))
-                rVals02 <- values(model, otherNodes)
-                rLogProb02 <- model$getLogProb(calcNodes)
-                rWrt02 <- values(model, wrt)
+                nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+                cOutput02 <- cDerivs$run(x, c(0,2), reset = reset)
+                cVals02 <- values(cModel, otherNodes)
+                cLogProb02 <- cModel$getLogProb(calcNodes)
+                cWrt02 <- values(cModel, wrt)
 
                 if(checkDoubleTape) {
                     ## Note that because inner deriv is order 1 or 2, don't expect model to be updated.
-                    nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
-                    rOutput1d <- rDerivsMeta$metaDerivs1Run(x = x, order = 0)
-                    rVals1d <- values(model, otherNodes)
-                    rLogProb1d <- model$getLogProb(calcNodes)
-                    rWrt1d <- values(model, wrt)
+                    nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+                    if(reset) {
+                        cOutput1d <- cDerivsMetaReset$metaDerivs1Run(x = x, order = 0, reset = reset)
+                    } else cOutput1d <- cDerivsMeta$metaDerivs1Run(x = x, order = 0, reset = reset)
+                    cVals1d <- values(cModel, otherNodes)
+                    cLogProb1d <- cModel$getLogProb(calcNodes)
+                    cWrt1d <- values(cModel, wrt)
                     
-                    nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
-                    rOutput2d <- rDerivsMeta$metaDerivs2Run(x = x, order = 0)
-                    rVals2d <- values(model, otherNodes)
-                    rLogProb2d <- model$getLogProb(calcNodes)
-                    rWrt2d <- values(model, wrt)
-                    
-                    nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
-                    rOutput2d11 <- rDerivsMeta$metaDerivs1Run(x = x, order = 1)
-                    rVals2d11 <- values(model, otherNodes)
-                    rLogProb2d11 <- model$getLogProb(calcNodes)
-                    rWrt2d11 <- values(model, wrt)
+                    nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+                    if(reset) {
+                        cOutput2d <- cDerivsMetaReset$metaDerivs2Run(x = x, order = 0, reset = reset)
+                    } else cOutput2d <- cDerivsMeta$metaDerivs2Run(x = x, order = 0, reset = reset)
+                    cVals2d <- values(cModel, otherNodes)
+                    cLogProb2d <- cModel$getLogProb(calcNodes)
+                    cWrt2d <- values(cModel, wrt)
+
+                    nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+                    if(reset) {
+                        cOutput2d11 <- cDerivsMetaReset$metaDerivs1Run(x = x, order = 1, reset = reset)
+                    } else cOutput2d11 <- cDerivsMeta$metaDerivs1Run(x = x, order = 1, reset = reset)
+                    cVals2d11 <- values(cModel, otherNodes)
+                    cLogProb2d11 <- cModel$getLogProb(calcNodes)
+                    cWrt2d11 <- values(cModel, wrt)
                 }
 
-                values(model, wrt) <- x
-                rLogProb_new <- model$calculate(calcNodes)
-                rVals_new <- values(model, otherNodes)
-            }
-
-            ## Without useParamTransform, wrt should be updated, because assignment into model is outside nimDerivs call,
-            ## but with useParamTransform they should not,
-            cOutput12 <- cDerivs$run(x, 1:2)
-            cVals12 <- values(cModel, otherNodes)
-            cLogProb12 <- cModel$getLogProb(calcNodes)
-            cWrt12 <- values(cModel, wrt)
-
-            nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
-            cOutput01 <- cDerivs$run(x, 0:1)
-            cVals01 <- values(cModel, otherNodes)
-            cLogProb01 <- cModel$getLogProb(calcNodes)
-            cWrt01 <- values(cModel, wrt)
-
-            nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
-            cOutput012 <- cDerivs$run(x, 0:2)
-            cVals012 <- values(cModel, otherNodes)
-            cLogProb012 <- cModel$getLogProb(calcNodes)
-            cWrt012 <- values(cModel, wrt)
-
-            nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
-            cOutput02 <- cDerivs$run(x, c(0,2))
-            cVals02 <- values(cModel, otherNodes)
-            cLogProb02 <- cModel$getLogProb(calcNodes)
-            cWrt02 <- values(cModel, wrt)
-
-            if(checkDoubleTape) {
-                ## Note that because inner deriv is order 1 or 2, don't expect model to be updated.
-                nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
-                cOutput1d <- cDerivsMeta$metaDerivs1Run(x = x, order = 0)
-                cVals1d <- values(cModel, otherNodes)
-                cLogProb1d <- cModel$getLogProb(calcNodes)
-                cWrt1d <- values(cModel, wrt)
+                values(cModel, wrt) <- x
+                cLogProb_new <- cModel$calculate(calcNodes)
+                cVals_new <- values(cModel, otherNodes)
                 
-                nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
-                cOutput2d <- cDerivsMeta$metaDerivs2Run(x = x, order = 0)
-                cVals2d <- values(cModel, otherNodes)
-                cLogProb2d <- cModel$getLogProb(calcNodes)
-                cWrt2d <- values(cModel, wrt)
+                ## Check results ##
 
-                nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
-                cOutput2d11 <- cDerivsMeta$metaDerivs1Run(x = x, order = 1)
-                cVals2d11 <- values(cModel, otherNodes)
-                cLogProb2d11 <- cModel$getLogProb(calcNodes)
-                cWrt2d11 <- values(cModel, wrt)
-            }
+                ## Check that only requested orders provided.
+                expect_identical(length(rOutput01$value), 1L)
+                expect_identical(length(rOutput12$value), 0L)
+                expect_identical(length(rOutput012$value), 1L)
+                expect_identical(length(rOutput02$value), 1L)
+                expect_identical(length(cOutput01$value), 1L)
+                expect_identical(length(cOutput12$value), 0L)
+                expect_identical(length(cOutput012$value), 1L)
+                expect_identical(length(cOutput02$value), 1L)
 
-            values(cModel, wrt) <- x
-            cLogProb_new <- cModel$calculate(calcNodes)
-            cVals_new <- values(cModel, otherNodes)
-            
-            ## Check results ##
+                expect_gte(length(rOutput01$jacobian), 1)
+                expect_gte(length(rOutput12$jacobian), 1)
+                expect_gte(length(rOutput012$jacobian), 1)
+                expect_identical(length(rOutput02$jacobian), 0L)
+                expect_gte(length(cOutput01$jacobian), 1)
+                expect_gte(length(cOutput12$jacobian), 1)
+                expect_gte(length(cOutput012$jacobian), 1)
+                expect_identical(length(cOutput02$jacobian), 0L)
 
-            ## Check that only requested orders provided.
-            expect_identical(length(rOutput01$value), 1L)
-            expect_identical(length(rOutput12$value), 0L)
-            expect_identical(length(rOutput012$value), 1L)
-            expect_identical(length(rOutput02$value), 1L)
-            expect_identical(length(cOutput01$value), 1L)
-            expect_identical(length(cOutput12$value), 0L)
-            expect_identical(length(cOutput012$value), 1L)
-            expect_identical(length(cOutput02$value), 1L)
+                expect_identical(length(rOutput01$hessian), 0L)
+                expect_gte(length(rOutput12$hessian), 1)
+                expect_gte(length(rOutput012$hessian), 1)
+                expect_gte(length(rOutput02$hessian), 1)
+                expect_identical(length(cOutput01$hessian), 0L)
+                expect_gte(length(cOutput12$hessian), 1)
+                expect_gte(length(cOutput012$hessian), 1)
+                expect_gte(length(cOutput02$hessian), 1)
 
-            expect_gte(length(rOutput01$jacobian), 1)
-            expect_gte(length(rOutput12$jacobian), 1)
-            expect_gte(length(rOutput012$jacobian), 1)
-            expect_identical(length(rOutput02$jacobian), 0L)
-            expect_gte(length(cOutput01$jacobian), 1)
-            expect_gte(length(cOutput12$jacobian), 1)
-            expect_gte(length(cOutput012$jacobian), 1)
-            expect_identical(length(cOutput02$jacobian), 0L)
+                if(checkDoubleTape) {
+                    expect_gte(length(rOutput1d$value), 1)
+                    expect_identical(length(rOutput1d$jacobian), 0L)
+                    expect_identical(length(rOutput1d$hessian), 0L)
+                    expect_gte(length(cOutput1d$value), 1)
+                    expect_identical(length(cOutput1d$jacobian), 0L)
+                    expect_identical(length(cOutput1d$hessian), 0L)
 
-            expect_identical(length(rOutput01$hessian), 0L)
-            expect_gte(length(rOutput12$hessian), 1)
-            expect_gte(length(rOutput012$hessian), 1)
-            expect_gte(length(rOutput02$hessian), 1)
-            expect_identical(length(cOutput01$hessian), 0L)
-            expect_gte(length(cOutput12$hessian), 1)
-            expect_gte(length(cOutput012$hessian), 1)
-            expect_gte(length(cOutput02$hessian), 1)
+                    expect_gte(length(rOutput2d$value), 1)
+                    expect_identical(length(rOutput2d$jacobian), 0L)
+                    expect_identical(length(rOutput2d$hessian), 0L)
+                    expect_gte(length(cOutput2d$value), 1)
+                    expect_identical(length(cOutput2d$jacobian), 0L)
+                    expect_identical(length(cOutput2d$hessian), 0L)
 
-            if(checkDoubleTape) {
-                expect_gte(length(rOutput1d$value), 1)
-                expect_identical(length(rOutput1d$jacobian), 0L)
-                expect_identical(length(rOutput1d$hessian), 0L)
-                expect_gte(length(cOutput1d$value), 1)
-                expect_identical(length(cOutput1d$jacobian), 0L)
-                expect_identical(length(cOutput1d$hessian), 0L)
+                    expect_identical(length(rOutput2d11$value), 0L)
+                    expect_gte(length(rOutput2d11$jacobian), 1)
+                    expect_identical(length(rOutput2d11$hessian), 0L)
+                    expect_identical(length(cOutput2d11$value), 0L)
+                    expect_gte(length(cOutput2d11$jacobian), 1)
+                    expect_identical(length(cOutput2d11$hessian), 0L)
+                }
+                
+                ## 0th order 'derivative'
+                expect_identical(rOutput01$value, rLogProb_new)
+                expect_identical(rOutput012$value, rLogProb_new)
+                expect_identical(rOutput02$value, rLogProb_new)
+                if(checkCompiledValuesIdentical) {
+                    expect_identical(cOutput01$value, cLogProb_new)
+                    expect_identical(cOutput012$value, cLogProb_new)
+                    expect_identical(cOutput02$value, cLogProb_new)
+                } else {
+                    expect_equal(cOutput01$value, cLogProb_new)
+                    expect_equal(cOutput012$value, cLogProb_new)
+                    expect_equal(cOutput02$value, cLogProb_new)
+                }
+                expect_equal(rOutput01$value, cOutput01$value, tolerance = relTol[1])
+                expect_equal(rOutput012$value, cOutput012$value, tolerance = relTol[1])
+                expect_equal(rOutput02$value, cOutput02$value, tolerance = relTol[1])
 
-                expect_gte(length(rOutput2d$value), 1)
-                expect_identical(length(rOutput2d$jacobian), 0L)
-                expect_identical(length(rOutput2d$hessian), 0L)
-                expect_gte(length(cOutput2d$value), 1)
-                expect_identical(length(cOutput2d$jacobian), 0L)
-                expect_identical(length(cOutput2d$hessian), 0L)
+                ## expect_equal (via waldo::compare and waldo::num_equal) uses absolute tolerance if 'y' value <= tolerance.
+                ## Consider creating a nim_equal operator that checks if max(abs(x-y)/abs(y)) > tolerance using
+                ## relative tolerance unless y == 0.
+                if(mean(abs(cOutput01$value)) <= relTol[1])
+                    warning("Using absolute tolerance for 01$value comparison.")
+                if(mean(abs(cOutput012$value)) <= relTol[1])
+                    warning("Using absolute tolerance for 012$value comparison.")
+                if(mean(abs(cOutput02$value)) <= relTol[1])
+                    warning("Using absolute tolerance for 02$value comparison.")
+                
+                
+                expect_equal(sum(is.na(rOutput01$value)), 0, info = "NAs found in uncompiled 0th derivative")
+                expect_equal(sum(is.na(cOutput01$value)), 0, info = "NAs found in compiled 0th derivative")
+                expect_equal(sum(is.na(rOutput012$value)), 0, info = "NAs found in uncompiled 0th derivative")
+                expect_equal(sum(is.na(cOutput012$value)), 0, info = "NAs found in compiled 0th derivative")
+                expect_equal(sum(is.na(rOutput02$value)), 0, info = "NAs found in uncompiled 0th derivative")
+                expect_equal(sum(is.na(cOutput02$value)), 0, info = "NAs found in compiled 0th derivative")
+                
+                ## 1st derivative
+                expect_equal(rOutput01$jacobian, cOutput01$jacobian, tolerance = relTol[2])
+                expect_equal(sum(is.na(rOutput01$jacobian)), 0, info = "NAs found in uncompiled 1st derivative")
+                expect_equal(sum(is.na(cOutput01$jacobian)), 0, info = "NAs found in compiled 1st derivative")
 
-                expect_identical(length(rOutput2d11$value), 0L)
-                expect_gte(length(rOutput2d11$jacobian), 1)
-                expect_identical(length(rOutput2d11$hessian), 0L)
-                expect_identical(length(cOutput2d11$value), 0L)
-                expect_gte(length(cOutput2d11$jacobian), 1)
-                expect_identical(length(cOutput2d11$hessian), 0L)
-            }
-            
-            ## 0th order 'derivative'
-            expect_identical(rOutput01$value, rLogProb_new)
-            expect_identical(rOutput012$value, rLogProb_new)
-            expect_identical(rOutput02$value, rLogProb_new)
-            if(checkCompiledValuesIdentical) {
-                expect_identical(cOutput01$value, cLogProb_new)
-                expect_identical(cOutput012$value, cLogProb_new)
-                expect_identical(cOutput02$value, cLogProb_new)
-            } else {
-                expect_equal(cOutput01$value, cLogProb_new)
-                expect_equal(cOutput012$value, cLogProb_new)
-                expect_equal(cOutput02$value, cLogProb_new)
-            }
-            expect_equal(rOutput01$value, cOutput01$value, tolerance = relTol[1])
-            expect_equal(rOutput012$value, cOutput012$value, tolerance = relTol[1])
-            expect_equal(rOutput02$value, cOutput02$value, tolerance = relTol[1])
-            
-            expect_equal(sum(is.na(rOutput01$value)), 0, info = "NAs found in uncompiled 0th derivative")
-            expect_equal(sum(is.na(cOutput01$value)), 0, info = "NAs found in compiled 0th derivative")
-            expect_equal(sum(is.na(rOutput012$value)), 0, info = "NAs found in uncompiled 0th derivative")
-            expect_equal(sum(is.na(cOutput012$value)), 0, info = "NAs found in compiled 0th derivative")
-            expect_equal(sum(is.na(rOutput02$value)), 0, info = "NAs found in uncompiled 0th derivative")
-            expect_equal(sum(is.na(cOutput02$value)), 0, info = "NAs found in compiled 0th derivative")
-            
-            ## 1st derivative
-            expect_equal(rOutput01$jacobian, cOutput01$jacobian, tolerance = relTol[2])
-            expect_equal(sum(is.na(rOutput01$jacobian)), 0, info = "NAs found in uncompiled 1st derivative")
-            expect_equal(sum(is.na(cOutput01$jacobian)), 0, info = "NAs found in compiled 1st derivative")
+                expect_equal(rOutput12$jacobian, cOutput12$jacobian, tolerance = relTol[2])
+                expect_equal(sum(is.na(rOutput12$jacobian)), 0, info = "NAs found in uncompiled 1st derivative")
+                expect_equal(sum(is.na(cOutput12$jacobian)), 0, info = "NAs found in compiled 1st derivative")
 
-            expect_equal(rOutput12$jacobian, cOutput12$jacobian, tolerance = relTol[2])
-            expect_equal(sum(is.na(rOutput12$jacobian)), 0, info = "NAs found in uncompiled 1st derivative")
-            expect_equal(sum(is.na(cOutput12$jacobian)), 0, info = "NAs found in compiled 1st derivative")
+                expect_equal(rOutput012$jacobian, cOutput012$jacobian, tolerance = relTol[2])
+                expect_equal(sum(is.na(rOutput012$jacobian)), 0, info = "NAs found in uncompiled 1st derivative")
+                expect_equal(sum(is.na(cOutput012$jacobian)), 0, info = "NAs found in compiled 1st derivative")
 
-            expect_equal(rOutput012$jacobian, cOutput012$jacobian, tolerance = relTol[2])
-            expect_equal(sum(is.na(rOutput012$jacobian)), 0, info = "NAs found in uncompiled 1st derivative")
-            expect_equal(sum(is.na(cOutput012$jacobian)), 0, info = "NAs found in compiled 1st derivative")
+                if(mean(abs(cOutput01$jacobian)) <= relTol[2])
+                    warning("Using absolute tolerance for 01$jacobian comparison.")
+                if(mean(abs(cOutput12$jacobian)) <= relTol[2])
+                    warning("Using absolute tolerance for 12$jacobian comparison.")
+                if(mean(abs(cOutput012$jacobian)) <= relTol[2])
+                    warning("Using absolute tolerance for 012$jacobian comparison.")
+                
+                ## explicit comparison of first derivs;
+                ## both of these are reverse mode because 2nd order reverse also invokes first order reverse
+                expect_identical(cOutput01$jacobian, cOutput012$jacobian)
+                
+                expect_identical(cOutput12$jacobian, cOutput012$jacobian)
 
-            ## explicit comparison of first derivs;
-            ## both of these are reverse mode because 2nd order reverse also invokes first order reverse
-            expect_identical(cOutput01$jacobian, cOutput012$jacobian)
-            
-            expect_identical(cOutput12$jacobian, cOutput012$jacobian)
+                if(checkDoubleTape) {
+                    expect_equal(rOutput1d$value, cOutput1d$value, tolerance = relTol[2])
+                    expect_equal(sum(is.na(rOutput1d$value)), 0, info = "NAs found in uncompiled double-taped 1st derivative")
+                    expect_equal(sum(is.na(cOutput1d$value)), 0, info = "NAs found in compiled double-taped 1st derivative")
 
-            if(checkDoubleTape) {
-                expect_equal(rOutput1d$value, cOutput1d$value, tolerance = relTol[2])
-                expect_equal(sum(is.na(rOutput1d$value)), 0, info = "NAs found in uncompiled double-taped 1st derivative")
-                expect_equal(sum(is.na(cOutput1d$value)), 0, info = "NAs found in compiled double-taped 1st derivative")
+                    ## explicit comparison to single-taped result
+                    expect_identical(cOutput1d$value, c(cOutput012$jacobian))
 
-                ## explicit comparison to single-taped result
-                expect_identical(cOutput1d$value, c(cOutput012$jacobian))
-            }
+                    if(mean(abs(cOutput1d$value)) <= relTol[2])
+                        warning("Using absolute tolerance for 1d$value comparison.")
 
-            ## 2nd derivative
-            expect_equal(rOutput12$hessian, cOutput12$hessian, tolerance = relTol[3])
-            expect_equal(sum(is.na(rOutput12$hessian)), 0, info = "NAs found in uncompiled 2nd derivative")
-            expect_equal(sum(is.na(cOutput12$hessian)), 0, info = "NAs found in compiled 2nd derivative")
+                }
 
-            expect_equal(rOutput012$hessian, cOutput012$hessian, tolerance = relTol[3])
-            expect_equal(sum(is.na(rOutput012$hessian)), 0, info = "NAs found in uncompiled 2nd derivative")
-            expect_equal(sum(is.na(cOutput012$hessian)), 0, info = "NAs found in compiled 2nd derivative")
+                ## 2nd derivative
+                expect_equal(rOutput12$hessian, cOutput12$hessian, tolerance = relTol[3])
+                expect_equal(sum(is.na(rOutput12$hessian)), 0, info = "NAs found in uncompiled 2nd derivative")
+                expect_equal(sum(is.na(cOutput12$hessian)), 0, info = "NAs found in compiled 2nd derivative")
 
-            expect_equal(rOutput02$hessian, cOutput02$hessian, tolerance = relTol[3])
-            expect_equal(sum(is.na(rOutput02$hessian)), 0, info = "NAs found in uncompiled 2nd derivative")
-            expect_equal(sum(is.na(cOutput02$hessian)), 0, info = "NAs found in compiled 2nd derivative")
+                expect_equal(rOutput012$hessian, cOutput012$hessian, tolerance = relTol[3])
+                expect_equal(sum(is.na(rOutput012$hessian)), 0, info = "NAs found in uncompiled 2nd derivative")
+                expect_equal(sum(is.na(cOutput012$hessian)), 0, info = "NAs found in compiled 2nd derivative")
 
-            expect_identical(cOutput12$hessian, cOutput012$hessian)
-            expect_identical(cOutput02$hessian, cOutput012$hessian)
+                expect_equal(rOutput02$hessian, cOutput02$hessian, tolerance = relTol[3])
+                expect_equal(sum(is.na(rOutput02$hessian)), 0, info = "NAs found in uncompiled 2nd derivative")
+                expect_equal(sum(is.na(cOutput02$hessian)), 0, info = "NAs found in compiled 2nd derivative")
+
+                if(mean(abs(cOutput12$hessian)) <= relTol[3])
+                    warning("Using absolute tolerance for 12$hessian comparison.")
+                if(mean(abs(cOutput012$hessian)) <= relTol[3])
+                    warning("Using absolute tolerance for 012$hessian comparison.")
+                if(mean(abs(cOutput02$hessian)) <= relTol[3])
+                    warning("Using absolute tolerance for 02$hessian comparison.")
+
+                expect_identical(cOutput12$hessian, cOutput012$hessian)
+                expect_identical(cOutput02$hessian, cOutput012$hessian)
 
 
-            if(checkDoubleTape) {
-                expect_equal(rOutput2d$value, cOutput2d$value, tolerance = relTol[3])
-                expect_equal(sum(is.na(rOutput2d$value)), 0, info = "NAs found in uncompiled double-taped 2nd derivative")
-                expect_equal(sum(is.na(cOutput2d$value)), 0, info = "NAs found in compiled double-taped 2nd derivative")
+                if(checkDoubleTape) {
+                    expect_equal(rOutput2d$value, cOutput2d$value, tolerance = relTol[3])
+                    expect_equal(sum(is.na(rOutput2d$value)), 0, info = "NAs found in uncompiled double-taped 2nd derivative")
+                    expect_equal(sum(is.na(cOutput2d$value)), 0, info = "NAs found in compiled double-taped 2nd derivative")
 
-                expect_equal(rOutput2d11$jacobian, cOutput2d11$jacobian, tolerance = relTol[4])
-                expect_equal(sum(is.na(rOutput2d11$jacobian)), 0, info = "NAs found in uncompiled double-taped 2nd derivative")
-                expect_equal(sum(is.na(cOutput2d11$jacobian)), 0, info = "NAs found in compiled double-taped 2nd derivative")
+                    expect_equal(rOutput2d11$jacobian, cOutput2d11$jacobian, tolerance = relTol[4])
+                    expect_equal(sum(is.na(rOutput2d11$jacobian)), 0, info = "NAs found in uncompiled double-taped 2nd derivative")
+                    expect_equal(sum(is.na(cOutput2d11$jacobian)), 0, info = "NAs found in compiled double-taped 2nd derivative")
 
-                ## explicit comparison to single-taped result
-                ## Not clear why 2d$value not identical to 012$hessian
-                expect_equal(cOutput2d$value, c(cOutput012$hessian), tolerance = 1e-15)
-                if(length(cOutput2d11$jacobian) == 1) cOutput2d11$jacobian <- c(cOutput2d11$jacobian)
-                expect_identical(cOutput2d11$jacobian, cOutput012$hessian[,,1])
-            }
+                    ## explicit comparison to single-taped result
+                    ## Not clear why 2d$value not identical to 012$hessian
+                    expect_equal(cOutput2d$value, c(cOutput012$hessian), tolerance = 1e-15)
+                    if(length(cOutput2d11$jacobian) == 1) cOutput2d11$jacobian <- c(cOutput2d11$jacobian)
+                    expect_identical(cOutput2d11$jacobian, cOutput012$hessian[,,1])
 
-            ## wrt values should equal original wrt values if order !=0 or doubleTape
-            ## because setting of wrt in model is done within nimDerivs call, so should obey our rules about when model state is altered.
+                    if(mean(abs(cOutput2d$value)) <= relTol[3])
+                        warning("Using absolute tolerance for 2d$value comparison.")
+                    if(mean(abs(cOutput2d11$jacobian)) <= relTol[4])
+                        warning("Using absolute tolerance for 2d11$jacobian comparison.")
 
-            expect_identical(rWrt01, x)
-            ## We provide the model to nimDerivs, so expect restoration except for non-paramTransform
-            ## and non-fasterRderivs, where assignment is outside nimDerivs.
-            if(!useParamTransform && !useFasterRderivs) {
-                expect_identical(rWrt12, x)
-            } else expect_identical(rWrt12, rWrt_orig)
-            expect_identical(rWrt012, x)
-            expect_identical(cWrt01, x)
-            if(!useParamTransform) {
-                ## Assignment to model is outside nimDerivs call, so expect change.
-                expect_identical(cWrt12, x)
-            } else expect_identical(cWrt12, cWrt_orig)
-            expect_identical(cWrt012, x)
+                }
 
-            if(checkDoubleTape) {
-                expect_identical(rWrt1d, rWrt_orig)
-                expect_identical(rWrt2d, rWrt_orig)
-                expect_identical(rWrt2d11, rWrt_orig)
-                expect_identical(cWrt1d, cWrt_orig)
-                expect_identical(cWrt2d, cWrt_orig)
-                expect_identical(cWrt2d11, cWrt_orig)
-            }
+                ## wrt values should equal original wrt values if order !=0 or doubleTape
+                ## because setting of wrt in model is done within nimDerivs call, so should obey our rules about when model state is altered.
 
-            ## Also, should we take otherNodes and break into those that are in calcNodes and those not?
-            ## Those in not in calcNodes should never be changed. So maybe nothing to check.
-            
-            ## model state - when order 0 is included, logProb and determistic nodes should be updated; otherwise not
-            expect_identical(rLogProb01, rLogProb_new)
-            expect_identical(rVals01, rVals_new)
-            expect_identical(rLogProb012, rLogProb_new)
-            expect_identical(rVals012, rVals_new)
-            expect_identical(rLogProb02, rLogProb_new)
-            expect_identical(rVals02, rVals_new)
-            expect_identical(rLogProb12, rLogProb_orig)
-            expect_identical(rVals12, rVals_orig)
-            
-            if(checkDoubleTape) {
-                ## Double tapes here don't have order = 0 in inner tape, so model should not be updated since I do pass model into nimDerivs.
-                expect_identical(rLogProb1d, rLogProb_orig)
-                expect_identical(rLogProb2d, rLogProb_orig)
-                expect_identical(rLogProb2d11, rLogProb_orig)
-                expect_identical(rVals1d, rVals_orig)
-                expect_identical(rVals2d, rVals_orig)
-                expect_identical(rVals2d11, rVals_orig)
-            }
-            
-            ## Not clear if next check should be expect_identical (in many cases they are identical);
-            ## Check with PdV whether values from taped model could get into the compiled model.        
-            if(checkCompiledValuesIdentical) {
-                expect_fun <- expect_identical
-            } else expect_fun <- expect_equal
-            
-            expect_fun(cLogProb01, cLogProb_new) 
-            expect_fun(cVals01, cVals_new)
-            expect_fun(cLogProb012, cLogProb_new) 
-            expect_fun(cVals012, cVals_new)
-            expect_fun(cLogProb02, cLogProb_new) 
-            expect_fun(cVals02, cVals_new)
+                expect_identical(rWrt01, x)
+                ## We provide the model to nimDerivs, so expect restoration except for non-paramTransform
+                ## and non-fasterRderivs, where assignment is outside nimDerivs.
+                if(!useParamTransform && !useFasterRderivs) {
+                    expect_identical(rWrt12, x)
+                } else expect_identical(rWrt12, rWrt_orig)
+                expect_identical(rWrt012, x)
+                expect_identical(cWrt01, x)
+                if(!useParamTransform) {
+                    ## Assignment to model is outside nimDerivs call, so expect change.
+                    expect_identical(cWrt12, x)
+                } else expect_identical(cWrt12, cWrt_orig)
+                expect_identical(cWrt012, x)
 
-            expect_fun(cLogProb12, cLogProb_orig)
-            expect_fun(cVals12, cVals_orig)
+                if(checkDoubleTape) {
+                    expect_identical(rWrt1d, rWrt_orig)
+                    expect_identical(rWrt2d, rWrt_orig)
+                    expect_identical(rWrt2d11, rWrt_orig)
+                    expect_identical(cWrt1d, cWrt_orig)
+                    expect_identical(cWrt2d, cWrt_orig)
+                    expect_identical(cWrt2d11, cWrt_orig)
+                }
 
-            if(checkDoubleTape) {
-                ## Double tapes here don't have order = 0 in inner tape, so model should not be updated.
-                expect_fun(cLogProb1d, cLogProb_orig)
-                expect_fun(cVals1d, cVals_orig)
-                expect_fun(cLogProb2d, cLogProb_orig)
-                expect_fun(cVals2d, cVals_orig)
-                expect_fun(cLogProb2d11, cLogProb_orig)
-                expect_fun(cVals2d11, cVals_orig)
+                ## Also, should we take otherNodes and break into those that are in calcNodes and those not?
+                ## Those in not in calcNodes should never be changed. So maybe nothing to check.
+                
+                ## model state - when order 0 is included, logProb and determistic nodes should be updated; otherwise not
+                expect_identical(rLogProb01, rLogProb_new)
+                expect_identical(rVals01, rVals_new)
+                expect_identical(rLogProb012, rLogProb_new)
+                expect_identical(rVals012, rVals_new)
+                expect_identical(rLogProb02, rLogProb_new)
+                expect_identical(rVals02, rVals_new)
+                expect_identical(rLogProb12, rLogProb_orig)
+                expect_identical(rVals12, rVals_orig)
+                
+                if(checkDoubleTape) {
+                    ## Double tapes here don't have order = 0 in inner tape, so model should not be updated since I do pass model into nimDerivs.
+                    expect_identical(rLogProb1d, rLogProb_orig)
+                    expect_identical(rLogProb2d, rLogProb_orig)
+                    expect_identical(rLogProb2d11, rLogProb_orig)
+                    expect_identical(rVals1d, rVals_orig)
+                    expect_identical(rVals2d, rVals_orig)
+                    expect_identical(rVals2d11, rVals_orig)
+                }
+                
+                ## Not clear if next check should be expect_identical (in many cases they are identical);
+                ## Check with PdV whether values from taped model could get into the compiled model.        
+                if(checkCompiledValuesIdentical) {
+                    expect_fun <- expect_identical
+                } else expect_fun <- expect_equal
+                
+                expect_fun(cLogProb01, cLogProb_new) 
+                expect_fun(cVals01, cVals_new)
+                expect_fun(cLogProb012, cLogProb_new) 
+                expect_fun(cVals012, cVals_new)
+                expect_fun(cLogProb02, cLogProb_new) 
+                expect_fun(cVals02, cVals_new)
+
+                expect_fun(cLogProb12, cLogProb_orig)
+                expect_fun(cVals12, cVals_orig)
+
+                if(checkDoubleTape) {
+                    ## Double tapes here don't have order = 0 in inner tape, so model should not be updated.
+                    expect_fun(cLogProb1d, cLogProb_orig)
+                    expect_fun(cVals1d, cVals_orig)
+                    expect_fun(cLogProb2d, cLogProb_orig)
+                    expect_fun(cVals2d, cVals_orig)
+                    expect_fun(cLogProb2d11, cLogProb_orig)
+                    expect_fun(cVals2d11, cVals_orig)
+                }
             }
         }
     })
+    local_edition(saved_edition)
 }
 
 
@@ -2408,14 +2533,14 @@ test_dynamic_indexing_model_internal <- function(param) {
                     
                     cm[[param$invalidIndexes[[i]]$var[j]]] <- param$invalidIndexes[[i]]$value[j]
                 }
-                expect_output(out <- calculate(m), "dynamic index out of bounds", info = paste0("problem with lack of warning in R calculate with non-NA invalid indexes, case: ", i))
+                expect_output(out <- calculate(m), "Dynamic index out of bounds", info = paste0("problem with lack of warning in R calculate with non-NA invalid indexes, case: ", i))
                 expect_equal(out, NaN, info = paste0("problem with lack of NaN in R calculate with non-NA invalid indexes, case: ", i))
-                expect_output(out <- calculate(cm), "dynamic index out of bounds", info = paste0("problem with lack of warning in C calculate with invalid indexes, case: ", i))
+                expect_output(out <- calculate(cm), "Dynamic index out of bounds", info = paste0("problem with lack of warning in C calculate with invalid indexes, case: ", i))
                 expect_equal(out, NaN, info = paste0("problem with lack of NaN in C calculate with invalid indexes, case: ", i))
-                expect_output(out <- calculateDiff(cm), "dynamic index out of bounds", info = paste0("problem with lack of warning in C calculateDiff with invalid indexes, case: ", i))
+                expect_output(out <- calculateDiff(cm), "Dynamic index out of bounds", info = paste0("problem with lack of warning in C calculateDiff with invalid indexes, case: ", i))
                 expect_equal(out, NaN, info = paste0("problem with lack of NaN in C calculateDiff with invalid indexes, case: ", i))
                 deps <- m$getDependencies(param$invalidIndexes[[i]]$var, self = FALSE)
-                expect_output(simulate(cm, deps, includeData = TRUE), "dynamic index out of bounds", info = paste0("problem with lack of warning in C simulate with invalid indexes, case: ", i))
+                expect_output(simulate(cm, deps, includeData = TRUE), "Dynamic index out of bounds", info = paste0("problem with lack of warning in C simulate with invalid indexes, case: ", i))
                 expect_true(sum(is.nan(values(cm, deps))) >= 1, info = paste0("problem with lack of NaN in C simulate with invalid indexes, case: ", i))
             }
             if(.Platform$OS.type != "windows") {

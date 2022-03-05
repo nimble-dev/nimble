@@ -59,10 +59,9 @@ test_that('dcar_normal sampling', {
     expect_true(all(Rsamples[, sampleNames] - Csamples[, sampleNames] == 0),
                 info = 'agreement between R and C sampling of dcar_normal')
     
-    expect_equal(as.numeric(Csamples[20, sampleNames]),
-                 c(1.639127, 1.815422, 1.676655, 5.099797, 2.345276, 7.018026, 2.696936),
-                 tolerance = 1e-6,
-                 info = 'exact sample values for dcar_normal')
+    expect_lt(max(abs(as.numeric(Csamples[20, sampleNames]) - 
+                 c(1.639127, 1.815422, 1.676655, 5.099797, 2.345276, 7.018026, 2.696936))),  1e-6,
+                 label = 'exact sample values for dcar_normal')
 })
 
 
@@ -127,11 +126,11 @@ test_that('dcar_proper sampling', {
     Cmodel <- compileNimble(Rmodel)
     lp <- -574.964
     
-    expect_equal(calculate(Rmodel), lp, tol = 1E-5,
-                 info = 'calculate for dcar_proper()')
+    expect_lt(abs(calculate(Rmodel) - lp), 1E-5,
+                 label = 'calculate for dcar_proper()')
     
-    expect_equal(calculate(Cmodel), lp, tol = 1E-5,
-                 info = 'calculate for dcar_proper(), compiled')
+    expect_lt(abs(calculate(Cmodel) - lp), 1E-5,
+                 label = 'calculate for dcar_proper(), compiled')
     
     weights <- rep(1, 6)
     CM <- as.carCM(adj, weights, num)
@@ -173,10 +172,9 @@ test_that('dcar_proper sampling', {
     expect_true(all(Rsamples[, sampleNames] - Csamples[, sampleNames] == 0),
                 info = 'agreement between R and C sampling of dcar_proper')
 
-    expect_equal(as.numeric(Csamples[20, sampleNames]),
-                 c(0.0978025, -0.6643286, 1.9510954, 0.2413084, 2.6684426, -3.2533691),
-                 tolerance = 1e-6,
-                 info = 'exact sample values for dcar_proper')
+    expect_lt(max(abs(as.numeric(Csamples[20, sampleNames]) -
+                 c(-0.86201288, 0.07689823, 2.04074467, 0.24380342, 3.00405982, -3.25336913))), 1e-6,
+                 label = 'exact sample values for dcar_proper')
 })
 
 

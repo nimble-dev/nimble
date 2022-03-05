@@ -29,7 +29,8 @@ cppVirtualNimbleFunctionClass <- setRefClass('cppVirtualNimbleFunctionClass',
             nfProc <<- nfp
             assign('cppDef', .self, envir = environment(nfProc$nfGenerator))
             for(i in names(nfp$RCfunProcs)) { ## This is what we should do for cppNimbleFunctions too
-                functionDefs[[i]] <<- RCfunctionDef(virtual = TRUE, abstract = TRUE)
+                abstract <- !isFALSE( environment(nfProc$nfGenerator)$methodControl[[i]]$required ) # default required = TRUE.  required is a synonym for abstract.  If it's abstract, it's required in derived classes.
+                functionDefs[[i]] <<- RCfunctionDef(virtual = TRUE, abstract = abstract)
                 functionDefs[[i]]$buildFunction(nfp$RCfunProcs[[i]])
             }
         }
@@ -156,7 +157,6 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                            cppCopyTypes <- makeNimbleFxnCppCopyTypes(nimCompProc$getSymbolTable(), objectDefs$getSymbolNames())
                                            copyFromRobjectDefs <- makeCopyFromRobjectDef(className = nfProc$name, cppCopyTypes, .self$nfProc$instances[[1]])
                                            functionDefs[['copyFromRobject']] <<- copyFromRobjectDefs$copyFromRobjectDef
-                                          ## SEXPmemberInterfaceFuns[['copyFromRobject']] <<- copyFromRobjectDefs$copyFromRobjectInterfaceDef
                                        },
                                        buildAll = function(where = where) {
                                            makeCppNames()
@@ -573,7 +573,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       addInheritance(baseClassName)
                                                       addAncestors('NamedObjects')
                                                   }
-                                                  handleDerivs <- nimbleOptions('experimentalEnableDerivs') &&
+                                                  handleDerivs <- isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs")) &&
                                                       length(environment(nfProc$nfGenerator)$enableDerivs) > 0
                                                   if(handleDerivs) {
                                                       constructorCode <- addADclassContent() ## Might generate code to insert into constructor, which is built later
@@ -634,7 +634,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
 ## The next block of code has the initial setup for an AST processing stage
 ## to make modifications for AD based on context etc.
 modifyForAD_handlers <- c(list(
-    pow = 'modifyForAD_issueWarning',
+    pow = 'modifyForAD_issuePowWarning',
     eigenBlock = 'modifyForAD_eigenBlock',
     calculate = 'modifyForAD_calculate',
     getValues = 'modifyForAD_getSetValues',
@@ -726,13 +726,13 @@ recurse_modifyForAD <- function(code, symTab, workEnv) {
   invisible(NULL)
 }
 
-modifyForAD_issueWarning <- function(code, symTab, workEnv) {
-  warning(paste0("Operator ", code$name, " can cause problems (potentially crashes) from AD."), call.=FALSE)
+modifyForAD_issuePowWarning <- function(code, symTab, workEnv) {
+  warning(paste0("Operator pow may cause derivative problems with negative arguments.  If the exponent is guaranteed to be an integer, use pow_int insted."), call.=FALSE)
   invisible(NULL)
 }
 
 modifyForAD_matmult <- function(code, symTab, workEnv) {
-  if(!isTRUE(nimbleOptions("skipADmatMultAtomic")))
+  if(isTRUE(nimbleOptions("useADmatMultAtomic")))
     if(length(code$args)==2)  ## something is wrong if there are not 2 args
       if(!(isEigScalar(code$args[[1]]) | isEigScalar(code$args[[2]]))) ## are both non-scalar?
         code$name <- 'nimDerivs_matmult'
@@ -740,7 +740,7 @@ modifyForAD_matmult <- function(code, symTab, workEnv) {
 }
 
 modifyForAD_matinverse <- function(code, symTab, workEnv) {
-  if(!isTRUE(nimbleOptions("skipADmatInverseAtomic")))
+  if(isTRUE(nimbleOptions("useADmatInverseAtomic")))
     code$name <- 'nimDerivs_matinverse'
   invisible(NULL)
 }
@@ -829,10 +829,10 @@ modifyForAD_prependNimDerivs <- function(code, symTab, workEnv) {
   origName <- code$name
   atomic <- TRUE
   if(origName == 'EIGEN_FS' | origName == 'EIGEN_BS')
-    if(isTRUE(nimbleOptions("skipADsolveAtomic")))
+    if(!isTRUE(nimbleOptions("useADsolveAtomic")))
         atomic <- FALSE
   if(origName == "EIGEN_CHOL")
-    if(isTRUE(nimbleOptions("skipADcholAtomic")))
+    if(!isTRUE(nimbleOptions("useADcholAtomic")))
         atomic <- FALSE
   if(atomic)
     code$name <- paste0("nimDerivs_", origName)
@@ -1010,9 +1010,8 @@ makeSingleCopyCall <- function(varName, cppCopyType) {
            },
            'modelVarAccess' = {
                cppLiteral(paste0("COPY_VALUE_MAP_ACCESSORS_FROM_NODE_NAMES(\"", varName, "\"",
-                                 if(isTRUE(nimbleOptions('experimentalEnableDerivs'))) ", 1" else ", 0", ");"))
+                                 if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs"))) ", 1" else ", 0", ");"))
            },
-           
            NULL)
 }
 

@@ -4,11 +4,26 @@
 \alias{nimbleMCMC}
 \title{Executes one or more chains of NIMBLE's default MCMC algorithm, for a model specified using BUGS code}
 \usage{
-nimbleMCMC(code, constants = list(), data = list(), inits,
-  dimensions = list(), model, monitors, thin = 1, niter = 10000,
-  nburnin = 0, nchains = 1, check = TRUE, setSeed = FALSE,
-  progressBar = getNimbleOption("MCMCprogressBar"), samples = TRUE,
-  samplesAsCodaMCMC = FALSE, summary = FALSE, WAIC = FALSE)
+nimbleMCMC(
+  code,
+  constants = list(),
+  data = list(),
+  inits,
+  dimensions = list(),
+  model,
+  monitors,
+  thin = 1,
+  niter = 10000,
+  nburnin = 0,
+  nchains = 1,
+  check = TRUE,
+  setSeed = FALSE,
+  progressBar = getNimbleOption("MCMCprogressBar"),
+  samples = TRUE,
+  samplesAsCodaMCMC = FALSE,
+  summary = FALSE,
+  WAIC = FALSE
+)
 }
 \arguments{
 \item{code}{The quoted code expression representing the model, such as the return value from a call to \code{nimbleCode}). Not required if \code{model} is provided.}
@@ -46,10 +61,10 @@ nimbleMCMC(code, constants = list(), data = list(), inits,
 \item{summary}{Logical argument.  When \code{TRUE}, summary statistics for the posterior samples of each parameter are also returned, for each MCMC chain.  This may be returned in addition to the posterior samples themselves.  Default value is \code{FALSE}.  See details.
 z}
 
-\item{WAIC}{Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  If multiple chains are run, then a single WAIC value is calculated using the posterior samples from all chains.  Default value is \code{FALSE}.  See details.}
+\item{WAIC}{Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  If multiple chains are run, then a single WAIC value is calculated using the posterior samples from all chains.  Default value is \code{FALSE}. Note that the version of WAIC used is the default WAIC conditional on random effects/latent states and without any grouping of data nodes. See \code{help(waic)} for more details. If a different version of WAIC is desired, use \code{runMCMC} instead of \code{nimbleMCMC}.}
 }
 \value{
-A list is returned with named elements depending on the arguments passed to \code{nimbleMCMC}, unless only one among samples, summary, and WAIC are requested, in which case only that element is returned.  These elements may include \code{samples}, \code{summary}, and \code{WAIC}.  When \code{nchains = 1}, posterior samples are returned as a single matrix, and summary statistics as a single matrix.  When \code{nchains > 1}, posterior samples are returned as a list of matrices, one matrix for each chain, and summary statistics are returned as a list containing \code{nchains+1} matrices: one matrix corresponding to each chain, and the final element providing a summary of all chains, combined.  If \code{samplesAsCodaMCMC} is \code{TRUE}, then posterior samples are provided as \code{coda} \code{mcmc} and \code{mcmc.list} objects.  When \code{WAIC} is \code{TRUE}, a single WAIC value is returned.
+A list is returned with named elements depending on the arguments passed to \code{nimbleMCMC}, unless only one among samples, summary, and WAIC are requested, in which case only that element is returned.  These elements may include \code{samples}, \code{summary}, and \code{WAIC}.  When \code{nchains = 1}, posterior samples are returned as a single matrix, and summary statistics as a single matrix.  When \code{nchains > 1}, posterior samples are returned as a list of matrices, one matrix for each chain, and summary statistics are returned as a list containing \code{nchains+1} matrices: one matrix corresponding to each chain, and the final element providing a summary of all chains, combined.  If \code{samplesAsCodaMCMC} is \code{TRUE}, then posterior samples are provided as \code{coda} \code{mcmc} and \code{mcmc.list} objects.  When \code{WAIC} is \code{TRUE}, a WAIC summary object is returned.
 }
 \description{
 \code{nimbleMCMC} is designed as the most straight forward entry point to using NIMBLE's default MCMC algorithm.  It provides capability for running multiple MCMC chains, specifying the number of MCMC iterations, thinning, and burn-in, and which model variables should be monitored.  It also provides options to return the posterior samples, to return summary statistics calculated from the posterior samples, and to return a WAIC value.
@@ -94,10 +109,9 @@ mcmc.output <- nimbleMCMC(code, data = data, inits = inits,
 }
 
 }
-\author{
-Daniel Turek
-}
 \seealso{
 \code{\link{configureMCMC}} \code{\link{buildMCMC}} \code{\link{runMCMC}}
 }
-
+\author{
+Daniel Turek
+}

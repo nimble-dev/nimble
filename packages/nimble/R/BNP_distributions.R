@@ -160,17 +160,19 @@ stick_breaking <- nimbleFunction(
         N <- length(z)   
         cond <- any(z < 0 | z > 1)
         if(cond) {
-            nimCat("stick_breaking: values in 'z' have to be in (0,1).\n")
+            nimCat("  [Warning] stick_breaking: values in 'z' have to be in (0,1).\n")
             return(rep(NaN, N+1))
         }
     
         x <- nimNumeric(N+1) 
         remainingLogProb <- 0 
     
-        x[1] <- log(z[1]) 
-        for(i in 2:N) {
-            remainingLogProb <- remainingLogProb + log(1-z[i-1]) 
-            x[i] <- log(z[i]) + remainingLogProb 
+        x[1] <- log(z[1])
+        if(N > 1) {
+            for(i in 2:N) {
+                remainingLogProb <- remainingLogProb + log(1-z[i-1]) 
+                x[i] <- log(z[i]) + remainingLogProb 
+            }
         }
         
         x[N+1] <- remainingLogProb + log(1-z[N]) 

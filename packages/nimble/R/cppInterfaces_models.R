@@ -198,7 +198,7 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                           .namedObjectsPtr, ##.basePtr,
                                                           dll[['handle']], model$name))
 
-                                                if(isTRUE(nimbleOptions('experimentalEnableDerivs'))) {
+                                                if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs"))) {
                                                     basePtrCallAD <- paste0(basePtrCall, "_AD")
                                                     newPtrPairAD <- eval(parse(text = ".Call(basePtrCallAD)"))
                                                     .ADptrs <<- list(

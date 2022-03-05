@@ -26,6 +26,14 @@
 
 #include "NimArr.h" // This includes Rmath.h via Utils.h, so it must come after the TMB files.
 
+/* discrete-round is four lines of code from TMB. */
+inline double discrete_round(const double &x)
+{     
+  double out_x = round(x);
+  return(out_x);
+}
+CPPAD_DISCRETE_FUNCTION(double, discrete_round)
+
 // Functions here connect from nimble-generated C++ to TMB code that uses CppAD.
 // TMB provides many nice distribution functions.
 // Note that these functions are called rarely, typically once, because
@@ -115,7 +123,7 @@ Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, Nim
 }
 
 template<class Type>
-Type nimDerivs_nimArr_dmnorm_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type prec_param, int give_log, Type overwrite_inputs) { 
+Type nimDerivs_nimArr_dmnorm_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type prec_param, int give_log, Type overwrite_inputs) {
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
   int n = x.dimSize(0);
   int i;
@@ -499,6 +507,49 @@ Type nimDerivs_nimArr_dmulti_logFixed(const NimArr<1, Type> &x,
     return logProb;
   } else {
     return exp(logProb);
+  }
+}
+/* Categorial */
+template<class Type>
+Type nimDerivs_nimArr_dcat(const Type &x,
+		    const NimArr<1, Type> &prob,
+		    const Type &give_log)
+{
+  CppAD::VecAD<double> vecProb(prob.size());
+  Type sumProb = 0.;
+  CppAD::AD<double> i; // Per CppAD example, index assigning into VecAD must be a CppAD::AD<>
+  for(i = 0; size_t(Integer(i) ) < prob.size(); i += 1.) {
+    vecProb[i] = prob[ size_t(Integer(i) ) ];
+  }
+  for(int j = 0; j < prob.size(); ++j) {
+    sumProb += prob[ j ];
+  }
+  Type ansProb = vecProb[x - 1] / sumProb;
+  Type ans = CppAD::CondExpEq(give_log, Type(1),
+			      log(ansProb),
+			      ansProb);
+  return(ans);
+}
+
+template<class Type>
+Type nimDerivs_nimArr_dcat_logFixed(const Type &x,
+			     const NimArr<1, Type> &prob,
+			     int give_log)
+{
+  CppAD::VecAD<double> vecProb(prob.size());
+  Type sumProb = 0.;
+  CppAD::AD<double> i;
+  for(i = 0; size_t(Integer(i) ) < prob.size(); i += 1.) {
+    vecProb[i] = prob[ size_t(Integer(i) ) ];
+  }
+  for(int j = 0; j < prob.size(); ++j) {
+    sumProb += prob[ j ];
+  }
+  Type ansProb = vecProb[x - 1] / sumProb;
+  if(give_log) {
+    return log(ansProb);
+  } else {
+    return ansProb;
   }
 }
 
@@ -956,13 +1007,6 @@ Type nimDerivs_nimArr_ddirch_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &alpha
 /*************/
 /* Functions */
 
-/* discrete-round is four lines of code from TMB. */
-inline double discrete_round(const double &x)
-{     
-  double out_x = round(x);
-  return(out_x);
-}
-CPPAD_DISCRETE_FUNCTION(double, discrete_round)
 
 /* pow */
 /* If x > 0, do simple x^y.*/
@@ -970,30 +1014,43 @@ CPPAD_DISCRETE_FUNCTION(double, discrete_round)
 /* The CondExp expressions may slow down CppAD tapes.*/
 template<class Type> 
 Type nimDerivs_pow(Type x, Type y) {
-	Type outVal = CppAD::CondExpGt(x, Type(0),
-				       CppAD::pow(x, y),
-				       CppAD::CondExpEq(y, discrete_round(y),
-							CppAD::pow(x, CppAD::Integer(y)),
-							Type(CppAD::numeric_limits<Type>::quiet_NaN())));
-	return(outVal);
+
+  /* We experimented with CppAD conditionals but still had cases that 
+     crashed or had constants baked into tapes when they shouldn't be
+     As a result we implemented nimDerivs_pow_int for cases where 
+     y will only have integer values and never need its derivatives taken.
+  */
+
+  /* Type outVal = CppAD::CondExpGt(x, Type(0), */
+  /* 			       CppAD::pow(x, y), */
+  /* 			       CppAD::CondExpEq(y, discrete_round(y), */
+  /* 						CppAD::pow(x, CppAD::Integer(y)), */
+  /* 						Type(CppAD::numeric_limits<Type>::quiet_NaN()))); */
+
+  /* There is still a need to identify hard-coded cases with integer y and 
+     divert them to nimDerivs_pow_int.  Currently nimble-generated code
+     does not cast the second argument to Type() for pow, so one of the 
+     over-loaded cases below (for y being int or double) will be called.*/
+  Type outVal = CppAD::pow(x, y);
+  return(outVal);
 }
 
-template<class Type> 
-Type nimDerivs_pow(int x, Type y) {
-	Type outVal = CppAD::CondExpGt(x, Type(0),
-				       CppAD::pow(x, y),
-				       CppAD::CondExpEq(y, discrete_round(y),
-							CppAD::pow(x, CppAD::Integer(y)),
-							Type(CppAD::numeric_limits<Type>::quiet_NaN())));
-	return(outVal);
-}
-
+// This may not longer ever be used from nimble-generated code.
 template<class Type> 
 Type nimDerivs_pow(Type x, int y) {
-	Type outVal = CppAD::pow(x, y);
-	return(outVal);
+  Type outVal = nimDerivs_pow_int(x, y);
+  return(outVal);
 }
 
+template<class Type> 
+Type nimDerivs_pow(Type x, double y) {
+  Type outVal;
+  if(fabs(y - round(y)) < 1e-8) // allows binary rounding error on computed indices
+    outVal = nimDerivs_pow_int(x, round(y));
+  else
+    outVal = nimDerivs_pow(x, Type(y));
+  return(outVal);
+}
 
 /* probit */
 /* This is modified from TMB's qnorm, to avoid using the mean and sd arguments unnecessarily. */
@@ -1023,7 +1080,7 @@ Type nimDerivs_factorial(Type x) {
 /* gammafn */
 template<class Type>
 Type nimDerivs_gammafn(Type x) {
-  return exp(nimDerivs_lgammafn<Type>(x));
+  return exp(nimDerivs_lgammafn(x));
 }
 
 /* AD recycling rule. See nimbleEigen.h for the non-AD equivalents. */
@@ -1070,6 +1127,8 @@ MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dunif, CppAD::AD<double>)
 MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dweibull, CppAD::AD<double>)
 MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dt_nonstandard, CppAD::AD<double>) // broken
 MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dt, CppAD::AD<double>) // broken
+
+MAKE_RECYCLING_RULE_CLASS1_1scalar(nimDerivs_pow_int, CppAD::AD<double>)
 
 #define nimDerivs_nimNewMatrixD newMatrix_impl<MatrixXd_CppAD, CppAD::AD<double> >::newMatrix
 #define nimDerivs_nimDiagonalD diagonal_impl<MatrixXd_CppAD, CppAD::AD<double> >::diagonal

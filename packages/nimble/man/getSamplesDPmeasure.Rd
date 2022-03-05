@@ -4,7 +4,12 @@
 \alias{getSamplesDPmeasure}
 \title{Get posterior samples for a Dirichlet process measure}
 \usage{
-getSamplesDPmeasure(MCMC, epsilon = 1e-04, setSeed = FALSE)
+getSamplesDPmeasure(
+  MCMC,
+  epsilon = 1e-04,
+  setSeed = FALSE,
+  progressBar = getNimbleOption("MCMCprogressBar")
+)
 }
 \arguments{
 \item{MCMC}{an MCMC class object, either compiled or uncompiled.}
@@ -12,6 +17,8 @@ getSamplesDPmeasure(MCMC, epsilon = 1e-04, setSeed = FALSE)
 \item{epsilon}{used for determining the truncation level of the representation of the random measure.}
 
 \item{setSeed}{Logical or numeric argument. If a single numeric value is provided, R's random number seed will be set to this value. In the case of a logical value, if \code{TRUE}, then R's random number seed will be set to \code{1}. Note that specifying the argument \code{setSeed = 0} does not prevent setting the RNG seed, but rather sets the random number generation seed to \code{0}.  Default value is \code{FALSE}.}
+
+\item{progressBar}{Logical specifying whether to display a progress bar during execution (default = TRUE).  The progress bar can be permanently disabled by setting the system option \code{nimbleOptions(MCMCprogressBar = FALSE)}}
 }
 \description{
 This function obtains posterior samples from a Dirichlet process distributed random measure of a model specified using the \code{dCRP} distribution.
@@ -37,9 +44,6 @@ For more details about sampling the random measure and determining its truncatio
   outputG <- getSamplesDPmeasure(cmcmc)
 }
 }
-\author{
-Claudia Wehrhahn and Christopher Paciorek
-}
 \references{
 Sethuraman, J. (1994). A constructive definition of Dirichlet priors. \emph{Statistica Sinica}, 639-650.
 
@@ -48,4 +52,6 @@ Gelfand, A.E. and Kottas, A. (2002). A computational approach for full nonparame
 \seealso{
 \code{\link{buildMCMC}}, \code{\link{configureMCMC}},
 }
-
+\author{
+Claudia Wehrhahn and Christopher Paciorek
+}

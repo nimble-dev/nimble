@@ -16,12 +16,14 @@ getParam(model, node, param, nodeFunctionIndex)
 \item{nodeFunctionIndex}{For internal NIMBLE use only}
 }
 \description{
-Part of the NIMBLE language
+Get the value of a parameter for any single stochastic node in a model.
 }
 \details{
+Standard usage is as a method of a model, in the form \code{model$getParam(node, param)}, but the usage as a simple function with the model as the first argument as above is also allowed.
+
 For example, suppose node 'x[1:5]' follows a multivariate
 normal distribution (dmnorm) in a model declared by BUGS code.
-getParam(model, 'x[1:5]', 'mean') would return the current value of
+model$getParam('x[1:5]', 'mean') would return the current value of
 the mean parameter (which may be determined from other nodes).  The
 parameter requested does not have to be part of the
 parameterization used to declare the node.  Rather, it can be any
@@ -29,4 +31,3 @@ parameter known to the distribution.  For example, one can request
 the scale or rate parameter of a gamma distribution, regardless of
 which one was used to declare the node.
 }
-

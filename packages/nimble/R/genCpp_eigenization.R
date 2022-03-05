@@ -68,7 +68,7 @@ callsFromExternalUnaries <- as.character(unlist(lapply(eigProxyTranslateExternal
 
 eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or matrix
     makeCallList(c('abs','square','sqrt','(','t'), 'eigenize_cWiseUnaryEither'),
-    makeCallList('pow', 'eigenize_cWiseByScalarArray'),
+    makeCallList(c('pow'), 'eigenize_cWiseByScalarArray'),
     makeCallList(c('asRow', 'asCol'), 'eigenize_asRowOrCol'),
     ## component-wise unarys valid only for only Eigen array
     makeCallList(c('exp','log','cube','cwiseInverse','sin','cos','tan','asin','acos'), 'eigenize_cWiseUnaryArray'), 
@@ -91,6 +91,7 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
     ## matrix ops
     makeCallList(matrixSolveOperators, 'eigenize_matrixOps'),
     makeCallList('bessel_k', 'eigenize_recyclingRuleFunction'),
+    makeCallList('pow_int', 'eigenize_recyclingRuleFunction'),
     makeCallList(scalar_distribution_dFuns, 'eigenize_recyclingRuleFunction'),
     makeCallList(scalar_distribution_pFuns, 'eigenize_recyclingRuleFunction'),
     makeCallList(scalar_distribution_qFuns, 'eigenize_recyclingRuleFunction'),
@@ -479,9 +480,15 @@ eigenCast <- function(expr, argIndex, newType) {
 eigenize_assign_before_recurse <- function(code, symTab, typeEnv, workEnv) {
     setupExprs <- list()
     if(length(code$args) != 2) stop(exprClassProcessingErrorMsg(code, 'There is an assignment without 2 arguments.'), call. = FALSE)
+
+
     workEnv$OnLHSnow <- TRUE
     setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[1]], symTab, typeEnv, workEnv))
     workEnv$OnLHSnow <- NULL ## allows workEnv[['OnLHSnow']] to be NULL if is does not exist or if set to NULL
+
+    promoteArgTypes(code)
+    if(!is.null(code$type)) code$type <- code$args[[2]]$type
+
     changeToFill <- FALSE
     if(inherits(code$args[[2]], 'exprClass')) {
         setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[2]], symTab, typeEnv, workEnv))
@@ -605,7 +612,7 @@ eigenize_cWiseBinaryArray <- function(code, symTab, typeEnv, workEnv) {
 eigenize_cWiseByScalarArray <- function(code, symTab, typeEnv, workEnv) {
     if(code$nDim == 0) return(NULL)
     if(!is.numeric(code$args[[2]]))
-        if(code$args[[2]]$nDim != 0) stop(exprClassProcessingErrorMsg(code, 'the second argument to pow must be a scalar.'), call. = FALSE)
+        if(code$args[[2]]$nDim != 0) stop(exprClassProcessingErrorMsg(code, 'the second argument to pow or pow_int must be a scalar.'), call. = FALSE)
     newName <- eigenizeTranslate[[code$name]]
     if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
     code$name <- newName
@@ -835,7 +842,7 @@ eigenizeName <- function(code, symTab, typeEnv, workEnv) {
     
     if(needStrides) {
         newArgs <- list()
-        newArgs[[1]] <- code$name
+       newArgs[[1]] <- as.name(code$name)
         newArgs[[2]] <- code$nDim ## not used but for completeness
         newArgs[[3]] <- quote(0) ## eigenizeNameStrided will insert getOffset(ptr)
         newArgs[[4]] <- code$sizeExprs
@@ -848,7 +855,13 @@ eigenizeName <- function(code, symTab, typeEnv, workEnv) {
     }
     
     if(!identical(as.integer(targetSym$nDim), as.integer(code$nDim))) { writeLines('found a case where !identical(targetSym$nDim, code$nDim)'); browser() }
-    if(!identical(targetSym$type, code$type)) { writeLines('found a case where !identical(targetSym$type, code$type)'); browser() }
+    if(!identical(targetSym$type, code$type)) {
+      if(!is.null(workEnv[['OnLHSnow']])) { ## This is a hack for a case like <Double vector> <- <Expression returning Integer Vector>
+        code$type <- targetSym$type         ## This is done only when we are processing the LHS name
+      } else {
+        writeLines('found a case where !identical(targetSym$type, code$type)'); browser()
+      }
+    }
     if(!identical(targetSym$name, code$name)) { writeLines('found a case where !identical(targetSym$name, code$name)'); browser() }
     targetTypeSizeExprs <- code$sizeExprs
 

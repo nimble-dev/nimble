@@ -6,13 +6,13 @@
 require(nimble)
 ``` 
 
-# Writing models in NIMBLE's dialect of BUGS {#cha:writing-models}
+# Writing models in NIMBLE's dialect of BUGS {#cha-writing-models}
 
 Models in NIMBLE are written using a variation on the BUGS language.
 From BUGS code, NIMBLE  creates a model object.  This chapter
 describes NIMBLE's version of BUGS.  The next chapter explains how to
 build and manipulate model objects.
-<!---  With NIMBLE you can also define your own distributions and functions for use in BUGS code; discussion of this functionality is deferred to Chapter \@ref(cha:user-defined) as it requires the use of nimbleFunctions.  -->
+<!---  With NIMBLE you can also define your own distributions and functions for use in BUGS code; discussion of this functionality is deferred to Chapter \@ref(cha-user-defined) as it requires the use of nimbleFunctions.  -->
 
 
 ## Comparison to BUGS dialects supported by WinBUGS, OpenBUGS and JAGS {#sec:supp-feat-bugs}
@@ -43,7 +43,7 @@ some extensions that are planned but not implemented.
 NIMBLE extends the BUGS language in the following ways:
 
 
-  1. User-defined functions and distributions -- written as nimbleFunctions -- can be used in model code. See Chapter \@ref(cha:user-defined).
+  1. User-defined functions and distributions -- written as nimbleFunctions -- can be used in model code. See Chapter \@ref(cha-user-defined).
   1. Multiple parameterizations for distributions, similar to those  in R, can be used.
   1. Named parameters for distributions and functions, similar to R function calls, can be used.
   1. Linear algebra, including for vectorized
@@ -179,7 +179,7 @@ NIMBLE's version of BUGS.
 }
 ``` 
 
-When a variable appears only on the right-hand side, it can be provided via `constants` (in which case it can never be changed) or via `data` or `inits`, as discussed in Chapter \@ref(cha:building-models).  
+When a variable appears only on the right-hand side, it can be provided via `constants` (in which case it can never be changed) or via `data` or `inits`, as discussed in Chapter \@ref(cha-building-models).  
 
 Notes on the comment-numbered lines are:
 
@@ -193,13 +193,13 @@ Notes on the comment-numbered lines are:
   normal distribution, with a named covariance matrix instead of BUGS'
   default of a precision matrix.  As in R, curly braces for for-loop
   contents are only needed if there is more than one line.
-  1. `w` follows a user-defined distribution. See Chapter \@ref(cha:user-defined).
+  1. `w` follows a user-defined distribution. See Chapter \@ref(cha-user-defined).
   1. `d1` is a scalar deterministic node that, when calculated, will be
   set to `a + b`.
   1. `d2` is a vector deterministic node using matrix
   multiplication in R's syntax.
   1. `d3` is a deterministic node using a user-provided
-  function.  See Chapter \@ref(cha:user-defined).
+  function.  See Chapter \@ref(cha-user-defined).
 
 
 #### More about indexing {#sec:indexing} 
@@ -293,8 +293,8 @@ prior or require proper (normalized) densities.
 ##### LKJ distribution for correlation matrices
 
 NIMBLE provides the LKJ distribution via `dlkj_corr_cholesky`
-for correlation matrices, discussed in Section 24 of [@Stan_Fun_2021] and based on
-[@Lewandowski_etal_2009]. This distribution has various advantages (both from a modeling perspective and an
+for correlation matrices, discussed in Section 24 of @Stan_Lang_Fun_2021 and based on
+@Lewandowski_etal_2009. This distribution has various advantages (both from a modeling perspective and an
 MCMC fitting perspective) over other prior distributions for correlation
 or covariance matrices such as the inverse Wishart distribution.
 
@@ -403,9 +403,9 @@ Tables \@ref(tab:functions)-\@ref(tab:functionsMatrix) show the available operat
 <!---\@ref(tab:functions)-\@ref(tab:functionsMatrix) 
 Hard-coding these as not clear how to have tables here and in Chapter 11 use same source files but numbered distinctly
 --> 
-<!---  These are also available for `nimbleFunction` programming (see Chapter \@ref(cha:progr-with-models)).  In fact, BUGS model nodes are implemented as `nimbleFunction`s that are custom-generated from BUGS declarations, so it would be more correct to say that functions and operators available for `nimbleFunction`s are also available for the model declarations. -->
+<!---  These are also available for `nimbleFunction` programming (see Chapter \@ref(cha-progr-with-models)).  In fact, BUGS model nodes are implemented as `nimbleFunction`s that are custom-generated from BUGS declarations, so it would be more correct to say that functions and operators available for `nimbleFunction`s are also available for the model declarations. -->
 Support for more general R expressions
-is covered in Chapter \@ref(cha:RCfunctions) about programming
+is covered in Chapter \@ref(cha-RCfunctions) about programming
 with nimbleFunctions. 
 
 For the most part NIMBLE supports the functions used in BUGS and JAGS,

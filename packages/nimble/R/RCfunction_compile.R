@@ -146,16 +146,16 @@ RCvirtualFunProcessing <- setRefClass(
 RCfunction <- function(f, name = NA, returnCallable = TRUE, check, enableDerivs = FALSE, where = NULL) {
     if(is.na(name))
         name <- rcFunLabelMaker(envName = environmentName(where))
-    nfm <- nfMethodRC$new(f, name, check = check, enableDerivs = enableDerivs)
+    nfm <- nfMethodRC$new(f, name, check = check, enableDerivs = enableDerivs, where = where)
     if(returnCallable)
         nfm$generateFunctionObject(keep.nfMethodRC = TRUE, where = where)
     else
         nfm
 }
 
-is.rcf <- function(x, inputIsName = FALSE) {
+is.rcf <- function(x, inputIsName = FALSE, where = -1) {
     if(inputIsName)
-        x <- get(x)
+        x <- get(x, pos = where)
     if(inherits(x, 'nfMethodRC'))
         return(TRUE)
     if(is.function(x)) {
@@ -186,7 +186,8 @@ nf_substituteExceptFunctionsAndDollarSigns <- function(code, subList) {
         )
     }
     if(is.call(code)) {
-        if(length(code) == 1)
+        ## Second check avoids premature return for code such a nL[[i]]$foo().
+        if(length(code) == 1 && length(code[[1]]) == 1)
             return(code)
         else {
             if(is.call(code[[1]]))
@@ -323,6 +324,7 @@ RCfunProcessing <- setRefClass(
             compileInfo$typeEnv[['.allowFunctionAsArgument']] <<- FALSE ## will be TRUE when recursing on optim. See sizeOptim.
             compileInfo$typeEnv[['.nimbleProject']] <<- nimbleProject
             compileInfo$typeEnv[['.new_noDeriv_vars']] <<- character()
+            compileInfo$typeEnv[['.myUniqueName']] <<- RCfun$uniqueName
             
             passedArgNames <-
                 as.list(compileInfo$origLocalSymTab$getSymbolNames()) 

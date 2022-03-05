@@ -39,13 +39,12 @@ ch <- chol(covmat)
 x <- rmnorm_chol(1, mean, ch, prec_param = FALSE)
 dmnorm_chol(x, mean, ch, prec_param = FALSE)
 }
-\author{
-Christopher Paciorek
-}
 \references{
 Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
 }
 \seealso{
 \link{Distributions} for other standard distributions
 }
-
+\author{
+Christopher Paciorek
+}

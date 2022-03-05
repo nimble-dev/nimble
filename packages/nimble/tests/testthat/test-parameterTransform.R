@@ -107,7 +107,7 @@ test_that('exact values parameterTransform of multivariate dmnorm and dwish node
     ##
     expect_true(theNF$getOriginalLength() == 44)
     expect_true(theNF$getTransformedLength() == 31)
-    expect_true(all(round(vals,15) - c(0, 1, 5, 0.5, 4, 1, -1, 0, 0, 0, 0.16, 1.2, 2, 1.2, 10, 14, 2, 14, 42, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1) == 0))
+    expect_true(all(abs(round(vals,15) - c(0, 1, 5, 0.5, 4, 1, -1, 0, 0, 0, 0.16, 1.2, 2, 1.2, 10, 14, 2, 14, 42, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1)) < 1e-15))
     expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 1.38629436111989, 1, -0.405465108108164, 0, 0, 0, -0.916290731874155, 3, -0.00000000000000177635683940025, 5, -1, 1.38629436111989, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 14) == 0))
     expect_true(all(vals - vals2 == 0))
     expect_true(round(theNF$logDetJacobian(tVals) - 4.54724272356, 11) == 0)
@@ -119,7 +119,7 @@ test_that('exact values parameterTransform of multivariate dmnorm and dwish node
     ##
     expect_true(theNF$getOriginalLength() == 44)
     expect_true(theNF$getTransformedLength() == 31)
-    expect_true(all(round(vals,15) - c(0, 1, 5, 0.5, 4, 1, -1, 0, 0, 0, 0.16, 1.2, 2, 1.2, 10, 14, 2, 14, 42, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1) == 0))
+    expect_true(all(abs(round(vals,15) - c(0, 1, 5, 0.5, 4, 1, -1, 0, 0, 0, 0.16, 1.2, 2, 1.2, 10, 14, 2, 14, 42, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1)) < 1e-15))
     expect_true(all(round(tVals - c(0, 0, -0.510825623765991, 0, 1.38629436111989, 1, -0.405465108108164, 0, 0, 0, -0.916290731874155, 3, -0.00000000000000177635683940025, 5, -1, 1.38629436111989, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 14) == 0))
     expect_true(all(vals - vals2 == 0))
     expect_true(round(theNF$logDetJacobian(tVals) - 4.54724272356, 11) == 0)

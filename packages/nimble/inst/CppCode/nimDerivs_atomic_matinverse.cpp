@@ -305,10 +305,23 @@ void atomic_matinverse(const MatrixXd_CppAD &x, // This (non-template) type forc
   std::vector<CppAD::AD<double> > xVec(n*n);
   mat2vec(x, xVec);
   std::vector<CppAD::AD<double> > yVec(n*n);
-  atomic_matinverse = new atomic_matinverse_class("atomic_matinverse");
+  bool recording = CppAD::AD<double>::get_tape_handle_nimble() != nullptr;
+  if(!recording) {
+    atomic_matinverse = new atomic_matinverse_class("atomic_matinverse");
+  } else {
+    void *tape_mgr = CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr();
+    atomic_matinverse = new_atomic_matinverse(tape_mgr, "atomic_matinverse");
+  }
   (*atomic_matinverse)(xVec, yVec);
   y.resize(n, n);
   vec2mat(yVec, y);  
+  if(!recording) {
+    delete atomic_matinverse;
+  } else {
+    track_nimble_atomic(atomic_matinverse,
+			CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr(),
+			CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage() );
+  }
 }
 
 MatrixXd_CppAD nimDerivs_matinverse(const MatrixXd_CppAD &x) {

@@ -47,9 +47,9 @@ BUGSmodel <- function(code,
 #' @author NIMBLE development team
 #' @export
 #' @details
-#' See the User Manual or \code{help(\link{modelBaseClass})} for information about manipulating NIMBLE models created by \code{\link{nimbleModel}}, including methods that operate on models, such as \code{\link{getDependencies}}.
+#' See the \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} or \code{help(\link{modelBaseClass})} for information about manipulating NIMBLE models created by \code{\link{nimbleModel}}, including methods that operate on models, such as \code{\link{getDependencies}}.
 #'
-#' The user may need to provide dimensions for certain variables as in some cases NIMBLE cannot automatically determine the dimensions and sizes of variables. See the User Manual for more information.
+#' The user may need to provide dimensions for certain variables as in some cases NIMBLE cannot automatically determine the dimensions and sizes of variables. See the \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} for more information.
 #'
 #' As noted above, one may lump together constants and data (as part of the \code{constants} argument (unlike R interfaces to JAGS and BUGS where they are provided as the \code{data} argument). One may not provide lumped constants and data as the \code{data} argument.
 #'
@@ -92,15 +92,8 @@ nimbleModel <- function(code,
         is.numeric(x) || is.logical(x) ||
             (is.data.frame(x) && all(sapply(x, 'is.numeric'))) })))
         stop("BUGSmodel: elements of 'data' must be numeric")
-    ## constantLengths <- unlist(lapply(constants, length))
-    ## if(any(constantLengths > 1)) {
-    ##     iLong <- which(constantLengths > 1)
-    ##     message(paste0('Constant(s) ', paste0(names(constants)[iLong], sep=" ", collapse = " "), ' are non-scalar and will be handled as inits.'))
-    ##     inits <- c(inits, constants[iLong])
-    ##     constants[iLong] <- NULL
-    ## }
     md <- modelDefClass$new(name = name)
-    if(nimbleOptions('verbose')) message("defining model...")
+    messageIfVerbose("Defining model")
     md$setupModel(code=code, constants=constants, dimensions=dimensions, inits = inits, data = data, userEnv = userEnv, debug=debug)
     if(!returnModel) return(md)
     # move any data lumped in 'constants' into 'data' for
@@ -109,14 +102,13 @@ nimbleModel <- function(code,
     vars <- names(md$varInfo) # varNames contains logProb vars too...
     dataVarIndices <- names(constants) %in% vars & !names(constants) %in% names(data)  # don't overwrite anything in 'data'
     if(sum(names(constants) %in% names(data)))
-        warning("BUGSmodel: found the same variable(s) in both 'data' and 'constants'; using variable(s) from 'data'.\n")
+        messageIfVerbose("  [Note] Found the same variable(s) in both 'data' and 'constants'; using variable(s) from 'data'.\n")
     if(sum(dataVarIndices)) {
         data <- c(data, constants[dataVarIndices])
-        if(nimbleOptions('verbose')) message("Adding ", paste(names(constants)[dataVarIndices], collapse = ', '), " as data for building model.")
+        ## if(nimbleOptions('verbose')) message("  Adding '", paste(names(constants)[dataVarIndices], collapse = ', '), "' as data for building model.")
     }
-    if(nimbleOptions('verbose')) message("building model...")
+    messageIfVerbose("Building model")
     model <- md$newModel(data=data, inits=inits, where=where, check=check, calculate = calculate, debug = debug)
-    if(nimbleOptions('verbose')) message("model building finished.")
     return(model)
 }
 
@@ -393,14 +385,9 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
   }
   if(is.null(data)) {
       possibleNames <- paste0(modelName, c("-data.R", "-data.txt", "data"))
-          ## c(
-          ##              file.path(dir, paste0(modelName, "-data.R")),
-          ##              file.path(dir, paste0(modelName, "-data.txt")),
-          ##              file.path(dir, paste0(modelName, "-data")))
     if(!Sys.info()['sysname'] %in% c("Darwin", "Windows")) # UNIX-like is case-sensitive
         possibleNames <- c(possibleNames,
                            paste0(modelName, "-data.r"))
-##                         file.path(dir, paste0(modelName, "-data.r")))
       if(!skip.file.path) possibleNames <- normalizePath(file.path(dir, possibleNames), winslash = "\\", mustWork=FALSE)
       fileExistence <- file.exists(possibleNames)
       if(sum(fileExistence) > 1)

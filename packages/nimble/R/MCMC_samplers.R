@@ -36,8 +36,8 @@ sampler_posterior_predictive <- nimbleFunction(
         calcNodes <- model$getDependencies(target)
     },
     run = function() {
-        simulate(model, target)
-        calculate(model, calcNodes)
+        model$simulate(target)
+        model$calculate(calcNodes)
         nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
     },
     methods = list(
@@ -61,7 +61,8 @@ sampler_posterior_predictive_branch <- nimbleFunction(
         calcNodes <- model$getDependencies(target, downstream = TRUE)
     },
     run = function() {
-        simulate(model, calcNodes)
+        model$simulate(calcNodes)
+        model$calculate(calcNodes)
         nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
     },
     methods = list(
@@ -93,13 +94,13 @@ sampler_binary <- nimbleFunction(
         if(!model$isBinary(target))     stop('can only use binary sampler on discrete 0/1 (binary) nodes')
     },
     run = function() {
-        currentLogProb <- getLogProb(model, calcNodes)
+        currentLogProb <- model$getLogProb(calcNodes)
         model[[target]] <<- 1 - model[[target]]
-        otherLogProbPrior <- calculate(model, target)
+        otherLogProbPrior <- model$calculate(target)
         if(otherLogProbPrior == -Inf) {
             otherLogProb <- otherLogProbPrior
         } else {
-            otherLogProb <- otherLogProbPrior + calculate(model, calcNodesNoSelf)
+            otherLogProb <- otherLogProbPrior + model$calculate(calcNodesNoSelf)
         }
         acceptanceProb <- 1/(exp(currentLogProb - otherLogProb) + 1)
         jump <- (!is.nan(acceptanceProb)) & (runif(1,0,1) < acceptanceProb)
@@ -147,18 +148,18 @@ sampler_categorical <- nimbleFunction(
     },
     run = function() {
         currentValue <- model[[target]]
-        logProbs[currentValue] <<- getLogProb(model, calcNodes)
+        logProbs[currentValue] <<- model$getLogProb(calcNodes)
         for(i in 1:k) {
             if(i != currentValue) {
                 model[[target]] <<- i
-                logProbPrior <- calculate(model, target)
+                logProbPrior <- model$calculate(target)
                 if(logProbPrior == -Inf) {
                     logProbs[i] <<- -Inf
                 } else {
                     if(is.nan(logProbPrior)) {
                         logProbs[i] <<- -Inf
                     } else {
-                        logProbs[i] <<- logProbPrior + calculate(model, calcNodesNoSelf)
+                        logProbs[i] <<- logProbPrior + model$calculate(calcNodesNoSelf)
                         if(is.nan(logProbs[i])) logProbs[i] <<- -Inf
                     }
                 }
@@ -169,7 +170,7 @@ sampler_categorical <- nimbleFunction(
         newValue <- rcat(1, probs)   ## rcat normalizes the probabilitiess internally
         if(newValue != currentValue) {
             model[[target]] <<- newValue
-            calculate(model, calcNodes)
+            model$calculate(calcNodes)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelfDeterm, logProb = FALSE)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelfStoch, logProbOnly = TRUE)
@@ -244,7 +245,7 @@ sampler_RW <- nimbleFunction(
             }
         }
         model[[target]] <<- propValue
-        logMHR <- calculateDiff(model, target)
+        logMHR <- model$calculateDiff(target)
         if(logMHR == -Inf) {
             nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
             ## Drawing a random number is needed during first testing
@@ -257,7 +258,7 @@ sampler_RW <- nimbleFunction(
             ## and uncomment the following:
             jump <- FALSE
         } else {
-            logMHR <- logMHR + calculateDiff(model, calcNodesNoSelf) + propLogScale
+            logMHR <- logMHR + model$calculateDiff(calcNodesNoSelf) + propLogScale
             jump <- decide(logMHR)
             if(jump) {
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
@@ -310,7 +311,7 @@ sampler_RW <- nimbleFunction(
             if(saveMCMChistory) {
                 return(scaleHistory)
             } else {
-                print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC")
+                print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
                 return(numeric(1, 0))
             }
         },          
@@ -319,10 +320,10 @@ sampler_RW <- nimbleFunction(
             if(saveMCMChistory) {
                 return(acceptanceHistory)
             } else {
-                print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC")
+                print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
                 return(numeric(1, 0))
             }
-        },          
+        },
         ##getScaleHistoryExpanded = function() {                                                 ## scaleHistory
         ##    scaleHistoryExpanded <- numeric(timesAdapted*adaptInterval, init=FALSE)            ## scaleHistory
         ##    for(iTA in 1:timesAdapted)                                                         ## scaleHistory
@@ -408,7 +409,7 @@ sampler_RW_block <- nimbleFunction(
             propValueVector <- generateProposalVector()
             ##lpMHR <- my_setAndCalculateDiff$run(propValueVector)
             values(model, targetNodesAsScalar) <<- propValueVector
-            lpD <- calculateDiff(model, calcNodesProposalStage)
+            lpD <- model$calculateDiff(calcNodesProposalStage)
             if(lpD == -Inf) {
                 nimCopy(from = mvSaved, to = model,   row = 1, nodes = calcNodesProposalStage, logProb = TRUE)
             ## Drawing a random number is needed during first testing
@@ -422,7 +423,7 @@ sampler_RW_block <- nimbleFunction(
             jump <- FALSE
             } else {
                 ##jump <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
-                lpD <- lpD + calculateDiff(model, calcNodesDepStage)
+                lpD <- lpD + model$calculateDiff(calcNodesDepStage)
                 jump <- decide(lpD)
                 if(jump) {
                     nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesProposalStage, logProb = TRUE)
@@ -480,17 +481,17 @@ sampler_RW_block <- nimbleFunction(
             }
         },
         getScaleHistory = function() {  ## scaleHistory
-            if(!saveMCMChistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC")
+            if(!saveMCMChistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
             returnType(double(1))
             return(scaleHistory)
         },          
         getAcceptanceHistory = function() {  ## scaleHistory
             returnType(double(1))
-            if(!saveMCMChistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC")
+            if(!saveMCMChistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
             return(acceptanceHistory)
         },                  
         getPropCovHistory = function() { ## scaleHistory
-            if(!saveMCMChistory | d > 10)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC and note that to reduce memory use we only save the proposal covariance history for parameter vectors of length 10 or less")
+            if(!saveMCMChistory | d > 10)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC and note that to reduce memory use we only save the proposal covariance history for parameter vectors of length 10 or less.")
             returnType(double(3))
             return(propCovHistory)
         },
@@ -553,11 +554,11 @@ sampler_RW_llFunction <- nimbleFunction(
     },
     run = function() {
         modelLP0 <- llFunction$run()
-        if(!includesTarget)     modelLP0 <- modelLP0 + getLogProb(model, target)
+        if(!includesTarget)     modelLP0 <- modelLP0 + model$getLogProb(target)
         propValue <- rnorm(1, mean = model[[target]], sd = scale)
         my_setAndCalculateOne$run(propValue)
         modelLP1 <- llFunction$run()
-        if(!includesTarget)     modelLP1 <- modelLP1 + getLogProb(model, target)
+        if(!includesTarget)     modelLP1 <- modelLP1 + model$getLogProb(target)
         jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
         if(adaptive) {
             targetRWSamplerFunction$adaptiveProcedure(jump)
@@ -612,7 +613,7 @@ sampler_slice <- nimbleFunction(
         if(length(targetAsScalar) > 1)     stop('cannot use slice sampler on more than one target node')
     },
     run = function() {
-        u <- getLogProb(model, calcNodes) - rexp(1, 1)    # generate (log)-auxiliary variable: exp(u) ~ uniform(0, exp(lp))
+        u <- model$getLogProb(calcNodes) - rexp(1, 1)    # generate (log)-auxiliary variable: exp(u) ~ uniform(0, exp(lp))
         x0 <- model[[target]]    # create random interval (L,R), of width 'width', around current value of target
         L <- x0 - runif(1, 0, 1) * width
         R <- L + width
@@ -661,9 +662,9 @@ sampler_slice <- nimbleFunction(
         setAndCalculateTarget = function(value = double()) {
             if(discrete)     value <- floor(value)
             model[[target]] <<- value
-            lp <- calculate(model, target)
+            lp <- model$calculate(target)
             if(lp == -Inf) return(-Inf) 
-            lp <- lp + calculate(model, calcNodesNoSelf)
+            lp <- lp + model$calculate(calcNodesNoSelf)
             returnType(double())
             return(lp)
         },
@@ -688,7 +689,7 @@ sampler_slice <- nimbleFunction(
             if(saveMCMChistory) {
                 return(widthHistory)
             } else {
-                print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC")
+                print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
                 return(numeric(1, 0))
             }
        },
@@ -711,6 +712,39 @@ sampler_slice <- nimbleFunction(
 ####################################################################
 
 
+essNFList_virtual <- nimbleFunctionVirtual(
+    name = 'essNFList_virtual',
+    run = function() { returnType(double(1)) }
+)
+
+essNF_univariate <- nimbleFunction(
+    name = 'essNF_univariate',
+    contains = essNFList_virtual,
+    setup = function(model, node) {
+        if(!(model$getDistribution(node) == 'dnorm'))   stop('something went wrong')
+        mean <- numeric(2)
+    },
+    run = function() {
+        setSize(mean, 1)
+        mean[1] <<- model$getParam(node, 'mean')
+        returnType(double(1))
+        return(mean)
+    }
+)
+
+essNF_multivariate <- nimbleFunction(
+    name = 'essNF_multivariate',
+    contains = essNFList_virtual,
+    setup = function(model, node) {
+        if(!(model$getDistribution(node) == 'dmnorm'))   stop('something went wrong')
+    },
+    run = function() {
+        mean <- model$getParam(node, 'mean')
+        returnType(double(1))
+        return(mean)
+    }
+)
+
 #' @rdname samplers
 #' @export
 sampler_ess <- nimbleFunction(
@@ -726,24 +760,28 @@ sampler_ess <- nimbleFunction(
         calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         ## numeric value generation
         Pi <- pi
+        d <- length(model$expandNodeNames(target, returnScalarComponents = TRUE))
+        d2 <- max(d, 2)
+        target_mean <- f <- nu <- numeric(d2)
         ## nested function and function list definitions
-        ##target_nodeFunctionList <- nimbleFunctionList(node_stoch_dmnorm)
-        ##target_nodeFunctionList[[1]] <- model$nodeFunctions[[target]]
+        essNFList <- nimbleFunctionList(essNFList_virtual)
+        if(model$getDistribution(target) == 'dnorm')    essNFList[[1]] <- essNF_univariate(model, target)
+        if(model$getDistribution(target) == 'dmnorm')   essNFList[[1]] <- essNF_multivariate(model, target)
         ## checks
-        if(length(target) > 1)                          stop('elliptical slice sampler only applies to one target node')
-        if(model$getDistribution(target) != 'dmnorm')   stop('elliptical slice sampler only applies to multivariate normal distributions')
+        if(length(target) > 1)                                           stop('elliptical slice sampler only applies to one target node')
+        if(!(model$getDistribution(target) %in% c('dnorm', 'dmnorm')))   stop('elliptical slice sampler only applies to normal distributions')
     },
     run = function() {
-        u <- getLogProb(model, calcNodesNoSelf) - rexp(1, 1)
-        target_mean <- model$getParam(target, 'mean') ##target_nodeFunctionList[[1]]$get_mean()
-        f <- model[[target]] - target_mean
-        simulate(model, target)
-        nu <- model[[target]] - target_mean
+        u <- model$getLogProb(calcNodesNoSelf) - rexp(1, 1)
+        target_mean[1:d] <<- essNFList[[1]]$run()
+        f[1:d] <<- values(model, target) - target_mean[1:d]
+        model$simulate(target)
+        nu[1:d] <<- values(model, target) - target_mean[1:d]
         theta <- runif(1, 0, 2*Pi)
         theta_min <- theta - 2*Pi
         theta_max <- theta
-        model[[target]] <<- f*cos(theta) + nu*sin(theta) + target_mean
-        lp <- calculate(model, calcNodesNoSelf)
+        values(model, target) <<- f[1:d]*cos(theta) + nu[1:d]*sin(theta) + target_mean[1:d]
+        lp <- model$calculate(calcNodesNoSelf)
         numContractions <- 0
         while((is.nan(lp) | lp < u) & theta_max - theta_min > eps & numContractions < maxContractions) {   # must be is.nan()
             ## The checks for theta_max - theta_min small and max number of contractions are
@@ -751,8 +789,8 @@ sampler_ess <- nimbleFunction(
             ## theta interval contracts to zero
             if(theta < 0)   theta_min <- theta   else   theta_max <- theta
             theta <- runif(1, theta_min, theta_max)
-            model[[target]] <<- f*cos(theta) + nu*sin(theta) + target_mean
-            lp <- calculate(model, calcNodesNoSelf)
+            values(model, target) <<- f[1:d]*cos(theta) + nu[1:d]*sin(theta) + target_mean[1:d]
+            lp <- model$calculate(calcNodesNoSelf)
             numContractions <- numContractions + 1
         }
         if(theta_max - theta_min <= eps | numContractions == maxContractions) {
@@ -832,7 +870,7 @@ sampler_AF_slice <- nimbleFunction(
         for(i in 1:d) {
             eigenVec <- gammaMatrix[, i]
             width <- widthVec[i]
-            u <- getLogProb(model, calcNodes) - rexp(1, 1)   # generate (log)-auxiliary variable: exp(u) ~ uniform(0, exp(lp))
+            u <- model$getLogProb(calcNodes) - rexp(1, 1)   # generate (log)-auxiliary variable: exp(u) ~ uniform(0, exp(lp))
             x0 <- values(model, target)                      # create random interval (L,R), of width 'width', around current value of target
             Lbound <- -1.0 * runif(1, 0, 1) * width
             Rbound <- Lbound + width
@@ -1021,7 +1059,7 @@ sampler_crossLevel <- nimbleFunction(
         ##my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)   ## old syntax: missing target argument
     },
     run = function() {
-        modelLP0 <- getLogProb(model, calcNodes)
+        modelLP0 <- model$getLogProb(calcNodes)
         propLP0 <- 0
         for(iSF in seq_along(lowConjugateGetLogDensityFunctions))  { propLP0 <- propLP0 + lowConjugateGetLogDensityFunctions[[iSF]]$run() }
         propValueVector <- topRWblockSamplerFunction$generateProposalVector()
@@ -1042,7 +1080,7 @@ sampler_crossLevel <- nimbleFunction(
         else {
             for(iSF in seq_along(lowConjugateSamplerFunctions))
                 lowConjugateSamplerFunctions[[iSF]]$run()
-            modelLP1 <- calculate(model, calcNodes)
+            modelLP1 <- model$calculate(calcNodes)
             propLP1 <- 0
             for(iSF in seq_along(lowConjugateGetLogDensityFunctions))
                 propLP1 <- propLP1 + lowConjugateGetLogDensityFunctions[[iSF]]$run()
@@ -1117,11 +1155,11 @@ sampler_RW_llFunction_block <- nimbleFunction(
     },
     run = function() {
         modelLP0 <- llFunction$run()
-        if(!includesTarget)     modelLP0 <- modelLP0 + getLogProb(model, target)
+        if(!includesTarget)     modelLP0 <- modelLP0 + model$getLogProb(target)
         propValueVector <- generateProposalVector()
         my_setAndCalculate$run(propValueVector)
         modelLP1 <- llFunction$run()
-        if(!includesTarget)     modelLP1 <- modelLP1 + getLogProb(model, target)
+        if(!includesTarget)     modelLP1 <- modelLP1 + model$getLogProb(target)
         jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
         if(adaptive)     adaptiveProcedure(jump)
     },
@@ -1342,7 +1380,7 @@ sampler_RW_dirichlet <- nimbleFunction(
                 thetaVecProp <- thetaVec
                 thetaVecProp[i] <- propValue
                 values(model, target) <<- thetaVecProp / sum(thetaVecProp)
-                logMHR <- alphaVec[i]*propLogScale + currentValue - propValue + calculateDiff(model, calcNodesNoSelf)
+                logMHR <- alphaVec[i]*propLogScale + currentValue - propValue + model$calculateDiff(calcNodesNoSelf)
                 jump <- decide(logMHR)
             } else jump <- FALSE
             if(adaptive & jump)   timesAcceptedVec[i] <<- timesAcceptedVec[i] + 1
@@ -1463,7 +1501,7 @@ sampler_RW_wishart <- nimbleFunction(
         ## matrix multiply to get proposal value (matrix)
         model[[target]] <<- t(propValue_chol) %*% propValue_chol
         ## decide and jump
-        logMHR <- calculateDiff(model, calcNodes)
+        logMHR <- model$calculateDiff(calcNodes)
         deltaDiag <- thetaVec_prop[1:d]-thetaVec[1:d]
         for(i in 1:d)   logMHR <- logMHR + (d+2-i)*deltaDiag[i]  ## took me quite a while to derive this
         jump <- decide(logMHR)
@@ -1540,9 +1578,10 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
         if(scaleOriginal < 0)
             stop('Cannot use RW_lkj_corr_cholesky sampler with scale control parameter less than 0.')
         ## adaptation objects
+        if(nTheta == 1) nTheta <- 2
         scaleVec            <- rep(scaleOriginal, nTheta)
         timesRan            <- 0
-        timesAcceptedVec    <- rep(nTheta, 0)
+        timesAcceptedVec    <- rep(0, nTheta)
         timesAdapted        <- 0
         optimalAR           <- 0.44
         ##
@@ -1716,7 +1755,7 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
 
         dist <- model$getDistribution(target)
         if(dist != 'dlkj_corr_cholesky') stop('RW_block_lkj_corr_cholesky sampler can only be used with the dlkj_corr_cholesky distribution.')
-        if(d < 2)                        stop('RW_block_lkj_corr_cholesky sampler requires target node dimension to be at least 2x2.')
+        if(d < 3)                        stop('RW_block_lkj_corr_cholesky sampler requires target node dimension to be at least 3x3.')
         if(adaptFactorExponent < 0)      stop('Cannot use RW_block_lkj_corr_cholesky sampler with adaptFactorExponent control parameter less than 0.')
 
     },
@@ -1838,17 +1877,17 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
             }
         },
         getScaleHistory = function() {  ## scaleHistory
-            if(!saveMCMChistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC")
+            if(!saveMCMChistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
             returnType(double(1))
             return(scaleHistory)
         },          
         getAcceptanceHistory = function() {  ## scaleHistory
             returnType(double(1))
-            if(!saveMCMChistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC")
+            if(!saveMCMChistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
             return(acceptanceHistory)
         },                  
         getPropCovHistory = function() { ## scaleHistory
-            if(!saveMCMChistory | d > 10)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC and note that to reduce memory use we only save the proposal covariance history for parameter vectors of length 10 or less")
+            if(!saveMCMChistory | d > 10)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC and note that to reduce memory use we only save the proposal covariance history for parameter vectors of length 10 or less.")
             returnType(double(3))
             return(propCovHistory)
         },
@@ -2209,13 +2248,19 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' @section \code{sampler_base}: base class for new samplers
 #'
-#' When you write a new sampler for use in a NIMBLE MCMC (see User Manual), you must include \code{contains = sampler_BASE}.
+#' When you write a new sampler for use in a NIMBLE MCMC (see \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual}), you must include \code{contains = sampler_BASE}.
 #'
 #' @section binary sampler:
 #'
 #' The binary sampler performs Gibbs sampling for binary-valued (discrete 0/1) nodes.  This can only be used for nodes following either a \code{dbern(p)} or \code{dbinom(p, size=1)} distribution.
 #'
 #' The binary sampler accepts no control list arguments.
+#'
+#' @section categorical sampler:
+#'
+#' The categorical sampler performs Gibbs sampling for a single node, which must follow a categorical (\code{dcat}) distribution.
+#'
+#' The categorical sampler accepts no control list arguments.
 #'
 #' @section RW sampler:
 #'
@@ -2245,6 +2290,7 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item adaptFactorExponent. Exponent controling the rate of decay of the scale adaptation factor.  See Shaby and Wells, 2011, for details. (default = 0.8)
 #' \item scale. The initial value of the scalar multiplier for propCov.  If adaptive = FALSE, scale will never change. (default = 1)
 #' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the character string 'identity', in which case the identity matrix of the appropriate dimension will be used for the initial proposal covariance matrix. (default = 'identity')
+#' \item tries. The number of times this sampler will repeatedly operate on each MCMC iteration.  Each try consists of a new proposed transition and an accept/reject decision of this proposal.  Specifying tries > 1 can help increase the overall sampler acceptance rate and therefore chain mixing. (default = 1)
 #' }
 #'
 #' Note that modifying elements of the control list may greatly affect the performance of this sampler. In particular, the sampler can take a long time to find a good proposal covariance when the elements being sampled are not on the same scale. We recommend providing an informed value for \code{propCov} in this case (possibly simply a diagonal matrix that approximates the relative scales), as well as possibly providing a value of \code{scale} that errs on the side of being too small. You may also consider decreasing \code{adaptFactorExponent} and/or \code{adaptInterval}, as doing so has greatly improved performance in some cases. 
@@ -2278,7 +2324,7 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' @section ess sampler:
 #'
-#' The ess sampler performs elliptical slice sampling of a single node, which must follow a multivariate normal distribution (Murray, 2010).  The algorithm is an extension of slice sampling (Neal, 2003), generalized to the multivariate normal context.  An auxiliary variable is used to identify points on an ellipse (which passes through the current node value) as candidate samples, which are accepted contingent upon a likelihood evaluation at that point.  This algorithm requires no tuning parameters and therefore no period of adaptation, and may result in very efficient sampling from multivariate Gaussian distributions.
+#' The ess sampler performs elliptical slice sampling of a single node, which must follow either a univariate or multivariate normal distribution (Murray, 2010).  The algorithm is an extension of slice sampling (Neal, 2003), generalized to context of the Gaussian distribution.  An auxiliary variable is used to identify points on an ellipse (which passes through the current node value) as candidate samples, which are accepted contingent upon a likelihood evaluation at that point.  This algorithm requires no tuning parameters and therefore no period of adaptation, and may result in very efficient sampling from Gaussian distributions.
 #'
 #' The ess sampler accepts the following control list arguments.
 #' \itemize{
@@ -2304,7 +2350,7 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' @section crossLevel sampler:
 #'
-#' This sampler is constructed to perform simultaneous updates across two levels of stochastic dependence in the model structure.  This is possible when all stochastic descendents of node(s) at one level have conjugate relationships with their own stochastic descendents.  In this situation, a Metropolis-Hastings algorithm may be used, in which a multivariate normal proposal distribution is used for the higher-level nodes, and the corresponding proposals for the lower-level nodes undergo Gibbs (conjugate) sampling.  The joint proposal is either accepted or rejected for all nodes involved based upon the Metropolis-Hastings ratio.
+#' This sampler is constructed to perform simultaneous updates across two levels of stochastic dependence in the model structure.  This is possible when all stochastic descendents of node(s) at one level have conjugate relationships with their own stochastic descendents.  In this situation, a Metropolis-Hastings algorithm may be used, in which a multivariate normal proposal distribution is used for the higher-level nodes, and the corresponding proposals for the lower-level nodes undergo Gibbs (conjugate) sampling.  The joint proposal is either accepted or rejected for all nodes involved based upon the Metropolis-Hastings ratio. This sampler is a conjugate version of Scheme 3 in Knorr-Held and Rue (2002). It can also be seen as a Metropolis-based version of collapsed Gibbs sampling (in particular Sampler 3 of van Dyk and Park (2008)). 
 #'
 #' The requirement that all stochastic descendents of the target nodes must themselves have only conjugate descendents will be checked when the MCMC algorithm is built.  This sampler is useful when there is strong dependence across the levels of a model that causes problems with convergence or mixing.
 #'
@@ -2318,9 +2364,9 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' @section RW_llFunction_block sampler:
 #'
-#' Sometimes it is useful to control the log likelihood calculations used for an MCMC updater instead of simply using the model.  For example, one could use a sampler with a log likelihood that analytically (or numerically) integrates over latent model nodes.  Or one could use a sampler with a log likelihood that comes from a stochastic approximation such as a particle filter, allowing composition of a particle MCMC (PMCMC) algorithm (Andrieu et al., 2010) (but see samplers listed below for NIMBLE's direct implementation of PMCMC).  The \code{RW_llFunctionBlock} sampler handles this by using a Metropolis-Hastings algorithm with a multivariate normal proposal distribution and a user-provided log-likelihood function.  To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction.  The log-likelihood function may use the same model as the MCMC as a setup argument, but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise).
+#' Sometimes it is useful to control the log likelihood calculations used for an MCMC updater instead of simply using the model.  For example, one could use a sampler with a log likelihood that analytically (or numerically) integrates over latent model nodes.  Or one could use a sampler with a log likelihood that comes from a stochastic approximation such as a particle filter, allowing composition of a particle MCMC (PMCMC) algorithm (Andrieu et al., 2010) (but see samplers listed below for NIMBLE's direct implementation of PMCMC).  The \code{RW_llFunction_block} sampler handles this by using a Metropolis-Hastings algorithm with a multivariate normal proposal distribution and a user-provided log-likelihood function.  To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction.  The log-likelihood function may use the same model as the MCMC as a setup argument, but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise).
 #'
-#' The RW_llFunctionBlock sampler accepts the following control list elements:
+#' The RW_llFunction_block sampler accepts the following control list elements:
 #' \itemize{
 #' \item adaptive. A logical argument, specifying whether the sampler should adapt the proposal covariance throughout the course of MCMC execution. (default is TRUE)
 #' \item adaptScaleOnly. A logical argument, specifying whether adaption should be done only for scale (TRUE) or also for provCov (FALSE).  This argument is only relevant when adaptive = TRUE.  When adaptScaleOnly = FALSE, both scale and propCov undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When adaptScaleOnly = TRUE, only the proposal scale is adapted. (default = FALSE)
@@ -2508,11 +2554,19 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' Metropolis, N., Rosenbluth, A. W., Rosenbluth, M. N., Teller, A. H., and Teller, E. (1953). Equation of State Calculations by Fast Computing Machines. \emph{The Journal of Chemical Physics}, 21(6), 1087-1092.
 #'
-#' Neal, Radford M. (2003). Slice Sampling. \emph{The Annals of Statistics}, 31(3), 705-741.
+#' Escobar, M. D., and West, M. (1995). Bayesian density estimation and inference using mixtures. \emph{Journal of the American Statistical Association}, 90(430), 577-588.
+#'
+#' Knorr-Held, L. and Rue, H. (2003). On block updating in Markov random field models for disease mapping. \emph{Scandinavian Journal of Statistics}, 29, 597-614.
+#'
+#' Metropolis, N., Rosenbluth, A. W., Rosenbluth, M. N., Teller, A. H., and Teller, E. (1953). Equation of State Calculations by Fast Computing Machines. \emph{The Journal of Chemical Physics}, 21(6), 1087-1092.
 #'
 #' Neal, Radford M. (2011). MCMC Using Hamiltonian Dynamics. \emph{Handbook of Markov Chain Monte Carlo}, CRC Press, 2011.
 #'
 #' Murray, I., Prescott Adams, R., and MacKay, D. J. C. (2010). Elliptical Slice Sampling. \emph{arXiv e-prints}, arXiv:1001.0175.
+#'
+#' Neal, R. M. (2000). Markov chain sampling methods for Dirichlet process mixture models. \emph{Journal of Computational and Graphical Statistics}, 9(2), 249-265.
+#' 
+#' Neal, R. M. (2003). Slice Sampling. \emph{The Annals of Statistics}, 31(3), 705-741.
 #'
 #' Pitt, M.K. and Shephard, N. (1999). Filtering via simulation: Auxiliary particle filters. \emph{Journal of the American Statistical Association} 94(446), 590-599.
 #'
@@ -2523,10 +2577,8 @@ sampler_CAR_proper <- nimbleFunction(
 #' Stan Development Team (2020). \emph{Stan Language Reference Manual, Version 2.22, Section 10.12}.
 #'
 #' Tibbits, M. M.,  Groendyke, C.,  Haran, M., and Liechty, J. C. (2014).  Automated Factor Slice Sampling.  \emph{Journal of Computational and Graphical Statistics}, 23(2), 543-563.
-#' 
-#' Escobar, M. D., and West, M. (1995). Bayesian density estimation and inference using mixtures. \emph{Journal of the American Statistical Association}, 90(430), 577-588.
-#' 
-#' Neal, R. M. (2000). Markov chain sampling methods for Dirichlet process mixture models. \emph{Journal of Computational and Graphical Statistics}, 9(2), 249-265.
+#'
+#' van Dyk, D.A. and T. Park. (2008). Partially collapsed Gibbs Samplers. \emph{Journal of the American Statistical Association}, 103(482), 790-796.
 #' 
 NULL
 

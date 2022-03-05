@@ -23,7 +23,7 @@ binaryMidPromoteNoLogicalOperators <- c('*','%%')
 binaryMidOperators <- c(binaryMidDoubleOperators,
                         binaryMidPromoteNoLogicalOperators)
 
-binaryLeftDoubleOperators <- c('pow','nimMod')
+binaryLeftDoubleOperators <- c('pow','nimMod', 'pow_int')
 binaryLeftPromoteOperators <- c('pmin','pmax','pairmin','pairmax')
 binaryLeftLogicalOperators <- c( 'nimEquals')
 binaryLeftOperators <- c(binaryLeftDoubleOperators,
@@ -338,11 +338,12 @@ operatorRank <- c(
 nimDerivsPrependTypeOperators <- c("dnorm", "dpois", "dgamma", "dinvgamma", "dsqrtinvgamma",
                                    "dexp_nimble", "dexp", "ddexp", "dlnorm", "dweibull",
                                    "dbinom", "dbeta", "dchisq", "dlogis", "dt",
-                                   "dt_nonstandard", "nimArr_dmulti", "dnbinom", "dunif", "pairmax", "pairmin", 
+                                   "dt_nonstandard", "nimArr_dmulti", "nimArr_dcat", "dnbinom", "dunif", "pairmax", "pairmin", 
                                    "nimArr_ddirch", "nimArr_dmvt_chol", "nimArr_dmnorm_chol", 
 				   "nimArr_dwish_chol", "nimArr_dinvwish_chol", "nimArr_dlkj_corr_cholesky",
                                    "nimStep", 'ilogit', 'icloglog', 'iprobit', 'probit', 'cloglog',
-                                   "nimEquals", "lgammafn", "gammafn", "lfactorial", "factorial", "logit", "cube", "inprod")
+                                   "nimEquals", "lgammafn", "gammafn", "lfactorial", "factorial", "logit",
+                                   "cube", "inprod")
 
 ## Reflects distribution funs that support recycling rule with AD -- see nimDerivs_TMB.h.
 recyclingRuleOperatorsAD <- c(
@@ -350,7 +351,7 @@ recyclingRuleOperatorsAD <- c(
   'dinvgamma', 'ddexp', 'dlnorm', 'dlogis', 'dunif', 'dweibull',
   ## The following operators should work but are currently broken for various
   ## reasons which are explained in test-ADfunctions.R.
-  'dexp', 'dsqrtinvgamma', 'dt_nonstandard', 'dt'
+  'dexp', 'dsqrtinvgamma', 'dt_nonstandard', 'dt', 'pow_int'
 )
 recyclingRuleOperatorsAD <- paste0(
     recyclingRuleOperatorsAD,

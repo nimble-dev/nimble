@@ -2,7 +2,10 @@ source(system.file(file.path('tests', 'testthat', 'AD_test_utils.R'), package = 
 source(system.file(file.path('tests', 'testthat', 'AD_math_test_lists.R'), package = 'nimble'))
 source(system.file(file.path('tests', 'testthat', 'AD_distribution_test_lists.R'), package = 'nimble'))
 source(system.file(file.path('tests', 'testthat', 'AD_knownFailures.R'), package = 'nimble'))
-nimbleOptions(experimentalEnableDerivs = TRUE)
+EDopt <- nimbleOptions("enableDerivs")
+BDopt <- nimbleOptions("buildDerivs")
+nimbleOptions(enableDerivs = TRUE)
+nimbleOptions(buildDerivs = TRUE)
 nimbleOptions(allowDynamicIndexing = FALSE)
 
 context("Testing of derivatives for nimbleFunctions.")
@@ -205,13 +208,17 @@ test_AD_batch(unaryOpTests, knownFailures = AD_knownFailures)
 test_AD_batch(unaryReductionOpTests, knownFailures = AD_knownFailures)
 test_AD_batch(binaryOpTests, knownFailures = AD_knownFailures)
 test_AD_batch(powOpTests, knownFailures = AD_knownFailures)
+test_AD_batch(pow_int_OpTests, knownFailures = AD_knownFailures)
 test_AD_batch(binaryReductionOpTests, knownFailures = AD_knownFailures)
 test_AD_batch(squareMatrixOpTests, knownFailures = AD_knownFailures) ## trace has a knownFailures entry for compilation failure.  Do we even support it?
 test_AD_batch(binaryMatrixOpTests, knownFailures = AD_knownFailures)
 
 ## from AD_distribution_test_lists.R
 test_AD_batch(distn_tests,  knownFailures = AD_knownFailures) ## dcat are knownFailures.  
-## test_AD_batch(distn_tests[13:14],  knownFailures = AD_knownFailures) ## dmulti fails, perhaps in regular compilation too?
+debug(test_AD)
+
+test_AD_batch(distn_tests[9])#,  knownFailures = AD_knownFailures) ## dcat are knownFailures.  
+test_AD_batch(distn_tests[13:14],  knownFailures = AD_knownFailures) ## dmulti fails, perhaps in regular compilation too?
 ## test_AD_batch(distn_tests[15:148],  knownFailures = AD_knownFailures) ## dmulti fails, perhaps in regular compilation too?
 ## test_AD_batch(distn_tests[39:64]) ## ddexp was in knownFailures.  Now it's ok.
 ## test_AD_batch(distn_tests[65:148]) ## There is a problem in sqrtinvgamma with scale, vectorized
@@ -224,3 +231,6 @@ test_AD_batch(distn_tests,  knownFailures = AD_knownFailures) ## dcat are knownF
 
 
 test_AD_batch(distn_with_log_tests,  knownFailures = AD_knownFailures)
+
+nimbleOptions(enableDerivs = EDopt)
+nimbleOptions(buildDerivs = BDopt)

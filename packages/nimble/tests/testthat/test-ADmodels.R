@@ -1,5 +1,8 @@
 source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
-nimbleOptions(experimentalEnableDerivs = TRUE)
+EDopt <- nimbleOptions("enableDerivs")
+BDopt <- nimbleOptions("buildDerivs")
+nimbleOptions(enableDerivs = TRUE)
+nimbleOptions(buildDerivs = TRUE)
 
 warning("All atomics currently off as result of NCT issue 274")
 
@@ -7,6 +10,71 @@ warning("All atomics currently off as result of NCT issue 274")
 context("Testing of derivatives for calculate() for nimbleModels")
 
 
+test_that('pow and pow_int work', {
+
+  ## Following example is reduced from BUGS equiv example.
+  ## It is a case from which we have had some problems and crashes in the past.
+  mc <- nimbleCode({
+    d ~ dnorm(0, sd = 10)
+    trt <- 0
+    a <- -1
+    m <- pow(a, trt) + d
+    y ~ dnorm(m, sd = 2)
+  })
+  m <- nimbleModel(mc, data = list(y = 1.5),
+                   inits = list(d = .3))
+
+  calcNodes <- c(m$getDependencies("d"))
+  wrtNodes <- 'd'
+  order <- 0:2
+  m$calculate()
+  wrapperDerivs <- nimDerivs(m$calculate(calcNodes), wrt = wrtNodes, order = order)
+  testFunctionInstance <- testCompiledModelDerivsNimFxn(m, calcNodes, wrtNodes, order)
+  cm <- compileNimble(m)
+  ctestFunctionInstance <- compileNimble(testFunctionInstance, project =  m, resetFunctions = TRUE)
+  cDerivs <- ctestFunctionInstance$run()
+  expect_equal(wrapperDerivs$value, cDerivs$value)
+  expect_equal(wrapperDerivs$jacobian, cDerivs$jacobian)
+  expect_equal(wrapperDerivs$hessian, cDerivs$hessian, tolerance = 1e-4)
+  m$trt <- cm$trt <- -2
+  m$calculate()
+  cm$calculate()
+  wrapperDerivs <- nimDerivs(m$calculate(calcNodes), wrt = wrtNodes, order = order)
+  cDerivs <- ctestFunctionInstance$run()
+  expect_equal(wrapperDerivs$value, cDerivs$value)
+  expect_equal(wrapperDerivs$jacobian, cDerivs$jacobian)
+  expect_equal(wrapperDerivs$hessian, cDerivs$hessian, tolerance = 1e-4)
+
+  mc <- nimbleCode({
+    d ~ dnorm(0, sd = 10)
+    trt <- -1
+    a <- -1
+    m <- pow_int(a, trt) + d
+    y ~ dnorm(m, sd = 2)
+  })
+  m <- nimbleModel(mc, data = list(y = 1.5),
+                   inits = list(d = .3))
+  calcNodes <- c(m$getDependencies("d"))
+  wrtNodes <- 'd'
+  order <- 0:2
+  m$calculate()
+  wrapperDerivs <- nimDerivs(m$calculate(calcNodes), wrt = wrtNodes, order = order)
+  testFunctionInstance <- testCompiledModelDerivsNimFxn(m, calcNodes, wrtNodes, order)
+  cm <- compileNimble(m)
+  ctestFunctionInstance <- compileNimble(testFunctionInstance, project =  m, resetFunctions = TRUE)
+  cDerivs <- ctestFunctionInstance$run()
+  expect_equal(wrapperDerivs$value, cDerivs$value)
+  expect_equal(wrapperDerivs$jacobian, cDerivs$jacobian)
+  expect_equal(wrapperDerivs$hessian, cDerivs$hessian, tolerance = 1e-4)
+  m$trt <- cm$trt <- -2
+  m$calculate()
+  cm$calculate()
+  wrapperDerivs <- nimDerivs(m$calculate(calcNodes), wrt = wrtNodes, order = order)
+  cDerivs <- ctestFunctionInstance$run()
+  expect_equal(wrapperDerivs$value, cDerivs$value)
+  expect_equal(wrapperDerivs$jacobian, cDerivs$jacobian)
+  expect_equal(wrapperDerivs$hessian, cDerivs$hessian, tolerance = 1e-4)  
+})
 
 ## check logic of results
 test_that('makeUpdateNodes works correctly', {
@@ -115,13 +183,14 @@ test_that('makeUpdateNodes works correctly', {
                                            model$expandNodeNames('y')))
     expect_identical(result$constantNodes, character(0))
 
+    # @paciorek take a look at this one
     result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('mu[1]','y[1]'), model)
-    expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", lftChElems, 'mu[1]'))
+    expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", lftChElems, 'mu[1]', 'mu[2]', 'mu[3]'))
     expect_identical(result$constantNodes, "y[1]")
 
-    ## NCT issue 257: should include mu[3] presumably
+    # @paciorek and this one. Note that prElems is not in result$updateNodes and shouldn't be.
     result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('mu[1:2]','y[1:2]'), model)
-    expect_identical(result$updateNodes, c(prElems, "lifted_sqrt_oPsigma2_cP", lftChElems, model$expandNodeNames('mu')))
+    expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", lftChElems, model$expandNodeNames('mu', returnScalarComponents = TRUE)))
     expect_identical(result$constantNodes, c("y[1]", "y[2]"))
 
     result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('sigma2', 'mu0', 'mu','y'), model)
@@ -144,7 +213,7 @@ test_that('makeUpdateNodes works correctly', {
    
 }
 
-## First set of tests are one's Nick developed
+## First set of tests are ones Nick developed
 
 ## Second set are those under development by Chris, which use the
 ## test_ADModelCalculate that tests various standard use cases.
@@ -238,7 +307,10 @@ test_that('Derivs of calculate function work for model ADmod5 (tricky indexing)'
 })
 
 
-test_that('Derivs of calculate function work for model equiv', { ## This test gives a crash on i = 3, j = 1.  It is due to pow(x, y) with y = 0.
+test_that('Derivs of calculate function work for model equiv', {
+    ## This test gives a crash on i = 3, j = 1.  It is due to pow(x, y) with y = 0.
+    ## 1. Try changing model code to use pow_int instead of pow.
+    ## 2. Need to error-trap to avoid crash if pow is used.
   dir = nimble:::getBUGSexampleDir('equiv')
   Rmodel <- readBUGSmodel('equiv', data = NULL, inits = list(tau = c(.2, .2), pi = 1, phi = 1, mu = 1), dir = dir, useInits = TRUE,
                           check = FALSE)
@@ -264,7 +336,7 @@ ssmCode <- nimbleCode({
   b ~ dnorm(0, sd = 1000)
   sigPN ~ dunif(1e-04, 1)
   sigOE ~ dunif(1e-04, 1)
-  x[1] ~ dnorm(b/(1 - a), sd = sqrt(sigPN^2 + sigOE^2))
+  x[1] ~ dnorm(b/(1 - a), sd = sqrt(sigPN^2 + sigOE*sigOE)) #sqrt(sigPN^2 + sigOE^2))
   y[1] ~ dnorm(x[1], sd = sigOE)
   for (i in 2:t) {
     x[i] ~ dnorm(x[i - 1] * a + b, sd = sigPN)
@@ -282,10 +354,10 @@ test_ADModelCalculate_nick(Rmodel, name = 'SSM',
                                            Rmodel$getDependencies('x')),
                       wrt = list(c('a', 'b'),
                                  c('sigPN'),
-                                 c('x[1]')), tolerance = .5,
+                                 c('x[1]')),
+                      tolerance = 0.0001,
                       order = c(0, 1, 2))
 })
-
 
 test_that("Derivs of calculate function work for rats model", {
   Rmodel <- readBUGSmodel('rats', dir = getBUGSexampleDir('rats'))
@@ -296,17 +368,24 @@ test_that("Derivs of calculate function work for rats model", {
                         wrt = list(c('alpha[1]',
                                      'beta[1]'),
                                    c('mu[1,1]')),
-                        tolerance = .5,
+                        tolerance = .0001,
                         order = c(0, 1, 2))
 })
 
-## Ragged arrays not supported for derivs yet.
-# dir = nimble:::getBUGSexampleDir('bones')
-# Rmodel <- readBUGSmodel('bones', data = NULL, inits = NULL, dir = dir, useInits = TRUE,
-#                         check = FALSE)
-# test_ADModelCalculate_nick(Rmodel, calcNodeNames = list(Rmodel$getDependencies('theta'), Rmodel$getDependencies('grade')),
-#                       wrt = list(c('theta'), c('grade'), c('theta', 'grade'), c('grade[1, 2]')), testR = TRUE,
-#                       testCompiled = FALSE)
+## bones uses dcat.  dcat works as of 2/25/22.
+## However these tests are *very* slow for uncompiled,
+## so I've only confirmed the first test passes.
+## Also there are derivatives wrt variables that follow a dcat.
+## In uncompiled execution, this generates endless warnings
+## becuase x+delta is non-integer, but dcat returns only integers.
+## In compiled execution it should would but I haven't checked.
+## I am leaving these commented-out because they are so slow.
+## dir = nimble:::getBUGSexampleDir('bones')
+## Rmodel <- readBUGSmodel('bones', data = NULL, inits = NULL, dir = dir, useInits = TRUE,
+##                         check = FALSE)
+## test_ADModelCalculate_nick(Rmodel, name = 'bones', calcNodeNames = list(Rmodel$getDependencies('theta'), Rmodel$getDependencies('grade')),
+##                            wrt = list(c('theta'), c('grade'), c('theta', 'grade'), c('grade[1, 2]')),
+##                            order = c(0, 1, 2))
 
 
 ## end of Nick's tests ##
@@ -477,8 +556,6 @@ code <- nimbleCode({
     b ~ dunif(0,5 )
 })
 model <- nimbleModel(code, data = list(y = 1), inits = list(mu = 0.5,a=1,b=1))
-
-
 ## compilation error
 test_ADModelCalculate(model, name = 'truncation with dbeta')
 
@@ -1204,3 +1281,5 @@ test_ADModelCalculate(model, useParamTransform = TRUE, verbose = TRUE, name = 's
 ## so something is weird with R deriv
 ## dugongs: various major mismatches, including logprob
 
+nimbleOptions(enableDerivs = EDopt)
+nimbleOptions(buildDerivs = BDopt)

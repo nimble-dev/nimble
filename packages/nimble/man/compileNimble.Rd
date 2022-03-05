@@ -4,9 +4,15 @@
 \alias{compileNimble}
 \title{compile NIMBLE models and nimbleFunctions}
 \usage{
-compileNimble(..., project, dirName = NULL, projectName = "",
-  control = list(), resetFunctions = FALSE,
-  showCompilerOutput = nimbleOptions("showCompilerOutput"))
+compileNimble(
+  ...,
+  project,
+  dirName = NULL,
+  projectName = "",
+  control = list(),
+  resetFunctions = FALSE,
+  showCompilerOutput = nimbleOptions("showCompilerOutput")
+)
 }
 \arguments{
 \item{...}{An arbitrary set of NIMBLE models and nimbleFunctions, or lists of them.  If given as named parameters, those names may be used in the return list.}
@@ -41,9 +47,8 @@ When compilation is not allowed or doesn't work, try using \code{resetFunctions 
 
 The control list can contain the following named elements, each with \code{TRUE} or \code{FALSE}: debug, which sets a debug mode for the compiler for development purposes; debugCpp, which inserts an output message before every line of C++ code for debugging purposes; compileR, which determines whether the R-only steps of compilation should be executed; writeCpp, which determines whether the C++ files should be generated; compileCpp, which determines whether the C++ should be compiled;  loadSO, which determines whether the DLL or shared object should be loaded and interfaced; and returnAsList, which determines whether calls to the compiled nimbleFunction should return only the returned value of the call (\code{returnAsList = FALSE}) or whether a list including the input arguments, possibly modified, should be returned in a list with the returned value of the call at the end (\code{returnAsList = TRUE}).  The control list is mostly for developer use, although \code{returnAsArgs} may be useful to a user.  An example of developer use is that one can have the compiler write the C++ files but not compile them, then modify them by hand, then have the C++ compiler do the subsequent steps without over-writing the files.
 
-See NIMBLE User Manual for examples
+See the NIMBLE \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} Manual for examples
 }
 \author{
 Perry de Valpine
 }
-

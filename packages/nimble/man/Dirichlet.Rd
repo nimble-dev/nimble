@@ -2,8 +2,8 @@
 % Please edit documentation in R/distributions_implementations.R
 \name{Dirichlet}
 \alias{Dirichlet}
-\alias{ddirch}
 \alias{dirichlet}
+\alias{ddirch}
 \alias{rdirch}
 \title{The Dirichlet Distribution}
 \usage{
@@ -34,13 +34,12 @@ alpha <- c(1, 10, 30)
 x <- rdirch(1, alpha)
 ddirch(x, alpha)
 }
-\author{
-Christopher Paciorek
-}
 \references{
 Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
 }
 \seealso{
 \link{Distributions} for other standard distributions
 }
-
+\author{
+Christopher Paciorek
+}

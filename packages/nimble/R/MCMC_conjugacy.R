@@ -572,16 +572,15 @@ conjugacyClass <- setRefClass(
             ## July 2017
             targetNdim <- getDimension(prior)
             targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
-            targetCoeffNdimSave <- targetCoeffNdim 
+            if(targetCoeffNdim == 2 && link == 'multiplicativeScalar')   ## Handles wish/invwish. There are no cases where we allow non-scalar 'coeff'.
+                targetCoeffNdim <- 0
             for(iDepCount in seq_along(dependentCounts)) {
                 distLinkName <- names(dependentCounts)[iDepCount]
                 tmp <- strsplit(names(dependentCounts)[iDepCount], "_")[[1]]
                 distName <- tmp[[1]]
                 currentLink <- tmp[[2]]
                 if(currentLink %in% c('additive', 'multiplicative', 'multiplicativeScalar', 'linear') || (nimbleOptions()$allowDynamicIndexing && doDependentScreen)) {
-                    if(currentLink == 'multiplicativeScalar')  
-                        targetCoeffNdim <- 0
-                     ## the 2's here are *only* to prevent warnings about assigning into member variable names using
+                    ## the 2's here are *only* to prevent warnings about assigning into member variable names using
                     inputList <-  list(DEP_OFFSET_VAR2     = as.name(paste0('dep_', distLinkName, '_offset')),  ## local assignment '<-', so changed the names to "...2"
                                        DEP_COEFF_VAR2      = as.name(paste0('dep_', distLinkName, '_coeff')),   ## so it doesn't recognize the ref class field name
                                        DECLARE_SIZE_OFFSET = makeDeclareSizeField(as.name(paste0('N_dep_', distLinkName)), as.name(paste0('dep_', distLinkName, '_nodeSizeMax')), as.name(paste0('dep_', distLinkName, '_nodeSizeMax')), targetNdim),
@@ -599,7 +598,6 @@ conjugacyClass <- setRefClass(
                             DEP_OFFSET_VAR2  <- array(0, dim = DECLARE_SIZE_OFFSET)
                             DEP_COEFF_VAR2  <- array(0, dim = DECLARE_SIZE_COEFF)
                         }, inputList) 
-                    targetCoeffNdim <- targetCoeffNdimSave
                 }
             }
 
@@ -643,11 +641,11 @@ conjugacyClass <- setRefClass(
         genRunFunction = function(dependentCounts, doDependentScreen = FALSE) {
             functionBody <- codeBlockClass()
 
-            ## only if we're verifying conjugate posterior distributions: get initial targetValue, and modelLogProb -- getLogProb(model, calcNodes)
+            ## only if we're verifying conjugate posterior distributions: get initial targetValue, and modelLogProb -- model$getLogProb(calcNodes)
 
             if(getNimbleOption('verifyConjugatePosteriors')) {
                 functionBody$addCode({
-                    modelLogProb0 <- getLogProb(model, calcNodes)
+                    modelLogProb0 <- model$getLogProb(calcNodes)
                     origTargetValue <- model[[target]]
                 })
             }
@@ -660,13 +658,13 @@ conjugacyClass <- setRefClass(
             functionBody$addCode({
                 newTargetValue <- RPOSTERIORCALL
                 model[[target]] <<- newTargetValue
-                calculate(model, calcNodes)
+                model$calculate(calcNodes)
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
             }, list(RPOSTERIORCALL = posteriorObject$rCallExpr))
             ## only if we're verifying conjugate posterior distributions: figure out if conjugate posterior distribution is correct
             if(nimbleOptions()$verifyConjugatePosteriors) {
                 functionBody$addCode({
-                    modelLogProb1 <- getLogProb(model, calcNodes)
+                    modelLogProb1 <- model$getLogProb(calcNodes)
                     posteriorLogDensity0 <- DPOSTERIORCALL_ORIG
                     posteriorLogDensity1 <- DPOSTERIORCALL_NEW
                     posteriorVerification <- modelLogProb0 - posteriorLogDensity0 - modelLogProb1 + posteriorLogDensity1
@@ -848,7 +846,7 @@ conjugacyClass <- setRefClass(
                                unitVector[sizeIndex] <- 1
                                model[[target]] <<- unitVector
                                unitVector[sizeIndex] <- 0
-                               calculate(model, calcNodesDeterm)
+                               model$calculate(calcNodesDeterm)
                            })
                            
                            for(iDepCount in seq_along(dependentCounts)) {
@@ -889,7 +887,7 @@ conjugacyClass <- setRefClass(
                        if(any(allCurrentLinks == 'multiplicativeScalar') || (nimbleOptions()$allowDynamicIndexing && doDependentScreen)) {
                            functionBody$addCode({
                                model[[target]] <<- diag(d)
-                               calculate(model, calcNodesDeterm)
+                               model$calculate(calcNodesDeterm)
                            })
                            
                            ## Use _COEFF_VAR to store value; we need this for stoch indexing case
@@ -916,7 +914,7 @@ conjugacyClass <- setRefClass(
                                ## Can't use zeros matrix as Cholesky fails; this is solely to determine if
                                ## potential dependency is not a dependency of target (due to stochastic indexing).
                                model[[target]] <<- 2*diag(d)  
-                               calculate(model, calcNodesDeterm)
+                               model$calculate(calcNodesDeterm)
                            })
                            
                            for(iDepCount in seq_along(dependentCounts)) {
@@ -956,7 +954,6 @@ conjugacyClass <- setRefClass(
                 tmp <- strsplit(names(dependentCounts)[iDepCount], '_')[[1]]
                 distName <- tmp[[1]]
                 currentLink <- tmp[[2]]
-
                 targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
                 if(targetCoeffNdim == 2 && link == 'multiplicativeScalar')   ## There are no cases where we allow non-scalar 'coeff'.
                     targetCoeffNdim <- 0
@@ -1024,7 +1021,6 @@ conjugacyClass <- setRefClass(
                                      list(N_DEP       = as.name(paste0('N_dep_', distLinkName)),
                                           FORLOOPBODY = forLoopBody$getCode()))
             }
-            ##}
         }
     )
 )
@@ -1150,7 +1146,7 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
                 numericOrVectorIndices <- sapply(indexExprs,
                       function(x) is.numeric(x) || (length(x) == 3 && x[[1]] == ':'))
                 if(!all(numericOrVectorIndices)) {
-                    if(model$getVarNames(nodes = targetNode) == model$getVarNames(nodes = deparse(expr))) {
+                    if(model$getVarNames(nodes = targetNode) == model$getVarNames(nodes = safeDeparse(expr, warn = TRUE))) {
                         ## expr var is same as target var, so plug in target indexes for
                         ## non-constant expr indexes to allow for possibility that
                         ## dynamic index will be that of target (in some cases based on allowed
@@ -1168,7 +1164,7 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
                     } else {
                         ## in this case the expr var is a different var, so shouldn't really matter what
                         ## indexes get plugged in; plug in mins of indexes as a default
-                        varInfo <- model$modelDef$varInfo[[deparse(expr[[2]])]]
+                        varInfo <- model$modelDef$varInfo[[safeDeparse(expr[[2]], warn = TRUE)]]
                         expr[which(!numericOrVectorIndices)+2] <- varInfo$mins[!numericOrVectorIndices]
                         ## sapply business gets rid of () at end of index expression
                         newExpr <- as.call(c(cc_structureExprName, expr, sapply(indexExprs[!numericOrVectorIndices], function(x) x)))
@@ -1179,7 +1175,7 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
                 }  ## else continue with processing as in non-dynamic index case
             }
         }
-        exprText <- deparse(expr)
+        exprText <- safeDeparse(expr, warn = TRUE)
         expandedNodeNamesRaw <- model$expandNodeNames(exprText)
         if(!is.null(skipExpansionsNode) && (exprText %in% model$expandNodeNames(skipExpansionsNode, returnScalarComponents=TRUE))) return(expr)
         ## if exprText is a node itself (and also part of a larger node), then we only want the expansion to be the exprText node:
@@ -1206,11 +1202,13 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
         return(newExpr)
     }
     if(is.call(expr)) {
+        if(any(sapply(expr[-1], function(x) x=='')))
+            stop('Found missing indexing in ', safeDeparse(expr), ' that prevents conjugacy processing for this particular model structure.')
         for(i in seq_along(expr)[-1])
             expr[[i]] <- cc_expandDetermNodesInExpr(model, expr[[i]], targetNode, skipExpansionsNode)
         return(expr)
     }
-    stop(paste0('something went wrong processing: ', deparse(expr)))
+    stop(paste0('something went wrong processing: ', safeDeparse(expr)))
 }
 
 
@@ -1255,7 +1253,7 @@ cc_checkScalar <- function(expr) {
     ## We don't know the output dims of all functions,
     ## as there can be user-defined functions that produce non-scalar output from scalar inputs,
     ## so only say it could be scalar (based on input args) in specific known cases we enumerate.
-    if(deparse(expr[[1]]) %in% c('(','[','*','+','-','/','exp','log','^','pow','sqrt')) {
+    if(safeDeparse(expr[[1]], warn = TRUE) %in% c('(','[','*','+','-','/','exp','log','^','pow','pow_int','sqrt')) {
         return(all(sapply(expr[2:length(expr)], cc_checkScalar)))
     } else return(FALSE)
 }
@@ -1323,9 +1321,9 @@ cc_nodeInExpr <- function(node, expr) { return(node %in% cc_getNodesInExpr(expr)
 cc_getNodesInExpr <- function(expr) {
     if(is.numeric(expr)) return(character(0))   ## expr is numeric
     if(is.logical(expr)) return(character(0))   ## expr is logical
-    if(is.name(expr) || (is.call(expr) && (expr[[1]] == '[') && is.name(expr[[2]]))) return(deparse(expr))   ## expr is a node name
+    if(is.name(expr) || (is.call(expr) && (expr[[1]] == '[') && is.name(expr[[2]]))) return(safeDeparse(expr, warn = TRUE))   ## expr is a node name
     if(is.call(expr)) return(unlist(lapply(expr[-1], cc_getNodesInExpr)))   ## expr is some general call
-    stop(paste0('something went wrong processing: ', deparse(expr)))
+    stop(paste0('something went wrong processing: ', safeDeparse(expr)))
 }
 
 ## if targetNode is vectorized: determines if any components of targetNode appear in expr
@@ -1344,16 +1342,27 @@ cc_vectorizedComponentCheck <- function(targetNode, expr) {
 ##############################################################################################
 ##############################################################################################
 
+cc_replace01 <- function(expr) {
+    ## replace {0,1} with {0,1}+1i so distinguished from offset,scale of 0,1 when match target
+    if(is.numeric(expr) && (expr %in% c(0, 1))) 
+        return(expr + 1i)
+    if(is.call(expr))
+        for(i in 2:length(expr))
+            expr[[i]] <- cc_replace01(expr[[i]])
+    return(expr)
+}
+
 cc_checkLinearity <- function(expr, targetNode) {
 
     ## targetNode doesn't appear in expr
     if(!cc_nodeInExpr(targetNode, expr)) {
         if(is.call(expr) && expr[[1]] == '(') return(cc_checkLinearity(expr[[2]], targetNode))
-        return(list(offset = expr, scale = 0))
+        # add +1i to tags 0s and 1s as not being from exact match to target
+        return(list(offset = cc_replace01(expr), scale = 0))  
     }
 
     ## expr is exactly the targetNode
-    if(identical(targetNode, deparse(expr)))
+    if(identical(targetNode, safeDeparse(expr, warn = TRUE)))
         return(list(offset = 0, scale = 1))
 
     if(!is.call(expr))   stop('cc_checkLinearity: expression is not a call object')
@@ -1362,7 +1371,7 @@ cc_checkLinearity <- function(expr, targetNode) {
     if(expr[[1]] == '(')
         return(cc_checkLinearity(expr[[2]], targetNode))
 
-    if(expr[[1]] == '[')
+    if(expr[[1]] == '[') 
         return(cc_checkLinearity(expr[[2]], targetNode))
 
     ## Look for individual nodes in vectorized use or other strange cases.

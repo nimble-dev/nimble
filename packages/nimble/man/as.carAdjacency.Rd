@@ -23,10 +23,9 @@ specifying the adjacency (neighboring) indices of each CAR process component,
 and (the second) a list of numeric vectors giving the unnormalized weights
 for each of these neighboring relationships.
 }
-\author{
-Daniel Turek
-}
 \seealso{
 \code{\link{CAR-Normal}}
 }
-
+\author{
+Daniel Turek
+}

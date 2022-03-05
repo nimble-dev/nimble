@@ -43,9 +43,10 @@ void finalizeOneObject(RnimblePtrsIterator RNPiter) {
     R_CFinalizer_t cfun;
     cfun = RNPiter->second.Finalizer;
     if(cfun) {
-      std::cout<<"finalizing "<<RNPiter->first<<std::endl;
+      //      std::cout<<"finalizing "<<RNPiter->first<<std::endl;
+      //      std::cout<<"local value of vec_ptr is "<<CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage()<<std::endl;
       cfun(RNPiter->first);
-      std::cout<<"done finalizing "<<RNPiter->first<<std::endl;
+      //      std::cout<<"done finalizing "<<RNPiter->first<<std::endl;
     }
     R_ClearExternalPtr(RNPiter->first);
     RnimblePtrs.erase(RNPiter);
@@ -154,11 +155,6 @@ SEXP RNimble_Ptr_CheckAndRunAllDllFinalizers(SEXP Dll, SEXP Sforce) {
     else
       PRINTF("Warning: %i objects were found from a DLL\n", objectsFound);
   }
-  //  SEXP Sans;
-  //  PROTECT(Sans = Rf_allocVector(INTSXP, 1));
-  //  INTEGER(Sans)[0] = objectsFound;
-  //  UNPROTECT(1);
-  //  return(Sans);
 
   return(local_vectorString_2_STRSEXP(objectsFoundLabels));
 }

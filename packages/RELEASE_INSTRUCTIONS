@@ -50,11 +50,13 @@ run examples in nimble-demos as further test
 
 check reverse dependencies:
 
-from nimble/packages, with the current nimble .tar.gz in that directory, do:
+from nimble/packages/rev_deps, with the current nimble .tar.gz in that directory (and having re-downloaded the dependencies), do:
 out <- tools::check_packages_in_dir('.', reverse = list())
 summary(out)
 Can also do this to see if anything has changed:
 tools::check_packages_in_dir_changes('.', reverse = list()) # for this you need an the most recent version of nimble as the 'old'
+
+Note that as of 0.11.0 I was having trouble getting this to work unless I manually download the source tarballs of the dependent packages as the default now seems to be to download the non-source Linux binary packages. It's best to download them to nimble/packages/rev_deps as otherwise some built objects populate nimble/packages/nimble and we don't want those accidentally committed to the repo.
 
 run nimbleSMC R CMD check and tests
 
@@ -78,15 +80,15 @@ test cross-machine on Macs and on Windows
 
 can test using rhub (from within packages/nimble):
 
-Rscript -e "library(rhub);check(platform = c('ubuntu-gcc-devel','windows-x86_64-devel','linux-x86_64-rocker-gcc-san','linux-x86_64-centos6-epel','fedora-clang-devel'))" >> /tmp/rhub.out
+Rscript -e "library(rhub);check(platform = c('ubuntu-gcc-devel','windows-x86_64-devel','linux-x86_64-rocker-gcc-san','linux-x86_64-centos-epel','fedora-clang-devel'))" >> /tmp/rhub.out
 
-can test on Windows using win-builder
+can test on Windows using win-builder and Mac M1 on macbuilder (https://mac.r-project.org/macbuilder/submit.html)
 
 submit to CRAN - potentially making use of notes in CJP's cranSubmit.txt file
 
 Once CRAN package accepted:
 
-(make sure both html and pdf versions of manual are updated and in repo before doing zenodo upload)
+(make sure both html and pdf versions of manual are updated and in repo before doing zenodo upload, since we should use the updated pdf manual as part of Zenodoversion)
 
 create new version with package tarball and manual in Zenodo. Note that inst/CITATION uses the version-independent DOI so don't need to update DOI in CITATION or on badge on r-nimble.org.
 However we might revisit this as that means that users will cite the version independent DOI at the same time they refer to a specific NIMBLE version. Probably ok and means we don't have to mint the DOI just as we are about to submit to CRAN and then shunt aside the new Zenodo version if there is a CRAN problem.
@@ -120,11 +122,8 @@ note that to make a new blog post or modify pages, need to
 deactivate Google analyticator on Plugins -> Installed Plugins page
 
 change Downloads page on R-nimble.org to reflect new version (including 'download source pkg' link);
-creating link for newly-deprecated version on Archived versions page.
 
-update previous releases page
-
-update archived versions of NIMBLE and User Manual
+update archived versions of newly-deprecated package and User Manual on Archived versions page.
 
 add info on new release to release notes page
 
@@ -132,7 +131,8 @@ update version numbering on license and citation page
 
 This is a good time to update info on our core developer team on the website if needed.
 
-make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag (not just a 'category'!!!) if you want it picked up by R-bloggers)
+make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag (not just a 'category'!!!) if you want it picked up by R-bloggers). Posts that are close to time of r-bloggers appearance in late afternoon Pacific time tend to show up first or early on the days blogs, so try to avoid always posting at that time out of fairness. If post in evening after r-bloggers appears, would be lower down.
+
 (best to point with a hyperlink to the info on versions/news on webpage not to NEWS)
 
 send notice to nimble-announce, nimble-users as christopher.paciorek@gmail.com (i.e., from the email of your admin status)

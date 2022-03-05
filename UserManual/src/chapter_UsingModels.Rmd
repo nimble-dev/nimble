@@ -9,11 +9,11 @@ read_chunk(file.path('chunks', 'usingBugsModels_chunks.R'))  # one can put code 
 ``` 
 
 
-# Working with NIMBLE models {#cha:using-models}
+# Working with NIMBLE models {#cha-using-models}
 
 Here we describe how one can get information about NIMBLE models and
 carry out operations on a model. While all of this functionality can
-be used from R, its primary use occurs when writing nimbleFunctions (see Chapter \@ref(cha:progr-with-models)). 
+be used from R, its primary use occurs when writing nimbleFunctions (see Chapter \@ref(cha-progr-with-models)). 
 Information about node types, distributions, and dimensions can be
 used to determine algorithm behavior in *setup* code of nimbleFunctions. Information
 about node or variable values or the parameter and bound values of a node would generally be used for algorithm
@@ -27,7 +27,7 @@ Section \@ref(sec:nodes-and-variables) defines what we mean by variables and nod
 ### Determining the nodes in a model {#sec:get-nodes}
 
 
-One can determine the variables in a model using `getVarNames` and the  nodes in a model using `getNodeNames`, with optional arguments allowing you to select only certain types of nodes. We illustrate here with the pump model from Chapter \@ref(cha:lightning-intro).
+One can determine the variables in a model using `getVarNames` and the  nodes in a model using `getNodeNames`, with optional arguments allowing you to select only certain types of nodes. We illustrate here with the pump model from Chapter \@ref(cha-lightning-intro).
 
 ```{r, getVarAndNodeNamesPump}
 ``` 
@@ -80,7 +80,7 @@ generated.  These include:
 ### Determining dependencies in a model {#sec:cdgetdependencies}
 
 Next we'll see how to determine the node dependencies (or
-'descendants') in a model. There are a variety of arguments to `getDependencies` that
+'descendants' or child nodes) in a model. There are a variety of arguments to `getDependencies` that
 allow one to specify whether to include the node itself, whether to
 include deterministic or stochastic or data dependents, etc. By
 default `getDependencies` returns descendants up to the next
@@ -89,7 +89,12 @@ needed to calculate a Metropolis-Hastings acceptance probability in
 MCMC, for example.
 
 ```{r, getDependencies}
-``` 
+```
+
+In addition, one can determine parent nodes using `getParents`.
+
+```{r, getParents}
+```
 
 ## Accessing information about nodes and variables {#sec:nodeInfo}
 

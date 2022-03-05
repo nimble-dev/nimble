@@ -1,100 +1,109 @@
 ## The BUGSdeclClass contains the pulled-apart content of a BUGS declaration line
 
 ## nimbleOrRfunctionNames is used to determine what (in BUGS code) can be evaluated in R if every argument is known OR in C++ (nimble) if arguments are other nodes
-nimbleOrRfunctionNames <- c('[',
-                            '+',
-                            '-',
-                            '/',
-                            '*',
-                            '(',
-                            'exp',
-                            'log',
-                            'pow',
-                            '^',
-                            '%%',
-                            '%*%',
-                            't',
-                            'equals',
-                            'inprod',
-                            'nimEquals',
-                            'sqrt',
-                            'logit',
-                            'expit',
-                            'ilogit',
-                            'probit',
-                            'iprobit',
-                            'phi',
-                            'cloglog',
-                            'icloglog',
-                            'step',
-                            'nimStep',
-                            'sin',
-                            'cos',
-                            'tan',
-                            'asin',
-                            'acos',
-                            'atan',
-                            'cosh',
-                            'sinh',
-                            'tanh',
-                            'asinh',
-                            'acosh',
-                            'atanh',
-                            'cube',
-                            'abs',
-                            'lgamma',
-                            'loggam',
-                            'log1p',
-                            'lfactorial',
-                            'besselK',
-                            'ceiling',
-                            'floor',
-                            'round',
-                            'nimRound',
-                            'trunc',
-                            'optim',
-                            'nimOptim',
-                            'optimDefaultControl',
-                            'nimOptimDefaultControl',
-                            'mean',
-                            'sum',
-                            'sd',
-                            'var',
-                            'max',
-                            'min',
-                            'pmin',
-                            'pmax',
-                            'prod',
-                            'asRow',
-                            'asCol',
-                            'logdet',    
-			    'chol',
-                            'inverse',
-                            'forwardsolve',
-                            'backsolve',
-                            'solve',
-                            'nimEigen',
-                            'nimSvd',  
-                            '>',
-                            '<',
-                            '>=',
-                            '<=',
-                            '==',
-                            '!=',
-                            '&',
-                            '|',
-                            '$',
-                            distributionFuns,
-                            # these are allowed in DSL as special
-                            # cases even though exp_nimble and
-                            # t_nonstandard are the canonical NIMBLE
-                            # distribution functions
-                            paste0(c('d','r','q','p'), 't'),
-                            paste0(c('d','r','q','p'), 'exp'),
-                            'nimC', 'nimRep', 'nimSeq', 'diag',
-                            'length')
+nimblePreevaluationFunctionNames <- c('+',
+                                      '-',
+                                      '/',
+                                      '*',
+                                      'exp',
+                                      'log',
+                                      'pow',
+                                      '^',
+                                      '%%',
+                                      'equals',
+                                      'nimEquals',
+                                      'sqrt',
+                                      'logit',
+                                      'expit',
+                                      'ilogit',
+                                      'probit',
+                                      'iprobit',
+                                      'phi',
+                                      'cloglog',
+                                      'icloglog',
+                                      'step',
+                                      'nimStep',
+                                      'sin',
+                                      'cos',
+                                      'tan',
+                                      'asin',
+                                      'acos',
+                                      'atan',
+                                      'cosh',
+                                      'sinh',
+                                      'tanh',
+                                      'asinh',
+                                      'acosh',
+                                      'atanh',
+                                      'cube',
+                                      'abs',
+                                      'lgamma',
+                                      'loggam',
+                                      'log1p',
+                                      'lfactorial',
+                                      'besselK',
+                                      'ceiling',
+                                      'floor',
+                                      'round',
+                                      'nimRound',
+                                      'trunc',
+                                      '>',
+                                      '<',
+                                      '>=',
+                                      '<=',
+                                      '==',
+                                      '!=',
+                                      '[',
+                                      '(',
+                                      '%*%',
+                                      't',
+                                      'inprod',
+                                      'optim',
+                                      'nimOptim',
+                                      'optimDefaultControl',
+                                      'nimOptimDefaultControl',
+                                      'mean',
+                                      'sum',
+                                      'sd',
+                                      'var',
+                                      'max',
+                                      'min',
+                                      'pmin',
+                                      'pmax',
+                                      'prod',
+                                      'asRow',
+                                      'asCol',
+                                      'logdet',    
+                                      'chol',
+                                      'inverse',
+                                      'forwardsolve',
+                                      'backsolve',
+                                      'solve',
+                                      'nimEigen',
+                                      'nimSvd',  
+                                      '&',
+                                      '|',
+                                      '$',
+                                      det_distributionFuns,
+                                        # these are allowed in DSL as special
+                                        # cases even though exp_nimble and
+                                        # t_nonstandard are the canonical NIMBLE
+                                        # distribution functions
+                                      paste0(c('d','q','p'), 't'),
+                                      paste0(c('d','q','p'), 'exp'),
+                                      'nimC', 'nimRep', 'nimSeq', 'diag',
+                                      'nimNumeric','nimMatrix','nimArray',
+                                      'length'
+                                      )
 
-functionsThatShouldNeverBeReplacedInBUGScode <- c(':','nimC','nimRep','nimSeq', 'diag')
+nimbleOrRfunctionNames <- c(nimblePreevaluationFunctionNames,
+                            distribution_rFuns,
+                            paste0(c('r'), 't'),
+                            paste0(c('r'), 'exp')
+                            )
+
+functionsThatShouldNeverBeReplacedInBUGScode <- c(':','nimC','nimRep','nimSeq', 'diag',
+                                                  'nimNumeric', 'nimMatrix', 'nimArray')
 
 #' BUGSdeclClass contains the information extracted from one BUGS declaration
 BUGSdeclClass <- setRefClass(
@@ -258,13 +267,13 @@ BUGSdeclClass$methods(
                 code[[3]][[1]] != "I"))
                 stop(
                     paste0('Improper syntax for stochastic declaration: ',
-                           deparse(code))
+                           safeDeparse(code))
                 )
         } else if(code[[1]] == '<-') {
             type <<- 'determ'
         } else {
             stop(paste0('Improper syntax for declaration: ',
-                        deparse(code))
+                        safeDeparse(code))
                  )
         }
         
@@ -294,7 +303,7 @@ BUGSdeclClass$methods(
                     ## There are subscripts inside the transformation
                     if(targetNodeExpr[[1]] != '[') {
                         print(paste("Invalid subscripting for",
-                                    deparse(targetExpr)))
+                                    safeDeparse(targetExpr)))
                     }
                     indexExpr <<- as.list(targetNodeExpr[-c(1,2)])
                     targetVarExpr <<- targetNodeExpr[[2]]
@@ -308,8 +317,8 @@ BUGSdeclClass$methods(
             targetNodeExpr <<- targetVarExpr
         }
         
-        targetVarName <<- deparse(targetVarExpr)
-        targetNodeName <<- deparse(targetNodeExpr)
+        targetVarName <<- safeDeparse(targetVarExpr, warn = TRUE)
+        targetNodeName <<- safeDeparse(targetNodeExpr, warn = TRUE)
     }
 )
 
@@ -375,7 +384,7 @@ makeIndexNamePieces <- function(indexCode) {
     ## Diagnostic for messed up indexing here
     if(as.character(indexCode[[1]] != ':'))
         stop(paste0("Error processing model: something is wrong with the index ",
-                    deparse(indexCode),
+                    safeDeparse(indexCode),
                     ".\nIndexing in model code requires this syntax: '(start expression):(end expression)'."),
              call. = FALSE)
     p1 <- indexCode[[2]]
@@ -463,7 +472,7 @@ BUGSdeclClass$methods(
             )
         if(inherits(targetIndexNamePieces, 'try-error'))
             stop(paste('Error occurred defining ',
-                       deparse(targetExprReplaced)),
+                       safeDeparse(targetExprReplaced)),
                  call. = FALSE)
     if(!nimbleOptions()$allowDynamicIndexing) {
         parentIndexNamePieces <<-
@@ -589,13 +598,13 @@ BUGSdeclClass$methods(
                        is.numeric(boundExprs$upper_) &&
                        boundExprs$lower_ >= boundExprs$upper_)
                         warning(paste0("Lower bound is greater than or equal to upper bound in ",
-                                       deparse(codeReplaced),
+                                       safeDeparse(codeReplaced),
                                        "; proceeding anyway, but this is likely to cause numerical issues."))
                     if(is.numeric(boundExprs$lower_) &&
                        is.numeric(distRange$lower) &&
                        boundExprs$lower_ < distRange$lower) {
                         warning(paste0("Lower bound is less than or equal to distribution lower bound in ",
-                                       deparse(codeReplaced), "; ignoring user-provided lower bound."))
+                                       safeDeparse(codeReplaced), "; ignoring user-provided lower bound."))
                         boundExprs$lower_ <<- distRange$lower
                         codeReplaced[[3]]['lower_'] <<- distRange$lower
                     }
@@ -603,7 +612,7 @@ BUGSdeclClass$methods(
                        is.numeric(distRange$upper) &&
                        boundExprs$upper_ > distRange$upper) {
                         warning(paste0("Upper bound is greater than or equal to distribution upper bound in ",
-                                       deparse(codeReplaced),
+                                       safeDeparse(codeReplaced),
                                        "; ignoring user-provided upper bound."))
                         boundExprs$upper_ <<- distRange$upper
                         codeReplaced[[3]]['upper_'] <<- distRange$upper
@@ -760,7 +769,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             ## error if it looks like mu[i][j] where i is a for-loop index
             if(variable$hasIndex)
                 stop('Error: Variable',
-                     deparse(code[[2]]),
+                     safeDeparse(code[[2]]),
                      'on outside of [ contains a BUGS code index.')
             
             if(variable$replaceable) {
@@ -768,7 +777,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                 ## block[i], so block is replaceable
                 if(!all(contentsReplaceable)) 
                     ## dynamic index on a constant
-                    stop('getSymbolicParentNodesRecurse: dynamic indexing of constants is not allowed in ', deparse(code), '. Try adding the dynamically-indexed constant as data instead (using the data argument of nimbleModel).')
+                    stop('getSymbolicParentNodesRecurse: dynamic indexing of constants is not allowed in ', safeDeparse(code), '. Try adding the dynamically-indexed constant as data instead (using the data argument of nimbleModel).')
                 boolIndexingBlock <-
                     unlist(
                         lapply(code[-c(1,2)],
@@ -797,23 +806,23 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                     return(list(code = c(contentsCode, list(code)),
                                 replaceable = FALSE,
                                 hasIndex = any(contentsHasIndex)))
-                } else { ## non-replaceable indices are dynamic indices
+                } else { ## non-replaceable indices are dynamic indices (or constant vectors, which are not allowed)
                     if(!nimbleOptions()$allowDynamicIndexing) {
                         warning("It appears you are trying to use dynamic indexing (i.e., the index of a variable is determined by something that is not a constant) in: ",
-                                deparse(code),
+                                safeDeparse(code),
                                 ". This is now allowed as of version 0.6-6 (as an optional beta feature) and by default as of version 0.6-7. Please set 'nimbleOptions(allowDynamicIndexing = TRUE)' and report any issues to the NIMBLE users group.")
                         dynamicIndexParent <- code[[2]]
                     } else {
-                      if(nimbleOptions()$experimentalEnableDerivs){
-                        stop("Experimental derivatives cannot currently be enabled for models that include dynamic indexing.  Please set 'nimbleOptions(experimentalEnableDerivs = FALSE)' and rebuild the model.")
+                      if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs"))){ # This warning will only trigger
+                        warning("  [Warning] Derivatives cannot currently be built for models that include dynamic indexing.  Please set 'nimbleOptions(buildDerivs = FALSE)' to proceed with this model.")
                       }
                         if(any(
                             sapply(contentsCode,
                                    detectNonscalarIndex))
                            )
-                            stop("getSymbolicParentNodesRecurse: only scalar random indices are allowed; vector random indexing found in ",
-                                 deparse(code))
-                        indexedVariable <- deparse(code[[2]])
+                            stop("getSymbolicParentNodesRecurse: only scalar indices are allowed; vector indexing found in ",
+                                 safeDeparse(code))
+                        indexedVariable <- safeDeparse(code[[2]], warn = TRUE)
                         dynamicIndexParent <-
                             addUnknownIndexToVarNameInBracketExpr(code, contextID)
                         ## Instead of inserting NA, leave indexing
@@ -883,13 +892,15 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             }
             ## check if the function can be called only in R, not NIMBLE
             isRfunction <- !any(code[[1]] == nimbleFunctionNames)
-            funName <- deparse(code[[1]])
+            funName <- safeDeparse(code[[1]], warn = TRUE)
             isRonly <- isRfunction &
                 (!checkNimbleOrRfunctionNames(funName, envir))
             ## if it can be called only in R but not all contents are replaceable, generate error:
             if(isRonly & !allContentsReplaceable) {
                 if(!exists(funName, envir))
                     stop("R function '", funName,"' does not exist.")
+                if(funName == ":") ## dynamic indexing in a vector of indices
+                    stop("Dynamic indexing found in a vector of indices, ", safeDeparse(code), ". Only scalar indices, such as 'idx' in 'x[idx]', can be dynamic. One can instead use dynamic indexing in a vector of indices inside a nimbleFunction.") 
                 unreplaceable <-
                     sapply(contents[!contentsReplaceable],
                            function(x) as.character(x$code)
@@ -906,7 +917,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
         }
     }
     stop(paste('Something went wrong in getSymbolicVariablesRecurse with',
-               deparse(code)))
+               safeDeparse(code)))
 }
 
 checkNimbleOrRfunctionNames <- function(functionName, envir) {
@@ -1035,7 +1046,7 @@ genReplacementsAndCodeRecurse <- function(code,
         ## or is a nimbleFunction (specifically, an RCfunction)
         if(
         {
-            funName <- deparse(code[[1]])
+            funName <- safeDeparse(code[[1]], warn = TRUE)
             (
                 (funName %in% functionsThatShouldNeverBeReplacedInBUGScode) ||
                 (exists(funName, envir) && is.rcf(get(funName, envir)))
@@ -1056,12 +1067,12 @@ genReplacementsAndCodeRecurse <- function(code,
         isRfunction <- !any(code[[1]] == nimbleFunctionNames)
         isRonly <-
             isRfunction &
-            !checkNimbleOrRfunctionNames(deparse(code[[1]]), envir)
-        if(deparse(code[[1]]) == '$')
+            !checkNimbleOrRfunctionNames(safeDeparse(code[[1]], warn = TRUE), envir)
+        if(safeDeparse(code[[1]], warn = TRUE) == '$')
             isRonly <- FALSE
         if(isRonly & !allContentsReplaceable)
             stop(paste0('Error, R function \"',
-                        deparse(code[[1]]),
+                        safeDeparse(code[[1]]),
                         '\" has non-replaceable node values as arguments.  Must be a nimble function.')
                  )
         if(isRfunction & allContentsReplaceable)
@@ -1073,7 +1084,7 @@ genReplacementsAndCodeRecurse <- function(code,
                                 startingAt=2))
     }
     stop(paste('Something went wrong in genReplacementsAndCodeRecurse with',
-               deparse(code)))
+               safeDeparse(code)))
 }
 
 replaceAllCodeSuccessfully <- function(code) {

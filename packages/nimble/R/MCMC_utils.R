@@ -110,7 +110,7 @@ setAndCalculateOne <- nimbleFunction(
     },
     run = function(targetValue = double()) {
         model[[targetNode]] <<- targetValue
-        lp <- calculate(model, calcNodes)
+        lp <- model$calculate(calcNodes)
         returnType(double())
         return(lp)
     }
@@ -153,7 +153,7 @@ setAndCalculate <- nimbleFunction(
     },
     run = function(targetValues = double(1)) {
         values(model, targetNodesAsScalar) <<- targetValues
-        lp <- calculate(model, calcNodes)
+        lp <- model$calculate(calcNodes)
         returnType(double())
         return(lp)
     }
@@ -169,7 +169,7 @@ setAndCalculateDiff <- nimbleFunction(
     },
     run = function(targetValues = double(1)) {
         values(model, targetNodesAsScalar) <<- targetValues
-        lpD <- calculateDiff(model, calcNodes)
+        lpD <- model$calculateDiff(calcNodes)
         returnType(double())
         return(lpD)
     }
@@ -205,10 +205,6 @@ calcAdaptationFactor <- nimbleFunction(
         }
     )
 )
-
-
-
-
 
 # for now export this as R<3.1.2 give warnings if don't
 
@@ -283,7 +279,7 @@ mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonS
                 if(length(controlValue) > 1)
                     controlValue <- ifelse(is.null(dim(controlValue)), 'custom vector', 'custom array')
         if(inherits(controlValue, 'samplerConf'))   controlValue <- controlValue$name
-        deparsedItem <- deparse(controlValue)
+        deparsedItem <- safeDeparse(controlValue, warn = TRUE)
         if(length(deparsedItem) > 1) deparsedItem <- paste0(deparsedItem, collapse='')
         ls2[[i]] <- paste0(controlName, ': ', deparsedItem)
     }
@@ -301,9 +297,9 @@ mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonS
 #'
 #' @param controlList control list object, which is passed as an argument to all MCMC sampler setup functions.
 #' @param elementName character string, giving the name of the element to be extracted from the control list.
-#' @param defaultValue default value of the control list element, giving the value to be used when the elementName does not exactly match the name of an element in the controlList.
-#' @param error character string, giving the error message to be printed if no defaultValue is provided and elementName does not match the name of an element in the controlList.
-#' @return The element of controlList with name matching elementName; or, if no controlList name matches elementName, rather the defaultValue is returned.
+#' @param defaultValue default value of the control list element, giving the value to be used when the \code{elementName} does not exactly match the name of an element in the \code{controlList}.
+#' @param error character string, giving the error message to be printed if no \code{defaultValue} is provided and \code{elementName} does not match the name of an element in the \code{controlList}.
+#' @return The element of \code{controlList} whose name matches \code{elementName}. If no \code{controlList} name matches \code{elementName}, then \code{defaultValue} is returned.
 #' @author Daniel Turek
 #' @export
 extractControlElement <- function(controlList, elementName, defaultValue, error) {
@@ -316,32 +312,6 @@ extractControlElement <- function(controlList, elementName, defaultValue, error)
         if(!missing(defaultValue)) return(defaultValue) else stop(error)
     }
 }
-
-
-## obselete, since control defaults were moved to sampler function setup code
-## -DT July 2017
-##mcmc_findControlListNamesInCode <- function(code) {
-##    if(is.function(code))     return(mcmc_findControlListNamesInCode(body(code)))
-##    if(is.name(code) || is.numeric(code) || is.logical(code) || is.character(code) || is.pairlist(code))     return(character())
-##    if(is.call(code)) {
-##        if(code[[1]] == '$' && code[[2]] == 'control') {
-##            if(is.name(code[[3]])) { return(as.character(code[[3]]))
-##            } else                 { warning(paste0('having trouble processing control list elements: ', deparse(code)))
-##                                     return(character()) }
-##        }
-##        if(code[[1]] == '[[' && code[[2]] == 'control') {
-##            if(is.character(code[[3]])) { return(as.character(code[[3]]))
-##            } else                 { warning(paste0('having trouble processing control list elements: ', deparse(code)))
-##                                     return(character()) }
-##        }
-##        ## code is some call, other than $ or [[
-##        return(unique(unlist(lapply(code, mcmc_findControlListNamesInCode))))
-##    }
-##    browser()
-##    stop('not sure how to handle this code expression')
-##}
-
-
 
 #' @export
 samplesSummary <- function(samples, round) {
@@ -390,7 +360,7 @@ mcmc_processMonitorNames <- function(model, nodes) {
 
 ## As of 0.10.1 stop WAIC if not monitoring all parameters of data nodes
 mcmc_checkWAICmonitors_conditional <- function(model, monitors, dataNodes) {
-    parentNodes <- getParentNodes(dataNodes, model, stochOnly = TRUE)
+    parentNodes <- model$getParents(dataNodes, stochOnly = TRUE)
     parentVars <- model$getVarNames(nodes = parentNodes)
     wh <- which(!parentVars %in% monitors)
     if(length(wh)) {
@@ -401,7 +371,6 @@ mcmc_checkWAICmonitors_conditional <- function(model, monitors, dataNodes) {
                     "  Currently, the following parameters are not monitored: ",
                     paste0(badVars, collapse = ", ")))
     }
-    message('Monitored nodes are valid for WAIC.')
 }
 
 ## Used through version 0.10.0 and likely to be used in some form once we re-introduce mWAIC
@@ -432,44 +401,8 @@ mcmc_checkWAICmonitors <- function(model, monitors, dataNodes) {
         thisVars <- model$getVarNames(nodes = nextNodes)
         thisVars <- thisVars[!(thisVars %in% monitors)]
     }
-    message('Monitored nodes are valid for WAIC')
+    messageIfVerbose('  [Note] Monitored nodes are valid for WAIC.')
 }
-
-
-## formerly used in conf$printSamplers(byType = TRUE)
-## to compress scalar index ranges of variables.
-## deprecated Nov 2019.
-##mcmc_compressIndexRanges <- function(nums) {
-##    nums <- sort(unique(nums))
-##    rangeStartInd <- c(1, which(diff(nums) != 1) + 1)
-##    ranges <- vector('list', length(rangeStartInd))
-##    for(i in seq_along(rangeStartInd)) {
-##        startInd <- rangeStartInd[i]
-##        if(i == length(rangeStartInd)) {
-##            if(rangeStartInd[i] == length(nums)) {
-##                ranges[[i]] <- nums[startInd]
-##            } else {
-##                ranges[[i]] <- substitute(START:END, list(START = as.numeric(nums[startInd]),
-##                                                          END = as.numeric(nums[length(nums)])))
-##            }
-##        } else {
-##            if(startInd+1 < rangeStartInd[i+1]) {
-##                ranges[[i]] <- substitute(START:END, list(START = as.numeric(nums[startInd]),
-##                                                          END = as.numeric(nums[rangeStartInd[i+1]-1])))
-##            } else ranges[[i]] <- nums[startInd]
-##        }
-##    }
-##    return(ranges)
-##}
-##
-##
-##mcmc_getIndexNumberFromNodeNames <- function(nodeNames, indNumber) {
-##    (nodeInsideBrackets <- gsub('^[[:alpha:]]+\\[(.+)\\]$', '\\1', nodeNames))
-##    splitList <- strsplit(nodeInsideBrackets, ',')
-##    if(length(splitList[[1]]) < indNumber) stop('in mcmc_getIndexNumberFromNodeNames: indNumber exceeds node dimension', call. = FALSE)
-##    indices <- as.numeric(sapply(splitList, function(el) el[indNumber]))
-##    return(indices)
-##}
 
 
 

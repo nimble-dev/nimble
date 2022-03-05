@@ -236,7 +236,7 @@ nfProcessing <- setRefClass('nfProcessing',
 
             collectRCfunNeededTypes()
 
-            if(isTRUE(nimbleOptions('experimentalEnableDerivs'))) {
+            if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs"))) {
                 collect_nimDerivs_info()
             }
             
@@ -511,7 +511,7 @@ makeTypeObj_impl <- function(.self, name, instances, firstOnly) {
     }
     return(symbolModel(name = name, type = 'Ronly', className = class(instances[[1]][[name]]))) 
   }
-  if(isTRUE(getNimbleOption('experimentalEnableDerivs'))) {
+  if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs"))) {
       if(inherits(instances[[1]][[name]], 'ADproxyModelClass')) {
           return(symbolModel(name = name, type = 'Ronly', className = class(instances[[1]][[name]]$model))) 
       }

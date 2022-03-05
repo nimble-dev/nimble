@@ -1,25 +1,25 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<html lang="" xml:lang="">
 <head>
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title></title>
+  <title>Chapter 12 Creating user-defined BUGS distributions and functions | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.12 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="" />
+  <meta property="og:title" content="Chapter 12 Creating user-defined BUGS distributions and functions | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
   
-  <meta property="og:image" content="nimble-icon.png" />
+  <meta property="og:image" content="/nimble-icon.png" />
   <meta property="og:description" content="This is the NIMBLE User Manual." />
   <meta name="github-repo" content="nimble-dev/nimble" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="" />
+  <meta name="twitter:title" content="Chapter 12 Creating user-defined BUGS distributions and functions | NimbleUserManual.knit" />
   
   <meta name="twitter:description" content="This is the NIMBLE User Manual." />
-  <meta name="twitter:image" content="nimble-icon.png" />
+  <meta name="twitter:image" content="/nimble-icon.png" />
 
 
 
@@ -29,15 +29,17 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
-<link rel="prev" href="cha-RCfunctions.html">
-<link rel="next" href="cha-using-models.html">
-<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<link rel="prev" href="cha-RCfunctions.html"/>
+<link rel="next" href="cha-using-models.html"/>
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
 
 
 
@@ -45,45 +47,74 @@
 
 
 
+
+<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
 
 
 <style type="text/css">
-div.sourceCode { overflow-x: auto; }
-table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
-  margin: 0; padding: 0; vertical-align: baseline; border: none; }
-table.sourceCode { width: 100%; line-height: 100%; }
-td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
-td.sourceCode { padding-left: 5px; }
-code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
-code > span.dt { color: #902000; } /* DataType */
-code > span.dv { color: #40a070; } /* DecVal */
-code > span.bn { color: #40a070; } /* BaseN */
-code > span.fl { color: #40a070; } /* Float */
-code > span.ch { color: #4070a0; } /* Char */
-code > span.st { color: #4070a0; } /* String */
-code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
-code > span.ot { color: #007020; } /* Other */
-code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
-code > span.fu { color: #06287e; } /* Function */
-code > span.er { color: #ff0000; font-weight: bold; } /* Error */
-code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
-code > span.cn { color: #880000; } /* Constant */
-code > span.sc { color: #4070a0; } /* SpecialChar */
-code > span.vs { color: #4070a0; } /* VerbatimString */
-code > span.ss { color: #bb6688; } /* SpecialString */
-code > span.im { } /* Import */
-code > span.va { color: #19177c; } /* Variable */
-code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-code > span.op { color: #666666; } /* Operator */
-code > span.bu { } /* BuiltIn */
-code > span.ex { } /* Extension */
-code > span.pp { color: #bc7a00; } /* Preprocessor */
-code > span.at { color: #7d9029; } /* Attribute */
-code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
-code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+a.sourceLine { display: inline-block; line-height: 1.25; }
+a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
+a.sourceLine:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+a.sourceLine { text-indent: -1em; padding-left: 1em; }
+}
+pre.numberSource a.sourceLine
+  { position: relative; left: -4em; }
+pre.numberSource a.sourceLine::before
+  { content: attr(title);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; pointer-events: all; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {  }
+@media screen {
+a.sourceLine::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
+
 
 <link rel="stylesheet" href="style.css" type="text/css" />
 </head>
@@ -100,7 +131,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.10.1</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.12.2</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -184,8 +215,9 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="7.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:build-compile-mcmc"><i class="fa fa-check"></i><b>7.3</b> Building and compiling the MCMC</a></li>
 <li class="chapter" data-level="7.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:runMCMC"><i class="fa fa-check"></i><b>7.4</b> User-friendly execution of MCMC algorithms: <em>runMCMC</em></a></li>
 <li class="chapter" data-level="7.5" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:executing-the-mcmc-algorithm"><i class="fa fa-check"></i><b>7.5</b> Running the MCMC</a><ul>
-<li class="chapter" data-level="7.5.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:sampler-time"><i class="fa fa-check"></i><b>7.5.1</b> Measuring sampler computation times: <em>getTimes</em></a></li>
-<li class="chapter" data-level="7.5.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#assessing-the-adaption-process-of-rw-and-rw_block-samplers"><i class="fa fa-check"></i><b>7.5.2</b> Assessing the adaption process of <em>RW</em> and <em>RW_block</em> samplers</a></li>
+<li class="chapter" data-level="7.5.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-rerun"><i class="fa fa-check"></i><b>7.5.1</b> Rerunning versus restarting an MCMC</a></li>
+<li class="chapter" data-level="7.5.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:sampler-time"><i class="fa fa-check"></i><b>7.5.2</b> Measuring sampler computation times: <em>getTimes</em></a></li>
+<li class="chapter" data-level="7.5.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#assessing-the-adaption-process-of-rw-and-rw_block-samplers"><i class="fa fa-check"></i><b>7.5.3</b> Assessing the adaption process of <em>RW</em> and <em>RW_block</em> samplers</a></li>
 </ul></li>
 <li class="chapter" data-level="7.6" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:extracting-samples"><i class="fa fa-check"></i><b>7.6</b> Extracting MCMC samples</a></li>
 <li class="chapter" data-level="7.7" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:WAIC"><i class="fa fa-check"></i><b>7.7</b> Calculating WAIC</a></li>
@@ -328,7 +360,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
-<li class="chapter" data-level="16" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i><b>16</b> References</a></li>
+<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
       </nav>
@@ -346,130 +378,149 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="cha:user-defined" class="section level1">
+<div id="cha-user-defined" class="section level1">
 <h1><span class="header-section-number">Chapter 12</span> Creating user-defined BUGS distributions and functions</h1>
-<p>NIMBLE allows you to define your own functions and distributions as <em>nimbleFunction</em>s for use in BUGS code. As a result, NIMBLE frees you from being constrained to the functions and distributions discussed in Chapter <a href="cha-writing-models.html#cha:writing-models">5</a>. For example, instead of setting up a Dirichlet prior with multinomial data and needing to use MCMC, one could recognize that this results in a Dirichlet-multinomial distribution for the data and provide that as a user-defined distribution instead.</p>
+<p>NIMBLE allows you to define your own functions and distributions as <em>nimbleFunction</em>s for use in BUGS code. As a result, NIMBLE frees you from being constrained to the functions and distributions discussed in Chapter <a href="cha-writing-models.html#cha-writing-models">5</a>. For example, instead of setting up a Dirichlet prior with multinomial data and needing to use MCMC, one could recognize that this results in a Dirichlet-multinomial distribution for the data and provide that as a user-defined distribution instead.</p>
 <p>Since NIMBLE allows you to wrap calls to external compiled code or arbitrary R functions as nimbleFunctions, and since you can define model functions and distributions as nimbleFunctions, you can combine these features to build external compiled code or arbitrary R functions into a model. See Sections <a href="cha-RCfunctions.html#sec:calling-external-code">11.6</a>-<a href="cha-RCfunctions.html#sec:calling-R-code">11.7</a>.</p>
-<p>Note that NIMBLE generally expects user-defined distributions or functions to be defined in the global environment. If you define them in a function (which would generally be the case if you are using them in the context of parallelization), one approach would be to assign them to the global environment in your function:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## for a user-defined function
-<span class="kw">assign</span>(<span class="st">&#39;myfun&#39;</span>, myfun, <span class="dt">envir =</span> .GlobalEnv)
-## for a user-defined distribution
-<span class="kw">assign</span>(<span class="st">&#39;dfoo&#39;</span>, dfoo, <span class="dt">envir =</span> .GlobalEnv)
-<span class="kw">assign</span>(<span class="st">&#39;rfoo&#39;</span>, rfoo, <span class="dt">envir =</span> .GlobalEnv)
-## similarly for &#39;p&#39; and &#39;q&#39; functions if you define them</code></pre></div>
+<p>Note that NIMBLE generally expects user-defined distributions or functions to be defined in the global environment.
+If you define them in a function (which would generally be the case if you are using them in the context of parallelization), one approach would be to assign them to the global environment in your function:</p>
+<div class="sourceCode" id="cb230"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb230-1" title="1"><span class="co">## for a user-defined function</span></a>
+<a class="sourceLine" id="cb230-2" title="2"><span class="kw">assign</span>(<span class="st">&#39;myfun&#39;</span>, myfun, <span class="dt">envir =</span> .GlobalEnv)</a>
+<a class="sourceLine" id="cb230-3" title="3"><span class="co">## for a user-defined distribution</span></a>
+<a class="sourceLine" id="cb230-4" title="4"><span class="kw">assign</span>(<span class="st">&#39;dfoo&#39;</span>, dfoo, <span class="dt">envir =</span> .GlobalEnv)</a>
+<a class="sourceLine" id="cb230-5" title="5"><span class="kw">assign</span>(<span class="st">&#39;rfoo&#39;</span>, rfoo, <span class="dt">envir =</span> .GlobalEnv)</a>
+<a class="sourceLine" id="cb230-6" title="6"><span class="co">## similarly for &#39;p&#39; and &#39;q&#39; functions if you define them</span></a></code></pre></div>
 <div id="sec:user-functions" class="section level2">
 <h2><span class="header-section-number">12.1</span> User-defined functions</h2>
-<p>To provide a new function for use in BUGS code, simply create a nimbleFunction that has no <em>setup</em> code as discussed in Chapter <a href="cha-RCfunctions.html#cha:RCfunctions">11</a>. Then use it in your BUGS code. That’s it.</p>
+<p>To provide a new function for use in BUGS code, simply create a nimbleFunction that has no <em>setup</em> code as discussed in Chapter <a href="cha-RCfunctions.html#cha-RCfunctions">11</a>. Then use it in your BUGS code. That’s it.</p>
 <p>Writing nimbleFunctions requires that you declare the dimensionality of arguments and the returned object (Section <a href="cha-RCfunctions.html#sec:decl-argum-return">11.4</a>). Make sure that the dimensionality specified in your nimbleFunction matches how you use it in BUGS code. For example, if you define scalar parameters in your BUGS code you will want to define nimbleFunctions that take scalar arguments. Here is an example that returns twice its input argument:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">timesTwo &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(    
-    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">x =</span> <span class="kw">double</span>(<span class="dv">0</span>)) {
-        <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">0</span>))
-        <span class="kw">return</span>(<span class="dv">2</span><span class="op">*</span>x)
-    })
-
-code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">3</span>) {
-        mu[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)
-        mu_times_two[i] &lt;-<span class="st"> </span><span class="kw">timesTwo</span>(mu[i])
-    }
-})</code></pre></div>
-<p>The <code>x = double(0)</code> argument and <code>returnType(double(0))</code> establish that the input and output will both be zero-dimensional (scalar) numbers.</p>
-<p>You can define nimbleFunctions that take inputs and outputs with more dimensions. Here is an example that takes a vector (1-dimensional) as input and returns a vector with twice the input values:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">vectorTimesTwo  &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(    
-    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">x =</span> <span class="kw">double</span>(<span class="dv">1</span>)) {
-        <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">1</span>))
-        <span class="kw">return</span>(<span class="dv">2</span><span class="op">*</span>x)
-    }
-    )
-code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">3</span>) {
-        mu[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)
-    }
-    mu_times_two[<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>] &lt;-<span class="st"> </span><span class="kw">vectorTimesTwo</span>(mu[<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>])
-})</code></pre></div>
+<div class="sourceCode" id="cb231"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb231-1" title="1">timesTwo &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(    </a>
+<a class="sourceLine" id="cb231-2" title="2">    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">x =</span> <span class="kw">double</span>(<span class="dv">0</span>)) {</a>
+<a class="sourceLine" id="cb231-3" title="3">        <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">0</span>))</a>
+<a class="sourceLine" id="cb231-4" title="4">        <span class="kw">return</span>(<span class="dv">2</span><span class="op">*</span>x)</a>
+<a class="sourceLine" id="cb231-5" title="5">    })</a>
+<a class="sourceLine" id="cb231-6" title="6"></a>
+<a class="sourceLine" id="cb231-7" title="7">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb231-8" title="8">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">3</span>) {</a>
+<a class="sourceLine" id="cb231-9" title="9">        mu[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb231-10" title="10">        mu_times_two[i] &lt;-<span class="st"> </span><span class="kw">timesTwo</span>(mu[i])</a>
+<a class="sourceLine" id="cb231-11" title="11">    }</a>
+<a class="sourceLine" id="cb231-12" title="12">})</a></code></pre></div>
+<p>The <code>x = double(0)</code> argument and <code>returnType(double(0))</code>
+establish that the input and output will both be zero-dimensional
+(scalar) numbers.</p>
+<p>You can define nimbleFunctions that take inputs and outputs with
+more dimensions. Here is an example that takes a vector
+(1-dimensional) as input and returns a vector with twice the input
+values:</p>
+<div class="sourceCode" id="cb232"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb232-1" title="1">vectorTimesTwo  &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(    </a>
+<a class="sourceLine" id="cb232-2" title="2">    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">x =</span> <span class="kw">double</span>(<span class="dv">1</span>)) {</a>
+<a class="sourceLine" id="cb232-3" title="3">        <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">1</span>))</a>
+<a class="sourceLine" id="cb232-4" title="4">        <span class="kw">return</span>(<span class="dv">2</span><span class="op">*</span>x)</a>
+<a class="sourceLine" id="cb232-5" title="5">    }</a>
+<a class="sourceLine" id="cb232-6" title="6">    )</a>
+<a class="sourceLine" id="cb232-7" title="7">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb232-8" title="8">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">3</span>) {</a>
+<a class="sourceLine" id="cb232-9" title="9">        mu[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb232-10" title="10">    }</a>
+<a class="sourceLine" id="cb232-11" title="11">    mu_times_two[<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>] &lt;-<span class="st"> </span><span class="kw">vectorTimesTwo</span>(mu[<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>])</a>
+<a class="sourceLine" id="cb232-12" title="12">})</a></code></pre></div>
 <p>There is a subtle difference between the <code>mu_times_two</code> variables in the two examples. In the first example, there are individual nodes for each <code>mu_times_two[i]</code>. In the second example, there is a single multivariate node, <code>mu_times_two[1:3]</code>. Each implementation could be more efficient for different needs. For example, suppose an algorithm modifies the value of <code>mu[2]</code> and then updates nodes that depend on it. In the first example, <code>mu_times_two[2]</code> would be updated. In the second example <code>mu_times_two[1:3]</code> would be updated because it is a single, vector node.</p>
 <p>At present in compiled use of a model, you cannot provide a scalar argument where the user-defined nimbleFunction expects a vector; unlike in R, scalars are not simply vectors of length 1.</p>
 </div>
 <div id="sec:user-distributions" class="section level2">
 <h2><span class="header-section-number">12.2</span> User-defined distributions</h2>
-<p>To provide a user-defined distribution, you need to define density (‘d’) and (optionally<a href="#fn22" class="footnoteRef" id="fnref22"><sup>22</sup></a>) simulation (‘r’) <code>nimbleFunctions</code>, without setup code, for your distribution. In many cases you can then simply use your distribution in BUGS code as you would any distribution already provided by NIMBLE, while in a few special cases<a href="#fn23" class="footnoteRef" id="fnref23"><sup>23</sup></a> you need to explicitly register your distribution as described in Section <a href="cha-user-defined.html#sec:registerDistributions">12.2.1</a>.</p>
-<p>You can optionally provide distribution (‘p’) and quantile (‘q’) functions, which will allow truncation to be applied to a user-defined distribution. You can also provide a list of alternative parameterizations, but only if you explicitly register the distribution.</p>
-<p>Here is an extended example of providing a univariate exponential distribution (solely for illustration as this is already provided by NIMBLE) and a multivariate Dirichlet-multinomial distribution.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">dmyexp &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
-    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">x =</span> <span class="kw">double</span>(<span class="dv">0</span>), <span class="dt">rate =</span> <span class="kw">double</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="dv">1</span>), 
-        <span class="dt">log =</span> <span class="kw">integer</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="dv">0</span>)) {
-        <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">0</span>))
-        logProb &lt;-<span class="st"> </span><span class="kw">log</span>(rate) <span class="op">-</span><span class="st"> </span>x<span class="op">*</span>rate
-        <span class="cf">if</span>(log) <span class="kw">return</span>(logProb)
-        <span class="cf">else</span> <span class="kw">return</span>(<span class="kw">exp</span>(logProb)) 
-    })
-
-rmyexp &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
-    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">n =</span> <span class="kw">integer</span>(<span class="dv">0</span>), <span class="dt">rate =</span> <span class="kw">double</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="dv">1</span>)) {
-        <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">0</span>))
-        <span class="cf">if</span>(n <span class="op">!=</span><span class="st"> </span><span class="dv">1</span>) <span class="kw">print</span>(<span class="st">&quot;rmyexp only allows n = 1; using n = 1.&quot;</span>)
-        dev &lt;-<span class="st"> </span><span class="kw">runif</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>)
-        <span class="kw">return</span>(<span class="op">-</span><span class="kw">log</span>(<span class="dv">1</span><span class="op">-</span>dev) <span class="op">/</span><span class="st"> </span>rate)
-    })
-
-pmyexp &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
-    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">q =</span> <span class="kw">double</span>(<span class="dv">0</span>), <span class="dt">rate =</span> <span class="kw">double</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="dv">1</span>), 
-        <span class="dt">lower.tail =</span> <span class="kw">integer</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="dv">1</span>), 
-        <span class="dt">log.p =</span> <span class="kw">integer</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="dv">0</span>)) {
-        <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">0</span>))
-        <span class="cf">if</span>(<span class="op">!</span>lower.tail) { 
-            logp &lt;-<span class="st"> </span><span class="op">-</span>rate <span class="op">*</span><span class="st"> </span>q
-            <span class="cf">if</span>(log.p) <span class="kw">return</span>(logp)
-            <span class="cf">else</span> <span class="kw">return</span>(<span class="kw">exp</span>(logp))
-        } <span class="cf">else</span> {
-            p &lt;-<span class="st"> </span><span class="dv">1</span> <span class="op">-</span><span class="st"> </span><span class="kw">exp</span>(<span class="op">-</span>rate <span class="op">*</span><span class="st"> </span>q)
-            <span class="cf">if</span>(<span class="op">!</span>log.p) <span class="kw">return</span>(p)
-            <span class="cf">else</span> <span class="kw">return</span>(<span class="kw">log</span>(p))
-        }
-    })
-
-qmyexp &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
-    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">p =</span> <span class="kw">double</span>(<span class="dv">0</span>), <span class="dt">rate =</span> <span class="kw">double</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="dv">1</span>), 
-        <span class="dt">lower.tail =</span> <span class="kw">integer</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="dv">1</span>), 
-        <span class="dt">log.p =</span> <span class="kw">integer</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="dv">0</span>)) {
-        <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">0</span>))
-        <span class="cf">if</span>(log.p) p &lt;-<span class="st"> </span><span class="kw">exp</span>(p)
-        <span class="cf">if</span>(<span class="op">!</span>lower.tail) p &lt;-<span class="st"> </span><span class="dv">1</span> <span class="op">-</span><span class="st"> </span>p
-        <span class="kw">return</span>(<span class="op">-</span><span class="kw">log</span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>p) <span class="op">/</span><span class="st"> </span>rate)
-    })
-
-ddirchmulti &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
-    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">x =</span> <span class="kw">double</span>(<span class="dv">1</span>), <span class="dt">alpha =</span> <span class="kw">double</span>(<span class="dv">1</span>), <span class="dt">size =</span> <span class="kw">double</span>(<span class="dv">0</span>), 
-        <span class="dt">log =</span> <span class="kw">integer</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="dv">0</span>)) {
-        <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">0</span>))
-        logProb &lt;-<span class="st"> </span><span class="kw">lgamma</span>(size<span class="op">+</span><span class="dv">1</span>) <span class="op">-</span><span class="st"> </span><span class="kw">sum</span>(<span class="kw">lgamma</span>(x<span class="op">+</span><span class="dv">1</span>)) <span class="op">+</span><span class="st"> </span><span class="kw">lgamma</span>(<span class="kw">sum</span>(alpha)) <span class="op">-</span>
-<span class="st">            </span><span class="kw">sum</span>(<span class="kw">lgamma</span>(alpha)) <span class="op">+</span><span class="st"> </span><span class="kw">sum</span>(<span class="kw">lgamma</span>(alpha <span class="op">+</span><span class="st"> </span>x)) <span class="op">-</span>
-<span class="st">            </span><span class="kw">lgamma</span>(<span class="kw">sum</span>(alpha) <span class="op">+</span><span class="st"> </span>size)
-        <span class="cf">if</span>(log) <span class="kw">return</span>(logProb)
-        <span class="cf">else</span> <span class="kw">return</span>(<span class="kw">exp</span>(logProb))
-    })
-
-rdirchmulti &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
-    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">n =</span> <span class="kw">integer</span>(<span class="dv">0</span>), <span class="dt">alpha =</span> <span class="kw">double</span>(<span class="dv">1</span>), <span class="dt">size =</span> <span class="kw">double</span>(<span class="dv">0</span>)) {
-        <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">1</span>))
-        <span class="cf">if</span>(n <span class="op">!=</span><span class="st"> </span><span class="dv">1</span>) <span class="kw">print</span>(<span class="st">&quot;rdirchmulti only allows n = 1; using n = 1.&quot;</span>)
-        p &lt;-<span class="st"> </span><span class="kw">rdirch</span>(<span class="dv">1</span>, alpha)
-        <span class="kw">return</span>(<span class="kw">rmulti</span>(<span class="dv">1</span>, <span class="dt">size =</span> size, <span class="dt">prob =</span> p))
-    })
-
-code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-     y[<span class="dv">1</span><span class="op">:</span>K] <span class="op">~</span><span class="st"> </span><span class="kw">ddirchmulti</span>(alpha[<span class="dv">1</span><span class="op">:</span>K], n)
-     <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>K) {
-         alpha[i] <span class="op">~</span><span class="st"> </span><span class="kw">dmyexp</span>(<span class="dv">1</span><span class="op">/</span><span class="dv">3</span>)
-      }
-     })
-
-model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">K =</span> <span class="dv">5</span>, <span class="dt">n =</span> <span class="dv">10</span>))</code></pre></div>
-<pre><code>## Registering the following user-provided distributions: ddirchmulti
-## NIMBLE has registered ddirchmulti as a distribution based on its use in BUGS code. Note that if you make changes to the nimbleFunctions for the distribution, you must call &#39;deregisterDistributions&#39; before using the distribution in BUGS code for those changes to take effect.
-## Registering the following user-provided distributions: dmyexp
-## NIMBLE has registered dmyexp as a distribution based on its use in BUGS code. Note that if you make changes to the nimbleFunctions for the distribution, you must call &#39;deregisterDistributions&#39; before using the distribution in BUGS code for those changes to take effect.</code></pre>
-<p>The distribution-related functions should take as input the parameters for a single parameterization, which will be the canonical parameterization that NIMBLE will use.</p>
+<p>To provide a user-defined distribution, you need to define density
+(‘d’) and (optionally)
+simulation (‘r’) <code>nimbleFunctions</code>, without setup
+code, for your distribution. In many cases you can then
+simply use your distribution in BUGS code as you would any
+distribution already provided by NIMBLE, while in a few special cases<a href="#fn23" class="footnote-ref" id="fnref23"><sup>23</sup></a>
+you need to explicitly register your distribution as described in Section <a href="cha-user-defined.html#sec:registerDistributions">12.2.1</a>.</p>
+<p>You need to provide the simulation (‘r’) function if any algorithm used with a model
+that uses the distribution needs to simulate from the distribution. This is not the case for NIMBLE’s built-in
+MCMC sampler functions, and therefore the simulation function is not generally required for standard MCMC in NIMBLE.
+However, the ‘r’ function is necessary for initialization of nodes that are assigned the user-defined distribution if no initial value is provided, and for sampling posterior predictive nodes (those nodes with no downstream data dependencies) that are assigned the user-defined distribution.</p>
+<p>You can optionally provide distribution (‘p’) and quantile (‘q’)
+functions, which will allow truncation to be applied to a user-defined
+distribution. You can also provide a list of alternative
+parameterizations, but only if you explicitly register the distribution.</p>
+<p>Here is an extended example of providing a univariate exponential
+distribution (solely for illustration as this is already provided by NIMBLE) and a
+multivariate Dirichlet-multinomial distribution.</p>
+<div class="sourceCode" id="cb233"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb233-1" title="1">dmyexp &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
+<a class="sourceLine" id="cb233-2" title="2">    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">x =</span> <span class="kw">double</span>(<span class="dv">0</span>), <span class="dt">rate =</span> <span class="kw">double</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="dv">1</span>), </a>
+<a class="sourceLine" id="cb233-3" title="3">        <span class="dt">log =</span> <span class="kw">integer</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="dv">0</span>)) {</a>
+<a class="sourceLine" id="cb233-4" title="4">        <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">0</span>))</a>
+<a class="sourceLine" id="cb233-5" title="5">        logProb &lt;-<span class="st"> </span><span class="kw">log</span>(rate) <span class="op">-</span><span class="st"> </span>x<span class="op">*</span>rate</a>
+<a class="sourceLine" id="cb233-6" title="6">        <span class="cf">if</span>(log) <span class="kw">return</span>(logProb)</a>
+<a class="sourceLine" id="cb233-7" title="7">        <span class="cf">else</span> <span class="kw">return</span>(<span class="kw">exp</span>(logProb)) </a>
+<a class="sourceLine" id="cb233-8" title="8">    })</a>
+<a class="sourceLine" id="cb233-9" title="9"></a>
+<a class="sourceLine" id="cb233-10" title="10">rmyexp &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
+<a class="sourceLine" id="cb233-11" title="11">    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">n =</span> <span class="kw">integer</span>(<span class="dv">0</span>), <span class="dt">rate =</span> <span class="kw">double</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="dv">1</span>)) {</a>
+<a class="sourceLine" id="cb233-12" title="12">        <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">0</span>))</a>
+<a class="sourceLine" id="cb233-13" title="13">        <span class="cf">if</span>(n <span class="op">!=</span><span class="st"> </span><span class="dv">1</span>) <span class="kw">print</span>(<span class="st">&quot;rmyexp only allows n = 1; using n = 1.&quot;</span>)</a>
+<a class="sourceLine" id="cb233-14" title="14">        dev &lt;-<span class="st"> </span><span class="kw">runif</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb233-15" title="15">        <span class="kw">return</span>(<span class="op">-</span><span class="kw">log</span>(<span class="dv">1</span><span class="op">-</span>dev) <span class="op">/</span><span class="st"> </span>rate)</a>
+<a class="sourceLine" id="cb233-16" title="16">    })</a>
+<a class="sourceLine" id="cb233-17" title="17"></a>
+<a class="sourceLine" id="cb233-18" title="18">pmyexp &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
+<a class="sourceLine" id="cb233-19" title="19">    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">q =</span> <span class="kw">double</span>(<span class="dv">0</span>), <span class="dt">rate =</span> <span class="kw">double</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="dv">1</span>), </a>
+<a class="sourceLine" id="cb233-20" title="20">        <span class="dt">lower.tail =</span> <span class="kw">integer</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="dv">1</span>), </a>
+<a class="sourceLine" id="cb233-21" title="21">        <span class="dt">log.p =</span> <span class="kw">integer</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="dv">0</span>)) {</a>
+<a class="sourceLine" id="cb233-22" title="22">        <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">0</span>))</a>
+<a class="sourceLine" id="cb233-23" title="23">        <span class="cf">if</span>(<span class="op">!</span>lower.tail) { </a>
+<a class="sourceLine" id="cb233-24" title="24">            logp &lt;-<span class="st"> </span><span class="op">-</span>rate <span class="op">*</span><span class="st"> </span>q</a>
+<a class="sourceLine" id="cb233-25" title="25">            <span class="cf">if</span>(log.p) <span class="kw">return</span>(logp)</a>
+<a class="sourceLine" id="cb233-26" title="26">            <span class="cf">else</span> <span class="kw">return</span>(<span class="kw">exp</span>(logp))</a>
+<a class="sourceLine" id="cb233-27" title="27">        } <span class="cf">else</span> {</a>
+<a class="sourceLine" id="cb233-28" title="28">            p &lt;-<span class="st"> </span><span class="dv">1</span> <span class="op">-</span><span class="st"> </span><span class="kw">exp</span>(<span class="op">-</span>rate <span class="op">*</span><span class="st"> </span>q)</a>
+<a class="sourceLine" id="cb233-29" title="29">            <span class="cf">if</span>(<span class="op">!</span>log.p) <span class="kw">return</span>(p)</a>
+<a class="sourceLine" id="cb233-30" title="30">            <span class="cf">else</span> <span class="kw">return</span>(<span class="kw">log</span>(p))</a>
+<a class="sourceLine" id="cb233-31" title="31">        }</a>
+<a class="sourceLine" id="cb233-32" title="32">    })</a>
+<a class="sourceLine" id="cb233-33" title="33"></a>
+<a class="sourceLine" id="cb233-34" title="34">qmyexp &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
+<a class="sourceLine" id="cb233-35" title="35">    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">p =</span> <span class="kw">double</span>(<span class="dv">0</span>), <span class="dt">rate =</span> <span class="kw">double</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="dv">1</span>), </a>
+<a class="sourceLine" id="cb233-36" title="36">        <span class="dt">lower.tail =</span> <span class="kw">integer</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="dv">1</span>), </a>
+<a class="sourceLine" id="cb233-37" title="37">        <span class="dt">log.p =</span> <span class="kw">integer</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="dv">0</span>)) {</a>
+<a class="sourceLine" id="cb233-38" title="38">        <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">0</span>))</a>
+<a class="sourceLine" id="cb233-39" title="39">        <span class="cf">if</span>(log.p) p &lt;-<span class="st"> </span><span class="kw">exp</span>(p)</a>
+<a class="sourceLine" id="cb233-40" title="40">        <span class="cf">if</span>(<span class="op">!</span>lower.tail) p &lt;-<span class="st"> </span><span class="dv">1</span> <span class="op">-</span><span class="st"> </span>p</a>
+<a class="sourceLine" id="cb233-41" title="41">        <span class="kw">return</span>(<span class="op">-</span><span class="kw">log</span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>p) <span class="op">/</span><span class="st"> </span>rate)</a>
+<a class="sourceLine" id="cb233-42" title="42">    })</a>
+<a class="sourceLine" id="cb233-43" title="43"></a>
+<a class="sourceLine" id="cb233-44" title="44">ddirchmulti &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
+<a class="sourceLine" id="cb233-45" title="45">    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">x =</span> <span class="kw">double</span>(<span class="dv">1</span>), <span class="dt">alpha =</span> <span class="kw">double</span>(<span class="dv">1</span>), <span class="dt">size =</span> <span class="kw">double</span>(<span class="dv">0</span>), </a>
+<a class="sourceLine" id="cb233-46" title="46">        <span class="dt">log =</span> <span class="kw">integer</span>(<span class="dv">0</span>, <span class="dt">default =</span> <span class="dv">0</span>)) {</a>
+<a class="sourceLine" id="cb233-47" title="47">        <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">0</span>))</a>
+<a class="sourceLine" id="cb233-48" title="48">        logProb &lt;-<span class="st"> </span><span class="kw">lgamma</span>(size<span class="op">+</span><span class="dv">1</span>) <span class="op">-</span><span class="st"> </span><span class="kw">sum</span>(<span class="kw">lgamma</span>(x<span class="op">+</span><span class="dv">1</span>)) <span class="op">+</span><span class="st"> </span><span class="kw">lgamma</span>(<span class="kw">sum</span>(alpha)) <span class="op">-</span></a>
+<a class="sourceLine" id="cb233-49" title="49"><span class="st">            </span><span class="kw">sum</span>(<span class="kw">lgamma</span>(alpha)) <span class="op">+</span><span class="st"> </span><span class="kw">sum</span>(<span class="kw">lgamma</span>(alpha <span class="op">+</span><span class="st"> </span>x)) <span class="op">-</span></a>
+<a class="sourceLine" id="cb233-50" title="50"><span class="st">            </span><span class="kw">lgamma</span>(<span class="kw">sum</span>(alpha) <span class="op">+</span><span class="st"> </span>size)</a>
+<a class="sourceLine" id="cb233-51" title="51">        <span class="cf">if</span>(log) <span class="kw">return</span>(logProb)</a>
+<a class="sourceLine" id="cb233-52" title="52">        <span class="cf">else</span> <span class="kw">return</span>(<span class="kw">exp</span>(logProb))</a>
+<a class="sourceLine" id="cb233-53" title="53">    })</a>
+<a class="sourceLine" id="cb233-54" title="54"></a>
+<a class="sourceLine" id="cb233-55" title="55">rdirchmulti &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
+<a class="sourceLine" id="cb233-56" title="56">    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">n =</span> <span class="kw">integer</span>(<span class="dv">0</span>), <span class="dt">alpha =</span> <span class="kw">double</span>(<span class="dv">1</span>), <span class="dt">size =</span> <span class="kw">double</span>(<span class="dv">0</span>)) {</a>
+<a class="sourceLine" id="cb233-57" title="57">        <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">1</span>))</a>
+<a class="sourceLine" id="cb233-58" title="58">        <span class="cf">if</span>(n <span class="op">!=</span><span class="st"> </span><span class="dv">1</span>) <span class="kw">print</span>(<span class="st">&quot;rdirchmulti only allows n = 1; using n = 1.&quot;</span>)</a>
+<a class="sourceLine" id="cb233-59" title="59">        p &lt;-<span class="st"> </span><span class="kw">rdirch</span>(<span class="dv">1</span>, alpha)</a>
+<a class="sourceLine" id="cb233-60" title="60">        <span class="kw">return</span>(<span class="kw">rmulti</span>(<span class="dv">1</span>, <span class="dt">size =</span> size, <span class="dt">prob =</span> p))</a>
+<a class="sourceLine" id="cb233-61" title="61">    })</a>
+<a class="sourceLine" id="cb233-62" title="62"></a>
+<a class="sourceLine" id="cb233-63" title="63">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb233-64" title="64">     y[<span class="dv">1</span><span class="op">:</span>K] <span class="op">~</span><span class="st"> </span><span class="kw">ddirchmulti</span>(alpha[<span class="dv">1</span><span class="op">:</span>K], n)</a>
+<a class="sourceLine" id="cb233-65" title="65">     <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>K) {</a>
+<a class="sourceLine" id="cb233-66" title="66">         alpha[i] <span class="op">~</span><span class="st"> </span><span class="kw">dmyexp</span>(<span class="dv">1</span><span class="op">/</span><span class="dv">3</span>)</a>
+<a class="sourceLine" id="cb233-67" title="67">      }</a>
+<a class="sourceLine" id="cb233-68" title="68">     })</a>
+<a class="sourceLine" id="cb233-69" title="69"></a>
+<a class="sourceLine" id="cb233-70" title="70">model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">K =</span> <span class="dv">5</span>, <span class="dt">n =</span> <span class="dv">10</span>))</a></code></pre></div>
+<p>The distribution-related functions should take as input the parameters
+for a single parameterization, which will be the canonical
+parameterization that NIMBLE will use.</p>
 <p>Here are more details on the requirements for distribution-related nimbleFunctions, which follow R’s conventions:</p>
 <ul>
 <li>Your distribution-related functions must have names that begin with ‘d’, ‘r’, ‘p’ and ‘q’. The name of the distribution must not be identical to any of the NIMBLE-provided distributions.</li>
@@ -477,43 +528,57 @@ model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <s
 <li>NIMBLE uses doubles for numerical calculations, so we suggest simply using doubles in general, even for integer-valued parameters or values of random variables. In fact, non-scalars must be declared as doubles.</li>
 <li>All density functions must have as their last argument <code>log</code> and implement return of the log probability density. NIMBLE algorithms typically use only <code>log = 1</code>, but we recommend you implement the <code>log = 0</code> case for completeness.</li>
 <li>All distribution and quantile functions must have their last two arguments be (in order) <code>lower.tail</code> and <code>log.p</code>. These functions must work for <code>lower.tail = 1</code> (i.e., TRUE) and <code>log.p = 0</code> (i.e., FALSE), as these are the inputs we use when working with truncated distributions. It is your choice whether you implement the necessary calculations for other combinations of these inputs, but again we recommend doing so for completeness.</li>
-<li>Define the nimbleFunctions in R’s global environment. Don’t expect R’s standard scoping to work<a href="#fn24" class="footnoteRef" id="fnref24"><sup>24</sup></a>.</li>
+<li>Define the nimbleFunctions in R’s global environment. Don’t expect R’s standard scoping to work<a href="#fn24" class="footnote-ref" id="fnref24"><sup>24</sup></a>.</li>
 </ul>
 <div id="sec:registerDistributions" class="section level3">
 <h3><span class="header-section-number">12.2.1</span> Using <em>registerDistributions</em> for alternative parameterizations and providing other information</h3>
-<p>Behind the scenes, NIMBLE uses the function <code>registerDistributions</code> to set up new distributions for use in BUGS code. In some circumstances, you will need to call <code>registerDistributions</code> directly to provide information that NIMBLE can’t obtain automatically from the nimbleFunctions you write.</p>
-<p>The cases in which you’ll need to explicitly call <code>registerDistributions</code> are when you want to do any of the following:</p>
+<p>Behind the scenes, NIMBLE uses the function
+<code>registerDistributions</code> to set up new distributions for use in BUGS
+code. In some circumstances, you will need to call
+<code>registerDistributions</code> directly to provide information that NIMBLE
+can’t obtain automatically from the nimbleFunctions you write.</p>
+<p>The cases in which you’ll need to explicitly call
+<code>registerDistributions</code> are when you want to do any of the following:</p>
 <ul>
 <li>provide alternative parameterizations,</li>
 <li>indicate a distribution is discrete, and</li>
 <li>provide the range of possible values for a distribution.</li>
 </ul>
-<p>If you would like to allow for multiple parameterizations, you can do this via the <code>Rdist</code> element of the list provided to <code>registerDistributions</code> as illustrated below. If you provide CDF (‘p’) and inverse CDF (quantile, i.e. ‘q’) functions, be sure to specify <code>pqAvail = TRUE</code> when you call <code>registerDistributions</code>. Here’s an example of using <code>registerDistributions</code> to provide an alternative parameterization (scale instead of rate) and to provide the range for the user-defined exponential distribution. We can then use the alternative parameterization in our BUGS code.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">registerDistributions</span>(<span class="kw">list</span>(
-    <span class="dt">dmyexp =</span> <span class="kw">list</span>(
-        <span class="dt">BUGSdist =</span> <span class="st">&quot;dmyexp(rate, scale)&quot;</span>,
-        <span class="dt">Rdist =</span> <span class="st">&quot;dmyexp(rate = 1/scale)&quot;</span>,
-        <span class="dt">altParams =</span> <span class="kw">c</span>(<span class="st">&quot;scale = 1/rate&quot;</span>, <span class="st">&quot;mean = 1/rate&quot;</span>),
-        <span class="dt">pqAvail =</span> <span class="ot">TRUE</span>, 
-        <span class="dt">range =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="ot">Inf</span>)
-        )
-    ))</code></pre></div>
-<pre><code>## Registering the following user-provided distributions: dmyexp
-## Overwriting the following user-supplied distributions: dmyexp</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-     y[<span class="dv">1</span><span class="op">:</span>K] <span class="op">~</span><span class="st"> </span><span class="kw">ddirchmulti</span>(alpha[<span class="dv">1</span><span class="op">:</span>K], n)
-     <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>K) {
-         alpha[i] <span class="op">~</span><span class="st"> </span><span class="kw">T</span>(<span class="kw">dmyexp</span>(<span class="dt">scale =</span> <span class="dv">3</span>), <span class="dv">0</span>, <span class="dv">100</span>)
-      }
-     })
-
-model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">K =</span> <span class="dv">5</span>, <span class="dt">n =</span> <span class="dv">10</span>), 
-                     <span class="dt">inits =</span> <span class="kw">list</span>(<span class="dt">alpha =</span> <span class="kw">rep</span>(<span class="dv">1</span>, <span class="dv">5</span>)))</code></pre></div>
-<p>There are a few rules for how you specify the information about a distribution that you provide to <code>registerDistributions</code>:</p>
+<p>If you would like to allow for
+multiple parameterizations, you can do this via the <code>Rdist</code> element
+of the list provided to <code>registerDistributions</code> as illustrated below. If
+you provide CDF (‘p’) and inverse CDF (quantile, i.e. ‘q’)
+functions, be sure to specify <code>pqAvail = TRUE</code> when you call
+<code>registerDistributions</code>. Here’s an example of using <code>registerDistributions</code>
+to provide an alternative parameterization (scale instead of rate) and to provide the range
+for the user-defined exponential distribution. We can then use
+the alternative parameterization in our BUGS code.</p>
+<div class="sourceCode" id="cb234"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb234-1" title="1"><span class="kw">registerDistributions</span>(<span class="kw">list</span>(</a>
+<a class="sourceLine" id="cb234-2" title="2">    <span class="dt">dmyexp =</span> <span class="kw">list</span>(</a>
+<a class="sourceLine" id="cb234-3" title="3">        <span class="dt">BUGSdist =</span> <span class="st">&quot;dmyexp(rate, scale)&quot;</span>,</a>
+<a class="sourceLine" id="cb234-4" title="4">        <span class="dt">Rdist =</span> <span class="st">&quot;dmyexp(rate = 1/scale)&quot;</span>,</a>
+<a class="sourceLine" id="cb234-5" title="5">        <span class="dt">altParams =</span> <span class="kw">c</span>(<span class="st">&quot;scale = 1/rate&quot;</span>, <span class="st">&quot;mean = 1/rate&quot;</span>),</a>
+<a class="sourceLine" id="cb234-6" title="6">        <span class="dt">pqAvail =</span> <span class="ot">TRUE</span>, </a>
+<a class="sourceLine" id="cb234-7" title="7">        <span class="dt">range =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="ot">Inf</span>)</a>
+<a class="sourceLine" id="cb234-8" title="8">        )</a>
+<a class="sourceLine" id="cb234-9" title="9">    ))</a>
+<a class="sourceLine" id="cb234-10" title="10"></a>
+<a class="sourceLine" id="cb234-11" title="11">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
+<a class="sourceLine" id="cb234-12" title="12">     y[<span class="dv">1</span><span class="op">:</span>K] <span class="op">~</span><span class="st"> </span><span class="kw">ddirchmulti</span>(alpha[<span class="dv">1</span><span class="op">:</span>K], n)</a>
+<a class="sourceLine" id="cb234-13" title="13">     <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>K) {</a>
+<a class="sourceLine" id="cb234-14" title="14">         alpha[i] <span class="op">~</span><span class="st"> </span><span class="kw">T</span>(<span class="kw">dmyexp</span>(<span class="dt">scale =</span> <span class="dv">3</span>), <span class="dv">0</span>, <span class="dv">100</span>)</a>
+<a class="sourceLine" id="cb234-15" title="15">      }</a>
+<a class="sourceLine" id="cb234-16" title="16">     })</a>
+<a class="sourceLine" id="cb234-17" title="17"></a>
+<a class="sourceLine" id="cb234-18" title="18">model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">K =</span> <span class="dv">5</span>, <span class="dt">n =</span> <span class="dv">10</span>), </a>
+<a class="sourceLine" id="cb234-19" title="19">                     <span class="dt">inits =</span> <span class="kw">list</span>(<span class="dt">alpha =</span> <span class="kw">rep</span>(<span class="dv">1</span>, <span class="dv">5</span>)))</a></code></pre></div>
+<p>There are a few rules for how you specify the information about a
+distribution that you provide to <code>registerDistributions</code>:</p>
 <ul>
 <li>The function name in the <code>BUGSdist</code> entry in the list provided to <code>registerDistributions</code> will be the name you can use in BUGS code.</li>
 <li>The names of your nimbleFunctions must match the function name in the <code>Rdist</code> entry. If missing, the <code>Rdist</code> entry defaults to be the same as the <code>BUGSdist</code> entry.</li>
-<li>Your distribution-related functions must take as arguments the parameters in default order, starting as the second argument and in the order used in the parameterizations in the <code>Rdist</code> argument to <code>registerDistributions</code> or the <code>BUGSdist</code> argument if there are no alternative parameterizations.</li>
+<li>Your distribution-related functions must take as arguments the
+parameters in default order, starting as the second argument and in the order used in the parameterizations in the <code>Rdist</code> argument to <code>registerDistributions</code> or the <code>BUGSdist</code> argument if there are no alternative parameterizations.</li>
 <li>You must specify a <code>types</code> entry in the list provided to <code>registerDistributions</code> if the distribution is multivariate or if any parameter is non-scalar.</li>
 </ul>
 <p>Further details on using <code>registerDistributions</code> can be found via R help on <code>registerDistributions</code>. NIMBLE uses the same list format as <code>registerDistributions</code> to define its distributions. This list can be found in the <code>R/distributions_inputList.R</code> file in the package source code directory or as the R list <code>nimble:::distributionsInputList</code>.</p>
@@ -523,10 +588,10 @@ model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <s
 </div>
 <div class="footnotes">
 <hr />
-<ol start="22">
-<li id="fn22"><p>You need to provide the simulation (‘r’) function if any algorithm used with a model that uses the distribution needs to simulate from the distribution; this is not the case for NIMBLE’s built-in MCMC sampler functions and therefore the simulation function is not required for standard MCMC in NIMBLE.<a href="cha-user-defined.html#fnref22">↩</a></p></li>
-<li id="fn23"><p>These include providing alternative parameterizations, specifying the range of the distribution, or specifying that the distribution is a discrete distribution.<a href="cha-user-defined.html#fnref23">↩</a></p></li>
-<li id="fn24"><p>NIMBLE can’t use R’s standard scoping because it doesn’t work for R reference classes, and nimbleFunctions are implemented as custom-generated reference classes.<a href="cha-user-defined.html#fnref24">↩</a></p></li>
+<ol start="23">
+<li id="fn23"><p>These include providing alternative parameterizations, specifying
+the range of the distribution, or specifying that the distribution is a discrete distribution.<a href="cha-user-defined.html#fnref23" class="footnote-back">↩</a></p></li>
+<li id="fn24"><p>NIMBLE can’t use R’s standard scoping because it doesn’t work for R reference classes, and nimbleFunctions are implemented as custom-generated reference classes.<a href="cha-user-defined.html#fnref24" class="footnote-back">↩</a></p></li>
 </ol>
 </div>
             </section>
@@ -539,12 +604,13 @@ model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <s
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
-<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
 <script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
 <script>
 gitbook.require(["gitbook"], function(gitbook) {
 gitbook.start({
@@ -552,12 +618,12 @@ gitbook.start({
 "github": false,
 "facebook": true,
 "twitter": true,
-"google": false,
 "linkedin": false,
 "weibo": false,
 "instapaper": false,
 "vk": false,
-"all": ["facebook", "google", "twitter", "linkedin", "weibo", "instapaper"]
+"whatsapp": false,
+"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
 },
 "fontsettings": {
 "theme": "white",
@@ -572,7 +638,15 @@ gitbook.start({
 "link": null,
 "text": null
 },
+"view": {
+"link": null,
+"text": null
+},
 "download": ["NimbleUserManual.pdf", "NimbleUserManual.epub"],
+"search": {
+"engine": "fuse",
+"options": null
+},
 "toc": {
 "collapse": "subsection"
 },
@@ -586,10 +660,11 @@ gitbook.start({
   (function () {
     var script = document.createElement("script");
     script.type = "text/javascript";
-    var src = "";
+    var src = "true";
     if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
-    if (location.protocol !== "file:" && /^https?:/.test(src))
-      src = src.replace(/^https?:/, '');
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
     script.src = src;
     document.getElementsByTagName("head")[0].appendChild(script);
   })();

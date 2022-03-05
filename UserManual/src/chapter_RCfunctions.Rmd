@@ -1,5 +1,5 @@
 
-# Writing simple nimbleFunctions {#cha:RCfunctions}
+# Writing simple nimbleFunctions {#cha-RCfunctions}
 
 
 
@@ -24,7 +24,7 @@ can also be compiled.  Simple nimbleFunctions are useful for doing math or the o
 kinds of processing available in NIMBLE when no model or modelValues
 is needed. These can be used for any purpose in R programming.  They
 can also be used as new functions and distributions in NIMBLE's
-extension of BUGS (Chapter \@ref(cha:user-defined)).
+extension of BUGS (Chapter \@ref(cha-user-defined)).
 
 
   Here's a basic example implementing the textbook calculation of
@@ -194,7 +194,7 @@ As in R (and nimbleFunctions), arguments are matched by order or by name
 (if given). Standard arguments to distribution functions in R
 (`log`, `log.p`, `lower.tail`) can be used and have the same
 defaults. User-defined distributions for BUGS (Chapter
-\@ref(cha:user-defined)) can also be used from
+\@ref(cha-user-defined)) can also be used from
 nimbleFunctions. 
 
 For standard distributions, we rely on R's regular help pages
@@ -231,6 +231,7 @@ Supported distributions, listed by their 'd' function, include:
   - `dmnorm_chol(x, mean, cholesky, prec_param, log)`
   - `dmvt_chol(x, mu, cholesky, df, prec_param, log)`
   - `dwish_chol(x, cholesky, df, scale_param, log)`
+  - `dinvwish_chol(x, cholesky, df, scale_param, log)`
 
 
 

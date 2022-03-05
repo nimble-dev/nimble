@@ -131,6 +131,11 @@ powOpTests <- make_AD_test_batch(
   powOps, powArgs
 )
 
+pow_int_OpTests <- list(
+  make_AD_test(c('double(0)', 'integer(0)'), op = 'pow_int', wrt_args = 'arg1'),
+  make_AD_test(c('double(1, 4)', 'integer(0)'), op = 'pow_int', wrt_args = 'arg1')
+)
+
 #######################
 ## binary reduction ops
 #######################

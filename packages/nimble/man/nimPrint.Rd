@@ -25,4 +25,3 @@ nimPrint('Answer is ', ans) ## would work in R or NIMBLE
 \seealso{
 \code{\link{cat}}
 }
-

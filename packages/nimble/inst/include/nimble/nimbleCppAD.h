@@ -43,6 +43,38 @@
 #include <vector>
 #include <algorithm>
 
+/*
+  nimble_atomic_base has two purposes:
+1. It allows a base calss pointer to any nimble atomic
+2. Its constructor records the atomic vec manager (a static in CppAD), and
+   its destructor resets that to its original location.
+   This prevents crashes when the atomic_three<> destructor is called.
+
+   ***It is necessary to declare atomic_three<> inheritance before nimble_atomic_base
+   inheritance to guarantee the correct order of destructor calls.***
+ */
+class nimble_atomic_base {
+ public:
+  nimble_atomic_base();
+  virtual ~nimble_atomic_base();
+  std::vector<CppAD::local::atomic_index_info>* vec_ptr_where_constructed;
+  /* This needs to be virtual to avoid any compiler inlining it and then
+     crossing boundaries of the static variables used in CppAD.
+     By making it virtual, the impementation will be looked up at
+     run-time and will be in the correct DLL. */
+  virtual void set_CppAD_atomic_info_vec_manager( std::vector<CppAD::local::atomic_index_info>* vec_ptr );
+};
+
+void track_nimble_atomic(nimble_atomic_base *obj, void *tape_mgr_ptr, std::vector<CppAD::local::atomic_index_info>* vec_ptr );
+
+class atomic_lgamma_class;
+class atomic_pow_int_class;
+class atomic_backsolve_class;
+class atomic_forwardsolve_class;
+class atomic_cholesky_class;
+class atomic_matmult_class;
+class atomic_matinverse_class;
+
 void copy_CppADdouble_to_double(CppAD::AD<double> *first, CppAD::AD<double> *last, double *output);
 void copy_CppADdouble_to_double(NimArrBase< CppAD::AD<double> > &from, NimArrBase< double > &to);
 void copy_CppADdouble_to_double(CppAD::AD<double> &from, double &to);
@@ -124,6 +156,54 @@ void derivs_tick_id();
 void show_tick_id();
 #endif
 
+/* A place to manage atomic objects associated with a tape */
+/* The system of atomic_pair and the "new_" and "delete_" functions
+   came from efforts to manage the atomic vec manager (a static inside CppAD) used
+   when any atomic is created or destructed. This was necessary in some
+   cases because nimble pass objects between DLLs, in a way that we hope to
+   clean up in the future but has always worked but has caused some headaches
+   when interacting with CppAD statics.  At this point the atomic_pair
+   system may be entirely unnecessary because nimble_atomic_base does the job
+   of recording the atomic vec manager on construction and ensuring
+   the same one is used during destruction.  However we are leaving both
+   systems in place in further needs are revealed. */
+class nimble_CppAD_tape_mgr {
+ public:
+  typedef std::pair<nimble_atomic_base *, std::vector<CppAD::local::atomic_index_info>* > atomic_pair;
+  std::vector<atomic_pair> atomic_ptrs;
+  void add_atomic_ptr(nimble_atomic_base *new_atomic_ptr, std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+  CppAD::ADFun<double> *ADtape_;
+  CppAD::ADFun<double>* &ADtape() {return ADtape_;};
+  CppAD::local::ADTape<double>* internal_tape_ptr_;
+  void reset();
+  void set_internal_tape(CppAD::local::ADTape<double>* internal_tape_ptr);
+  nimble_CppAD_tape_mgr();
+  ~nimble_CppAD_tape_mgr();
+
+  int lgamma_index[5];
+  bool lgamma_exists[5];
+  atomic_lgamma_class* new_atomic_lgamma(const std::string& name, int bO);
+  void delete_atomic_lgamma(atomic_lgamma_class *atomic_lgamma);
+  atomic_lgamma_class *get_atomic_lgamma(int baseOrder,
+					 std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+  int pow_int_index;
+  bool pow_int_exists;
+  atomic_pow_int_class* new_atomic_pow_int(const std::string& name);
+  void delete_atomic_pow_int(atomic_pow_int_class *atomic_pow_int);
+  atomic_pow_int_class *get_atomic_pow_int(std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+  
+  atomic_backsolve_class* new_atomic_backsolve(const std::string& name);
+  void delete_atomic_backsolve(atomic_backsolve_class *atomic_backsolve);
+  atomic_forwardsolve_class* new_atomic_forwardsolve(const std::string& name);
+  void delete_atomic_forwardsolve(atomic_forwardsolve_class *atomic_forwardsolve);
+  atomic_cholesky_class* new_atomic_cholesky(const std::string& name);
+  void delete_atomic_cholesky(atomic_cholesky_class *atomic_cholesky);
+  atomic_matmult_class* new_atomic_matmult(const std::string& name);
+  void delete_atomic_matmult(atomic_matmult_class *atomic_matmult);
+  atomic_matinverse_class* new_atomic_matinverse(const std::string& name);
+  void delete_atomic_matinverse(atomic_matinverse_class *atomic_matinverse);
+};
+
 /* nimbleCppADinfoClass is the class to convey information from a nimbleFunction
    object
    to generic CppAD driver wrappers like calcjacobian.
@@ -135,7 +215,13 @@ class nimbleCppADinfoClass {
   std::vector< CppAD::AD<double> > independentVars_meta;
   std::vector< CppAD::AD<double> > dynamicVars_meta;
   bool metaFlag;
-  CppAD::ADFun<double> *ADtape;
+  nimble_CppAD_tape_mgr ADtape_mgr_;
+  bool ADtape_empty() {return ADtape_mgr_.ADtape() == 0;}
+  void ADtape_reset() {ADtape_mgr_.reset();}
+  void set_internal_tape(CppAD::local::ADTape<double>* internal_tape_ptr) {
+    ADtape_mgr_.set_internal_tape(internal_tape_ptr);}
+  CppAD::ADFun<double>* &ADtape() {return ADtape_mgr_.ADtape(); }
+  //  CppAD::ADFun<double> *ADtape;
   NodeVectorClassNew_derivs *updaterNV_;
   NodeVectorClassNew_derivs *updaterNV() {return updaterNV_;}
   nimbleCppADinfoClass& setUpdaterNV(NodeVectorClassNew_derivs &UNV) {
@@ -158,17 +244,17 @@ class nimbleCppADinfoClass {
   }
  nimbleCppADinfoClass() :
   metaFlag(false),
-    ADtape(0),
+    //    ADtape(0),
     updaterNV_(0),
     updateModel_(true),
     nodeFunPtrSet_(false),
     nodeFunPtr_(0)
       {}
   ~nimbleCppADinfoClass() {
-    if(ADtape) {
-      delete ADtape;
-      ADtape = 0;
-    }
+    /* if(ADtape) { */
+    /*   delete ADtape; */
+    /*   ADtape = 0; */
+    /* } */
   }
 };
 
@@ -310,7 +396,7 @@ inline nimbleCppADinfoClass& set_tape_ptr(nimbleCppADinfoClass &ADtapeSetup,
 					  CppAD::ADFun<double>* &ADtapePtr,
 					  bool do_this) {
   if(!ADtapePtr) ADtapePtr = new CppAD::ADFun<double>;
-  if(do_this) ADtapeSetup.ADtape = ADtapePtr;
+  if(do_this) ADtapeSetup.ADtape() = ADtapePtr;
   return ADtapeSetup;
 }
 

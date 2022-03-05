@@ -23,7 +23,7 @@ nimPointerList <- setRefClass('nimPointerList', ## A base class for a list of ob
 #' @author NIMBLE development team
 #' @export
 #' @details
-#' See the User Manual for information about creating and populating a \code{nimbleFunctionList}.
+#' See the \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} for information about creating and populating a \code{nimbleFunctionList}.
 nimbleFunctionList <- setRefClass('nimbleFunctionList',
                                   contains = 'nimPointerList',
                                   methods = list(

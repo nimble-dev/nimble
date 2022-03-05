@@ -72,6 +72,7 @@ cppOutputCalls <- c(## makeCallList(recyclingRuleOperatorsAD, 'cppOutputRecyclin
                         ADbreak = 'cppOutputSkip')
                     )
 cppOutputCalls[['pow']] <-  'cppOutputPow'
+cppOutputCalls[['pow_int']] <-  'cppOutputPow'
 cppMidOperators <- midOperators
 cppMidOperators[['::']] <- '::'
 cppMidOperators[['%*%']] <- ' * '
@@ -187,7 +188,7 @@ cppOutputNimDerivsPrependType <- function(code, symTab){
   ##          })), collapse = ', '), ')')
   ## }
   ## else
-      if(identical(nimbleUserNamespace$cppADCode, 2L)) {
+    if(identical(nimbleUserNamespace$cppADCode, 2L)) {
     argList <- list()
     logFixedString <- ''
     for(i in seq_along(code$args)){
@@ -536,7 +537,7 @@ cppOutputPow <- function(code, symTab) {
         ## if(isTRUE(nimbleUserNamespace$cppADCode))
         ##     FALSE
         ## else
-            if(is.numeric(code$args[[2]]) )
+        if(is.numeric(code$args[[2]]) )
             TRUE
         else identical(code$args[[2]]$nDim, 0)
     if(useStaticCast) {

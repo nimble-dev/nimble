@@ -47,6 +47,7 @@ void nodeFun::initialize_AD_model_before_recording(NodeVectorClassNew_derivs &NV
 }  
 
 void nodeFun::set_atomic_info_from_nodeFun(std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  //  std::cout<<"changing model vec_ptr from "<<CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage()<<" to "<<vec_ptr<<std::endl;
   CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage(1, vec_ptr);
 }
 

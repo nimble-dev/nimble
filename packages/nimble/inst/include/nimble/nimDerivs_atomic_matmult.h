@@ -8,6 +8,7 @@
 #include <R.h>
 #include <Rinternals.h>
 #include <Rmath.h>
+#include "nimbleCppAD.h"
 #include "nimDerivs_vecmat_utils.h"
 
 /*
@@ -91,13 +92,14 @@ MatrixXd_CppAD nimDerivs_matmult(const MatrixXd_CppAD &x1,
 				 const MatrixXd_CppAD &x2,
 				 bool debug = false);
 
-class atomic_matmult_class :  public CppAD::atomic_three< double > {
+class atomic_matmult_class :  public CppAD::atomic_three< double >, public nimble_atomic_base {
  private:
   int n1_;
   std::vector<double> X_stored;
   std::vector<CppAD::AD<double> > X_AD_stored;
   matrix_category X1cat_, X2cat_;
   bool x1_is_constant_, x2_is_constant_;
+  bool x1_is_variable_, x2_is_variable_;
   
  public:
   double * get_X_stored_ptr() {return &X_stored[0];}
@@ -126,7 +128,12 @@ class atomic_matmult_class :  public CppAD::atomic_three< double > {
   bool &X2constant() {return x2_is_constant_;}
   bool const &X1constant() const {return x1_is_constant_;}
   bool const &X2constant() const {return x2_is_constant_;}
-  
+
+  bool &X1variable() {return x1_is_variable_;}
+  bool &X2variable() {return x2_is_variable_;}
+  bool const &X1variable() const {return x1_is_variable_;}
+  bool const &X2variable() const {return x2_is_variable_;}
+
   atomic_matmult_class(const std::string& name);
   void set_n1(int n1__) {n1_ = n1__;}
   int get_n1() {return n1_;}
@@ -203,5 +210,8 @@ class atomic_matmult_class :  public CppAD::atomic_three< double > {
 		      CppAD::vector<CppAD::AD<double> >&                     partial_x   ,
 		      const CppAD::vector<CppAD::AD<double> >&               partial_y   );
 };
+
+atomic_matmult_class* new_atomic_matmult(void* tape_mgr, const std::string& name);
+void delete_atomic_matmult(void* tape_mgr, atomic_matmult_class *atomic_matmult);
 
 #endif

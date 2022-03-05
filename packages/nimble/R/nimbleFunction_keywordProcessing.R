@@ -28,23 +28,6 @@ setupCodeTemplateClass <- setRefClass('setupCodeTemplateClass',
 
 
 ### KEYWORD INFO OBJECTS
-
-#		Current objects:
-#		d_gamma_keywordInfo
-#		pq_gamma_keywordInfo
-#		rgamma_keywordInfo
-#		d_dist_keywordInfo
-#		qp_dist_keywordInfo
-#		values_keywordInfo
-#		calculate_keywordInfo
-#		simulate_keywordInfo
-#		getLogProb_keywordInfo
-#		nimCopy_keywordInfo
-#		doubleBracket_keywordInfo
-#		dollarSign_keywordInfo
-#		singleBracket_keywordInfo
-		
-		
 		
 d_gamma_keywordInfo <- keywordInfoClass(
     keyword = 'dgamma',
@@ -116,7 +99,7 @@ nimSeq_keywordInfo <- keywordInfoClass(
                 newRunCode <- substitute(nimSeqLen(FROM, TO, 0, LEN), list(FROM = code$from, TO = code$to, LEN = code$length.out))
             } else {
                 byVal <- if(useBy) code$by else 1 ## default by = 1
-                newRunCode <- substitute(nimSeqBy(FROM, TO, BY, 0), list(FROM = code$from, TO = code$to, BY = code$by))
+                newRunCode <- substitute(nimSeqBy(FROM, TO, BY, 0), list(FROM = code$from, TO = code$to, BY = byVal))
             }
         }
         return(newRunCode)
@@ -260,7 +243,7 @@ calculate_keywordInfo <- keywordInfoClass(
 
         enableDerivs <- FALSE
         withDerivsOutputOnly <- FALSE
-        if(nimbleOptions('experimentalEnableDerivs')) {
+        if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs"))) {
           derivControl <- environment(nfProc$nfGenerator)$enableDerivs[[RCfunProc$name]]
           ## There are two cases.
           ## If enableDerivs has an entry, then derivatives are enabled either
@@ -653,6 +636,7 @@ doubleBracket_keywordInfo <- keywordInfoClass(
             }
             return(ans)			
         }
+        stop("Incorrect use of double brackets in: '", deparse(code), "'.")
     })
 
 modelMemberFun_keywordInfo <- keywordInfoClass(
@@ -1982,6 +1966,9 @@ nimDerivsInfoClass_init_impl <- function(.self
                                                logProb = FALSE)
     .self$wrtMapInfo <- makeMapInfoFromAccessorVectorFaster(wrtNodesAccessor)
 
+    # See comment in makeUpdateNodes for explanation of why both of the next
+    # two lines are necessary.
+    calcNodes <- model$expandNodeNames(calcNodes)
     calcNodes <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE)
     updateNodes <- makeUpdateNodes_impl(wrtNodes,
                                         calcNodes,
@@ -2060,7 +2047,12 @@ makeUpdateNodes <- function(wrtNodes,
                             model,
                             dataAsConstantNodes = TRUE) {
   wrtNodes <- model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE)
-  calcNodes <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE)
+  # This ensures that elements of a non-scalar node become the entire non-scalare node
+  calcNodes <- model$expandNodeNames(calcNodes)
+  # And then this splits into scalar components.
+  # E.g. if calcNodes is 'mu[1]' but 'mu[1:3]' is a vector node,
+  # the above call gets `mu[1:3]` and then the below call splits it.
+  calcNodes <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE) 
   makeUpdateNodes_impl(wrtNodes,
                        calcNodes,
                        model,

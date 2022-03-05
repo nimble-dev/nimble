@@ -8,12 +8,13 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
 .nimbleOptions <- as.environment(
     list(
         useCppADoptimize = TRUE,
-        skipADcholAtomic = TRUE,
-        skipADsolveAtomic = TRUE,
-        skipADmatMultAtomic = TRUE, # If TRUE, do not use nimble's CppAD atomic class for %*%
-        skipADmatInverseAtomic = TRUE, # If TRUE, do not use nimble's CppAD atomic class for inverse
+        useADcholAtomic = FALSE, # If TRUE, use nimble's CppAD atomic for cholesky decomposition
+        useADsolveAtomic = FALSE, # If TRUE, use nimble's CppAD atomic for matrix inverse
+        useADmatMultAtomic = FALSE, # If TRUE, use nimble's CppAD atomic class for %*%
+        useADmatInverseAtomic = FALSE, # If TRUE, use nimble's CppAD atomic class for inverse
         groupDetermWithGivenInCondIndSets = TRUE, # used in getConditionallyIndependentSets
         use_C_getParents = FALSE,
+        useSafeDeparse = TRUE,
         useNewConfigureMCMC = TRUE,
         oldConjugacyChecking = FALSE,
         disallow_multivariate_argument_expressions = TRUE,
@@ -27,7 +28,8 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         enableSpecialHandling = FALSE,
         pauseAfterWritingFiles = FALSE,
         CppAD_directory = NA,
-        experimentalEnableDerivs = FALSE,
+        enableDerivs = TRUE,
+        buildDerivs = FALSE,
         useADreconfigure = TRUE,
         convertSingleVectorsToScalarsInSetupArgs = TRUE,
         messagesWhenBuildingOrFinalizingCppObjects = FALSE,
@@ -46,6 +48,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         clearNimbleFunctionsAfterCompiling = FALSE,
         checkModel = FALSE,
         checkNimbleFunction = TRUE,
+        checkDuplicateNodeDefinitions = TRUE,
         verbose = TRUE,
         verboseErrors = FALSE,
 
@@ -56,52 +59,15 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
 
         showCompilerOutput = FALSE,
 
-        ## uses the 'new' system for dynamically generated conjugate samplers (DT, March 2016),
-        ## rather than the older 'static' system.
-        ## update May 2016: old (non-dynamic) system is no longer supported -DT
-        ##useDynamicConjugacy = TRUE,
-
-
-        ## samplerAssignmentRules system deprecated Nov 2020 -DT
-        ## samplerAssignmentRules object that controls the default sampler assignments by configureMCMC.
-        ## value is set to samplerAssignmentRules() (the defaults) in MCMC_configuration.R
         MCMCprogressBar = TRUE,
-        ##MCMCuseSamplerAssignmentRules = FALSE,
         MCMCsaveHistory = FALSE,
-        ##MCMCdefaultSamplerAssignmentRules = NULL,
         MCMCmultivariateNodesAsScalars = FALSE,
         MCMCmonitorAllSampledNodes = FALSE,
         MCMCuseConjugacy = TRUE,
         MCMCjointlySamplePredictiveBranches = TRUE,
+        MCMCRJcheckHyperparam = TRUE,
         MCMCenableWAIC = FALSE
         
-        ## default settings for MCMC samplers
-        ## control list defaults for MCMC samplers are
-        ## now part of the sampler functions (setup code).
-        ## -DT July 2017
-        ##MCMCcontrolDefaultList = list(
-        ##    log = FALSE,
-        ##    reflective = FALSE,
-        ##    adaptive = TRUE,
-        ##    adaptScaleOnly = FALSE,
-        ##    adaptInterval = 200,
-        ##    scale = 1,
-        ##    propCov = 'identity',
-        ##    sliceWidth = 1,
-        ##    sliceMaxSteps = 100,
-        ##    sliceAdaptFactorMaxIter = 15000,  ##factorBurnIn = 15000,
-        ##    sliceAdaptFactorInterval = 1000,  ##factorAdaptInterval = 1000,
-        ##    sliceAdaptWidthMaxIter = 512,     ##sliceBurnIn = 512,
-        ##    sliceAdaptWidthTolerance = 0.1,
-        ##    scaleAdaptInterval = 200,
-        ##    sliceWidths = 'oneVec',
-        ##    pfNparticles = 1000,
-        ##    pfResample = FALSE,
-        ##    pfOptimizeNparticles = FALSE,
-        ##    pfType = 'bootstrap',
-        ##    pfLookahead = 'simulate',
-        ##    carUseConjugacy = TRUE
-        ##)
     )
 )
 

@@ -19,4 +19,3 @@ The NIMBLE \code{stop} is similar to the native R \code{stop}, but it takes only
 \author{
 Perry de Valpine
 }
-

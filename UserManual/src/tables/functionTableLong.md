@@ -20,7 +20,7 @@ indicates if the function can take a vector as an argument (i.e., if the functio
   `sqrt(x)`              square root                                                  yes     yes
   `abs(x)`               absolute value                                               yes  	  yes
   `step(x)`              step function at 0              0 if $x<0$, 1 if $x>=0$      yes     yes
-  `equals(x)`            equality of two scalars         1 if $x==y$, 0 if $x != y$   yes	  yes	 
+  `equals(x, y)`         equality of two scalars         1 if $x==y$, 0 if $x != y$   yes	  yes
   `cube(x)`              third power                     $x^3$                        yes	  yes
   `sin(x), cos(x),`      trigonometric functions                                      yes     yes
     `tan(x)` 

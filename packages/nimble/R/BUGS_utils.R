@@ -48,25 +48,25 @@ determineNodeIndexSizes <- function(node) {
 
 makeSizeAndDimList <- function(code, nodesToExtract, unrolledIndicesMatrix = NULL, allSizeAndDimList = list(), checkRagged = FALSE){
   if(is.call(code)){
-    if(deparse(code[[1]]) == '[') {
-      if(deparse(code[[2]]) %in% nodesToExtract){
+    if(safeDeparse(code[[1]], warn = TRUE) == '[') {
+      if(safeDeparse(code[[2]], warn = TRUE) %in% nodesToExtract){
         thisCodeExprList <- list()
         numInds <- length(code) - 2
         codeLength <- c()
         for(i in 1:numInds){
-          if(is.call(code[[i+2]]) && deparse(code[[i+2]][[1]]) == ':'){
+          if(is.call(code[[i+2]]) && safeDeparse(code[[i+2]][[1]], warn = TRUE) == ':'){
             if(is.numeric(code[[i+2]][[2]])){
               codeStartInds <- code[[i+2]][[2]]
             }
             else{
-              codeStartInds <- unrolledIndicesMatrix[, deparse(code[[i+2]][[2]])]
+              codeStartInds <- unrolledIndicesMatrix[, safeDeparse(code[[i+2]][[2]], warn = TRUE)]
             }
 
             if(is.numeric(code[[i+2]][[3]])){
               codeEndInds <- code[[i+2]][[3]]
             }
             else{
-              codeEndInds <- unrolledIndicesMatrix[, deparse(code[[i+2]][[3]])]
+              codeEndInds <- unrolledIndicesMatrix[, safeDeparse(code[[i+2]][[3]], warn = TRUE)]
             }
             thisCodeLength <- codeEndInds - codeStartInds + 1
             if(checkRagged && !all(thisCodeLength == thisCodeLength[1])){ ## checkRagged may not be used anywhere anymore. In early versions of AD, we had to exclude ragged arrays.  Now they should work.  Dynamic ragged arrays will not work.
@@ -80,8 +80,8 @@ makeSizeAndDimList <- function(code, nodesToExtract, unrolledIndicesMatrix = NUL
         }
         thisCodeExprList$lengths <- codeLength
         thisCodeExprList$nDim <- sum(codeLength > 1)
-        if(is.null(allSizeAndDimList[[deparse(code[[2]])]])) allSizeAndDimList[[deparse(code[[2]])]][[1]] <- thisCodeExprList
-        else allSizeAndDimList[[deparse(code[[2]])]][[length(allSizeAndDimList[[deparse(code[[2]])]]) + 1]] <- thisCodeExprList
+        if(is.null(allSizeAndDimList[[safeDeparse(code[[2]], warn = TRUE)]])) allSizeAndDimList[[safeDeparse(code[[2]], warn = TRUE)]][[1]] <- thisCodeExprList
+        else allSizeAndDimList[[safeDeparse(code[[2]], warn = TRUE)]][[length(allSizeAndDimList[[safeDeparse(code[[2]], warn = TRUE)]]) + 1]] <- thisCodeExprList
         return(allSizeAndDimList)
       }
     }
@@ -210,7 +210,7 @@ exprAsListDrop2 <- function(expr) {
     if(is.null(ans)) as.list(expr[-c(1,2)]) else ans
 }
 
-getCallText <- function(code)      deparse(code[[1]])
+getCallText <- function(code)      safeDeparse(code[[1]], warn = TRUE)
 
 parseTreeSubstitute <- function(pt, pattern, replacement) {
     if(identical(pt, pattern))    return(replacement)
@@ -241,7 +241,7 @@ Rname2CppName <- function(rName, colonsOK = TRUE, maxLength = 250) {
     ## This will serve to replace and combine our former Rname2CppName and nameMashupFromExpr
     ## which were largely redundant
     if (!is.character(rName)) 
-        rName <- deparse(rName)
+        rName <- safeDeparse(rName)
 
     if( colonsOK) {
         # Substitute single colons but preserve double colons.
@@ -355,8 +355,4 @@ is.Cmodel <- function(obj, inputIsName = FALSE) {
     return(inherits(obj, 'CmodelBaseClass'))
 }
 
-# extracts dimension from character vec of form such as c("double(0)", "integer(1)")
-## getDimFromType <- function(text) {
-##     sapply(parse(text = text), '[[', 2)
-## }
 

@@ -17,7 +17,7 @@ void atomic_cholesky(const MatrixXd_CppAD &x,
 
 MatrixXd_CppAD nimDerivs_EIGEN_CHOL(const MatrixXd_CppAD &x);
 
-class atomic_cholesky_class : public CppAD::atomic_three< double > {
+class atomic_cholesky_class : public CppAD::atomic_three< double >, public nimble_atomic_base {
  public:
   atomic_cholesky_class(const std::string& name);
  private:
@@ -77,5 +77,8 @@ class atomic_cholesky_class : public CppAD::atomic_three< double > {
 		       CppAD::vector<CppAD::AD<double> >&                     partial_x   ,
 		       const CppAD::vector<CppAD::AD<double> >&               partial_y   );
 };
+
+atomic_cholesky_class* new_atomic_cholesky(void* tape_mgr, const std::string& name);
+void delete_atomic_cholesky(void* tape_mgr, atomic_cholesky_class *atomic_cholesky);
 
 #endif

@@ -4,8 +4,13 @@
 \alias{configureRJ}
 \title{Configure Reversible Jump for Variable Selection}
 \usage{
-configureRJ(conf, targetNodes, indicatorNodes = NULL, priorProb = NULL,
-  control = list(mean = NULL, scale = NULL, fixedValue = NULL))
+configureRJ(
+  conf,
+  targetNodes,
+  indicatorNodes = NULL,
+  priorProb = NULL,
+  control = list(mean = NULL, scale = NULL, fixedValue = NULL)
+)
 }
 \arguments{
 \item{conf}{An \code{MCMCconf} object.}
@@ -140,13 +145,12 @@ mean(samples[ , "beta2"][samples[ , "beta2"] != 0])
 }
 
 }
-\author{
-Sally Paganin, Perry de Valpine, Daniel Turek
-}
 \references{
 Peter J. Green. (1995). Reversible jump Markov chain Monte Carlo computation and Bayesian model determination. \emph{Biometrika}, 82(4), 711-732.
 }
 \seealso{
 \code{\link{samplers}} \code{\link{configureMCMC}}
 }
-
+\author{
+Sally Paganin, Perry de Valpine, Daniel Turek
+}

@@ -24,7 +24,7 @@ ndf_createDetermSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRep
                                 RHS = RHS,
                                 NANEXPR = nanExpr,
                                 CONDITION = dynamicIndexLimitsExpr,
-                                TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))))
+                                TEXT = paste0("  [Warning] Dynamic index out of bounds: ", safeDeparse(RHSnonReplaced))))
     } else code <- substitute(LHS <<- RHS,
                               list(LHS = LHS,
                                    RHS = RHS))
@@ -53,7 +53,7 @@ ndf_createStochSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRepl
                                 RHS = RHS,
                                 NANEXPR = nanExpr,
                                 CONDITION = dynamicIndexLimitsExpr,
-                                TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))))
+                                TEXT = paste0("  [Warning] Dynamic index out of bounds: ", safeDeparse(RHSnonReplaced))))
     } else {
         code <- substitute(LHS <<- RHS,
                            list(LHS = LHS,
@@ -149,15 +149,7 @@ ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE,
                                        print(TEXT)}, # LocalNewLogProb <- -Inf,
                                    list(STOCHCALC = RHS,
                                         CONDITION = dynamicIndexLimitsExpr,
-                                        TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))))
-            ## } else if(ADFunc){  ## don't want global assignment for _AD_ functions.
-            ##     code <- substitute(if(isTRUE(CONDITION)) LOGPROB <- STOCHCALC
-            ##                        else {LOGPROB <- NaN
-            ##                            print(TEXT)},
-            ##                        list(LOGPROB = logProbNodeExpr,
-            ##                             STOCHCALC = RHS,
-            ##                             CONDITION = dynamicIndexLimitsExpr,
-            ##                             TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))))
+                                        TEXT = paste0("  [Warning] Dynamic index out of bounds: ", safeDeparse(RHSnonReplaced))))
             } else {
 
                 code <- substitute(if(isTRUE(CONDITION)) LOGPROB <<- STOCHCALC
@@ -166,7 +158,7 @@ ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE,
                                    list(LOGPROB = logProbNodeExpr,
                                         STOCHCALC = RHS,
                                         CONDITION = dynamicIndexLimitsExpr,
-                                        TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))))
+                                        TEXT = paste0("  [Warning] Dynamic index out of bounds: ", safeDeparse(RHSnonReplaced))))
             }
         } else {
             if(diff) {
@@ -236,7 +228,7 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
                                        print(TEXT)}, # LocalNewLogProb <- -Inf,
                                    list(STOCHCALC = RHS,
                                         CONDITION = dynamicIndexLimitsExpr,
-                                        TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))))
+                                        TEXT = paste0("  [Warning] Dynamic index out of bounds: ", safeDeparse(RHSnonReplaced))))
 
     
     if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
@@ -270,7 +262,7 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
                                                    PDIST_UPPER = PDIST_UPPER,
                                                    DDIST_LOWER = DDIST_LOWER,
                                                    CONDITION = dynamicIndexLimitsExpr,
-                                                   TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))
+                                                   TEXT = paste0("  [Warning] Dynamic index out of bounds: ", safeDeparse(RHSnonReplaced))
                                                )), list( e = substCode)))
         } else {
             if(discrete && lower != -Inf) {
@@ -303,7 +295,7 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
                                                    PDIST_UPPER = PDIST_UPPER,
                                                    DDIST_LOWER = DDIST_LOWER,
                                                    CONDITION = dynamicIndexLimitsExpr,
-                                                   TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))
+                                                   TEXT = paste0("  [Warning] Dynamic index out of bounds: ", safeDeparse(RHSnonReplaced))
                                                )), list(e = substCode)))
         }
     } else {
