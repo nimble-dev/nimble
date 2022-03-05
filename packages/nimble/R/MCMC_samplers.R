@@ -15,8 +15,8 @@ sampler_BASE <- nimbleFunctionVirtual(
         after_chain  = function() { }
     ),
     methodControl = list(
-        before_chain = list(abstract = FALSE),
-        after_chain  = list(abstract = FALSE)
+        before_chain = list(required = FALSE),
+        after_chain  = list(required = FALSE)
     )
 )
 
