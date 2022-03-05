@@ -516,7 +516,7 @@ bool atomic_cholesky_class::reverse(
   metaEigenConstMap Yadjoint_map(&partial_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
   metaEigenMap Xadjoint_map(&partial_x[0], n, n, EigStrDyn(nrow*n, nrow) );
   if(order_up >= 0) {
-    MatrixXd_CppAD Yadjoint_UT =  Ymap.transpose().template triangularView<Eigen::Upper>();//nimDerivs_matmult(Yadjoint_map, Ymap.transpose().template triangularView<Eigen::Lower>()).template triangularView<Eigen::Upper>();
+    MatrixXd_CppAD Yadjoint_UT = nimDerivs_matmult(Yadjoint_map, Ymap.transpose().template triangularView<Eigen::Lower>()).template triangularView<Eigen::Upper>();
     //      MatrixXd_CppAD Yadjoint_UT = (Yadjoint_map * Ymap.transpose().template triangularView<Eigen::Lower>()).template triangularView<Eigen::Upper>();
     HalfDiag(Yadjoint_UT);
     MatrixXd_CppAD Uinv_PhiStuff_UinvT = nimDerivs_EIGEN_BS(Ymap,
