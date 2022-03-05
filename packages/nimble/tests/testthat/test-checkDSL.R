@@ -354,9 +354,8 @@ test_that("nimbleFunctionVirtual works with abstract and non-abstract methods", 
     run = function(x = double()) {returnType(double())},
     methods = list(
       foo = function(x = double(1)) {returnType(double(1))},
-      hw = function(x = double(1)) {returnType(void())}
-    ),
-    methodControl = list(hw = list(abstract = FALSE))
+      hw = function(x = double(1)) {a < 1; returnType(void())}    ),
+    methodControl = list(hw = list(required = FALSE))
   )
 
   dNFa <- nimbleFunction(

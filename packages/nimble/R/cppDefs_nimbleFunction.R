@@ -29,7 +29,7 @@ cppVirtualNimbleFunctionClass <- setRefClass('cppVirtualNimbleFunctionClass',
             nfProc <<- nfp
             assign('cppDef', .self, envir = environment(nfProc$nfGenerator))
             for(i in names(nfp$RCfunProcs)) { ## This is what we should do for cppNimbleFunctions too
-                abstract <- !isFALSE( environment(nfProc$nfGenerator)$methodControl[[i]]$abstract ) # default = TRUE
+                abstract <- !isFALSE( environment(nfProc$nfGenerator)$methodControl[[i]]$required ) # default required = TRUE.  required is a synonym for abstract.  If it's abstract, it's required in derived classes.
                 functionDefs[[i]] <<- RCfunctionDef(virtual = TRUE, abstract = abstract)
                 functionDefs[[i]]$buildFunction(nfp$RCfunProcs[[i]])
             }
