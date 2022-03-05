@@ -22,7 +22,8 @@ nf_refClassLabelMaker <- labelFunctionCreator('nfRefClass')
 nimbleFunctionVirtual <- function(contains = NULL,
                                   run = function() { },
                                   methods     = list(),
-                                  name        = NA) {
+                                  name        = NA,
+                                  methodControl = list()) {
     virtual <- TRUE
     if(is.na(name)) name <- nf_refClassLabelMaker()
     className <- name
@@ -34,7 +35,7 @@ nimbleFunctionVirtual <- function(contains = NULL,
     nfRefClassDef <- nfRefClass <- NULL ## Existence of these makes this treated like a nfGenerator
     environment(generatorFunction) <- GFenv <- new.env()
     parent.env(GFenv) <- parent.frame()
-    for(var in c('generatorFunction','nfRefClassDef','nfRefClass','run','methods','methodList','name', 'className', 'contains', 'virtual')) {
+    for(var in c('generatorFunction','nfRefClassDef','nfRefClass','run','methods','methodList','name', 'className', 'contains', 'virtual', 'methodControl')) {
         GFenv[[var]] <- get(var)
     }
     return(generatorFunction)
