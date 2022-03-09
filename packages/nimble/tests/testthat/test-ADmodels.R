@@ -6,6 +6,11 @@ nimbleOptions(buildDerivs = TRUE)
 
 warning("All atomics currently off as result of NCT issue 274")
 
+nimbleOptions(useADcholAtomic = TRUE)
+nimbleOptions(useADsolveAtomic  = TRUE)                              
+nimbleOptions(useADmatMultAtomic = TRUE)                             
+nimbleOptions(useADmatInverseAtomic  = TRUE)                       
+
 ##nimbleOptions(showCompilerOutput = TRUE)
 context("Testing of derivatives for calculate() for nimbleModels")
 
@@ -409,6 +414,7 @@ code <- nimbleCode({
     })
 model <- nimbleModel(code, inits = inits, data = data)
 test_ADModelCalculate(model, verbose = TRUE, name = 'basic model, lifted nodes')
+## 2022-03-05: good
 
 ## the first few of these mimic and may replace Nick's tests
 
@@ -427,8 +433,10 @@ data <- list(y = rnorm(3))
 model <- nimbleModel(code, data = data)
 model$simulate()
 model$calculate()
-test_ADModelCalculate(model, verbose = TRUE, name = 'basic state space') 
-## with SOME random seeds, R and C 2d11 jacobian only match to only 1-2 digits with new updateNode values
+test_ADModelCalculate(model, verbose = TRUE, name = 'basic state space') # , relTol =c(1e-15,1e-8,1e-4,1e-4))
+## 2022-03-06: R vs C value off by ~1e-14 or less for various scenarios
+
+## (OLD) with SOME random seeds, R and C 2d11 jacobian only match to only 1-2 digits with new updateNode values
 ## presumably just stochasticity in that the Hessian tolerance is .001 
 
 ## basic tricky indexing
@@ -441,6 +449,7 @@ code <- nimbleCode({
 })
 model <- nimbleModel(code, dimensions = list(x = 2, y = 2, z = 3), constants = list(covMat = matrix(c(1.9, .7, .7, 1.3), 2)), inits = list(x = c(1, 1.2), y  = c(-.1,-.2)))
 test_ADModelCalculate(model, name = 'basic tricky indexing')
+## 2022-03-06: R vs C value off by ~1e-14 for EB only, only when modifying constant nodes
 
 ## state space model
 code <- nimbleCode({
@@ -461,8 +470,10 @@ inits <- list(a = 0.95, b=1, sigOE=0.05,sigPN = 0.2,  x= c(20.26036,20.51331,20.
 model <- nimbleModel(code, constants = constants, data = data, inits = inits)
 
 test_ADModelCalculate(model, name = 'state space model', useFasterRderivs = TRUE, verbose =  TRUE)
-## cOutput1d$value not identical to c(cOutput012$jacobian)
-## R and C 2d11 jacobian match to limited digits
+## 2022-03-07:
+## R and C 2d11 jacobian match to limited digits plus various cases (some not shown in the printout) where they are very far off, either a bug or some serious numerical issues with the R 2d11 jacobian
+## a few other cases of out of tolerance but still close
+## TODO: need to better understand why R 2d11 jacobian can be so far off
 
 ## link functions on stochastic nodes (not covered in BUGS examples)
 ## plus alt params and NIMBLE-provided distributions
@@ -482,6 +493,7 @@ model <- nimbleModel(code, constants = list(n = n), data = list(y = rpois(n, 1))
                      inits = list(mu0 = rnorm(1), sigma = runif(1), mu = exp(log_mu_init),
                                 log_mu = log_mu_init, a = runif(1), b = runif(1)))
 test_ADModelCalculate(model, name = 'stochastic link model')
+## 2022-03-07: good, but ML partial-based scenario comparisons use absolute tolerance.
 
 ## dexp and dt, which are provided by NIMBLE to allow expanded parameterizations
 code <- nimbleCode({
@@ -499,9 +511,10 @@ n <- 10
 model <- nimbleModel(code, constants = list(n = n), data = list(y = rnorm(n)),
                      inits = list(mu = rnorm(n), sigma = runif(1), nu = 2.5, mu0 = rnorm(1), sd0 = runif(1),
                                   tau = runif(1)))
-## (not seeing anymore) Heisenbug: with verbose=F (the default), can get cLogProb12 equal but not identical to cLogProb_orig
 test_ADModelCalculate(model, name = 'dt and dexp model')
+## 2022-03-07: good
 ## very slow to run rOutput2d11 (2-3 minutes) (numDeriv::jacobian slower than pracma::jacobian); might want to use fasterRderivs
+## (not seeing anymore) Heisenbug: with verbose=F (the default), can get cLogProb12 equal but not identical to cLogProb_orig
 
 ## vectorized deterministic nodes
 
@@ -516,7 +529,7 @@ n <- 10
 model <- nimbleModel(code, constants = list(n = n), data = list(y = rpois(n, 1)),
                      inits = list(logmu = rnorm(n)))
 test_ADModelCalculate(model, name = 'deterministic vectorized model')
-## 2d11 hessian R and C mismatch - as bad as only 1 digit in common
+## 2022-03-07: R and C 2d11 jacobian match to limited digits
 
 ## truncation
 ## Note that constraints are not handled
@@ -538,6 +551,8 @@ for(i in 1:n)
     y[i, ] <- rmnorm_chol(1, inits$mu, diag(rep(0.2, 4)), prec_param = FALSE)
 model <- nimbleModel(code, constants = list(n = n), data = list(y = y), inits = inits)
 test_ADModelCalculate(model, name = 'truncation model')
+## 2022-03-07: good
+
 
 code <- nimbleCode({
     y ~ dnorm(mu, 1)
@@ -545,7 +560,7 @@ code <- nimbleCode({
     mu0 ~ dnorm(0,1)
 })
 model <- nimbleModel(code, data = list(y = 1), inits = list(mu = 0.5, mu0 = 1))
-## compilation error: issue #254
+## 2022-03-07: compilation error: issue #254
 test_ADModelCalculate(model, name = 'truncation on non-top node')
 
 
@@ -556,7 +571,7 @@ code <- nimbleCode({
     b ~ dunif(0,5 )
 })
 model <- nimbleModel(code, data = list(y = 1), inits = list(mu = 0.5,a=1,b=1))
-## compilation error
+## 2022-03-07: compilation error
 test_ADModelCalculate(model, name = 'truncation with dbeta')
 
 
@@ -581,14 +596,7 @@ model$simulate()
 model$calculate()
 model$setData('y','w')
 test_ADModelCalculate(model, name = 'complicated indexing')
-## compiled/uncompiled 01, 012, 02 values out of tolerance in various cases
-## comp/unc 2d11 hessian out of tolerance
-## same types of issues but not exact same numerical results when using atomics
-## occasional rOutput2d11 values way off (e.g., first value in EB, idx =3 is -243 (or -251) (see issue 275 to reproduce) (not seeing as of 2021-04-29)
-
-## if use pracma::jacobian:
-## unc/compiled 01,012,02 values out of tolerance in various cases
-## unc/compiled 012, 12 jacobian out of tolerance in one case
+## 2022-03-07: R and C 2d11 jacobian match to limited digits, including some big discrepancies (and see NCT issue 275), various R vs C values have minor discrepancies; machine precision difference in C 2d and 012 hessians.
 
 ## using different subsets of a matrix
 code <- nimbleCode({
@@ -605,7 +613,7 @@ model$simulate()
 model$calculate()
 model$setData('y1', 'y2')
 test_ADModelCalculate(model, name = 'different subsets of a matrix')
-## comp/unc values out of tolerance for HMC/MAP partial
+## 2022-03-08: R and C 2d11 jacobian match to limited digits, but without big discrepancies; various R vs C values have minor discrepancies in HMC/MAP partial
 
 ## vectorized covariance matrix
 code <- nimbleCode({
@@ -624,8 +632,8 @@ model$simulate()
 model$calculate()
 model$setData('y')
 test_ADModelCalculate(model, excludeUpdateNodes = 'dist', name = 'dmnorm with vectorized covariance matrix')
-## comp 2d/012 hessian out of tolerance, comp/unc values out of tolerance for ML partial for non-atomics
-## with atomics, only one comp 2d/012 hessian out of tolerance
+## 2022-03-08: minor C 2d/012 hessian discrepancy, minor R vs C values disprepancy 
+
 
 ## vectorized covariance matrix, chol param
 code <- nimbleCode({
@@ -647,9 +655,9 @@ model <- nimbleModel(code, constants = list(n = n),
 model$simulate()
 model$calculate()
 model$setData('y')
-## rOutput 01, 012, 02 values out of tolerance with compiled counterparts in one use case
 test_ADModelCalculate(model, excludeUpdateNodes = 'dist',
                       name = 'dmnorm with vectorized covariance matrix, chol param')
+## 2022-03-08: minor C 2d/012 hessian discrepancy, minor R vs C values disprepancy, R and C 2d11 jacobian match to limited digits, including some big discrepancies
 
 
 ## MVN with various parameterizations and user-defined functions
@@ -687,7 +695,8 @@ model$calculate()
 model$setData('y')
 test_ADModelCalculate(model, excludeUpdateNodes = 'dist',
                       name = 'dnorm with user-defined fxn for covariance with loops')
-## 2d/012 hessian out of tolerance
+## 2022-03-08: minor C 2d/012 hessian discrepancy, minor R vs C values disprepancy
+
 
 ## user-defined cov function vectorized
 
@@ -713,11 +722,9 @@ model <- nimbleModel(code, constants = list(n = n),
 model$simulate()
 model$calculate()
 model$setData('y')
-## compiled 2d, 012 hessians out of tolerance in several cases
-## compiled and uncompiled 01, 012, 02 value out of tolerance in a couple cases
 test_ADModelCalculate(model, excludeUpdateNodes = 'dist',
                       name = 'dmnorm with user-defined vectorized fxn')
-## 2d/012 hessian out of tolerance
+## 2022-03-08: minor C 2d/012 hessian discrepancy only when not using atomics
 
 ## other dmnorm parameterizations
 code <- nimbleCode({
@@ -743,8 +750,9 @@ model <- nimbleModel(code, constants = list(n = n),
 model$simulate()
 model$calculate()
 model$setData('y')
-## comp/unc value out of tolerance for EB
 test_ADModelCalculate(model, name = 'various dmnorm parameterizations')
+## 2022-03-08:  minor R vs C values disprepancy, R and C 2d11 jacobian match to limited digits, including some big discrepancies
+
 
 ## various dmvt parameterizations
 
@@ -776,6 +784,7 @@ model$setData('y')
 ## uncompiled/compiled 2d11 hessian out of tolerance in some cases 
 ## unc/com 01,012,02 value out of tolerance in some cases
 test_ADModelCalculate(model, name = 'various dmvt parameterizations')
+## 2022-03-08: minor R vs C values discrepancy, R and C 2d11 jacobian match to limited digits, including some big discrepancies
 
 
 ## dirichlet as likelihood so not differentiating wrt something with constraint.
@@ -787,6 +796,8 @@ code <- nimbleCode({
 k <- 4
 model <- nimbleModel(code, constants = list(k = k), data = list(p = c(.2, .4, .15, .25)), inits = list(alpha = runif(4)))
 test_ADModelCalculate(model, name = 'Dirichlet likelihood')
+## 2022-03-08: NaN in various uncompiled derivs from invalid p vector
+## TODO: need functionality to provide the new constant/updateNodes
 
 ## dwish and dinvwish so long as not differentiating w.r.t. the random variable (since it has constraints)
 ## Note that nu must exceed n and can't be set to runif(0,1) via test_ADModelCalculate.
@@ -817,7 +828,7 @@ model$setData(c('W1','W2','W3','W4','IW1','IW2','IW3','IW4'))
 ## comp/unc values out of tolerance in some cases
 ## 2d, 012 comp hessian out of tolerance in some cases
 test_ADModelCalculate(model, excludeUpdateNodes = 'dist', verbose = TRUE, name = 'dwish, dinvwish')
-
+## 2022-03-08: need to rerun as voluminous output
 
 ## simple user-defined distribution
 dmyexp <- nimbleFunction(

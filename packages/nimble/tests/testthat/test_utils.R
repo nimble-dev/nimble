@@ -1523,9 +1523,9 @@ test_ADModelCalculate_nick <- function(model, name = NULL, calcNodeNames = NULL,
 ## By default test a standardized set of {wrt, calcNodes} pairs representing common use cases (MAP, max lik, EB),
 ## unless user provides 'wrt' and 'calcNodes'.
 test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNodes = NULL, wrt = NULL,
-                                  excludeUpdateNodes = NULL,
+                                  newUpdateNodes = NULL, newConstantNodes = NULL,
                                   relTol = c(1e-15, 1e-8, 1e-3, 1e-3), useFasterRderivs = FALSE, useParamTransform = FALSE,
-                                  checkDoubleTape = TRUE, checkCompiledValuesIdentical = TRUE, checkNewConstantNodesValues = FALSE,
+                                  checkDoubleTape = TRUE, checkCompiledValuesIdentical = TRUE, 
                                   seed = 1, verbose = FALSE, debug = FALSE){
     if(!is.null(seed))
         set.seed(seed)
@@ -1553,12 +1553,12 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
             xNew <- values(model, wrt)
             nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         } else xNew <- runif(length(tmp))
-        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, excludeUpdateNodes = excludeUpdateNodes,
+        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt,
+                                           newUpdateNodes = newUpdateNodes, newConstantNodes = newConstantNodes,
                                            savedMV = mv, relTol = relTol,
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
-                                           checkNewConstantNodesValues = checkNewConstantNodesValues,
                                        verbose = verbose, debug = debug))
         ## max. lik. use case
         if(verbose) cat("============================================\ntesting ML-based scenario\n--------------------------------------------\n")
@@ -1579,12 +1579,12 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
             xNew <- values(model, wrt)
             nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         } else xNew <- runif(length(tmp))
-        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, excludeUpdateNodes = excludeUpdateNodes,
+        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, 
+                                           newUpdateNodes = newUpdateNodes, newConstantNodes = newConstantNodes,
                                            savedMV =mv, relTol = relTol,
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
-                                           checkNewConstantNodesValues = checkNewConstantNodesValues,
                                            verbose = verbose, debug = debug))
 
         ## modular HMC/MAP use case
@@ -1613,12 +1613,12 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         values(model, wrt) <- xNew
         xNew <- values(model, wrtSub)
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
-        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrtSub, excludeUpdateNodes = excludeUpdateNodes,
+        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrtSub, 
+                                           newUpdateNodes = newUpdateNodes, newConstantNodes = newConstantNodes,
                                            savedMV = mv, relTol = relTol,
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
-                                           checkNewConstantNodesValues = checkNewConstantNodesValues,
                                            verbose = verbose, debug = debug))
 
         ## conditional max. lik. use case
@@ -1650,12 +1650,12 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
         values(model, wrt) <- xNew
         xNew <- values(model, wrtSub)
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
-        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrtSub, excludeUpdateNodes = excludeUpdateNodes,
+        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrtSub, 
+                                           newUpdateNodes = newUpdateNodes, newConstantNodes = newConstantNodes,
                                            savedMV = mv, relTol = relTol,
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
-                                           checkNewConstantNodesValues = checkNewConstantNodesValues,
                                            verbose = verbose, debug = debug))
 
         ## empirical Bayes use case (though not actually integrating over any latent nodes)
@@ -1676,12 +1676,12 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
             xNew <- values(model, wrt)
             nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         } else xNew <- runif(length(tmp))
-        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, excludeUpdateNodes = excludeUpdateNodes,
+        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, 
+                                           newUpdateNodes = newUpdateNodes, newConstantNodes = newConstantNodes,
                                            savedMV = mv, relTol = relTol,
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
-                                           checkNewConstantNodesValues = checkNewConstantNodesValues,
                                            verbose = verbose, debug = debug))
     } else {
         if(is.null(calcNodes)) calcNodes <- model$getNodeNames()
@@ -1698,11 +1698,12 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
             xNew <- values(model, wrt)
             nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         } else xNew <- runif(length(tmp))
-        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, excludeUpdateNodes = excludeUpdateNodes, relTol = relTol,
+        try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, 
+                                           newUpdateNodes = newUpdateNodes, newConstantNodes = newConstantNodes,
+                                           relTol = relTol,
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
-                                           checkNewConstantNodesValues = checkNewConstantNodesValues,
                                            verbose = verbose, debug = debug))
     }
 }
@@ -1711,10 +1712,10 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
 ## This does the core assessment, by default running with various sets of order values to be able to assess
 ## forward and backward mode and to assess whether values in the model are updated.
 test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL, xNew = NULL,
-                                           calcNodes = NULL, wrt = NULL,
-                                           excludeUpdateNodes = NULL, excludeConstantNodes = NULL, savedMV = NULL, 
+                                           calcNodes = NULL, wrt = NULL, savedMV = NULL, 
+                                           newUpdateNodes = NULL, newConstantNodes = NULL, 
                                            relTol = c(1e-15, 1e-8, 1e-3, 1e-3), useFasterRderivs = FALSE,
-                                           useParamTransform = FALSE, checkDoubleTape = TRUE, checkNewConstantNodesValues = FALSE,
+                                           useParamTransform = FALSE, checkDoubleTape = TRUE, 
                                            checkCompiledValuesIdentical = TRUE,
                                            verbose = FALSE, debug = FALSE){
 
@@ -1751,25 +1752,18 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
         
         allUpdateNodes <- makeUpdateNodes(wrt, calcNodes, model)
         updateNodes <- allUpdateNodes$updateNodes
-        updateNodesDeps <- model$getDependencies(updateNodes)
+        constantNodes <- allUpdateNodes$constantNodes
 
-        ## Manipulations so can set random matrices to be positive definite.
-        ## Only needed for updateNodes, not wrt, because for wrt we'll need param transform anyway.
-        updateNodesAsNodes <- model$expandNodeNames(updateNodes)
-        updateNodesAsNodes <- updateNodesAsNodes[!updateNodesAsNodes %in% model$expandNodeNames(excludeUpdateNodes)]
-        updateNodesMat <- sapply(updateNodesAsNodes, checkSquareMatrix)
+        ## Some of this probably assumes no complicated mixing of nodes within a variable.
+        updateVars <- model$getVarNames(nodes = updateNodes)
+        constantVars <- model$getVarNames(nodes = constantNodes)
 
-        if(checkNewConstantNodesValues) {
-            constantNodes <- allUpdateNodes$constantNodes
-            constantNodesDeps <- model$getDependencies(constantNodes)
-            
-            ## Manipulations so can set random matrices to be positive definite.
-            ## Only needed for constantNodes, not wrt, because for wrt we'll need param transform anyway.
-            constantNodesAsNodes <- model$expandNodeNames(constantNodes)
-            constantNodesAsNodes <- constantNodesAsNodes[!constantNodesAsNodes %in% model$expandNodeNames(excludeConstantNodes)]
-            constantNodesMat <- sapply(constantNodesAsNodes, checkSquareMatrix)
-        }
-        
+        cat("Not using potential updateNodes: ", updateVars[!updateVars %in% names(newUpdateNodes)], ".")
+        cat("Not using potential constantNodes: ", constantVars[!constantVars %in% names(newConstantNodes)], ".")
+
+        updateNodesDeps <- model$getDependencies(names(newUpdateNodes))
+        constantNodesDeps <- model$getDependencies(names(newConstantNodes))
+
         if(useParamTransform) {
             rDerivs <- derivsNimbleFunctionParamTransform(model, calcNodes = calcNodes, wrt = wrt)
         } else rDerivs <- derivsNimbleFunction(model, calcNodes = calcNodes, wrt = wrt)
@@ -1834,10 +1828,6 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
         }
 
         for(case in 1:2) {
-            if(case == 2 && !checkNewConstantNodesValues) {
-                warning("Not checking new constantNode values.")
-                next
-            }
             for(idx in seq_along(xList)) {
                 if(exists('paciorek') && paciorek == idx) browser()
                 
@@ -1845,56 +1835,35 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                     if(case == 1) {
                         if(idx == 1) cat("Testing initial wrt values with initial constantNodes\n")
                         if(idx == 2) cat("Testing new wrt values with initial constantNodes\n")
-                        if(idx == 3) cat("Testing new updateNode values with initial constantNodes\n")
+                        if(idx == 3 && length(updateNodes)) cat("Testing new updateNode values with initial constantNodes\n")
                     } else {
-                        if(idx == 1) cat("Testing initial wrt values with new constantNodes\n")
-                        if(idx == 2) cat("Testing new wrt values with new constantNodes\n")
-                        if(idx == 3) cat("Testing new updateNode values with new constantNodes\n")
+                        if(idx == 1 && length(constantNodes)) cat("Testing initial wrt values with new constantNodes\n")
+                        if(idx == 2 && length(constantNodes)) cat("Testing new wrt values with new constantNodes\n")
+                        if(idx == 3 && length(constantNodes) && length(updateNodes)) cat("Testing new updateNode values with new constantNodes\n")
                     }
                 }
 
                 if(idx == 3) {
                     ## Also modify updateNodes to make sure nothing has been incorrectly baked in.
-                    if(verbose && length(updateNodes)) cat(paste0("  Using updateNodes: ", paste0(updateNodes, collapse = ', '), "\n"))
-                    updateNodesSim <- updateNodes
-                    if(!is.null(excludeUpdateNodes)) {
-                        ## Try to be safe as updateNodes are generally specified as scalar components
-                        excludeUpdateNodesFull <- c(model$expandNodeNames(excludeUpdateNodes),
-                                                    model$expandNodeNames(excludeUpdateNodes, returnScalarComponents = TRUE))
-                        updateNodesSim <- updateNodesSim[!updateNodesSim %in% excludeUpdateNodesFull]
+                    for(nm in names(newUpdateNodes)) {
+                        values(model, nm) <- newUpdateNodes[[nm]]
+                        values(cModel, nm) <- newUpdateNodes[[nm]]
                     }
-                    values(model, updateNodesSim) <- runif(length(updateNodesSim))
-                    ## Make sure updateNodes are positive definite if square matrices.
-                    for(nodeIdx in seq_along(updateNodesAsNodes)) 
-                        if(updateNodesMat[nodeIdx])
-                            model[[updateNodesAsNodes[nodeIdx]]] <- t(model[[updateNodesAsNodes[nodeIdx]]]) %*%
-                                model[[updateNodesAsNodes[nodeIdx]]]
                     model$calculate(updateNodesDeps)
-                    values(cModel, updateNodes) <- values(model, updateNodes)
                     cModel$calculate(updateNodesDeps)
                 }
 
                 reset <- FALSE
                 if(case == 2) {
                     reset <- TRUE
-                    if(verbose && length(constantNodes)) cat(paste0("  Using constantNodes: ", paste0(constantNodes, collapse = ', '), "\n"))
-                    constantNodesSim <- constantNodes
-                    if(!is.null(excludeConstantNodes)) {
-                        ## Try to be safe as constantNodes are generally specified as scalar components
-                        excludeConstantNodesFull <- c(model$expandNodeNames(excludeConstantNodes),
-                                                    model$expandNodeNames(excludeConstantNodes, returnScalarComponents = TRUE))
-                        constantNodesSim <- constantNodesSim[!constantNodesSim %in% excludeConstantNodesFull]
+
+                    for(nm in names(newConstantNodes)) {
+                        values(model, nm) <- newConstantNodes[[nm]]
+                        values(cModel, nm) <- newConstantNodes[[nm]]
                     }
-                    values(model, constantNodesSim) <- runif(length(constantNodesSim))
-                    ## Make sure constantNodes are positive definite if square matrices.
-                    for(nodeIdx in seq_along(constantNodesAsNodes)) 
-                        if(constantNodesMat[nodeIdx])
-                            model[[constantNodesAsNodes[nodeIdx]]] <- t(model[[constantNodesAsNodes[nodeIdx]]]) %*%
-                                model[[constantNodesAsNodes[nodeIdx]]]
                     model$calculate(constantNodesDeps)
-                    values(cModel, constantNodes) <- values(model, constantNodes)
                     cModel$calculate(constantNodesDeps)
-                }
+                 }
                 
                 x <- xList[[idx]]
 
