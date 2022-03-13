@@ -1754,16 +1754,9 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
         updateNodes <- allUpdateNodes$updateNodes
         constantNodes <- allUpdateNodes$constantNodes
 
-        ## Some of this probably assumes no complicated mixing of nodes within a variable.
-        updateVars <- model$getVarNames(nodes = updateNodes)
-        constantVars <- model$getVarNames(nodes = constantNodes)
-
-        cat("Not using potential updateNodes: ", updateVars[!updateVars %in% names(newUpdateNodes)], ".")
-        cat("Not using potential constantNodes: ", constantVars[!constantVars %in% names(newConstantNodes)], ".")
-
-        updateNodesDeps <- model$getDependencies(names(newUpdateNodes))
-        constantNodesDeps <- model$getDependencies(names(newConstantNodes))
-
+        updateNodesDeps <- model$getDependencies(updateNodes)
+        constantNodesDeps <- model$getDependencies(constantNodes)
+        
         if(useParamTransform) {
             rDerivs <- derivsNimbleFunctionParamTransform(model, calcNodes = calcNodes, wrt = wrt)
         } else rDerivs <- derivsNimbleFunction(model, calcNodes = calcNodes, wrt = wrt)
@@ -1835,35 +1828,55 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                     if(case == 1) {
                         if(idx == 1) cat("Testing initial wrt values with initial constantNodes\n")
                         if(idx == 2) cat("Testing new wrt values with initial constantNodes\n")
-                        if(idx == 3 && length(updateNodes)) cat("Testing new updateNode values with initial constantNodes\n")
+                        if(idx == 3 && length(updateNodes)) {
+                             cat("Testing new updateNode values with initial constantNodes\n")
+                            cat("  Using updateNodes: ", updateNodes, "\n")
+                        }
                     } else {
-                        if(idx == 1 && length(constantNodes)) cat("Testing initial wrt values with new constantNodes\n")
+                        if(idx == 1 && length(constantNodes)) {
+                            cat("Testing initial wrt values with new constantNodes\n")
+                            cat("  Using constantNodes: ", constantNodes, "\n")
+                        }
                         if(idx == 2 && length(constantNodes)) cat("Testing new wrt values with new constantNodes\n")
                         if(idx == 3 && length(constantNodes) && length(updateNodes)) cat("Testing new updateNode values with new constantNodes\n")
                     }
                 }
 
                 if(idx == 3) {
-                    ## Also modify updateNodes to make sure nothing has been incorrectly baked in.
-                    for(nm in names(newUpdateNodes)) {
-                        values(model, nm) <- newUpdateNodes[[nm]]
-                        values(cModel, nm) <- newUpdateNodes[[nm]]
-                    }
-                    model$calculate(updateNodesDeps)
-                    cModel$calculate(updateNodesDeps)
+                    if(length(updateNodes)) {
+                        values(model, updateNodes) <- runif(length(updateNodes))
+                        values(cModel, updateNodes) <- values(model, updateNodes)
+                        ## Overwrite for tricky cases (p.d. matrices, integers, etc.)
+                        if(!is.null(newUpdateNodes)) {
+                            for(nm in names(newUpdateNodes)) {
+                                ## Expansion is needed so that fill by element, which retains dimensionality in uncompiled model.
+                                values(model, model$expandNodeNames(nm, returnScalarComponents = TRUE)) <- newUpdateNodes[[nm]]
+                                values(cModel, nm) <- values(model, nm)
+                            }
+                        }
+                        model$calculate(updateNodesDeps)
+                        cModel$calculate(updateNodesDeps)
+                    } else next
                 }
 
                 reset <- FALSE
                 if(case == 2) {
                     reset <- TRUE
-
-                    for(nm in names(newConstantNodes)) {
-                        values(model, nm) <- newConstantNodes[[nm]]
-                        values(cModel, nm) <- newConstantNodes[[nm]]
-                    }
-                    model$calculate(constantNodesDeps)
-                    cModel$calculate(constantNodesDeps)
-                 }
+                    if(length(constantNodes)) {
+                        values(model, constantNodes) <- runif(length(constantNodes))
+                        values(cModel, constantNodes) <- values(model, constantNodes)
+                        
+                        if(!is.null(newConstantNodes)) {
+                            for(nm in names(newConstantNodes)) {
+                                ## Expansion is needed so that fill by element, which retains dimensionality in uncompiled model.
+                                values(model, model$expandNodeNames(nm, returnScalarComponents = TRUE)) <- newConstantNodes[[nm]]
+                                values(cModel, nm) <- values(model, nm)
+                            }
+                        }
+                        model$calculate(constantNodesDeps)
+                        cModel$calculate(constantNodesDeps)
+                    } else next
+                }
                 
                 x <- xList[[idx]]
 
