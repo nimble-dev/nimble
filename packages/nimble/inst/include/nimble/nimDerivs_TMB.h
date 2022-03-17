@@ -951,23 +951,23 @@ Type nimDerivs_nimArr_ddirch(NimArr<1, Type> &x, NimArr<1, Type> &alpha, Type gi
 {
   Type K = alpha.size();
   Type n = x.size();
-  Type logres = CppAD::CondExpLt(K, Type(1), Type(CppAD::numeric_limits<Type>::quiet_NaN()), Type(0));
-  logres = CppAD::CondExpEq(K, n, logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+  Type logres = CppAD::CondExpLt(K, Type(1), CppAD::numeric_limits<Type>::quiet_NaN(), Type(0));
+  logres = CppAD::CondExpEq(K, n, logres, CppAD::numeric_limits<Type>::quiet_NaN());
   
   Type sumAlpha = Type(0.0);
   Type sumX = Type(0.0);
   Type dens = Type(0.0);
   
   for(int i = 0; i < K; i++) {
-    logres += CppAD::CondExpGt(alpha[i], Type(0), Type(0),   Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+    logres += CppAD::CondExpGt(alpha[i], Type(0), Type(0),   CppAD::numeric_limits<Type>::quiet_NaN());
     logres += CppAD::CondExpGe(x[i], Type(0), Type(0), -Type(std::numeric_limits<double>::infinity()));
     logres += CppAD::CondExpLe(x[i], Type(1), Type(0), -Type(std::numeric_limits<double>::infinity()));
     logres += (alpha[i]-Type(1)) * log(x[i]) - nimDerivs_lgammafn(alpha[i]) ;
     sumAlpha += alpha[i];
     sumX += x[i];
   }
-  logres += CppAD::CondExpLe(sumX, Type(1.0 + 100.0*numeric_limits<Type>::epsilon()), 
-			     CppAD::CondExpGe(sumX, Type(1.0 - 100.0*numeric_limits<Type>::epsilon()), Type(0), -Type(std::numeric_limits<double>::infinity())),
+  logres += CppAD::CondExpLe(sumX, Type(1.0 + 10.0*std::numeric_limits<double>::epsilon()), 
+			     CppAD::CondExpGe(sumX, Type(1.0 - 10.0*std::numeric_limits<double>::epsilon()), Type(0), -Type(std::numeric_limits<double>::infinity())),
 			     -Type(std::numeric_limits<double>::infinity()));
   logres += nimDerivs_lgammafn(sumAlpha);
   logres = CppAD::CondExpEq(give_log, Type(1), logres, exp(logres));
@@ -979,23 +979,23 @@ Type nimDerivs_nimArr_ddirch_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &alpha
 {
   Type K = alpha.size();
   Type n = x.size();
-  Type logres = CppAD::CondExpLt(K, Type(1), Type(CppAD::numeric_limits<Type>::quiet_NaN()), Type(0));
-  logres = CppAD::CondExpEq(K, n, logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+  Type logres = CppAD::CondExpLt(K, Type(1), CppAD::numeric_limits<Type>::quiet_NaN(), Type(0));
+  logres = CppAD::CondExpEq(K, n, logres, CppAD::numeric_limits<Type>::quiet_NaN());
   
   Type sumAlpha = Type(0.0);
   Type sumX = Type(0.0);
   Type dens = Type(0.0);
   
   for(int i = 0; i < K; i++) {
-    logres += CppAD::CondExpGt(alpha[i], Type(0), Type(0),   Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+    logres += CppAD::CondExpGt(alpha[i], Type(0), Type(0), CppAD::numeric_limits<Type>::quiet_NaN());
     logres += CppAD::CondExpGe(x[i], Type(0), Type(0), -Type(std::numeric_limits<double>::infinity()));
     logres += CppAD::CondExpLe(x[i], Type(1), Type(0), -Type(std::numeric_limits<double>::infinity()));
     logres += (alpha[i]-Type(1)) * log(x[i]) - nimDerivs_lgammafn(alpha[i]) ;
     sumAlpha += alpha[i];
     sumX += x[i];
   }
-  logres += CppAD::CondExpLe(sumX, Type(1.0 + 100.0*numeric_limits<Type>::epsilon()), 
-			     CppAD::CondExpGe(sumX, Type(1.0 - 100.0*numeric_limits<Type>::epsilon()), Type(0), -Type(std::numeric_limits<double>::infinity())),
+  logres += CppAD::CondExpLe(sumX, Type(1.0 + 10.0*std::numeric_limits<double>::epsilon()), 
+			     CppAD::CondExpGe(sumX, Type(1.0 - 10.0*std::numeric_limits<double>::epsilon()), Type(0), -Type(std::numeric_limits<double>::infinity())),
 			     -Type(std::numeric_limits<double>::infinity()));
   logres += nimDerivs_lgammafn(sumAlpha);
   if(!give_log){
