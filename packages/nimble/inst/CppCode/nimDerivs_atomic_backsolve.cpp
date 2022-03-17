@@ -378,6 +378,15 @@ void atomic_backsolve(const MatrixXd_CppAD &A,
     return;
   }
 
+  auto dyn_cond = [](const CppAD::AD<double> &x)->bool {return CppAD::Dynamic(x);};
+  bool A_is_dynamic(false);
+  int a, b, c, d; // dummies
+  if(!A_is_constant)
+    A_is_dynamic = delineate_condition_region(dyn_cond, A, a, b, c, d);
+  bool B_is_dynamic(false);
+  if(!B_is_constant)
+    B_is_dynamic = delineate_condition_region(dyn_cond, B, a, b, c, d);
+  
   // - A or B or neither are constant: record atomic
   atomic_backsolve_class *atomic_backsolve;
   bool recording = CppAD::AD<double>::get_tape_handle_nimble() != nullptr;
@@ -389,6 +398,9 @@ void atomic_backsolve(const MatrixXd_CppAD &A,
   }
   atomic_backsolve->Aconstant() = A_is_constant;
   atomic_backsolve->Bconstant() = B_is_constant;
+
+  atomic_backsolve->Avariable() = !(A_is_constant || A_is_dynamic);
+  atomic_backsolve->Bvariable() = !(B_is_constant || B_is_dynamic);
   
   int xVecSize = 0;
   if(!A_is_constant) xVecSize += n1*n1;

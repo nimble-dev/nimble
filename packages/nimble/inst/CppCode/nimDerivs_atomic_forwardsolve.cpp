@@ -317,7 +317,7 @@ void atomic_forwardsolve(const MatrixXd_CppAD &A,
   atomic_forwardsolve->Bconstant() = B_is_constant;
 
   atomic_forwardsolve->Avariable() = !(A_is_constant || A_is_dynamic);
-  atomic_forwardsolve->Bvariable() = !(A_is_constant || A_is_dynamic);
+  atomic_forwardsolve->Bvariable() = !(B_is_constant || B_is_dynamic);
 
   int xVecSize = 0;
   if(!A_is_constant) xVecSize += n1*n1;

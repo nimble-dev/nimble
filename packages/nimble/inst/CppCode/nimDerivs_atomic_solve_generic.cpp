@@ -9,6 +9,8 @@ problems can occur if internal temporaries are created and then lost when the op
 as an unevaluated op.
  */
 
+// #define VERBOSE_ATOMIC_SOLVE
+
 ATOMIC_SOLVE_CLASS::ATOMIC_SOLVE_CLASS(const std::string& name) :
   atomic_solve_base_class(), CppAD::atomic_three<double>(name)
 {};
@@ -23,8 +25,8 @@ bool ATOMIC_SOLVE_CLASS::forward(
 				     CppAD::vector<double>&                     taylor_y     ) {
   //forward mode
   int nrow = order_up + 1;
-#ifdef VERBOSE_ATOMIC_FS
-  printf("In forwardsolve forward\n");
+#ifdef VERBOSE_ATOMIC_SOLVE
+  printf("In solve forward\n");
   std::cout<<"order_low = "<<order_low<<" order_up = "<<order_up<<" nrow = "<<nrow<<std::endl;
 #endif
   int n = taylor_x.size()/nrow;
@@ -136,6 +138,9 @@ bool ATOMIC_SOLVE_CLASS::forward(
     
     double_cache.set_cache( 1, 1, order_up, taylor_x, taylor_y );
   }
+#ifdef VERBOSE_ATOMIC_SOLVE
+  std::cout<<"leaving solve forward"<<std::endl;
+#endif
   return true;
 }
 
@@ -149,8 +154,8 @@ bool ATOMIC_SOLVE_CLASS::forward(
 				     CppAD::vector<CppAD::AD<double> >&                     taylor_y     ) {
   // meta-forward mode
   int nrow = order_up + 1;
-#ifdef VERBOSE_ATOMIC_FS
-  printf("In forwardsolve meta-forward\n");
+#ifdef  VERBOSE_ATOMIC_SOLVE
+  printf("In solve meta-forward\n");
   std::cout<<"order_low = "<<order_low<<" order_up = "<<order_up<<" nrow = "<<nrow<<std::endl;
 #endif
   int n = taylor_x.size()/nrow;
@@ -193,7 +198,7 @@ bool ATOMIC_SOLVE_CLASS::forward(
     CppADdouble_cache.set_cache( 0, 0, order_up, taylor_x, taylor_y );
   }
   if(order_low <= 1 & order_up >= 1) {
-    //printf("In forward >1\n");
+    //    std::cout<<"In forward >1"<<std::endl;
     //      solve(A, dB - dA * Y)
     CppADdouble_cache.check_and_set_cache(this,
 					  parameter_x,
@@ -220,7 +225,7 @@ bool ATOMIC_SOLVE_CLASS::forward(
 
     new (&mdY_map) metaEigenMap(&taylor_y[1], n1, n2, EigStrDyn(nrow*n1, nrow ) );
     //  metaEigenMap dY_map(&taylor_y[1], n1, n2, EigStrDyn(nrow*n1, nrow ) );
-
+    
     if(Avariable() && Bvariable()) {
       mdY_map = ND_META_SOLVE(mAmap, mdB_map - nimDerivs_matmult( ND_MAIN_TRI(mdA_map), mYmap) );
       //      mdY_map = ND_META_SOLVE(mAmap, mdB_map - nimDerivs_matmult( ND_MAIN_TRI(mdA_map), mYmap));
@@ -239,6 +244,10 @@ bool ATOMIC_SOLVE_CLASS::forward(
     }
     CppADdouble_cache.set_cache( 1, 1, order_up, taylor_x, taylor_y );
   }
+#ifdef VERBOSE_ATOMIC_SOLVE
+  std::cout<<"leaving solve meta-forward"<<std::endl;
+#endif
+
   return true;
 }
 
@@ -253,8 +262,8 @@ bool ATOMIC_SOLVE_CLASS::reverse(
 {
   //reverse mode
   int nrow = order_up + 1;
-#ifdef VERBOSE_ATOMIC_FS
-  printf("In forwardsolve reverse\n");
+#ifdef VERBOSE_ATOMIC_SOLVE
+  printf("In solve reverse\n");
   std::cout<<" order_up = "<<order_up<<" nrow = "<<nrow<<std::endl;
 #endif
   int n = taylor_x.size()/nrow;
@@ -379,6 +388,9 @@ bool ATOMIC_SOLVE_CLASS::reverse(
     printf("Unsupported reverse order requested\n");
     return false;
   }
+#ifdef VERBOSE_ATOMIC_SOLVE
+  std::cout<<"leaving solve reverse"<<std::endl;
+#endif
   return true;
 }
 
@@ -393,8 +405,8 @@ bool ATOMIC_SOLVE_CLASS::reverse(
 {
   //meta-reverse mode
   int nrow = order_up + 1;
-#ifdef VERBOSE_ATOMIC_FS
-  printf("In forwardsolve meta-reverse\n");
+#ifdef VERBOSE_ATOMIC_SOLVE
+  printf("In solve meta-reverse\n");
   std::cout<<" order_up = "<<order_up<<" nrow = "<<nrow<<std::endl;
 #endif
   int n = taylor_x.size()/nrow;
@@ -528,6 +540,9 @@ bool ATOMIC_SOLVE_CLASS::reverse(
     printf("Unsupported reverse order requested\n");
       return false;
   }
+#ifdef VERBOSE_ATOMIC_SOLVE
+  std::cout<<"leaving solve meta-reverse"<<std::endl;
+#endif
   return true;
 }
 
