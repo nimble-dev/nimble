@@ -672,7 +672,9 @@ makeADtapingFunction2 <- function(newFunName = 'callForADtaping',
     setADresponseVarsSizeLine <- substitute(cppMemberFunction(resize(ADresponseVars, totalDepLength_)))
 
     ## line to finish taping
-    finishTapingCall <- cppLiteral('RETURN_TAPE_->Dependent(ADindependentVars, ADresponseVars);')
+  finishTapingCall <- cppLiteral(
+      paste0('ADinfo.sum_dummyOutputs_to_dependentVars(ADresponseVars);\n',
+             'RETURN_TAPE_->Dependent(ADindependentVars, ADresponseVars);'))
 
     ADoptimizeCalls <- list(
         # cppLiteral(paste0("std::cout<<\"about to optimize for ", className,"\"<<std::endl;")),

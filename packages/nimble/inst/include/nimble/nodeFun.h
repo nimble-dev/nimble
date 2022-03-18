@@ -27,6 +27,7 @@
 #include <cppad/cppad.hpp>
 class nimbleCppADinfoClass;
 class nimbleCppADrecordingInfoClass;
+void add_dummyOutput(nimbleCppADinfoClass *ADinfoPtr, CppAD::AD<double> &dummy); // also declared in nimbleCppAD.h
 
 #define ADvector CppAD::vector
 

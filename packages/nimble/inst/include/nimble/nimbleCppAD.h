@@ -202,6 +202,10 @@ class nimble_CppAD_tape_mgr {
   void delete_atomic_matmult(atomic_matmult_class *atomic_matmult);
   atomic_matinverse_class* new_atomic_matinverse(const std::string& name);
   void delete_atomic_matinverse(atomic_matinverse_class *atomic_matinverse);
+
+  std::vector<CppAD::AD<double> > dummyOutputs;
+  void add_dummyOutput(CppAD::AD<double> &dummy);
+  void sum_dummyOutputs_to_dependentVars(std::vector<CppAD::AD<double> > &depVars);
 };
 
 /* nimbleCppADinfoClass is the class to convey information from a nimbleFunction
@@ -220,6 +224,8 @@ class nimbleCppADinfoClass {
   void ADtape_reset() {ADtape_mgr_.reset();}
   void set_internal_tape(CppAD::local::ADTape<double>* internal_tape_ptr) {
     ADtape_mgr_.set_internal_tape(internal_tape_ptr);}
+  void add_dummyOutput(CppAD::AD<double> &dummy) {ADtape_mgr_.add_dummyOutput(dummy); };
+  void sum_dummyOutputs_to_dependentVars(std::vector<CppAD::AD<double> > &depVars) {ADtape_mgr_.sum_dummyOutputs_to_dependentVars(depVars); }
   CppAD::ADFun<double>* &ADtape() {return ADtape_mgr_.ADtape(); }
   //  CppAD::ADFun<double> *ADtape;
   NodeVectorClassNew_derivs *updaterNV_;
@@ -257,6 +263,8 @@ class nimbleCppADinfoClass {
     /* } */
   }
 };
+
+void add_dummyOutput(nimbleCppADinfoClass *ADinfoPtr, CppAD::AD<double> &dummy);
 
 class nimbleCppADrecordingInfoClass {
  private:

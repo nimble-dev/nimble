@@ -179,7 +179,8 @@ nodeFun::runExtraOutputObject(NodeVectorClassNew_derivs &NV,
   // Should be ok to copy.  No further uses after taping involve statics,
   // so there should be no further issue with which DLL we are in.
   // std::cout<<"runExtraOutputObject E"<<std::endl;
-  logProb += extraOutputDummyResult[0];
+  //  logProb += extraOutputDummyResult[0];
+  add_dummyOutput(ADinfoPtr, extraOutputDummyResult[0]);
   // std::cout<<"runExtraOutputObject E"<<std::endl;
   return localExtraOutputObject;
 }

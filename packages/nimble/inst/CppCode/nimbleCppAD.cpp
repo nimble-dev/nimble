@@ -601,6 +601,7 @@ CppAD::ADFun<double>* calculate_recordTape(NodeVectorClassNew_derivs &NV,
     // TRY USING CppAD's vector type
   } // These {} ensure that the destructor for the my_tape_info_RAII_ is called before Dependent, which is necessary in some cases (depending on libnimble.a vs libnimble.so)
   CppAD::ADFun<double>* ansTape = new CppAD::ADFun<double>;
+  ADinfo.sum_dummyOutputs_to_dependentVars(dependentVars);
   ansTape->Dependent(independentVars, dependentVars);
   //  std::cout<<"about to call optimize"<<std::endl;
   //  std::cout<<"tape handle address = "<< CppAD::AD<double>::get_handle_address_nimble() <<std::endl;
@@ -891,8 +892,9 @@ void setValues_AD_AD_taping(NimArr<1, CppAD::AD<double> > &v,
     //   The concern is that otherwise CppAD might optimize it away by determining that nothing really depends on it.
     //   The following line is essentially a no-operation for this purpose (extraOutputDummyResult[0] will always be 0 in value).
     // We do this for all v[i] defensively, to reduce the change that the atomic step is optimized out of the model.
-    for(size_t i = 0; i < v.size(); ++i)
-      v[i] += extraOutputDummyResult[0];
+    //    for(size_t i = 0; i < v.size(); ++i)
+    //  v[i] += extraOutputDummyResult[0];
+    recordingInfo.ADinfoPtr()->add_dummyOutput(extraOutputDummyResult[0]);
   }
   setValues_AD_AD(v, MVA_AD); // record copying on the tape
 }
@@ -1010,6 +1012,7 @@ void nimble_CppAD_tape_mgr::add_atomic_ptr(nimble_atomic_base *new_atomic_ptr, s
   // std::cout<<"adding atomic_ptr "<<new_atomic_ptr<<" to "<<this<<" with atomic vec_ptr "<<vec_ptr<<std::endl;
   atomic_ptrs.push_back(atomic_pair(new_atomic_ptr, vec_ptr) );
 };
+
 void nimble_CppAD_tape_mgr::reset() {
   //  std::cout<<"Doing nimble_CppAD_tape_mgr::reset "<<this<<" "<<atomic_ptrs.size()<<std::endl;
   if(ADtape_) {
@@ -1038,8 +1041,30 @@ void nimble_CppAD_tape_mgr::reset() {
     lgamma_exists[i] = false;
     lgamma_index[i] = 0;
   }
+  dummyOutputs.clear();
   //  std::cout<<"Done with nimble_CppAD_tape_mgr::reset"<<std::endl;
 }
+void nimble_CppAD_tape_mgr::add_dummyOutput(CppAD::AD<double> &dummy) {
+  dummyOutputs.push_back(dummy);
+}
+
+void add_dummyOutput(nimbleCppADinfoClass *ADinfoPtr, CppAD::AD<double> &dummy) {
+  ADinfoPtr->add_dummyOutput(dummy);
+}
+
+void nimble_CppAD_tape_mgr::sum_dummyOutputs_to_dependentVars(std::vector<CppAD::AD<double> > &depVars) {
+  if(dummyOutputs.size() == 0) return;
+  CppAD::AD<double> firstSum = dummyOutputs[0];
+  if(dummyOutputs.size() > 1) {
+    for(int i = 1; i < dummyOutputs.size(); ++i) {
+      firstSum += dummyOutputs[i];
+    }
+  }
+  for(int j = 0; j < depVars.size(); ++j) {
+    depVars[j] += firstSum;
+  }
+}
+
 void nimble_CppAD_tape_mgr::set_internal_tape(CppAD::local::ADTape<double>* internal_tape_ptr) {
   internal_tape_ptr_ = internal_tape_ptr;
   internal_tape_ptr->nimble_CppAD_tape_mgr_ptr() = static_cast<void*>(this);
