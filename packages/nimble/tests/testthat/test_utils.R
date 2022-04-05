@@ -1522,14 +1522,15 @@ test_ADModelCalculate_nick <- function(model, name = NULL, calcNodeNames = NULL,
 ## Chris' version of test_ADModelCalculate
 ## By default test a standardized set of {wrt, calcNodes} pairs representing common use cases (MAP, max lik, EB),
 ## unless user provides 'wrt' and 'calcNodes'.
-test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNodes = NULL, wrt = NULL,
+test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = NULL, calcNodes = NULL, wrt = NULL,
                                   newUpdateNodes = NULL, newConstantNodes = NULL,
                                   relTol = c(1e-15, 1e-8, 1e-3, 1e-3), useFasterRderivs = FALSE, useParamTransform = FALSE,
-                                  checkDoubleTape = TRUE, checkCompiledValuesIdentical = TRUE, 
-                                  seed = 1, verbose = FALSE, debug = FALSE){
+                                  checkDoubleTape = TRUE, checkCompiledValuesIdentical = TRUE, checkDoubleUncHessian = TRUE,
+                                  doAllUncHessian = TRUE, seed = 1, verbose = FALSE, debug = FALSE){
     if(!is.null(seed))
         set.seed(seed)
     initsHandling <- x
+    xNewIn <- xNew
     ## Save model state so can restore for later use cases below.
     mv <- modelValues(model)
     nodes <- model$getNodeNames()
@@ -1553,14 +1554,24 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
             xNew <- values(model, wrt)
             nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         } else xNew <- runif(length(tmp))
+        if(!is.null(xNewIn)) {
+            wrtScalars <- model$expandNodeNames(wrt, returnScalarComponents = TRUE)
+            for(nm in names(xNewIn)) {
+                wh <- grep(paste0("(^",nm,"$)|(^",nm,"\\[)"), wrtScalars)
+                xNew[wh] <- c(xNewIn[[nm]])
+            }
+        }
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt,
                                            newUpdateNodes = newUpdateNodes, newConstantNodes = newConstantNodes,
                                            savedMV = mv, relTol = relTol,
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           checkDoubleUncHessian = checkDoubleUncHessian, doAllUncHessian = doAllUncHessian,
                                        verbose = verbose, debug = debug))
         ## max. lik. use case
+        if(!is.null(seed))   ## There has weirdness where whether a test fails or passes modifies the RNG state, affecting the next call to test_ADModelCalculate_internal.
+            set.seed(seed)
         if(verbose) cat("============================================\ntesting ML-based scenario\n--------------------------------------------\n")
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         calcNodes <- model$getNodeNames()
@@ -1579,14 +1590,24 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
             xNew <- values(model, wrt)
             nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         } else xNew <- runif(length(tmp))
+        if(!is.null(xNewIn)) {
+            wrtScalars <- model$expandNodeNames(wrt, returnScalarComponents = TRUE)
+            for(nm in names(xNewIn)) {
+                wh <- grep(paste0("(^",nm,"$)|(^",nm,"\\[)"), wrtScalars)
+                xNew[wh] <- c(xNewIn[[nm]])
+            }
+        }
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, 
                                            newUpdateNodes = newUpdateNodes, newConstantNodes = newConstantNodes,
                                            savedMV =mv, relTol = relTol,
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           checkDoubleUncHessian = checkDoubleUncHessian, doAllUncHessian = doAllUncHessian,
                                            verbose = verbose, debug = debug))
 
+        if(!is.null(seed))   ## There has weirdness where whether a test fails or passes modifies the RNG state, affecting the next call to test_ADModelCalculate_internal.
+            set.seed(seed)
         ## modular HMC/MAP use case
         if(verbose) cat("============================================\ntesting HMC/MAP partial-based scenario\n--------------------------------------------\n")
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
@@ -1606,6 +1627,13 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
             model$simulate(wrt)
             xNew <- values(model, wrt)
         } else xNew <- runif(length(tmp))
+        if(!is.null(xNewIn)) {
+            wrtScalars <- model$expandNodeNames(wrt, returnScalarComponents = TRUE)
+            for(nm in names(xNewIn)) {
+                wh <- grep(paste0("(^",nm,"$)|(^",nm,"\\[)"), wrtScalars)
+                xNew[wh] <- c(xNewIn[[nm]])
+            }
+        }
         wrtSub <- wrt[wrtIdx]
         ## get correct subset of x, xNew
         values(model, wrt) <- x
@@ -1619,8 +1647,11 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           checkDoubleUncHessian = checkDoubleUncHessian, doAllUncHessian = doAllUncHessian,
                                            verbose = verbose, debug = debug))
 
+        if(!is.null(seed))   ## There has weirdness where whether a test fails or passes modifies the RNG state, affecting the next call to test_ADModelCalculate_internal.
+            set.seed(seed)
         ## conditional max. lik. use case
         if(verbose) cat("============================================\ntesting ML partial-based scenario\n--------------------------------------------\n")
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
@@ -1643,6 +1674,13 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
             model$simulate(wrt)
             xNew <- values(model, wrt)
         } else xNew <- runif(length(tmp))
+        if(!is.null(xNewIn)) {
+            wrtScalars <- model$expandNodeNames(wrt, returnScalarComponents = TRUE)
+            for(nm in names(xNewIn)) {
+                wh <- grep(paste0("(^",nm,"$)|(^",nm,"\\[)"), wrtScalars)
+                xNew[wh] <- c(xNewIn[[nm]])
+            }
+        }
         wrtSub <- wrt[wrtIdx]
         ## get correct subset of x, xNew
         values(model, wrt) <- x
@@ -1656,8 +1694,11 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           checkDoubleUncHessian = checkDoubleUncHessian, doAllUncHessian = doAllUncHessian,
                                            verbose = verbose, debug = debug))
 
+        if(!is.null(seed))   ## There has weirdness where whether a test fails or passes modifies the RNG state, affecting the next call to test_ADModelCalculate_internal.
+            set.seed(seed)
         ## empirical Bayes use case (though not actually integrating over any latent nodes)
         if(verbose) cat('============================================\ntesting EB-based scenario\n--------------------------------------------\n')
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
@@ -1676,12 +1717,20 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
             xNew <- values(model, wrt)
             nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         } else xNew <- runif(length(tmp))
+        if(!is.null(xNewIn)) {
+            wrtScalars <- model$expandNodeNames(wrt, returnScalarComponents = TRUE)
+            for(nm in names(xNewIn)) {
+                wh <- grep(paste0("(^",nm,"$)|(^",nm,"\\[)"), wrtScalars)
+                xNew[wh] <- c(xNewIn[[nm]])
+            }
+        }
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, 
                                            newUpdateNodes = newUpdateNodes, newConstantNodes = newConstantNodes,
                                            savedMV = mv, relTol = relTol,
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           checkDoubleUncHessian = checkDoubleUncHessian, doAllUncHessian = doAllUncHessian,
                                            verbose = verbose, debug = debug))
     } else {
         if(is.null(calcNodes)) calcNodes <- model$getNodeNames()
@@ -1698,12 +1747,20 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', calcNode
             xNew <- values(model, wrt)
             nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         } else xNew <- runif(length(tmp))
+        if(!is.null(xNewIn)) {
+            wrtScalars <- model$expandNodeNames(wrt, returnScalarComponents = TRUE)
+            for(nm in names(xNewIn)) {
+                wh <- grep(paste0("(^",nm,"$)|(^",nm,"\\[)"), wrtScalars)
+                xNew[wh] <- c(xNewIn[[nm]])
+            }
+        }
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, 
                                            newUpdateNodes = newUpdateNodes, newConstantNodes = newConstantNodes,
                                            relTol = relTol,
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           checkDoubleUncHessian = checkDoubleUncHessian, doAllUncHessian = doAllUncHessian,
                                            verbose = verbose, debug = debug))
     }
 }
@@ -1716,11 +1773,13 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                                            newUpdateNodes = NULL, newConstantNodes = NULL, 
                                            relTol = c(1e-15, 1e-8, 1e-3, 1e-3), useFasterRderivs = FALSE,
                                            useParamTransform = FALSE, checkDoubleTape = TRUE, 
-                                           checkCompiledValuesIdentical = TRUE,
+                                           checkCompiledValuesIdentical = TRUE, checkDoubleUncHessian = TRUE,
+                                           doAllUncHessian = TRUE,
                                            verbose = FALSE, debug = FALSE){
 
     saved_edition <- edition_get()
     local_edition(3)
+    on.exit(local_edition(saved_edition))
     
     test_that(paste0("Derivatives of calculate for model ", name), {
         if(exists('paciorek') && paciorek == 0) browser()
@@ -1823,10 +1882,12 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
         for(case in 1:2) {
             for(idx in seq_along(xList)) {
                 if(exists('paciorek') && paciorek == idx) browser()
-                
                 if(verbose) {
                     if(case == 1) {
-                        if(idx == 1) cat("Testing initial wrt values with initial constantNodes\n")
+                        if(idx == 1) {
+                            cat("Testing initial wrt values with initial constantNodes\n")
+                            cat("  Using wrt: ", wrt, "\n")
+                        }
                         if(idx == 2) cat("Testing new wrt values with initial constantNodes\n")
                         if(idx == 3 && length(updateNodes)) {
                              cat("Testing new updateNode values with initial constantNodes\n")
@@ -1875,7 +1936,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                         }
                         model$calculate(constantNodesDeps)
                         cModel$calculate(constantNodesDeps)
-                    } else next
+                    } else next 
                 }
                 
                 x <- xList[[idx]]
@@ -1895,15 +1956,15 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 rVals_orig <- cVals_orig <- values(model, otherNodes)
                 
                 if(useFasterRderivs) {
-                    
                     inputx <- x
                     if(useParamTransform)
                         inputx <- rDerivs$my_parameterTransform$transform(x)
 
-                    rOutput12 <- nimDerivs(wrapper(inputx), order = 1:2, model = cModel, reset = reset)
-                    rVals12 <- values(cModel, otherNodes)
-                    rLogProb12 <- cModel$getLogProb(calcNodes)
-                    rWrt12 <- values(cModel, wrt)
+                    
+                    rOutput012 <- nimDerivs(wrapper(inputx), order = 0:2, reset = reset)
+                    rVals012 <- values(cModel, otherNodes)
+                    rLogProb012 <- cModel$getLogProb(calcNodes)
+                    rWrt012 <- values(cModel, wrt)
                     
                     nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
                     rOutput01 <- nimDerivs(wrapper(inputx), order = 0:1, reset = reset)
@@ -1911,18 +1972,20 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                     rVals01 <- values(cModel, otherNodes)
                     rWrt01 <- values(cModel, wrt)
 
-                    nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
-                    rOutput012 <- nimDerivs(wrapper(inputx), order = 0:2, reset = reset)
-                    rVals012 <- values(cModel, otherNodes)
-                    rLogProb012 <- cModel$getLogProb(calcNodes)
-                    rWrt012 <- values(cModel, wrt)
-
-                    nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
-                    rOutput02 <- nimDerivs(wrapper(inputx), order = c(0,2), reset = reset)
-                    rVals02 <- values(cModel, otherNodes)
-                    rLogProb02 <- cModel$getLogProb(calcNodes)
-                    rWrt02 <- values(cModel, wrt)
-
+                    if(doAllUncHessian) { 
+                        nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+                        rOutput12 <- nimDerivs(wrapper(inputx), order = 1:2, model = cModel, reset = reset)
+                        rVals12 <- values(cModel, otherNodes)
+                        rLogProb12 <- cModel$getLogProb(calcNodes)
+                        rWrt12 <- values(cModel, wrt)
+                        
+                        nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+                        rOutput02 <- nimDerivs(wrapper(inputx), order = c(0,2), reset = reset)
+                        rVals02 <- values(cModel, otherNodes)
+                        rLogProb02 <- cModel$getLogProb(calcNodes)
+                        rWrt02 <- values(cModel, wrt)
+                    }
+                    
                     if(checkDoubleTape) {
                         ## Note that because inner deriv is order 1 or 2, don't expect model to be updated,
                         ## so need to do this before 01, 012 cases below.
@@ -1933,23 +1996,27 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                         rVals1d <- values(cModel, otherNodes)
                         rLogProb1d <- cModel$getLogProb(calcNodes)
                         rWrt1d <- values(cModel, wrt)
-                        
-                        nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
-                        if(reset) {
-                            rOutput2d <- nimDerivs(wrapperMeta2Reset(inputx), order = 0, model = cModel, reset = reset)
-                        } else rOutput2d <- nimDerivs(wrapperMeta2(inputx), order = 0, model = cModel, reset = reset)
-                        rVals2d <- values(cModel, otherNodes)
-                        rLogProb2d <- cModel$getLogProb(calcNodes)
-                        rWrt2d <- values(cModel, wrt)
 
-                        nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
-                        if(reset) {
-                            rOutput2d11 <- nimDerivs(wrapperMeta1Reset(inputx), order = 1, model = cModel, reset = reset)
-                        } else rOutput2d11 <- nimDerivs(wrapperMeta1(inputx), order = 1, model = cModel, reset = reset)
+                        if(doAllUncHessian) { 
+                            nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+                            if(reset) {
+                                rOutput2d <- nimDerivs(wrapperMeta2Reset(inputx), order = 0, model = cModel, reset = reset)
+                            } else rOutput2d <- nimDerivs(wrapperMeta2(inputx), order = 0, model = cModel, reset = reset)
+                            rVals2d <- values(cModel, otherNodes)
+                            rLogProb2d <- cModel$getLogProb(calcNodes)
+                            rWrt2d <- values(cModel, wrt)
+                        }
                         
-                        rVals2d11 <- values(cModel, otherNodes)
-                        rLogProb2d11 <- cModel$getLogProb(calcNodes)
-                        rWrt2d11 <- values(cModel, wrt)
+                        if(checkDoubleUncHessian) {
+                            nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
+                            if(reset) {
+                                rOutput2d11 <- nimDerivs(wrapperMeta1Reset(inputx), order = 1, model = cModel, reset = reset)
+                            } else rOutput2d11 <- nimDerivs(wrapperMeta1(inputx), order = 1, model = cModel, reset = reset)
+                            
+                            rVals2d11 <- values(cModel, otherNodes)
+                            rLogProb2d11 <- cModel$getLogProb(calcNodes)
+                            rWrt2d11 <- values(cModel, wrt)
+                        }
                     }
 
                     rLogProb_new <- wrapper(inputx)
@@ -1959,10 +2026,11 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                     nimCopy(tmpMV, cModel, nodes, nodes, row = 1, logProb = TRUE)
 
                 } else {
-                    rOutput12 <- rDerivs$run(x, 1:2, reset = reset)
-                    rVals12 <- values(model, otherNodes)
-                    rLogProb12 <- model$getLogProb(calcNodes)
-                    rWrt12 <- values(model, wrt)
+                         
+                    rOutput012 <- rDerivs$run(x, 0:2, reset = reset)
+                    rVals012 <- values(model, otherNodes)
+                    rLogProb012 <- model$getLogProb(calcNodes)
+                    rWrt012 <- values(model, wrt)
 
                     nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
                     rOutput01 <- rDerivs$run(x, 0:1, reset = reset)
@@ -1970,18 +2038,20 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                     rVals01 <- values(model, otherNodes)
                     rWrt01 <- values(model, wrt)
 
-                    nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
-                    rOutput012 <- rDerivs$run(x, 0:2, reset = reset)
-                    rVals012 <- values(model, otherNodes)
-                    rLogProb012 <- model$getLogProb(calcNodes)
-                    rWrt012 <- values(model, wrt)
-
-                    nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
-                    rOutput02 <- rDerivs$run(x, c(0,2), reset = reset)
-                    rVals02 <- values(model, otherNodes)
-                    rLogProb02 <- model$getLogProb(calcNodes)
-                    rWrt02 <- values(model, wrt)
-
+                    if(doAllUncHessian) {
+                        nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
+                        rOutput12 <- rDerivs$run(x, 1:2, reset = reset)
+                        rVals12 <- values(model, otherNodes)
+                        rLogProb12 <- model$getLogProb(calcNodes)
+                        rWrt12 <- values(model, wrt)
+                        
+                        nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
+                        rOutput02 <- rDerivs$run(x, c(0,2), reset = reset)
+                        rVals02 <- values(model, otherNodes)
+                        rLogProb02 <- model$getLogProb(calcNodes)
+                        rWrt02 <- values(model, wrt)
+                    }
+                    
                     if(checkDoubleTape) {
                         ## Note that because inner deriv is order 1 or 2, don't expect model to be updated.
                         nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
@@ -1992,21 +2062,25 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                         rLogProb1d <- model$getLogProb(calcNodes)
                         rWrt1d <- values(model, wrt)
                         
-                        nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
-                        if(reset) {
-                            rOutput2d <- rDerivsMetaReset$metaDerivs2Run(x = x, order = 0, reset = reset)
-                        } else rOutput2d <- rDerivsMeta$metaDerivs2Run(x = x, order = 0, reset = reset)
-                        rVals2d <- values(model, otherNodes)
-                        rLogProb2d <- model$getLogProb(calcNodes)
-                        rWrt2d <- values(model, wrt)
-                        
-                        nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
-                        if(reset) {
-                            rOutput2d11 <- rDerivsMetaReset$metaDerivs1Run(x = x, order = 1, reset = reset)
-                        } else rOutput2d11 <- rDerivsMeta$metaDerivs1Run(x = x, order = 1, reset = reset)
-                        rVals2d11 <- values(model, otherNodes)
-                        rLogProb2d11 <- model$getLogProb(calcNodes)
-                        rWrt2d11 <- values(model, wrt)
+                        if(doAllUncHessian) {
+                            nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
+                            if(reset) {
+                                rOutput2d <- rDerivsMetaReset$metaDerivs2Run(x = x, order = 0, reset = reset)
+                            } else rOutput2d <- rDerivsMeta$metaDerivs2Run(x = x, order = 0, reset = reset)
+                            rVals2d <- values(model, otherNodes)
+                            rLogProb2d <- model$getLogProb(calcNodes)
+                            rWrt2d <- values(model, wrt)
+                        }
+                            
+                        if(checkDoubleUncHessian) {
+                            nimCopy(tmpMV, model, nodes, nodes, row = 1, logProb = TRUE)
+                            if(reset) {
+                                rOutput2d11 <- rDerivsMetaReset$metaDerivs1Run(x = x, order = 1, reset = reset)
+                            } else rOutput2d11 <- rDerivsMeta$metaDerivs1Run(x = x, order = 1, reset = reset)
+                            rVals2d11 <- values(model, otherNodes)
+                            rLogProb2d11 <- model$getLogProb(calcNodes)
+                            rWrt2d11 <- values(model, wrt)
+                        }
                     }
 
                     values(model, wrt) <- x
@@ -2072,29 +2146,40 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 
                 ## Check results ##
 
+                if(checkCompiledValuesIdentical) {
+                    expect_fun <- expect_identical
+                } else expect_fun <- expect_equal
+                
                 ## Check that only requested orders provided.
-                expect_identical(length(rOutput01$value), 1L)
-                expect_identical(length(rOutput12$value), 0L)
+
                 expect_identical(length(rOutput012$value), 1L)
-                expect_identical(length(rOutput02$value), 1L)
+                expect_identical(length(rOutput01$value), 1L)
+                if(doAllUncHessian) {
+                    expect_identical(length(rOutput12$value), 0L)
+                    expect_identical(length(rOutput02$value), 1L)
+                }
                 expect_identical(length(cOutput01$value), 1L)
                 expect_identical(length(cOutput12$value), 0L)
                 expect_identical(length(cOutput012$value), 1L)
                 expect_identical(length(cOutput02$value), 1L)
 
-                expect_gte(length(rOutput01$jacobian), 1)
-                expect_gte(length(rOutput12$jacobian), 1)
                 expect_gte(length(rOutput012$jacobian), 1)
-                expect_identical(length(rOutput02$jacobian), 0L)
+                expect_gte(length(rOutput01$jacobian), 1)
+                if(doAllUncHessian) {
+                    expect_gte(length(rOutput12$jacobian), 1)
+                    expect_identical(length(rOutput02$jacobian), 0L)
+                }
                 expect_gte(length(cOutput01$jacobian), 1)
                 expect_gte(length(cOutput12$jacobian), 1)
                 expect_gte(length(cOutput012$jacobian), 1)
                 expect_identical(length(cOutput02$jacobian), 0L)
 
-                expect_identical(length(rOutput01$hessian), 0L)
-                expect_gte(length(rOutput12$hessian), 1)
                 expect_gte(length(rOutput012$hessian), 1)
-                expect_gte(length(rOutput02$hessian), 1)
+                expect_identical(length(rOutput01$hessian), 0L)
+                if(doAllUncHessian) {
+                    expect_gte(length(rOutput12$hessian), 1)
+                    expect_gte(length(rOutput02$hessian), 1)
+                }
                 expect_identical(length(cOutput01$hessian), 0L)
                 expect_gte(length(cOutput12$hessian), 1)
                 expect_gte(length(cOutput012$hessian), 1)
@@ -2108,16 +2193,20 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                     expect_identical(length(cOutput1d$jacobian), 0L)
                     expect_identical(length(cOutput1d$hessian), 0L)
 
-                    expect_gte(length(rOutput2d$value), 1)
-                    expect_identical(length(rOutput2d$jacobian), 0L)
-                    expect_identical(length(rOutput2d$hessian), 0L)
+                    if(doAllUncHessian) {
+                        expect_gte(length(rOutput2d$value), 1)
+                        expect_identical(length(rOutput2d$jacobian), 0L)
+                        expect_identical(length(rOutput2d$hessian), 0L)
+                    }
                     expect_gte(length(cOutput2d$value), 1)
                     expect_identical(length(cOutput2d$jacobian), 0L)
                     expect_identical(length(cOutput2d$hessian), 0L)
 
-                    expect_identical(length(rOutput2d11$value), 0L)
-                    expect_gte(length(rOutput2d11$jacobian), 1)
-                    expect_identical(length(rOutput2d11$hessian), 0L)
+                    if(checkDoubleUncHessian) {
+                        expect_identical(length(rOutput2d11$value), 0L)
+                        expect_gte(length(rOutput2d11$jacobian), 1)
+                        expect_identical(length(rOutput2d11$hessian), 0L)
+                    }
                     expect_identical(length(cOutput2d11$value), 0L)
                     expect_gte(length(cOutput2d11$jacobian), 1)
                     expect_identical(length(cOutput2d11$hessian), 0L)
@@ -2126,19 +2215,16 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 ## 0th order 'derivative'
                 expect_identical(rOutput01$value, rLogProb_new)
                 expect_identical(rOutput012$value, rLogProb_new)
-                expect_identical(rOutput02$value, rLogProb_new)
-                if(checkCompiledValuesIdentical) {
-                    expect_identical(cOutput01$value, cLogProb_new)
-                    expect_identical(cOutput012$value, cLogProb_new)
-                    expect_identical(cOutput02$value, cLogProb_new)
-                } else {
-                    expect_equal(cOutput01$value, cLogProb_new)
-                    expect_equal(cOutput012$value, cLogProb_new)
-                    expect_equal(cOutput02$value, cLogProb_new)
-                }
+                if(doAllUncHessian) 
+                    expect_identical(rOutput02$value, rLogProb_new)
+                expect_fun(cOutput01$value, cLogProb_new)
+                expect_fun(cOutput012$value, cLogProb_new)
+                expect_fun(cOutput02$value, cLogProb_new)
+
                 expect_equal(rOutput01$value, cOutput01$value, tolerance = relTol[1])
                 expect_equal(rOutput012$value, cOutput012$value, tolerance = relTol[1])
-                expect_equal(rOutput02$value, cOutput02$value, tolerance = relTol[1])
+                if(doAllUncHessian) 
+                    expect_equal(rOutput02$value, cOutput02$value, tolerance = relTol[1])
 
                 ## expect_equal (via waldo::compare and waldo::num_equal) uses absolute tolerance if 'y' value <= tolerance.
                 ## Consider creating a nim_equal operator that checks if max(abs(x-y)/abs(y)) > tolerance using
@@ -2155,7 +2241,8 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 expect_equal(sum(is.na(cOutput01$value)), 0, info = "NAs found in compiled 0th derivative")
                 expect_equal(sum(is.na(rOutput012$value)), 0, info = "NAs found in uncompiled 0th derivative")
                 expect_equal(sum(is.na(cOutput012$value)), 0, info = "NAs found in compiled 0th derivative")
-                expect_equal(sum(is.na(rOutput02$value)), 0, info = "NAs found in uncompiled 0th derivative")
+                if(doAllUncHessian)
+                    expect_equal(sum(is.na(rOutput02$value)), 0, info = "NAs found in uncompiled 0th derivative")
                 expect_equal(sum(is.na(cOutput02$value)), 0, info = "NAs found in compiled 0th derivative")
                 
                 ## 1st derivative
@@ -2163,8 +2250,10 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 expect_equal(sum(is.na(rOutput01$jacobian)), 0, info = "NAs found in uncompiled 1st derivative")
                 expect_equal(sum(is.na(cOutput01$jacobian)), 0, info = "NAs found in compiled 1st derivative")
 
-                expect_equal(rOutput12$jacobian, cOutput12$jacobian, tolerance = relTol[2])
-                expect_equal(sum(is.na(rOutput12$jacobian)), 0, info = "NAs found in uncompiled 1st derivative")
+                if(doAllUncHessian) {
+                    expect_equal(rOutput12$jacobian, cOutput12$jacobian, tolerance = relTol[2])
+                    expect_equal(sum(is.na(rOutput12$jacobian)), 0, info = "NAs found in uncompiled 1st derivative")
+                }
                 expect_equal(sum(is.na(cOutput12$jacobian)), 0, info = "NAs found in compiled 1st derivative")
 
                 expect_equal(rOutput012$jacobian, cOutput012$jacobian, tolerance = relTol[2])
@@ -2190,7 +2279,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                     expect_equal(sum(is.na(cOutput1d$value)), 0, info = "NAs found in compiled double-taped 1st derivative")
 
                     ## explicit comparison to single-taped result
-                    expect_identical(cOutput1d$value, c(cOutput012$jacobian))
+                    expect_fun(cOutput1d$value, c(cOutput012$jacobian))
 
                     if(mean(abs(cOutput1d$value)) <= relTol[2])
                         warning("Using absolute tolerance for 1d$value comparison.")
@@ -2198,16 +2287,20 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 }
 
                 ## 2nd derivative
-                expect_equal(rOutput12$hessian, cOutput12$hessian, tolerance = relTol[3])
-                expect_equal(sum(is.na(rOutput12$hessian)), 0, info = "NAs found in uncompiled 2nd derivative")
+                if(doAllUncHessian) {
+                    expect_equal(rOutput12$hessian, cOutput12$hessian, tolerance = relTol[3])
+                    expect_equal(sum(is.na(rOutput12$hessian)), 0, info = "NAs found in uncompiled 2nd derivative")
+                }
                 expect_equal(sum(is.na(cOutput12$hessian)), 0, info = "NAs found in compiled 2nd derivative")
 
                 expect_equal(rOutput012$hessian, cOutput012$hessian, tolerance = relTol[3])
                 expect_equal(sum(is.na(rOutput012$hessian)), 0, info = "NAs found in uncompiled 2nd derivative")
                 expect_equal(sum(is.na(cOutput012$hessian)), 0, info = "NAs found in compiled 2nd derivative")
 
-                expect_equal(rOutput02$hessian, cOutput02$hessian, tolerance = relTol[3])
-                expect_equal(sum(is.na(rOutput02$hessian)), 0, info = "NAs found in uncompiled 2nd derivative")
+                if(doAllUncHessian) {
+                    expect_equal(rOutput02$hessian, cOutput02$hessian, tolerance = relTol[3])
+                    expect_equal(sum(is.na(rOutput02$hessian)), 0, info = "NAs found in uncompiled 2nd derivative")
+                }
                 expect_equal(sum(is.na(cOutput02$hessian)), 0, info = "NAs found in compiled 2nd derivative")
 
                 if(mean(abs(cOutput12$hessian)) <= relTol[3])
@@ -2222,19 +2315,23 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
 
 
                 if(checkDoubleTape) {
-                    expect_equal(rOutput2d$value, cOutput2d$value, tolerance = relTol[3])
-                    expect_equal(sum(is.na(rOutput2d$value)), 0, info = "NAs found in uncompiled double-taped 2nd derivative")
+                    if(doAllUncHessian) {
+                        expect_equal(rOutput2d$value, cOutput2d$value, tolerance = relTol[3])
+                        expect_equal(sum(is.na(rOutput2d$value)), 0, info = "NAs found in uncompiled double-taped 2nd derivative")
+                    }
                     expect_equal(sum(is.na(cOutput2d$value)), 0, info = "NAs found in compiled double-taped 2nd derivative")
 
-                    expect_equal(rOutput2d11$jacobian, cOutput2d11$jacobian, tolerance = relTol[4])
-                    expect_equal(sum(is.na(rOutput2d11$jacobian)), 0, info = "NAs found in uncompiled double-taped 2nd derivative")
+                    if(checkDoubleUncHessian) {
+                        expect_equal(rOutput2d11$jacobian, cOutput2d11$jacobian, tolerance = relTol[4])
+                        expect_equal(sum(is.na(rOutput2d11$jacobian)), 0, info = "NAs found in uncompiled double-taped 2nd derivative")
+                    }
                     expect_equal(sum(is.na(cOutput2d11$jacobian)), 0, info = "NAs found in compiled double-taped 2nd derivative")
 
                     ## explicit comparison to single-taped result
                     ## Not clear why 2d$value not identical to 012$hessian
                     expect_equal(cOutput2d$value, c(cOutput012$hessian), tolerance = 1e-15)
                     if(length(cOutput2d11$jacobian) == 1) cOutput2d11$jacobian <- c(cOutput2d11$jacobian)
-                    expect_identical(cOutput2d11$jacobian, cOutput012$hessian[,,1])
+                    expect_fun(cOutput2d11$jacobian, cOutput012$hessian[,,1])
 
                     if(mean(abs(cOutput2d$value)) <= relTol[3])
                         warning("Using absolute tolerance for 2d$value comparison.")
@@ -2249,9 +2346,11 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 expect_identical(rWrt01, x)
                 ## We provide the model to nimDerivs, so expect restoration except for non-paramTransform
                 ## and non-fasterRderivs, where assignment is outside nimDerivs.
-                if(!useParamTransform && !useFasterRderivs) {
-                    expect_identical(rWrt12, x)
-                } else expect_identical(rWrt12, rWrt_orig)
+                if(doAllUncHessian) {
+                    if(!useParamTransform && !useFasterRderivs) {
+                        expect_identical(rWrt12, x)
+                    } else expect_identical(rWrt12, rWrt_orig)
+                }
                 expect_identical(rWrt012, x)
                 expect_identical(cWrt01, x)
                 if(!useParamTransform) {
@@ -2262,8 +2361,10 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
 
                 if(checkDoubleTape) {
                     expect_identical(rWrt1d, rWrt_orig)
-                    expect_identical(rWrt2d, rWrt_orig)
-                    expect_identical(rWrt2d11, rWrt_orig)
+                    if(doAllUncHessian) 
+                        expect_identical(rWrt2d, rWrt_orig)
+                    if(checkDoubleUncHessian)
+                        expect_identical(rWrt2d11, rWrt_orig)
                     expect_identical(cWrt1d, cWrt_orig)
                     expect_identical(cWrt2d, cWrt_orig)
                     expect_identical(cWrt2d11, cWrt_orig)
@@ -2277,26 +2378,29 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 expect_identical(rVals01, rVals_new)
                 expect_identical(rLogProb012, rLogProb_new)
                 expect_identical(rVals012, rVals_new)
-                expect_identical(rLogProb02, rLogProb_new)
-                expect_identical(rVals02, rVals_new)
-                expect_identical(rLogProb12, rLogProb_orig)
-                expect_identical(rVals12, rVals_orig)
+                if(doAllUncHessian) {
+                    expect_identical(rLogProb02, rLogProb_new)
+                    expect_identical(rVals02, rVals_new)
+                    expect_identical(rLogProb12, rLogProb_orig)
+                    expect_identical(rVals12, rVals_orig)
+                }
                 
                 if(checkDoubleTape) {
                     ## Double tapes here don't have order = 0 in inner tape, so model should not be updated since I do pass model into nimDerivs.
                     expect_identical(rLogProb1d, rLogProb_orig)
-                    expect_identical(rLogProb2d, rLogProb_orig)
-                    expect_identical(rLogProb2d11, rLogProb_orig)
+                    if(doAllUncHessian) 
+                        expect_identical(rLogProb2d, rLogProb_orig)
+                    if(checkDoubleUncHessian)
+                        expect_identical(rLogProb2d11, rLogProb_orig)
                     expect_identical(rVals1d, rVals_orig)
-                    expect_identical(rVals2d, rVals_orig)
-                    expect_identical(rVals2d11, rVals_orig)
+                    if(doAllUncHessian) 
+                        expect_identical(rVals2d, rVals_orig)
+                    if(checkDoubleUncHessian)
+                        expect_identical(rVals2d11, rVals_orig)
                 }
                 
                 ## Not clear if next check should be expect_identical (in many cases they are identical);
                 ## Check with PdV whether values from taped model could get into the compiled model.        
-                if(checkCompiledValuesIdentical) {
-                    expect_fun <- expect_identical
-                } else expect_fun <- expect_equal
                 
                 expect_fun(cLogProb01, cLogProb_new) 
                 expect_fun(cVals01, cVals_new)
@@ -2320,7 +2424,6 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             }
         }
     })
-    local_edition(saved_edition)
 }
 
 
