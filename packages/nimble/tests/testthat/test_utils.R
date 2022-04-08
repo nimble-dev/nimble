@@ -1571,7 +1571,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
                                        verbose = verbose, debug = debug))
         ## max. lik. use case
         if(!is.null(seed))   ## There has weirdness where whether a test fails or passes modifies the RNG state, affecting the next call to test_ADModelCalculate_internal.
-            set.seed(seed)
+            set.seed(seed+1)
         if(verbose) cat("============================================\ntesting ML-based scenario\n--------------------------------------------\n")
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         calcNodes <- model$getNodeNames()
@@ -1607,7 +1607,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
                                            verbose = verbose, debug = debug))
 
         if(!is.null(seed))   ## There has weirdness where whether a test fails or passes modifies the RNG state, affecting the next call to test_ADModelCalculate_internal.
-            set.seed(seed)
+            set.seed(seed+2)
         ## modular HMC/MAP use case
         if(verbose) cat("============================================\ntesting HMC/MAP partial-based scenario\n--------------------------------------------\n")
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
@@ -1651,7 +1651,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
                                            verbose = verbose, debug = debug))
 
         if(!is.null(seed))   ## There has weirdness where whether a test fails or passes modifies the RNG state, affecting the next call to test_ADModelCalculate_internal.
-            set.seed(seed)
+            set.seed(seed+3)
         ## conditional max. lik. use case
         if(verbose) cat("============================================\ntesting ML partial-based scenario\n--------------------------------------------\n")
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
@@ -1698,7 +1698,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
                                            verbose = verbose, debug = debug))
 
         if(!is.null(seed))   ## There has weirdness where whether a test fails or passes modifies the RNG state, affecting the next call to test_ADModelCalculate_internal.
-            set.seed(seed)
+            set.seed(seed+4)
         ## empirical Bayes use case (though not actually integrating over any latent nodes)
         if(verbose) cat('============================================\ntesting EB-based scenario\n--------------------------------------------\n')
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
@@ -2148,7 +2148,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
 
                 if(checkCompiledValuesIdentical) {
                     expect_fun <- expect_identical
-                } else expect_fun <- expect_equal
+                } else expect_fun <- nim_expect_equal
                 
                 ## Check that only requested orders provided.
 
@@ -2221,51 +2221,54 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 expect_fun(cOutput012$value, cLogProb_new)
                 expect_fun(cOutput02$value, cLogProb_new)
 
-                expect_equal(rOutput01$value, cOutput01$value, tolerance = relTol[1])
-                expect_equal(rOutput012$value, cOutput012$value, tolerance = relTol[1])
+                nim_expect_equal(rOutput01$value, cOutput01$value, tolerance = relTol[1])
+                nim_expect_equal(rOutput012$value, cOutput012$value, tolerance = relTol[1])
                 if(doAllUncHessian) 
-                    expect_equal(rOutput02$value, cOutput02$value, tolerance = relTol[1])
+                    nim_expect_equal(rOutput02$value, cOutput02$value, tolerance = relTol[1])
 
+                if(FALSE) {  ## not relevant if using nim_expect_equal
                 ## expect_equal (via waldo::compare and waldo::num_equal) uses absolute tolerance if 'y' value <= tolerance.
                 ## Consider creating a nim_equal operator that checks if max(abs(x-y)/abs(y)) > tolerance using
                 ## relative tolerance unless y == 0.
-                if(mean(abs(cOutput01$value)) <= relTol[1])
-                    warning("Using absolute tolerance for 01$value comparison.")
-                if(mean(abs(cOutput012$value)) <= relTol[1])
-                    warning("Using absolute tolerance for 012$value comparison.")
-                if(mean(abs(cOutput02$value)) <= relTol[1])
-                    warning("Using absolute tolerance for 02$value comparison.")
+                    if(mean(abs(cOutput01$value)) <= relTol[1])
+                        warning("Using absolute tolerance for 01$value comparison.")
+                    if(mean(abs(cOutput012$value)) <= relTol[1])
+                        warning("Using absolute tolerance for 012$value comparison.")
+                    if(mean(abs(cOutput02$value)) <= relTol[1])
+                        warning("Using absolute tolerance for 02$value comparison.")
+                }
                 
-                
-                expect_equal(sum(is.na(rOutput01$value)), 0, info = "NAs found in uncompiled 0th derivative")
-                expect_equal(sum(is.na(cOutput01$value)), 0, info = "NAs found in compiled 0th derivative")
-                expect_equal(sum(is.na(rOutput012$value)), 0, info = "NAs found in uncompiled 0th derivative")
-                expect_equal(sum(is.na(cOutput012$value)), 0, info = "NAs found in compiled 0th derivative")
+                expect_identical(sum(is.na(rOutput01$value)), 0L, info = "NAs found in uncompiled 0th derivative")
+                expect_identical(sum(is.na(cOutput01$value)), 0L, info = "NAs found in compiled 0th derivative")
+                expect_identical(sum(is.na(rOutput012$value)), 0L, info = "NAs found in uncompiled 0th derivative")
+                expect_identical(sum(is.na(cOutput012$value)), 0L, info = "NAs found in compiled 0th derivative")
                 if(doAllUncHessian)
-                    expect_equal(sum(is.na(rOutput02$value)), 0, info = "NAs found in uncompiled 0th derivative")
-                expect_equal(sum(is.na(cOutput02$value)), 0, info = "NAs found in compiled 0th derivative")
+                    expect_identical(sum(is.na(rOutput02$value)), 0L, info = "NAs found in uncompiled 0th derivative")
+                expect_identical(sum(is.na(cOutput02$value)), 0L, info = "NAs found in compiled 0th derivative")
                 
                 ## 1st derivative
-                expect_equal(rOutput01$jacobian, cOutput01$jacobian, tolerance = relTol[2])
-                expect_equal(sum(is.na(rOutput01$jacobian)), 0, info = "NAs found in uncompiled 1st derivative")
-                expect_equal(sum(is.na(cOutput01$jacobian)), 0, info = "NAs found in compiled 1st derivative")
+                nim_expect_equal(rOutput01$jacobian, cOutput01$jacobian, tolerance = relTol[2])
+                expect_identical(sum(is.na(rOutput01$jacobian)), 0L, info = "NAs found in uncompiled 1st derivative")
+                expect_identical(sum(is.na(cOutput01$jacobian)), 0L, info = "NAs found in compiled 1st derivative")
 
                 if(doAllUncHessian) {
-                    expect_equal(rOutput12$jacobian, cOutput12$jacobian, tolerance = relTol[2])
-                    expect_equal(sum(is.na(rOutput12$jacobian)), 0, info = "NAs found in uncompiled 1st derivative")
+                    nim_expect_equal(rOutput12$jacobian, cOutput12$jacobian, tolerance = relTol[2])
+                    expect_identical(sum(is.na(rOutput12$jacobian)), 0L, info = "NAs found in uncompiled 1st derivative")
                 }
-                expect_equal(sum(is.na(cOutput12$jacobian)), 0, info = "NAs found in compiled 1st derivative")
+                expect_identical(sum(is.na(cOutput12$jacobian)), 0L, info = "NAs found in compiled 1st derivative")
 
-                expect_equal(rOutput012$jacobian, cOutput012$jacobian, tolerance = relTol[2])
-                expect_equal(sum(is.na(rOutput012$jacobian)), 0, info = "NAs found in uncompiled 1st derivative")
-                expect_equal(sum(is.na(cOutput012$jacobian)), 0, info = "NAs found in compiled 1st derivative")
+                nim_expect_equal(rOutput012$jacobian, cOutput012$jacobian, tolerance = relTol[2])
+                expect_identical(sum(is.na(rOutput012$jacobian)), 0L, info = "NAs found in uncompiled 1st derivative")
+                expect_identical(sum(is.na(cOutput012$jacobian)), 0L, info = "NAs found in compiled 1st derivative")
 
-                if(mean(abs(cOutput01$jacobian)) <= relTol[2])
-                    warning("Using absolute tolerance for 01$jacobian comparison.")
-                if(mean(abs(cOutput12$jacobian)) <= relTol[2])
-                    warning("Using absolute tolerance for 12$jacobian comparison.")
-                if(mean(abs(cOutput012$jacobian)) <= relTol[2])
-                    warning("Using absolute tolerance for 012$jacobian comparison.")
+                if(FALSE) {  ## not relevant if using nim_expect_equal
+                    if(mean(abs(cOutput01$jacobian)) <= relTol[2])
+                        warning("Using absolute tolerance for 01$jacobian comparison.")
+                    if(mean(abs(cOutput12$jacobian)) <= relTol[2])
+                        warning("Using absolute tolerance for 12$jacobian comparison.")
+                    if(mean(abs(cOutput012$jacobian)) <= relTol[2])
+                        warning("Using absolute tolerance for 012$jacobian comparison.")
+                }
                 
                 ## explicit comparison of first derivs;
                 ## both of these are reverse mode because 2nd order reverse also invokes first order reverse
@@ -2274,70 +2277,74 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 expect_identical(cOutput12$jacobian, cOutput012$jacobian)
 
                 if(checkDoubleTape) {
-                    expect_equal(rOutput1d$value, cOutput1d$value, tolerance = relTol[2])
-                    expect_equal(sum(is.na(rOutput1d$value)), 0, info = "NAs found in uncompiled double-taped 1st derivative")
-                    expect_equal(sum(is.na(cOutput1d$value)), 0, info = "NAs found in compiled double-taped 1st derivative")
+                    nim_expect_equal(rOutput1d$value, cOutput1d$value, tolerance = relTol[2])
+                    expect_identical(sum(is.na(rOutput1d$value)), 0L, info = "NAs found in uncompiled double-taped 1st derivative")
+                    expect_identical(sum(is.na(cOutput1d$value)), 0L, info = "NAs found in compiled double-taped 1st derivative")
 
                     ## explicit comparison to single-taped result
                     expect_fun(cOutput1d$value, c(cOutput012$jacobian))
 
-                    if(mean(abs(cOutput1d$value)) <= relTol[2])
-                        warning("Using absolute tolerance for 1d$value comparison.")
-
+                    if(FALSE) {  ## not relevant if using nim_expect_equal
+                        if(mean(abs(cOutput1d$value)) <= relTol[2])
+                            warning("Using absolute tolerance for 1d$value comparison.")
+                    }
                 }
 
                 ## 2nd derivative
                 if(doAllUncHessian) {
-                    expect_equal(rOutput12$hessian, cOutput12$hessian, tolerance = relTol[3])
-                    expect_equal(sum(is.na(rOutput12$hessian)), 0, info = "NAs found in uncompiled 2nd derivative")
+                    nim_expect_equal(rOutput12$hessian, cOutput12$hessian, tolerance = relTol[3])
+                    expect_identical(sum(is.na(rOutput12$hessian)), 0L, info = "NAs found in uncompiled 2nd derivative")
                 }
-                expect_equal(sum(is.na(cOutput12$hessian)), 0, info = "NAs found in compiled 2nd derivative")
+                expect_identical(sum(is.na(cOutput12$hessian)), 0L, info = "NAs found in compiled 2nd derivative")
 
-                expect_equal(rOutput012$hessian, cOutput012$hessian, tolerance = relTol[3])
-                expect_equal(sum(is.na(rOutput012$hessian)), 0, info = "NAs found in uncompiled 2nd derivative")
-                expect_equal(sum(is.na(cOutput012$hessian)), 0, info = "NAs found in compiled 2nd derivative")
+                nim_expect_equal(rOutput012$hessian, cOutput012$hessian, tolerance = relTol[3])
+                expect_identical(sum(is.na(rOutput012$hessian)), 0L, info = "NAs found in uncompiled 2nd derivative")
+                expect_identical(sum(is.na(cOutput012$hessian)), 0L, info = "NAs found in compiled 2nd derivative")
 
                 if(doAllUncHessian) {
-                    expect_equal(rOutput02$hessian, cOutput02$hessian, tolerance = relTol[3])
-                    expect_equal(sum(is.na(rOutput02$hessian)), 0, info = "NAs found in uncompiled 2nd derivative")
+                    nim_expect_equal(rOutput02$hessian, cOutput02$hessian, tolerance = relTol[3])
+                    expect_identical(sum(is.na(rOutput02$hessian)), 0L, info = "NAs found in uncompiled 2nd derivative")
                 }
-                expect_equal(sum(is.na(cOutput02$hessian)), 0, info = "NAs found in compiled 2nd derivative")
+                expect_identical(sum(is.na(cOutput02$hessian)), 0L, info = "NAs found in compiled 2nd derivative")
 
-                if(mean(abs(cOutput12$hessian)) <= relTol[3])
-                    warning("Using absolute tolerance for 12$hessian comparison.")
-                if(mean(abs(cOutput012$hessian)) <= relTol[3])
-                    warning("Using absolute tolerance for 012$hessian comparison.")
-                if(mean(abs(cOutput02$hessian)) <= relTol[3])
-                    warning("Using absolute tolerance for 02$hessian comparison.")
-
+                if(FALSE) {  ## not relevant if using nim_expect_equal
+                    if(mean(abs(cOutput12$hessian)) <= relTol[3])
+                        warning("Using absolute tolerance for 12$hessian comparison.")
+                    if(mean(abs(cOutput012$hessian)) <= relTol[3])
+                        warning("Using absolute tolerance for 012$hessian comparison.")
+                    if(mean(abs(cOutput02$hessian)) <= relTol[3])
+                        warning("Using absolute tolerance for 02$hessian comparison.")
+                }
+                
                 expect_identical(cOutput12$hessian, cOutput012$hessian)
                 expect_identical(cOutput02$hessian, cOutput012$hessian)
 
 
                 if(checkDoubleTape) {
                     if(doAllUncHessian) {
-                        expect_equal(rOutput2d$value, cOutput2d$value, tolerance = relTol[3])
-                        expect_equal(sum(is.na(rOutput2d$value)), 0, info = "NAs found in uncompiled double-taped 2nd derivative")
+                        nim_expect_equal(rOutput2d$value, cOutput2d$value, tolerance = relTol[3])
+                        expect_identical(sum(is.na(rOutput2d$value)), 0L, info = "NAs found in uncompiled double-taped 2nd derivative")
                     }
-                    expect_equal(sum(is.na(cOutput2d$value)), 0, info = "NAs found in compiled double-taped 2nd derivative")
+                    expect_identical(sum(is.na(cOutput2d$value)), 0L, info = "NAs found in compiled double-taped 2nd derivative")
 
                     if(checkDoubleUncHessian) {
-                        expect_equal(rOutput2d11$jacobian, cOutput2d11$jacobian, tolerance = relTol[4])
-                        expect_equal(sum(is.na(rOutput2d11$jacobian)), 0, info = "NAs found in uncompiled double-taped 2nd derivative")
+                        nim_expect_equal(rOutput2d11$jacobian, cOutput2d11$jacobian, tolerance = relTol[4])
+                        expect_identical(sum(is.na(rOutput2d11$jacobian)), 0L, info = "NAs found in uncompiled double-taped 2nd derivative")
                     }
-                    expect_equal(sum(is.na(cOutput2d11$jacobian)), 0, info = "NAs found in compiled double-taped 2nd derivative")
+                    expect_identical(sum(is.na(cOutput2d11$jacobian)), 0L, info = "NAs found in compiled double-taped 2nd derivative")
 
                     ## explicit comparison to single-taped result
                     ## Not clear why 2d$value not identical to 012$hessian
-                    expect_equal(cOutput2d$value, c(cOutput012$hessian), tolerance = 1e-15)
+                    nim_expect_equal(cOutput2d$value, c(cOutput012$hessian), tolerance = 1e-15)
                     if(length(cOutput2d11$jacobian) == 1) cOutput2d11$jacobian <- c(cOutput2d11$jacobian)
                     expect_fun(cOutput2d11$jacobian, cOutput012$hessian[,,1])
 
-                    if(mean(abs(cOutput2d$value)) <= relTol[3])
-                        warning("Using absolute tolerance for 2d$value comparison.")
-                    if(mean(abs(cOutput2d11$jacobian)) <= relTol[4])
-                        warning("Using absolute tolerance for 2d11$jacobian comparison.")
-
+                    if(FALSE) {  ## not relevant if using nim_expect_equal
+                        if(mean(abs(cOutput2d$value)) <= relTol[3])
+                            warning("Using absolute tolerance for 2d$value comparison.")
+                        if(mean(abs(cOutput2d11$jacobian)) <= relTol[4])
+                            warning("Using absolute tolerance for 2d11$jacobian comparison.")
+                    }
                 }
 
                 ## wrt values should equal original wrt values if order !=0 or doubleTape
@@ -2888,4 +2895,28 @@ modify_on_match <- function(x, pattern, key, value, env = parent.frame(), ...) {
       eval(substitute(x[[name]][[key]] <- value), env)
     }
   }
+}
+
+
+
+nim_expect_equal <- function(x, y, tolerance = .Machine$double.eps^0.5) {
+    xlab <- deparse1(substitute(x))
+    ylab <- deparse1(substitute(y))
+     
+    denom <- y
+    denom[denom == 0] <- 1
+    rel_diff <- abs(x-y)/denom
+    result <- rel_diff < tolerance
+    all_result <- all(result)
+    if(!all_result) {
+        ord <- order(rel_diff, decreasing = TRUE)
+        wh <- 1:min(length(rel_diff), 5)
+        report <- cbind(x[ord[wh]], y[ord[wh]], rel_diff[ord[wh]])
+        report <- report[report[,3] > tolerance, ]
+        cat("\n******************\n")
+        cat("Detected some values out of relative tolerance: ", xlab, " ", ylab, ".\n")
+        print(report)
+        cat("\n******************\n")
+    }        
+    expect_true(all_result)
 }
