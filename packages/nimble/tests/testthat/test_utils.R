@@ -2905,7 +2905,7 @@ nim_expect_equal <- function(x, y, tolerance = .Machine$double.eps^0.5) {
      
     denom <- y
     denom[denom == 0] <- 1
-    rel_diff <- abs(x-y)/denom
+    rel_diff <- abs(x-y)/abs(denom)
     result <- rel_diff < tolerance
     all_result <- all(result)
     if(!all_result) {
@@ -2914,9 +2914,9 @@ nim_expect_equal <- function(x, y, tolerance = .Machine$double.eps^0.5) {
         report <- cbind(x[ord[wh]], y[ord[wh]], rel_diff[ord[wh]])
         report <- report[report[,3] > tolerance, ]
         cat("\n******************\n")
-        cat("Detected some values out of relative tolerance: ", xlab, " ", ylab, ".\n")
+        cat("Detected some values out of relative tolerance: ", xlab, " ", ylab, ".")
         print(report)
-        cat("\n******************\n")
+        cat("\n******************\n\n")
     }        
     expect_true(all_result)
 }

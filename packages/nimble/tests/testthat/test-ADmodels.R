@@ -544,8 +544,6 @@ test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, name = 'stoc
                       checkCompiledValuesIdentical = FALSE, useParamTransform = TRUE, newConstantNodes = list(y = newY))
 
 
-## NEED TO FILL IN RESULTS HERE 04-07
-
 ## dexp and dt, which are provided by NIMBLE to allow expanded parameterizations
 set.seed(1)
 code <- nimbleCode({
@@ -570,7 +568,7 @@ relTolTmp[4] <- 1e-2
 
 test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, useFasterRderivs = TRUE, name = 'dt and dexp model')
 
-## 2022-04-06: wrt values stored in model equal but not identical to 'x'
+## 2022-04-08: wrt values stored in model equal but not identical to 'x'
 test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, useFasterRderivs = TRUE, useParamTransform = TRUE,
                       checkCompiledValuesIdentical = FALSE, name = 'dt and dexp model')
 
@@ -587,6 +585,7 @@ test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, useFasterRde
 
 ## vectorized deterministic nodes
 
+set.seed(1)
 code <- nimbleCode({
     for(i in 1:n) {
         y[i] ~ dpois(mu[i])
@@ -600,11 +599,12 @@ model <- nimbleModel(code, constants = list(n = n), data = list(y = rpois(n, 1))
 newY <- rpois(n, 2)
 
 relTolTmp <- relTol
+relTolTmp[2] <- 1e-7
 relTolTmp[4] <- 1e-2
 test_ADModelCalculate(model, newConstantNodes = list(y = newY), relTol = relTolTmp, verbose = verbose, name = 'deterministic vectorized model')
 test_ADModelCalculate(model, newConstantNodes = list(y = newY), useParamTransform = TRUE, relTol = relTolTmp,
                       checkCompiledValuesIdentical = FALSE, verbose = verbose, name = 'deterministic vectorized model')
-## 2022-04-06: all set
+## 2022-04-12: all set
 
 
 ## truncation
@@ -627,9 +627,21 @@ for(i in 1:n)
     y[i, ] <- rmnorm_chol(1, inits$mu, diag(rep(0.2, 4)), prec_param = FALSE)
 model <- nimbleModel(code, constants = list(n = n), data = list(y = y), inits = inits)
 newPr <- crossprod(matrix(rnorm(4*4), 4))
-test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr), relTol = relTol, verbose = verbose, name = 'truncation model')
-## 2022-03-10: good, except a few R vs. C jacobian discrepancies O(1e-8)
-test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr), useParamTransform = TRUE, relTol = relTol, verbose = verbose, name = 'truncation model')
+
+relTolTmp <- relTol
+relTolTmp[2] <- 1e-7
+relTolTmp[4] <- 1e-3
+## 2022-04-16: all set
+test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr), relTol = relTolTmp, verbose = verbose, name = 'truncation model')
+
+relTolTmp <- relTol
+relTolTmp[2] <- 1e-7
+relTolTmp[3] <- 1e-5
+relTolTmp[4] <- 1e-2
+## 2022-04-16: various values equal but not identical
+## Detected some values out of relative tolerance:  cOutput2d$value   c(cOutput012$hessian) .
+## [1] 8.466706e-01 8.466706e-01 1.311281e-15
+test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr), useParamTransform = TRUE, relTol = relTolTmp, verbose = verbose, name = 'truncation model')
 
 
 code <- nimbleCode({
@@ -654,6 +666,7 @@ test_ADModelCalculate(model, relTol = relTol, verbose = verbose, name = 'truncat
 
 
 ## complicated indexing 
+set.seed(1)
 code <- nimbleCode({
     x[2:4,3:5] <- S[1:3,1:3]
     x[1,2:5] ~ dmnorm(z[1:4], pr2[1:4,1:4])
@@ -676,11 +689,18 @@ model$setData('y','w')
 newPr <- crossprod(matrix(rnorm(5*5), 5))
 newPr2 <- crossprod(matrix(rnorm(4*4), 4))
 newS <- crossprod(matrix(rnorm(3*3), 3))
-test_ADModelCalculate(model, newUpdateNodes = list(S = newS, pr = newPr, pr2 = newPr2), relTol = relTol, verbose = verbose, name = 'complicated indexing')
+
+relTolTmp <- relTol
+relTolTmp[3] <- 1e-2
+relTolTmp[4] <- 1e-2
+test_ADModelCalculate(model, newUpdateNodes = list(S = newS, pr = newPr, pr2 = newPr2), relTol = relTolTmp, verbose = verbose, name = 'complicated indexing')
 ## 2022-03-12: R and C 2d11 jacobian match to limited digits in HMC/MAP scenario, various R vs C values have minor discrepancies (the latter only for non-atomics)
-test_ADModelCalculate(model, newUpdateNodes = list(S = newS, pr = newPr, pr2 = newPr2), useParamTransform = TRUE, relTol = relTol, verbose = verbose, name = 'complicated indexing')
+test_ADModelCalculate(model, newUpdateNodes = list(S = newS, pr = newPr, pr2 = newPr2), useParamTransform = TRUE, relTol = relTolTmp, verbose = verbose, name = 'complicated indexing')
+## 2022-04-12: with param transform have -Inf value (NCT issue 351)
+
 
 ## using different subsets of a matrix
+set.seed(1)
 code <- nimbleCode({
     x1[1:5] ~ dmnorm(z[1:5], pr5[1:5, 1:5])
     x2[1:4] ~ dmnorm(z[1:4], pr4[1:4, 1:4])
@@ -696,11 +716,17 @@ model$calculate()
 model$setData('y1', 'y2')
 newPr5 <- crossprod(matrix(rnorm(5*5), 5))
 newPr4 <- crossprod(matrix(rnorm(4*4), 4))
-test_ADModelCalculate(model, newUpdateNodes = list(pr5 = newPr5, pr4 = newPr4), relTol = relTol, verbose = verbose, name = 'different subsets of a matrix')
-## 2022-03-11: R and C 2d11 jacobian match to limited digits, but without big discrepancies
-test_ADModelCalculate(model, newUpdateNodes = list(pr5 = newPr5, pr4 = newPr4), useParamTransform = TRUE, relTol = relTol, verbose = verbose, name = 'different subsets of a matrix')
+relTolTmp <- relTol
+relTolTmp[3] <- 1e-5
+relTolTmp[4] <- 1e-3
+
+## 2022-04-16: all set
+test_ADModelCalculate(model, newUpdateNodes = list(pr5 = newPr5, pr4 = newPr4), relTol = relTolTmp, verbose = verbose, name = 'different subsets of a matrix')
+## 2022-04-16: various compiled values equal but not identical
+test_ADModelCalculate(model, newUpdateNodes = list(pr5 = newPr5, pr4 = newPr4), useParamTransform = TRUE, relTol = relTolTmp, verbose = verbose, name = 'different subsets of a matrix')
 
 ## vectorized covariance matrix
+set.seed(1)
 code <- nimbleCode({
     Sigma1[1:n,1:n] <- exp(-dist[1:n,1:n]/rho)
     y[1:n] ~ dmnorm(mu1[1:n], cov = Sigma1[1:n,1:n])
@@ -718,6 +744,15 @@ model$calculate()
 model$setData('y')
 newPr <- crossprod(matrix(rnorm(5*5), 5))
 newDist <- as.matrix(dist(runif(5)))
+
+## 2022-04-16: problematic with new tolerance approach:
+## various off-diag hessian values are O(1e-16) but uncompiled values are exactly zero, or O(1e-8), etc.
+## So relative error is huge.
+## Not sure how to distinguish cases with small magnitude derivs where we expect
+## tolerance to be absolute rather than relative.
+## Consider that d(b*x)/dx = b is a case where we can arbitrarily scale 'b' and expect
+## tolerance to be relative
+
 test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr, dist = newDist),
                       relTol = relTol, verbose = verbose, name = 'dmnorm with vectorized covariance matrix')
 ## 2022-03-11: minor C 2d/012 hessian discrepancy
