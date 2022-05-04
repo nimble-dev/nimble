@@ -419,14 +419,12 @@ waicDetailsList <- nimbleList(
 #' @field value The value of the function evaluated at the given input arguments. 
 #' @field jacobian	The Jacobian of the function evaluated at the given input arguments. 
 #' @field hessian The Hessian of the function evaluated at the given input arguments. 
-#' @field thirdDerivs Currently unused.
 #'
 #' @export
 #' @seealso \code{\link{nimDerivs}}
 ADNimbleList <-  nimbleList(list(nimbleType('value', 'double', 1),
                                  nimbleType('jacobian', 'double', 2),
-                                 nimbleType('hessian', 'double', 3),
-                                 nimbleType('thirdDerivs', 'double', 4)),
+                                 nimbleType('hessian', 'double', 3)),
                             name = "NIMBLE_ADCLASS", predefined = TRUE)
 
 #' EXPERIMENTAL Data type for the return value of \code{\link{nimOptim}}

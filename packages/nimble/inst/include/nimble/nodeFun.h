@@ -36,7 +36,6 @@ class NIMBLE_ADCLASS : public NamedObjects, public pointedToBase {
   NimArr<1, double> value;
   NimArr<2, double> jacobian;
   NimArr<3, double> hessian;
-  NimArr<4, double> thirdDerivs;
   SEXP RObjectPointer;
   bool RCopiedFlag;
   void copyFromSEXP(SEXP S_nimList_);

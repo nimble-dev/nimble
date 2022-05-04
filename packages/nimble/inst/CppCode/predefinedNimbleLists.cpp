@@ -515,7 +515,6 @@ void NIMBLE_ADCLASS::copyFromSEXP(SEXP S_nimList_) {
   SEXP S_value;
   SEXP S_jacobian;
   SEXP S_hessian;
-  SEXP S_thirdDerivs;
   RObjectPointer = S_nimList_;
   PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
   SET_STRING_ELT(S__dot_xData, 0, Rf_mkChar(".xData"));
@@ -528,14 +527,10 @@ void NIMBLE_ADCLASS::copyFromSEXP(SEXP S_nimList_) {
   PROTECT(S_hessian =
               Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("hessian")));
-  PROTECT(S_thirdDerivs =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
-                                Rf_install("thirdDerivs")));
   SEXP_2_NimArr<1>(S_value, value);
   SEXP_2_NimArr<2>(S_jacobian, jacobian);
   SEXP_2_NimArr<3>(S_hessian, hessian);
-  SEXP_2_NimArr<4>(S_thirdDerivs, thirdDerivs);
-  UNPROTECT(9);
+  UNPROTECT(7);
 }
 SEXP NIMBLE_ADCLASS::copyToSEXP() {
   PROTECT(RObjectPointer);
@@ -543,24 +538,20 @@ SEXP NIMBLE_ADCLASS::copyToSEXP() {
   SEXP S_value;
   SEXP S_jacobian;
   SEXP S_hessian;
-  SEXP S_thirdDerivs;
   if (!RCopiedFlag) {
     PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
     SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
     PROTECT(S_value = NimArr_2_SEXP<1>(value));
     PROTECT(S_jacobian = NimArr_2_SEXP<2>(jacobian));
     PROTECT(S_hessian = NimArr_2_SEXP<3>(hessian));
-    PROTECT(S_thirdDerivs = NimArr_2_SEXP<4>(thirdDerivs));
     Rf_defineVar(PROTECT(Rf_install("value")), S_value,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
     Rf_defineVar(PROTECT(Rf_install("jacobian")), S_jacobian,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
     Rf_defineVar(PROTECT(Rf_install("hessian")), S_hessian,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
-    Rf_defineVar(PROTECT(Rf_install("thirdDerivs")), S_thirdDerivs,
-                 PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
     RCopiedFlag = true;
-    UNPROTECT(14);
+    UNPROTECT(11);
   }
   UNPROTECT(1);
   return (RObjectPointer);
@@ -581,8 +572,7 @@ void NIMBLE_ADCLASS::copyFromRobject(SEXP Robject) {
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("value");
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("jacobian");
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("hessian");
-  COPY_NUMERIC_VECTOR_FROM_R_OBJECT("thirdDerivs");
-  UNPROTECT(6);
+  UNPROTECT(5);
 }
 
 NIMBLE_ADCLASS::NIMBLE_ADCLASS() {
@@ -591,7 +581,6 @@ NIMBLE_ADCLASS::NIMBLE_ADCLASS() {
   namedObjects["value"] = &value;
   namedObjects["jacobian"] = &jacobian;
   namedObjects["hessian"] = &hessian;
-  namedObjects["thirdDerivs"] = &thirdDerivs;
   namedObjects["RObjectPointer"] = &RObjectPointer;
   namedObjects["RCopiedFlag"] = &RCopiedFlag;
 }
