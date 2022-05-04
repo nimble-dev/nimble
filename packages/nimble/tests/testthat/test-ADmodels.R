@@ -11,6 +11,10 @@ nimbleOptions(useADsolveAtomic  = TRUE)
 nimbleOptions(useADmatMultAtomic = TRUE)                             
 nimbleOptions(useADmatInverseAtomic  = TRUE)                       
 
+relTol <- eval(formals(test_ADModelCalculate)$relTol)
+relTol[3] <- 1e-6
+relTol[4] <- 1e-4
+
 ##nimbleOptions(showCompilerOutput = TRUE)
 context("Testing of derivatives for calculate() for nimbleModels")
 
@@ -414,8 +418,16 @@ code <- nimbleCode({
         }
     })
 model <- nimbleModel(code, inits = inits, data = data)
-test_ADModelCalculate(model, verbose = verbose, name = 'basic model, lifted nodes')
-## 2022-03-10: a couple non-negligible, but not extreme, R vs C 2d11 discrepancies.
+relTolTmp <- relTol
+relTolTmp[3] <- 1e-4
+relTolTmp[4] <- 1e-3
+## 2022-04-07: ok, except issue below
+test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, name = 'basic model, lifted nodes')
+## Detected some values out of relative tolerance:  cOutput2d$value   c(cOutput012$hessian) .
+## [1] 1.596544e-02 1.596544e-02 2.607718e-15
+
+test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, useParamTransform = TRUE,
+                      checkCompiledValuesIdentical = FALSE, name = 'basic model, lifted nodes')
 
 ## the first few of these mimic and may replace Nick's tests
 
@@ -434,13 +446,14 @@ data <- list(y = rnorm(3))
 model <- nimbleModel(code, data = data)
 model$simulate()
 model$calculate()
-test_ADModelCalculate(model, verbose = verbose, name = 'basic state space') # , relTol =c(1e-15,1e-8,1e-4,1e-4))
-## 2022-03-10: R vs C value off by ~1e-14 or less for various scenarios
+## 2022-04-07: all set
+test_ADModelCalculate(model, relTol = relTol, verbose = verbose, name = 'basic state space') 
+test_ADModelCalculate(model, relTol = relTol, verbose = verbose, useParamTransform = TRUE,
+                      checkCompiledValuesIdentical = FALSE, name = 'basic state space') 
 
-## (OLD) with SOME random seeds, R and C 2d11 jacobian only match to only 1-2 digits with new updateNode values
-## presumably just stochasticity in that the Hessian tolerance is .001 
 
 ## basic tricky indexing
+set.seed(1)
 code <- nimbleCode({
     y[1:2] ~ dmnorm(z[1:2], cov = covMat[,])
     z[1] <- x[2]
@@ -449,14 +462,15 @@ code <- nimbleCode({
     x[2] ~ dnorm(1, 3)
 })
 model <- nimbleModel(code, dimensions = list(x = 2, y = 2, z = 3), inits = list(covMat = matrix(c(1.9, .7, .7, 1.3), 2), x = c(1, 1.2)), data = list(y = c(-.1,-.2)))
-## Getting the updateNode stuff for x is a pain because in some scenarios, part of x is in wrt.
-## Also randomly generating the newUpdateNode values can change what wrt is used in the partial scenarios
-## because the random generation is done after seed is set because of promise evaluation and this affects the RNG.
-test_ADModelCalculate(model, verbose = verbose, name = 'basic tricky indexing',
+## 2022-04-07: all set
+test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, name = 'basic tricky indexing',
                       newUpdateNodes = list(covMat = matrix(c(0.7, .25, .25, .7), 2)))
-## 2022-03-10: fine
+test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, name = 'basic tricky indexing', useParamTransform = TRUE,
+                      newUpdateNodes = list(covMat = matrix(c(0.7, .25, .25, .7), 2)), checkCompiledValuesIdentical = FALSE)
+
 
 ## state space model
+set.seed(1)
 code <- nimbleCode({
   a ~ dunif(-0.9999, 0.9999)
   b ~ dnorm(0, sd = 1000)
@@ -473,15 +487,29 @@ constants <- list(t = 100)
 data <- list(y = c(20.24405,20.57693,20.49357,20.34159,20.45759,20.43326,20.20554,20.12860,20.14756,20.20781,20.23022,20.26766,20.22984,20.37703,20.13641,20.05309,19.95709,20.19303,20.30562,20.54443,20.91010,20.70580,20.42344,20.19795,20.28816,20.31894,20.76939,20.77023,20.83486,20.29335,20.40990,20.19601,20.04083,19.76056,19.80810,19.83129,19.69174,19.90069,19.87623,19.63371,19.62360,19.72630,19.64450,19.86779,20.17104,20.34797,20.32968,20.48027,20.46694,20.47006,20.51676,20.40695,20.18715,19.97552,19.88331,19.67831,19.74702,19.47502,19.24408,19.37179,19.38277,19.15034,19.08723,19.37051,19.14274,19.46433,19.62459,19.77971,19.54194,19.39081,19.61621,19.51307,19.34745,19.17019,19.26829,19.58943,19.77143,19.83582,19.71198,19.67746,19.75053,20.40197,20.49363,20.37079,20.19005,20.55862,20.48523,20.33071,19.97069,19.79758,19.83811,19.79728,19.86277,19.86836,19.92481,19.88095,20.24899,20.55165,20.22707,20.11235))
 inits <- list(a = 0.95, b=1, sigOE=0.05,sigPN = 0.2,  x= c(20.26036,20.51331,20.57057,20.35633,20.33736,20.47321,20.22002,20.14917,20.19216,20.26969,20.21135,20.22745,20.20466,20.41158,20.13408,20.08023,19.98956,20.13543,20.32709,20.55840,20.88206,20.74740,20.47671,20.14012,20.29953,20.33778,20.80916,20.75773,20.84349,20.35654,20.41045,20.20180,20.02872,19.74226,19.80483,19.81842,19.69770,19.84564,19.88211,19.70559,19.56090,19.73728,19.66545,19.88158,20.13870,20.39163,20.37372,20.47429,20.39414,20.42024,20.55560,20.40462,20.15831,19.89425,19.79939,19.72692,19.74565,19.42233,19.22730,19.36489,19.37289,19.19050,19.00823,19.35738,19.14293,19.48812,19.67329,19.82750,19.58979,19.43634,19.61278,19.56739,19.38584,19.19260,19.32732,19.65500,19.65295,19.84843,19.68285,19.69620,19.77497,20.31795,20.45797,20.32650,20.24045,20.60507,20.51597,20.30076,19.98100,19.86709,19.85965,19.74822,19.86730,19.90523,19.86970,19.87286,20.28417,20.46212,20.22618,20.13689))
 model <- nimbleModel(code, constants = constants, data = data, inits = inits)
+xNew <- list(x  = rnorm(constants$t, 20, 1))
 
-test_ADModelCalculate(model, verbose = verbose, name = 'state space model',
-                      useFasterRderivs = TRUE)
-## 2022-03-10: R and C 2d11 jacobian match to limited digits plus various cases (some not shown in the printout) where they are very far off, either a bug or some serious numerical issues with the R 2d11 jacobian
-## Also a few equal but non-identical compiled jacobians. 
-## TODO: need to better understand why R 2d11 jacobian can be so far off
+relTolTmp <- relTol
+relTolTmp[2] <- 1e-6
+relTolTmp[3] <- 1e-3
+relTolTmp[4] <- 1e-2
+
+## 2022-04-07: a few R vs C 2d11 values very far off (TODO: check this)
+## 2022-04-07: some R vs C jacobian values out of tolerance
+test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, name = 'state space model', useFasterRderivs = TRUE)
+
+## 2022-04-07: wrt values stored in model equal but not identical to 'x'
+## 2022-04-07: a few R vs C 2d11 values very far off (TODO: check this)
+## 2022-04-07: some R vs C hessian values rather far off (~0.1 relative tolerance)
+## 2022-04-07: some R vs C jacobian values out of tolerance
+test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, name = 'state space model',
+                    checkCompiledValuesIdentical = FALSE, useParamTransform = TRUE, useFasterRderivs = TRUE)
+
+
 
 ## link functions on stochastic nodes (not covered in BUGS examples)
 ## plus alt params and NIMBLE-provided distributions
+set.seed(1)
 code <- nimbleCode({
     for(i in 1:n)
         y[i] ~ dpois(mu)
@@ -498,10 +526,26 @@ model <- nimbleModel(code, constants = list(n = n), data = list(y = rpois(n, 1))
                      inits = list(mu0 = rnorm(1), sigma = runif(1), mu = exp(log_mu_init),
                                   log_mu = log_mu_init, a = runif(1), b = runif(1)))
 newY <- rpois(n, 2)
-test_ADModelCalculate(model, verbose = verbose, name = 'stochastic link model', newConstantNodes = list(y = newY))
-## 2022-03-10: good, but ML partial-based scenario comparisons use absolute tolerance.
+
+relTolTmp <- relTol
+relTolTmp[3] <- 1e-5
+relTolTmp[4] <- 1e-3  
+
+test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, name = 'stochastic link model', newConstantNodes = list(y = newY))
+
+## 2022-04-07: wrt values stored in model equal but not identical to 'x'
+## Detected some values out of relative tolerance:  cOutput2d$value   c(cOutput012$hessian) .
+## [1] 8.354624e-02 8.354624e-02 2.823854e-15
+## Detected some values out of relative tolerance:  cOutput2d$value   c(cOutput012$hessian) .
+## [1] 8.354624e-02 8.354624e-02 2.823854e-15
+## Detected some values out of relative tolerance:  rOutput2d11$jacobian   cOutput2d11$jacobian .
+## [1] 0.046076465 0.046211194 0.002915511
+test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, name = 'stochastic link model',
+                      checkCompiledValuesIdentical = FALSE, useParamTransform = TRUE, newConstantNodes = list(y = newY))
+
 
 ## dexp and dt, which are provided by NIMBLE to allow expanded parameterizations
+set.seed(1)
 code <- nimbleCode({
     for(i in 1:n) {
         y[i] ~ dnorm(mu[i], sd = sigma)
@@ -517,13 +561,31 @@ n <- 10
 model <- nimbleModel(code, constants = list(n = n), data = list(y = rnorm(n)),
                      inits = list(mu = rnorm(n), sigma = runif(1), nu = 2.5, mu0 = rnorm(1), sd0 = runif(1),
                                   tau = runif(1)))
-test_ADModelCalculate(model, verbose = verbose, name = 'dt and dexp model')
-## 2022-03-10: good
-## very slow to run rOutput2d11 (2-3 minutes) (numDeriv::jacobian slower than pracma::jacobian); might want to use fasterRderivs
-## (not seeing anymore) Heisenbug: with verbose=F (the default), can get cLogProb12 equal but not identical to cLogProb_orig
+relTolTmp <- relTol
+relTolTmp[2] <- 1e-7 
+relTolTmp[3] <- 1e-4 
+relTolTmp[4] <- 1e-2 
+
+test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, useFasterRderivs = TRUE, name = 'dt and dexp model')
+
+## 2022-04-08: wrt values stored in model equal but not identical to 'x'
+test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, useFasterRderivs = TRUE, useParamTransform = TRUE,
+                      checkCompiledValuesIdentical = FALSE, name = 'dt and dexp model')
+
+## 2022-04-08 (both cases above): some R vs C 2d11 still out of tolerance, e.g.,
+## Detected some values out of relative tolerance:  rOutput2d11$jacobian   cOutput2d11$jacobian .
+##           [,1] [,2]       [,3]
+## [1,] 0.06642949    0 0.06642949
+## 2022-04-08 (both cases above): some minor discrepancy between compiled Hessians, e.g.,
+## Detected some values out of relative tolerance:  cOutput2d$value   c(cOutput012$hessian) .
+##            [,1]       [,2]         [,3]
+## [1,] 0.05092678 0.05092678 1.021893e-14
+
+
 
 ## vectorized deterministic nodes
 
+set.seed(1)
 code <- nimbleCode({
     for(i in 1:n) {
         y[i] ~ dpois(mu[i])
@@ -535,8 +597,15 @@ n <- 10
 model <- nimbleModel(code, constants = list(n = n), data = list(y = rpois(n, 1)),
                      inits = list(logmu = rnorm(n)))
 newY <- rpois(n, 2)
-test_ADModelCalculate(model, newConstantNodes = list(y = newY), verbose = verbose, name = 'deterministic vectorized model')
-## 2022-03-10: R and C 2d11 jacobian match to limited digits for a few values for HMC/MAP scenario w/o atomics
+
+relTolTmp <- relTol
+relTolTmp[2] <- 1e-7
+relTolTmp[4] <- 1e-2
+test_ADModelCalculate(model, newConstantNodes = list(y = newY), relTol = relTolTmp, verbose = verbose, name = 'deterministic vectorized model')
+test_ADModelCalculate(model, newConstantNodes = list(y = newY), useParamTransform = TRUE, relTol = relTolTmp,
+                      checkCompiledValuesIdentical = FALSE, verbose = verbose, name = 'deterministic vectorized model')
+## 2022-04-12: all set
+
 
 ## truncation
 ## Note that constraints are not handled
@@ -558,8 +627,22 @@ for(i in 1:n)
     y[i, ] <- rmnorm_chol(1, inits$mu, diag(rep(0.2, 4)), prec_param = FALSE)
 model <- nimbleModel(code, constants = list(n = n), data = list(y = y), inits = inits)
 newPr <- crossprod(matrix(rnorm(4*4), 4))
-test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr), verbose = verbose, name = 'truncation model')
-## 2022-03-10: good, except a few R vs. C jacobian discrepancies O(1e-8)
+
+relTolTmp <- relTol
+relTolTmp[2] <- 1e-7
+relTolTmp[4] <- 1e-3
+## 2022-04-16: all set
+test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr), relTol = relTolTmp, verbose = verbose, name = 'truncation model')
+
+relTolTmp <- relTol
+relTolTmp[2] <- 1e-7
+relTolTmp[3] <- 1e-5
+relTolTmp[4] <- 1e-2
+## 2022-04-16: various values equal but not identical
+## Detected some values out of relative tolerance:  cOutput2d$value   c(cOutput012$hessian) .
+## [1] 8.466706e-01 8.466706e-01 1.311281e-15
+test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr), useParamTransform = TRUE, relTol = relTolTmp, verbose = verbose, name = 'truncation model')
+
 
 code <- nimbleCode({
     y ~ dnorm(mu, 1)
@@ -568,7 +651,7 @@ code <- nimbleCode({
 })
 model <- nimbleModel(code, data = list(y = 1), inits = list(mu = 0.5, mu0 = 1))
 ## 2022-03-07: compilation error: issue #254
-test_ADModelCalculate(model, verbose = verbose, name = 'truncation on non-top node')
+test_ADModelCalculate(model, relTol = relTol, verbose = verbose, name = 'truncation on non-top node')
 
 
 code <- nimbleCode({
@@ -579,10 +662,11 @@ code <- nimbleCode({
 })
 model <- nimbleModel(code, data = list(y = 1), inits = list(mu = 0.5,a=1,b=1))
 ## 2022-03-07: compilation error
-test_ADModelCalculate(model, verbose = verbose, name = 'truncation with dbeta')
+test_ADModelCalculate(model, relTol = relTol, verbose = verbose, name = 'truncation with dbeta')
 
 
 ## complicated indexing 
+set.seed(1)
 code <- nimbleCode({
     x[2:4,3:5] <- S[1:3,1:3]
     x[1,2:5] ~ dmnorm(z[1:4], pr2[1:4,1:4])
@@ -605,11 +689,18 @@ model$setData('y','w')
 newPr <- crossprod(matrix(rnorm(5*5), 5))
 newPr2 <- crossprod(matrix(rnorm(4*4), 4))
 newS <- crossprod(matrix(rnorm(3*3), 3))
-test_ADModelCalculate(model, newUpdateNodes = list(S = newS, pr = newPr, pr2 = newPr2), verbose = verbose, name = 'complicated indexing')
+
+relTolTmp <- relTol
+relTolTmp[3] <- 1e-2
+relTolTmp[4] <- 1e-2
+test_ADModelCalculate(model, newUpdateNodes = list(S = newS, pr = newPr, pr2 = newPr2), relTol = relTolTmp, verbose = verbose, name = 'complicated indexing')
 ## 2022-03-12: R and C 2d11 jacobian match to limited digits in HMC/MAP scenario, various R vs C values have minor discrepancies (the latter only for non-atomics)
-## check atomics
+test_ADModelCalculate(model, newUpdateNodes = list(S = newS, pr = newPr, pr2 = newPr2), useParamTransform = TRUE, relTol = relTolTmp, verbose = verbose, name = 'complicated indexing')
+## 2022-04-12: with param transform have -Inf value (NCT issue 351)
+
 
 ## using different subsets of a matrix
+set.seed(1)
 code <- nimbleCode({
     x1[1:5] ~ dmnorm(z[1:5], pr5[1:5, 1:5])
     x2[1:4] ~ dmnorm(z[1:4], pr4[1:4, 1:4])
@@ -625,10 +716,17 @@ model$calculate()
 model$setData('y1', 'y2')
 newPr5 <- crossprod(matrix(rnorm(5*5), 5))
 newPr4 <- crossprod(matrix(rnorm(4*4), 4))
-test_ADModelCalculate(model, newUpdateNodes = list(pr5 = newPr5, pr4 = newPr4), verbose = verbose, name = 'different subsets of a matrix')
-## 2022-03-11: R and C 2d11 jacobian match to limited digits, but without big discrepancies
+relTolTmp <- relTol
+relTolTmp[3] <- 1e-5
+relTolTmp[4] <- 1e-3
+
+## 2022-04-16: all set
+test_ADModelCalculate(model, newUpdateNodes = list(pr5 = newPr5, pr4 = newPr4), relTol = relTolTmp, verbose = verbose, name = 'different subsets of a matrix')
+## 2022-04-16: various compiled values equal but not identical
+test_ADModelCalculate(model, newUpdateNodes = list(pr5 = newPr5, pr4 = newPr4), useParamTransform = TRUE, relTol = relTolTmp, verbose = verbose, name = 'different subsets of a matrix')
 
 ## vectorized covariance matrix
+set.seed(1)
 code <- nimbleCode({
     Sigma1[1:n,1:n] <- exp(-dist[1:n,1:n]/rho)
     y[1:n] ~ dmnorm(mu1[1:n], cov = Sigma1[1:n,1:n])
@@ -646,10 +744,21 @@ model$calculate()
 model$setData('y')
 newPr <- crossprod(matrix(rnorm(5*5), 5))
 newDist <- as.matrix(dist(runif(5)))
+
+## 2022-04-16: problematic with new tolerance approach:
+## various off-diag hessian values are O(1e-16) but uncompiled values are exactly zero, or O(1e-8), etc.
+## So relative error is huge.
+## Not sure how to distinguish cases with small magnitude derivs where we expect
+## tolerance to be absolute rather than relative.
+## Consider that d(b*x)/dx = b is a case where we can arbitrarily scale 'b' and expect
+## tolerance to be relative
+
 test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr, dist = newDist),
-                      verbose = verbose, name = 'dmnorm with vectorized covariance matrix')
+                      relTol = relTol, verbose = verbose, name = 'dmnorm with vectorized covariance matrix')
 ## 2022-03-11: minor C 2d/012 hessian discrepancy
 ## for atomics only also have minor R vs C values discrepancy and a single R vs C 2d11 difference
+test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr, dist = newDist), useParamTransform = TRUE,
+                      relTol = relTol, verbose = verbose, name = 'dmnorm with vectorized covariance matrix')
 
 
 ## vectorized covariance matrix, chol param
@@ -673,9 +782,11 @@ model$simulate()
 model$calculate()
 model$setData('y')
 test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr, dist = newDist),
-                      verbose = verbose, name = 'dmnorm with vectorized covariance matrix, chol param')
+                      relTol = relTol, verbose = verbose, name = 'dmnorm with vectorized covariance matrix, chol param')
 ## 2022-03-12: with atomics: minor C 2d/012 hessian discrepancy, minor R vs C values disprepancy, R and C 2d11 jacobian match to limited digits, including some big discrepancies
 ## without atomics, only have minor C 2d/012 hessian discrepancy in HMC/MAP scenario
+test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr, dist = newDist), useParamTransform = TRUE,
+                      relTol = relTol, verbose = verbose, name = 'dmnorm with vectorized covariance matrix, chol param')
 
 
 ## MVN with various parameterizations and user-defined functions
@@ -713,9 +824,13 @@ model$calculate()
 model$setData('y')
 test_ADModelCalculate(model,
                       newUpdateNodes = list(dist = newDist, pr = newPr),
-                      verbose = verbose, 
+                      relTol = relTol, verbose = verbose, 
                       name = 'dnorm with user-defined fxn for covariance with loops')
 ## 2022-03-12: minor C 2d/012 hessian discrepancy
+test_ADModelCalculate(model, useParamTransform = TRUE,
+                      newUpdateNodes = list(dist = newDist, pr = newPr),
+                      relTol = relTol, verbose = verbose, 
+                      name = 'dnorm with user-defined fxn for covariance with loops')
 
 
 ## user-defined cov function vectorized
@@ -742,10 +857,14 @@ model <- nimbleModel(code, constants = list(n = n),
 model$simulate()
 model$calculate()
 model$setData('y')
-test_ADModelCalculate(model, verbose = verbose,
+test_ADModelCalculate(model, relTol = relTol, verbose = verbose,
                       newUpdateNodes = list(dist = newDist, pr = newPr),
                       name = 'dmnorm with user-defined vectorized fxn')
 ## 2022-03-12: minor C 2d/012 hessian discrepancy, plus (atomics only) minor R vs C values discrepancy and a single R vs C 2d11 difference
+test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTol, verbose = verbose,
+                      newUpdateNodes = list(dist = newDist, pr = newPr),
+                      name = 'dmnorm with user-defined vectorized fxn')
+
 
 ## other dmnorm parameterizations
 code <- nimbleCode({
@@ -775,7 +894,7 @@ newSigma <- crossprod(matrix(rnorm(5*5), 5))
 newQ <- crossprod(matrix(rnorm(5*5), 5))
 test_ADModelCalculate(model,
                       newUpdateNodes = list(pr = newPr, Q = newQ, Sigma = newSigma),
-                      verbose = verbose, name = 'various dmnorm parameterizations')
+                      relTol = relTol, verbose = verbose, name = 'various dmnorm parameterizations')
 ## 2022-03-12:  minor R vs C values disprepancy (non-atomics only), R and C 2d11 jacobian match to limited digits, including some big discrepancies
 
 
@@ -808,8 +927,11 @@ model$calculate()
 model$setData('y')
 test_ADModelCalculate(model,
                       newUpdateNodes = list(Q = newQ, Sigma = newSigma, pr = newPr),
-                      verbose = verbose, name = 'various dmvt parameterizations')
+                      relTol = relTol, verbose = verbose, name = 'various dmvt parameterizations')
 ## 2022-03-12: R and C 2d11 jacobian match to limited digits, some big discrepancy and (for non-atomics) R vs C values minor discrepancy
+test_ADModelCalculate(model, useParamTransform = TRUE,
+                      newUpdateNodes = list(Q = newQ, Sigma = newSigma, pr = newPr),
+                      relTol = relTol, verbose = verbose, name = 'various dmvt parameterizations')
 
 
 ## dirichlet as likelihood so not differentiating wrt something with constraint.
@@ -823,8 +945,11 @@ model <- nimbleModel(code, constants = list(k = k), data = list(p = c(.2, .4, .1
 newP <- rdirch(1, rep(1,4))
 test_ADModelCalculate(model,
                       newConstantNodes = list(p = newP),
-                      verbose = verbose, name = 'Dirichlet likelihood')
+                      relTol = relTol, verbose = verbose, name = 'Dirichlet likelihood')
 ## 2022-03-12: R vs C values minor discrepancy
+test_ADModelCalculate(model, useParamTransform = TRUE,
+                      newConstantNodes = list(p = newP),
+                      relTol = relTol, verbose = verbose, name = 'Dirichlet likelihood')
 
 
 ## dwish and dinvwish so long as not differentiating w.r.t. the random variable (since it has constraints)
@@ -864,8 +989,12 @@ newIW4 <- crossprod(matrix(rnorm(5*5), 5))
 test_ADModelCalculate(model, newUpdateNodes = list(dist = newDist),
                       newConstantNodes = list(W1 = newW1, W2 = newW2, W3 = newW3, W4 = newW4,
                                         IW1 = newIW1, IW2 = newIW2, IW3 = newIW3, IW4 = newIW4),
-                      verbose = verbose, name = 'dwish, dinvwish')
+                      relTol = relTol, verbose = verbose, name = 'dwish, dinvwish')
 ## 2022-03-12: minor C 2d/012 hessian discrepancy, R vs C hessians some discrepancy, R vs C values minor discrepancy, R vs C 2d11 some discrepancy
+test_ADModelCalculate(model, useParamTransform = TRUE, newUpdateNodes = list(dist = newDist),
+                      newConstantNodes = list(W1 = newW1, W2 = newW2, W3 = newW3, W4 = newW4,
+                                        IW1 = newIW1, IW2 = newIW2, IW3 = newIW3, IW4 = newIW4),
+                      relTol = relTol, verbose = verbose, name = 'dwish, dinvwish')
 
 ## simple user-defined distribution
 dmyexp <- nimbleFunction(
@@ -883,8 +1012,9 @@ code <- nimbleCode({
 })
 
 model <- nimbleModel(code, data = list(y = rgamma(1,1,1)), inits = list(rho = rgamma(1, 1, 1)))
-test_ADModelCalculate(model, verbose = verbose, name = 'simple user-defined distribution')
+test_ADModelCalculate(model, relTol = relTol, verbose = verbose, name = 'simple user-defined distribution')
 ## 2022-03-12: R vs C values minor discrepancy, atomics only
+test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTol, verbose = verbose, name = 'simple user-defined distribution')
 
 ## vectorized powers cause problems, issue #253
 dtest <- nimbleFunction(
@@ -913,8 +1043,9 @@ model <- nimbleModel(code, inits = list(mu = rnorm(2)))
 model$simulate()
 model$calculate()
 model$setData('y')
-test_ADModelCalculate(model, verbose = verbose, name = 'vectorized power')
+test_ADModelCalculate(model, relTol = relTol, verbose = verbose, name = 'vectorized power')
 ## 2022-03-12: good
+test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTol, verbose = verbose, name = 'vectorized power')
 
 ## user-defined distribution, issue #253
 
@@ -954,11 +1085,15 @@ model$simulate()
 model$calculate()
 model$setData('y')
 test_ADModelCalculate(model, newConstantNodes = list(dist = newDist),
-                      verbose = verbose, name = 'user-defined distribution')
-## 2022-03-12: minor C 2d/012 hessian discrepancy, R vs C values minor discrepancy (without atomics)
-## 2022-03-12: seg fault with atomics
+                      relTol = relTol, verbose = verbose, name = 'user-defined distribution')
+## 2022-03-12: minor C 2d/012 hessian discrepancy, R vs C values minor discrepancy
 ## (formerly: all compiled Jacobian/Hessian values are NaN, issue seems to be in qf^2)
 ## (formerly: model compiles but numerical differences; see later comments in NCT issue #220)
+test_ADModelCalculate(model, newConstantNodes = list(dist = newDist), useParamTransform = TRUE,
+                      relTol = relTol, verbose = verbose, name = 'user-defined distribution')
+
+
+
 
 ## Use additional matrix functions
 ## logdet() not yet allowed
@@ -989,14 +1124,13 @@ model <- nimbleModel(code, constants = list(n = n, x = rnorm(n), z = rep(0, n), 
 model$simulate()
 model$calculate()
 model$setData(c('y1','yy')) # 'y2'
-
-## unc/comp value exceeds tolerance
-## compiled 1d, 012 jacobian equal not identical (only for non-atomics)
-## compiled 2d, 012 hessian exceeds tolerance
-## compiled 2d11, 012 hessian equal not identical (only for non-atomics)
 test_ADModelCalculate(model,
-                      newUpdateNodes = list(dist = newDist, pr = newPr),
-                      verbose = verbose, name = 'various matrix functions')
+                      newConstantNodes = list(dist = newDist, pr = newPr),
+                      relTol = relTol, verbose = verbose, name = 'various matrix functions')
+## 2022-03-13: minor C 2d/012 hessian discrepancy, R vs C values minor discrepancy, compiled comparisons not identical (without atomics)
+test_ADModelCalculate(model, useParamTransform = TRUE,
+                      newConstantNodes = list(dist = newDist, pr = newPr),
+                      relTol = relTol, verbose = verbose, name = 'various matrix functions')
 
 ## Various combinations of updateNodes, wrt, calcNodes
 
@@ -1007,10 +1141,14 @@ code <- nimbleCode({
 })
 model <- nimbleModel(code, data = list(b = 1.2), inits = list(a = 1.3, z = 0.7))
 ## calcNodes excludes det intermediates
-test_ADModelCalculate(model, verbose = verbose, wrt = 'a', calcNodes = c('a', 'b'), name = 'update nodes case 1a')
+test_ADModelCalculate(model, relTol = relTol, verbose = verbose, wrt = 'a', calcNodes = c('a', 'b'), name = 'update nodes case 1a')
+test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTol, verbose = verbose, wrt = 'a', calcNodes = c('a', 'b'), name = 'update nodes case 1a')
 model <- nimbleModel(code, data = list(b = 1.2), inits = list(a = 1.3, z = 0.7))
 ## calcNodes includes det intermediates
-test_ADModelCalculate(model, verbose = verbose, wrt = 'a', calcNodes = c('a', 'b', 'lifted_sqrt_oPa_cP'), name = 'update nodes case 1b')
+test_ADModelCalculate(model, relTol = relTol, verbose = verbose, wrt = 'a', calcNodes = c('a', 'b', 'lifted_sqrt_oPa_cP'), name = 'update nodes case 1b')
+## 2022-03-13: good
+test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTol, verbose = verbose, wrt = 'a', calcNodes = c('a', 'b', 'lifted_sqrt_oPa_cP'), name = 'update nodes case 1b')
+
 
 code <- nimbleCode({
     a ~ dgamma(1.1, 0.8)
@@ -1022,11 +1160,13 @@ code <- nimbleCode({
 })
 model <- nimbleModel(code, data = list(b = rnorm(4)), inits = list(a = 1.3, z = runif(4), pr = diag(2), mu0 = rep(0, 2)))
 ## calcNodes excludes det intermediates
-test_ADModelCalculate(model, verbose = verbose, wrt = 'a', calcNodes = c('a', 'b'), name = 'update nodes case 2a')
+test_ADModelCalculate(model, relTol = relTol, verbose = verbose, wrt = 'a', calcNodes = c('a', 'b'), name = 'update nodes case 2a')
+test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTol, verbose = verbose, wrt = 'a', calcNodes = c('a', 'b'), name = 'update nodes case 2a')
 model <- nimbleModel(code, data = list(b = rnorm(4)), inits = list(a = 1.3, z = runif(4), pr = diag(2), mu0 = rep(0, 2)))
 ## calcNodes includes det intermediates
-test_ADModelCalculate(model, verbose = verbose, wrt = 'a', calcNodes = c('a', 'b', "lifted_sqrt_oPa_cP"), name = 'update nodes case 2b')
-
+test_ADModelCalculate(model, relTol = relTol, verbose = verbose, wrt = 'a', calcNodes = c('a', 'b', "lifted_sqrt_oPa_cP"), name = 'update nodes case 2b')
+## 2022-03-13: good
+test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTol, verbose = verbose, wrt = 'a', calcNodes = c('a', 'b', "lifted_sqrt_oPa_cP"), name = 'update nodes case 2b')
 
 ## Parameter transform system and full use of ddirch, dwish, dinvwish
 
@@ -1038,10 +1178,8 @@ code <- nimbleCode({
     mu ~ dnorm(0, 1)
 })
 model <- nimbleModel(code, data = list(y = rnorm(1)), inits = list(sigma = rgamma(1, 1, 1), mu = rnorm(1)))
-## compiled values and logProb equal not identical (ENI) to cLogProb_new
-## compiled 2d11, 012 hessian ENI
-test_ADModelCalculate(model, verbose = verbose, useParamTransform = TRUE, name = 'basic param transform')
-
+test_ADModelCalculate(model, relTol = relTol, verbose = verbose, useParamTransform = TRUE, name = 'basic param transform')
+## 2022-03-13: various compiled cases not identical; R vs C value minor discrepancy
 
 set.seed(1)
 code <- nimbleCode({
@@ -1050,9 +1188,8 @@ code <- nimbleCode({
     mu ~ dnorm(0, 1)
 })
 model <- nimbleModel(code, data = list(y = rnorm(1)), inits = list(sigma2 = rgamma(1, 1, 1), mu = rnorm(1)))
-## compiled values and logProb equal not identical (ENI) to cLogProb_new
-## compiled 2d11, 012 hessian ENI
-test_ADModelCalculate(model, verbose = verbose, useParamTransform = TRUE, name = 'basic param transform, with lifted')
+test_ADModelCalculate(model, relTol = relTol, verbose = verbose, useParamTransform = TRUE, name = 'basic param transform, with lifted')
+## 2022-03-13: various compiled cases not identical; R vs C value minor discrepancy
 
 ## now check if model is out-of-state
 set.seed(1)
@@ -1066,30 +1203,31 @@ model <- nimbleModel(code, data = list(y = rnorm(1)), inits = list(sigma2 = 2))
 model$sigma <- 1
 model$calculate('y')
 model$logProb_y
-## no issues
-test_ADModelCalculate(model, verbose = verbose)
+test_ADModelCalculate(model, relTol = relTol, verbose = verbose)
+## 2022-03-14: R vs C value minor discrepancy
 
 model <- nimbleModel(code, data = list(y = rnorm(1)), inits = list(sigma2 = 2))
 model$sigma <- 1
 model$calculate('y')
 model$logProb_y
-## compiled values and logProb equal not identical (ENI) to cLogProb_new
-## compiled 2d11, 012 hessian ENI
-test_ADModelCalculate(model, verbose = verbose, useParamTransform = TRUE)
+test_ADModelCalculate(model, relTol = relTol, verbose = verbose, useParamTransform = TRUE)
+## 2022-03-14: various compiled cases not identical
 
 model <- nimbleModel(code, data = list(y = rnorm(1)), inits = list(sigma2 = 2))
 model$sigma <- 1
 model$calculate('y')
 model$logProb_y
-test_ADModelCalculate(model, verbose = verbose, useFasterRderivs = TRUE)
+test_ADModelCalculate(model, relTol = relTol, verbose = verbose, useFasterRderivs = TRUE)
+## 2022-03-14: good
 
 model <- nimbleModel(code, data = list(y = rnorm(1)), inits = list(sigma2 = 2))
 model$sigma <- 1
 model$calculate('y')
 model$logProb_y
-## compiled values and logProb equal not identical (ENI) to cLogProb_new
-## compiled 2d11, 012 hessian ENI
-test_ADModelCalculate(model, verbose = verbose, useFasterRderivs = TRUE, useParamTransform = TRUE)
+test_ADModelCalculate(model, relTol = relTol, verbose = verbose, useFasterRderivs = TRUE, useParamTransform = TRUE)
+## 2022-03-14: various compiled cases not identical
+
+
 
 ## Dirichlet
 code <- nimbleCode({
@@ -1101,21 +1239,11 @@ code <- nimbleCode({
 n <- 30
 k <- 4
 model <- nimbleModel(code, constants = list(k = k, n = n), data = list(y = rmulti(1, n, rep(1/k, k))), inits = list(p = c(.2, .4, .15, .25), alpha = runif(4)))
-
-## various vals, logProbs, wrt ENI
-## comp 2d11/012 hessian ENI
-## comp 1d/012 jacobian ENI
-## comp/uncom 2d11 jacobian out of tolerance (quite a bit)
-
-## no longer seeing this issue as of 2021-04-29
-## ISSUE: ML partial: compiled wrt and x quite different
-## cWrt01,012 having values be restored in ML partial wrt=alpha[1,2]
-## see issue 277 - it occurs regardless of using full alpha or partial alpha
-## per PdV this seems like a corner case we may not fix
-test_ADModelCalculate(model, x = 'prior', useParamTransform = TRUE, excludeUpdateNodes = 'p', verbose = verbose,
-                      name = 'Dirichlet paramTransform', seed = 2)
-## seed = 1 (default) produces p[1]=2e-6 in new x and that causes -Inf in 0th order deriv and NaN in jac/hessian
-
+newP <- rdirch(1, rep(1:k))
+newY <- rmulti(1, n, newP)
+test_ADModelCalculate(model, x = 'prior', useParamTransform = TRUE, newUpdateNodes = list(p = newP), newConstantNodes = list(y = newY),
+                      relTol = relTol, verbose = verbose, name = 'Dirichlet paramTransform', seed = 3)
+## 2022-03-18: various cases not identical; R vs C 2d11 discrepancy (very large at times); 'x' and R/C wrt values not identical; R vs C values minor discrepancy
 
 
 code <- nimbleCode({
@@ -1134,8 +1262,7 @@ code <- nimbleCode({
     Ucov[1:n, 1:n] <- chol(Sigma1[1:n,1:n])
     y[5, 1:n] ~ dmnorm(mu5[1:n], cholesky = Uprec[1:n,1:n], prec_param = 1)
     y[6, 1:n] ~ dmnorm(mu6[1:n], cholesky = Ucov[1:n,1:n], prec_param = 0)
-    ## previous bug prevents this:
-    ## y[7, 1:n] ~ dGPdist(dist[1:n, 1:n], rho)
+    y[7, 1:n] ~ dGPdist(dist[1:n, 1:n], rho)
     
     W1[1:n, 1:n] ~ dinvwish(R = R[1:n,1:n], df = nu)
 
@@ -1155,8 +1282,7 @@ code <- nimbleCode({
     mu5[1:n] ~ dmnorm(z[1:n], W5[1:n,1:n])
     mu6[1:n] ~ dmnorm(z[1:n], W6[1:n,1:n])
     rho ~ dgamma(2, 3)
-    nu0 ~ dunif(0, 10)
-    nu <- 10 + nu0  ## hack to ensure big enough to ensure p.d. when simulating new updateNodes
+    nu ~ dunif(0, 100)
 })
 
 n <- 5
@@ -1164,29 +1290,26 @@ locs <- runif(n)
 dd <- fields::rdist(locs)
 R <- crossprod(matrix(rnorm(n^2), n, n))
 model <- nimbleModel(code, constants = list(n = n),
-                     inits = list(dist = dd, R = R, nu0 = 5, rho = rgamma(1, 1, 1),
+                     inits = list(dist = dd, R = R, nu = 8, rho = rgamma(1, 1, 1),
                                                                  z = rep(0, n)))
 model$simulate()
 model$calculate()
 model$setData('y')
 
-## non-atomics has seg fault in HMC/MAP partial
-## *** caught segfault ***
-##address 0x55da1bd80ba0, cause 'memory not mapped'
-## Traceback:
-##  1: .Call("CALL_nfRefClass_R_GlobalEnv46_run", x, order, .basePtr)
-
-## atomics: 
-## compvalues, logProb_new, wrt ENI
-## comp/unc values out of tolerance
-## comp jac/Hessians ENI
-## comp/unc 2d11 jacobian quite out of tolerance
-## comp/unc 2d/012 hessian out of tolerance 
-test_ADModelCalculate(model, excludeUpdateNodes = 'dist', x = 'prior',
+newR <- crossprod(matrix(rnorm(5*5), 5))
+newW1 <- crossprod(matrix(rnorm(5*5), 5))
+newW2 <- crossprod(matrix(rnorm(5*5), 5))
+newW3 <- crossprod(matrix(rnorm(5*5), 5))
+newW4 <- crossprod(matrix(rnorm(5*5), 5))
+newW5 <- crossprod(matrix(rnorm(5*5), 5))
+newW6 <- crossprod(matrix(rnorm(5*5), 5))
+test_ADModelCalculate(model, newUpdateNodes = list(nu = 12.1, dist = newDist, R = newR, W1 = newW1, W2 = newW2, W3 = newW3, W4 = newW4, W5 = newW5, W6 = newW6),
+                      x = 'prior',
                       useParamTransform = TRUE, useFasterRderivs = TRUE,
-                      verbose = verbose,
+                      relTol = relTol, verbose = verbose,
                       name = 'various multivariate dists')
-
+## 2022-03-14: various cases not identical; R vs C values minor discrepancy; R vs C 2d11 discrepancy, including large discrepancy; C 2d vs 012 hessian minor discrepancy
+## 2022-03-17: at one point I got a seg fault with atomics and dGPdist, in HMC/MAP initial/initial cDerivs$run(x, 1:2, reset = reset), but can't reproduce
 
 ## loop through BUGS models
 
@@ -1197,23 +1320,27 @@ if(FALSE) {
     set.seed(1)
     model$simulate('b1')
     model$calculate()
-    test_ADModelCalculate(model, verbose = verbose, name = 'epil', useFasterRderivs = TRUE)
+    newY <- matrix(rpois(length(model$y), 2), nrow = nrow(model$y))
+    test_ADModelCalculate(model, newConstantNodes = list(y = newY),
+                          relTol = relTol, verbose = verbose, name = 'epil', useFasterRderivs = TRUE)
 }
 
 
 ## now loop through BUGS models.
-examples <- c('blocker', 'dyes', 'epil', 'equiv', 'line', 'oxford', 'pump', 'rats', 'beetles', 'jaw', 'dugongs', 'schools', 'seeds')
+examples <- c('blocker', 'dyes', 'epil', 'equiv', 'line', 'pump', 'rats', 'beetles', 'jaw', 'dugongs', 'seeds','oxford','schools')
 bugsFile <- examples
 initsFile <- dataFile <- rep(NA, length(examples))
 names(bugsFile) <- names(initsFile) <- names(dataFile) <- examples
 
 ## litters uses truncation on non-top node (issue #254) so left out for now
-## bones, inhaler has dcat so left out for now (but we should be able to handle this)
+## bones, inhaler, pigs has dcat so left out for now (but we should be able to handle this)
 ## biops has stoch indexing so left out for now
 ## lsat requires setting some indexing and doing a bunch of initialization
 ## kidney, mice has dinterval so left out for now
-## TODO: look at the various other bugs Volume 2 examples to see if there are others we should include
-
+## asia has dcat and max
+## stagnant has dcat and step
+## eyes has dnormmix
+## TODO: could add: air, alli, birats, cervix, hearts, ice, orange
 
 ## customize file names as needed
 bugsFile['beetles'] <- 'beetles-logit'
@@ -1242,12 +1369,36 @@ simulateNodes[['jaw']] <- 'Omega'
 ## simulateNodes[['litters']] <- c('mu', 'theta')
 simulateNodes[['seeds']] <- 'b'
 
-relTol_default <- eval(formals(test_ADModelCalculate)$relTol)
+relTol_default <- relTol
 relTols <- list()
 length(relTols) <- length(examples)
 names(relTols) <- examples
 
+newConstantNodes <- list()
+newConstantNodes[['blocker']] <- list(rt = rbinom(22, 10, .5), rc = rbinom(22, 10, .5))
+newConstantNodes[['oxford']] <- list(r0 = rbinom(120, 10, .5), r1 = rbinom(120, 10, .5))
+newConstantNodes[['pump']] <- list(x = rpois(10, 2))
+newConstantNodes[['beetles']] <- list(r = sample(0:1, 8, replace = TRUE))
+newConstantNodes[['seeds']] <- list(r = rbinom(21, 4, .5))
+newConstantNodes[['jaw']] <- list(R = crossprod(matrix(rnorm(4*4), 4)))
+newConstantNodes[['schools']] <- list(pr = crossprod(matrix(rnorm(3*3), 3)))
+newConstantNodes[['dyes']]  <- list(y = matrix(rnorm(30, 1500, 10), 6 ,5), tau.within = 1/450, tau.between = 1/420)
 
+newUpdateNodes <- list()
+newUpdateNodes[['jaw']] <- list(Omega = crossprod(matrix(rnorm(4*4), 4)))
+newUpdateNodes[['schools']] <- list(T = crossprod(matrix(rnorm(3*3), 3)))
+newUpdateNodes[['dyes']]  <- list(tau.within = 1/450, tau.between = 1/420)
+newUpdateNodes[['oxford']] <- list(beta1 = .0035, beta2 = .000634)
+
+wrtGeneration <- rep('given', length(examples))
+names(wrtGeneration) <- examples
+wrtGeneration['jaw'] <- 'prior'
+wrtGeneration['schools'] <- 'prior'
+
+xNew <- list()
+xNew[['oxford']] <- list(alpha = .11, beta1 = .12, beta2 = .13, sigma = .14)
+xNew[['schools']] <- list(theta = .11, phi = .12)
+xNew[['dyes']] <- list(mu = rnorm(6, 1500, 4))  # otherwise uncompiled derivs are squaring large y-mu deviations
 
 for(i in seq_along(examples)) {
     cat("Testing ", examples[i], ".\n")
@@ -1255,6 +1406,9 @@ for(i in seq_along(examples)) {
     if(is.na(dataFile[i])) tmpData <- NULL else tmpData <- dataFile[i]
     model <- readBUGSmodel(model = bugsFile[i], inits = tmpInits, data = tmpData, useInits = TRUE,
                            dir = nimble:::getBUGSexampleDir(examples[i]))
+    if(examples[i] == 'dyes')  # NCT issue 350 - inaccurate double-taped second derivs around log(1)
+        ## also, values near 1 give large magnitude logProb as too small for variation in y
+        model$tau.between <- model$tau.within <- 1/400
     if(!is.null(simulateNodes[[i]])) {
         model$simulate(simulateNodes[[i]])
     }
@@ -1262,8 +1416,11 @@ for(i in seq_along(examples)) {
     if(is.null(relTols[[examples[i]]])) {
         relTol <- relTol_default
     } else relTol = relTols[[examples[i]]]
-    test_ADModelCalculate(model, useParamTransform = TRUE, verbose = TRUE, name = bugsFile[i], relTol = relTol, useFasterRderivs = TRUE)
+    test_ADModelCalculate(model, newConstantNodes = newConstantNodes[[examples[i]]], newUpdateNodes = newUpdateNodes[[examples[i]]],
+                          x = wrtGeneration[examples[i]], xNew = xNew[[examples[i]]], useParamTransform = TRUE, relTol = relTol, verbose = verbose, name = bugsFile[i],
+                          useFasterRderivs = TRUE)
 }
+
 
 ## need to monkey with leuk and salm code, which makes it a pain to deal with directories as done above.
 
@@ -1273,21 +1430,44 @@ system.in.dir(paste("cat leuk.bug >>", file.path(tempdir(), "leuk.bug")), dir = 
 system.in.dir(paste("sed -i -e 's/step/nimStep/g'", file.path(tempdir(), "leuk.bug")))
 model <- readBUGSmodel(model = file.path(tempdir(), "leuk.bug"), data = system.file('classic-bugs','vol1','leuk','leuk-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol1','leuk','leuk-init.R', package = 'nimble'), useInits = TRUE)
 out <- model$calculate()
-## issue #253
-test_ADModelCalculate(model, useParamTransform = TRUE, verbose = TRUE, name = 'leuk', relTol = relTol_default, useFasterRderivs = TRUE)
+newConstantNodes <- list(dN = matrix(rpois(17*42, 2), 17))
+test_ADModelCalculate(model, newConstantNodes = newConstantNodes, useParamTransform = TRUE, relTol = relTol, verbose = verbose, name = 'leuk', relTol = relTol_default, useFasterRderivs = TRUE)
+## issue #348
 
-## salm
-writeLines(c("var","logx[doses];"), con = file.path(tempdir(), "salm.bug"))
-system.in.dir(paste("cat salm.bug >>", file.path(tempdir(), "salm.bug")), dir = system.file('classic-bugs','vol1','salm', package = 'nimble'))
-model <- readBUGSmodel(model = file.path(tempdir(), "salm.bug"), data = system.file('classic-bugs','vol1','salm','salm-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol1','salm','salm-init.R', package = 'nimble'), useInits = TRUE)
-model$simulate('lambda')
-model$calculate()
-## rWrt, cWrt equal not identical to x
-test_ADModelCalculate(model, useParamTransform = TRUE, verbose = TRUE, name = 'salm', relTol = relTol_default, useFasterRderivs = TRUE)
+## salm: easy to have this blow up because of exponentiation unless 'gamma' (part of wrt) is quite small
+if(FALSE) {
+    writeLines(c("var","logx[doses];"), con = file.path(tempdir(), "salm.bug"))
+    system.in.dir(paste("cat salm.bug >>", file.path(tempdir(), "salm.bug")), dir = system.file('classic-bugs','vol1','salm', package = 'nimble'))
+    model <- readBUGSmodel(model = file.path(tempdir(), "salm.bug"), data = system.file('classic-bugs','vol1','salm','salm-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol1','salm','salm-init.R', package = 'nimble'), useInits = TRUE)
+    model$simulate('lambda')
+    model$calculate()
+    newUpdateNodes <- list(gamma = 0.012)
+    newConstantNodes <- list(y = matrix(rpois(6*3, 2), 6))
+    xNew <- list(gamma = .012)
+    test_ADModelCalculate(model, xNew = xNew, newUpdateNodes = newUpdateNodes, newConstantNodes = newConstantNodes, useParamTransform = TRUE, relTol = relTol, verbose = verbose, name = 'salm', relTol = relTol_default, useFasterRderivs = TRUE)
+}
+## 2022-03-29: some large magnitude discrepancy between R and C single-taped Hessians, though relative discrepancy not much bigger than 0.001; some cases where R 2d11 hessian values not zero when true value is zero, leading to big discrepancy; some comparisons equal but not identical, couple other minor discrepancies
+
+
+## March 2022 results:
+
+## epil2: R vs C 2d11 hessian discrepancy
+## blocker: R vs C 2d11 hessian discrepancy (some large, very likely NCT issue 350), some compiled comparisons equal but not identical
+## dyes: some compiled comparisons equal but not identical; HMC/MAP partial and ML partial has some non-negligible discrepancy of R vs C single-taped hessians - even a few of these after more careful setting of tau.{between,within} values; it looks like the default h for pracma::hessian may be too small in this case (interestingly numDeriv::hessian does better here)
+## dyes: R 2d11 Hessian for [3,3] element (tau.between) is wrong for HMC/MAP when tau.between=1; NCT issue 350
+## equiv: R vs C 2d11 hessian discrepancy (some large), some compiled comparisons equal but not identical, compiled 2d/012 hessian minor discrepancy, a few R vs C minor discrepancy
+## line: R vs C 2d11 hessian discrepancy (some large),some comparisons equal but not identical
+## pump: R vs C 2d11 hessian discrepancy; some comparisons equal but not identical, couple other minor discrepancies
+## rats: R vs C 2d11 hessian discrepancy (some large); some comparisons equal but not identical, couple other minor discrepancies; some exceedance of thresholds for R vs C
+## beetles: R vs C 2d11 hessian discrepancy; some comparisons equal but not identical, couple other minor discrepancies
+## jaw: R vs C 2d11 hessian discrepancy; some comparisons equal but not identical, couple other minor discrepancies
+## dugongs: R vs C 2d11 hessian discrepancy; some comparisons equal but not identical, couple other minor discrepancies
+## seeds: R vs C 2d11 hessian discrepancy; some comparisons equal but not identical, couple other minor discrepancies
+## schools: R vs C 2d11 hessian discrepancy; some comparisons equal but not identical
+## oxford: R vs C 2d11 hessian discrepancy (some large),some comparisons equal but not identical; some other minor R vs C discrepancies;
 
 
 ## Feb 2021 results:
-
 
 ## epil2: 2d11 uncompiled hessian out of tolerance with compiled
 
