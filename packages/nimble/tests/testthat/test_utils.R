@@ -2598,7 +2598,19 @@ compareFilesUsingDiff <- function(trialFile, correctFile, main = "") {
 ## more_args: A named list, e.g. list(log = 1), that will be added
 ##            as a formal to the output expr but not part of args.
 ##
-make_op_param <- function(op, argTypes, more_args = NULL) {
+## output_code: quoted code such as quote(Y^2) to be used with Y
+##              substituted as the operation result.  E.g., if the
+##              operation is `arg1 + arg2`, this would replace it with
+##             (arg1 + arg2)^2.
+##
+## inner_codes: list of quoted code such as quote(X^2) to be used with
+##              X substituted as the corresponding argument. The list
+##              must be as long as the number of arugments, with NULL
+##              entries indicating no substitution.  E.g. with
+##              list(NULL, quote(X^2)), `arg1 + arg2` would be changed
+##              to `art1 + arg2^2`.
+make_op_param <- function(op, argTypes, more_args = NULL,
+                          outer_code = NULL, inner_codes = NULL) {
   arg_names <- names(argTypes)
 
   if (is.null(arg_names)) {
@@ -2611,15 +2623,37 @@ make_op_param <- function(op, argTypes, more_args = NULL) {
   args_string <- paste0(arg_names, ' = ', argTypes, collapse = ' ')
   name <- paste(op, args_string)
 
-  expr <- substitute(
-    out <- this_call,
-    list(
-      this_call = as.call(c(
-        substitute(FOO, list(FOO = as.name(op))),
-        op_args, more_args
-      ))
-    )
-  )
+  # Add inner funs around arguments
+  if(!is.null(inner_codes)) {
+    for(i in seq_along(op_args)) {
+      if(!is.null(inner_codes[[i]])) {
+        op_args[[i]] <- eval(substitute(
+          substitute(INNER_CODE,
+                     list(X = op_args[[i]])),
+          list(INNER_CODE = inner_codes[[i]]))
+        )
+      }
+    }
+  }
+  
+  this_call <- as.call(c(
+      substitute(FOO, list(FOO = as.name(op))),
+      op_args, more_args
+  ))
+
+  if(is.null(outer_code)) {
+      expr <- substitute(
+          out <- THIS_CALL,
+          list(THIS_CALL = this_call)
+      )
+  } else {
+    expr <- eval(substitute(
+      substitute(
+        out <- OUTER_CODE,
+        list(Y = this_call)),
+      list(OUTER_CODE = outer_code))
+      )
+  }
 
   argTypesList <- as.list(argTypes)
   names(argTypesList) <- arg_names
@@ -2726,9 +2760,11 @@ return_type_string <- function(op, argTypes) {
              max((sapply(args, `[[`, 'size')))
            }
 
-  size_string <- if (nDim > 0)
-                   paste0(', c(', paste(sizes, collapse = ', '), ')')
-                 else ''
+    size_string <- if(all(is.na(sizes)))
+                       ''
+                   else if (nDim > 0)
+                       paste0(', c(', paste(sizes, collapse = ', '), ')')
+                   else ''
 
   return(paste0(scalarTypeString, '(', nDim, size_string, ')'))
 }
@@ -2744,13 +2780,15 @@ add_missing_size <- function(argSymbol, vector_size = 3, matrix_size = c(3, 4)) 
   invisible(argSymbol)
 }
 
-arg_type_2_input <- function(argType, input_gen_fun = NULL) {
+arg_type_2_input <- function(argType, input_gen_fun = NULL, size = NULL, return_function = FALSE) {
   argSymbol <- add_missing_size(
     nimble:::argType2symbol(argType)
   )
   type <- argSymbol$type
   nDim <- argSymbol$nDim
-  size <- argSymbol$size
+  if(is.null(size))
+    size <- argSymbol$size
+  
   if (is.null(input_gen_fun))
     input_gen_fun <- switch(
       type,
@@ -2759,16 +2797,21 @@ arg_type_2_input <- function(argType, input_gen_fun = NULL) {
       "logical" = function(arg_size)
         sample(c(TRUE, FALSE), prod(arg_size), replace = TRUE)
     )
-  arg <- switch(
-    nDim + 1,
-    input_gen_fun(1), ## nDim is 0
-    input_gen_fun(size), ## nDim is 1
-    matrix(input_gen_fun(size), nrow = size[1], ncol = size[2]), ## nDim is 2
-    array(input_gen_fun(size), dim = size) ## nDim is 3
-  )
-  if (is.null(arg))
-    stop('Something went wrong while making test input.', call.=FALSE)
-  return(arg)
+  ans <- function() {
+    arg <- switch(
+      nDim + 1,
+      input_gen_fun(1), ## nDim is 0
+      input_gen_fun(prod(size)), ## nDim is 1
+      matrix(input_gen_fun(prod(size)), nrow = size[1], ncol = size[2]), ## nDim is 2
+      array(input_gen_fun(prod(size)), dim = size) ## nDim is 3
+    )
+    if(is.null(arg))
+      stop('Something went wrong while making test input.', call.=FALSE)
+    arg
+  }
+  if(return_function)
+    return(ans)
+  ans()
 }
 
 modify_on_match <- function(x, pattern, key, value, env = parent.frame(), ...) {
@@ -2785,4 +2828,32 @@ modify_on_match <- function(x, pattern, key, value, env = parent.frame(), ...) {
       eval(substitute(x[[name]][[key]] <- value), env)
     }
   }
+}
+
+nim_all_equal <- function(x, y, tolerance = .Machine$double.eps^0.5, verbose = FALSE, info = "") {
+  xlab <- deparse1(substitute(x))
+  ylab <- deparse1(substitute(y))
+  
+  denom <- y
+  denom[denom == 0] <- 1
+  rel_diff <- abs((x-y)/denom)
+  result <- rel_diff < tolerance
+  all_result <- all(result)
+  if(verbose) {
+    if(!all_result) {
+      ord <- order(rel_diff, decreasing = TRUE)
+      wh <- 1:min(length(rel_diff), 5)
+      report <- cbind(x[ord[wh]], y[ord[wh]], rel_diff[ord[wh]])
+      report <- report[report[,3] > tolerance, ]
+      cat("\n******************\n")
+      cat("Detected some values out of relative tolerance ", info, ": ", xlab, " ", ylab, ".\n")
+      print(report)
+      cat("\n******************\n")
+    } 
+  }
+  all_result
+}
+
+nim_expect_equal <- function(x, y, tolerance = .Machine$double.eps^0.5) {
+  expect_true(nim_all_equal(x, y, tolerance, verbose = TRUE))
 }

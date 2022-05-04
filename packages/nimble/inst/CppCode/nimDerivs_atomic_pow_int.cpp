@@ -15,6 +15,7 @@
 
 */
 #include <nimble/nimDerivs_atomic_pow_int.h>
+#include <nimble/nimDerivs_atomic_zround.h>
 
 atomic_pow_int_class::atomic_pow_int_class(const std::string& name) : 
   CppAD::atomic_three<double>(name)
@@ -25,7 +26,7 @@ bool atomic_pow_int_class::for_type(
 	      const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
 	      CppAD::vector<CppAD::ad_type_enum>&        type_y      )
 {
-  type_y[0] = type_x[0]; // type of y is type of a. type of b is ignored.
+  type_y[0] = max(type_x[0], type_x[1]); // type of y is type of a. type of b is ignored.
   return true;
 }
 // Not sure this is ever needed.
@@ -34,7 +35,7 @@ bool atomic_pow_int_class::for_type(
 	      const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
 	      CppAD::vector<CppAD::ad_type_enum>&        type_y      )
 {
-  type_y[0] = type_x[0];
+  type_y[0] = max(type_x[0], type_x[1]);
   return true;
 }
 
@@ -53,8 +54,9 @@ bool atomic_pow_int_class::rev_depend(
 // This is needed for meta-taping b * nimDerivs_pow_int(a, b-1).
 // the "b * <stuff>" will create a derivative in b, but using
 // CppADround(b) * <stuff> sets that to 0.
-double CppADround(const double &x) {return round(x);}
-CPPAD_DISCRETE_FUNCTION(double, CppADround)
+//  Elsewhere I encountered difficulties with this approach, so have replaced it with an atomic
+// double CppADround(const double &x) {return round(x);}
+// CPPAD_DISCRETE_FUNCTION(double, CppADround)
   
 bool atomic_pow_int_class::forward(
      const CppAD::vector<double>&               parameter_x  ,
@@ -75,11 +77,17 @@ bool atomic_pow_int_class::forward(
   double sign_a = a >= 0 ? 1 : -1;
   double sign_y = a >= 0 ? 1 : ( b % 2 == 0 ? 1 : -1); 
   if(order_low <= 0 & order_up >= 0) {
-    taylor_y[0] = a_zero ? 0 : sign_y * exp( b * log_fabs_a); // a^b = exp(b * log(a))
+    // Cases with a == 0 take special care:
+    // 0^(+ive) = 0 by special case.
+    // 0^0 becomes exp(azmul(0, -Inf)) = exp(0) = 1, correct
+    // 0^(-ive) becomes exp(azmul(-ive, -Inf)) = exp(Inf) = Inf, correct
+    //  Cases with a != 0 are fine.
+    taylor_y[0] = (a_zero && (b > 0)) ? 0 : sign_y * exp( CppAD::azmul(b, log_fabs_a) ); // a^b = exp(b * log(a))
   }
   if(order_low <= 1 & order_up >= 1) {
     // dy = b a^(b-1) da = b * exp( (b-1) * log(a) ) * da
-    taylor_y[1] = a_zero ? 0 : sign_a * sign_y * b * exp( (b-1) * log_fabs_a) * taylor_x[1];
+    double pow_a_bm1 = (a_zero && (b > 1)) ? 0 : exp( CppAD::azmul(b-1, log_fabs_a) );
+    taylor_y[1] = sign_a * sign_y * CppAD::azmul(b, pow_a_bm1) * taylor_x[1];
   }
   return true;
 }
@@ -97,7 +105,8 @@ bool atomic_pow_int_class::forward(
     taylor_y[0] = nimDerivs_pow_int(taylor_x[0], taylor_x[0 + 1*nrow]);
   }
   if(order_low <= 1 & order_up >= 1) {
-    taylor_y[1] = CppADround(taylor_x[0 + 1*nrow]) * nimDerivs_pow_int(taylor_x[0], taylor_x[0 + 1*nrow] - 1) * taylor_x[1];
+    taylor_y[1] = CppAD::azmul(nimDerivs_nimRound(taylor_x[0 + 1*nrow]),
+			       nimDerivs_pow_int(taylor_x[0], taylor_x[0 + 1*nrow] - 1)) * taylor_x[1];
   }
   return true;
 }
@@ -131,7 +140,9 @@ bool atomic_pow_int_class::reverse(
   double log_fabs_a(log(fabs(a)));
   double sign_a = a >= 0 ? 1 : -1;
   double sign_y = a >= 0 ? 1 : ( b % 2 == 0 ? 1 : -1); 
-  double dy_da(a_zero ? 0 : sign_a * sign_y * b * exp( (b-1) * log_fabs_a) );
+  //  double dy_da(a_zero ? 0 : sign_a * sign_y * b * exp( (b-1) * log_fabs_a) );
+  double pow_a_bm1( (a_zero && (b > 1)) ? 0 : exp( CppAD::azmul(b-1, log_fabs_a) ) );
+  double dy_da(sign_a * sign_y * CppAD::azmul(b, pow_a_bm1) );
   partial_x[0] = 0;  // a_adjoint
   partial_x[0 + 1*nrow] = 0; // b_adjoint
   if(order_up >= 0) {
@@ -139,7 +150,8 @@ bool atomic_pow_int_class::reverse(
   }
   if(order_up >= 1) {
     partial_x[1] = dy_da * partial_y[1]; // a_dot_adjoint
-    partial_x[0] += a_zero ? 0 : sign_y * b * (b-1) * exp( (b-2) * log_fabs_a) * taylor_x[1] * partial_y[1];
+    double pow_a_bm2( (a_zero && (b > 2)) ? 0 : exp( CppAD::azmul(b-2, log_fabs_a) ) );
+    partial_x[0] += sign_y * CppAD::azmul(b * (b-1), pow_a_bm2) * taylor_x[1] * partial_y[1];
     partial_x[1 + 1*nrow] = 0; // b_dot_adjoint
   }
   return true;
@@ -155,8 +167,8 @@ bool atomic_pow_int_class::reverse(
 				   const CppAD::vector< CppAD::AD<double> >&               partial_y   ) {
   int nrow(order_up + 1);
   // std::cout<<"meta-reverse "<<nrow<<" "<<partial_x.size()<<" "<<partial_y.size()<<std::endl;
-  CppAD::AD<double> rb = CppADround(taylor_x[0 + 1*nrow]);
-  CppAD::AD<double> dy_da = rb * nimDerivs_pow_int(taylor_x[0], taylor_x[0 + 1*nrow] - 1);
+  CppAD::AD<double> rb = nimDerivs_nimRound(taylor_x[0 + 1*nrow]);
+  CppAD::AD<double> dy_da = CppAD::azmul(rb, nimDerivs_pow_int(taylor_x[0], taylor_x[0 + 1*nrow] - 1));
   partial_x[0] = 0;  // a_adjoint
   partial_x[0 + 1*nrow] = 0; // b_adjoint
   if(order_up >= 0) {
@@ -164,7 +176,8 @@ bool atomic_pow_int_class::reverse(
   }
   if(order_up >= 1) {
     partial_x[1] = dy_da * partial_y[1]; // a_dot_adjoint
-    partial_x[0] += rb * (rb-1) * nimDerivs_pow_int(taylor_x[0], taylor_x[0 + 1*nrow] - 2) * taylor_x[1] * partial_y[1];
+    partial_x[0] += CppAD::azmul(rb * (rb-1),
+				 nimDerivs_pow_int(taylor_x[0], taylor_x[0 + 1*nrow] - 2)) * taylor_x[1] * partial_y[1];
     partial_x[1 + 1*nrow] = 0; // b_dot_adjoint
   }
   return true;

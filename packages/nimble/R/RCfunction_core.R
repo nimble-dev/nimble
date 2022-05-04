@@ -42,6 +42,42 @@ nimKeyWords <- list(copy = 'nimCopy',
                     max.bound = 'carMaxBound',
                     derivs = 'nimDerivs')
 
+callsNotAllowedInAD <- c(
+  '%%',
+  'nimMod',
+  'trace',
+  'nimEigen',
+  'nimSvd',
+  'nimOptim_model',
+  'nimOptim',
+  'getParam',
+  'getBound',
+  'bessel_k',
+  paste0('p', c('binom', 'nbinom', 'pois','beta','chisq',
+                'dexp','exp_nimble','gamma','invgamma','lnorm',
+                'logis','norm','t_nonstandard','unif','weibull', 't','exp')),
+  paste0('q', c('binom', 'nbinom', 'pois','beta','chisq',
+                'dexp','exp_nimble','gamma','invgamma','lnorm',
+                'logis','norm','t_nonstandard','unif','weibull', 't','exp')),
+  paste0('r', c('binom', 'nbinom', 'pois','beta','chisq',
+                'dexp','exp_nimble','flat','halfflat','gamma','invgamma','sqrtinvgamma','lnorm',
+                'logis','norm','t_nonstandard','unif','weibull', 't','exp')),
+  paste0('d', c('cat', 'interval', 'car_normal', 'car_proper')),
+  paste0('r', c('cat', 'interval', 'car_normal', 'car_proper',
+                'dirch','mnorm_chol','multi','mvt_chol','lkj_corr_cholesky','wish_chol',
+                'invwish_chol')),
+  paste0('nimArr_d', c('cat', 'dcar_normal', 'dcar_proper', 'interval')),
+  paste0('nimArr_r', c('mnorm_chol','mvt_chol', 'lkj_corr_cholesky','wish_chol',
+                       'invwish_chol', 'car_normal','car_proper','multi','dirch') ),
+  'getLogProb',
+  'decide',
+  'rankSample',
+  'any_na',
+  'any_nan',
+  'ISNAN','ISNA',
+  'nimCopy','carMinBound','carMaxBound'
+)
+
 nfMethodRCinterface <- setRefClass(
     Class = 'nfMethodRCinterface',
     fields = list(

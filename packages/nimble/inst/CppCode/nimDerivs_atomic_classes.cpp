@@ -21,12 +21,22 @@
     delete atomic_obj;							\
   }\
 
+ATOMIC_NEW_DELETE_(gammafn)
 ATOMIC_NEW_DELETE_(backsolve)
 ATOMIC_NEW_DELETE_(cholesky)
 ATOMIC_NEW_DELETE_(forwardsolve)
 ATOMIC_NEW_DELETE_(matinverse)
 ATOMIC_NEW_DELETE_(matmult)
 ATOMIC_NEW_DELETE_(pow_int)
+ATOMIC_NEW_DELETE_(zround)
+ATOMIC_NEW_DELETE_(floor)
+ATOMIC_NEW_DELETE_(ceil)
+ATOMIC_NEW_DELETE_(ftrunc)
+ATOMIC_NEW_DELETE_(nimRound)
+ATOMIC_NEW_DELETE_(log_pow_int)
+ATOMIC_NEW_DELETE_(zb_over_a)
+ATOMIC_NEW_DELETE_(probit)
+ATOMIC_NEW_DELETE_(iprobit)
 
 atomic_lgamma_class* new_atomic_lgamma(void* tape_mgr_ptr, const std::string& name, int bO) {
   return reinterpret_cast<nimble_CppAD_tape_mgr*>(tape_mgr_ptr)->new_atomic_lgamma(name, bO);
@@ -46,6 +56,19 @@ void nimble_CppAD_tape_mgr::delete_atomic_lgamma(atomic_lgamma_class *atomic_lga
   delete atomic_lgamma;
 }
 
+atomic_gammafn_class *track_atomic_gammafn(void* tape_mgr_ptr,
+					   std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  return reinterpret_cast<nimble_CppAD_tape_mgr*>(tape_mgr_ptr)->get_atomic_gammafn(vec_ptr);
+}
+atomic_gammafn_class *nimble_CppAD_tape_mgr::get_atomic_gammafn(std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  if(!gammafn_exists) {
+    gammafn_index = atomic_ptrs.size();
+    atomic_ptrs.push_back(atomic_pair(new_atomic_gammafn("atomic_gammafn_managed"), vec_ptr) );
+    gammafn_exists = true;
+  }
+  return dynamic_cast<atomic_gammafn_class*>(atomic_ptrs[gammafn_index].first);
+}
+
 atomic_pow_int_class *track_atomic_pow_int(void* tape_mgr_ptr,
 					   std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
   return reinterpret_cast<nimble_CppAD_tape_mgr*>(tape_mgr_ptr)->get_atomic_pow_int(vec_ptr);
@@ -58,6 +81,126 @@ atomic_pow_int_class *nimble_CppAD_tape_mgr::get_atomic_pow_int(std::vector<CppA
   }
   return dynamic_cast<atomic_pow_int_class*>(atomic_ptrs[pow_int_index].first);
 }
+
+atomic_zround_class *track_atomic_zround(void* tape_mgr_ptr,
+					   std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  return reinterpret_cast<nimble_CppAD_tape_mgr*>(tape_mgr_ptr)->get_atomic_zround(vec_ptr);
+}
+atomic_zround_class *nimble_CppAD_tape_mgr::get_atomic_zround(std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  if(!zround_exists) {
+    zround_index = atomic_ptrs.size();
+    atomic_ptrs.push_back(atomic_pair(new_atomic_zround("atomic_zround_managed"), vec_ptr) );
+    zround_exists = true;
+  }
+  return dynamic_cast<atomic_zround_class*>(atomic_ptrs[zround_index].first);
+}
+
+atomic_floor_class *track_atomic_floor(void* tape_mgr_ptr,
+					   std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  return reinterpret_cast<nimble_CppAD_tape_mgr*>(tape_mgr_ptr)->get_atomic_floor(vec_ptr);
+}
+atomic_floor_class *nimble_CppAD_tape_mgr::get_atomic_floor(std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  if(!floor_exists) {
+    floor_index = atomic_ptrs.size();
+    atomic_ptrs.push_back(atomic_pair(new_atomic_floor("atomic_floor_managed"), vec_ptr) );
+    floor_exists = true;
+  }
+  return dynamic_cast<atomic_floor_class*>(atomic_ptrs[floor_index].first);
+}
+
+atomic_ceil_class *track_atomic_ceil(void* tape_mgr_ptr,
+					   std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  return reinterpret_cast<nimble_CppAD_tape_mgr*>(tape_mgr_ptr)->get_atomic_ceil(vec_ptr);
+}
+atomic_ceil_class *nimble_CppAD_tape_mgr::get_atomic_ceil(std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  if(!ceil_exists) {
+    ceil_index = atomic_ptrs.size();
+    atomic_ptrs.push_back(atomic_pair(new_atomic_ceil("atomic_ceil_managed"), vec_ptr) );
+    ceil_exists = true;
+  }
+  return dynamic_cast<atomic_ceil_class*>(atomic_ptrs[ceil_index].first);
+}
+
+atomic_ftrunc_class *track_atomic_ftrunc(void* tape_mgr_ptr,
+					   std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  return reinterpret_cast<nimble_CppAD_tape_mgr*>(tape_mgr_ptr)->get_atomic_ftrunc(vec_ptr);
+}
+atomic_ftrunc_class *nimble_CppAD_tape_mgr::get_atomic_ftrunc(std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  if(!ftrunc_exists) {
+    ftrunc_index = atomic_ptrs.size();
+    atomic_ptrs.push_back(atomic_pair(new_atomic_ftrunc("atomic_ftrunc_managed"), vec_ptr) );
+    ftrunc_exists = true;
+  }
+  return dynamic_cast<atomic_ftrunc_class*>(atomic_ptrs[ftrunc_index].first);
+}
+
+atomic_nimRound_class *track_atomic_nimRound(void* tape_mgr_ptr,
+					   std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  return reinterpret_cast<nimble_CppAD_tape_mgr*>(tape_mgr_ptr)->get_atomic_nimRound(vec_ptr);
+}
+atomic_nimRound_class *nimble_CppAD_tape_mgr::get_atomic_nimRound(std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  if(!nimRound_exists) {
+    nimRound_index = atomic_ptrs.size();
+    atomic_ptrs.push_back(atomic_pair(new_atomic_nimRound("atomic_nimRound_managed"), vec_ptr) );
+    nimRound_exists = true;
+  }
+  return dynamic_cast<atomic_nimRound_class*>(atomic_ptrs[nimRound_index].first);
+}
+
+atomic_probit_class *track_atomic_probit(void* tape_mgr_ptr,
+					   std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  return reinterpret_cast<nimble_CppAD_tape_mgr*>(tape_mgr_ptr)->get_atomic_probit(vec_ptr);
+}
+atomic_probit_class *nimble_CppAD_tape_mgr::get_atomic_probit(std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  if(!probit_exists) {
+    probit_index = atomic_ptrs.size();
+    atomic_ptrs.push_back(atomic_pair(new_atomic_probit("atomic_probit_managed"), vec_ptr) );
+    probit_exists = true;
+  }
+  return dynamic_cast<atomic_probit_class*>(atomic_ptrs[probit_index].first);
+}
+
+atomic_iprobit_class *track_atomic_iprobit(void* tape_mgr_ptr,
+					   std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  return reinterpret_cast<nimble_CppAD_tape_mgr*>(tape_mgr_ptr)->get_atomic_iprobit(vec_ptr);
+}
+atomic_iprobit_class *nimble_CppAD_tape_mgr::get_atomic_iprobit(std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  if(!iprobit_exists) {
+    iprobit_index = atomic_ptrs.size();
+    atomic_ptrs.push_back(atomic_pair(new_atomic_iprobit("atomic_iprobit_managed"), vec_ptr) );
+    iprobit_exists = true;
+  }
+  return dynamic_cast<atomic_iprobit_class*>(atomic_ptrs[iprobit_index].first);
+}
+
+
+atomic_log_pow_int_class *track_atomic_log_pow_int(void* tape_mgr_ptr,
+					   std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  return reinterpret_cast<nimble_CppAD_tape_mgr*>(tape_mgr_ptr)->get_atomic_log_pow_int(vec_ptr);
+}
+atomic_log_pow_int_class *nimble_CppAD_tape_mgr::get_atomic_log_pow_int(std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  if(!log_pow_int_exists) {
+    log_pow_int_index = atomic_ptrs.size();
+    atomic_ptrs.push_back(atomic_pair(new_atomic_log_pow_int("atomic_log_pow_int_managed"), vec_ptr) );
+    log_pow_int_exists = true;
+  }
+  return dynamic_cast<atomic_log_pow_int_class*>(atomic_ptrs[log_pow_int_index].first);
+}
+
+atomic_zb_over_a_class *track_atomic_zb_over_a(void* tape_mgr_ptr,
+					   std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  return reinterpret_cast<nimble_CppAD_tape_mgr*>(tape_mgr_ptr)->get_atomic_zb_over_a(vec_ptr);
+}
+atomic_zb_over_a_class *nimble_CppAD_tape_mgr::get_atomic_zb_over_a(std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  if(!zb_over_a_exists) {
+    zb_over_a_index = atomic_ptrs.size();
+    atomic_ptrs.push_back(atomic_pair(new_atomic_zb_over_a("atomic_zb_over_a_managed"), vec_ptr) );
+    zb_over_a_exists = true;
+  }
+  return dynamic_cast<atomic_zb_over_a_class*>(atomic_ptrs[zb_over_a_index].first);
+}
+
+/***********************************/
 
 atomic_lgamma_class *track_atomic_lgamma(int baseOrder,
 					 void* tape_mgr_ptr,
@@ -75,6 +218,8 @@ atomic_lgamma_class *nimble_CppAD_tape_mgr::get_atomic_lgamma(int baseOrder,
   }
   return dynamic_cast<atomic_lgamma_class*>(atomic_ptrs[lgamma_index[baseOrder] ].first);
 }
+
+/***********************************/
 
 atomic_lgamma_class::atomic_lgamma_class(const std::string& name, int baseOrder_) : 
   unary_atomic_class<double>(name),
@@ -279,3 +424,153 @@ CppAD::AD<double> nimDerivs_lgammafn(CppAD::AD<double> x, int baseOrder, bool ve
 CppAD::AD<double> nimDerivs_lgammafn(CppAD::AD<double> x) {
   return nimDerivs_lgammafn(x, 0); // a relic of a problem with default value when writing this previously using templates.
 }
+
+/***************************************/
+/* gammafn                             */
+/* We can't just use exp(lgammafn(x))  */
+/* because lgamma is defined as log of */
+/* ABSOLUTE VALUE of gamma(x)          */
+/***************************************/
+
+atomic_gammafn_class::atomic_gammafn_class(const std::string& name) : 
+  unary_atomic_class<double>(name)
+{ }
+
+bool atomic_gammafn_class::forward(
+     const CppAD::vector<double>&               parameter_x  ,
+     const CppAD::vector<CppAD::ad_type_enum>&  type_x       ,
+     size_t                              need_y       ,
+     size_t                              order_low    ,
+     size_t                              order_up     ,
+     const CppAD::vector<double>&               taylor_x     ,
+     CppAD::vector<double>&                     taylor_y     )
+{
+  bool verbose = false;
+  if(order_low <= 0 & order_up >= 0) {
+    taylor_y[0] = Rf_gammafn(taylor_x[0]);
+  }
+  double lgamma_prime;
+  if(order_low <= 2 & order_up >= 1) {
+    lgamma_prime = Rf_psigamma(taylor_x[0], 0) ;
+  }
+  if(order_low <= 1 & order_up >= 1) {
+    taylor_y[1] = lgamma_prime * taylor_y[0] * taylor_x[1];
+    if(verbose) std::cout<<"taylor_x[1] "<<taylor_x[1]<<" taylor_y[1] "<<taylor_y[1]<<" ";
+	  // f'(x) (x')
+  }
+  // This is never used from nimble
+  if(order_low <= 2 & order_up >= 2) {
+    taylor_y[2] = 0.5 * taylor_y[0] *
+      ((Rf_psigamma(taylor_x[0], 1) + lgamma_prime*lgamma_prime) * taylor_x[1] * taylor_x[1] + 
+       lgamma_prime * 2 * taylor_x[2]);
+    if(verbose) std::cout<<"taylor_x[2] "<<taylor_x[2]<<" taylor_y[2] "<<taylor_y[2]<<" ";
+    // 0.5 * ((f''(x)) (x')^2 + 2*f'(x) (x''))
+    // Note x'' is a taylor coeff so it is 0.5*2nd deriv
+  }
+  if(verbose) std::cout<<std::endl;
+  return true;
+}
+bool atomic_gammafn_class::reverse(
+     const CppAD::vector<double>&               parameter_x ,
+     const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
+     size_t                              order_up    ,
+     const CppAD::vector<double>&               taylor_x    ,
+     const CppAD::vector<double>&               taylor_y    ,
+     CppAD::vector<double>&                     partial_x   ,
+     const CppAD::vector<double>&               partial_y   )
+{
+  bool verbose = false;
+  partial_x[0] = 0;
+  if(order_up >= 1) partial_x[1] = 0;
+  double lgamma_prime = Rf_psigamma(taylor_x[0], 0);
+  double fprime = lgamma_prime * taylor_y[0];
+  if(order_up >= 1) {
+    partial_x[1] += partial_y[1] * fprime;
+    double fprimeprime = (Rf_psigamma(taylor_x[0], 1) + lgamma_prime * lgamma_prime) * taylor_y[0];
+    partial_x[0] += partial_y[1] * fprimeprime * taylor_x[1];
+    if(verbose) std::cout<<"partial_x[1] "<<partial_x[1]<<" first step of partial_x[0] "<<partial_x[0]<<" ";
+  }
+  partial_x[0] += partial_y[0] * fprime;
+  if(verbose) std::cout<<"partial_x[0] "<<partial_x[0]<<std::endl;
+  return true;
+}
+
+bool atomic_gammafn_class::forward(
+     const CppAD::vector< CppAD::AD<double> >&               parameter_x  ,
+     const CppAD::vector<CppAD::ad_type_enum>&  type_x       ,
+     size_t                              need_y       ,
+     size_t                              order_low    ,
+     size_t                              order_up     ,
+     const CppAD::vector< CppAD::AD<double> >&               taylor_x     ,
+     CppAD::vector< CppAD::AD<double> >&                     taylor_y     )
+{
+  bool verbose = false;
+  if(order_low <= 0 & order_up >= 0) {
+    taylor_y[0] = nimDerivs_gammafn(taylor_x[0]); // This puts it in the new tape being recorded
+    if(verbose) {
+      std::cout<<"taylor_y[0] "<<CppAD::Value(taylor_y[0])<<" ";
+    }
+  }
+  CppAD::AD<double> lgamma_prime;
+  if(order_low <= 2 & order_up >= 1) {
+    lgamma_prime = nimDerivs_lgammafn(taylor_x[0], 1);
+  }
+  if(order_low <= 1 & order_up >= 1) {
+    taylor_y[1] = lgamma_prime * taylor_y[0] * taylor_x[1];
+    if(verbose) std::cout<<"taylor_x[1] "<<CppAD::Value(taylor_x[1])<<" taylor_y[1] "<<CppAD::Value(taylor_y[1])<<" ";
+  }
+  if(order_low <= 2 & order_up >= 2) {
+    taylor_y[2] = 0.5 * taylor_y[0] *
+      ((nimDerivs_lgammafn(taylor_x[0], 2) + lgamma_prime*lgamma_prime) * taylor_x[1] * taylor_x[1] + 
+       lgamma_prime * 2 * taylor_x[2]);
+    if(verbose) std::cout<<"taylor_x[2] "<<CppAD::Value(taylor_x[2])<<" taylor_y[2] "<<CppAD::Value(taylor_y[2])<<" ";
+  }
+  if(verbose) std::cout<<std::endl;
+  return true;
+}
+
+bool atomic_gammafn_class::reverse(
+     const CppAD::vector< CppAD::AD<double> >&               parameter_x ,
+     const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
+     size_t                              order_up    ,
+     const CppAD::vector< CppAD::AD<double> >&               taylor_x    ,
+     const CppAD::vector< CppAD::AD<double> >&               taylor_y    ,
+     CppAD::vector< CppAD::AD<double> >&                     partial_x   ,
+     const CppAD::vector< CppAD::AD<double> >&               partial_y   ) 
+{
+  bool verbose = false;
+  partial_x[0] = CppAD::AD<double>(0);
+  if(order_up >= 1) partial_x[1] = CppAD::AD<double>(0);
+  CppAD::AD<double> lgamma_prime = nimDerivs_lgammafn(taylor_x[0], 1);
+  CppAD::AD<double>  fprime = lgamma_prime * taylor_y[0];
+  if(verbose) std::cout<<"fprime "<<CppAD::Value(fprime)<<" ";
+  if(order_up >= 1) {
+    partial_x[1] += partial_y[1] * fprime;
+    CppAD::AD<double> fprimeprime = (nimDerivs_lgammafn(taylor_x[0], 2) + lgamma_prime * lgamma_prime) * taylor_y[0];
+    partial_x[0] += partial_y[1] * fprimeprime * taylor_x[1];
+    if(verbose) std::cout<<"partial_x[1] "<<CppAD::Value(partial_x[1])<<" first step of partial_x[0] "<<CppAD::Value(partial_x[0])<<" ";
+  }
+  partial_x[0] += partial_y[0] * fprime;
+  if(verbose) std::cout<<"partial_x[0] "<<CppAD::Value(partial_x[0])<<std::endl;
+  return true;
+}
+
+CppAD::AD<double> nimDerivs_gammafn(CppAD::AD<double> x) {
+  atomic_gammafn_class *atomic_gammafn;
+  bool recording = CppAD::AD<double>::get_tape_handle_nimble() != nullptr;
+  if(!recording) {
+    atomic_gammafn = new atomic_gammafn_class("nimDerivs_gammafn");
+  } else {
+    atomic_gammafn = track_atomic_gammafn(CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr(),
+					  CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage() );
+  } 
+  CppAD::vector<CppAD::AD<double>> in(1);
+  CppAD::vector<CppAD::AD<double>> out(1);
+  in[0] = x;
+  (*atomic_gammafn)(in, out);
+  if(!recording) {
+    delete atomic_gammafn;
+  }
+  return out[0];
+}
+

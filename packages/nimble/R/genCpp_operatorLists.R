@@ -315,7 +315,6 @@ eigProxyTranslateExternalUnary <- list(
 )
 eigProxyCallsExternalUnary <- names(eigProxyTranslateExternalUnary)
 
-eigOtherMemberFunctionCalls <- c('cwiseSqrt', 'cwiseAbs')
 eigCalls <- c('matrix', 'array')
 cppCasts = list(as.numeric = 'double', as.integer = 'int')
 
@@ -342,7 +341,8 @@ nimDerivsPrependTypeOperators <- c("dnorm", "dpois", "dgamma", "dinvgamma", "dsq
                                    "nimArr_ddirch", "nimArr_dmvt_chol", "nimArr_dmnorm_chol", 
 				   "nimArr_dwish_chol", "nimArr_dinvwish_chol", "nimArr_dlkj_corr_cholesky",
                                    "nimStep", 'ilogit', 'icloglog', 'iprobit', 'probit', 'cloglog',
-                                   "nimEquals", "lgammafn", "gammafn", "lfactorial", "factorial", "logit",
+                                   "nimEquals", "lgammafn", "gammafn", "lfactorial", "factorial",
+                                   "logit", "floor", "ceil", "nimRound", "ftrunc",
                                    "cube", "inprod")
 
 ## Reflects distribution funs that support recycling rule with AD -- see nimDerivs_TMB.h.

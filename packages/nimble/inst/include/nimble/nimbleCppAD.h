@@ -65,15 +65,82 @@ class nimble_atomic_base {
   virtual void set_CppAD_atomic_info_vec_manager( std::vector<CppAD::local::atomic_index_info>* vec_ptr );
 };
 
+template<class T>
+class unary_atomic_class : public CppAD::atomic_three<T>, public nimble_atomic_base {
+  // This layer in the class hierarchy simply provides the same for_type and rev_depend
+  // for all atomic classes representing unary functions below.
+ public:
+ unary_atomic_class(const std::string& name) : CppAD::atomic_three<T>(name) {};
+  virtual ~unary_atomic_class() {};
+ private:
+   // for_type is essential.
+  // This determines which elements of y are constants, dynamic parameters, or variables
+  //   depending on types of x.
+  // If omitted, calls to forward (and possibly reverse) will not happen.
+  virtual bool for_type(
+      const CppAD::vector<double>&               parameter_x ,
+      const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
+      CppAD::vector<CppAD::ad_type_enum>&        type_y      )
+  {
+    //    std::cout<<"in for_type\n";
+    type_y[0] = type_x[0];
+    return true;
+  }
+  // Not sure this is ever needed.
+  virtual bool for_type(
+			const CppAD::vector<CppAD::AD<double> >&               parameter_x ,
+      const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
+      CppAD::vector<CppAD::ad_type_enum>&        type_y      )
+  {
+    //    std::cout<<"in meta for_type\n";
+    type_y[0] = type_x[0];
+    return true;
+  }
+  // rev_depend is used when the optimize() method is called for a tape (an ADFun).
+  virtual bool rev_depend(
+			  const CppAD::vector<double>&          parameter_x ,
+			  const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
+			  CppAD::vector<bool>&                depend_x    ,
+			  const CppAD::vector<bool>&          depend_y
+			  ) {
+    //  std::cout<<"in rev_depend\n";
+    depend_x[0] = depend_y[0];
+    return true;
+  }
+  // Not sure this is ever needed
+  virtual bool rev_depend(
+			  const CppAD::vector<CppAD::AD<double> >&          parameter_x ,
+			  const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
+			  CppAD::vector<bool>&                depend_x    ,
+			  const CppAD::vector<bool>&          depend_y
+			  ) {
+    //    std::cout<<"in meta rev_depend\n";
+    depend_x[0] = depend_y[0];
+    return true;
+  }
+};
+
 void track_nimble_atomic(nimble_atomic_base *obj, void *tape_mgr_ptr, std::vector<CppAD::local::atomic_index_info>* vec_ptr );
 
 class atomic_lgamma_class;
+class atomic_gammafn_class;
 class atomic_pow_int_class;
 class atomic_backsolve_class;
 class atomic_forwardsolve_class;
 class atomic_cholesky_class;
 class atomic_matmult_class;
 class atomic_matinverse_class;
+class atomic_zround_class;
+class nimDerivs_floor_class;
+template<class ftor> class atomic_discrete_class;
+class atomic_floor_class;
+class atomic_ceil_class;
+class atomic_ftrunc_class;
+class atomic_nimRound_class;
+class atomic_log_pow_int_class;
+class atomic_zb_over_a_class;
+class atomic_probit_class;
+class atomic_iprobit_class;
 
 void copy_CppADdouble_to_double(CppAD::AD<double> *first, CppAD::AD<double> *last, double *output);
 void copy_CppADdouble_to_double(NimArrBase< CppAD::AD<double> > &from, NimArrBase< double > &to);
@@ -186,11 +253,71 @@ class nimble_CppAD_tape_mgr {
   void delete_atomic_lgamma(atomic_lgamma_class *atomic_lgamma);
   atomic_lgamma_class *get_atomic_lgamma(int baseOrder,
 					 std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+  int gammafn_index;
+  bool gammafn_exists;
+  atomic_gammafn_class* new_atomic_gammafn(const std::string& name);
+  void delete_atomic_gammafn(atomic_gammafn_class *atomic_gammafn);
+  atomic_gammafn_class *get_atomic_gammafn(std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+
   int pow_int_index;
   bool pow_int_exists;
   atomic_pow_int_class* new_atomic_pow_int(const std::string& name);
   void delete_atomic_pow_int(atomic_pow_int_class *atomic_pow_int);
   atomic_pow_int_class *get_atomic_pow_int(std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+
+  int zround_index;
+  bool zround_exists;
+  atomic_zround_class* new_atomic_zround(const std::string& name);
+  void delete_atomic_zround(atomic_zround_class *atomic_zround);
+  atomic_zround_class *get_atomic_zround(std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+
+  int floor_index;
+  bool floor_exists;
+  atomic_floor_class* new_atomic_floor(const std::string& name);
+  void delete_atomic_floor(atomic_floor_class *atomic_floor);
+  atomic_floor_class *get_atomic_floor(std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+
+  int ceil_index;
+  bool ceil_exists;
+  atomic_ceil_class* new_atomic_ceil(const std::string& name);
+  void delete_atomic_ceil(atomic_ceil_class *atomic_ceil);
+  atomic_ceil_class *get_atomic_ceil(std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+
+  int ftrunc_index;
+  bool ftrunc_exists;
+  atomic_ftrunc_class* new_atomic_ftrunc(const std::string& name);
+  void delete_atomic_ftrunc(atomic_ftrunc_class *atomic_ftrunc);
+  atomic_ftrunc_class *get_atomic_ftrunc(std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+
+  int nimRound_index;
+  bool nimRound_exists;
+  atomic_nimRound_class* new_atomic_nimRound(const std::string& name);
+  void delete_atomic_nimRound(atomic_nimRound_class *atomic_nimRound);
+  atomic_nimRound_class *get_atomic_nimRound(std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+  
+  int log_pow_int_index;
+  bool log_pow_int_exists;
+  atomic_log_pow_int_class* new_atomic_log_pow_int(const std::string& name);
+  void delete_atomic_log_pow_int(atomic_log_pow_int_class *atomic_log_pow_int);
+  atomic_log_pow_int_class *get_atomic_log_pow_int(std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+
+  int zb_over_a_index;
+  bool zb_over_a_exists;
+  atomic_zb_over_a_class* new_atomic_zb_over_a(const std::string& name);
+  void delete_atomic_zb_over_a(atomic_zb_over_a_class *atomic_zb_over_a);
+  atomic_zb_over_a_class *get_atomic_zb_over_a(std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+
+  int probit_index;
+  bool probit_exists;
+  atomic_probit_class* new_atomic_probit(const std::string& name);
+  void delete_atomic_probit(atomic_probit_class *atomic_probit);
+  atomic_probit_class *get_atomic_probit(std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+
+  int iprobit_index;
+  bool iprobit_exists;
+  atomic_iprobit_class* new_atomic_iprobit(const std::string& name);
+  void delete_atomic_iprobit(atomic_iprobit_class *atomic_iprobit);
+  atomic_iprobit_class *get_atomic_iprobit(std::vector<CppAD::local::atomic_index_info>* vec_ptr);
   
   atomic_backsolve_class* new_atomic_backsolve(const std::string& name);
   void delete_atomic_backsolve(atomic_backsolve_class *atomic_backsolve);

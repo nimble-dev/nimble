@@ -68,7 +68,7 @@ void nimStop() {NIMERROR("");}
 bool nimNot(bool x) {return(!x);}
 
 double pow_int(double a, double b) {
-  return pow(a, b);
+  return pow(a, fround(b, 0.));
 }
 
 double ilogit(double x) {return(1./(1. + exp(-x)));}

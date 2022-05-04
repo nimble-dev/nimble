@@ -124,6 +124,11 @@ makeTypeTemplateFunction <- function(newName,
     newCppFunDef$name <- newName
     newCppFunDef$template <- cppVarFull(name = character(), baseType = 'template', templateArgs = list('class TYPE_'))
     ignore <- derivControl[['noDeriv_vars']]
+    nameSubList <- .self$RCfunProc$nameSubList
+    for(i in seq_along(ignore)) {
+        if(!is.null(nameSubList[[ignore[[i]] ]]))
+            ignore[[i]] <- as.character(nameSubList[[ignore[[i]] ]])
+    }
     if(is.null(ignore)) ignore <- character()
     newCppFunDef$args <- symbolTable2templateTypeSymbolTable(.self$args, addRef = FALSE, ignore = ignore) ## addRef = TRUE breaks if a literal number is passed.
     newCppFunDef$args$setParentST( .self$args$getParentST() )

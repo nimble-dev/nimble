@@ -28,10 +28,12 @@ test_that('Derivatives of dnorm function correctly.',
       ), enableDerivs = c('testMethod')
     )
     ADfunInst <- ADfun1()
+    xRec <- matrix(c(1, -1))
     x <- matrix(c(2, -2))
     Rderivs <- ADfunInst$run(x)
     temporarilyAssignInGlobalEnv(ADfunInst)  
     cADfunInst <- compileNimble(ADfunInst)
+    cADfunInst$run(xRec)
     cderivs <- cADfunInst$run(x)
     expect_equal(cderivs$value, Rderivs$value)
     expect_equal(cderivs$jacobian, Rderivs$jacobian)
@@ -66,10 +68,12 @@ test_that('Derivatives of x^2 function correctly.',
               ), enableDerivs = c('testMethod', 'testMethod2')
             )
             ADfunInst <- ADfun2()
+            xRec <- c(2, 2)
             x <- c(1, 1)
             Rderivs <- ADfunInst$run(x)
             temporarilyAssignInGlobalEnv(ADfunInst)  
-            cADfunInst <- compileNimble(ADfunInst)
+            suppressWarnings(cADfunInst <- compileNimble(ADfunInst))
+            cADfunInst$run(xRec)
             cderivs <- cADfunInst$run(x)
             expect_equal(cderivs$list1$value, Rderivs$list1$value)
             expect_equal(cderivs$list1$jacobian, Rderivs$list1$jacobian, tolerance = 0.01)
@@ -97,10 +101,12 @@ test_that('Derivatives of sum(log(x)) function correctly.',
               ), enableDerivs = c('testMethod')
             )
             ADfunInst <- ADfun3()
+            xRec <- c(1, 1)
             x <- c(1, 1)
             Rderivs <- ADfunInst$run(x)
             temporarilyAssignInGlobalEnv(ADfunInst)  
             cADfunInst <- compileNimble(ADfunInst)
+            cADfunInst$run(xRec)
             cderivs <- cADfunInst$run(x)
             expect_equal(cderivs, Rderivs, tolerance = 0.01)
           }
@@ -167,9 +173,7 @@ test_that('Derivatives of matrix multiplication function correctly.',
           }
 )
 
-
-
-test_that('Derivatives of matrix exponentiation function correctly.',
+test_that('Derivatives of matrix component-wise exponentiation function correctly.',
           {
             ADfun6 <- nimbleFunction(
               setup = function(){},
@@ -195,19 +199,41 @@ test_that('Derivatives of matrix exponentiation function correctly.',
           }
 )
 
-
-## one for exp(mat)
-## get order to owrk without c()!
-
 #######################
 ## run all of the tests
 #######################
 
 ## from AD_math_test_lists.R
-test_AD_batch(unaryOpTests, knownFailures = AD_knownFailures)
-test_AD_batch(unaryReductionOpTests, knownFailures = AD_knownFailures)
-test_AD_batch(binaryOpTests, knownFailures = AD_knownFailures)
-test_AD_batch(powOpTests, knownFailures = AD_knownFailures)
+## See notes there on Spring 2022 update to "version 2" with f(g(x)) and g(f(x)) test variantes as well
+test_AD_batch(unaryOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures)
+ADtestEnv$RCrelTol <- c(1e-15, 1e-4, 1e-2) ## Loosen tols because there are more operations
+test_AD_batch(unaryOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures)
+resetTols()
+ADtestEnv$RCrelTol <- c(1e-15, 1e-6, 1e-2)
+test_AD_batch(unaryOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures)
+resetTols()
+
+
+
+test_AD_batch(unaryReductionOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures)
+ADtestEnv$RCrelTol <- c(1e-12, 1e-5, 1e-3)
+test_AD_batch(unaryReductionOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures)
+resetTols()
+ADtestEnv$RCrelTol <- c(1e-12, 1e-5, 1e-3)
+test_AD_batch(unaryReductionOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures)
+resetTols()
+
+
+test_AD_batch(binaryOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures)
+ADtestEnv$RCrelTol <- c(1e-15, 1e-4, 1e-2) ## Loosen tols because there are more operations
+test_AD_batch(binaryOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures)
+test_AD_batch(binaryOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures)
+
+resetTols()
+
+test_AD_batch(powOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures)
+## STOPPED HERE
+
 test_AD_batch(pow_int_OpTests, knownFailures = AD_knownFailures)
 test_AD_batch(binaryReductionOpTests, knownFailures = AD_knownFailures)
 test_AD_batch(squareMatrixOpTests, knownFailures = AD_knownFailures) ## trace has a knownFailures entry for compilation failure.  Do we even support it?

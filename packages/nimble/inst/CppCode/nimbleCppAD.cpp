@@ -1035,8 +1035,28 @@ void nimble_CppAD_tape_mgr::reset() {
   }
   //  CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage(1, temp_vec_ptr);
   atomic_ptrs.resize(0);
+  gammafn_exists = false;
+  gammafn_index = 0;
   pow_int_exists = false;
   pow_int_index = 0;
+  zround_exists = false;
+  zround_index = 0;
+  floor_exists = false;
+  floor_index = 0;
+  ceil_exists = false;
+  ceil_index = 0;
+  ftrunc_exists = false;
+  ftrunc_index = 0;
+  nimRound_exists = false;
+  nimRound_index = 0;
+  log_pow_int_exists = false;
+  log_pow_int_index = 0;
+  zb_over_a_exists = false;
+  zb_over_a_index = 0;
+  probit_exists = false;
+  probit_index = 0;
+  iprobit_exists = false;
+  iprobit_index = 0;
   for(int i = 0; i < 5; i++) {
     lgamma_exists[i] = false;
     lgamma_index[i] = 0;
@@ -1044,6 +1064,7 @@ void nimble_CppAD_tape_mgr::reset() {
   dummyOutputs.clear();
   //  std::cout<<"Done with nimble_CppAD_tape_mgr::reset"<<std::endl;
 }
+
 void nimble_CppAD_tape_mgr::add_dummyOutput(CppAD::AD<double> &dummy) {
   dummyOutputs.push_back(dummy);
 }
@@ -1072,8 +1093,28 @@ void nimble_CppAD_tape_mgr::set_internal_tape(CppAD::local::ADTape<double>* inte
 nimble_CppAD_tape_mgr::nimble_CppAD_tape_mgr() :
   ADtape_(0),
   internal_tape_ptr_(0),
+  gammafn_index(0),
+  gammafn_exists(false),
   pow_int_index(0),
-  pow_int_exists(false)
+  pow_int_exists(false),
+  zround_index(0),
+  zround_exists(false),
+  floor_index(0),
+  floor_exists(false),
+  ceil_index(0),
+  ceil_exists(false),
+  ftrunc_index(0),
+  ftrunc_exists(false),
+  nimRound_index(0),
+  nimRound_exists(false),
+  log_pow_int_index(0),
+  log_pow_int_exists(false),
+  zb_over_a_index(0),
+  zb_over_a_exists(false),
+  probit_index(0),
+  probit_exists(false),
+  iprobit_index(0),
+  iprobit_exists(false)
 {
   for(int i = 0; i < 5; i++) {
     lgamma_exists[i] = false;

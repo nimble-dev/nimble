@@ -1,0 +1,316 @@
+---
+title: "Draft AD chapter - to be integrated into User Manual"
+date: '2022-05-04'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# (PART) Automatic Derivatives in NIMBLE {-}
+
+```{r, echo=FALSE}
+require(nimble)
+``` 
+
+# Automatic Derivatives {#cha-AD}
+
+```{r, ADchunk0, echo = FALSE}
+# source the code
+if(!require(nimble, warn.conflicts = FALSE, quietly = TRUE)) {
+#source(file.path('..', '..', 'examples', 'demos', 'loadAllCode.R'))
+}
+require(methods, warn.conflicts = FALSE, quietly = TRUE)  # seems to be needed, but why?
+require(igraph, warn.conflicts = FALSE, quietly = TRUE)  # same question
+``` 
+
+As of version xx.xx.xx, NIMBLE can automatically provide numerically accurate derivatives of potentially arbitrary order for most calculations in models (including arbitrary subsets of models) and/or nimbleFunctions.  This feature is in beta-testing mode, meaning it has some rough edges and we expect bugs will be found. 
+
+Automatic (or algorithmic) differentiation (AD) refers to the method of carrying derivative information through a set of mathematical operations.   When done this way, derivatives are numerically accurate to the precision of the computer.  This is distinct from finite element methods, which approximate derivatives by calculating function values at extremely nearby points, which is both slower and less accurate.  It is also distinct from writing separate functions for each derivative, which can become very complicated and sometimes slower than AD.  NIMBLE uses the CppAD package (Bell, citation) as its AD engine, following TMB's  success (citation) in doing so.  CppAD supports potentially arbitrary-order derivatives.
+
+AD is not a simple feature.  It requires care in programming, awareness of what can go wrong, and testing to be sure things are working as you want.  Enabling AD will result in slower C++ compilation because it makes NIMBLE generate substantially more C++ code.  
+
+A key concept from CppAD used by NIMBLE is that operations are *taped* and then re-used -- *played* -- to obtain derivatives.  Hence we will refer to the AD *tape* in explaining some features below.  In addition, when taped operations are played, the resulting operations can themselves be taped.  We call this *meta-taping* or *double-taping*.  It is useful because it can sometimes boost efficiency.
+
+There are several ways to use AD to obtain derivatives of model log probabilities:
+
+1. Basic use: Simply call `nimDerivs(model$calculate(nodes), <other args>)`
+2. More advanced use: Write a nimbleFunction method, e.g. `foo`, which might contain a call `model$calculate(nodes)`.  Then call `nimDerivs(foo(<args>), <other args>)`.
+3. Meta-taping: Call `nimDerivs` of a method that contains a call to `nimDerivs`.  This also serves as the way to obtain third and higher-order derivatives.
+
+We will work through these in order.
+
+It is also possible to obtain derivatives of a nimbleFunction (or method) not involving a model at all, but here we will focus on use of models.
+
+First, make sure to set the option to build derivative tools in NIMBLE's compilation steps:
+```{r}
+nimbleOptions(buildDerivs = TRUE)
+```
+
+## Basic use
+
+We'll use a Poisson GLMM as a simple example model  There will be 10 groups (`i`) of 5 observations (`j`) each.  Each observation has a covariate, `X`, and each group has a random effect `ran_eff`.  Here is the model code:
+```{r eval=FALSE}
+model_code <- nimbleCode({
+  # priors 
+  intercept ~ dnorm(0, sd = 100)
+  beta ~ dnorm(0, sd = 100)
+  sigma ~ dunif(0, 10)
+  # random effects and data  
+  for(i in 1:10) {
+    # random effects
+    ran_eff[i] ~ dnorm(0, sd = sigma)
+    for(j in 1:5) {
+      # data
+      y[i,j] ~ dpois(exp(intercept + beta*X[i,j] + ran_eff[i]))
+    }
+  }
+})
+```
+
+To finish setting up the model, we can simulate data values and then set those as the data to use.
+```{r eval=FALSE}
+set.seed(123)
+X <- matrix(rnorm(50), nrow = 10)
+model <- nimbleModel(model_code, constants = list(X = X), calculate = FALSE)
+model$intercept <- 0
+model$beta <- 0.2
+model$sigma <- 0.5
+model$calculate()
+model$simulate(model$getDependencies('ran_eff'))
+model$calculate()
+model$setData('y')
+```
+
+Now we are ready to get some derivatives.  Say we want a nimbleFunction to calculate derivatives for some set of node calculations.
+
+```{r eval=FALSE}
+derivs_nf <- nimbleFunction(
+  setup = function(model, with_respect_to_nodes, calc_nodes) {},
+  run = function(order = integer(1),
+                 reset = logical(0, default=FALSE)) {
+    ans <- nimDerivs(model$calculate(calc_nodes), wrt = with_respect_to_nodes,
+                     order = order, reset = reset)
+    return(ans)
+    returnType(ADNimbleList())
+  }
+)
+```
+
+In `derivs_nf`:
+
+- `model` will be a model object returned from `nimbleModel`.
+- `with_respect_to_nodes` will be the names of nodes we want derivatives with respect to.
+- `calc_nodes` will be the nodes to be calculated, in the order given.  As usual, `model$calculate(calc_nodes)` returns the summed log probability of stochastic nodes in `calc_nodes`.  Deterministic nodes in `calc_nodes` have their values calculated but do not contribute to the summed log probability.
+- `order` can contain any of `0` (value), `1` (1st order), or `2` (2nd order) derivatives requested
+- `reset` should be TRUE if the AD tape should be reset (re-recorded).  Normally the tape is automatically reset on the first call (regardless of `reset`'s value) and then can be left as is (`reset = FALSE`).
+
+Thus, `nimDerivs(model$calculate(calc_nodes), wrt = with_respect_to_nodes, <other args>)` takes derivatives of a function whose inputs are `with_respect_to_nodes` (using their current values in the model object) and whose output is the summed log probability of `calc_nodes`.
+
+Now we can make an instance of `derivs_nf`, compile things, and look at the results.
+
+```{r eval=FALSE}
+wrt_nodes <- c('intercept','beta', 'sigma')
+calc_nodes <- model$getDependencies(wrt)
+derivs_all <- derivs_nf(model, wrt_nodes, calc_nodes)
+cModel <- compileNimble(model)
+cDerivs_all <- compileNimble(derivs_all, project = model)
+derivs_result <- cDerivs_all$run(order = 0:2)
+derivs_result
+```
+
+Using `order = 0:2` results in the the value ("0th" order result, i.e. the value returned by `model$calculate(nodes)`), the Jacobian (matrix of first order derivatives), and the Hessian (array of second order derivatives).  The function `model$calculate` is organized here to have inputs that are the current values of `intercept`, `beta`, and `sigma` in the model.  It has output that is the summed log probability of the `calc_nodes`.  The Jacobian columns are first derivatives with respect to `intercept`, `beta` and `sigma`, respectively.  The first and second indices of the Hessian array follow the same ordering.  For example `derivs_result$hessian[2,1,1]` is the second derivative with respect to `beta` (first index = 2) and `intercept` (second index = 1).  
+
+In this case first index of the Jacobian and the last index of the Hessian are always 1 because derivatives are of the first (and only) output value. When taking derivatives of other functions, there may be multiple output values. (Although it may seem inconsistent to have the output index be first for Jacobian and last for Hessian, it is consistent with some standards for how these object are created in other packages and used mathematically.)
+
+When non-scalar nodes such as matrix or array nodes are used as `with_respect_to_nodes`, the resulting elements of Jacobian and Hessian outputs will follow column-major order.   For example, for a 2x2 matrix `m`, the element order would be `m[1, 1]`, `m[2, 1]`, `m[1, 2]`, `m[2, 2]`. 
+
+Note that derivatives can also be calculated in uncompiled execution, but they will be much slower and less accurate: slower because they are run in R, and less accurate because they use finite element methods (from packages `pracma` and/or `numDeriv`, citations).  Uncompiled execution is mostly useful for checking that compiled derivatives are working correctly, because although they are slower and less accurate, they are also much simpler internally and thus provide good checks on compiled results.  For example:
+
+```{r eval=FALSE}
+derivs_all$run(order = 0:2)
+```
+
+We can see that all the results clearly match the compiled results to a reasonable numerical precision.
+
+
+## More advanced use: Calling `nimDerivs` for a nimbleFunction method.
+Sometimes one needs derivatives of calculations done in a nimbleFunction as well as in a model.  And sometimes one needs to change values in a model before and/or after doing model calculations, while not wanting to repeat calculations needed for derivatives. 
+
+For these reasons, it is possible in one method to take derivatives of another method, which can include a call to `model$calculate`.  Here is how to do that.  Continuing the above example, say we want to take derivatives with respect to the log of `sigma`, so the input vector will be treated as `intercept`, `beta`, and `log(sigma)`, in that order.  (This would be useful so we could run an optimization algorithm on an unconstrained parameter space, for example.  See below for NIMBLE's automated parameter transformation system if you need to do this systematically.)  We will convert `log(sigma)` to `sigma` before using it in the model, and we want the derivative of that transformation included in the net (chain-ruled) derivative results.
+
+Here is a nimbleFunction to do that.
+
+```{r eval=FALSE}
+derivs_nf2 <- nimbleFunction(
+  setup = function(model, wrt_nodes, calc_nodes) {
+    allUpdateNodes <- makeUpdateNodes(wrt_nodes, calc_nodes, model)
+    updateNodes <- allUpdateNodes$updateNodes
+    constantNodes <- allUpdateNodes$constantNodes
+    n_wrt <- length(wrt_nodes) 
+    # If wrt_nodes might contain non-scalar nodes, the more general way
+    # to determine the length of all scalar elements is:
+    # length(model$expandNodeNames(wrt_nodes, returnScalarComponents = TRUE))
+  },
+  run = function(x = double(1)) {
+    x_trans <- x               # x[1:2] don't need transformation
+    x_trans[3] <- exp(x[3])    # transformation of x[3]
+    values(model, wrt_nodes) <<- x_trans # put inputs into model
+    ans <- model$calculate(calc_nodes)   # calculate model
+    return(ans)
+    returnType(double(0))
+  },
+  methods = list(
+    derivsRun = function(x = double(1),
+                         order = integer(1),
+                         reset = logical(0, default=FALSE)) {
+      wrt <- 1:n_wrt
+      ans <- nimDerivs(run(x), wrt = wrt, order = order, reset = reset,
+                       model = model, updateNodes = updateNodes, 
+                       constantNodes = constantNodes)
+      return(ans)
+      returnType(ADNimbleList())
+    }
+  ),
+  enableDerivs = list(run = list()) # or simply 'run' would work in this case
+)
+```
+
+Let's see how this can be used.
+
+```{r eval = FALSE}
+derivs_all2 <- derivs_nf2(model, wrtNodes, calcNodes)
+cDerivs_all2 <- compileNimble(derivs_all2, project = model)
+params <- values(model, wrtNodes)
+params[3] <- log(params[3])
+cDerivs_all2$derivsRun(params, order = 0:2)
+```
+
+Notice that these results are the same as we saw above except for third elements, which represent derivatives with respect to `sigma` above and to `log(sigma)` here.
+
+There are several different steps taken here:
+
+- The `enableDerivs` argument indicates that C++ support for obtaining derivatives of `run` should be created.  The list for `run` can include control options not covered here.
+
+- In the `nimDerivs` call in `derivsRun`,  `wrt` (with-respect-to) is now a numeric vector of indices of `x`.  It not a set of node names as it was in the "basic use".  (It can be given as an argument name, e.g. 'x', if `x` is declared with fixed size, e.g. `x = double(1, 3)`, but that reduces the generality quite a bit.)  For example, if `wrt` is set to `2:3`, derivatives would be calculated with respect to `x[2]` and `x[3]`.
+
+- The only valid way to get values into the model that will be recorded on the AD tape is with `values(model, nodes) <<- some_values` as shown.  Other ways such as `nimCopy` or `model[[node]] <<- some_value` are not currently supported to work with AD.
+
+- The call to `nimDerivs` of `run`  must be told some information about the model calculations that will be done inside of `run`. `constantNodes` is a vector of node names whose values are needed for the calculations but are not expected to change until you use `reset = TRUE`.  Values of these nodes will be permanently fixed in the AD tape until `reset = TRUE`.  `updateNodes` is a vector of node names whose values are needed for the calculations, might change between calls even with `reset = FALSE`, and are neither part of `wrt_nodes` nor a deterministic part of `calc_nodes`.  The function `makeUpdateNodes`, as shown in the `setup` code, determines what is usually needed for `constantNodes` and `updateNodes`.
+
+Let's explore the `constantNodes` and `updateNodes` arguments in more detail. Say that we want derivatives with respect to `ran_eff[1]` for the calculations of it and the data that depend on it, including any deterministic nodes, all in valid order as defined by the model.  In other words, the `calc_nodes` will be:
+```{r eval=FALSE}
+model$getDependencies('ran_eff[1]')
+```
+The AD system must be told in advance about all nodes that will be involved in taped model calculations.  In this case, the log probability of `ran_eff[1]` itself requires `sigma`.  Since `sigma` is not in `wrt_nodes` and is not a deterministic node (or any node) in `calc_nodes`, and since it might change between calls, it should be included in `updateNodes`.  Next, notice that the stochastic node `y[1, 1]` in `calc_nodes` means that the log probability of `y[1, 1]` will be calculated, and this requires the actual value (data, in this case) of `y[1, 1]`.  This nodes is part of `calcNodes` but is not a deterministic part of it, so it must be provided in either `updateNodes` or `constantNodes`.  When data values will not be changed often, it is better to put those nodes in `constantNodes`, because that will be more efficient than putting them in `updateNodes`.  (If the data values are changed, use `reset=TRUE`.)
+
+Note that a deterministic node in `calc_nodes` will have its value calculated as part of the AD tape, so it does not need to be included in `updateNodes` or `constantNodes`.
+
+The function `makeUpdateNodes` inspects the model and determines the usual needs for `updateNodes` and `constantNodes`.  By default, data nodes are put in `constantNodes`.  Use `dataAsConstantNodes = FALSE` in `makeUpdateNodes` if you want them put in `updateNodes`.
+
+As usual in model-generic programming in NIMBLE, beware lifted nodes and their implications.  Suppose in the Poisson GLMM we had used a precision parameterization for the random effects, with this code snippet instead:
+```{r eval=FALSE}
+  precision ~ dgamma(0.01, 0.01)
+  <...>
+    ran_eff[i] ~ dnorm(0, tau = precision)
+```
+This would result in a lifted node for the standard deviation, calculated as `1/sqrt(precision)`.  That lifted node would be used  in the call to `dnorm` for the log probability of each `ran_eff[i]`.  Now if `ran_eff[1]` is in `wrt_nodes`, the *lifted node* (but *not* `precision`) will be in `updateNodes` (as determined by `makeUpdateNodes`).  If you then change the value of `precision`, you must be sure to calculate the lifted node before obtaining derivatives.  Otherwise the value of the lifted node will correspond to the old value of precision.
+
+In the "basic use" above, NIMBLE automatically uses `makeUpdateNodes` based on the code `nimDerivs(model$calculate(<args>), <args>)`.  However, in the "more advanced use" when `model$calculate(<args>)` is used in a method such as `run`, then a call to `nimDerivs(run(<args>), <args>)` requires the `model`, `updateNodes` and `constantNodes` to be provided.  In this sense, the two functions (`run` and `derivsRun`) must be written in coordination.
+
+## Meta-taping
+
+In the "more advanced use" example above, `derivsRun` is just a function with some input and output.  Can we take its derivative, even thought it contains derivative calculations itself?  The answer, with minor modification, is yes.  Here is an example.
+
+```{r eval=FALSE}
+derivs_nf3 <- nimbleFunction(
+  setup = function(model, wrt_nodes, calc_nodes) {
+    allUpdateNodes <- makeUpdateNodes(wrt_nodes, calc_nodes, model)
+    updateNodes <- allUpdateNodes$updateNodes
+    constantNodes <- allUpdateNodes$constantNodes
+    n_wrt <- length(wrt_nodes) 
+    # See comment above
+  },
+  run = function(x = double(1)) { # Same as above
+    x_trans <- x               # x[1:2] don't need transformation
+    x_trans[3] <- exp(x[3])    # transformation of x[3]
+    values(model, wrt_nodes) <<- x_trans # put inputs into model
+    ans <- model$calculate(calc_nodes)   # calculate model
+    return(ans)
+    returnType(double(0))
+  },
+  methods = list(
+    jacobian = function(x = double(1), # Almost like derivsRun above
+                        reset = logical(0, default=FALSE)) {
+      wrt <- 1:n_wrt
+      ans <- nimDerivs(run(x), wrt = wrt, order = 1, reset = reset,
+                              model = model, updateNodes = updateNodes, 
+                              constantNodes = constantNodes)
+      jac <- ans$jacobian[1,]
+      return(jac)
+      returnType(double(1))
+    },
+    derivsJacobian = function(x = double(1),
+                              wrt = integer(1),
+                              order = integer(1),
+                              reset = logical(0, default = FALSE)) {
+      ans <- nimDerivs(jacobian(x, reset = reset), wrt = wrt, order = order,
+                       reset = reset, model = model, updateNodes = updateNodes,
+                       constantNodes = constantNodes)
+      return(ans)
+      returnType(ADNimbleList())
+    }
+  ),
+  enableDerivs = list(run = list(),
+                      jacobian = list(noDeriv_vars = 'wrt'))
+)
+```
+
+What is going on here?
+
+- `jacobian` looks very much like `derivsRun` above, but `order` is a constant of 1 and the result is a vector of the extracted Jacobian values rather than the `ADNimbleList` object with all orders.
+- `derivsJacobian` takes the derivatives of the `jacobian` function.  Its order 0 results will be the Jacobian of `run`.  Its order 1 results will be a re-arranged Hessian of `run`.  And its order 2 results will contain third order derivatives of `run`.
+- The trio of `model`, `updateNodes`, and `constantNodes` needs to be provided at each layer.
+- The `reset` argument is propagated from `derivsJacobian` to `jacobian`, so both would be reset together.  This isn't strictly necessary but often makes sense.
+- The `enableDerivs` entry for `jacobian` names variables that should not be involved in any derivative tracking.  These are called `noDeriv_vars`, and in this case include the `wrt` variable.  Normally integers and logicals are automatically excluded from derivative tracking, but you may not always be sure whether the NIMBLE compiler will treat a variable as an integer or double; it sometimes uses a double in cases where it might not have been necessary for a particular code context, so it may be necessary to exclude variables from derivative calculations even when you might have thought their exclusion would be automatic.
+
+We saw that `derivsJacobian` uses meta-taping or double-taping of `run`, since it tapes the calculations from a tape in `jacobian`.  The two main reasons to use this trick are that it can be more efficient -- sometimes substantially so -- and it allows access to higher-order derivatives.  The reason it can be more efficient is that the tape in `jacobian` will do all value calculations before any first-order calculations if requested, in turn before second-order calculations, if requested.  (For readers familiar with AD, these may include forward-mode and reverse-mode AD calculations.)  When the only result desired is the Jacobian, then recording those operations can result in steps unnecessary for the Jacobian being left out of the second tape. In addition, NIMBLE uses CppAD's capability to optimize recorded tapes to achieve better performance by consolidating operations.
+
+In fact, in the "basic use" case above, NIMBLE automatically uses double-taping of model calculations.
+
+## Derivatives not involving models
+
+## When do you need to reset a tape?
+
+- Data values are changed in a model used in the tape.
+- Other constant values are changed in a model used in the tape.
+- For-loop extents in a nimbleFunction are changed.  
+- Conditions used for if-then-else in a nimbleFunction are changed.  
+- Sizes of inputs or outputs for a nimbleFunction are changed.
+
+The last three cases includes nimbleFunctions for user-defined functions or distributions in a model as well as nimbleFunctions (and methods) used elsewhere in the tape.
+
+## What operations are and aren't supported
+
+Some of what is not supported:
+
+- stochastic indexing in models
+- truncated distributions
+- some specific functions including many cumulative distribution and quantile functions
+- `%%` (mod)
+- `pow(a, b)` requires positive `a` and `b`. See note on `pow_int`.
+
+A new function `pow_int(a, b)` is introduced that returns `pow(a, round(b))` with derivatives for the second argument always set to 0.  `a` can take any value.
+
+`log_pow_int`.
+
+## Derivatives in user-defined functions and distributions
+
+## How to test derivatives
+
+## Parameter transformations
+
+## Things to look out for
+
+- When model log probs and deterministic nodes are updated.
+- Can use wrt character strings if sizes of arguments are fixed and declared.

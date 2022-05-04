@@ -12,14 +12,15 @@ cppOutputCalls <- c(## makeCallList(recyclingRuleOperatorsAD, 'cppOutputRecyclin
                     makeCallList(eigProxyCalls, 'cppOutputEigMemberFunction'),
                     makeCallList(eigCalls, 'cppOutputMemberFunction'),
                     makeCallList(c('setSize', 'initialize', 'getPtr', 'dim', 'getOffset', 'strides', 'isMap', 'mapCopy', 'setMap'), 'cppOutputMemberFunction'),
-                    makeCallList(eigOtherMemberFunctionCalls, 'cppOutputEigMemberFunctionNoTranslate'),
                     makeCallList(eigProxyCallsExternalUnary, 'cppOutputEigExternalUnaryFunction'),
                     makeCallList(c('startNimbleTimer','endNimbleTimer','push_back'), 'cppOutputMemberFunction'),
                     makeCallList(c('nimSeqBy','nimSeqLen', 'nimSeqByLen'), 'cppOutputCallAsIs'),
                     list(nimDerivs_dummy = 'cppOutputNimDerivs'),
                     makeCallList(nimbleListReturningOperators, 'cppNimbleListReturningOperator'),
                     makeCallList(c("TFsetInput_", "TFgetOutput_", "TFrun_"), 'cppOutputMemberFunctionDeref'),
-                    list(
+    list(
+        'cwiseSqrt' = 'cppOutputEigMemberFunctionNoTranslate',
+        'cwiseAbs' = 'cppOutputEigMemberFunctionNoTranslate_specialAD',
                         'next' = 'cppOutputNext',
                         cppComment = 'cppOutputComment',
                         eigenCast = 'cppOutputEigenCast',
@@ -429,6 +430,15 @@ cppOutputEigMemberFunction <- function(code, symTab) {
 
 cppOutputEigMemberFunctionNoTranslate <- function(code, symTab) {
     paste0( '(', nimGenerateCpp(code$args[[1]], symTab), ').', paste0(code$name, '(', paste0(unlist(lapply(code$args[-1], nimGenerateCpp, symTab) ), collapse = ', '), ')' ))
+}
+
+cppOutputEigMemberFunctionNoTranslate_specialAD <- function(code, symTab) {
+    ## currently only for cwiseAbs, for which Eigen needs to be circumvented
+    if(!identical(nimbleUserNamespace$cppADCode, 2L))
+        return(cppOutputEigMemberFunctionNoTranslate(code, symTab))
+    paste0(
+        '(', nimGenerateCpp(code$args[[1]], symTab),
+        ').unaryExpr(std::ptr_fun<CppAD::AD<double>, CppAD::AD<double> >(nimDerivs_fabs))')
 }
 
 cppOutputMemberFunctionDeref <- function(code, symTab) {

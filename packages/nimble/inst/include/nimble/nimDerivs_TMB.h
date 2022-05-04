@@ -66,17 +66,17 @@ Type nimDerivs_dnorm_logFixed(Type x, Type mean, Type sd, int give_log)
 
 /* pnorm: normal distribution */
 /* This wraps a call to TMB's pnorm. */ 
-template<class Type>
-Type nimDerivs_pnorm(Type q, Type mean = 0., Type sd = 1.){
-  return nimDerivs_pnorm1<Type>((q-mean)/sd);
-}
+/* template<class Type> */
+/* Type nimDerivs_pnorm(Type q, Type mean = 0., Type sd = 1.){ */
+/*   return nimDerivs_pnorm1<Type>((q-mean)/sd); */
+/* } */
 
 /* anorm: normal distribution */
 /* This wraps a call to TMB's qnorm. */ 
-template<class Type>
-Type nimDerivs_qnorm(Type p, Type mean = 0., Type sd = 1.){
-  return sd * nimDerivs_qnorm1<Type>(p) + mean;
-}
+/* template<class Type> */
+/* Type nimDerivs_qnorm(Type p, Type mean = 0., Type sd = 1.){ */
+/*   return sd * nimDerivs_qnorm1<Type>(p) + mean; */
+/* } */
 
 /* dmnorm: Multivariate normal distribution */
 /* TMB uses specialized atomic classes.  nimble currently has a "naive" and likely less efficiency implementation: */
@@ -463,9 +463,7 @@ Type nimDerivs_nimArr_dmulti(const NimArr<1, Type> &x,
   logSumProb = log(sumProb);
 
   for(int i = 0; i < K; i++) {
-    logProb += CppAD::CondExpEq(x[i], Type(0.0),
-				Type(0.0),
-				x[i]*(log(prob[i]) - logSumProb) - nimDerivs_lgammafn(x[i] + Type(1.)));
+    logProb += CppAD::azmul(x[i], log(prob[i]) - logSumProb) - nimDerivs_lgammafn(x[i] + Type(1.));
   }
   logProb = CppAD::CondExpEq(sumX, size,
 			     logProb,
@@ -495,14 +493,11 @@ Type nimDerivs_nimArr_dmulti_logFixed(const NimArr<1, Type> &x,
   logSumProb = log(sumProb);
 
   for(int i = 0; i < K; i++) {
-    logProb += CppAD::CondExpEq(x[i], Type(0.0),
-				Type(0.0),
-				x[i]*(log(prob[i]) - logSumProb) - nimDerivs_lgammafn(x[i] + Type(1.)));
+    logProb += CppAD::azmul(x[i], log(prob[i]) - logSumProb) - nimDerivs_lgammafn(x[i] + Type(1.));
   }
   logProb = CppAD::CondExpEq(sumX, size,
 			     logProb,
 			     -Type(std::numeric_limits<double>::infinity()));
-  Type ans;
   if(give_log) {
     return logProb;
   } else {
@@ -690,19 +685,19 @@ inline Type nimDerivs_dnbinom_logFixed(const Type &x, const Type &size, const Ty
 template<class Type>
 inline Type nimDerivs_dpois(const Type &x, const Type &lambda, Type give_log)
 {
-  Type res = -lambda + x*log(lambda) - nimDerivs_lgammafn(x+Type(1));
-	res = CppAD::CondExpEq(give_log, Type(1), res, exp(res));
-	return(res);
+  Type res = -lambda + nimDerivs_log_pow_int(lambda, x) - nimDerivs_lgammafn(x+Type(1));
+  res = CppAD::CondExpEq(give_log, Type(1), res, exp(res));
+  return(res);
 }
 
 template<class Type>
 inline Type nimDerivs_dpois_logFixed(const Type &x, const Type &lambda, int give_log)
 {
-  Type res = -lambda + x*log(lambda) - nimDerivs_lgammafn(x+Type(1));
+  Type res = -lambda +  nimDerivs_log_pow_int(lambda, x) - nimDerivs_lgammafn(x+Type(1));
   if(!give_log){
-	  res = exp(res);
+    res = exp(res);
   }
-	return(res);
+  return(res);
 }
 
 /* dexp: exponential distribution */
@@ -815,7 +810,8 @@ Type nimDerivs_dweibull_logFixed(Type x, Type shape, Type scale, int give_log)
 template<class Type>
 Type nimDerivs_dbinom(Type k, Type size, Type prob, Type give_log)
 {
-  Type res = nimDerivs_lgammafn(size+1)-nimDerivs_lgammafn(k+1)-nimDerivs_lgammafn(size-k+1)+k*log(prob)+(size-k)*log(1-prob);
+  Type res = nimDerivs_lgammafn(size+1)-nimDerivs_lgammafn(k+1)-nimDerivs_lgammafn(size-k+1)+
+    CppAD::azmul(k, log(prob))+ CppAD::azmul(size-k, log(1-prob));
   res = CondExpEq(give_log, Type(1), res, exp(res));
   return(res);
 }
@@ -823,9 +819,10 @@ Type nimDerivs_dbinom(Type k, Type size, Type prob, Type give_log)
 template<class Type>
 Type nimDerivs_dbinom_logFixed(Type k, Type size, Type prob, int give_log)
 {
-  Type res = nimDerivs_lgammafn(size+1)-nimDerivs_lgammafn(k+1)-nimDerivs_lgammafn(size-k+1)+k*log(prob)+(size-k)*log(1-prob);
+  Type res = nimDerivs_lgammafn(size+1)-nimDerivs_lgammafn(k+1)-nimDerivs_lgammafn(size-k+1)+
+    CppAD::azmul(k, log(prob))+ CppAD::azmul(size-k, log(1-prob));
   if(!give_log){
-	res = exp(res);
+    res = exp(res);
   }
   return(res);
 }
@@ -1054,34 +1051,41 @@ Type nimDerivs_pow(Type x, double y) {
 
 /* probit */
 /* This is modified from TMB's qnorm, to avoid using the mean and sd arguments unnecessarily. */
-template<class T>
-T nimDerivs_probit(T p){
-  return nimDerivs_qnorm1<T>(p);
-}
+/* template<class T> */
+/* T nimDerivs_probit(T p){ */
+/*   return nimDerivs_qnorm1<T>(p); */
+/* } */
 
-/* iprobit */
+/* /\* iprobit *\/ */
+/* template<class T> */
+/* T nimDerivs_iprobit(T q){ */
+/*   return nimDerivs_pnorm1<T>(q); */
+/* } */
+
+/* This seems necessary for use in Eigen unaryExpr via ptr_fun */
+/* which is necessary because otherwise Eigen circumvents regular call to fabs. */
 template<class T>
-T nimDerivs_iprobit(T q){
-  return nimDerivs_pnorm1<T>(q);
+T nimDerivs_fabs(T x) {
+  return fabs(x);
 }
 
 /* lfactorial */
 template<class T>
 T nimDerivs_lfactorial(T x) {
-  return nimDerivs_lgammafn(x + 1);
+  return nimDerivs_lgammafn(x + 1.);
 }
 
 /* factorial */
 template<class Type> 
 Type nimDerivs_factorial(Type x) {
-  return exp(nimDerivs_lfactorial<Type>(x));
+  return nimDerivs_gammafn(x + 1.); // Even R does not restrict to x >= 0
 }
 
-/* gammafn */
-template<class Type>
-Type nimDerivs_gammafn(Type x) {
-  return exp(nimDerivs_lgammafn(x));
-}
+/* /\* gammafn *\/ */
+/* template<class Type> */
+/* Type nimDerivs_gammafn(Type x) { */
+/*   return exp(nimDerivs_lgammafn(x)); */
+/* } */
 
 /* AD recycling rule. See nimbleEigen.h for the non-AD equivalents. */
 template<>
