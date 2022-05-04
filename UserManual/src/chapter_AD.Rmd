@@ -299,18 +299,28 @@ Some of what is not supported:
 - some specific functions including many cumulative distribution and quantile functions
 - `%%` (mod)
 - `pow(a, b)` requires positive `a` and `b`. See note on `pow_int`.
+- any 'r' functions.
+- any 'p' or 'q' functions (some will be supported in the future).
 
 A new function `pow_int(a, b)` is introduced that returns `pow(a, round(b))` with derivatives for the second argument always set to 0.  `a` can take any value.
 
-`log_pow_int`.
-
 ## Derivatives in user-defined functions and distributions
+
+- This will cover how to enable derivatives in user-defined functions and distributions.
 
 ## How to test derivatives
 
+- This will cover how to test derivatives.
+
 ## Parameter transformations
+
+- This will introduce the parameter transformation system.
 
 ## Things to look out for
 
-- When model log probs and deterministic nodes are updated.
+This will include miscellaneous points unless they are all integrated into other sections.
+
+Some of these include:
+
+- Understanding when model log probs and deterministic node values are updated from tapes.
 - Can use wrt character strings if sizes of arguments are fixed and declared.

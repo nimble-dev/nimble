@@ -2964,5 +2964,5 @@ nim_all_equal <- function(x, y, tolerance = .Machine$double.eps^0.5, verbose = F
   all_result
 }
 
-nim_expect_equal <- function(x, y, tolerance = .Machine$double.eps^0.5) {
+nim_expect_equal <- function(x, y, tolerance = .Machine$double.eps^0.5)
   expect_true(nim_all_equal(x, y, tolerance, verbose = TRUE))
