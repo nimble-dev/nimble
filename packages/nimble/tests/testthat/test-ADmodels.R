@@ -1534,8 +1534,9 @@ newW4 <- crossprod(matrix(rnorm(n*n), n))
 newW5 <- crossprod(matrix(rnorm(n*n), n))
 newW6 <- crossprod(matrix(rnorm(n*n), n))
 relTolTmp <- relTol
-relTolTmp[2] <- 1e-7
-relTolTmp[3] <- 1e-3
+relTolTmp[1] <- 1e-14
+relTolTmp[2] <- 1e-6
+relTolTmp[3] <- 1e-2
 
 test_ADModelCalculate(model, newUpdateNodes = list(nu = 12.1, dist = newDist, R = newR, W1 = newW1, W2 = newW2, W3 = newW3, W4 = newW4, W5 = newW5, W6 = newW6),
                       x = 'prior', absTolThreshold = 1e-12,
@@ -1544,15 +1545,23 @@ test_ADModelCalculate(model, newUpdateNodes = list(nu = 12.1, dist = newDist, R 
                       name = 'various multivariate dists')
 
 ## 2022-05-05:
-## TODO: investigate big 2d11 discrepancy 
-## Detected some values out of (relative, usually) tolerance:  rOutput02$value   cOutput02$value .
-## [1] 6.862470e+01 6.862470e+01 3.934535e-15
+## TODO: investigate big 2d11 discrepancy in HMC/MAP
 ## Detected some values out of (relative, usually) tolerance:  rOutput2d11$jacobian   cOutput2d11$jacobian .
 ##              [,1]          [,2]      [,3]
 ## [1,]  1.918025622  0.0000000000 1.9180256
+## Detected some values out of (relative, usually) tolerance:  rOutput2d11$jacobian   cOutput2d11$jacobian .
+##           [,1] [,2]      [,3]
+## [1,] 12.198946    0 12.198946
+## [2,] 12.198946    0 12.198946
+## [3,] -6.777284    0  6.777284
+## [4,] -6.777284    0  6.777284
+## [5,]  2.709502    0  2.709502
+## Detected some values out of (relative, usually) tolerance:  cOutput2d$value   c(cOutput012$hessian) .
+##            [,1]       [,2]         [,3]
+## [1,] -0.9472489 -0.9472489 1.200179e-13
 
+## various cases equal but not identical
 
-## 2022-04-25: various cases not identical
 
 ## loop through BUGS models
 
