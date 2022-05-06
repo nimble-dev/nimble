@@ -1524,7 +1524,7 @@ test_ADModelCalculate_nick <- function(model, name = NULL, calcNodeNames = NULL,
 ## unless user provides 'wrt' and 'calcNodes'.
 test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = NULL, calcNodes = NULL, wrt = NULL,
                                   newUpdateNodes = NULL, newConstantNodes = NULL,
-                                  relTol = c(1e-15, 1e-8, 1e-3, 1e-3), useFasterRderivs = FALSE, useParamTransform = FALSE,
+                                  relTol = c(1e-15, 1e-8, 1e-3, 1e-3), absTolThreshold = 0, useFasterRderivs = FALSE, useParamTransform = FALSE,
                                   checkDoubleTape = TRUE, checkCompiledValuesIdentical = TRUE, checkDoubleUncHessian = TRUE,
                                   doAllUncHessian = TRUE, seed = 1, verbose = FALSE, debug = FALSE){
     if(!is.null(seed))
@@ -1563,7 +1563,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
         }
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt,
                                            newUpdateNodes = newUpdateNodes, newConstantNodes = newConstantNodes,
-                                           savedMV = mv, relTol = relTol,
+                                           savedMV = mv, relTol = relTol, absTolThreshold = absTolThreshold,
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
@@ -1599,7 +1599,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
         }
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, 
                                            newUpdateNodes = newUpdateNodes, newConstantNodes = newConstantNodes,
-                                           savedMV =mv, relTol = relTol,
+                                           savedMV =mv, relTol = relTol, absTolThreshold = absTolThreshold,
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
@@ -1643,7 +1643,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrtSub, 
                                            newUpdateNodes = newUpdateNodes, newConstantNodes = newConstantNodes,
-                                           savedMV = mv, relTol = relTol,
+                                           savedMV = mv, relTol = relTol, absTolThreshold = absTolThreshold,
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
@@ -1690,7 +1690,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
         nimCopy(mv, model, nodes, nodes, row = 1, logProb = TRUE)
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrtSub, 
                                            newUpdateNodes = newUpdateNodes, newConstantNodes = newConstantNodes,
-                                           savedMV = mv, relTol = relTol,
+                                           savedMV = mv, relTol = relTol, absTolThreshold = absTolThreshold,
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
@@ -1726,7 +1726,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
         }
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, 
                                            newUpdateNodes = newUpdateNodes, newConstantNodes = newConstantNodes,
-                                           savedMV = mv, relTol = relTol,
+                                           savedMV = mv, relTol = relTol, absTolThreshold = absTolThreshold,
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
@@ -1756,7 +1756,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
         }
         try(test_ADModelCalculate_internal(model, name = name, x = x, xNew = xNew, calcNodes = calcNodes, wrt = wrt, 
                                            newUpdateNodes = newUpdateNodes, newConstantNodes = newConstantNodes,
-                                           relTol = relTol,
+                                           relTol = relTol, absTolThreshold = absTolThreshold,
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
@@ -1771,7 +1771,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
 test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL, xNew = NULL,
                                            calcNodes = NULL, wrt = NULL, savedMV = NULL, 
                                            newUpdateNodes = NULL, newConstantNodes = NULL, 
-                                           relTol = c(1e-15, 1e-8, 1e-3, 1e-3), useFasterRderivs = FALSE,
+                                           relTol = c(1e-15, 1e-8, 1e-3, 1e-3), absTolThreshold = 0, useFasterRderivs = FALSE,
                                            useParamTransform = FALSE, checkDoubleTape = TRUE, 
                                            checkCompiledValuesIdentical = TRUE, checkDoubleUncHessian = TRUE,
                                            doAllUncHessian = TRUE,
@@ -2221,10 +2221,10 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 expect_fun(cOutput012$value, cLogProb_new)
                 expect_fun(cOutput02$value, cLogProb_new)
 
-                nim_expect_equal(rOutput01$value, cOutput01$value, tolerance = relTol[1])
-                nim_expect_equal(rOutput012$value, cOutput012$value, tolerance = relTol[1])
+                nim_expect_equal(rOutput01$value, cOutput01$value, tolerance = relTol[1], abs_threshold = absTolThreshold)
+                nim_expect_equal(rOutput012$value, cOutput012$value, tolerance = relTol[1], abs_threshold = absTolThreshold)
                 if(doAllUncHessian) 
-                    nim_expect_equal(rOutput02$value, cOutput02$value, tolerance = relTol[1])
+                    nim_expect_equal(rOutput02$value, cOutput02$value, tolerance = relTol[1], abs_threshold = absTolThreshold)
 
                 if(FALSE) {  ## not relevant if using nim_expect_equal
                 ## expect_equal (via waldo::compare and waldo::num_equal) uses absolute tolerance if 'y' value <= tolerance.
@@ -2247,17 +2247,17 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 expect_identical(sum(is.na(cOutput02$value)), 0L, info = "NAs found in compiled 0th derivative")
                 
                 ## 1st derivative
-                nim_expect_equal(rOutput01$jacobian, cOutput01$jacobian, tolerance = relTol[2])
+                nim_expect_equal(rOutput01$jacobian, cOutput01$jacobian, tolerance = relTol[2], abs_threshold = absTolThreshold)
                 expect_identical(sum(is.na(rOutput01$jacobian)), 0L, info = "NAs found in uncompiled 1st derivative")
                 expect_identical(sum(is.na(cOutput01$jacobian)), 0L, info = "NAs found in compiled 1st derivative")
 
                 if(doAllUncHessian) {
-                    nim_expect_equal(rOutput12$jacobian, cOutput12$jacobian, tolerance = relTol[2])
+                    nim_expect_equal(rOutput12$jacobian, cOutput12$jacobian, tolerance = relTol[2], abs_threshold = absTolThreshold)
                     expect_identical(sum(is.na(rOutput12$jacobian)), 0L, info = "NAs found in uncompiled 1st derivative")
                 }
                 expect_identical(sum(is.na(cOutput12$jacobian)), 0L, info = "NAs found in compiled 1st derivative")
 
-                nim_expect_equal(rOutput012$jacobian, cOutput012$jacobian, tolerance = relTol[2])
+                nim_expect_equal(rOutput012$jacobian, cOutput012$jacobian, tolerance = relTol[2], abs_threshold = absTolThreshold)
                 expect_identical(sum(is.na(rOutput012$jacobian)), 0L, info = "NAs found in uncompiled 1st derivative")
                 expect_identical(sum(is.na(cOutput012$jacobian)), 0L, info = "NAs found in compiled 1st derivative")
 
@@ -2277,7 +2277,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 expect_identical(cOutput12$jacobian, cOutput012$jacobian)
 
                 if(checkDoubleTape) {
-                    nim_expect_equal(rOutput1d$value, cOutput1d$value, tolerance = relTol[2])
+                    nim_expect_equal(rOutput1d$value, cOutput1d$value, tolerance = relTol[2], abs_threshold = absTolThreshold)
                     expect_identical(sum(is.na(rOutput1d$value)), 0L, info = "NAs found in uncompiled double-taped 1st derivative")
                     expect_identical(sum(is.na(cOutput1d$value)), 0L, info = "NAs found in compiled double-taped 1st derivative")
 
@@ -2292,17 +2292,17 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
 
                 ## 2nd derivative
                 if(doAllUncHessian) {
-                    nim_expect_equal(rOutput12$hessian, cOutput12$hessian, tolerance = relTol[3])
+                    nim_expect_equal(rOutput12$hessian, cOutput12$hessian, tolerance = relTol[3], abs_threshold = absTolThreshold)
                     expect_identical(sum(is.na(rOutput12$hessian)), 0L, info = "NAs found in uncompiled 2nd derivative")
                 }
                 expect_identical(sum(is.na(cOutput12$hessian)), 0L, info = "NAs found in compiled 2nd derivative")
 
-                nim_expect_equal(rOutput012$hessian, cOutput012$hessian, tolerance = relTol[3])
+                nim_expect_equal(rOutput012$hessian, cOutput012$hessian, tolerance = relTol[3], abs_threshold = absTolThreshold)
                 expect_identical(sum(is.na(rOutput012$hessian)), 0L, info = "NAs found in uncompiled 2nd derivative")
                 expect_identical(sum(is.na(cOutput012$hessian)), 0L, info = "NAs found in compiled 2nd derivative")
 
                 if(doAllUncHessian) {
-                    nim_expect_equal(rOutput02$hessian, cOutput02$hessian, tolerance = relTol[3])
+                    nim_expect_equal(rOutput02$hessian, cOutput02$hessian, tolerance = relTol[3], abs_threshold = absTolThreshold)
                     expect_identical(sum(is.na(rOutput02$hessian)), 0L, info = "NAs found in uncompiled 2nd derivative")
                 }
                 expect_identical(sum(is.na(cOutput02$hessian)), 0L, info = "NAs found in compiled 2nd derivative")
@@ -2322,20 +2322,20 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
 
                 if(checkDoubleTape) {
                     if(doAllUncHessian) {
-                        nim_expect_equal(rOutput2d$value, cOutput2d$value, tolerance = relTol[3])
+                        nim_expect_equal(rOutput2d$value, cOutput2d$value, tolerance = relTol[3], abs_threshold = absTolThreshold)
                         expect_identical(sum(is.na(rOutput2d$value)), 0L, info = "NAs found in uncompiled double-taped 2nd derivative")
                     }
                     expect_identical(sum(is.na(cOutput2d$value)), 0L, info = "NAs found in compiled double-taped 2nd derivative")
 
                     if(checkDoubleUncHessian) {
-                        nim_expect_equal(rOutput2d11$jacobian, cOutput2d11$jacobian, tolerance = relTol[4])
+                        nim_expect_equal(rOutput2d11$jacobian, cOutput2d11$jacobian, tolerance = relTol[4], abs_threshold = absTolThreshold)
                         expect_identical(sum(is.na(rOutput2d11$jacobian)), 0L, info = "NAs found in uncompiled double-taped 2nd derivative")
                     }
                     expect_identical(sum(is.na(cOutput2d11$jacobian)), 0L, info = "NAs found in compiled double-taped 2nd derivative")
 
                     ## explicit comparison to single-taped result
                     ## Not clear why 2d$value not identical to 012$hessian
-                    nim_expect_equal(cOutput2d$value, c(cOutput012$hessian), tolerance = 1e-15)
+                    nim_expect_equal(cOutput2d$value, c(cOutput012$hessian), tolerance = 1e-15, abs_threshold = absTolThreshold)
                     if(length(cOutput2d11$jacobian) == 1) cOutput2d11$jacobian <- c(cOutput2d11$jacobian)
                     expect_fun(cOutput2d11$jacobian, cOutput012$hessian[,,1])
 
@@ -2945,12 +2945,18 @@ modify_on_match <- function(x, pattern, key, value, env = parent.frame(), ...) {
   }
 }
 
-nim_all_equal <- function(x, y, tolerance = .Machine$double.eps^0.5, verbose = FALSE, info = "") {
-  xlab <- deparse1(substitute(x))
-  ylab <- deparse1(substitute(y))
+nim_all_equal <- function(x, y, tolerance = .Machine$double.eps^0.5, abs_threshold = 0, xlab = NULL, ylab = NULL, verbose = FALSE, info = "") {
+  if(is.null(xlab))
+      xlab <- deparse1(substitute(x))
+  if(is.null(ylab))
+      ylab <- deparse1(substitute(y))
   
-  denom <- y
-  denom[denom == 0] <- 1
+  denom <- abs(y)
+  ## Use absolute tolerance for sufficiently small values.
+  ## This is necessary for y values exactly zero.
+  ## In some cases (such as derivatives very near zero and affected by floating point errors)
+  ## we also need to use absolute tolerance.
+  denom[denom <= abs_threshold] <- 1
   rel_diff <- abs((x-y)/denom)
   result <- rel_diff < tolerance
   all_result <- all(result)
@@ -2963,11 +2969,14 @@ nim_all_equal <- function(x, y, tolerance = .Machine$double.eps^0.5, verbose = F
       cat("\n******************\n")
       cat("Detected some values out of relative tolerance ", info, ": ", xlab, " ", ylab, ".\n")
       print(report)
-      cat("\n******************\n\n")
+      cat("******************\n")
     } 
   }
   all_result
 }
 
-nim_expect_equal <- function(x, y, tolerance = .Machine$double.eps^0.5)
-  expect_true(nim_all_equal(x, y, tolerance, verbose = TRUE))
+nim_expect_equal <- function(x, y, tolerance = .Machine$double.eps^0.5, abs_threshold = 0) {
+    xlab <- deparse1(substitute(x))
+    ylab <- deparse1(substitute(y))
+    expect_true(nim_all_equal(x, y, xlab = xlab, ylab = ylab, tolerance = tolerance, abs_threshold = abs_threshold, verbose = TRUE))
+}
