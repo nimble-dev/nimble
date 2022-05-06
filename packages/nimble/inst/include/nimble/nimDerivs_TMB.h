@@ -79,10 +79,12 @@ Type nimDerivs_dnorm_logFixed(Type x, Type mean, Type sd, int give_log)
 /* } */
 
 /* dmnorm: Multivariate normal distribution */
-/* TMB uses specialized atomic classes.  nimble currently has a "naive" and likely less efficiency implementation: */
 template<class Type>
 Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type prec_param, Type give_log, Type overwrite_inputs) { 
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  if(!CppAD::Constant(prec_param))
+    std::cout<<"Warning: In dmnorm, prec_param with value = "<<CppAD::Value(prec_param)<<" is a variable but will be fixed in the tape until the tape is reset.  Make prec_param a constant to avoid this warning."<<std::endl;
+
   int n = x.dimSize(0);
   int i;
   Type dens = Type(-n * M_LN_SQRT_2PI);
@@ -96,8 +98,9 @@ Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, Nim
   for(i = 0; i < n; i++)
     xCopy(i, 0) = x[i] - mean[i];
 
-  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
-  //  std::cout<<"Baking in prec_param = "<<CppAD::Value(prec_param)<<" in dmnorm."<<std::endl;
+  NimArr<2, Type> chol_possible_copy;
+  Eigen::Map<MatrixXt > mapChol(nimArrCopyIfNeeded<2, Type>(chol, chol_possible_copy).getPtr(), n, n);
+  //  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
 #ifdef _USE_ATOMICS_IN_DMNORM
   if(CppAD::Value(prec_param) == 1) {
     xCopy = nimDerivs_matmult(mapChol.template triangularView<Eigen::Upper>(), xCopy);
@@ -125,6 +128,10 @@ Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, Nim
 template<class Type>
 Type nimDerivs_nimArr_dmnorm_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type prec_param, int give_log, Type overwrite_inputs) {
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+
+  if(!CppAD::Constant(prec_param))
+    std::cout<<"Warning: In dmnorm, prec_param with value = "<<CppAD::Value(prec_param)<<" is a variable but will be fixed in the tape until the tape is reset.  Make prec_param a constant to avoid this warning."<<std::endl;
+  
   int n = x.dimSize(0);
   int i;
   Type dens = Type(-n * M_LN_SQRT_2PI);
@@ -138,9 +145,9 @@ Type nimDerivs_nimArr_dmnorm_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &
   for(i = 0; i < n; i++)
     xCopy(i, 0) = x[i] - mean[i];
 
-  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
-  
-  //  std::cout<<"Baking in prec_param = "<<CppAD::Value(prec_param)<<" in dmnorm."<<std::endl;
+  NimArr<2, Type> chol_possible_copy;
+  Eigen::Map<MatrixXt > mapChol(nimArrCopyIfNeeded<2, Type>(chol, chol_possible_copy).getPtr(), n, n);
+  //  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
 #ifdef _USE_ATOMICS_IN_DMNORM
   if(CppAD::Value(prec_param) == 1) {
     xCopy = nimDerivs_matmult(mapChol.template triangularView<Eigen::Upper>(), xCopy);
@@ -171,6 +178,10 @@ Type nimDerivs_nimArr_dmnorm_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &
 template<class Type>
 Type nimDerivs_nimArr_dmvt_chol(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<2, Type> &chol, Type df, Type prec_param, Type give_log, Type overwrite_inputs) { 
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+
+  if(!CppAD::Constant(prec_param))
+    std::cout<<"Warning: In dmvt, prec_param with value = "<<CppAD::Value(prec_param)<<" is a variable but will be fixed in the tape until the tape is reset.  Make prec_param a constant to avoid this warning."<<std::endl;
+  
   int n = x.dimSize(0);
   int i;
   Type dens = nimDerivs_lgammafn((df + Type(n)) / Type(2)) - nimDerivs_lgammafn(df / Type(2)) - Type(n) * Type(M_LN_SQRT_PI) - Type(n) * log(df) / Type(2); 
@@ -184,8 +195,9 @@ Type nimDerivs_nimArr_dmvt_chol(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<
   for(i = 0; i < n; i++)
     xCopy(i, 0) = x[i] - mu[i];
 
-  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
-  std::cout<<"Baking in prec_param = "<<prec_param<<" in dmvt."<<std::endl;
+  NimArr<2, Type> chol_possible_copy;
+  Eigen::Map<MatrixXt > mapChol(nimArrCopyIfNeeded<2, Type>(chol, chol_possible_copy).getPtr(), n, n);
+  // Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
   if(CppAD::Value(prec_param) == 1) {
     xCopy = mapChol.template triangularView<Eigen::Upper>()*xCopy;
   } else {
@@ -205,6 +217,10 @@ Type nimDerivs_nimArr_dmvt_chol(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<
 template<class Type>
 Type nimDerivs_nimArr_dmvt_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<2, Type> &chol, Type df, Type prec_param, int give_log, Type overwrite_inputs) { 
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+
+  if(!CppAD::Constant(prec_param))
+    std::cout<<"Warning: In dmvt, prec_param with value = "<<CppAD::Value(prec_param)<<" is a variable but will be fixed in the tape until the tape is reset.  Make prec_param a constant to avoid this warning."<<std::endl;
+
   int n = x.dimSize(0);
   int i;
   Type dens = nimDerivs_lgammafn((df + Type(n)) / Type(2.)) - nimDerivs_lgammafn(df / Type(2.)) - Type(n) * Type(M_LN_SQRT_PI) - Type(n) * log(df) / Type(2.); 
@@ -218,8 +234,9 @@ Type nimDerivs_nimArr_dmvt_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &mu
   for(i = 0; i < n; i++)
     xCopy(i, 0) = x[i] - mu[i];
 
-  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
-  std::cout<<"Baking in prec_param = "<<prec_param<<" in dmvt."<<std::endl;
+  NimArr<2, Type> chol_possible_copy;
+  Eigen::Map<MatrixXt > mapChol(nimArrCopyIfNeeded<2, Type>(chol, chol_possible_copy).getPtr(), n, n);
+  // Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
   if(CppAD::Value(prec_param) == 1) {
     xCopy = mapChol.template triangularView<Eigen::Upper>()*xCopy;
   } else {
@@ -246,7 +263,10 @@ Type nimDerivs_nimArr_dlkj_corr_cholesky(NimArr<2, Type> &x, Type eta, Type p, T
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
   typedef Eigen::Array<Type, Eigen::Dynamic, 1> ArrayXt;
   int n = x.dimSize(0);   // otherwise not sure how to cast `p` to be acceptable to mapX
-  Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
+
+  NimArr<2, Type> x_possible_copy;
+  Eigen::Map<MatrixXt > mapX(nimArrCopyIfNeeded<2, Type>(x, x_possible_copy).getPtr(), n, n);
+  //  Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
 
   // not sure how to use Eigen:seq in arithmetic or to initialize an array
   ArrayXt pseq(n);
@@ -279,7 +299,9 @@ Type nimDerivs_nimArr_dlkj_corr_cholesky_logFixed(NimArr<2, Type> &x, Type eta, 
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
   typedef Eigen::Array<Type, Eigen::Dynamic, 1> ArrayXt;
   int n = x.dimSize(0);   // otherwise not sure how to cast `p` to be acceptable to mapX
-  Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
+  NimArr<2, Type> x_possible_copy;
+  Eigen::Map<MatrixXt > mapX(nimArrCopyIfNeeded<2, Type>(x, x_possible_copy).getPtr(), n, n);
+  //  Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
 
   // not sure how to use Eigen:seq in arithmetic
   ArrayXt pseq(n);
@@ -300,9 +322,16 @@ template<class Type>
 Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &x, NimArr<2, Type> &chol, Type df, Type scale_param, Type give_log, Type overwrite_inputs) { 
 
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  if(!CppAD::Constant(scale_param))
+    std::cout<<"Warning: In dwish, scale_param with value = "<<CppAD::Value(scale_param)<<" is a variable but will be fixed in the tape until the tape is reset.  Make scale_param a constant to avoid this warning."<<std::endl;
+
   int n = x.dimSize(0);
-  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
-  Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
+  NimArr<2, Type> chol_possible_copy;
+  Eigen::Map<MatrixXt > mapChol(nimArrCopyIfNeeded<2, Type>(chol, chol_possible_copy).getPtr(), n, n);
+  //Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
+  NimArr<2, Type> x_possible_copy;
+  Eigen::Map<MatrixXt > mapX(nimArrCopyIfNeeded<2, Type>(x, x_possible_copy).getPtr(), n, n);
+  //  Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
   int p = x.dim()[0];
   Type dens = (df * mapChol.diagonal().array().log()).sum();
   dens = CppAD::CondExpEq(scale_param, Type(1), -dens, dens);
@@ -315,7 +344,6 @@ Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &x, NimArr<2, Type> &chol, Type
   MatrixXt Lx = mapX.template selfadjointView<Eigen::Lower>().llt().matrixL();
   dens += (df - p - Type(1.)) * Lx.diagonal().array().log().sum();
   
-  std::cout<<"Baking in scale_param = "<<scale_param<<" in dwish."<<std::endl;
   if(CppAD::Value(scale_param) == 1) {
     dens -= Type(0.5) * (mapChol.template triangularView<Eigen::Upper>().transpose().solve(Lx)).squaredNorm();
   } else {
@@ -335,9 +363,16 @@ template<class Type>
 Type nimDerivs_nimArr_dwish_chol_logFixed(NimArr<2, Type> &x, NimArr<2, Type> &chol, Type df, Type scale_param, int give_log, Type overwrite_inputs) { 
 
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  if(!CppAD::Constant(scale_param))
+    std::cout<<"Warning: In dwish, scale_param with value = "<<CppAD::Value(scale_param)<<" is a variable but will be fixed in the tape until the tape is reset.  Make scale_param a constant to avoid this warning."<<std::endl;
+  
   int n = x.dimSize(0);
-  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
-  Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
+  NimArr<2, Type> chol_possible_copy;
+  Eigen::Map<MatrixXt > mapChol(nimArrCopyIfNeeded<2, Type>(chol, chol_possible_copy).getPtr(), n, n);
+  //Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
+  NimArr<2, Type> x_possible_copy;
+  Eigen::Map<MatrixXt > mapX(nimArrCopyIfNeeded<2, Type>(x, x_possible_copy).getPtr(), n, n);
+  //  Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
   int p = x.dim()[0];
   Type dens = (df * mapChol.diagonal().array().log()).sum();
   dens = CppAD::CondExpEq(scale_param, Type(1), -dens, dens);
@@ -350,7 +385,6 @@ Type nimDerivs_nimArr_dwish_chol_logFixed(NimArr<2, Type> &x, NimArr<2, Type> &c
   MatrixXt Lx = mapX.template selfadjointView<Eigen::Lower>().llt().matrixL();
   dens += (df - p - Type(1.)) * Lx.diagonal().array().log().sum();
 
-  std::cout<<"Baking in scale_param = "<<scale_param<<" in dwish."<<std::endl;
   if(CppAD::Value(scale_param) == 1) {
     dens -= Type(0.5) * (mapChol.template triangularView<Eigen::Upper>().transpose().solve(Lx)).squaredNorm();
   } else {
@@ -372,9 +406,15 @@ template<class Type>
 Type nimDerivs_nimArr_dinvwish_chol(NimArr<2, Type> &x, NimArr<2, Type> &chol, Type df, Type scale_param, Type give_log, Type overwrite_inputs) { 
 
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  if(!CppAD::Constant(scale_param))
+    std::cout<<"Warning: In dinvwish, scale_param with value = "<<CppAD::Value(scale_param)<<" is a variable but will be fixed in the tape until the tape is reset.  Make scale_param a constant to avoid this warning."<<std::endl;
   int n = x.dimSize(0);
-  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
-  Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
+  NimArr<2, Type> chol_possible_copy;
+  Eigen::Map<MatrixXt > mapChol(nimArrCopyIfNeeded<2, Type>(chol, chol_possible_copy).getPtr(), n, n);
+  //Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
+  NimArr<2, Type> x_possible_copy;
+  Eigen::Map<MatrixXt > mapX(nimArrCopyIfNeeded<2, Type>(x, x_possible_copy).getPtr(), n, n);
+  //  Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
   int p = x.dim()[0];
 
   Type dens = (df * mapChol.diagonal().array().log()).sum();
@@ -409,9 +449,15 @@ template<class Type>
 Type nimDerivs_nimArr_dinvwish_chol_logFixed(NimArr<2, Type> &x, NimArr<2, Type> &chol, Type df, Type scale_param, int give_log, Type overwrite_inputs) { 
 
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  if(!CppAD::Constant(scale_param))
+    std::cout<<"Warning: In dinvwish, scale_param with value = "<<CppAD::Value(scale_param)<<" is a variable but will be fixed in the tape until the tape is reset.  Make scale_param a constant to avoid this warning."<<std::endl;
   int n = x.dimSize(0);
-  Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
-  Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
+  NimArr<2, Type> chol_possible_copy;
+  Eigen::Map<MatrixXt > mapChol(nimArrCopyIfNeeded<2, Type>(chol, chol_possible_copy).getPtr(), n, n);
+  //Eigen::Map<MatrixXt > mapChol(chol.getPtr(), n, n);
+  NimArr<2, Type> x_possible_copy;
+  Eigen::Map<MatrixXt > mapX(nimArrCopyIfNeeded<2, Type>(x, x_possible_copy).getPtr(), n, n);
+  //  Eigen::Map<MatrixXt > mapX(x.getPtr(), n, n);
   int p = x.dim()[0];
 
   Type dens = (df * mapChol.diagonal().array().log()).sum();
@@ -435,7 +481,6 @@ Type nimDerivs_nimArr_dinvwish_chol_logFixed(NimArr<2, Type> &x, NimArr<2, Type>
     dens -= Type(0.5) * (Lx.template triangularView<Eigen::Lower>().solve(mapChol.template triangularView<Eigen::Upper>().solve(MatrixXt::Identity(n,n)))).squaredNorm();
   }
 
-
   if(!give_log){
     dens = exp(dens);
   }
@@ -452,7 +497,6 @@ Type nimDerivs_nimArr_dmulti(const NimArr<1, Type> &x,
 {
   Type sumProb = 0.0;
   Type sumX = 0.0;
-  Type logSumProb;
 
   Type logProb = nimDerivs_lgammafn(size + 1);
   int K = x.dimSize(0);
@@ -460,10 +504,9 @@ Type nimDerivs_nimArr_dmulti(const NimArr<1, Type> &x,
     sumProb += prob[i];
     sumX += x[i];
   }
-  logSumProb = log(sumProb);
 
   for(int i = 0; i < K; i++) {
-    logProb += CppAD::azmul(x[i], log(prob[i]) - logSumProb) - nimDerivs_lgammafn(x[i] + Type(1.));
+    logProb += nimDerivs_log_pow_int(prob[i]/sumProb, x[i]) - nimDerivs_lgammafn(x[i] + Type(1.));
   }
   logProb = CppAD::CondExpEq(sumX, size,
 			     logProb,
@@ -482,7 +525,6 @@ Type nimDerivs_nimArr_dmulti_logFixed(const NimArr<1, Type> &x,
 {
   Type sumProb(0.0);
   Type sumX(0.0);
-  Type logSumProb;
 
   Type logProb = nimDerivs_lgammafn(size + 1);
   int K = x.size();
@@ -490,10 +532,9 @@ Type nimDerivs_nimArr_dmulti_logFixed(const NimArr<1, Type> &x,
     sumProb += prob[i];
     sumX += x[i];
   }
-  logSumProb = log(sumProb);
 
   for(int i = 0; i < K; i++) {
-    logProb += CppAD::azmul(x[i], log(prob[i]) - logSumProb) - nimDerivs_lgammafn(x[i] + Type(1.));
+    logProb += nimDerivs_log_pow_int(prob[i]/sumProb, x[i]) - nimDerivs_lgammafn(x[i] + Type(1.));
   }
   logProb = CppAD::CondExpEq(sumX, size,
 			     logProb,
@@ -660,10 +701,13 @@ inline Type nimDerivs_dnbinom(const Type &x, const Type &size, const Type &prob,
 {
   Type n=size;
   Type p=prob;
+  // p > 0, so  n*log(p) is ok.
+  // but x is integer and p may be == 1, so nimDerivs_log_pow_int(Type(1.)-p, x)
+  //    is needed instead of x * log(1.-p)
   Type res = nimDerivs_lgammafn(x+n)-nimDerivs_lgammafn(n)-nimDerivs_lgammafn(x+Type(1))+
-    n*log(p)+x*log(Type(1)-p);
-	res = CppAD::CondExpEq(give_log, Type(1), res, exp(res));
-	return(res);
+    n*log(p) + nimDerivs_log_pow_int(Type(1.)-p, x); 
+  res = CppAD::CondExpEq(give_log, Type(1), res, exp(res));
+  return(res);
 }
 
 template<class Type>
@@ -673,7 +717,7 @@ inline Type nimDerivs_dnbinom_logFixed(const Type &x, const Type &size, const Ty
   Type n=size;
   Type p=prob;
   Type res = nimDerivs_lgammafn(x+n)-nimDerivs_lgammafn(n)-nimDerivs_lgammafn(x+Type(1))+
-    n*log(p)+x*log(Type(1)-p);
+    n*log(p) + nimDerivs_log_pow_int(Type(1.)-p, x); 
   if(!give_log){
     res = exp(res);
   }
@@ -1129,8 +1173,8 @@ MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dlnorm, CppAD::AD<double>)
 MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dlogis, CppAD::AD<double>)
 MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dunif, CppAD::AD<double>)
 MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dweibull, CppAD::AD<double>)
-MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dt_nonstandard, CppAD::AD<double>) // broken
-MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dt, CppAD::AD<double>) // broken
+MAKE_RECYCLING_RULE_CLASS4_1scalar(nimDerivs_dt_nonstandard, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS2_1scalar(nimDerivs_dt, CppAD::AD<double>)
 
 MAKE_RECYCLING_RULE_CLASS1_1scalar(nimDerivs_pow_int, CppAD::AD<double>)
 

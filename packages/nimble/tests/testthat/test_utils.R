@@ -2907,6 +2907,11 @@ arg_type_2_input <- function(argType, input_gen_fun = NULL, size = NULL, return_
       "logical" = function(arg_size)
         sample(c(TRUE, FALSE), prod(arg_size), replace = TRUE)
     )
+  if(is.character(input_gen_fun)) {
+    new_fun <- function(size) {}
+    body(new_fun) <- parse(text = input_gen_fun, keep.source = FALSE)[[1]]
+    input_gen_fun <- new_fun
+  }
   ans <- function() {
     arg <- switch(
       nDim + 1,

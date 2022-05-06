@@ -126,6 +126,8 @@ distn_params[['cat_base']]$wrt <- c('x', 'prob') # FAILS
 ###########################
 
 ## no size arg
+## This is supported through compilation by inserting a default
+## size = sum(x) before calling dmulti.
 distn_params[['multi_no_size']] <- distn_base
 distn_params[['multi_no_size']]$name <- 'multi'
 distn_params[['multi_no_size']]$args <- list(
@@ -188,23 +190,6 @@ distn_params[['pois_base']]$args <- list(
   )
 )
 distn_params[['pois_base']]$wrt <- c('lambda')
-
-pois_base_test <- make_distribution_fun_AD_test(distn_params[['pois_base']],  maker = make_AD_test2)
-res <- test_AD2(pois_base_test[[1]])
-
-pois_params <- list(
-  name = 'pois',
-  variants = 'd',
-  args = list(
-    rand_variate = list(input_gen_fun = function(n) rep(0, n),
-                        type = 'double(0)'),
-    lambda = list(input_gen_fun = function(n) rep(0, n),
-                  type = 'double(0)')
-  ),
-  wrt = 'lambda',
-  more_args = list(d = list(log = 0))) # also use log = 1
-pois_test <- make_distribution_fun_AD_test(pois_params,  maker = make_AD_test2)
-res <- test_AD2(pois_test[[1]])
 
 ####################
 ## Beta distribution
@@ -300,7 +285,7 @@ distn_params[['exp_R']]$args[['rand_variate']]$input_gen_fun <- function(n) {
   function(rate) rexp(n, rate)
 }
 distn_params[['exp_R']]$args[['rate']] = list(
-  input_gen_fun = function(n) runif(n, max = 100),
+  input_gen_fun = function(n) runif(n, min = 3, max = 10),
   type = c('double(0)', 'double(1, 3)')
 )
 distn_params[['exp_R']]$wrt <- c(exp_base$wrt, 'rate')
@@ -316,7 +301,7 @@ distn_params[['exp_nimble_scale']]$args[['rand_variate']]$input_gen_fun <- funct
   function(scale) rexp(n, 1/scale)
 }
 distn_params[['exp_nimble_scale']]$args[['scale']]  <- list(
-  input_gen_fun = function(n) runif(n, max = 10),
+  input_gen_fun = function(n) runif(n, min = 3, max = 10),
   type = c('double(0)', 'double(1, 3)')
 )
 distn_params[['exp_nimble_scale']]$wrt <- c(exp_base$wrt, 'scale')
@@ -335,7 +320,7 @@ distn_params[['gamma_scale']]$name <-
 ## add the shape parameter
 distn_params[['gamma_scale']]$args[['shape']] <-
   distn_params[['gamma_rate']]$args[['shape']] <- list(
-    input_gen_fun = function(n) runif(n, max = 10),
+    input_gen_fun = function(n) runif(n, min = 2, max = 4),
     type = c('double(0)', 'double(1, 7)')
   )
 
@@ -360,7 +345,14 @@ distn_params[['gamma_scale']]$args[['rand_variate']]$input_gen_fun <- function(n
 #############################
 
 distn_params[['invgamma_scale']] <- distn_params[['gamma_scale']]
+distn_params[['invgamma_scale']]$args[['rand_variate']]$input_gen_fun <- function(n) {
+  function(shape, scale) rinvgamma(n, shape, scale=scale)
+}
+
 distn_params[['invgamma_rate']] <- distn_params[['gamma_rate']]
+distn_params[['invgamma_rate']]$args[['rand_variate']]$input_gen_fun <- function(n) {
+  function(shape, rate) rinvgamma(n, shape, rate=rate)
+}
 
 distn_params[['invgamma_scale']]$name <-
   distn_params[['invgamma_rate']]$name <- 'invgamma'
@@ -370,8 +362,13 @@ distn_params[['invgamma_scale']]$name <-
 ##################################
 
 distn_params[['sqrtinvgamma_scale']] <- distn_params[['gamma_scale']]
+distn_params[['invgamma_scale']]$args[['rand_variate']]$input_gen_fun <- function(n) {
+  function(shape, scale) rsqrtinvgamma(n, shape, scale=scale)
+}
 distn_params[['sqrtinvgamma_rate']] <- distn_params[['gamma_rate']]
-
+distn_params[['invgamma_rate']]$args[['rand_variate']]$input_gen_fun <- function(n) {
+  function(shape, rate) rsqrtinvgamma(n, shape, rate=rate)
+}
 distn_params[['sqrtinvgamma_scale']]$name <-
   distn_params[['sqrtinvgamma_rate']]$name <- 'sqrtinvgamma'
 
@@ -387,11 +384,11 @@ distn_params[['lnorm_base']]$args <- list(
     type = c('double(0)', 'double(1, 5)')
   ),
   meanlog = list(
-    input_gen_fun = function(n) runif(n, min = -2, max = 2),
+    input_gen_fun = function(n) runif(n, min = -1.5, max = 1.5),
     type = c('double(0)', 'double(1, 3)')
   ),
   sdlog = list(
-    input_gen_fun = function(n) runif(n, max = 3),
+    input_gen_fun = function(n) runif(n, min = 0.5, max = 2),
     type = c('double(0)', 'double(1, 7)')
   )
 )
@@ -494,11 +491,11 @@ distn_params[['weibull_base']]$args <- list(
     type = c('double(0)', 'double(1, 5)')
   ),
   shape = list(
-    input_gen_fun = function(n) runif(n, 0.1, 5),
+    input_gen_fun = function(n) runif(n, 2, 5),
     type = c('double(0)', 'double(1, 3)')
   ),
   scale = list(
-    input_gen_fun = function(n) runif(n, 0.1, 5),
+    input_gen_fun = function(n) runif(n, 2, 5),
     type = c('double(0)', 'double(1, 7)')
   )
 )
@@ -612,11 +609,16 @@ distn_tests <- unlist(
 )
 debug(make_AD_test2)
 debug(make_distribution_fun_AD_test)
+set.seed(456)
 distn_tests2 <- unlist(
   lapply(distn_params_log_1, make_distribution_fun_AD_test, maker = make_AD_test2),
   recursive = FALSE
 )
 debug(test_AD2)
+# 
+ADtestEnv$RCrelTol <- c(1e-12, 1e-6, 1e-2)
+resetTols()
+lapply(distn_tests2[137:144], test_AD2)
 lapply(distn_tests2, test_AD2)
 test_AD2(distn_tests2[[3]])
 #######################################################################

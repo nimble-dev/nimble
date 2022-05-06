@@ -303,35 +303,40 @@ test_AD2 <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
   Robj <- nf()
   temporarilyAssignInGlobalEnv(Robj)
 
-  ## input_gen_funs might be generalized.
-  opParam <- param$opParam
-  if (is.null(param$input_gen_funs) || is.null(names(param$input_gen_funs)))
-    if (length(param$input_gen_funs) <= 1) {
+  if(!is.null(param$inputs)) {
+    inputsRecord <- param$inputs[[1]]
+    inputsTest <- param$inputs[[2]]
+  } else {
+    ## input_gen_funs might be generalized.
+    opParam <- param$opParam
+    if (is.null(param$input_gen_funs) || is.null(names(param$input_gen_funs)))
+      if (length(param$input_gen_funs) <= 1) {
         inputsRecord <- lapply(opParam$args, arg_type_2_input,
                                input_gen_fun = param$input_gen_funs, size = param$size)
         inputsTest <- lapply(opParam$args, arg_type_2_input,
                              input_gen_fun = param$input_gen_funs, size = param$size)
-    }
+      }
     else
       stop(
         'input_gen_funs of length greater than 1 must have names',
         call. = FALSE
       )
-  else {
-    inputsRecord <- sapply(
-      names(opParam$args),
-      function(name)
-        arg_type_2_input(opParam$args[[name]],  input_gen_fun = param$input_gen_funs[[name]],
-                         size = param$size[[name]]),
-      simplify = FALSE
-    )
-    inputsTest <- sapply(
-      names(opParam$args),
-      function(name)
-        arg_type_2_input(opParam$args[[name]],  input_gen_fun = param$input_gen_funs[[name]],
-                          size = param$size[[name]]),
-      simplify = FALSE
-    )
+    else {
+      inputsRecord <- sapply(
+        names(opParam$args),
+        function(name)
+          arg_type_2_input(opParam$args[[name]],  input_gen_fun = param$input_gen_funs[[name]],
+                           size = param$size[[name]]),
+        simplify = FALSE
+      )
+      inputsTest <- sapply(
+        names(opParam$args),
+        function(name)
+          arg_type_2_input(opParam$args[[name]],  input_gen_fun = param$input_gen_funs[[name]],
+                           size = param$size[[name]]),
+        simplify = FALSE
+      )
+    }
   }
   ##
   ## generate inputs that depend on the other inputs
@@ -890,9 +895,13 @@ make_wrt <- function(argTypes, n_random = 10, n_arg_reps = 1) {
 make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
                           input_gen_funs = NULL, more_args = NULL, seed = 0,
                           outer_code = NULL, inner_codes = NULL,
-                          size = NULL) {
-  opParam <- make_op_param(op, argTypes, more_args = more_args,
-                           outer_code = outer_code,  inner_codes = inner_codes)
+                          size = NULL, inputs = NULL) {
+  if(!is.list(op)) {
+    opParam <- make_op_param(op, argTypes, more_args = more_args,
+                             outer_code = outer_code,  inner_codes = inner_codes)
+  } else {
+    opParam <- op
+  }
   run <- gen_runFunCore(opParam)
 
   if(seed == 0) seed <- round(runif(1, 1, 10000))
@@ -1116,7 +1125,8 @@ make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
     wrt_args = wrt_args,
     input_gen_funs = input_gen_funs,
     size = size,
-    seed = seed
+    seed = seed,
+    inputs = inputs
   )
 }
 
@@ -1305,6 +1315,15 @@ make_distribution_fun_AD_test <- function(distn_param, maker = make_AD_test) {
       v
     })
   }, simplify = FALSE)
+  for(i in seq_along(distn_param$args)) {
+    if(is.null(distn_param$args[[i]]$size))
+      distn_param$args[[i]]$size <- lapply(distn_param$args[[i]]$type,
+                                           function(type) {
+                                             if(is.character(type))
+                                               type <- parse(text = type, keep.source=FALSE)[[1]]
+                                             add_missing_size(nimble:::argType2symbol(type))$size
+                                           })
+  }
   argSizes <- sapply(distn_param$variants, function(variant) {
     rand_variate_size <- distn_param$args$rand_variate$size
     first_argSize <- switch(
