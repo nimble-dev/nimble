@@ -91,13 +91,13 @@ nimOneLaplace1D <- nimbleFunction(
     ## Optim control list 
     optimControlList <- nimOptimDefaultControl()
   
-    inner_makeUpdateNodes <- nimble:::makeUpdateNodes(wrtNodes = randomEffectsNodes, calcNodes = calcNodes, model = model)
-    inner_updateNodes     <- inner_makeUpdateNodes$updateNodes
-    inner_constantNodes   <- inner_makeUpdateNodes$constantNodes
+    inner_derivsInfo <- nimble:::makeDerivsInfo(model = model, wrtNodes = randomEffectsNodes, calcNodes = calcNodes)
+    inner_updateNodes     <- inner_derivsInfo$updateNodes
+    inner_constantNodes   <- inner_derivsInfo$constantNodes
 
-    joint_makeUpdateNodes <- nimble:::makeUpdateNodes(wrtNodes = wrtNodes, calcNodes = calcNodes, model = model)
-    joint_updateNodes     <- joint_makeUpdateNodes$updateNodes
-    joint_constantNodes   <- joint_makeUpdateNodes$constantNodes
+    joint_derivsInfo <- nimble:::makeDerivsInfo(model = model, wrtNodes = wrtNodes, calcNodes = calcNodes)
+    joint_updateNodes     <- joint_derivsInfo$updateNodes
+    joint_constantNodes   <- joint_derivsInfo$constantNodes
 
     ## The following are a set of member data
     ## for Laplace and gr_Laplace to store intermediate values
@@ -656,13 +656,13 @@ nimOneLaplace <- nimbleFunction(
     ## Optim control list 
     optimControlList <- nimOptimDefaultControl()
   
-    inner_makeUpdateNodes <- nimble:::makeUpdateNodes(wrtNodes = randomEffectsNodes, calcNodes = calcNodes, model = model)
-    inner_updateNodes     <- inner_makeUpdateNodes$updateNodes
-    inner_constantNodes   <- inner_makeUpdateNodes$constantNodes
+    inner_derivsInfo <- nimble:::makeDerivsInfo(model = model, wrtNodes = randomEffectsNodes, calcNodes = calcNodes)
+    inner_updateNodes     <- inner_derivsInfo$updateNodes
+    inner_constantNodes   <- inner_derivsInfo$constantNodes
 
-    joint_makeUpdateNodes <- nimble:::makeUpdateNodes(wrtNodes = wrtNodes, calcNodes = calcNodes, model = model)
-    joint_updateNodes     <- joint_makeUpdateNodes$updateNodes
-    joint_constantNodes   <- joint_makeUpdateNodes$constantNodes
+    joint_derivsInfo <- nimble:::makeDerivsInfo(model = model, wrtNodes = wrtNodes, calcNodes = calcNodes)
+    joint_updateNodes     <- joint_derivsInfo$updateNodes
+    joint_constantNodes   <- joint_derivsInfo$constantNodes
 
     ## The following are a set of member data
     ## for Laplace and gr_Laplace to store intermediate values

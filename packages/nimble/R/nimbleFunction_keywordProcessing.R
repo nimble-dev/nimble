@@ -1966,16 +1966,16 @@ nimDerivsInfoClass_init_impl <- function(.self
                                                logProb = FALSE)
     .self$wrtMapInfo <- makeMapInfoFromAccessorVectorFaster(wrtNodesAccessor)
 
-    # See comment in makeUpdateNodes for explanation of why both of the next
+    # See comment in makeDerivsInfo for explanation of why both of the next
     # two lines are necessary.
     calcNodes <- model$expandNodeNames(calcNodes)
     calcNodes <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE)
-    updateNodes <- makeUpdateNodes_impl(wrtNodes,
-                                        calcNodes,
-                                        model,
-                                        dataAsConstantNodes = TRUE)
-    constantNodes <- updateNodes$constantNodes
-    updateNodes <- updateNodes$updateNodes
+    derivsInfo <- makeDerivsInfo_impl(model,
+                                      wrtNodes,
+                                      calcNodes,
+                                      dataAsConstantNodes = TRUE)
+    constantNodes <- derivsInfo$constantNodes
+    updateNodes <- derivsInfo$updateNodes
     
     extraInputNodesAccessor <- modelVariableAccessorVector(model,
                                                            updateNodes,
@@ -1992,7 +1992,7 @@ nimDerivsInfoClass_init_impl <- function(.self
     ## output nodes: deterministic nodes in calcNodes plus logProb nodes
     ##   but not the actual data nodes.
 
-    modelOutputNodes <- makeOutputNodes(calcNodes, model)
+    modelOutputNodes <- makeOutputNodes(model, calcNodes)
     
     modelOutputNodesAccessor <- modelVariableAccessorVector(model,
                                                             modelOutputNodes,
@@ -2002,8 +2002,8 @@ nimDerivsInfoClass_init_impl <- function(.self
     NULL
 }
 
-makeOutputNodes <- function(calcNodes,
-                            model) {
+makeOutputNodes <- function(model,
+                            calcNodes) {
   calcNodeNames <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE)
   logProbCalcNodeNames <- model$modelDef$nodeName2LogProbName(calcNodeNames)
   isDetermCalcNodes <- model$isDeterm(calcNodeNames)
@@ -2032,7 +2032,7 @@ nimDerivsInfoClass_output_init_impl <- function(.self,
   .self$extraInputMapInfo <-
     makeMapInfoFromAccessorVectorFaster(extraInputNodesAccessor)
 
-  modelOutputNodes <- makeOutputNodes(calcNodes, model)
+  modelOutputNodes <- makeOutputNodes(model, calcNodes)
   modelOutputNodesAccessor <- modelVariableAccessorVector(model,
                                                           modelOutputNodes,
                                                           logProb = FALSE)
@@ -2042,10 +2042,10 @@ nimDerivsInfoClass_output_init_impl <- function(.self,
   NULL
 }
 
-makeUpdateNodes <- function(wrtNodes,
-                            calcNodes,
-                            model,
-                            dataAsConstantNodes = TRUE) {
+makeDerivsInfo <- function(model,
+                           wrtNodes,
+                           calcNodes,
+                           dataAsConstantNodes = TRUE) {
   wrtNodes <- model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE)
   # This ensures that elements of a non-scalar node become the entire non-scalare node
   calcNodes <- model$expandNodeNames(calcNodes)
@@ -2053,10 +2053,10 @@ makeUpdateNodes <- function(wrtNodes,
   # E.g. if calcNodes is 'mu[1]' but 'mu[1:3]' is a vector node,
   # the above call gets `mu[1:3]` and then the below call splits it.
   calcNodes <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE) 
-  makeUpdateNodes_impl(wrtNodes,
-                       calcNodes,
-                       model,
-                       dataAsConstantNodes)
+  makeDerivsInfo_impl(model,
+                      wrtNodes,
+                      calcNodes,
+                      dataAsConstantNodes)
 }
 
 getImmediateParentNodes <- function(nodes, model) { 
@@ -2073,10 +2073,10 @@ getImmediateParentNodes <- function(nodes, model) {
   fromNodes
 }
 
-makeUpdateNodes_impl <- function(wrtNodes,
+makeDerivsInfo_impl <- function(model,
+                                wrtNodes,
                                  calcNodes,
-                                 model,
-                                 dataAsConstantNodes = TRUE) {
+                                dataAsConstantNodes = TRUE) {
   nonWrtCalcNodes <- setdiff(calcNodes, wrtNodes)
   nonWrtCalcNodeNames <- model$expandNodeNames(nonWrtCalcNodes, returnScalarComponents = TRUE)
   nonWrtStochCalcNodeNames <- nonWrtCalcNodeNames[ model$isStoch(nonWrtCalcNodeNames) ]  

@@ -85,7 +85,7 @@ test_that('pow and pow_int work', {
 })
 
 ## check logic of results
-test_that('makeUpdateNodes works correctly', {
+test_that('makeDerivsInfo works correctly', {
     ## updateNodes should include all nodes that affect calculate(calcNodes) that are not in wrt,
     ## including any immediate (either stoch or det) parent nodes not in either calcNodes or in wrt.
     ## Will include stoch nodes that are in calcNodes but not wrt, but not det nodes that are in calcNodes.
@@ -105,63 +105,63 @@ test_that('makeUpdateNodes works correctly', {
     ## Various wrt and calcNodes cases; not exhaustive, but hopefully capturing most possibilities
     
     ## distinct wrt and calcNodes: updateNodes should have 'mu' and determ parents not in calcNodes
-    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'tau'), calcNodes = c('mu','y'), model)
+    result <- makeDerivsInfo(model = model, wrtNodes = c('sigma2', 'mu0', 'tau'), calcNodes = c('mu','y'))
     expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP",
                                            model$expandNodeNames('mu')))
     expect_identical(result$constantNodes, model$expandNodeNames('y'))
 
     ## distinct wrt and calcNodes, where calcNodes includes a deterministic node
     ## updateNodes should have 'mu' and determ parents not in calcNodes
-    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'tau'), calcNodes = c('mu','y', "lifted_d1_over_sqrt_oPtau_cP"), model)
+    result <- makeDerivsInfo(model = model, wrtNodes = c('sigma2', 'mu0', 'tau'), calcNodes = c('mu','y', "lifted_d1_over_sqrt_oPtau_cP"))
     expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP",
                                            model$expandNodeNames('mu')))
     expect_identical(result$constantNodes, model$expandNodeNames('y'))
 
     ## with option to include data nodes in updateNodes
-    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'tau'), calcNodes = c('mu','y'), model,
+    result <- makeDerivsInfo(model = model, wrtNodes = c('sigma2', 'mu0', 'tau'), calcNodes = c('mu','y'),
                               dataAsConstantNodes = FALSE)
     expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP",
                                        model$expandNodeNames('mu'), model$expandNodeNames('y')))
     expect_identical(result$constantNodes, character(0))
 
     ## scalar calcNodes
-    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'tau'), calcNodes = c('mu[1]','y[1]'), model)
+    result <- makeDerivsInfo(model = model, wrtNodes = c('sigma2', 'mu0', 'tau'), calcNodes = c('mu[1]','y[1]'))
     expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP", "mu[1]"))
     expect_identical(result$constantNodes, "y[1]")
 
     ## subset of a variable as calcNodes
-    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'tau'), calcNodes = c('mu[1:2]','y[1:2]'), model)
+    result <- makeDerivsInfo(model = model, wrtNodes = c('sigma2', 'mu0', 'tau'), calcNodes = c('mu[1:2]','y[1:2]'))
     expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP", "mu[1]", "mu[2]"))
     expect_identical(result$constantNodes, c("y[1]", "y[2]"))
 
     ## a wrt node included in calcNodes
     ## updateNodes should have the stoch calcNodes not in wrt, plus determ parents not in calcNodes
-    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('sigma2', 'mu0', 'mu','y'), model)
+    result <- makeDerivsInfo(model = model, wrtNodes = c('sigma2', 'mu0'), calcNodes = c('sigma2', 'mu0', 'mu','y'))
     expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP",
                                            model$expandNodeNames('mu')))
     expect_identical(result$constantNodes, model$expandNodeNames('y'))
 
     ## some overlap of wrt and calcNodes
     ## updateNodes should have determ parents not in calcNodes
-    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'tau', 'mu'), calcNodes = c('sigma2', 'mu0', 'mu','y'), model)
+    result <- makeDerivsInfo(model = model, wrtNodes = c('sigma2', 'mu0', 'tau', 'mu'), calcNodes = c('sigma2', 'mu0', 'mu','y'))
     expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP"))
     expect_identical(result$constantNodes, model$expandNodeNames('y'))
 
     ## full overlap of wrt and calcNodes
     ## updateNodes should have determ parents not in calcNodes
-    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'mu'), calcNodes = c('sigma2', 'mu0', 'mu','y'), model)
+    result <- makeDerivsInfo(model = model, wrtNodes = c('sigma2', 'mu0', 'mu'), calcNodes = c('sigma2', 'mu0', 'mu','y'))
     expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP"))
     expect_identical(result$constantNodes, model$expandNodeNames('y'))
 
     ## wrt are intermediate nodes
     ## updateNodes should have determ and stoch parents not in calcNodes
-    result <- makeUpdateNodes(wrt = c('mu'), calcNodes = c('mu','y'), model)
+    result <- makeDerivsInfo(model = model, wrtNodes = c('mu'), calcNodes = c('mu','y'))
     expect_identical(result$updateNodes, c("mu0", "lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP"))
     expect_identical(result$constantNodes, model$expandNodeNames('y'))
 
     ## no data nodes in calcNodes
     ## updateNodes should have determ parents not in calcNodes
-    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'mu'), calcNodes = c('sigma2', 'mu0', 'mu'), model)
+    result <- makeDerivsInfo(model = model, wrtNodes = c('sigma2', 'mu0', 'mu'), calcNodes = c('sigma2', 'mu0', 'mu'))
     expect_identical(result$updateNodes, c("lifted_d1_over_sqrt_oPtau_cP"))
     expect_identical(result$constantNodes, character(0))
 
@@ -179,12 +179,12 @@ test_that('makeUpdateNodes works correctly', {
     prElems <- model$expandNodeNames('pr', returnScalarComponents = TRUE)
     lftChElems <- model$expandNodeNames('lifted_chol_oPpr_oB1to3_comma_1to3_cB_cP', returnScalarComponents = TRUE)
 
-    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('mu','y'), model)
+    result <- makeDerivsInfo(model = model, wrtNodes = c('sigma2', 'mu0'), calcNodes = c('mu','y'))
     expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", lftChElems,
                                        model$expandNodeNames('mu', returnScalarComponents = TRUE)))
     expect_identical(result$constantNodes, model$expandNodeNames('y'))
 
-    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('mu','y'), model,
+    result <- makeDerivsInfo(model = model, wrtNodes = c('sigma2', 'mu0'), calcNodes = c('mu','y'),
                               dataAsConstantNodes = FALSE)
     expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", lftChElems,
                                            model$expandNodeNames('mu', returnScalarComponents = TRUE),
@@ -192,30 +192,30 @@ test_that('makeUpdateNodes works correctly', {
     expect_identical(result$constantNodes, character(0))
 
     # @paciorek take a look at this one
-    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('mu[1]','y[1]'), model)
+    result <- makeDerivsInfo(model = model, wrtNodes = c('sigma2', 'mu0'), calcNodes = c('mu[1]','y[1]'))
     expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", lftChElems, 'mu[1]', 'mu[2]', 'mu[3]'))
     expect_identical(result$constantNodes, "y[1]")
 
     # @paciorek and this one. Note that prElems is not in result$updateNodes and shouldn't be.
-    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('mu[1:2]','y[1:2]'), model)
+    result <- makeDerivsInfo(model = model, wrtNodes = c('sigma2', 'mu0'), calcNodes = c('mu[1:2]','y[1:2]'))
     expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", lftChElems, model$expandNodeNames('mu', returnScalarComponents = TRUE)))
     expect_identical(result$constantNodes, c("y[1]", "y[2]"))
 
-    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0'), calcNodes = c('sigma2', 'mu0', 'mu','y'), model)
+    result <- makeDerivsInfo(model = model, wrtNodes = c('sigma2', 'mu0'), calcNodes = c('sigma2', 'mu0', 'mu','y'))
     expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", lftChElems,
                                        model$expandNodeNames('mu', returnScalarComponents = TRUE)))
     expect_identical(result$constantNodes, model$expandNodeNames('y'))
 
-    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'mu'), calcNodes = c('sigma2', 'mu0', 'mu','y'), model)
+    result <- makeDerivsInfo(model = model, wrtNodes = c('sigma2', 'mu0', 'mu'), calcNodes = c('sigma2', 'mu0', 'mu','y'))
     expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", lftChElems))
     expect_identical(result$constantNodes, model$expandNodeNames('y'))
 
-    result <- makeUpdateNodes(wrt = c('mu'), calcNodes = c('mu','y'), model)
+    result <- makeDerivsInfo(model = model, wrtNodes = c('mu'), calcNodes = c('mu','y'))
     expect_identical(result$updateNodes, c(model$expandNodeNames('mu0', returnScalarComponents = TRUE),
                                            "lifted_sqrt_oPsigma2_cP", lftChElems))
     expect_identical(result$constantNodes, model$expandNodeNames('y'))
 
-    result <- makeUpdateNodes(wrt = c('sigma2', 'mu0', 'mu'), calcNodes = c('sigma2', 'mu0', 'mu'), model)
+    result <- makeDerivsInfo(model = model, wrtNodes = c('sigma2', 'mu0', 'mu'), calcNodes = c('sigma2', 'mu0', 'mu'))
     expect_identical(result$updateNodes, c(lftChElems))
     expect_identical(result$constantNodes, character(0))
    

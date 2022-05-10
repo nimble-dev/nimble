@@ -1312,9 +1312,9 @@ derivsNimbleFunctionMeta <- nimbleFunction(
   setup = function(model, calcNodes, wrt, reset = FALSE) {
     innerWrtVec <- seq_along(model$expandNodeNames(wrt, returnScalarComponents = TRUE))
     d <- length(innerWrtVec)  
-    allUpdateNodes <- makeUpdateNodes(wrt, calcNodes, model)
-    updateNodes <- allUpdateNodes$updateNodes
-    constantNodes <- allUpdateNodes$constantNodes
+    derivsInfo <- makeDerivsInfo(model, wrt, calcNodes)
+    updateNodes <- derivsInfo$updateNodes
+    constantNodes <- derivsInfo$constantNodes
   },
   run = function(x = double(1)) {
     values(model, wrt) <<- x
@@ -1373,9 +1373,9 @@ derivsNimbleFunctionParamTransform <- nimbleFunction(
         my_parameterTransform <- parameterTransform(model, wrtNodesAsScalars)
         d <- my_parameterTransform$getTransformedLength()
         nimDerivs_wrt <- 1:d
-        allUpdateNodes <- makeUpdateNodes(wrt, calcNodes, model)
-        updateNodes   <- allUpdateNodes$updateNodes
-        constantNodes <- allUpdateNodes$constantNodes
+        derivsInfo <- makeDerivsInfo(model, wrt, calcNodes)
+        updateNodes   <- derivsInfo$updateNodes
+        constantNodes <- derivsInfo$constantNodes
     },
     run = function(x = double(1),
                    order = double(1),
@@ -1405,9 +1405,9 @@ derivsNimbleFunctionParamTransformMeta <- nimbleFunction(
         my_parameterTransform <- parameterTransform(model, wrtNodesAsScalars)
         d <- my_parameterTransform$getTransformedLength()
         nimDerivs_wrt <- 1:d
-        allUpdateNodes <- makeUpdateNodes(wrt, calcNodes, model)
-        updateNodes   <- allUpdateNodes$updateNodes
-        constantNodes <- allUpdateNodes$constantNodes
+        derivsInfo <- makeDerivsInfo(model, wrt, calcNodes)
+        updateNodes   <- derivsInfo$updateNodes
+        constantNodes <- derivsInfo$constantNodes
     },
     ## formerly inverseTransformStoreCalculate
     run = function(transformed_x = double(1)) {
@@ -1809,9 +1809,9 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
             if(!is.null(d) && length(d) == 2 && d[1] == d[2]) return(TRUE) else return(FALSE)
         }        
         
-        allUpdateNodes <- makeUpdateNodes(wrt, calcNodes, model)
-        updateNodes <- allUpdateNodes$updateNodes
-        constantNodes <- allUpdateNodes$constantNodes
+        derivsInfo <- makeDerivsInfo(model, wrt, calcNodes)
+        updateNodes <- derivsInfo$updateNodes
+        constantNodes <- derivsInfo$constantNodes
 
         updateNodesDeps <- model$getDependencies(updateNodes)
         constantNodesDeps <- model$getDependencies(constantNodes)
