@@ -430,7 +430,7 @@ Type nimDerivs_nimArr_dinvwish_chol(NimArr<2, Type> &x, NimArr<2, Type> &chol, T
 
   /* in basic tests, use of .solve(Identity) was 2-3x faster than .inverse();
   I don't see a way to use .inverse that recognizes the triangular input */
-  std::cout<<"Baking in scale_param = "<<scale_param<<" in dinvwish."<<std::endl;
+  // std::cout<<"Baking in scale_param = "<<scale_param<<" in dinvwish."<<std::endl;
   if(CppAD::Value(scale_param) == 1) {
     dens -= Type(0.5) * (Lx.template triangularView<Eigen::Lower>().solve(mapChol.transpose())).squaredNorm();
   } else {
@@ -473,7 +473,7 @@ Type nimDerivs_nimArr_dinvwish_chol_logFixed(NimArr<2, Type> &x, NimArr<2, Type>
 
   /* in basic tests, use of .solve(Identity) was 2-3x faster than .inverse();
   I don't see a way to use .inverse that recognizes the triangular input */
-  std::cout<<"Baking in scale_param = "<<scale_param<<" in dinvwish."<<std::endl;
+  // std::cout<<"Baking in scale_param = "<<scale_param<<" in dinvwish."<<std::endl;
 
   if(CppAD::Value(scale_param) == 1) {
     dens -= Type(0.5) * (Lx.template triangularView<Eigen::Lower>().solve(mapChol.transpose())).squaredNorm();
