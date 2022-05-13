@@ -117,7 +117,9 @@ compileModel_impl <- function(.self,
     cppProj$addClass(mvc, filename = filename)
     cppProj$addClass(modelCpp, modelDefName, filename)
 
-    if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs"))) {
+    buildDerivsForThisModel <- isTRUE(modelDef[["buildDerivs"]]) # could check nimbleOptions("enableDerivs") but why?
+    
+    if(buildDerivsForThisModel) {
         CnameAD <- paste0(Cname,"_AD")
         modelCppAD <- cppBUGSmodelClass(modelDef = modelDef, model = model,
                                         name = CnameAD, project = .self)
@@ -159,7 +161,9 @@ compileModel_impl <- function(.self,
     
     compiledModel <- modelCpp ## cppProj$cppDefs[[2]]
     newCall <- paste0('new_',Rname2CppName(modelDefName))
-    ans <- buildModelInterface(interfaceName, compiledModel, newCall, where = where, project = .self, dll = cppProj$dll)
+    ans <- buildModelInterface(interfaceName, compiledModel, newCall,
+                               buildDerivs = buildDerivsForThisModel,
+                               where = where, project = .self, dll = cppProj$dll)
     createModel <- TRUE
     if(!createModel) return(ans) else return(ans(model, where, dll = cppProj$dll))
     ## creating the model populates model$CobjectInterface

@@ -53,7 +53,8 @@ modelDefClass <- setRefClass('modelDefClass',
                                  modelClass = 'ANY',   ## custom model class
                                  modelValuesClassName = 'ANY',    ## set in setModelValuesClassName()
                                  modelValuesClass = 'ANY', ## custom model values class
-                                 classEnvironment = 'ANY'	#environment		 # environment in which the reference classes will be defined.
+                                 classEnvironment = 'ANY',	#environment		 # environment in which the reference classes will be defined.
+                                 buildDerivs = 'ANY' # logical indicating whether to build derivative features for this model.
                              ),
                              
                              methods = list(
@@ -66,6 +67,7 @@ modelDefClass <- setRefClass('modelDefClass',
                                  	logProbVarInfo <<- list()
                                  	isDataVarInfo <<- list()
                                  	classEnvironment <<- new.env()
+                                        buildDerivs <<- FALSE
                                  	callSuper(...)
                                  },
                                  setupModel = function(code, constants, dimensions, inits, data, debug) {},
@@ -428,6 +430,9 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
             if(code[[i]][[1]] == '~') {
                 code[[i]] <- replaceDistributionAliases(code[[i]])
                 checkUserDefinedDistribution(code[[i]], userEnv)
+                if(nimbleOptions("enableDerivs"))
+                    if(buildDerivs)
+                        checkADsupportForDistribution(code[[i]], userEnv)
             }
             if(code[[i]][[1]] == '<-')
                 checkForDeterministicDorR(code[[i]])
@@ -486,6 +491,29 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
     }
     lineNumber
 })
+
+checkADsupportForDistribution <- function(code, userEnv) {
+    dist <- as.character(code[[3]][[1]])
+    if(dist %in% c("T", "I")) {
+        dist <- as.character(code[[3]][[2]][[1]])
+        message("   [Note] Truncation via 'T' or 'I' is not supported for derivatives.  This model cannot be compiled.")
+    }
+    supported <- TRUE
+    if(dist %in% callsNotAllowedInAD)
+        message("   [Note] Distribution ", dist, " does not have support for derivatives.  This model cannot be compiled.")
+    else {
+        if(!dist %in% distributions$namesVector) {
+            dfun <- get(dist, pos = userEnv) # same way dist is looked up in prepareDistributionInput
+            if(!is.rcf(dfun))
+                message("   [Note] Could not find a valid distribution definition while trying to check derivative support for ", dist, ".")
+            else {
+                dfun_buildDerivs <- environment(dfun)$nfMethodRCobject[["buildDerivs"]]
+                if(isFALSE(dfun_buildDerivs) || is.null(dfun_buildDerivs))
+                    message("   [Note] Distribution ", dist, " does not appear to support derivatives. Set buildDerivs = TRUE (or to a list) in its nimbleFunction to turn on derivative support.")
+            }
+        }
+    }
+}
 
 # check if distribution is defined and if not, attempt to register it
 checkUserDefinedDistribution <- function(code, userEnv) {
@@ -1163,7 +1191,7 @@ modelDefClass$methods(genSymbolicParentNodes = function() {
     nimFunNames <- getAllDistributionsInfo('namesExprList')
 
     for(i in seq_along(declInfo)){
-        declInfo[[i]]$genSymbolicParentNodes(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames, contextID = declInfo[[i]]$contextID)
+        declInfo[[i]]$genSymbolicParentNodes(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames, contextID = declInfo[[i]]$contextID, buildDerivs = buildDerivs)
     }
 })
 
@@ -1184,7 +1212,7 @@ modelDefClass$methods(genReplacedTargetValueAndParentInfo = function() {
     
     for(i in seq_along(declInfo)) {
         declInfo[[i]]$genReplacedTargetValueAndParentInfo(constantsNamesList, contexts[[declInfo[[i]]$contextID]],
-                                                          nimFunNames, contextID = declInfo[[i]]$contextID)
+                                                          nimFunNames, contextID = declInfo[[i]]$contextID, buildDerivs = buildDerivs)
     }
     NULL
 })

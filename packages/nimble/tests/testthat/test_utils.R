@@ -45,11 +45,13 @@ sink_with_messages <- function(file, ...) {
 }
 
 ## This is useful for working around scoping issues with nimbleFunctions using other nimbleFunctions.
-temporarilyAssignInGlobalEnv <- function(value) {
+temporarilyAssignInGlobalEnv <- function(value, replace = FALSE) {
     name <- deparse(substitute(value))
     assign(name, value, envir = .GlobalEnv)
-    rmCommand <- substitute(remove(name, envir = .GlobalEnv))
-    do.call('on.exit', list(rmCommand, add = TRUE), envir = parent.frame())
+    if(!replace) {
+        rmCommand <- substitute(remove(name, envir = .GlobalEnv))
+        do.call('on.exit', list(rmCommand, add = TRUE), envir = parent.frame())
+    }
 }
 
 withTempProject <- function(code) {
@@ -1304,7 +1306,7 @@ derivsNimbleFunction <- nimbleFunction(
     ans <- nimDerivs(model$calculate(calcNodes), wrt = wrt, order = order, reset = reset)
     return(ans)
     returnType(ADNimbleList())
-  }  ## don't need enableDerivs if call nimDerivs directly, but would if just have model$calc in nf
+  }  ## don't need buildDerivs if call nimDerivs directly, but would if just have model$calc in nf
 )
 
 ## nf for double-taping
@@ -1361,7 +1363,7 @@ derivsNimbleFunctionMeta <- nimbleFunction(
       returnType(ADNimbleList())
     }
   ),
-  enableDerivs = list(run = list(),
+  buildDerivs = list(run = list(),
                       derivs1Run = list(),
                       derivs2Run = list())
 )
@@ -1395,7 +1397,7 @@ derivsNimbleFunctionParamTransform <- nimbleFunction(
             returnType(double())
             return(lp)
         }
-    ), enableDerivs = 'inverseTransformStoreCalculate'
+    ), buildDerivs = 'inverseTransformStoreCalculate'
 )
 
 
@@ -1454,7 +1456,7 @@ derivsNimbleFunctionParamTransformMeta <- nimbleFunction(
             returnType(ADNimbleList())
         }       
     ),
-    enableDerivs = list(run = list(),
+    buildDerivs = list(run = list(),
                         derivs1Run = list(),
                         derivs2Run = list())
 )
@@ -1472,7 +1474,7 @@ calcNodesForDerivs <- nimbleFunction(
             return(ans)
             returnType(double())
         },
-    enableDerivs = 'run')
+    buildDerivs = 'run')
 
 
 ## Tests taking derivatives of calls to model$calculate(nodes) (or equivalently calculate(model, nodes))

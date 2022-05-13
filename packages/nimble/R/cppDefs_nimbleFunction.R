@@ -155,7 +155,10 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                            ## The next line creates the cppCopyTypes exactly the same way as in buildNimbleObjInterface
                                            ## and CmultiNimbleObjClass::initialize.
                                            cppCopyTypes <- makeNimbleFxnCppCopyTypes(nimCompProc$getSymbolTable(), objectDefs$getSymbolNames())
-                                           copyFromRobjectDefs <- makeCopyFromRobjectDef(className = nfProc$name, cppCopyTypes, .self$nfProc$instances[[1]])
+                                           copyFromRobjectDefs <- makeCopyFromRobjectDef(className = nfProc$name,
+                                                                                         cppCopyTypes,
+                                                                                         .self$nfProc$instances[[1]],
+                                                                                         buildDerivs = environment(nfProc$nfGenerator)$buildDerivs)
                                            functionDefs[['copyFromRobject']] <<- copyFromRobjectDefs$copyFromRobjectDef
                                        },
                                        buildAll = function(where = where) {
@@ -428,7 +431,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   nameSubList <- RCfunProc$nameSubList
                                                   compileInfo <- nfProc$compileInfos[[funName]]
                                                   if(length(nameSubList) == 0)
-                                                    stop(paste0('Derivatives cannot be enabled for method ',
+                                                    stop(paste0('Derivatives cannot be built for method ',
                                                                 funName,
                                                                 ', since this method has no arguments.'))
                                                   ## if(!nfProc$isNode & !isTRUE(derivControl[['meta']]) & isStatic){
@@ -488,27 +491,27 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               checkADargument = function(funName, argSym, argName = NULL, returnType = FALSE){
                                                   argTypeText <- if(returnType) 'returnType' else 'argument'
                                                   if(argSym$type != 'double')
-                                                      stop(paste0('The ', argName, ' ', argTypeText, ' of the ', funName, ' method is not a double, this method cannot have derivatives enabled.'))
+                                                      stop(paste0('The ', argName, ' ', argTypeText, ' of the ', funName, ' method is not a double, this method cannot have derivatives built.'))
                                         # if(!(argSym$nDim %in% c(0,1)))
                                         #    stop(paste0('The ', argName, ' ', argTypeText, ' of the ', funName, ' method must be a double scalar or double vector for derivatives to be enabled.'))
                                                   if((argSym$nDim != 0) && is.na(argSym$size))
-                                                      stop(paste0('To enable derivatives, size must be given for the ',
+                                                      stop(paste0('To build derivatives, size must be given for the ',
                                                                   argName, ' ', argTypeText, ' of the ', funName,
                                                                   ' method,  e.g. double(1, 3) for a length 3 vector.' ))
                                               },
                                               addADclassContent = function() {
                                         # CPPincludes <<- c("<TMB/distributions_R.hpp>", CPPincludes)
                                                   constructorCode <- NULL ## default return object
-                                                enableDerivs <- environment(nfProc$nfGenerator)$enableDerivs
+                                                buildDerivs <- environment(nfProc$nfGenerator)$buildDerivs
 
-                                                enableNames <- names(enableDerivs)
+                                                buildNames <- names(buildDerivs)
                                                 ADinUse <- FALSE
-                                                for(iED in seq_along(enableDerivs)) {
-                                                  if(!isTRUE(enableDerivs[[iED]][['isNode']])) {
+                                                for(iED in seq_along(buildDerivs)) {
+                                                  if(!isTRUE(buildDerivs[[iED]][['isNode']])) {
                                                     ADinUse <- TRUE
-                                                    if(!isTRUE(enableDerivs[[iED]][['calculate']])) {
-                                                      addADclassContentOneFun(enableNames[iED],
-                                                                              enableDerivs[[iED]],
+                                                    if(!isTRUE(buildDerivs[[iED]][['calculate']])) {
+                                                      addADclassContentOneFun(buildNames[iED],
+                                                                              buildDerivs[[iED]],
                                                                               funIndex = iED) ## funIndex might be deprecated
                                                     }
                                                   }
@@ -573,8 +576,8 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       addInheritance(baseClassName)
                                                       addAncestors('NamedObjects')
                                                   }
-                                                  handleDerivs <- isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs")) &&
-                                                      length(environment(nfProc$nfGenerator)$enableDerivs) > 0
+                                                  handleDerivs <- isTRUE(nimbleOptions("enableDerivs")) &&
+                                                      length(environment(nfProc$nfGenerator)$buildDerivs) > 0
                                                   if(handleDerivs) {
                                                       constructorCode <- addADclassContent() ## Might generate code to insert into constructor, which is built later
                                                       if('nodeFun' %in% .self$inheritance) {
@@ -675,7 +678,7 @@ exprClasses_modifyForAD <- function(code, symTab,
       modifyForAD_recordable(code, symTab, workEnv)
     else {
       if(!is.null(code$aux)) {
-        if(isTRUE(code$aux[['enableDerivs']])) ## This is added in sizeRCfunction
+        if(isTRUE(code$aux[['buildDerivs']])) ## This is added in sizeRCfunction
           modifyForAD_RCfunction(code, symTab, workEnv)
       }
     }
@@ -866,9 +869,9 @@ modifyForAD_nfMethod <- function(code, symTab, workEnv) {
   if(!is.character(methodName))
     message("In modifyForAD_nfMethod, was expecting method name to be character.  There must be another case that needs implementation.")
   methodSymObj <- NFsymObj$nfProc$compileInfos[[methodName]]$newLocalSymTab$getSymbolObject(methodName, TRUE)
-  enableDerivs <- methodSymObj$nfMethodRCobj$enableDerivs
-  if(!is.null(enableDerivs))
-    if(!isFALSE(enableDerivs)) {
+  buildDerivs <- methodSymObj$nfMethodRCobj$buildDerivs
+  if(!is.null(buildDerivs))
+    if(!isFALSE(buildDerivs)) {
       code$args[[2]] <- paste0( code$args[[2]], "_AD2_")
       code$name <- "nfMethodAD" ## This is a tag for modifyForAD_chainedCall
     }
@@ -886,9 +889,9 @@ modifyForAD_chainedCall <- function(code, symTab, workEnv) {
 
 modifyForAD_recordable <- function(code, symTab, workEnv) {
   symObj <- workEnv$RsymTab$getSymbolObject(code$name, TRUE)
-  enableDerivs <- symObj$nfMethodRCobj$enableDerivs
-  if(!is.null(enableDerivs))
-    if(!isFALSE(enableDerivs)) {
+  buildDerivs <- symObj$nfMethodRCobj$buildDerivs
+  if(!is.null(buildDerivs))
+    if(!isFALSE(buildDerivs)) {
       code$name <- paste0(code$name, "_AD2_")
       setArg(code, length(code$args) + 1, RparseTree2ExprClasses(quote(recordingInfo_)))
     }
@@ -985,7 +988,8 @@ updateADproxyModelMethods <- function(.self) {
     NULL
 }
 
-makeSingleCopyCall <- function(varName, cppCopyType) {
+makeSingleCopyCall <- function(varName, cppCopyType,
+                               buildDerivs = FALSE) {
     switch(cppCopyType,
            'nimbleFunction' = {
                cppLiteral(paste0("COPY_NIMBLE_FXN_FROM_R_OBJECT(\"", varName, "\");")) 
@@ -1010,12 +1014,13 @@ makeSingleCopyCall <- function(varName, cppCopyType) {
            },
            'modelVarAccess' = {
                cppLiteral(paste0("COPY_VALUE_MAP_ACCESSORS_FROM_NODE_NAMES(\"", varName, "\"",
-                                 if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs"))) ", 1" else ", 0", ");"))
+                                 if(isTRUE(buildDerivs)) ", 1" else ", 0", ");"))
            },
            NULL)
 }
 
-makeCopyFromRobjectDef <- function(className, cppCopyTypes, Robj) {
+makeCopyFromRobjectDef <- function(className, cppCopyTypes, Robj,
+                                   buildDerivs = FALSE) {
     ## Make method for copying from R object
     copyFromRobjectDef <- RCfunctionDef()
     copyFromRobjectDef$name <- 'copyFromRobject'
@@ -1032,7 +1037,8 @@ makeCopyFromRobjectDef <- function(className, cppCopyTypes, Robj) {
       ##     cppCopyTypes[[i]] = "nodeFxnVec_derivs"
       ##   }
       ## }
-      copyCalls[[varNames[i]]] <- makeSingleCopyCall(varNames[i], cppCopyTypes[[i]])
+      copyCalls[[varNames[i]]] <- makeSingleCopyCall(varNames[i], cppCopyTypes[[i]],
+                                                     buildDerivs = buildDerivs)
     }
 
     if(length(copyCalls) == 0) {

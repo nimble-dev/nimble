@@ -1629,12 +1629,12 @@ sizeValues <- function(code, symTab, typeEnv) {
 sizeRCfunction <- function(code, symTab, typeEnv, nfmObj, RCfunProc) {
     returnType <- nfmObj$returnType
     ## argInfo <- nfmObj$argInfo
-    ## Insert enableDerivs label into code$aux
-    if(is.list(nfmObj$enableDerivs)) {
+    ## Insert buildDerivs label into code$aux
+    if(is.list(nfmObj$buildDerivs)) {
         if(is.null(code$aux))
-            code$aux <- list(enableDerivs = TRUE)
+            code$aux <- list(buildDerivs = TRUE)
         else
-            code$aux[['enableDerivs']] <- TRUE
+            code$aux[['buildDerivs']] <- TRUE
     }
     code$name <- nfmObj$uniqueName
     returnSymbol <- RCfunProc$compileInfo$returnSymbol

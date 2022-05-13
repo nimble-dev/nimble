@@ -145,30 +145,30 @@ nfProcessing <- setRefClass('nfProcessing',
             }
         },
         collect_nimDerivs_info = function() {
-            newEnableDerivs <- list()
+            newBuildDerivs <- list()
             for(i in seq_along(RCfunProcs)) {
                 ADinfoNames <- RCfunProcs[[i]]$compileInfo$typeEnv[['ADinfoNames_calculate']]
                 if(!is.null(ADinfoNames)) {
                     methodName <- RCfunProcs[[i]]$name
                     if(is.character(methodName)) ## not sure when it wouldn't be; this is defensive
-                        newEnableDerivs[[ methodName ]] <- list(calculate = TRUE)
+                        newBuildDerivs[[ methodName ]] <- list(calculate = TRUE)
                 }
             }
-            if(length(newEnableDerivs)) {
-                environment(nfGenerator)$enableDerivs <<- c(newEnableDerivs,
-                                                            environment(nfGenerator)$enableDerivs)
+            if(length(newBuildDerivs)) {
+                environment(nfGenerator)$buildDerivs <<- c(newBuildDerivs,
+                                                            environment(nfGenerator)$buildDerivs)
             }
             for(i in seq_along(RCfunProcs)) {
                 new_noDeriv_vars <- RCfunProcs[[i]]$compileInfo$typeEnv[['.new_noDeriv_vars']]
                 if(length(new_noDeriv_vars) > 0) {
                     thisFunName <- names(RCfunProcs)[i]
-                    thisEnableDerivs <- environment(nfGenerator)$enableDerivs[[thisFunName]]
-                    if(!is.null(thisEnableDerivs)) {
-                        if(is.null(thisEnableDerivs$noDeriv_vars))
-                            thisEnableDerivs$noDeriv_vars <- character()
-                        thisEnableDerivs$noDeriv_vars <- unique(c(thisEnableDerivs$noDeriv_vars,
+                    thisBuildDerivs <- environment(nfGenerator)$buildDerivs[[thisFunName]]
+                    if(!is.null(thisBuildDerivs)) {
+                        if(is.null(thisBuildDerivs$noDeriv_vars))
+                            thisBuildDerivs$noDeriv_vars <- character()
+                        thisBuildDerivs$noDeriv_vars <- unique(c(thisBuildDerivs$noDeriv_vars,
                                                                   new_noDeriv_vars))
-                        environment(nfGenerator)$enableDerivs[[thisFunName]] <<- thisEnableDerivs
+                        environment(nfGenerator)$buildDerivs[[thisFunName]] <<- thisBuildDerivs
                     }
                 }
             }
@@ -236,7 +236,7 @@ nfProcessing <- setRefClass('nfProcessing',
 
             collectRCfunNeededTypes()
 
-            if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs"))) {
+            if(isTRUE(nimbleOptions("enableDerivs"))) {
                 collect_nimDerivs_info()
             }
             
@@ -511,10 +511,10 @@ makeTypeObj_impl <- function(.self, name, instances, firstOnly) {
     }
     return(symbolModel(name = name, type = 'Ronly', className = class(instances[[1]][[name]]))) 
   }
-  if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs"))) {
-      if(inherits(instances[[1]][[name]], 'ADproxyModelClass')) {
-          return(symbolModel(name = name, type = 'Ronly', className = class(instances[[1]][[name]]$model))) 
-      }
+  if(inherits(instances[[1]][[name]], 'ADproxyModelClass')) {
+      if(!isTRUE(nimbleOptions("enableDerivs")))
+          stop("It looks like derivatives are being created by nimbleOptions('enableDerivs') is not TRUE.")
+      return(symbolModel(name = name, type = 'Ronly', className = class(instances[[1]][[name]]$model))) 
   }
   
   if(inherits(instances[[1]][[name]], 'NumericListBase')) {

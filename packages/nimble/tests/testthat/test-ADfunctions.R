@@ -3,9 +3,9 @@ source(system.file(file.path('tests', 'testthat', 'AD_math_test_lists.R'), packa
 source(system.file(file.path('tests', 'testthat', 'AD_distribution_test_lists.R'), package = 'nimble'))
 source(system.file(file.path('tests', 'testthat', 'AD_knownFailures.R'), package = 'nimble'))
 EDopt <- nimbleOptions("enableDerivs")
-BDopt <- nimbleOptions("buildDerivs")
+BMDopt <- nimbleOptions("buildModelDerivs")
 nimbleOptions(enableDerivs = TRUE)
-nimbleOptions(buildDerivs = TRUE)
+nimbleOptions(buildModelDerivs = TRUE)
 nimbleOptions(allowDynamicIndexing = FALSE)
 
 context("Testing of derivatives for nimbleFunctions.")
@@ -25,7 +25,7 @@ test_that('Derivatives of dnorm function correctly.',
           returnType(double())
           return(out)
         }
-      ), enableDerivs = c('testMethod')
+      ), buildDerivs = c('testMethod')
     )
     ADfunInst <- ADfun1()
     xRec <- matrix(c(1, -1))
@@ -65,7 +65,7 @@ test_that('Derivatives of x^2 function correctly.',
                   return(2^x[1])
                 }
                 
-              ), enableDerivs = c('testMethod', 'testMethod2')
+              ), buildDerivs = c('testMethod', 'testMethod2')
             )
             ADfunInst <- ADfun2()
             xRec <- c(2, 2)
@@ -98,7 +98,7 @@ test_that('Derivatives of sum(log(x)) function correctly.',
                   returnType(double(0))
                   return(sum(log(x[])))
                 }
-              ), enableDerivs = c('testMethod')
+              ), buildDerivs = c('testMethod')
             )
             ADfunInst <- ADfun3()
             xRec <- c(1, 1)
@@ -159,7 +159,7 @@ test_that('Derivatives of matrix multiplication function correctly.',
                   returnType(double(2, c(2, 4)))
                   return(x%*%y)
                 }
-              ), enableDerivs = c('testMethod')
+              ), buildDerivs = c('testMethod')
             )
             ADfunInst <- ADfun5()
             x <- diag(2)
@@ -187,7 +187,7 @@ test_that('Derivatives of matrix component-wise exponentiation function correctl
                   returnType(double(2, c(2, 2)))
                   return(exp(x))
                 }
-              ), enableDerivs = c('testMethod')
+              ), buildDerivs = c('testMethod')
             )
             ADfunInst <- ADfun6()
             x <- diag(2)
@@ -259,4 +259,4 @@ test_AD_batch(distn_tests[13:14],  knownFailures = AD_knownFailures) ## dmulti f
 test_AD_batch(distn_with_log_tests,  knownFailures = AD_knownFailures)
 
 nimbleOptions(enableDerivs = EDopt)
-nimbleOptions(buildDerivs = BDopt)
+nimbleOptions(buildModelDerivs = BMDopt)

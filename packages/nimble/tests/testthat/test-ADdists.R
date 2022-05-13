@@ -1,8 +1,8 @@
 source(system.file(file.path('tests', 'testthat', 'AD_test_utils.R'), package = 'nimble'))
 EDopt <- nimbleOptions("enableDerivs")
-BDopt <- nimbleOptions("buildDerivs")
+BMDopt <- nimbleOptions("buildModelDerivs")
 nimbleOptions(enableDerivs = TRUE)
-nimbleOptions(buildDerivs = TRUE)
+nimbleOptions(buildModelDerivs = TRUE)
 nimbleOptions(allowDynamicIndexing = FALSE)
 
 ## I'll use more comprehensive tests in AD_distribution_test_lists
@@ -72,3 +72,6 @@ betaDistTests <- list(
 # PROBLEM: Set tols
 # WILL NOT WORK AT X = 0
 lapply(betaDistTests, test_AD2)
+
+nimbleOptions(enableDerivs= EDopt)
+nimbleOptions(buildModelDerivs = BMDopt)

@@ -46,6 +46,7 @@ callsNotAllowedInAD <- c(
   '%%',
   'nimMod',
   'trace',
+  'nimStep',
   'nimEigen',
   'nimSvd',
   'nimOptim_model',
@@ -62,7 +63,7 @@ callsNotAllowedInAD <- c(
   paste0('r', c('binom', 'nbinom', 'pois','beta','chisq',
                 'dexp','exp_nimble','flat','halfflat','gamma','invgamma','sqrtinvgamma','lnorm',
                 'logis','norm','t_nonstandard','unif','weibull', 't','exp')),
-  paste0('d', c('cat', 'interval', 'car_normal', 'car_proper')),
+  paste0('d', c('cat', 'interval', 'car_normal', 'car_proper', 'constraint')),
   paste0('r', c('cat', 'interval', 'car_normal', 'car_proper',
                 'dirch','mnorm_chol','multi','mvt_chol','lkj_corr_cholesky','wish_chol',
                 'invwish_chol')),
@@ -95,7 +96,7 @@ nfMethodRC <- setRefClass(
         neededRCfuns = 'ANY',		#list
         externalHincludes = 'ANY',
         externalCPPincludes = 'ANY',
-        enableDerivs = 'ANY'
+        buildDerivs = 'ANY'
     ),
     methods = list(
         initialize = function(method,
@@ -103,7 +104,7 @@ nfMethodRC <- setRefClass(
                               check = FALSE,
                               methodNames = NULL,
                               setupVarNames = NULL,
-                              enableDerivs = FALSE,
+                              buildDerivs = FALSE,
                               where = NULL) {
             ## uniqueName is only needed for a pure RC function.
             ## It is not needed for a nimbleFunction method.
@@ -119,15 +120,17 @@ nfMethodRC <- setRefClass(
             ## check all code except nimble package nimbleFunctions
             generateArgs()
 
-            if(check && "package:nimble" %in% search()) 
+            if(check && "package:nimble" %in% search()) {
                 nf_checkDSLcode(code, methodNames, setupVarNames, names(arguments), where)
-
+                if(!isFALSE(buildDerivs) & !is.null(buildDerivs))
+                    nf_checkDSLcode_derivs(code, names(arguments), callsNotAllowedInAD)
+            }
             generateTemplate() ## used for argument matching
             removeAndSetReturnType(check = check)
             ## Includes for .h and .cpp files when making external calls:
             ## If needed, these will be populated by nimbleExternalCall
             externalHincludes <<- externalCPPincludes <<- list()
-            enableDerivs <<- enableDerivs
+            buildDerivs <<- buildDerivs
         },
         generateArgs = function() {
             argsList <- nf_createAList(names(argInfo))
@@ -224,6 +227,16 @@ findMethodsInExprClass <- function(expr) {
         }
     } 
     return(NULL)
+}
+
+nf_checkDSLcode_derivs <- function(code, args, calls_not_allowed) {
+    calls <- setdiff(all.names(code),
+                     c(all.vars(code), args))
+    problem_calls <- calls[ calls %in% calls_not_allowed ]
+    if(length(problem_calls)) {
+        message("  [Note] Detected use of function(s) that are not supported for derivative tracking in a function or method for which buildDerivs has been requested: ", paste(unique(problem_calls), collapse = ", "), ".")
+    }
+    NULL
 }
 
 nf_checkDSLcode <- function(code, methodNames, setupVarNames, args, where = NULL) {

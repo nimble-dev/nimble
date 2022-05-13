@@ -298,7 +298,7 @@ test_AD2 <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
     setup = function() {},
     run = param$run,
     methods = param$methods,
-    enableDerivs = param$enableDerivs
+    buildDerivs = param$buildDerivs
   )
   Robj <- nf()
   temporarilyAssignInGlobalEnv(Robj)
@@ -466,7 +466,7 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
     setup = function() {},
     run = param$run,
     methods = param$methods,
-    enableDerivs = param$enableDerivs
+    buildDerivs = param$buildDerivs
   )
   nfInst <- nf()
   temporarilyAssignInGlobalEnv(nfInst)
@@ -1115,7 +1115,7 @@ make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
     opParam = opParam,
     run = run,
     methods = methods,
-    enableDerivs = list(run = list()
+    buildDerivs = list(run = list()
                        ,
                        value = list(noDeriv_vars = c('wrt', 'i')),
                        jac = list(noDeriv_vars = c('wrt', 'i', 'j')),
@@ -1163,7 +1163,7 @@ make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
 ##          methods:        a list of nimbleFunction method expressions that are
 ##                          the calls to nimDerivs() of the run method, each with
 ##                          a different wrt argument
-##          enableDerivs:   list('run')
+##          buildDerivs:   list('run')
 ##          wrts:           a list of character vectors, each of which is the wrt
 ##                          argument for the corresponding method in methods
 ##          input_gen_funs: A list of random input generation functions to be
@@ -1226,7 +1226,7 @@ make_AD_test <- function(op, argTypes, wrt_args = NULL,
     opParam = opParam,
     run = run,
     methods = methods,
-    enableDerivs = 'run',
+    buildDerivs = 'run',
     wrts = wrts,
     input_gen_funs = input_gen_funs
   )

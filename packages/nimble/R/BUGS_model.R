@@ -1324,7 +1324,7 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            code <- nimble:::insertSingleIndexBrackets(code, modelDef$varInfo)
                                            LHS <- code[[2]]
                                            RHS <- code[[3]]
-                                           if(isTRUE(nimble::nimbleOptions("enableDerivs")) && isTRUE(nimble::nimbleOptions("buildDerivs"))) {
+                                           if(isTRUE(modelDef$buildDerivs)) {
                                              parents <- BUGSdecl$allParentVarNames()
                                              selfWithNoInds <-  strsplit(nimble:::safeDeparse(LHS, warn = TRUE), '[', fixed = TRUE)[[1]][1]
                                              parents <- c(selfWithNoInds, parents)
@@ -1377,6 +1377,7 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                                                                    unrolledIndicesMatrix = BUGSdecl$unrolledIndicesMatrix,
                                                                                    nodeDim = nodeDim,
                                                                                    evaluate=TRUE,
+                                                                                   buildDerivs = modelDef$buildDerivs,
                                                                                    where = where)
 
                                            nodeGenerators[[i]] <<- nfGenerator
@@ -1410,7 +1411,7 @@ RMakeCustomModelClass <- function(vars, className, isDataVars, modelDef, where =
     className <- paste0(className, '_', nimbleUniqueID())
 
     allFields <- makeBUGSclassFields(varnames, vars)
-    if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs"))) {
+    if(isTRUE(modelDef$buildDerivs)) {
         allFields[[length(allFields) + 1]] <- 'ANY'
         names(allFields)[[length(allFields)]] <- 'ADproxyModel'
     }
@@ -1436,7 +1437,7 @@ RMakeCustomModelClass <- function(vars, className, isDataVars, modelDef, where =
             }
         ), where = where),
         list(FIELDS = allFields,
-             ADPROXYLINE = if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs")))
+             ADPROXYLINE = if(isTRUE(modelDef$buildDerivs))
                                quote(ADproxyModel <<- nimble:::ADproxyModelClass(.self))
                            else
                                NULL

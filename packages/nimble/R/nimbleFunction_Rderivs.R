@@ -807,10 +807,10 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
   fxnArgsDimSizes <- lapply(nimFxnArgs, function(x){
     if(length(x) == 1) return(1)
     if(x[[2]] == 0) return(1)
-    if(length(x) < 3) stop(paste0('Problem with derivative-enabled nimbleFunction method ', fxnName,
-                                 ': If the mode of enableDerivs is static=TRUE, sizes of arguments ',
+    if(length(x) < 3) stop(paste0('Problem building derivatives for nimbleFunction method ', fxnName,
+                                 ': If the mode of buildDerivs is static=TRUE, sizes of arguments ',
                                  'must be explicitly specified (e.g. x = double(1, 4)).  If the mode of ',
-                                 'enableDerivs is static=FALSE, then wrt cannot use argument ',
+                                 'buildDerivs is static=FALSE, then wrt cannot use argument ',
                                  'names.'))
     if(x[[2]] == 1){
       if(length(x[[3]]) == 1) return(x[[3]])

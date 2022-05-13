@@ -241,17 +241,17 @@ calculate_keywordInfo <- keywordInfoClass(
             return(code)
         errorContext <- deparse(code)
 
-        enableDerivs <- FALSE
+        buildDerivs <- FALSE
         withDerivsOutputOnly <- FALSE
-        if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(nimbleOptions("buildDerivs"))) {
-          derivControl <- environment(nfProc$nfGenerator)$enableDerivs[[RCfunProc$name]]
+        if(isTRUE(nimbleOptions("enableDerivs"))) {
+          derivControl <- environment(nfProc$nfGenerator)$buildDerivs[[RCfunProc$name]]
           ## There are two cases.
-          ## If enableDerivs has an entry, then derivatives are enabled either
+          ## If buildDerivs has an entry, then derivatives are enabled either
           ## explicitly or because of a nimDerivs(model$calculate), i.e. a direct line into derivs for just a model calculation.
           ##
           ## These need to be disambiguated for use below to choose the right setup template case
-          enableDerivs <- !is.null(derivControl) | !is.null(code$wrt)
-          withDerivsOutputOnly <- enableDerivs & is.null(code$wrt) ## This is the case of *not* nimDerivs(model$calculate)
+          buildDerivs <- !is.null(derivControl) | !is.null(code$wrt)
+          withDerivsOutputOnly <- buildDerivs & is.null(code$wrt) ## This is the case of *not* nimDerivs(model$calculate)
         }
         
         nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, wrtNodes = code$wrt,
@@ -273,7 +273,7 @@ calculate_keywordInfo <- keywordInfoClass(
         }
         useNodeFunctionVectorByIndex <- FALSE
         if(hasBracket(nodeFunVec_ArgList$nodes)) { ## like calculate(model, nodes[i]), which could have started as model$calculate(nodes[i])
-            if(enableDerivs)
+            if(buildDerivs)
                 stop(paste0('Derivatives for an indexed node are not allowed.\n',
                             'Use nimDerivs(model$calculate(nodes), ...) instead of \n',
                             'nimDerivs(model$calculate(nodes[i]).\n'))
@@ -287,7 +287,7 @@ calculate_keywordInfo <- keywordInfoClass(
             nodeFunVec_ArgList$sortUnique <- FALSE
         }
 
-        if(!withDerivsOutputOnly) { ## This is regular mode, including without derivs at all and with enableDerivs but not nimDerivs(model$calculate...)
+        if(!withDerivsOutputOnly) { ## This is regular mode, including without derivs at all and with buildDerivs but not nimDerivs(model$calculate...)
           nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
           addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
         } else {

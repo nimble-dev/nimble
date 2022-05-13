@@ -1,8 +1,8 @@
 source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 EDopt <- nimbleOptions("enableDerivs")
-BDopt <- nimbleOptions("buildDerivs")
+BMDopt <- nimbleOptions("buildModelDerivs")
 nimbleOptions(enableDerivs = TRUE)
-nimbleOptions(buildDerivs = TRUE)
+nimbleOptions(buildModelDerivs = TRUE)
 
 nimbleOptions(useADcholAtomic = TRUE)
 nimbleOptions(useADsolveAtomic  = TRUE)                              
@@ -401,6 +401,8 @@ test_that("Derivs of calculate function work for rats model", {
 ## Start of Chris' tests ##
 
 ## basic model, with lifted nodes
+  debug(nimble:::processModelVarAccess)
+  debug(nimble:::populateManyModelVarMapAccess)
 
 set.seed(1)
 inits <- list(mu0 = 1.2, tau = 1.5, tau0 = 2.2, mu = c(0.1, 1.1, 2.1))
@@ -852,8 +854,8 @@ covFunLoop <- nimbleFunction(
                 out[i,j] <- exp(-dist[i,j]/rho)
         returnType(double(2))
         return(out)
-    }, enableDerivs = list(run = list(noDeriv_vars = c('i','j'))))
-    # enableDerivs = TRUE) # if use NCT 130 work-around
+    }, buildDerivs = list(run = list(noDeriv_vars = c('i','j'))))
+    # buildDerivs = TRUE) # if use NCT 130 work-around
 
 code <- nimbleCode({
     Sigma2[1:n,1:n] <- covFunLoop(dist[1:n,1:n], rho)
@@ -904,7 +906,7 @@ covFunVec <- nimbleFunction(
         out <- exp(-dist/rho)
         returnType(double(2))
         return(out)
-    }, enableDerivs = TRUE)
+    }, buildDerivs = TRUE)
 
 code <- nimbleCode({
     Sigma3[1:n,1:n] <- covFunVec(dist[1:n,1:n], rho)
@@ -1153,7 +1155,7 @@ dmyexp <- nimbleFunction(
         logProb <- log(rate) - x*rate
         if(log) return(logProb)
         else return(exp(logProb)) 
-    }, enableDerivs = TRUE)
+    }, buildDerivs = TRUE)
 
 code <- nimbleCode({ 
     y ~ dmyexp(rho)
@@ -1176,7 +1178,7 @@ dtest <- nimbleFunction(
         tmp <- mu^2
         out <- tmp[1]
         if(log) return(out) else return(exp(out))
-    }, enableDerivs = TRUE)
+    }, buildDerivs = TRUE)
 
 rtest <- nimbleFunction(
     run = function(n = integer(0), mu = double(1)) {
@@ -1218,7 +1220,7 @@ dGPdist <- nimbleFunction(
         qf <- forwardsolve(L, x)
         out <- out - 0.5*sum(qf^2)
         if(log) return(out) else return(exp(out))
-    }, enableDerivs = TRUE)
+    }, buildDerivs = TRUE)
 
 rGPdist <- nimbleFunction(
     run = function(n = integer(0), dist = double(2), rho = double(0)) {
@@ -1782,4 +1784,4 @@ if(FALSE) {
 ## dugongs: various major mismatches, including logprob
 
 nimbleOptions(enableDerivs = EDopt)
-nimbleOptions(buildDerivs = BDopt)
+nimbleOptions(buildModelDerivs = BMDopt)

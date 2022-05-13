@@ -588,7 +588,7 @@ nimOneLaplace1D <- nimbleFunction(
       returnType(double(1))
     }
   ),
-  enableDerivs = list(inner_logLik                      = list(),
+  buildDerivs = list(inner_logLik                      = list(),
                       joint_logLik                      = list(),
                       gr_joint_logLik_wrt_re            = list(),
                       negHess                           = list(),
@@ -1267,7 +1267,7 @@ nimOneLaplace <- nimbleFunction(
       returnType(double(1))
     }
   ),
-  enableDerivs = list(inner_logLik                      = list(),
+  buildDerivs = list(inner_logLik                      = list(),
                       joint_logLik                      = list(),
                       gr_joint_logLik_wrt_re            = list(),
                       negHess                           = list(),
@@ -1724,5 +1724,5 @@ buildLaplace <- nimbleFunction(
       returnType(optimResultNimbleList())
    }
   ),
-  enableDerivs = list(inverseTransform = list())
+  buildDerivs = list(inverseTransform = list())
 )
