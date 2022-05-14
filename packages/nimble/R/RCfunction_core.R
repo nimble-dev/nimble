@@ -122,8 +122,9 @@ nfMethodRC <- setRefClass(
 
             if(check && "package:nimble" %in% search()) {
                 nf_checkDSLcode(code, methodNames, setupVarNames, names(arguments), where)
-                if(!isFALSE(buildDerivs) & !is.null(buildDerivs))
-                    nf_checkDSLcode_derivs(code, names(arguments), callsNotAllowedInAD)
+                if(isTRUE(nimbleOptions("doADerrorTraps")))
+                   if(!isFALSE(buildDerivs) & !is.null(buildDerivs))
+                       nf_checkDSLcode_derivs(code, names(arguments), callsNotAllowedInAD)
             }
             generateTemplate() ## used for argument matching
             removeAndSetReturnType(check = check)

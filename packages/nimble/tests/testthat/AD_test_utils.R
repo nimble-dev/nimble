@@ -1117,10 +1117,10 @@ make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
     methods = methods,
     buildDerivs = list(run = list()
                        ,
-                       value = list(noDeriv_vars = c('wrt', 'i')),
-                       jac = list(noDeriv_vars = c('wrt', 'i', 'j')),
-                       jac2 = list(noDeriv_vars = c('wrt', 'i', 'j')),
-                       hess = list(noDeriv_vars = c('wrt', 'i', 'j', 'k'))
+                       value = list(ignore = c('wrt', 'i')),
+                       jac = list(ignore = c('wrt', 'i', 'j')),
+                       jac2 = list(ignore = c('wrt', 'i', 'j')),
+                       hess = list(ignore = c('wrt', 'i', 'j', 'k'))
                         ),
     wrt_args = wrt_args,
     input_gen_funs = input_gen_funs,

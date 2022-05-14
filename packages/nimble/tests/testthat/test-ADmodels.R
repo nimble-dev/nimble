@@ -219,7 +219,7 @@ test_that('makeDerivsInfo works correctly', {
     expect_identical(result$updateNodes, c(lftChElems))
     expect_identical(result$constantNodes, character(0))
    
-}
+})
 
 ## First set of tests are ones Nick developed
 
@@ -401,9 +401,6 @@ test_that("Derivs of calculate function work for rats model", {
 ## Start of Chris' tests ##
 
 ## basic model, with lifted nodes
-  debug(nimble:::processModelVarAccess)
-  debug(nimble:::populateManyModelVarMapAccess)
-
 set.seed(1)
 inits <- list(mu0 = 1.2, tau = 1.5, tau0 = 2.2, mu = c(0.1, 1.1, 2.1))
 data <- list(a = matrix(rnorm(6), 3, 2))
@@ -854,7 +851,7 @@ covFunLoop <- nimbleFunction(
                 out[i,j] <- exp(-dist[i,j]/rho)
         returnType(double(2))
         return(out)
-    }, buildDerivs = list(run = list(noDeriv_vars = c('i','j'))))
+    }, buildDerivs = list(run = list(ignore = c('i','j'))))
     # buildDerivs = TRUE) # if use NCT 130 work-around
 
 code <- nimbleCode({

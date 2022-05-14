@@ -8,6 +8,7 @@ nimblePreevaluationFunctionNames <- c('+',
                                       'exp',
                                       'log',
                                       'pow',
+                                      'pow_int',
                                       '^',
                                       '%%',
                                       'equals',
@@ -823,9 +824,10 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                                 ". This is now allowed as of version 0.6-6 (as an optional beta feature) and by default as of version 0.6-7. Please set 'nimbleOptions(allowDynamicIndexing = TRUE)' and report any issues to the NIMBLE users group.")
                         dynamicIndexParent <- code[[2]]
                     } else {
-                      if(isTRUE(buildDerivs)){ # This warning will only trigger
-                        warning("  [Warning] Derivatives cannot currently be built for models that include dynamic indexing.  Please set 'nimbleOptions(buildDerivs = FALSE)' to proceed with this model.")
-                      }
+                        if(isTRUE(nimbleOptions("doADerrorTraps")))
+                          if(isTRUE(buildDerivs))
+                            warning("  [Warning] Derivatives cannot currently be built for models that include dynamic indexing.  Please set 'nimbleOptions(buildDerivs = FALSE)' to proceed with this model.")
+                      
                         if(any(
                             sapply(contentsCode,
                                    detectNonscalarIndex))

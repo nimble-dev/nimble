@@ -592,7 +592,7 @@ nimOneLaplace1D <- nimbleFunction(
                       joint_logLik                      = list(),
                       gr_joint_logLik_wrt_re            = list(),
                       negHess                           = list(),
-                      logdetNegHess                     = list(noDeriv_vars = c("d","i")),
+                      logdetNegHess                     = list(ignore = c("d","i")),
                       gr_inner_logLik_internal          = list(),
                       gr_joint_logLik_wrt_p_internal    = list(),
                       gr_joint_logLik_wrt_re_internal   = list(),
@@ -600,7 +600,7 @@ nimOneLaplace1D <- nimbleFunction(
                       negHess_internal                  = list(),
                       gr_logdetNegHess_wrt_p_internal   = list(),
                       gr_logdetNegHess_wrt_re_internal  = list(),
-                      joint_logLik_with_grad_and_hess = list(noDeriv_vars = c("i","j")),
+                      joint_logLik_with_grad_and_hess = list(ignore = c("i","j")),
                       joint_logLik_with_higher_derivs = list())
 ) ## End of nimOneLaplace1D
 
@@ -1271,16 +1271,16 @@ nimOneLaplace <- nimbleFunction(
                       joint_logLik                      = list(),
                       gr_joint_logLik_wrt_re            = list(),
                       negHess                           = list(),
-                      logdetNegHess                     = list(noDeriv_vars = c("d","i")),
+                      logdetNegHess                     = list(ignore = c("d","i")),
                       gr_inner_logLik_internal          = list(),
                       gr_joint_logLik_wrt_p_internal    = list(),
                       gr_joint_logLik_wrt_re_internal   = list(),
                       hess_joint_logLik_wrt_p_wrt_re_internal = list(),
                       negHess_internal                  = list(),
-                      negHess2_internal                  = list(noDeriv_vars = c("i","j")),
+                      negHess2_internal                  = list(ignore = c("i","j")),
                       gr_logdetNegHess_wrt_p_internal   = list(),
                       gr_logdetNegHess_wrt_re_internal  = list(),
-                      joint_logLik_with_grad_and_hess = list(noDeriv_vars = c("i","j")),
+                      joint_logLik_with_grad_and_hess = list(ignore = c("i","j")),
                       joint_logLik_with_higher_derivs = list())
 ) ## End of nimOneLaplace
 

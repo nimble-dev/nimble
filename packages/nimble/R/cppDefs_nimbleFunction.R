@@ -155,10 +155,12 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                            ## The next line creates the cppCopyTypes exactly the same way as in buildNimbleObjInterface
                                            ## and CmultiNimbleObjClass::initialize.
                                            cppCopyTypes <- makeNimbleFxnCppCopyTypes(nimCompProc$getSymbolTable(), objectDefs$getSymbolNames())
+                                           buildDerivs = environment(nfProc$nfGenerator)$buildDerivs
+                                           buildDerivsInCopier <- (length(buildDerivs) > 0) & (!isFALSE(buildDerivs))
                                            copyFromRobjectDefs <- makeCopyFromRobjectDef(className = nfProc$name,
                                                                                          cppCopyTypes,
                                                                                          .self$nfProc$instances[[1]],
-                                                                                         buildDerivs = environment(nfProc$nfGenerator)$buildDerivs)
+                                                                                         buildDerivs = buildDerivs)
                                            functionDefs[['copyFromRobject']] <<- copyFromRobjectDefs$copyFromRobjectDef
                                        },
                                        buildAll = function(where = where) {
@@ -450,9 +452,9 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   ivBaseTypes <- lapply(compileInfo$newLocalSymTab$symbols[independentVarNames], `[[`, "type")
                                                   ## independentVarNames <- names(ivBaseTypes)
                                                 includeIV <- ivBaseTypes == "double" ## previously ivBaseTypes != "bool"
-                                                noDeriv_vars <- derivControl[["noDeriv_vars"]]
-                                                if(!is.null(noDeriv_vars)) {
-                                                    noDeriv_mangledArgNames <- as.character(unlist(nameSubList[noDeriv_vars]))
+                                                ignore <- derivControl[["ignore"]]
+                                                if(!is.null(ignore)) {
+                                                    noDeriv_mangledArgNames <- as.character(unlist(nameSubList[ignore]))
                                                     includeIV <- includeIV & !(independentVarNames %in% noDeriv_mangledArgNames)
                                                 }
                                                 independentVarNames <- as.character(independentVarNames[includeIV])
@@ -730,7 +732,7 @@ recurse_modifyForAD <- function(code, symTab, workEnv) {
 }
 
 modifyForAD_issuePowWarning <- function(code, symTab, workEnv) {
-  warning(paste0("Operator pow may cause derivative problems with negative arguments.  If the exponent is guaranteed to be an integer, use pow_int insted."), call.=FALSE)
+  message(paste0("   [Note] Operator pow may cause derivative problems with negative arguments.  If the exponent is guaranteed to be an integer, use pow_int insted."), call.=FALSE)
   invisible(NULL)
 }
 
@@ -862,12 +864,12 @@ modifyForAD_getDerivs_wrapper <- function(code, symTab, workEnv) {
 
 modifyForAD_nfMethod <- function(code, symTab, workEnv) {
   if(code$args[[1]]$name != "cppPointerDereference")
-    message("In modifyForAD_nfMethod, was expecting cppPointerDereference.  There must be another case that needs implementation.")
+    message("   [Note] In modifyForAD_nfMethod, was expecting cppPointerDereference.  There must be another case that needs implementation.")
   objName <- code$args[[1]]$args[[1]]$name
   NFsymObj <- workEnv$RsymTab$getSymbolObject(objName, TRUE)
   methodName <- code$args[[2]]
   if(!is.character(methodName))
-    message("In modifyForAD_nfMethod, was expecting method name to be character.  There must be another case that needs implementation.")
+    message("   [Note] In modifyForAD_nfMethod, was expecting method name to be character.  There must be another case that needs implementation.")
   methodSymObj <- NFsymObj$nfProc$compileInfos[[methodName]]$newLocalSymTab$getSymbolObject(methodName, TRUE)
   buildDerivs <- methodSymObj$nfMethodRCobj$buildDerivs
   if(!is.null(buildDerivs))

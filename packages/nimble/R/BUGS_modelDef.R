@@ -430,9 +430,10 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
             if(code[[i]][[1]] == '~') {
                 code[[i]] <- replaceDistributionAliases(code[[i]])
                 checkUserDefinedDistribution(code[[i]], userEnv)
-                if(nimbleOptions("enableDerivs"))
-                    if(buildDerivs)
-                        checkADsupportForDistribution(code[[i]], userEnv)
+                if(isTRUE(nimbleOptions("enableDerivs")))
+                    if(isTRUE(nimbleOptions("doADerrorTraps")))
+                        if(buildDerivs)
+                            checkADsupportForDistribution(code[[i]], userEnv)
             }
             if(code[[i]][[1]] == '<-')
                 checkForDeterministicDorR(code[[i]])

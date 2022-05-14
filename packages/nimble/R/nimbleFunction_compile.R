@@ -159,15 +159,15 @@ nfProcessing <- setRefClass('nfProcessing',
                                                             environment(nfGenerator)$buildDerivs)
             }
             for(i in seq_along(RCfunProcs)) {
-                new_noDeriv_vars <- RCfunProcs[[i]]$compileInfo$typeEnv[['.new_noDeriv_vars']]
-                if(length(new_noDeriv_vars) > 0) {
+                new_ignore <- RCfunProcs[[i]]$compileInfo$typeEnv[['.new_ignore']]
+                if(length(new_ignore) > 0) {
                     thisFunName <- names(RCfunProcs)[i]
                     thisBuildDerivs <- environment(nfGenerator)$buildDerivs[[thisFunName]]
                     if(!is.null(thisBuildDerivs)) {
-                        if(is.null(thisBuildDerivs$noDeriv_vars))
-                            thisBuildDerivs$noDeriv_vars <- character()
-                        thisBuildDerivs$noDeriv_vars <- unique(c(thisBuildDerivs$noDeriv_vars,
-                                                                  new_noDeriv_vars))
+                        if(is.null(thisBuildDerivs$ignore))
+                            thisBuildDerivs$ignore <- character()
+                        thisBuildDerivs$ignore <- unique(c(thisBuildDerivs$ignore,
+                                                                  new_ignore))
                         environment(nfGenerator)$buildDerivs[[thisFunName]] <<- thisBuildDerivs
                     }
                 }
@@ -513,7 +513,7 @@ makeTypeObj_impl <- function(.self, name, instances, firstOnly) {
   }
   if(inherits(instances[[1]][[name]], 'ADproxyModelClass')) {
       if(!isTRUE(nimbleOptions("enableDerivs")))
-          stop("It looks like derivatives are being created by nimbleOptions('enableDerivs') is not TRUE.")
+          stop("It looks like derivatives are being created but nimbleOptions('enableDerivs') is not TRUE.")
       return(symbolModel(name = name, type = 'Ronly', className = class(instances[[1]][[name]]$model))) 
   }
   

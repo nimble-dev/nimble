@@ -1897,7 +1897,7 @@ sizeInsertIntermediate <- function(code, argID, symTab, typeEnv, forceAssign = F
     }
     setArg(code, argID, newArgExpr)
     if( isTRUE(typeEnv$.avoidAD) ) {
-        typeEnv$.new_noDeriv_vars <- c(typeEnv$.new_noDeriv_vars, newName)
+        typeEnv$.new_ignore <- c(typeEnv$.new_ignore, newName)
     }
     return(ans) ## This is to be inserted in a list of asserts, even though it is really core code, not just an a test or assertion
 }

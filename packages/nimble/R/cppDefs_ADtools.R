@@ -123,7 +123,7 @@ makeTypeTemplateFunction <- function(newName,
     typeDefs$addSymbol(cppVarFull(baseType = "typedef typename EigenTemplateTypes<TYPE_>::typeMatrixXd", name = "MatrixXd_TYPE_") )
     newCppFunDef$name <- newName
     newCppFunDef$template <- cppVarFull(name = character(), baseType = 'template', templateArgs = list('class TYPE_'))
-    ignore <- derivControl[['noDeriv_vars']]
+    ignore <- derivControl[['ignore']]
     nameSubList <- .self$RCfunProc$nameSubList
     for(i in seq_along(ignore)) {
         if(!is.null(nameSubList[[ignore[[i]] ]]))
