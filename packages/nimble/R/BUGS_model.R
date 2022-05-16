@@ -77,6 +77,7 @@ See `help(getBound)`
                                   plot      = function() plotGraph(),
                                   getModelDef = function() modelDef,
                                   setModelDef = function(value) modelDef <<- value,
+                                  getBuildDerivs = function() modelDef$buildDerivs,
                                   getMaps = function(mapName, all = FALSE){
                                       if(all == TRUE)		return(modelDef$maps)
                                       return(modelDef$maps[[mapName]])
