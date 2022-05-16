@@ -1,7 +1,7 @@
 # ifndef CPPAD_LOCAL_SWEEP_FORWARD2_HPP
 # define CPPAD_LOCAL_SWEEP_FORWARD2_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-22 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -152,7 +152,7 @@ void forward2(
     vector<Base> atom_ty_all;
     //
     // information defined by atomic function operators
-    size_t atom_index=0, atom_old=0, atom_m=0, atom_n=0, atom_i=0, atom_j=0;
+    size_t atom_index=0, atom_id=0, atom_m=0, atom_n=0, atom_i=0, atom_j=0;
     enum_atom_state atom_state = start_atom; // proper initialization
     //
     // length of the parameter vector (used by CppAD assert macros)
@@ -170,8 +170,10 @@ void forward2(
     const size_t atom_q1 = q+1;
 
     // variable indices for results vector
-    // (done differently for order zero).
     vector<size_t> atom_iy;
+
+    // select_y for an atomic function call
+    vector<bool> atom_sy;
 
     // skip the BeginOp at the beginning of the recording
     play::const_sequential_iterator itr = play->begin();
@@ -202,7 +204,7 @@ void forward2(
                 {   // get information for this atomic function call
                     CPPAD_ASSERT_UNKNOWN( atom_state == start_atom );
                     play::atom_op_info<Base>(
-                        op, arg, atom_index, atom_old, atom_m, atom_n
+                        op, arg, atom_index, atom_id, atom_m, atom_n
                     );
                     //
                     // skip to the second AFunOp
@@ -324,7 +326,7 @@ void forward2(
             // -------------------------------------------------
 
             case DisOp:
-            forward_dis_op(p, q, r, i_var, arg, J, taylor);
+            forward_dis_op<RecBase>(p, q, r, i_var, arg, J, taylor);
             break;
             // -------------------------------------------------
 
@@ -429,6 +431,11 @@ void forward2(
             break;
             // -------------------------------------------------
 
+            case NegOp:
+            forward_neg_op_dir(q, r, i_var, size_t(arg[0]), J, taylor);
+            break;
+            // -------------------------------------------------
+
             case ParOp:
             k = i_var*(J-1)*r + i_var + (q-1)*r + 1;
             for(ell = 0; ell < r; ell++)
@@ -527,7 +534,7 @@ void forward2(
             // start or end an atomic function call
             flag = atom_state == start_atom;
             play::atom_op_info<RecBase>(
-                op, arg, atom_index, atom_old, atom_m, atom_n
+                op, arg, atom_index, atom_id, atom_m, atom_n
             );
             if( flag )
             {   atom_state = arg_atom;
@@ -544,6 +551,7 @@ void forward2(
                 atom_ty_all.resize(atom_m * (q * r + 1));
                 //
                 atom_iy.resize(atom_m);
+                atom_sy.resize(atom_m);
             }
             else
             {   CPPAD_ASSERT_UNKNOWN( atom_i == atom_m );
@@ -574,14 +582,18 @@ void forward2(
                             atom_ty_one[k_one] = atom_ty_all[k_all];
                         }
                     }
+                    // set atom_sy
+                    for(i = 0; i < atom_m; ++i)
+                        atom_sy[i] = atom_iy[i] != 0;
                     call_atomic_forward<Base,RecBase>(
                         atom_par_x,
                         atom_type_x,
                         need_y,
+                        atom_sy,
                         order_low,
                         order_up,
                         atom_index,
-                        atom_old,
+                        atom_id,
                         atom_tx_one,
                         atom_ty_one
                     );
@@ -601,7 +613,7 @@ void forward2(
             break;
 
             case FunapOp:
-            // parameter argument for a atomic function
+            // parameter argument for an atomic function
             CPPAD_ASSERT_UNKNOWN( NumArg(op) == 1 );
             CPPAD_ASSERT_UNKNOWN( atom_state == arg_atom );
             CPPAD_ASSERT_UNKNOWN( atom_i == 0 );
@@ -624,7 +636,7 @@ void forward2(
             break;
 
             case FunavOp:
-            // variable argument for a atomic function
+            // variable argument for an atomic function
             CPPAD_ASSERT_UNKNOWN( NumArg(op) == 1 );
             CPPAD_ASSERT_UNKNOWN( atom_state == arg_atom );
             CPPAD_ASSERT_UNKNOWN( atom_i == 0 );
@@ -647,7 +659,7 @@ void forward2(
             break;
 
             case FunrpOp:
-            // parameter result for a atomic function
+            // parameter result for an atomic function
             CPPAD_ASSERT_NARG_NRES(op, 1, 0);
             CPPAD_ASSERT_UNKNOWN( atom_state == ret_atom );
             CPPAD_ASSERT_UNKNOWN( atom_i < atom_m );
@@ -665,7 +677,7 @@ void forward2(
             break;
 
             case FunrvOp:
-            // variable result for a atomic function
+            // variable result for an atomic function
             CPPAD_ASSERT_NARG_NRES(op, 0, 1);
             CPPAD_ASSERT_UNKNOWN( atom_state == ret_atom );
             CPPAD_ASSERT_UNKNOWN( atom_i < atom_m );

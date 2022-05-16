@@ -29,7 +29,13 @@ with
     std::vector<atomic_index_info> &vec = *atomic_index_info_vec_manager_nimble<Base>::manage();
 #endif
 
-6. We previously commented out the function check_for_nan in check_for_nan.hpp, but in updated CppAD this appears to be moot.
+6. In local, in ad_tape.hpp, insert the following lines as the last lines of the definition of class ADTape.
+
+// NIMBLE extensions
+void *nimble_CppAD_tape_mgr_ptr_;
+void* &nimble_CppAD_tape_mgr_ptr() {return nimble_CppAD_tape_mgr_ptr_;}
+
+7. We previously commented out the function check_for_nan in check_for_nan.hpp, but in updated CppAD this appears to be moot.
 
 
 

@@ -1,7 +1,7 @@
 # ifndef CPPAD_LOCAL_GRAPH_CPP_GRAPH_ITR_HPP
 # define CPPAD_LOCAL_GRAPH_CPP_GRAPH_ITR_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-22 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -35,16 +35,17 @@ private:
     size_t                         op_index_;
     size_t                         first_arg_;
     //
-    // set by get_value
-    size_t                         first_node_;
+    // set by set_value
     graph_op_enum                  op_enum_;
-    vector<size_t>                 str_index_;
+    size_t                         first_node_;
     size_t                         n_result_;
+    size_t                         call_id_;
+    vector<size_t>                 str_index_;
     vector<size_t>                 arg_node_;
 /* %$$
 $end
 ------------------------------------------------------------------------------
-$begin cpp_graph_itr_get_value$$
+$begin cpp_graph_itr_set_value$$
 $spell
     obj
     op
@@ -56,10 +57,10 @@ $spell
     str
 $$
 
-$section C++ AD Graph Iterator get_value()$$
+$section C++ AD Graph Iterator set_value()$$
 
 $head Syntax$$
-$icode%itr%.get_value()%$$
+$icode%itr%.set_value()%$$
 
 $head op_index_$$
 This input is the operator index for the value we are retrieving.
@@ -81,8 +82,8 @@ The input value of this argument does not matter.
 Upon return its size is zero except for the special cases
 listed below:
 
-$subhead atom_graph_op$$
-If $icode op_enum_$$ is $code atom_graph_op$$,
+$subhead atom_graph_op, atom4_graph_op$$
+If $icode op_enum_$$ is $code atom_graph_op$$ or $code atom4_graph_op$$,
 $code str_index_.size() == 1$$ and
 $code str_index_[0]$$ is the index in
 $cref/atomic_name_vec/cpp_ad_graph/atomic_name_vec/$$
@@ -107,6 +108,13 @@ $head n_result_$$
 The input value of this argument does not matter.
 This is set to the number of result nodes for this operator.
 
+$head call_id_$$
+If $icode op_enum_$$ is $code atom4_graph_op$$,
+$code call_id_$$ is set to the $cref/call_id/atomic_four_call/call_id/$$
+for this function call.
+If $icode op_enum_$$ is $code atom_graph_op$$,
+$code call_id$$ is set to zero.
+
 $head arg_node_$$
 The input value of this argument does not matter.
 Upon return, its size is the number of arguments,
@@ -115,7 +123,7 @@ The value of the elements are the node indices.
 
 $head Prototype$$
 $srccode%hpp% */
-    void get_value(void)
+    void set_value(void)
 /* %$$
 $end
 */
@@ -124,13 +132,14 @@ $end
     size_t n_arg      = invalid_index;
     first_node_       = invalid_index;
     n_result_         = invalid_index;
+    call_id_          = invalid_index;
     str_index_.resize(0);
     arg_node_.resize(0);
     //
     // op_enum
     op_enum_          = (*operator_vec_)[op_index_];
     //
-    // n_result_, n_arg, str_index_
+    // n_result_, n_arg, call_id_, str_index_
     switch( op_enum_ )
     {
         // unary operators
@@ -149,6 +158,7 @@ $end
         case expm1_graph_op:
         case log1p_graph_op:
         case log_graph_op:
+        case neg_graph_op:
         case sign_graph_op:
         case sin_graph_op:
         case sinh_graph_op:
@@ -180,11 +190,20 @@ $end
         n_arg       = 1;
         break;
 
-
         // atom_graph_op
         case atom_graph_op:
         first_node_ = first_arg_ + 3;
         str_index_.push_back( (*operator_arg_)[first_node_ - 3] );
+        call_id_    = 0;
+        n_result_   = (*operator_arg_)[first_node_ - 2];
+        n_arg       = (*operator_arg_)[first_node_ - 1];
+        break;
+
+        // atom4_graph_op
+        case atom4_graph_op:
+        first_node_ = first_arg_ + 4;
+        str_index_.push_back( (*operator_arg_)[first_node_ - 4] );
+        call_id_    = (*operator_arg_)[first_node_ - 3];
         n_result_   = (*operator_arg_)[first_node_ - 2];
         n_arg       = (*operator_arg_)[first_node_ - 1];
         break;
@@ -250,8 +269,9 @@ $srccode%hpp% */
 public:
     typedef struct {
         graph_op_enum          op_enum;
-        const vector<size_t>*  str_index_ptr;
         size_t                 n_result;
+        size_t                 call_id;
+        const vector<size_t>*  str_index_ptr;
         const vector<size_t>*  arg_node_ptr;
     } value_type;
     typedef std::input_iterator_tag    iterator_category;
@@ -325,7 +345,7 @@ $end
         first_arg_ = 0;
         //
         // get the value, and first_node_, for this operator
-        get_value();
+        set_value();
     }
 /* %$$
 ------------------------------------------------------------------------------
@@ -355,8 +375,9 @@ $srccode%hpp% */
         );
         value_type ret;
         ret.op_enum       = op_enum_;
-        ret.str_index_ptr = &str_index_;
         ret.n_result      = n_result_;
+        ret.call_id       = call_id_;
+        ret.str_index_ptr = &str_index_;
         ret.arg_node_ptr  = &arg_node_;
         return ret;
     }
@@ -364,7 +385,7 @@ $srccode%hpp% */
     cpp_graph_itr& operator++(void)
     {   ++op_index_;
         first_arg_ = first_node_ + arg_node_.size();
-        get_value();
+        set_value();
         return *this;
     }
     // itr++
@@ -372,7 +393,7 @@ $srccode%hpp% */
     {   cpp_graph_itr ret(*this);
         ++op_index_;
         first_arg_ = first_node_ + arg_node_.size();
-        get_value();
+        set_value();
         return ret;
     }
 /* %$$

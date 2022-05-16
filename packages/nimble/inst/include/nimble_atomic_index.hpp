@@ -16,6 +16,8 @@ public:
       vec_ptr = &vec;
       first = false;
     }
+    //    std::cout<<" [&vec_ptr:"<< &vec_ptr<<"] ";
+    //    std::cout<<"entering atomic info manage. vec = "<<&vec<<" set = "<<set<<" vec_ptr = "<<vec_ptr<<" input_vec_ptr = "<<input_vec_ptr<<std::endl;
     switch(set) {
     case 0 :
       return vec_ptr;

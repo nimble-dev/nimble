@@ -1,7 +1,7 @@
 # ifndef CPPAD_LOCAL_OP_CODE_VAR_HPP
 # define CPPAD_LOCAL_OP_CODE_VAR_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-21 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-22 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -122,8 +122,9 @@ $subhead arg[0]$$
 This is the $cref atomic_index$$ for this function.
 
 $subhead arg[1]$$
-This is the $cref/id/atomic_one/id/$$ information used by an
-old atomic class that has been deprecated
+This is the $cref/call_id/atomic_four_call/call_id/$$ information.
+It is also he $cref/id/atomic_one/id/$$
+for atomic one functions which have been deprecated.
 
 $subhead arg[2]$$
 is the number of arguments to this atomic function.
@@ -450,6 +451,7 @@ enum OpCode {
     LtvvOp,   // ...
     MulpvOp,  // binary *
     MulvvOp,  // ...
+    NegOp,    // unary negative
     NeppOp,   // compare !=
     NepvOp,   // ...
     NevvOp,   // ...
@@ -556,6 +558,7 @@ inline size_t NumArg( OpCode op)
         2, // LtvvOp
         2, // MulpvOp
         2, // MulvvOp
+        1, // NegOp
         2, // NeppOp
         2, // NepvOp
         2, // NevvOp
@@ -674,6 +677,7 @@ inline size_t NumRes(OpCode op)
         0, // LtvvOp
         1, // MulpvOp
         1, // MulvvOp
+        1, // NegOp
         0, // NeppOp
         0, // NepvOp
         0, // NevvOp
@@ -770,6 +774,7 @@ inline const char* OpName(OpCode op)
         "Ltvv"  ,
         "Mulpv" ,
         "Mulvv" ,
+        "Neg"   ,
         "Nepp"  ,
         "Nepv"  ,
         "Nevv"  ,
@@ -1093,6 +1098,7 @@ void printOp(
         case Expm1Op:
         case LogOp:
         case Log1pOp:
+        case NegOp:
         case SignOp:
         case SinOp:
         case SinhOp:
@@ -1327,6 +1333,7 @@ void arg_is_variable(
         case ExpOp:
         case Log1pOp:
         case LogOp:
+        case NegOp:
         case SignOp:
         case SinhOp:
         case SinOp:

@@ -1,7 +1,7 @@
 # ifndef CPPAD_CORE_GRAPH_GRAPH_OP_ENUM_HPP
 # define CPPAD_CORE_GRAPH_GRAPH_OP_ENUM_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-21 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-22 Bradley M. Bell
 
   CppAD is distributed under the terms of the
                Eclipse Public License Version 2.0.
@@ -113,24 +113,31 @@ to the discrete function.
 
 $head Atomic Function$$
 The atomic function operator has a variable number of arguments
-and a variable number of node results.
-The total number of arguments for this operator is three plus the number
-of arguments for the function being called.
+and a variable number of result nodes.
+These are three extra arguments for $cref atomic_three$$ functions and
+four extra arguments for $cref atomic_four$$ functions.
+The total number of operator arguments is
+the number of extra arguments
+plus the number of arguments for the function being called.
+The extra arguments come before the function arguments.
+
 $list number$$
-The first argument is the index in
-$cref/atomic_name_vec/cpp_ad_graph/atomic_name_vec/$$ for the
-$cref/name/atomic_three_ctor/atomic_three/name/$$
-of the $code atomic_three$$ function that is called.
+The first operator argument is function name represented by it's index in the
+$cref/atomic_name_vec/cpp_ad_graph/atomic_name_vec/$$.
 $lnext
-The second argument is the number of result for this function call.
-The order of the results is determined by function being called.
+If this is an atomic four function call,
+the second operator argument is the $cref/call_id/atomic_four_call/call_id/$$.
 $lnext
-The third argument is the number of arguments
-for this function call.
+In the atomic three (atomic four) case, second (third) operator argument
+is the number of results for this function call.
+The order of the function results is determined by the function being called.
 $lnext
-The other arguments are the indices of nodes for each argument to the
-function call.  The order of the arguments is determined by function
-being called.
+In the atomic three (atomic four) case, the third (fourth) operator argument
+is the number of arguments for this function call.
+$lnext
+The rest of the operator arguments are the node indices for each of the
+function arguments.
+The order of the function arguments is determined by function being called.
 $lend
 
 $head Print$$
@@ -182,6 +189,7 @@ $childtable%
     example/graph/cexp_op.cpp%
     example/graph/discrete_op.cpp%
     example/graph/atom_op.cpp%
+    example/graph/atom4_op.cpp%
     example/graph/print_op.cpp
 %$$
 
@@ -198,7 +206,8 @@ namespace CppAD { namespace graph {
         asinh_graph_op,    // unary: inverse hyperbolic sine
         atan_graph_op,     // unary: inverse tangent
         atanh_graph_op,    // unary: inverse hyperbolic tangent
-        atom_graph_op,     // atomic function
+        atom_graph_op,     // atomic three function call
+        atom4_graph_op,    // atomic four function call
         azmul_graph_op,    // binary: absolute zero multiplication
         cexp_eq_graph_op,  // conditional expression: ==
         cexp_le_graph_op,  // conditional expression: <=
@@ -217,6 +226,7 @@ namespace CppAD { namespace graph {
         expm1_graph_op,    // unary: exponential minus one
         log1p_graph_op,    // unary: logarithm of one plus argument
         log_graph_op,      // unary: logarithm
+        neg_graph_op,      // unary: minus
         mul_graph_op,      // binary: multiplication
         pow_graph_op,      // binary: first argument raised to second argument
         print_graph_op,    // print during zero order forward

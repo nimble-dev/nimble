@@ -1,7 +1,7 @@
 # ifndef CPPAD_LOCAL_RECORD_PUT_VAR_ATOMIC_HPP
 # define CPPAD_LOCAL_RECORD_PUT_VAR_ATOMIC_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-22 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -27,7 +27,7 @@ $section Put a Variable Atomic Call Operator in Recording$$
 
 $head Syntax$$
 $icode%rec%.put_var_atomic(
-    %tape_id%, %atomic_index%, %type_x%, %type_y%, %ax%, %ay%
+    %tape_id%, %atomic_index%, %call_id%, %type_x%, %type_y%, %ax%, %ay%
 )%$$
 
 $head Prototype$$
@@ -43,11 +43,19 @@ $codei%AD<%Base%>.tape_ptr()%$$ is null.
 $head atomic_index$$
 is the $cref atomic_index$$ for this atomic function.
 
+$head call_id$$
+Is the $cref/call_id/atomic_four_call/call_id/$$ for this
+atomic function call.
+
 $head type_x$$
 is the $cref ad_type_enum$$ for each of the atomic function arguments.
+This is one of the rare cases where constants can have type
+$code identical_zero_enum$$.
 
 $head type_y$$
 is the $code ad_type_enum$$ for each of the atomic function results.
+This is one of the rare cases where constants can have type
+$code identical_zero_enum$$.
 
 $head ax$$
 is the atomic function argument vector for this call.
@@ -83,6 +91,7 @@ template <class Base> template <class VectorAD>
 void recorder<Base>::put_var_atomic(
     tape_id_t                   tape_id      ,
     size_t                      atomic_index ,
+    size_t                      call_id      ,
     const vector<ad_type_enum>& type_x       ,
     const vector<ad_type_enum>& type_y       ,
     const VectorAD&             ax           ,
@@ -98,10 +107,9 @@ void recorder<Base>::put_var_atomic(
     );
     // Operator that marks beginning of this atomic operation
     CPPAD_ASSERT_NARG_NRES(local::AFunOp, 4, 0 );
-    addr_t old_id = 0; // used by atomic_two to implement atomic_one interface
     size_t n = ax.size();
     size_t m = ay.size();
-    PutArg(addr_t(atomic_index), old_id, addr_t(n), addr_t(m));
+    PutArg(addr_t(atomic_index), addr_t(call_id), addr_t(n), addr_t(m));
     PutOp(local::AFunOp);
 
     // Now put n operators, one for each element of argument vector
@@ -116,7 +124,7 @@ void recorder<Base>::put_var_atomic(
         else
         {   // information for an argument that is parameter
             addr_t par = ax[j].taddr_;
-            if( type_x[j] == constant_enum )
+            if( type_x[j] <= constant_enum )
                 par = put_con_par(ax[j].value_);
             PutArg(par);
             PutOp(local::FunapOp);
@@ -134,7 +142,7 @@ void recorder<Base>::put_var_atomic(
         }
         else
         {   addr_t par = ay[i].taddr_;
-            if( type_y[i] == constant_enum )
+            if( type_y[i] <= constant_enum )
                 par = put_con_par( ay[i].value_ );
             PutArg(par);
             PutOp(local::FunrpOp);
@@ -142,7 +150,7 @@ void recorder<Base>::put_var_atomic(
     }
 
     // Put a duplicate AFunOp at end of AFunOp sequence
-    PutArg(addr_t(atomic_index), old_id, addr_t(n), addr_t(m));
+    PutArg(addr_t(atomic_index), addr_t(call_id), addr_t(n), addr_t(m));
     PutOp(local::AFunOp);
 }
 

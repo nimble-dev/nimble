@@ -2,7 +2,7 @@
 # define CPPAD_CORE_GRAPH_TO_GRAPH_HPP
 
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-21 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-22 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -198,6 +198,7 @@ void CppAD::ADFun<Base,RecBase>::to_graph(
             // unary operators
 
             case local::abs_dyn:
+            case local::fabs_dyn:
             graph_op = abs_graph_op;
             break;
 
@@ -255,6 +256,10 @@ void CppAD::ADFun<Base,RecBase>::to_graph(
 
             case local::log_dyn:
             graph_op = log_graph_op;
+            break;
+
+            case local::neg_dyn:
+            graph_op = neg_graph_op;
             break;
 
             case local::sign_dyn:
@@ -354,15 +359,19 @@ void CppAD::ADFun<Base,RecBase>::to_graph(
             {
                 // arg[0]: atomic function index
                 size_t atom_index  = size_t( dyn_par_arg[i_arg + 0] );
-                // arg[1]: number of arguments to function
-                n_arg              = size_t( dyn_par_arg[i_arg + 1] );
-                // arg[2]: number of results from function
-                size_t n_result    = size_t( dyn_par_arg[i_arg + 2] );
                 //
-                // get the name for this atomic function
+                // arg[1]: call_id
+                size_t call_id = size_t( dyn_par_arg[i_arg + 1] );
+                //
+                // arg[2]: number of arguments to function
+                n_arg              = size_t( dyn_par_arg[i_arg + 2] );
+                // arg[3]: number of results from function
+                size_t n_result    = size_t( dyn_par_arg[i_arg + 3] );
+                //
+                // get the name and type for this atomic function
                 std::string     name;
+                size_t          type;
                 {   bool        set_null = false;
-                    size_t      type;
                     void*       ptr;
                     CppAD::local::atomic_index<RecBase>(
                         set_null, atom_index, type, &name, ptr
@@ -373,18 +382,29 @@ void CppAD::ADFun<Base,RecBase>::to_graph(
                 if( name_index == graph_obj.atomic_name_vec_size() )
                     graph_obj.atomic_name_vec_push_back(name);
                 //
-                // for atom_graph_op:
-                // name_index, n_result, n_arg come before first_node
+                // atom_graph_op:
+                // name_index, n_result, n_arg (before first_node)
+                //
+                // atom4_graph_op:
+                // name_index, call_id, n_result, n_arg (before first_node)
                 graph_obj.operator_arg_push_back(name_index);
+                if( type == 4 )
+                    graph_obj.operator_arg_push_back(call_id);
                 graph_obj.operator_arg_push_back(n_result);
                 graph_obj.operator_arg_push_back(n_arg);
                 //
-                graph_op = atom_graph_op;
+                if( type == 3 )
+                    graph_op = atom_graph_op;
+                else
+                {   CPPAD_ASSERT_UNKNOWN( type == 4 );
+                    graph_op = atom4_graph_op;
+                }
+                //
                 graph_obj.operator_vec_push_back( graph_op );
                 //
                 for(size_t j  = 0; j < n_arg; ++j)
-                {   // arg[4 + j] is j-th argument to the function
-                    size_t node_j = par2node[ dyn_par_arg[i_arg + 4 + j] ];
+                {   // arg[5 + j] is j-th argument to the function
+                    size_t node_j = par2node[ dyn_par_arg[i_arg + 5 + j] ];
                     CPPAD_ASSERT_UNKNOWN( node_j < i_par );
                     graph_obj.operator_arg_push_back( node_j );
                 }
@@ -486,7 +506,8 @@ void CppAD::ADFun<Base,RecBase>::to_graph(
         // operator is not ignored.
         // -------------------------------------------------------------------
         switch( var_op )
-        {
+        {   // 2DO: some of these cases can be joined
+
             // -------------------------------------------------------------
             // unary operators
             case local::AbsOp:
@@ -560,6 +581,11 @@ void CppAD::ADFun<Base,RecBase>::to_graph(
             break;
 
             case local::LogOp:
+            fixed_n_arg = 1;
+            is_var[0] = true;
+            break;
+
+            case local::NegOp:
             fixed_n_arg = 1;
             is_var[0] = true;
             break;
@@ -701,6 +727,10 @@ void CppAD::ADFun<Base,RecBase>::to_graph(
 
                 case local::LogOp:
                 graph_op = log_graph_op;
+                break;
+
+                case local::NegOp:
+                graph_op = neg_graph_op;
                 break;
 
                 case local::SignOp:
@@ -1060,14 +1090,16 @@ void CppAD::ADFun<Base,RecBase>::to_graph(
             else
             {   // This is the AFunOp at the end of the call
                 size_t atom_index   = size_t( arg[0] );
+                //
+                size_t call_id      = size_t( arg[1] );
                 size_t n_arg        = size_t( arg[2] );
                 size_t n_result     = size_t( arg[3] );
                 CPPAD_ASSERT_UNKNOWN( atom_node_arg.size() == n_arg );
                 //
-                // get the name for this atomic function
+                // get the name and type for this atomic function
                 std::string     name;
+                size_t          type;
                 {   bool        set_null = false;
-                    size_t      type;
                     void*       ptr;
                     CppAD::local::atomic_index<RecBase>(
                         set_null, atom_index, type, &name, ptr
@@ -1079,12 +1111,21 @@ void CppAD::ADFun<Base,RecBase>::to_graph(
                     graph_obj.atomic_name_vec_push_back(name);
                 //
                 // for atom_graph_op:
-                // name_index, n_result, n_arg come before first_node
+                // name_index, n_result, n_arg (before first_node)
+                //
+                // for atom4_graph_op:
+                // name_index, call_id, n_result, n_arg (before first_node)
                 graph_obj.operator_arg_push_back(name_index);
+                if( type == 4 )
+                    graph_obj.operator_arg_push_back(call_id);
                 graph_obj.operator_arg_push_back(n_result);
                 graph_obj.operator_arg_push_back(n_arg);
-                //
-                graph_op = atom_graph_op;
+                if( type == 3 )
+                    graph_op = atom_graph_op;
+                else
+                {   CPPAD_ASSERT_UNKNOWN( type == 4 );
+                    graph_op = atom4_graph_op;
+                }
                 graph_obj.operator_vec_push_back( graph_op );
                 for(size_t i = 0; i < n_arg; ++i)
                     graph_obj.operator_arg_push_back( atom_node_arg[i] );

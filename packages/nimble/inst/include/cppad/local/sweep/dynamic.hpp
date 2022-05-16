@@ -1,7 +1,7 @@
 # ifndef CPPAD_LOCAL_SWEEP_DYNAMIC_HPP
 # define CPPAD_LOCAL_SWEEP_DYNAMIC_HPP
 /* --------------------------------------------------------------------------
-CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-20 Bradley M. Bell
+CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-22 Bradley M. Bell
 
 CppAD is distributed under the terms of the
              Eclipse Public License Version 2.0.
@@ -78,6 +78,18 @@ lower than the index value for the parameter.
 \param not_used_rec_base
 Specifies RecBase for this call.
 */
+
+template <class RecBase>
+RecBase discrete_eval(size_t index, const RecBase& x, const RecBase& not_used)
+{   return discrete<RecBase>::eval(index, x); }
+template <class RecBase>
+AD<RecBase> discrete_eval(
+    size_t index, const AD<RecBase>& ax, const RecBase& not_used
+)
+{   return discrete<RecBase>::ad_eval(index, ax); }
+
+
+
 template <class Base, class BaseVector, class RecBase>
 void dynamic(
     pod_vector_maybe<Base>&       all_par_vec        ,
@@ -94,6 +106,7 @@ void dynamic(
     // vectors used in call to atomic fuctions
     vector<ad_type_enum> type_x;
     vector<Base>         taylor_x, taylor_y;
+    vector<bool>         select_y;
 # ifndef NDEBUG
     for(size_t j = 0; j < ind_dynamic.size(); ++j)
         CPPAD_ASSERT_UNKNOWN(
@@ -314,6 +327,12 @@ void dynamic(
             all_par_vec[i_par] = *par[0] * *par[1];
             break;
 
+            // neg
+            case neg_dyn:
+            CPPAD_ASSERT_UNKNOWN( n_arg == 1 );
+            all_par_vec[i_par] = - *par[0];
+            break;
+
             // pow
             case pow_dyn:
             CPPAD_ASSERT_UNKNOWN( n_arg == 2 );
@@ -341,10 +360,10 @@ void dynamic(
             // ---------------------------------------------------------------
             // discrete(index, argument)
             case dis_dyn:
-            CPPAD_ASSERT_UNKNOWN( n_arg == 2 );
-            all_par_vec[i_par] = discrete<Base>::eval(
-                size_t(      dyn_par_arg[i_arg + 0] ) , // index
-                all_par_vec[ dyn_par_arg[i_arg + 1] ]   // argument
+            all_par_vec[i_par] = discrete_eval(
+                    size_t(      dyn_par_arg[i_arg + 0] ) , // index
+                    all_par_vec[ dyn_par_arg[i_arg + 1] ] , // argument
+                    RecBase(0)                              // not_used
             );
 # if CPPAD_DYNAMIC_TRACE
             std::cout
@@ -412,23 +431,26 @@ void dynamic(
             // atomic function call
             case atom_dyn:
             {   size_t atom_index = size_t( dyn_par_arg[i_arg + 0] );
-                size_t n          = size_t( dyn_par_arg[i_arg + 1] );
-                size_t m          = size_t( dyn_par_arg[i_arg + 2] );
-                n_dyn             = size_t( dyn_par_arg[i_arg + 3] );
-                n_arg             = 5 + n + m;
+                size_t call_id    = size_t( dyn_par_arg[i_arg + 1] );
+                size_t n          = size_t( dyn_par_arg[i_arg + 2] );
+                size_t m          = size_t( dyn_par_arg[i_arg + 3] );
+                n_dyn             = size_t( dyn_par_arg[i_arg + 4] );
+                n_arg             = 6 + n + m;
                 CPPAD_ASSERT_UNKNOWN(
-                    size_t( dyn_par_arg[i_arg + 4 + n + m] ) == n_arg
+                    size_t( dyn_par_arg[i_arg + 5 + n + m] ) == n_arg
                 );
                 //
                 size_t need_y    = size_t(dynamic_enum);
                 size_t order_low = 0;
                 size_t order_up  = 0;
-                size_t atom_old  = 0; // not used
                 type_x.resize(n);
                 taylor_x.resize(n);
                 taylor_y.resize(m);
+                select_y.resize(m);
+                //
+                // taylor_x, type_x
                 for(size_t j = 0; j < n; ++j)
-                {   addr_t arg_j = dyn_par_arg[i_arg + 4 + j];
+                {   addr_t arg_j = dyn_par_arg[i_arg + 5 + j];
                     taylor_x[j]   = all_par_vec[ arg_j ];
                     if( arg_j == 0 )
                         type_x[j] = variable_enum;
@@ -437,14 +459,20 @@ void dynamic(
                     else
                         type_x[j] = constant_enum;
                 }
+                // select_y
+                for(size_t i = 0; i < m; ++i)
+                {   i_par = size_t( dyn_par_arg[i_arg + 5 + n + i] );
+                    select_y[i] = dyn_par_is[i_par];
+                }
                 call_atomic_forward<Base, RecBase>(
                     taylor_x,
                     type_x,
                     need_y,
+                    select_y,
                     order_low,
                     order_up,
                     atom_index,
-                    atom_old,
+                    call_id,
                     taylor_x,
                     taylor_y
                 );
@@ -468,7 +496,7 @@ void dynamic(
                 size_t count_dyn = 0;
 # endif
                 for(size_t i = 0; i < m; ++i)
-                {   i_par = size_t( dyn_par_arg[i_arg + 4 + n + i] );
+                {   i_par = size_t( dyn_par_arg[i_arg + 5 + n + i] );
                     if( dyn_par_is[i_par] )
                     {   CPPAD_ASSERT_UNKNOWN( i_par != 0 );
                         all_par_vec[i_par] = taylor_y[i];

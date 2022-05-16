@@ -77,7 +77,7 @@ $srccode%hpp% */
 $head CPPAD_PACKAGE_STRING$$
 cppad-yyyymmdd as a C string where yyyy is year, mm is month, and dd is day.
 $srccode%hpp% */
-# define CPPAD_PACKAGE_STRING "cppad-20210225"
+# define CPPAD_PACKAGE_STRING "cppad-20220516"
 /* %$$
 
 $head CPPAD_HAS_ADOLC$$
