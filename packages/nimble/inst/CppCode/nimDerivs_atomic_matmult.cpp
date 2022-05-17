@@ -1152,7 +1152,7 @@ void atomic_matmult(const MatrixXd_CppAD &x1,
       // A1 * B2
       // populate up to 3 contributions to y[0:(x1rowStart-1), x1colStart:(x1colEnd-1)]
       // get constant * variable contribution to y[0:(x1rowStart-1), x1colStart:(x1colEnd-1)]
-#ifdef VERBOSE_ATOMIC_MATMULT
+#ifdef VERBOSE_ATOMIC_MATMULT_REGIONS
       cout<<"A1 * B2"<<endl;
       atomic_matmult_diagnostic_message(0, x2rowStart, x1rowStart, x2rowEnd - x2rowStart,
 					x2rowStart, x2colStart, x2rowEnd - x2rowStart, x2colEnd - x2colStart,
@@ -1174,7 +1174,7 @@ void atomic_matmult(const MatrixXd_CppAD &x1,
   if(x1rowStart < x1rowEnd) { // there are some variable rows in x1, i.e region B1
     if(x2colStart > 0) {      // there are some constant first cols in x2, i.e. region A2
       // B1 * A2
-#ifdef VERBOSE_ATOMIC_MATMULT
+#ifdef VERBOSE_ATOMIC_MATMULT_REGIONS
       cout<<"B1 * A2"<<endl;
       // 3 cases here
       // set y[x1rowStart:(x1rowEnd-1), 0:(x2colStart-1)]
@@ -1195,7 +1195,7 @@ void atomic_matmult(const MatrixXd_CppAD &x1,
       // y.block(x1rowStart, 0, x1rowEnd - x1rowStart, x2colStart ) += y_var_const1;
     }
     if(x2colStart < x2colEnd) { // B1 * B2, the most complication region to handle
-#ifdef VERBOSE_ATOMIC_MATMULT
+#ifdef VERBOSE_ATOMIC_MATMULT_REGIONS
       cout<<"B1 * B2"<<endl;
 #endif
       // There are up to 5 cases here!
@@ -1203,14 +1203,14 @@ void atomic_matmult(const MatrixXd_CppAD &x1,
       // The constant * constant pieces would have been dealt with above.
       // Start with the var * var region if there is is one, because it is the one region of interest if all elements of x1 and x2 are variables; fill to 0 otherwise
       if(((x1colStart < x2rowEnd) && (x1colEnd > x2rowStart)) || ((x2rowStart < x1colEnd) && (x2rowEnd > x1colStart))) {
-#ifdef VERBOSE_ATOMIC_MATMULT
+#ifdef VERBOSE_ATOMIC_MATMULT_REGIONS
 	cout<<"\t segment 1"<<endl;
 #endif
 	
 	int largerStart = x1colStart > x2rowStart ? x1colStart : x2rowStart;
 	int smallerEnd = x1colEnd < x2rowEnd ? x1colEnd : x2rowEnd;
 	if(smallerEnd <= largerStart) cout<<"Some logic appears to be wrong in the var*var part of nimDerivs matrix mult."<<endl;
-#ifdef VERBOSE_ATOMIC_MATMULT
+#ifdef VERBOSE_ATOMIC_MATMULT_REGIONS
 	atomic_matmult_diagnostic_message(x1rowStart, largerStart, x1rowEnd-x1rowStart, smallerEnd - largerStart,
 					  largerStart, x2colStart, smallerEnd - largerStart,  x2colEnd - x2colStart,
 					  x1rowStart, x2colStart, x1rowEnd - x1rowStart, x2colEnd - x2colStart );
@@ -1223,12 +1223,12 @@ void atomic_matmult(const MatrixXd_CppAD &x1,
 	y.block(x1rowStart, x2colStart, x1rowEnd - x1rowStart, x2colEnd - x2colStart) += y_var_var;
       }
       if(x1colStart < x2rowStart) { // there is a var * constant region
-#ifdef VERBOSE_ATOMIC_MATMULT
+#ifdef VERBOSE_ATOMIC_MATMULT_REGIONS
 	cout<<"\t segment 2"<<endl;
 #endif
 	int start = x1colStart;
 	int end = x2rowStart < x1colEnd ? x2rowStart : x1colEnd;
-#ifdef VERBOSE_ATOMIC_MATMULT
+#ifdef VERBOSE_ATOMIC_MATMULT_REGIONS
 	atomic_matmult_diagnostic_message(x1rowStart, start, x1rowEnd-x1rowStart, end-start,
 					  start, x2colStart, end-start,  x2colEnd - x2colStart,
 					  x1rowStart, x2colStart, x1rowEnd - x1rowStart, x2colEnd - x2colStart );
@@ -1246,12 +1246,12 @@ void atomic_matmult(const MatrixXd_CppAD &x1,
 	// 		       += y_var_const1;
       }
       if( x2rowStart < x1colStart ) { // there is a constant * var region. mutually exclusive with previous case
-#ifdef VERBOSE_ATOMIC_MATMULT
+#ifdef VERBOSE_ATOMIC_MATMULT_REGIONS
 	cout<<"\t segment 3"<<endl;
 #endif
 	int start = x2rowStart; 
 	int end = x1colStart < x2rowEnd ? x1colStart : x2rowEnd;
-#ifdef VERBOSE_ATOMIC_MATMULT
+#ifdef VERBOSE_ATOMIC_MATMULT_REGIONS
 	atomic_matmult_diagnostic_message(x1rowStart, start, x1rowEnd-x1rowStart, end-start,
 					  start, x2colStart, end-start,  x2colEnd - x2colStart,
 					  x1rowStart, x2colStart, x1rowEnd - x1rowStart, x2colEnd - x2colStart );
@@ -1269,13 +1269,13 @@ void atomic_matmult(const MatrixXd_CppAD &x1,
 	// 		       += y_const_var1;
       }
       if( x1colEnd > x2rowEnd ) { // there is a var * constant region
-#ifdef VERBOSE_ATOMIC_MATMULT
+#ifdef VERBOSE_ATOMIC_MATMULT_REGIONS
 	cout<<"\t segment 4"<<endl;
 #endif
 	
 	int end = x1colEnd;
 	int start = x1colStart > x2rowEnd ? x1colStart : x2rowEnd;
-#ifdef VERBOSE_ATOMIC_MATMULT
+#ifdef VERBOSE_ATOMIC_MATMULT_REGIONS
 	atomic_matmult_diagnostic_message(x1rowStart, start, x1rowEnd-x1rowStart, end-start,
 					  start, x2colStart, end-start,  x2colEnd - x2colStart,
 					  x1rowStart, x2colStart, x1rowEnd - x1rowStart, x2colEnd - x2colStart );
@@ -1294,12 +1294,12 @@ void atomic_matmult(const MatrixXd_CppAD &x1,
 	// 		       += y_var_const1;
       }
       if( x2rowEnd > x1colEnd ) { // there is a constant * var region. mutually exclusive with previous case
-#ifdef VERBOSE_ATOMIC_MATMULT
+#ifdef VERBOSE_ATOMIC_MATMULT_REGIONS
 	cout<<"\t segment 5"<<endl;
 #endif
 	int end = x2rowEnd;
 	int start = x2rowStart > x1colEnd ? x2rowStart : x1colEnd;
-#ifdef VERBOSE_ATOMIC_MATMULT
+#ifdef VERBOSE_ATOMIC_MATMULT_REGIONS
 	atomic_matmult_diagnostic_message(x1rowStart, start, x1rowEnd-x1rowStart, end-start,
 					  start, x2colStart, end-start,  x2colEnd - x2colStart,
 					  x1rowStart, x2colStart, x1rowEnd - x1rowStart, x2colEnd - x2colStart );
@@ -1322,7 +1322,7 @@ void atomic_matmult(const MatrixXd_CppAD &x1,
       if(x2colEnd < n3) { // there are some constant final cols in x2.
 	// B1 * C2, which is only relevant if there is a B2 region.  Otherwise A2 covers all of x2
 	// 3 cases here
-#ifdef VERBOSE_ATOMIC_MATMULT
+#ifdef VERBOSE_ATOMIC_MATMULT_REGIONS
 	cout<<"B1 * C2"<<endl;	
 	// set y[x1rowStart:(x1rowEnd-1), x2colEnd:(n3-1)]
 	atomic_matmult_diagnostic_message(x1rowStart, x1colStart, x1rowEnd-x1rowStart, x1colEnd - x1colStart,
@@ -1345,7 +1345,7 @@ void atomic_matmult(const MatrixXd_CppAD &x1,
       //
       // C1 * B2, in this section because C1 exists only if B1 exists
       if(x1rowEnd < n1 ) {
-#ifdef VERBOSE_ATOMIC_MATMULT
+#ifdef VERBOSE_ATOMIC_MATMULT_REGIONS
 	cout<<"C1 * B2"<<endl;	
 	// populate up to 3 contributions to y[x1rowEnd:(n1-1), x1colStart:(x1colEnd-1)]
 	// get constant * variable contribution to y[x1rowEnd:(n1-1), x1colStart:(x1colEnd-1)]

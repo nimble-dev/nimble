@@ -104,13 +104,34 @@ test_AD2_oneCall <- function(Robj, Cobj,
                              # these defaults are not used
                              RRrelTol = c(1e-8, 1e-3, 1e-2), 
                              RCrelTol = c(1e-15, 1e-8, 1e-3),
-                             CCrelTol = rep(sqrt(.Machine$double.eps), 3)) {
+                             CCrelTol = rep(sqrt(.Machine$double.eps), 3),
+                             Rmodel = NULL, Cmodel = NULL,
+                             recordInits = NULL, testInits = NULL,
+                             nodesToChange = NULL) {
   resRecord <- list()
   resTest <- list()
 
+  useRmodel <- !is.null(Rmodel)
+  useCmodel <- !is.null(Cmodel)
+  
   if(is.null(names(RRrelTol))) names(RRrelTol) <- c("0", "1", "2")
   if(is.null(names(RCrelTol))) names(RCrelTol) <- c("0", "1", "2")
   if(is.null(names(CCrelTol))) names(CCrelTol) <- c("0", "1", "2")
+
+  setModelInits <- function(m, inits) {
+    for(v in names(inits)) {
+      m[[v]] <- inits[[v]]
+    }
+    m$calculate()
+  }
+
+  changeModelInits <- function(m, inits, nodesToChange) {
+    for(node in nodesToChange) { # This will not include constant nodes and can include like 'x[2:3]'
+      if(all.vars(parse(text = node))[1] %in% names(inits))
+        eval(parse(text = paste0("m$", node, " <- inits$", node)))
+    }
+    m$calculate()
+  }
   
   do_one_call <- function(fun, argList) {
     eval( as.call( c(fun, argList) ) )
@@ -143,18 +164,26 @@ test_AD2_oneCall <- function(Robj, Cobj,
       extraArgs$innerWrt = wrt_all
     }
     argList <- c(recordArgs, extraArgs)
-    if(doR)
+    if(doR) {
+      if(useRmodel) setModelInits(Rmodel, recordInits)
       RansRecord <- do_one_call(Rfun, argList)
-    if(doC)
+    }
+    if(doC) {
+      if(useCmodel) setModelInits(Cmodel, recordInits)
       CansRecord <- do_one_call(Cfun, argList)
+    }
     if(tapingLevel >= 1)
       extraArgs$reset <- FALSE
 
     argList <- c(testArgs, extraArgs)
-    if(doR)
+    if(doR) {
+      if(useRmodel) changeModelInits(Rmodel, testInits, nodesToChange)
       RansTest <- do_one_call(Rfun, argList)
-    if(doC)
+    }
+    if(doC) {
+      if(useCmodel) changeModelInits(Cmodel, testInits, nodesToChange)
       CansTest <- do_one_call(Cfun, argList)
+    }
 
     pieces <- c("0"="value", "1"="jacobian", "2"="hessian")
     rName <- paste0("R", name)
@@ -895,7 +924,8 @@ make_wrt <- function(argTypes, n_random = 10, n_arg_reps = 1) {
 make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
                           input_gen_funs = NULL, more_args = NULL, seed = 0,
                           outer_code = NULL, inner_codes = NULL,
-                          size = NULL, inputs = NULL) {
+                          size = NULL, inputs = NULL,
+                          includeModelArgs = FALSE) {
   if(!is.list(op)) {
     opParam <- make_op_param(op, argTypes, more_args = more_args,
                              outer_code = outer_code,  inner_codes = inner_codes)
@@ -905,6 +935,18 @@ make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
   run <- gen_runFunCore(opParam)
 
   if(seed == 0) seed <- round(runif(1, 1, 10000))
+
+  modelArg <- NULL
+  updateNodesArg <- NULL
+  constantNodesArg <- NULL
+  if(isTRUE(includeModelArgs)) {
+    # If this is used, then some custom setup code
+    # will need to be inserted to create model, updateNodes, and constantNodes
+    modelArg <- as.name("model")
+    updateNodesArg <- as.name("updateNodes")
+    constantNodesArg <- as.name("constantNodes")
+  }
+  
   
   ## Make a set of methods. These need to be constructed
   ## so that they can have different argument names, numbers, and types.
@@ -922,11 +964,15 @@ make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
              wrt = double(1),
              order = integer(1),
              reset = logical(0, default = FALSE)) {
-      ans <- nimDerivs(RUNCALL, wrt = wrt, order = order, reset = reset)
+      ans <- nimDerivs(RUNCALL, wrt = wrt, order = order, reset = reset,
+                       model = MODELARG, updateNodes = UPDATENODESARG,
+                       constantNodes = CONSTANTNODESARG)
       return(ans)
       returnType(ADNimbleList())
     },
-    list(RUNCALL = runCall)
+    list(RUNCALL = runCall, MODELARG = modelArg,
+         UPDATENODESARG = updateNodesArg,
+         CONSTANTNODESARG = constantNodesArg)
   ))
   attributes(derivsRun)$srcref <- NULL
   formals(derivsRun) <- c(args_formals, formals(derivsRun))
@@ -935,7 +981,9 @@ make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
     function(#arg1 = double(1) etc to be inserted
              wrt = double(1),
              reset = logical(0, default = FALSE)) {
-      ans <- nimDerivs(RUNCALL, wrt = wrt, order = 0, reset = reset)
+      ans <- nimDerivs(RUNCALL, wrt = wrt, order = 0, reset = reset,
+                       model = MODELARG, updateNodes = UPDATENODESARG,
+                       constantNodes = CONSTANTNODESARG)
       d1 <- dim(ans$value)[1]
       res <- numeric(length = d1)
       for(i in 1:d1)
@@ -943,7 +991,9 @@ make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
       return(res)
       returnType(double(1))
     },
-    list(RUNCALL = runCall)
+    list(RUNCALL = runCall, MODELARG = modelArg,
+         UPDATENODESARG = updateNodesArg,
+         CONSTANTNODESARG = constantNodesArg)
   ))
   attributes(value)$srcref <- NULL
   formals(value) <- c(args_formals, formals(value))
@@ -952,7 +1002,9 @@ make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
     function(#arg1 = double(1) etc to be inserted
              wrt = double(1),
              reset = logical(0, default = FALSE)) {
-      ans <- nimDerivs(RUNCALL, wrt = wrt, order = 1, reset = reset)
+      ans <- nimDerivs(RUNCALL, wrt = wrt, order = 1, reset = reset,
+                       model = MODELARG, updateNodes = UPDATENODESARG,
+                       constantNodes = CONSTANTNODESARG)
       d1 <- dim(ans$jacobian)[1]
       d2  <- dim(ans$jacobian)[2]
       res <- numeric(length = d1*d2)
@@ -962,7 +1014,9 @@ make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
       return(res)
       returnType(double(1))
     },
-    list(RUNCALL = runCall)
+    list(RUNCALL = runCall, MODELARG = modelArg,
+         UPDATENODESARG = updateNodesArg,
+         CONSTANTNODESARG = constantNodesArg)
   ))
   attributes(jac)$srcref <- NULL
   formals(jac) <- c(args_formals, formals(jac))
@@ -972,7 +1026,9 @@ make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
              wrt = double(1),
              reset = logical(0, default = FALSE)) {
       # Because this gets order 2, the order 1 comes from forward 1
-      ans <- nimDerivs(RUNCALL, wrt = wrt, order = 1:2, reset = reset)
+      ans <- nimDerivs(RUNCALL, wrt = wrt, order = 1:2, reset = reset,
+                       model = MODELARG, updateNodes = UPDATENODESARG,
+                       constantNodes = CONSTANTNODESARG)
       d1 <- dim(ans$jacobian)[1]
       d2  <- dim(ans$jacobian)[2]
       res <- numeric(length = d1*d2)
@@ -982,7 +1038,9 @@ make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
       return(res)
       returnType(double(1))
     },
-    list(RUNCALL = runCall)
+    list(RUNCALL = runCall, MODELARG = modelArg,
+         UPDATENODESARG = updateNodesArg,
+         CONSTANTNODESARG = constantNodesArg)
   ))
   attributes(jac2)$srcref <- NULL
   formals(jac2) <- c(args_formals, formals(jac2))
@@ -991,7 +1049,9 @@ make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
     function(#arg1 = double(1) etc to be inserted
              wrt = double(1),
              reset = logical(0, default = FALSE)) {
-      ans <- nimDerivs(RUNCALL, wrt = wrt, order = 2, reset = reset)
+      ans <- nimDerivs(RUNCALL, wrt = wrt, order = 2, reset = reset,
+                       model = MODELARG, updateNodes = UPDATENODESARG,
+                       constantNodes = CONSTANTNODESARG)
       d1 <- dim(ans$hessian)[1]
       d2 <- dim(ans$hessian)[2]
       d3 <- dim(ans$hessian)[3]
@@ -1005,7 +1065,9 @@ make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
       return(res)
       returnType(double(1))
     },
-    list(RUNCALL = runCall)
+    list(RUNCALL = runCall, MODELARG = modelArg,
+         UPDATENODESARG = updateNodesArg,
+         CONSTANTNODESARG = constantNodesArg)
   ))
   attributes(hess)$srcref <- NULL
   formals(hess) <- c(args_formals, formals(hess))
@@ -1023,11 +1085,15 @@ make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
              wrt = double(1),
              order = integer(1),
              reset = logical(0, default = FALSE) ) {
-      ans <- nimDerivs(VALUECALL, wrt = wrt, order = order, reset = reset)
+      ans <- nimDerivs(VALUECALL, wrt = wrt, order = order, reset = reset,
+                       model = MODELARG, updateNodes = UPDATENODESARG,
+                       constantNodes = CONSTANTNODESARG)
       return(ans)
       returnType(ADNimbleList())
     },
-    list(VALUECALL = valueCall)
+    list(VALUECALL = valueCall, MODELARG = modelArg,
+         UPDATENODESARG = updateNodesArg,
+         CONSTANTNODESARG = constantNodesArg)
   ))
   attributes(derivsValue)$srcref <- NULL
   formals(derivsValue) <- c(args_formals, formals(derivsValue))
@@ -1046,11 +1112,15 @@ make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
              wrt = double(1),
              order = integer(1),
              reset = logical(0, default = FALSE) ) {
-      ans <- nimDerivs(JACCALL, wrt = wrt, order = order, reset = reset)
+      ans <- nimDerivs(JACCALL, wrt = wrt, order = order, reset = reset,
+                       model = MODELARG, updateNodes = UPDATENODESARG,
+                       constantNodes = CONSTANTNODESARG)
       return(ans)
       returnType(ADNimbleList())
     },
-    list(JACCALL = jacCall)
+    list(JACCALL = jacCall, MODELARG = modelArg,
+         UPDATENODESARG = updateNodesArg,
+         CONSTANTNODESARG = constantNodesArg)
   ))
   attributes(derivsJac)$srcref <- NULL
   formals(derivsJac) <- c(args_formals, formals(derivsJac))
@@ -1068,11 +1138,15 @@ make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
              wrt = double(1),
              order = integer(1),
              reset = logical(0, default = FALSE) ) {
-      ans <- nimDerivs(JAC2CALL, wrt = wrt, order = order, reset = reset)
+      ans <- nimDerivs(JAC2CALL, wrt = wrt, order = order, reset = reset,
+                       model = MODELARG, updateNodes = UPDATENODESARG,
+                       constantNodes = CONSTANTNODESARG)
       return(ans)
       returnType(ADNimbleList())
     },
-    list(JAC2CALL = jac2Call)
+    list(JAC2CALL = jac2Call, MODELARG = modelArg,
+         UPDATENODESARG = updateNodesArg,
+         CONSTANTNODESARG = constantNodesArg)
   ))
   attributes(derivsJac2)$srcref <- NULL
   formals(derivsJac2) <- c(args_formals, formals(derivsJac2))
@@ -1090,11 +1164,15 @@ make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
              wrt = double(1),
              order = integer(1),
              reset = logical(0, default = FALSE) ) {
-      ans <- nimDerivs(HESSCALL, wrt = wrt, order = order, reset = reset)
+      ans <- nimDerivs(HESSCALL, wrt = wrt, order = order, reset = reset,
+                       model = MODELARG, updateNodes = UPDATENODESARG,
+                       constantNodes = CONSTANTNODESARG)
       return(ans)
       returnType(ADNimbleList())
     },
-    list(HESSCALL = hessCall)
+    list(HESSCALL = hessCall, MODELARG = modelArg,
+         UPDATENODESARG = updateNodesArg,
+         CONSTANTNODESARG = constantNodesArg)
     ))
   attributes(derivsHess)$srcref <- NULL
   formals(derivsHess) <- c(args_formals, formals(derivsHess))
