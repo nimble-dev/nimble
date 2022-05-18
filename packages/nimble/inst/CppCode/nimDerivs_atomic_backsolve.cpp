@@ -93,9 +93,9 @@ bool atomic_backsolve_class::for_type(
 #endif
   // Row i of output depends on rows i and <i in A input.
   // Element (i,j) of output depends on elements (<=i, j) of B input
-  int n = type_x.size();
-  int m = type_y.size();
-  int n1sq, n1, n2;
+  size_t n = type_x.size();
+  size_t m = type_y.size();
+  size_t n1sq, n1, n2;
   if((!Aconstant()) && (!Bconstant())) n1sq = n-m;
   if(Aconstant()) n1sq = get_X_stored().size();
   if(Bconstant()) n1sq = n;
@@ -110,12 +110,13 @@ bool atomic_backsolve_class::for_type(
   CppAD::ad_type_enum row_type_below(CppAD::constant_enum);
   CppAD::ad_type_enum this_row_type;
   CppAD::ad_type_enum item_type;
-  for(int i = n1-1; i >= 0; --i) { // go backwards because rows depend on those below them.  Must use int to get valid >= 0 comparison.
+
+  for(size_t i = n1; i > 0; --i) { // go backwards because rows depend on those below them.  Must use int to get valid >= 0 comparison.
     this_row_type = row_type_below;
     if(!Aconstant()) {
       if(this_row_type != CppAD::variable_enum) { // no need to check if row type is already at the "max"
-	for(size_t j = i; j < n1; ++j) { // only look at upper triangle
-	  item_type = type_x[i + j*n1];
+	for(size_t j = i-1; j < n1; ++j) { // only look at upper triangle
+	  item_type = type_x[i-1 + j*n1];
 	  if(item_type == CppAD::variable_enum) {
 	    this_row_type = CppAD::variable_enum;
 	    break;
@@ -126,23 +127,23 @@ bool atomic_backsolve_class::for_type(
 	}
       }
     }
-    x1RowTypes[i] = row_type_below = this_row_type;
+    x1RowTypes[i-1] = row_type_below = this_row_type;
   }
-
+  
   CppAD::ad_type_enum B_item_type;
   CppAD::ad_type_enum B_row_type_below;  // type of elements below row i, done for one column a time
   CppAD::ad_type_enum  B_this_row_type;  // type of the current row, done for one column at a time
-  int Boffset = Aconstant() ? 0 : n1sq;
+  size_t Boffset = Aconstant() ? 0 : n1sq;
 
-  for(int j = 0; j < n2; ++j) {
+  for(size_t j = 0; j < n2; ++j) {
     // for the j-th column
     B_row_type_below = CppAD::constant_enum;
-    for(int i = n1-1; i >= 0; --i) { // must be int, not size_t
+    for(size_t i = n1; i > 0; --i) { // must be int, not size_t
       B_this_row_type = B_row_type_below; // can't be lower type than what's below it in the current column
       // if B_this_row_type is not already variable (max type), update based on type of element B[i,j]
       if(B_this_row_type < CppAD::variable_enum) {
 	if(!Bconstant()) {
-	  B_item_type = type_x[Boffset + i + j*n1];
+	  B_item_type = type_x[Boffset + (i-1) + j*n1];
 	  if(B_item_type == CppAD::variable_enum) {
 	    B_this_row_type = CppAD::variable_enum;
 	  } else {
@@ -155,33 +156,16 @@ bool atomic_backsolve_class::for_type(
 
       item_type = CppAD::constant_enum; // output type
 
-      if(x1RowTypes[i] == CppAD::variable_enum || B_this_row_type == CppAD::variable_enum) {
+      if(x1RowTypes[i-1] == CppAD::variable_enum || B_this_row_type == CppAD::variable_enum) {
 	item_type = CppAD::variable_enum;
       } else {
-	if(x1RowTypes[i] == CppAD::dynamic_enum || B_this_row_type == CppAD::dynamic_enum) {
+	if(x1RowTypes[i-1] == CppAD::dynamic_enum || B_this_row_type == CppAD::dynamic_enum) {
 	  item_type = CppAD::dynamic_enum;
 	}
       }
-      type_y[i + j*n1] = item_type;
+      type_y[i-1 + j*n1] = item_type;
     }
   }
-  //  std::cout<<"forward type analysis"<<std::endl;
-  // std::cout<<"type_x (A parts)"<<std::endl;
-  //   for(int i = 0; i < n1; ++i) {
-  //     for(int j = 0; j < n1; ++j) std::cout<< type_x[i + j*n1]<<"\t";
-  //     std::cout<<std::endl;
-  //   }
-  //   std::cout<<"type_x (B parts)"<<std::endl;
-  //   for(int i = 0; i < n1; ++i) {
-  //     for(int j = 0; j < n2; ++j) std::cout<< type_x[n1sq + i + j*n1]<<"\t";
-  //     std::cout<<std::endl;
-  //   }
-  //   std::cout<<"type_y"<<std::endl;
-  //   for(int i = 0; i < n1; ++i) {
-  //     for(int j = 0; j < n2; ++j) std::cout<< type_y[i + j*n1]<<"\t";
-  //     std::cout<<std::endl;
-  //   }
-
   return true;
 }
 
@@ -197,9 +181,9 @@ bool atomic_backsolve_class::rev_depend(
 #ifdef VERBOSE_ATOMIC_FS
   printf("In backsolve rev_depend\n");
 #endif
-  int n = depend_x.size();
-  int m = depend_y.size();
-  int n1sq, n1, n2;
+  size_t n = depend_x.size();
+  size_t m = depend_y.size();
+  size_t n1sq, n1, n2;
   if((!Aconstant()) && (!Bconstant())) n1sq = n-m;
   if(Aconstant()) n1sq = get_X_stored().size();
   if(Bconstant()) n1sq = n;
@@ -208,15 +192,15 @@ bool atomic_backsolve_class::rev_depend(
   n1 = sqrt( static_cast<double>(n1sq) );
   n2 = m/n1;
 
-  int Boffset = Aconstant() ? 0 : n1sq;
+  size_t Boffset = Aconstant() ? 0 : n1sq;
 
-  int i_first_true_any_col, i_first_true_this_col;
+  size_t i_first_true_any_col, i_first_true_this_col;
   
   i_first_true_any_col = n1; // initialize past the end, i.e. no rows have depend_y true for this column (j)
-  for(int j = 0; j < n2; ++j) {
+  for(size_t j = 0; j < n2; ++j) {
     i_first_true_this_col = n1; // ditto
     // find the first row in the column that had depend_y true
-    for(int i = 0; i < n1; ++i) {
+    for(size_t i = 0; i < n1; ++i) {
       if(depend_y[i + j*n1]) {
 	i_first_true_this_col = i;
 	break;
@@ -228,26 +212,26 @@ bool atomic_backsolve_class::rev_depend(
     }
     // set depend_x elements corresponding to B true for >= first row with depend_y true for this column
     if(!Bconstant()) {
-      for(int i = i_first_true_this_col; i < n1; ++i) {
+      for(size_t i = i_first_true_this_col; i < n1; ++i) {
 	depend_x[Boffset + i + j*n1] = true;
       }
-      for(int i = 0; i < i_first_true_this_col; ++i) {
+      for(size_t i = 0; i < i_first_true_this_col; ++i) {
 	depend_x[Boffset + i + j*n1] = false; // false otherwise
       }
     }
   }
   if(!Aconstant()) {
     // set all upper_diagonal elements of A for rows >= first row with depend_y true for any column true
-    for(int i = i_first_true_any_col; i < n1; ++i) {
-      for(int j = i; j < n1; ++j) {
+    for(size_t i = i_first_true_any_col; i < n1; ++i) {
+      for(size_t j = i; j < n1; ++j) {
 	depend_x[i + j * n1] = true;
       }
-      for(int j = 0; j < i; ++j) {
+      for(size_t j = 0; j < i; ++j) {
 	depend_x[i + j * n1] = false; // below-diagonal elements for row i
       }
     }
-    for(int i = 0; i < i_first_true_any_col; ++i) { // other rows
-      for(int j = 0; j < n1; ++j) {                     // all cols 
+    for(size_t i = 0; i < i_first_true_any_col; ++i) { // other rows
+      for(size_t j = 0; j < n1; ++j) {                     // all cols 
 	depend_x[i + j * n1] = false;
       }    
     }
@@ -275,12 +259,12 @@ bool atomic_backsolve_class::rev_depend(
 
 bool check_A_diagonal_upper(const MatrixXd_CppAD &A) {
   // THIS IGNORES LOWER OFF-DIAGONAL. IT IS FOR backsolve
-  int n1 = A.rows();
+  size_t n1 = A.rows();
   if(A.cols() != n1)
     cout<<"A is not square in check_A_diagonal"<<endl;
   bool diagonal(true);
-  for(int iii = 0; iii < n1-1; ++iii) {
-    for(int jjj = iii+1; jjj < n1; ++jjj) {
+  for(size_t iii = 0; iii < n1-1; ++iii) {
+    for(size_t jjj = iii+1; jjj < n1; ++jjj) {
       diagonal &= CppAD::IdenticalZero(A(iii, jjj));
       if(!diagonal) break;
     }
@@ -300,8 +284,8 @@ void atomic_backsolve(const MatrixXd_CppAD &A,
   // In the future blocks of var within const or such can be implemented.
   //
   // First set up constant cases and put all testing in place.
-  int n1 = A.rows();
-  int n2 = B.cols();
+  size_t n1 = A.rows();
+  size_t n2 = B.cols();
   //  cout<<n1<<" "<<n2<<endl;
   if(A.cols() != n1)
     cout<<"A is not square in atomic_backsolve"<<endl;
@@ -328,8 +312,8 @@ void atomic_backsolve(const MatrixXd_CppAD &A,
 
   // A is diagonal (This subsumes the case that A is 1x1)
   if(check_A_diagonal_upper(A)) {
-    for(int i = 0; i < n1; ++i) {
-      for(int j = 0; j < n2; ++j) {
+    for(size_t i = 0; i < n1; ++i) {
+      for(size_t j = 0; j < n2; ++j) {
 	Y(i, j) = B(i, j) / A(i, i);
       }
     }
@@ -337,7 +321,7 @@ void atomic_backsolve(const MatrixXd_CppAD &A,
   }
 
   // Check constant zero region for B
-  int BrowStartNZ, BrowEndNZ, BcolStartNZ, BcolEndNZ;
+  size_t BrowStartNZ, BrowEndNZ, BcolStartNZ, BcolEndNZ;
   bool B_is_constant_zero;
 
   auto zero_cond = [](const CppAD::AD<double> &x)->bool {return CppAD::IdenticalZero(x);};
@@ -347,10 +331,10 @@ void atomic_backsolve(const MatrixXd_CppAD &A,
   if((BrowEndNZ < n1)  || B_is_constant_zero) {
     // B has some final rows with all constant zeros: fill in zero results and recurse to solve non-zero region
     // note that if B is all constant, we'll have BrowStartNZ == BrowEndNZ == n1
-    int lowest_constant_zero_row = B_is_constant_zero ? 0 : BrowEndNZ;
-    for(int i = n1-1; i >= lowest_constant_zero_row; --i) {
-      for(int j = 0; j < n2; ++j) {
-  	Y(i, j) = 0;
+    size_t lowest_constant_zero_row = B_is_constant_zero ? 0 : BrowEndNZ;
+    for(size_t i = n1; i > lowest_constant_zero_row; --i) {
+      for(size_t j = 0; j < n2; ++j) {
+  	Y(i-1, j) = 0;
       }
     }
     if(!B_is_constant_zero) {    // Recurse on a nested forward solve
@@ -360,8 +344,8 @@ void atomic_backsolve(const MatrixXd_CppAD &A,
   }
 
   // Find constant vs non-constant regions
-  int ArowStart, ArowEnd, AcolStart, AcolEnd;
-  int BrowStart, BrowEnd, BcolStart, BcolEnd;
+  size_t ArowStart, ArowEnd, AcolStart, AcolEnd;
+  size_t BrowStart, BrowEnd, BcolStart, BcolEnd;
   bool A_is_constant, B_is_constant;
 
   auto const_cond = [](const CppAD::AD<double> &x)->bool {return CppAD::Constant(x);};
@@ -380,7 +364,7 @@ void atomic_backsolve(const MatrixXd_CppAD &A,
 
   auto dyn_cond = [](const CppAD::AD<double> &x)->bool {return CppAD::Dynamic(x);};
   bool A_is_dynamic(false);
-  int a, b, c, d; // dummies
+  size_t a, b, c, d; // dummies
   if(!A_is_constant)
     A_is_dynamic = delineate_condition_region(dyn_cond, A, a, b, c, d);
   bool B_is_dynamic(false);
@@ -402,7 +386,7 @@ void atomic_backsolve(const MatrixXd_CppAD &A,
   atomic_backsolve->Avariable() = !(A_is_constant || A_is_dynamic);
   atomic_backsolve->Bvariable() = !(B_is_constant || B_is_dynamic);
   
-  int xVecSize = 0;
+  size_t xVecSize = 0;
   if(!A_is_constant) xVecSize += n1*n1;
   if(!B_is_constant) xVecSize += n1*n2;
   std::vector<CppAD::AD<double> > xVec(xVecSize);
@@ -443,8 +427,8 @@ void atomic_backsolve_old(const MatrixXd_CppAD &A,
   // B and Y are n1-x-n2
   //  static atomic_backsolve_class atomic_backsolve("atomic_backsolve");
   atomic_backsolve_class *atomic_backsolve;
-  int n1 = A.rows();
-  int n2 = B.cols();
+  size_t n1 = A.rows();
+  size_t n2 = B.cols();
   std::vector<CppAD::AD<double> > xVec(n1*n1 + n1*n2);
   mat2vec(A, xVec);
   mat2vec(B, xVec, n1*n1);

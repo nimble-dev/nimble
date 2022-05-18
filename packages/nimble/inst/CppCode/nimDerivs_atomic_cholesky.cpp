@@ -89,13 +89,13 @@ bool atomic_cholesky_class::for_type(
 				     const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
 				     CppAD::vector<CppAD::ad_type_enum>&        type_y      )
 {
-  int nsq = type_y.size();
-  int n = static_cast<size_t>(sqrt(static_cast<double>(nsq)));
+  size_t nsq = type_y.size();
+  size_t n = static_cast<size_t>(sqrt(static_cast<double>(nsq)));
   std::vector< CppAD::ad_type_enum > row_types(n, CppAD::constant_enum);
   CppAD::ad_type_enum this_type, this_col_type, this_row_type;
-  for(int j = 0; j < n; ++j) {
+  for(size_t j = 0; j < n; ++j) {
     this_col_type = CppAD::constant_enum;
-    for(int i = 0; i <= j; ++i) {
+    for(size_t i = 0; i <= j; ++i) {
       this_row_type = row_types[i];
       this_type = type_x[i + j*n];
       // match running column type and this type to larger
@@ -114,7 +114,7 @@ bool atomic_cholesky_class::for_type(
       row_types[i] = this_row_type;
       type_y[i + j*n] = this_type;
     }
-    for(int i = j+1; i < n; ++i) { // set strict below-diagonal elements constant
+    for(size_t i = j+1; i < n; ++i) { // set strict below-diagonal elements constant
       type_y[i + j*n] = CppAD::constant_enum;
     }
   }
@@ -131,15 +131,15 @@ bool atomic_cholesky_class::rev_depend(
   // We need to set any elements of depend_x to true that are inputs to elements of y with depend_y true
   // x(i,j) impacts on y(>=i, >=j).
   // Therefore y(i,j) is impacted by elements x(<=i, <=j) 
-  int nsq = parameter_x.size();
-  int n = static_cast<size_t>(sqrt(static_cast<double>(nsq)));
+  size_t nsq = parameter_x.size();
+  size_t n = static_cast<size_t>(sqrt(static_cast<double>(nsq)));
   std::vector<bool> dep_cols(n, false);
   bool this_dep, dep_this_row, dep_this_col;
-  for(int i = n-1; i >= 0; --i) {
+  for(size_t i = n; i > 0; --i) { // use as i-1
     dep_this_row = false;
-    for(int j = n-1; j >= i; --j) {
-      dep_this_col = dep_cols[j];
-      this_dep = depend_y[i + j*n];
+    for(size_t j = n; j > i-1; --j) { // use as j-1
+      dep_this_col = dep_cols[j-1];
+      this_dep = depend_y[(i-1) + (j-1)*n];
       if(this_dep > dep_this_row) {
 	dep_this_row = this_dep;
       } else {
@@ -151,12 +151,12 @@ bool atomic_cholesky_class::rev_depend(
 	this_dep = dep_this_col;
       }
       dep_this_row = this_dep;
-      dep_cols[j] = this_dep;
-      depend_x[i + j * n] = this_dep;
+      dep_cols[j-1] = this_dep;
+      depend_x[(i-1) + (j-1) * n] = this_dep;
     }
     // When treating input as upper-diagonal
-    for( int j = 0; j < i; ++j) {
-      depend_x[i + j*n] = false;
+    for( size_t j = 0; j < i-1; ++j) {
+      depend_x[i-1 + j*n] = false;
     }
   }
 
@@ -182,8 +182,8 @@ bool atomic_cholesky_class::forward(
 #endif
   //forward mode
   //  std::cout<<"In Cholesky forward "<<order_low<<" "<<order_up<<std::endl;
-  int nrow = order_up + 1;
-  int n = static_cast<int>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
+  size_t nrow = order_up + 1;
+  size_t n = static_cast<size_t>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
   // populate cholesky into taylor_y
   if(order_low <= 0 & order_up >= 0) {//value
     // Eigen::MatrixXd xMat(n, n);
@@ -209,7 +209,7 @@ bool atomic_cholesky_class::forward(
 				     order_up,
 				     taylor_x,
 				     taylor_y.size());
-    int cache_nrow = double_cache.nrow();
+    size_t cache_nrow = double_cache.nrow();
     EigenMap Ymap(double_cache.taylor_y_ptr(), n, n, EigStrDyn(cache_nrow*n, cache_nrow ) );
 
     EigenMap dYmap(&taylor_y[1], n, n, EigStrDyn(nrow*n, nrow ) );
@@ -284,8 +284,8 @@ bool atomic_cholesky_class::forward(
 				    CppAD::vector<CppAD::AD<double> >&                     taylor_y     ) {
   //forward mode
   // printf("In cholesky forward\n");
-  int nrow = order_up + 1;
-  int n = static_cast<int>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
+  size_t nrow = order_up + 1;
+  size_t n = static_cast<size_t>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
   // populate cholesky into taylor_y
   if(order_low <= 0 & order_up >= 0) {//value
     // Eigen::MatrixXd xMat(n, n);
@@ -305,7 +305,7 @@ bool atomic_cholesky_class::forward(
 					  order_up,
 					  taylor_x,
 					  taylor_y.size());
-    int cache_nrow = CppADdouble_cache.nrow();
+    size_t cache_nrow = CppADdouble_cache.nrow();
     metaEigenMap Ymap(CppADdouble_cache.taylor_y_ptr(), n, n, EigStrDyn(cache_nrow*n, cache_nrow ) );
 
     metaEigenMap dYmap(&taylor_y[1], n, n, EigStrDyn(nrow*n, nrow ) );
@@ -347,8 +347,8 @@ bool atomic_cholesky_class::reverse(
   derivs_chol_timer_start();
 #endif
 
-  int nrow = order_up + 1;
-  int n = static_cast<int>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
+  size_t nrow = order_up + 1;
+  size_t n = static_cast<int>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
     
   double_cache.check_and_set_cache(this,
 				   parameter_x,
@@ -357,7 +357,7 @@ bool atomic_cholesky_class::reverse(
 				   order_up,
 				   taylor_x,
 				   taylor_y.size());
-  int cache_nrow = double_cache.nrow();
+  size_t cache_nrow = double_cache.nrow();
   EigenConstMap Ymap(double_cache.taylor_y_ptr(), n, n, EigStrDyn(cache_nrow*n, cache_nrow ) );
   
   EigenConstMap Yadjoint_map(&partial_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
@@ -498,8 +498,8 @@ bool atomic_cholesky_class::reverse(
 				    const CppAD::vector<CppAD::AD<double> >&               taylor_y    ,
 				    CppAD::vector<CppAD::AD<double> >&                     partial_x   ,
 				    const CppAD::vector<CppAD::AD<double> >&               partial_y   ) {
-  int nrow = order_up + 1;
-  int n = static_cast<int>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
+  size_t nrow = order_up + 1;
+  size_t n = static_cast<size_t>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
 
 
   CppADdouble_cache.check_and_set_cache(this,
@@ -510,7 +510,7 @@ bool atomic_cholesky_class::reverse(
 					taylor_x,
 					taylor_y.size());
   //  metaEigenConstMap Ymap(&taylor_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
-  int cache_nrow = CppADdouble_cache.nrow();
+  size_t cache_nrow = CppADdouble_cache.nrow();
   metaEigenConstMap Ymap(CppADdouble_cache.taylor_y_ptr(), n, n, EigStrDyn(cache_nrow*n, cache_nrow ) );
 
   metaEigenConstMap Yadjoint_map(&partial_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
@@ -570,7 +570,7 @@ void atomic_cholesky(const MatrixXd_CppAD &x, // This (non-template) type forces
 		     MatrixXd_CppAD &y) {
   //  static atomic_cholesky_class atomic_cholesky("atomic_cholesky"); // this has no state information so the same object can be used for all cases
   atomic_cholesky_class *atomic_cholesky; // Need to do it this way for multiple compilation units
-  int n = x.rows();
+  size_t n = x.rows();
   CppAD::vector<CppAD::AD<double> > xVec(n*n);
   mat2vec(x, xVec); // could be mat2vec_lower_zero but it doesn't seem to matter.
   CppAD::vector<CppAD::AD<double> > yVec(n*n);

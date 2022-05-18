@@ -9,7 +9,7 @@ template<typename T>
 atomic_cache_class<T>::atomic_cache_class() :
   taylor_x_cache_nrow(0),
   taylor_y_cache_nrow(0),
-  current_cache_order(-1)
+  current_cache_order(0)
 {}
 
 template<typename T>
@@ -18,7 +18,7 @@ T* atomic_cache_class<T>::taylor_y_ptr() {
 }
 
 template<typename T>
-int atomic_cache_class<T>::nrow() const {
+size_t atomic_cache_class<T>::nrow() const {
   return taylor_y_cache_nrow;
 }
 
@@ -27,11 +27,11 @@ void atomic_cache_class<T>::check_and_set_cache_size(size_t order_up_set,
 						     size_t order_up,
 						     size_t v_size,
 						     CppAD::vector<T>& v_cache,
-						     int &cache_nrow) {
-  int nrow = order_up + 1; // pertains to v
-  int nrow_set = order_up_set + 1;
+						     size_t &cache_nrow) {
+  size_t nrow = order_up + 1; // pertains to v
+  size_t nrow_set = order_up_set + 1;
   if(nrow_set > cache_nrow) {
-  int n = static_cast<int>(static_cast<double>(v_size)/nrow);
+  size_t n = static_cast<size_t>(static_cast<double>(v_size)/nrow);
 #ifdef DEBUG_ATOMIC_CACHE_
     std::cout<<"resizing from "<<cache_nrow<<" to "<<v_size<<" for nrow = "<<nrow<<" n = "<<n<<std::endl;
 #endif
@@ -62,9 +62,9 @@ Hence, the cache may be bigger than the input on a 0th-order call.
 
 template<typename T>
 void atomic_cache_class<T>::show_cache_generic(const CppAD::vector< T >& v_cache,
-					       int &cache_nrow) {
+					       size_t &cache_nrow) {
   std::cout<<"cache_nrow = "<<cache_nrow<<std::endl;
-  int n = static_cast<int>(static_cast<double>(v_cache.size())/cache_nrow);
+  size_t n = static_cast<size_t>(static_cast<double>(v_cache.size())/cache_nrow);
   for(size_t irow = 0; irow < cache_nrow; ++irow) {
     for(size_t i = 0; i < n; ++i) {
       std::cout<<v_cache[irow + i * cache_nrow]<<"\t";
@@ -85,11 +85,11 @@ void atomic_cache_class<T>::set_cache_generic(size_t order_low_set,
 					      size_t order_up,
 					      const CppAD::vector< T >& v,
 					      CppAD::vector< T >& v_cache,
-					      int &cache_nrow
+					      size_t &cache_nrow
 					      ) {
-  int nrow = order_up + 1; // pertains to v
+  size_t nrow = order_up + 1; // pertains to v
   if(nrow <= 0) return;
-  int nrow_set = order_up_set + 1;
+  size_t nrow_set = order_up_set + 1;
   /* 
     Expanding cache is destructive, but we don't need the old values.
     Caches will be expanded but not contracted.  That is because we 
@@ -102,7 +102,7 @@ void atomic_cache_class<T>::set_cache_generic(size_t order_low_set,
   */
   typename CppAD::vector< T >::const_iterator v_iter;
   typename CppAD::vector< T >::iterator v_cache_iter;
-  int n = static_cast<int>(static_cast<double>(v.size())/nrow);
+  size_t n = static_cast<size_t>(static_cast<double>(v.size())/nrow);
   
   for(size_t irow = order_low_set; irow < nrow_set; ++irow) { // irow is order
     // v[i + j*nrow] is the j-th element of the i-th order
@@ -143,11 +143,11 @@ bool atomic_cache_class<T>::check_Xcache(size_t order_up_check,
   std::cout<<"checking Xcache (outcome is false unless \"all true\" is shown)..."<<std::endl;
 #endif
   if(order_up_check > current_cache_order) return(false);
-  int nrow = order_up + 1; // for taylor_x
+  size_t nrow = order_up + 1; // for taylor_x
   typename CppAD::vector< T >::const_iterator v_iter;
   typename CppAD::vector< T >::iterator v_cache_iter;
-  int n = static_cast<int>(static_cast<double>(taylor_x.size())/nrow);
-  int nrow_check = order_up_check + 1;
+  size_t n = static_cast<size_t>(static_cast<double>(taylor_x.size())/nrow);
+  size_t nrow_check = order_up_check + 1;
   
   for(size_t irow = 0; irow < nrow_check; ++irow) { // irow is order
     // v[i + j*nrow] is the j-th element of the i-th order
@@ -221,10 +221,10 @@ void atomic_cache_class<T>::check_and_set_cache(S *owner,
   // 2. Otherwise, calculate Ymap and Ydot_map into the cache by calling forward.
   if(!cache_is_current) {
     check_and_set_cache_size(order_up_check, order_up, taylor_y_size, taylor_y_cache, taylor_y_cache_nrow);
-    int nrow = order_up + 1;
-    int n = static_cast<int>(static_cast<double>(taylor_x.size())/nrow);
-    int m = static_cast<int>(static_cast<double>(taylor_y_size)/nrow);
-    int temp_nrow = order_up_check + 1;
+    size_t nrow = order_up + 1;
+    size_t n = static_cast<size_t>(static_cast<double>(taylor_x.size())/nrow);
+    size_t m = static_cast<size_t>(static_cast<double>(taylor_y_size)/nrow);
+    size_t temp_nrow = order_up_check + 1;
     
     CppAD::vector< T > taylor_x_temp( n * temp_nrow ); // These can be necessary because order_up might not match order_up_check and hence migt not match sizes of taylor_x and taylor_y
     CppAD::vector< T > taylor_y_temp( m * temp_nrow );

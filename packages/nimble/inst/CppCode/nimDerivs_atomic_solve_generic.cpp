@@ -24,21 +24,21 @@ bool ATOMIC_SOLVE_CLASS::forward(
 				     const CppAD::vector<double>&               taylor_x     ,
 				     CppAD::vector<double>&                     taylor_y     ) {
   //forward mode
-  int nrow = order_up + 1;
+  size_t nrow = order_up + 1;
 #ifdef VERBOSE_ATOMIC_SOLVE
   printf("In solve forward\n");
   std::cout<<"order_low = "<<order_low<<" order_up = "<<order_up<<" nrow = "<<nrow<<std::endl;
 #endif
-  int n = taylor_x.size()/nrow;
-  int m = taylor_y.size() / nrow;
-  int n1sq, n1, n2;
+  size_t n = taylor_x.size() / nrow;
+  size_t m = taylor_y.size() / nrow;
+  size_t n1sq, n1, n2;
   if((!Aconstant()) && (!Bconstant())) n1sq = n-m;
   if(Aconstant()) n1sq = get_X_stored().size();
   if(Bconstant()) n1sq = n;
   if(Aconstant() && Bconstant())
     std::cout<<"atomic_forwardsolve is being used with both A and B constant.  This should not happen."<<std::endl;
   n1 = sqrt( static_cast<double>(n1sq) );
-  n2 = m/n1;
+  n2 = m / n1;
 
   // Note on cache vs. constants:
   // The cache is used to save a value of taylor_y.
@@ -49,7 +49,7 @@ bool ATOMIC_SOLVE_CLASS::forward(
   // Constants are used for values that won't change, which are stored in X_stored (X as in taylor_x, the input).
   
   const double *Xptr;
-  int row_mult;
+  size_t row_mult;
   
   if(Aconstant()) 
     {Xptr = get_X_stored_ptr(); row_mult = 1;} else
@@ -87,7 +87,7 @@ bool ATOMIC_SOLVE_CLASS::forward(
 				     order_up,
 				     taylor_x,
 				     taylor_y.size());
-    int cache_nrow = double_cache.nrow();
+    size_t cache_nrow = double_cache.nrow();
     // EigenMap Ymap(double_cache.taylor_y_ptr(), n1, n2, EigStrDyn(cache_nrow*n1, cache_nrow ) );
     new (&Ymap) EigenMap(double_cache.taylor_y_ptr(), n1, n2, EigStrDyn(cache_nrow*n1, cache_nrow ) );
 
@@ -153,14 +153,14 @@ bool ATOMIC_SOLVE_CLASS::forward(
 				     const CppAD::vector<CppAD::AD<double> >&               taylor_x     ,
 				     CppAD::vector<CppAD::AD<double> >&                     taylor_y     ) {
   // meta-forward mode
-  int nrow = order_up + 1;
+  size_t nrow = order_up + 1;
 #ifdef  VERBOSE_ATOMIC_SOLVE
   printf("In solve meta-forward\n");
   std::cout<<"order_low = "<<order_low<<" order_up = "<<order_up<<" nrow = "<<nrow<<std::endl;
 #endif
-  int n = taylor_x.size()/nrow;
-  int m = taylor_y.size() / nrow;
-  int n1sq, n1, n2;
+  size_t n = taylor_x.size()/nrow;
+  size_t m = taylor_y.size() / nrow;
+  size_t n1sq, n1, n2;
   if((!Aconstant()) && (!Bconstant())) n1sq = n-m;
   if(Aconstant()) n1sq = get_X_stored().size();
   if(Bconstant()) n1sq = n;
@@ -170,7 +170,7 @@ bool ATOMIC_SOLVE_CLASS::forward(
   n2 = m/n1;
 
   const CppAD::AD<double> *Xptr;
-  int row_mult;
+  size_t row_mult;
   
   if(Aconstant()) 
     {fill_X_AD_stored(); Xptr = get_X_AD_stored_ptr(); row_mult = 1;} else
@@ -207,7 +207,7 @@ bool ATOMIC_SOLVE_CLASS::forward(
 					  order_up,
 					  taylor_x,
 					  taylor_y.size());
-    int cache_nrow = CppADdouble_cache.nrow();
+    size_t cache_nrow = CppADdouble_cache.nrow();
     new (&mYmap) metaEigenMap(CppADdouble_cache.taylor_y_ptr(), n1, n2, EigStrDyn(cache_nrow*n1, cache_nrow ) );
     // metaEigenMap Ymap(CppADdouble_cache.taylor_y_ptr(), n1, n2, EigStrDyn(cache_nrow*n1, cache_nrow ) );
     if(!Aconstant()) {
@@ -261,14 +261,14 @@ bool ATOMIC_SOLVE_CLASS::reverse(
 				     const CppAD::vector<double>&               partial_y   )
 {
   //reverse mode
-  int nrow = order_up + 1;
+  size_t nrow = order_up + 1;
 #ifdef VERBOSE_ATOMIC_SOLVE
   printf("In solve reverse\n");
   std::cout<<" order_up = "<<order_up<<" nrow = "<<nrow<<std::endl;
 #endif
-  int n = taylor_x.size()/nrow;
-  int m = taylor_y.size() / nrow;
-  int n1sq, n1, n2;
+  size_t n = taylor_x.size()/nrow;
+  size_t m = taylor_y.size() / nrow;
+  size_t n1sq, n1, n2;
   if((!Aconstant()) && (!Bconstant())) n1sq = n-m;
   if(Aconstant()) n1sq = get_X_stored().size();
   if(Bconstant()) n1sq = n;
@@ -284,14 +284,14 @@ bool ATOMIC_SOLVE_CLASS::reverse(
 				   order_up,
 				   taylor_x,
 				   taylor_y.size());
-  int cache_nrow = double_cache.nrow();
+  size_t cache_nrow = double_cache.nrow();
   new (&YmapC) EigenConstMap(double_cache.taylor_y_ptr(), n1, n2, EigStrDyn(cache_nrow*n1, cache_nrow ) );
   //EigenConstMap YmapC(double_cache.taylor_y_ptr(), n1, n2, EigStrDyn(cache_nrow*n1, cache_nrow ) );
   //  EigenConstMap Ymap(&taylor_y[0], n1, n2, EigStrDyn(nrow*n1, nrow ) );
 
   const double *Xptr;
   double *pXptr;
-  int row_mult;
+  size_t row_mult;
   
   if(Aconstant()) 
     {Xptr = get_X_stored_ptr(); row_mult = 1;} else
@@ -404,14 +404,14 @@ bool ATOMIC_SOLVE_CLASS::reverse(
 				     const CppAD::vector<CppAD::AD<double> >&               partial_y   )
 {
   //meta-reverse mode
-  int nrow = order_up + 1;
+  size_t nrow = order_up + 1;
 #ifdef VERBOSE_ATOMIC_SOLVE
   printf("In solve meta-reverse\n");
   std::cout<<" order_up = "<<order_up<<" nrow = "<<nrow<<std::endl;
 #endif
-  int n = taylor_x.size()/nrow;
-  int m = taylor_y.size() / nrow;
-  int n1sq, n1, n2;
+  size_t n = taylor_x.size()/nrow;
+  size_t m = taylor_y.size() / nrow;
+  size_t n1sq, n1, n2;
   if((!Aconstant()) && (!Bconstant())) n1sq = n-m;
   if(Aconstant()) n1sq = get_X_stored().size();
   if(Bconstant()) n1sq = n;
@@ -422,7 +422,7 @@ bool ATOMIC_SOLVE_CLASS::reverse(
 
   CppAD::AD<double> *pXptr;
   const CppAD::AD<double> *Xptr;
-  int row_mult;
+  size_t row_mult;
   
   CppADdouble_cache.check_and_set_cache(this,
 					parameter_x,
@@ -431,7 +431,7 @@ bool ATOMIC_SOLVE_CLASS::reverse(
 					order_up,
 					taylor_x,
 					taylor_y.size());
-  int cache_nrow = CppADdouble_cache.nrow();
+  size_t cache_nrow = CppADdouble_cache.nrow();
   new (&mYmapC) metaEigenConstMap(CppADdouble_cache.taylor_y_ptr(), n1, n2, EigStrDyn(cache_nrow*n1, cache_nrow ) );
   // metaEigenConstMap Ymap(CppADdouble_cache.taylor_y_ptr(), n1, n2, EigStrDyn(cache_nrow*n1, cache_nrow ) );
   // metaEigenConstMap Ymap(&taylor_y[0], n1, n2, EigStrDyn(nrow*n1, nrow ) );

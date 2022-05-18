@@ -90,7 +90,7 @@ makeArgs = function(n1Ar, n1Ac, n1B, n2, d, Adiag = FALSE) {
   )
 }
 
-## Case with all elements variable.  This works
+## Case with all elements variable. 
 recordArgs <- makeArgs(n1, n1, n1, n2, 1.2)
 testArgs <- makeArgs(n1, n1, n1, n2, 1.4)
 
@@ -132,7 +132,7 @@ testArgs <- makeArgs(n1, n1, n1-1, n2, 1.4)
 checkCase(backsolveTest, Aconst, Bconst0, c(1, 1), c(n1, n1), c(2, 1), c(n1, n2),
           recordArgs = recordArgs, testArgs = testArgs)
 
-## Case with first rows of both A and B of constant elements. (I have a notes that this does not get special handling internally, but it might be out of date.) My original testing code for this used Bconst0, but I'm not sure that was intended.
+## Case with first rows of both A and B of constant elements. (I have a note that this does not get special handling internally, but it might be out of date.) My original testing code for this used Bconst0, but I'm not sure that was intended.
 recordArgs <- makeArgs(n1-1, n1, n1-1, n2, 1.2)
 testArgs <- makeArgs(n1-1, n1, n1-1, n2, 1.4)
 

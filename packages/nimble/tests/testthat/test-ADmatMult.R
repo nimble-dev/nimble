@@ -67,7 +67,7 @@ checkCase <- function(nf,
 }
 
 n1 <- 5
-n2 <- 3
+n2 <- 7
 n3 <- 9
 
 set.seed(1)
@@ -109,7 +109,6 @@ testArgs <- makeArgs(0, n2, n2, n3, 1.4)
 
 checkCase(matMultTestFxn, Aconst, Bconst, c(-1, 1), c(n1, n2), c(1, 1), c(n2, n3),
           recordArgs = recordArgs, testArgs = testArgs)
-
 
 ## Case with all of A constant, with some zero rows.
 set.seed(2)
@@ -278,6 +277,5 @@ testArgs <- makeArgs(n1-1, n2, n2, n3-1, 1.4)
 
 checkCase(matMultTestFxn, Aconst, Bconst, c(2, 1), c(n1, n2), c(1, 1), c(n2, n3-1),
           recordArgs = recordArgs, testArgs = testArgs)
-
 
 ## STOPPED HERE: There are some random-configuration tests that couuld be ported over here too.
