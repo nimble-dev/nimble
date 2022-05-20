@@ -1088,6 +1088,7 @@ void atomic_matmult(const MatrixXd_CppAD &x1,
   // Make this const_or_param
   auto const_cond = [](const CppAD::AD<double> &x)->bool {return CppAD::Constant(x);};
   // Make these x1_has_no_variables
+  // These are called to set the last four arguments by reference.
   x1_is_constant = delineate_condition_region(const_cond, x1, x1rowStart, x1rowEnd, x1colStart, x1colEnd);
   x2_is_constant = delineate_condition_region(const_cond, x2, x2rowStart, x2rowEnd, x2colStart, x2colEnd);
 

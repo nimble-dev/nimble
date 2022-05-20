@@ -261,6 +261,7 @@ void atomic_forwardsolve(const MatrixXd_CppAD &A,
   bool B_is_constant_zero;
 
   auto zero_cond = [](const CppAD::AD<double> &x)->bool {return CppAD::IdenticalZero(x);};
+  // This is called to set the last four arguments by reference
   B_is_constant_zero = delineate_condition_region(zero_cond, B,
 						  BrowStartNZ, BrowEndNZ, BcolStartNZ, BcolEndNZ);
   if(BrowStartNZ > 0) {

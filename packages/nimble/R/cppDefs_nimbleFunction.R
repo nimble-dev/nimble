@@ -154,14 +154,15 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                        addCopyFromRobject = function() {
                                            ## The next line creates the cppCopyTypes exactly the same way as in buildNimbleObjInterface
                                            ## and CmultiNimbleObjClass::initialize.
-                                           cppCopyTypes <- makeNimbleFxnCppCopyTypes(nimCompProc$getSymbolTable(), objectDefs$getSymbolNames())
-                                           buildDerivs = environment(nfProc$nfGenerator)$buildDerivs
+                                         cppCopyTypes <- makeNimbleFxnCppCopyTypes(nimCompProc$getSymbolTable(), objectDefs$getSymbolNames())
+                                         buildDerivsInCopier <- FALSE
+                                         if(inherits(nimCompProc, 'virtualNFprocessing')) {
+                                           buildDerivs <- environment(nimCompProc$nfGenerator)[['buildDerivs']]
                                            buildDerivsInCopier <- (length(buildDerivs) > 0) & (!isFALSE(buildDerivs))
-                                           copyFromRobjectDefs <- makeCopyFromRobjectDef(className = nfProc$name,
-                                                                                         cppCopyTypes,
-                                                                                         .self$nfProc$instances[[1]],
-                                                                                         buildDerivs = buildDerivs)
-                                           functionDefs[['copyFromRobject']] <<- copyFromRobjectDefs$copyFromRobjectDef
+                                         }
+                                         copyFromRobjectDefs <- makeCopyFromRobjectDef(cppCopyTypes,
+                                                                                       buildDerivs = buildDerivsInCopier)
+                                         functionDefs[['copyFromRobject']] <<- copyFromRobjectDefs$copyFromRobjectDef
                                        },
                                        buildAll = function(where = where) {
                                            makeCppNames()
@@ -1021,7 +1022,7 @@ makeSingleCopyCall <- function(varName, cppCopyType,
            NULL)
 }
 
-makeCopyFromRobjectDef <- function(className, cppCopyTypes, Robj,
+makeCopyFromRobjectDef <- function(cppCopyTypes,
                                    buildDerivs = FALSE) {
     ## Make method for copying from R object
     copyFromRobjectDef <- RCfunctionDef()
@@ -1034,11 +1035,6 @@ makeCopyFromRobjectDef <- function(className, cppCopyTypes, Robj,
     copyCalls <- list()
     varNames <- names(cppCopyTypes)
     for(i in seq_along(cppCopyTypes)) {
-      ## if(cppCopyTypes[[i]] == "nodeFxnVec"){
-      ##   if(!is.null(Robj[[varNames[i]]]$nimDerivsInfo)){
-      ##     cppCopyTypes[[i]] = "nodeFxnVec_derivs"
-      ##   }
-      ## }
       copyCalls[[varNames[i]]] <- makeSingleCopyCall(varNames[i], cppCopyTypes[[i]],
                                                      buildDerivs = buildDerivs)
     }
@@ -1051,10 +1047,6 @@ makeCopyFromRobjectDef <- function(className, cppCopyTypes, Robj,
                             )
     } else {
         unprotectCount <- 2 + length(copyCalls) ## 2 from SETUP_S_xData
-        ## copyCalls <- list(cppLiteral("SETUP_S_xData;"),
-        ##                   cppLiteral("COPY_NUMERIC_VECTOR_FROM_R_OBJECT(Robject, \"v\");"),
-        ##                   cppLiteral(paste0("UNPROTECT(",unprotectCount,");"))
-        ##                   )
         allRcode <- do.call('call',
                             c(list('{'),
                               list(cppLiteral("SETUP_S_xData;")),
@@ -1067,26 +1059,6 @@ makeCopyFromRobjectDef <- function(className, cppCopyTypes, Robj,
     copyFromRobjectDef$code <- cppCodeBlock(code = allCode,
                                             objectDefs = localVars)
 
-    ## Make SEXP interface function to call from R:
-    ## SEXPinterfaceCname <- paste0("CALL_", className, "_copyFromRobject")
-    ## interfaceArgs <- symbolTable()
-    ## interfaceArgs$addSymbol(RobjectVarSym)
-    ## interfaceArgs$addSymbol(cppSEXP(name = 'SextPtrToObject'))
-
-    ## RHScall <- as.call(list(as.name('copyFromRobject'),
-    ##                         as.name('Robject')))
-    ## castedCall <- substitute(cppMemberDereference(
-    ##     template(static_cast, cppPtrType(CN))(R_ExternalPtrAddr(SextPtrToObject)), RHS),
-    ##     list(CN = as.name(className), RHS = RHScall))
-    ## returnLine <- quote(return(R_NilValue))
-    
-    ## interfaceCode <- embedListInRbracket(list(castedCall, returnLine))
-    ## copyFromRobjectInterfaceDef <- cppFunctionDef(name = SEXPinterfaceCname,
-    ##                                               args = interfaceArgs,
-    ##                                               code = cppCodeBlock(code = RparseTree2ExprClasses(interfaceCode),
-    ##                                                                   objectDefs = localVars), ## also empty local vars
-    ##                                               returnType = cppSEXP(),
-    ##                                               externC = TRUE)
     copyFromRobjectInterfaceDef <- NULL
     
     list(copyFromRobjectDef = copyFromRobjectDef,
