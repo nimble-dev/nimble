@@ -683,16 +683,16 @@ For internal use only
             '
 Removes one or more samplers from an MCMCconf object.
 
-Arguments:
-
 This function also has the side effect of resetting the sampler execution ordering so as to iterate over the remaining set of samplers, sequentially, executing each sampler once.
+
+Arguments:
 
 ...: Character node names or numeric indices.  Character node names specify the node names for samplers to remove, or numeric indices can provide the indices of samplers to remove.
 
 ind: A numeric vector or character vector specifying the samplers to remove.  A numeric vector may specify the indices of the samplers to be removed.  Alternatively, a character vector may be used to specify a set of model nodes and/or variables, and all samplers whose \'target\' is among these nodes will be removed.  If omitted, then all samplers are removed.
 
 print: A logical argument specifying whether to print the current list of samplers once the removal has been done (default FALSE).
-'      
+'
             if(missing(ind)) {
                 ind <- list(...)
                 ind <- unname(unlist(ind))
@@ -711,6 +711,36 @@ print: A logical argument specifying whether to print the current list of sample
 Alias for removeSamplers method
 '
             removeSamplers(...)
+        },
+        
+        ## Note: function prototype is identical to addSampler
+        replaceSamplers = function(...) {
+            '
+Replaces one or more samplers from an MCMCconf object with newly specified sampler(s).  Operation and arguments are identical to the \'addSampler\' method, with the additional side effect of any samplers operating on the specified node(s) are first removed.
+
+See \'addSamplers\' for a description of the arguments.
+
+This function also has the side effect of resetting the sampler execution ordering so as to iterate over the newly specified set of samplers, sequentially, executing each sampler once.
+'
+            samplerConfs_save <- samplerConfs
+            samplerExecutionOrder_save <- samplerExecutionOrder
+            m <- match.call(definition = addSampler)
+            removeSamplers(m$target, m$nodes)   ## both unnamed arguments accepted as ... argument
+            e <- try(addSampler(...), silent = TRUE)   ## pass all arguments along to addSampler
+            ## if an error occurred in addSampler, then restore original samplerConfs
+            if(class(e) == 'try-error') {
+                samplerConfs <<- samplerConfs_save
+                samplerExecutionOrder <<- samplerExecutionOrder_save
+                errorMessage <- sub('^Error.+: ', '', e[1])
+                stop(errorMessage)
+            }
+        },
+
+        replaceSampler = function(...) {
+            '
+Alias for replaceSamplers method
+'
+            replaceSamplers(...)
         },
         
         setSamplers = function(..., ind, print = FALSE) {
