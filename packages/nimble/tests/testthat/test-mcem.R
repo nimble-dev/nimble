@@ -2,6 +2,8 @@ source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'ni
 
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
+RdigitsOption <- options('digits')$digits
+options(digits = 6)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = TRUE)
 nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
@@ -140,5 +142,6 @@ if(!generatingGoldFile) {
 }
 
 options(warn = RwarnLevel)
+options(digits = RdigitsOption)
 nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
