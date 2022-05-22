@@ -716,7 +716,7 @@ Alias for removeSamplers method
         ## Note: function prototype is identical to addSampler
         replaceSamplers = function(...) {
             '
-Replaces one or more samplers from an MCMCconf object with newly specified sampler(s).  Operation and arguments are identical to the \'addSampler\' method, with the additional side effect of any samplers operating on the specified node(s) are first removed.
+Replaces one or more samplers from an MCMCconf object with newly specified sampler(s).  Operation and arguments are identical to the \'addSampler\' method, with the additional side effect of first removing any existing samplers which operate on the specified node(s).
 
 See \'addSamplers\' for a description of the arguments.
 
