@@ -102,9 +102,9 @@ test_AD2_oneCall <- function(Robj, Cobj,
                              check.equality = TRUE,
                              # In normal usage, the tols are set from test_AD2 and
                              # these defaults are not used
-                             RRrelTol = c(1e-8, 1e-3, 1e-2), 
-                             RCrelTol = c(1e-15, 1e-8, 1e-3),
-                             CCrelTol = rep(sqrt(.Machine$double.eps), 3),
+                             RRrelTol = c(1e-8, 1e-3, 1e-2, 1e-14),
+                             RCrelTol = c(1e-15, 1e-8, 1e-3, 1e-14),
+                             CCrelTol = c(rep(sqrt(.Machine$double.eps), 3), 1e-14),
                              Rmodel = NULL, Cmodel = NULL,
                              recordInits = NULL, testInits = NULL,
                              nodesToChange = NULL) {
@@ -113,10 +113,17 @@ test_AD2_oneCall <- function(Robj, Cobj,
 
   useRmodel <- !is.null(Rmodel)
   useCmodel <- !is.null(Cmodel)
-  
-  if(is.null(names(RRrelTol))) names(RRrelTol) <- c("0", "1", "2")
-  if(is.null(names(RCrelTol))) names(RCrelTol) <- c("0", "1", "2")
-  if(is.null(names(CCrelTol))) names(CCrelTol) <- c("0", "1", "2")
+
+  RRabsThresh <- 0
+  RCabsthresh <- 0
+  CCabsThresh <- 0
+  if(length(RRrelTol) > 3) RRabsThresh <- RRrelTol[4]
+  if(length(RCrelTol) > 3) RCabsThresh <- RCrelTol[4]
+  if(length(CCrelTol) > 3) CCabsThresh <- CCrelTol[4]
+
+  if(is.null(names(RRrelTol))) names(RRrelTol)[1:3] <- c("0", "1", "2")
+  if(is.null(names(RCrelTol))) names(RCrelTol)[1:3] <- c("0", "1", "2")
+  if(is.null(names(CCrelTol))) names(CCrelTol)[1:3] <- c("0", "1", "2")
 
   setModelInits <- function(m, inits) {
     for(v in names(inits)) {
@@ -263,11 +270,13 @@ test_AD2_oneCall <- function(Robj, Cobj,
   do_one_set("derivsHess", order = 2, name = "derivsHess", metaLevel = 2,
              doR = FALSE, doC = TRUE, tapingLevel = 2, fixedOrder = FALSE)
 
-  all_equal_list <- function(first, others, tol, info = "") {
+  all_equal_list <- function(first, others, tol,
+                             abs_threshold, info = "") {
     pass <- TRUE
     for(i in seq_along(others)) {
       pass <- pass && nim_all_equal(as.numeric(first), as.numeric(others[[i]]),
-                                    tol, verbose = TRUE, info = info)
+                                    tol, abs_threshold = abs_threshold,
+                                    verbose = TRUE, info = info)
     }
     pass
   }
@@ -283,6 +292,7 @@ test_AD2_oneCall <- function(Robj, Cobj,
         CansSet <- splitAnsSet[["C"]]
         if(length(RansSet) > 1) {
           pass <- pass && all_equal_list(RansSet[[1]], RansSet[-1], tol = RRrelTol[[o]],
+                                         abs_threshold = RRabsThresh,
                                          info = paste0("(RR order ", o,")"))
           if(!pass) {
             cat(paste('Some R-to-R derivatives do not match for order',o))
@@ -291,6 +301,7 @@ test_AD2_oneCall <- function(Robj, Cobj,
         }
         if(length(RansSet) > 0 && length(CansSet) > 0) {
           pass <- pass && all_equal_list(RansSet[[1]], CansSet, tol = RCrelTol[[o]],
+                                         abs_threshold = RCabsThresh,
                                          info = paste0("(RC order ", o,")"))
           if(!pass) {
             cat(paste('Some C-to-R derivatives to not match for order',o))
@@ -299,6 +310,7 @@ test_AD2_oneCall <- function(Robj, Cobj,
         }
         if(length(CansSet) > 1) {
           pass <- pass && all_equal_list(CansSet[[1]], CansSet[-1], CCrelTol[[o]],
+                                         abs_threshold = CCabsThresh,
                                          info = paste0("(CC order ", o, ")"))
           if(!pass) {
             cat(paste('Some C-to-C derivatives to not match for order',o))
@@ -1206,6 +1218,71 @@ make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
     seed = seed,
     inputs = inputs
   )
+}
+
+
+model_calculate_test_pieces <- make_AD_test2(
+  op = list(
+    expr = quote( {
+      values(model, derivNodes) <<- arg1
+      out <- model$calculate(calcNodes)
+      return(out)
+    }),
+    args = list(arg1 = quote(double(1))),
+    outputType = quote(double())
+  ),
+  argTypes = list(arg1 = "double(1)"),
+  includeModelArgs = TRUE)
+
+model_calculate_test <- nimbleFunction(
+  setup = function(model, nodesList) {
+    derivNodes <- nodesList$derivNodes
+    updateNodes <- nodesList$updateNodes
+    constantNodes <- nodesList$constantNodes
+    calcNodes <- nodesList$calcNodes
+    nNodes <- length(derivNodes)
+  },
+  run = model_calculate_test_pieces$run,
+  methods = model_calculate_test_pieces$methods,
+  buildDerivs = model_calculate_test_pieces$buildDerivs
+)
+
+setup_update_and_constant_nodes_for_tests <- function(model,
+                                            derivNodes,
+                                            forceConstantNodes = character(),
+                                            forceUpdateNodes = character()) {
+  ## "update" means "CppAD dynamic"
+  ##  derivNodes <- model$expandNodeNames(derivNodes) # do not do this because do not want vector node names
+  nNodes <- length(derivNodes)
+  calcNodes <- model$getDependencies(derivNodes)
+  ucNodes <- makeDerivsInfo(model, derivNodes, calcNodes, dataAsConstantNodes = TRUE)
+  updateNodes <- ucNodes$updateNodes
+  constantNodes <- ucNodes$constantNodes
+  updateNodes <- setdiff(updateNodes, forceConstantNodes) # remove forceConstants from updates
+  constantNodes <- setdiff(constantNodes, forceUpdateNodes) # remove forceUpdates from constants
+  constantNodes <- union(constantNodes, forceConstantNodes) # add forceConstants to constants
+  updateNodes <- union(updateNodes, forceUpdateNodes)     # add forceUpdates to updates
+  list(derivNodes = derivNodes, updateNodes = updateNodes,
+       constantNodes = constantNodes, calcNodes = calcNodes)
+}
+
+model_calculate_test_case <- function(Rmodel, Cmodel,
+                                      deriv_nf, nodesList,
+                                      v1, v2  ,
+                                      order,
+                                      varValues = list(),
+                                      varValues2 = list(), ...) {
+                                        # This sets up an instance of a checker fxn
+  Rfxn <- deriv_nf( Rmodel, nodesList)
+  Cfxn <- compileNimble(Rfxn, project = Rmodel)
+
+  test_AD2_oneCall(Rfxn, Cfxn,
+                   recordArgs = v1, testArgs = v2,
+                   order = order,
+                   Rmodel = Rmodel, Cmodel = Cmodel,
+                   recordInits = varValues, testInits = varValues2,
+                   nodesToChange = c(nodesList$updateNodes),
+                   ...)
 }
 
 ## Make a test parameterization to be used by test_AD. This method is primarily
