@@ -323,23 +323,7 @@ nimbleMCMC <- function(code,
     if(missing(code) && missing(model)) stop('must provide either code or model argument')
     if(!samples && !summary && !WAIC) stop('no output specified, use samples = TRUE, summary = TRUE, or WAIC = TRUE')
     if(!missing(code) && inherits(code, 'modelBaseClass')) model <- code   ## let's handle it, if model object is provided as un-named first argument to nimbleMCMC
-    if(missing(model)) {  ## model object not provided
-        if(!missing(inits)) {
-            if(!is.function(inits) && !is.list(inits)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of initial values')
-            if(is.list(inits) && (length(inits) > 0) && is.list(inits[[1]]) && (length(inits) != nchains)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of inital values')
-            if(is.function(inits)) {
-                if(is.numeric(setSeed) || setSeed) { if(is.numeric(setSeed)) set.seed(setSeed[1]) else set.seed(0) }
-                theseInits <- inits()
-            } else if(is.list(inits) && (length(inits) > 0) && is.list(inits[[1]])) {
-                theseInits <- inits[[1]]
-            } else theseInits <- inits
-            Rmodel    <- nimbleModel(code, constants, data, theseInits, dimensions = dimensions, check = check)    ## inits provided
-        } else Rmodel <- nimbleModel(code, constants, data,             dimensions = dimensions, check = check)    ## inits not provided
-    } else {              ## model object provided
-        if(!is.model(model)) stop('model argument must be a NIMBLE model object')
-        Rmodel <- if(is.Rmodel(model)) model else model$Rmodel
-        if(!is.Rmodel(Rmodel)) stop('something went wrong')
-    }
+    Rmodel <- mcmc_createRmodelObject(model, inits, nchains, setSeed, code, constants, data, dimensions, check)
     conf <- configureMCMC(Rmodel, monitors = monitors, thin = thin, enableWAIC = WAIC, print = FALSE)
     Rmcmc <- buildMCMC(conf)
     compiledList <- compileNimble(Rmodel, Rmcmc)    ## only one compileNimble() call
