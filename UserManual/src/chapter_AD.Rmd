@@ -30,17 +30,18 @@ Automatic (or algorithmic) differentiation (AD) refers to the method of carrying
 
 AD is not a simple feature in NIMBLE.  It requires care in models and nimbleFunctions, awareness of what can go wrong, and testing to be sure things are working as you want.  Calls to `compileNimble` that include AD features will result in slower C++ compilation.  That said, using a packaged AD algorithm with a model should be as simple as setting `buildDerivs=TRUE` in the model.
 
-A key concept from CppAD used by NIMBLE is that mathematical operations are *taped* and then re-used -- *played* -- to obtain derivatives.  Hence we will refer to the AD *tape* in explaining some features below.  In addition, when taped operations are played, the resulting operations can themselves be taped.  We call this *meta-taping* or *double-taping*.  It is useful because it can sometimes boost efficiency.
+<!-- A key concept from CppAD used by NIMBLE is that mathematical operations are *taped* and then re-used -- *played* -- to obtain derivatives.  Hence we will refer to the AD *tape* in explaining some features below.  In addition, when taped operations are played, the resulting operations can themselves be taped.  We call this *meta-taping* or *double-taping*.  It is useful because it can sometimes boost efficiency. -->
 
 We will introduce NIMBLE's AD features step by step, from simply turning them on for a model to using them in your own nimbleFunctions.  We will show you:
 
 1. how to turn on derivatives in a model and use them for Hamiltonian Monte Carlo (HMC).
 2. basics of obtaining derivatives in `nimbleFunctions`.
-3. advanced uses of obtaining derivatives in `nimbleFunctions`, including double-taping.
+3. advanced uses of obtaining derivatives in `nimbleFunctions`, including *double-taping*.
 4. how to get derivatives involving model calculations.
 5. details on what functions are supported and not supported for derivatives.
 6. automatic parameter transformations to give any model an unconstrained parameter space for algorithms to work in.
-7. a worked example showing use of nimble's derivatives for maximum likelihood estimation.
+7. an example showing use of nimble's derivatives for maximum likelihood estimation.
+8. an example of nimble's Laplace approximation.
 
 <!-- 4. More advanced use: Write a nimbleFunction method, e.g. `foo`, which might contain a call `model$calculate(nodes)`.  Then call `nimDerivs(foo(<args>), <other args>)`. -->
 <!-- 3. Meta-taping: Call `nimDerivs` of a method that contains a call to `nimDerivs`.  This also serves as the way to obtain third and higher-order derivatives. -->
@@ -56,8 +57,7 @@ nimbleOptions(enableDerivs = TRUE)
 
 NIMBLE's HMC sampler is provided in a separate package, nimbleHMC.  This is more flexible than some HMC implementations because HMC can be used on some parts of a model while other samplers are used on (the same or) other parts of the same model.  Indeed, the inventor of HMC discussed using it in this way (Neal, citation).
 
-NIMBLE's Laplace approximation is provided in XYZ.
-
+NIMBLE's Laplace approximation is provided in `buildLaplace`.  An example is given below.
 
 We'll use a Poisson GLMM as a simple example model  There will be 10 groups (`i`) of 5 observations (`j`) each.  Each observation has a covariate, `X`, and each group has a random effect `ran_eff`.  Here is the model code:
 ```{r eval=TRUE}
@@ -86,7 +86,7 @@ X <- matrix(rnorm(50), nrow = 10)
 
 In order to use one of the algorithms for a specific model, that model must be created with `buildDerivs=TRUE`.
 
-```{r eval=TRUE}
+```{r eval=eval}
 model <- nimbleModel(model_code, constants = list(X = X), calculate = FALSE,
                      buildDerivs = TRUE) # Here is the argument needed for AD.
 ```
@@ -98,9 +98,9 @@ To finish setting up the model, we can set parameter values, simulate data value
 model$intercept <- 0
 model$beta <- 0.2
 model$sigma <- 0.5
-model$calculate()
+model$calculate() # This will return NA because the model is not fully initialized.
 model$simulate(model$getDependencies('ran_eff'))
-model$calculate()
+model$calculate() # Now the model is fully initialized: all nodes have valid values.
 model$setData('y') # Now the model has y marked as data, with values from simulation.
 ```
 
@@ -112,6 +112,10 @@ HMC <- buildHMC(model)
 Cmodel <- compileNimble(model)
 CHMC <- compileNimble(HMC, project = model)
 samples <- runMCMC(CHMC, niter = 1000, nburnin = 500) # short run for illustration
+```
+
+We will not investigate results in detail, but here is a summary to see that reasonable results were generated.
+```{r}
 summary(coda::as.mcmc(samples))
 ```
 
@@ -144,7 +148,7 @@ Here are some things to notice:
 - Having `setup` code allows the nimbleFunction to have multiple methods (i.e. to behave like a class definition in object-oriented programming).  If, as here, you don't need the `setup` to do anything, you can instead use `setup=TRUE`.
 - Any arguments to `run` that real numbers (i.e. regular double precision numbers, but not integers or logicals) will have derivatives tracked when called through `derivs`.
 - The "with-respect-to" (`wrt`) argument gives indices of the arguments for which you want derivatives.  In this case, we're including all elements of `d` and `X`.  The indices form one sequence over all arguments.
-- `order` can contain any of `0` (value), `1` (1st order), or `2` (2nd order) derivatives requested.  Higher-order derivatives can be obtained by double-taping.
+- `order` can contain any of `0` (value), `1` (1st order), or `2` (2nd order) derivatives requested.  Higher-order derivatives can be obtained by double-taping, described below.
 - Basics of `nimbleFunction` programming are covered in Chapter (ref).  These include type declarations (`double()` for scalar,  `double(1)` for vector), that `run` is just a method with a favored name, and the distinction between setup code and run code.
 - `derivs` can alternatively be called `nimDerivs`.  In fact the former will be converted to the latter internally.
 
@@ -160,12 +164,11 @@ C_my_derivs_demo$derivsRun(d, x)
 
 We can see that using `order = 0:2` results in the the value ("0th" order result, i.e. the value returned  by `run(d, x)`), the Jacobian (matrix of first order derivatives), and the Hessian (array of second order derivatives).  The `run` function here has taken three inputs (in the order `d`, `x[1]`, `x[2]`) and returned two outputs (the first and second elements of `exp(-d*x)`).
 
-
 The i-th Jacobian row contains the first derivatives of the i-th output with respect to `d`, `x[1]`, and `x[2]`, in that order.  The first and second indices of the Hessian array follow the same ordering as the columns of the Jacobian.  The third index of the Hessian array is for the output values.  For example, `hessian[3,1,2]` is the second derivative of the second output value (third index = 2) with respect to `x[2]` (first index = 3) and `d` (second index = 1).
 
  (Although it may seem inconsistent to have the output index be first for Jacobian and last for Hessian, it is consistent with some standards for how these objects are created in other packages and used mathematically.)
 
-When a function being taped for derivatives (`run` in this case) has non-scalar arguments (`x` in this case), the indexing of inputs goes in order of arguments, and in column-major order within arguments.  For example, if we had arguments `x = double(1)` and `z = double(2)` (a matrix), the  inputs would be ordered as `x[1]`, `x[2]`, ..., `y[1, 1]`, `z[2, 1]`, ..., `z[1, 2]`, `z[2, 2]`, etc.
+When a function being called for derivatives (`run` in this case) has non-scalar arguments (`x` in this case), the indexing of inputs goes in order of arguments, and in column-major order within arguments.  For example, if we had arguments `x = double(1)` and `z = double(2)` (a matrix), the  inputs would be ordered as `x[1]`, `x[2]`, ..., `y[1, 1]`, `z[2, 1]`, ..., `z[1, 2]`, `z[2, 2]`, etc.
 
 ### Checking derivatives with uncompiled execution
 
@@ -259,9 +262,24 @@ C_my_derivs_demo3$derivsRun(d, x)$jacobian
 
 Note that for a nimbleFunction without setup code, one can say `buildDerivs=TRUE`, `buildDerivs = 'run'`, or `buildDerivs = list(run = list())`.
 
-### Resetting the AD Tape
+### Understanding more about how AD works:  *taping* of operations.
 
-The first time a call `nimDerivs` runs, it records a tape of the operations in the its first argument (`run(d, x)` in this case).  On subsequent calls, it re-uses that tape without re-recording it.  That means subsequent calls are usually much faster.  *It also means  that subsequent calls **must** use the same sized arguments as the recorded call.*  For example, we can use `C_my_derivs_demo$derivsRun` with new arguments of the same size(s):
+At this point, it will be helpful to grasp more of how AD works and its implementation in nimble via the CppAD library (citation).  AD methods work by following a set of calculations multiple times, sometimes in reverse order.  
+
+For example, the derivative of $y = \exp(x^2)$ can be calculated (by the chain rule of calculus) as the derivative of $y = \exp(z)$ (evaluated at $z = x^2$) times the derivative of $z = x^2$ (evaluated at $x$).  This can be calculated by first going through the sequence of steps for the value, i.e. (i) $z = x^2$, (ii) $y = \exp(z)$, and then again for the derivatives, i.e. (i) $dz = 2x (dx)$, (ii) $dy = \exp(z) dz$.  These steps determine the instantaneous change $dy$ that results from an instantaneous change $dx$.  (It may be helpful to think of both values as a function of a third variable such as $t$. Then we are determining $dy/dt$ as a function of $dx/dt$.)
+
+The derivative calculations typically need the values.  For example, the derivative of $\exp(z)$ is (also) $\exp(z)$, for which the value of $z$ is needed, which in this case is $x^2$, one of the steps in calculating the value of $\exp(x^2)$.  (In fact, in this case the derivative of $\exp(z)$ can more simply use the value of $y$ itself.) Hence, values are calculated before derivatives.
+
+What was just described is called *forward* mode AD.  The derivatives can also be calculated by working through $\exp(x^2)$ in *reverse* mode.  This is often less familiar to graduates of basic calculus courses. In reverse mode, one determines what instantaneous change $dx$ would give an instantaneous change $dy$.  For example, given a value of $dy$, we can calculate $1/dz = \exp(z) / dy$ and then $(1/dx) = (x^2) / dz$.  In general, choice of forward mode versus reverse mode has to do with the lengths of inputs and outputs and possibly specific operations involved.  In nimble, some reasonable defaults are used.
+
+In CppAD, the metaphor of pre-digital technology -- magnetic tapes -- is used for the set of operations in a calculation.  When a line with `nimDerivs` is first run, the operations in the function it calls are *taped* and then re-used -- *played* -- in forward and/or reverse orders to obtain derivatives.  Hence we will refer to the AD *tape* in explaining some features below.  It is also possible to reset (i.e. re-record) the AD tape used for a particular `nimDerivs` call.
+
+When taped operations are played, the resulting operations can themselves be taped.  We call this *meta-taping* or *double-taping*.  It is useful because it can sometimes boost efficiency.
+
+
+### Resetting a `nimDerivs` call
+
+The first time a call to `nimDerivs` runs, it records a tape of the operations in the its first argument (`run(d, x)` in this case).  On subsequent calls, it re-uses that tape without re-recording it.  That means subsequent calls are usually much faster.  *It also means  that subsequent calls **must** use the same sized arguments as the recorded call.*  For example, we can use `C_my_derivs_demo$derivsRun` with new arguments of the same size(s):
 
 ```{r eval=eval}
 C_my_derivs_demo$derivsRun(-0.4, c(3.2, 5.1))
@@ -318,7 +336,7 @@ Specifically, you need to reset a tape when:
 
 - the extent of any for-loops change.  For-loops are not natively recorded, but rather each operation done in execution of the for-loop is recorded.  (This is sometimes called "loop unrolling".)  Therefore, in `for(i in start:end)`, the values of `start` and `end` are in effect baked into a tape.
 - conditions used for if-then-else in a nimbleFunction are changed. 
-- any other member data using in calculations changes.  It is possible to create a variable in the `setup` function and use it in methods such as `run`.  Such variables become member data in the terminology of object-oriented programming.  Such variables will not have derivatives tracked if used in a function while it is being taped, so the values will be baked into the tape.  This can be useful if you understand what is happening or confusing if not.
+- any other member data used in calculations changes.  It is possible to create a variable in the `setup` function and use it in methods such as `run`.  Such variables become member data in the terminology of object-oriented programming.  Such variables will not have derivatives tracked if used in a function while it is being taped, so the values will be baked into the tape.  This can be useful if you understand what is happening or confusing if not.
 
 
 Uncompiled execution of `derivs` ignores the reset argument.
@@ -641,24 +659,223 @@ When a linear algebra atomic is turned off, the AD tape simply records each scal
 
 ## Parameter transformations
 
+\newcommand{\logit}{\mbox{logit}}
+\newcommand{\chol}{\mbox{chol}}
+
+
 Many algorithms that in some way explore a parameter space are best used in an unconstrained parameter space.  For example, there are a bunch of optimization methods provided in R's `optim`, but only one (`L-BFGS-B`) allows constraints on the parameter space.  Similarly, HMC is implemented to work in an unconstrained parameter space.
 
 NIMBLE provides a nimbleFunction to automatically create a transformation from original parameters to unconstrained parameters and inverse transformation back to the original parameters.  Denoting `x` as an original parameter (scalar or vector) and `g(x)` as the transformed parameter, the cases handled include:
 
-- If $x \in (0, \infty)$, $g(x) = log(x)$.  For example, `x ~ dweibull` in a model means  $x \in (0, \infty)$.
-- If $x \in (0, 1)$, $g(x) = logit(x)$. For example, `x ~ dbeta` in a model means $x \in (0, 1)$
-- If $x \in (a, \infty)$, $g(x) = log(x - a)$.
-- If $x \in (-\infty, b)$, $g(x) = -log(b - x)$.
-- If $x \in (a, b)$, $g(x) = logit((x-a)/(b-a))$. For example `x ~ T(<some distribution>, a, b)` in a model means $x \in (a, b)$.
-- If `x[1:n, 1:n] ~ dwishart` or `x[1:n, 1:n] ~ dinvwishart` in a model, $g(x) = chol(x)$ for non-diagonal elements of $chol(x)$ and $g(x) = log(chol(x))$ for diagonal elements of $chol(x)$, where $chol(x)$ is the Cholesky decomposition of $x$.  Note that $x$ in these cases follows a Wishart or inverse Wishart distribution, respectively, and thus is a random covariance matrix.  That means it must be positive definite and thus have positive diagonal elements of $chol(x)$.
-- If `x[1:n] ~ ddirch` in a model, $g(x[1]) = logit(x[1])$ and $g(x[i]) = logit(x[i] / (1-\sum_{k=1}^{i-1}x[i]))$ for $i \gt 1$.  In this case, `x` follows a Dirichlet distribution and thus has the simplex constraint that $\sum_{i=1}^n x[i] = 1$.
+- If $x \in (0, \infty)$, $g(x) = \log(x)$.  For example, `x ~ dweibull` in a model means  $x \in (0, \infty)$.
+- If $x \in (0, 1)$, $g(x) = \logit(x)$. For example, `x ~ dbeta` in a model means $x \in (0, 1)$
+- If $x \in (a, \infty)$, $g(x) = \log(x - a)$.
+- If $x \in (-\infty, b)$, $g(x) = -\log(b - x)$.
+- If $x \in (a, b)$, $g(x) = \logit((x-a)/(b-a))$. For example `x ~ T(<some distribution>, a, b)` in a model means $x \in (a, b)$.
+- If `x[1:n, 1:n] ~ dwishart` or `x[1:n, 1:n] ~ dinvwishart` in a model, $g(x) = \chol(x)$ for non-diagonal elements of $\chol(x)$ and $g(x) = \log(\chol(x))$ for diagonal elements of $\chol(x)$, where $\chol(x)$ is the Cholesky decomposition of $x$.  Note that $x$ in these cases follows a Wishart or inverse Wishart distribution, respectively, and thus is a random covariance matrix.  That means it must be positive definite and thus have positive diagonal elements of $\chol(x)$.
+- If `x[1:n] ~ ddirch` in a model, $g(x[1]) = \logit(x[1])$ and $g(x[i]) = \logit(x[i] / (1-\sum_{k=1}^{i-1}x[i]))$ for $i \gt 1$.  In this case, `x` follows a Dirichlet distribution and thus has the simplex constraint that $\sum_{i=1}^n x[i] = 1$.
 - If `x[1:n] ~ dlkj_corr_cholesky`, $g(x)$ is the LKJ Cholesky transformation.  This provides the LKJ prior for a covariance matrix.
 
-Note that some of these are of limited relevance for AD because truncation of distributions using `T()` is not currently supported for AD.
+Note that the scalar transformations are all monotonic increasing functions of the original parameter.  Some of these are of limited relevance for AD because truncation of distributions using `T()` is not currently supported for AD.
 
-**TBD: Better description of LKJ.  Polish LaTeX formatting.**
+**TBD: Better description of LKJ.**
 
 The worked example next will illustrate use of the parameter transformation system.
 
-## Worked example: maximum likelihood estimation using `optim` with gradients from `nimDerivs`.
+# Example: maximum likelihood estimation using `optim` with gradients from `nimDerivs`.
 
+In this example, we will obtain maximum likelihood estimates of a Poisson GLM.  It will be similar to the GLMM above, but without the random effects.  Maximization of a likelihood function can be done with methods that don't require gradients, but it is much faster to use methods that do use gradients.
+
+To illustrate the parameter transformation system, we will give `p` a uniform prior, constrained to values between 0 and 1.  The maximum likelihood estimation below will not use the prior probability, but nevertheless the prior will be interpreted for its constraints on valid values in this case.  This need for parameter transformation is somewhat artifical in the interest of simplicity.
+
+```{r eval=eval}
+model_code <- nimbleCode({
+  # priors (will be ignored for MLE)
+  p ~ dunif(0, 1)
+  log_p <- log(p)
+  beta ~ dnorm(0, sd = 100)
+  # random effects and data  
+  for(i in 1:50) {
+    # data
+    y[i] ~ dpois(exp(log_p + beta*X[i]))
+  }
+})
+
+set.seed(123)
+X <- rnorm(50) # Simulate values for X
+
+model <- nimbleModel(model_code, constants = list(X = X), calculate = FALSE,
+                     buildDerivs = TRUE) # Create nimble model object
+
+model$p <- 0.5     # assign parameter values and simulate data (y)
+model$beta <- 0.2
+model$calculate()
+model$simulate(model$getDependencies(c('beta', 'p'), self = FALSE))
+model$calculate()
+model$setData('y') # Now the model has y marked as data, with values from simulation.
+Cmodel <- compileNimble(model) # Make compiled version
+```
+
+Now we'll write a nimbleFunction to provide the negative log likelihood and its gradient using an unconstrained parameter space.  The default behavior of `optim` below is to do a minimization problem, so returning the negative log likelihood means that `optim` will find the maximum likelihood parameters.
+
+```{r eval=eval}
+logLikelihood_nf <- nimbleFunction(
+  setup = function(model, paramNodes) {
+    # Determine nodes for calculating the log likelihood for parameters given by paramNodes
+    calcNodes <- model$getDependencies(paramNodes, self = FALSE)
+    # Set up the additional arguments for nimDerivs when the function called includes model$calculate
+    derivsInfo <- makeDerivsInfo(model, paramNodes, calcNodes)
+    updateNodes <- derivsInfo$updateNodes
+    constantNodes <- derivsInfo$constantNodes
+    # Create a parameter transformation between original and unconstrained parameter spaces.
+    transformer <- parameterTransform(model, paramNodes)
+  },
+  methods = list(
+    neg_logLikelihood_p = function(p = double(1)) { # Put values in model and calcualte neg log likelihood.
+      values(model, paramNodes) <<- p
+      return(-model$calculate(calcNodes))
+      returnType(double())
+    },
+    neg_logLikelihood = function(ptrans = double(1)) { # Objective function for optim,
+                                                       # using transformed parameter space
+      p <- transformer$inverseTransform(ptrans)
+      return(neg_logLikelihood_p(p))
+      returnType(double())
+    },
+    gr_neg_logLikelihood = function(ptrans = double(1)) { # Gradient of neg log likelihood
+      p <- transformer$inverseTransform(ptrans)
+      d <- derivs(neg_logLikelihood_p(p), wrt = 1:length(p), order = 1,
+                  model = model, updateNodes = updateNodes, constantNodes = constantNodes)
+      return(d$jacobian[1,])
+      returnType(double(1))
+    },
+    transform = function(p = double(1)) {  # Give easy access to transformation ...
+      return(transformer$transform(p))
+      returnType(double(1))
+    },
+    inverse = function(ptrans = double(1)) { # ... and its inverse.
+      return(transformer$inverseTransform(ptrans))
+      returnType(double(1))
+    }
+  ),
+  buildDerivs = 'neg_logLikelihood_p'
+)
+```
+
+Sometimes you might want a call to `transformer$transform` or `transformer$inverseTransform` to be included in a derivative calculation.  In this case, we don't. 
+
+Next we build and compile an instance of `logLikelihood_nf` specialized (by the `setup`` function) to our model and its parameters.
+
+```{r eval=eval}
+ll_glm <- logLikelihood_nf(model, c("p", "beta"))
+Cll_glm <- compileNimble(ll_glm, project = model)
+```
+
+Now let's see how the parameter transformation works for this model.  For `beta`, it already has an unconstrained range of valid values, so it has no transformation (i.e. it has an indentity transformation).  For `p`, it is constrained beween 0 and 1, so it will be logit-transformed. 
+
+```{r eval=eval}
+Cll_glm$transform(c(0.2, 1))
+Cll_glm$inverse(c(-1.386294, 1)) # The inverse transformation goes back to the original parameters, within rounding.
+```
+
+Now we are ready to use the methods provided in `Cll_glm` in a call to R's `optim` to find the MLE.
+
+
+```{r eval=eval}
+MLE <- optim(c(0,0), # initial values
+             fn = Cll_glm$neg_logLikelihood, # function to be minimized
+             gr = Cll_glm$gr_neg_logLikelihood, # gradient of function to be minimized
+             method = "BFGS") # optimization method to use
+MLE$par
+-MLE$value
+```
+
+Those outputs show the MLE in the parameters `logit(p)`,  and `beta`, following by the maximum log likelihood value.
+
+Now let's confirm that it's working correctly by comparing to results from `glm`.
+
+```{r eval=eval}
+glm_fit <- glm(I(model$y) ~ X, family = poisson)
+coef(glm_fit)
+logLik(glm_fit)
+```
+
+We see that the coefficient for `X` matches `beta (within numerical tolerance)`, and the maximum log likelihoods match.  To understand the intercept, we need to be careful about the parameter transformation used in nimble.  The inverse transformation will give `p`, and the log of that should match the intercept estimated by `glm.`
+
+```{r eval=eval}
+Cll_glm$inverse(MLE$par)
+log(Cll_glm$inverse(MLE$par)[1]) # This should match glm's intercept
+```
+
+It looks like it worked.
+
+# Example: Laplace approximation
+
+In this example, we will use nimble's Laplace approximation, which uses derivatives internally, to get maximum (approximate) likelihood estimates for the GLMM model above.  Note that the Laplace approximation uses second derivatives, and the gradient of the Laplace approximation uses third derivatves.  These are described in detail by (citation).
+
+We will create the above GLMM model anew here.
+
+```{r eval=eval}
+model_code <- nimbleCode({
+  # priors 
+  intercept ~ dnorm(0, sd = 100)
+  beta ~ dnorm(0, sd = 100)
+  sigma ~ dunif(0, 10)
+  # random effects and data  
+  for(i in 1:10) {
+    # random effects
+    ran_eff[i] ~ dnorm(0, sd = sigma)
+    for(j in 1:5) {
+      # data
+      y[i,j] ~ dpois(exp(intercept + beta*X[i,j] + ran_eff[i]))
+    }
+  }
+})
+set.seed(123)
+X <- matrix(rnorm(50), nrow = 10)
+model <- nimbleModel(model_code, constants = list(X = X), calculate = FALSE,
+                     buildDerivs = TRUE) # Here is the argument needed for AD.
+model$intercept <- 0
+model$beta <- 0.2
+model$sigma <- 0.5
+model$calculate()
+model$simulate(model$getDependencies('ran_eff'))
+model$calculate()
+model$setData('y') # Now the model has y marked as data, with values from simulation.
+Cmodel <- compileNimble(model)
+```
+
+Next we create a Laplace approximation specialized to the parameters of interest for this model.  The `buildLaplace` setup code will automatically determine the random effects to be integrated over and the associated nodes to calculate. In fact, if you omit the parameter nodes, it will assume that all top-level nodes in the model should be treated as parameters.  If fine-grained control is needed, these various sets of nodes can be input directly into `buildLaplace`.
+
+```{r eval=eval}
+glmm_laplace <- buildLaplace(model, c('intercept','beta','sigma'))
+Cglmm_laplace <- compileNimble(glmm_laplace, project = model)
+```
+
+Now we are ready to use some of the methods provided by `buildLaplace`.  These include calculating the Laplace approximation for some input parameter values, calculating its gradient, and maximizing the Laplace-approximated likelihood.
+
+```{r eval=eval}
+Cglmm_laplace$Laplace(c(0, 0, 1))
+Cglmm_laplace$gr_Laplace(c(0, 0, 1))
+MLE <- Cglmm_laplace$LaplaceMLE(c(0, 0, 1))
+MLE$par
+MLE$value
+```
+
+The final outputs show the MLE for `intercept`, `beta`, and `sigma`, followed by the maximum (approximate) likelihood.
+
+`buildLaplace` actually offers several choices in how computations are done, differing in how they use double taping or not.  In some cases one or another choice might be more efficient.  See `help(buildLaplace)` if you want to explore it further.
+
+Finally, let's confirm that it worked by comparing to results from package lme4.  In this case, lme4 will be faster because it is highly specialized to GLMMs.  Here our interest is in checking that nimble's Laplace approximation worked correctly in a case where we have an established tool such as lme4.
+
+```{r eval=eval}
+library(lme4)
+y <- as.numeric(model$y) # Rearrage inputs for call to glmer
+X <- as.numeric(X)
+group <- rep(1:10, 5)
+lme4_fit <- glmer(y ~ X + (1 | group), family = poisson) # There is a warning that seems to be innocuous.
+summary(lme4_fit)
+logLik(lme4_fit)
+```
+
+The results match within numerical tolerance typical of optimization problems.  Specifically, the coefficients for `(Intercept)` and `X` match nimble's `Intercept` and `beta`, the random effects standard deviation for `group` matches nimble's `sigma`, and the maximum likelihood values match.`
