@@ -406,8 +406,9 @@ mcmc_checkWAICmonitors <- function(model, monitors, dataNodes) {
 
 
 
-## create the Rmodel object using arguments provided to nimbleMCMC
+#' @export
 mcmc_createModelObject <- function(code, constants, data, inits, dimensions, model, nchains, setSeed, check) {
+    ## create the Rmodel object using arguments provided to nimbleMCMC
     if(missing(model)) {  ## model object not provided
         if(!missing(inits)) {
             if(!is.function(inits) && !is.list(inits)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of initial values')

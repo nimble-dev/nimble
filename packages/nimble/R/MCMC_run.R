@@ -217,9 +217,9 @@ runMCMC <- function(mcmc,
 #' 
 #' @param constants Named list of constants in the model.  Constants cannot be subsequently modified. For compatibility with JAGS and BUGS, one can include data values with constants and \code{nimbleModel} will automatically distinguish them based on what appears on the left-hand side of expressions in \code{code}.
 #' 
-#' @param data Named list of values for the data nodes.  Data values can be subsequently modified.  Providing this argument also flags nodes as having data for purposes of algorithms that inspect model structure. Values that are NA will not be flagged as data.
+#' @param data Named list of values for the data nodes.  Values that are NA will not be flagged as data.
 #'
-#' @param inits Argument to specify initial values for the model object, and for each MCMC chain.  See details.
+#' @param inits Argument to specify initial values for each MCMC chain.  See details.
 #'
 #' @param dimensions Named list of dimensions for variables.  Only needed for variables used with empty indices in model code that are not provided in constants or data.
 #'
