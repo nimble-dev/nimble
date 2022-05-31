@@ -617,6 +617,7 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
 							   NodeVectorClassNew_derivs &nodes,
 							   const NimArr<1, double> &derivOrders,
 							   const NimArr<1, double> &wrtVector,
+                 bool do_update,
 							   bool reset,
 							   nimSmartPtr<NIMBLE_ADCLASS> ansList) {
   // If use_meta_tape is true, then double-recording will be used.

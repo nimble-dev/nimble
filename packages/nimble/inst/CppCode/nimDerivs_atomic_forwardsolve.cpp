@@ -258,11 +258,13 @@ void atomic_forwardsolve(const MatrixXd_CppAD &A,
 
   // Check constant zero region for B
   int BrowStartNZ, BrowEndNZ, BcolStartNZ, BcolEndNZ;
-  bool B_is_constant_zero;
 
   auto zero_cond = [](const CppAD::AD<double> &x)->bool {return CppAD::IdenticalZero(x);};
   // This is called to set the last four arguments by reference
-  B_is_constant_zero = delineate_condition_region(zero_cond, B,
+  // bool B_is_constant_zero; // This return value is not actually needed
+  // delineate_constant_region is called to set the last four arguments by reference.
+  //B_is_constant_zero =
+  delineate_condition_region(zero_cond, B,
 						  BrowStartNZ, BrowEndNZ, BcolStartNZ, BcolEndNZ);
   if(BrowStartNZ > 0) {
     // B has some first set of rows with all constant zeros: fill in zero results and recurse to solve non-zero region

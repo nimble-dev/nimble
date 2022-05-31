@@ -1076,7 +1076,6 @@ void atomic_matmult(const MatrixXd_CppAD &x1,
     
   int x1rowStart, x1rowEnd, x1colStart, x1colEnd;
   int x2rowStart, x2rowEnd, x2colStart, x2colEnd;
-  bool x1_is_constant, x2_is_constant;
 
   // CppAD has three roles: constant, dynamic parameter, variable
   // Names of checking functions are confusing
@@ -1089,8 +1088,13 @@ void atomic_matmult(const MatrixXd_CppAD &x1,
   auto const_cond = [](const CppAD::AD<double> &x)->bool {return CppAD::Constant(x);};
   // Make these x1_has_no_variables
   // These are called to set the last four arguments by reference.
-  x1_is_constant = delineate_condition_region(const_cond, x1, x1rowStart, x1rowEnd, x1colStart, x1colEnd);
-  x2_is_constant = delineate_condition_region(const_cond, x2, x2rowStart, x2rowEnd, x2colStart, x2colEnd);
+
+  // bool x1_is_constant, x2_is_constant; // These return values are not actually needed.
+  // delineate_condition_region is called to set the last four arguments by reference.
+  // x1_is_constant =
+    delineate_condition_region(const_cond, x1, x1rowStart, x1rowEnd, x1colStart, x1colEnd);
+  // x2_is_constant =
+    delineate_condition_region(const_cond, x2, x2rowStart, x2rowEnd, x2colStart, x2colEnd);
 
   using std::cout;
 #ifdef VERBOSE_ATOMIC_MATMULT_REGIONS
