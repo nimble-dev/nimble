@@ -324,10 +324,10 @@ pow_int_OpTests2 <- list(
                                       arg2 = function(x) sample(-3:3, size = x, replace = TRUE)))
 )
 
-resetTols()
+## resetTols()
 
-res <- lapply(powOpTests2, test_AD2)
-res <- lapply(pow_int_OpTests2, test_AD2)
+## res <- lapply(powOpTests2, test_AD2)
+## res <- lapply(pow_int_OpTests2, test_AD2)
 
 # f(g(x)).  Use a different g than above because that is basically a power function
 
@@ -355,8 +355,8 @@ pow_int_OpTests2 <- list(
 
 resetTols()
 
-res <- lapply(powOpTests2, test_AD2)
-res <- lapply(pow_int_OpTests2, test_AD2)
+## res <- lapply(powOpTests2, test_AD2)
+## res <- lapply(pow_int_OpTests2, test_AD2)
 
 # g(f(x))
 
@@ -384,8 +384,8 @@ resetTols()
 
 ADtestEnv$RCrelTol <- c(1e-12, 1e-4, 1e-2) # This seems to need looser tols, based on one case.
 
-res <- lapply(powOpTests2, test_AD2)
-res <- lapply(pow_int_OpTests2, test_AD2)
+## res <- lapply(powOpTests2, test_AD2)
+## res <- lapply(pow_int_OpTests2, test_AD2)
 
 resetTols()
 
@@ -412,23 +412,23 @@ binaryReductionOpTests2 <- make_AD_test_batch(
   binaryReductionOps, binaryReductionArgs2, maker = make_AD_test2
 )
 resetTols()
-res <- lapply(binaryReductionOpTests2, test_AD2)
+## res <- lapply(binaryReductionOpTests2, test_AD2)
 
 binaryReductionOpTests2 <- make_AD_test_batch(
   binaryReductionOps, binaryReductionArgs2, maker = make_AD_test2,
   inner_codes = list(quote(X*X*X), quote(X*X*X))
 )
 resetTols()
-ADtestEnv$RCrelTol <- c(1e-12, 1e-4, 1e-2)
-res <- lapply(binaryReductionOpTests2, test_AD2)
+##ADtestEnv$RCrelTol <- c(1e-12, 1e-4, 1e-2)
+##res <- lapply(binaryReductionOpTests2, test_AD2)
 
 binaryReductionOpTests2 <- make_AD_test_batch(
   binaryReductionOps, binaryReductionArgs2, maker = make_AD_test2,
   outer_code = quote(exp(0.5*Y))
 )
 resetTols()
-ADtestEnv$RCrelTol <- c(1e-12, 1e-4, 1e-2)
-res <- lapply(binaryReductionOpTests2, test_AD2)
+##ADtestEnv$RCrelTol <- c(1e-12, 1e-4, 1e-2)
+##res <- lapply(binaryReductionOpTests2, test_AD2)
 
 
 ##########################
@@ -465,9 +465,9 @@ squareMatrixOpTests2 <- c(squareMatrixOpTests2a, squareMatrixOpTests2b)
 
 ADtestEnv$RCrelTol <- c(1e-12, 1e-4, 1e-2)
 
-lapply(squareMatrixOpTests2, test_AD2)
-debug(test_AD2)
-lapply(squareMatrixOpTests2[6], test_AD2) # Chol 5x5 can have some crazy unstable 2nd derivs.
+##lapply(squareMatrixOpTests2, test_AD2)
+##debug(test_AD2)
+##lapply(squareMatrixOpTests2[6], test_AD2) # Chol 5x5 can have some crazy unstable 2nd derivs.
 # Hessian of det is numerically nearly zero in different ways - comparison disaster
 # This affects log det too
 # We evidently don't really support trace?

@@ -551,4 +551,17 @@ NimArr<1, double> make_vector_if_necessary(double);
 NimArr<1, double> make_vector_if_necessary(NimArr<1, double>);
 NimArr<1, double> make_vector_if_necessary(NimArr<1, int>);
 
+template <typename T>
+NimArr<1, double> make_vector_if_necessary(const T &x) { // This case catches eigen ops
+  typedef typename Eigen::internal::traits<T>::Scalar Scalar;
+  Eigen::Matrix<Scalar, Dynamic, Dynamic> materialized_x = x;
+  size_t len = x.size();
+  NimArr<1, Scalar> NimArr_x;
+  NimArr_x.setSize(len, 0, 0);
+  Map< MatrixXd > Eig_NimArr_x(NimArr_x.getPtr(),len,1);
+  Eig_NimArr_x = materialized_x;
+  return make_vector_if_necessary(NimArr_x);
+}
+
+
 #endif

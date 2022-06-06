@@ -81,7 +81,7 @@ test_that('pow and pow_int work', {
   cDerivs <- ctestFunctionInstance$run()
   expect_equal(wrapperDerivs$value, cDerivs$value)
   expect_equal(wrapperDerivs$jacobian, cDerivs$jacobian)
-  expect_equal(wrapperDerivs$hessian, cDerivs$hessian, tolerance = 1e-4)  
+  expect_equal(wrapperDerivs$hessian, cDerivs$hessian, tolerance = 1e-4)
 })
 
 ## check logic of results

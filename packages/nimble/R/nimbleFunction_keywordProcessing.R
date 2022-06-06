@@ -833,13 +833,16 @@ nimDerivs_keywordInfo <- keywordInfoClass(
     }
     if(calculateCase) {
         innerCode <- code[[2]]
-        if(is.null(code$wrt))
-            stop("Derivatives of a call to 'calculate()' must have 'wrt' argument specified.")
+        if(length(code$wrt)==1)
+          if(!is.name(code$wrt))
+            if(is.na(code$wrt[1]))
+              stop("Derivatives of a call to 'calculate()' must have 'wrt' argument specified.")
         innerCode$wrt <- code$wrt
         newCode <- calculate_keywordInfo$processor(innerCode, nfProc, RCfunProc)
         newCode[[1]] <- as.name('nimDerivs_calculate')
         newCode$orderVector <- code$order
         newCode$reset <- if(is.null(code[['reset']])) FALSE else code[['reset']]
+        newCode$do_update <- if(is.null(code[['do_update']])) TRUE else code[['do_update']]
         return(newCode)
     }
     ## Not a calculate case:
@@ -875,20 +878,31 @@ nimDerivs_keywordInfo <- keywordInfoClass(
       }
       ## Check if model and updateNodes are provided.
       ## If so, create a nodeFxnVector for them.
-      modelProvided <- !is.null(code[['model']])
-      updateNodesProvided <- !is.null(code[['updateNodes']]) ## This can be a list of both updateNodes and constantNodes or a vector of node names
-      constantNodesProvided <- !is.null(code[['constantNodes']]) ## This can be a vector of node names or provided in updateNodes
+      modelProvided <-  is.name(code[['model']])
+      updateNodesProvided <- is.name(code[['updateNodes']])
+      if(!updateNodesProvided)
+        if(is.character(code[['updateNodes']]))
+          updateNodesProvided <- !is.na(code[['updateNodes']][1])
+      constantNodesProvided <- is.name(code[['constantNodes']])
+      if(!constantNodesProvided)
+        if(is.character(code[['constantNodes']]))
+          constantNodesProvided <- !is.na(code[['constantNodes']][1])
       if(xor(modelProvided, updateNodesProvided || constantNodesProvided))
         stop('nimDerivs arguments model and at least one of updateNodes or constantNodes must be provided together or not at all.')
       if(modelProvided) { ## At this point that means both were provided
-        DMUNargList <- list(model = code$model, updateNodes = code[["updateNodes"]], constantNodes = code[["constantNodes"]])
+        DMUNargList <- list(model = code$model,
+                            updateNodes = if(updateNodesProvided) code[["updateNodes"]] else NULL,
+                            constantNodes = if(constantNodesProvided) code[["constantNodes"]] else NULL)
         accessName <- nodeFunctionVector_DerivsModelUpdateNodes_SetupTemplate$makeName(DMUNargList)
         addNecessarySetupCode(accessName, DMUNargList, nodeFunctionVector_DerivsModelUpdateNodes_SetupTemplate, nfProc)
-        code[['model']] <- NULL
-        if(updateNodesProvided) code[['updateNodes']] <- NULL
-        if(constantNodesProvided) code[['constantNodes']] <- NULL
+        ## code[['model']] <- NULL
+        ## if(updateNodesProvided) code[['updateNodes']] <- NULL
+        ## if(constantNodesProvided) code[['constantNodes']] <- NULL
         code[['updateNodesName']] <- accessName
       }
+      code[['model']] <- NULL
+      code[['updateNodes']] <- NULL
+      code[['constantNodes']] <- NULL
     }
     return(code)
   }
@@ -1004,8 +1018,11 @@ matchFunctions[['nimOptimDefaultControl']] <- nimOptimDefaultControl
 matchFunctions[['nimEigen']] <- function(squareMat, symmetric = FALSE, only.values = FALSE){}
 matchFunctions[['nimSvd']] <- function(mat, vectors = 'full'){}
 matchFunctions[['nimOptim_model']] <- function(model, wrt, nodes, use.gr = TRUE, method = "BFGS", lower = -Inf, upper = Inf, control = nimOptimDefaultControl(), hessian = FALSE) {} ## Any changes here need to be reflected in the keyword processor, which has to re-insert arguments to a modified call.
-matchFunctions[['nimDerivs']] <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NA, wrt = NA, calcNodes = NA, static = FALSE,
-                                          model, updateNodes, constantNodes, reset = FALSE) {} ## Avoid NULLs in R default args.
+matchFunctions[['nimDerivs']] <- function(call = NA,
+                                          order = nimC(0,1,2),
+                                          wrt = NA,
+                                          model = NA, updateNodes = NA, constantNodes = NA,
+                                          do_update = TRUE, reset = FALSE) {}
 matchFunctions[['derivInfo']] <- derivInfo
 matchFunctions[['besselK']] <- function(x, nu, expon.scaled = FALSE){}
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}

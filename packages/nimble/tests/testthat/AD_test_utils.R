@@ -115,7 +115,7 @@ test_AD2_oneCall <- function(Robj, Cobj,
   useCmodel <- !is.null(Cmodel)
 
   RRabsThresh <- 0
-  RCabsthresh <- 0
+  RCabsThresh <- 0
   CCabsThresh <- 0
   if(length(RRrelTol) > 3) RRabsThresh <- RRrelTol[4]
   if(length(RCrelTol) > 3) RCabsThresh <- RCrelTol[4]
@@ -948,9 +948,9 @@ make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
 
   if(seed == 0) seed <- round(runif(1, 1, 10000))
 
-  modelArg <- NULL
-  updateNodesArg <- NULL
-  constantNodesArg <- NULL
+  modelArg <- NA
+  updateNodesArg <- NA
+  constantNodesArg <- NA
   if(isTRUE(includeModelArgs)) {
     # If this is used, then some custom setup code
     # will need to be inserted to create model, updateNodes, and constantNodes

@@ -191,6 +191,7 @@ make_deriv_function <- function(origFun,
                                   nDim = 1, type = 'double', ref = TRUE, const = TRUE))
   newFun$args$addSymbol(cppNimArr(name = 'ARGZ_wrtVector_',
                                   nDim = 1, type = 'double', ref = TRUE, const = TRUE))
+  newFun$args$addSymbol(cppVar(baseType = 'bool', name = "DO_UPDATE_"))
   newFun$args$addSymbol(cppVar(baseType = 'bool', name = "RESET_"))
   newFun$args$addSymbol(cppVar(name = 'ARGZ_ADinfo_',
                                ref = TRUE,
@@ -210,14 +211,14 @@ make_deriv_function <- function(origFun,
     innerRcall <- do.call('call',
                           c(list(argTransferFunName),
                             lapply(origFun$args$getSymbolNames(), as.name),
-                            list(as.name("recordingInfo_"), as.name("RESET_"), as.name("ARGZ_ADinfo_"))),
+                            list(as.name("recordingInfo_"), as.name("DO_UPDATE_"), as.name("RESET_"), as.name("ARGZ_ADinfo_"))),
                           quote = TRUE
                           )
   else
     innerRcall <- do.call('call',
                           c(list(argTransferFunName),
                             lapply(origFun$args$getSymbolNames(), as.name),
-                            list(as.name("RESET_"), as.name("ARGZ_ADinfo_"))),
+                            list(as.name("DO_UPDATE_"), as.name("RESET_"), as.name("ARGZ_ADinfo_"))),
                           quote = TRUE
                           )
 
@@ -751,21 +752,21 @@ addADinfoObjects <- function(cppDef) {
       for(ADinfoName in ADinfoNames)
         cppDef$objectDefs$addSymbol(cppVar(name = ADinfoName, ptr = 0, baseType = "nimbleCppADinfoClass"))
     }
-    ADstaticInfoNames <- cppDef$nimCompProc$compileInfos[[i]]$typeEnv[['ADstaticInfoNames']]
-    if(!is.null(ADstaticInfoNames)) {
-      for(ADstaticInfoName in ADstaticInfoNames) {
-        cppDef$objectDefs$addSymbol(cppVarFull(name = ADstaticInfoName, ptr = 0, baseType = "nimbleCppADinfoClass", static = TRUE))
-        if(firstStatic) {
-          globals <- cppGlobalObjects(name = paste0('staticGlobals_', cppDef$name),
-                                      staticMembers = TRUE)
-          firstStatic <- FALSE
-        }
-        globals$objectDefs[[ADstaticInfoName]] <-
-          cppVarFull(baseType = 'nimbleCppADinfoClass',
-                     name = paste0(cppDef$name,'::', ADstaticInfoName))
-      }
-    }
-    
+    ## ADstaticInfoNames <- cppDef$nimCompProc$compileInfos[[i]]$typeEnv[['ADstaticInfoNames']]
+    ## if(!is.null(ADstaticInfoNames)) {
+    ##   for(ADstaticInfoName in ADstaticInfoNames) {
+    ##     cppDef$objectDefs$addSymbol(cppVarFull(name = ADstaticInfoName, ptr = 0, baseType = "nimbleCppADinfoClass", static = TRUE))
+    ##     if(firstStatic) {
+    ##       globals <- cppGlobalObjects(name = paste0('staticGlobals_', cppDef$name),
+    ##                                   staticMembers = TRUE)
+    ##       firstStatic <- FALSE
+    ##     }
+    ##     globals$objectDefs[[ADstaticInfoName]] <-
+    ##       cppVarFull(baseType = 'nimbleCppADinfoClass',
+    ##                  name = paste0(cppDef$name,'::', ADstaticInfoName))
+    ##   }
+    ## }
+
   }
   if(!is.null(globals))
     cppDef$neededTypeDefs[['staticTapeInfos']] <- globals
@@ -875,6 +876,7 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
     if(!isNode) {
       if(metaTape)
         TF$args$addSymbol(cppVarFull(baseType = "nimbleCppADrecordingInfoClass", name = "recordingInfo_", ref = TRUE))
+      TF$args$addSymbol(cppVar(baseType = "bool", name = "DO_UPDATE_"))
       TF$args$addSymbol(cppVar(baseType = "bool", name = "RESET_"))
       TF$args$addSymbol(cppVar(baseType = "nimbleCppADinfoClass", ref = TRUE, name = "ADinfo"))
     }
@@ -1035,7 +1037,7 @@ makeADargumentTransferFunction2 <- function(newFunName = 'arguments2cppad',
     }
 
   dynamicVarsLine <- if(usesModelCalculate) {
-    substitute(UDV(ADinfo),
+    substitute(if(DO_UPDATE_) UDV(ADinfo),
                list(UDV = update_dynamicVars_funName))
   } else {
     quote(blank())

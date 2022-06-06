@@ -696,6 +696,7 @@ nimOneLaplace <- nimbleFunction(
     i_inner_time <- 1
     inner_logLik_times <- rep(0, num_inner_times)
     innerMethod <- "BFGS"
+    update_once <- TRUE
   },
   run = function(){},
   methods = list(
@@ -939,7 +940,9 @@ nimOneLaplace <- nimbleFunction(
       ans <- derivs(negHess_internal(p, reTransform), wrt = reTrans_indices,
                     order = 0, model = model,
                     updateNodes   = joint_updateNodes,
-                    constantNodes = joint_constantNodes)
+                    constantNodes = joint_constantNodes,
+                    do_update =  update_once)
+      # update_once <<- FALSE
       neghess <- matrix(ans$value, nrow = nreTrans)
       return(neghess)
       returnType(double(2))
@@ -961,10 +964,15 @@ nimOneLaplace <- nimbleFunction(
       ans <- derivs(negHess2_internal(p, reTransform), wrt = reTrans_indices,
                     order = 0, model = model,
                     updateNodes   = joint_updateNodes,
-                    constantNodes = joint_constantNodes)
+                    constantNodes = joint_constantNodes,
+                    do_update = update_once)
+      # update_once <<- FALSE
       neghess <- matrix(ans$value, nrow = nreTrans)
       return(neghess)
       returnType(double(2))
+    },
+    reset_update = function(update = logical(0, default = TRUE)) {
+      update_once <<- update
     },
     ## Logdet negative Hessian
     logdetNegHess = function(p = double(1), reTransform = double(1)) {
@@ -1492,7 +1500,7 @@ buildLaplace <- nimbleFunction(
     pTransform_indices <- if(pTransform_length > 1) 1:pTransform_length else c(1, -1)
     one_time_fixes_done <- FALSE
 
-    methodID <- 3
+    methodID <- 2
   },
   run = function(){},
   methods = list(
