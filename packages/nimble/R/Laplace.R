@@ -60,38 +60,39 @@ nimOneLaplace1D <- nimbleFunction(
       }
       paramDeps <- paramDeps[keep_paramDeps]
     }
+    innerCalcNodes <- calcNodes
     ## Add any additional nodes to calcNodes
     calcNodes <- model$expandNodeNames(c(paramDeps, calcNodes), sort = TRUE)
-    
+
     ## Automated transformation for random effects to ensure range of (-Inf, Inf) for each.
     reTrans <- parameterTransform(model, randomEffectsNodes)
-    
+
     ## Numbers of random effects and parameters
     npar <- length(model$expandNodeNames(paramNodes, returnScalarComponents = TRUE))
     nre  <- length(model$expandNodeNames(randomEffectsNodes, returnScalarComponents = TRUE))
 
     if(length(nre) != 1)
       stop("Number of random effects for nimOneLaplace1D must be 1.")
-    
+
     ## Derivatives w.r.t. paramNodes and randomEffectsNodes are needed
     wrtNodes <- c(paramNodes, randomEffectsNodes)
 
     ## Indices of randomEffectsNodes inside wrtNodes
     re_indices <- as.numeric(c(npar+1, -1))
-    
+
     ## Indices of paramNodes inside wrtNodes
     if(npar > 1) p_indices <- as.numeric(1:npar)
     else p_indices <- as.numeric(c(1, -1))
-    
-    ## Indices of randomEffectsNodes inside randomEffectsNodes for use in getting the derivative of 
-    ## the inner log-likelihood (paramNodes fixed) w.r.t. randomEffectsNodes. 
+
+    ## Indices of randomEffectsNodes inside randomEffectsNodes for use in getting the derivative of
+    ## the inner log-likelihood (paramNodes fixed) w.r.t. randomEffectsNodes.
     re_indices_inner <- as.numeric(c(1, -1))
 
     p_and_re_indices <- as.numeric(1:(npar + 1))
-    ## Optim control list 
+    ## Optim control list
     optimControlList <- nimOptimDefaultControl()
-  
-    inner_derivsInfo <- nimble:::makeDerivsInfo(model = model, wrtNodes = randomEffectsNodes, calcNodes = calcNodes)
+
+    inner_derivsInfo <- nimble:::makeDerivsInfo(model = model, wrtNodes = randomEffectsNodes, calcNodes = innerCalcNodes)
     inner_updateNodes     <- inner_derivsInfo$updateNodes
     inner_constantNodes   <- inner_derivsInfo$constantNodes
 
@@ -122,7 +123,7 @@ nimOneLaplace1D <- nimbleFunction(
     max_inner_logLik_saved_value <- numeric(1)
     max_inner_logLik_previous_p <- if(npar > 1) rep(Inf, npar) else as.numeric(c(Inf, -1))
     cache_inner_max <- TRUE
-    
+
     ## The following is used to ensure the one_time_fixes are run when needed.
     one_time_fixes_done <- FALSE
     innerMethod <- "CG"
@@ -167,14 +168,14 @@ nimOneLaplace1D <- nimbleFunction(
     inner_logLik = function(reTransform = double(1)) {
       re <- reTrans$inverseTransform(reTransform)
       values(model, randomEffectsNodes) <<- re
-      ans <- model$calculate(calcNodes) + reTrans$logDetJacobian(reTransform)
+      ans <- model$calculate(innerCalcNodes) + reTrans$logDetJacobian(reTransform)
       return(ans)
       returnType(double())
     },
     # Gradient of the joint log-likelihood (p fixed) w.r.t. transformed random effects: used only for inner optimization
     gr_inner_logLik_internal = function(reTransform = double(1)) {
       ans <- derivs(inner_logLik(reTransform), wrt = re_indices_inner, order = 1, model = model,
-                    updateNodes   = inner_updateNodes, 
+                    updateNodes   = inner_updateNodes,
                     constantNodes = inner_constantNodes)
       return(ans$jacobian[1,])
       returnType(double(1))
@@ -185,7 +186,7 @@ nimOneLaplace1D <- nimbleFunction(
     gr_inner_logLik = function(reTransform = double(1)) {
       ans <- derivs(gr_inner_logLik_internal(reTransform), wrt = re_indices_inner, order = 0, model = model,
                     updateNodes   = inner_updateNodes,
-                    constantNodes = inner_updateNodes)
+                    constantNodes = inner_constantNodes)
       return(ans$value)
       returnType(double(1))
     },
@@ -202,14 +203,16 @@ nimOneLaplace1D <- nimbleFunction(
     # },
     ## Solve the inner optimization for Laplace approximation
     max_inner_logLik = function(p = double(1)) {
+      # cat('max_inner_logLik ',p[1], ' ',p[2],' ', p[3],' ',p[4], '\n')
       values(model, paramNodes) <<- p
+      model$calculate(paramDeps)
       ## Random effects values from the model
       reInitTrans <- get_reInitTrans()
       ## control <- get_optim_control()
       optimControl <- nimOptimDefaultControl()
       optimControl$fnscale <- -1
       optimControl$maxit <- 100 # 5000
-      optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik, method = "CG", control = optimControl)
+      optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik, method = innerMethod, control = optimControl)
       ## Need to consider the case where optim does not converge
       if(optRes$convergence != 0) {
         print("Warning: optim does not converge for the inner optimization of Laplace approximation")
@@ -219,6 +222,7 @@ nimOneLaplace1D <- nimbleFunction(
     },
     max_inner_logLik_internal = function(p = double(1)) {
       values(model, paramNodes) <<- p
+      model$calculate(paramDeps)
       ## Random effects values from the model
       ## re <- values(model, randomEffectsNodes)
       ## reTransform <- reTrans$transform(re)
@@ -260,7 +264,7 @@ nimOneLaplace1D <- nimbleFunction(
     ## 1st order partial derivative w.r.t. parameters
     gr_joint_logLik_wrt_p_internal = function(p = double(1), reTransform = double(1)) {
       ans <- derivs(joint_logLik(p, reTransform), wrt = p_indices, order = 1, model = model,
-                    updateNodes   = joint_updateNodes, 
+                    updateNodes   = joint_updateNodes,
                     constantNodes = joint_constantNodes)
       return(ans$jacobian[1,])
       returnType(double(1))
@@ -276,7 +280,7 @@ nimOneLaplace1D <- nimbleFunction(
     ## 1st order partial derivative w.r.t. transformed random effects
     gr_joint_logLik_wrt_re_internal = function(p = double(1), reTransform = double(1)) {
       ans <- derivs(joint_logLik(p, reTransform), wrt = re_indices, order = 1, model = model,
-                    updateNodes   = joint_updateNodes, 
+                    updateNodes   = joint_updateNodes,
                     constantNodes = joint_constantNodes)
       return(ans$jacobian[1,])
       returnType(double(1))
@@ -302,7 +306,7 @@ nimOneLaplace1D <- nimbleFunction(
       ans <- derivs(hess_joint_logLik_wrt_p_wrt_re_internal(p, reTransform), wrt = re_indices, order = 0, model = model,
                     updateNodes   = joint_updateNodes,
                     constantNodes = joint_constantNodes)
-      derivmat <- matrix(value = ans$value, nrow = npar) 
+      derivmat <- matrix(value = ans$value, nrow = npar)
       return(derivmat)
       returnType(double(2))
     },
@@ -327,7 +331,7 @@ nimOneLaplace1D <- nimbleFunction(
     ## Logdet negative Hessian
     logdetNegHess = function(p = double(1), reTransform = double(1)) {
       ## res <- derivs(gr_joint_logLik_wrt_re_internal(p, reTransform), wrt = re_indices, order = 1, model = model,
-      ##               updateNodes   = joint_updateNodes, 
+      ##               updateNodes   = joint_updateNodes,
       ##               constantNodes = joint_constantNodes)
       ## negHessian <- -(res$jacobian)
       negHessian <- negHess(p, reTransform)
@@ -370,7 +374,7 @@ nimOneLaplace1D <- nimbleFunction(
     },
     ##
     joint_logLik_with_grad_and_hess_test = function(p = double(1), reTransform = double(1)) {
-      # This returns a vector of  concatenated key quantities (see comment below for details) 
+      # This returns a vector of  concatenated key quantities (see comment below for details)
       # reTransform is the arg max of the inner logLik
       # We could consider returning only upper triangular elements of chol(-Hessian),
       #  and re-constituting as a matrix when needed.
@@ -378,12 +382,12 @@ nimOneLaplace1D <- nimbleFunction(
                                  wrt = p_and_re_indices, # 1:(npar + nre)
                                  order = c(1, 2),
                                  model = model, updateNodes = joint_updateNodes, constantNodes = joint_constantNodes)
-      
+
       returnType(ADNimbleList())
       return(joint_logLik_res)
     },
     joint_logLik_with_grad_and_hess = function(p = double(1), reTransform = double(1)) {
-      # This returns a vector of  concatenated key quantities (see comment below for details) 
+      # This returns a vector of  concatenated key quantities (see comment below for details)
       # reTransform is the arg max of the inner logLik
       # We could consider returning only upper triangular elements of chol(-Hessian),
       #  and re-constituting as a matrix when needed.
@@ -397,9 +401,9 @@ nimOneLaplace1D <- nimbleFunction(
       for(i in 1:npar)
 ##        for(j in 1:nre)
         hess_wrt_p_wrt_re[i, 1] <- joint_logLik_res$hessian[i, npar + 1, 1]
-      
 
-      
+
+
       ans <- c(joint_logLik_res$jacobian[1, 1:npar], # I experimented with swapped order.  It's not being first.  It's the actual alpha parameter that has a problem, and which just happens to be first
                logdetNegHessAns,
                negHessValue, # cholNegHess
@@ -453,7 +457,7 @@ nimOneLaplace1D <- nimbleFunction(
         update_max_inner_logLik(p)
       }
       reTransform <- max_inner_logLik_saved_par
-      maxValue <- max_inner_logLik_saved_value        
+      maxValue <- max_inner_logLik_saved_value
 
       ans <- derivs(joint_logLik_with_higher_derivs(p, reTransform), wrt = p_and_re_indices, order = 0,
                     model = model, updateNodes = joint_updateNodes, constantNodes = joint_constantNodes)
@@ -473,9 +477,9 @@ nimOneLaplace1D <- nimbleFunction(
       gr_logdetNegHess_wrt_re_v <- ans$value[ind]
 
       Laplace_value <- maxValue - 0.5 * logdetNegHess_value + 0.5 * 1 * log(2*pi)
-      Laplace3_saved_value <<- Laplace_value 
+      Laplace3_saved_value <<- Laplace_value
       # print(Laplace_value)
-      
+
       gr_Laplace_v <- gr_logLik_wrt_p - 0.5*(gr_logdetNegHess_wrt_p_v +  hess_cross_terms * (gr_logdetNegHess_wrt_re_v / negHessValue) )
       ## print( gr_logLik_wrt_p )
       ## print( gr_logdetNegHess_wrt_p_v )
@@ -512,7 +516,7 @@ nimOneLaplace1D <- nimbleFunction(
         update_max_inner_logLik(p)
       }
       reTransform <- max_inner_logLik_saved_par
-      maxValue <- max_inner_logLik_saved_value        
+      maxValue <- max_inner_logLik_saved_value
 
       logdetNegHessian <- logdetNegHess(p, reTransform)
       ## Laplace approximation
@@ -530,7 +534,7 @@ nimOneLaplace1D <- nimbleFunction(
         update_max_inner_logLik_internal(p)
       }
       reTransform <- max_inner_logLik_saved_par
-      maxValue <- max_inner_logLik_saved_value        
+      maxValue <- max_inner_logLik_saved_value
 
       logdetNegHessian <- logdetNegHess(p, reTransform)
       ## Laplace approximation
@@ -558,8 +562,8 @@ nimOneLaplace1D <- nimbleFunction(
       ##   gr_Lap_hesslogLikwrtpre_s <<- hesslogLikwrtpre
       ##   gr_Lap_gr_joint_logLik_wrt_p_s <<- gr_joint_logLik_wrt_p(p, reTransform)
       ## }
-      p1 <- gr_joint_logLik_wrt_p(p, reTransform) 
-      ans <- p1 - 
+      p1 <- gr_joint_logLik_wrt_p(p, reTransform)
+      ans <- p1 -
         0.5 * (grlogdetNegHesswrtp + hesslogLikwrtpre * (grlogdetNegHesswrtre / negHessian))
       ## print( p1 )
       ## print( grlogdetNegHesswrtp )
@@ -582,7 +586,7 @@ nimOneLaplace1D <- nimbleFunction(
       grlogdetNegHesswrtp <- gr_logdetNegHess_wrt_p_internal(p, reTransform)
       grlogdetNegHesswrtre <- gr_logdetNegHess_wrt_re_internal(p, reTransform)[1]
       hesslogLikwrtpre <- hess_joint_logLik_wrt_p_wrt_re_internal(p, reTransform)[,1]
-      ans <- gr_joint_logLik_wrt_p_internal(p, reTransform) - 
+      ans <- gr_joint_logLik_wrt_p_internal(p, reTransform) -
         0.5 * (grlogdetNegHesswrtp + hesslogLikwrtpre * (grlogdetNegHesswrtre / negHessian))
       return(ans)
       returnType(double(1))
@@ -604,7 +608,6 @@ nimOneLaplace1D <- nimbleFunction(
                       joint_logLik_with_higher_derivs = list())
 ) ## End of nimOneLaplace1D
 
-
 #' A nimbleFunction that performs a single Laplace approximation
 nimOneLaplace <- nimbleFunction(
   contains = Laplace_BASE,
@@ -625,12 +628,13 @@ nimOneLaplace <- nimbleFunction(
       }
       paramDeps <- paramDeps[keep_paramDeps]
     }
+    innerCalcNodes <- calcNodes
     ## Add any additional nodes to calcNodes
     calcNodes <- model$expandNodeNames(c(paramDeps, calcNodes), sort = TRUE)
-    
+
     ## Automated transformation for random effects to ensure range of (-Inf, Inf) for each.
     reTrans <- parameterTransform(model, randomEffectsNodes)
-    
+
     ## Numbers of random effects and parameters
     npar <- length(model$expandNodeNames(paramNodes, returnScalarComponents = TRUE))
     nre  <- length(model$expandNodeNames(randomEffectsNodes, returnScalarComponents = TRUE))
@@ -642,21 +646,21 @@ nimOneLaplace <- nimbleFunction(
     ## Indices of randomEffectsNodes inside wrtNodes
     if(nreTrans > 1) reTrans_indices <- as.numeric((npar+1):(npar+nreTrans))
     else reTrans_indices <- as.numeric(c(npar+1, -1)) ## Ensure this is a vector
-    
+
     ## Indices of paramNodes inside wrtNodes
     if(npar > 1) p_indices <- as.numeric(1:npar)
     else p_indices <- as.numeric(c(1, -1))
-    
-    ## Indices of randomEffectsNodes inside randomEffectsNodes for use in getting the derivative of 
-    ## the inner log-likelihood (paramNodes fixed) w.r.t. randomEffectsNodes. 
-    if(nreTrans > 1) reTrans_indices_inner <- as.numeric(1:nreTrans) 
+
+    ## Indices of randomEffectsNodes inside randomEffectsNodes for use in getting the derivative of
+    ## the inner log-likelihood (paramNodes fixed) w.r.t. randomEffectsNodes.
+    if(nreTrans > 1) reTrans_indices_inner <- as.numeric(1:nreTrans)
     else reTrans_indices_inner <- as.numeric(c(1, -1))
 
     p_and_reTrans_indices <- as.numeric(1:(npar + nreTrans))
-    ## Optim control list 
+    ## Optim control list
     optimControlList <- nimOptimDefaultControl()
-  
-    inner_derivsInfo <- nimble:::makeDerivsInfo(model = model, wrtNodes = randomEffectsNodes, calcNodes = calcNodes)
+
+    inner_derivsInfo <- nimble:::makeDerivsInfo(model = model, wrtNodes = randomEffectsNodes, calcNodes = innerCalcNodes)
     inner_updateNodes     <- inner_derivsInfo$updateNodes
     inner_constantNodes   <- inner_derivsInfo$constantNodes
 
@@ -687,7 +691,7 @@ nimOneLaplace <- nimbleFunction(
     max_inner_logLik_saved_value <- numeric(1)
     max_inner_logLik_previous_p <- if(npar > 1) rep(Inf, npar) else as.numeric(c(Inf, -1))
     cache_inner_max <- TRUE
-    
+
     ## The following is used to ensure the one_time_fixes are run when needed.
     one_time_fixes_done <- FALSE
     num_times <- 11
@@ -697,13 +701,19 @@ nimOneLaplace <- nimbleFunction(
     inner_logLik_times <- rep(0, num_inner_times)
     innerMethod <- "BFGS"
     update_once <- TRUE
+    gr_inner_update_once <- TRUE
+    gr_inner_logLik_force_update <- TRUE
+    gr_inner_logLik_first <- TRUE
+    negHess_inner_update_once <- TRUE
+    negHess_inner_logLik_force_update <- TRUE
+    negHess_inner_logLik_first <- TRUE
   },
   run = function(){},
   methods = list(
     get_times = function() {return(times); returnType(double(1))},
     reset_times = function() {times <<- rep(0, num_times)},
     add_time = function(t = double(), i = integer()) {times[i] <<- times[i] + t},
-    
+
     fix_one_vec = function(x = double(1)) {
       if(length(x) == 2) {
         if(x[2] == -1) {
@@ -744,7 +754,7 @@ nimOneLaplace <- nimbleFunction(
     inner_logLik = function(reTransform = double(1)) {
       re <- reTrans$inverseTransform(reTransform)
       values(model, randomEffectsNodes) <<- re
-      ans <- model$calculate(calcNodes) + reTrans$logDetJacobian(reTransform)
+      ans <- model$calculate(innerCalcNodes) + reTrans$logDetJacobian(reTransform)
       return(ans)
       returnType(double())
     },
@@ -752,7 +762,7 @@ nimOneLaplace <- nimbleFunction(
     gr_inner_logLik_internal = function(reTransform = double(1)) {
       ans <- derivs(inner_logLik(reTransform), wrt = reTrans_indices_inner,
                     order = 1, model = model,
-                    updateNodes   = inner_updateNodes, 
+                    updateNodes   = inner_updateNodes,
                     constantNodes = inner_constantNodes)
       return(ans$jacobian[1,])
       returnType(double(1))
@@ -765,11 +775,52 @@ nimOneLaplace <- nimbleFunction(
       ans <- derivs(gr_inner_logLik_internal(reTransform), wrt = reTrans_indices_inner,
                     order = 0, model = model,
                     updateNodes   = inner_updateNodes,
-                    constantNodes = inner_updateNodes)
+                    constantNodes = inner_constantNodes,
+                    do_update = gr_inner_logLik_force_update | gr_inner_update_once)
       })
+      gr_inner_update_once <<- FALSE
       add_time(t10, 10)
       return(ans$value)
       returnType(double(1))
+    },
+    set_gr_inner_update = function(update = logical(0, default = TRUE)) {
+      gr_inner_update_once <<- update
+    },
+    set_negHess_inner_update = function(update = logical(0, default = TRUE)) {
+      negHess_inner_update_once <<- update
+    },
+
+    set_params = function(p = double(1)) {
+      values(model, paramNodes) <<- p
+      model$calculate(paramDeps)
+      gr_inner_update_once <<- TRUE
+      negHess_inner_update_once <<- TRUE
+    },
+    negHess_inner_logLik_internal = function(reTransform = double(1)) {
+      ans <- derivs(gr_inner_logLik_internal(reTransform), wrt = reTrans_indices_inner,
+                    order = 1, model = model,
+                    updateNodes   = inner_updateNodes,
+                    constantNodes = inner_constantNodes)
+      return(-ans$jacobian)
+      returnType(double(2))
+    },
+    # We also tried double-taping straight to second order.  That was a bit slower.
+    negHess_inner_logLik = function(reTransform = double(1)) {
+      ans <- derivs(negHess_inner_logLik_internal(reTransform), wrt = reTrans_indices_inner,
+                    order = 0, model = model,
+                    updateNodes   = inner_updateNodes,
+                    constantNodes = inner_constantNodes,
+                    do_update = negHess_inner_logLik_force_update | negHess_inner_update_once)
+      negHess_inner_update_once <<- FALSE
+      neghess <- matrix(ans$value, nrow = nreTrans)
+      return(neghess)
+      returnType(double(2))
+    },
+    record_negHess_inner_logLik = function(reTransform = double(1)) {
+      negHess_inner_logLik_force_update <<- TRUE
+      negHess_inner_logLik(reTransform) # record
+      negHess_inner_logLik_first <<- FALSE
+      negHess_inner_logLik_force_update <<- FALSE
     },
     # Setting optim control list as below does not work
     # ## Set up optim control list
@@ -784,10 +835,12 @@ nimOneLaplace <- nimbleFunction(
     # },
     ## Solve the inner optimization for Laplace approximation
     max_inner_logLik = function(p = double(1)) {
-      values(model, paramNodes) <<- p
-      ## Random effects values from the model
+      # cat('max_inner_logLik ',p[1], ' ',p[2],' ', p[3],' ',p[4], '\n')
+      set_params(p)
+      ## Random effects values from the last inner optimization
       reInitTrans <- get_reInitTrans()
-      
+      # reInitTrans <- rep(0, nre)
+
       # If optim can't get a value from initial parameters (random effects),
       # it will error out and we don't have a good way to catch it.
       # This might be possible via but I am not sure how.  It is thrown from a direct error() call in the optim C++ functions.
@@ -811,6 +864,12 @@ nimOneLaplace <- nimbleFunction(
       optimControl <- nimOptimDefaultControl()
       optimControl$fnscale <- -1
       optimControl$maxit <- 5000
+      if(gr_inner_logLik_first) { # need to record
+        gr_inner_logLik_force_update <<- TRUE
+        gr_inner_logLik(reInitTrans) # record
+        gr_inner_logLik_first <<- FALSE
+        gr_inner_logLik_force_update <<- FALSE
+      }
       optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik,
                       method = innerMethod, control = optimControl)
       ## Need to consider the case where optim does not converge
@@ -822,6 +881,7 @@ nimOneLaplace <- nimbleFunction(
     },
     max_inner_logLik_internal = function(p = double(1)) {
       values(model, paramNodes) <<- p
+      model$calculate(paramDeps)
       ## Random effects values from the model
       reInitTrans <- get_reInitTrans()
 
@@ -830,7 +890,7 @@ nimOneLaplace <- nimbleFunction(
       optimControl$fnscale <- -1
       optimControl$maxit <- 5000
       optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik_internal,
-                      method = "CG", control = optimControl)
+                      method = innerMethod, control = optimControl)
       ## Need to consider the case where optim does not converge
       if(optRes$convergence != 0) {
         print("Warning: optim does not converge for the inner optimization of Laplace approximation")
@@ -850,7 +910,7 @@ nimOneLaplace <- nimbleFunction(
         inner_logLik_times <<- c(inner_logLik_times, rep(0, 1000))
       }
       i_inner_time <<- i_inner_time + 1
-      
+
       max_inner_logLik_saved_par <<- optRes$par
       max_inner_logLik_saved_value <<- optRes$value
       max_inner_logLik_previous_p <<- p
@@ -874,7 +934,7 @@ nimOneLaplace <- nimbleFunction(
     gr_joint_logLik_wrt_p_internal = function(p = double(1), reTransform = double(1)) {
       ans <- derivs(joint_logLik(p, reTransform), wrt = p_indices,
                     order = 1, model = model,
-                    updateNodes   = joint_updateNodes, 
+                    updateNodes   = joint_updateNodes,
                     constantNodes = joint_constantNodes)
       return(ans$jacobian[1,])
       returnType(double(1))
@@ -892,7 +952,7 @@ nimOneLaplace <- nimbleFunction(
     gr_joint_logLik_wrt_re_internal = function(p = double(1), reTransform = double(1)) {
       ans <- derivs(joint_logLik(p, reTransform), wrt = reTrans_indices,
                     order = 1, model = model,
-                    updateNodes   = joint_updateNodes, 
+                    updateNodes   = joint_updateNodes,
                     constantNodes = joint_constantNodes)
       return(ans$jacobian[1,])
       returnType(double(1))
@@ -921,7 +981,7 @@ nimOneLaplace <- nimbleFunction(
                     order = 0, model = model,
                     updateNodes   = joint_updateNodes,
                     constantNodes = joint_constantNodes)
-      derivmat <- matrix(value = ans$value, nrow = npar) 
+      derivmat <- matrix(value = ans$value, nrow = npar)
       return(derivmat)
       returnType(double(2))
     },
@@ -947,7 +1007,7 @@ nimOneLaplace <- nimbleFunction(
       return(neghess)
       returnType(double(2))
     },
-    ## This was an experiment in double taping the second order.  It was very slow. 
+    ## This was an experiment in double taping the second order.  It was very slow.
     negHess2_internal = function(p = double(1), reTransform = double(1)) {
       ans <- derivs(joint_logLik(p, reTransform), wrt = reTrans_indices,
                     order = 2, model = model,
@@ -1021,7 +1081,7 @@ nimOneLaplace <- nimbleFunction(
     },
     ##
     joint_logLik_with_grad_and_hess_test = function(p = double(1), reTransform = double(1)) {
-      # This returns a vector of  concatenated key quantities (see comment below for details) 
+      # This returns a vector of  concatenated key quantities (see comment below for details)
       # reTransform is the arg max of the inner logLik
       # We could consider returning only upper triangular elements of chol(-Hessian),
       #  and re-constituting as a matrix when needed.
@@ -1029,12 +1089,12 @@ nimOneLaplace <- nimbleFunction(
                                  wrt = p_and_reTrans_indices, # 1:(npar + nreTrans)
                                  order = c(1, 2),
                                  model = model, updateNodes = joint_updateNodes, constantNodes = joint_constantNodes)
-      
+
       returnType(ADNimbleList())
       return(joint_logLik_res)
     },
     joint_logLik_with_grad_and_hess = function(p = double(1), reTransform = double(1)) {
-      # This returns a vector of  concatenated key quantities (see comment below for details) 
+      # This returns a vector of  concatenated key quantities (see comment below for details)
       # reTransform is the arg max of the inner logLik
       # We could consider returning only upper triangular elements of chol(-Hessian),
       #  and re-constituting as a matrix when needed.
@@ -1052,7 +1112,7 @@ nimOneLaplace <- nimbleFunction(
       for(i in 1:npar)
         for(j in 1:nreTrans)
           hess_wrt_p_wrt_re[i, j] <- joint_logLik_res$hessian[i, npar + j, 1]
-      
+
       ans <- c(joint_logLik_res$jacobian[1, 1:npar], # I experimented with swapped order.  It's not being first.  It's the actual alpha parameter that has a problem, and which just happens to be first
                logdetNegHessAns,
                cholNegHess,
@@ -1107,7 +1167,7 @@ nimOneLaplace <- nimbleFunction(
         update_max_inner_logLik(p)
       }
       reTransform <- max_inner_logLik_saved_par
-      maxValue <- max_inner_logLik_saved_value        
+      maxValue <- max_inner_logLik_saved_value
 
       ans <- derivs(joint_logLik_with_higher_derivs(p, reTransform), wrt = p_and_reTrans_indices,
                     order = 0, model = model,
@@ -1129,9 +1189,9 @@ nimOneLaplace <- nimbleFunction(
       gr_logdetNegHess_wrt_re_v <- ans$value[(ind):(ind + nreTrans - 1)]
 
       Laplace_value <- maxValue - 0.5 * logdetNegHess_value + 0.5 * nreTrans * log(2*pi)
-      Laplace3_saved_value <<- Laplace_value 
+      Laplace3_saved_value <<- Laplace_value
       # print(Laplace_value)
-      
+
       # We need A^T inverse(negHess) B
       # where A = gr_logdetNegHess_wrt_re_v (a vector treated by default as a one-column matrix)
       #  and  B = t(hess_cross_terms)
@@ -1142,7 +1202,7 @@ nimOneLaplace <- nimbleFunction(
       # We have (A^T inverse(U) ) ( inverse(U^T) B) = v^T w
       #    v^T = A^T inverse(U), so v = inverse(U^T) A = fowardsolve(U^T, gr_logdetNegHess_wrt_re_v )
       #    w = inverse(U^T) B, so w = forwardsolve(U^T, t(hess_cross_terms))
-      # 
+      #
       # We could return the chol and hess_cross_terms from the derivs steps
       # in transposed form since that's how we need them here.
       v <- forwardsolve(t(chol_negHess), gr_logdetNegHess_wrt_re_v)
@@ -1178,7 +1238,7 @@ nimOneLaplace <- nimbleFunction(
         update_max_inner_logLik(p)
       }
       reTransform <- max_inner_logLik_saved_par
-      maxValue <- max_inner_logLik_saved_value        
+      maxValue <- max_inner_logLik_saved_value
 
       if(maxValue == -Inf) return(-Inf) # This would mean inner optimization failed
 
@@ -1205,7 +1265,7 @@ nimOneLaplace <- nimbleFunction(
         update_max_inner_logLik_internal(p)
       }
       reTransform <- max_inner_logLik_saved_par
-      maxValue <- max_inner_logLik_saved_value        
+      maxValue <- max_inner_logLik_saved_value
 
       logdetNegHessian <- logdetNegHess(p, reTransform)
       ## Laplace approximation
@@ -1249,11 +1309,11 @@ nimOneLaplace <- nimbleFunction(
       ##   gr_Lap_gr_joint_logLik_wrt_p_s <<- gr_joint_logLik_wrt_p(p, reTransform)
       ## }
       t8 <- run.time({
-      ans <- gr_joint_logLik_wrt_p(p, reTransform) - 
+      ans <- gr_joint_logLik_wrt_p(p, reTransform) -
         0.5 * (grlogdetNegHesswrtp + (grlogdetNegHesswrtre %*% invNegHessian) %*% t(hesslogLikwrtpre))
       })
       add_time(t8, 8)
-      
+
       return(ans[1,])
       returnType(double(1))
     },
@@ -1269,7 +1329,7 @@ nimOneLaplace <- nimbleFunction(
       grlogdetNegHesswrtp <- gr_logdetNegHess_wrt_p_internal(p, reTransform)
       grlogdetNegHesswrtre <- gr_logdetNegHess_wrt_re_internal(p, reTransform)
       hesslogLikwrtpre <- hess_joint_logLik_wrt_p_wrt_re_internal(p, reTransform)
-      ans <- gr_joint_logLik_wrt_p_internal(p, reTransform) - 
+      ans <- gr_joint_logLik_wrt_p_internal(p, reTransform) -
         0.5 * (grlogdetNegHesswrtp + (grlogdetNegHesswrtre %*% invNegHessian) %*% t(hesslogLikwrtpre))
       return(ans[1,])
       returnType(double(1))
@@ -1289,9 +1349,9 @@ nimOneLaplace <- nimbleFunction(
                       gr_logdetNegHess_wrt_p_internal   = list(),
                       gr_logdetNegHess_wrt_re_internal  = list(),
                       joint_logLik_with_grad_and_hess = list(ignore = c("i","j")),
-                      joint_logLik_with_higher_derivs = list())
+                     joint_logLik_with_higher_derivs = list(),
+                     negHess_inner_logLik_internal = list())
 ) ## End of nimOneLaplace
-
 
 #' From a set of nodes, find out nodes that are dependent of tarNodes
 getDependentNodes <- function(model, nodes, tarNodes){
@@ -1450,7 +1510,7 @@ buildLaplace <- nimbleFunction(
                        errorNodes, "\n",
                        "To silence this warning, include \'warn = FALSE\' in\n",
                        "the control list."))
-      }  
+      }
     }
     if(!calcProvided) {
       calcNodes <- calcNodesDefault
@@ -1470,7 +1530,7 @@ buildLaplace <- nimbleFunction(
       else if(is.numeric(split))
         reSets <- split(randomEffectsNodes, split)
       else stop("Invalid value for \'split\' provided in control list")
-      
+
       num_reSets <- length(reSets)
       if(num_reSets == 0)
         stop("There was a problem determining conditionally independent sets for this model.")
@@ -1485,14 +1545,14 @@ buildLaplace <- nimbleFunction(
         ## In the future this could be customized.
         if(length(model$expandNodeNames(these_reNodes, returnScalarComponents = TRUE)) > 1) {
           laplace_nfl[[i]] <- nimOneLaplace(model, paramNodes,
-                                            these_reNodes, these_calcNodes)
+                                             these_reNodes, these_calcNodes)
         } else {
           laplace_nfl[[i]] <- nimOneLaplace1D(model, paramNodes,
-                                              these_reNodes, these_calcNodes)
+                                               these_reNodes, these_calcNodes)
         }
       }
     }
-      
+
     npar <- length(model$expandNodeNames(paramNodes, returnScalarComponents = TRUE))
     ## Automated transformation for parameters
     paramsTransformation <- parameterTransform(model, paramNodes)
@@ -1635,7 +1695,7 @@ buildLaplace <- nimbleFunction(
       return(ans)
       returnType(ADNimbleList())
     },
-    
+
     ## Gradient of the Laplace approximation in terms of transformed parameters
     p_transformed_gr_Laplace = function(pTransform = double(1)) {
       if(methodID == 1)
