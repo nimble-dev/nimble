@@ -119,7 +119,7 @@ runMCMC <- function(mcmc,
     ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
     ##samplerExecutionOrderToUse <- if(!missing(samplerExecutionOrder)) samplerExecutionOrder else mcmc$samplerExecutionOrderFromConfPlusTwoZeros[mcmc$samplerExecutionOrderFromConfPlusTwoZeros>0]
     for(i in 1:nchains) {
-        messageIfVerbose('Running chain ', i, ' ...')
+        messageIfVerbose('running chain ', i, ' ...')
         ##if(setSeed) set.seed(i)
         if(is.numeric(setSeed)) {
             if(length(setSeed) == 1) {
