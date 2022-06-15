@@ -153,7 +153,7 @@ nimbleFunction <- function(setup         = NULL,
     rm(setupOutputsDeclaration)
     ## create the reference class definition
     
-    nfRefClassDef <- nf_createRefClassDef(setup, methodList, className, globalSetup, declaredSetupOutputNames)
+    nfRefClassDef <- nf_createRefClassDef(setup, methodList, className, globalSetup, declaredSetupOutputNames, contains)
     nfRefClass    <- eval(nfRefClassDef)
     .namesToCopy <- nf_namesNotHidden(names(nfRefClass$fields()))
     .namesToCopyFromGlobalSetup <- intersect(.namesToCopy,
@@ -240,10 +240,14 @@ nimbleFunctionBase <- setRefClass(Class = 'nimbleFunctionBase',
 
 
 ## template for the reference class internal to all nimble functions
-nf_createRefClassDef <- function(setup, methodList, className = nf_refClassLabelMaker(), globalSetup, declaredSetupOutputNames) {
+nf_createRefClassDef <- function(setup, methodList, className = nf_refClassLabelMaker(), globalSetup, declaredSetupOutputNames,
+                                 contains = NULL) {
     finalMethodList <- lapply(methodList, function(nfMethodRCobject) nfMethodRCobject$generateFunctionObject())
     finalMethodList[['show']] <- eval(substitute(function() writeLines(paste0('reference class object for nimble function class ', className)),
                                                  list(className = className)))
+    if(!is.null(contains)) {
+      finalMethodList <- c(finalMethodList, nf_getBaseClassMethods(methodList, contains))
+    }
     substitute(
         setRefClass(Class   = NFREFCLASS_CLASSNAME,
                     fields  = NFREFCLASS_FIELDS,
@@ -257,6 +261,29 @@ nf_createRefClassDef <- function(setup, methodList, className = nf_refClassLabel
         )
 }
 
+nf_getBaseClassMethods <- function(methodList, contains) {
+  contains_env <- environment(contains)
+  baseClassMethodNames <- names(contains_env$methods)
+  ## Including run seems to make this complete, although in fact missing run args to
+  ## nimbleFunction will result in an empty function, so it won't be missing.
+  if(is.function(contains_env$run)) baseClassMethodNames <- c("run", baseClassMethodNames)
+  for(mn in baseClassMethodNames) {
+    reqd <- TRUE # reqd FALSE means the method might be taken from contains
+    if(is.logical(contains_env$methodControl[[mn]][['required']]))
+      reqd <- contains_env$methodControl[[mn]][['required']][1]
+    provided <- mn %in% names(methodList)
+    if(!reqd) {
+      if(!provided)
+        methodList[[mn]] <- contains_env$methods[[mn]]
+    }
+    if(reqd) {
+      if(!provided)
+        messageIfVerbose(
+          paste0("  [Warning] method ", mn, " is required from the contains (base) class, but was not provided."))
+    }
+  }
+  methodList
+}
 
 ## creates a list of the fields (setupOutputs) for a nimble function reference class
 nf_createRefClassDef_fields <- function(setup, methodList, globalSetup, declaredSetupOutputNames) {
@@ -276,9 +303,6 @@ nf_createSetupOutputNames <- function(setup, methodList, declaredSetupOutputName
     setupOutputNames <- unique(setupOutputNames)
     return(setupOutputNames)
 }
-
-
-
 
 nf_assignmentLHSvars <- function(code) {
   if(!is.call(code))     return(character(0))
