@@ -263,7 +263,10 @@ Rname2CppName <- function(rName, colonsOK = TRUE, maxLength = 250) {
     rName <- gsub('^([[:digit:]])', 'd\\1', rName)    # if begins with a digit, add 'd' in front
     rName <- sapply(rName,
                     function(x) {
-                        if(nchar(x) > maxLength && !length(grep("___TRUNC___", x))) 
+                        if(nchar(x) > maxLength &&
+                           !length(grep("___TRUNC___", x)) &&
+                           !length(grep("_Vec$", x))) ## when we add _Vec on we need it to stay on (issue #1216)
+                            ## Note this could break if a user has long syntax that ends in _Vec, but deal if it arises.
                             x <- paste0(substring(x, 1, maxLength), CppNameLabelMaker())
                         return(x)
                     })
