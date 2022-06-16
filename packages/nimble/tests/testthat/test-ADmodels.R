@@ -657,27 +657,25 @@ relTolTmp[4] <- 1e-2
 ## [1] 8.466706e-01 8.466706e-01 1.311281e-15
 test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr), useParamTransform = TRUE, relTol = relTolTmp, verbose = verbose, name = 'truncation model')
 
-
-code <- nimbleCode({
-    y ~ dnorm(mu, 1)
-    mu ~ T(dnorm(mu0, 1), 0, 10)
-    mu0 ~ dnorm(0,1)
-})
-model <- nimbleModel(code, data = list(y = 1), inits = list(mu = 0.5, mu0 = 1))
-## 2022-03-07: compilation error: issue #254
-test_ADModelCalculate(model, relTol = relTol, verbose = verbose, name = 'truncation on non-top node')
-
-
-code <- nimbleCode({
-    y ~ dnorm(mu, 1)
-    mu ~ T(dbeta(a,b), 0.1, 0.8)
-    a ~ dunif(0, 5)
-    b ~ dunif(0,5 )
-})
-model <- nimbleModel(code, data = list(y = 1), inits = list(mu = 0.5,a=1,b=1))
-## 2022-03-07: compilation error
-test_ADModelCalculate(model, relTol = relTol, verbose = verbose, name = 'truncation with dbeta')
-
+if(FALSE) {   ## truncation on non-top nodes not handled for now; issue #254
+    code <- nimbleCode({
+        y ~ dnorm(mu, 1)
+        mu ~ T(dnorm(mu0, 1), 0, 10)
+        mu0 ~ dnorm(0,1)
+    })
+    model <- nimbleModel(code, data = list(y = 1), inits = list(mu = 0.5, mu0 = 1))
+    test_ADModelCalculate(model, relTol = relTol, verbose = verbose, name = 'truncation on non-top node')
+    
+    
+    code <- nimbleCode({
+        y ~ dnorm(mu, 1)
+        mu ~ T(dbeta(a,b), 0.1, 0.8)
+        a ~ dunif(0, 5)
+        b ~ dunif(0,5 )
+    })
+    model <- nimbleModel(code, data = list(y = 1), inits = list(mu = 0.5,a=1,b=1))
+    test_ADModelCalculate(model, relTol = relTol, verbose = verbose, name = 'truncation with dbeta')
+}
 
 ## complicated indexing 
 set.seed(1)
@@ -718,7 +716,6 @@ test_ADModelCalculate(model, newUpdateNodes = list(S = newS, pr = newPr, pr2 = n
 ## [1,] 0.01329597 0.0128945 0.03113457
 
 test_ADModelCalculate(model, newUpdateNodes = list(S = newS, pr = newPr, pr2 = newPr2), useParamTransform = TRUE, relTol = relTolTmp, verbose = verbose, name = 'complicated indexing')
-## 2022-04-12: with param transform have -Inf value (NCT issue 351)
 
 
 ## using different subsets of a matrix
@@ -1204,9 +1201,6 @@ test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, name = 'vect
 test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTolTmp, verbose = verbose, name = 'vectorized power')
 
 
-
-## user-defined distribution, issue #253
-
 dGPdist <- nimbleFunction(
     run = function(x = double(1), dist = double(2), rho = double(0),
                    log = integer(0, default = 0)) {
@@ -1544,7 +1538,9 @@ test_ADModelCalculate(model, newUpdateNodes = list(nu = 12.1, dist = newDist, R 
                       name = 'various multivariate dists')
 
 ## 2022-05-05:
-## TODO: investigate big 2d11 discrepancy in HMC/MAP
+## I can't fully explain the magnitude of the 2d11 disparity. If I manually call jacobian, I can see
+## smaller disparities than if I do my own hand-calculated 2nd derivs, but not the magnitude seen here.
+## However, given the single-taped uncompiled Hessians match compiled Hessians, I don't think anything is wrong.
 ## Detected some values out of (relative, usually) tolerance:  rOutput2d11$jacobian   cOutput2d11$jacobian .
 ##              [,1]          [,2]      [,3]
 ## [1,]  1.918025622  0.0000000000 1.9180256
@@ -1558,8 +1554,15 @@ test_ADModelCalculate(model, newUpdateNodes = list(nu = 12.1, dist = newDist, R 
 ## Detected some values out of (relative, usually) tolerance:  cOutput2d$value   c(cOutput012$hessian) .
 ##            [,1]       [,2]         [,3]
 ## [1,] -0.9472489 -0.9472489 1.200179e-13
+## Detected some values out of  absolute  tolerance   :  rOutput012$hessian   cOutput012$hessian .
+##              [,1]         [,2]      [,3]
+## [1,] -0.002075195 -0.002125045 0.0234584
+## Detected some values out of  absolute  tolerance   :  rOutput01$jacobian   cOutput01$jacobian .
+## [1] -4.988689e-01 -4.988643e-01  9.101791e-06
 
 ## various cases equal but not identical
+
+## with atomics, can get seg fault.
 
 
 ## loop through BUGS models

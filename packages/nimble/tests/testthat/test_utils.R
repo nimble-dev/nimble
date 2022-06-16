@@ -1535,7 +1535,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
     xNewIn <- xNew
     ## Save model state so can restore for later use cases below.
     mv <- modelValues(model)
-    nodes <- model$getNodeNames()
+    nodes <- model$getNodeNames(includeRHSonly = TRUE)
     nimCopy(model, mv, nodes, nodes, rowTo = 1, logProb = TRUE)
 
     if(is.null(wrt) && is.null(calcNodes)) {
@@ -2969,7 +2969,7 @@ nim_all_equal <- function(x, y, tolerance = .Machine$double.eps^0.5, abs_thresho
       report <- cbind(x[ord[wh]], y[ord[wh]], rel_diff[ord[wh]])
       report <- report[report[,3] > tolerance, ]
       cat("\n******************\n")
-      cat("Detected some values out of relative tolerance ", info, ": ", xlab, " ", ylab, ".\n")
+      cat("Detected some values out of ", ifelse(abs_threshold > 0, "absolute", "relative"), " tolerance ", info, ": ", xlab, " ", ylab, ".\n")
       print(report)
       cat("******************\n")
     } 
