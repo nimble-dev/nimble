@@ -126,7 +126,7 @@ buildWAIC <- nimbleFunction(
             groupIndices <- lapply(dataNodesUser, length)
             groupIndices <- cumsum(groupIndices)
             dataNodesUser <- unlist(dataNodesUser)
-            if (length(dataNodesUser) != dataNodeLength || sort(dataNodesUser) != sort(dataNodes)) 
+            if (length(dataNodesUser) != dataNodeLength || !identical(sort(dataNodesUser), sort(dataNodes))) 
                 warning("buildWAIC: Potential problem with data grouping. The nodes included in 'dataGroups' do not match the full set of data nodes in the model.")
             dataNodes <- dataNodesUser
         } else{
