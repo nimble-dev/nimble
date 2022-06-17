@@ -14,7 +14,7 @@ nimDerivs_dummy <- nimbleFunction(
 #' EXPERIMENTAL Computes the value, Jacobian, and Hessian of a given  
 #' \code{nimbleFunction} method.  
 #' 
-#' @param nimFxn a call to a \code{nimbleFunction} method with arguments 
+#' @param call a call to a \code{nimbleFunction} method with arguments
 #' included.  Can also be a call to  \code{model$calculate(nodes)}, or to 
 #' \code{calculate(model, nodes)}.
 #' @param order an integer vector with values within the set {0, 1, 2}, 
@@ -53,14 +53,15 @@ nimDerivs_dummy <- nimbleFunction(
 #' }
 #' 
 #' @export
-nimDerivs <- function(nimFxn = NA,
+nimDerivs <- function(call = NA,
+                      wrt = NULL,
                       order = nimC(0,1,2),
-                      dropArgs = NA,
-                      wrt = NULL, calcNodes = NULL, model = NULL, ...){ ## ... absorbs compile-only params
+                      model = NA,
+                      ...){ ## ... absorbs compile-only params
   fxnEnv <- parent.frame()
   fxnCall <- match.call()
   if(is.null(fxnCall[['order']])) fxnCall[['order']] <- order
-  derivFxnCall <- fxnCall[['nimFxn']]
+  derivFxnCall <- fxnCall[['call']]
   ## Below are two checks to see if the nimFxn argument is a model calculate 
   ## call. If so,  a wrapper function will be made and nimDerivs will be called 
   ## again on that wrapper function.
@@ -94,11 +95,11 @@ nimDerivs <- function(nimFxn = NA,
       }
   }
 
-  if(!is.na(dropArgs)){
-    removeArgs <- which(wrt == dropArgs)
-    if(length(removeArgs) > 0)
-      wrt <- wrt[-removeArgs]
-  }
+  ## if(!is.na(dropArgs)){
+  ##   removeArgs <- which(wrt == dropArgs)
+  ##   if(length(removeArgs) > 0)
+  ##     wrt <- wrt[-removeArgs]
+  ## }
   if(model_calculate_case) {
       ans <- nimDerivs_model( order = order, wrt = wrt, derivFxnCall = derivFxnCall, fxnEnv = fxnEnv )
   } else {
@@ -655,14 +656,18 @@ nimDerivs_nf_numericwrt <- function(derivFxn,
   ans 
 }
 
-nimDerivs_nf <- function(nimFxn = NA, order = nimC(0,1,2),
-                         wrt = NULL, derivFxnCall = NULL, fxnEnv = parent.frame(), model = NULL){
+nimDerivs_nf <- function(call = NA,
+                         wrt = NA,
+                         order = nimC(0,1,2),
+                         derivFxnCall = NULL,
+                         fxnEnv = parent.frame(),
+                         model = NA){
   fxnCall <- match.call()
   ## This may be called directly (for testing) or from nimDerivs (typically).
   ## In the former case, we get derivFxnCall from the nimFxn argument.
   ## In the latter case, it is already match.call()ed and is passed here via derivFxnCall
   if(is.null(derivFxnCall))
-    derivFxnCall <- fxnCall[['nimFxn']] ## either calculate(model, nodes) or model$calculate(nodes)
+    derivFxnCall <- fxnCall[['call']] ## either calculate(model, nodes) or model$calculate(nodes)
   else
     if(is.null(fxnCall[['order']]))
       fxnCall[['order']] <- order ## I don't think this is meaningful any more. fxnCall is not used further
@@ -673,7 +678,7 @@ nimDerivs_nf <- function(nimFxn = NA, order = nimC(0,1,2),
   ## Initialize information for restoring model when needed
   e <- environment(derivFxn)
   ## There might be no model in the inner nimDerivs call, so need to check for e$restoreInfo.
-  if(!is.null(model) || exists('restoreInfo', e)) {
+  if(inherits(model, 'modelBaseClass') || exists('restoreInfo', e)) {
       if(!exists('restoreInfo', e)) {
           ## First nimDerivs call: save model state and initialize derivative status.
           e$restoreInfo <- new.env()
@@ -705,7 +710,7 @@ nimDerivs_nf <- function(nimFxn = NA, order = nimC(0,1,2),
   derivFxnCall <- match.call(derivFxn, derivFxnCall)
 
   fA <- formalArgs(derivFxn)
-  if(is.null(wrt)) {
+  if(length(wrt)==1 & is.na(wrt[1])) {
     wrt <- fA
   }
   if(is.character(wrt)) {
@@ -742,8 +747,7 @@ nimDerivs_nf <- function(nimFxn = NA, order = nimC(0,1,2),
       } else {
           e$restoreInfo$currentDepth <- e$restoreInfo$currentDepth - 1
       }
-  } 
-  
+  }
   ans
 }
 

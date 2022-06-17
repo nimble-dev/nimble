@@ -252,8 +252,9 @@ cppOutputNimDerivs <- function(code, symTab) {
     origName <- code$args[[1]]$name
     derivName <- paste0(origName, '_deriv_')
     innerArgs <- code$args[[1]]$args
-    iOmit <- which(names(code$args) == 'dropArgs')
-    outerArgs <- code$args[-c(1, iOmit)]
+    ## iOmit <- which(names(code$args) == 'dropArgs')
+    ## outerArgs <- code$args[-c(1, iOmit)]
+    outerArgs <- code$args[-1]
     ADinfoArg <- code$aux$ADinfoName
     updateNodesName <- code$aux[['updateNodesName']]
     if(!is.null(updateNodesName)) {

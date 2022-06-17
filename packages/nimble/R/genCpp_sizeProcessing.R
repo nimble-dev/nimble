@@ -1202,9 +1202,9 @@ sizeNFvar <- function(code, symTab, typeEnv) {
 
 sizeNimDerivs <- function(code, symTab, typeEnv){
   code$name <- "nimDerivs_dummy"
-  static <- code$args[['static']]
-  code$args[['calcNodes']] <- NULL
-  code$args[['static']] <- NULL ## Ok since these two are last arguments.  Otherwise we need to shift args.
+  ## static <- code$args[['static']]
+  ## code$args[['calcNodes']] <- NULL
+  ## code$args[['static']] <- NULL ## Ok since these two are last arguments.  Otherwise we need to shift args.
   updateNodesName <- code$args[['updateNodesName']]
   code$args[['updateNodesName']] <- NULL
 
@@ -1271,7 +1271,8 @@ sizeNimDerivs <- function(code, symTab, typeEnv){
   if(!is.null(updateNodesName))
     code$aux[['updateNodesName']] <- updateNodesName
   
-  ADinfoNames <- if(isTRUE(static)) 'ADstaticInfoNames' else 'ADinfoNames'
+  ADinfoNames <- 'ADinfoNames'
+  ##  ADinfoNames <- if(isTRUE(static)) 'ADstaticInfoNames' else 'ADinfoNames'
   if(is.null(typeEnv[[ADinfoNames]])) {
     typeEnv[[ADinfoNames]] <- newADinfoName
   } else {
@@ -1488,6 +1489,7 @@ sizeCppPointerDereference <- function(code, symTab, typeEnv) {
 }
 
 sizeDoubleBracket <- function(code, symTab, typeEnv) {
+
     asserts <- recurseSetSizes(code, symTab, typeEnv)
     if(code$args[[1]]$isName) {
         objectName <- code$args[[1]]$name
