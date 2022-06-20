@@ -82,18 +82,19 @@ nimDerivs <- function(call = NA,
   ## Handle case of nimFxn argument being a calcNodes call for faster
   ## AD testing of model calculate calls. 
   model_calcNodes_case <- FALSE
-  if(length(derivFxnCall[[1]]) == 3 && deparse(derivFxnCall[[1]][[1]]) == '$'){
-      if(deparse(derivFxnCall[[1]][[3]]) == 'run'){
-          nf <- eval(derivFxnCall[[1]][[2]], envir = fxnEnv)
-          if(is(nf, "calcNodes_refClass")) {
-              model <- eval(nf$Robject$model, envir = fxnEnv)
-              if(!(exists('CobjectInterface', model) && !is(model$CobjectInterface, 'uninitializedField'))) { ## but, model should always be compiled because existence of calcNodes_refClass implies that.
-                  cModel <- compileNimble(model)
-              } else cModel <- eval(quote(model$CobjectInterface))
-              model_calcNodes_case <- TRUE
-          }
-      }
-  }
+  ## 6/20/22 I am checking if this use case is fully deprecated by commenting this out
+  ## if(length(derivFxnCall[[1]]) == 3 && deparse(derivFxnCall[[1]][[1]]) == '$'){
+  ##     if(deparse(derivFxnCall[[1]][[3]]) == 'run'){
+  ##         nf <- eval(derivFxnCall[[1]][[2]], envir = fxnEnv)
+  ##         if(is(nf, "calcNodes_refClass")) {
+  ##             model <- eval(nf$Robject$model, envir = fxnEnv)
+  ##             if(!(exists('CobjectInterface', model) && !is(model$CobjectInterface, 'uninitializedField'))) { ## but, model should always be compiled because existence of calcNodes_refClass implies that.
+  ##                 cModel <- compileNimble(model)
+  ##             } else cModel <- eval(quote(model$CobjectInterface))
+  ##             model_calcNodes_case <- TRUE
+  ##         }
+  ##     }
+  ## }
 
   ## if(!is.na(dropArgs)){
   ##   removeArgs <- which(wrt == dropArgs)
@@ -710,7 +711,7 @@ nimDerivs_nf <- function(call = NA,
   derivFxnCall <- match.call(derivFxn, derivFxnCall)
 
   fA <- formalArgs(derivFxn)
-  if(length(wrt)==1 & is.na(wrt[1])) {
+  if(is.null(wrt) || (length(wrt)==1 && is.na(wrt[1]))) {
     wrt <- fA
   }
   if(is.character(wrt)) {
@@ -735,7 +736,8 @@ nimDerivs_nf <- function(call = NA,
       ## Per NCT issue 256, compiled double-taping with inner tape = 0 does not update model,
       ## so mimicing that here.
       ## It's possible no model was provided to the nested nimDerivs call.
-      if(!is.null(model) && (e$restoreInfo$currentDepth > 1 || e$restoreInfo$deepestDepth > 1 || !0 %in% order)) {
+    if((inherits(model, 'modelBaseClass')) &&
+       (e$restoreInfo$currentDepth > 1 || e$restoreInfo$deepestDepth > 1 || !0 %in% order)) {
           for(v in seq_along(e$restoreInfo$values)) {
               nm <- names(e$restoreInfo$values)[v]
               model[[nm]] <- e$restoreInfo$values[[nm]]
