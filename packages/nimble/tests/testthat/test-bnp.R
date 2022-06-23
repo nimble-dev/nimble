@@ -2058,7 +2058,7 @@ test_that("Test that not nonparametric MCMC message in CRP sampler is printed", 
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
   expect_message(out <- runMCMC(cMCMC, niter=1, nburnin = 0, thin=1),
-                 "Running chain")  
+                 "running chain")
   
   
   ## dirichlet-multinomial model, no message is sent when xi = 1:n

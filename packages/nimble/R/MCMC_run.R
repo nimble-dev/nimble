@@ -119,7 +119,7 @@ runMCMC <- function(mcmc,
     ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
     ##samplerExecutionOrderToUse <- if(!missing(samplerExecutionOrder)) samplerExecutionOrder else mcmc$samplerExecutionOrderFromConfPlusTwoZeros[mcmc$samplerExecutionOrderFromConfPlusTwoZeros>0]
     for(i in 1:nchains) {
-        messageIfVerbose('Running chain ', i, ' ...')
+        messageIfVerbose('running chain ', i, ' ...')
         ##if(setSeed) set.seed(i)
         if(is.numeric(setSeed)) {
             if(length(setSeed) == 1) {
@@ -323,7 +323,7 @@ nimbleMCMC <- function(code,
     if(missing(code) && missing(model)) stop('must provide either code or model argument')
     if(!samples && !summary && !WAIC) stop('no output specified, use samples = TRUE, summary = TRUE, or WAIC = TRUE')
     if(!missing(code) && inherits(code, 'modelBaseClass')) model <- code   ## let's handle it, if model object is provided as un-named first argument to nimbleMCMC
-    Rmodel <- mcmc_createModelObject(code, constants, data, inits, dimensions, model, nchains, setSeed, check)
+    Rmodel <- mcmc_createRmodelObject(model, inits, nchains, setSeed, code, constants, data, dimensions, check)
     conf <- configureMCMC(Rmodel, monitors = monitors, thin = thin, enableWAIC = WAIC, print = FALSE)
     Rmcmc <- buildMCMC(conf)
     compiledList <- compileNimble(Rmodel, Rmcmc)    ## only one compileNimble() call
