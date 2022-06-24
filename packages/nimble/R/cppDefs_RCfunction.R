@@ -16,7 +16,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                                      nimbleIncludeFile("nimDists.h"),
                                                      nimbleIncludeFile("nimOptim.h"),
                                                      nimbleIncludeFile("nimbleCppAD.h"),
-                                                     nimbleIncludeFile("nimDerivs_TMB.h"))
+                                                     nimbleIncludeFile("nimDerivs_dists.h"))
                                      CPPincludes <<- c(CPPincludes,
                                                        '<Rmath.h>',
                                                        '<math.h>',

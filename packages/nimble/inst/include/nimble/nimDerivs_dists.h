@@ -1,32 +1,23 @@
-#ifndef _NIMDERIVS_TMB__
-#define _NIMDERIVS_TMB__
+#ifndef _NIMDERIVS_DISTS__
+#define _NIMDERIVS_DISTS__
 
 #define _USE_ATOMICS_IN_DMNORM // remove this line to turn off atomics in dmnorm
 
-// Some of the following is extracted from TMB.hpp.
-// We don't need all of what that includes, so we have
-// extracted pieces that allow the subset of TMB that we
-// need to work.
-
-// These macros follow the case that WITH_LIBTMB and TMB_PRECOMPILE are both undefined 
-#define CSKIP(x) x
-#define TMB_EXTERN
-#define IF_TMB_PRECOMPILE(x)
+// The code here benefited from studying source code of Template Model Builder(TMB).
+// In the end, there is little if any code directly used verbatim from TMB under open-source licensing.
+// Where possible we have noted pieces of code modified from TMB.
 
 #include <cppad/cppad.hpp>
 #include <R.h>
 #include <Rinternals.h>
 #include "nimDerivs_atomic_classes.h"
 //#include <cppad/utility/nan.hpp>
-//#include <TMB/atomic_math.hpp>
-// #include <TMB/atomic_macro.hpp> // loaded by atomic_math
-//#include <TMB/dnorm.hpp>
-//#include <TMB/lgamma.hpp>
-//#include <TMB/distributions_R.hpp>
 
-#include "NimArr.h" // This includes Rmath.h via Utils.h, so it must come after the TMB files.
+#include "NimArr.h" // This includes Rmath.h via Utils.h.
 
-/* discrete-round is four lines of code from TMB. */
+/* discrete-round is four lines of simple code from TMB, but I don't think we even call it. */
+/* because there was a bug using CPPAD_DISCRETE_FUNCTION from CppAD with base2ad. */
+/* That bug was fixed, but after we worked around it anyway. */
 inline double discrete_round(const double &x)
 {     
   double out_x = round(x);
@@ -34,8 +25,7 @@ inline double discrete_round(const double &x)
 }
 CPPAD_DISCRETE_FUNCTION(double, discrete_round)
 
-// Functions here connect from nimble-generated C++ to TMB code that uses CppAD.
-// TMB provides many nice distribution functions.
+// Functions here connect from nimble-generated C++ to CppAD.
 // Note that these functions are called rarely, typically once, because
 // they are only used when recording a CppAD tape of operations.  This tape
 // is then the object used to obtain derivatives of the recorded operations.
@@ -55,7 +45,6 @@ Type nimDerivs_dnorm(Type x, Type mean, Type sd, Type give_log)
   return(res);
 }
 
-/* This wraps a call to TMB's dnorm. */
 template<class Type>
 Type nimDerivs_dnorm_logFixed(Type x, Type mean, Type sd, int give_log)
 {
@@ -64,19 +53,6 @@ Type nimDerivs_dnorm_logFixed(Type x, Type mean, Type sd, int give_log)
   return(res);
 }
 
-/* pnorm: normal distribution */
-/* This wraps a call to TMB's pnorm. */ 
-/* template<class Type> */
-/* Type nimDerivs_pnorm(Type q, Type mean = 0., Type sd = 1.){ */
-/*   return nimDerivs_pnorm1<Type>((q-mean)/sd); */
-/* } */
-
-/* anorm: normal distribution */
-/* This wraps a call to TMB's qnorm. */ 
-/* template<class Type> */
-/* Type nimDerivs_qnorm(Type p, Type mean = 0., Type sd = 1.){ */
-/*   return sd * nimDerivs_qnorm1<Type>(p) + mean; */
-/* } */
 
 /* dmnorm: Multivariate normal distribution */
 template<class Type>
@@ -593,7 +569,8 @@ Type nimDerivs_nimArr_dcat_logFixed(const Type &x,
   
 /* dt: Student's t distribution */
 /* This case is modified from TMB code so that give_log can be different
-   when the tape is used from when it is recorded. */
+   when the tape is used from when it is recorded.
+   It also uses nimble's atomic for lgammafn*/
 template <class Type>
 Type nimDerivs_dt(Type x, Type df, Type give_log)
 {
@@ -602,7 +579,6 @@ Type nimDerivs_dt(Type x, Type df, Type give_log)
   return(res);
 }
 
-/* This wraps a call to TMB's dt. */
 template <class Type>
 Type nimDerivs_dt_logFixed(Type x, Type df, int give_log)
 {

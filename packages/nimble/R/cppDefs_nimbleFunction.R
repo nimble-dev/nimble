@@ -503,8 +503,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                                   ' method,  e.g. double(1, 3) for a length 3 vector.' ))
                                               },
                                               addADclassContent = function() {
-                                        # CPPincludes <<- c("<TMB/distributions_R.hpp>", CPPincludes)
-                                                  constructorCode <- NULL ## default return object
+                                                constructorCode <- NULL ## default return object
                                                 buildDerivs <- environment(nfProc$nfGenerator)$buildDerivs
 
                                                 buildNames <- names(buildDerivs)
@@ -522,7 +521,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
 
                                                 if(ADinUse) {
                                                   CPPincludes <<- c(nimbleIncludeFile("nimbleCppAD.h"),
-                                                                  nimbleIncludeFile("nimDerivs_TMB.h"), CPPincludes)
+                                                                  nimbleIncludeFile("nimDerivs_dists.h"), CPPincludes)
                                                   addInheritance("nimbleFunctionCppADbase")
                                                   addADinfoObjects(.self)
                                                 }
@@ -949,11 +948,10 @@ updateADproxyModelMethods <- function(.self) {
     functionNames <- names(.self$functionDefs)
     ADproxyModel_functionNames <- functionNames[ grepl("_ADproxyModel", functionNames ) ]
     if(length(ADproxyModel_functionNames) > 0) {
-        ## The following two headers were added to CPPincludes because nimDerives_TMB must
-        ## come before Rmath.h, so that functions like pbeta do not get re-defined Rf_pbeta,
-        ## which causes problems in TMB headers.
+        ## The following two headers were added to CPPincludes because nimDerives_dists must
+        ## come before Rmath.h
         .self$CPPincludes <- c(nimbleIncludeFile("nimbleCppAD.h"),
-                               nimbleIncludeFile("nimDerivs_TMB.h"), .self$CPPincludes)
+                               nimbleIncludeFile("nimDerivs_dists.h"), .self$CPPincludes)
     }
     for(fn in ADproxyModel_functionNames) {
         thisDef <- .self$functionDefs[[fn]]

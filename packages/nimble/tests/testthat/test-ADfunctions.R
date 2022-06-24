@@ -112,7 +112,6 @@ test_that('Derivatives of sum(log(x)) function correctly.',
           }
 )
 
-
 test_that('Derivatives of model$calculate() work in expressions.', 
           {
             testModelCode <- nimbleCode({
