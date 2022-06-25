@@ -2969,7 +2969,7 @@ nim_all_equal <- function(x, y, tolerance = .Machine$double.eps^0.5, abs_thresho
       report <- cbind(x[ord[wh]], y[ord[wh]], rel_diff[ord[wh]])
       report <- report[report[,3] > tolerance, ]
       cat("\n******************\n")
-      cat("Detected some values out of ", ifelse(abs_threshold > 0, "absolute", "relative"), " tolerance ", info, ": ", xlab, " ", ylab, ".\n")
+      cat("Detected some values out of ", ifelse(abs_threshold == 0, "relative", ""), " tolerance ", info, ": ", xlab, " ", ylab, ".\n")
       print(report)
       cat("******************\n")
     } 

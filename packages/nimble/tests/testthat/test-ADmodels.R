@@ -1695,29 +1695,64 @@ for(i in seq_along(examples)) {
 ## need to monkey with leuk and salm code, which makes it a pain to deal with directories as done above.
 
 ## leuk
-if(FALSE) {  ## currently broken, perhaps related to new args strategy for AD problematic for useFasterRderivs?
+relTolTmp <- relTol
+relTolTmp[2] <- 1e-7
+relTolTmp[3] <- 1e-5
+relTolTmp[4] <- 1e-3
 writeLines(c("var", "Y[N,T],", "dN[N,T];"), con = file.path(tempdir(), "leuk.bug"))
 system.in.dir(paste("cat leuk.bug >>", file.path(tempdir(), "leuk.bug")), dir = system.file('classic-bugs','vol1','leuk', package = 'nimble'))
 system.in.dir(paste("sed -i -e 's/step/nimStep/g'", file.path(tempdir(), "leuk.bug")))
 model <- readBUGSmodel(model = file.path(tempdir(), "leuk.bug"), data = system.file('classic-bugs','vol1','leuk','leuk-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol1','leuk','leuk-init.R', package = 'nimble'), useInits = TRUE)
 out <- model$calculate()
 newConstantNodes <- list(dN = matrix(rpois(17*42, 2), 17))
-test_ADModelCalculate(model, newConstantNodes = newConstantNodes, useParamTransform = TRUE, relTol = relTol, verbose = verbose, name = 'leuk', useFasterRderivs = TRUE)
+test_ADModelCalculate(model, newConstantNodes = newConstantNodes, useParamTransform = TRUE, relTol = relTolTmp, verbose = verbose, name = 'leuk', useFasterRderivs = TRUE, absTolThreshold = 1e-12)
 }
-## issue #348
+## 2022-06-25: Some fairly extreme 2d11 discrepancies
+## Detected some values out of tolerance   :  rOutput2d11$jacobian   cOutput2d11$jacobian .
+##            [,1]     [,2]     [,3]
+## [1,]  -59.30499  -15.001 2.953402
+## Detected some values out of tolerance   :  rOutput12$hessian   cOutput12$hessian .
+##             [,1]        [,2]         [,3]
+## [1,]  0.01189137  0.01187638 1.261831e-03
+## Detected some values out of  absolute  tolerance   :  rOutput2d11$jacobian   cOutput2d11$jacobian .
+##           [,1]        [,2]      [,3]
+## [1,] 9.9941568 -6.34527345 2.5750553
+## Detected some values out of  absolute  tolerance   :  cOutput2d$value   c(cOutput012$hessian) .
+## [1] 9.664767e-02 9.664767e-02 2.871831e-15
+
 
 ## salm: easy to have this blow up because of exponentiation unless 'gamma' (part of wrt) is quite small
-if(FALSE) {  ## currently broken, perhaps related to new args strategy for AD?
-    writeLines(c("var","logx[doses];"), con = file.path(tempdir(), "salm.bug"))
-    system.in.dir(paste("cat salm.bug >>", file.path(tempdir(), "salm.bug")), dir = system.file('classic-bugs','vol1','salm', package = 'nimble'))
-    model <- readBUGSmodel(model = file.path(tempdir(), "salm.bug"), data = system.file('classic-bugs','vol1','salm','salm-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol1','salm','salm-init.R', package = 'nimble'), useInits = TRUE)
-    model$simulate('lambda')
-    model$calculate()
-    newUpdateNodes <- list(gamma = 0.012)
-    newConstantNodes <- list(y = matrix(rpois(6*3, 2), 6))
-    xNew <- list(gamma = .012)
-    test_ADModelCalculate(model, xNew = xNew, newUpdateNodes = newUpdateNodes, newConstantNodes = newConstantNodes, useParamTransform = TRUE, relTol = relTol, verbose = verbose, name = 'salm', useFasterRderivs = TRUE)
-}
+relTolTmp <- relTol
+relTolTmp[2] <- 1e-5
+writeLines(c("var","logx[doses];"), con = file.path(tempdir(), "salm.bug"))
+system.in.dir(paste("cat salm.bug >>", file.path(tempdir(), "salm.bug")), dir = system.file('classic-bugs','vol1','salm', package = 'nimble'))
+model <- readBUGSmodel(model = file.path(tempdir(), "salm.bug"), data = system.file('classic-bugs','vol1','salm','salm-data.R', package = 'nimble'),  inits = list(tau = 0.1, alpha.star = 0.1, beta = 0.1, gamma = 0.01), useInits = TRUE)
+model$simulate('lambda')
+model$calculate()
+newUpdateNodes <- list(gamma = 0.012)
+newConstantNodes <- list(y = matrix(rpois(6*3, 2), 6))
+xNew <- list(gamma = .012)
+test_ADModelCalculate(model, xNew = xNew, newUpdateNodes = newUpdateNodes, newConstantNodes = newConstantNodes, useParamTransform = TRUE, relTol = relTolTmp, verbose = verbose, name = 'salm', useFasterRderivs = TRUE)
+## 2022-06-25: various big discrepancies:
+## Detected some values out of  relative  tolerance   :  rOutput12$hessian   cOutput12$hessian .
+##            [,1]         [,2]     [,3]
+## [1,]  0.0078125  0.003072018 1.543117
+## Detected some values out of  relative  tolerance   :  rOutput2d11$jacobian   cOutput2d11$jacobian .
+##            [,1]         [,2]      [,3]
+## [1,]   6.702698 -0.003333151 2011.9194
+## Detected some values out of  relative  tolerance   :  rOutput01$jacobian   cOutput01$jacobian .
+##            [,1]       [,2]         [,3]
+## [1,]  1.1961280  1.1932028 2.451549e-03
+## Detected some values out of  relative  tolerance   :  rOutput12$hessian   cOutput12$hessian .
+##      [,1]        [,2]     [,3]
+## [1,]  0.5 -0.03097681 17.14111
+## Detected some values out of  relative  tolerance   :  rOutput2d11$jacobian   cOutput2d11$jacobian .
+##           [,1] [,2]      [,3]
+## [1,] 1223.1194    0 1223.1194
+## Detected some values out of  relative  tolerance   :  rOutput2d11$jacobian   cOutput2d11$jacobian .
+##           [,1]         [,2]     [,3]
+## [1,] -162.6059  0.008900249 18270.82
+
 ## 2022-03-29: some large magnitude discrepancy between R and C single-taped Hessians, though relative discrepancy not much bigger than 0.001; some cases where R 2d11 hessian values not zero when true value is zero, leading to big discrepancy; some comparisons equal but not identical, couple other minor discrepancies
 
 
