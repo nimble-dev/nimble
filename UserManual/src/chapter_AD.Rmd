@@ -1,6 +1,8 @@
 ---
 title: "Draft AD chapter - to be integrated into User Manual"
 output: html_document
+bibliography: AD_references.bib
+reference-section-title: "References"
 ---
 
 ```{r setup, include=FALSE}
@@ -26,7 +28,12 @@ eval <- TRUE
 
 As of version xx.xx.xx, NIMBLE can automatically provide numerically accurate derivatives of potentially arbitrary order for most calculations in models and/or nimbleFunctions.  This feature is in beta-testing mode, meaning it has some rough edges and we expect bugs will be found.  This feature supports methods such as Hamiltonian Monte Carlo (HMC, see package nimbleHMC), Laplace approximation, and fast optimization with methods that use function gradients.
 
-Automatic (or algorithmic) differentiation (AD) refers to the method of carrying derivative information through a set of mathematical operations.   When done this way, derivatives are numerically accurate to the precision of the computer.  This is distinct from finite element methods, used by packages such as `numDeriv` and `pracma` (citations), which approximate derivatives by calculating function values at extremely nearby points. Finite element methods are slower and less accurate than AD.  It is also distinct from writing separate functions for each derivative, which can become very complicated and sometimes slower than AD.  NIMBLE uses the CppAD package (Bell, citation) as its AD engine, following TMB's  success (citation) in doing so.  CppAD supports potentially arbitrary-order derivatives.  A general reference on AD is Griewank and Walter (2008, citation).
+You can install the beta-testing version using the `remotes` package like this:
+```{r eval=FALSE}
+remotes::install_github("nimble-dev/nimble", ref="AD-rc0", subdir="packages/nimble", quiet=TRUE)
+```
+
+Automatic (or algorithmic) differentiation (AD) refers to the method of carrying derivative information through a set of mathematical operations.   When done this way, derivatives are numerically accurate to the precision of the computer.  This is distinct from finite element methods, used by packages such as `numDeriv` [@gilbert-varadhan-19] and `pracma` [@borchers-22], which approximate derivatives by calculating function values at extremely nearby points. Finite element methods are slower and less accurate than AD.  It is also distinct from writing separate functions for each derivative, which can become very complicated and sometimes slower than AD.  NIMBLE uses the CppAD package [@bell-22] as its AD engine, following TMB's success [@kristensen-etal-16] in doing so.  CppAD supports potentially arbitrary-order derivatives.  A general reference on AD is @griewank-walther-08.
 
 AD is not a simple feature in NIMBLE.  It requires care in models and nimbleFunctions, awareness of what can go wrong, and testing to be sure things are working as you want.  Calls to `compileNimble` that include AD features will result in slower C++ compilation.  That said, using a packaged AD algorithm with a model should be as simple as setting `buildDerivs=TRUE` in the model.
 
@@ -55,11 +62,11 @@ nimbleOptions(enableDerivs = TRUE)
 
 ## How to turn on derivatives in a model and use them for Hamiltonian Monte Carlo (HMC)
 
-NIMBLE's HMC sampler is provided in a separate package, nimbleHMC.  This is more flexible than some HMC implementations because HMC can be used on some parts of a model while other samplers are used on (the same or) other parts of the same model.  Indeed, the inventor of HMC discussed using it in this way (Neal, citation).
+NIMBLE's HMC sampler is provided in a separate package, nimbleHMC.  HMC is an MCMC method that works by a physical analogy of frictionless motion on a surface that is the negative log posterior density.  It often achieves good mixing, although at high computational cost.  Within `nimble`, HMC is more flexible than in some implementations because HMC can be used on some parts of a model while other samplers are used on (the same or) other parts of the same model.  Indeed, the inventor of HMC discussed using it in this way [@neal-11].
 
 NIMBLE's Laplace approximation is provided in `buildLaplace`.  An example is given below.
 
-We'll use a Poisson GLMM as a simple example model  There will be 10 groups (`i`) of 5 observations (`j`) each.  Each observation has a covariate, `X`, and each group has a random effect `ran_eff`.  Here is the model code:
+We'll use a Poisson GLMM as a simple example model.  There will be 10 groups (`i`) of 5 observations (`j`) each.  Each observation has a covariate, `X`, and each group has a random effect `ran_eff`.  Here is the model code:
 ```{r eval=TRUE}
 model_code <- nimbleCode({
   # priors 
@@ -115,7 +122,7 @@ samples <- runMCMC(CHMC, niter = 1000, nburnin = 500) # short run for illustrati
 ```
 
 We will not investigate results in detail, but here is a summary to see that reasonable results were generated.
-```{r}
+```{r eval=eval}
 summary(coda::as.mcmc(samples))
 ```
 
@@ -146,7 +153,7 @@ derivs_demo <- nimbleFunction(
 Here are some things to notice:
 
 - Having `setup` code allows the nimbleFunction to have multiple methods (i.e. to behave like a class definition in object-oriented programming).  If, as here, you don't need the `setup` to do anything, you can instead use `setup=TRUE`.
-- Any arguments to `run` that real numbers (i.e. regular double precision numbers, but not integers or logicals) will have derivatives tracked when called through `derivs`.
+- Any arguments to `run` that are real numbers (i.e. regular double precision numbers, but not integers or logicals) will have derivatives tracked when called through `derivs`.
 - The "with-respect-to" (`wrt`) argument gives indices of the arguments for which you want derivatives.  In this case, we're including all elements of `d` and `X`.  The indices form one sequence over all arguments.
 - `order` can contain any of `0` (value), `1` (1st order), or `2` (2nd order) derivatives requested.  Higher-order derivatives can be obtained by double-taping, described below.
 - Basics of `nimbleFunction` programming are covered in Chapter (ref).  These include type declarations (`double()` for scalar,  `double(1)` for vector), that `run` is just a method with a favored name, and the distinction between setup code and run code.
@@ -172,7 +179,7 @@ When a function being called for derivatives (`run` in this case) has non-scalar
 
 ### Checking derivatives with uncompiled execution
 
-Derivatives can also be calculated in uncompiled execution, but they will be much slower and less accurate: slower because they are run in R, and less accurate because they use finite element methods (from packages `pracma` and/or `numDeriv`, citations).  Uncompiled execution is mostly useful for checking that compiled derivatives are working correctly, because although they are slower and less accurate, they are also much simpler internally and thus provide good checks on compiled results.  For example:
+Derivatives can also be calculated in uncompiled execution, but they will be much slower and less accurate: slower because they are run in R, and less accurate because they use finite element methods (from packages `pracma` and/or `numDeriv`).  Uncompiled execution is mostly useful for checking that compiled derivatives are working correctly, because although they are slower and less accurate, they are also much simpler internally and thus provide good checks on compiled results.  For example:
 
 ```{r eval=eval}
 my_derivs_demo$derivsRun(d, x)
@@ -190,7 +197,7 @@ derivs_demo2 <- nimbleFunction(
   run = function(d = double(), x = double(1)) {
     ans <- numeric(length = length(x))
     for(i in 1:length(x))
-      ans[i] <- exp(d*x[i])
+      ans[i] <- exp(-d*x[i])
     return(ans)
     returnType(double(1))
   },
@@ -205,7 +212,7 @@ derivs_demo2 <- nimbleFunction(
 )
 ```
 
-We can see that it gives identical results as above, looking at the Jacobian to keep it short.
+We can see that it gives identical results as above, looking at only the Jacobian to keep the output short.
 
 ```{r eval=eval}
 my_derivs_demo2 <- derivs_demo2()
@@ -235,7 +242,7 @@ nf_sqrt <- nimbleFunction(
 derivs_demo3 <- nimbleFunction(
   setup = function() {},
   run = function(d = double(), x = double(1)) {
-    ans <- exp(d*x)
+    ans <- exp(-d*x)
     ans <- nf_sqrt(ans) 
     return(ans) 
     returnType(double(1))
@@ -264,7 +271,7 @@ Note that for a nimbleFunction without setup code, one can say `buildDerivs=TRUE
 
 ### Understanding more about how AD works:  *taping* of operations.
 
-At this point, it will be helpful to grasp more of how AD works and its implementation in nimble via the CppAD library (citation).  AD methods work by following a set of calculations multiple times, sometimes in reverse order.  
+At this point, it will be helpful to grasp more of how AD works and its implementation in nimble via the CppAD library [@bell-22].  AD methods work by following a set of calculations multiple times, sometimes in reverse order.  
 
 For example, the derivative of $y = \exp(x^2)$ can be calculated (by the chain rule of calculus) as the derivative of $y = \exp(z)$ (evaluated at $z = x^2$) times the derivative of $z = x^2$ (evaluated at $x$).  This can be calculated by first going through the sequence of steps for the value, i.e. (i) $z = x^2$, (ii) $y = \exp(z)$, and then again for the derivatives, i.e. (i) $dz = 2x (dx)$, (ii) $dy = \exp(z) dz$.  These steps determine the instantaneous change $dy$ that results from an instantaneous change $dx$.  (It may be helpful to think of both values as a function of a third variable such as $t$. Then we are determining $dy/dt$ as a function of $dx/dt$.)
 
@@ -335,7 +342,7 @@ Other important situations where you need to reset a tape are when values that a
 Specifically, you need to reset a tape when:
 
 - the extent of any for-loops change.  For-loops are not natively recorded, but rather each operation done in execution of the for-loop is recorded.  (This is sometimes called "loop unrolling".)  Therefore, in `for(i in start:end)`, the values of `start` and `end` are in effect baked into a tape.
-- conditions used for if-then-else in a nimbleFunction are changed. 
+- the outcomes of any if-then-else conditions in a nimbleFunction are changed.
 - any other member data used in calculations changes.  It is possible to create a variable in the `setup` function and use it in methods such as `run`.  Such variables become member data in the terminology of object-oriented programming.  Such variables will not have derivatives tracked if used in a function while it is being taped, so the values will be baked into the tape.  This can be useful if you understand what is happening or confusing if not.
 
 
@@ -347,7 +354,7 @@ If you are interested in measuring the performance of AD in nimble, please remem
 
 ## Advanced uses: double taping
 
-Suppose you are interested only in the Jacobian, not in the value, and want only some elements of the Jacobian. You might still need the value, but obtaining the value alone from an AD tape will be slower than obtaining it by simply calling the function. On the other hand, AD methods need to calculate the value before calculating first order derivatives, so the value will be calculated anyway.  However, in some cases, some of the steps of value calculations aren't really needed if one only wants, say, first-order derivatives.  In addition, if not all elements of the Jacobian are wanted, then some unnecessary calculations will be done internally that one might want to avoid.  
+Suppose you are interested only in the Jacobian, not in the value, and/or want only some elements of the Jacobian. You might still need the value, but obtaining the value alone from an AD tape will be slower than obtaining it by simply calling the function. On the other hand, AD methods need to calculate the value before calculating first order derivatives, so the value will be calculated anyway.  However, in some cases, some of the steps of value calculations aren't really needed if one only wants, say, first-order derivatives.  In addition, if not all elements of the Jacobian are wanted, then some unnecessary calculations will be done internally that one might want to avoid.  
 
 A way to cut out unnecessary calculations is to record a tape of a tape, which we call double taping.  Let's see an example before explaining further.
 
@@ -382,7 +389,7 @@ derivs_demo5 <- nimbleFunction(
 )
 ```
 
-What is happening in this code?  ` jacobian_run_wrt_d` is a method that returns part of the Jacobian of `run(d, x)`, specifically the first column, which contains derivatives with respect to `d`.  It happens to use AD to do it, but otherwise it is just some function with inputs `d` and `x` and a vector output.  (Arguments that are integer or logical do not have derivatives tracked.)  `derivsJacobian` calculates derivatives of ` jacobian_run_wrt_d`.  This means that the `value` returned by `derivsJacobian` will be the value of ` jacobian_run_wrt_d`, which are the first derivatives of `run` with respect to `d`.  The `jacobian` returned by `derivsJacobian` will contain second derivatives of `run` with respect to `d` and each of `d`, `x[1]`, and `x[2]`.  And the `hessian` returned by `derivsJacobian` will contain some *third* derivatives of `run`.  Notice that `buildDerivs` now includes `jacobian_run_wrt_d`.
+What is happening in this code?  ` jacobian_run_wrt_d` is a method that returns part of the Jacobian of `run(d, x)`, specifically the first column, which contains derivatives with respect to `d`.  It happens to use AD to do it, but otherwise it is just some function with inputs `d` and `x` and a vector output.  (Arguments that are integer or logical do not have derivatives tracked.)  `derivsJacobian` calculates derivatives of ` jacobian_run_wrt_d`.  This means that the `value` returned by `derivsJacobian` will be the value of ` jacobian_run_wrt_d`, which comprises the first derivatives of `run` with respect to `d`.  The `jacobian` returned by `derivsJacobian` will contain second derivatives of `run` with respect to `d` and each of `d`, `x[1]`, and `x[2]`.  And the `hessian` returned by `derivsJacobian` will contain some *third* derivatives of `run`.  Notice that `buildDerivs` now includes `jacobian_run_wrt_d`.
 
 Let's see this in use.
 
@@ -406,9 +413,9 @@ We will use the Poisson GLMM above as an example model for which we want derivat
 
 ### Method 1: `nimDerivs` of `model$calculate`
 
-Recall that `model$calculate(nodes)` returns the sum of the log probabilities of all stochastic nodes in `nodes`.  Deterministic calculations are also executed; they contribute 0 to the sum of probabilities but may be needed for inputs to subsequent calculations.  Calculations are done in the order of `nodes`, which must be a valid order for the model, often obtained from `model$getDependencies`.
+Recall that `model$calculate(nodes)` returns the sum of the log probabilities of all stochastic nodes in `nodes`.  Deterministic calculations are also executed; they contribute 0 to the sum of probabilities but may be needed for inputs to subsequent calculations.  Calculations are done in the order of `nodes`, which should be a valid order for the model, often obtained from `model$getDependencies`.
 
-The simplest way to get derivatives for model calculations is to use `model$calculate` as the function taped by `derivs` (here shown by the alias `nimDerivs` for illustration).
+The simplest way to get derivatives for model calculations is to use `model$calculate` as the function taped by `derivs` (here shown by the alias `nimDerivs` for illustration). 
 
 ```{r eval=eval}
 derivs_nf <- nimbleFunction(
@@ -647,7 +654,7 @@ Some details on what is supported include:
 - `pow(a, b)` requires positive `a` and `b`.
 - A new function `pow_int(a, b)` returns `pow(a, round(b))` and thus sets all derivatives with respect to `b` to zero.  This allows valid derivatives with respect to `a` even if it takes a negative value.
 
-For the linear algebra functions `%*%`, `chol`, `forwardsolve`, `backsolve`, and `inverse`, there are special extensions provided by NIMBLE for CppAD called (in CppAD terms) "atomics", short for derived "atomic" classes by which one can extend CppAD.  By default, these atomics will be used and often improve efficiency. They can be turned off with the set of options:
+For the linear algebra functions `%*%`, `chol`, `forwardsolve`, `backsolve`, and `inverse`, there are special extensions provided by NIMBLE for CppAD called (in CppAD terms) "atomics", short for derived "atomic" classes by which one can extend CppAD.  By default, these atomics will be used and often improve efficiency. There may be cases where they decrease efficiency, which might include when the matrix operands are small or contain many zeros.  To compare results with and without use of the atomics, they can be turned off with a set of options:
 ```{r eval=FALSE}
 nimbleOptions(useADmatMultAtomic = FALSE) # for %*%
 nimbleOptions(useADcholAtomic = FALSE)    # for chol
@@ -800,7 +807,7 @@ coef(glm_fit)
 logLik(glm_fit)
 ```
 
-We see that the coefficient for `X` matches `beta (within numerical tolerance)`, and the maximum log likelihoods match.  To understand the intercept, we need to be careful about the parameter transformation used in nimble.  The inverse transformation will give `p`, and the log of that should match the intercept estimated by `glm.`
+We see that the coefficient for `X` matches `beta` (within numerical tolerance), and the maximum log likelihoods match.  To understand the intercept, we need to be careful about the parameter transformation used in nimble.  The inverse transformation will give `p`, and the log of that should match the intercept estimated by `glm.`
 
 ```{r eval=eval}
 Cll_glm$inverse(MLE$par)
@@ -811,7 +818,7 @@ It looks like it worked.
 
 # Example: Laplace approximation
 
-In this example, we will use nimble's Laplace approximation, which uses derivatives internally, to get maximum (approximate) likelihood estimates for the GLMM model above.  Note that the Laplace approximation uses second derivatives, and the gradient of the Laplace approximation uses third derivatves.  These are described in detail by (citation).
+In this example, we will use nimble's Laplace approximation, which uses derivatives internally, to get maximum (approximate) likelihood estimates for the GLMM model above.  What Laplace approximation approximates in this context is the integral over continuous random effects needed to calculate the likelihood.  Hence, it gives an approximate likelihood -- often quite accurate -- that can be used for maximum likelihood estimation.  Note that the Laplace approximation uses second derivatives, and the gradient of the Laplace approximation uses third derivatves.  These are described in detail by @skaug-fournier-06 and @fournier-etal-12.
 
 We will create the above GLMM model anew here.
 
@@ -879,3 +886,4 @@ logLik(lme4_fit)
 ```
 
 The results match within numerical tolerance typical of optimization problems.  Specifically, the coefficients for `(Intercept)` and `X` match nimble's `Intercept` and `beta`, the random effects standard deviation for `group` matches nimble's `sigma`, and the maximum likelihood values match.`
+
