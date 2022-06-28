@@ -175,7 +175,7 @@ The i-th Jacobian row contains the first derivatives of the i-th output with res
 
  (Although it may seem inconsistent to have the output index be first for Jacobian and last for Hessian, it is consistent with some standards for how these objects are created in other packages and used mathematically.)
 
-When a function being called for derivatives (`run` in this case) has non-scalar arguments (`x` in this case), the indexing of inputs goes in order of arguments, and in column-major order within arguments.  For example, if we had arguments `x = double(1)` and `z = double(2)` (a matrix), the  inputs would be ordered as `x[1]`, `x[2]`, ..., `y[1, 1]`, `z[2, 1]`, ..., `z[1, 2]`, `z[2, 2]`, etc.
+When a function being called for derivatives (`run` in this case) has non-scalar arguments (`x` in this case), the indexing of inputs goes in order of arguments, and in column-major order within arguments.  For example, if we had arguments `x = double(1)` and `z = double(2)` (a matrix), the  inputs would be ordered as `x[1]`, `x[2]`, ..., `z[1, 1]`, `z[2, 1]`, ..., `z[1, 2]`, `z[2, 2]`, etc.
 
 ### Checking derivatives with uncompiled execution
 
@@ -254,7 +254,7 @@ derivs_demo3 <- nimbleFunction(
       returnType(ADNimbleList())
     }
   ),
-  buildDerivs = list(run = list(ignore = 'i'))
+  buildDerivs = 'run'
 )
 ```
 
