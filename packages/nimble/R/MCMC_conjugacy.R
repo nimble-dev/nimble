@@ -1136,7 +1136,9 @@ cc_makeRDistributionName     <- function(distName)     return(paste0('r', substr
 
 
 ## expands all deterministic nodes in expr, to create a single expression with only stochastic nodes
-cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpansionsNode = NULL) {
+cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpansionsNode = NULL, prevExpr = NULL) {
+    ## prevents an infinite-recursion case, where structureExpr(EXPR) is repeatedly processed, indefinitely (DT Aug 2022):
+    if(!is.null(prevExpr) && identical(expr, prevExpr)) return(expr)
     if(is.numeric(expr)) return(expr)     # return numeric
     if(is.name(expr) || (is.call(expr) && (expr[[1]] == '[') && is.name(expr[[2]]))) { # expr is a name, or an indexed name
         if(nimbleOptions()$allowDynamicIndexing) {
@@ -1168,14 +1170,8 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
                         expr[which(!numericOrVectorIndices)+2] <- varInfo$mins[!numericOrVectorIndices]
                         ## sapply business gets rid of () at end of index expression
                         newExpr <- as.call(c(cc_structureExprName, expr, sapply(indexExprs[!numericOrVectorIndices], function(x) x)))
-                        for(i in seq_along(newExpr)[-1]) {
-                            ## this check (immediately below) prevents an infinite-recursion case, where structureExpr(ORIGINAL_EXPRESSION)
-                            ## is created, and ORIGINAL_EXPRESSION is repeatedly processed, indefinitely.
-                            ## -DT Aug 2022
-                            if(!identical(expr, newExpr[[i]])) {
-                                newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansionsNode)
-                            }
-                        }
+                        for(i in seq_along(newExpr)[-1])
+                            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansionsNode, prevExpr = expr)
                         return(newExpr)
                     }
                 }  ## else continue with processing as in non-dynamic index case
@@ -1204,7 +1200,7 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
         }
         newExpr <- cc_createStructureExpr(model, exprText)
         for(i in seq_along(newExpr)[-1])
-            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansionsNode)
+            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansionsNode, prevExpr = expr)
         return(newExpr)
     }
     if(is.call(expr)) {
