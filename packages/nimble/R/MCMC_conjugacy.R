@@ -1168,8 +1168,14 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
                         expr[which(!numericOrVectorIndices)+2] <- varInfo$mins[!numericOrVectorIndices]
                         ## sapply business gets rid of () at end of index expression
                         newExpr <- as.call(c(cc_structureExprName, expr, sapply(indexExprs[!numericOrVectorIndices], function(x) x)))
-                        for(i in seq_along(newExpr)[-1])
-                            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansionsNode)
+                        for(i in seq_along(newExpr)[-1]) {
+                            ## this check (immediately below) prevents an infinite-recursion case, where structureExpr(ORIGINAL_EXPRESSION)
+                            ## is created, and ORIGINAL_EXPRESSION is repeatedly processed, indefinitely.
+                            ## -DT Aug 2022
+                            if(!identical(expr, newExpr[[i]])) {
+                                newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansionsNode)
+                            }
+                        }
                         return(newExpr)
                     }
                 }  ## else continue with processing as in non-dynamic index case
