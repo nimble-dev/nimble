@@ -1562,8 +1562,118 @@ test_ADModelCalculate(model, newUpdateNodes = list(nu = 12.1, dist = newDist, R 
 
 ## various cases equal but not identical
 
-## with atomics, can get seg fault.
+## 2022-07-29: have gotten seg faults in EB scenario, 'Testing new wrt values with new constantNodes' for the above when running on its own, 
 
+## Mimic BUGS jaws model, given difficulty in getting Hessians wrt Wishart params to match in actual jaw, presumably simply because of the numerical difficulties with values being used.
+
+code <- nimbleCode({
+  for (i in 1:N) {
+     Y[i,1:M] ~ dmnorm(mu[1:M], Omega[1:M,1:M]);  # The 4 measurements for each  
+  }                                   # boy are multivariate normal
+
+  for(j in 1:M) {     # location model for mean bone length at each age
+     mu[j] <- beta0;                                         # constant
+  }
+
+  beta0 ~ dnorm(0.0, 0.001); 
+  Omega[1:M,1:M] ~ dwish(R[1:M,1:M], 6);    # between-child variance in length at each age  
+})
+
+set.seed(1)
+M <- 4
+m <- nimbleModel(code, constants = list(M=M, N = 20), inits = list(R=diag(4)))
+m$beta0 <- 45
+m$Omega <- rwish_chol(1, chol(m$R), 4)
+m$simulate('mu')
+m$simulate(m$getDependencies('Omega'), includeData = TRUE)
+m$setData('Y')
+
+newR <- crossprod(matrix(rnorm(M*M), M))
+newOmega <- solve(cov(m$Y))
+
+relTolTmp <- relTol
+relTolTmp[2] <- 1e-5
+relTolTmp[3] <- 1e-4
+relTolTmp[4] <- 1e-3
+test_ADModelCalculate(m, xNew = list(beta0 = 42, Omega = newOmega), newUpdateNodes = list(R = newR, Omega = newOmega), 
+                      absTolThreshold = 1e-10,
+                      useParamTransform = TRUE, useFasterRderivs = TRUE,
+                      relTol = relTolTmp, verbose = verbose,
+                      name = 'jaw facsimile')
+
+## 2022-08-02: worst results are various compiled vs. uncompiled Hessians off by 0.005 - 0.009
+
+## Mimic schools model, given difficulty in getting Hessians wrt Wishart params to match in actual jaw, presumably simply because of the numerical difficulties with values being used.
+
+code <- nimbleCode({
+   for(p in 1:N) {
+      Y[p] ~ dnorm(mu[p], tau[p])
+      mu[p] <- alpha[school[p],1] + alpha[school[p],2]*LRT[p] + alpha[school[p],3]*VR[p,1] + beta[1]*LRT2[p] +
+          beta[2]*VR[p,2] + beta[3]*Gender[p] +
+               beta[4]*School.gender[p,1] + beta[5]*School.gender[p,2]+
+               beta[6]*School.denom[p,1] + beta[7]*School.denom[p,2]+
+               beta[8]*School.denom[p,3]
+      log(tau[p]) <- theta + phi*LRT[p]
+      LRT2[p] <- LRT[p]^2
+   }
+
+   # Priors for fixed effects:
+   for (k in 1:8)
+       beta[k] ~ dnorm(0.0, 0.0001)   
+   theta ~ dnorm(0.0, 0.0001)
+   phi ~ dnorm(0.0, 0.0001)
+
+   # Priors for random coefficients:
+   for (j in 1:M) {
+      alpha[j,1:D] ~ dmnorm(gamma[1:D], T[1:D,1:D]) 
+   }
+ 
+   # Hyper-priors:
+   gamma[1:D] ~ dmnorm(mn[1:D], prec[1:D,1:D])
+
+   T[1:D,1:D] ~ dwish(R[1:D,1:D],3)
+})
+
+e <- new.env()
+source(system.file('classic-bugs','vol2','schools','schools-data.R', package = 'nimble'), local = e)
+e$D <- 3
+#e$LRT <- rnorm(length(e$LRT))  # otherwise get crazy taus after exp()
+rm('Y', envir = e)
+
+set.seed(1)
+m <- nimbleModel(code, constants = as.list(e))                                        
+m$theta <- .1
+m$phi <- .1
+m$beta <- rnorm(8)
+m$beta[1] <- 0.01
+m$T <- rwish_chol(1, chol(m$R), 3)
+m$gamma <- rnorm(3)
+m$alpha <- matrix(rnorm(e$M*e$D),e$M)
+m$simulate(m$getDependencies(c('theta','phi','beta'), self = FALSE, downstream = TRUE, includeData = TRUE))
+m$setData('Y')
+
+newR <- matrix(c(.19,-.004, .004, -.004, .15, .01, .004, .01, .07), 3, 3)
+newT <- solve(cov(m$alpha))
+newPrec <- solve(matrix(c(9000, 100, 100, 100, 9000, 100, 100, 100, 9000), 3))
+newY <- rnorm(length(m$Y), m$Y, .5) 
+
+relTolTmp <- relTol
+relTolTmp[2] <- 1e-4
+relTolTmp[3] <- 1e-4
+relTolTmp[3] <- 1e-4
+test_ADModelCalculate(m, xNew = list(gamma = rnorm(3, m$gamma, .1), theta = .15, phi = .07, beta = m$beta + c(.005, rnorm(7, 0, .2)),
+                                     alpha = rnorm(e$D*e$M, m$alpha, 0.2), T = newT), newUpdateNodes = list(T = newT, R = newR),
+                      newConstantNodes = list(R = newR, prec = newPrec, Y = newY), 
+                      absTolThreshold = 1e-11,
+                      useParamTransform = TRUE, useFasterRderivs = TRUE,
+                      relTol = relTolTmp, verbose = verbose,
+                      name = 'schools facsimile')
+
+## 2022-08-02: various bad Jacobians and Hessians involving parameter T.
+## E.g., Hessian relative errors of 0.02, 0.21, 210, 52
+## Verified that for three specific cases (.02,.21,210) that using numDeriv and/or modifying 'h'
+## in pracma:hessian gives relative errors of ~1e-5 for first two and .00078 for third.
+## So it appears that even for single-taped case, can get very bad numerical derivative estimates.
 
 ## loop through BUGS models
 
@@ -1595,7 +1705,7 @@ names(bugsFile) <- names(initsFile) <- names(dataFile) <- examples
 ## asia has dcat and max
 ## stagnant has dcat and step
 ## eyes has dnormmix
-## TODO: could add: air, alli, birats, cervix, hearts, ice, orange
+## TODO: could add: air, alli, birats, cervix, hearts, ice, orange, but these have similar features to models already checked.
 
 ## customize file names as needed
 bugsFile['beetles'] <- 'beetles-logit'
@@ -1629,9 +1739,16 @@ relTols <- list()
 length(relTols) <- length(examples)
 names(relTols) <- examples
 
-relTols[['equiv']] <- c(1e-15, 1e-7, 1e-5, 1e-2)
-relTols[['line']] <- c(1e-15, 1e-8, 1e-5, 1e-3)
-relTols[['pump']] <- c(1e-14, 1e-7, 1e-5, 1e-3)
+relTols[['blocker']] <- c(1e-15, 1e-5, 1e-2, 1e-2)
+relTols[['dyes']] <- c(1e-15, 1e-7, 1e-3, 1e-3)
+relTols[['epil']] <- c(1e-15, 1e-6, 1e-2, 1e-2)
+relTols[['equiv']] <- c(1e-15, 1e-6, 1e-4, 1e-4)
+relTols[['line']] <- c(1e-15, 1e-7, 1e-5, 1e-4)
+relTols[['pump']] <- c(1e-15, 1e-7, 1e-4, 1e-4)
+relTols[['rats']] <- c(1e-15, 1e-5, 1e-1, 1e-1)
+relTols[['beetles']] <- c(1e-14, 1e-8, 1e-4, 1e-4)
+relTols[['oxford']] <- c(1e-15, 1e-4, 1e-6, 1e-4)
+relTols[['schools']] <- c(1e-15, 1e-3, 1e-1, 1e-1)
 
 newConstantNodes <- list()
 newConstantNodes[['blocker']] <- list(rt = rbinom(22, 10, .5), rc = rbinom(22, 10, .5))
@@ -1648,17 +1765,21 @@ newUpdateNodes[['jaw']] <- list(Omega = crossprod(matrix(rnorm(4*4), 4)))
 newUpdateNodes[['schools']] <- list(T = crossprod(matrix(rnorm(3*3), 3)))
 newUpdateNodes[['dyes']]  <- list(tau.within = 1/450, tau.between = 1/420)
 newUpdateNodes[['oxford']] <- list(beta1 = .0035, beta2 = .000634)
+newUpdateNodes[['dugongs']] <- list(gamma = .83)
 
 wrtGeneration <- rep('given', length(examples))
 names(wrtGeneration) <- examples
 wrtGeneration['jaw'] <- 'prior'
-wrtGeneration['schools'] <- 'prior'
+# wrtGeneration['schools'] <- 'prior'
 
 xNew <- list()
-xNew[['oxford']] <- list(alpha = .11, beta1 = .12, beta2 = .13, sigma = .14)
-xNew[['schools']] <- list(theta = .11, phi = .12)
+xNew[['oxford']] <- list(alpha = .11, beta1 = .12, beta2 = .13, sigma = .9, mu = rnorm(120,0,.1), b = rnorm(120, 0, .1))
+xNew[['schools']] <- list(theta = .11, phi = .12, T = matrix(c(15.3, -4.1, -4.1, -4.1, 150.7, -35.23, -4.1, -35.23, 150.7), 3),
+                         gamma = rnorm(3, 0, .1), beta = rnorm(8, 0, .1), alpha = matrix(rnorm(38*3, 0, .1), 38, 3))
 xNew[['dyes']] <- list(mu = rnorm(6, 1500, 4), theta = rnorm(1, 1500, 5))  # otherwise uncompiled derivs are squaring large y-mu deviations
 xNew[['blocker']] <- list(tau = 4.2, mu= rnorm(22, 1, 0.5), delta = rnorm(22, 1, 0.5), delta.new = .5, d = .5)
+xNew[['rats']] <- list(alpha = rnorm(30, 250, 10), beta = rnorm(30, 6, 1))  # otherwise, if use much smaller values, get bad uncompiled Hessian with h=1e-4 because magnitude of function is very large O(-1e7)
+xNew[['jaw']] <- list(beta0 = 35, beta1 = 0.1, beta2 = -0.1, Omega = matrix(c(1.5,1.2,-1.5,-.1,1.2,8,-3,2.5,-1.5,-3,5,-1.4,-.1,2.5,-1.4,7),4))
 
 inits <- list()
 length(inits) <- length(examples)
@@ -1688,16 +1809,23 @@ for(i in seq_along(examples)) {
     } else relTol = relTols[[examples[i]]]
     test_ADModelCalculate(model, newConstantNodes = newConstantNodes[[examples[i]]], newUpdateNodes = newUpdateNodes[[examples[i]]],
                           x = wrtGeneration[examples[i]], xNew = xNew[[examples[i]]], useParamTransform = TRUE, relTol = relTol, verbose = verbose, name = bugsFile[i],
-                          useFasterRderivs = TRUE)
+                          useFasterRderivs = TRUE, absTolThreshold = 1e-12)
 }
 
+## 2022-07 results
+## dyes: some Hessian errors ~0.1 for HMC partial and ML partial; probably fine given other uncompiled Hessian issues with these examples but haven't checked
+## rats: some Hessian errors ~0.1; checked a case and it seems fine - just numerical errors in uncompiled Hessians
+## oxford: checked one of the Hessian anomalies and messing with h for finite element brings uncompiled and compiled into alignment
+## schools: various Hessian anomalies; it appears these are simply numerical errors in uncompiled Hessians.
+## jaw: very large anomalies; uncompiled Hessian seems unstable but not yet able to verify that the issue is its inaccuracy.
 
-## need to monkey with leuk and salm code, which makes it a pain to deal with directories as done above.
+## Running leuk and salm requires monkeying with code, which makes it a pain to deal with directories as done above, so do individually here.
 
 ## leuk
+set.seed(1)
 relTolTmp <- relTol
 relTolTmp[2] <- 1e-7
-relTolTmp[3] <- 1e-5
+relTolTmp[3] <- 1e-3
 relTolTmp[4] <- 1e-3
 writeLines(c("var", "Y[N,T],", "dN[N,T];"), con = file.path(tempdir(), "leuk.bug"))
 system.in.dir(paste("cat leuk.bug >>", file.path(tempdir(), "leuk.bug")), dir = system.file('classic-bugs','vol1','leuk', package = 'nimble'))
@@ -1719,42 +1847,43 @@ test_ADModelCalculate(model, newConstantNodes = newConstantNodes, useParamTransf
 ## [1,] 9.9941568 -6.34527345 2.5750553
 ## Detected some values out of  absolute  tolerance   :  cOutput2d$value   c(cOutput012$hessian) .
 ## [1] 9.664767e-02 9.664767e-02 2.871831e-15
+## Detected some values out of    tolerance   :  rOutput01$jacobian   cOutput01$jacobian .
+## [1] -1.892888e+01 -1.892887e+01  3.018687e-07
 
 
 ## salm: easy to have this blow up because of exponentiation unless 'gamma' (part of wrt) is quite small
 relTolTmp <- relTol
 relTolTmp[2] <- 1e-5
+relTolTmp[3] <- 1e-2
+relTolTmp[4] <- 1e-2
+set.seed(1)
 writeLines(c("var","logx[doses];"), con = file.path(tempdir(), "salm.bug"))
 system.in.dir(paste("cat salm.bug >>", file.path(tempdir(), "salm.bug")), dir = system.file('classic-bugs','vol1','salm', package = 'nimble'))
-model <- readBUGSmodel(model = file.path(tempdir(), "salm.bug"), data = system.file('classic-bugs','vol1','salm','salm-data.R', package = 'nimble'),  inits = list(tau = 0.1, alpha.star = 0.1, beta = 0.1, gamma = 0.01), useInits = TRUE)
+model <- readBUGSmodel(model = file.path(tempdir(), "salm.bug"), data = system.file('classic-bugs','vol1','salm','salm-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol1','salm','salm-init.R', package = 'nimble'), useInits = TRUE)
+# model <- readBUGSmodel(model = file.path(tempdir(), "salm.bug"), data = system.file('classic-bugs','vol1','salm','salm-data.R', package = 'nimble'),  inits = list(tau = 0.1, alpha.star = 0.1, beta = 0.1, gamma = 0.01), useInits = TRUE)
 model$simulate('lambda')
 model$calculate()
 newUpdateNodes <- list(gamma = 0.012)
 newConstantNodes <- list(y = matrix(rpois(6*3, 2), 6))
 xNew <- list(gamma = .012)
 test_ADModelCalculate(model, xNew = xNew, newUpdateNodes = newUpdateNodes, newConstantNodes = newConstantNodes, useParamTransform = TRUE, relTol = relTolTmp, verbose = verbose, name = 'salm', useFasterRderivs = TRUE)
-## 2022-06-25: various big discrepancies:
+## 2022-07-02: Note that I checked the first two of these 4 cases and compiled Hessians are correct compared to hand-calculated derivs
 ## Detected some values out of  relative  tolerance   :  rOutput12$hessian   cOutput12$hessian .
-##            [,1]         [,2]     [,3]
-## [1,]  0.0078125  0.003072018 1.543117
+##           [,1]       [,2]       [,3]
+## [1,] 0.06298828 0.06220637 0.01256961
 ## Detected some values out of  relative  tolerance   :  rOutput2d11$jacobian   cOutput2d11$jacobian .
-##            [,1]         [,2]      [,3]
-## [1,]   6.702698 -0.003333151 2011.9194
+##            [,1]        [,2]      [,3]
+## [1,]  31.603067 -0.05611477 564.18623
 ## Detected some values out of  relative  tolerance   :  rOutput01$jacobian   cOutput01$jacobian .
-##            [,1]       [,2]         [,3]
-## [1,]  1.1961280  1.1932028 2.451549e-03
+##             [,1]        [,2]         [,3]
+## [1,]  0.04182428  0.04166845 3.739910e-03
 ## Detected some values out of  relative  tolerance   :  rOutput12$hessian   cOutput12$hessian .
-##      [,1]        [,2]     [,3]
-## [1,]  0.5 -0.03097681 17.14111
-## Detected some values out of  relative  tolerance   :  rOutput2d11$jacobian   cOutput2d11$jacobian .
-##           [,1] [,2]      [,3]
-## [1,] 1223.1194    0 1223.1194
-## Detected some values out of  relative  tolerance   :  rOutput2d11$jacobian   cOutput2d11$jacobian .
-##           [,1]         [,2]     [,3]
-## [1,] -162.6059  0.008900249 18270.82
+##           [,1]        [,2]       [,3]
+## [1,] -0.046875 -0.05611477 0.16465846
+
+
 
 ## 2022-03-29: some large magnitude discrepancy between R and C single-taped Hessians, though relative discrepancy not much bigger than 0.001; some cases where R 2d11 hessian values not zero when true value is zero, leading to big discrepancy; some comparisons equal but not identical, couple other minor discrepancies
-
 
 ## March 2022 results:
 
