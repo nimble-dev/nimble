@@ -378,7 +378,8 @@ nodes: An optional character vector supplying a subset of nodes for which to ext
                                   getNodeNames = function(determOnly = FALSE, stochOnly = FALSE,
                                                           includeData = TRUE, dataOnly = FALSE, includeRHSonly = FALSE,
                                                           topOnly = FALSE, latentOnly = FALSE, endOnly = FALSE,
-                                                          posteriorPredOnly = FALSE, posteriorPredBranchOnly = FALSE,
+                                                          includePosteriorPred = TRUE, posteriorPredOnly = FALSE,
+                                                          includePosteriorPredBranch = TRUE, posteriorPredBranchOnly = FALSE,
                                                           returnType = 'names', returnScalarComponents = FALSE) {
                                       '
 Returns a character vector of all node names in the model, in topologically sorted order.  A variety of logical arguments allow for flexible subsetting of all model nodes.
@@ -401,7 +402,11 @@ latentOnly: Logical argument specifying whether to return only latent (mid-level
 
 endOnly: Logical argument specifying whether to return only end nodes from the hierarchical model structure.
 
+includePosteriorPred: Logical argument specifying whether to include posterior predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data) from the hierarchical model structure.
+
 posteriorPredOnly: Logical argument specifying whether to return only posterior predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data) from the hierarchical model structure.
+
+includePosteriorPredBranch: Logical argument specifying whether to include posterior predictive branch nodes (the branch points in the model, for which themselves and all downstream nodes are posterior predictive nodes) from the hierarchical model structure.
 
 posteriorPredBranchOnly: Logical argument specifying whether to return only posterior predictive branch nodes (the branch points in the model, for which themselves and all downstream nodes are posterior predictive nodes) from the hierarchical model structure.
 
@@ -434,11 +439,13 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                           if(dataOnly)                  validValues[!boolIsData] <- FALSE
                                       }
                                       
-                                      if(posteriorPredOnly)             validValues <- safeUpdateValidValuesVector(validValues, postPredNodeIDs)
-                                      if(posteriorPredBranchOnly)       validValues <- safeUpdateValidValuesVector(validValues, postPredBranchNodeIDs)
-                                      if(topOnly)                       validValues <- safeUpdateValidValuesVector(validValues, modelDef$maps$top_IDs)
-                                      if(latentOnly)                    validValues <- safeUpdateValidValuesVector(validValues, modelDef$maps$latent_IDs)
-                                      if(endOnly)                       validValues <- safeUpdateValidValuesVector(validValues, modelDef$maps$end_IDs)
+                                      if(!includePosteriorPred)         validValues <- safeUpdateValidValues(validValues, idsVec_exclude = postPredNodeIDs)
+                                      if(posteriorPredOnly)             validValues <- safeUpdateValidValues(validValues, idsVec_only    = postPredNodeIDs)
+                                      if(!includePosteriorPredBranch)   validValues <- safeUpdateValidValues(validValues, idsVec_exclude = postPredBranchNodeIDs)
+                                      if(posteriorPredBranchOnly)       validValues <- safeUpdateValidValues(validValues, idsVec_only    = postPredBranchNodeIDs)
+                                      if(topOnly)                       validValues <- safeUpdateValidValues(validValues, idsVec_only = modelDef$maps$top_IDs)
+                                      if(latentOnly)                    validValues <- safeUpdateValidValues(validValues, idsVec_only = modelDef$maps$latent_IDs)
+                                      if(endOnly)                       validValues <- safeUpdateValidValues(validValues, idsVec_only = modelDef$maps$end_IDs)
 
                                       ## Part of fix for Issue #340.
                                       ## In general the flow of model/node querying functions sometimes flips between IDs and names multiple times
@@ -461,10 +468,16 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                       }
                                       return(ans)
                                   },
-                                  safeUpdateValidValuesVector = function(validValues, IDvectorToNegate) {
-                                      if(length(IDvectorToNegate) == 0) {
-                                          validValues <- rep(FALSE, length(validValues))
-                                      } else   validValues[-IDvectorToNegate] <- FALSE
+                                  safeUpdateValidValues = function(validValues, idsVec_only, idsVec_exclude) {
+                                      if(!missing(idsVec_only) && !missing(idsVec_exclude)) stop()
+                                      if(!missing(idsVec_only)) {
+                                          if(length(idsVec_only) == 0) {
+                                              validValues <- rep(FALSE, length(validValues))
+                                          } else   validValues[-idsVec_only] <- FALSE
+                                      }
+                                      if(!missing(idsVec_exclude)) {
+                                          if(length(idsVec_exclude) > 0)   validValues[idsVec_exclude] <- FALSE
+                                      }
                                       return(validValues)
                                   },
 expandNodeNamesFromGraphIDs = function(graphID, returnScalarComponents = FALSE, returnType = 'names', sort = FALSE) {
@@ -919,7 +932,8 @@ Return value: List of nodes that are in conditionally independent sets.  Within 
                                   getDependencies = function(nodes, omit = character(), self = TRUE,
                                       determOnly = FALSE, stochOnly = FALSE,
                                       includeData = TRUE, dataOnly = FALSE,
-                                      posteriorPredOnly = FALSE, posteriorPredBranchOnly = FALSE,
+                                      includePosteriorPred = TRUE, posteriorPredOnly = FALSE,
+                                      includePosteriorPredBranch = TRUE, posteriorPredBranchOnly = FALSE,
                                       includeRHSonly = FALSE, downstream = FALSE,
                                       returnType = 'names', returnScalarComponents = FALSE) {
 '
@@ -941,7 +955,11 @@ includeData: Logical argument specifying whether to include \'data\' nodes (set 
 
 dataOnly: Logical argument specifying whether to return only \'data\' nodes.  Default is FALSE.
 
+includePosteriorPred: Logical argument specifying whether to include posterior predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data).  Default is TRUE.
+
 posteriorPredOnly: Logical argument specifying whether to return only posterior predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data).  Default is FALSE.
+
+includePosteriorPredBranch: Logical argument specifying whether to include posterior predictive branch nodes (the branch points in the model, for which themselves and all downstream nodes are posterior predictive nodes).  Default is TRUE.
 
 posteriorPredBranchOnly: Logical argument specifying whether to return only posterior predictive branch nodes (the branch points in the model, for which themselves and all downstream nodes are posterior predictive nodes).  Default is FALSE.
 
@@ -992,9 +1010,10 @@ depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(i
                                       }
                                       if(!includeData)       depIDs <- depIDs[!isDataFromGraphID(depIDs)]
                                       if(dataOnly)           depIDs <- depIDs[isDataFromGraphID(depIDs)]
+                                      if(!includePosteriorPred)    depIDs <- setdiff(  depIDS, postPredNodeIDs)
                                       if(posteriorPredOnly)        depIDs <- intersect(depIDS, postPredNodeIDs)
-                                      if(posteriorPredBranchOnly)  depIDs <- intersect(depIDS, postPredBranchNodeIDs)
-
+                                      if(!includePosteriorPredBranch)  depIDs <- setdiff(  depIDS, postPredBranchNodeIDs)
+                                      if(posteriorPredBranchOnly)      depIDs <- intersect(depIDS, postPredBranchNodeIDs)
 
                                       depIDs <- modelDef$nodeName2GraphIDs(modelDef$maps$graphID_2_nodeName[depIDs], !returnScalarComponents)
                                       if(returnScalarComponents)
