@@ -919,6 +919,7 @@ Return value: List of nodes that are in conditionally independent sets.  Within 
                                   getDependencies = function(nodes, omit = character(), self = TRUE,
                                       determOnly = FALSE, stochOnly = FALSE,
                                       includeData = TRUE, dataOnly = FALSE,
+                                      posteriorPredOnly = FALSE, posteriorPredBranchOnly = FALSE,
                                       includeRHSonly = FALSE, downstream = FALSE,
                                       returnType = 'names', returnScalarComponents = FALSE) {
 '
@@ -939,6 +940,10 @@ stochOnly: Logical argument specifying whether to return only stochastic nodes. 
 includeData: Logical argument specifying whether to include \'data\' nodes (set via nimbleModel or the setData method).  Default is TRUE.
 
 dataOnly: Logical argument specifying whether to return only \'data\' nodes.  Default is FALSE.
+
+posteriorPredOnly: Logical argument specifying whether to return only posterior predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data).  Default is FALSE.
+
+posteriorPredBranchOnly: Logical argument specifying whether to return only posterior predictive branch nodes (the branch points in the model, for which themselves and all downstream nodes are posterior predictive nodes).  Default is FALSE.
 
 includeRHSonly: Logical argument specifying whether to include right-hand-side-only nodes (model nodes which never appear on the left-hand-side of ~ or <- in the model code).  These nodes are neither stochastic nor deterministic, but instead function as variable inputs to the model.  Default is FALSE.
 
@@ -971,7 +976,7 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       else if(is.numeric(omit))
                                           omitIDs <- omit
 ## Go into C++
- depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(is.null(omitIDs)) integer() else omitIDs, downstream = downstream)
+depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(is.null(omitIDs)) integer() else omitIDs, downstream = downstream)
 ## ## Uncomment these lines to catch discrepancies between the C++ and R systems.
 ## depIDs <- nimble:::gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(all = TRUE), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
 ## if(!identical(as.numeric(depIDsOld), as.numeric(depIDs))) {
@@ -981,12 +986,15 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       if(!includeRHSonly) depIDs <- depIDs[modelDef$maps$types[depIDs] != 'RHSonly']
                                       if(determOnly)	depIDs <- depIDs[modelDef$maps$types[depIDs] == 'determ']
                                       if(stochOnly)	depIDs <- depIDs[modelDef$maps$types[depIDs] == 'stoch']
-if(!self)	{
-    nodeFunIDs <- unique(modelDef$maps$vertexID_2_nodeID[ nodeIDs ])
-    depIDs <- setdiff(depIDs, nodeFunIDs)
-}
-                                      if(!includeData)	depIDs <- depIDs[!isDataFromGraphID(depIDs)]
-                                      if(dataOnly)		depIDs <- depIDs[isDataFromGraphID(depIDs)]
+                                      if(!self) {
+                                          nodeFunIDs <- unique(modelDef$maps$vertexID_2_nodeID[ nodeIDs ])
+                                          depIDs <- setdiff(depIDs, nodeFunIDs)
+                                      }
+                                      if(!includeData)       depIDs <- depIDs[!isDataFromGraphID(depIDs)]
+                                      if(dataOnly)           depIDs <- depIDs[isDataFromGraphID(depIDs)]
+                                      if(posteriorPredOnly)        depIDs <- intersect(depIDS, postPredNodeIDs)
+                                      if(posteriorPredBranchOnly)  depIDs <- intersect(depIDS, postPredBranchNodeIDs)
+
 
                                       depIDs <- modelDef$nodeName2GraphIDs(modelDef$maps$graphID_2_nodeName[depIDs], !returnScalarComponents)
                                       if(returnScalarComponents)
