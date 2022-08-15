@@ -1013,10 +1013,10 @@ depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(i
                                       }
                                       if(!includeData)       depIDs <- depIDs[!isDataFromGraphID(depIDs)]
                                       if(dataOnly)           depIDs <- depIDs[isDataFromGraphID(depIDs)]
-                                      if(!includePosteriorPred)    depIDs <- setdiff(  depIDS, postPredNodeIDs)
-                                      if(posteriorPredOnly)        depIDs <- intersect(depIDS, postPredNodeIDs)
-                                      if(!includePosteriorPredBranch)  depIDs <- setdiff(  depIDS, postPredBranchNodeIDs)
-                                      if(posteriorPredBranchOnly)      depIDs <- intersect(depIDS, postPredBranchNodeIDs)
+                                      if(!includePosteriorPred)    depIDs <- setdiff(  depIDs, postPredNodeIDs)
+                                      if(posteriorPredOnly)        depIDs <- intersect(depIDs, postPredNodeIDs)
+                                      if(!includePosteriorPredBranch)  depIDs <- setdiff(  depIDs, postPredBranchNodeIDs)
+                                      if(posteriorPredBranchOnly)      depIDs <- intersect(depIDs, postPredBranchNodeIDs)
 
                                       depIDs <- modelDef$nodeName2GraphIDs(modelDef$maps$graphID_2_nodeName[depIDs], !returnScalarComponents)
                                       if(returnScalarComponents)
