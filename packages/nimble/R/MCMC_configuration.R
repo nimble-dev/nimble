@@ -209,49 +209,28 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                 isEndNode <- model$isEndNode(nodes)
                 if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
             } else {
-                ## determine node branch points of any trailing model branches of entirely non-data nodes.
-                ## call these posterior predictive branch nodes - they'll get a posterior_predictive_branch sampler.
                 ## convert to node IDs:
                 nodeIDs <- model$expandNodeNames(nodes, returnType = 'ids')
                 nodeIDsOrig <- nodeIDs
+                ## determine which posterior predictive branch nodes should be sampled,
+                ## those for which the entire branch (including the branch node) were going to be sampled.
+                ## also need to update nodeIDs to remove the other nodes deeper within the branch
                 posteriorPredictiveBranchNodes <- character()
-                anyPPnodes <- any(model$isEndNode(model$getNodeNames(stochOnly = TRUE, includeData = FALSE)))
-                ## DT: decided I didn't like this additional output message below;
-                ##     this isn't the nimbleModel() function, afterall.
-                ##if(!getNimbleOption('MCMCjointlySamplePredictiveBranches') & anyPPnodes) {
-                ##    message('Detected presense of posterior predictive model nodes.  If many predictive nodes exist in a trailing jointly posterior predictive network, then MCMC sampling of these posterior predictive nodes may be improved by enabling the NIMBLE package option \'MCMCjointlySamplePredictiveBranches\' prior to configuring the MCMC algorithm.')
-                ##}
-                if(getNimbleOption('MCMCjointlySamplePredictiveBranches') & anyPPnodes) {
-                    stochNonDataIDs <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE, returnType = 'ids')
-                    ## all potential (candidate) posterior predictive branch nodes:
-                    candidateNodeIDs <- stochNonDataIDs[!model$isEndNode(stochNonDataIDs)]
-                    dataNodeIDs <- model$getNodeNames(dataOnly = TRUE, returnType = 'ids')
-                    dataNodeParentIDs <- model$expandNodeNames(model$getParents(dataNodeIDs, stochOnly = TRUE), returnType = 'ids')
-                    ## remove from candidate nodes all direct parents of data nodes:
-                    candidateNodeIDs <- setdiff(candidateNodeIDs, dataNodeParentIDs)
-                    nCandidate <- length(candidateNodeIDs)
-                    nextCandInd <- 1
-                    posteriorPredictiveBranchNodeIDs <- numeric()
-                    while(nextCandInd <= nCandidate) {
-                        thisCandNodeID <- as.numeric(candidateNodeIDs[nextCandInd])
-                        stochDownstreamNoSelfIDs <- model$getDependencies(thisCandNodeID, self = FALSE, stochOnly = TRUE, downstream = TRUE, returnType = 'ids')
-                        ## skip candidate nodes that have any downstream data nodes:
-                        if(length(intersect(stochDownstreamNoSelfIDs, dataNodeIDs)) > 0)   { nextCandInd <- nextCandInd + 1;   next }
-                        ## skip candidate nodes for which the entire resulting branch wasn't going to be sampled:
-                        if(!all(c(thisCandNodeID, stochDownstreamNoSelfIDs) %in% nodeIDsOrig))   { nextCandInd <- nextCandInd + 1;   next }
-                        ## found a posterior predictive branch node:
-                        posteriorPredictiveBranchNodeIDs <- c(posteriorPredictiveBranchNodeIDs, thisCandNodeID)
+                if(getNimbleOption('MCMCjointlySamplePredictiveBranches')) {
+                    postPredBranchNodeIDs <- model$getPostPredBranchNodeIDs()
+                    postPredBranchNodeIDsToSample <- numeric()
+                    for(branchNodeID in postPredBranchNodeIDs) {
+                        branchNodeDownstreamNoSelfIDs <- model$getDependencies(branchNodeID, self = FALSE, stochOnly = TRUE, downstream = TRUE, returnType = 'ids')
+                        ## skip branch nodes for which the entire resulting branch wasn't going to be sampled:
+                        if(!all(c(branchNodeID, branchNodeDownstreamNoSelfIDs) %in% nodeIDsOrig))   next
+                        ## found a posterior predictive branch node to sample:
+                        postPredBranchNodeIDsToSample <- c(postPredBranchNodeIDsToSample, branchNodeID)
                         ## remove stochastic nodes which are within this branch from the nodeIDs to be assigned samplers:
-                        nodeIDs <- setdiff(nodeIDs, stochDownstreamNoSelfIDs)
-                        ## update candidateNodeIDs, removing downstream stochastic dependencies of this branch node from the candidate set:
-                        candidateNodeIDs <- candidateNodeIDs[-(1:nextCandInd)]
-                        candidateNodeIDs <- setdiff(candidateNodeIDs, stochDownstreamNoSelfIDs)
-                        nCandidate <- length(candidateNodeIDs)
-                        nextCandInd <- 1
+                        nodeIDs <- setdiff(nodeIDs, branchNodeDownstreamNoSelfIDs)
                     }
                     ## convert back to node names:
-                    nodes <- model$expandNodeNamesFromGraphIDs(nodeIDs)
-                    posteriorPredictiveBranchNodes <- model$expandNodeNamesFromGraphIDs(posteriorPredictiveBranchNodeIDs)
+                    nodes <- model$modelDef$maps$graphID_2_nodeName[nodeIDs]
+                    posteriorPredictiveBranchNodes <- model$modelDef$maps$graphID_2_nodeName[postPredBranchNodeIDsToSample]
                 }
                 isEndNode <-  model$isEndNode(nodeIDs) ## isEndNode can be modified later to avoid adding names when input is IDs
                 if(useConjugacy) conjugacyResultsAll <- nimble:::conjugacyRelationshipsObject$checkConjugacy(model, nodeIDs) ## Later, this can go through model$checkConjugacy if we make it check whether nodes are already nodeIDs.  To isolate changes, I am doing it directly here.
