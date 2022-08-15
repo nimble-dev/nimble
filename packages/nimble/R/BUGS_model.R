@@ -462,9 +462,10 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                       return(ans)
                                   },
                                   safeUpdateValidValuesVector = function(validValues, IDvectorToNegate) {
-                                      if(!length(IDvectorToNegate))  # vector of IDs has length = 0
-                                          newValidValues <- rep(FALSE, length(validValues)) else validValues[-IDvectorToNegate] <- FALSE
-                                      return(newValidValues)
+                                      if(length(IDvectorToNegate) == 0) {
+                                          validValues <- rep(FALSE, length(validValues))
+                                      } else   validValues[-IDvectorToNegate] <- FALSE
+                                      return(validValues)
                                   },
 expandNodeNamesFromGraphIDs = function(graphID, returnScalarComponents = FALSE, returnType = 'names', sort = FALSE) {
     if(length(graphID)==0) return(if(returnType=='names') character() else numeric())
