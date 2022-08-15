@@ -378,6 +378,7 @@ nodes: An optional character vector supplying a subset of nodes for which to ext
                                   getNodeNames = function(determOnly = FALSE, stochOnly = FALSE,
                                                           includeData = TRUE, dataOnly = FALSE, includeRHSonly = FALSE,
                                                           topOnly = FALSE, latentOnly = FALSE, endOnly = FALSE,
+                                                          posteriorPredOnly = FALSE, posteriorPredBranchOnly = FALSE,
                                                           returnType = 'names', returnScalarComponents = FALSE) {
                                       '
 Returns a character vector of all node names in the model, in topologically sorted order.  A variety of logical arguments allow for flexible subsetting of all model nodes.
@@ -400,6 +401,10 @@ latentOnly: Logical argument specifying whether to return only latent (mid-level
 
 endOnly: Logical argument specifying whether to return only end nodes from the hierarchical model structure.
 
+posteriorPredOnly: Logical argument specifying whether to return only posterior predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data) from the hierarchical model structure.
+
+posteriorPredBranchOnly: Logical argument specifying whether to return only posterior predictive branch nodes (the branch points in the model, for which themselves and all downstream nodes are posterior predictive nodes) from the hierarchical model structure.
+
 returnType: Character argument specific type object returned. Options are \'names\' (returns character vector) and \'ids\' (returns numeric graph IDs for model)
 
 returnScalar Componenets: Logical argument specifying whether multivariate nodes should return full node name (i.e. \'x[1:2]\') or should break down into scalar componenets (i.e. \'x[1]\' and \'x[2]\')
@@ -417,24 +422,23 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                       ## validValues is a boolean vector aligned with modelDef$maps$nodesNames and allied vectors
                                       validValues <- modelDef$maps$types != "LHSinferred"
                                       ## Apply a series of filters of what can be included
-                                      if(!includeRHSonly)		validValues[modelDef$maps$types == 'RHSonly'] <- FALSE
-                                      if(determOnly)			validValues[modelDef$maps$types != 'determ']	<- FALSE
-                                      if(stochOnly)			validValues[modelDef$maps$types != 'stoch']	<- FALSE
+                                      if(!includeRHSonly)               validValues[modelDef$maps$types == 'RHSonly'] <- FALSE
+                                      if(determOnly)                    validValues[modelDef$maps$types != 'determ']  <- FALSE
+                                      if(stochOnly)                     validValues[modelDef$maps$types != 'stoch']   <- FALSE
 
                                       if(!includeData | dataOnly) {
                                           boolIsData <- rep(FALSE, length(modelDef$maps$graphIDs))
                                           possibleDataIDs <- modelDef$maps$graphIDs[modelDef$maps$types == 'RHSonly' | modelDef$maps$types == 'stoch']
                                           boolIsData[possibleDataIDs] <- isDataFromGraphID(possibleDataIDs)
-                                          
-                                          if(!includeData)		        validValues[boolIsData] <- FALSE
-                                          if(dataOnly)			validValues[!boolIsData] <- FALSE
+                                          if(!includeData)              validValues[boolIsData]  <- FALSE
+                                          if(dataOnly)                  validValues[!boolIsData] <- FALSE
                                       }
-                                      if(topOnly)			validValues[-modelDef$maps$top_IDs] <- FALSE
-                                      if(latentOnly) {
-                                          if(!length(modelDef$maps$latent_IDs))  # no latents
-                                              validValues <- rep(FALSE, length(validValues)) else validValues[-modelDef$maps$latent_IDs] <- FALSE
-                                      }
-                                      if(endOnly)				validValues[-modelDef$maps$end_IDs] <- FALSE
+                                      
+                                      if(posteriorPredOnly)             validValues <- safeUpdateValidValuesVector(validValues, postPredNodeIDs)
+                                      if(posteriorPredBranchOnly)       validValues <- safeUpdateValidValuesVector(validValues, postPredBranchNodeIDs)
+                                      if(topOnly)                       validValues <- safeUpdateValidValuesVector(validValues, modelDef$maps$top_IDs)
+                                      if(latentOnly)                    validValues <- safeUpdateValidValuesVector(validValues, modelDef$maps$latent_IDs)
+                                      if(endOnly)                       validValues <- safeUpdateValidValuesVector(validValues, modelDef$maps$end_IDs)
 
                                       ## Part of fix for Issue #340.
                                       ## In general the flow of model/node querying functions sometimes flips between IDs and names multiple times
@@ -456,6 +460,11 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                                                  returnType = returnType)
                                       }
                                       return(ans)
+                                  },
+                                  safeUpdateValidValuesVector = function(validValues, IDvectorToNegate) {
+                                      if(!length(IDvectorToNegate))  # vector of IDs has length = 0
+                                          newValidValues <- rep(FALSE, length(validValues)) else validValues[-IDvectorToNegate] <- FALSE
+                                      return(newValidValues)
                                   },
 expandNodeNamesFromGraphIDs = function(graphID, returnScalarComponents = FALSE, returnType = 'names', sort = FALSE) {
     if(length(graphID)==0) return(if(returnType=='names') character() else numeric())
