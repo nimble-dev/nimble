@@ -658,7 +658,10 @@ Details: If a provided value (or the current value in the model when only a name
                                       stochNonDataIDs <- getNodeNames(stochOnly = TRUE, includeData = FALSE, returnType = 'ids')
                                       anyPPnodes <- any(isEndNode(stochNonDataIDs))
                                       if(anyPPnodes) {
-                                          ## all potential (candidate) posterior predictive branch nodes:
+                                          ## for starters, all stochNonData nodes, which are end nodes, are posterior predictive nodes
+                                          ## (these don't get included, otherwise):
+                                          posteriorPredictiveNodeIDs <- stochNonDataIDs[isEndNode(stochNonDataIDs)]
+                                          ## now, find all potential (candidate) posterior predictive branch nodes:
                                           candidateBranchNodeIDs <- stochNonDataIDs[!isEndNode(stochNonDataIDs)]
                                           dataNodeIDs <- getNodeNames(dataOnly = TRUE, returnType = 'ids')
                                           dataNodeParentIDs <- expandNodeNames(getParents(dataNodeIDs, stochOnly = TRUE), returnType = 'ids')
