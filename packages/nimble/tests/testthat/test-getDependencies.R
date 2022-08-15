@@ -385,6 +385,94 @@ test_that("getConditionallyIndependentSets works for tweaked pump model", {
                         'theta[7]', 'theta[8]', 'theta[9]', 'theta[10]',
                         c('theta[1]', 'theta[2]')))  
 })
+
+test_that('getNodeNames and getDependencies with with posteriorPredNode and posteriorPredBranchNode options', {
     
+    code <- nimbleCode({
+        a ~ dnorm(0, 1)
+        for(i in 1:8) {
+            b[i] ~ dnorm(a, 1)
+            c[i] ~ dnorm(b[i], 1)
+            d[i] ~ dnorm(c[i], 1)
+        }
+    })
+
+    Rmodel <- nimbleModel(code)
+
+    expect_identical(Rmodel$getPostPredNodeIDs(), as.numeric(1:length(Rmodel$getNodeNames())))
+    expect_identical(Rmodel$getPostPredBranchNodeIDs(), 1)
+
+    expect_identical(Rmodel$getNodeNames(includePosteriorPred = FALSE), character())
+    expect_identical(Rmodel$getNodeNames(includePosteriorPredBranch = FALSE), Rmodel$expandNodeNames(c('b', 'c', 'd')))
+    expect_identical(Rmodel$getNodeNames(posteriorPredOnly = TRUE), Rmodel$getNodeNames())
+    expect_identical(Rmodel$getNodeNames(posteriorPredBranchOnly = TRUE), 'a')
+
+    Rmodel$resetData()
+    Rmodel$setData(list(b=1:8, c=1:8, d=1:8))
+
+    expect_identical(Rmodel$getPostPredNodeIDs(), numeric())
+    expect_identical(Rmodel$getPostPredBranchNodeIDs(), numeric())
+
+    expect_identical(Rmodel$getNodeNames(includePosteriorPred = FALSE), Rmodel$getNodeNames())
+    expect_identical(Rmodel$getNodeNames(includePosteriorPredBranch = FALSE), Rmodel$getNodeNames())
+    expect_identical(Rmodel$getNodeNames(posteriorPredOnly = TRUE), character())
+    expect_identical(Rmodel$getNodeNames(posteriorPredBranchOnly = TRUE), character())
+
+    Rmodel$resetData()
+    Rmodel$setData(list(
+               b = rep(c(0, NA), each = 4),
+               c = rep(c(0, NA, 0, NA), each = 2),
+               d = rep(c(0, NA), 4)))
+
+    expect_identical(Rmodel$getPostPredNodeIDs(), c(9, 13, 17, 19, 21, 23, 25))
+    expect_identical(Rmodel$getPostPredBranchNodeIDs(), c(9, 13))
+
+    expect_identical(Rmodel$getNodeNames(includePosteriorPred = FALSE),
+                     setdiff(Rmodel$getNodeNames(), Rmodel$modelDef$maps$graphID_2_nodeName[Rmodel$getPostPredNodeIDs()]))
+    expect_identical(Rmodel$getNodeNames(includePosteriorPredBranch = FALSE),
+                     setdiff(Rmodel$getNodeNames(), Rmodel$modelDef$maps$graphID_2_nodeName[Rmodel$getPostPredBranchNodeIDs()]))
+    expect_identical(Rmodel$getNodeNames(posteriorPredOnly = TRUE),
+                     Rmodel$modelDef$maps$graphID_2_nodeName[Rmodel$getPostPredNodeIDs()])
+    expect_identical(Rmodel$getNodeNames(posteriorPredBranchOnly = TRUE),
+                     Rmodel$modelDef$maps$graphID_2_nodeName[Rmodel$getPostPredBranchNodeIDs()])
+
+    expect_identical(Rmodel$getDependencies('a', includePosteriorPred = FALSE),
+                     Rmodel$expandNodeNames(c('a', 'b[1:7]')))
+    expect_identical(Rmodel$getDependencies('a', includePosteriorPredBranch = FALSE),
+                     Rmodel$expandNodeNames(c('a', 'b[1:7]')))
+    expect_identical(Rmodel$getDependencies('a', posteriorPredOnly = TRUE),
+                     'b[8]')
+    expect_identical(Rmodel$getDependencies('a', posteriorPredBranchOnly = TRUE),
+                     'b[8]')
+
+    expect_identical(Rmodel$getDependencies('b', includePosteriorPred = FALSE),
+                     Rmodel$expandNodeNames(c('b[1:7]', 'c[1:3]', 'c[5:7]')))
+    expect_identical(Rmodel$getDependencies('b', includePosteriorPredBranch = FALSE),
+                     Rmodel$expandNodeNames(c('b[1:7]', 'c[1:3]', 'c[5:8]')))
+    expect_identical(Rmodel$getDependencies('b', posteriorPredOnly = TRUE),
+                     c('b[8]', 'c[4]', 'c[8]'))
+    expect_identical(Rmodel$getDependencies('b', posteriorPredBranchOnly = TRUE),
+                     c('b[8]', 'c[4]'))
+
+    expect_identical(Rmodel$getDependencies('c', includePosteriorPred = FALSE),
+                     Rmodel$expandNodeNames(c('c[1:3]', 'c[5:7]', 'd[1]', 'd[3]', 'd[5]', 'd[7]')))
+    expect_identical(Rmodel$getDependencies('c', includePosteriorPredBranch = FALSE),
+                     Rmodel$expandNodeNames(c('c[1:3]', 'c[5:8]', 'd[1:8]')))
+    expect_identical(Rmodel$getDependencies('c', posteriorPredOnly = TRUE),
+                     c('c[4]', 'c[8]', 'd[2]', 'd[4]', 'd[6]', 'd[8]'))
+    expect_identical(Rmodel$getDependencies('c', posteriorPredBranchOnly = TRUE),
+                     c('c[4]'))
+
+    expect_identical(Rmodel$getDependencies('d', includePosteriorPred = FALSE),
+                     c('d[1]', 'd[3]', 'd[5]', 'd[7]'))
+    expect_identical(Rmodel$getDependencies('d', includePosteriorPredBranch = FALSE),
+                     Rmodel$expandNodeNames('d[1:8]'))
+    expect_identical(Rmodel$getDependencies('d', posteriorPredOnly = TRUE),
+                     c('d[2]', 'd[4]', 'd[6]', 'd[8]'))
+    expect_identical(Rmodel$getDependencies('d', posteriorPredBranchOnly = TRUE),
+                     character())
+
+})
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
