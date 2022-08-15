@@ -30,6 +30,8 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   name = 'ANY', 		#character
                                   isDataVars = 'ANY', #list           ## list with the dimensions of isData_vars
                                   isDataEnv = 'ANY',	#environment      ## environment holding 'logical' objects, with isData flags
+                                  postPredNodeIDs = 'ANY',               ## numeric vector giving the graph IDs of posterior predictive nodes
+                                  postPredBranchNodeIDs = 'ANY',         ## numeric vector giving the graph IDs of posterior predictive branch nodes
                                   classEnvironment = 'ANY', # environment in which the reference classes will be defined
                                   origData = 'ANY',
                                   origInits = 'ANY',
@@ -522,6 +524,8 @@ Details: This function merely reorders its input argument.  This may be importan
                                   init_isDataEnv = function() {
                                       ## initializes the 'isDataEnv' to logical arrays of 'FALSE', based on dimensions in 'isDataVars' object
                                       list2env(lapply(isDataVars, nimble:::createDefault_isDataObj), isDataEnv)
+                                      ## at the time of initializing the isDataEnv, also set postPredNodeIDs and postPredBranchNodeIDs:
+                                      setPostPredNodeIDs()
                                   },
 
                                   resetData = function() {
@@ -618,8 +622,50 @@ Details: If a provided value (or the current value in the model when only a name
                                           assign(varName, isDataVarValue, envir = isDataEnv)
                                       }
                                    ##   testDataFlags()  ## this is slow for large models.  it could be re-written if we want to use it routinely
+                                      setPostPredNodeIDs()
                                       return(invisible(NULL))
                                   },
+
+                                  setPostPredNodeIDs = function() {
+                                      ## re-determine all posterior-predictive nodes,
+                                      ## and also the branch points of any trailing model branches of entirely non-data nodes.
+                                      ## call these posterior predictive branch nodes.
+                                      posteriorPredictiveNodeIDs <- numeric()
+                                      posteriorPredictiveBranchNodeIDs <- numeric()
+                                      stochNonDataIDs <- getNodeNames(stochOnly = TRUE, includeData = FALSE, returnType = 'ids')
+                                      anyPPnodes <- any(isEndNode(stochNonDataIDs))
+                                      if(anyPPnodes) {
+                                          ## all potential (candidate) posterior predictive branch nodes:
+                                          candidateBranchNodeIDs <- stochNonDataIDs[!isEndNode(stochNonDataIDs)]
+                                          dataNodeIDs <- getNodeNames(dataOnly = TRUE, returnType = 'ids')
+                                          dataNodeParentIDs <- expandNodeNames(getParents(dataNodeIDs, stochOnly = TRUE), returnType = 'ids')
+                                          ## remove from candidate branch nodes all direct parents of data nodes:
+                                          candidateBranchNodeIDs <- setdiff(candidateBranchNodeIDs, dataNodeParentIDs)
+                                          nCandidate <- length(candidateBranchNodeIDs)
+                                          nextCandInd <- 1
+                                          while(nextCandInd <= nCandidate) {
+                                              thisCandNodeID <- as.numeric(candidateBranchNodeIDs[nextCandInd])
+                                              stochDownstreamNoSelfIDs <- getDependencies(thisCandNodeID, self = FALSE, stochOnly = TRUE, downstream = TRUE, returnType = 'ids')
+                                              ## skip candidate nodes that have any downstream data nodes:
+                                              if(length(intersect(stochDownstreamNoSelfIDs, dataNodeIDs)) > 0)   { nextCandInd <- nextCandInd + 1;   next }
+                                              ## found posterior predictive branch node:
+                                              posteriorPredictiveBranchNodeIDs <- c(posteriorPredictiveBranchNodeIDs, thisCandNodeID)
+                                              ## everything downstream from (and including) branch node is a posterior predictive node:
+                                              posteriorPredictiveNodeIDs <- c(posteriorPredictiveNodeIDs, thisCandNodeID, stochDownstreamNoSelfIDs)
+                                              ## update candidateBranchNodeIDs, removing downstream stochastic dependencies of this branch node from the candidate set:
+                                              candidateBranchNodeIDs <- candidateBranchNodeIDs[-(1:nextCandInd)]
+                                              candidateBranchNodeIDs <- setdiff(candidateBranchNodeIDs, stochDownstreamNoSelfIDs)
+                                              nCandidate <- length(candidateBranchNodeIDs)
+                                              nextCandInd <- 1
+                                          }
+                                      }
+                                      ## set into the model object's fields:
+                                      postPredNodeIDs <<- sort(unique(posteriorPredictiveNodeIDs))       ## can contain duplicates
+                                      postPredBranchNodeIDs <<- posteriorPredictiveBranchNodeIDs
+                                  },
+
+                                  getPostPredNodeIDs       = function() return(postPredNodeIDs),
+                                  getPostPredBranchNodeIDs = function() return(postPredBranchNodeIDs),
 
                                   testDataFlags = function() {
                                       ## this function tests for *mixed* T/F flags in the isData flag of all nodes.
