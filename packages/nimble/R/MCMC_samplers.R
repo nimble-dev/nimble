@@ -79,7 +79,7 @@ sampler_binary <- nimbleFunction(
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
-        calcNodes <- ccLst$calcNodes; calcNodesNoSelf <- ccLst$calcNodesNoSelf; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch
+        calcNodes <- ccLst$calcNodes; calcNodesNoSelf <- ccLst$calcNodesNoSelf; calcNodesPPskipped <- ccLst$calcNodesPPskipped; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch
         ## checks
         if(length(targetAsScalar) > 1)  stop('cannot use binary sampler on more than one target node')
         if(!model$isBinary(target))     stop('can only use binary sampler on discrete 0/1 (binary) nodes')
@@ -96,6 +96,7 @@ sampler_binary <- nimbleFunction(
         acceptanceProb <- 1/(exp(currentLogProb - otherLogProb) + 1)
         jump <- (!is.nan(acceptanceProb)) & (runif(1,0,1) < acceptanceProb)
         if(jump) {
+            model$calculate(calcNodesPPskipped)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)

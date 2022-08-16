@@ -431,8 +431,10 @@ mcmc_createRmodelObject <- function(model, inits, nchains, setSeed, code, consta
 
 ## create the lists of calcNodes and copyNodes for use in MCMC samplers
 mcmc_determineCalcAndCopyNodes <- function(model, target) {
-    calcNodes <- model$getDependencies(target, includePosteriorPred = getNimbleOption('MCMCincludePredictiveDependencies'))
-    calcNodesNoSelf <- model$getDependencies(target, self = FALSE, includePosteriorPred = getNimbleOption('MCMCincludePredictiveDependencies'))
+    optionIncludePPDeps <- getNimbleOption('MCMCincludePredictiveDependencies')
+    calcNodes <- model$getDependencies(target, includePosteriorPred = optionIncludePPDeps)
+    calcNodesNoSelf <- model$getDependencies(target, self = FALSE, includePosteriorPred = optionIncludePPDeps)
+    calcNodesPPskipped <- if(optionIncludePPDeps) character() else model$getDependencies(target, posteriorPredOnly = TRUE)
     copyNodes <- model$getDependencies(target, self = FALSE)
     isStochCopyNodes <- model$isStoch(copyNodes)
     copyNodesDeterm <- copyNodes[!isStochCopyNodes]
@@ -440,6 +442,7 @@ mcmc_determineCalcAndCopyNodes <- function(model, target) {
     ccLst <- list(
         calcNodes = calcNodes,
         calcNodesNoSelf = calcNodesNoSelf,
+        calcNodesPPskipped = calcNodesPPskipped,
         copyNodesDeterm = copyNodesDeterm,
         copyNodesStoch = copyNodesStoch
     )
