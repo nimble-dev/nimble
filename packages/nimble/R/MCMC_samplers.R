@@ -78,7 +78,7 @@ sampler_binary <- nimbleFunction(
     setup = function(model, mvSaved, target, control) {
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        ccLst <- mcmc_determingCalcAndCopyNodes(model, target)
+        ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
         calcNodes <- ccLst$calcNodes; calcNodesNoSelf <- ccLst$calcNodesNoSelf; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch
         ## checks
         if(length(targetAsScalar) > 1)  stop('cannot use binary sampler on more than one target node')
