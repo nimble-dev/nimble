@@ -196,21 +196,16 @@ sampler_RW <- nimbleFunction(
         scale               <- extractControlElement(control, 'scale',               1)
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        calcNodes <- model$getDependencies(target)
-        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
-        isStochCalcNodesNoSelf <- model$isStoch(calcNodesNoSelf)   ## should be made faster
-        calcNodesNoSelfDeterm <- calcNodesNoSelf[!isStochCalcNodesNoSelf]
-        calcNodesNoSelfStoch <- calcNodesNoSelf[isStochCalcNodesNoSelf]
+        ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
+        calcNodes <- ccLst$calcNodes; calcNodesNoSelf <- ccLst$calcNodesNoSelf; calcNodesPPskipped <- ccLst$calcNodesPPskipped; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch
         ## numeric value generation
         scaleOriginal <- scale
         timesRan      <- 0
         timesAccepted <- 0
         timesAdapted  <- 0
-        scaleHistory  <- c(0, 0)   ## scaleHistory
-        acceptanceHistory  <- c(0, 0)   ## scaleHistory
-        if(nimbleOptions('MCMCsaveHistory')) {
-            saveMCMChistory <- TRUE
-        } else saveMCMChistory <- FALSE
+        scaleHistory      <- c(0, 0)   ## scaleHistory
+        acceptanceHistory <- c(0, 0)   ## scaleHistory
+        saveMCMChistory <- getNimbleOption('MCMCsaveHistory')
         optimalAR     <- 0.44
         gamma1        <- 0
         ## checks
@@ -237,27 +232,20 @@ sampler_RW <- nimbleFunction(
         model[[target]] <<- propValue
         logMHR <- model$calculateDiff(target)
         if(logMHR == -Inf) {
-            nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
-            ## Drawing a random number is needed during first testing
-            ## of this step in order to keep the random numbers identical
-            ## to old behavior to see if tests that depend on particular
-            ## sample sequences pass.  Rather than calling runif(1, 0, 1) here,
-            ## we call decide() to ensure same behavior.
-            ## jump <- decide(logMHR)
-            ## When new behavior is acceptable, we can remove the above line
-            ## and uncomment the following:
             jump <- FALSE
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
         } else {
             logMHR <- logMHR + model$calculateDiff(calcNodesNoSelf) + propLogScale
             jump <- decide(logMHR)
             if(jump) {
+                model$calculate(calcNodesPPskipped)
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
-                nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelfDeterm, logProb = FALSE)
-                nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelfStoch, logProbOnly = TRUE)
+                nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+                nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
             } else {
                 nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
-                nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesNoSelfDeterm, logProb = FALSE)
-                nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesNoSelfStoch, logProbOnly = TRUE)
+                nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+                nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
             }
         }
         if(adaptive)     adaptiveProcedure(jump)
