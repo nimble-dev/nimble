@@ -78,11 +78,8 @@ sampler_binary <- nimbleFunction(
     setup = function(model, mvSaved, target, control) {
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        calcNodes <- model$getDependencies(target)
-        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
-        isStochCalcNodesNoSelf <- model$isStoch(calcNodesNoSelf)   ## should be made faster
-        calcNodesNoSelfDeterm <- calcNodesNoSelf[!isStochCalcNodesNoSelf]
-        calcNodesNoSelfStoch <- calcNodesNoSelf[isStochCalcNodesNoSelf]
+        ccLst <- mcmc_determingCalcAndCopyNodes(model, target)
+        calcNodes <- ccLst$calcNodes; calcNodesNoSelf <- ccLst$calcNodesNoSelf; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch
         ## checks
         if(length(targetAsScalar) > 1)  stop('cannot use binary sampler on more than one target node')
         if(!model$isBinary(target))     stop('can only use binary sampler on discrete 0/1 (binary) nodes')
@@ -100,12 +97,12 @@ sampler_binary <- nimbleFunction(
         jump <- (!is.nan(acceptanceProb)) & (runif(1,0,1) < acceptanceProb)
         if(jump) {
             nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
-            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelfDeterm, logProb = FALSE)
-            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelfStoch, logProbOnly = TRUE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
         } else {
             nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
-            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesNoSelfDeterm, logProb = FALSE)
-            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesNoSelfStoch, logProbOnly = TRUE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
         }
     },
     methods = list(
