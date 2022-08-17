@@ -2429,6 +2429,86 @@ if(!generatingGoldFile) {
     })
 }
 
+test_that('asymptotic agreement of samplers, using MCMCincludePredictiveDependencies option', {
+    includePredDepOptionSave <- nimbleOptions('MCMCincludePredictiveDependencies')
+    ##
+    niter <- 200000
+    nburnin <- 50000
+    ##
+    code <- nimbleCode({
+        ## binary sampler:
+        x[1] ~ dbern(0.4)
+        ## categorical sampler:
+        x[2] ~ dcat(p[1:5])
+        ## RW sampler:
+        x[3] ~ dgamma(1, 1)
+        ## RW_block sampler:
+        x[4:5] ~ dmnorm(mu[1:2], Sigma[1:2,1:2])
+        ## slice sampler:
+        x[6] ~ dbinom(size = 4, prob = 0.5)
+        ## ess sampler:
+        x[7:8] ~ dmnorm(mu[1:2], Sigma[1:2,1:2])
+        ## AF_slice sampler:
+        x[9:10] ~ dmnorm(mu[1:2], Sigma[1:2,1:2])
+        ## RW_dirichlet sampler:
+        x[11:13] ~ ddirch(a[1:3])
+        ## RW_wishart sampler:
+        w[1:2,1:2] ~ dwish(Sigma[1:2,1:2], 2)
+        ## data and predictive nodes:
+        for(i in 1:N) {
+            y[i] ~ dnorm(x[i], 1)
+            yp[i] ~ dnorm(x[i], 1)
+        }
+        for(i in 1:2) {
+            w_data[i] ~ dnorm(w[1,i], 1)
+            wp_data[i] ~ dnorm(w[1,i], 1)
+        }
+    })
+    ##
+    N <- 13
+    constants <- list(N = N,
+                      p = rep(0.2, 5),
+                      mu = c(0,0),
+                      Sigma = diag(2),
+                      a = c(1,2,3))
+    data <- list(y = rep(0, N), w_data = rep(0,2))
+    inits <- list(x = c(0,1,1, 0,0, 0, 0,0, 0,0, 1/3,1/3,1/3),
+                  w = diag(2),
+                  yp = rep(0, N),
+                  wp_data = rep(0,2))
+    ## include PP nodes in all sampler calculations:
+    nimbleOptions(MCMCincludePredictiveDependencies = TRUE)
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    conf <- configureMCMC(Rmodel)
+    conf$removeSampler('x[7:8]')
+    conf$addSampler('x[7:8]', 'ess')
+    conf$removeSampler('x[9:10]')
+    conf$addSampler('x[9:10]', 'AF_slice')
+    Rmcmc <- buildMCMC(conf)
+    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
+    Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
+    set.seed(0)
+    samplesT <- runMCMC(Cmcmc, niter, nburnin)
+    ## now exclude all PP nodes:
+    nimbleOptions(MCMCincludePredictiveDependencies = FALSE)
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    conf <- configureMCMC(Rmodel)
+    conf$removeSampler('x[7:8]')
+    conf$addSampler('x[7:8]', 'ess')
+    conf$removeSampler('x[9:10]')
+    conf$addSampler('x[9:10]', 'AF_slice')
+    Rmcmc <- buildMCMC(conf)
+    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
+    Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
+    set.seed(0)
+    samplesF <- runMCMC(Cmcmc, niter, nburnin)
+    ##
+    expect_true(all(abs(as.numeric(apply(samplesT, 2, mean)) - as.numeric(apply(samplesF, 2, mean))) < 0.03))
+    expect_true(all(abs(as.numeric(apply(samplesT, 2, sd  )) - as.numeric(apply(samplesF, 2, sd  ))) < 0.05))
+    ##
+    nimbleOptions(MCMCincludePredictiveDependencies = includePredDepOptionSave)
+})
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
