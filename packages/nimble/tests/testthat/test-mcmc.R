@@ -2418,17 +2418,6 @@ test_that('posterior_predictive_branch sampler updates node log-probs', {
     nimbleOptions(MCMCjointlySamplePredictiveBranches = nimblePPBranchSamplerSettingTemp)
 })
 
-sink(NULL)
-
-if(!generatingGoldFile) {
-    test_that("Log file matches gold file", {
-        trialResults <- readLines(tempFileName)
-        trialResults <- trialResults[grep('Error in x$.self$finalize() : attempt to apply non-function', trialResults, invert = TRUE, fixed = TRUE)]
-        correctResults <- readLines(system.file(file.path('tests', 'testthat', goldFileName), package = 'nimble'))
-        compareFilesByLine(trialResults, correctResults)
-    })
-}
-
 test_that('asymptotic agreement of samplers, using MCMCincludePredictiveDependencies option', {
     includePredDepOptionSave <- nimbleOptions('MCMCincludePredictiveDependencies')
     ##
@@ -2508,6 +2497,17 @@ test_that('asymptotic agreement of samplers, using MCMCincludePredictiveDependen
     ##
     nimbleOptions(MCMCincludePredictiveDependencies = includePredDepOptionSave)
 })
+
+sink(NULL)
+
+if(!generatingGoldFile) {
+    test_that("Log file matches gold file", {
+        trialResults <- readLines(tempFileName)
+        trialResults <- trialResults[grep('Error in x$.self$finalize() : attempt to apply non-function', trialResults, invert = TRUE, fixed = TRUE)]
+        correctResults <- readLines(system.file(file.path('tests', 'testthat', goldFileName), package = 'nimble'))
+        compareFilesByLine(trialResults, correctResults)
+    })
+}
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
