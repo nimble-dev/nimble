@@ -1301,11 +1301,8 @@ sampler_RW_dirichlet <- nimbleFunction(
         scaleOriginal       <- extractControlElement(control, 'scale',               1)
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        calcNodes <- model$getDependencies(target)
-        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
-        isStochCalcNodesNoSelf <- model$isStoch(calcNodesNoSelf)   ## should be made faster
-        calcNodesNoSelfDeterm <- calcNodesNoSelf[!isStochCalcNodesNoSelf]
-        calcNodesNoSelfStoch <- calcNodesNoSelf[isStochCalcNodesNoSelf]
+        ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
+        calcNodesNoSelf <- ccLst$calcNodesNoSelf; calcNodesPPskipped <- ccLst$calcNodesPPskipped; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch  # not used: calcNodes
         ## numeric value generation
         d <- length(targetAsScalar)
         thetaVec         <- rep(0, d)
@@ -1336,13 +1333,14 @@ sampler_RW_dirichlet <- nimbleFunction(
             if(adaptive & jump)   timesAcceptedVec[i] <<- timesAcceptedVec[i] + 1
             if(jump) {
                 thetaVec <<- thetaVecProp
+                model$calculate(calcNodesPPskipped)
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
-                nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelfDeterm, logProb = FALSE)
-                nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelfStoch, logProbOnly = TRUE)
+                nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+                nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
             } else {
                 nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
-                nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesNoSelfDeterm, logProb = FALSE)
-                nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesNoSelfStoch, logProbOnly = TRUE)
+                nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+                nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
             }
             model$calculate(target)                                                             ## update target logProb
             nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProbOnly = TRUE)    ##
