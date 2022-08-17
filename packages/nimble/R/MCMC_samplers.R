@@ -197,7 +197,7 @@ sampler_RW <- nimbleFunction(
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
-        calcNodes <- ccLst$calcNodes; calcNodesNoSelf <- ccLst$calcNodesNoSelf; calcNodesPPskipped <- ccLst$calcNodesPPskipped; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch
+        calcNodesNoSelf <- ccLst$calcNodesNoSelf; calcNodesPPskipped <- ccLst$calcNodesPPskipped; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch   # not used: calcNodes
         ## numeric value generation
         scaleOriginal <- scale
         timesRan      <- 0
@@ -344,25 +344,19 @@ sampler_RW_block <- nimbleFunction(
         tries               <- extractControlElement(control, 'tries',               1)
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        calcNodes <- model$getDependencies(target)
+        ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
+        calcNodes <- ccLst$calcNodes; calcNodesPPskipped <- ccLst$calcNodesPPskipped; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch   # not used: calcNodesNoSelf
         finalTargetIndex <- max(match(model$expandNodeNames(target), calcNodes))
-        if(!is.integer(finalTargetIndex) |
-           length(finalTargetIndex) != 1 |
-           is.na(finalTargetIndex[1]))
-            stop('Problem with target node in sampler_RW_block')
+        if(!is.integer(finalTargetIndex) | length(finalTargetIndex) != 1 | is.na(finalTargetIndex[1]))   stop('problem with target node in RW_block sampler')
         calcNodesProposalStage <- calcNodes[1:finalTargetIndex]
         calcNodesDepStage <- calcNodes[-(1:finalTargetIndex)]
-        ##calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
-        isStochCalcNodesDepStage <- model$isStoch(calcNodesDepStage)   ## should be made faster
-        calcNodesDepStageDeterm <- calcNodesDepStage[!isStochCalcNodesDepStage]
-        calcNodesDepStageStoch <- calcNodesDepStage[isStochCalcNodesDepStage]
         ## numeric value generation
         scaleOriginal <- scale
         timesRan      <- 0
         timesAccepted <- 0
         timesAdapted  <- 0
         d <- length(targetAsScalar)
-        scaleHistory  <- c(0, 0)                                                 ## scaleHistory
+        scaleHistory <- c(0, 0)                                                 ## scaleHistory
         acceptanceHistory  <- c(0, 0)                                            ## scaleHistory
         propCovHistory <- if(d<=10) array(0, c(2,d,d)) else array(0, c(2,2,2))   ## scaleHistory
         saveMCMChistory <- if(nimbleOptions('MCMCsaveHistory')) TRUE else FALSE
@@ -372,45 +366,34 @@ sampler_RW_block <- nimbleFunction(
         chol_propCov_scale <- scale * chol_propCov
         empirSamp <- matrix(0, nrow=adaptInterval, ncol=d)
         ## nested function and function list definitions
-        ##my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
         targetNodesAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        ##my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)   ## old syntax: missing target argument
         my_calcAdaptationFactor <- calcAdaptationFactor(d, adaptFactorExponent)
         ## checks
         if(!inherits(propCov, 'matrix'))        stop('propCov must be a matrix\n')
         if(!inherits(propCov[1,1], 'numeric'))  stop('propCov matrix must be numeric\n')
-        if(!all(dim(propCov) == d))           stop('propCov matrix must have dimension ', d, 'x', d, '\n')
-        if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
+        if(!all(dim(propCov) == d))             stop('propCov matrix must have dimension ', d, 'x', d, '\n')
+        if(!isSymmetric(propCov))               stop('propCov matrix must be symmetric')
     },
     run = function() {
         for(i in 1:tries) {
             propValueVector <- generateProposalVector()
-            ##lpMHR <- my_setAndCalculateDiff$run(propValueVector)
             values(model, targetNodesAsScalar) <<- propValueVector
             lpD <- model$calculateDiff(calcNodesProposalStage)
             if(lpD == -Inf) {
+                jump <- FALSE
                 nimCopy(from = mvSaved, to = model,   row = 1, nodes = calcNodesProposalStage, logProb = TRUE)
-            ## Drawing a random number is needed during first testing
-            ## of this step in order to keep the random numbers identical
-            ## to old behavior to see if tests that depend on particular
-            ## sample sequences pass.  Rather than calling runif(1, 0, 1) here,
-            ## we call decide() to ensure same behavior.
-            ## jump <- decide(lpD)
-            ## When new behavior is acceptable, we can remove the above line
-            ## and uncomment the following:
-            jump <- FALSE
             } else {
-                ##jump <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
                 lpD <- lpD + model$calculateDiff(calcNodesDepStage)
                 jump <- decide(lpD)
                 if(jump) {
+                    model$calculate(calcNodesPPskipped)
                     nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesProposalStage, logProb = TRUE)
-                    nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesDepStageDeterm, logProb = FALSE)
-                    nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesDepStageStoch, logProbOnly = TRUE)
+                    nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+                    nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
                 } else {
                     nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesProposalStage, logProb = TRUE)
-                    nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesDepStageDeterm, logProb = FALSE)
-                    nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesDepStageStoch, logProbOnly = TRUE)
+                    nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+                    nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
                 }
             }
             if(adaptive)     adaptiveProcedure(jump)
@@ -807,18 +790,12 @@ sampler_AF_slice <- nimbleFunction(
         eps <- 1e-15
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        calcNodes <- model$getDependencies(target)
+        ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
+        calcNodes <- ccLst$calcNodes; calcNodesPPskipped <- ccLst$calcNodesPPskipped; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch   # not used: calcNodesNoSelf
         finalTargetIndex <- max(match(model$expandNodeNames(target), calcNodes))
-        if(!is.integer(finalTargetIndex) |
-           length(finalTargetIndex) != 1 |
-           is.na(finalTargetIndex[1]))
-            stop('Problem with target node in sampler_AF_slice')
+        if(!is.integer(finalTargetIndex) | length(finalTargetIndex) != 1 | is.na(finalTargetIndex[1]))   stop('problem with target node in AF_slice sampler')
         calcNodesProposalStage <- calcNodes[1:finalTargetIndex]
         calcNodesDepStage <- calcNodes[-(1:finalTargetIndex)]
-        ##calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
-        isStochCalcNodesDepStage <- model$isStoch(calcNodesDepStage)   ## should be made faster
-        calcNodesDepStageDeterm <- calcNodesDepStage[!isStochCalcNodesDepStage]
-        calcNodesDepStageStoch <- calcNodesDepStage[isStochCalcNodesDepStage]
         ## numeric value generation
         d                  <- length(targetAsScalar)
         discrete           <- sapply(targetAsScalar, function(x) model$isDiscrete(x))
@@ -895,12 +872,13 @@ sampler_AF_slice <- nimbleFunction(
             if(maxContractionsWarning)
                 cat("Warning: AF slice sampler reached maximum number of contractions in at least one dimension.\n")
             nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesProposalStage, logProb = TRUE)
-            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesDepStageDeterm, logProb = FALSE)
-            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesDepStageStoch, logProbOnly = TRUE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
         } else {
+            model$calculate(calcNodesPPskipped)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesProposalStage, logProb = TRUE)
-            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesDepStageDeterm, logProb = FALSE)
-            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesDepStageStoch, logProbOnly = TRUE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
         }
         if(allWidthsAdapted == 0)   adaptWidths()
         if(adaptFactorMaxIter > 0)  adaptFactors()
