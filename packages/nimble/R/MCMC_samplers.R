@@ -511,7 +511,7 @@ sampler_RW_llFunction <- nimbleFunction(
         RWControl <- list(adaptive=adaptive, adaptInterval=adaptInterval, scale=scale, log=FALSE, reflective=FALSE)
         targetRWSamplerFunction <- sampler_RW(model, mvInternal, target, RWControl)
         my_setAndCalculateOne <- setAndCalculateOne(model, target)
-        my_decideAndJump <- decideAndJump(model, mvSaved, target, calcNodes)
+        my_decideAndJump <- decideAndJump(model, mvSaved, target = target)
     },
     run = function() {
         modelLP0 <- llFunction$run()
@@ -1013,7 +1013,6 @@ sampler_crossLevel <- nimbleFunction(
             lowConjugateGetLogDensityFunctions[[iLN]] <- getPosteriorDensityFromConjSampler(lowConjugateSamplerFunctions[[iLN]])
         }
         my_setAndCalculateTop <- setAndCalculate(model, target)
-        ##my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)   ## old syntax: missing target argument
     },
     run = function() {
         modelLP0 <- model$getLogProb(calcNodes)
@@ -1022,10 +1021,6 @@ sampler_crossLevel <- nimbleFunction(
         propValueVector <- topRWblockSamplerFunction$generateProposalVector()
         topLP <- my_setAndCalculateTop$run(propValueVector)
         if(is.na(topLP)) {
-            ##jump <- my_decideAndJump$run(-Inf, 0, 0, 0)
-            ## below: code copied from decideAndJump function,
-            ## can't use decideAndJump here any longer, because adding a 'target'
-            ## argument to it, to prevent unnecessary copying of dependent stochastic node values
             logMHR <- -Inf
             jump <- decide(logMHR)
             if(jump) {
@@ -1041,10 +1036,6 @@ sampler_crossLevel <- nimbleFunction(
             propLP1 <- 0
             for(iSF in seq_along(lowConjugateGetLogDensityFunctions))
                 propLP1 <- propLP1 + lowConjugateGetLogDensityFunctions[[iSF]]$run()
-            ##jump <- my_decideAndJump$run(modelLP1, modelLP0, propLP1, propLP0)
-            ## below: code copied from decideAndJump function,
-            ## can't use decideAndJump here any longer, because adding a 'target'
-            ## argument to it, to prevent unnecessary copying of dependent stochastic node values
             logMHR <- modelLP1 - modelLP0 - propLP1 + propLP0
             jump <- decide(logMHR)
             if(jump) {
@@ -1102,7 +1093,7 @@ sampler_RW_llFunction_block <- nimbleFunction(
         empirSamp <- matrix(0, nrow=adaptInterval, ncol=d)
         ## nested function and function list definitions
         my_setAndCalculate <- setAndCalculate(model, target)
-        my_decideAndJump <- decideAndJump(model, mvSaved, target, calcNodes)
+        my_decideAndJump <- decideAndJump(model, mvSaved, target = target)
         my_calcAdaptationFactor <- calcAdaptationFactor(d, adaptFactorExponent)
         ## checks
         if(!inherits(propCov, 'matrix'))        stop('propCov must be a matrix\n')
@@ -1198,7 +1189,7 @@ sampler_RW_multinomial <- nimbleFunction(
         u       <- runif(1, 0, Pi)
         ## nested function and function list definitions
         my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
-        my_decideAndJump       <- decideAndJump(model, mvSaved, target, calcNodes)
+        my_decideAndJump       <- decideAndJump(model, mvSaved, target = target)
         ## checks
         if(model$getDistribution(target) != 'dmulti')   stop('can only use RW_multinomial sampler for multinomial distributions')
         if(length(targetAllNodes) > 1)                  stop('cannot use RW_multinomial sampler on more than one target')
@@ -1222,7 +1213,7 @@ sampler_RW_multinomial <- nimbleFunction(
                 }
                 propValueVector <- generateProposalVector(iFrom, iTo)
                 lpMHR <- my_setAndCalculateDiff$run(propValueVector) + lpRev - lpProp 
-                jump  <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## returns lpMHR + 0 - 0 + 0
+                jump  <- my_decideAndJump$run(lpMHR, 0, 0, 0)
                 if(adaptive)   adaptiveProcedure(jump=jump, iFrom=iFrom, iTo=iTo)
             }
         }
@@ -1694,7 +1685,6 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
         ## nested function and function list definitions
         ##        my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
         targetNodesAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-##        my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
         my_calcAdaptationFactor <- calcAdaptationFactor(d, adaptFactorExponent)
 
         z                   <- array(0, c(p, p))  # canonical partial correlations
@@ -1756,7 +1746,6 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
                 nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesProposalStage, logProb = TRUE)
                 jump <- FALSE
             } else {
-                ##        jump <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
                 logMHR <- logMHR + lpD + calculateDiff(model, calcNodesDepStage)
                 jump <- decide(logMHR)
                 if(jump) {
