@@ -504,8 +504,6 @@ sampler_RW_llFunction <- nimbleFunction(
         scale          <- extractControlElement(control, 'scale',          1)
         llFunction     <- extractControlElement(control, 'llFunction',     error = 'RW_llFunction sampler missing required control argument: llFunction')
         includesTarget <- extractControlElement(control, 'includesTarget', error = 'RW_llFunction sampler missing required control argument: includesTarget')
-        ## node list generation
-        calcNodes <- model$getDependencies(target)
         ## nested function and function list definitions
         mvInternal <- modelValues(model)
         RWControl <- list(adaptive=adaptive, adaptInterval=adaptInterval, scale=scale, log=FALSE, reflective=FALSE)
