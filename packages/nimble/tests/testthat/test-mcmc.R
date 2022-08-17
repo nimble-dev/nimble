@@ -321,6 +321,8 @@ test_that('basic no-block sampler setup', {
 ### slice sampler example
 
 test_that('slice sampler example setup', {
+    includePredDepOptionSave <- nimbleOptions('MCMCincludePredictiveDependencies')
+    nimbleOptions(MCMCincludePredictiveDependencies = TRUE)
     code <- nimbleCode({
         z ~ dnorm(0, 1)
         normal5_10 ~ dnorm(5, sd = 10)
@@ -352,6 +354,8 @@ test_that('slice sampler example setup', {
                               list(type = 'slice', target = 'binom10_p5', control = list(adaptInterval = 10)),
                               list(type = 'slice', target = 'binom20_p3', control = list(adaptInterval = 10))),
               avoidNestedTest = TRUE)
+    
+    nimbleOptions(MCMCincludePredictiveDependencies = includePredDepOptionSave)
     })
 
 
@@ -386,6 +390,7 @@ test_that('elliptical slice sampler setup', {
               resultsTolerance = list(mean = list(x = c(0.01, 0.01, 0.01))),
               numItsC = 100000,
               samplers = list(list(type = 'ess', target = 'x')), avoidNestedTest = TRUE)
+    
     })
 
 
@@ -404,6 +409,8 @@ test_that('beta-binom conjugacy setup', {
 ### checkConjugacy_demo3_run.R - various conjugacies
 
 test_that('various conjugacies setup', {
+    includePredDepOptionSave <- nimbleOptions('MCMCincludePredictiveDependencies')
+    nimbleOptions(MCMCincludePredictiveDependencies = TRUE)
     code <- nimbleCode({
         x ~ dgamma(1, 1)       # should satisfy 'gamma' conjugacy class
         a  ~ dnorm(0, x)     # should satisfy 'norm' conjugacy class
@@ -426,6 +433,7 @@ test_that('various conjugacies setup', {
     
     test_mcmc(model = code, name = 'check various conjugacies', exactSample = sampleVals, seed = 0, mcmcControl = list(scale=0.01), avoidNestedTest = TRUE)
     ## with fixing of jNorm[1] and kLogNorm[1] we no longer have: knownFailures = list('R C samples match' = "KNOWN ISSUE: R and C posterior samples are not equal for 'various conjugacies'"))
+    nimbleOptions(MCMCincludePredictiveDependencies = includePredDepOptionSave)
 })
 
 ### Weibull-gamma conjugacy
