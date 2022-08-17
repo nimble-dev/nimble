@@ -1082,7 +1082,6 @@ sampler_RW_llFunction_block <- nimbleFunction(
         includesTarget      <- extractControlElement(control, 'includesTarget',      error = 'RW_llFunction_block sampler missing required control argument: includesTarget')
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        calcNodes <- model$getDependencies(target)
         ## numeric value generation
         scaleOriginal <- scale
         timesRan      <- 0
