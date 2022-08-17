@@ -714,7 +714,8 @@ sampler_ess <- nimbleFunction(
         eps <- 1e-15
         ## node list generation
         target <- model$expandNodeNames(target)
-        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
+        ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
+        calcNodesNoSelf <- ccLst$calcNodesNoSelf; calcNodesPPskipped <- ccLst$calcNodesPPskipped; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch   # not used: calcNodes
         ## numeric value generation
         Pi <- pi
         d <- length(model$expandNodeNames(target, returnScalarComponents = TRUE))
@@ -753,9 +754,15 @@ sampler_ess <- nimbleFunction(
         if(theta_max - theta_min <= eps | numContractions == maxContractions) {
             if(maxContractionsWarning)
                 cat("Warning: elliptical slice sampler reached maximum number of contractions.\n")
-            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesNoSelf, logProb = TRUE)
-        } else
-            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelf, logProb = TRUE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
+        } else {
+            model$calculate(calcNodesPPskipped)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
+        }
     },
     methods = list(
         reset = function() { }
