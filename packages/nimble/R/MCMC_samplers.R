@@ -511,7 +511,7 @@ sampler_RW_llFunction <- nimbleFunction(
         RWControl <- list(adaptive=adaptive, adaptInterval=adaptInterval, scale=scale, log=FALSE, reflective=FALSE)
         targetRWSamplerFunction <- sampler_RW(model, mvInternal, target, RWControl)
         my_setAndCalculateOne <- setAndCalculateOne(model, target)
-        my_decideAndJump <- decideAndJump(model, mvSaved, target, calcNodes)
+        my_decideAndJump <- decideAndJump(model, mvSaved, target)
     },
     run = function() {
         modelLP0 <- llFunction$run()
@@ -1102,7 +1102,7 @@ sampler_RW_llFunction_block <- nimbleFunction(
         empirSamp <- matrix(0, nrow=adaptInterval, ncol=d)
         ## nested function and function list definitions
         my_setAndCalculate <- setAndCalculate(model, target)
-        my_decideAndJump <- decideAndJump(model, mvSaved, target, calcNodes)
+        my_decideAndJump <- decideAndJump(model, mvSaved, target)
         my_calcAdaptationFactor <- calcAdaptationFactor(d, adaptFactorExponent)
         ## checks
         if(!inherits(propCov, 'matrix'))        stop('propCov must be a matrix\n')
@@ -1198,7 +1198,7 @@ sampler_RW_multinomial <- nimbleFunction(
         u       <- runif(1, 0, Pi)
         ## nested function and function list definitions
         my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
-        my_decideAndJump       <- decideAndJump(model, mvSaved, target, calcNodes)
+        my_decideAndJump       <- decideAndJump(model, mvSaved, target)
         ## checks
         if(model$getDistribution(target) != 'dmulti')   stop('can only use RW_multinomial sampler for multinomial distributions')
         if(length(targetAllNodes) > 1)                  stop('cannot use RW_multinomial sampler on more than one target')
