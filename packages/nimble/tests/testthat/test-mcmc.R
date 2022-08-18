@@ -8,6 +8,7 @@ nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 nimblePPBranchSamplerSetting <- getNimbleOption('MCMCjointlySamplePredictiveBranches')
 nimbleOptions(MCMCjointlySamplePredictiveBranches = FALSE)
+nimbleIncludePredDependenciesSetting <- nimbleOptions('MCMCincludePredictiveDependencies')
 
 ## If you do *not* want to write to results files
 ##    comment out the sink() call below.  And consider setting verbose = FALSE 
@@ -31,8 +32,10 @@ nimbleOptions(MCMCprogressBar = FALSE)
 test_mcmc('blocker', numItsC = 1000, resampleData = TRUE)
 # 100% coverage; looks fine
 
+nimbleOptions(MCMCincludePredictiveDependencies = TRUE)
 test_mcmc('bones', numItsC = 10000, resampleData = TRUE)
 # 100% coverage; looks fine
+nimbleOptions(MCMCincludePredictiveDependencies = nimbleIncludePredDependenciesSetting)
 
 test_mcmc('dyes', numItsC = 1000, resampleData = TRUE)
 # 100% coverage; looks fine
@@ -321,7 +324,6 @@ test_that('basic no-block sampler setup', {
 ### slice sampler example
 
 test_that('slice sampler example setup', {
-    includePredDepOptionSave <- nimbleOptions('MCMCincludePredictiveDependencies')
     nimbleOptions(MCMCincludePredictiveDependencies = TRUE)
     code <- nimbleCode({
         z ~ dnorm(0, 1)
@@ -355,7 +357,7 @@ test_that('slice sampler example setup', {
                               list(type = 'slice', target = 'binom20_p3', control = list(adaptInterval = 10))),
               avoidNestedTest = TRUE)
     
-    nimbleOptions(MCMCincludePredictiveDependencies = includePredDepOptionSave)
+    nimbleOptions(MCMCincludePredictiveDependencies = nimbleIncludePredDependenciesSetting)
     })
 
 
@@ -409,7 +411,6 @@ test_that('beta-binom conjugacy setup', {
 ### checkConjugacy_demo3_run.R - various conjugacies
 
 test_that('various conjugacies setup', {
-    includePredDepOptionSave <- nimbleOptions('MCMCincludePredictiveDependencies')
     nimbleOptions(MCMCincludePredictiveDependencies = TRUE)
     code <- nimbleCode({
         x ~ dgamma(1, 1)       # should satisfy 'gamma' conjugacy class
@@ -433,7 +434,7 @@ test_that('various conjugacies setup', {
     
     test_mcmc(model = code, name = 'check various conjugacies', exactSample = sampleVals, seed = 0, mcmcControl = list(scale=0.01), avoidNestedTest = TRUE)
     ## with fixing of jNorm[1] and kLogNorm[1] we no longer have: knownFailures = list('R C samples match' = "KNOWN ISSUE: R and C posterior samples are not equal for 'various conjugacies'"))
-    nimbleOptions(MCMCincludePredictiveDependencies = includePredDepOptionSave)
+    nimbleOptions(MCMCincludePredictiveDependencies = nimbleIncludePredDependenciesSetting)
 })
 
 ### Weibull-gamma conjugacy
@@ -2419,7 +2420,6 @@ test_that('posterior_predictive_branch sampler updates node log-probs', {
 })
 
 test_that('asymptotic agreement of samplers, using MCMCincludePredictiveDependencies option', {
-    includePredDepOptionSave <- nimbleOptions('MCMCincludePredictiveDependencies')
     ##
     niter <- 200000
     nburnin <- 50000
@@ -2495,7 +2495,7 @@ test_that('asymptotic agreement of samplers, using MCMCincludePredictiveDependen
     expect_true(all(abs(as.numeric(apply(samplesT, 2, mean)) - as.numeric(apply(samplesF, 2, mean))) < 0.03))
     expect_true(all(abs(as.numeric(apply(samplesT, 2, sd  )) - as.numeric(apply(samplesF, 2, sd  ))) < 0.05))
     ##
-    nimbleOptions(MCMCincludePredictiveDependencies = includePredDepOptionSave)
+    nimbleOptions(MCMCincludePredictiveDependencies = nimbleIncludePredDependenciesSetting)
 })
 
 sink(NULL)
