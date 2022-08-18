@@ -2469,26 +2469,22 @@ test_that('asymptotic agreement of samplers, using MCMCincludePredictiveDependen
     nimbleOptions(MCMCincludePredictiveDependencies = TRUE)
     Rmodel <- nimbleModel(code, constants, data, inits)
     conf <- configureMCMC(Rmodel)
-    conf$removeSampler('x[7:8]')
-    conf$addSampler('x[7:8]', 'ess')
-    conf$removeSampler('x[9:10]')
-    conf$addSampler('x[9:10]', 'AF_slice')
+    conf$replaceSampler('x[7:8]', 'ess')
+    conf$replaceSampler('x[9:10]', 'AF_slice')
     Rmcmc <- buildMCMC(conf)
     compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
-    Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
+    Cmcmc <- compiledList$mcmc
     set.seed(0)
     samplesT <- runMCMC(Cmcmc, niter, nburnin)
     ## now exclude all PP nodes:
     nimbleOptions(MCMCincludePredictiveDependencies = FALSE)
     Rmodel <- nimbleModel(code, constants, data, inits)
     conf <- configureMCMC(Rmodel)
-    conf$removeSampler('x[7:8]')
-    conf$addSampler('x[7:8]', 'ess')
-    conf$removeSampler('x[9:10]')
-    conf$addSampler('x[9:10]', 'AF_slice')
+    conf$replaceSampler('x[7:8]', 'ess')
+    conf$replaceSampler('x[9:10]', 'AF_slice')
     Rmcmc <- buildMCMC(conf)
     compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
-    Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
+    Cmcmc <- compiledList$mcmc
     set.seed(0)
     samplesF <- runMCMC(Cmcmc, niter, nburnin)
     ##
