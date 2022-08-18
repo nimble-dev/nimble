@@ -95,7 +95,7 @@ buildMCMC <- nimbleFunction(
             ppSamplerInd <- which(grepl('^posterior_predictive', samplerNames))
             otherSamplerInd <- which(!grepl('^posterior_predictive', samplerNames))
             if(!all(sapply(ppSamplerInd, function(ind) all(ind > otherSamplerInd)))) {
-                messageIfVerbose('  [Note] Reordering to put posterior_predictive samplers at the end')
+                messageIfVerbose('  [Note] Reordering posterior predictive samplers to be last')
                 conf$samplerConfs <- conf$samplerConfs[c(otherSamplerInd, ppSamplerInd)]
             }
         }
