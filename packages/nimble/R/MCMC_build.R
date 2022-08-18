@@ -89,6 +89,16 @@ buildMCMC <- nimbleFunction(
         model <- conf$model
         my_initializeModel <- initializeModel(model)
         mvSaved <- modelValues(model)
+        if(!getNimbleOption('MCMCincludePredictiveDependencies') && length(conf$samplerConfs)) {
+            ## put all posterior_predictive and posterior_predictive_branch samplers at the end
+            samplerNames <- sapply(conf$samplerConfs, `[[`, 'name')
+            ppSamplerInd <- which(grepl('^posterior_predictive', samplerNames))
+            otherSamplerInd <- which(!grepl('^posterior_predictive', samplerNames))
+            if(!all(sapply(ppSamplerInd, function(ind) all(ind > otherSamplerInd)))) {
+                messageIfVerbose('  [Note] Reordering to put posterior_predictive samplers at the end')
+                conf$samplerConfs <- conf$samplerConfs[c(otherSamplerInd, ppSamplerInd)]
+            }
+        }
         samplerFunctions <- nimbleFunctionList(sampler_BASE)
         for(i in seq_along(conf$samplerConfs))
             samplerFunctions[[i]] <- conf$samplerConfs[[i]]$buildSampler(model=model, mvSaved=mvSaved)

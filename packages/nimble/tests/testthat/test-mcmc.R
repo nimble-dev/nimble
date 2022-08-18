@@ -2494,6 +2494,30 @@ test_that('asymptotic agreement of samplers, using MCMCincludePredictiveDependen
     nimbleOptions(MCMCincludePredictiveDependencies = nimbleIncludePredDependenciesSetting)
 })
 
+test_that('reordering of posterior_predictive and posterior_predictive_branch samplers to the end', {
+    if(!getNimbleOption('MCMCincludePredictiveDependencies')) {
+        code <- nimbleCode({
+            mu ~ dnorm(0, 1)
+            for(i in 1:5)
+                x[i] ~ dexp(mu^2+1)
+            for(i in 1:4)
+                y[i] ~ dnorm(x[i], 1)
+        })
+        constants <- list()
+        data <- list(y = c(1, 2, 3, NA))
+        inits <- list(mu = 0, x = rep(1, 5), y = c(NA, NA, NA, 4))
+        Rmodel <- nimbleModel(code, constants, data, inits)
+        conf <- configureMCMC(Rmodel)
+        conf$addSampler('mu', 'slice')
+        conf$addSampler('x[1]', 'slice')
+        Rmcmc <- buildMCMC(conf)
+        samplerNames <- sapply(conf$samplerConfs, `[[`, 'name')
+        ppSamplerInd <- which(grepl('^posterior_predictive', samplerNames))
+        otherSamplerInd <- which(!grepl('^posterior_predictive', samplerNames))
+        expect_true(all(sapply(ppSamplerInd, function(ind) all(ind > otherSamplerInd))))
+    } else expect_true(TRUE)
+})
+
 sink(NULL)
 
 if(!generatingGoldFile) {
