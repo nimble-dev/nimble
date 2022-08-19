@@ -2495,27 +2495,41 @@ test_that('asymptotic agreement of samplers, using MCMCincludePredictiveDependen
 })
 
 test_that('reordering of posterior_predictive and posterior_predictive_branch samplers to the end', {
+    code <- nimbleCode({
+        mu ~ dnorm(0, 1)
+        pp ~ dnorm(mu, 1)
+        for(i in 1:5)
+            x[i] ~ dexp(mu^2+1)
+        for(i in 1:4)
+            y[i] ~ dnorm(x[i], 1)
+    })
+    constants <- list()
+    data <- list(y = c(1, 2, 3, NA))
+    inits <- list(mu = 0, x = rep(1, 5), y = c(NA, NA, NA, 4), pp = 0)
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    conf <- configureMCMC(Rmodel)
+    ## configureMCMC should already have reordered PP samplers last (expect_true):
+    samplerNames <- sapply(conf$samplerConfs, `[[`, 'name')
+    ppSamplerInd <- which(grepl('^posterior_predictive', samplerNames))
+    otherSamplerInd <- which(!grepl('^posterior_predictive', samplerNames))
+    expect_true(all(sapply(ppSamplerInd, function(ind) all(ind > otherSamplerInd))))
+    ##
+    conf$addSampler('mu', 'slice')
+    conf$addSampler('x[1]', 'slice')
+    ## now, there are PP samplers that are not last (expect_false):
+    samplerNames <- sapply(conf$samplerConfs, `[[`, 'name')
+    ppSamplerInd <- which(grepl('^posterior_predictive', samplerNames))
+    otherSamplerInd <- which(!grepl('^posterior_predictive', samplerNames))
+    expect_false(all(sapply(ppSamplerInd, function(ind) all(ind > otherSamplerInd))))
     if(!getNimbleOption('MCMCincludePredictiveDependencies')) {
-        code <- nimbleCode({
-            mu ~ dnorm(0, 1)
-            for(i in 1:5)
-                x[i] ~ dexp(mu^2+1)
-            for(i in 1:4)
-                y[i] ~ dnorm(x[i], 1)
-        })
-        constants <- list()
-        data <- list(y = c(1, 2, 3, NA))
-        inits <- list(mu = 0, x = rep(1, 5), y = c(NA, NA, NA, 4))
-        Rmodel <- nimbleModel(code, constants, data, inits)
-        conf <- configureMCMC(Rmodel)
-        conf$addSampler('mu', 'slice')
-        conf$addSampler('x[1]', 'slice')
-        Rmcmc <- buildMCMC(conf)
+        ## should issue a message, about reordering samplers:
+        expect_message(Rmcmc <- buildMCMC(conf))
+        ## now, all PP samplers should be last (expect_true):
         samplerNames <- sapply(conf$samplerConfs, `[[`, 'name')
         ppSamplerInd <- which(grepl('^posterior_predictive', samplerNames))
         otherSamplerInd <- which(!grepl('^posterior_predictive', samplerNames))
         expect_true(all(sapply(ppSamplerInd, function(ind) all(ind > otherSamplerInd))))
-    } else expect_true(TRUE)
+    }
 })
 
 sink(NULL)
