@@ -2320,9 +2320,8 @@ test_that('MCMC assigned posterior_predictive_branch sampler correctly', {
     conf <- configureMCMC(Rmodel, print = FALSE)
     expect_true(all(sapply(conf$getSamplers(), function(x) x$name) ==
                     c('conjugate_dgamma_dnorm_identity',
-                      rep('conjugate_dnorm_dnorm_identity_dnorm_multiplicative', 5),
+                      rep('conjugate_dnorm_dnorm_identity_dnorm_multiplicative', 8),
                       'posterior_predictive',
-                      rep('conjugate_dnorm_dnorm_identity_dnorm_multiplicative', 3),
                       'posterior_predictive_branch')))
     y <- c(1:(N/2), rep(NA, N/2))
     data <- list(y = y)
@@ -2344,14 +2343,8 @@ test_that('MCMC assigned posterior_predictive_branch sampler correctly', {
     conf <- configureMCMC(Rmodel, print = FALSE)
     expect_true(all(sapply(conf$getSamplers(), function(x) x$name) ==
                     c('conjugate_dgamma_dnorm_identity',
-                      rep('conjugate_dnorm_dnorm_identity_dnorm_multiplicative', 2),
-                      'posterior_predictive',
-                      'conjugate_dnorm_dnorm_identity_dnorm_multiplicative',
-                      'posterior_predictive',
-                      'conjugate_dnorm_dnorm_identity_dnorm_multiplicative',
-                      'posterior_predictive',
-                      'conjugate_dnorm_dnorm_identity_dnorm_multiplicative',
-                      'posterior_predictive',
+                      rep('conjugate_dnorm_dnorm_identity_dnorm_multiplicative', 5),
+                      rep('posterior_predictive', 4),
                       'posterior_predictive_branch')))
     ##
     code <- nimbleCode({
