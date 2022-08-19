@@ -203,8 +203,8 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                                 collapse=', ')) }    ## ensure all target node(s) are stochastic
             }
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
-            postPredIndices <- which(nodes %in% model$getNodeNames(posteriorPredOnly = TRUE))
-            nodes <- c(nodes[-postPredIndices], nodes[postPredIndices])  ## put posterior predictive nodes at the end
+            postPredBool <- nodes %in% model$getNodeNames(posteriorPredOnly = TRUE)
+            nodes <- c(nodes[!postPredBool], nodes[postPredBool])  ## put posterior predictive nodes at the end
 
             if(!useNewConfigureMCMC) {
                 if(!(all(model$isStoch(nodes)))) { stop('assigning samplers to non-stochastic nodes: ', paste0(nodes[!model$isStoch(nodes)], collapse=', ')) }
