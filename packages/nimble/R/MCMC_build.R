@@ -97,7 +97,7 @@ buildMCMC <- nimbleFunction(
             if(!all(sapply(ppSamplerInd, function(ind) all(ind > otherSamplerInd)))) {
                 messageIfVerbose('  [Note] Reordering posterior predictive samplers to execute last')
                 exOrder <- conf$samplerExecutionOrder
-                if(!((min(exOrder) == 1) && all(exOrder == 1:max(exOrder)))) stop('Halting, rather than reordering samplers in the presence of a modified sampler execution order.  If a modified execution order is needed, then: (1) reorder posterior predictive samplers to be last in the MCMC configuration printSamplers method output, (2) set the modified execution order, and (3) run buildMCMC.')
+                if((length(exOrder)!=length(conf$samplerConfs)) || !all(exOrder==1:length(conf$samplerConfs))) stop('Halting, rather than reordering samplers in the presence of a modified sampler execution order.  If a modified execution order is needed, then: (1) reorder posterior predictive samplers to be last in the MCMC configuration printSamplers method output, (2) set the desired sampler execution order, and (3) run buildMCMC.')
                 conf$samplerExecutionOrder == 1:max(conf$samplerExecutionOrder)
                 conf$samplerConfs <- conf$samplerConfs[c(otherSamplerInd, ppSamplerInd)]
             }
