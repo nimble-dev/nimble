@@ -701,6 +701,8 @@ Alias for removeSamplers method
             '
 Replaces one or more samplers from an MCMCconf object with newly specified sampler(s).  Operation and arguments are identical to the \'addSampler\' method, with the additional side effect of first removing any existing samplers which operate on the specified node(s).
 
+This function also has the side effect of resetting the sampler execution ordering so as to iterate over the remaining set of samplers, sequentially, executing each sampler once.
+
 See \'addSamplers\' for a description of the arguments.
 
 This function also has the side effect of resetting the sampler execution ordering so as to iterate over the newly specified set of samplers, sequentially, executing each sampler once.
