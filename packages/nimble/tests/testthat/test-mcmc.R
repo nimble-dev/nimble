@@ -4,10 +4,19 @@ context("Testing of default MCMC")
 
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
+
+## verbose: set to FALSE
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
+
+## MCMC progress bar: set to FALSE
+nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
+nimbleOptions(MCMCprogressBar = FALSE)
+
+## MCMC use posteriorPredictiveBranch sampler - save current setting
 nimblePPBranchSamplerSetting <- getNimbleOption('MCMCjointlySamplePredictiveBranches')
-nimbleOptions(MCMCjointlySamplePredictiveBranches = FALSE)
+
+## MCMC calculation include predictive dependencies - save current setting
 nimbleIncludePredDependenciesSetting <- nimbleOptions('MCMCincludePredictiveDependencies')
 
 ## If you do *not* want to write to results files
@@ -24,8 +33,6 @@ outputFile <- if(generatingGoldFile) file.path(nimbleOptions('generateGoldFileFo
 ## capture warnings
 sink_with_messages(outputFile)
 
-nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
-nimbleOptions(MCMCprogressBar = FALSE)
 
 ## tests of classic BUGS examples
 
