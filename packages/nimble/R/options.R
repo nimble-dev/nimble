@@ -57,6 +57,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         MCMCmultivariateNodesAsScalars = FALSE,
         MCMCmonitorAllSampledNodes = FALSE,
         MCMCuseConjugacy = TRUE,
+        MCMCreorderSamplersPosteriorPredLast = TRUE,
         MCMCincludePredictiveDependencies = FALSE,
         MCMCjointlySamplePredictiveBranches = TRUE,
         MCMCRJcheckHyperparam = TRUE,
