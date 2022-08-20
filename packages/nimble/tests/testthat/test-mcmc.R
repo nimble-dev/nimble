@@ -446,7 +446,7 @@ test_that('various conjugacies setup', {
     
     test_mcmc(model = code, name = 'check various conjugacies', exactSample = sampleVals, seed = 0, mcmcControl = list(scale=0.01), avoidNestedTest = TRUE)
     ## with fixing of jNorm[1] and kLogNorm[1] we no longer have: knownFailures = list('R C samples match' = "KNOWN ISSUE: R and C posterior samples are not equal for 'various conjugacies'"))
-    nimbleOption(MCMCreorderSamplersPosteriorPredLast = nimbleReorderPPsamplersSetting)
+    nimbleOptions(MCMCreorderSamplersPosteriorPredLast = nimbleReorderPPsamplersSetting)
     nimbleOptions(MCMCjointlySamplePredictiveBranches = nimblePPBranchSamplerSetting)
     nimbleOptions(MCMCincludePredictiveDependencies = nimbleIncludePredDependenciesSetting)
 })
