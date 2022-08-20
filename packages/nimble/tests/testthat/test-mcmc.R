@@ -2495,7 +2495,7 @@ test_that('asymptotic agreement of samplers, using MCMCincludePredictiveDependen
     set.seed(0)
     samplesF <- runMCMC(Cmcmc, niter, nburnin)
     ##
-    expect_true(all(abs(as.numeric(apply(samplesT, 2, mean)) - as.numeric(apply(samplesF, 2, mean))) < 0.03))
+    expect_true(all(abs(as.numeric(apply(samplesT, 2, mean)) - as.numeric(apply(samplesF, 2, mean))) < 0.035))
     expect_true(all(abs(as.numeric(apply(samplesT, 2, sd  )) - as.numeric(apply(samplesF, 2, sd  ))) < 0.05))
     ##
     nimbleOptions(MCMCincludePredictiveDependencies = nimbleIncludePredDependenciesSetting)
