@@ -234,6 +234,7 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                     nodes <- model$modelDef$maps$graphID_2_nodeName[nodeIDs]
                     posteriorPredictiveBranchNodes <- model$modelDef$maps$graphID_2_nodeName[postPredBranchNodeIDsToSample]
                 }
+                posteriorPredictiveNodesAll <- model$getNodeNames(posteriorPredOnly = TRUE)
                 isEndNode <-  model$isEndNode(nodeIDs) ## isEndNode can be modified later to avoid adding names when input is IDs
                 if(useConjugacy) conjugacyResultsAll <- nimble:::conjugacyRelationshipsObject$checkConjugacy(model, nodeIDs) ## Later, this can go through model$checkConjugacy if we make it check whether nodes are already nodeIDs.  To isolate changes, I am doing it directly here.
                 nodeDeclIDs <- model$modelDef$maps$graphID_2_declID[nodeIDs] ## Below, nodeDeclIDs[i] gives the nodeDeclID.  We could add an interface to get this.
@@ -311,11 +312,12 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                             nodeLength <- length(nodeScalarComponents)
                         }
                     }
-                    ## if node has 0 stochastic dependents, assign 'posterior_predictive' sampler (e.g. for predictive nodes)
-                    if(isEndNode[i]) { addSampler(target = node, type = 'posterior_predictive', control = controlDefaultsArg);     next }
-
+                    
                     ## if nodes is a branch point of a network of entirely non-data nodes, assign 'posterior_predictive_branch' sampler
-                    if(node %in% posteriorPredictiveBranchNodes) { addSampler(target = node, type = 'posterior_predictive_branch', control = controlDefaultsArg);     next }
+                    if(node %in% posteriorPredictiveBranchNodes) { addSampler(target = node, type = 'posterior_predictive_branch', control = controlDefaultsArg);   next }
+                    
+                    ## if node has 0 stochastic dependents, assign 'posterior_predictive' sampler (e.g. for predictive nodes)
+                    if(node %in% posteriorPredictiveNodesAll)    { addSampler(target = node, type = 'posterior_predictive',        control = controlDefaultsArg);   next }
                     
                     ## for multivariate nodes, either add a conjugate sampler, RW_multinomial, or RW_block sampler
                     if(nodeLength > 1) {
