@@ -822,8 +822,8 @@ byType: A logical argument, specifying whether the nodes being sampled should be
                 cat(paste0(info, "\n"))
             }
             if(!executionOrder && !identical(as.numeric(samplerExecutionOrder), as.numeric(seq_along(samplerConfs)))) {
-                cat('These sampler functions have a modified order of execution.\n')
-                cat('To print samplers in the modified order of execution, use printSamplers(executionOrder = TRUE).\n')
+                message('\n  [Note] Samplers have a modified order of execution.')
+                message('  [Node] To print samplers in the modified order of execution, use printSamplers(executionOrder = TRUE).\n')
             }
             return(invisible(NULL))
         },
