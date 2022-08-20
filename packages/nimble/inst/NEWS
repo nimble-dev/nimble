@@ -8,9 +8,11 @@ USER LEVEL CHANGES
 
 -- New `nodes` argument added for the `addSampler` method of MCMC configuration objects.  Nodes specified in `nodes` automatically undergo expansion according to `expandNodeNames` prior to sampler assignment, allowing for easier assignment of samplers to multiple nodes.
 
--- Addition of arguments `includePosteriorPred`, `posteriorPredOnly`, `includePosteriorPredBranch`, and `posteriorPredBranchOnly` arguments to `getNodeNames` and `getDependencies` methods of model objects.
+-- Addition of arguments `includePosteriorPred`, `posteriorPredOnly`, `includePosteriorPredBranch`, and `posteriorPredBranchOnly` arguments to `getNodeNames` and `getDependencies` methods of model objects, which inform about posterior predictive node names in the model.
 
--- New system-level option `MCMCincludePredictiveDependencies` which controls whether MCMC samplers condition on posterior predictive nodes (and posterior predictive branch nodes) when calculating the acceptance probabilities of proposed transitions.  Default is FALSE.
+-- New package option `MCMCincludePredictiveDependencies` which controls whether MCMC samplers condition on posterior predictive nodes (and posterior predictive branch nodes) when calculating the acceptance probabilities of proposed transitions.  Default is FALSE.
+
+-- New package option `MCMCreorderSamplersPosteriorPredLast` which controls whether MCMC samplers are automatically reordered, to make all posterior predictive samplers operate last.  Doing so, posterior predictive samples are generated conditional on the other specific values in the MCMC sample.  Default is TRUE.
 
 
                             CHANGES IN VERSION 0.12.2 (February 2022)
