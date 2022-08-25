@@ -89,7 +89,6 @@ buildMCMC <- nimbleFunction(
         model <- conf$model
         my_initializeModel <- initializeModel(model)
         mvSaved <- modelValues(model)
-        browser()
         if(getNimbleOption('MCMCreorderSamplersPosteriorPredLast') && length(conf$samplerConfs)) {
             ## put all posterior_predictive and posterior_predictive_branch samplers at the end
             samplerNames <- sapply(conf$samplerConfs, `[[`, 'name')
