@@ -198,6 +198,66 @@ test_that('Derivatives of matrix component-wise exponentiation function correctl
           }
 )
 
+test_that('Derivatives with rep() work correctly.',
+{
+  ADfun7 <- nimbleFunction(
+    setup = TRUE,
+    run = function(x = double(), n = double()) {
+      y <- rep(x, n) # Regardless of n or n2, the second argument is lifted to a TYPE_
+      ans <- sum(y^2)
+      return(ans)
+      returnType(double())
+    },
+    methods = list(
+      derivsRun = function(x = double(), n = double()) {
+        ans <- derivs(run(x, n), wrt = c(1), order = 0:2)
+        return(ans)
+        returnType(ADNimbleList())
+      }),
+    buildDerivs = list(run = list(ignore = c("n")))
+  )
+
+  ADfunInst <- ADfun7()
+  temporarilyAssignInGlobalEnv(ADfunInst)
+  cADfunInst <- compileNimble(ADfunInst)
+  cderivs <- cADfunInst$derivsRun(3,4)
+  derivs <- ADfunInst$derivsRun(3,4)
+  expect_equivalent(cderivs$value, derivs$value)
+  expect_equivalent(cderivs$jacobian, derivs$jacobian)
+  expect_equivalent(cderivs$hessian, derivs$hessian)
+}
+)
+
+test_that('Derivatives with c() work correctly.',
+{
+  ADfun8 <- nimbleFunction(
+    setup = TRUE,
+    run = function(x = double(), y = double()) {
+      z <- c(x, y)
+      ans <- sum(z^2)
+      return(ans)
+      returnType(double())
+    },
+    methods = list(
+      derivsRun = function(x = double(), y = double()) {
+        ans <- derivs(run(x, y), wrt = 1:2, order = 0:2)
+        return(ans)
+        returnType(ADNimbleList())
+      }),
+    buildDerivs = list(run = list())
+  )
+
+  ADfunInst <- ADfun8()
+  temporarilyAssignInGlobalEnv(ADfunInst)
+  cADfunInst <- compileNimble(ADfunInst)
+  cderivs <- cADfunInst$derivsRun(3,5)
+  derivs <- ADfunInst$derivsRun(3,5)
+  expect_equivalent(cderivs$value, derivs$value)
+  expect_equivalent(cderivs$jacobian, derivs$jacobian)
+  expect_equivalent(cderivs$hessian, derivs$hessian)
+}
+)
+
 #######################
 ## run all of the tests
 #######################

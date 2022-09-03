@@ -654,7 +654,7 @@ modifyForAD_handlers <- c(list(
     MAKE_FIXED_VECTOR = 'modifyForAD_MAKE_FIXED_VECTOR'),
     makeCallList(recyclingRuleOperatorsAD, 'modifyForAD_RecyclingRule'),
     makeCallList(c('EIGEN_FS', 'EIGEN_BS', 'EIGEN_SOLVE', 'EIGEN_CHOL', 'nimNewMatrixD', 'nimCd',
-                   'nimDiagonalD', 'nimNonseqIndexedd'),
+                   'nimRepd','nimDiagonalD', 'nimNonseqIndexedd'),
                  'modifyForAD_prependNimDerivs'))
 
 exprClasses_modifyForAD <- function(code, symTab,

@@ -708,7 +708,10 @@ sizeRep <- function(code, symTab, typeEnv) {
 
     ## requiring for now that times and each arguments are given as integers, not expressions
     ## Since these will go into sizeExprs, which are then processed as R expressions, then as exprClasses but not fully size processed,
-    ## any expression should be lifted
+  ## any expression should be lifted
+  old_avoidAD <- typeEnv$.avoidAD
+  typeEnv$.avoidAD <- TRUE  # The makes the lifted nodes for times and/or length.out be put on the ignore list for AD
+  on.exit(typeEnv$.avoidAD <- old_avoidAD)
     if(includesLengthOut) { ## there is a "length.out" argument        ## need to lift length.out if it is more than a name or constant
         if(inherits(code$args[[2]], 'exprClass')) if(code$args[[2]]$nDim > 0) stop(exprClassProcessingErrorMsg(code, paste0('times argument to rep() must be scalar is length.out is also provided.')), call. = FALSE)
         if(inherits(code$args[[3]], 'exprClass')) { ## if length.out is present, it is argument 3

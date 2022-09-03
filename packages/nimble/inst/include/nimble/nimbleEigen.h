@@ -417,7 +417,7 @@ struct concatenate_impl {
 #define nimCb concatenate_impl<MatrixXb>::concatenate
 
 // rep, rep(x, times, each)
-template<typename Index1, typename Derived1> // times and each should be scalar but if non-scalar first value is used
+template<typename Index1, typename Derived1, typename result_type = double> // times and each should be scalar but if non-scalar first value is used
 class repClass {
 public:
   const Derived1 &Arg1;
@@ -425,7 +425,7 @@ public:
   typedef enum{useEach, useTimes, useBoth} eachTimesCaseType;
   eachTimesCaseType eachTimesCase;
   int sizeArg1, outputLength;
-  typedef double result_type;
+//  typedef double result_type;
  repClass(const Derived1 &A1, int timesIn, int eachIn) :
   Arg1(A1),
     times(timesIn),
@@ -487,31 +487,31 @@ public:
 
 namespace Eigen{
   namespace internal{
-    template<typename Index, typename Derived1>
-      struct functor_has_linear_access<repClass<Index, Derived1> > { enum { ret = 1}; }; 
-    template<typename Index, typename Derived1>
-      struct functor_traits<repClass<Index, Derived1> > { enum { Cost = 10, PacketAccess = false, IsRepeatable = true}; };
+    template<typename Index, typename Derived1, typename result_type>
+      struct functor_has_linear_access<repClass<Index, Derived1, result_type> > { enum { ret = 1}; };
+    template<typename Index, typename Derived1, typename result_type>
+      struct functor_traits<repClass<Index, Derived1, result_type> > { enum { Cost = 10, PacketAccess = false, IsRepeatable = true}; };
   }
 }
 
-template<typename returnDerived>
+template<typename returnDerived, typename result_type = double>
 struct rep_impl {
   typedef Eigen::Index IndexReturn;
 
   template<typename Derived1, typename DerivedEach> // timesIn can always be int here because if it is non-int this code isn't used
-  static CwiseNullaryOp<repClass<IndexReturn, Derived1>, returnDerived > rep(const Derived1 &A1, int timesIn, const DerivedEach &each) {
-    repClass<IndexReturn, Derived1> repObj(A1,
+  static CwiseNullaryOp<repClass<IndexReturn, Derived1, result_type>, returnDerived > rep(const Derived1 &A1, int timesIn, const DerivedEach &each) {
+    repClass<IndexReturn, Derived1, result_type> repObj(A1,
 					   timesIn,
 					   nimble_eigen_coeff_impl< nimble_eigen_traits<DerivedEach>::nimbleUseLinearAccess, int, DerivedEach, unsigned int >::getCoeff(each, 0));
-    return(CwiseNullaryOp<repClass<IndexReturn, Derived1>, returnDerived >(repObj.outputLength, 1, repObj));
+    return(CwiseNullaryOp<repClass<IndexReturn, Derived1, result_type>, returnDerived >(repObj.outputLength, 1, repObj));
   }
   
   template<typename Derived1, typename DerivedLengthOut, typename DerivedEach>
-    static CwiseNullaryOp<repClass<IndexReturn, Derived1>, returnDerived > rep(const Derived1 &A1, int timesIn, const DerivedLengthOut &length_out, const DerivedEach &eachIn) {
-    repClass<IndexReturn, Derived1> repObj(A1, timesIn,
+    static CwiseNullaryOp<repClass<IndexReturn, Derived1, result_type>, returnDerived > rep(const Derived1 &A1, int timesIn, const DerivedLengthOut &length_out, const DerivedEach &eachIn) {
+    repClass<IndexReturn, Derived1, result_type> repObj(A1, timesIn,
 					   nimble_eigen_coeff_impl< nimble_eigen_traits<DerivedEach>::nimbleUseLinearAccess, int, DerivedEach, unsigned int >::getCoeff(eachIn, 0),
 					   nimble_eigen_coeff_impl< nimble_eigen_traits<DerivedLengthOut>::nimbleUseLinearAccess, int, DerivedLengthOut, unsigned int >::getCoeff(length_out, 0));
-    return(CwiseNullaryOp<repClass<IndexReturn, Derived1>, returnDerived >(repObj.outputLength, 1, repObj));
+    return(CwiseNullaryOp<repClass<IndexReturn, Derived1, result_type>, returnDerived >(repObj.outputLength, 1, repObj));
   }
 };
 

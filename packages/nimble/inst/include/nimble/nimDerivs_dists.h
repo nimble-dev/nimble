@@ -1158,5 +1158,6 @@ MAKE_RECYCLING_RULE_CLASS1_1scalar(nimDerivs_pow_int, CppAD::AD<double>)
 #define nimDerivs_nimDiagonalD diagonal_impl<MatrixXd_CppAD, CppAD::AD<double> >::diagonal
 #define nimDerivs_nimCd concatenate_impl<MatrixXd_CppAD, CppAD::AD<double> >::concatenate
 #define nimDerivs_nimNonseqIndexedd nonseqIndexed_impl<MatrixXd_CppAD, CppAD::AD<double> >::nonseqIndexed
+#define nimDerivs_nimRepd rep_impl<MatrixXd_CppAD, CppAD::AD<double> >::rep
 
 #endif
