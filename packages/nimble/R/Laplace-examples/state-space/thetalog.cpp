@@ -13,9 +13,7 @@ Type objective_function<Type>::operator() ()
   int n = y.size();
   Type f = 0;
   for(int t = 1; t < n; t++){
-    // Type mean = u[t-1] + r0 * (1 - pow(exp(u[t-1])/K, psi));
-    // Type mean = u[t-1] + r0 * (1 - psi* exp(u[t-1]) / K);
-    Type mean = u[t-1] + r0 * psi * (1 - exp(u[t-1]) / K);
+    Type mean = u[t-1] + r0 * (1 - pow(exp(u[t-1])/K, psi));
     f -= dnorm(u[t], mean, sqrt(Q), true);
   }
   

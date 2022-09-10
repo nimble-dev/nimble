@@ -1,6 +1,8 @@
 ## A state-space model for testing nimble Laplace 
+rm(list=ls())
 library(nimble)
 nimbleOptions(buildDerivs = TRUE)
+nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions = TRUE) 
 
 ## Read in data
 dat<- scan("thetalog.dat", skip=3, quiet=TRUE)
@@ -29,10 +31,7 @@ thetalogCode <- nimbleCode({
   
   ## States and observations for t >= 2
   for(t in 2:N){
-    ## When pow or '^' is used here, fatal errors occur when calling Laplace.
-    ## mean.u[t-1] <- u[t - 1] + r0 * (1 - pow(exp(u[t - 1]) / K, psi))
-    ## mean.u[t-1] <- u[t - 1] + r0 * (1 - psi * exp(u[t - 1]) / K)
-    mean.u[t-1] <- u[t - 1] + r0 * psi * (1 - exp(u[t - 1]) / K)
+    mean.u[t-1] <- u[t - 1] + r0 * (1 - pow(exp(u[t - 1]) / K, psi))
     u[t] ~ dnorm(mean.u[t-1], sd = sqrt(Q))
     y[t] ~ dnorm(u[t], sd = sqrt(R))
   }
@@ -63,22 +62,35 @@ thetalogLaplace <- buildLaplace(thetalog, paramNodes, randomEffectsNodes, calcNo
 CthetalogLaplace <- compileNimble(thetalogLaplace, project = thetalog)
 
 ## Compute one Laplace approximation
-CthetalogLaplace$set_method(2)
 CthetalogLaplace$Laplace(p)
+CthetalogLaplace$gr_Laplace(p)
 
 ## Calculate MLE using different methods 
-nimtime1 <- system.time(nimres1 <- CthetalogLaplace$LaplaceMLE1(p-1))
-nimtime2 <- system.time(nimres2 <- CthetalogLaplace$LaplaceMLE2(p))
-## nimtime3 <- system.time(nimres3 <- CthetalogLaplace$LaplaceMLE3(p))
+CthetalogLaplace$set_method(1) ## Single taping for derivatives calculation with separate components
+nimtime1 <- system.time(nimres1 <- CthetalogLaplace$LaplaceMLE(p-1))
+nimsumm1 <- CthetalogLaplace$summary(nimres1)
 
-## Use nlminb for outer optimization, which is faster, but still slower than TMB
-## Convergence code 8 is annoying but results are very close to those of TMB
-nimtime.nlminb <- system.time(
-  nimres.nlminb <- nlminb(p, 
-                          function(x) -CthetalogLaplace$Laplace2(x),
-                          function(x) -CthetalogLaplace$gr_Laplace2(x))
+CthetalogLaplace$set_method(2) ## Double taping for derivatives calculation with separate components
+nimtime2 <- system.time(nimres2 <- CthetalogLaplace$LaplaceMLE(p-1))
+nimsumm2 <- CthetalogLaplace$summary(nimres2)
+
+## Method 3 is slow for this example
+# CthetalogLaplace$set_method(3) ## Double taping with everything packed together
+# nimtime3 <- system.time(nimres3 <- CthetalogLaplace$LaplaceMLE(p-1))
+
+## Use nlminb 
+nimtime.nlmb <- system.time(
+  nimres.nlminb <- nlminb(p-1, 
+                          function(x) -CthetalogLaplace$Laplace(x),
+                          function(x) -CthetalogLaplace$gr_Laplace(x))
 )
 
-source("thetalogTMB.R") ## TMB code
-rbind(nimres1$par, nimres2$par, nimres.nlminb$par, tmbres$par)
-c(nimres1$value, nimres2$value, tmbres$objective)
+## Run TMB code
+source("thetalogTMB.R") 
+
+## Compare runtimes, MLEs, and standard errors
+rbind(nimtime1, nimtime2, nimtime.nlmb, tmbtime)
+rbind(nimsumm1$estimate, nimsumm2$estimate, nimres.nlminb$par, tmbres$par)
+rbind(nimsumm1$stdError, nimsumm2$stdError, tmbsumm[,"Std. Error"])
+
+

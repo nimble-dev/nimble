@@ -1,7 +1,7 @@
 rm(list=ls())
 library(nimble)
-## source("../DLaplace.R")
 nimbleOptions(buildDerivs = TRUE)
+nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions = TRUE)
 source("lmmTMB.R")
 ## Model code
 code <- nimbleCode({
@@ -30,26 +30,35 @@ model <- nimbleModel(code, constants = constants, data = data, inits = inits, bu
 cmodel <- compileNimble(model)
 cmodel$calculate()
 ## Laplace
-paramNodes <- c("beta", "logsdu", "logsd0")
-randomEffectsNodes <- "u"
-calcNodes <- model$getDependencies(randomEffectsNodes)
-laplace <- buildLaplace(model, paramNodes, randomEffectsNodes, calcNodes,
-                        control = list(split=TRUE))
+laplace <- buildLaplace(model) 
 claplace <- compileNimble(laplace, project = model)
-p <- values(model, paramNodes)
-claplace$set_method(2)
+## Test it works
+p <- values(model, c("logsdu", "logsd0", "beta"))
 claplace$Laplace(p)
+claplace$gr_Laplace(p)
 
-## Calculate MLEs
-## nimtime1 <- system.time(nimres1 <- claplace$LaplaceMLE1(p))
-nimtime2 <- system.time(nimres2 <- claplace$LaplaceMLE2(p))
-## nimtime3 <- system.time(nimres3 <- claplace$LaplaceMLE3(p)) ## This takes long...
+## Calculate MLE
+claplace$set_method(1) ## Single taping for derivatives calculation with separate components
+nimtime1 <- system.time(nimres1 <- claplace$LaplaceMLE(p))
+nimsumm1 <- claplace$summary(nimres1)
+
+claplace$set_method(2) ## Double taping for derivatives calculation with separate components
+nimtime2 <- system.time(nimres2 <- claplace$LaplaceMLE(p))
+nimsumm2 <- claplace$summary(nimres2)
+
+# claplace$set_method(3) ## Double taping with everything packed together
+# nimtime3 <- system.time(nimres3 <- claplace$LaplaceMLE(p)) ## This takes longer: 4mins 
 nimtime.nlminb <- system.time(
-  nimres.nlminb <- nlminb(p, 
-                          function(x) {-claplace$Laplace2(x)},
-                          function(x) {-claplace$gr_Laplace2(x)})
+  nimres.nlminb <- nlminb(p,
+                          function(x) -claplace$Laplace(x),
+                          function(x) -claplace$gr_Laplace(x))
 )
 
-## Results match well, but nimble is slower than TMB
-rbind(nimtime2, nimtime.nlminb, tmbtime)
-rbind(nimres2$par, nimres.nlminb$par, tmbres$par)
+## Compare run times and MLEs
+rbind(nimtime1, nimtime2, nimtime.nlminb, tmbtime)
+rbind(nimsumm1$estimate, nimsumm2$estimate, nimres.nlminb$par, tmbres$par)
+
+## Std errors
+rbind(nimsumm1$stdError[1:4],
+      nimsumm2$stdError[1:4],
+      tmbsumm[,"Std. Error"])

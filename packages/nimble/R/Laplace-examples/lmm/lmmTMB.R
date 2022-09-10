@@ -27,3 +27,4 @@ obj <- MakeADFun(data=list(x=x, B=B, A=A),
                  silent=TRUE
                  )
 tmbtime <- system.time(tmbres <- nlminb(obj$par, obj$fn, obj$gr))
+tmbsumm <- summary(sdreport(obj), "fixed")

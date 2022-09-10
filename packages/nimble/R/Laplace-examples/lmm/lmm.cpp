@@ -8,9 +8,9 @@ Type objective_function<Type>::operator() ()
   DATA_SPARSE_MATRIX(B);  // Random effect design matrix
   DATA_SPARSE_MATRIX(A);  // Fixed effect design matrix
   PARAMETER_VECTOR(u);    // Random effects vector
-  PARAMETER_VECTOR(beta); // Fixed effects vector
   PARAMETER(logsdu);      // Random effect standard deviations
   PARAMETER(logsd0);      // Measurement standard deviation
+  PARAMETER_VECTOR(beta); // Fixed effects vector
 
   // Distribution of random effect (u):
   Type ans = 0;

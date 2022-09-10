@@ -19,3 +19,4 @@ parameters <- list(
 ## Fit model
 obj <- MakeADFun(data, parameters, random="u", DLL="thetalog")
 tmbtime <- system.time(tmbres <- nlminb(obj$par, obj$fn, obj$gr))
+tmbsumm <- summary(sdreport(obj), "fixed")

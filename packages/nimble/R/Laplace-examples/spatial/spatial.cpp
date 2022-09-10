@@ -9,13 +9,15 @@ Type objective_function<Type>::operator() ()
   DATA_MATRIX(X);
   DATA_MATRIX(dd);
   PARAMETER_VECTOR(b);
-  PARAMETER(a);
+  //PARAMETER(a);
+  PARAMETER(log_a);
   PARAMETER(log_sigma);
   PARAMETER_VECTOR(u);
 
   using namespace density;
   int i,j;
   Type res=0;
+  Type a = exp(log_a);
 
   vector<Type> eta(n); 
   eta = X*b + exp(log_sigma)*u;
@@ -42,6 +44,7 @@ Type objective_function<Type>::operator() ()
   REPORT(res); // Negative log-likelihood value
   REPORT(eta)
   REPORT(u);
+  ADREPORT(a);
   return res;
 
 }

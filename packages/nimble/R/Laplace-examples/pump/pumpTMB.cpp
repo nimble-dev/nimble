@@ -5,16 +5,16 @@ Type objective_function<Type>::operator() ()
   DATA_VECTOR(X);
   DATA_VECTOR(t);
   PARAMETER_VECTOR(u);
-  PARAMETER(alpha_transform);
-  PARAMETER(beta_transform);
+  PARAMETER(alphat);
+  PARAMETER(betat);
   
   int N = X.size();
   Type ans=0;
   vector<Type> lambda(N);
   // exp transformation for original random effects 
   vector<Type> theta = exp(u);
-  Type alpha = exp(alpha_transform);
-  Type beta = exp(beta_transform);
+  Type alpha = exp(alphat);
+  Type beta = exp(betat);
   
   // Negative log-likelihood
   for(int i = 0; i < N; i++){

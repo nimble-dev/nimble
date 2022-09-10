@@ -1,15 +1,22 @@
-## A spatial Poisson GLMM 
 rm(list=ls())
 library(nimble)
+source("spatialTMB.R")
+## *** Note that parametrizing the model using a / log(a) causes a (big) difference to 
+## the efficiency of optimization using TMB. The latter is faster.  
+tmbtime ## TMB run time: ~0.7s
+
 nimbleOptions(buildDerivs = TRUE)
+nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions = TRUE) 
 
 ## Model code
-spatialCode <- nimbleCode({
+code <- nimbleCode({
   ## Priors
   for(i in 1:2){
     b[i] ~ dnorm(0, sd = 100)
   }
-  a ~ dnorm(0, sd = 100)
+  log_a ~ dnorm(0, sd = 100)
+  a <- exp(log_a)
+  ## a ~ dgamma(0.1, 1.0)
   log_sigma ~ dnorm(0, sd = 100)
   
   ## Covariance matrix
@@ -20,13 +27,10 @@ spatialCode <- nimbleCode({
       cov[j, i] <- cov[i, j]
     }
   }
-  ## Zero mean 
+  ## Zero mean
   for(i in 1:n){
     mean[i] <- 0
   }
-  ## Multivariate normal
-  ## prec[1:n, 1:n] <- inverse(cov[1:n, 1:n])
-  ## u[1:n] ~ dmnorm(mean[1:n], prec = prec[1:n, 1:n])
   u[1:n] ~ dmnorm(mean[1:n], cov = cov[1:n, 1:n])
   
   ## Multivariate Poisson
@@ -35,54 +39,49 @@ spatialCode <- nimbleCode({
     y[i] ~ dpois(exp(eta[i]))
   }
 })
-## Load data
+## Source data
 source("spatial_data.R")
 dd <- as.matrix(dist(Z))
+model <- nimbleModel(code,
+                     constants = list(n = n, dd = dd, X = X),
+                     data = list(y = y),
+                     inits = list(b = c(1, 1), log_a = log(2), log_sigma = -1, u = rep(1, n)),
+                     buildDerivs = TRUE)
 
-## Build the model
-spatialGLMM <- nimbleModel(spatialCode, 
-                           name = "spatialGLMM",
-                           constants = list(n = n, dd = dd),
-                           data = list(y = y, X = X),
-                           inits = list(b = c(1, 1), a = 2, log_sigma = -1, u = rep(1, n)),
-                           buildDerivs = TRUE
-                           )
-## Compile the model
-CspatialGLMM <- compileNimble(spatialGLMM)
+Cmodel <- compileNimble(model)
+Cmodel$calculate() 
 
-## Setup
-randomEffectsNodes <- "u"
-calcNodes <- spatialGLMM$getDependencies(randomEffectsNodes)
-paramNodes <- c("b", "a", "log_sigma")
+paramNodes <- c("b", "log_a", "log_sigma") 
+model$getNodeNames(topOnly = TRUE, stochOnly = TRUE) ## Order of parameters by default
 
-## Values of parameters and random effects nodes
-p  <- values(spatialGLMM, paramNodes)
-re <- values(spatialGLMM, randomEffectsNodes)
+## Build Laplace: do everything using the default settings
+laplace <- buildLaplace(model)
+Claplace <- compileNimble(laplace, project = model, resetFunctions = TRUE)
 
-## Laplace approximation
-spLaplace  <- buildLaplace(spatialGLMM, paramNodes, randomEffectsNodes, calcNodes, control = list(split = FALSE))
-CspLaplace <- compileNimble(spLaplace, project = spatialGLMM)
+## MLEs
+p <- values(model, paramNodes)
+Claplace$Laplace(p)
+Claplace$gr_Laplace(p)
 
-## Method 2 seems to be the best for this spatial model
-method <- 2
-CspLaplace$set_method(method)
-## Correct answers are returned (first-time run is much slower)
-system.time(nimres <- CspLaplace$Laplace(p))
-system.time(tmbres <- obj$fn(p))
-system.time(nimres2 <- CspLaplace$Laplace(p+1))
-system.time(tmbres2 <- obj$fn(p+1))
+Claplace$set_method(1) ## Single taping for derivatives calculation with separate components
+nimtime1 <- system.time(nimres1 <- Claplace$LaplaceMLE(p))
+nimSumm1 <- Claplace$summary(nimres1)
 
-## Calculate MLEs
-nimtime1 <- system.time(nimres1 <- CspLaplace$LaplaceMLE1(p))
-nimtime2 <- system.time(nimres2 <- CspLaplace$LaplaceMLE2(p))
-nimtime21 <- system.time(nimres.nlminb <- nlminb(p+1, function(x) -CspLaplace$Laplace2(x),
-                                          function(x) -CspLaplace$gr_Laplace2(x),
-                                          lower=c(-100.0, -100.0, 0.01, -3.0),
-                                          upper=c( 100.0,  100.0, 3.00,  3.0)))
-nimtime3 <- system.time(nimres3 <- CspLaplace$LaplaceMLE3(p))
-## Compare nimble and TMB
-source("spatialTMB.R") 
-c(nimtime1, nimtime2, tmbtime)
-rbind(nimres1$par, nimres2$par, tmbres$par)
+Claplace$set_method(2) ## Double taping for derivatives calculation with separate components
+nimtime2 <- system.time(nimres2 <- Claplace$LaplaceMLE(p))
+nimSumm2 <- Claplace$summary(nimres2)
 
-
+## Use nlminb
+nimtime_nlmb <- system.time(
+  nimres_nlmb <- nlminb(p, 
+                        function(x) -Claplace$Laplace(x),
+                        function(x) -Claplace$gr_Laplace(x))
+)
+## nimble + nlminb gives very close results to TMB for out optimization
+rbind(nimres_nlmb$par, tmbres$par)
+## Compare run times 
+rbind(nimtime1, nimtime2, nimtime_nlmb, tmbtime)
+## MLEs are very close
+rbind(nimSumm1$estimate, nimSumm2$estimate, nimres_nlmb$par, tmbres$par)
+## Std. errors: very close as well
+rbind(nimSumm1$stdError, nimSumm2$stdError, rep[,"Std. Error"])

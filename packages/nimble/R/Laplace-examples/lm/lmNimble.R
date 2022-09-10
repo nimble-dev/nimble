@@ -1,6 +1,5 @@
 rm(list=ls())
 library(nimble)
-## source("../DLaplace.R")
 nimbleOptions(buildDerivs = TRUE)
 ## nimbleFunction for maximum likelihood
 source("nimMaxLik.R") 
@@ -33,6 +32,7 @@ cmle <- compileNimble(mle, project = model, resetFunctions = T)
 p <- values(model, paramNodes)
 nimtime <- system.time(nimres <- cmle$maxLik(p))
 
+## Runtimes and MLEs are very close
 rbind(tmbtime, nimtime)
 rbind(tmbres$par, nimres$par)
 
