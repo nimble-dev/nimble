@@ -1363,8 +1363,15 @@ cc_checkLinearity <- function(expr, targetNode) {
         return(list(offset = cc_replace01(expr), scale = 0))  
     }
 
-    ## expr is exactly the targetNode
-    if(identical(targetNode, safeDeparse(expr, warn = TRUE)))
+    ## Check if expr is exactly the targetNode.
+    
+    ## `deparse()` may return multiple lines, which will cause `FALSE` here.
+    ## That should always be correct as multiple lines would only occur
+    ## when `expr` is not a node name. It's possible one could have a node name
+    ## with many indices and large integers as indices (e.g., x[13434, 1342352,...])
+    ## but to get to a length that would get deparsed to multiple lines
+    ## would entail a gigantic object.
+    if(identical(targetNode, deparse(expr)))
         return(list(offset = 0, scale = 1))
 
     if(!is.call(expr))   stop('cc_checkLinearity: expression is not a call object')
