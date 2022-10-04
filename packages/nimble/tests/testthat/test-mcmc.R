@@ -14,7 +14,7 @@ nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
 nimbleOptions(MCMCprogressBar = FALSE)
 
 ## MCMC orderSamplersPosteriorPredictiveLast - save current setting
-nimbleReorderPPsamplersSetting <- getNimbleOption('MCMCorderSamplersPosteriorPredictiveLast')
+nimbleReorderPPsamplersSetting <- getNimbleOption('MCMCorderPosteriorPredictiveSamplersLast')
 
 ## MCMC use posteriorPredictiveBranch sampler - save current setting
 nimblePPBranchSamplerSetting <- getNimbleOption('MCMCjointlySamplePredictiveBranches')
@@ -421,7 +421,7 @@ test_that('beta-binom conjugacy setup', {
 ### checkConjugacy_demo3_run.R - various conjugacies
 
 test_that('various conjugacies setup', {
-    nimbleOptions(MCMCorderSamplersPosteriorPredictiveLast = FALSE)
+    nimbleOptions(MCMCorderPosteriorPredictiveSamplersLast = FALSE)
     nimbleOptions(MCMCjointlySamplePredictiveBranches = FALSE)
     nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)
     code <- nimbleCode({
@@ -446,7 +446,7 @@ test_that('various conjugacies setup', {
     
     test_mcmc(model = code, name = 'check various conjugacies', exactSample = sampleVals, seed = 0, mcmcControl = list(scale=0.01), avoidNestedTest = TRUE)
     ## with fixing of jNorm[1] and kLogNorm[1] we no longer have: knownFailures = list('R C samples match' = "KNOWN ISSUE: R and C posterior samples are not equal for 'various conjugacies'"))
-    nimbleOptions(MCMCorderSamplersPosteriorPredictiveLast = nimbleReorderPPsamplersSetting)
+    nimbleOptions(MCMCorderPosteriorPredictiveSamplersLast = nimbleReorderPPsamplersSetting)
     nimbleOptions(MCMCjointlySamplePredictiveBranches = nimblePPBranchSamplerSetting)
     nimbleOptions(MCMCusePredictiveDependenciesInCalculations = nimbleUsePredictiveDependenciesSetting)
 })

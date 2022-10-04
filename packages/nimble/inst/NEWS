@@ -12,7 +12,7 @@ USER LEVEL CHANGES
 
 -- New package option `MCMCusePredictiveDependenciesInCalculations` which controls whether MCMC samplers condition on posterior predictive nodes (and posterior predictive branch point nodes) when calculating the acceptance probabilities of proposed transitions.  Default is FALSE.
 
--- New package option `MCMCorderSamplersPosteriorPredictiveLast` which controls whether MCMC samplers are automatically reordered, to make all posterior predictive samplers operate last.  Doing so, posterior predictive samples are generated conditional on the other other values in the MCMC sample.  Default is TRUE.
+-- New package option `MCMCorderPosteriorPredictiveSamplersLast` which controls whether MCMC samplers are automatically reordered, to make all posterior predictive samplers operate last.  Doing so, posterior predictive samples are generated conditional on the other other values in the MCMC sample.  Default is TRUE.
 
 
                             CHANGES IN VERSION 0.12.2 (February 2022)

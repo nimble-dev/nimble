@@ -203,7 +203,7 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                                 collapse=', ')) }    ## ensure all target node(s) are stochastic
             }
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
-            if(getNimbleOption('MCMCorderSamplersPosteriorPredictiveLast')) {
+            if(getNimbleOption('MCMCorderPosteriorPredictiveSamplersLast')) {
                 postPredBool <- nodes %in% model$getNodeNames(predictiveOnly = TRUE)
                 nodes <- c(nodes[!postPredBool], nodes[postPredBool])  ## put posterior predictive nodes at the end
             }
