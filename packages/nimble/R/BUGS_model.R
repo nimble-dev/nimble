@@ -547,7 +547,9 @@ Details: This function merely reorders its input argument.  This may be importan
                                       ## initializes the 'isDataEnv' to logical arrays of 'FALSE', based on dimensions in 'isDataVars' object
                                       list2env(lapply(isDataVars, nimble:::createDefault_isDataObj), isDataEnv)
                                       ## at the time of initializing the isDataEnv, also set predictiveNodeIDs and predictiveBranchPointNodeIDs:
-                                      setPredictiveNodeIDs()
+                                      ##setPredictiveNodeIDs()
+                                      predictiveNodeIDs <<- as.numeric(getNodeNames(stochOnly = TRUE, returnType = 'ids'))
+                                      predictiveBranchPointNodeIDs <<- as.numeric(getNodeNames(stochOnly = TRUE, topOnly = TRUE, returnType = 'ids'))
                                   },
 
                                   resetData = function() {
