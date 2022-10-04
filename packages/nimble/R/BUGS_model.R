@@ -31,7 +31,7 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   isDataVars = 'ANY', #list           ## list with the dimensions of isData_vars
                                   isDataEnv = 'ANY',	#environment      ## environment holding 'logical' objects, with isData flags
                                   predictiveNodeIDs = 'ANY',                  ## numeric vector giving the graph IDs of predictive nodes
-                                  predictiveBranchPointNodeIDs = 'ANY',       ## numeric vector giving the graph IDs of predictive branch nodes
+                                  predictiveBranchPointNodeIDs = 'ANY',       ## numeric vector giving the graph IDs of predictive branch point nodes
                                   classEnvironment = 'ANY', # environment in which the reference classes will be defined
                                   origData = 'ANY',
                                   origInits = 'ANY',
