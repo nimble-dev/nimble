@@ -378,8 +378,8 @@ nodes: An optional character vector supplying a subset of nodes for which to ext
                                   getNodeNames = function(determOnly = FALSE, stochOnly = FALSE,
                                                           includeData = TRUE, dataOnly = FALSE, includeRHSonly = FALSE,
                                                           topOnly = FALSE, latentOnly = FALSE, endOnly = FALSE,
-                                                          includePosteriorPred = TRUE, posteriorPredOnly = FALSE,
-                                                          includePosteriorPredBranch = TRUE, posteriorPredBranchOnly = FALSE,
+                                                          includePredictive = TRUE, predictiveOnly = FALSE,
+                                                          includePredictiveBranchPoint = TRUE, predictiveBranchPointOnly = FALSE,
                                                           returnType = 'names', returnScalarComponents = FALSE) {
                                       '
 Returns a character vector of all node names in the model, in topologically sorted order.  A variety of logical arguments allow for flexible subsetting of all model nodes.
@@ -402,13 +402,13 @@ latentOnly: Logical argument specifying whether to return only latent (mid-level
 
 endOnly: Logical argument specifying whether to return only end nodes from the hierarchical model structure.
 
-includePosteriorPred: Logical argument specifying whether to include posterior predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data) from the hierarchical model structure.
+includePredictive: Logical argument specifying whether to include predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data) from the hierarchical model structure.
 
-posteriorPredOnly: Logical argument specifying whether to return only posterior predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data) from the hierarchical model structure.
+predictiveOnly: Logical argument specifying whether to return only predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data) from the hierarchical model structure.
 
-includePosteriorPredBranch: Logical argument specifying whether to include posterior predictive branch nodes (the branch points in the model, for which themselves and all downstream nodes are posterior predictive nodes) from the hierarchical model structure.
+includePredictiveBranchPoint: Logical argument specifying whether to include predictive branch points (nodes in the model for which themselves and all downstream nodes are posterior predictive nodes) from the hierarchical model structure.
 
-posteriorPredBranchOnly: Logical argument specifying whether to return only posterior predictive branch nodes (the branch points in the model, for which themselves and all downstream nodes are posterior predictive nodes) from the hierarchical model structure.
+predictiveBranchPointOnly: Logical argument specifying whether to return only predictive branch points (nodes the model for which themselves and all downstream nodes are posterior predictive nodes) from the hierarchical model structure.
 
 returnType: Character argument specific type object returned. Options are \'names\' (returns character vector) and \'ids\' (returns numeric graph IDs for model)
 
@@ -439,10 +439,10 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                           if(dataOnly)                  validValues[!boolIsData] <- FALSE
                                       }
                                       
-                                      if(!includePosteriorPred)         validValues <- safeUpdateValidValues(validValues, idsVec_exclude = postPredNodeIDs)
-                                      if(posteriorPredOnly)             validValues <- safeUpdateValidValues(validValues, idsVec_only    = postPredNodeIDs)
-                                      if(!includePosteriorPredBranch)   validValues <- safeUpdateValidValues(validValues, idsVec_exclude = postPredBranchNodeIDs)
-                                      if(posteriorPredBranchOnly)       validValues <- safeUpdateValidValues(validValues, idsVec_only    = postPredBranchNodeIDs)
+                                      if(!includePredictive)         validValues <- safeUpdateValidValues(validValues, idsVec_exclude = postPredNodeIDs)
+                                      if(predictiveOnly)             validValues <- safeUpdateValidValues(validValues, idsVec_only    = postPredNodeIDs)
+                                      if(!includePredictiveBranchPoint)   validValues <- safeUpdateValidValues(validValues, idsVec_exclude = postPredBranchNodeIDs)
+                                      if(predictiveBranchPointOnly)       validValues <- safeUpdateValidValues(validValues, idsVec_only    = postPredBranchNodeIDs)
                                       if(topOnly)                       validValues <- safeUpdateValidValues(validValues, idsVec_only = modelDef$maps$top_IDs)
                                       if(latentOnly)                    validValues <- safeUpdateValidValues(validValues, idsVec_only = modelDef$maps$latent_IDs)
                                       if(endOnly)                       validValues <- safeUpdateValidValues(validValues, idsVec_only = modelDef$maps$end_IDs)
@@ -935,8 +935,8 @@ Return value: List of nodes that are in conditionally independent sets.  Within 
                                   getDependencies = function(nodes, omit = character(), self = TRUE,
                                       determOnly = FALSE, stochOnly = FALSE,
                                       includeData = TRUE, dataOnly = FALSE,
-                                      includePosteriorPred = TRUE, posteriorPredOnly = FALSE,
-                                      includePosteriorPredBranch = TRUE, posteriorPredBranchOnly = FALSE,
+                                      includePredictive = TRUE, predictiveOnly = FALSE,
+                                      includePredictiveBranchPoint = TRUE, predictiveBranchPointOnly = FALSE,
                                       includeRHSonly = FALSE, downstream = FALSE,
                                       returnType = 'names', returnScalarComponents = FALSE) {
 '
@@ -958,13 +958,13 @@ includeData: Logical argument specifying whether to include \'data\' nodes (set 
 
 dataOnly: Logical argument specifying whether to return only \'data\' nodes.  Default is FALSE.
 
-includePosteriorPred: Logical argument specifying whether to include posterior predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data).  Default is TRUE.
+includePredictive: Logical argument specifying whether to include predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data).  Default is TRUE.
 
-posteriorPredOnly: Logical argument specifying whether to return only posterior predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data).  Default is FALSE.
+predictiveOnly: Logical argument specifying whether to return only predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data).  Default is FALSE.
 
-includePosteriorPredBranch: Logical argument specifying whether to include posterior predictive branch nodes (the branch points in the model, for which themselves and all downstream nodes are posterior predictive nodes).  Default is TRUE.
+includePredictiveBranchPoint: Logical argument specifying whether to include predictive branch points (nodes in the model for which themselves and all downstream nodes are posterior predictive nodes).  Default is TRUE.
 
-posteriorPredBranchOnly: Logical argument specifying whether to return only posterior predictive branch nodes (the branch points in the model, for which themselves and all downstream nodes are posterior predictive nodes).  Default is FALSE.
+predictiveBranchPointOnly: Logical argument specifying whether to return only predictive branch points (nodes in the model for which themselves and all downstream nodes are posterior predictive nodes).  Default is FALSE.
 
 includeRHSonly: Logical argument specifying whether to include right-hand-side-only nodes (model nodes which never appear on the left-hand-side of ~ or <- in the model code).  These nodes are neither stochastic nor deterministic, but instead function as variable inputs to the model.  Default is FALSE.
 
@@ -1013,10 +1013,10 @@ depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(i
                                       }
                                       if(!includeData)       depIDs <- depIDs[!isDataFromGraphID(depIDs)]
                                       if(dataOnly)           depIDs <- depIDs[isDataFromGraphID(depIDs)]
-                                      if(!includePosteriorPred)    depIDs <- setdiff(  depIDs, postPredNodeIDs)
-                                      if(posteriorPredOnly)        depIDs <- intersect(depIDs, postPredNodeIDs)
-                                      if(!includePosteriorPredBranch)  depIDs <- setdiff(  depIDs, postPredBranchNodeIDs)
-                                      if(posteriorPredBranchOnly)      depIDs <- intersect(depIDs, postPredBranchNodeIDs)
+                                      if(!includePredictive)    depIDs <- setdiff(  depIDs, postPredNodeIDs)
+                                      if(predictiveOnly)        depIDs <- intersect(depIDs, postPredNodeIDs)
+                                      if(!includePredictiveBranchPoint)  depIDs <- setdiff(  depIDs, postPredBranchNodeIDs)
+                                      if(predictiveBranchPointOnly)      depIDs <- intersect(depIDs, postPredBranchNodeIDs)
 
                                       depIDs <- modelDef$nodeName2GraphIDs(modelDef$maps$graphID_2_nodeName[depIDs], !returnScalarComponents)
                                       if(returnScalarComponents)

@@ -429,14 +429,14 @@ mcmc_createRmodelObject <- function(model, inits, nchains, setSeed, code, consta
 
 ## create the lists of calcNodes and copyNodes for use in MCMC samplers
 mcmc_determineCalcAndCopyNodes <- function(model, target) {
-    optionIncludePPDeps <- getNimbleOption('MCMCincludePredictiveDependencies')
-    ## if this sampler is operating on a posterior-predictive node,
-    ## the we're doing non-standard sampler assignment here, so
-    ## skip over the option of 'MCMCincludePredictiveDependencies':
-    if(!length(model$getDependencies(target, includePosteriorPred = optionIncludePPDeps)))   optionIncludePPDeps <- TRUE
-    calcNodes <- model$getDependencies(target, includePosteriorPred = optionIncludePPDeps)
-    calcNodesNoSelf <- model$getDependencies(target, self = FALSE, includePosteriorPred = optionIncludePPDeps)
-    calcNodesPPskipped <- if(optionIncludePPDeps) character() else model$getDependencies(target, posteriorPredOnly = TRUE)
+    optionIncludePPDepsXXXXX <- getNimbleOption('dependenciesIncludePredictiveNodesXXXXXX')   ## XXXXXXXXXXXXXXXXXXXX
+    ## if the sampler calling this is operating on a posterior-predictive node,
+    ## then we're doing non-standard sampler assignment here, so
+    ## skip over the option of 'dependenciesIncludePredictiveNodesXXXXXXXXX':
+    if(!length(model$getDependencies(target, includePredictive = optionIncludePPDepsXXXX)))   optionIncludePPDepsXXXXX <- TRUE
+    calcNodes <- model$getDependencies(target, includePredictive = optionIncludePPDeps)
+    calcNodesNoSelf <- model$getDependencies(target, self = FALSE, includePredictive = optionIncludePPDeps)
+    calcNodesPPskipped <- if(optionIncludePPDeps) character() else model$getDependencies(target, predictiveOnly = TRUE)
     copyNodes <- model$getDependencies(target, self = FALSE)
     isStochCopyNodes <- model$isStoch(copyNodes)
     copyNodesDeterm <- copyNodes[!isStochCopyNodes]
