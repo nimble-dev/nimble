@@ -203,7 +203,7 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                                 collapse=', ')) }    ## ensure all target node(s) are stochastic
             }
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
-            if(getNimbleOption('MCMCreorderSamplersPosteriorPredLast')) {
+            if(getNimbleOption('MCMCorderSamplersPosteriorPredictiveLast')) {
                 postPredBool <- nodes %in% model$getNodeNames(predictiveOnly = TRUE)
                 nodes <- c(nodes[!postPredBool], nodes[postPredBool])  ## put posterior predictive nodes at the end
             }
@@ -219,22 +219,22 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                 ## determine which posterior predictive branch nodes should be sampled,
                 ## those for which the entire branch (including the branch node) were going to be sampled.
                 ## also need to update nodeIDs to remove the other nodes deeper within the branch
-                posteriorPredictiveBranchNodes <- character()
+                predictiveBranchPointNodes <- character()
                 if(getNimbleOption('MCMCjointlySamplePredictiveBranches')) {
-                    postPredBranchNodeIDs <- model$getPostPredBranchNodeIDs()
-                    postPredBranchNodeIDsToSample <- numeric()
-                    for(branchNodeID in postPredBranchNodeIDs) {
+                    predictiveBranchPointNodeIDs <- model$getPredictiveBranchPointNodeIDs()
+                    predictiveBranchPointNodeIDsToSample <- numeric()
+                    for(branchNodeID in predictiveBranchPointNodeIDs) {
                         branchNodeDownstreamNoSelfIDs <- model$getDependencies(branchNodeID, self = FALSE, stochOnly = TRUE, downstream = TRUE, returnType = 'ids')
                         ## skip branch nodes for which the entire resulting branch wasn't going to be sampled:
                         if(!all(c(branchNodeID, branchNodeDownstreamNoSelfIDs) %in% nodeIDsOrig))   next
                         ## found a posterior predictive branch node to sample:
-                        postPredBranchNodeIDsToSample <- c(postPredBranchNodeIDsToSample, branchNodeID)
+                        predictiveBranchPointNodeIDsToSample <- c(predictiveBranchPointNodeIDsToSample, branchNodeID)
                         ## remove stochastic nodes which are within this branch from the nodeIDs to be assigned samplers:
                         nodeIDs <- setdiff(nodeIDs, branchNodeDownstreamNoSelfIDs)
                     }
                     ## convert back to node names:
                     nodes <- model$modelDef$maps$graphID_2_nodeName[nodeIDs]
-                    posteriorPredictiveBranchNodes <- model$modelDef$maps$graphID_2_nodeName[postPredBranchNodeIDsToSample]
+                    predictiveBranchPointNodes <- model$modelDef$maps$graphID_2_nodeName[predictiveBranchPointNodeIDsToSample]
                 }
                 isEndNode <-  model$isEndNode(nodeIDs) ## isEndNode can be modified later to avoid adding names when input is IDs
                 if(useConjugacy) conjugacyResultsAll <- nimble:::conjugacyRelationshipsObject$checkConjugacy(model, nodeIDs) ## Later, this can go through model$checkConjugacy if we make it check whether nodes are already nodeIDs.  To isolate changes, I am doing it directly here.
@@ -317,7 +317,7 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                     if(isEndNode[i]) { addSampler(target = node, type = 'posterior_predictive', control = controlDefaultsArg);     next }
 
                     ## if nodes is a branch point of a network of entirely non-data nodes, assign 'posterior_predictive_branch' sampler
-                    if(node %in% posteriorPredictiveBranchNodes) { addSampler(target = node, type = 'posterior_predictive_branch', control = controlDefaultsArg);     next }
+                    if(node %in% predictiveBranchPointNodes) { addSampler(target = node, type = 'posterior_predictive_branch', control = controlDefaultsArg);     next }
                     
                     ## for multivariate nodes, either add a conjugate sampler, RW_multinomial, or RW_block sampler
                     if(nodeLength > 1) {
