@@ -379,7 +379,7 @@ nodes: An optional character vector supplying a subset of nodes for which to ext
                                                           includeData = TRUE, dataOnly = FALSE, includeRHSonly = FALSE,
                                                           topOnly = FALSE, latentOnly = FALSE, endOnly = FALSE,
                                                           includePredictive = TRUE, predictiveOnly = FALSE,
-                                                          includePredictiveBranchPoint = TRUE, predictiveBranchPointOnly = FALSE,
+                                                          includePredictiveBranchPoints = TRUE, predictiveBranchPointsOnly = FALSE,
                                                           returnType = 'names', returnScalarComponents = FALSE) {
                                       '
 Returns a character vector of all node names in the model, in topologically sorted order.  A variety of logical arguments allow for flexible subsetting of all model nodes.
@@ -406,9 +406,9 @@ includePredictive: Logical argument specifying whether to include predictive nod
 
 predictiveOnly: Logical argument specifying whether to return only predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data) from the hierarchical model structure.
 
-includePredictiveBranchPoint: Logical argument specifying whether to include predictive branch points (nodes in the model for which themselves and all downstream nodes are posterior predictive nodes) from the hierarchical model structure.
+includePredictiveBranchPoints: Logical argument specifying whether to include predictive branch points (nodes in the model for which themselves and all downstream nodes are posterior predictive nodes) from the hierarchical model structure.
 
-predictiveBranchPointOnly: Logical argument specifying whether to return only predictive branch points (nodes the model for which themselves and all downstream nodes are posterior predictive nodes) from the hierarchical model structure.
+predictiveBranchPointsOnly: Logical argument specifying whether to return only predictive branch points (nodes the model for which themselves and all downstream nodes are posterior predictive nodes) from the hierarchical model structure.
 
 returnType: Character argument specific type object returned. Options are \'names\' (returns character vector) and \'ids\' (returns numeric graph IDs for model)
 
@@ -441,8 +441,8 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                       
                                       if(!includePredictive)         validValues <- safeUpdateValidValues(validValues, idsVec_exclude = postPredNodeIDs)
                                       if(predictiveOnly)             validValues <- safeUpdateValidValues(validValues, idsVec_only    = postPredNodeIDs)
-                                      if(!includePredictiveBranchPoint)   validValues <- safeUpdateValidValues(validValues, idsVec_exclude = postPredBranchNodeIDs)
-                                      if(predictiveBranchPointOnly)       validValues <- safeUpdateValidValues(validValues, idsVec_only    = postPredBranchNodeIDs)
+                                      if(!includePredictiveBranchPoints)   validValues <- safeUpdateValidValues(validValues, idsVec_exclude = postPredBranchNodeIDs)
+                                      if(predictiveBranchPointsOnly)       validValues <- safeUpdateValidValues(validValues, idsVec_only    = postPredBranchNodeIDs)
                                       if(topOnly)                       validValues <- safeUpdateValidValues(validValues, idsVec_only = modelDef$maps$top_IDs)
                                       if(latentOnly)                    validValues <- safeUpdateValidValues(validValues, idsVec_only = modelDef$maps$latent_IDs)
                                       if(endOnly)                       validValues <- safeUpdateValidValues(validValues, idsVec_only = modelDef$maps$end_IDs)
@@ -936,7 +936,7 @@ Return value: List of nodes that are in conditionally independent sets.  Within 
                                       determOnly = FALSE, stochOnly = FALSE,
                                       includeData = TRUE, dataOnly = FALSE,
                                       includePredictive = TRUE, predictiveOnly = FALSE,
-                                      includePredictiveBranchPoint = TRUE, predictiveBranchPointOnly = FALSE,
+                                      includePredictiveBranchPoints = TRUE, predictiveBranchPointsOnly = FALSE,
                                       includeRHSonly = FALSE, downstream = FALSE,
                                       returnType = 'names', returnScalarComponents = FALSE) {
 '
@@ -962,9 +962,9 @@ includePredictive: Logical argument specifying whether to include predictive nod
 
 predictiveOnly: Logical argument specifying whether to return only predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data).  Default is FALSE.
 
-includePredictiveBranchPoint: Logical argument specifying whether to include predictive branch points (nodes in the model for which themselves and all downstream nodes are posterior predictive nodes).  Default is TRUE.
+includePredictiveBranchPoints: Logical argument specifying whether to include predictive branch points (nodes in the model for which themselves and all downstream nodes are posterior predictive nodes).  Default is TRUE.
 
-predictiveBranchPointOnly: Logical argument specifying whether to return only predictive branch points (nodes in the model for which themselves and all downstream nodes are posterior predictive nodes).  Default is FALSE.
+predictiveBranchPointsOnly: Logical argument specifying whether to return only predictive branch points (nodes in the model for which themselves and all downstream nodes are posterior predictive nodes).  Default is FALSE.
 
 includeRHSonly: Logical argument specifying whether to include right-hand-side-only nodes (model nodes which never appear on the left-hand-side of ~ or <- in the model code).  These nodes are neither stochastic nor deterministic, but instead function as variable inputs to the model.  Default is FALSE.
 
@@ -1015,8 +1015,8 @@ depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(i
                                       if(dataOnly)           depIDs <- depIDs[isDataFromGraphID(depIDs)]
                                       if(!includePredictive)    depIDs <- setdiff(  depIDs, postPredNodeIDs)
                                       if(predictiveOnly)        depIDs <- intersect(depIDs, postPredNodeIDs)
-                                      if(!includePredictiveBranchPoint)  depIDs <- setdiff(  depIDs, postPredBranchNodeIDs)
-                                      if(predictiveBranchPointOnly)      depIDs <- intersect(depIDs, postPredBranchNodeIDs)
+                                      if(!includePredictiveBranchPoints)  depIDs <- setdiff(  depIDs, postPredBranchNodeIDs)
+                                      if(predictiveBranchPointsOnly)      depIDs <- intersect(depIDs, postPredBranchNodeIDs)
 
                                       depIDs <- modelDef$nodeName2GraphIDs(modelDef$maps$graphID_2_nodeName[depIDs], !returnScalarComponents)
                                       if(returnScalarComponents)
