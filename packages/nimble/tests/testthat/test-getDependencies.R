@@ -472,6 +472,16 @@ test_that('getNodeNames and getDependencies with with predictiveNode and predict
     expect_identical(Rmodel$getDependencies('d', predictiveBranchPointsOnly = TRUE),
                      character())
 
+    Rmodel$resetData()
+
+    expect_identical(Rmodel$getPredictiveNodeIDs(), as.numeric(1:length(Rmodel$getNodeNames())))
+    expect_identical(Rmodel$getPredictiveBranchPointNodeIDs(), 1)
+
+    expect_identical(Rmodel$getNodeNames(includePredictive = FALSE), character())
+    ##expect_identical(Rmodel$getNodeNames(includePredictiveBranchPoints = FALSE), Rmodel$expandNodeNames(c('b', 'c', 'd')))
+    expect_identical(Rmodel$getNodeNames(predictiveOnly = TRUE), Rmodel$getNodeNames())
+    expect_identical(Rmodel$getNodeNames(predictiveBranchPointsOnly = TRUE), 'a')
+
 })
 
 options(warn = RwarnLevel)
