@@ -652,14 +652,14 @@ Details: If a provided value (or the current value in the model when only a name
                                       ## re-determine all current predictive nodes,
                                       ## and also the branch points of departure of entirely non-data node networks.
                                       ## call these points of departure from the main model: predictive branch point nodes.
-                                      predictiveNodeIDs <- numeric()
-                                      predictiveBranchPointNodeIDs <- numeric()
+                                      predNodeIDs <- numeric()
+                                      predBranchPointNodeIDs <- numeric()
                                       stochNonDataIDs <- getNodeNames(stochOnly = TRUE, includeData = FALSE, returnType = 'ids')
                                       anyPredictiveNodes <- any(isEndNode(stochNonDataIDs))
                                       if(anyPredictiveNodes) {
                                           ## for starters, all stochNonData nodes, which are end nodes, are predictive nodes
                                           ## (these don't get included, otherwise):
-                                          predictiveNodeIDs <- stochNonDataIDs[isEndNode(stochNonDataIDs)]
+                                          predNodeIDs <- stochNonDataIDs[isEndNode(stochNonDataIDs)]
                                           ## now, find all potential (candidate) predictive branch nodes:
                                           candidateBranchNodeIDs <- stochNonDataIDs[!isEndNode(stochNonDataIDs)]
                                           dataNodeIDs <- getNodeNames(dataOnly = TRUE, returnType = 'ids')
@@ -674,9 +674,9 @@ Details: If a provided value (or the current value in the model when only a name
                                               ## skip candidate nodes that have any downstream data nodes:
                                               if(length(intersect(stochDownstreamNoSelfIDs, dataNodeIDs)) > 0)   { nextCandInd <- nextCandInd + 1;   next }
                                               ## found predictive branch point node:
-                                              predictiveBranchPointNodeIDs <- c(predictiveBranchPointNodeIDs, thisCandNodeID)
+                                              predBranchPointNodeIDs <- c(predBranchPointNodeIDs, thisCandNodeID)
                                               ## everything downstream from (and including) branch node is a predictive node:
-                                              predictiveNodeIDs <- c(predictiveNodeIDs, thisCandNodeID, stochDownstreamNoSelfIDs)
+                                              predNodeIDs <- c(predNodeIDs, thisCandNodeID, stochDownstreamNoSelfIDs)
                                               ## update candidateBranchNodeIDs, removing downstream stochastic dependencies of this branch node from the candidate set:
                                               candidateBranchNodeIDs <- candidateBranchNodeIDs[-(1:nextCandInd)]
                                               candidateBranchNodeIDs <- setdiff(candidateBranchNodeIDs, stochDownstreamNoSelfIDs)
@@ -685,8 +685,8 @@ Details: If a provided value (or the current value in the model when only a name
                                           }
                                       }
                                       ## set into the model object's fields:
-                                      predictiveNodeIDs <<- sort(unique(predictiveNodeIDs))       ## can contain duplicates
-                                      predictiveBranchPointNodeIDs <<- predictiveBranchPointNodeIDs
+                                      predictiveNodeIDs <<- sort(unique(predNodeIDs))       ## can contain duplicates
+                                      predictiveBranchPointNodeIDs <<- predBranchPointNodeIDs
                                   },
 
                                   getPredictiveNodeIDs            = function() return(predictiveNodeIDs),
