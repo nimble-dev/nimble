@@ -20,7 +20,7 @@ nimbleReorderPPsamplersSetting <- getNimbleOption('MCMCreorderSamplersPosteriorP
 nimblePPBranchSamplerSetting <- getNimbleOption('MCMCjointlySamplePredictiveBranches')
 
 ## MCMC calculation include predictive dependencies - save current setting
-nimbleIncludePredDependenciesSetting <- nimbleOptions('MCMCincludePredictiveDependencies')
+nimbleUsePredictiveDependenciesSetting <- nimbleOptions('MCMCusePredictiveDependenciesInCalculations')
 
 ## If you do *not* want to write to results files
 ##    comment out the sink() call below.  And consider setting verbose = FALSE 
@@ -42,10 +42,10 @@ sink_with_messages(outputFile)
 test_mcmc('blocker', numItsC = 1000, resampleData = TRUE)
 # 100% coverage; looks fine
 
-nimbleOptions(MCMCincludePredictiveDependencies = TRUE)
+nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)
 test_mcmc('bones', numItsC = 10000, resampleData = TRUE)
 # 100% coverage; looks fine
-nimbleOptions(MCMCincludePredictiveDependencies = nimbleIncludePredDependenciesSetting)
+nimbleOptions(MCMCusePredictiveDependenciesInCalculations = nimbleUsePredictiveDependenciesSetting)
 
 test_mcmc('dyes', numItsC = 1000, resampleData = TRUE)
 # 100% coverage; looks fine
@@ -334,7 +334,7 @@ test_that('basic no-block sampler setup', {
 ### slice sampler example
 
 test_that('slice sampler example setup', {
-    nimbleOptions(MCMCincludePredictiveDependencies = TRUE)
+    nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)
     code <- nimbleCode({
         z ~ dnorm(0, 1)
         normal5_10 ~ dnorm(5, sd = 10)
@@ -367,7 +367,7 @@ test_that('slice sampler example setup', {
                               list(type = 'slice', target = 'binom20_p3', control = list(adaptInterval = 10))),
               avoidNestedTest = TRUE)
     
-    nimbleOptions(MCMCincludePredictiveDependencies = nimbleIncludePredDependenciesSetting)
+    nimbleOptions(MCMCusePredictiveDependenciesInCalculations = nimbleUsePredictiveDependenciesSetting)
     })
 
 
@@ -423,7 +423,7 @@ test_that('beta-binom conjugacy setup', {
 test_that('various conjugacies setup', {
     nimbleOptions(MCMCreorderSamplersPosteriorPredLast = FALSE)
     nimbleOptions(MCMCjointlySamplePredictiveBranches = FALSE)
-    nimbleOptions(MCMCincludePredictiveDependencies = TRUE)
+    nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)
     code <- nimbleCode({
         x ~ dgamma(1, 1)       # should satisfy 'gamma' conjugacy class
         a  ~ dnorm(0, x)     # should satisfy 'norm' conjugacy class
@@ -448,7 +448,7 @@ test_that('various conjugacies setup', {
     ## with fixing of jNorm[1] and kLogNorm[1] we no longer have: knownFailures = list('R C samples match' = "KNOWN ISSUE: R and C posterior samples are not equal for 'various conjugacies'"))
     nimbleOptions(MCMCreorderSamplersPosteriorPredLast = nimbleReorderPPsamplersSetting)
     nimbleOptions(MCMCjointlySamplePredictiveBranches = nimblePPBranchSamplerSetting)
-    nimbleOptions(MCMCincludePredictiveDependencies = nimbleIncludePredDependenciesSetting)
+    nimbleOptions(MCMCusePredictiveDependenciesInCalculations = nimbleUsePredictiveDependenciesSetting)
 })
 
 ### Weibull-gamma conjugacy
@@ -2426,7 +2426,7 @@ test_that('posterior_predictive_branch sampler updates node log-probs', {
     nimbleOptions(MCMCjointlySamplePredictiveBranches = nimblePPBranchSamplerSettingTemp)
 })
 
-test_that('asymptotic agreement of samplers, using MCMCincludePredictiveDependencies option', {
+test_that('asymptotic agreement of samplers, using MCMCusePredictiveDependenciesInCalculations option', {
     ##
     niter <- 200000
     nburnin <- 50000
@@ -2473,7 +2473,7 @@ test_that('asymptotic agreement of samplers, using MCMCincludePredictiveDependen
                   yp = rep(0, N),
                   wp_data = rep(0,2))
     ## include PP nodes in all sampler calculations:
-    nimbleOptions(MCMCincludePredictiveDependencies = TRUE)
+    nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)
     Rmodel <- nimbleModel(code, constants, data, inits)
     conf <- configureMCMC(Rmodel)
     conf$replaceSampler('x[7:8]', 'ess')
@@ -2484,7 +2484,7 @@ test_that('asymptotic agreement of samplers, using MCMCincludePredictiveDependen
     set.seed(0)
     samplesT <- runMCMC(Cmcmc, niter, nburnin)
     ## now exclude all PP nodes:
-    nimbleOptions(MCMCincludePredictiveDependencies = FALSE)
+    nimbleOptions(MCMCusePredictiveDependenciesInCalculations = FALSE)
     Rmodel <- nimbleModel(code, constants, data, inits)
     conf <- configureMCMC(Rmodel)
     conf$replaceSampler('x[7:8]', 'ess')
@@ -2498,7 +2498,7 @@ test_that('asymptotic agreement of samplers, using MCMCincludePredictiveDependen
     expect_true(all(abs(as.numeric(apply(samplesT, 2, mean)) - as.numeric(apply(samplesF, 2, mean))) < 0.035))
     expect_true(all(abs(as.numeric(apply(samplesT, 2, sd  )) - as.numeric(apply(samplesF, 2, sd  ))) < 0.05))
     ##
-    nimbleOptions(MCMCincludePredictiveDependencies = nimbleIncludePredDependenciesSetting)
+    nimbleOptions(MCMCusePredictiveDependenciesInCalculations = nimbleUsePredictiveDependenciesSetting)
 })
 
 test_that('reordering of posterior_predictive and posterior_predictive_branch samplers to the end', {
@@ -2528,7 +2528,7 @@ test_that('reordering of posterior_predictive and posterior_predictive_branch sa
     ppSamplerInd <- which(grepl('^posterior_predictive', samplerNames))
     otherSamplerInd <- which(!grepl('^posterior_predictive', samplerNames))
     expect_false(all(sapply(ppSamplerInd, function(ind) all(ind > otherSamplerInd))))
-    if(!getNimbleOption('MCMCincludePredictiveDependencies')) {
+    if(!getNimbleOption('MCMCusePredictiveDependenciesInCalculations')) {
         ## should issue a message, about reordering samplers:
         nimbleOptions(verbose = TRUE)
         expect_message(Rmcmc <- buildMCMC(conf))
