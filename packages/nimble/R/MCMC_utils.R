@@ -429,18 +429,29 @@ mcmc_createRmodelObject <- function(model, inits, nchains, setSeed, code, consta
 
 ## create the lists of calcNodes and copyNodes for use in MCMC samplers
 mcmc_determineCalcAndCopyNodes <- function(model, target) {
-    optionIncludePPDepsXXXXX <- getNimbleOption('dependenciesIncludePredictiveNodesXXXXXX')   ## XXXXXXXXXXXXXXXXXXXX
-    ## if the sampler calling this is operating on a posterior-predictive node,
-    ## then we're doing non-standard sampler assignment here, so
-    ## skip over the option of 'dependenciesIncludePredictiveNodesXXXXXXXXX':
-    if(!length(model$getDependencies(target, includePredictive = optionIncludePPDepsXXXX)))   optionIncludePPDepsXXXXX <- TRUE
-    calcNodes <- model$getDependencies(target, includePredictive = optionIncludePPDeps)
-    calcNodesNoSelf <- model$getDependencies(target, self = FALSE, includePredictive = optionIncludePPDeps)
-    calcNodesPPomitted <- if(optionIncludePPDeps) character() else model$getDependencies(target, predictiveOnly = TRUE)
+    ## if the sampler calling this, itself, is operating exclusively on posterior predictive nodes,
+    ## then regardless of how the rest of the model is being sampled (w.r.t. inclusion of posterior predictive nodes),
+    ## we'll include 'self' and all stochastic dependencies (the full markov blanket) in the calculations,
+    ## which necessarily are taking place entirely within a posterior predictive model branch.
+    ## this should lead to correct behaviour (consistent samples and joint posteriors) in all cases.
+    if(all(model$expandNodeNames(target) %in% model$getNodeNames(predictiveOnly = TRUE))) {
+        ## when sampler is operating only on posterior predictive nodes,
+        ## then always include all predictive dependencies:
+        calcNodes <- model$getDependencies(target, includePredictive = TRUE)
+        calcNodesNoSelf <- model$getDependencies(target, self = FALSE, includePredictive = TRUE)
+        calcNodesPPomitted <- character()
+    } else {
+        ## usual case:
+        calcNodes <- model$getDependencies(target)
+        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
+        calcNodesPPomitted <- setdiff(model$getDependencies(target, includePredictive = TRUE), calcNodes)
+    }
+    ## copyNodes:
     copyNodes <- model$getDependencies(target, self = FALSE)
     isStochCopyNodes <- model$isStoch(copyNodes)
     copyNodesDeterm <- copyNodes[!isStochCopyNodes]
     copyNodesStoch <- copyNodes[isStochCopyNodes]
+    ##
     ccLst <- list(
         calcNodes = calcNodes,
         calcNodesNoSelf = calcNodesNoSelf,

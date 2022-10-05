@@ -103,9 +103,14 @@ buildMCMC <- nimbleFunction(
                 conf$samplerConfs <- conf$samplerConfs[c(regularSamplerInd, ppSamplerInd)]
             }
         }
+        
+        nimbleDependenciesIncludePredNodesSetting <- getNimbleOption('getDependenciesIncludesPredictiveNodes')
+        nimbleOptions(getDependenciesIncludesPredictiveNodes = getNimbleOption('MCMCusePredictiveDependenciesInCalculations'))
         samplerFunctions <- nimbleFunctionList(sampler_BASE)
         for(i in seq_along(conf$samplerConfs))
             samplerFunctions[[i]] <- conf$samplerConfs[[i]]$buildSampler(model=model, mvSaved=mvSaved)
+        nimbleOptions(getDependenciesIncludesPredictiveNodes = nimbleDependenciesIncludePredNodesSetting)
+        
         samplerExecutionOrderFromConfPlusTwoZeros <- c(conf$samplerExecutionOrder, 0, 0)  ## establish as a vector
         monitors  <- mcmc_processMonitorNames(model, conf$monitors)
         monitors2 <- mcmc_processMonitorNames(model, conf$monitors2)
