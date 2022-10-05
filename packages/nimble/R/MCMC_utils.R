@@ -429,12 +429,22 @@ mcmc_createRmodelObject <- function(model, inits, nchains, setSeed, code, consta
 
 ## create the lists of calcNodes and copyNodes for use in MCMC samplers
 mcmc_determineCalcAndCopyNodes <- function(model, target) {
+    targetExpanded <- model$expandNodeNames(target)
+    modelPredictiveNodes <- model$getNodeNames(predictiveOnly = TRUE)
+    targetExpandedPPbool <- targetExpanded %in% modelPredictiveNodes
+    targetAllPP <- all(targetExpandedPPbool)
+    targetAnyPP <- any(targetExpandedPPbool)
+    ## if a particular sampler is assigned *jointly to PP and non-PP* nodes, then we're going to bail
+    ## out and quit, if the option MCMCusePredictiveDependenciesInCalculations == FALSE.
+    ## this is an extreme corner-case, which I think will lead to problems.
+    if(targetAnyPP && !targetAllPP && !getNimbleOption('MCMCusePredictiveDependenciesInCalculations'))
+        stop('cannot assign samplers jointly to posterior predictive (PP) nodes and non-PP nodes, when MCMCusePredictiveDependenciesInCalculations option is FALSE', call. = FALSE)
     ## if the sampler calling this, itself, is operating exclusively on posterior predictive nodes,
     ## then regardless of how the rest of the model is being sampled (w.r.t. inclusion of posterior predictive nodes),
     ## we'll include 'self' and all stochastic dependencies (the full markov blanket) in the calculations,
     ## which necessarily are taking place entirely within a posterior predictive model branch.
     ## this should lead to correct behaviour (consistent samples and joint posteriors) in all cases.
-    if(all(model$expandNodeNames(target) %in% model$getNodeNames(predictiveOnly = TRUE))) {
+    if(targetAllPP) {
         ## when sampler is operating only on posterior predictive nodes,
         ## then always include all predictive dependencies:
         calcNodes <- model$getDependencies(target, includePredictive = TRUE)
