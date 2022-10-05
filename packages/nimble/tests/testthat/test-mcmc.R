@@ -2406,18 +2406,20 @@ test_that('posterior_predictive_branch sampler updates node log-probs', {
     nimbleOptions(MCMCjointlySamplePredictiveBranches = FALSE)
     expect_false(nimbleOptions('MCMCjointlySamplePredictiveBranches'))
     conf <- configureMCMC(Rmodel)
+    Rmcmc <- buildMCMC(conf)
     expect_true(conf$getSamplers('a')[[1]]$name == 'RW')
     expect_true(conf$getSamplers('b')[[1]]$name == 'conjugate_dnorm_dnorm_identity')
     expect_true(conf$getSamplers('c')[[1]]$name == 'posterior_predictive')
+    expect_true(all(Rmcmc$samplerFunctions[[3]]$calcNodes == 'c'))
     ##
     nimbleOptions(MCMCjointlySamplePredictiveBranches = TRUE)
     expect_true(nimbleOptions('MCMCjointlySamplePredictiveBranches'))
     conf <- configureMCMC(Rmodel)
-    ##
+    Rmcmc <- buildMCMC(conf)
     expect_true(conf$getSamplers('a')[[1]]$name == 'RW')
     expect_true(conf$getSamplers('b')[[1]]$name == 'posterior_predictive_branch')
+    expect_true(all(Rmcmc$samplerFunctions[[2]]$calcNodes == c('b', 'c')))
     ##
-    Rmcmc <- buildMCMC(conf)
     compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
     Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
     set.seed(0)
