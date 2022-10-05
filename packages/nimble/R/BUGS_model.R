@@ -549,11 +549,11 @@ Details: This function merely reorders its input argument.  This may be importan
                                       ## at the time of initializing the isDataEnv, also set predictiveNodeIDs and predictiveBranchPointNodeIDs:
                                       ##setPredictiveNodeIDs()
                                       if(!getNimbleOption('determinePredictiveNodesInModel')) {
-                                          predictiveNodeIDs <<- numeric()
-                                          predictiveBranchPointNodeIDs <<- numeric()
+                                          predictiveNodeIDs <<- integer()
+                                          predictiveBranchPointNodeIDs <<- integer()
                                       } else {
-                                          predictiveNodeIDs <<- as.numeric(getNodeNames(stochOnly = TRUE, returnType = 'ids'))
-                                          predictiveBranchPointNodeIDs <<- as.numeric(getNodeNames(stochOnly = TRUE, topOnly = TRUE, returnType = 'ids'))
+                                          predictiveNodeIDs <<- as.integer(getNodeNames(stochOnly = TRUE, returnType = 'ids'))
+                                          predictiveBranchPointNodeIDs <<- as.integer(getNodeNames(stochOnly = TRUE, topOnly = TRUE, returnType = 'ids'))
                                       }
                                   },
 
@@ -697,8 +697,8 @@ Details: If a provided value (or the current value in the model when only a name
                                           }
                                       }
                                       ## set into the model object's fields:
-                                      predictiveNodeIDs <<- sort(unique(predNodeIDs))       ## can contain duplicates
-                                      predictiveBranchPointNodeIDs <<- predBranchPointNodeIDs
+                                      predictiveNodeIDs <<- as.integer(sort(unique(predNodeIDs)))       ## can contain duplicates
+                                      predictiveBranchPointNodeIDs <<- as.integer(predBranchPointNodeIDs)
                                   },
 
                                   getPredictiveNodeIDs            = function() return(predictiveNodeIDs),
