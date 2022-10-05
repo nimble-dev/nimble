@@ -52,7 +52,7 @@ decideAndJump <- nimbleFunction(
     name = 'decideAndJump',
     setup = function(model, mvSaved, target, calcNodes) {
         ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
-        copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch  # not used: calcNodes, calcNodesNoSelf, calcNodesPPskipped
+        copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch  # not used: calcNodes, calcNodesNoSelf, calcNodesPPomitted
     },
     run = function(modelLP1 = double(), modelLP0 = double(), propLP1 = double(), propLP0 = double()) {
         logMHR <- modelLP1 - modelLP0 - propLP1 + propLP0
@@ -436,7 +436,7 @@ mcmc_determineCalcAndCopyNodes <- function(model, target) {
     if(!length(model$getDependencies(target, includePredictive = optionIncludePPDepsXXXX)))   optionIncludePPDepsXXXXX <- TRUE
     calcNodes <- model$getDependencies(target, includePredictive = optionIncludePPDeps)
     calcNodesNoSelf <- model$getDependencies(target, self = FALSE, includePredictive = optionIncludePPDeps)
-    calcNodesPPskipped <- if(optionIncludePPDeps) character() else model$getDependencies(target, predictiveOnly = TRUE)
+    calcNodesPPomitted <- if(optionIncludePPDeps) character() else model$getDependencies(target, predictiveOnly = TRUE)
     copyNodes <- model$getDependencies(target, self = FALSE)
     isStochCopyNodes <- model$isStoch(copyNodes)
     copyNodesDeterm <- copyNodes[!isStochCopyNodes]
@@ -444,7 +444,7 @@ mcmc_determineCalcAndCopyNodes <- function(model, target) {
     ccLst <- list(
         calcNodes = calcNodes,
         calcNodesNoSelf = calcNodesNoSelf,
-        calcNodesPPskipped = calcNodesPPskipped,
+        calcNodesPPomitted = calcNodesPPomitted,
         copyNodesDeterm = copyNodesDeterm,
         copyNodesStoch = copyNodesStoch
     )
