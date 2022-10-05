@@ -2541,6 +2541,81 @@ test_that('reordering of posterior_predictive and posterior_predictive_branch sa
     }
 })
 
+test_that('mcmc_determineCalcAndCopyNodes works correctly in different situations', {
+    code <- nimbleCode({
+        a ~ dnorm(0, 1)
+        b ~ dnorm(a, 1)
+        y ~ dnorm(b, 1)
+        ppb ~ dnorm(y, 1)
+        pp1 ~ dnorm(ppb, 1)
+        pp2 ~ dnorm(pp1, 1)
+    })
+    constants <- list()
+    data <- list(y = 0)
+    inits <- list(a = 0, b = 0, ppb = 0, pp1 = 0, pp2 = 0)
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    ##
+    nimbleOptions(MCMCusePredictiveDependenciesInCalculations = FALSE)
+    conf <- configureMCMC(Rmodel)
+    Rmcmc <- buildMCMC(conf)
+    expect_true(all(sapply(conf$samplerConfs, `[[`, 'name') == c(rep('conjugate_dnorm_dnorm_identity', 2), 'posterior_predictive_branch')))
+    expect_true(all(sapply(conf$samplerConfs, `[[`, 'target') == c('a', 'b', 'ppb')))
+    expect_true(all(Rmcmc$samplerFunctions[[1]]$calcNodes == c('a', 'b')))
+    expect_true(all(Rmcmc$samplerFunctions[[2]]$calcNodes == c('b', 'y')))
+    ##
+    getDependenciesPPoption_current <- nimbleOptions('getDependenciesIncludesPredictiveNodes')
+    conf <- configureMCMC(Rmodel)
+    conf$addSampler('a', 'posterior_predictive')
+    expect_error(Rmcmc <- buildMCMC(conf))
+    expect_identical(nimbleOptions('getDependenciesIncludesPredictiveNodes'), getDependenciesPPoption_current)
+    ##
+    getDependenciesPPoption_current <- nimbleOptions('getDependenciesIncludesPredictiveNodes')
+    conf <- configureMCMC(Rmodel)
+    conf$addSampler('a', 'posterior_predictive_branch')
+    expect_error(Rmcmc <- buildMCMC(conf))
+    expect_identical(nimbleOptions('getDependenciesIncludesPredictiveNodes'), getDependenciesPPoption_current)
+    ##
+    nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('pp1', 'RW')
+    conf$addSampler('pp1', 'RW_block')
+    conf$addSampler('pp2', 'RW')
+    conf$addSampler('pp2', 'RW_block')
+    Rmcmc <- buildMCMC(conf)
+    expect_identical(Rmcmc$samplerFunctions[[1]]$calcNodesNoSelf, 'pp2')
+    expect_identical(Rmcmc$samplerFunctions[[2]]$calcNodesProposalStage, 'pp1')
+    expect_identical(Rmcmc$samplerFunctions[[2]]$calcNodesDepStage, 'pp2')
+    expect_identical(Rmcmc$samplerFunctions[[3]]$calcNodesNoSelf, character())
+    expect_identical(Rmcmc$samplerFunctions[[4]]$calcNodesProposalStage, 'pp2')
+    expect_identical(Rmcmc$samplerFunctions[[4]]$calcNodesDepStage, character())
+    ##
+    nimbleOptions(MCMCusePredictiveDependenciesInCalculations = FALSE)
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('pp1', 'RW')
+    conf$addSampler('pp1', 'RW_block')
+    conf$addSampler('pp2', 'RW')
+    conf$addSampler('pp2', 'RW_block')
+    Rmcmc <- buildMCMC(conf)
+    expect_identical(Rmcmc$samplerFunctions[[1]]$calcNodesNoSelf, 'pp2')
+    expect_identical(Rmcmc$samplerFunctions[[2]]$calcNodesProposalStage, 'pp1')
+    expect_identical(Rmcmc$samplerFunctions[[2]]$calcNodesDepStage, 'pp2')
+    expect_identical(Rmcmc$samplerFunctions[[3]]$calcNodesNoSelf, character())
+    expect_identical(Rmcmc$samplerFunctions[[4]]$calcNodesProposalStage, 'pp2')
+    expect_identical(Rmcmc$samplerFunctions[[4]]$calcNodesDepStage, character())
+    ##
+    nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler(c('a', 'b', 'pp1'), 'RW_block')
+    expect_error(Rmcmc <- buildMCMC(conf), NA)
+    ##
+    nimbleOptions(MCMCusePredictiveDependenciesInCalculations = FALSE)
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler(c('a', 'b', 'pp1'), 'RW_block')
+    expect_error(Rmcmc <- buildMCMC(conf))
+    ##
+    nimbleOptions(MCMCusePredictiveDependenciesInCalculations = nimbleUsePredictiveDependenciesSetting)
+})
+
 sink(NULL)
 
 if(!generatingGoldFile) {
