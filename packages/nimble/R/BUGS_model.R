@@ -548,8 +548,13 @@ Details: This function merely reorders its input argument.  This may be importan
                                       list2env(lapply(isDataVars, nimble:::createDefault_isDataObj), isDataEnv)
                                       ## at the time of initializing the isDataEnv, also set predictiveNodeIDs and predictiveBranchPointNodeIDs:
                                       ##setPredictiveNodeIDs()
-                                      predictiveNodeIDs <<- as.numeric(getNodeNames(stochOnly = TRUE, returnType = 'ids'))
-                                      predictiveBranchPointNodeIDs <<- as.numeric(getNodeNames(stochOnly = TRUE, topOnly = TRUE, returnType = 'ids'))
+                                      if(!getNimbleOption('determinePredictiveNodesInModel')) {
+                                          predictiveNodeIDs <<- numeric()
+                                          predictiveBranchPointNodeIDs <<- numeric()
+                                      } else {
+                                          predictiveNodeIDs <<- as.numeric(getNodeNames(stochOnly = TRUE, returnType = 'ids'))
+                                          predictiveBranchPointNodeIDs <<- as.numeric(getNodeNames(stochOnly = TRUE, topOnly = TRUE, returnType = 'ids'))
+                                      }
                                   },
 
                                   resetData = function() {
@@ -651,6 +656,11 @@ Details: If a provided value (or the current value in the model when only a name
                                   },
 
                                   setPredictiveNodeIDs = function() {
+                                      if(!getNimbleOption('determinePredictiveNodesInModel')) {
+                                          predictiveNodeIDs <<- numeric()
+                                          predictiveBranchPointNodeIDs <<- numeric()
+                                          return()
+                                      }
                                       ## re-determine all current predictive nodes,
                                       ## and also the branch points of departure of entirely non-data node networks.
                                       ## call these points of departure from the main model: predictive branch point nodes.

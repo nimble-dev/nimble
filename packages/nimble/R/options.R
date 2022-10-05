@@ -24,6 +24,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         pauseAfterWritingFiles = FALSE,
         CppAD_directory = NA,
         experimentalEnableDerivs = FALSE,
+        determinePredictiveNodesInModel = TRUE,
         getDependenciesIncludesPredictiveNodes = TRUE,    ## may be toggled off during MCMC sampler building
         convertSingleVectorsToScalarsInSetupArgs = TRUE,
         messagesWhenBuildingOrFinalizingCppObjects = FALSE,
