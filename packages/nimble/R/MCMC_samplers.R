@@ -85,7 +85,7 @@ sampler_binary <- nimbleFunction(
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
-        calcNodes <- ccLst$calcNodes; calcNodesNoSelf <- ccLst$calcNodesNoSelf; calcNodesPPomitted <- ccLst$calcNodesPPomitted; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch
+        calcNodes <- ccLst$calcNodes; calcNodesNoSelf <- ccLst$calcNodesNoSelf; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch
         ## checks
         if(length(targetAsScalar) > 1)  stop('cannot use binary sampler on more than one target node')
         if(!model$isBinary(target))     stop('can only use binary sampler on discrete 0/1 (binary) nodes')
@@ -102,7 +102,7 @@ sampler_binary <- nimbleFunction(
         acceptanceProb <- 1/(exp(currentLogProb - otherLogProb) + 1)
         jump <- (!is.nan(acceptanceProb)) & (runif(1,0,1) < acceptanceProb)
         if(jump) {
-            model$calculate(calcNodesPPomitted)
+            ##model$calculate(calcNodesPPomitted)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
@@ -132,7 +132,7 @@ sampler_categorical <- nimbleFunction(
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
-        calcNodes <- ccLst$calcNodes; calcNodesNoSelf <- ccLst$calcNodesNoSelf; calcNodesPPomitted <- ccLst$calcNodesPPomitted; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch
+        calcNodes <- ccLst$calcNodes; calcNodesNoSelf <- ccLst$calcNodesNoSelf; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch
         ## numeric value generation
         k <- length(model$getParam(target, 'prob'))
         probs <- numeric(k)
@@ -166,7 +166,7 @@ sampler_categorical <- nimbleFunction(
         if(newValue != currentValue) {
             model[[target]] <<- newValue
             model$calculate(calcNodes)
-            model$calculate(calcNodesPPomitted)
+            ##model$calculate(calcNodesPPomitted)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
@@ -203,7 +203,7 @@ sampler_RW <- nimbleFunction(
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
-        calcNodesNoSelf <- ccLst$calcNodesNoSelf; calcNodesPPomitted <- ccLst$calcNodesPPomitted; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch   # not used: calcNodes
+        calcNodesNoSelf <- ccLst$calcNodesNoSelf; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch   # not used: calcNodes
         ## numeric value generation
         scaleOriginal <- scale
         timesRan      <- 0
@@ -244,7 +244,7 @@ sampler_RW <- nimbleFunction(
             logMHR <- logMHR + model$calculateDiff(calcNodesNoSelf) + propLogScale
             jump <- decide(logMHR)
             if(jump) {
-                model$calculate(calcNodesPPomitted)
+                ##model$calculate(calcNodesPPomitted)
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
@@ -351,7 +351,7 @@ sampler_RW_block <- nimbleFunction(
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
-        calcNodes <- ccLst$calcNodes; calcNodesPPomitted <- ccLst$calcNodesPPomitted; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch   # not used: calcNodesNoSelf
+        calcNodes <- ccLst$calcNodes; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch   # not used: calcNodesNoSelf
         finalTargetIndex <- max(match(model$expandNodeNames(target), calcNodes))
         if(!is.integer(finalTargetIndex) | length(finalTargetIndex) != 1 | is.na(finalTargetIndex[1]))   stop('problem with target node in RW_block sampler')
         calcNodesProposalStage <- calcNodes[1:finalTargetIndex]
@@ -392,7 +392,7 @@ sampler_RW_block <- nimbleFunction(
                 lpD <- lpD + model$calculateDiff(calcNodesDepStage)
                 jump <- decide(lpD)
                 if(jump) {
-                    model$calculate(calcNodesPPomitted)
+                    ##model$calculate(calcNodesPPomitted)
                     nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesProposalStage, logProb = TRUE)
                     nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
                     nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
@@ -560,7 +560,7 @@ sampler_slice <- nimbleFunction(
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
-        calcNodes <- ccLst$calcNodes; calcNodesNoSelf <- ccLst$calcNodesNoSelf; calcNodesPPomitted <- ccLst$calcNodesPPomitted; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch
+        calcNodes <- ccLst$calcNodes; calcNodesNoSelf <- ccLst$calcNodesNoSelf; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch
         ## numeric value generation
         widthOriginal <- width
         timesRan      <- 0
@@ -613,7 +613,7 @@ sampler_slice <- nimbleFunction(
             nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
             nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
         } else {
-            model$calculate(calcNodesPPomitted)
+            ##model$calculate(calcNodesPPomitted)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
@@ -721,7 +721,7 @@ sampler_ess <- nimbleFunction(
         ## node list generation
         target <- model$expandNodeNames(target)
         ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
-        calcNodesNoSelf <- ccLst$calcNodesNoSelf; calcNodesPPomitted <- ccLst$calcNodesPPomitted; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch   # not used: calcNodes
+        calcNodesNoSelf <- ccLst$calcNodesNoSelf; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch   # not used: calcNodes
         ## numeric value generation
         Pi <- pi
         d <- length(model$expandNodeNames(target, returnScalarComponents = TRUE))
@@ -764,7 +764,7 @@ sampler_ess <- nimbleFunction(
             nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
             nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
         } else {
-            model$calculate(calcNodesPPomitted)
+            ##model$calculate(calcNodesPPomitted)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
@@ -800,7 +800,7 @@ sampler_AF_slice <- nimbleFunction(
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
-        calcNodes <- ccLst$calcNodes; calcNodesPPomitted <- ccLst$calcNodesPPomitted; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch   # not used: calcNodesNoSelf
+        calcNodes <- ccLst$calcNodes; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch   # not used: calcNodesNoSelf
         finalTargetIndex <- max(match(model$expandNodeNames(target), calcNodes))
         if(!is.integer(finalTargetIndex) | length(finalTargetIndex) != 1 | is.na(finalTargetIndex[1]))   stop('problem with target node in AF_slice sampler')
         calcNodesProposalStage <- calcNodes[1:finalTargetIndex]
@@ -884,7 +884,7 @@ sampler_AF_slice <- nimbleFunction(
             nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
             nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
         } else {
-            model$calculate(calcNodesPPomitted)
+            ##model$calculate(calcNodesPPomitted)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesProposalStage, logProb = TRUE)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
@@ -1308,7 +1308,7 @@ sampler_RW_dirichlet <- nimbleFunction(
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
-        calcNodesNoSelf <- ccLst$calcNodesNoSelf; calcNodesPPomitted <- ccLst$calcNodesPPomitted; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch  # not used: calcNodes
+        calcNodesNoSelf <- ccLst$calcNodesNoSelf; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch  # not used: calcNodes
         ## numeric value generation
         d <- length(targetAsScalar)
         thetaVec         <- rep(0, d)
@@ -1339,7 +1339,7 @@ sampler_RW_dirichlet <- nimbleFunction(
             if(adaptive & jump)   timesAcceptedVec[i] <<- timesAcceptedVec[i] + 1
             if(jump) {
                 thetaVec <<- thetaVecProp
-                model$calculate(calcNodesPPomitted)
+                ##model$calculate(calcNodesPPomitted)
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
@@ -1397,7 +1397,7 @@ sampler_RW_wishart <- nimbleFunction(
         target <- model$expandNodeNames(target)
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
-        calcNodes <- ccLst$calcNodes; calcNodesPPomitted <- ccLst$calcNodesPPomitted; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch  # not used: calcNodesNoSelf
+        calcNodes <- ccLst$calcNodes; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch  # not used: calcNodesNoSelf
         ## numeric value generation
         scaleOriginal <- scale
         timesRan      <- 0
@@ -1457,7 +1457,7 @@ sampler_RW_wishart <- nimbleFunction(
         for(i in 1:d)   logMHR <- logMHR + (d+2-i)*deltaDiag[i]  ## took me quite a while to derive this
         jump <- decide(logMHR)
         if(jump) {
-            model$calculate(calcNodesPPomitted)
+            ##model$calculate(calcNodesPPomitted)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
