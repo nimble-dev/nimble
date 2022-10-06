@@ -85,10 +85,10 @@ buildMCMC <- nimbleFunction(
         else if(!inherits(conf, 'MCMCconf')) stop('conf must either be a nimbleModel or a MCMCconf object (created by configureMCMC(...) )')
 
         enableWAIC <- conf$enableWAIC
-        
         model <- conf$model
         my_initializeModel <- initializeModel(model)
         mvSaved <- modelValues(model)
+        
         if(getNimbleOption('MCMCorderPosteriorPredictiveSamplersLast') && length(conf$samplerConfs)) {
             ## put all posterior_predictive and posterior_predictive_branch samplers at the end
             samplerNames <- sapply(conf$samplerConfs, `[[`, 'name')
@@ -99,7 +99,6 @@ buildMCMC <- nimbleFunction(
                 messageIfVerbose('  [Note] Reordering posterior predictive samplers to execute last')
                 exOrder <- conf$samplerExecutionOrder
                 if((length(exOrder)!=length(conf$samplerConfs)) || !all(exOrder==1:length(conf$samplerConfs))) stop('Halting, rather than reordering samplers in the presence of a modified sampler execution order.  If a modified execution order is needed, then: (1) reorder posterior predictive samplers to be last in the MCMC configuration printSamplers method output, (2) set the desired sampler execution order, and (3) run buildMCMC.')
-                conf$samplerExecutionOrder == 1:max(conf$samplerExecutionOrder)
                 conf$samplerConfs <- conf$samplerConfs[c(regularSamplerInd, ppSamplerInd)]
             }
         }
