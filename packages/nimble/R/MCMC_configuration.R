@@ -826,7 +826,7 @@ byType: A logical argument, specifying whether the nodes being sampled should be
             }
             if(!executionOrder && !identical(as.numeric(samplerExecutionOrder), as.numeric(seq_along(samplerConfs)))) {
                 message('\n  [Note] Samplers have a modified order of execution.')
-                message('  [Node] To print samplers in the modified order of execution, use printSamplers(executionOrder = TRUE).\n')
+                message('  [Note] To print samplers in the modified order of execution, use printSamplers(executionOrder = TRUE).\n')
             }
             return(invisible(NULL))
         },
@@ -1186,7 +1186,7 @@ Details: See the initialize() function
             if(length(unsampledNodes)) {
                 numUnsampled <- length(unsampledNodes)
                 sTag <- if(numUnsampled > 1) 's' else ''
-                message(paste0('  [Warning] No samplers assigned for ', numUnsampled, ' node', sTag, ', use conf$getUnsampledNodes() for node name', sTag))
+                message(paste0('[Warning] No samplers assigned for ', numUnsampled, ' node', sTag, ', use conf$getUnsampledNodes() for node name', sTag))
             }
         },
         
