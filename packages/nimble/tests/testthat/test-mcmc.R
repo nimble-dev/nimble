@@ -22,6 +22,9 @@ nimblePPBranchSamplerSetting <- getNimbleOption('MCMCjointlySamplePredictiveBran
 ## MCMC calculation include predictive dependencies - save current setting
 nimbleUsePredictiveDependenciesSetting <- nimbleOptions('MCMCusePredictiveDependenciesInCalculations')
 
+## MCMC warn about unsampled nodes - save current setting
+nimbleWarnUnsampledNodesSetting <- nimbleOptions('MCMCwarnUnsampledStochasticNodes')
+
 ## If you do *not* want to write to results files
 ##    comment out the sink() call below.  And consider setting verbose = FALSE 
 ## To record a new gold file, nimbleOptions('generateGoldFileForMCMCtesting') should contain the path to the directory where you want to put it
@@ -2625,6 +2628,32 @@ test_that('mcmc_determineCalcAndCopyNodes works correctly in different situation
     expect_error(Rmcmc <- buildMCMC(conf))
     ##
     nimbleOptions(MCMCusePredictiveDependenciesInCalculations = nimbleUsePredictiveDependenciesSetting)
+})
+
+test_that('mcmc_determineCalcAndCopyNodes works correctly in different situations', {
+    code <- nimbleCode({
+        x[1] ~ dnorm(0, 1)
+        for(i in 2:10) x[i] ~ dnorm(x[i-1], 1)
+    })
+    Rmodel <- nimbleModel(code)
+    conf <- configureMCMC(Rmodel)
+    expect_identical(conf$getUnsampledNodes(), character())
+    conf$removeSamplers()
+    expect_identical(length(conf$getUnsampledNodes()), 10L)
+    conf$addSampler('x[3]', 'posterior_predictive')
+    expect_identical(conf$getUnsampledNodes(), paste0('x[', c(1:2, 4:10), ']'))
+    conf$addSampler('x[3]', 'posterior_predictive_branch')
+    expect_identical(conf$getUnsampledNodes(), paste0('x[', 1:2, ']'))
+    conf$addSampler('x[1]', 'RW')
+    expect_identical(conf$getUnsampledNodes(), 'x[2]')
+    conf$addSampler('x[1]', 'posterior_predictive_branch')
+    expect_identical(conf$getUnsampledNodes(), character())
+    conf$removeSamplers()
+    Rmodel$setData(x = c(rep(NA,5), rep(0,5)))
+    expect_identical(conf$getUnsampledNodes(), paste0('x[', 1:5, ']'))
+    conf$addSampler(c('x[1]', 'x[3]'), 'RW_block')
+    expect_identical(conf$getUnsampledNodes(), paste0('x[', c(2,4,5), ']'))
+    nimbleOptions(MCMCwarnUnsampledStochasticNodes = nimbleWarnUnsampledNodesSetting)
 })
 
 sink(NULL)

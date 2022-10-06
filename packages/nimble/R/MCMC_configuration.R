@@ -82,6 +82,7 @@ MCMCconf <- setRefClass(
         samplerConfs        = 'ANY',
         samplerExecutionOrder = 'ANY',
         controlDefaults     = 'ANY',
+        unsampledNodes      = 'ANY',
         ##namedSamplerLabelMaker = 'ANY',  ## usage long since deprecated (Dec 2020)
         mvSamples1Conf      = 'ANY',
         mvSamples2Conf      = 'ANY'
@@ -1164,13 +1165,38 @@ Details: See the initialize() function
             if(ind == 1) mvSamples1Conf <<- thisModelValuesConf
             if(ind == 2) mvSamples2Conf <<- thisModelValuesConf     	
         },
-
+        
+        setUnsampledNodes = function() {
+            samplerTargetNodes <- model$expandNodeNames(unlist(lapply(samplerConfs, `[[`, 'target')))
+            samplerNames <- sapply(samplerConfs, `[[`, 'name')
+            ppBranchSamplerInd <- which(samplerNames == 'posterior_predictive_branch')
+            ppBranchSamplerTargetNodes <- if(length(ppBranchSamplerInd)) unlist(lapply(samplerConfs[ppBranchSamplerInd], `[[`, 'target')) else character()
+            ppBranchSamplerNodesSampled <- model$getDependencies(ppBranchSamplerTargetNodes, stochOnly = TRUE, downstream = TRUE, includePredictive = TRUE)
+            allNodesBeingSampled <- unique(c(samplerTargetNodes, ppBranchSamplerNodesSampled))
+            unsampledNodes <<- setdiff(model$getNodeNames(stochOnly = TRUE, includeData = FALSE), allNodesBeingSampled)
+        },
+        
+        getUnsampledNodes = function() {
+            setUnsampledNodes()
+            return(unsampledNodes)
+        },
+        
+        warnUnsampledNodes = function() {
+            setUnsampledNodes()
+            if(length(unsampledNodes)) {
+                numUnsampled <- length(unsampledNodes)
+                sTag <- if(numUnsampled > 1) 's' else ''
+                message(paste0('  [Warning] No samplers assigned for ', numUnsampled, ' node', sTag, ', use conf$getUnsampledNodes() for node name', sTag))
+            }
+        },
+        
         show = function() {
             cat('===== Monitors =====\n')
             printMonitors()
             cat('===== Samplers =====\n')
             if(length(samplerConfs) == 0) cat('(no samplers assigned)\n')
             printSamplers(byType = TRUE)
+            if(getNimbleOption('MCMCwarnUnsampledStochasticNodes'))   warnUnsampledNodes()
         }
     )
 )

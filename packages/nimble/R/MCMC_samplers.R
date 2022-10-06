@@ -57,7 +57,7 @@ sampler_posterior_predictive_branch <- nimbleFunction(
         ## node list generation
         calcNodes <- model$getDependencies(target, downstream = TRUE, includePredictive = TRUE)
         ## checks
-        if(!all(model$expandNodeNames(target) %in% model$getNodeNames(predictiveBranchPointsOnly = TRUE)))
+        if(!all(model$expandNodeNames(target) %in% model$getNodeNames(predictiveOnly = TRUE)))
             stop('posterior_predictive_branch sampler should not be assigned to non-posterior-predictive-branch-point nodes')
     },
     run = function() {

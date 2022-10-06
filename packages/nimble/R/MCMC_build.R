@@ -102,6 +102,8 @@ buildMCMC <- nimbleFunction(
                 conf$samplerConfs <- conf$samplerConfs[c(regularSamplerInd, ppSamplerInd)]
             }
         }
+
+        if(getNimbleOption('MCMCwarnUnsampledStochasticNodes'))   conf$warnUnsampledNodes()
         
         ## build sampler functions.
         ## save current values of 'getDependenciesIncludesPredictiveNodes' system option, then temporarily
