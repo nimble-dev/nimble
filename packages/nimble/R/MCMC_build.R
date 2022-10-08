@@ -119,7 +119,7 @@ buildMCMC <- nimbleFunction(
         ## regardless whether an error occurred during sampler building, restore the original system option value:
         nimbleOptions(getDependenciesIncludesPredictiveNodes = getDependenciesIncludesPredictiveNodes_save)
         ## if an error occurred during sampler building, then quit here:
-        if(class(e) == 'try-error')   { errorMessage <- sub('^Error.+: ', '', e[1]); stop(errorMessage) }
+        if(class(e) == 'try-error')   { errorMessage <- sub('^Error.+?: ', '', e[1]); stop(errorMessage) }
         
         samplerExecutionOrderFromConfPlusTwoZeros <- c(conf$samplerExecutionOrder, 0, 0)  ## establish as a vector
         monitors  <- mcmc_processMonitorNames(model, conf$monitors)
