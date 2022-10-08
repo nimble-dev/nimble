@@ -111,9 +111,15 @@ buildMCMC <- nimbleFunction(
         getDependenciesIncludesPredictiveNodes_save <- getNimbleOption('getDependenciesIncludesPredictiveNodes')
         nimbleOptions(getDependenciesIncludesPredictiveNodes = getNimbleOption('MCMCusePredictiveDependenciesInCalculations'))
         samplerFunctions <- nimbleFunctionList(sampler_BASE)
-        e <- try(
-            for(i in seq_along(conf$samplerConfs))
-                samplerFunctions[[i]] <- conf$samplerConfs[[i]]$buildSampler(model=model, mvSaved=mvSaved),
+        e <- try({
+            for(i in seq_along(conf$samplerConfs)) {
+                ## caveat: if this sampler is sampling a predictive node, then revert the 'getDependenciesIncludesPredictiveNodes'
+                ## setting back to its original value, for creation of this sampler.
+                samplingPredictiveNode <- if(any(conf$model$expandNodeNames(conf$samplerConfs[[i]]$targetAsScalar, returnType = 'ids') %in% conf$model$getPredictiveNodeIDs())) TRUE else FALSE
+                if(samplingPredictiveNode)   nimbleOptions(getDependenciesIncludesPredictiveNodes = getDependenciesIncludesPredictiveNodes_save)
+                samplerFunctions[[i]] <- conf$samplerConfs[[i]]$buildSampler(model=model, mvSaved=mvSaved)
+                if(samplingPredictiveNode)   nimbleOptions(getDependenciesIncludesPredictiveNodes =  getNimbleOption('MCMCusePredictiveDependenciesInCalculations'))
+            }},
             silent = TRUE
         )
         ## regardless whether an error occurred during sampler building, restore the original system option value:
