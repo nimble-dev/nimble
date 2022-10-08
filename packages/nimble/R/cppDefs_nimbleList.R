@@ -19,8 +19,8 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         } else if(name == 'EIGEN_SVDCLASS' || name == 'EIGEN_EIGENCLASS') {
                                             ## Handle these two EIGEN_ classes specially. They are implemented as an inheritance hierarchy,
                                             ## so we cannot generate the class definitions (Nick and Perry understand why).
-                                            ## Note that this branch is only ever run under the control of generateStaticCode.R to
-                                            ## regenerate C++ code  in predefinedNimbleLists.h and predefinedNimbleLists.cpp.
+                                            ## Note that this section of code is only ever run under the control of generateStaticCode.R to
+                                            ## regenerate C++ code in predefinedNimbleLists.h and predefinedNimbleLists.cpp.
                                             defs <- c(SEXPgeneratorFun, ptrCastFun, ptrCastToPtrPairFun)
                                             if(!inherits(SEXPfinalizerFun, 'uninitializedField')) {
                                                 defs <- c(defs, SEXPfinalizerFun)
