@@ -442,7 +442,7 @@ mcmc_determineCalcAndCopyNodes <- function(model, target) {
     ## if the sampler calling this, itself, is operating exclusively on posterior predictive nodes,
     ## then regardless of how the rest of the model is being sampled (w.r.t. inclusion of posterior predictive nodes),
     ## we'll include 'self' and all stochastic dependencies (the full markov blanket) in the calculations,
-    ## which necessarily are taking place entirely within a posterior predictive model branch.
+    ## which necessarily are taking place entirely within a posterior predictive network of nodes.
     ## this should lead to correct behaviour (consistent samples and joint posteriors) in all cases.
     if(targetAllPP) {
         ## when sampler is operating only on posterior predictive nodes,
